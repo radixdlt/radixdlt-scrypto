@@ -146,8 +146,8 @@ impl Vault {
     /// Locks the specified amount as transaction fee.
     ///
     /// Unused fee will be refunded to the vaults from the most recently locked to the least.
-    pub fn lock_fee(&mut self, amount: Decimal) -> () {
-        let input = RadixEngineInput::LockFee(self.0, amount);
+    pub fn pay_fee(&mut self, amount: Decimal) -> () {
+        let input = RadixEngineInput::PayFee(self.0, amount);
         call_engine(input)
     }
 

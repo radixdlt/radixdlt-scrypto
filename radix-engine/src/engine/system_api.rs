@@ -89,5 +89,5 @@ where
         proof_ids: Vec<ProofId>,
     ) -> Result<bool, RuntimeError>;
 
-    fn lock_fee(&mut self, vault_id: VaultId, amount: Decimal) -> Result<(), RuntimeError>;
+    fn pay_fee(&mut self, vault_id: VaultId, amount: Decimal) -> Result<(), RuntimeError>;
 }

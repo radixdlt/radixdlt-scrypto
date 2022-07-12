@@ -10,7 +10,7 @@ use transaction::builder::ManifestBuilder;
 use transaction::model::*;
 
 #[test]
-fn test_lock_fee_and_transfer() {
+fn test_pay_fee_and_transfer() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
     let (public_key, _, account) = test_runner.new_account();
@@ -18,7 +18,7 @@ fn test_lock_fee_and_transfer() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .call_method(account, "lock_fee", to_struct!(Decimal::from(1)))
+        .call_method(account, "pay_fee", to_struct!(Decimal::from(1)))
         .withdraw_from_account(RADIX_TOKEN, account)
         .call_method_with_all_resources(other_account, "deposit_batch")
         .build();

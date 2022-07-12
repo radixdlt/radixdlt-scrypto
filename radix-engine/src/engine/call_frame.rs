@@ -2215,16 +2215,16 @@ where
         self.fee_table
     }
 
-    fn lock_fee(&mut self, vault_id: VaultId, amount: Decimal) -> Result<(), RuntimeError> {
+    fn pay_fee(&mut self, vault_id: VaultId, amount: Decimal) -> Result<(), RuntimeError> {
         let value_id = ValueId::vault_id(vault_id);
         if self.owned_values.contains_key(&value_id) {
-            Err(RuntimeError::LockFeeFailure(
+            Err(RuntimeError::PayFeeFailure(
                 "Attempted to locked fee on a local vault".to_owned(),
             ))
         } else if let Some(r) = self.value_refs.get_mut(&value_id) {
             match r.location {
                 REValueLocation::Track { parent } => {
-                    // Take the given amount from the vault
+                    // 1. Take the given amount from the vault
                     let return_data = self.invoke_snode(
                         SNodeRef::VaultRef(vault_id),
                         "take".to_owned(),
@@ -2247,12 +2247,12 @@ where
                         .into_container()
                         .expect("The return should be liquid thus unwrappable");
                     if returned_resource.resource_address() != RADIX_TOKEN {
-                        return Err(RuntimeError::LockFeeFailure(
+                        return Err(RuntimeError::PayFeeFailure(
                             "Attempted to lock non-XRD as fee".to_owned(),
                         ));
                     }
 
-                    // Add the taken amount to the locked
+                    // 2. Add the taken amount to the locked
                     let address =
                         Address::Vault(parent.expect("TODO: is this a safe unwrap?"), vault_id);
                     self.track
@@ -2270,7 +2270,7 @@ where
                     self.track.write_value(address.clone(), value);
                     self.track.release_lock(address.clone());
 
-                    // credit cost units
+                    // 3. Credit cost units
                     // TODO: add xrd/cost unit conversion
                     self.cost_unit_counter
                         .repay(100)
@@ -2278,12 +2278,12 @@ where
 
                     Ok(())
                 }
-                _ => Err(RuntimeError::LockFeeFailure(
+                _ => Err(RuntimeError::PayFeeFailure(
                     "Referenced vault is not in track".to_owned(),
                 )),
             }
         } else {
-            Err(RuntimeError::LockFeeFailure("Vault not found".to_owned()))
+            Err(RuntimeError::PayFeeFailure("Vault not found".to_owned()))
         }
     }
 }

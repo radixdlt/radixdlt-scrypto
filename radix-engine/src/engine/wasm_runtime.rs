@@ -161,8 +161,8 @@ where
         self.system_api.check_access_rule(access_rule, proof_ids)
     }
 
-    fn handle_lock_fee(&mut self, vault_id: VaultId, amount: Decimal) -> Result<(), RuntimeError> {
-        self.system_api.lock_fee(vault_id, amount)
+    fn handle_pay_fee(&mut self, vault_id: VaultId, amount: Decimal) -> Result<(), RuntimeError> {
+        self.system_api.pay_fee(vault_id, amount)
     }
 }
 
@@ -201,8 +201,8 @@ impl<
             RadixEngineInput::CheckAccessRule(rule, proof_ids) => {
                 self.handle_check_access_rule(rule, proof_ids).map(encode)
             }
-            RadixEngineInput::LockFee(vault_id, amount) => {
-                self.handle_lock_fee(vault_id, amount).map(encode)
+            RadixEngineInput::PayFee(vault_id, amount) => {
+                self.handle_pay_fee(vault_id, amount).map(encode)
             }
         }
         .map_err(InvokeError::RuntimeError)
