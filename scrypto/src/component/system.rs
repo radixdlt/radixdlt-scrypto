@@ -54,7 +54,7 @@ impl ComponentSystem {
     }
 
     /// Instantiates a component.
-    pub fn create_component<T: ComponentState<C>, C: LComponent>(
+    pub fn create_component<T: ComponentState<C>, C: LocalComponent>(
         &self,
         blueprint_name: &str,
         state: T,
