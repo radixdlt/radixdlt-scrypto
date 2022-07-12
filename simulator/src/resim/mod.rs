@@ -166,7 +166,7 @@ pub fn handle_manifest<O: std::io::Write>(
             let nonce = get_nonce()?;
             let transaction = TestTransaction::new(manifest, nonce, pks);
 
-            let receipt = executor.execute(&transaction, false);
+            let receipt = executor.execute(&transaction);
             if output_receipt {
                 writeln!(out, "{:?}", receipt).map_err(Error::IOError)?;
             }

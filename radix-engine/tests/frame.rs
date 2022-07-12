@@ -24,7 +24,7 @@ fn test_max_call_depth_success() {
     let manifest = ManifestBuilder::new()
         .call_function(package_address, "Caller", "recursive", to_struct!(14u32))
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![], false);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_success();
@@ -40,7 +40,7 @@ fn test_max_call_depth_failure() {
     let manifest = ManifestBuilder::new()
         .call_function(package_address, "Caller", "recursive", to_struct!(15u32))
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![], false);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_err(|e| matches!(e, RuntimeError::MaxCallDepthLimitReached));

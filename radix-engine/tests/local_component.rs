@@ -22,7 +22,7 @@ fn local_component_should_return_correct_info() {
             to_struct!(package_address, "LocalComponent".to_string()),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![], false);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_success();
@@ -43,7 +43,7 @@ fn local_component_should_be_callable_read_only() {
             to_struct!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![], false);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_success();
@@ -64,7 +64,7 @@ fn local_component_should_be_callable_with_write() {
             to_struct!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![], false);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_success();
@@ -89,7 +89,7 @@ fn local_component_with_access_rules_should_not_be_callable() {
             to_struct!(auth_address),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key], false);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
     receipt.expect_err(|e| matches!(e, RuntimeError::AuthorizationError { .. }));
@@ -119,7 +119,7 @@ fn local_component_with_access_rules_should_be_callable() {
             to_struct!(auth_address),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key], false);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
     receipt.expect_success()
@@ -146,7 +146,7 @@ fn recursion_bomb() {
         })
         .call_method_with_all_resources(account, "deposit_batch")
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key], false);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
     receipt.expect_success();
@@ -172,7 +172,7 @@ fn recursion_bomb_to_failure() {
         })
         .call_method_with_all_resources(account, "deposit_batch")
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key], false);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
     receipt.expect_err(|e| matches!(e, RuntimeError::MaxCallDepthLimitReached));
@@ -198,7 +198,7 @@ fn recursion_bomb_2() {
         })
         .call_method_with_all_resources(account, "deposit_batch")
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key], false);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
     receipt.expect_success();
@@ -224,7 +224,7 @@ fn recursion_bomb_2_to_failure() {
         })
         .call_method_with_all_resources(account, "deposit_batch")
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key], false);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
     receipt.expect_err(|e| matches!(e, RuntimeError::MaxCallDepthLimitReached));

@@ -21,7 +21,7 @@ fn can_withdraw_from_my_account() {
         .withdraw_from_account(RADIX_TOKEN, account)
         .call_method_with_all_resources(other_account, "deposit_batch")
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key], false);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
     receipt.expect_success();
@@ -40,7 +40,7 @@ fn can_withdraw_non_fungible_from_my_account() {
         .withdraw_from_account(resource_address, account)
         .call_method_with_all_resources(other_account, "deposit_batch")
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key], false);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
     receipt.expect_success();
@@ -58,7 +58,7 @@ fn cannot_withdraw_from_other_account() {
         .build();
 
     // Act
-    let receipt = test_runner.execute_manifest(manifest, vec![other_public_key], false);
+    let receipt = test_runner.execute_manifest(manifest, vec![other_public_key]);
 
     // Assert
     let error = receipt.result.expect_err("Should be runtime error");
@@ -84,7 +84,7 @@ fn account_to_bucket_to_account() {
         .build();
 
     // Act
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key], false);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
     receipt.expect_success();
@@ -100,7 +100,7 @@ fn test_account_balance() {
         .build();
 
     // Act
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key], false);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
     receipt.result.expect("Should be okay");
 
     // Assert

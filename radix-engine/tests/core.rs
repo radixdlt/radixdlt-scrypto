@@ -14,7 +14,7 @@ fn test_process_and_transaction() {
     let manifest1 = ManifestBuilder::new()
         .call_function(package_address, "CoreTest", "query", to_struct![])
         .build();
-    let receipt1 = test_runner.execute_manifest(manifest1, vec![], false);
+    let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
     receipt1.expect_success();
 }
 
@@ -29,6 +29,6 @@ fn test_call() {
         .call_function(package_address, "MoveTest", "move_proof", to_struct![])
         .call_method_with_all_resources(account, "deposit_batch")
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key], false);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
     receipt.expect_success();
 }

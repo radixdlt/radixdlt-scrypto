@@ -27,7 +27,7 @@ fn cannot_make_cross_component_call_without_authorization() {
             to_struct!(authorization),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![], false);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_success();
     let secured_component = receipt.new_component_addresses[0];
 
@@ -39,7 +39,7 @@ fn cannot_make_cross_component_call_without_authorization() {
             to_struct!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![], false);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_success();
     let my_component = receipt.new_component_addresses[0];
 
@@ -51,7 +51,7 @@ fn cannot_make_cross_component_call_without_authorization() {
             to_struct!(secured_component),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![], false);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     let error = receipt.result.expect_err("Should be error");
@@ -78,7 +78,7 @@ fn can_make_cross_component_call_with_authorization() {
             to_struct!(authorization),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![], false);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_success();
     let secured_component = receipt.new_component_addresses[0];
 
@@ -90,7 +90,7 @@ fn can_make_cross_component_call_with_authorization() {
             to_struct!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![], false);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_success();
     let my_component = receipt.new_component_addresses[0];
 
@@ -98,7 +98,7 @@ fn can_make_cross_component_call_with_authorization() {
         .withdraw_from_account_by_ids(&BTreeSet::from([auth_id.clone()]), auth, account)
         .call_method_with_all_resources(my_component, "put_auth")
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key], false);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
     receipt.expect_success();
 
     // Act
@@ -109,7 +109,7 @@ fn can_make_cross_component_call_with_authorization() {
             to_struct!(secured_component),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![], false);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_success();

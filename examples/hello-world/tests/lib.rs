@@ -32,7 +32,7 @@ fn test_hello() {
         .publish_package(extract_package(compile_package!()).unwrap())
         .build();
     let package_address = executor
-        .execute(&TestTransaction::new(manifest, 1, vec![public_key]), false)
+        .execute(&TestTransaction::new(manifest, 1, vec![public_key]))
         .new_package_addresses[0];
 
     // Create an account
@@ -46,14 +46,14 @@ fn test_hello() {
         })
         .build();
     let account = executor
-        .execute(&TestTransaction::new(manifest, 2, vec![public_key]), false)
+        .execute(&TestTransaction::new(manifest, 2, vec![public_key]))
         .new_component_addresses[0];
 
     // Test the `instantiate_hello` function.
     let manifest = ManifestBuilder::new()
         .call_function(package_address, "Hello", "instantiate_hello", to_struct!())
         .build();
-    let receipt = executor.execute(&TestTransaction::new(manifest, 3, vec![public_key]), false);
+    let receipt = executor.execute(&TestTransaction::new(manifest, 3, vec![public_key]));
     println!("{:?}\n", receipt);
     receipt.result.expect("Should be okay.");
     let component = receipt.new_component_addresses[0];
@@ -63,7 +63,7 @@ fn test_hello() {
         .call_method(component, "free_token", to_struct!())
         .call_method_with_all_resources(account, "deposit_batch")
         .build();
-    let receipt = executor.execute(&TestTransaction::new(manifest, 4, vec![public_key]), false);
+    let receipt = executor.execute(&TestTransaction::new(manifest, 4, vec![public_key]));
     println!("{:?}\n", receipt);
     receipt.result.expect("Should be okay.");
 }

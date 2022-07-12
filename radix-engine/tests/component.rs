@@ -15,7 +15,7 @@ fn test_package() {
     let manifest1 = ManifestBuilder::new()
         .call_function(package, "PackageTest", "publish", to_struct!())
         .build();
-    let receipt1 = test_runner.execute_manifest(manifest1, vec![], false);
+    let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
     receipt1.expect_success();
 }
 
@@ -29,7 +29,7 @@ fn test_component() {
     let manifest1 = ManifestBuilder::new()
         .call_function(package, "ComponentTest", "create_component", to_struct!())
         .build();
-    let receipt1 = test_runner.execute_manifest(manifest1, vec![], false);
+    let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
     receipt1.expect_success();
 
     // Find the component address from receipt
@@ -47,7 +47,7 @@ fn test_component() {
         .call_method(component, "put_component_state", to_struct!())
         .call_method_with_all_resources(account, "deposit_batch")
         .build();
-    let receipt2 = test_runner.execute_manifest(manifest2, vec![public_key], false);
+    let receipt2 = test_runner.execute_manifest(manifest2, vec![public_key]);
     receipt2.expect_success();
 }
 
@@ -66,7 +66,7 @@ fn invalid_blueprint_name_should_cause_error() {
             to_struct!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![], false);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_err(|e| {
@@ -86,7 +86,7 @@ fn reentrancy_should_not_be_possible() {
     let manifest = ManifestBuilder::new()
         .call_function(package_address, "ReentrantComponent", "new", to_struct!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![], false);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_success();
     let component_address = receipt.new_component_addresses[0];
 
@@ -94,7 +94,7 @@ fn reentrancy_should_not_be_possible() {
     let manifest = ManifestBuilder::new()
         .call_method(component_address, "call_self", to_struct!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![], false);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_err(|e| {
@@ -119,7 +119,7 @@ fn missing_component_address_should_cause_error() {
     let manifest = ManifestBuilder::new()
         .call_method(component_address, "get_component_state", to_struct!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![], false);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_err(|e| {

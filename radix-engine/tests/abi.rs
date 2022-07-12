@@ -24,7 +24,7 @@ fn test_invalid_access_rule_methods() {
             to_struct!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![], false);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     let error = receipt.result.expect_err("Should be an error.");
@@ -54,7 +54,7 @@ fn test_arg(method_name: &str, arg: Vec<u8>, expected_result: ExpectedResult) {
     let manifest = ManifestBuilder::new()
         .call_function(package_address, "AbiComponent2", method_name, arg)
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![], false);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     match expected_result {

@@ -17,7 +17,7 @@ fn test_worktop_resource_leak() {
     let manifest = ManifestBuilder::new()
         .withdraw_from_account(RADIX_TOKEN, account)
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key], false);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
     receipt.expect_err(|e| matches!(e, RuntimeError::DropFailure(DropFailure::Worktop)));

@@ -61,7 +61,7 @@ impl TestRunner {
             })
             .build();
 
-        let receipt = self.execute_manifest(manifest, vec![], false);
+        let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_success();
 
         receipt.new_component_addresses[0]
@@ -77,7 +77,7 @@ impl TestRunner {
     pub fn publish_package(&mut self, package: Package) -> PackageAddress {
         let manifest = ManifestBuilder::new().publish_package(package).build();
 
-        let receipt = self.execute_manifest(manifest, vec![], false);
+        let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_success();
         receipt.new_package_addresses[0]
     }
@@ -94,7 +94,6 @@ impl TestRunner {
         &mut self,
         manifest: TransactionManifest,
         signer_public_keys: Vec<EcdsaPublicKey>,
-        is_system: bool,
     ) -> Receipt {
         let transaction =
             TestTransaction::new(manifest, self.next_transaction_nonce, signer_public_keys);
@@ -106,7 +105,7 @@ impl TestRunner {
             &mut self.wasm_instrumenter,
             self.trace,
         )
-        .execute(&transaction, is_system);
+        .execute(&transaction);
 
         receipt
     }
@@ -155,7 +154,7 @@ impl TestRunner {
             )
             .call_method_with_all_resources(account, "deposit_batch")
             .build();
-        self.execute_manifest(manifest, vec![signer_public_key], false)
+        self.execute_manifest(manifest, vec![signer_public_key])
             .expect_success();
     }
 
@@ -184,7 +183,7 @@ impl TestRunner {
             )
             .call_method_with_all_resources(account, "deposit_batch")
             .build();
-        let receipt = self.execute_manifest(manifest, vec![], false);
+        let receipt = self.execute_manifest(manifest, vec![]);
         (
             receipt.new_resource_addresses[0],
             mint_auth,
@@ -209,7 +208,7 @@ impl TestRunner {
             )
             .call_method_with_all_resources(account, "deposit_batch")
             .build();
-        let receipt = self.execute_manifest(manifest, vec![], false);
+        let receipt = self.execute_manifest(manifest, vec![]);
         (auth_resource_address, receipt.new_resource_addresses[0])
     }
 
@@ -229,7 +228,7 @@ impl TestRunner {
             )
             .call_method_with_all_resources(account, "deposit_batch")
             .build();
-        let receipt = self.execute_manifest(manifest, vec![], false);
+        let receipt = self.execute_manifest(manifest, vec![]);
         (auth_resource_address, receipt.new_resource_addresses[0])
     }
 
@@ -244,7 +243,7 @@ impl TestRunner {
             )
             .call_method_with_all_resources(account, "deposit_batch")
             .build();
-        let receipt = self.execute_manifest(manifest, vec![], false);
+        let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_success();
         receipt.new_resource_addresses[0]
     }
@@ -265,7 +264,7 @@ impl TestRunner {
             )
             .call_method_with_all_resources(account, "deposit_batch")
             .build();
-        let receipt = self.execute_manifest(manifest, vec![], false);
+        let receipt = self.execute_manifest(manifest, vec![]);
         receipt.new_resource_addresses[0]
     }
 
@@ -290,7 +289,7 @@ impl TestRunner {
             .unwrap()
             .call_method_with_all_resources(account, "deposit_batch")
             .build();
-        let receipt = self.execute_manifest(manifest, vec![signer_public_key], false);
+        let receipt = self.execute_manifest(manifest, vec![signer_public_key]);
         receipt.new_component_addresses[0]
     }
 }

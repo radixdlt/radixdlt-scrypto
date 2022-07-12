@@ -24,7 +24,7 @@ fn test_auth_rule(
         .withdraw_from_account(RADIX_TOKEN, account)
         .call_method_with_all_resources(other_account, "deposit_batch")
         .build();
-    let receipt = test_runner.execute_manifest(manifest, signer_public_keys.to_vec(), false);
+    let receipt = test_runner.execute_manifest(manifest, signer_public_keys.to_vec());
 
     // Assert
     if should_succeed {
@@ -233,7 +233,7 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_no_signature() {
         })
         .call_method_with_all_resources(other_account, "deposit_batch")
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![], false);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_success();
@@ -261,7 +261,7 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_right_amount_of_proof() {
         })
         .call_method_with_all_resources(other_account, "deposit_batch")
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![], false);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_success();
@@ -289,7 +289,7 @@ fn cannot_withdraw_from_my_any_xrd_auth_account_with_less_than_amount_of_proof()
         })
         .call_method_with_all_resources(other_account, "deposit_batch")
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![], false);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     let error = receipt.result.expect_err("Should be an error");
