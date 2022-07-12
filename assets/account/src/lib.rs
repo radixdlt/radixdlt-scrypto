@@ -42,6 +42,16 @@ blueprint! {
                 .unwrap_or_default()
         }
 
+        pub fn lock_fee(&mut self, amount: Decimal) {
+            let vault = self.vaults.get(&RADIX_TOKEN);
+            match vault {
+                Some(mut vault) => vault.lock_fee(amount),
+                None => {
+                    panic!("No XRD in account");
+                }
+            }
+        }
+
         /// Deposits resource into this account.
         pub fn deposit(&mut self, bucket: Bucket) {
             let resource_address = bucket.resource_address();
