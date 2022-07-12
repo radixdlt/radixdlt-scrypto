@@ -58,5 +58,4 @@ pub trait ReadableSubstateStore {
 pub trait WriteableSubstateStore {
     fn put_substate(&mut self, address: &[u8], substate: Substate);
     fn put_space(&mut self, address: &[u8], phys_id: PhysicalSubstateId);
-    fn set_epoch(&mut self, epoch: u64);
 }

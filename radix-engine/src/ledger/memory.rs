@@ -8,14 +8,12 @@ use crate::ledger::{Substate, WriteableSubstateStore};
 /// A substate store that stores all substates in host memory.
 pub struct InMemorySubstateStore {
     substates: HashMap<Vec<u8>, Vec<u8>>,
-    current_epoch: u64,
 }
 
 impl InMemorySubstateStore {
     pub fn new() -> Self {
         Self {
             substates: HashMap::new(),
-            current_epoch: 0,
         }
     }
 
@@ -55,9 +53,5 @@ impl WriteableSubstateStore for InMemorySubstateStore {
     fn put_space(&mut self, address: &[u8], phys_id: PhysicalSubstateId) {
         self.substates
             .insert(address.to_vec(), scrypto_encode(&phys_id));
-    }
-
-    fn set_epoch(&mut self, epoch: u64) {
-        self.current_epoch = epoch;
     }
 }
