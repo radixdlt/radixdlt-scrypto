@@ -25,6 +25,7 @@ pub type ProofId = u32;
 pub enum TransientValueId {
     Bucket(BucketId),
     Proof(ProofId),
+    Worktop,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Encode, Decode)]
@@ -71,6 +72,15 @@ impl ValueId {
     }
 }
 
+impl Into<StoredValueId> for ValueId {
+    fn into(self) -> StoredValueId {
+        match self {
+            ValueId::Stored(id) => id,
+            _ => panic!("Not a stored id"),
+        }
+    }
+}
+
 impl Into<(Hash, u32)> for ValueId {
     fn into(self) -> KeyValueStoreId {
         match self {
@@ -96,6 +106,15 @@ impl Into<ComponentAddress> for ValueId {
         match self {
             ValueId::Stored(StoredValueId::Component(component_address)) => component_address,
             _ => panic!("Not a component address"),
+        }
+    }
+}
+
+impl Into<PackageAddress> for ValueId {
+    fn into(self) -> PackageAddress {
+        match self {
+            ValueId::Package(package_address) => package_address,
+            _ => panic!("Not a package address"),
         }
     }
 }

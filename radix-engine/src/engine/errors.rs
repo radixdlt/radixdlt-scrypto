@@ -48,6 +48,7 @@ pub enum RuntimeError {
     BlueprintNotFound(PackageAddress, String),
 
     ComponentReentrancy(ComponentAddress),
+    PackageReentrancy,
 
     /// Component does not exist.
     ComponentNotFound(ComponentAddress),
@@ -87,6 +88,8 @@ pub enum RuntimeError {
     /// Error when generating or accessing proof.
     ProofError(ProofError),
 
+    ValueNotAllowed,
+
     /// Bucket is not allowed.
     BucketNotAllowed,
 
@@ -121,14 +124,18 @@ pub enum RuntimeError {
     NotSupported,
 
     CostingError(CostUnitCounterError),
+
+    MaxCallDepthLimitReached,
 }
 
 #[derive(Debug, PartialEq)]
 pub enum DropFailure {
+    Resource,
     Component,
     Bucket,
-    Vault,
     Worktop,
+    Vault,
+    Package,
     KeyValueStore,
 }
 

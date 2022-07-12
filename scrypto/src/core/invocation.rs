@@ -12,7 +12,6 @@ pub enum SNodeRef {
     SystemStatic,
     PackageStatic,
     AuthZoneRef,
-    WorktopRef,
     Scrypto(ScryptoActor),
     Component(ComponentAddress),
     ResourceStatic,
@@ -20,6 +19,7 @@ pub enum SNodeRef {
     Consumed(ValueId),
     BucketRef(BucketId),
     ProofRef(ProofId),
+    WorktopRef,
     VaultRef(VaultId),
     TransactionProcessor,
 }

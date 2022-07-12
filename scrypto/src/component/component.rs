@@ -4,11 +4,13 @@ use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
+use scrypto::engine::types::StoredValueId;
 
 use crate::abi::*;
 use crate::buffer::scrypto_encode;
 use crate::component::*;
 use crate::core::*;
+use crate::engine::types::ValueId;
 use crate::engine::{api::*, call_engine};
 use crate::misc::*;
 use crate::resource::AccessRules;
@@ -17,6 +19,9 @@ use crate::resource::AccessRules;
 pub struct ComponentAddAccessCheckInput {
     pub access_rules: AccessRules,
 }
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct ComponentGlobalizeInput {}
 
 /// Represents the state of a component.
 pub trait ComponentState<C: LComponent>: Encode + Decode {
@@ -69,10 +74,13 @@ impl Component {
     }
 
     pub fn globalize(self) -> ComponentAddress {
-        let addr = self.0.clone();
-        let input = RadixEngineInput::Globalize(self.0);
+        let input = RadixEngineInput::InvokeSNode(
+            SNodeRef::Consumed(ValueId::Stored(StoredValueId::Component(self.0))),
+            "globalize".to_string(),
+            scrypto_encode(&ComponentGlobalizeInput {}),
+        );
         let _: () = call_engine(input);
-        addr
+        self.0.clone()
     }
 }
 
