@@ -43,6 +43,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     }
 
     let module_ident = format_ident!("{}_impl", bp_ident);
+    let value_ident = format_ident!("{}_Component", bp_ident);
 
     let output_mod = quote! {
         #[allow(non_snake_case)]
@@ -56,13 +57,13 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 #(#bp_items)*
             }
 
-            impl ::scrypto::component::ComponentState<super::#bp_ident> for #bp_ident {
-                fn instantiate(self) -> super::#bp_ident {
+            impl ::scrypto::component::ComponentState<#value_ident> for #bp_ident {
+                fn instantiate(self) -> #value_ident {
                     let component = ::scrypto::component::component_system().create_component(
                         #bp_name,
                         self
                     );
-                    super::#bp_ident {
+                    #value_ident {
                         component
                     }
                 }
@@ -106,7 +107,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         quote! { #output_dispatcher }
     );
 
-    let output_stubs = generate_stubs(bp_ident, bp_items)?;
+    let output_stubs = generate_stubs(&value_ident, bp_ident, bp_items)?;
 
     let output = quote! {
         #output_mod
@@ -375,7 +376,7 @@ fn generate_abi(bp_ident: &Ident, items: &[ImplItem]) -> Result<Vec<Expr>> {
 }
 
 // Parses function items of an `Impl` and returns ABI of functions.
-fn generate_stubs(bp_ident: &Ident, items: &[ImplItem]) -> Result<TokenStream> {
+fn generate_stubs(value_ident: &Ident, bp_ident: &Ident, items: &[ImplItem]) -> Result<TokenStream> {
     let bp_name = bp_ident.to_string();
     let mut functions = Vec::<ImplItem>::new();
     let mut methods = Vec::<ImplItem>::new();
@@ -456,12 +457,13 @@ fn generate_stubs(bp_ident: &Ident, items: &[ImplItem]) -> Result<TokenStream> {
     }
 
     let output = quote! {
+        #[allow(non_camel_case_types)]
         #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
-        pub struct #bp_ident {
+        pub struct #value_ident {
             pub component: ::scrypto::component::Component,
         }
 
-        impl ::scrypto::component::LComponent for #bp_ident {
+        impl ::scrypto::component::LComponent for #value_ident {
             fn package_address(&self) -> PackageAddress {
                 self.component.package_address()
             }
@@ -477,7 +479,7 @@ fn generate_stubs(bp_ident: &Ident, items: &[ImplItem]) -> Result<TokenStream> {
             }
         }
 
-        impl #bp_ident {
+        impl #value_ident {
             #(#functions)*
 
             #(#methods)*
@@ -550,13 +552,13 @@ mod tests {
                         }
                     }
 
-                    impl ::scrypto::component::ComponentState<super::Test> for Test {
-                        fn instantiate(self) -> super::Test {
+                    impl ::scrypto::component::ComponentState<Test_Component> for Test {
+                        fn instantiate(self) -> Test_Component {
                             let component = ::scrypto::component::component_system().create_component(
                                 "Test",
                                 self
                             );
-                            super::Test {
+                            Test_Component {
                                 component
                             }
                         }
@@ -636,12 +638,13 @@ mod tests {
                     ::scrypto::buffer::scrypto_encode_to_buffer(&output)
                 }
 
+                #[allow(non_camel_case_types)]
                 #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
-                pub struct Test {
+                pub struct Test_Component {
                     pub component: ::scrypto::component::Component,
                 }
 
-                impl ::scrypto::component::LComponent for Test {
+                impl ::scrypto::component::LComponent for Test_Component {
                     fn package_address(&self) -> PackageAddress {
                         self.component.package_address()
                     }
@@ -657,7 +660,7 @@ mod tests {
                     }
                 }
 
-                impl Test {
+                impl Test_Component {
                     pub fn y(arg0: u32) -> u32 {
                         ::scrypto::core::Runtime::call_function(::scrypto::core::Runtime::package_address(), "Test", "y", ::scrypto::args!(arg0))
                     }
@@ -688,13 +691,13 @@ mod tests {
                     impl Test {
                     }
 
-                    impl ::scrypto::component::ComponentState<super::Test> for Test {
-                        fn instantiate(self) -> super::Test {
+                    impl ::scrypto::component::ComponentState<Test_Component> for Test {
+                        fn instantiate(self) -> Test_Component {
                             let component = ::scrypto::component::component_system().create_component(
                                 "Test",
                                 self
                             );
-                            super::Test {
+                            Test_Component {
                                 component
                             }
                         }
@@ -717,12 +720,13 @@ mod tests {
                     ::scrypto::buffer::scrypto_encode_to_buffer(&output)
                 }
 
+                #[allow(non_camel_case_types)]
                 #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
-                pub struct Test {
+                pub struct Test_Component {
                     pub component: ::scrypto::component::Component,
                 }
 
-                impl ::scrypto::component::LComponent for Test {
+                impl ::scrypto::component::LComponent for Test_Component {
                     fn package_address(&self) -> PackageAddress {
                         self.component.package_address()
                     }
@@ -738,7 +742,7 @@ mod tests {
                     }
                 }
 
-                impl Test {
+                impl Test_Component {
                 }
             },
         );
