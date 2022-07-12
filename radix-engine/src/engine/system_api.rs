@@ -54,8 +54,6 @@ where
         non_fungible: Option<NonFungible>,
     );
 
-    fn get_epoch(&mut self) -> u64;
-
     fn get_transaction_hash(&mut self) -> Hash;
 
     fn generate_uuid(&mut self) -> u128;

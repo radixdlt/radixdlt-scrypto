@@ -400,11 +400,6 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         self.transaction_hash
     }
 
-    /// Returns the current epoch.
-    pub fn current_epoch(&self) -> u64 {
-        self.substate_store.get_epoch()
-    }
-
     /// Adds a log message.
     pub fn add_log(&mut self, level: Level, message: String) {
         self.logs.push((level, message));

@@ -44,10 +44,6 @@ impl ReadableSubstateStore for InMemorySubstateStore {
             .get(address)
             .map(|bytes| scrypto_decode(bytes).unwrap())
     }
-
-    fn get_epoch(&self) -> u64 {
-        self.current_epoch
-    }
 }
 
 impl WriteableSubstateStore for InMemorySubstateStore {

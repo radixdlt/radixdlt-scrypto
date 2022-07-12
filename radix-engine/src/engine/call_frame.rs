@@ -2023,10 +2023,6 @@ where
         }
     }
 
-    fn get_epoch(&mut self) -> u64 {
-        self.track.current_epoch()
-    }
-
     fn get_transaction_hash(&mut self) -> Hash {
         self.track.transaction_hash()
     }

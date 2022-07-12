@@ -103,13 +103,6 @@ impl ReadableSubstateStore for RadixEngineDB {
     fn get_space(&mut self, address: &[u8]) -> Option<PhysicalSubstateId> {
         self.read(&address).map(|b| scrypto_decode(&b).unwrap())
     }
-
-    fn get_epoch(&self) -> u64 {
-        let id = scrypto_encode(&"epoch");
-        self.read(&id)
-            .map(|v| scrypto_decode(&v).unwrap())
-            .unwrap_or(0)
-    }
 }
 
 impl WriteableSubstateStore for RadixEngineDB {
