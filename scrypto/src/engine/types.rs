@@ -32,6 +32,7 @@ pub enum ValueId {
     Resource(ResourceAddress),
     NonFungibles(ResourceAddress),
     Package(PackageAddress),
+    System,
 }
 
 impl Into<(Hash, u32)> for ValueId {

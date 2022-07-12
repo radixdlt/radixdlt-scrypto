@@ -1,6 +1,9 @@
-use sbor::DecodeError;
+use sbor::*;
 use scrypto::buffer::scrypto_decode;
-use scrypto::core::{SystemGetCurrentEpochInput, SystemGetTransactionHashInput};
+use scrypto::core::{
+    SystemGetCurrentEpochInput, SystemGetTransactionHashInput, SystemSetEpochInput,
+};
+use scrypto::engine::types::ValueId;
 use scrypto::values::ScryptoValue;
 
 use crate::engine::SystemApi;
@@ -14,27 +17,38 @@ pub enum SystemError {
     InvalidMethod,
 }
 
-pub struct System {}
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct System {
+    pub epoch: u64,
+}
 
 impl System {
-    pub fn static_main<
+    pub fn main<
         'p,
         's,
         Y: SystemApi<'p, 's, W, I, S>,
         W: WasmEngine<I>,
         I: WasmInstance,
-        S: ReadableSubstateStore,
+        S: 's + ReadableSubstateStore,
     >(
         method_name: &str,
         arg: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, SystemError> {
         match method_name {
-            "current_epoch" => {
+            "get_epoch" => {
                 let _: SystemGetCurrentEpochInput =
                     scrypto_decode(&arg.raw).map_err(|e| SystemError::InvalidRequestData(e))?;
-                // TODO: Make this stateful
-                Ok(ScryptoValue::from_typed(&system_api.get_epoch()))
+                let value = system_api.borrow_value(&ValueId::System);
+                Ok(ScryptoValue::from_typed(&value.system().epoch))
+            }
+            "set_epoch" => {
+                let SystemSetEpochInput { epoch } =
+                    scrypto_decode(&arg.raw).map_err(|e| SystemError::InvalidRequestData(e))?;
+                let mut system_value = system_api.borrow_value_mut(&ValueId::System);
+                system_value.system().epoch = epoch;
+                system_api.return_value_mut(ValueId::System, system_value);
+                Ok(ScryptoValue::from_typed(&()))
             }
             "transaction_hash" => {
                 let _: SystemGetTransactionHashInput =
