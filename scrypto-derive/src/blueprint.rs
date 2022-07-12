@@ -467,7 +467,7 @@ fn generate_stubs(
             pub component: ::scrypto::component::Component,
         }
 
-        impl ::scrypto::component::LComponent for #value_ident {
+        impl ::scrypto::component::LocalComponent for #value_ident {
             fn package_address(&self) -> PackageAddress {
                 self.component.package_address()
             }
@@ -648,7 +648,7 @@ mod tests {
                     pub component: ::scrypto::component::Component,
                 }
 
-                impl ::scrypto::component::LComponent for Test_Component {
+                impl ::scrypto::component::LocalComponent for Test_Component {
                     fn package_address(&self) -> PackageAddress {
                         self.component.package_address()
                     }
@@ -730,7 +730,7 @@ mod tests {
                     pub component: ::scrypto::component::Component,
                 }
 
-                impl ::scrypto::component::LComponent for Test_Component {
+                impl ::scrypto::component::LocalComponent for Test_Component {
                     fn package_address(&self) -> PackageAddress {
                         self.component.package_address()
                     }

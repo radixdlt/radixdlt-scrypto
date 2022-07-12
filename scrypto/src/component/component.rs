@@ -24,12 +24,12 @@ pub struct ComponentAddAccessCheckInput {
 pub struct ComponentGlobalizeInput {}
 
 /// Represents the state of a component.
-pub trait ComponentState<C: LComponent>: Encode + Decode {
+pub trait ComponentState<C: LocalComponent>: Encode + Decode {
     /// Instantiates a component from this data structure.
     fn instantiate(self) -> C;
 }
 
-pub trait LComponent {
+pub trait LocalComponent {
     fn package_address(&self) -> PackageAddress;
     fn blueprint_name(&self) -> String;
     fn add_access_check(&mut self, access_rules: AccessRules) -> &mut Self;
