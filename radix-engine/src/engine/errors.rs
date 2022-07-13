@@ -119,7 +119,7 @@ pub enum RuntimeError {
     CantMoveLockedBucket,
 
     /// Can't move restricted proof.
-    CantMoveRestrictedProof(ValueId),
+    CantMoveRestrictedProof,
 
     NotSupported,
 

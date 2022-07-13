@@ -1,4 +1,4 @@
-use crate::engine::call_frame::{DataInstruction, SubstateAddress};
+use crate::engine::call_frame::SubstateAddress;
 use sbor::rust::marker::PhantomData;
 use sbor::rust::vec::Vec;
 use sbor::*;
@@ -111,7 +111,7 @@ where
             }
         };
 
-        self.system_api.data(address, DataInstruction::Read)
+        self.system_api.read_value_data(address)
     }
 
     fn handle_write_data(
@@ -130,8 +130,8 @@ where
             }
         };
         let scrypto_value = ScryptoValue::from_slice(&value).map_err(RuntimeError::DecodeError)?;
-        self.system_api
-            .data(address, DataInstruction::Write(scrypto_value))
+        self.system_api.write_value_data(address, scrypto_value)?;
+        Ok(ScryptoValue::unit())
     }
 
     fn handle_get_actor(&mut self) -> Result<ScryptoActorInfo, RuntimeError> {

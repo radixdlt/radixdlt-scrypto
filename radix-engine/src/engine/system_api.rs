@@ -5,7 +5,7 @@ use scrypto::engine::types::*;
 use scrypto::resource::AccessRule;
 use scrypto::values::*;
 
-use crate::engine::call_frame::{DataInstruction, REValueRef, SubstateAddress};
+use crate::engine::call_frame::{REValueRef, SubstateAddress};
 use crate::engine::values::*;
 use crate::engine::*;
 use crate::fee::*;
@@ -52,29 +52,16 @@ where
 
     fn create_value<V: Into<REValueByComplexity>>(&mut self, v: V)
         -> Result<ValueId, RuntimeError>;
-
-    // TODO remove
-    fn create_resource(&mut self, resource_manager: ResourceManager) -> ResourceAddress;
-
-    fn data(
+    fn read_value_data(&mut self, address: SubstateAddress) -> Result<ScryptoValue, RuntimeError>;
+    fn write_value_data(
         &mut self,
         address: SubstateAddress,
-        instruction: DataInstruction,
-    ) -> Result<ScryptoValue, RuntimeError>;
+        value: ScryptoValue,
+    ) -> Result<(), RuntimeError>;
+    fn remove_value_data(&mut self, address: SubstateAddress)
+        -> Result<ScryptoValue, RuntimeError>;
 
-    // TODO remove
-    fn get_non_fungible(
-        &mut self,
-        non_fungible_address: &NonFungibleAddress,
-    ) -> Option<NonFungible>;
-
-    // TODO remove
-    fn set_non_fungible(
-        &mut self,
-        non_fungible_address: NonFungibleAddress,
-        non_fungible: Option<NonFungible>,
-    );
-
+    fn create_resource(&mut self, resource_manager: ResourceManager) -> ResourceAddress;
     fn transaction_hash(&mut self) -> Result<Hash, CostUnitCounterError>;
 
     fn get_transaction_network(&mut self) -> Network;

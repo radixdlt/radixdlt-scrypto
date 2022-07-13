@@ -306,6 +306,14 @@ impl SubstateValue {
         }
     }
 
+    pub fn non_fungible(&self) -> &Option<NonFungible> {
+        if let SubstateValue::NonFungible(non_fungible) = self {
+            non_fungible
+        } else {
+            panic!("Not a NonFungible");
+        }
+    }
+
     pub fn kv_entry(&self) -> &Option<Vec<u8>> {
         if let SubstateValue::KeyValueStoreEntry(kv_entry) = self {
             kv_entry
@@ -775,7 +783,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
 
     pub fn insert_objects_into_component(
         &mut self,
-        values: HashMap<StoredValueId, REValue>,
+        values: HashMap<ValueId, REValue>,
         component_address: ComponentAddress,
     ) {
         for (id, value) in values {

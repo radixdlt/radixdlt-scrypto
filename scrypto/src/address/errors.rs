@@ -1,4 +1,5 @@
 use bech32::{Error, Variant};
+#[cfg(not(feature = "alloc"))]
 use sbor::rust::fmt;
 
 /// Represents an error in addressing.

@@ -11,6 +11,7 @@ use sbor::rust::string::ToString;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 use sbor::*;
+use scrypto::buffer::scrypto_decode;
 use scrypto::core::{Network, SNodeRef, ScryptoActor};
 use scrypto::engine::types::*;
 use scrypto::prelude::ComponentOffset;
@@ -250,22 +251,14 @@ impl REValueLocation {
                 let children = root_value
                     .get_children_store()
                     .expect("Should have children");
-                let stored_value_id = match value_id {
-                    ValueId::Stored(stored_value_id) => stored_value_id,
-                    _ => panic!("Unexpected value id"),
-                };
-                children.get_child(ancestors, stored_value_id)
+                children.get_child(ancestors, value_id)
             },
             REValueLocation::Borrowed { root, ancestors } => unsafe {
                 let borrowed = borrowed_values.get(root).unwrap();
-                let stored_value_id = match value_id {
-                    ValueId::Stored(stored_value_id) => stored_value_id,
-                    _ => panic!("Unexpected value id"),
-                };
                 borrowed
                     .get_children_store()
                     .unwrap()
-                    .get_child(ancestors, stored_value_id)
+                    .get_child(ancestors, value_id)
             },
             _ => panic!("Not an owned ref"),
         }
@@ -332,22 +325,14 @@ impl REValueLocation {
                 let children = root_value
                     .get_children_store_mut()
                     .expect("Should have children");
-                let stored_value_id = match value_id {
-                    ValueId::Stored(stored_value_id) => stored_value_id,
-                    _ => panic!("Unexpected value id"),
-                };
-                children.get_child_mut(ancestors, stored_value_id)
+                children.get_child_mut(ancestors, value_id)
             }
             REValueLocation::Borrowed { root, ancestors } => {
                 let borrowed = borrowed_values.get_mut(root).unwrap();
-                let stored_value_id = match value_id {
-                    ValueId::Stored(stored_value_id) => stored_value_id,
-                    _ => panic!("Unexpected value id"),
-                };
                 borrowed
                     .get_children_store_mut()
                     .unwrap()
-                    .get_child_mut(ancestors, stored_value_id)
+                    .get_child_mut(ancestors, value_id)
             }
             _ => panic!("Not an owned ref"),
         }
@@ -384,7 +369,8 @@ impl REValueLocation {
                             Address::GlobalComponent(*component_address)
                         }
                     }
-                    _ => panic!("Unexpected value id"),
+                    ValueId::Resource(resource_address) => Address::Resource(*resource_address),
+                    _ => panic!("Unexpected value id {:?}", value_id),
                 };
 
                 REValueRefMut::Track(track, address)
@@ -492,6 +478,14 @@ pub enum REValueRef<'f, 'p, 's, S: ReadableSubstateStore> {
 }
 
 impl<'f, 'p, 's, S: ReadableSubstateStore> REValueRef<'f, 'p, 's, S> {
+    pub fn vault(&self) -> &Vault {
+        match self {
+            REValueRef::Owned(owned) => owned.vault(),
+            REValueRef::Track(track, address) => track.read_value(address.clone()).vault(),
+            REValueRef::Borrowed(borrowed) => borrowed.vault(),
+        }
+    }
+
     pub fn system(&self) -> &System {
         match self {
             REValueRef::Owned(owned) => owned.system(),
@@ -538,7 +532,7 @@ impl<'a, 'b, 'c, 's, S: ReadableSubstateStore> REValueRefMut<'a, 'b, 'c, 's, S> 
         &mut self,
         key: Vec<u8>,
         value: ScryptoValue,
-        to_store: HashMap<StoredValueId, REValue>,
+        to_store: HashMap<ValueId, REValue>,
     ) {
         match self {
             REValueRefMut::Owned(owned) => {
@@ -597,22 +591,66 @@ impl<'a, 'b, 'c, 's, S: ReadableSubstateStore> REValueRefMut<'a, 'b, 'c, 's, S> 
         ScryptoValue::from_value(value).unwrap()
     }
 
-    fn component_get_state(&self) -> ScryptoValue {
+    fn non_fungible_get(&mut self, id: &NonFungibleId) -> ScryptoValue {
         match self {
-            REValueRefMut::Track(track, address) => {
-                let component_val = track.read_value(address.clone());
-                let component = component_val.component();
-                return ScryptoValue::from_slice(component.state()).expect("Expected to decode");
+            REValueRefMut::Owned(..) => {
+                panic!("Not supported");
             }
-            REValueRefMut::Borrowed(owned) => {
-                let component = owned.component();
-                return ScryptoValue::from_slice(component.state()).expect("Expected to decode");
+            REValueRefMut::Borrowed(..) => {
+                panic!("Not supported");
             }
-            _ => panic!("Unexpected component ref"),
+            REValueRefMut::Track(track, parent_address) => {
+                let resource_address: ResourceAddress = parent_address.clone().into();
+                let parent_address = Address::NonFungibleSet(resource_address);
+                let value = track.read_key_value(parent_address, id.to_vec());
+                ScryptoValue::from_typed(value.non_fungible())
+            }
         }
     }
 
-    fn component_put(&mut self, value: ScryptoValue, to_store: HashMap<StoredValueId, REValue>) {
+    fn non_fungible_remove(&mut self, id: &NonFungibleId) {
+        match self {
+            REValueRefMut::Owned(..) => {
+                panic!("Not supported");
+            }
+            REValueRefMut::Borrowed(..) => {
+                panic!("Not supported");
+            }
+            REValueRefMut::Track(track, parent_address) => {
+                let resource_address: ResourceAddress = parent_address.clone().into();
+                let parent_address = Address::NonFungibleSet(resource_address);
+                track.set_key_value(
+                    parent_address,
+                    id.to_vec(),
+                    SubstateValue::NonFungible(None),
+                );
+            }
+        }
+    }
+
+    fn non_fungible_put(&mut self, id: NonFungibleId, value: ScryptoValue) {
+        match self {
+            REValueRefMut::Owned(..) => {
+                panic!("Not supported");
+            }
+            REValueRefMut::Borrowed(..) => {
+                panic!("Not supported");
+            }
+            REValueRefMut::Track(track, parent_address) => {
+                let resource_address: ResourceAddress = parent_address.clone().into();
+                let parent_address = Address::NonFungibleSet(resource_address);
+                let non_fungible: NonFungible =
+                    scrypto_decode(&value.raw).expect("Should not fail.");
+                track.set_key_value(
+                    parent_address,
+                    id.to_vec(),
+                    SubstateValue::NonFungible(Some(non_fungible)),
+                );
+            }
+        }
+    }
+
+    fn component_put(&mut self, value: ScryptoValue, to_store: HashMap<ValueId, REValue>) {
         match self {
             REValueRefMut::Track(track, address) => {
                 track.write_component_value(address.clone(), value.raw);
@@ -635,39 +673,13 @@ impl<'a, 'b, 'c, 's, S: ReadableSubstateStore> REValueRefMut<'a, 'b, 'c, 's, S> 
         }
     }
 
-    fn component_info(&mut self) -> (PackageAddress, String) {
+    fn component(&mut self) -> &Component {
         match self {
-            REValueRefMut::Owned(owned) => {
-                let component = &owned.component_mut();
-                (
-                    component.package_address().clone(),
-                    component.blueprint_name().to_string(),
-                )
-            }
-            REValueRefMut::Borrowed(borrowed) => {
-                let component = &borrowed.component();
-                (
-                    component.package_address().clone(),
-                    component.blueprint_name().to_string(),
-                )
-            }
+            REValueRefMut::Owned(owned) => owned.component(),
+            REValueRefMut::Borrowed(borrowed) => borrowed.component(),
             REValueRefMut::Track(track, address) => {
                 let component_val = track.read_value(address.clone());
-                let component = component_val.component();
-                (
-                    component.package_address().clone(),
-                    component.blueprint_name().to_string(),
-                )
-            }
-        }
-    }
-
-    fn vault_resource_address(&mut self) -> ResourceAddress {
-        match self {
-            REValueRefMut::Owned(re_value) => re_value.vault().resource_address(),
-            REValueRefMut::Borrowed(re_value) => re_value.vault().resource_address(),
-            REValueRefMut::Track(track, address) => {
-                track.read_value(address.clone()).vault().resource_address()
+                component_val.component()
             }
         }
     }
@@ -687,13 +699,9 @@ pub enum SNodeExecution<'a> {
     Scrypto(ScryptoActorInfo, PackageAddress),
 }
 
-pub enum DataInstruction {
-    Read,
-    Write(ScryptoValue),
-}
-
 pub enum SubstateAddress {
     KeyValueEntry(KeyValueStoreId, ScryptoValue),
+    NonFungible(ResourceAddress, NonFungibleId),
     Component(ComponentAddress, ComponentOffset),
 }
 
@@ -973,7 +981,7 @@ where
 
         // Take values to return
         let values_to_take = output.value_ids();
-        let (taken_values, mut missing) = self.take_available_values(values_to_take)?;
+        let (taken_values, mut missing) = self.take_available_values(values_to_take, false)?;
         let first_missing_value = missing.drain().nth(0);
         if let Some(missing_value) = first_missing_value {
             return Err(RuntimeError::ValueNotFound(missing_value));
@@ -1004,47 +1012,10 @@ where
         Ok((output, taken_values))
     }
 
-    fn take_persistent_child_values(
-        &mut self,
-        value_ids: HashSet<ValueId>,
-    ) -> Result<(HashMap<StoredValueId, REValue>, HashSet<ValueId>), RuntimeError> {
-        let (taken, missing) = {
-            let mut taken_values = HashMap::new();
-            let mut missing_values = HashSet::new();
-
-            for id in value_ids {
-                let maybe = self.owned_values.remove(&id);
-                if let Some(celled_value) = maybe {
-                    let value = celled_value.into_inner();
-                    if !value.is_persistable_child() {
-                        return Err(RuntimeError::ValueNotAllowed);
-                    }
-                    let stored_id: StoredValueId = id.into();
-                    taken_values.insert(stored_id, value);
-                } else {
-                    missing_values.insert(id);
-                }
-            }
-
-            (taken_values, missing_values)
-        };
-
-        // Moved values must have their references removed
-        for (id, value) in taken.iter() {
-            self.value_refs.remove(&ValueId::Stored(id.clone()));
-            if let Some(children_store) = value.get_children_store() {
-                for id in children_store.all_descendants() {
-                    self.value_refs.remove(&ValueId::Stored(id));
-                }
-            }
-        }
-
-        Ok((taken, missing))
-    }
-
     fn take_available_values(
         &mut self,
         value_ids: HashSet<ValueId>,
+        persist_only: bool,
     ) -> Result<(HashMap<ValueId, REValue>, HashSet<ValueId>), RuntimeError> {
         let (taken, missing) = {
             let mut taken_values = HashMap::new();
@@ -1054,20 +1025,10 @@ where
                 let maybe = self.owned_values.remove(&id);
                 if let Some(celled_value) = maybe {
                     let value = celled_value.into_inner();
-                    match &value {
-                        REValue::Bucket(bucket) => {
-                            if bucket.is_locked() {
-                                return Err(RuntimeError::CantMoveLockedBucket);
-                            }
-                        }
-                        REValue::Proof(proof) => {
-                            if proof.is_restricted() {
-                                return Err(RuntimeError::CantMoveRestrictedProof(id));
-                            }
-                        }
-                        _ => {}
+                    value.verify_can_move()?;
+                    if persist_only {
+                        value.verify_can_persist()?;
                     }
-
                     taken_values.insert(id, value);
                 } else {
                     missing_values.insert(id);
@@ -1082,12 +1043,108 @@ where
             self.value_refs.remove(id);
             if let Some(children) = value.get_children_store() {
                 for id in children.all_descendants() {
-                    self.value_refs.remove(&ValueId::Stored(id.clone()));
+                    self.value_refs.remove(&id);
                 }
             }
         }
 
         Ok((taken, missing))
+    }
+
+    fn read_value_internal(
+        &mut self,
+        address: &SubstateAddress,
+    ) -> Result<
+        (
+            ValueId,
+            REValueLocation,
+            ScryptoValue,
+            HashSet<StoredValueId>,
+        ),
+        RuntimeError,
+    > {
+        let value_id = match address {
+            SubstateAddress::Component(component_address, ..) => {
+                ValueId::Stored(StoredValueId::Component(*component_address))
+            }
+            SubstateAddress::NonFungible(resource_address, ..) => {
+                ValueId::Resource(*resource_address)
+            }
+            SubstateAddress::KeyValueEntry(kv_store_id, ..) => ValueId::kv_store_id(*kv_store_id),
+        };
+
+        // Get location
+        // Note this must be run AFTER values are taken, otherwise there would be inconsistent readable_values state
+        let (value_info, address_borrowed) = self
+            .value_refs
+            .get(&value_id)
+            .map(|v| (v, None))
+            .or_else(|| {
+                // Allow global read access to any component info
+                if let SubstateAddress::Component(component_address, ComponentOffset::Info) =
+                    address
+                {
+                    if self.owned_values.contains_key(&value_id) {
+                        return Some((
+                            &REValueInfo {
+                                location: REValueLocation::OwnedRoot,
+                                visible: true,
+                            },
+                            None,
+                        ));
+                    } else if self.track.take_lock(*component_address, false).is_ok() {
+                        return Some((
+                            &REValueInfo {
+                                location: REValueLocation::Track { parent: None },
+                                visible: true,
+                            },
+                            Some(component_address),
+                        ));
+                    }
+                }
+
+                None
+            })
+            .ok_or_else(|| RuntimeError::InvalidDataAccess(value_id))?;
+        if !value_info.visible {
+            return Err(RuntimeError::InvalidDataAccess(value_id));
+        }
+        let location = &value_info.location;
+
+        // Read current value
+        let (current_value, cur_children) = {
+            let mut value_ref = location.to_ref_mut(
+                &value_id,
+                &mut self.owned_values,
+                &mut self.frame_borrowed_values,
+                &mut self.track,
+            );
+            let current_value = match &address {
+                SubstateAddress::Component(.., offset) => match offset {
+                    ComponentOffset::State => {
+                        ScryptoValue::from_slice(value_ref.component().state())
+                            .expect("Expected to decode")
+                    }
+                    ComponentOffset::Info => {
+                        ScryptoValue::from_typed(&value_ref.component().info())
+                    }
+                },
+                SubstateAddress::KeyValueEntry(.., key) => {
+                    verify_stored_key(key)?;
+                    value_ref.kv_store_get(&key.raw)
+                }
+                SubstateAddress::NonFungible(.., id) => value_ref.non_fungible_get(id),
+            };
+            let cur_children = to_stored_ids(current_value.value_ids())?;
+            (current_value, cur_children)
+        };
+
+        // TODO: Remove, currently a hack to allow for global component info retrieval
+        if let Some(component_address) = address_borrowed {
+            self.track.release_lock(*component_address);
+        }
+
+        Ok((value_id, location.clone(), current_value, cur_children))
     }
 }
 
@@ -1131,7 +1188,7 @@ where
 
         // Figure out what buckets and proofs to move from this process
         let values_to_take = input.value_ids();
-        let (taken_values, mut missing) = self.take_available_values(values_to_take)?;
+        let (taken_values, mut missing) = self.take_available_values(values_to_take, false)?;
         let first_missing_value = missing.drain().nth(0);
         if let Some(missing_value) = first_missing_value {
             return Err(RuntimeError::ValueNotFound(missing_value));
@@ -1462,16 +1519,16 @@ where
                     };
 
                     let actor_info = {
-                        let mut value_ref = next_frame_location.to_ref_mut(
+                        let value_ref = next_frame_location.to_ref(
                             &value_id,
                             &mut next_owned_values,
                             &mut next_borrowed_values,
                             &mut self.track,
                         );
-                        let (package_address, blueprint_name) = value_ref.component_info();
+                        let component = value_ref.component();
                         ScryptoActorInfo::component(
-                            package_address,
-                            blueprint_name,
+                            component.package_address(),
+                            component.blueprint_name().to_string(),
                             component_address,
                         )
                     };
@@ -1620,13 +1677,15 @@ where
                     };
 
                     // Lock Resource
-                    let mut value_ref = next_location.to_ref_mut(
-                        &value_id,
-                        &mut next_owned_values,
-                        &mut next_borrowed_values,
-                        &mut self.track,
-                    );
-                    let resource_address = value_ref.vault_resource_address();
+                    let resource_address = {
+                        let value_ref = next_location.to_ref(
+                            &value_id,
+                            &mut next_owned_values,
+                            &mut next_borrowed_values,
+                            &mut self.track,
+                        );
+                        value_ref.vault().resource_address()
+                    };
                     self.track
                         .take_lock(resource_address, true)
                         .expect("Should never fail.");
@@ -1637,13 +1696,15 @@ where
 
                 // Retrieve Method Authorization
                 let method_auth = {
-                    let mut value_ref = next_location.to_ref_mut(
-                        &value_id,
-                        &mut next_owned_values,
-                        &mut next_borrowed_values,
-                        &mut self.track,
-                    );
-                    let resource_address = value_ref.vault_resource_address();
+                    let resource_address = {
+                        let value_ref = next_location.to_ref(
+                            &value_id,
+                            &mut next_owned_values,
+                            &mut next_borrowed_values,
+                            &mut self.track,
+                        );
+                        value_ref.vault().resource_address()
+                    };
                     let resource_manager =
                         self.track.read_value(resource_address).resource_manager();
                     resource_manager.get_vault_auth(&fn_ident).clone()
@@ -1736,31 +1797,6 @@ where
         }
 
         Ok(result)
-    }
-
-    fn get_non_fungible(
-        &mut self,
-        non_fungible_address: &NonFungibleAddress,
-    ) -> Option<NonFungible> {
-        let parent_address = Address::NonFungibleSet(non_fungible_address.resource_address());
-        let key = non_fungible_address.non_fungible_id().to_vec();
-        if let SubstateValue::NonFungible(non_fungible) =
-            self.track.read_key_value(parent_address, key)
-        {
-            non_fungible
-        } else {
-            panic!("Value is not a non fungible");
-        }
-    }
-
-    fn set_non_fungible(
-        &mut self,
-        non_fungible_address: NonFungibleAddress,
-        non_fungible: Option<NonFungible>,
-    ) {
-        let parent_address = Address::NonFungibleSet(non_fungible_address.resource_address());
-        let key = non_fungible_address.non_fungible_id().to_vec();
-        self.track.set_key_value(parent_address, key, non_fungible)
     }
 
     fn borrow_value(
@@ -1941,7 +1977,7 @@ where
             REValueByComplexity::Primitive(primitive) => primitive.into(),
             REValueByComplexity::Complex(complex) => {
                 let children = complex.get_children()?;
-                let (child_values, mut missing) = self.take_persistent_child_values(children)?;
+                let (child_values, mut missing) = self.take_available_values(children, true)?;
                 let first_missing_value = missing.drain().nth(0);
                 if let Some(missing_value) = first_missing_value {
                     return Err(RuntimeError::ValueNotFound(missing_value));
@@ -1997,7 +2033,7 @@ where
 
         let mut values = HashSet::new();
         values.insert(value_id.clone());
-        let (taken_values, missing) = self.take_available_values(values).unwrap();
+        let (taken_values, missing) = self.take_available_values(values, false).unwrap();
         assert!(missing.is_empty());
         assert!(taken_values.len() == 1);
         let value = taken_values.into_values().nth(0).unwrap();
@@ -2033,162 +2069,128 @@ where
         Ok(())
     }
 
-    fn data(
+    fn remove_value_data(
         &mut self,
         address: SubstateAddress,
-        instruction: DataInstruction,
     ) -> Result<ScryptoValue, RuntimeError> {
-        match &instruction {
-            DataInstruction::Read => {
-                self.cost_unit_counter
-                    .consume(
-                        self.fee_table.system_api_cost(SystemApiCostingEntry::Read {
-                            size: 0, // TODO: get size of the value
-                        }),
-                        "read",
-                    )
-                    .map_err(RuntimeError::CostingError)?;
-            }
-            DataInstruction::Write(..) => {
-                self.cost_unit_counter
-                    .consume(
-                        self.fee_table
-                            .system_api_cost(SystemApiCostingEntry::Write {
-                                size: 0, // TODO: get size of the value
-                            }),
-                        "write",
-                    )
-                    .map_err(RuntimeError::CostingError)?;
-            }
+        let (value_id, location, current_value, cur_children) =
+            self.read_value_internal(&address)?;
+        if !cur_children.is_empty() {
+            return Err(RuntimeError::ValueNotAllowed);
         }
+
+        // Write values
+        let mut value_ref = location.to_ref_mut(
+            &value_id,
+            &mut self.owned_values,
+            &mut self.frame_borrowed_values,
+            &mut self.track,
+        );
+        match address {
+            SubstateAddress::Component(..) => {
+                panic!("Should not get here");
+            }
+            SubstateAddress::KeyValueEntry(..) => {
+                panic!("Should not get here");
+            }
+            SubstateAddress::NonFungible(.., id) => value_ref.non_fungible_remove(&id),
+        }
+
+        Ok(current_value)
+    }
+
+    fn read_value_data(&mut self, address: SubstateAddress) -> Result<ScryptoValue, RuntimeError> {
+        self.cost_unit_counter
+            .consume(
+                self.fee_table.system_api_cost(SystemApiCostingEntry::Read {
+                    size: 0, // TODO: get size of the value
+                }),
+                "read",
+            )
+            .map_err(RuntimeError::CostingError)?;
+
+        let (value_id, parent_location, current_value, cur_children) =
+            self.read_value_internal(&address)?;
+        for stored_value_id in cur_children {
+            let child_location = parent_location.child(value_id.clone());
+
+            // Extend current readable space when kv stores are found
+            let visible = matches!(stored_value_id, StoredValueId::KeyValueStoreId(..));
+            let child_info = REValueInfo {
+                location: child_location,
+                visible,
+            };
+            self.value_refs
+                .insert(ValueId::Stored(stored_value_id), child_info);
+        }
+        Ok(current_value)
+    }
+
+    fn write_value_data(
+        &mut self,
+        address: SubstateAddress,
+        value: ScryptoValue,
+    ) -> Result<(), RuntimeError> {
+        self.cost_unit_counter
+            .consume(
+                self.fee_table
+                    .system_api_cost(SystemApiCostingEntry::Write {
+                        size: 0, // TODO: get size of the value
+                    }),
+                "write",
+            )
+            .map_err(RuntimeError::CostingError)?;
 
         // If write, take values from current frame
-        let (taken_values, missing) = match &instruction {
-            DataInstruction::Write(value) => {
-                let value_ids = value.value_ids();
-                self.take_persistent_child_values(value_ids)?
-            }
-            DataInstruction::Read => (HashMap::new(), HashSet::new()),
-        };
-
-        let value_id = match address {
-            SubstateAddress::Component(component_address, ..) => {
-                ValueId::Stored(StoredValueId::Component(component_address))
-            }
-            SubstateAddress::KeyValueEntry(kv_store_id, ..) => ValueId::kv_store_id(kv_store_id),
-        };
-
-        // Get location
-        // Note this must be run AFTER values are taken, otherwise there would be inconsistent readable_values state
-        let (value_info, address_borrowed) = self
-            .value_refs
-            .get(&value_id)
-            .map(|v| (v, None))
-            .or_else(|| {
-                // Allow global read access to any component info
-                if let SubstateAddress::Component(component_address, ComponentOffset::Info) =
-                    address
-                {
-                    if self.owned_values.contains_key(&value_id) {
-                        return Some((
-                            &REValueInfo {
-                                location: REValueLocation::OwnedRoot,
-                                visible: true,
-                            },
-                            None,
-                        ));
-                    } else if self.track.take_lock(component_address, false).is_ok() {
-                        return Some((
-                            &REValueInfo {
-                                location: REValueLocation::Track { parent: None },
-                                visible: true,
-                            },
-                            Some(component_address),
-                        ));
+        let (taken_values, missing) = {
+            let value_ids = value.value_ids();
+            match address {
+                SubstateAddress::KeyValueEntry(..)
+                | SubstateAddress::Component(_, ComponentOffset::State) => {
+                    self.take_available_values(value_ids, true)?
+                }
+                SubstateAddress::Component(_, ComponentOffset::Info) => {
+                    return Err(RuntimeError::InvalidDataWrite)
+                }
+                SubstateAddress::NonFungible(..) => {
+                    if !value_ids.is_empty() {
+                        return Err(RuntimeError::ValueNotAllowed);
                     }
+                    (HashMap::new(), HashSet::new())
                 }
-
-                None
-            })
-            .ok_or_else(|| RuntimeError::InvalidDataAccess(value_id))?;
-        if !value_info.visible {
-            return Err(RuntimeError::InvalidDataAccess(value_id));
-        }
-        let location = &value_info.location;
-
-        // Read current value
-        let (current_value, cur_children) = {
-            let mut value_ref = location.to_ref_mut(
-                &value_id,
-                &mut self.owned_values,
-                &mut self.frame_borrowed_values,
-                &mut self.track,
-            );
-            let current_value = match &address {
-                SubstateAddress::Component(.., offset) => match offset {
-                    ComponentOffset::State => value_ref.component_get_state(),
-                    ComponentOffset::Info => ScryptoValue::from_typed(&value_ref.component_info()),
-                },
-                SubstateAddress::KeyValueEntry(.., key) => {
-                    verify_stored_key(key)?;
-                    value_ref.kv_store_get(&key.raw)
-                }
-            };
-            let cur_children = to_stored_ids(current_value.value_ids())?;
-            (current_value, cur_children)
+            }
         };
 
-        // TODO: Remove, currently a hack to allow for global component info retrieval
-        if let Some(component_address) = address_borrowed {
-            self.track.release_lock(component_address);
-        }
+        let (value_id, location, _current_value, cur_children) =
+            self.read_value_internal(&address)?;
 
         // Fulfill method
-        match instruction {
-            DataInstruction::Read => {
-                let parent_location = location.clone();
-                for stored_value_id in cur_children {
-                    let child_location = parent_location.child(value_id.clone());
+        let missing = to_stored_ids(missing)?;
+        verify_stored_value_update(&cur_children, &missing)?;
 
-                    // Extend current readable space when kv stores are found
-                    let visible = matches!(stored_value_id, StoredValueId::KeyValueStoreId(..));
-                    let child_info = REValueInfo {
-                        location: child_location,
-                        visible,
-                    };
-                    self.value_refs
-                        .insert(ValueId::Stored(stored_value_id), child_info);
+        // TODO: verify against some schema
+
+        // Write values
+        let mut value_ref = location.to_ref_mut(
+            &value_id,
+            &mut self.owned_values,
+            &mut self.frame_borrowed_values,
+            &mut self.track,
+        );
+        match address {
+            SubstateAddress::Component(.., offset) => match offset {
+                ComponentOffset::State => value_ref.component_put(value, taken_values),
+                ComponentOffset::Info => {
+                    return Err(RuntimeError::InvalidDataWrite);
                 }
-                Ok(current_value)
+            },
+            SubstateAddress::KeyValueEntry(.., key) => {
+                value_ref.kv_store_put(key.raw, value, taken_values);
             }
-            DataInstruction::Write(value) => {
-                let missing = to_stored_ids(missing)?;
-                verify_stored_value_update(&cur_children, &missing)?;
-
-                // TODO: verify against some schema
-
-                // Write values
-                let mut value_ref = location.to_ref_mut(
-                    &value_id,
-                    &mut self.owned_values,
-                    &mut self.frame_borrowed_values,
-                    &mut self.track,
-                );
-                match address {
-                    SubstateAddress::Component(.., offset) => match offset {
-                        ComponentOffset::State => value_ref.component_put(value, taken_values),
-                        ComponentOffset::Info => {
-                            return Err(RuntimeError::InvalidDataWrite);
-                        }
-                    },
-                    SubstateAddress::KeyValueEntry(.., key) => {
-                        value_ref.kv_store_put(key.raw, value, taken_values);
-                    }
-                }
-
-                Ok(ScryptoValue::from_typed(&()))
-            }
+            SubstateAddress::NonFungible(.., id) => value_ref.non_fungible_put(id, value),
         }
+
+        Ok(())
     }
 
     fn transaction_hash(&mut self) -> Result<Hash, CostUnitCounterError> {
