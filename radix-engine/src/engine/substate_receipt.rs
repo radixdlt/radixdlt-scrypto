@@ -1,5 +1,5 @@
 use crate::engine::track::VirtualSubstateId;
-use crate::engine::{SubstateParentId, SubstateValue};
+use crate::engine::{SubstateParentId, Substate};
 use sbor::rust::collections::*;
 use sbor::rust::ops::RangeFull;
 use sbor::rust::vec::Vec;
@@ -11,9 +11,9 @@ use crate::ledger::*;
 
 pub struct CommitReceipt {
     pub virtual_down_substates: HashSet<HardVirtualSubstateId>,
-    pub down_substates: HashSet<PhysicalSubstateId>,
-    pub virtual_up_substates: Vec<PhysicalSubstateId>,
-    pub up_substates: Vec<PhysicalSubstateId>,
+    pub down_substates: HashSet<OutputId>,
+    pub virtual_up_substates: Vec<OutputId>,
+    pub up_substates: Vec<OutputId>,
 }
 
 impl CommitReceipt {
@@ -30,29 +30,29 @@ impl CommitReceipt {
         self.virtual_down_substates.insert(id);
     }
 
-    fn down(&mut self, id: PhysicalSubstateId) {
+    fn down(&mut self, id: OutputId) {
         self.down_substates.insert(id);
     }
 
-    fn virtual_space_up(&mut self, id: PhysicalSubstateId) {
+    fn virtual_space_up(&mut self, id: OutputId) {
         self.up_substates.push(id);
     }
 
-    fn up(&mut self, id: PhysicalSubstateId) {
+    fn up(&mut self, id: OutputId) {
         self.up_substates.push(id);
     }
 }
 
 #[derive(Debug, Clone, Hash, TypeId, Encode, Decode, PartialEq, Eq)]
-pub struct HardVirtualSubstateId(PhysicalSubstateId, Vec<u8>);
+pub struct HardVirtualSubstateId(OutputId, Vec<u8>);
 
 // TODO: Update encoding scheme here to not take up so much space with the enum strings
 #[derive(Debug, TypeId, Encode, Decode)]
 pub enum SubstateOperation {
     VirtualDown(VirtualSubstateId),
-    Down(PhysicalSubstateId),
+    Down(OutputId),
     VirtualUp(Vec<u8>),
-    Up(Vec<u8>, SubstateValue),
+    Up(Vec<u8>, Substate),
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -66,7 +66,7 @@ impl SubstateOperationsReceipt {
     pub fn commit<S: WriteableSubstateStore>(mut self, store: &mut S) -> CommitReceipt {
         let hash = hash(scrypto_encode(&self));
         let mut receipt = CommitReceipt::new();
-        let mut id_gen = SubstateIdGenerator::new(hash);
+        let mut id_gen = OutputIdGenerator::new(hash);
 
         for instruction in self.substate_operations.drain(RangeFull) {
             match instruction {
@@ -74,7 +74,7 @@ impl SubstateOperationsReceipt {
                     let parent_hard_id = match parent_id {
                         SubstateParentId::Exists(real_id) => real_id,
                         SubstateParentId::New(index) => {
-                            PhysicalSubstateId(hash, index.try_into().unwrap())
+                            OutputId(hash, index.try_into().unwrap())
                         }
                     };
                     let virtual_substate_id = HardVirtualSubstateId(parent_hard_id, key);
@@ -89,7 +89,7 @@ impl SubstateOperationsReceipt {
                 SubstateOperation::Up(key, value) => {
                     let phys_id = id_gen.next();
                     receipt.up(phys_id.clone());
-                    let substate = Substate { value, phys_id };
+                    let substate = Output { value, phys_id };
                     store.put_substate(&key, substate);
                 }
             }

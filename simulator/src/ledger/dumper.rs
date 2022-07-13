@@ -7,7 +7,7 @@ use scrypto::buffer::{scrypto_encode};
 use scrypto::engine::types::*;
 use scrypto::values::*;
 use std::collections::VecDeque;
-use radix_engine::engine::SubstateValue;
+use radix_engine::engine::Substate;
 
 use crate::utils::*;
 
@@ -120,7 +120,7 @@ fn dump_kv_store<T: ReadableSubstateStore + QueryableSubstateStore, O: std::io::
     );
     for (last, (k, v)) in map.iter().identify_last() {
         let key = ScryptoValue::from_slice(k).unwrap();
-        if let SubstateValue::KeyValueStoreEntry(Some(v)) = v {
+        if let Substate::KeyValueStoreEntry(Some(v)) = v {
             let value = ScryptoValue::from_slice(&v).unwrap();
             writeln!(output, "{} {} => {}", list_item_prefix(last), key, value);
             referenced_maps.extend(value.kv_store_ids);

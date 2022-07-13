@@ -107,7 +107,7 @@ impl Into<VaultId> for Address {
 
 // TODO: Update encoding scheme to not take up so much space with the enum strings
 #[derive(Debug, Encode, Decode)]
-pub enum SubstateValue {
+pub enum Substate {
     System(System),
     Resource(ResourceManager),
     Component(Component),
@@ -117,21 +117,21 @@ pub enum SubstateValue {
     KeyValueStoreEntry(Option<Vec<u8>>),
 }
 
-impl SubstateValue {
+impl Substate {
     pub fn encode_raw(&self) -> Vec<u8> {
         match self {
-            SubstateValue::System(system) => scrypto_encode(system),
-            SubstateValue::Resource(resource_manager) => scrypto_encode(resource_manager),
-            SubstateValue::Package(package) => scrypto_encode(package),
-            SubstateValue::Component(component) => scrypto_encode(component),
-            SubstateValue::Vault(vault) => scrypto_encode(vault),
-            SubstateValue::NonFungible(non_fungible) => scrypto_encode(non_fungible),
-            SubstateValue::KeyValueStoreEntry(value) => scrypto_encode(value),
+            Substate::System(system) => scrypto_encode(system),
+            Substate::Resource(resource_manager) => scrypto_encode(resource_manager),
+            Substate::Package(package) => scrypto_encode(package),
+            Substate::Component(component) => scrypto_encode(component),
+            Substate::Vault(vault) => scrypto_encode(vault),
+            Substate::NonFungible(non_fungible) => scrypto_encode(non_fungible),
+            Substate::KeyValueStoreEntry(value) => scrypto_encode(value),
         }
     }
 
     pub fn vault_mut(&mut self) -> &mut Vault {
-        if let SubstateValue::Vault(vault) = self {
+        if let Substate::Vault(vault) = self {
             vault
         } else {
             panic!("Not a vault");
@@ -139,7 +139,7 @@ impl SubstateValue {
     }
 
     pub fn vault(&self) -> &Vault {
-        if let SubstateValue::Vault(vault) = self {
+        if let Substate::Vault(vault) = self {
             vault
         } else {
             panic!("Not a vault");
@@ -147,7 +147,7 @@ impl SubstateValue {
     }
 
     pub fn system(&self) -> &System {
-        if let SubstateValue::System(system) = self {
+        if let Substate::System(system) = self {
             system
         } else {
             panic!("Not a system value");
@@ -155,7 +155,7 @@ impl SubstateValue {
     }
 
     pub fn system_mut(&mut self) -> &mut System {
-        if let SubstateValue::System(system) = self {
+        if let Substate::System(system) = self {
             system
         } else {
             panic!("Not a system value");
@@ -163,7 +163,7 @@ impl SubstateValue {
     }
 
     pub fn resource_manager_mut(&mut self) -> &mut ResourceManager {
-        if let SubstateValue::Resource(resource_manager) = self {
+        if let Substate::Resource(resource_manager) = self {
             resource_manager
         } else {
             panic!("Not a resource manager");
@@ -171,7 +171,7 @@ impl SubstateValue {
     }
 
     pub fn resource_manager(&self) -> &ResourceManager {
-        if let SubstateValue::Resource(resource_manager) = self {
+        if let Substate::Resource(resource_manager) = self {
             resource_manager
         } else {
             panic!("Not a resource manager");
@@ -179,7 +179,7 @@ impl SubstateValue {
     }
 
     pub fn component(&self) -> &Component {
-        if let SubstateValue::Component(component) = self {
+        if let Substate::Component(component) = self {
             component
         } else {
             panic!("Not a component");
@@ -187,7 +187,7 @@ impl SubstateValue {
     }
 
     pub fn component_mut(&mut self) -> &mut Component {
-        if let SubstateValue::Component(component) = self {
+        if let Substate::Component(component) = self {
             component
         } else {
             panic!("Not a component");
@@ -195,7 +195,7 @@ impl SubstateValue {
     }
 
     pub fn package(&self) -> &ValidatedPackage {
-        if let SubstateValue::Package(package) = self {
+        if let Substate::Package(package) = self {
             package
         } else {
             panic!("Not a package");
@@ -203,7 +203,7 @@ impl SubstateValue {
     }
 
     pub fn non_fungible(&self) -> &Option<NonFungible> {
-        if let SubstateValue::NonFungible(non_fungible) = self {
+        if let Substate::NonFungible(non_fungible) = self {
             non_fungible
         } else {
             panic!("Not a NonFungible");
@@ -211,7 +211,7 @@ impl SubstateValue {
     }
 
     pub fn kv_entry(&self) -> &Option<Vec<u8>> {
-        if let SubstateValue::KeyValueStoreEntry(kv_entry) = self {
+        if let Substate::KeyValueStoreEntry(kv_entry) = self {
             kv_entry
         } else {
             panic!("Not a KVEntry");
@@ -219,92 +219,92 @@ impl SubstateValue {
     }
 }
 
-impl Into<SubstateValue> for System {
-    fn into(self) -> SubstateValue {
-        SubstateValue::System(self)
+impl Into<Substate> for System {
+    fn into(self) -> Substate {
+        Substate::System(self)
     }
 }
 
-impl Into<SubstateValue> for ValidatedPackage {
-    fn into(self) -> SubstateValue {
-        SubstateValue::Package(self)
+impl Into<Substate> for ValidatedPackage {
+    fn into(self) -> Substate {
+        Substate::Package(self)
     }
 }
 
-impl From<SubstateValue> for ValidatedPackage {
-    fn from(substate: SubstateValue) -> Self {
+impl From<Substate> for ValidatedPackage {
+    fn from(substate: Substate) -> Self {
         match substate {
-            SubstateValue::Package(package) => package,
+            Substate::Package(package) => package,
             _ => panic!("Expected package"),
         }
     }
 }
 
 
-impl Into<SubstateValue> for Component {
-    fn into(self) -> SubstateValue {
-        SubstateValue::Component(self)
+impl Into<Substate> for Component {
+    fn into(self) -> Substate {
+        Substate::Component(self)
     }
 }
 
-impl From<SubstateValue> for Component {
-    fn from(substate: SubstateValue) -> Self {
+impl From<Substate> for Component {
+    fn from(substate: Substate) -> Self {
         match substate {
-            SubstateValue::Component(component) => component,
+            Substate::Component(component) => component,
             _ => panic!("Expected component"),
         }
     }
 }
 
-impl Into<SubstateValue> for ResourceManager {
-    fn into(self) -> SubstateValue {
-        SubstateValue::Resource(self)
+impl Into<Substate> for ResourceManager {
+    fn into(self) -> Substate {
+        Substate::Resource(self)
     }
 }
 
-impl From<SubstateValue> for ResourceManager {
-    fn from(substate: SubstateValue) -> Self {
+impl From<Substate> for ResourceManager {
+    fn from(substate: Substate) -> Self {
         match substate {
-            SubstateValue::Resource(resource_manager) => resource_manager,
+            Substate::Resource(resource_manager) => resource_manager,
             _ => panic!("Expected resource manager"),
         }
     }
 }
 
-impl Into<SubstateValue> for Vault {
-    fn into(self) -> SubstateValue {
-        SubstateValue::Vault(self)
+impl Into<Substate> for Vault {
+    fn into(self) -> Substate {
+        Substate::Vault(self)
     }
 }
 
-impl From<SubstateValue> for Vault {
-    fn from(substate: SubstateValue) -> Self {
+impl From<Substate> for Vault {
+    fn from(substate: Substate) -> Self {
         match substate {
-            SubstateValue::Vault(vault) => vault,
+            Substate::Vault(vault) => vault,
             _ => panic!("Expected vault"),
         }
     }
 }
 
 
-impl Into<SubstateValue> for Option<NonFungible> {
-    fn into(self) -> SubstateValue {
-        SubstateValue::NonFungible(self)
+impl Into<Substate> for Option<NonFungible> {
+    fn into(self) -> Substate {
+        Substate::NonFungible(self)
     }
 }
 
-impl From<SubstateValue> for Option<NonFungible> {
-    fn from(substate: SubstateValue) -> Self {
+impl From<Substate> for Option<NonFungible> {
+    fn from(substate: Substate) -> Self {
         match substate {
-            SubstateValue::NonFungible(non_fungible) => non_fungible,
+            Substate::NonFungible(non_fungible) => non_fungible,
             _ => panic!("Expected non fungible"),
         }
     }
 }
 
-impl Into<SubstateValue> for Option<ScryptoValue> {
-    fn into(self) -> SubstateValue {
-        SubstateValue::KeyValueStoreEntry(self.map(|v| v.raw))
+impl Into<Substate> for Option<ScryptoValue> {
+    fn into(self) -> Substate {
+        Substate::KeyValueStoreEntry(self.map(|v| v.raw))
     }
 }
 

@@ -8,17 +8,17 @@ use sbor::*;
 use scrypto::engine::types::*;
 
 use crate::engine::track::BorrowedSubstate::Taken;
-use crate::engine::{Address, SubstateOperation, SubstateOperationsReceipt, SubstateValue};
+use crate::engine::{Address, SubstateOperation, SubstateOperationsReceipt, Substate};
 use crate::ledger::*;
 
 enum BorrowedSubstate {
-    Loaded(SubstateValue, u32),
-    LoadedMut(SubstateValue),
+    Loaded(Substate, u32),
+    LoadedMut(Substate),
     Taken,
 }
 
 impl BorrowedSubstate {
-    fn loaded(value: SubstateValue, mutable: bool) -> Self {
+    fn loaded(value: Substate, mutable: bool) -> Self {
         if mutable {
             BorrowedSubstate::LoadedMut(value)
         } else {
@@ -35,9 +35,9 @@ pub struct Track<'s, S: ReadableSubstateStore> {
     new_addresses: Vec<Address>,
     borrowed_substates: HashMap<Address, BorrowedSubstate>,
 
-    downed_substates: Vec<PhysicalSubstateId>,
+    downed_substates: Vec<OutputId>,
     down_virtual_substates: Vec<VirtualSubstateId>,
-    up_substates: IndexMap<Vec<u8>, SubstateValue>,
+    up_substates: IndexMap<Vec<u8>, Substate>,
     up_virtual_substate_space: IndexSet<Vec<u8>>,
 }
 
@@ -66,13 +66,13 @@ pub struct TrackReceipt {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SubstateUpdate<T> {
-    pub prev_id: Option<PhysicalSubstateId>,
+    pub prev_id: Option<OutputId>,
     pub value: T,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub enum SubstateParentId {
-    Exists(PhysicalSubstateId),
+    Exists(OutputId),
     New(usize),
 }
 
@@ -101,7 +101,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
     }
 
     /// Creates a row with the given key/value
-    pub fn create_uuid_value<A: Into<Address>, V: Into<SubstateValue>>(
+    pub fn create_uuid_value<A: Into<Address>, V: Into<Substate>>(
         &mut self,
         addr: A,
         value: V,
@@ -152,7 +152,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         }
     }
 
-    pub fn read_value<A: Into<Address>>(&self, addr: A) -> &SubstateValue {
+    pub fn read_value<A: Into<Address>>(&self, addr: A) -> &Substate {
         let address: Address = addr.into();
         match self
             .borrowed_substates
@@ -165,7 +165,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         }
     }
 
-    pub fn take_value<A: Into<Address>>(&mut self, addr: A) -> SubstateValue {
+    pub fn take_value<A: Into<Address>>(&mut self, addr: A) -> Substate {
         let address: Address = addr.into();
         match self
             .borrowed_substates
@@ -178,7 +178,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         }
     }
 
-    pub fn write_value<A: Into<Address>, V: Into<SubstateValue>>(&mut self, addr: A, value: V) {
+    pub fn write_value<A: Into<Address>, V: Into<Substate>>(&mut self, addr: A, value: V) {
         let address: Address = addr.into();
 
         let cur_value = self
@@ -238,15 +238,15 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
     }
 
     /// Returns the value of a key value pair
-    pub fn read_key_value(&mut self, parent_address: Address, key: Vec<u8>) -> SubstateValue {
+    pub fn read_key_value(&mut self, parent_address: Address, key: Vec<u8>) -> Substate {
         let mut address = parent_address.encode();
         address.extend(key);
         if let Some(cur) = self.up_substates.get(&address) {
             match cur {
-                SubstateValue::KeyValueStoreEntry(e) => {
-                    return SubstateValue::KeyValueStoreEntry(e.clone())
+                Substate::KeyValueStoreEntry(e) => {
+                    return Substate::KeyValueStoreEntry(e.clone())
                 }
-                SubstateValue::NonFungible(n) => return SubstateValue::NonFungible(n.clone()),
+                Substate::NonFungible(n) => return Substate::NonFungible(n.clone()),
                 _ => panic!("Unsupported key value"),
             }
         }
@@ -255,18 +255,18 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
                 .substate_store
                 .get_substate(&address)
                 .map(|s| s.value)
-                .unwrap_or(SubstateValue::NonFungible(None)),
+                .unwrap_or(Substate::NonFungible(None)),
             Address::KeyValueStore(..) => self
                 .substate_store
                 .get_substate(&address)
                 .map(|s| s.value)
-                .unwrap_or(SubstateValue::KeyValueStoreEntry(None)),
+                .unwrap_or(Substate::KeyValueStoreEntry(None)),
             _ => panic!("Invalid keyed value address {:?}", parent_address),
         }
     }
 
     /// Sets a key value
-    pub fn set_key_value<V: Into<SubstateValue>>(
+    pub fn set_key_value<V: Into<Substate>>(
         &mut self,
         parent_address: Address,
         key: Vec<u8>,
@@ -276,8 +276,8 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         address.extend(key.clone());
 
         if self.up_substates.remove(&address).is_none() {
-            let cur: Option<Substate> = self.substate_store.get_substate(&address);
-            if let Some(Substate { value: _, phys_id }) = cur {
+            let cur: Option<Output> = self.substate_store.get_substate(&address);
+            if let Some(Output { value: _, phys_id }) = cur {
                 self.downed_substates.push(phys_id);
             } else {
                 let parent_id = self.get_substate_parent_id(&parent_address.encode());

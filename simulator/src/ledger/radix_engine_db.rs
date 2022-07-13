@@ -6,7 +6,7 @@ use rocksdb::{DBWithThreadMode, Direction, IteratorMode, SingleThreaded, DB};
 use sbor::Decode;
 use scrypto::buffer::*;
 use scrypto::engine::types::*;
-use radix_engine::engine::SubstateValue;
+use radix_engine::engine::Substate;
 
 pub struct RadixEngineDB {
     db: DBWithThreadMode<SingleThreaded>,
@@ -73,7 +73,7 @@ impl QueryableSubstateStore for RadixEngineDB {
         &self,
         component_address: ComponentAddress,
         kv_store_id: &KeyValueStoreId,
-    ) -> HashMap<Vec<u8>, SubstateValue> {
+    ) -> HashMap<Vec<u8>, Substate> {
         let mut id = scrypto_encode(&component_address);
         id.extend(scrypto_encode(kv_store_id));
         let key_size = id.len();
@@ -89,7 +89,7 @@ impl QueryableSubstateStore for RadixEngineDB {
             }
 
             let local_key = key.split_at(key_size).1.to_vec();
-            let substate: Substate = scrypto_decode(&value.to_vec()).unwrap();
+            let substate: Output = scrypto_decode(&value.to_vec()).unwrap();
             items.insert(local_key, substate.value);
         }
         items
@@ -97,21 +97,21 @@ impl QueryableSubstateStore for RadixEngineDB {
 }
 
 impl ReadableSubstateStore for RadixEngineDB {
-    fn get_substate(&self, address: &[u8]) -> Option<Substate> {
+    fn get_substate(&self, address: &[u8]) -> Option<Output> {
         self.read(address).map(|b| scrypto_decode(&b).unwrap())
     }
 
-    fn get_space(&mut self, address: &[u8]) -> Option<PhysicalSubstateId> {
+    fn get_space(&mut self, address: &[u8]) -> Option<OutputId> {
         self.read(&address).map(|b| scrypto_decode(&b).unwrap())
     }
 }
 
 impl WriteableSubstateStore for RadixEngineDB {
-    fn put_substate(&mut self, address: &[u8], substate: Substate) {
+    fn put_substate(&mut self, address: &[u8], substate: Output) {
         self.write(address, &scrypto_encode(&substate));
     }
 
-    fn put_space(&mut self, address: &[u8], phys_id: PhysicalSubstateId) {
+    fn put_space(&mut self, address: &[u8], phys_id: OutputId) {
         self.write(&address, &scrypto_encode(&phys_id));
     }
 }

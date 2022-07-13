@@ -244,7 +244,7 @@ impl REValuePointer {
 
 pub enum RENativeValueRef {
     Stack(REValue, Option<usize>, ValueId, Option<ValueId>),
-    Track(Address, SubstateValue),
+    Track(Address, Substate),
 }
 
 impl RENativeValueRef {
@@ -430,7 +430,7 @@ impl<'f, 's, S: ReadableSubstateStore> REValueRefMut<'f, 's, S> {
                 track.set_key_value(
                     address.clone(),
                     key,
-                    SubstateValue::KeyValueStoreEntry(Some(value.raw)),
+                    Substate::KeyValueStoreEntry(Some(value.raw)),
                 );
                 for (id, val) in to_store {
                     insert_non_root_nodes(track, val.to_nodes(id));
@@ -491,7 +491,7 @@ impl<'f, 's, S: ReadableSubstateStore> REValueRefMut<'f, 's, S> {
                 track.set_key_value(
                     address.clone(),
                     id.to_vec(),
-                    SubstateValue::NonFungible(None),
+                    Substate::NonFungible(None),
                 );
             }
         }
@@ -512,7 +512,7 @@ impl<'f, 's, S: ReadableSubstateStore> REValueRefMut<'f, 's, S> {
                 track.set_key_value(
                     address.clone(),
                     id.to_vec(),
-                    SubstateValue::NonFungible(Some(non_fungible)),
+                    Substate::NonFungible(Some(non_fungible)),
                 );
             }
         }
@@ -1994,8 +1994,8 @@ where
         let value = taken_values.into_values().nth(0).unwrap();
 
         let (substate, maybe_non_fungibles) = match value.root {
-            RENode::Component(component) => (SubstateValue::Component(component), None),
-            RENode::Package(package) => (SubstateValue::Package(package), None),
+            RENode::Component(component) => (Substate::Component(component), None),
+            RENode::Package(package) => (Substate::Package(package), None),
             RENode::Resource(resource_manager) => {
                 let non_fungibles =
                     if matches!(resource_manager.resource_type(), ResourceType::NonFungible) {
@@ -2009,7 +2009,7 @@ where
                     } else {
                         None
                     };
-                (SubstateValue::Resource(resource_manager), non_fungibles)
+                (Substate::Resource(resource_manager), non_fungibles)
             }
             _ => panic!("Not expected"),
         };
@@ -2038,7 +2038,7 @@ where
                 self.track.set_key_value(
                     parent_address.clone(),
                     id.to_vec(),
-                    SubstateValue::NonFungible(Some(non_fungible)),
+                    Substate::NonFungible(Some(non_fungible)),
                 );
             }
         }
