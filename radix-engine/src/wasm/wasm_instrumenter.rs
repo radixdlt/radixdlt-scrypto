@@ -5,7 +5,7 @@ use scrypto::crypto::{hash, Hash};
 use crate::wasm::{WasmMeteringParams, WasmModule};
 
 pub struct WasmInstrumenter {
-    cache: HashMap<(Hash, u8), Vec<u8>>,
+    cache: HashMap<(Hash, Hash), Vec<u8>>,
 }
 
 impl WasmInstrumenter {

@@ -8,8 +8,8 @@ use scrypto::prelude::{PackageAddress, PackagePublishInput};
 use scrypto::values::ScryptoValue;
 
 use crate::engine::*;
+use crate::fee::CostUnitCounterError;
 use crate::ledger::ReadableSubstateStore;
-use crate::model::PackageError::MethodNotFound;
 use crate::wasm::*;
 
 /// A collection of blueprints, compiled and published as a single unit.
@@ -25,6 +25,7 @@ pub enum PackageError {
     InvalidWasm(PrepareError),
     BlueprintNotFound,
     MethodNotFound(String),
+    CostingError(CostUnitCounterError),
 }
 
 impl ValidatedPackage {
@@ -62,12 +63,14 @@ impl ValidatedPackage {
                     .map_err(|e| PackageError::InvalidRequestData(e))?;
                 let package =
                     ValidatedPackage::new(input.package).map_err(PackageError::InvalidWasm)?;
-                let value_id = system_api.create_value(package).unwrap();
-                system_api.globalize_value(&value_id);
+                let value_id = system_api.create_value(package).unwrap(); // FIXME: update all `create_value` calls to handle errors correctly
+                system_api
+                    .globalize_value(&value_id)
+                    .map_err(PackageError::CostingError)?;
                 let package_address: PackageAddress = value_id.into();
                 Ok(ScryptoValue::from_typed(&package_address))
             }
-            _ => Err(MethodNotFound(method_name.to_string())),
+            _ => Err(PackageError::MethodNotFound(method_name.to_string())),
         }
     }
 }
