@@ -30,11 +30,26 @@ where
         input: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError>;
 
-    fn globalize_value(&mut self, value_id: &ValueId);
-    fn borrow_value(&self, value_id: &ValueId) -> REValueRef<'_, 'p, 's, S>;
-    fn borrow_value_mut(&mut self, value_id: &ValueId) -> RENativeValueRef<'p>;
-    fn return_value_mut(&mut self, value_id: ValueId, val_ref: RENativeValueRef<'p>);
-    fn drop_value(&mut self, value_id: &ValueId) -> REValue;
+    fn globalize_value(&mut self, value_id: &ValueId) -> Result<(), CostUnitCounterError>;
+
+    fn borrow_value(
+        &mut self,
+        value_id: &ValueId,
+    ) -> Result<REValueRef<'_, 'p, 's, S>, CostUnitCounterError>;
+
+    fn borrow_value_mut(
+        &mut self,
+        value_id: &ValueId,
+    ) -> Result<RENativeValueRef<'p>, CostUnitCounterError>;
+
+    fn return_value_mut(
+        &mut self,
+        value_id: ValueId,
+        val_ref: RENativeValueRef<'p>,
+    ) -> Result<(), CostUnitCounterError>;
+
+    fn drop_value(&mut self, value_id: &ValueId) -> Result<REValue, CostUnitCounterError>;
+
     fn create_value<V: Into<REValueByComplexity>>(&mut self, v: V)
         -> Result<ValueId, RuntimeError>;
     fn read_value_data(&mut self, address: SubstateAddress) -> Result<ScryptoValue, RuntimeError>;
@@ -47,11 +62,11 @@ where
         -> Result<ScryptoValue, RuntimeError>;
 
     fn create_resource(&mut self, resource_manager: ResourceManager) -> ResourceAddress;
-    fn get_transaction_hash(&mut self) -> Hash;
+    fn transaction_hash(&mut self) -> Result<Hash, CostUnitCounterError>;
 
-    fn generate_uuid(&mut self) -> u128;
+    fn generate_uuid(&mut self) -> Result<u128, CostUnitCounterError>;
 
-    fn user_log(&mut self, level: Level, message: String);
+    fn emit_log(&mut self, level: Level, message: String) -> Result<(), CostUnitCounterError>;
 
     fn check_access_rule(
         &mut self,
