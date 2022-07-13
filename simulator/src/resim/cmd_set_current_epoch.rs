@@ -20,7 +20,7 @@ impl SetCurrentEpoch {
         let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?);
         let mut wasm_engine = DefaultWasmEngine::new();
         let mut wasm_instrumenter = WasmInstrumenter::new();
-        let mut track = Track::new(&mut substate_store, hash, Network::LocalSimulator);
+        let mut track = Track::new(&mut substate_store, hash);
         let mut cost_unit_counter = CostUnitCounter::new(MAX_TRANSACTION_COST, SYSTEM_LOAN_AMOUNT);
         let fee_table = FeeTable::new();
 

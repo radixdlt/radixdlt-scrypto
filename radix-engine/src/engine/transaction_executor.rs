@@ -69,11 +69,7 @@ where
         let instructions = transaction.instructions().to_vec();
 
         // Start state track
-        let mut track = Track::new(
-            self.substate_store,
-            transaction_hash,
-            transaction_network.clone(),
-        );
+        let mut track = Track::new(self.substate_store, transaction_hash);
 
         // Metering
         let mut cost_unit_counter = CostUnitCounter::new(MAX_TRANSACTION_COST, SYSTEM_LOAN_AMOUNT);

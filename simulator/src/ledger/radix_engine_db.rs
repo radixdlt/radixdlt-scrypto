@@ -19,7 +19,7 @@ impl RadixEngineDB {
 
     pub fn with_bootstrap(root: PathBuf) -> Self {
         let mut substate_store = Self::new(root);
-        bootstrap(&mut substate_store, scrypto::core::Network::LocalSimulator);
+        bootstrap(&mut substate_store);
         substate_store
     }
 

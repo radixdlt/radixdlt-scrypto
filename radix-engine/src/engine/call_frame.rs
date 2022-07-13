@@ -12,7 +12,7 @@ use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
-use scrypto::core::{Network, SNodeRef, ScryptoActor};
+use scrypto::core::{SNodeRef, ScryptoActor};
 use scrypto::engine::types::*;
 use scrypto::prelude::ComponentOffset;
 use scrypto::resource::AuthZoneClearInput;
@@ -2200,10 +2200,6 @@ where
             "read_transaction_hash",
         )?;
         Ok(self.track.transaction_hash())
-    }
-
-    fn get_transaction_network(&mut self) -> Network {
-        self.track.transaction_network()
     }
 
     fn generate_uuid(&mut self) -> Result<u128, CostUnitCounterError> {

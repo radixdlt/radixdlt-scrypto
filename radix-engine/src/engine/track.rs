@@ -8,7 +8,6 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
 use scrypto::buffer::scrypto_encode;
-use scrypto::core::Network;
 use scrypto::engine::types::*;
 use scrypto::values::ScryptoValue;
 use transaction::validation::*;
@@ -38,7 +37,6 @@ impl BorrowedSubstate {
 pub struct Track<'s, S: ReadableSubstateStore> {
     substate_store: &'s mut S,
     transaction_hash: Hash,
-    transaction_network: Network,
     id_allocator: IdAllocator,
     logs: Vec<(Level, String)>,
 
@@ -396,15 +394,10 @@ impl Into<Vault> for SubstateValue {
 }
 
 impl<'s, S: ReadableSubstateStore> Track<'s, S> {
-    pub fn new(
-        substate_store: &'s mut S,
-        transaction_hash: Hash,
-        transaction_network: Network,
-    ) -> Self {
+    pub fn new(substate_store: &'s mut S, transaction_hash: Hash) -> Self {
         Self {
             substate_store,
             transaction_hash,
-            transaction_network,
             id_allocator: IdAllocator::new(IdSpace::Application),
             logs: Vec::new(),
 
@@ -421,9 +414,6 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
     /// Returns the transaction hash.
     pub fn transaction_hash(&self) -> Hash {
         self.transaction_hash
-    }
-    pub fn transaction_network(&self) -> Network {
-        self.transaction_network.clone()
     }
 
     /// Adds a log message.
