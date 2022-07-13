@@ -5,7 +5,6 @@ use sbor::rust::ops::RangeFull;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto::buffer::scrypto_decode;
 use scrypto::engine::types::*;
 
 use crate::engine::track::BorrowedSubstate::Taken;
@@ -145,32 +144,8 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
 
         if let Some(substate) = self.substate_store.get_substate(&address.encode()) {
             self.downed_substates.push(substate.phys_id);
-            let value = match address {
-                Address::GlobalComponent(_) | Address::LocalComponent(..) => {
-                    let component = scrypto_decode(&substate.value).unwrap();
-                    SubstateValue::Component(component)
-                }
-                Address::Resource(_) => {
-                    let resource_manager = scrypto_decode(&substate.value).unwrap();
-                    SubstateValue::Resource(resource_manager)
-                }
-                Address::Vault(..) => {
-                    let vault = scrypto_decode(&substate.value).unwrap();
-                    SubstateValue::Vault(vault)
-                }
-                Address::Package(..) => {
-                    let package = scrypto_decode(&substate.value).unwrap();
-                    SubstateValue::Package(package)
-                }
-                Address::System => {
-                    let system = scrypto_decode(&substate.value).unwrap();
-                    SubstateValue::System(system)
-                }
-                _ => panic!("Attempting to borrow unsupported value {:?}", address),
-            };
-
             self.borrowed_substates
-                .insert(address.clone(), BorrowedSubstate::loaded(value, mutable));
+                .insert(address.clone(), BorrowedSubstate::loaded(substate.value, mutable));
             Ok(())
         } else {
             Err(TrackError::NotFound)
@@ -279,18 +254,12 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             Address::NonFungibleSet(_) => self
                 .substate_store
                 .get_substate(&address)
-                .map(|r| {
-                    let non_fungible = scrypto_decode(&r.value).unwrap();
-                    SubstateValue::NonFungible(non_fungible)
-                })
+                .map(|s| s.value)
                 .unwrap_or(SubstateValue::NonFungible(None)),
             Address::KeyValueStore(..) => self
                 .substate_store
                 .get_substate(&address)
-                .map(|r| {
-                    let kv_store_entry = scrypto_decode(&r.value).unwrap();
-                    SubstateValue::KeyValueStoreEntry(kv_store_entry)
-                })
+                .map(|s| s.value)
                 .unwrap_or(SubstateValue::KeyValueStoreEntry(None)),
             _ => panic!("Invalid keyed value address {:?}", parent_address),
         }
@@ -340,7 +309,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             store_instructions.push(SubstateOperation::VirtualDown(virtual_substate_id));
         }
         for (address, value) in self.up_substates.drain(RangeFull) {
-            store_instructions.push(SubstateOperation::Up(address, value.encode()));
+            store_instructions.push(SubstateOperation::Up(address, value));
         }
         for space_address in self.up_virtual_substate_space.drain(RangeFull) {
             store_instructions.push(SubstateOperation::VirtualUp(space_address));

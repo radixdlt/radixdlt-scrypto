@@ -105,7 +105,8 @@ impl Into<VaultId> for Address {
     }
 }
 
-#[derive(Debug)]
+// TODO: Update encoding scheme to not take up so much space with the enum strings
+#[derive(Debug, Encode, Decode)]
 pub enum SubstateValue {
     System(System),
     Resource(ResourceManager),
@@ -117,7 +118,7 @@ pub enum SubstateValue {
 }
 
 impl SubstateValue {
-    pub fn encode(&self) -> Vec<u8> {
+    pub fn encode_raw(&self) -> Vec<u8> {
         match self {
             SubstateValue::System(system) => scrypto_encode(system),
             SubstateValue::Resource(resource_manager) => scrypto_encode(resource_manager),
@@ -230,9 +231,28 @@ impl Into<SubstateValue> for ValidatedPackage {
     }
 }
 
+impl From<SubstateValue> for ValidatedPackage {
+    fn from(substate: SubstateValue) -> Self {
+        match substate {
+            SubstateValue::Package(package) => package,
+            _ => panic!("Expected package"),
+        }
+    }
+}
+
+
 impl Into<SubstateValue> for Component {
     fn into(self) -> SubstateValue {
         SubstateValue::Component(self)
+    }
+}
+
+impl From<SubstateValue> for Component {
+    fn from(substate: SubstateValue) -> Self {
+        match substate {
+            SubstateValue::Component(component) => component,
+            _ => panic!("Expected component"),
+        }
     }
 }
 
@@ -242,11 +262,30 @@ impl Into<SubstateValue> for ResourceManager {
     }
 }
 
+impl From<SubstateValue> for ResourceManager {
+    fn from(substate: SubstateValue) -> Self {
+        match substate {
+            SubstateValue::Resource(resource_manager) => resource_manager,
+            _ => panic!("Expected resource manager"),
+        }
+    }
+}
+
 impl Into<SubstateValue> for Vault {
     fn into(self) -> SubstateValue {
         SubstateValue::Vault(self)
     }
 }
+
+impl From<SubstateValue> for Vault {
+    fn from(substate: SubstateValue) -> Self {
+        match substate {
+            SubstateValue::Vault(vault) => vault,
+            _ => panic!("Expected vault"),
+        }
+    }
+}
+
 
 impl Into<SubstateValue> for Option<NonFungible> {
     fn into(self) -> SubstateValue {
@@ -254,39 +293,18 @@ impl Into<SubstateValue> for Option<NonFungible> {
     }
 }
 
+impl From<SubstateValue> for Option<NonFungible> {
+    fn from(substate: SubstateValue) -> Self {
+        match substate {
+            SubstateValue::NonFungible(non_fungible) => non_fungible,
+            _ => panic!("Expected non fungible"),
+        }
+    }
+}
+
 impl Into<SubstateValue> for Option<ScryptoValue> {
     fn into(self) -> SubstateValue {
         SubstateValue::KeyValueStoreEntry(self.map(|v| v.raw))
-    }
-}
-
-impl Into<Component> for SubstateValue {
-    fn into(self) -> Component {
-        if let SubstateValue::Component(component) = self {
-            component
-        } else {
-            panic!("Not a component");
-        }
-    }
-}
-
-impl Into<ResourceManager> for SubstateValue {
-    fn into(self) -> ResourceManager {
-        if let SubstateValue::Resource(resource_manager) = self {
-            resource_manager
-        } else {
-            panic!("Not a resource manager");
-        }
-    }
-}
-
-impl Into<Vault> for SubstateValue {
-    fn into(self) -> Vault {
-        if let SubstateValue::Vault(vault) = self {
-            vault
-        } else {
-            panic!("Not a vault");
-        }
     }
 }
 

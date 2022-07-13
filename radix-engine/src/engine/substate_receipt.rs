@@ -1,5 +1,5 @@
 use crate::engine::track::VirtualSubstateId;
-use crate::engine::SubstateParentId;
+use crate::engine::{SubstateParentId, SubstateValue};
 use sbor::rust::collections::*;
 use sbor::rust::ops::RangeFull;
 use sbor::rust::vec::Vec;
@@ -46,15 +46,16 @@ impl CommitReceipt {
 #[derive(Debug, Clone, Hash, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct HardVirtualSubstateId(PhysicalSubstateId, Vec<u8>);
 
-#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
+// TODO: Update encoding scheme here to not take up so much space with the enum strings
+#[derive(Debug, TypeId, Encode, Decode)]
 pub enum SubstateOperation {
     VirtualDown(VirtualSubstateId),
     Down(PhysicalSubstateId),
     VirtualUp(Vec<u8>),
-    Up(Vec<u8>, Vec<u8>),
+    Up(Vec<u8>, SubstateValue),
 }
 
-#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
+#[derive(Debug, TypeId, Encode, Decode)]
 pub struct SubstateOperationsReceipt {
     pub substate_operations: Vec<SubstateOperation>,
 }

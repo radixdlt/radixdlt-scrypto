@@ -113,7 +113,6 @@ impl TestRunner {
     pub fn inspect_component(&self, component_address: ComponentAddress) -> Component {
         self.substate_store
             .get_decoded_substate(&component_address)
-            .map(|(component, _)| component)
             .unwrap()
     }
 

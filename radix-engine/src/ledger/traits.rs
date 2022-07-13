@@ -4,21 +4,22 @@ use sbor::*;
 use scrypto::buffer::*;
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
+use crate::engine::SubstateValue;
 
 pub trait QueryableSubstateStore {
     fn get_kv_store_entries(
         &self,
         component_address: ComponentAddress,
         kv_store_id: &KeyValueStoreId,
-    ) -> HashMap<Vec<u8>, Vec<u8>>;
+    ) -> HashMap<Vec<u8>, SubstateValue>;
 }
 
 #[derive(Debug, Clone, Hash, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct PhysicalSubstateId(pub Hash, pub u32);
 
-#[derive(Clone, Debug, Encode, Decode, TypeId)]
+#[derive(Debug, Encode, Decode, TypeId)]
 pub struct Substate {
-    pub value: Vec<u8>,
+    pub value: SubstateValue,
     pub phys_id: PhysicalSubstateId,
 }
 
@@ -46,12 +47,12 @@ pub trait ReadableSubstateStore {
     fn get_space(&mut self, address: &[u8]) -> Option<PhysicalSubstateId>;
 
     // Temporary Encoded/Decoded interface
-    fn get_decoded_substate<A: Encode, T: Decode>(
+    fn get_decoded_substate<A: Encode, T: From<SubstateValue>>(
         &self,
         address: &A,
-    ) -> Option<(T, PhysicalSubstateId)> {
+    ) -> Option<T> {
         self.get_substate(&scrypto_encode(address))
-            .map(|s| (scrypto_decode(&s.value).unwrap(), s.phys_id))
+            .map(|s| s.value.into())
     }
 }
 

@@ -6,6 +6,7 @@ use rocksdb::{DBWithThreadMode, Direction, IteratorMode, SingleThreaded, DB};
 use sbor::Decode;
 use scrypto::buffer::*;
 use scrypto::engine::types::*;
+use radix_engine::engine::SubstateValue;
 
 pub struct RadixEngineDB {
     db: DBWithThreadMode<SingleThreaded>,
@@ -72,7 +73,7 @@ impl QueryableSubstateStore for RadixEngineDB {
         &self,
         component_address: ComponentAddress,
         kv_store_id: &KeyValueStoreId,
-    ) -> HashMap<Vec<u8>, Vec<u8>> {
+    ) -> HashMap<Vec<u8>, SubstateValue> {
         let mut id = scrypto_encode(&component_address);
         id.extend(scrypto_encode(kv_store_id));
         let key_size = id.len();
