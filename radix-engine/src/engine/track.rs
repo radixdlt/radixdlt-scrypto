@@ -9,7 +9,7 @@ use scrypto::buffer::scrypto_decode;
 use scrypto::engine::types::*;
 
 use crate::engine::track::BorrowedSubstate::Taken;
-use crate::engine::{Address, RENode, SubstateOperation, SubstateOperationsReceipt, SubstateValue};
+use crate::engine::{Address, SubstateOperation, SubstateOperationsReceipt, SubstateValue};
 use crate::ledger::*;
 
 enum BorrowedSubstate {
@@ -326,30 +326,6 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         } else {
             let substate_id = self.substate_store.get_space(space_address).unwrap();
             SubstateParentId::Exists(substate_id)
-        }
-    }
-
-    pub fn insert_non_root_nodes(&mut self, values: HashMap<ValueId, RENode>) {
-        for (id, node) in values {
-            match node {
-                RENode::Vault(vault) => {
-                    let addr = Address::Vault(id.into());
-                    self.create_uuid_value(addr, vault);
-                }
-                RENode::Component(component) => {
-                    let addr = Address::LocalComponent(id.into());
-                    self.create_uuid_value(addr, component);
-                }
-                RENode::KeyValueStore(store) => {
-                    let id = id.into();
-                    let address = Address::KeyValueStore(id);
-                    self.create_key_space(address.clone());
-                    for (k, v) in store.store {
-                        self.set_key_value(address.clone(), k, Some(v));
-                    }
-                }
-                _ => panic!("Invalid node being persisted: {:?}", node),
-            }
         }
     }
 

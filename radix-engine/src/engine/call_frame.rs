@@ -120,6 +120,30 @@ fn verify_stored_key(value: &ScryptoValue) -> Result<(), RuntimeError> {
     Ok(())
 }
 
+pub fn insert_non_root_nodes<'s, S: ReadableSubstateStore>(track: &mut Track<'s, S>, values: HashMap<ValueId, RENode>) {
+    for (id, node) in values {
+        match node {
+            RENode::Vault(vault) => {
+                let addr = Address::Vault(id.into());
+                track.create_uuid_value(addr, vault);
+            }
+            RENode::Component(component) => {
+                let addr = Address::LocalComponent(id.into());
+                track.create_uuid_value(addr, component);
+            }
+            RENode::KeyValueStore(store) => {
+                let id = id.into();
+                let address = Address::KeyValueStore(id);
+                track.create_key_space(address.clone());
+                for (k, v) in store.store {
+                    track.set_key_value(address.clone(), k, Some(v));
+                }
+            }
+            _ => panic!("Invalid node being persisted: {:?}", node),
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct REValueInfo {
     visible: bool,
@@ -409,7 +433,7 @@ impl<'f, 's, S: ReadableSubstateStore> REValueRefMut<'f, 's, S> {
                     SubstateValue::KeyValueStoreEntry(Some(value.raw)),
                 );
                 for (id, val) in to_store {
-                    track.insert_non_root_nodes(val.to_nodes(id));
+                    insert_non_root_nodes(track, val.to_nodes(id));
                 }
             }
         }
@@ -506,7 +530,7 @@ impl<'f, 's, S: ReadableSubstateStore> REValueRefMut<'f, 's, S> {
             REValueRefMut::Track(track, address) => {
                 track.write_component_value(address.clone(), value.raw);
                 for (id, val) in to_store {
-                    track.insert_non_root_nodes(val.to_nodes(id));
+                    insert_non_root_nodes(track, val.to_nodes(id));
                 }
             }
         }
@@ -709,11 +733,11 @@ where
                     StaticSNodeState::TransactionProcessor => TransactionProcessor::static_main(
                         fn_ident, input, self,
                     )
-                    .map_err(|e| match e {
-                        TransactionProcessorError::InvalidRequestData(_) => panic!("Illegal state"),
-                        TransactionProcessorError::InvalidMethod => panic!("Illegal state"),
-                        TransactionProcessorError::RuntimeError(e) => e,
-                    }),
+                        .map_err(|e| match e {
+                            TransactionProcessorError::InvalidRequestData(_) => panic!("Illegal state"),
+                            TransactionProcessorError::InvalidMethod => panic!("Illegal state"),
+                            TransactionProcessorError::RuntimeError(e) => e,
+                        }),
                     StaticSNodeState::Package => {
                         ValidatedPackage::static_main(fn_ident, input, self)
                             .map_err(RuntimeError::PackageError)
@@ -894,7 +918,7 @@ where
             .or_else(|| {
                 // Allow global read access to any component info
                 if let SubstateAddress::Component(component_address, ComponentOffset::Info) =
-                    address
+                address
                 {
                     if self.owned_values.contains_key(&value_id) {
                         return Some((
@@ -1024,6 +1048,8 @@ where
             .new_kv_store_id(self.transaction_hash)
             .unwrap()
     }
+
+
 }
 
 impl<'p, 'g, 's, S, W, I> SystemApi<'p, 's, W, I, S> for CallFrame<'p, 'g, 's, S, W, I>
@@ -2001,7 +2027,7 @@ where
         for (id, value) in value.non_root_nodes.into_iter() {
             to_store_values.insert(id, value);
         }
-        self.track.insert_non_root_nodes(to_store_values);
+        insert_non_root_nodes(self.track, to_store_values);
 
         if let Some(non_fungibles) = maybe_non_fungibles {
             let resource_address: ResourceAddress = address.clone().into();
