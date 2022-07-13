@@ -12,7 +12,7 @@ use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
-use scrypto::core::{SNodeRef, ScryptoActor};
+use scrypto::core::{Network, SNodeRef, ScryptoActor};
 use scrypto::engine::types::*;
 use scrypto::prelude::ComponentOffset;
 use scrypto::resource::AuthZoneClearInput;
@@ -29,10 +29,8 @@ use crate::wasm::*;
 /// owned objects by this function.
 pub struct CallFrame<
     'p, // parent lifetime
-    't, // Track lifetime
+    'g, // lifetime of values outliving all frames
     's, // Substate store lifetime
-    'w, // WASM engine lifetime
-    'c, // Costing lifetime
     S,  // Substore store type
     W,  // WASM engine type
     I,  // WASM instance type
@@ -49,16 +47,16 @@ pub struct CallFrame<
     trace: bool,
 
     /// State track
-    track: &'t mut Track<'s, S>,
+    track: &'g mut Track<'s, S>,
     /// Wasm engine
-    wasm_engine: &'w mut W,
+    wasm_engine: &'g mut W,
     /// Wasm Instrumenter
-    wasm_instrumenter: &'w mut WasmInstrumenter,
+    wasm_instrumenter: &'g mut WasmInstrumenter,
 
     /// Remaining cost unit counter
-    cost_unit_counter: &'c mut CostUnitCounter,
+    cost_unit_counter: &'g mut CostUnitCounter,
     /// Fee table
-    fee_table: &'c FeeTable,
+    fee_table: &'g FeeTable,
 
     /// All ref values accessible by this call frame. The value may be located in one of the following:
     /// 1. borrowed values
@@ -704,7 +702,7 @@ pub enum SubstateAddress {
     Component(ComponentAddress, ComponentOffset),
 }
 
-impl<'p, 't, 's, 'w, 'c, S, W, I> CallFrame<'p, 't, 's, 'w, 'c, S, W, I>
+impl<'p, 'g, 's, S, W, I> CallFrame<'p, 'g, 's, S, W, I>
 where
     S: ReadableSubstateStore,
     W: WasmEngine<I>,
@@ -715,11 +713,11 @@ where
         transaction_hash: Hash,
         signer_public_keys: Vec<EcdsaPublicKey>,
         is_system: bool,
-        track: &'t mut Track<'s, S>,
-        wasm_engine: &'w mut W,
-        wasm_instrumenter: &'w mut WasmInstrumenter,
-        cost_unit_counter: &'c mut CostUnitCounter,
-        fee_table: &'c FeeTable,
+        track: &'g mut Track<'s, S>,
+        wasm_engine: &'g mut W,
+        wasm_instrumenter: &'g mut WasmInstrumenter,
+        cost_unit_counter: &'g mut CostUnitCounter,
+        fee_table: &'g FeeTable,
     ) -> Self {
         // TODO: Cleanup initialization of authzone
         let signer_non_fungible_ids: BTreeSet<NonFungibleId> = signer_public_keys
@@ -770,11 +768,11 @@ where
         transaction_hash: Hash,
         depth: usize,
         trace: bool,
-        track: &'t mut Track<'s, S>,
-        wasm_engine: &'w mut W,
-        wasm_instrumenter: &'w mut WasmInstrumenter,
-        cost_unit_counter: &'c mut CostUnitCounter,
-        fee_table: &'c FeeTable,
+        track: &'g mut Track<'s, S>,
+        wasm_engine: &'g mut W,
+        wasm_instrumenter: &'g mut WasmInstrumenter,
+        cost_unit_counter: &'g mut CostUnitCounter,
+        fee_table: &'g FeeTable,
         auth_zone: Option<RefCell<AuthZone>>,
         owned_values: HashMap<ValueId, RefCell<REValue>>,
         value_refs: HashMap<ValueId, REValueInfo>,
@@ -1141,8 +1139,7 @@ where
     }
 }
 
-impl<'p, 't, 's, 'w, 'c, S, W, I> SystemApi<'p, 's, W, I, S>
-    for CallFrame<'p, 't, 's, 'w, 'c, S, W, I>
+impl<'p, 'g, 's, S, W, I> SystemApi<'p, 's, W, I, S> for CallFrame<'p, 'g, 's, S, W, I>
 where
     S: ReadableSubstateStore,
     W: WasmEngine<I>,
@@ -1997,8 +1994,8 @@ where
                 resource_address,
                 ..,
             )) => ValueId::NonFungibles(resource_address),
-            REValueByComplexity::Complex(REComplexValue::Component(..)) => {
-                let component_address = self.track.new_component_address();
+            REValueByComplexity::Complex(REComplexValue::Component(ref component)) => {
+                let component_address = self.track.new_component_address(component);
                 ValueId::Stored(StoredValueId::Component(component_address))
             }
         };
@@ -2252,6 +2249,10 @@ where
             "read_transaction_hash",
         )?;
         Ok(self.track.transaction_hash())
+    }
+
+    fn get_transaction_network(&mut self) -> Network {
+        self.track.transaction_network()
     }
 
     fn generate_uuid(&mut self) -> Result<u128, CostUnitCounterError> {

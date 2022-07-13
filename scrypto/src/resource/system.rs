@@ -90,12 +90,12 @@ mod tests {
     fn test_resource_manager_macro() {
         init_resource_system(ResourceSystem::new());
 
-        let resource_manager = borrow_resource_manager!(ResourceAddress([0u8; 26]));
-        let resource_manager_same_id = borrow_resource_manager!(ResourceAddress([0u8; 26]));
-        let resource_manager_different_id = borrow_resource_manager!(ResourceAddress([1u8; 26]));
+        let resource_manager = borrow_resource_manager!(ResourceAddress([0u8; 27]));
+        let resource_manager_same_id = borrow_resource_manager!(ResourceAddress([0u8; 27]));
+        let resource_manager_different_id = borrow_resource_manager!(ResourceAddress([1u8; 27]));
 
-        assert_eq!(ResourceAddress([0u8; 26]), resource_manager.0);
-        assert_eq!(ResourceAddress([0u8; 26]), resource_manager_same_id.0);
-        assert_eq!(ResourceAddress([1u8; 26]), resource_manager_different_id.0);
+        assert_eq!(ResourceAddress([0u8; 27]), resource_manager.0);
+        assert_eq!(ResourceAddress([0u8; 27]), resource_manager_same_id.0);
+        assert_eq!(ResourceAddress([1u8; 27]), resource_manager_different_id.0);
     }
 }

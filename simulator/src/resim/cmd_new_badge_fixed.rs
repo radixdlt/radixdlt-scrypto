@@ -1,5 +1,6 @@
 use clap::Parser;
 use sbor::rust::collections::*;
+use scrypto::core::Network;
 use scrypto::engine::types::*;
 use transaction::builder::ManifestBuilder;
 
@@ -64,7 +65,7 @@ impl NewBadgeFixed {
             metadata.insert("icon_url".to_string(), icon_url);
         };
 
-        let manifest = ManifestBuilder::new()
+        let manifest = ManifestBuilder::new(Network::LocalSimulator)
             .new_badge_fixed(metadata, self.total_supply)
             .call_method_with_all_resources(default_account, "deposit_batch")
             .build();

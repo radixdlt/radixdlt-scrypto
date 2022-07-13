@@ -1,4 +1,3 @@
-use sbor::rust::borrow::ToOwned;
 use sbor::rust::fmt;
 use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
@@ -7,6 +6,7 @@ use sbor::*;
 use scrypto::engine::types::StoredValueId;
 
 use crate::abi::*;
+use crate::address::{AddressError, BECH32_DECODER, BECH32_ENCODER};
 use crate::buffer::scrypto_encode;
 use crate::component::*;
 use crate::core::*;
@@ -89,7 +89,7 @@ impl Component {
 //========
 
 impl TryFrom<&[u8]> for Component {
-    type Error = ParseComponentAddressError;
+    type Error = AddressError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         let component_address = ComponentAddress::try_from(slice)?;
@@ -110,7 +110,7 @@ scrypto_type!(Component, ScryptoType::Component, Vec::new());
 //======
 
 impl FromStr for Component {
-    type Err = ParseComponentAddressError;
+    type Err = AddressError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         ComponentAddress::from_str(s).map(|a| Component(a))
@@ -131,43 +131,21 @@ impl fmt::Debug for Component {
 
 /// An instance of a blueprint, which lives in the ledger state.
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
-pub struct ComponentAddress(pub [u8; 26]);
+pub struct ComponentAddress(pub [u8; 27]);
 
 impl ComponentAddress {}
-
-//========
-// error
-//========
-
-/// Represents an error when decoding component address.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ParseComponentAddressError {
-    InvalidHex(String),
-    InvalidLength(usize),
-    InvalidPrefix,
-}
-
-#[cfg(not(feature = "alloc"))]
-impl std::error::Error for ParseComponentAddressError {}
-
-#[cfg(not(feature = "alloc"))]
-impl fmt::Display for ParseComponentAddressError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
-    }
-}
 
 //========
 // binary
 //========
 
 impl TryFrom<&[u8]> for ComponentAddress {
-    type Error = ParseComponentAddressError;
+    type Error = AddressError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         match slice.len() {
-            26 => Ok(Self(copy_u8_array(slice))),
-            _ => Err(ParseComponentAddressError::InvalidLength(slice.len())),
+            27 => Ok(Self(copy_u8_array(slice))),
+            _ => Err(AddressError::InvalidLength(slice.len())),
         }
     }
 }
@@ -184,24 +162,21 @@ scrypto_type!(ComponentAddress, ScryptoType::ComponentAddress, Vec::new());
 // text
 //======
 
-// Before Bech32, we use a fixed prefix for text representation.
-
 impl FromStr for ComponentAddress {
-    type Err = ParseComponentAddressError;
+    type Err = AddressError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let bytes =
-            hex::decode(s).map_err(|_| ParseComponentAddressError::InvalidHex(s.to_owned()))?;
-        if bytes.get(0) != Some(&2u8) {
-            return Err(ParseComponentAddressError::InvalidPrefix);
-        }
-        Self::try_from(&bytes[1..])
+        BECH32_DECODER.validate_and_decode_component_address(s)
     }
 }
 
 impl fmt::Display for ComponentAddress {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}", hex::encode(combine(2, &self.0)))
+        write!(
+            f,
+            "{}",
+            BECH32_ENCODER.encode_component_address(self).unwrap()
+        )
     }
 }
 

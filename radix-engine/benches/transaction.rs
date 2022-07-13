@@ -1,8 +1,8 @@
 use criterion::{criterion_group, criterion_main, Criterion};
+use scrypto::core::Network;
 use scrypto::prelude::*;
 use transaction::builder::ManifestBuilder;
 use transaction::builder::TransactionBuilder;
-use transaction::model::Network;
 use transaction::model::TransactionHeader;
 use transaction::signing::EcdsaPrivateKey;
 use transaction::signing::Ed25519PrivateKey;
@@ -39,18 +39,20 @@ fn bench_ed25519_validation(c: &mut Criterion) {
 }
 
 fn bench_transaction_validation(c: &mut Criterion) {
-    let account1 =
-        ComponentAddress::from_str("02684fabeec72caa03cfa436547b0cccf492d88b940eb5198c4204")
-            .unwrap();
-    let account2 =
-        ComponentAddress::from_str("027889a17c391f9a544ecd254aedae645d3b433a3f0a7abeaff09d")
-            .unwrap();
+    let account1 = ComponentAddress::from_str(
+        "account_sim1qd5yl2lwcuk25q705sm9g7cven6f9kytjs8t2xvvggzq5d2mse",
+    )
+    .unwrap();
+    let account2 = ComponentAddress::from_str(
+        "account_sim1qdugngtu8y0e54zwe5j54mdwv3wnkse68u9840407zws6fzpn7",
+    )
+    .unwrap();
     let signer = EcdsaPrivateKey::from_u64(1).unwrap();
 
     let transaction = TransactionBuilder::new()
         .header(TransactionHeader {
             version: 1,
-            network: Network::InternalTestnet,
+            network: Network::LocalSimulator,
             start_epoch_inclusive: 0,
             end_epoch_exclusive: 100,
             nonce: 1,
@@ -58,7 +60,7 @@ fn bench_transaction_validation(c: &mut Criterion) {
             notary_as_signatory: true,
         })
         .manifest(
-            ManifestBuilder::new()
+            ManifestBuilder::new(Network::LocalSimulator)
                 .withdraw_from_account_by_amount(1u32.into(), RADIX_TOKEN, account1)
                 .call_method_with_all_resources(account2, "deposit_batch")
                 .build(),
