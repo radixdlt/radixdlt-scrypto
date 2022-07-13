@@ -157,7 +157,7 @@ fn test_total_cost_units_consumed() {
     Cost analysis:
     1. Transaction validation cost = TX_VALIDATION_COST_PER_BYTE * 1
     2. Engine run cost
-       * invoke_function: 4515
+       * invoke_function: 4520
          * TransactionProcessor::main
             * Scrypto::main
             * AuthZone::clear * 2
@@ -172,7 +172,7 @@ fn test_total_cost_units_consumed() {
         ft.tx_decoding_per_byte() * 1
             + ft.tx_verification_per_byte() * 1
             + ft.tx_signature_validation_per_sig() * 0
-            + 4515
+            + 4520
             + 30000
             + 10000
             + 1050
