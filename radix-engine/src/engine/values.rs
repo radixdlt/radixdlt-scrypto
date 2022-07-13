@@ -1,7 +1,7 @@
 use sbor::rust::collections::*;
-use scrypto::buffer::scrypto_encode;
-use sbor::rust::vec::Vec;
 use sbor::rust::vec;
+use sbor::rust::vec::Vec;
+use scrypto::buffer::scrypto_encode;
 use scrypto::engine::types::*;
 use scrypto::values::ScryptoValue;
 
@@ -240,7 +240,6 @@ impl From<Substate> for ValidatedPackage {
     }
 }
 
-
 impl Into<Substate> for Component {
     fn into(self) -> Substate {
         Substate::Component(self)
@@ -285,7 +284,6 @@ impl From<Substate> for Vault {
         }
     }
 }
-
 
 impl Into<Substate> for Option<NonFungible> {
     fn into(self) -> Substate {

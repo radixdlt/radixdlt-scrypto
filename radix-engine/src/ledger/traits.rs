@@ -1,10 +1,10 @@
+use crate::engine::Substate;
 use sbor::rust::collections::*;
 use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::buffer::*;
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
-use crate::engine::Substate;
 
 pub trait QueryableSubstateStore {
     fn get_kv_store_entries(
@@ -47,10 +47,7 @@ pub trait ReadableSubstateStore {
     fn get_space(&mut self, address: &[u8]) -> Option<OutputId>;
 
     // Temporary Encoded/Decoded interface
-    fn get_decoded_substate<A: Encode, T: From<Substate>>(
-        &self,
-        address: &A,
-    ) -> Option<T> {
+    fn get_decoded_substate<A: Encode, T: From<Substate>>(&self, address: &A) -> Option<T> {
         self.get_substate(&scrypto_encode(address))
             .map(|s| s.value.into())
     }

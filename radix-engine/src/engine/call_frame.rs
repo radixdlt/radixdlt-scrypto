@@ -10,7 +10,7 @@ use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
-use scrypto::core::{Network, SNodeRef, ScryptoActor};
+use scrypto::core::{SNodeRef, ScryptoActor};
 use scrypto::engine::types::*;
 use scrypto::prelude::ComponentOffset;
 use scrypto::resource::AuthZoneClearInput;
@@ -120,7 +120,10 @@ fn verify_stored_key(value: &ScryptoValue) -> Result<(), RuntimeError> {
     Ok(())
 }
 
-pub fn insert_non_root_nodes<'s, S: ReadableSubstateStore>(track: &mut Track<'s, S>, values: HashMap<ValueId, RENode>) {
+pub fn insert_non_root_nodes<'s, S: ReadableSubstateStore>(
+    track: &mut Track<'s, S>,
+    values: HashMap<ValueId, RENode>,
+) {
     for (id, node) in values {
         match node {
             RENode::Vault(vault) => {
@@ -488,11 +491,7 @@ impl<'f, 's, S: ReadableSubstateStore> REValueRefMut<'f, 's, S> {
                 panic!("Not supported");
             }
             REValueRefMut::Track(track, address) => {
-                track.set_key_value(
-                    address.clone(),
-                    id.to_vec(),
-                    Substate::NonFungible(None),
-                );
+                track.set_key_value(address.clone(), id.to_vec(), Substate::NonFungible(None));
             }
         }
     }
@@ -607,7 +606,9 @@ where
             let id = [NonFungibleId::from_u32(0)].into_iter().collect();
             let mut system_bucket =
                 Bucket::new(ResourceContainer::new_non_fungible(SYSTEM_TOKEN, id));
-            let system_proof = system_bucket.create_proof(id_allocator.new_bucket_id().unwrap()).unwrap();
+            let system_proof = system_bucket
+                .create_proof(id_allocator.new_bucket_id().unwrap())
+                .unwrap();
             initial_auth_zone_proofs.push(system_proof);
         }
 
@@ -733,11 +734,11 @@ where
                     StaticSNodeState::TransactionProcessor => TransactionProcessor::static_main(
                         fn_ident, input, self,
                     )
-                        .map_err(|e| match e {
-                            TransactionProcessorError::InvalidRequestData(_) => panic!("Illegal state"),
-                            TransactionProcessorError::InvalidMethod => panic!("Illegal state"),
-                            TransactionProcessorError::RuntimeError(e) => e,
-                        }),
+                    .map_err(|e| match e {
+                        TransactionProcessorError::InvalidRequestData(_) => panic!("Illegal state"),
+                        TransactionProcessorError::InvalidMethod => panic!("Illegal state"),
+                        TransactionProcessorError::RuntimeError(e) => e,
+                    }),
                     StaticSNodeState::Package => {
                         ValidatedPackage::static_main(fn_ident, input, self)
                             .map_err(RuntimeError::PackageError)
@@ -918,7 +919,7 @@ where
             .or_else(|| {
                 // Allow global read access to any component info
                 if let SubstateAddress::Component(component_address, ComponentOffset::Info) =
-                address
+                    address
                 {
                     if self.owned_values.contains_key(&value_id) {
                         return Some((
@@ -991,7 +992,6 @@ where
         Ok((location.clone(), current_value))
     }
 
-
     /// Creates a new package ID.
     pub fn new_package_address(&mut self) -> PackageAddress {
         // Security Alert: ensure ID allocating will practically never fail
@@ -1052,8 +1052,6 @@ where
             .new_kv_store_id(self.transaction_hash)
             .unwrap()
     }
-
-
 }
 
 impl<'p, 'g, 's, S, W, I> SystemApi<'p, 's, W, I, S> for CallFrame<'p, 'g, 's, S, W, I>
@@ -2177,10 +2175,6 @@ where
             "read_transaction_hash",
         )?;
         Ok(self.transaction_hash)
-    }
-
-    fn get_transaction_network(&mut self) -> Network {
-        self.track.transaction_network()
     }
 
     fn generate_uuid(&mut self) -> Result<u128, CostUnitCounterError> {

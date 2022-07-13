@@ -5,11 +5,10 @@ use sbor::rust::ops::RangeFull;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto::core::Network;
 use scrypto::engine::types::*;
 
 use crate::engine::track::BorrowedSubstate::Taken;
-use crate::engine::{Address, SubstateOperation, SubstateOperationsReceipt, Substate};
+use crate::engine::{Address, Substate, SubstateOperation, SubstateOperationsReceipt};
 use crate::ledger::*;
 
 enum BorrowedSubstate {
@@ -31,7 +30,6 @@ impl BorrowedSubstate {
 /// Facilitates transactional state updates.
 pub struct Track<'s, S: ReadableSubstateStore> {
     substate_store: &'s mut S,
-    transaction_network: Network,
     logs: Vec<(Level, String)>,
 
     new_addresses: Vec<Address>,
@@ -82,13 +80,9 @@ pub enum SubstateParentId {
 pub struct VirtualSubstateId(pub SubstateParentId, pub Vec<u8>);
 
 impl<'s, S: ReadableSubstateStore> Track<'s, S> {
-    pub fn new(
-        substate_store: &'s mut S,
-        transaction_network: Network,
-    ) -> Self {
+    pub fn new(substate_store: &'s mut S) -> Self {
         Self {
             substate_store,
-            transaction_network,
             logs: Vec::new(),
 
             new_addresses: Vec::new(),
@@ -101,21 +95,13 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         }
     }
 
-    pub fn transaction_network(&self) -> Network {
-        self.transaction_network.clone()
-    }
-
     /// Adds a log message.
     pub fn add_log(&mut self, level: Level, message: String) {
         self.logs.push((level, message));
     }
 
     /// Creates a row with the given key/value
-    pub fn create_uuid_value<A: Into<Address>, V: Into<Substate>>(
-        &mut self,
-        addr: A,
-        value: V,
-    ) {
+    pub fn create_uuid_value<A: Into<Address>, V: Into<Substate>>(&mut self, addr: A, value: V) {
         let address = addr.into();
         self.new_addresses.push(address.clone());
         self.up_substates.insert(address.encode(), value.into());
@@ -154,8 +140,10 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
 
         if let Some(substate) = self.substate_store.get_substate(&address.encode()) {
             self.downed_substates.push(substate.phys_id);
-            self.borrowed_substates
-                .insert(address.clone(), BorrowedSubstate::loaded(substate.value, mutable));
+            self.borrowed_substates.insert(
+                address.clone(),
+                BorrowedSubstate::loaded(substate.value, mutable),
+            );
             Ok(())
         } else {
             Err(TrackError::NotFound)
@@ -253,9 +241,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         address.extend(key);
         if let Some(cur) = self.up_substates.get(&address) {
             match cur {
-                Substate::KeyValueStoreEntry(e) => {
-                    return Substate::KeyValueStoreEntry(e.clone())
-                }
+                Substate::KeyValueStoreEntry(e) => return Substate::KeyValueStoreEntry(e.clone()),
                 Substate::NonFungible(n) => return Substate::NonFungible(n.clone()),
                 _ => panic!("Unsupported key value"),
             }
@@ -338,5 +324,4 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             logs: self.logs,
         }
     }
-
 }

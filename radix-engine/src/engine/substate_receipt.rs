@@ -1,5 +1,5 @@
 use crate::engine::track::VirtualSubstateId;
-use crate::engine::{SubstateParentId, Substate};
+use crate::engine::{Substate, SubstateParentId};
 use sbor::rust::collections::*;
 use sbor::rust::ops::RangeFull;
 use sbor::rust::vec::Vec;
@@ -73,9 +73,7 @@ impl SubstateOperationsReceipt {
                 SubstateOperation::VirtualDown(VirtualSubstateId(parent_id, key)) => {
                     let parent_hard_id = match parent_id {
                         SubstateParentId::Exists(real_id) => real_id,
-                        SubstateParentId::New(index) => {
-                            OutputId(hash, index.try_into().unwrap())
-                        }
+                        SubstateParentId::New(index) => OutputId(hash, index.try_into().unwrap()),
                     };
                     let virtual_substate_id = HardVirtualSubstateId(parent_hard_id, key);
                     receipt.virtual_down(virtual_substate_id);

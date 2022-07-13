@@ -1,5 +1,6 @@
 #![allow(unused_must_use)]
 use colored::*;
+use radix_engine::engine::Substate;
 use radix_engine::ledger::*;
 use radix_engine::model::*;
 use sbor::rust::collections::HashSet;
@@ -10,7 +11,6 @@ use scrypto::core::Network;
 use scrypto::engine::types::*;
 use scrypto::values::*;
 use std::collections::VecDeque;
-use radix_engine::engine::Substate;
 
 use crate::utils::*;
 
@@ -31,8 +31,7 @@ pub fn dump_package<T: ReadableSubstateStore, O: std::io::Write>(
 ) -> Result<(), DisplayError> {
     let bech32_encoder = Bech32Encoder::new_from_network(&Network::LocalSimulator);
 
-    let package: Option<ValidatedPackage> = substate_store
-        .get_decoded_substate(&package_address);
+    let package: Option<ValidatedPackage> = substate_store.get_decoded_substate(&package_address);
     match package {
         Some(b) => {
             writeln!(
@@ -63,8 +62,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
 ) -> Result<(), DisplayError> {
     let bech32_encoder = Bech32Encoder::new_from_network(&Network::LocalSimulator);
 
-    let component: Option<Component> = substate_store
-        .get_decoded_substate(&component_address);
+    let component: Option<Component> = substate_store.get_decoded_substate(&component_address);
     match component {
         Some(c) => {
             writeln!(
@@ -183,7 +181,11 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
                 nf_address.push(0u8);
                 nf_address.extend(id.to_vec());
 
-                let non_fungible: Option<NonFungible> = substate_store.get_substate(&nf_address).unwrap().value.into();
+                let non_fungible: Option<NonFungible> = substate_store
+                    .get_substate(&nf_address)
+                    .unwrap()
+                    .value
+                    .into();
 
                 let id = ScryptoValue::from_slice(&id.to_vec()).unwrap();
 
@@ -214,8 +216,8 @@ pub fn dump_resource_manager<T: ReadableSubstateStore, O: std::io::Write>(
     substate_store: &T,
     output: &mut O,
 ) -> Result<(), DisplayError> {
-    let resource_manager: Option<ResourceManager> = substate_store
-        .get_decoded_substate(&resource_address);
+    let resource_manager: Option<ResourceManager> =
+        substate_store.get_decoded_substate(&resource_address);
     match resource_manager {
         Some(r) => {
             writeln!(

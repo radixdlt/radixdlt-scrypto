@@ -79,12 +79,5 @@ impl Bech32Encoder {
     }
 }
 
-#[cfg(target_arch = "wasm32")]
-pub const BECH32_ENCODER: Lazy<Bech32Encoder> = Lazy::new(|| {
-    use crate::core::Runtime;
-    Bech32Encoder::new_from_network(&Runtime::transaction_network())
-});
-
-#[cfg(not(target_arch = "wasm32"))]
 pub const BECH32_ENCODER: Lazy<Bech32Encoder> =
     Lazy::new(|| Bech32Encoder::new_from_network(&Network::LocalSimulator));

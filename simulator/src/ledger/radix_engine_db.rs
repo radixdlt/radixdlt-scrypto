@@ -1,12 +1,12 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
 
+use radix_engine::engine::Substate;
 use radix_engine::ledger::*;
 use rocksdb::{DBWithThreadMode, Direction, IteratorMode, SingleThreaded, DB};
 use sbor::Decode;
 use scrypto::buffer::*;
 use scrypto::engine::types::*;
-use radix_engine::engine::Substate;
 
 pub struct RadixEngineDB {
     db: DBWithThreadMode<SingleThreaded>,
@@ -20,7 +20,7 @@ impl RadixEngineDB {
 
     pub fn with_bootstrap(root: PathBuf) -> Self {
         let mut substate_store = Self::new(root);
-        bootstrap(&mut substate_store, scrypto::core::Network::LocalSimulator);
+        bootstrap(&mut substate_store);
         substate_store
     }
 

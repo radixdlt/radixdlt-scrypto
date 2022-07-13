@@ -70,10 +70,7 @@ where
         let instructions = transaction.instructions().to_vec();
 
         // Start state track
-        let mut track = Track::new(
-            self.substate_store,
-            transaction_network.clone(),
-        );
+        let mut track = Track::new(self.substate_store);
 
         let mut id_allocator = IdAllocator::new(IdSpace::Application);
 
