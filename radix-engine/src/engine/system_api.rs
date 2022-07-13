@@ -1,6 +1,6 @@
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
-use scrypto::core::SNodeRef;
+use scrypto::core::{Network, SNodeRef};
 use scrypto::engine::types::*;
 use scrypto::resource::AccessRule;
 use scrypto::values::*;
@@ -41,10 +41,7 @@ where
         value_id: &ValueId,
     ) -> Result<RENativeValueRef, CostUnitCounterError>;
 
-    fn return_value_mut(
-        &mut self,
-        val_ref: RENativeValueRef,
-    ) -> Result<(), CostUnitCounterError>;
+    fn return_value_mut(&mut self, val_ref: RENativeValueRef) -> Result<(), CostUnitCounterError>;
 
     fn drop_value(&mut self, value_id: &ValueId) -> Result<REValue, CostUnitCounterError>;
 
@@ -60,6 +57,8 @@ where
         -> Result<ScryptoValue, RuntimeError>;
 
     fn transaction_hash(&mut self) -> Result<Hash, CostUnitCounterError>;
+
+    fn get_transaction_network(&mut self) -> Network;
 
     fn generate_uuid(&mut self) -> Result<u128, CostUnitCounterError>;
 

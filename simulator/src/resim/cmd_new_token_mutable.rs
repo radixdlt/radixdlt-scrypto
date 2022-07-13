@@ -1,5 +1,6 @@
 use clap::Parser;
 use sbor::rust::collections::*;
+use scrypto::core::Network;
 use scrypto::engine::types::*;
 use transaction::builder::ManifestBuilder;
 
@@ -63,7 +64,7 @@ impl NewTokenMutable {
             metadata.insert("icon_url".to_string(), icon_url);
         };
 
-        let manifest = ManifestBuilder::new()
+        let manifest = ManifestBuilder::new(Network::LocalSimulator)
             .new_token_mutable(metadata, self.minter_resource_address)
             .build();
         handle_manifest(

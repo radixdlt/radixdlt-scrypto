@@ -19,25 +19,25 @@ impl RadixEngineDB {
 
     pub fn with_bootstrap(root: PathBuf) -> Self {
         let mut substate_store = Self::new(root);
-        bootstrap(&mut substate_store);
+        bootstrap(&mut substate_store, scrypto::core::Network::LocalSimulator);
         substate_store
     }
 
     pub fn list_packages(&self) -> Vec<PackageAddress> {
-        let start = &scrypto_encode(&PackageAddress([0; 26]));
-        let end = &scrypto_encode(&PackageAddress([255; 26]));
+        let start = &scrypto_encode(&PackageAddress([0; 27]));
+        let end = &scrypto_encode(&PackageAddress([255; 27]));
         self.list_items(start, end)
     }
 
     pub fn list_components(&self) -> Vec<ComponentAddress> {
-        let start = &scrypto_encode(&ComponentAddress([0; 26]));
-        let end = &scrypto_encode(&ComponentAddress([255; 26]));
+        let start = &scrypto_encode(&ComponentAddress([0; 27]));
+        let end = &scrypto_encode(&ComponentAddress([255; 27]));
         self.list_items(start, end)
     }
 
     pub fn list_resource_managers(&self) -> Vec<ResourceAddress> {
-        let start = &scrypto_encode(&ResourceAddress([0; 26]));
-        let end = &scrypto_encode(&ResourceAddress([255; 26]));
+        let start = &scrypto_encode(&ResourceAddress([0; 27]));
+        let end = &scrypto_encode(&ResourceAddress([255; 27]));
         self.list_items(start, end)
     }
 

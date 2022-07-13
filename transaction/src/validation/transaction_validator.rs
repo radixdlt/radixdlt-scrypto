@@ -266,6 +266,8 @@ impl TransactionValidator {
             return Err(HeaderValidationError::OutOfEpochRange);
         }
 
+        // TODO: Validate transaction network matches engine network
+
         Ok(())
     }
 
@@ -325,6 +327,8 @@ impl TransactionValidator {
 
 #[cfg(test)]
 mod tests {
+    use scrypto::core::Network;
+
     use super::*;
     use crate::{builder::ManifestBuilder, builder::TransactionBuilder, signing::EcdsaPrivateKey};
 
@@ -407,14 +411,18 @@ mod tests {
         let mut builder = TransactionBuilder::new()
             .header(TransactionHeader {
                 version,
-                network: Network::InternalTestnet,
+                network: Network::LocalSimulator,
                 start_epoch_inclusive: start_epoch,
                 end_epoch_exclusive: end_epoch,
                 nonce,
                 notary_public_key: sk_notary.public_key(),
                 notary_as_signatory: false,
             })
-            .manifest(ManifestBuilder::new().clear_auth_zone().build());
+            .manifest(
+                ManifestBuilder::new(Network::LocalSimulator)
+                    .clear_auth_zone()
+                    .build(),
+            );
 
         for signer in signers {
             builder = builder.sign(&EcdsaPrivateKey::from_u64(signer).unwrap());

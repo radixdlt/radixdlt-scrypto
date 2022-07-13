@@ -21,7 +21,7 @@ fn test_max_call_depth_success() {
     // * 2-15: Caller::call x 14
     // * 16: AuthZone::clear
     // ============================
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(package_address, "Caller", "recursive", to_struct!(14u32))
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -37,7 +37,7 @@ fn test_max_call_depth_failure() {
     let package_address = test_runner.extract_and_publish_package("recursion");
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(package_address, "Caller", "recursive", to_struct!(15u32))
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);

@@ -1,7 +1,8 @@
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
 use scrypto::core::{
-    SystemGetCurrentEpochInput, SystemGetTransactionHashInput, SystemSetEpochInput,
+    SystemGetCurrentEpochInput, SystemGetTransactionHashInput, SystemGetTransactionNetworkInput,
+    SystemSetEpochInput,
 };
 use scrypto::engine::types::ValueId;
 use scrypto::values::ScryptoValue;
@@ -65,6 +66,13 @@ impl System {
                     &system_api
                         .transaction_hash()
                         .map_err(SystemError::CostingError)?,
+                ))
+            }
+            "transaction_network" => {
+                let _: SystemGetTransactionNetworkInput =
+                    scrypto_decode(&arg.raw).map_err(|e| SystemError::InvalidRequestData(e))?;
+                Ok(ScryptoValue::from_typed(
+                    &system_api.get_transaction_network(),
                 ))
             }
             _ => Err(InvalidMethod),

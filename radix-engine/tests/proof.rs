@@ -3,6 +3,7 @@ pub mod test_runner;
 
 use crate::test_runner::TestRunner;
 use radix_engine::engine::RuntimeError;
+use scrypto::core::Network;
 use scrypto::prelude::*;
 use scrypto::to_struct;
 use transaction::builder::ManifestBuilder;
@@ -16,7 +17,7 @@ fn can_create_clone_and_drop_bucket_proof() {
     let package_address = test_runner.extract_and_publish_package("proof");
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function_with_abi(
             package_address,
             "BucketProof",
@@ -52,7 +53,7 @@ fn can_create_clone_and_drop_vault_proof() {
     );
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_method(
             component_address,
             "create_clone_drop_vault_proof",
@@ -84,7 +85,7 @@ fn can_create_clone_and_drop_vault_proof_by_amount() {
     );
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_method_with_abi(
             component_address,
             "create_clone_drop_vault_proof_by_amount",
@@ -124,7 +125,7 @@ fn can_create_clone_and_drop_vault_proof_by_ids() {
         NonFungibleId::from_u32(3),
     ]);
     let proof_ids = BTreeSet::from([NonFungibleId::from_u32(2)]);
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_method(
             component_address,
             "create_clone_drop_vault_proof_by_ids",
@@ -147,7 +148,7 @@ fn can_use_bucket_for_authorization() {
     let package_address = test_runner.extract_and_publish_package("proof");
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function_with_abi(
             package_address,
             "BucketProof",
@@ -186,7 +187,7 @@ fn can_use_vault_for_authorization() {
     );
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_method_with_abi(
             component_address,
             "use_vault_proof_for_auth",
@@ -212,7 +213,7 @@ fn can_create_proof_from_account_and_pass_on() {
     let package_address = test_runner.extract_and_publish_package("proof");
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function_with_abi(
             package_address,
             "VaultProof",
@@ -239,7 +240,7 @@ fn cant_move_restricted_proof() {
     let package_address = test_runner.extract_and_publish_package("proof");
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function_with_abi(
             package_address,
             "VaultProof",
@@ -266,7 +267,7 @@ fn cant_move_locked_bucket() {
     let package_address = test_runner.extract_and_publish_package("proof");
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function_with_abi(
             package_address,
             "BucketProof",
@@ -301,7 +302,7 @@ fn can_compose_bucket_and_vault_proof() {
     );
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .withdraw_from_account_by_amount(99.into(), resource_address, account)
         .take_from_worktop_by_amount(99.into(), resource_address, |builder, bucket_id| {
             builder.call_method(
@@ -335,7 +336,7 @@ fn can_compose_bucket_and_vault_proof_by_amount() {
     );
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .withdraw_from_account_by_amount(99.into(), resource_address, account)
         .take_from_worktop_by_amount(99.into(), resource_address, |builder, bucket_id| {
             builder.call_method(
@@ -368,7 +369,7 @@ fn can_compose_bucket_and_vault_proof_by_ids() {
     );
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .withdraw_from_account_by_ids(
             &BTreeSet::from([NonFungibleId::from_u32(2), NonFungibleId::from_u32(3)]),
             resource_address,
@@ -412,7 +413,7 @@ fn can_create_vault_proof_by_amount_from_non_fungibles() {
     );
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_method(
             component_address,
             "create_clone_drop_vault_proof_by_amount",
@@ -434,7 +435,7 @@ fn can_create_auth_zone_proof_by_amount_from_non_fungibles() {
     let package_address = test_runner.extract_and_publish_package("proof");
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .create_proof_from_account_by_ids(
             &BTreeSet::from([NonFungibleId::from_u32(1), NonFungibleId::from_u32(2)]),
             resource_address,
