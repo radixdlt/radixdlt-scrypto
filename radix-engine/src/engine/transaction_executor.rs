@@ -4,6 +4,7 @@ use sbor::rust::vec::Vec;
 use scrypto::buffer::*;
 use scrypto::values::ScryptoValue;
 use transaction::model::*;
+use transaction::validation::{IdAllocator, IdSpace};
 
 use crate::engine::*;
 use crate::fee::CostUnitCounter;
@@ -68,7 +69,9 @@ where
         let instructions = transaction.instructions().to_vec();
 
         // Start state track
-        let mut track = Track::new(self.substate_store, transaction_hash);
+        let mut track = Track::new(self.substate_store);
+
+        let mut id_allocator = IdAllocator::new(IdSpace::Application);
 
         // Metering
         let mut cost_unit_counter = CostUnitCounter::new(MAX_TRANSACTION_COST, SYSTEM_LOAN_AMOUNT);
@@ -102,6 +105,7 @@ where
             transaction_hash,
             signer_public_keys,
             false,
+            &mut id_allocator,
             &mut track,
             self.wasm_engine,
             self.wasm_instrumenter,

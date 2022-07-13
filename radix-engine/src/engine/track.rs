@@ -7,7 +7,6 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
 use scrypto::engine::types::*;
-use transaction::validation::*;
 
 use crate::engine::track::BorrowedSubstate::Taken;
 use crate::engine::{Address, RENode, SubstateOperation, SubstateOperationsReceipt, SubstateValue};
@@ -32,8 +31,6 @@ impl BorrowedSubstate {
 /// Facilitates transactional state updates.
 pub struct Track<'s, S: ReadableSubstateStore> {
     substate_store: &'s mut S,
-    transaction_hash: Hash,
-    id_allocator: IdAllocator,
     logs: Vec<(Level, String)>,
 
     new_addresses: Vec<Address>,
@@ -84,11 +81,9 @@ pub enum SubstateParentId {
 pub struct VirtualSubstateId(pub SubstateParentId, pub Vec<u8>);
 
 impl<'s, S: ReadableSubstateStore> Track<'s, S> {
-    pub fn new(substate_store: &'s mut S, transaction_hash: Hash) -> Self {
+    pub fn new(substate_store: &'s mut S) -> Self {
         Self {
             substate_store,
-            transaction_hash,
-            id_allocator: IdAllocator::new(IdSpace::Application),
             logs: Vec::new(),
 
             new_addresses: Vec::new(),
@@ -99,11 +94,6 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             up_substates: IndexMap::new(),
             up_virtual_substate_space: IndexSet::new(),
         }
-    }
-
-    /// Returns the transaction hash.
-    pub fn transaction_hash(&self) -> Hash {
-        self.transaction_hash
     }
 
     /// Adds a log message.
@@ -339,61 +329,28 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         }
     }
 
-    /// Creates a new package ID.
-    pub fn new_package_address(&mut self) -> PackageAddress {
-        // Security Alert: ensure ID allocating will practically never fail
-        let package_address = self
-            .id_allocator
-            .new_package_address(self.transaction_hash())
-            .unwrap();
-        package_address
-    }
-
-    /// Creates a new component address.
-    pub fn new_component_address(&mut self) -> ComponentAddress {
-        let component_address = self
-            .id_allocator
-            .new_component_address(self.transaction_hash())
-            .unwrap();
-        component_address
-    }
-
-    /// Creates a new resource address.
-    pub fn new_resource_address(&mut self) -> ResourceAddress {
-        let resource_address = self
-            .id_allocator
-            .new_resource_address(self.transaction_hash())
-            .unwrap();
-        resource_address
-    }
-
-    /// Creates a new UUID.
-    pub fn new_uuid(&mut self) -> u128 {
-        self.id_allocator.new_uuid(self.transaction_hash()).unwrap()
-    }
-
-    /// Creates a new bucket ID.
-    pub fn new_bucket_id(&mut self) -> BucketId {
-        self.id_allocator.new_bucket_id().unwrap()
-    }
-
-    /// Creates a new vault ID.
-    pub fn new_vault_id(&mut self) -> VaultId {
-        self.id_allocator
-            .new_vault_id(self.transaction_hash())
-            .unwrap()
-    }
-
-    /// Creates a new reference id.
-    pub fn new_proof_id(&mut self) -> ProofId {
-        self.id_allocator.new_proof_id().unwrap()
-    }
-
-    /// Creates a new map id.
-    pub fn new_kv_store_id(&mut self) -> KeyValueStoreId {
-        self.id_allocator
-            .new_kv_store_id(self.transaction_hash())
-            .unwrap()
+    pub fn insert_non_root_nodes(&mut self, values: HashMap<ValueId, RENode>) {
+        for (id, node) in values {
+            match node {
+                RENode::Vault(vault) => {
+                    let addr = Address::Vault(id.into());
+                    self.create_uuid_value(addr, vault);
+                }
+                RENode::Component(component) => {
+                    let addr = Address::LocalComponent(id.into());
+                    self.create_uuid_value(addr, component);
+                }
+                RENode::KeyValueStore(store) => {
+                    let id = id.into();
+                    let address = Address::KeyValueStore(id);
+                    self.create_key_space(address.clone());
+                    for (k, v) in store.store {
+                        self.set_key_value(address.clone(), k, Some(v));
+                    }
+                }
+                _ => panic!("Invalid node being persisted: {:?}", node),
+            }
+        }
     }
 
     /// Commits changes to the underlying ledger.
@@ -427,27 +384,4 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         }
     }
 
-    pub fn insert_non_root_nodes(&mut self, values: HashMap<ValueId, RENode>) {
-        for (id, node) in values {
-            match node {
-                RENode::Vault(vault) => {
-                    let addr = Address::Vault(id.into());
-                    self.create_uuid_value(addr, vault);
-                }
-                RENode::Component(component) => {
-                    let addr = Address::LocalComponent(id.into());
-                    self.create_uuid_value(addr, component);
-                }
-                RENode::KeyValueStore(store) => {
-                    let id = id.into();
-                    let address = Address::KeyValueStore(id);
-                    self.create_key_space(address.clone());
-                    for (k, v) in store.store {
-                        self.set_key_value(address.clone(), k, Some(v));
-                    }
-                }
-                _ => panic!("Invalid node being persisted: {:?}", node),
-            }
-        }
-    }
 }

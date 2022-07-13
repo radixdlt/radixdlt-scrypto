@@ -102,7 +102,7 @@ where
 {
     let system_substate = substate_store.get_substate(&scrypto_encode(&SYSTEM_PACKAGE));
     if system_substate.is_none() {
-        let track = Track::new(substate_store, Hash([0u8; 32]));
+        let track = Track::new(substate_store);
         let receipt = create_genesis(track);
         receipt.substates.commit(substate_store);
     }
