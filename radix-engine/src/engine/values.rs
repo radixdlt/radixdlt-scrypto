@@ -1,5 +1,6 @@
 use sbor::rust::collections::*;
 use scrypto::buffer::scrypto_encode;
+use sbor::rust::vec::Vec;
 use scrypto::engine::types::*;
 use scrypto::values::ScryptoValue;
 
