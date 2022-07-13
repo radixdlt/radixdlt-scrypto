@@ -59,11 +59,11 @@ impl TryFrom<&[u8]> for NonFungibleAddress {
     type Error = ParseNonFungibleAddressError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-        if slice.len() < 26 {
+        if slice.len() < 27 {
             return Err(ParseNonFungibleAddressError::InvalidLength(slice.len()));
         }
 
-        let (resource_address_slice, non_fungible_id_slice) = slice.split_at(26);
+        let (resource_address_slice, non_fungible_id_slice) = slice.split_at(27);
         let resource_address = ResourceAddress::try_from(resource_address_slice)
             .map_err(|_| ParseNonFungibleAddressError::InvalidResourceDefId)?;
         let non_fungible_id = NonFungibleId::try_from(non_fungible_id_slice)

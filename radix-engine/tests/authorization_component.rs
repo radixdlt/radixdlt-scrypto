@@ -3,6 +3,7 @@ pub mod test_runner;
 
 use crate::test_runner::TestRunner;
 use radix_engine::engine::RuntimeError;
+use scrypto::core::Network;
 use scrypto::prelude::*;
 use scrypto::to_struct;
 use transaction::builder::ManifestBuilder;
@@ -19,7 +20,7 @@ fn cannot_make_cross_component_call_without_authorization() {
         AccessRules::new().method("get_component_state", rule!(require(auth_address.clone())));
 
     let package_address = test_runner.extract_and_publish_package("component");
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(
             package_address,
             "CrossComponent",
@@ -31,7 +32,7 @@ fn cannot_make_cross_component_call_without_authorization() {
     receipt.expect_success();
     let secured_component = receipt.new_component_addresses[0];
 
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(
             package_address,
             "CrossComponent",
@@ -44,7 +45,7 @@ fn cannot_make_cross_component_call_without_authorization() {
     let my_component = receipt.new_component_addresses[0];
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_method(
             my_component,
             "cross_component_call",
@@ -70,7 +71,7 @@ fn can_make_cross_component_call_with_authorization() {
         AccessRules::new().method("get_component_state", rule!(require(auth_address.clone())));
 
     let package_address = test_runner.extract_and_publish_package("component");
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(
             package_address,
             "CrossComponent",
@@ -82,7 +83,7 @@ fn can_make_cross_component_call_with_authorization() {
     receipt.expect_success();
     let secured_component = receipt.new_component_addresses[0];
 
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(
             package_address,
             "CrossComponent",
@@ -94,7 +95,7 @@ fn can_make_cross_component_call_with_authorization() {
     receipt.expect_success();
     let my_component = receipt.new_component_addresses[0];
 
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .withdraw_from_account_by_ids(&BTreeSet::from([auth_id.clone()]), auth, account)
         .call_method_with_all_resources(my_component, "put_auth")
         .build();
@@ -102,7 +103,7 @@ fn can_make_cross_component_call_with_authorization() {
     receipt.expect_success();
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_method(
             my_component,
             "cross_component_call",

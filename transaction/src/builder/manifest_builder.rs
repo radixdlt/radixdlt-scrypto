@@ -9,7 +9,9 @@ use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::abi::*;
+use scrypto::address::Bech32Decoder;
 use scrypto::buffer::*;
+use scrypto::core::Network;
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
 use scrypto::prelude::Package;
@@ -24,6 +26,8 @@ use crate::validation::*;
 
 /// Utility for building transaction manifest.
 pub struct ManifestBuilder {
+    /// The decoder used by the manifest (mainly for the `call_*_with_abi)
+    decoder: Bech32Decoder,
     /// ID validator for calculating transaction object id
     id_validator: IdValidator,
     /// Instructions generated.
@@ -32,8 +36,9 @@ pub struct ManifestBuilder {
 
 impl ManifestBuilder {
     /// Starts a new transaction builder.
-    pub fn new() -> Self {
+    pub fn new(network: Network) -> Self {
         Self {
+            decoder: Bech32Decoder::new_from_network(&network),
             id_validator: IdValidator::new(),
             instructions: Vec::new(),
         }
@@ -780,20 +785,23 @@ impl ManifestBuilder {
                 Ok(scrypto_encode(&value))
             }
             ScryptoType::PackageAddress => {
-                let value = arg
-                    .parse::<PackageAddress>()
+                let value = self
+                    .decoder
+                    .validate_and_decode_package_address(arg)
                     .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
                 Ok(scrypto_encode(&value))
             }
             ScryptoType::ComponentAddress => {
-                let value = arg
-                    .parse::<ComponentAddress>()
+                let value = self
+                    .decoder
+                    .validate_and_decode_component_address(arg)
                     .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
                 Ok(scrypto_encode(&value))
             }
             ScryptoType::ResourceAddress => {
-                let value = arg
-                    .parse::<ResourceAddress>()
+                let value = self
+                    .decoder
+                    .validate_and_decode_resource_address(arg)
                     .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
                 Ok(scrypto_encode(&value))
             }
@@ -810,7 +818,7 @@ impl ManifestBuilder {
                 Ok(scrypto_encode(&value))
             }
             ScryptoType::Bucket => {
-                let resource_specifier = parse_resource_specifier(arg)
+                let resource_specifier = parse_resource_specifier(arg, &self.decoder)
                     .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
                 let bucket_id = match resource_specifier {
                     ResourceSpecifier::Amount(amount, resource_address) => {
@@ -839,7 +847,7 @@ impl ManifestBuilder {
                 Ok(scrypto_encode(&scrypto::resource::Bucket(bucket_id)))
             }
             ScryptoType::Proof => {
-                let resource_specifier = parse_resource_specifier(arg)
+                let resource_specifier = parse_resource_specifier(arg, &self.decoder)
                     .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
                 let proof_id = match resource_specifier {
                     ResourceSpecifier::Amount(amount, resource_address) => {
@@ -887,7 +895,10 @@ enum ParseResourceSpecifierError {
     MoreThanOneAmountSpecified,
 }
 
-fn parse_resource_specifier(input: &str) -> Result<ResourceSpecifier, ParseResourceSpecifierError> {
+fn parse_resource_specifier(
+    input: &str,
+    decoder: &Bech32Decoder,
+) -> Result<ResourceSpecifier, ParseResourceSpecifierError> {
     let tokens: Vec<&str> = input.trim().split(',').map(|s| s.trim()).collect();
 
     // check length
@@ -897,8 +908,8 @@ fn parse_resource_specifier(input: &str) -> Result<ResourceSpecifier, ParseResou
 
     // parse resource address
     let token = tokens[tokens.len() - 1];
-    let resource_address = token
-        .parse::<ResourceAddress>()
+    let resource_address = decoder
+        .validate_and_decode_resource_address(token)
         .map_err(|_| ParseResourceSpecifierError::InvalidResourceAddress(token.to_owned()))?;
 
     // parse non-fungible ids or amount

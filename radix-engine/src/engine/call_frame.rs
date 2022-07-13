@@ -12,7 +12,7 @@ use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
-use scrypto::core::{SNodeRef, ScryptoActor};
+use scrypto::core::{Network, SNodeRef, ScryptoActor};
 use scrypto::engine::types::*;
 use scrypto::prelude::ComponentOffset;
 use scrypto::resource::AuthZoneClearInput;
@@ -29,10 +29,8 @@ use crate::wasm::*;
 /// owned objects by this function.
 pub struct CallFrame<
     'p, // parent lifetime
-    't, // Track lifetime
+    'g, // lifetime of values outliving all frames
     's, // Substate store lifetime
-    'w, // WASM engine lifetime
-    'c, // Costing lifetime
     S,  // Substore store type
     W,  // WASM engine type
     I,  // WASM instance type
@@ -49,16 +47,16 @@ pub struct CallFrame<
     trace: bool,
 
     /// State track
-    track: &'t mut Track<'s, S>,
+    track: &'g mut Track<'s, S>,
     /// Wasm engine
-    wasm_engine: &'w mut W,
+    wasm_engine: &'g mut W,
     /// Wasm Instrumenter
-    wasm_instrumenter: &'w mut WasmInstrumenter,
+    wasm_instrumenter: &'g mut WasmInstrumenter,
 
     /// Remaining cost unit counter
-    cost_unit_counter: &'c mut CostUnitCounter,
+    cost_unit_counter: &'g mut CostUnitCounter,
     /// Fee table
-    fee_table: &'c FeeTable,
+    fee_table: &'g FeeTable,
 
     /// All ref values accessible by this call frame. The value may be located in one of the following:
     /// 1. borrowed values
@@ -151,46 +149,59 @@ impl REValueLocation {
             REValueLocation::OwnedRoot(root) => REValueLocation::Owned {
                 root: root.clone(),
                 ancestors: vec![],
-                id: child_id
+                id: child_id,
             },
-            REValueLocation::Owned { root, ancestors, id } => {
+            REValueLocation::Owned {
+                root,
+                ancestors,
+                id,
+            } => {
                 let mut next_ancestors = ancestors.clone();
                 next_ancestors.push(id.clone().into());
                 REValueLocation::Owned {
                     root: root.clone(),
                     ancestors: next_ancestors,
-                    id: child_id
+                    id: child_id,
                 }
             }
             REValueLocation::BorrowedRoot(root) => REValueLocation::Borrowed {
                 root: root.clone(),
                 ancestors: vec![],
-                id: child_id
+                id: child_id,
             },
-            REValueLocation::Borrowed { root, ancestors, id } => {
+            REValueLocation::Borrowed {
+                root,
+                ancestors,
+                id,
+            } => {
                 let mut next_ancestors = ancestors.clone();
                 next_ancestors.push(id.clone().into());
                 REValueLocation::Borrowed {
                     root: root.clone(),
                     ancestors: next_ancestors,
-                    id: child_id
+                    id: child_id,
                 }
             }
             REValueLocation::Track(address) => {
                 let component_address = match address {
                     Address::GlobalComponent(component_address) => component_address.clone(),
-                    Address::LocalComponent(parent, ..)
-                    | Address::KeyValueStore(parent, .. ) => parent.clone(),
-                    _ => panic!("Unexpected: {:?}", address)
+                    Address::LocalComponent(parent, ..) | Address::KeyValueStore(parent, ..) => {
+                        parent.clone()
+                    }
+                    _ => panic!("Unexpected: {:?}", address),
                 };
                 let child_address = match child_id {
-                    ValueId::KeyValueStore(kv_store_id) => Address::KeyValueStore(component_address, kv_store_id),
+                    ValueId::KeyValueStore(kv_store_id) => {
+                        Address::KeyValueStore(component_address, kv_store_id)
+                    }
                     ValueId::Vault(vault_id) => Address::Vault(component_address, vault_id),
-                    ValueId::Component(component_id) => Address::LocalComponent(component_address, component_id),
-                    _ => panic!("Unexpected")
+                    ValueId::Component(component_id) => {
+                        Address::LocalComponent(component_address, component_id)
+                    }
+                    _ => panic!("Unexpected"),
                 };
                 REValueLocation::Track(child_address)
-            },
+            }
         }
     }
 
@@ -243,7 +254,11 @@ impl REValueLocation {
                     .expect("Should have children");
                 children.get_child(ancestors, id)
             },
-            REValueLocation::Borrowed { root, ancestors, id } => unsafe {
+            REValueLocation::Borrowed {
+                root,
+                ancestors,
+                id,
+            } => unsafe {
                 let borrowed = borrowed_values.get(root).unwrap();
                 borrowed
                     .get_children_store()
@@ -269,9 +284,7 @@ impl REValueLocation {
             REValueLocation::BorrowedRoot(id) => {
                 REValueRef::Borrowed(borrowed_values.get(id).unwrap())
             }
-            REValueLocation::Track(address) => {
-                REValueRef::Track(track, address.clone())
-            }
+            REValueLocation::Track(address) => REValueRef::Track(track, address.clone()),
         }
     }
 
@@ -296,7 +309,11 @@ impl REValueLocation {
                     .expect("Should have children");
                 children.get_child_mut(ancestors, id)
             }
-            REValueLocation::Borrowed { root, ancestors, id } => {
+            REValueLocation::Borrowed {
+                root,
+                ancestors,
+                id,
+            } => {
                 let borrowed = borrowed_values.get_mut(root).unwrap();
                 borrowed
                     .get_children_store_mut()
@@ -322,9 +339,7 @@ impl REValueLocation {
             REValueLocation::BorrowedRoot(id) => {
                 REValueRefMut::Borrowed(borrowed_values.get_mut(id).unwrap())
             }
-            REValueLocation::Track(address) => {
-                REValueRefMut::Track(track, address.clone())
-            }
+            REValueLocation::Track(address) => REValueRefMut::Track(track, address.clone()),
         }
     }
 }
@@ -652,7 +667,7 @@ pub enum SubstateAddress {
     Component(ComponentAddress, ComponentOffset),
 }
 
-impl<'p, 't, 's, 'w, 'c, S, W, I> CallFrame<'p, 't, 's, 'w, 'c, S, W, I>
+impl<'p, 'g, 's, S, W, I> CallFrame<'p, 'g, 's, S, W, I>
 where
     S: ReadableSubstateStore,
     W: WasmEngine<I>,
@@ -663,11 +678,11 @@ where
         transaction_hash: Hash,
         signer_public_keys: Vec<EcdsaPublicKey>,
         is_system: bool,
-        track: &'t mut Track<'s, S>,
-        wasm_engine: &'w mut W,
-        wasm_instrumenter: &'w mut WasmInstrumenter,
-        cost_unit_counter: &'c mut CostUnitCounter,
-        fee_table: &'c FeeTable,
+        track: &'g mut Track<'s, S>,
+        wasm_engine: &'g mut W,
+        wasm_instrumenter: &'g mut WasmInstrumenter,
+        cost_unit_counter: &'g mut CostUnitCounter,
+        fee_table: &'g FeeTable,
     ) -> Self {
         // TODO: Cleanup initialization of authzone
         let signer_non_fungible_ids: BTreeSet<NonFungibleId> = signer_public_keys
@@ -718,11 +733,11 @@ where
         transaction_hash: Hash,
         depth: usize,
         trace: bool,
-        track: &'t mut Track<'s, S>,
-        wasm_engine: &'w mut W,
-        wasm_instrumenter: &'w mut WasmInstrumenter,
-        cost_unit_counter: &'c mut CostUnitCounter,
-        fee_table: &'c FeeTable,
+        track: &'g mut Track<'s, S>,
+        wasm_engine: &'g mut W,
+        wasm_instrumenter: &'g mut WasmInstrumenter,
+        cost_unit_counter: &'g mut CostUnitCounter,
+        fee_table: &'g FeeTable,
         auth_zone: Option<RefCell<AuthZone>>,
         owned_values: HashMap<ValueId, RefCell<REValue>>,
         value_refs: HashMap<ValueId, REValueInfo>,
@@ -847,10 +862,8 @@ where
                         .map_err(RuntimeError::BucketError),
                     ValueId::Proof(..) => Proof::main(value_id, fn_ident, input, self)
                         .map_err(RuntimeError::ProofError),
-                    ValueId::Worktop => {
-                        Worktop::main(value_id, fn_ident, input, self)
-                            .map_err(RuntimeError::WorktopError)
-                    }
+                    ValueId::Worktop => Worktop::main(value_id, fn_ident, input, self)
+                        .map_err(RuntimeError::WorktopError),
                     ValueId::Vault(vault_id) => Vault::main(vault_id, fn_ident, input, self)
                         .map_err(RuntimeError::VaultError),
                     ValueId::Component(..) => Component::main(value_id, fn_ident, input, self)
@@ -1017,7 +1030,9 @@ where
                     } else if self.track.take_lock(*component_address, false).is_ok() {
                         return Some((
                             REValueInfo {
-                                location: REValueLocation::Track(Address::GlobalComponent(*component_address)),
+                                location: REValueLocation::Track(Address::GlobalComponent(
+                                    *component_address,
+                                )),
                                 visible: true,
                             },
                             Some(component_address),
@@ -1067,8 +1082,7 @@ where
     }
 }
 
-impl<'p, 't, 's, 'w, 'c, S, W, I> SystemApi<'p, 's, W, I, S>
-    for CallFrame<'p, 't, 's, 'w, 'c, S, W, I>
+impl<'p, 'g, 's, S, W, I> SystemApi<'p, 's, W, I, S> for CallFrame<'p, 'g, 's, S, W, I>
 where
     S: ReadableSubstateStore,
     W: WasmEngine<I>,
@@ -1165,14 +1179,18 @@ where
                         value_refs.insert(
                             ValueId::Resource(resource_address),
                             REValueInfo {
-                                location: REValueLocation::Track(Address::Resource(resource_address)),
+                                location: REValueLocation::Track(Address::Resource(
+                                    resource_address,
+                                )),
                                 visible: true,
                             },
                         );
                         value_refs.insert(
                             ValueId::NonFungibles(resource_address),
                             REValueInfo {
-                                location: REValueLocation::Track(Address::NonFungibleSet(resource_address)),
+                                location: REValueLocation::Track(Address::NonFungibleSet(
+                                    resource_address,
+                                )),
                                 visible: true,
                             },
                         );
@@ -1243,7 +1261,9 @@ where
                         value_refs.insert(
                             ValueId::Resource(resource_address.clone()),
                             REValueInfo {
-                                location: REValueLocation::Track(Address::Resource(resource_address.clone())),
+                                location: REValueLocation::Track(Address::Resource(
+                                    resource_address.clone(),
+                                )),
                                 visible: true,
                             },
                         );
@@ -1280,7 +1300,9 @@ where
                 value_refs.insert(
                     ValueId::NonFungibles(*resource_address),
                     REValueInfo {
-                        location: REValueLocation::Track(Address::NonFungibleSet(*resource_address)),
+                        location: REValueLocation::Track(Address::NonFungibleSet(
+                            *resource_address,
+                        )),
                         visible: true,
                     },
                 );
@@ -1354,7 +1376,9 @@ where
                     value_refs.insert(
                         ValueId::Resource(resource_address.clone()),
                         REValueInfo {
-                            location: REValueLocation::Track(Address::Resource(resource_address.clone())),
+                            location: REValueLocation::Track(Address::Resource(
+                                resource_address.clone(),
+                            )),
                             visible: true,
                         },
                     );
@@ -1773,11 +1797,9 @@ where
             panic!("Trying to read value which is not visible.")
         }
 
-        Ok(info.location.to_ref(
-            &self.owned_values,
-            &self.frame_borrowed_values,
-            &self.track,
-        ))
+        Ok(info
+            .location
+            .to_ref(&self.owned_values, &self.frame_borrowed_values, &self.track))
     }
 
     fn borrow_value_mut(
@@ -1908,9 +1930,7 @@ where
                 let proof_id = self.track.new_proof_id();
                 ValueId::Proof(proof_id)
             }
-            REValueByComplexity::Primitive(REPrimitiveValue::Worktop(..)) => {
-                ValueId::Worktop
-            }
+            REValueByComplexity::Primitive(REPrimitiveValue::Worktop(..)) => ValueId::Worktop,
             REValueByComplexity::Primitive(REPrimitiveValue::Vault(..)) => {
                 let vault_id = self.track.new_vault_id();
                 ValueId::Vault(vault_id)
@@ -1931,8 +1951,8 @@ where
                 resource_address,
                 ..,
             )) => ValueId::NonFungibles(resource_address),
-            REValueByComplexity::Complex(REComplexValue::Component(..)) => {
-                let component_address = self.track.new_component_address();
+            REValueByComplexity::Complex(REComplexValue::Component(ref component)) => {
+                let component_address = self.track.new_component_address(component);
                 ValueId::Component(component_address)
             }
         };
@@ -2178,6 +2198,10 @@ where
             "read_transaction_hash",
         )?;
         Ok(self.track.transaction_hash())
+    }
+
+    fn get_transaction_network(&mut self) -> Network {
+        self.track.transaction_network()
     }
 
     fn generate_uuid(&mut self) -> Result<u128, CostUnitCounterError> {

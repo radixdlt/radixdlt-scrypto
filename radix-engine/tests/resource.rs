@@ -4,6 +4,7 @@ pub mod test_runner;
 use crate::test_runner::TestRunner;
 use radix_engine::engine::RuntimeError;
 use radix_engine::model::ResourceManagerError;
+use scrypto::core::Network;
 use scrypto::prelude::*;
 use scrypto::to_struct;
 use transaction::builder::ManifestBuilder;
@@ -16,7 +17,7 @@ fn test_resource_manager() {
     let package_address = test_runner.extract_and_publish_package("resource");
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(
             package_address,
             "ResourceTest",
@@ -47,7 +48,7 @@ fn mint_with_bad_granularity_should_fail() {
     let package_address = test_runner.extract_and_publish_package("resource");
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(
             package_address,
             "ResourceTest",
@@ -80,7 +81,7 @@ fn mint_too_much_should_fail() {
     let package_address = test_runner.extract_and_publish_package("resource");
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(
             package_address,
             "ResourceTest",
