@@ -1,7 +1,7 @@
-use crate::{address, entity_type_id_from_entity_type, type_from_entity_type};
 use crate::address::*;
 use crate::component::*;
 use crate::resource::*;
+use crate::{address, entity_type_id_from_entity_type, type_from_entity_type};
 
 /// The package of the system blueprint.
 pub const SYSTEM_PACKAGE: PackageAddress = address!(EntityType::Package, 1u8);

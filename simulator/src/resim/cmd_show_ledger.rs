@@ -24,7 +24,7 @@ impl ShowLedger {
                 list_item_prefix(last),
                 bech32_encoder
                     .encode_package_address(package_address)
-                    .unwrap()
+                    .map_err(|err| Error::AddressError(err))?
             )
             .map_err(Error::IOError)?;
         }
@@ -37,7 +37,7 @@ impl ShowLedger {
                 list_item_prefix(last),
                 bech32_encoder
                     .encode_component_address(component_address)
-                    .unwrap()
+                    .map_err(|err| Error::AddressError(err))?
             )
             .map_err(Error::IOError)?;
         }
@@ -50,7 +50,7 @@ impl ShowLedger {
                 list_item_prefix(last),
                 bech32_encoder
                     .encode_resource_address(resource_address)
-                    .unwrap()
+                    .map_err(|err| Error::AddressError(err))?
             )
             .map_err(Error::IOError)?;
         }

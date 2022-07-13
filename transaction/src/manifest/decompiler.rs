@@ -1,6 +1,6 @@
 use sbor::rust::collections::*;
 use sbor::{encode_any, DecodeError, Value};
-use scrypto::address::Bech32Encoder;
+use scrypto::address::{AddressError, Bech32Encoder};
 use scrypto::engine::types::*;
 use scrypto::values::*;
 
@@ -12,6 +12,7 @@ use crate::validation::*;
 pub enum DecompileError {
     IdValidationError(IdValidationError),
     DecodeError(DecodeError),
+    AddressError(AddressError),
 }
 
 pub fn decompile(
@@ -34,7 +35,7 @@ pub fn decompile(
                     "TAKE_FROM_WORKTOP ResourceAddress(\"{}\") Bucket(\"{}\");\n",
                     bech32_encoder
                         .encode_resource_address(&resource_address)
-                        .unwrap(),
+                        .map_err(|err| DecompileError::AddressError(err))?,
                     name
                 ));
             }
@@ -49,7 +50,7 @@ pub fn decompile(
                 buckets.insert(bucket_id, name.clone());
                 buf.push_str(&format!(
                     "TAKE_FROM_WORKTOP_BY_AMOUNT Decimal(\"{}\") ResourceAddress(\"{}\") Bucket(\"{}\");\n",
-                    amount, bech32_encoder.encode_resource_address(&resource_address).unwrap(), name
+                    amount, bech32_encoder.encode_resource_address(&resource_address).map_err(|err| DecompileError::AddressError(err))?, name
                 ));
             }
             Instruction::TakeFromWorktopByIds {
@@ -67,7 +68,7 @@ pub fn decompile(
                     .map(|k| format!("NonFungibleId(\"{}\")", k))
                     .collect::<Vec<String>>()
                     .join(", "),
-                    bech32_encoder.encode_resource_address(&resource_address).unwrap(), name
+                    bech32_encoder.encode_resource_address(&resource_address).map_err(|err| DecompileError::AddressError(err))?, name
                 ));
             }
             Instruction::ReturnToWorktop { bucket_id } => {
@@ -87,7 +88,7 @@ pub fn decompile(
                     "ASSERT_WORKTOP_CONTAINS ResourceAddress(\"{}\");\n",
                     bech32_encoder
                         .encode_resource_address(&resource_address)
-                        .unwrap()
+                        .map_err(|err| DecompileError::AddressError(err))?
                 ));
             }
             Instruction::AssertWorktopContainsByAmount {
@@ -99,7 +100,7 @@ pub fn decompile(
                     amount,
                     bech32_encoder
                         .encode_resource_address(&resource_address)
-                        .unwrap()
+                        .map_err(|err| DecompileError::AddressError(err))?
                 ));
             }
             Instruction::AssertWorktopContainsByIds {
@@ -112,7 +113,7 @@ pub fn decompile(
                         .map(|k| format!("NonFungibleId(\"{}\")", k))
                         .collect::<Vec<String>>()
                         .join(", "),
-                    bech32_encoder.encode_resource_address(&resource_address).unwrap()
+                    bech32_encoder.encode_resource_address(&resource_address).map_err(|err| DecompileError::AddressError(err))?
                 ));
             }
             Instruction::PopFromAuthZone => {
@@ -148,7 +149,7 @@ pub fn decompile(
                     "CREATE_PROOF_FROM_AUTH_ZONE ResourceAddress(\"{}\") Proof(\"{}\");\n",
                     bech32_encoder
                         .encode_resource_address(&resource_address)
-                        .unwrap(),
+                        .map_err(|err| DecompileError::AddressError(err))?,
                     name
                 ));
             }
@@ -164,7 +165,7 @@ pub fn decompile(
                 buf.push_str(&format!(
                     "CREATE_PROOF_FROM_AUTH_ZONE_BY_AMOUNT Decimal(\"{}\") ResourceAddress(\"{}\") Proof(\"{}\");\n",
                     amount,
-                    bech32_encoder.encode_resource_address(&resource_address).unwrap(), name
+                    bech32_encoder.encode_resource_address(&resource_address).map_err(|err| DecompileError::AddressError(err))?, name
                 ));
             }
             Instruction::CreateProofFromAuthZoneByIds {
@@ -181,7 +182,7 @@ pub fn decompile(
                     .map(|k| format!("NonFungibleId(\"{}\")", k))
                     .collect::<Vec<String>>()
                     .join(", "),
-                    bech32_encoder.encode_resource_address(&resource_address).unwrap(), name
+                    bech32_encoder.encode_resource_address(&resource_address).map_err(|err| DecompileError::AddressError(err))?, name
                 ));
             }
             Instruction::CreateProofFromBucket { bucket_id } => {
@@ -236,7 +237,7 @@ pub fn decompile(
                     "CALL_FUNCTION PackageAddress(\"{}\") \"{}\" \"{}\"",
                     bech32_encoder
                         .encode_package_address(&package_address)
-                        .unwrap(),
+                        .map_err(|err| DecompileError::AddressError(err))?,
                     blueprint_name,
                     method_name
                 ));
@@ -268,7 +269,7 @@ pub fn decompile(
                     "CALL_METHOD ComponentAddress(\"{}\") \"{}\"",
                     bech32_encoder
                         .encode_component_address(&component_address)
-                        .unwrap(),
+                        .map_err(|err| DecompileError::AddressError(err))?,
                     method_name
                 ));
 
@@ -303,7 +304,7 @@ pub fn decompile(
                     "CALL_METHOD_WITH_ALL_RESOURCES ComponentAddress(\"{}\") \"{}\";\n",
                     bech32_encoder
                         .encode_component_address(&component_address)
-                        .unwrap(),
+                        .map_err(|err| DecompileError::AddressError(err))?,
                     method
                 ));
             }

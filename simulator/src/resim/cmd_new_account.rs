@@ -53,7 +53,7 @@ impl NewAccount {
                 "Account component address: {}",
                 bech32_encoder
                     .encode_component_address(&account)
-                    .unwrap()
+                    .map_err(|err| Error::AddressError(err))?
                     .to_string()
                     .green()
             )

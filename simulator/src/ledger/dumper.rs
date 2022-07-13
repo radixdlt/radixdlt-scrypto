@@ -3,6 +3,7 @@ use colored::*;
 use radix_engine::ledger::*;
 use radix_engine::model::*;
 use sbor::rust::collections::HashSet;
+use scrypto::address::AddressError;
 use scrypto::address::Bech32Encoder;
 use scrypto::buffer::{scrypto_decode, scrypto_encode};
 use scrypto::core::Network;
@@ -18,6 +19,7 @@ pub enum DisplayError {
     PackageNotFound,
     ComponentNotFound,
     ResourceManagerNotFound,
+    AddressError(AddressError),
 }
 
 /// Dump a package into console.
@@ -39,7 +41,7 @@ pub fn dump_package<T: ReadableSubstateStore, O: std::io::Write>(
                 "Package".green().bold(),
                 bech32_encoder
                     .encode_package_address(&package_address)
-                    .unwrap()
+                    .map_err(|err| DisplayError::AddressError(err))?
             );
             writeln!(
                 output,
@@ -72,7 +74,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
                 "Component".green().bold(),
                 bech32_encoder
                     .encode_component_address(&component_address)
-                    .unwrap()
+                    .map_err(|err| DisplayError::AddressError(err))?
             );
 
             writeln!(
@@ -169,7 +171,7 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
             amount,
             bech32_encoder
                 .encode_resource_address(&resource_address)
-                .unwrap(),
+                .map_err(|err| DisplayError::AddressError(err))?,
             resource_manager
                 .metadata()
                 .get("name")
