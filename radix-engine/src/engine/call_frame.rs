@@ -27,10 +27,8 @@ use crate::wasm::*;
 /// owned objects by this function.
 pub struct CallFrame<
     'p, // parent lifetime
-    't, // Track lifetime
+    'g, // lifetime of values outliving all frames
     's, // Substate store lifetime
-    'w, // WASM engine lifetime
-    'c, // Costing lifetime
     S,  // Substore store type
     W,  // WASM engine type
     I,  // WASM instance type
@@ -47,16 +45,16 @@ pub struct CallFrame<
     trace: bool,
 
     /// State track
-    track: &'t mut Track<'s, S>,
+    track: &'g mut Track<'s, S>,
     /// Wasm engine
-    wasm_engine: &'w mut W,
+    wasm_engine: &'g mut W,
     /// Wasm Instrumenter
-    wasm_instrumenter: &'w mut WasmInstrumenter,
+    wasm_instrumenter: &'g mut WasmInstrumenter,
 
     /// Remaining cost unit counter
-    cost_unit_counter: &'c mut CostUnitCounter,
+    cost_unit_counter: &'g mut CostUnitCounter,
     /// Fee table
-    fee_table: &'c FeeTable,
+    fee_table: &'g FeeTable,
 
     /// All ref values accessible by this call frame. The value may be located in one of the following:
     /// 1. borrowed values
@@ -543,7 +541,7 @@ pub enum SubstateAddress {
     Component(ComponentAddress, ComponentOffset),
 }
 
-impl<'p, 't, 's, 'w, 'c, S, W, I> CallFrame<'p, 't, 's, 'w, 'c, S, W, I>
+impl<'p, 'g, 's, S, W, I> CallFrame<'p, 'g, 's, S, W, I>
 where
     S: ReadableSubstateStore,
     W: WasmEngine<I>,
@@ -554,11 +552,11 @@ where
         transaction_hash: Hash,
         signer_public_keys: Vec<EcdsaPublicKey>,
         is_system: bool,
-        track: &'t mut Track<'s, S>,
-        wasm_engine: &'w mut W,
-        wasm_instrumenter: &'w mut WasmInstrumenter,
-        cost_unit_counter: &'c mut CostUnitCounter,
-        fee_table: &'c FeeTable,
+        track: &'g mut Track<'s, S>,
+        wasm_engine: &'g mut W,
+        wasm_instrumenter: &'g mut WasmInstrumenter,
+        cost_unit_counter: &'g mut CostUnitCounter,
+        fee_table: &'g FeeTable,
     ) -> Self {
         // TODO: Cleanup initialization of authzone
         let signer_non_fungible_ids: BTreeSet<NonFungibleId> = signer_public_keys
@@ -609,11 +607,11 @@ where
         transaction_hash: Hash,
         depth: usize,
         trace: bool,
-        track: &'t mut Track<'s, S>,
-        wasm_engine: &'w mut W,
-        wasm_instrumenter: &'w mut WasmInstrumenter,
-        cost_unit_counter: &'c mut CostUnitCounter,
-        fee_table: &'c FeeTable,
+        track: &'g mut Track<'s, S>,
+        wasm_engine: &'g mut W,
+        wasm_instrumenter: &'g mut WasmInstrumenter,
+        cost_unit_counter: &'g mut CostUnitCounter,
+        fee_table: &'g FeeTable,
         auth_zone: Option<RefCell<AuthZone>>,
         owned_values: HashMap<ValueId, REValue>,
         value_refs: HashMap<ValueId, REValueInfo>,
@@ -964,8 +962,7 @@ where
     }
 }
 
-impl<'p, 't, 's, 'w, 'c, S, W, I> SystemApi<'p, 's, W, I, S>
-    for CallFrame<'p, 't, 's, 'w, 'c, S, W, I>
+impl<'p, 'g, 's, S, W, I> SystemApi<'p, 's, W, I, S> for CallFrame<'p, 'g, 's, S, W, I>
 where
     S: ReadableSubstateStore,
     W: WasmEngine<I>,
