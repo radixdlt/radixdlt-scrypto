@@ -9,7 +9,6 @@ use crate::resource::ResourceAddress;
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub enum SNodeRef {
-    SystemStatic,
     PackageStatic,
     AuthZoneRef,
     Scrypto(ScryptoActor),
@@ -19,6 +18,7 @@ pub enum SNodeRef {
     Consumed(ValueId),
     BucketRef(BucketId),
     ProofRef(ProofId),
+    SystemRef,
     WorktopRef,
     VaultRef(VaultId),
     TransactionProcessor,

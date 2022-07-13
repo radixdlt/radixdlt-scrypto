@@ -75,8 +75,6 @@ where
         non_fungible: Option<NonFungible>,
     );
 
-    fn epoch(&mut self) -> Result<u64, CostUnitCounterError>;
-
     fn transaction_hash(&mut self) -> Result<Hash, CostUnitCounterError>;
 
     fn generate_uuid(&mut self) -> Result<u128, CostUnitCounterError>;
