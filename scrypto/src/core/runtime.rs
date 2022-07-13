@@ -13,6 +13,11 @@ use crate::engine::{api::*, call_engine};
 pub struct SystemGetCurrentEpochInput {}
 
 #[derive(Debug, TypeId, Encode, Decode)]
+pub struct SystemSetEpochInput {
+    pub epoch: u64,
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
 pub struct SystemGetTransactionHashInput {}
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -81,7 +86,7 @@ impl Runtime {
     /// Returns the transaction hash.
     pub fn transaction_hash() -> Hash {
         let input = RadixEngineInput::InvokeSNode(
-            SNodeRef::SystemStatic,
+            SNodeRef::SystemRef,
             "transaction_hash".to_string(),
             scrypto_encode(&SystemGetTransactionHashInput {}),
         );
@@ -91,7 +96,7 @@ impl Runtime {
     /// Returns the transaction network.
     pub fn transaction_network() -> Network {
         let input = RadixEngineInput::InvokeSNode(
-            SNodeRef::SystemStatic,
+            SNodeRef::SystemRef,
             "transaction_network".to_string(),
             scrypto_encode(&SystemGetTransactionNetworkInput {}),
         );
@@ -101,8 +106,8 @@ impl Runtime {
     /// Returns the current epoch number.
     pub fn current_epoch() -> u64 {
         let input = RadixEngineInput::InvokeSNode(
-            SNodeRef::SystemStatic,
-            "current_epoch".to_string(),
+            SNodeRef::SystemRef,
+            "get_epoch".to_string(),
             scrypto_encode(&SystemGetCurrentEpochInput {}),
         );
         call_engine(input)

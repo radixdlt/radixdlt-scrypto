@@ -97,7 +97,7 @@ impl FeeTable {
 
     pub fn function_cost(&self, receiver: &SNodeRef, fn_ident: &str, input: &ScryptoValue) -> u32 {
         match receiver {
-            SNodeRef::SystemStatic => match fn_ident {
+            SNodeRef::SystemRef => match fn_ident {
                 "current_epoch" => self.fixed_low,
                 "transaction_hash" => self.fixed_low,
                 _ => self.fixed_high,
@@ -154,6 +154,7 @@ impl FeeTable {
                 },
                 ValueId::Resource(_) => self.fixed_medium,
                 ValueId::Package(_) => self.fixed_high,
+                ValueId::System => self.fixed_high,
             },
             SNodeRef::BucketRef(_) => match fn_ident {
                 "take" => self.fixed_medium,

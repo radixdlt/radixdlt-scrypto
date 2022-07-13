@@ -1,5 +1,5 @@
 use crate::address::*;
-use crate::component::*;
+use crate::engine::types::{ComponentAddress, PackageAddress};
 use crate::resource::*;
 use crate::{address, entity_type_id_from_entity_type, type_from_entity_type};
 
@@ -17,3 +17,6 @@ pub const RADIX_TOKEN: ResourceAddress = address!(EntityType::Resource, 4u8);
 
 /// The ECDSA virtual resource address.
 pub const ECDSA_TOKEN: ResourceAddress = address!(EntityType::Resource, 5u8);
+
+/// The system token which allows access to system resources (e.g. setting epoch)
+pub const SYSTEM_TOKEN: ResourceAddress = address!(EntityType::Resource, 6u8);

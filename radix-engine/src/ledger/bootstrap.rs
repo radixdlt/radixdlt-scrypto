@@ -11,7 +11,7 @@ use scrypto::resource::ResourceMethodAuthKey::Withdraw;
 use scrypto::resource::LOCKED;
 use scrypto::rule;
 
-use crate::engine::{Track, TrackReceipt};
+use crate::engine::{Address, Track, TrackReceipt};
 use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
 use crate::model::ValidatedPackage;
 
@@ -77,6 +77,10 @@ where
     .unwrap();
     track.create_uuid_value_2(ECDSA_TOKEN, ecdsa_token);
 
+    let system_token =
+        ResourceManager::new(ResourceType::NonFungible, HashMap::new(), HashMap::new()).unwrap();
+    track.create_uuid_value_2(SYSTEM_TOKEN, system_token);
+
     let system_vault = Vault::new(minted_xrd);
     track.create_uuid_value_2((SYSTEM_COMPONENT, XRD_VAULT_ID), system_vault);
 
@@ -88,6 +92,7 @@ where
     );
 
     track.create_uuid_value_2(SYSTEM_COMPONENT, system_component);
+    track.create_uuid_value_2(Address::System, System { epoch: 0 });
 
     track.to_receipt()
 }

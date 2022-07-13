@@ -106,6 +106,7 @@ where
             self.trace,
             transaction_hash,
             signer_public_keys,
+            false,
             &mut track,
             self.wasm_engine,
             self.wasm_instrumenter,
