@@ -10,7 +10,7 @@ use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
-use scrypto::core::{SNodeRef, ScryptoActor};
+use scrypto::core::{Network, SNodeRef, ScryptoActor};
 use scrypto::engine::types::*;
 use scrypto::prelude::ComponentOffset;
 use scrypto::resource::AuthZoneClearInput;
@@ -1003,10 +1003,14 @@ where
     }
 
     /// Creates a new component address.
-    pub fn new_component_address(&mut self) -> ComponentAddress {
+    pub fn new_component_address(&mut self, component: &Component) -> ComponentAddress {
         let component_address = self
             .id_allocator
-            .new_component_address(self.transaction_hash)
+            .new_component_address(
+                self.transaction_hash,
+                &component.package_address(),
+                component.blueprint_name(),
+            )
             .unwrap();
         component_address
     }
@@ -1780,11 +1784,9 @@ where
             panic!("Trying to read value which is not visible.")
         }
 
-        Ok(info.location.to_ref(
-            &self.owned_values,
-            &self.parent_values,
-            &self.track,
-        ))
+        Ok(info
+            .location
+            .to_ref(&self.owned_values, &self.parent_values, &self.track))
     }
 
     fn borrow_value_mut(
@@ -1852,28 +1854,30 @@ where
         ))
     }
 
-    fn return_value_mut(
-        &mut self,
-        val_ref: RENativeValueRef,
-    ) -> Result<(), CostUnitCounterError> {
+    fn return_value_mut(&mut self, val_ref: RENativeValueRef) -> Result<(), CostUnitCounterError> {
         self.cost_unit_counter.consume(
             self.fee_table.system_api_cost({
                 match &val_ref {
                     RENativeValueRef::Stack(..) => SystemApiCostingEntry::ReturnLocal,
-                    RENativeValueRef::Track(address, _) => {
-                        match address {
-                            Address::Vault(_) => SystemApiCostingEntry::ReturnGlobal { size: 0 },
-                            Address::KeyValueStore(_) => SystemApiCostingEntry::ReturnGlobal { size: 0 },
-                            Address::Resource(_) => SystemApiCostingEntry::ReturnGlobal { size: 0 },
-                            Address::Package(_) => SystemApiCostingEntry::ReturnGlobal { size: 0 },
-                            Address::NonFungibleSet(_) => SystemApiCostingEntry::ReturnGlobal { size: 0 },
-                            Address::GlobalComponent(_) => SystemApiCostingEntry::ReturnGlobal { size: 0 },
-                            Address::LocalComponent(_) => SystemApiCostingEntry::ReturnGlobal { size: 0 },
-                            Address::System => SystemApiCostingEntry::ReturnGlobal { size: 0 },
+                    RENativeValueRef::Track(address, _) => match address {
+                        Address::Vault(_) => SystemApiCostingEntry::ReturnGlobal { size: 0 },
+                        Address::KeyValueStore(_) => {
+                            SystemApiCostingEntry::ReturnGlobal { size: 0 }
                         }
-                    }
+                        Address::Resource(_) => SystemApiCostingEntry::ReturnGlobal { size: 0 },
+                        Address::Package(_) => SystemApiCostingEntry::ReturnGlobal { size: 0 },
+                        Address::NonFungibleSet(_) => {
+                            SystemApiCostingEntry::ReturnGlobal { size: 0 }
+                        }
+                        Address::GlobalComponent(_) => {
+                            SystemApiCostingEntry::ReturnGlobal { size: 0 }
+                        }
+                        Address::LocalComponent(_) => {
+                            SystemApiCostingEntry::ReturnGlobal { size: 0 }
+                        }
+                        Address::System => SystemApiCostingEntry::ReturnGlobal { size: 0 },
+                    },
                 }
-
             }),
             "return",
         )?;
@@ -1937,8 +1941,8 @@ where
                 resource_address,
                 ..,
             )) => ValueId::NonFungibles(resource_address),
-            REValueByComplexity::Complex(REComplexValue::Component(..)) => {
-                let component_address = self.new_component_address();
+            REValueByComplexity::Complex(REComplexValue::Component(ref component)) => {
+                let component_address = self.new_component_address(component);
                 ValueId::Component(component_address)
             }
         };
@@ -2173,6 +2177,10 @@ where
             "read_transaction_hash",
         )?;
         Ok(self.transaction_hash)
+    }
+
+    fn get_transaction_network(&mut self) -> Network {
+        self.track.transaction_network()
     }
 
     fn generate_uuid(&mut self) -> Result<u128, CostUnitCounterError> {

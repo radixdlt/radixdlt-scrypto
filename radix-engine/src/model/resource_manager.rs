@@ -433,7 +433,8 @@ impl ResourceManager {
                     None
                 };
 
-                system_api.globalize_value(&resource_value_id)
+                system_api
+                    .globalize_value(&resource_value_id)
                     .map_err(ResourceManagerError::CostingError)?;
 
                 Ok(ScryptoValue::from_typed(&(resource_address, bucket_id)))

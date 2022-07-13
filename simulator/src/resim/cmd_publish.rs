@@ -1,5 +1,6 @@
 use clap::Parser;
 use colored::*;
+use scrypto::core::Network;
 use std::ffi::OsStr;
 use std::fs;
 use std::path::PathBuf;
@@ -33,7 +34,7 @@ impl Publish {
         })
         .map_err(Error::IOError)?;
 
-        let manifest = ManifestBuilder::new()
+        let manifest = ManifestBuilder::new(Network::LocalSimulator)
             .publish_package(extract_package(code).map_err(Error::PackageError)?)
             .build();
 

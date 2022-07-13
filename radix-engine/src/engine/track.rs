@@ -5,6 +5,7 @@ use sbor::rust::ops::RangeFull;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
+use scrypto::core::Network;
 use scrypto::engine::types::*;
 
 use crate::engine::track::BorrowedSubstate::Taken;
@@ -30,6 +31,7 @@ impl BorrowedSubstate {
 /// Facilitates transactional state updates.
 pub struct Track<'s, S: ReadableSubstateStore> {
     substate_store: &'s mut S,
+    transaction_network: Network,
     logs: Vec<(Level, String)>,
 
     new_addresses: Vec<Address>,
@@ -80,9 +82,13 @@ pub enum SubstateParentId {
 pub struct VirtualSubstateId(pub SubstateParentId, pub Vec<u8>);
 
 impl<'s, S: ReadableSubstateStore> Track<'s, S> {
-    pub fn new(substate_store: &'s mut S) -> Self {
+    pub fn new(
+        substate_store: &'s mut S,
+        transaction_network: Network,
+    ) -> Self {
         Self {
             substate_store,
+            transaction_network,
             logs: Vec::new(),
 
             new_addresses: Vec::new(),
@@ -93,6 +99,10 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             up_substates: IndexMap::new(),
             up_virtual_substate_space: IndexSet::new(),
         }
+    }
+
+    pub fn transaction_network(&self) -> Network {
+        self.transaction_network.clone()
     }
 
     /// Adds a log message.

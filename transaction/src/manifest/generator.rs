@@ -4,6 +4,7 @@ use sbor::rust::collections::HashMap;
 use sbor::rust::str::FromStr;
 use sbor::type_id::*;
 use scrypto::abi::*;
+use scrypto::address::Bech32Decoder;
 use scrypto::engine::types::*;
 use scrypto::values::*;
 use scrypto::vec_to_struct;
@@ -100,6 +101,7 @@ impl NameResolver {
 
 pub fn generate_manifest(
     instructions: &[ast::Instruction],
+    bech32_decoder: &Bech32Decoder,
 ) -> Result<TransactionManifest, GeneratorError> {
     let mut id_validator = IdValidator::new();
     let mut name_resolver = NameResolver::new();
@@ -110,6 +112,7 @@ pub fn generate_manifest(
             instruction,
             &mut id_validator,
             &mut name_resolver,
+            bech32_decoder,
         )?);
     }
 
@@ -122,6 +125,7 @@ pub fn generate_instruction(
     instruction: &ast::Instruction,
     id_validator: &mut IdValidator,
     resolver: &mut NameResolver,
+    bech32_decoder: &Bech32Decoder,
 ) -> Result<Instruction, GeneratorError> {
     Ok(match instruction {
         ast::Instruction::TakeFromWorktop {
@@ -134,7 +138,7 @@ pub fn generate_instruction(
             declare_bucket(new_bucket, resolver, bucket_id)?;
 
             Instruction::TakeFromWorktop {
-                resource_address: generate_resource_address(resource_address)?,
+                resource_address: generate_resource_address(resource_address, bech32_decoder)?,
             }
         }
         ast::Instruction::TakeFromWorktopByAmount {
@@ -149,7 +153,7 @@ pub fn generate_instruction(
 
             Instruction::TakeFromWorktopByAmount {
                 amount: generate_decimal(amount)?,
-                resource_address: generate_resource_address(resource_address)?,
+                resource_address: generate_resource_address(resource_address, bech32_decoder)?,
             }
         }
         ast::Instruction::TakeFromWorktopByIds {
@@ -164,7 +168,7 @@ pub fn generate_instruction(
 
             Instruction::TakeFromWorktopByIds {
                 ids: generate_non_fungible_ids(ids)?,
-                resource_address: generate_resource_address(resource_address)?,
+                resource_address: generate_resource_address(resource_address, bech32_decoder)?,
             }
         }
         ast::Instruction::ReturnToWorktop { bucket } => {
@@ -176,7 +180,7 @@ pub fn generate_instruction(
         }
         ast::Instruction::AssertWorktopContains { resource_address } => {
             Instruction::AssertWorktopContains {
-                resource_address: generate_resource_address(resource_address)?,
+                resource_address: generate_resource_address(resource_address, bech32_decoder)?,
             }
         }
         ast::Instruction::AssertWorktopContainsByAmount {
@@ -184,14 +188,14 @@ pub fn generate_instruction(
             resource_address,
         } => Instruction::AssertWorktopContainsByAmount {
             amount: generate_decimal(amount)?,
-            resource_address: generate_resource_address(resource_address)?,
+            resource_address: generate_resource_address(resource_address, bech32_decoder)?,
         },
         ast::Instruction::AssertWorktopContainsByIds {
             ids,
             resource_address,
         } => Instruction::AssertWorktopContainsByIds {
             ids: generate_non_fungible_ids(ids)?,
-            resource_address: generate_resource_address(resource_address)?,
+            resource_address: generate_resource_address(resource_address, bech32_decoder)?,
         },
         ast::Instruction::PopFromAuthZone { new_proof } => {
             let proof_id = id_validator
@@ -214,7 +218,7 @@ pub fn generate_instruction(
             resource_address,
             new_proof,
         } => {
-            let resource_address = generate_resource_address(resource_address)?;
+            let resource_address = generate_resource_address(resource_address, bech32_decoder)?;
             let proof_id = id_validator
                 .new_proof(ProofKind::AuthZoneProof)
                 .map_err(GeneratorError::IdValidationError)?;
@@ -228,7 +232,7 @@ pub fn generate_instruction(
             new_proof,
         } => {
             let amount = generate_decimal(amount)?;
-            let resource_address = generate_resource_address(resource_address)?;
+            let resource_address = generate_resource_address(resource_address, bech32_decoder)?;
             let proof_id = id_validator
                 .new_proof(ProofKind::AuthZoneProof)
                 .map_err(GeneratorError::IdValidationError)?;
@@ -245,7 +249,7 @@ pub fn generate_instruction(
             new_proof,
         } => {
             let ids = generate_non_fungible_ids(ids)?;
-            let resource_address = generate_resource_address(resource_address)?;
+            let resource_address = generate_resource_address(resource_address, bech32_decoder)?;
             let proof_id = id_validator
                 .new_proof(ProofKind::AuthZoneProof)
                 .map_err(GeneratorError::IdValidationError)?;
@@ -287,7 +291,7 @@ pub fn generate_instruction(
             function,
             args,
         } => {
-            let args = generate_args(args, resolver)?;
+            let args = generate_args(args, resolver, bech32_decoder)?;
             let mut fields = Vec::new();
             for arg in &args {
                 let validated_arg = ScryptoValue::from_slice(arg).unwrap();
@@ -298,7 +302,7 @@ pub fn generate_instruction(
             }
 
             Instruction::CallFunction {
-                package_address: generate_package_address(package_address)?,
+                package_address: generate_package_address(package_address, bech32_decoder)?,
                 blueprint_name: generate_string(blueprint_name)?,
                 method_name: generate_string(function)?,
                 arg: vec_to_struct!(fields),
@@ -309,7 +313,7 @@ pub fn generate_instruction(
             method,
             args,
         } => {
-            let args = generate_args(args, resolver)?;
+            let args = generate_args(args, resolver, bech32_decoder)?;
             let mut fields = Vec::new();
             for arg in &args {
                 let validated_arg = ScryptoValue::from_slice(arg).unwrap();
@@ -320,7 +324,7 @@ pub fn generate_instruction(
             }
 
             Instruction::CallMethod {
-                component_address: generate_component_address(component_address)?,
+                component_address: generate_component_address(component_address, bech32_decoder)?,
                 method_name: generate_string(method)?,
                 arg: vec_to_struct!(fields),
             }
@@ -333,7 +337,7 @@ pub fn generate_instruction(
                 .move_all_resources()
                 .map_err(GeneratorError::IdValidationError)?;
             Instruction::CallMethodWithAllResources {
-                component_address: generate_component_address(component_address)?,
+                component_address: generate_component_address(component_address, bech32_decoder)?,
                 method: generate_string(method)?,
             }
         }
@@ -356,10 +360,11 @@ macro_rules! invalid_type {
 fn generate_args(
     values: &Vec<ast::Value>,
     resolver: &mut NameResolver,
+    bech32_decoder: &Bech32Decoder,
 ) -> Result<Vec<Vec<u8>>, GeneratorError> {
     let mut result = Vec::new();
     for v in values {
-        let value = generate_value(v, None, resolver)?;
+        let value = generate_value(v, None, resolver, bech32_decoder)?;
 
         result.push(encode_any(&value));
     }
@@ -416,10 +421,14 @@ fn generate_decimal(value: &ast::Value) -> Result<Decimal, GeneratorError> {
     }
 }
 
-fn generate_package_address(value: &ast::Value) -> Result<PackageAddress, GeneratorError> {
+fn generate_package_address(
+    value: &ast::Value,
+    bech32_decoder: &Bech32Decoder,
+) -> Result<PackageAddress, GeneratorError> {
     match value {
         ast::Value::PackageAddress(inner) => match &**inner {
-            ast::Value::String(s) => PackageAddress::from_str(s)
+            ast::Value::String(s) => bech32_decoder
+                .validate_and_decode_package_address(s)
                 .map_err(|_| GeneratorError::InvalidPackageAddress(s.into())),
             v @ _ => invalid_type!(v, ast::Type::String),
         },
@@ -427,10 +436,14 @@ fn generate_package_address(value: &ast::Value) -> Result<PackageAddress, Genera
     }
 }
 
-fn generate_component_address(value: &ast::Value) -> Result<ComponentAddress, GeneratorError> {
+fn generate_component_address(
+    value: &ast::Value,
+    bech32_decoder: &Bech32Decoder,
+) -> Result<ComponentAddress, GeneratorError> {
     match value {
         ast::Value::ComponentAddress(inner) => match &**inner {
-            ast::Value::String(s) => ComponentAddress::from_str(s)
+            ast::Value::String(s) => bech32_decoder
+                .validate_and_decode_component_address(s)
                 .map_err(|_| GeneratorError::InvalidComponentAddress(s.into())),
             v @ _ => invalid_type!(v, ast::Type::String),
         },
@@ -438,10 +451,14 @@ fn generate_component_address(value: &ast::Value) -> Result<ComponentAddress, Ge
     }
 }
 
-fn generate_resource_address(value: &ast::Value) -> Result<ResourceAddress, GeneratorError> {
+fn generate_resource_address(
+    value: &ast::Value,
+    bech32_decoder: &Bech32Decoder,
+) -> Result<ResourceAddress, GeneratorError> {
     match value {
         ast::Value::ResourceAddress(inner) => match &**inner {
-            ast::Value::String(s) => ResourceAddress::from_str(s)
+            ast::Value::String(s) => bech32_decoder
+                .validate_and_decode_resource_address(s)
                 .map_err(|_| GeneratorError::InvalidResourceAddress(s.into())),
             v @ _ => invalid_type!(v, ast::Type::String),
         },
@@ -569,6 +586,7 @@ fn generate_value(
     value: &ast::Value,
     expected: Option<ast::Type>,
     resolver: &mut NameResolver,
+    bech32_decoder: &Bech32Decoder,
 ) -> Result<Value, GeneratorError> {
     if let Some(ty) = expected {
         if ty != value.kind() {
@@ -596,73 +614,77 @@ fn generate_value(
             value: value.clone(),
         }),
         ast::Value::Struct(fields) => Ok(Value::Struct {
-            fields: generate_singletons(fields, None, resolver)?,
+            fields: generate_singletons(fields, None, resolver, bech32_decoder)?,
         }),
         ast::Value::Enum(name, fields) => Ok(Value::Enum {
             name: name.clone(),
-            fields: generate_singletons(fields, None, resolver)?,
+            fields: generate_singletons(fields, None, resolver, bech32_decoder)?,
         }),
         ast::Value::Option(value) => match &**value {
             Some(inner) => Ok(Value::Option {
-                value: Some(generate_value(inner, None, resolver)?).into(),
+                value: Some(generate_value(inner, None, resolver, bech32_decoder)?).into(),
             }),
             None => Ok(Value::Option { value: None.into() }),
         },
         ast::Value::Array(element_type, elements) => Ok(Value::Array {
             element_type_id: generate_type_id(element_type),
-            elements: generate_singletons(elements, Some(*element_type), resolver)?,
+            elements: generate_singletons(elements, Some(*element_type), resolver, bech32_decoder)?,
         }),
         ast::Value::Tuple(elements) => Ok(Value::Tuple {
-            elements: generate_singletons(elements, None, resolver)?,
+            elements: generate_singletons(elements, None, resolver, bech32_decoder)?,
         }),
         ast::Value::Result(value) => match &**value {
             Ok(inner) => Ok(Value::Result {
-                value: Ok(generate_value(inner, None, resolver)?).into(),
+                value: Ok(generate_value(inner, None, resolver, bech32_decoder)?).into(),
             }),
             Err(inner) => Ok(Value::Result {
-                value: Err(generate_value(inner, None, resolver)?).into(),
+                value: Err(generate_value(inner, None, resolver, bech32_decoder)?).into(),
             }),
         },
         ast::Value::Vec(element_type, elements) => Ok(Value::Vec {
             element_type_id: generate_type_id(element_type),
-            elements: generate_singletons(elements, Some(*element_type), resolver)?,
+            elements: generate_singletons(elements, Some(*element_type), resolver, bech32_decoder)?,
         }),
         ast::Value::TreeSet(element_type, elements) => Ok(Value::TreeSet {
             element_type_id: generate_type_id(element_type),
-            elements: generate_singletons(elements, Some(*element_type), resolver)?,
+            elements: generate_singletons(elements, Some(*element_type), resolver, bech32_decoder)?,
         }),
         ast::Value::TreeMap(key_type, value_type, elements) => Ok(Value::TreeMap {
             key_type_id: generate_type_id(key_type),
             value_type_id: generate_type_id(value_type),
-            elements: generate_pairs(elements, *key_type, *value_type, resolver)?,
+            elements: generate_pairs(elements, *key_type, *value_type, resolver, bech32_decoder)?,
         }),
         ast::Value::HashSet(element_type, elements) => Ok(Value::HashSet {
             element_type_id: generate_type_id(element_type),
-            elements: generate_singletons(elements, Some(*element_type), resolver)?,
+            elements: generate_singletons(elements, Some(*element_type), resolver, bech32_decoder)?,
         }),
         ast::Value::HashMap(key_type, value_type, elements) => Ok(Value::HashMap {
             key_type_id: generate_type_id(key_type),
             value_type_id: generate_type_id(value_type),
-            elements: generate_pairs(elements, *key_type, *value_type, resolver)?,
+            elements: generate_pairs(elements, *key_type, *value_type, resolver, bech32_decoder)?,
         }),
         ast::Value::Decimal(_) => generate_decimal(value).map(|v| Value::Custom {
             type_id: ScryptoType::Decimal.id(),
             bytes: v.to_vec(),
         }),
-        ast::Value::PackageAddress(_) => generate_package_address(value).map(|v| Value::Custom {
-            type_id: ScryptoType::PackageAddress.id(),
-            bytes: v.to_vec(),
-        }),
+        ast::Value::PackageAddress(_) => {
+            generate_package_address(value, bech32_decoder).map(|v| Value::Custom {
+                type_id: ScryptoType::PackageAddress.id(),
+                bytes: v.to_vec(),
+            })
+        }
         ast::Value::ComponentAddress(_) => {
-            generate_component_address(value).map(|v| Value::Custom {
+            generate_component_address(value, bech32_decoder).map(|v| Value::Custom {
                 type_id: ScryptoType::ComponentAddress.id(),
                 bytes: v.to_vec(),
             })
         }
-        ast::Value::ResourceAddress(_) => generate_resource_address(value).map(|v| Value::Custom {
-            type_id: ScryptoType::ResourceAddress.id(),
-            bytes: v.to_vec(),
-        }),
+        ast::Value::ResourceAddress(_) => {
+            generate_resource_address(value, bech32_decoder).map(|v| Value::Custom {
+                type_id: ScryptoType::ResourceAddress.id(),
+                bytes: v.to_vec(),
+            })
+        }
         ast::Value::Hash(_) => generate_hash(value).map(|v| Value::Custom {
             type_id: ScryptoType::Hash.id(),
             bytes: v.to_vec(),
@@ -705,10 +727,11 @@ fn generate_singletons(
     elements: &Vec<ast::Value>,
     ty: Option<ast::Type>,
     resolver: &mut NameResolver,
+    bech32_decoder: &Bech32Decoder,
 ) -> Result<Vec<Value>, GeneratorError> {
     let mut result = vec![];
     for element in elements {
-        result.push(generate_value(element, ty, resolver)?);
+        result.push(generate_value(element, ty, resolver, bech32_decoder)?);
     }
     Ok(result)
 }
@@ -718,17 +741,24 @@ fn generate_pairs(
     key_type: ast::Type,
     value_type: ast::Type,
     resolver: &mut NameResolver,
+    bech32_decoder: &Bech32Decoder,
 ) -> Result<Vec<Value>, GeneratorError> {
     if elements.len() % 2 != 0 {
         return Err(GeneratorError::OddNumberOfElements(elements.len()));
     }
     let mut result = vec![];
     for i in 0..elements.len() / 2 {
-        result.push(generate_value(&elements[2 * i], Some(key_type), resolver)?);
+        result.push(generate_value(
+            &elements[2 * i],
+            Some(key_type),
+            resolver,
+            bech32_decoder,
+        )?);
         result.push(generate_value(
             &elements[2 * i + 1],
             Some(value_type),
             resolver,
+            bech32_decoder,
         )?);
     }
     Ok(result)
@@ -778,7 +808,9 @@ mod tests {
     use super::*;
     use crate::manifest::lexer::tokenize;
     use crate::manifest::parser::Parser;
+    use scrypto::address::Bech32Decoder;
     use scrypto::buffer::scrypto_encode;
+    use scrypto::core::Network;
     use scrypto::prelude::Package;
     use scrypto::to_struct;
 
@@ -787,7 +819,15 @@ mod tests {
         ( $s:expr, $expected:expr ) => {{
             let value = Parser::new(tokenize($s).unwrap()).parse_value().unwrap();
             let mut resolver = NameResolver::new();
-            assert_eq!(generate_value(&value, None, &mut resolver), Ok($expected));
+            assert_eq!(
+                generate_value(
+                    &value,
+                    None,
+                    &mut resolver,
+                    &Bech32Decoder::new_from_network(&Network::LocalSimulator)
+                ),
+                Ok($expected)
+            );
         }};
     }
 
@@ -800,7 +840,12 @@ mod tests {
             let mut id_validator = IdValidator::new();
             let mut resolver = NameResolver::new();
             assert_eq!(
-                generate_instruction(&instruction, &mut id_validator, &mut resolver),
+                generate_instruction(
+                    &instruction,
+                    &mut id_validator,
+                    &mut resolver,
+                    &Bech32Decoder::new_from_network(&Network::LocalSimulator)
+                ),
                 Ok($expected)
             );
         }};
@@ -810,7 +855,12 @@ mod tests {
     macro_rules! generate_value_error {
         ( $s:expr, $expected:expr ) => {{
             let value = Parser::new(tokenize($s).unwrap()).parse_value().unwrap();
-            match generate_value(&value, None, &mut NameResolver::new()) {
+            match generate_value(
+                &value,
+                None,
+                &mut NameResolver::new(),
+                &Bech32Decoder::new_from_network(&Network::LocalSimulator),
+            ) {
                 Ok(_) => {
                     panic!("Expected {:?} but no error is thrown", $expected);
                 }
@@ -971,39 +1021,39 @@ mod tests {
     #[test]
     fn test_instructions() {
         generate_instruction_ok!(
-            r#"TAKE_FROM_WORKTOP_BY_AMOUNT  Decimal("1.0")  ResourceAddress("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d")  Bucket("xrd_bucket");"#,
+            r#"TAKE_FROM_WORKTOP_BY_AMOUNT  Decimal("1.0")  ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak")  Bucket("xrd_bucket");"#,
             Instruction::TakeFromWorktopByAmount {
                 amount: Decimal::from(1),
                 resource_address: ResourceAddress::from_str(
-                    "03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d"
+                    "resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak"
                 )
                 .unwrap(),
             }
         );
         generate_instruction_ok!(
-            r#"TAKE_FROM_WORKTOP  ResourceAddress("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d")  Bucket("xrd_bucket");"#,
+            r#"TAKE_FROM_WORKTOP  ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak")  Bucket("xrd_bucket");"#,
             Instruction::TakeFromWorktop {
                 resource_address: ResourceAddress::from_str(
-                    "03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d"
+                    "resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak"
                 )
                 .unwrap(),
             }
         );
         generate_instruction_ok!(
-            r#"ASSERT_WORKTOP_CONTAINS_BY_AMOUNT  Decimal("1.0")  ResourceAddress("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d");"#,
+            r#"ASSERT_WORKTOP_CONTAINS_BY_AMOUNT  Decimal("1.0")  ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak");"#,
             Instruction::AssertWorktopContainsByAmount {
                 amount: Decimal::from(1),
                 resource_address: ResourceAddress::from_str(
-                    "03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d"
+                    "resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak"
                 )
                 .unwrap(),
             }
         );
         generate_instruction_ok!(
-            r#"CALL_FUNCTION  PackageAddress("01d1f50010e4102d88aacc347711491f852c515134a9ecf67ba17c")  "Airdrop"  "new"  500u32  HashMap<String, U8>("key", 1u8);"#,
+            r#"CALL_FUNCTION  PackageAddress("package_sim1q8gl2qqsusgzmz92es68wy2fr7zjc523xj57eanm597qrz3dx7")  "Airdrop"  "new"  500u32  HashMap<String, U8>("key", 1u8);"#,
             Instruction::CallFunction {
                 package_address: PackageAddress::from_str(
-                    "01d1f50010e4102d88aacc347711491f852c515134a9ecf67ba17c".into()
+                    "package_sim1q8gl2qqsusgzmz92es68wy2fr7zjc523xj57eanm597qrz3dx7".into()
                 )
                 .unwrap(),
                 blueprint_name: "Airdrop".into(),
@@ -1012,10 +1062,10 @@ mod tests {
             }
         );
         generate_instruction_ok!(
-            r#"CALL_METHOD  ComponentAddress("0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1")  "refill";"#,
+            r#"CALL_METHOD  ComponentAddress("component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum")  "refill";"#,
             Instruction::CallMethod {
                 component_address: ComponentAddress::from_str(
-                    "0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1".into()
+                    "component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum".into()
                 )
                 .unwrap(),
                 method_name: "refill".to_string(),
@@ -1023,10 +1073,10 @@ mod tests {
             }
         );
         generate_instruction_ok!(
-            r#"CALL_METHOD_WITH_ALL_RESOURCES  ComponentAddress("02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1bf1de") "deposit_batch";"#,
+            r#"CALL_METHOD_WITH_ALL_RESOURCES  ComponentAddress("account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qgsy064") "deposit_batch";"#,
             Instruction::CallMethodWithAllResources {
                 component_address: ComponentAddress::from_str(
-                    "02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1bf1de".into()
+                    "account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qgsy064".into()
                 )
                 .unwrap(),
                 method: "deposit_batch".into(),
@@ -1060,18 +1110,20 @@ mod tests {
         let encoded_package = scrypto_encode(&package);
 
         assert_eq!(
-            crate::manifest::compile(tx).unwrap().instructions,
+            crate::manifest::compile(tx, &Network::LocalSimulator)
+                .unwrap()
+                .instructions,
             vec![
                 Instruction::CallMethod {
                     component_address: ComponentAddress::from_str(
-                        "02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1bf1de".into()
+                        "account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qgsy064".into()
                     )
                     .unwrap(),
                     method_name: "withdraw_by_amount".to_string(),
                     arg: to_struct!(
                         Decimal::from(5u32),
                         ResourceAddress::from_str(
-                            "030000000000000000000000000000000000000000000000000004"
+                            "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag"
                         )
                         .unwrap()
                     )
@@ -1079,13 +1131,13 @@ mod tests {
                 Instruction::TakeFromWorktopByAmount {
                     amount: Decimal::from(2),
                     resource_address: ResourceAddress::from_str(
-                        "030000000000000000000000000000000000000000000000000004"
+                        "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag"
                     )
                     .unwrap(),
                 },
                 Instruction::CallMethod {
                     component_address: ComponentAddress::from_str(
-                        "0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1".into()
+                        "component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum".into()
                     )
                     .unwrap(),
                     method_name: "buy_gumball".to_string(),
@@ -1094,19 +1146,19 @@ mod tests {
                 Instruction::AssertWorktopContainsByAmount {
                     amount: Decimal::from(3),
                     resource_address: ResourceAddress::from_str(
-                        "030000000000000000000000000000000000000000000000000004"
+                        "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag"
                     )
                     .unwrap(),
                 },
                 Instruction::AssertWorktopContains {
                     resource_address: ResourceAddress::from_str(
-                        "03aedb7960d1f87dc25138f4cd101da6c98d57323478d53c5fb951"
+                        "resource_sim1qzhdk7tq68u8msj38r6v6yqa5myc64ejx3ud20zlh9gseqtux6"
                     )
                     .unwrap(),
                 },
                 Instruction::TakeFromWorktop {
                     resource_address: ResourceAddress::from_str(
-                        "030000000000000000000000000000000000000000000000000004"
+                        "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag"
                     )
                     .unwrap(),
                 },
@@ -1116,14 +1168,14 @@ mod tests {
                 Instruction::DropProof { proof_id: 515 },
                 Instruction::CallMethod {
                     component_address: ComponentAddress::from_str(
-                        "02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1bf1de".into()
+                        "account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qgsy064".into()
                     )
                     .unwrap(),
                     method_name: "create_proof_by_amount".to_string(),
                     arg: to_struct!(
                         Decimal::from(5u32),
                         ResourceAddress::from_str(
-                            "030000000000000000000000000000000000000000000000000004"
+                            "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag"
                         )
                         .unwrap()
                     )
@@ -1137,13 +1189,13 @@ mod tests {
                         NonFungibleId::from_str("0907000000").unwrap(),
                     ]),
                     resource_address: ResourceAddress::from_str(
-                        "030000000000000000000000000000000000000000000000000004"
+                        "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag"
                     )
                     .unwrap()
                 },
                 Instruction::CallMethodWithAllResources {
                     component_address: ComponentAddress::from_str(
-                        "02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1bf1de".into()
+                        "account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qgsy064".into()
                     )
                     .unwrap(),
                     method: "deposit_batch".into(),

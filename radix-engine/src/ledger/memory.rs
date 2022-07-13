@@ -19,7 +19,7 @@ impl InMemorySubstateStore {
 
     pub fn with_bootstrap() -> Self {
         let mut substate_store = Self::new();
-        bootstrap(&mut substate_store);
+        bootstrap(&mut substate_store, scrypto::core::Network::LocalSimulator);
         substate_store
     }
 }

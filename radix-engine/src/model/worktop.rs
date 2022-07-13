@@ -385,7 +385,8 @@ impl Worktop {
             _ => Err(InvalidMethod),
         }?;
 
-        system_api.return_value_mut(value_ref)
+        system_api
+            .return_value_mut(value_ref)
             .map_err(WorktopError::CostingError)?;
         Ok(rtn)
     }

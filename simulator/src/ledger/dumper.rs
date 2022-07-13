@@ -3,7 +3,10 @@ use colored::*;
 use radix_engine::ledger::*;
 use radix_engine::model::*;
 use sbor::rust::collections::HashSet;
-use scrypto::buffer::{scrypto_encode};
+use scrypto::address::AddressError;
+use scrypto::address::Bech32Encoder;
+use scrypto::buffer::scrypto_encode;
+use scrypto::core::Network;
 use scrypto::engine::types::*;
 use scrypto::values::*;
 use std::collections::VecDeque;
@@ -17,6 +20,7 @@ pub enum DisplayError {
     PackageNotFound,
     ComponentNotFound,
     ResourceManagerNotFound,
+    AddressError(AddressError),
 }
 
 /// Dump a package into console.
@@ -25,6 +29,8 @@ pub fn dump_package<T: ReadableSubstateStore, O: std::io::Write>(
     substate_store: &T,
     output: &mut O,
 ) -> Result<(), DisplayError> {
+    let bech32_encoder = Bech32Encoder::new_from_network(&Network::LocalSimulator);
+
     let package: Option<ValidatedPackage> = substate_store
         .get_decoded_substate(&package_address);
     match package {
@@ -33,7 +39,9 @@ pub fn dump_package<T: ReadableSubstateStore, O: std::io::Write>(
                 output,
                 "{}: {}",
                 "Package".green().bold(),
-                package_address.to_string()
+                bech32_encoder
+                    .encode_package_address(&package_address)
+                    .map_err(|err| DisplayError::AddressError(err))?
             );
             writeln!(
                 output,
@@ -53,6 +61,8 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
     substate_store: &T,
     output: &mut O,
 ) -> Result<(), DisplayError> {
+    let bech32_encoder = Bech32Encoder::new_from_network(&Network::LocalSimulator);
+
     let component: Option<Component> = substate_store
         .get_decoded_substate(&component_address);
     match component {
@@ -61,7 +71,9 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
                 output,
                 "{}: {}",
                 "Component".green().bold(),
-                component_address.to_string()
+                bech32_encoder
+                    .encode_component_address(&component_address)
+                    .map_err(|err| DisplayError::AddressError(err))?
             );
 
             writeln!(
@@ -135,6 +147,8 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
     substate_store: &T,
     output: &mut O,
 ) -> Result<(), DisplayError> {
+    let bech32_encoder = Bech32Encoder::new_from_network(&Network::LocalSimulator);
+
     writeln!(output, "{}:", "Resources".green().bold());
     for (last, vault_id) in vaults.iter().identify_last() {
         let vault: Vault = substate_store.get_decoded_substate(vault_id).unwrap();
@@ -148,7 +162,9 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
             "{} {{ amount: {}, resource address: {}{}{} }}",
             list_item_prefix(last),
             amount,
-            resource_address,
+            bech32_encoder
+                .encode_resource_address(&resource_address)
+                .map_err(|err| DisplayError::AddressError(err))?,
             resource_manager
                 .metadata()
                 .get("name")
