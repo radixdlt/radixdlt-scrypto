@@ -2,6 +2,7 @@ use radix_engine::engine::TransactionExecutor;
 use radix_engine::ledger::*;
 use radix_engine::model::extract_package;
 use radix_engine::wasm::*;
+use scrypto::core::Network;
 use scrypto::prelude::*;
 use scrypto::to_struct;
 use transaction::builder::ManifestBuilder;
@@ -28,7 +29,7 @@ fn test_hello() {
     let public_key = private_key.public_key();
 
     // Publish package
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .publish_package(extract_package(compile_package!()).unwrap())
         .build();
     let package_address = executor
@@ -36,7 +37,7 @@ fn test_hello() {
         .new_package_addresses[0];
 
     // Create an account
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_method(SYSTEM_COMPONENT, "free_xrd", to_struct!())
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.new_account_with_resource(
@@ -50,7 +51,7 @@ fn test_hello() {
         .new_component_addresses[0];
 
     // Test the `instantiate_hello` function.
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(package_address, "Hello", "instantiate_hello", to_struct!())
         .build();
     let receipt = executor.execute(&TestTransaction::new(manifest, 3, vec![public_key]));
@@ -59,7 +60,7 @@ fn test_hello() {
     let component = receipt.new_component_addresses[0];
 
     // Test the `free_token` method.
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_method(component, "free_token", to_struct!())
         .call_method_with_all_resources(account, "deposit_batch")
         .build();

@@ -11,7 +11,7 @@ use sbor::rust::string::ToString;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto::core::{SNodeRef, ScryptoActor};
+use scrypto::core::{Network, SNodeRef, ScryptoActor};
 use scrypto::engine::types::*;
 use scrypto::prelude::ComponentOffset;
 use scrypto::resource::AuthZoneClearInput;
@@ -1931,8 +1931,8 @@ where
                 let package_address = self.track.new_package_address();
                 ValueId::Package(package_address)
             }
-            REValueByComplexity::Complex(REComplexValue::Component(..)) => {
-                let component_address = self.track.new_component_address();
+            REValueByComplexity::Complex(REComplexValue::Component(ref component)) => {
+                let component_address = self.track.new_component_address(component);
                 ValueId::Stored(StoredValueId::Component(component_address))
             }
         };
@@ -2198,6 +2198,10 @@ where
             "read_transaction_hash",
         )?;
         Ok(self.track.transaction_hash())
+    }
+
+    fn get_transaction_network(&mut self) -> Network {
+        self.track.transaction_network()
     }
 
     fn generate_uuid(&mut self) -> Result<u128, CostUnitCounterError> {

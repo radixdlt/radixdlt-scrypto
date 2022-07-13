@@ -3,6 +3,7 @@ pub mod test_runner;
 
 use crate::test_runner::TestRunner;
 use radix_engine::engine::RuntimeError;
+use scrypto::core::Network;
 use scrypto::engine::types::{StoredValueId, ValueId};
 use scrypto::prelude::*;
 use scrypto::to_struct;
@@ -15,7 +16,7 @@ fn non_existent_vault_in_component_creation_should_fail() {
     let package_address = test_runner.extract_and_publish_package("vault");
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(
             package_address,
             "NonExistentVault",
@@ -39,14 +40,14 @@ fn non_existent_vault_in_committed_component_should_fail() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.extract_and_publish_package("vault");
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(package_address, "NonExistentVault", "new", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     let component_address = receipt.new_component_addresses[0];
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_method(component_address, "create_non_existent_vault", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -67,7 +68,7 @@ fn non_existent_vault_in_key_value_store_creation_should_fail() {
     let package_address = test_runner.extract_and_publish_package("vault");
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(
             package_address,
             "NonExistentVault",
@@ -91,14 +92,14 @@ fn non_existent_vault_in_committed_key_value_store_should_fail() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.extract_and_publish_package("vault");
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(package_address, "NonExistentVault", "new", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     let component_address = receipt.new_component_addresses[0];
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_method(
             component_address,
             "create_non_existent_vault_in_key_value_store",
@@ -123,7 +124,7 @@ fn create_mutable_vault_into_map() {
     let package_address = test_runner.extract_and_publish_package("vault");
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(
             package_address,
             "VaultTest",
@@ -144,7 +145,7 @@ fn invalid_double_ownership_of_vault() {
     let package_address = test_runner.extract_and_publish_package("vault");
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(
             package_address,
             "VaultTest",
@@ -170,7 +171,7 @@ fn create_mutable_vault_into_map_and_referencing_before_storing() {
     let package_address = test_runner.extract_and_publish_package("vault");
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(
             package_address,
             "VaultTest",
@@ -189,7 +190,7 @@ fn cannot_overwrite_vault_in_map() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.extract_and_publish_package("vault");
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(
             package_address,
             "VaultTest",
@@ -201,7 +202,7 @@ fn cannot_overwrite_vault_in_map() {
     let component_address = receipt.new_component_addresses[0];
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_method(component_address, "overwrite_vault_in_map", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -221,7 +222,7 @@ fn create_mutable_vault_into_vector() {
     let package_address = test_runner.extract_and_publish_package("vault");
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(
             package_address,
             "VaultTest",
@@ -240,7 +241,7 @@ fn cannot_remove_vaults() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.extract_and_publish_package("vault");
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(
             package_address,
             "VaultTest",
@@ -252,7 +253,7 @@ fn cannot_remove_vaults() {
     let component_address = receipt.new_component_addresses[0];
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_method(component_address, "clear_vector", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -270,7 +271,7 @@ fn can_push_vault_into_vector() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.extract_and_publish_package("vault");
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(
             package_address,
             "VaultTest",
@@ -282,7 +283,7 @@ fn can_push_vault_into_vector() {
     let component_address = receipt.new_component_addresses[0];
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_method(component_address, "push_vault_into_vector", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -298,7 +299,7 @@ fn create_mutable_vault_with_take() {
     let package_address = test_runner.extract_and_publish_package("vault");
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(
             package_address,
             "VaultTest",
@@ -319,7 +320,7 @@ fn create_mutable_vault_with_take_non_fungible() {
     let package_address = test_runner.extract_and_publish_package("vault");
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(
             package_address,
             "VaultTest",
@@ -340,7 +341,7 @@ fn create_mutable_vault_with_get_nonfungible_ids() {
     let package_address = test_runner.extract_and_publish_package("vault");
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(
             package_address,
             "VaultTest",
@@ -361,7 +362,7 @@ fn create_mutable_vault_with_get_amount() {
     let package_address = test_runner.extract_and_publish_package("vault");
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(
             package_address,
             "VaultTest",
@@ -382,7 +383,7 @@ fn create_mutable_vault_with_get_resource_manager() {
     let package_address = test_runner.extract_and_publish_package("vault");
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(
             package_address,
             "VaultTest",

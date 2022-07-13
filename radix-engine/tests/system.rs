@@ -3,6 +3,7 @@ pub mod test_runner;
 
 use crate::test_runner::TestRunner;
 use radix_engine::engine::RuntimeError;
+use scrypto::core::Network;
 use scrypto::prelude::*;
 use scrypto::to_struct;
 use transaction::builder::ManifestBuilder;
@@ -14,7 +15,7 @@ fn test_get_epoch() {
     let package_address = test_runner.extract_and_publish_package("system");
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(package_address, "SystemTest", "get_epoch", to_struct![])
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -33,7 +34,7 @@ fn test_set_epoch_without_system_auth_fails() {
 
     // Act
     let epoch = 9876u64;
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(
             package_address,
             "SystemTest",

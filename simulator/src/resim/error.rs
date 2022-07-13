@@ -3,6 +3,7 @@ use std::io;
 use radix_engine::engine::*;
 use radix_engine::model::ExtractAbiError;
 use sbor::*;
+use scrypto::address::AddressError;
 use transaction::errors::*;
 
 use crate::ledger::*;
@@ -44,4 +45,6 @@ pub enum Error {
     InvalidId(String),
 
     InvalidPrivateKey,
+
+    AddressError(AddressError),
 }

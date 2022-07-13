@@ -3,6 +3,7 @@ pub mod test_runner;
 
 use crate::test_runner::TestRunner;
 use radix_engine::engine::RuntimeError;
+use scrypto::core::Network;
 use scrypto::prelude::*;
 use scrypto::to_struct;
 use transaction::builder::ManifestBuilder;
@@ -31,7 +32,7 @@ fn test_dynamic_auth(
         .collect();
 
     let package = test_runner.extract_and_publish_package("component");
-    let manifest1 = ManifestBuilder::new()
+    let manifest1 = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(
             package,
             "AuthComponent",
@@ -44,7 +45,7 @@ fn test_dynamic_auth(
     let component = receipt1.new_component_addresses[0];
 
     if let Some(next_auth) = update_auth {
-        let update_manifest = ManifestBuilder::new()
+        let update_manifest = ManifestBuilder::new(Network::LocalSimulator)
             .call_method(
                 component,
                 "update_auth",
@@ -57,7 +58,7 @@ fn test_dynamic_auth(
     }
 
     // Act
-    let manifest2 = ManifestBuilder::new()
+    let manifest2 = ManifestBuilder::new(Network::LocalSimulator)
         .call_method(component, "get_secret", to_struct!())
         .build();
     let receipt2 = test_runner.execute_manifest(manifest2, public_keys.to_vec());
@@ -94,7 +95,7 @@ fn test_dynamic_authlist(
 
     // Arrange
     let package = test_runner.extract_and_publish_package("component");
-    let manifest1 = ManifestBuilder::new()
+    let manifest1 = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(
             package,
             "AuthListComponent",
@@ -107,7 +108,7 @@ fn test_dynamic_authlist(
     let component = receipt0.new_component_addresses[0];
 
     // Act
-    let manifest2 = ManifestBuilder::new()
+    let manifest2 = ManifestBuilder::new(Network::LocalSimulator)
         .call_method(component, "get_secret", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest2, public_keys.to_vec());
@@ -219,7 +220,7 @@ fn chess_should_not_allow_second_player_to_move_if_first_player_didnt_move() {
         NonFungibleId::from_bytes(other_public_key.to_vec()),
     );
     let players = [non_fungible_address, other_non_fungible_address];
-    let manifest1 = ManifestBuilder::new()
+    let manifest1 = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(package, "Chess", "create_game", to_struct!(players))
         .build();
     let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
@@ -227,7 +228,7 @@ fn chess_should_not_allow_second_player_to_move_if_first_player_didnt_move() {
     let component = receipt1.new_component_addresses[0];
 
     // Act
-    let manifest2 = ManifestBuilder::new()
+    let manifest2 = ManifestBuilder::new(Network::LocalSimulator)
         .call_method(component, "make_move", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest2, vec![other_public_key]);
@@ -247,13 +248,13 @@ fn chess_should_allow_second_player_to_move_after_first_player() {
     let non_fungible_address = NonFungibleAddress::from_public_key(&public_key);
     let other_non_fungible_address = NonFungibleAddress::from_public_key(&other_public_key);
     let players = [non_fungible_address, other_non_fungible_address];
-    let manifest1 = ManifestBuilder::new()
+    let manifest1 = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(package, "Chess", "create_game", to_struct!(players))
         .build();
     let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
     receipt1.expect_success();
     let component = receipt1.new_component_addresses[0];
-    let manifest2 = ManifestBuilder::new()
+    let manifest2 = ManifestBuilder::new(Network::LocalSimulator)
         .call_method(component, "make_move", to_struct!())
         .build();
     test_runner
@@ -262,7 +263,7 @@ fn chess_should_allow_second_player_to_move_after_first_player() {
         .expect("Should be okay.");
 
     // Act
-    let manifest3 = ManifestBuilder::new()
+    let manifest3 = ManifestBuilder::new(Network::LocalSimulator)
         .call_method(component, "make_move", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest3, vec![other_public_key]);

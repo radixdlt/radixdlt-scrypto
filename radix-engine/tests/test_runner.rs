@@ -5,6 +5,7 @@ use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter};
 use sbor::describe::Fields;
 use sbor::Type;
 use scrypto::abi::{BlueprintAbi, Fn};
+use scrypto::core::Network;
 use scrypto::prelude::*;
 use scrypto::prelude::{HashMap, Package};
 use scrypto::{abi, to_struct};
@@ -54,7 +55,7 @@ impl TestRunner {
     }
 
     pub fn new_account_with_auth_rule(&mut self, withdraw_auth: &AccessRule) -> ComponentAddress {
-        let manifest = ManifestBuilder::new()
+        let manifest = ManifestBuilder::new(Network::LocalSimulator)
             .call_method(SYSTEM_COMPONENT, "free_xrd", to_struct!())
             .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
                 builder.new_account_with_resource(withdraw_auth, bucket_id)
@@ -75,7 +76,9 @@ impl TestRunner {
     }
 
     pub fn publish_package(&mut self, package: Package) -> PackageAddress {
-        let manifest = ManifestBuilder::new().publish_package(package).build();
+        let manifest = ManifestBuilder::new(Network::LocalSimulator)
+            .publish_package(package)
+            .build();
 
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_success();
@@ -144,7 +147,7 @@ impl TestRunner {
         signer_public_key: EcdsaPublicKey,
     ) {
         let package = self.extract_and_publish_package("resource_creator");
-        let manifest = ManifestBuilder::new()
+        let manifest = ManifestBuilder::new(Network::LocalSimulator)
             .create_proof_from_account(auth, account)
             .call_function(
                 package,
@@ -174,7 +177,7 @@ impl TestRunner {
         let admin_auth = self.create_non_fungible_resource(account);
 
         let package = self.extract_and_publish_package("resource_creator");
-        let manifest = ManifestBuilder::new()
+        let manifest = ManifestBuilder::new(Network::LocalSimulator)
             .call_function(
                 package,
                 "ResourceCreator",
@@ -199,7 +202,7 @@ impl TestRunner {
     ) -> (ResourceAddress, ResourceAddress) {
         let auth_resource_address = self.create_non_fungible_resource(account);
         let package = self.extract_and_publish_package("resource_creator");
-        let manifest = ManifestBuilder::new()
+        let manifest = ManifestBuilder::new(Network::LocalSimulator)
             .call_function(
                 package,
                 "ResourceCreator",
@@ -219,7 +222,7 @@ impl TestRunner {
         let auth_resource_address = self.create_non_fungible_resource(account);
 
         let package = self.extract_and_publish_package("resource_creator");
-        let manifest = ManifestBuilder::new()
+        let manifest = ManifestBuilder::new(Network::LocalSimulator)
             .call_function(
                 package,
                 "ResourceCreator",
@@ -234,7 +237,7 @@ impl TestRunner {
 
     pub fn create_non_fungible_resource(&mut self, account: ComponentAddress) -> ResourceAddress {
         let package = self.extract_and_publish_package("resource_creator");
-        let manifest = ManifestBuilder::new()
+        let manifest = ManifestBuilder::new(Network::LocalSimulator)
             .call_function(
                 package,
                 "ResourceCreator",
@@ -255,7 +258,7 @@ impl TestRunner {
         account: ComponentAddress,
     ) -> ResourceAddress {
         let package = self.extract_and_publish_package("resource_creator");
-        let manifest = ManifestBuilder::new()
+        let manifest = ManifestBuilder::new(Network::LocalSimulator)
             .call_function(
                 package,
                 "ResourceCreator",
@@ -277,7 +280,7 @@ impl TestRunner {
         account: ComponentAddress,
         signer_public_key: EcdsaPublicKey,
     ) -> ComponentAddress {
-        let manifest = ManifestBuilder::new()
+        let manifest = ManifestBuilder::new(Network::LocalSimulator)
             .call_function_with_abi(
                 package_address,
                 blueprint_name,

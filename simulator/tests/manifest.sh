@@ -11,7 +11,7 @@ $resim reset
 
 export account=`$resim new-account | awk '/Account component address:/ {print $NF}'`
 export package=`$resim publish ../examples/hello-world | awk '/Package:/ {print $NF}'`
-export xrd=030000000000000000000000000000000000000000000000000004
+export xrd=resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag
 
 output=`$resim run ./tests/m1.rtm | awk '/Component:|Resource:/ {print $NF}'`
 export component=`echo $output | cut -d " " -f1`
