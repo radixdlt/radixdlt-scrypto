@@ -1,5 +1,7 @@
 use crate::engine::SystemApi;
+use crate::fee::CostUnitCounterError;
 use crate::ledger::ReadableSubstateStore;
+use sbor::rust::borrow::ToOwned;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
@@ -18,6 +20,7 @@ pub enum ComponentError {
     InvalidRequestData(DecodeError),
     BlueprintFunctionDoesNotExist(String),
     MethodNotFound,
+    CostingError(CostUnitCounterError),
 }
 
 /// A component is an instance of blueprint.
@@ -105,12 +108,19 @@ impl Component {
 
                 // Abi checks
                 {
-                    let component_ref = system_api.borrow_value(&value_id);
+                    let component_ref = system_api
+                        .borrow_value(&value_id)
+                        .map_err(ComponentError::CostingError)?;
                     let component = component_ref.component();
+                    let component_name = component.blueprint_name().to_owned();
                     let package_id = ValueId::Package(component.package_address.clone());
-                    let package_ref = system_api.borrow_value(&package_id);
+                    drop(component);
+                    drop(component_ref);
+                    let package_ref = system_api
+                        .borrow_value(&package_id)
+                        .map_err(ComponentError::CostingError)?;
                     let package = package_ref.package();
-                    let blueprint_abi = package.blueprint_abi(component.blueprint_name()).unwrap();
+                    let blueprint_abi = package.blueprint_abi(&component_name).unwrap();
                     for (func_name, _) in input.access_rules.iter() {
                         if !blueprint_abi.contains_fn(func_name.as_str()) {
                             return Err(ComponentError::BlueprintFunctionDoesNotExist(
@@ -120,10 +130,14 @@ impl Component {
                     }
                 }
 
-                let mut ref_mut = system_api.borrow_value_mut(&value_id);
+                let mut ref_mut = system_api
+                    .borrow_value_mut(&value_id)
+                    .map_err(ComponentError::CostingError)?;
                 let component = ref_mut.component();
                 component.access_rules.push(input.access_rules);
-                system_api.return_value_mut(ref_mut);
+                system_api
+                    .return_value_mut(ref_mut)
+                    .map_err(ComponentError::CostingError)?;
 
                 Ok(ScryptoValue::from_typed(&()))
             }
@@ -131,7 +145,9 @@ impl Component {
                 let _: ComponentGlobalizeInput =
                     scrypto_decode(&arg.raw).map_err(|e| ComponentError::InvalidRequestData(e))?;
 
-                system_api.globalize_value(&value_id);
+                system_api
+                    .globalize_value(&value_id)
+                    .map_err(ComponentError::CostingError)?;
                 Ok(ScryptoValue::from_typed(&()))
             }
             _ => Err(ComponentError::MethodNotFound),
@@ -158,7 +174,9 @@ impl Component {
                 let _: ComponentGlobalizeInput =
                     scrypto_decode(&arg.raw).map_err(|e| ComponentError::InvalidRequestData(e))?;
 
-                system_api.globalize_value(&value_id);
+                system_api
+                    .globalize_value(&value_id)
+                    .map_err(ComponentError::CostingError)?;
                 Ok(ScryptoValue::from_typed(&()))
             }
             _ => Err(ComponentError::MethodNotFound),

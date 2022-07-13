@@ -659,7 +659,7 @@ where
 
     fn process_return_data(
         &mut self,
-        from: Option<SNodeRef>,
+        from: SNodeRef,
         validated: &ScryptoValue,
     ) -> Result<(), RuntimeError> {
         if !validated.kv_store_ids.is_empty() {
@@ -668,7 +668,7 @@ where
 
         // Allow vaults to be returned from ResourceStatic
         // TODO: Should we allow vaults to be returned by any component?
-        if !matches!(from, Some(SNodeRef::ResourceRef(_))) {
+        if !matches!(from, SNodeRef::ResourceRef(_)) {
             if !validated.vault_ids.is_empty() {
                 return Err(RuntimeError::VaultNotAllowed);
             }
@@ -679,7 +679,7 @@ where
 
     pub fn run(
         &mut self,
-        snode_ref: Option<SNodeRef>, // TODO: Remove, abstractions between invoke_snode() and run() are a bit messy right now
+        snode_ref: SNodeRef, // TODO: Remove, abstractions between invoke_snode() and run() are a bit messy right now
         execution: SNodeExecution<'p>,
         fn_ident: &str,
         input: ScryptoValue,
@@ -689,10 +689,14 @@ where
             Level::Debug,
             "Run started! Depth: {}, Remaining cost units: {}",
             self.depth,
-            self.cost_unit_counter.remaining()
+            self.cost_unit_counter.balance()
         );
+
         self.cost_unit_counter
-            .consume(self.fee_table.engine_run_cost())
+            .consume(
+                self.fee_table.function_cost(&snode_ref, fn_ident, &input),
+                "run_function",
+            )
             .map_err(RuntimeError::CostingError)?;
 
         let output = {
@@ -820,7 +824,7 @@ where
             self,
             Level::Debug,
             "Run finished! Remaining cost units: {}",
-            self.cost_unit_counter().remaining()
+            self.cost_unit_counter().balance()
         );
 
         Ok((output, taken_values))
@@ -976,6 +980,17 @@ where
         if self.depth == MAX_CALL_DEPTH {
             return Err(RuntimeError::MaxCallDepthLimitReached);
         }
+
+        self.cost_unit_counter
+            .consume(
+                self.fee_table
+                    .system_api_cost(SystemApiCostingEntry::InvokeFunction {
+                        receiver: &snode_ref,
+                        input: &input,
+                    }),
+                "invoke_function",
+            )
+            .map_err(RuntimeError::CostingError)?;
 
         trace!(
             self,
@@ -1602,8 +1617,7 @@ where
         );
 
         // invoke the main function
-        let (result, received_values) =
-            frame.run(Some(snode_ref), loaded_snode, &fn_ident, input)?;
+        let (result, received_values) = frame.run(snode_ref, loaded_snode, &fn_ident, input)?;
         drop(frame);
 
         // Release locked addresses
@@ -1620,7 +1634,56 @@ where
         Ok(result)
     }
 
-    fn borrow_value(&self, value_id: &ValueId) -> REValueRef<'_, 's, S> {
+    fn borrow_value(
+        &mut self,
+        value_id: &ValueId,
+    ) -> Result<REValueRef<'_, 's, S>, CostUnitCounterError> {
+        self.cost_unit_counter.consume(
+            self.fee_table.system_api_cost({
+                match value_id {
+                    ValueId::Bucket(_) => SystemApiCostingEntry::BorrowLocal,
+                    ValueId::Proof(_) => SystemApiCostingEntry::BorrowLocal,
+                    ValueId::Worktop => SystemApiCostingEntry::BorrowLocal,
+                    ValueId::Vault(_) => SystemApiCostingEntry::BorrowGlobal {
+                        // TODO: figure out loaded state and size
+                        loaded: false,
+                        size: 0,
+                    },
+                    ValueId::Component(_) => SystemApiCostingEntry::BorrowGlobal {
+                        // TODO: figure out loaded state and size
+                        loaded: false,
+                        size: 0,
+                    },
+                    ValueId::KeyValueStore(_) => SystemApiCostingEntry::BorrowGlobal {
+                        // TODO: figure out loaded state and size
+                        loaded: false,
+                        size: 0,
+                    },
+                    ValueId::Resource(_) => SystemApiCostingEntry::BorrowGlobal {
+                        // TODO: figure out loaded state and size
+                        loaded: false,
+                        size: 0,
+                    },
+                    ValueId::Package(_) => SystemApiCostingEntry::BorrowGlobal {
+                        // TODO: figure out loaded state and size
+                        loaded: false,
+                        size: 0,
+                    },
+                    ValueId::System => SystemApiCostingEntry::BorrowGlobal {
+                        // TODO: figure out loaded state and size
+                        loaded: false,
+                        size: 0,
+                    },
+                    ValueId::NonFungibles(..) => SystemApiCostingEntry::BorrowGlobal {
+                        // TODO: figure out loaded state and size
+                        loaded: false,
+                        size: 0,
+                    },
+                }
+            }),
+            "borrow",
+        )?;
+
         let info = self
             .value_refs
             .get(value_id)
@@ -1629,11 +1692,63 @@ where
             panic!("Trying to read value which is not visible.")
         }
 
-        info.location
-            .to_ref(&self.owned_values, &self.parent_values, &self.track)
+        Ok(info.location.to_ref(
+            &self.owned_values,
+            &self.parent_values,
+            &self.track,
+        ))
     }
 
-    fn borrow_value_mut(&mut self, value_id: &ValueId) -> RENativeValueRef {
+    fn borrow_value_mut(
+        &mut self,
+        value_id: &ValueId,
+    ) -> Result<RENativeValueRef, CostUnitCounterError> {
+        self.cost_unit_counter.consume(
+            self.fee_table.system_api_cost({
+                match value_id {
+                    ValueId::Bucket(_) => SystemApiCostingEntry::BorrowLocal,
+                    ValueId::Proof(_) => SystemApiCostingEntry::BorrowLocal,
+                    ValueId::Worktop => SystemApiCostingEntry::BorrowLocal,
+                    ValueId::Vault(_) => SystemApiCostingEntry::BorrowGlobal {
+                        // TODO: figure out loaded state and size
+                        loaded: false,
+                        size: 0,
+                    },
+                    ValueId::Component(_) => SystemApiCostingEntry::BorrowGlobal {
+                        // TODO: figure out loaded state and size
+                        loaded: false,
+                        size: 0,
+                    },
+                    ValueId::KeyValueStore(_) => SystemApiCostingEntry::BorrowGlobal {
+                        // TODO: figure out loaded state and size
+                        loaded: false,
+                        size: 0,
+                    },
+                    ValueId::Resource(_) => SystemApiCostingEntry::BorrowGlobal {
+                        // TODO: figure out loaded state and size
+                        loaded: false,
+                        size: 0,
+                    },
+                    ValueId::Package(_) => SystemApiCostingEntry::BorrowGlobal {
+                        // TODO: figure out loaded state and size
+                        loaded: false,
+                        size: 0,
+                    },
+                    ValueId::System => SystemApiCostingEntry::BorrowGlobal {
+                        // TODO: figure out loaded state and size
+                        loaded: false,
+                        size: 0,
+                    },
+                    ValueId::NonFungibles(..) => SystemApiCostingEntry::BorrowGlobal {
+                        // TODO: figure out loaded state and size
+                        loaded: false,
+                        size: 0,
+                    },
+                }
+            }),
+            "borrow",
+        )?;
+
         let info = self
             .value_refs
             .get(value_id)
@@ -1642,29 +1757,67 @@ where
             panic!("Trying to read value which is not visible.")
         }
 
-        info.location.borrow_native_ref(
+        Ok(info.location.borrow_native_ref(
             &mut self.owned_values,
             &mut self.parent_values,
             &mut self.track,
-        )
+        ))
     }
 
-    fn return_value_mut(&mut self, val_ref: RENativeValueRef) {
+    fn return_value_mut(
+        &mut self,
+        val_ref: RENativeValueRef,
+    ) -> Result<(), CostUnitCounterError> {
+        self.cost_unit_counter.consume(
+            self.fee_table.system_api_cost({
+                match &val_ref {
+                    RENativeValueRef::Stack(..) => SystemApiCostingEntry::ReturnLocal,
+                    RENativeValueRef::Track(address, _) => {
+                        match address {
+                            Address::Vault(_) => SystemApiCostingEntry::ReturnGlobal { size: 0 },
+                            Address::KeyValueStore(_) => SystemApiCostingEntry::ReturnGlobal { size: 0 },
+                            Address::Resource(_) => SystemApiCostingEntry::ReturnGlobal { size: 0 },
+                            Address::Package(_) => SystemApiCostingEntry::ReturnGlobal { size: 0 },
+                            Address::NonFungibleSet(_) => SystemApiCostingEntry::ReturnGlobal { size: 0 },
+                            Address::GlobalComponent(_) => SystemApiCostingEntry::ReturnGlobal { size: 0 },
+                            Address::LocalComponent(_) => SystemApiCostingEntry::ReturnGlobal { size: 0 },
+                            Address::System => SystemApiCostingEntry::ReturnGlobal { size: 0 },
+                        }
+                    }
+                }
+
+            }),
+            "return",
+        )?;
+
         val_ref.return_to_location(
             &mut self.owned_values,
             &mut self.parent_values,
             &mut self.track,
-        )
+        );
+        Ok(())
     }
 
-    fn drop_value(&mut self, value_id: &ValueId) -> REValue {
-        self.owned_values.remove(&value_id).unwrap()
+    fn drop_value(&mut self, value_id: &ValueId) -> Result<REValue, CostUnitCounterError> {
+        // TODO: costing
+
+        Ok(self.owned_values.remove(&value_id).unwrap())
     }
 
     fn create_value<V: Into<REValueByComplexity>>(
         &mut self,
         v: V,
     ) -> Result<ValueId, RuntimeError> {
+        self.cost_unit_counter
+            .consume(
+                self.fee_table
+                    .system_api_cost(SystemApiCostingEntry::Create {
+                        size: 0, // TODO: get size of the value
+                    }),
+                "create",
+            )
+            .map_err(RuntimeError::CostingError)?;
+
         let value_by_complexity = v.into();
         let id = match value_by_complexity {
             REValueByComplexity::Primitive(REPrimitiveValue::Bucket(..)) => {
@@ -1736,7 +1889,15 @@ where
         Ok(id)
     }
 
-    fn globalize_value(&mut self, value_id: &ValueId) {
+    fn globalize_value(&mut self, value_id: &ValueId) -> Result<(), CostUnitCounterError> {
+        self.cost_unit_counter.consume(
+            self.fee_table
+                .system_api_cost(SystemApiCostingEntry::Globalize {
+                    size: 0, // TODO: get size of the value
+                }),
+            "globalize",
+        )?;
+
         let mut values = HashSet::new();
         values.insert(value_id.clone());
         let (taken_values, missing) = self.take_available_values(values, false).unwrap();
@@ -1793,6 +1954,8 @@ where
                 );
             }
         }
+
+        Ok(())
     }
 
     fn remove_value_data(
@@ -1825,6 +1988,15 @@ where
     }
 
     fn read_value_data(&mut self, address: SubstateAddress) -> Result<ScryptoValue, RuntimeError> {
+        self.cost_unit_counter
+            .consume(
+                self.fee_table.system_api_cost(SystemApiCostingEntry::Read {
+                    size: 0, // TODO: get size of the value
+                }),
+                "read",
+            )
+            .map_err(RuntimeError::CostingError)?;
+
         let (parent_location, current_value) = self.read_value_internal(&address)?;
         let cur_children = current_value.value_ids();
         for child_id in cur_children {
@@ -1846,6 +2018,16 @@ where
         address: SubstateAddress,
         value: ScryptoValue,
     ) -> Result<(), RuntimeError> {
+        self.cost_unit_counter
+            .consume(
+                self.fee_table
+                    .system_api_cost(SystemApiCostingEntry::Write {
+                        size: 0, // TODO: get size of the value
+                    }),
+                "write",
+            )
+            .map_err(RuntimeError::CostingError)?;
+
         // If write, take values from current frame
         let (taken_values, missing) = {
             let value_ids = value.value_ids();
@@ -1896,16 +2078,34 @@ where
         Ok(())
     }
 
-    fn get_transaction_hash(&mut self) -> Hash {
-        self.track.transaction_hash()
+    fn transaction_hash(&mut self) -> Result<Hash, CostUnitCounterError> {
+        self.cost_unit_counter.consume(
+            self.fee_table
+                .system_api_cost(SystemApiCostingEntry::ReadTransactionHash),
+            "read_transaction_hash",
+        )?;
+        Ok(self.track.transaction_hash())
     }
 
-    fn generate_uuid(&mut self) -> u128 {
-        self.track.new_uuid()
+    fn generate_uuid(&mut self) -> Result<u128, CostUnitCounterError> {
+        self.cost_unit_counter.consume(
+            self.fee_table
+                .system_api_cost(SystemApiCostingEntry::GenerateUuid),
+            "generate_uuid",
+        )?;
+        Ok(self.track.new_uuid())
     }
 
-    fn user_log(&mut self, level: Level, message: String) {
+    fn emit_log(&mut self, level: Level, message: String) -> Result<(), CostUnitCounterError> {
+        self.cost_unit_counter.consume(
+            self.fee_table
+                .system_api_cost(SystemApiCostingEntry::EmitLog {
+                    size: message.len() as u32,
+                }),
+            "emit_log",
+        )?;
         self.track.add_log(level, message);
+        Ok(())
     }
 
     fn check_access_rule(
