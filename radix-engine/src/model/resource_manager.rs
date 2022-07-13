@@ -19,6 +19,7 @@ use scrypto::resource::ResourceMethodAuthKey::{self, *};
 use scrypto::values::ScryptoValue;
 
 use crate::engine::SystemApi;
+use crate::fee::CostUnitCounterError;
 use crate::ledger::ReadableSubstateStore;
 use crate::model::resource_manager::ResourceMethodRule::{Protected, Public};
 use crate::model::ResourceManagerError::InvalidMethod;
@@ -51,6 +52,7 @@ pub enum ResourceManagerError {
     CouldNotCreateBucket,
     CouldNotCreateVault,
     InvalidMethod,
+    CostingError(CostUnitCounterError),
 }
 
 enum MethodAccessRuleMethod {
@@ -415,11 +417,15 @@ impl ResourceManager {
                 let resource_address = system_api.create_resource(resource_manager);
                 let bucket_id = if let Some(mint_params) = input.mint_params {
                     let resource_id = ValueId::Resource(resource_address);
-                    let mut value = system_api.borrow_value_mut(&resource_id);
+                    let mut value = system_api
+                        .borrow_value_mut(&resource_id)
+                        .map_err(ResourceManagerError::CostingError)?;
                     let resource_manager = value.resource_manager();
                     let container =
                         resource_manager.mint(mint_params, resource_address, system_api)?;
-                    system_api.return_value_mut(resource_id, value);
+                    system_api
+                        .return_value_mut(resource_id, value)
+                        .map_err(ResourceManagerError::CostingError)?;
                     let bucket_id = system_api
                         .create_value(Bucket::new(container))
                         .unwrap()
@@ -449,7 +455,9 @@ impl ResourceManager {
         system_api: &mut Y,
     ) -> Result<ScryptoValue, ResourceManagerError> {
         let value_id = ValueId::Resource(resource_address);
-        let mut ref_mut = system_api.borrow_value_mut(&value_id);
+        let mut ref_mut = system_api
+            .borrow_value_mut(&value_id)
+            .map_err(ResourceManagerError::CostingError)?;
         let resource_manager = ref_mut.resource_manager();
 
         let rtn = match method_name {
@@ -573,7 +581,9 @@ impl ResourceManager {
             _ => Err(InvalidMethod),
         }?;
 
-        system_api.return_value_mut(value_id, ref_mut);
+        system_api
+            .return_value_mut(value_id, ref_mut)
+            .map_err(ResourceManagerError::CostingError)?;
 
         Ok(rtn)
     }

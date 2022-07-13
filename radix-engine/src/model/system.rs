@@ -4,6 +4,7 @@ use scrypto::core::{SystemGetCurrentEpochInput, SystemGetTransactionHashInput};
 use scrypto::values::ScryptoValue;
 
 use crate::engine::SystemApi;
+use crate::fee::CostUnitCounterError;
 use crate::ledger::ReadableSubstateStore;
 use crate::model::SystemError::InvalidMethod;
 use crate::wasm::*;
@@ -12,6 +13,7 @@ use crate::wasm::*;
 pub enum SystemError {
     InvalidRequestData(DecodeError),
     InvalidMethod,
+    CostingError(CostUnitCounterError),
 }
 
 pub struct System {}
@@ -34,12 +36,18 @@ impl System {
                 let _: SystemGetCurrentEpochInput =
                     scrypto_decode(&arg.raw).map_err(|e| SystemError::InvalidRequestData(e))?;
                 // TODO: Make this stateful
-                Ok(ScryptoValue::from_typed(&system_api.get_epoch()))
+                Ok(ScryptoValue::from_typed(
+                    &system_api.epoch().map_err(SystemError::CostingError)?,
+                ))
             }
             "transaction_hash" => {
                 let _: SystemGetTransactionHashInput =
                     scrypto_decode(&arg.raw).map_err(|e| SystemError::InvalidRequestData(e))?;
-                Ok(ScryptoValue::from_typed(&system_api.get_transaction_hash()))
+                Ok(ScryptoValue::from_typed(
+                    &system_api
+                        .transaction_hash()
+                        .map_err(SystemError::CostingError)?,
+                ))
             }
             _ => Err(InvalidMethod),
         }

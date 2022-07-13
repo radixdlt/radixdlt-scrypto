@@ -10,6 +10,7 @@ use scrypto::resource::{
 use scrypto::values::ScryptoValue;
 
 use crate::engine::SystemApi;
+use crate::fee::CostUnitCounterError;
 use crate::ledger::ReadableSubstateStore;
 use crate::model::AuthZoneError::InvalidMethod;
 use crate::model::{Proof, ProofError};
@@ -25,6 +26,7 @@ pub enum AuthZoneError {
     CouldNotGetResource,
     NoMethodSpecified,
     InvalidMethod,
+    CostingError(CostUnitCounterError),
 }
 
 /// A transient resource container.
@@ -121,6 +123,7 @@ impl AuthZone {
                     scrypto_decode(&arg.raw).map_err(|e| AuthZoneError::InvalidRequestData(e))?;
                 let mut proof: Proof = system_api
                     .drop_value(&ValueId::Transient(TransientValueId::Proof(input.proof.0)))
+                    .map_err(AuthZoneError::CostingError)?
                     .into();
                 // FIXME: this is a hack for now until we can get snode_state into process
                 // FIXME: and be able to determine which snode the proof is going into
@@ -133,7 +136,9 @@ impl AuthZone {
                 let input: AuthZoneCreateProofInput =
                     scrypto_decode(&arg.raw).map_err(|e| AuthZoneError::InvalidRequestData(e))?;
                 let resource_type = {
-                    let value = system_api.borrow_value(&ValueId::Resource(input.resource_address));
+                    let value = system_api
+                        .borrow_value(&ValueId::Resource(input.resource_address))
+                        .map_err(AuthZoneError::CostingError)?;
                     let resource_manager = value.resource_manager();
                     resource_manager.resource_type()
                 };
@@ -147,7 +152,9 @@ impl AuthZone {
                 let input: AuthZoneCreateProofByAmountInput =
                     scrypto_decode(&arg.raw).map_err(|e| AuthZoneError::InvalidRequestData(e))?;
                 let resource_type = {
-                    let value = system_api.borrow_value(&ValueId::Resource(input.resource_address));
+                    let value = system_api
+                        .borrow_value(&ValueId::Resource(input.resource_address))
+                        .map_err(AuthZoneError::CostingError)?;
                     let resource_manager = value.resource_manager();
                     resource_manager.resource_type()
                 };
@@ -165,7 +172,9 @@ impl AuthZone {
                 let input: AuthZoneCreateProofByIdsInput =
                     scrypto_decode(&arg.raw).map_err(|e| AuthZoneError::InvalidRequestData(e))?;
                 let resource_type = {
-                    let value = system_api.borrow_value(&ValueId::Resource(input.resource_address));
+                    let value = system_api
+                        .borrow_value(&ValueId::Resource(input.resource_address))
+                        .map_err(AuthZoneError::CostingError)?;
                     let resource_manager = value.resource_manager();
                     resource_manager.resource_type()
                 };
