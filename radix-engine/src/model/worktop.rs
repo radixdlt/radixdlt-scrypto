@@ -236,7 +236,7 @@ impl Worktop {
             .map_err(WorktopError::CostingError)?;
         let worktop = value_ref.worktop();
 
-        match method_name {
+        let rtn = match method_name {
             "put" => {
                 let input: WorktopPutInput =
                     scrypto_decode(&arg.raw).map_err(|e| WorktopError::InvalidRequestData(e))?;
@@ -383,6 +383,10 @@ impl Worktop {
                 Ok(ScryptoValue::from_typed(&buckets))
             }
             _ => Err(InvalidMethod),
-        }
+        }?;
+
+        system_api.return_value_mut(value_ref)
+            .map_err(WorktopError::CostingError)?;
+        Ok(rtn)
     }
 }
