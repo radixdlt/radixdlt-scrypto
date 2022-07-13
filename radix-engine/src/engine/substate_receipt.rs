@@ -60,8 +60,7 @@ pub struct SubstateOperationsReceipt {
 }
 
 impl SubstateOperationsReceipt {
-    /// Commits changes to the underlying ledger.
-    /// Currently none of these objects are deleted so all commits are puts
+    /// Commits changes to the underlying substate store.
     pub fn commit<S: WriteableSubstateStore>(mut self, store: &mut S) -> CommitReceipt {
         let hash = hash(scrypto_encode(&self));
         let mut receipt = CommitReceipt::new();

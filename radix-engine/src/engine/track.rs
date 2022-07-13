@@ -65,7 +65,6 @@ impl BorrowedSNodes {
 }
 
 pub struct TrackReceipt {
-    pub borrowed: BorrowedSNodes,
     pub new_addresses: Vec<Address>,
     pub logs: Vec<(Level, String)>,
     pub substates: SubstateOperationsReceipt,
@@ -712,9 +711,11 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             .unwrap()
     }
 
-    /// Commits changes to the underlying ledger.
-    /// Currently none of these objects are deleted so all commits are puts
     pub fn to_receipt(mut self) -> TrackReceipt {
+        if !self.borrowed_substates.is_empty() {
+            panic!("There should be nothing borrowed by end of transaction.");
+        }
+
         let mut store_instructions = Vec::new();
         for substate_id in self.downed_substates {
             store_instructions.push(SubstateOperation::Down(substate_id));
@@ -732,12 +733,8 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         let substates = SubstateOperationsReceipt {
             substate_operations: store_instructions,
         };
-        let borrowed = BorrowedSNodes {
-            borrowed_substates: self.borrowed_substates.into_keys().collect(),
-        };
         TrackReceipt {
             new_addresses: self.new_addresses,
-            borrowed,
             substates,
             logs: self.logs,
         }

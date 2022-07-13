@@ -59,7 +59,7 @@ where
         self.substate_store
     }
 
-    pub fn execute<T: ExecutableTransaction>(&mut self, transaction: &T) -> Receipt {
+    pub fn execute<T: ExecutableTransaction>(&mut self, transaction: &T) -> Option<Receipt> {
         #[cfg(not(feature = "alloc"))]
         let now = std::time::Instant::now();
 
@@ -117,20 +117,34 @@ where
                 instructions: instructions.clone(),
             }),
         );
-        let cost_units_consumed = root_frame.cost_unit_counter().consumed();
-
         let (outputs, error) = match result {
             Ok(o) => (scrypto_decode::<Vec<Vec<u8>>>(&o.raw).unwrap(), None),
             Err(e) => (Vec::new(), Some(e)),
         };
 
+        // Fee finalization:
+        // - Refund overpaid fee
+        // - Burn consumed fee
+        // - Disburse validator tips
+        let counter = root_frame.cost_unit_counter();
+        if counter.owed() != 0 {
+            // If a transaction finished before the loan check point AND the
+            // loan is not fully repaid, we should reject it.
+            return None;
+        }
+        if counter.balance() > 0 {
+            // TODO: refund
+        }
+        for _i in 0..10 {
+            // TODO: burn fee + reward validators
+        }
+        let total_consumed = counter.consumed();
+        let _overpaid = counter.balance();
+
         let track_receipt = track.to_receipt();
 
         // commit state updates
         let commit_receipt = if error.is_none() {
-            if !track_receipt.borrowed.is_empty() {
-                panic!("There should be nothing borrowed by end of transaction.");
-            }
             let commit_receipt = track_receipt.substates.commit(self.substate_store);
             Some(commit_receipt)
         } else {
@@ -167,7 +181,7 @@ where
             println!("+{}+", "-".repeat(30));
         }
 
-        Receipt {
+        Some(Receipt {
             commit_receipt,
             instructions,
             result: match error {
@@ -180,7 +194,7 @@ where
             new_component_addresses,
             new_resource_addresses,
             execution_time,
-            cost_units_consumed,
-        }
+            cost_units_consumed: total_consumed,
+        })
     }
 }
