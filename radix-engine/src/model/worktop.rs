@@ -10,6 +10,7 @@ use scrypto::engine::types::*;
 use scrypto::values::ScryptoValue;
 
 use crate::engine::{DropFailure, SystemApi};
+use crate::fee::CostUnitCounterError;
 use crate::ledger::ReadableSubstateStore;
 use crate::model::WorktopError::InvalidMethod;
 use crate::model::{Bucket, ResourceContainer, ResourceContainerError};
@@ -74,6 +75,7 @@ pub enum WorktopError {
     CouldNotTakeBucket,
     AssertionFailed,
     InvalidMethod,
+    CostingError(CostUnitCounterError),
 }
 
 impl Worktop {
@@ -229,7 +231,9 @@ impl Worktop {
         arg: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, WorktopError> {
-        let mut value_ref = system_api.borrow_value_mut(&value_id);
+        let mut value_ref = system_api
+            .borrow_value_mut(&value_id)
+            .map_err(WorktopError::CostingError)?;
         let worktop = value_ref.worktop();
 
         match method_name {
@@ -240,6 +244,7 @@ impl Worktop {
                     .drop_value(&ValueId::Transient(TransientValueId::Bucket(
                         input.bucket.0,
                     )))
+                    .map_err(WorktopError::CostingError)?
                     .into();
                 worktop
                     .put(bucket)
@@ -256,8 +261,9 @@ impl Worktop {
                     container
                 } else {
                     let resource_type = {
-                        let value =
-                            system_api.borrow_value(&ValueId::Resource(input.resource_address));
+                        let value = system_api
+                            .borrow_value(&ValueId::Resource(input.resource_address))
+                            .map_err(WorktopError::CostingError)?;
                         let resource_manager = value.resource_manager();
                         resource_manager.resource_type()
                     };
@@ -282,8 +288,9 @@ impl Worktop {
                     container
                 } else {
                     let resource_type = {
-                        let value =
-                            system_api.borrow_value(&ValueId::Resource(input.resource_address));
+                        let value = system_api
+                            .borrow_value(&ValueId::Resource(input.resource_address))
+                            .map_err(WorktopError::CostingError)?;
                         let resource_manager = value.resource_manager();
                         resource_manager.resource_type()
                     };
@@ -309,8 +316,9 @@ impl Worktop {
                     container
                 } else {
                     let resource_type = {
-                        let value =
-                            system_api.borrow_value(&ValueId::Resource(input.resource_address));
+                        let value = system_api
+                            .borrow_value(&ValueId::Resource(input.resource_address))
+                            .map_err(WorktopError::CostingError)?;
                         let resource_manager = value.resource_manager();
                         resource_manager.resource_type()
                     };

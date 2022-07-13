@@ -1,8 +1,20 @@
+use core::ops::AddAssign;
+
+use sbor::rust::collections::HashMap;
+
 pub struct CostUnitCounter {
-    limit: u32,
-    loan: u32,
+    /// The balance cost units
+    balance: u32,
+    /// The number of cost units owed to the system
+    owed: u32,
+    /// The total cost units consumed so far
     consumed: u32,
-    remaining: u32,
+    /// The max number of cost units that can be consumed
+    limit: u32,
+    /// At which point the system loan repayment is checked
+    check_point: u32,
+    /// Costing analysis
+    pub analysis: HashMap<&'static str, u32>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -10,50 +22,52 @@ pub enum CostUnitCounterError {
     OutOfCostUnit,
     CounterOverflow,
     LimitExceeded,
+    SystemLoanNotCleared,
 }
 
 impl CostUnitCounter {
     pub fn new(limit: u32, loan: u32) -> Self {
         Self {
-            limit,
-            loan,
+            balance: loan,
+            owed: loan,
             consumed: 0,
-            remaining: loan,
+            limit,
+            check_point: loan,
+            analysis: HashMap::new(),
         }
     }
 
-    pub fn consume(&mut self, n: u32) -> Result<(), CostUnitCounterError> {
-        self.remaining = self
-            .remaining
+    pub fn consume(&mut self, n: u32, reason: &'static str) -> Result<(), CostUnitCounterError> {
+        self.balance = self
+            .balance
             .checked_sub(n)
             .ok_or(CostUnitCounterError::OutOfCostUnit)?;
         self.consumed = self
             .consumed
             .checked_add(n)
             .ok_or(CostUnitCounterError::CounterOverflow)?;
+
+        self.analysis.entry(reason).or_default().add_assign(n);
+
         if self.consumed > self.limit {
             return Err(CostUnitCounterError::LimitExceeded);
+        }
+        if self.consumed >= self.check_point && self.owed > 0 {
+            return Err(CostUnitCounterError::SystemLoanNotCleared);
         }
         Ok(())
     }
 
-    pub fn refill(&mut self, n: u32) -> Result<(), CostUnitCounterError> {
-        self.remaining = self
-            .remaining
-            .checked_add(n)
-            .ok_or(CostUnitCounterError::CounterOverflow)?;
-        Ok(())
-    }
-
     pub fn repay(&mut self, n: u32) -> Result<(), CostUnitCounterError> {
-        self.remaining = self
-            .remaining
-            .checked_sub(n)
-            .ok_or(CostUnitCounterError::OutOfCostUnit)?;
-        self.loan = self
-            .loan
-            .checked_sub(n)
-            .ok_or(CostUnitCounterError::CounterOverflow)?;
+        if n >= self.owed {
+            self.balance = self
+                .balance
+                .checked_add(n - self.owed)
+                .ok_or(CostUnitCounterError::CounterOverflow)?;
+            self.owed = 0;
+        } else {
+            self.owed -= n;
+        }
         Ok(())
     }
 
@@ -65,12 +79,12 @@ impl CostUnitCounter {
         self.consumed
     }
 
-    pub fn remaining(&self) -> u32 {
-        self.remaining
+    pub fn balance(&self) -> u32 {
+        self.balance
     }
 
-    pub fn loan(&self) -> u32 {
-        self.loan
+    pub fn owed(&self) -> u32 {
+        self.owed
     }
 }
 
@@ -79,35 +93,36 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_consume_and_refill() {
+    fn test_consume_and_repay() {
         let mut counter = CostUnitCounter::new(100, 5);
-        counter.consume(2).unwrap();
-        counter.refill(3).unwrap();
-        assert_eq!(6, counter.remaining());
+        counter.consume(2, "test").unwrap();
+        counter.repay(3).unwrap();
+        assert_eq!(3, counter.balance());
         assert_eq!(2, counter.consumed());
+        assert_eq!(2, counter.owed());
     }
 
     #[test]
     fn test_out_of_cost_unit() {
         let mut counter = CostUnitCounter::new(100, 5);
-        assert_eq!(Err(CostUnitCounterError::OutOfCostUnit), counter.consume(6));
+        assert_eq!(
+            Err(CostUnitCounterError::OutOfCostUnit),
+            counter.consume(6, "test")
+        );
     }
 
     #[test]
     fn test_overflow() {
-        let mut counter = CostUnitCounter::new(100, u32::max_value());
-        counter.consume(1).unwrap();
-        assert_eq!(
-            Err(CostUnitCounterError::CounterOverflow),
-            counter.refill(2)
-        );
+        let mut counter = CostUnitCounter::new(100, 0);
+        assert_eq!(Ok(()), counter.repay(u32::max_value()));
+        assert_eq!(Err(CostUnitCounterError::CounterOverflow), counter.repay(1));
     }
 
     #[test]
     fn test_repay() {
         let mut counter = CostUnitCounter::new(100, 500);
         counter.repay(100).unwrap();
-        assert_eq!(400, counter.remaining());
-        assert_eq!(400, counter.loan());
+        assert_eq!(500, counter.balance());
+        assert_eq!(400, counter.owed());
     }
 }

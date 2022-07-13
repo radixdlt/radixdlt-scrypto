@@ -10,13 +10,13 @@ use transaction::builder::ManifestBuilder;
 fn should_be_able_to_call_read_method_on_a_stored_component_in_owned_component() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
-    let package_address = test_runner.extract_and_publish_package("component");
+    let package_address = test_runner.extract_and_publish_package("local_component");
 
     // Act
     let manifest = ManifestBuilder::new()
         .call_function(
             package_address,
-            "StoredLocalComponent",
+            "StoredSecret",
             "call_read_on_stored_component_in_owned_component",
             to_struct!(),
         )
@@ -31,13 +31,13 @@ fn should_be_able_to_call_read_method_on_a_stored_component_in_owned_component()
 fn should_be_able_to_call_write_method_on_a_stored_component_in_owned_component() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
-    let package_address = test_runner.extract_and_publish_package("component");
+    let package_address = test_runner.extract_and_publish_package("local_component");
 
     // Act
     let manifest = ManifestBuilder::new()
         .call_function(
             package_address,
-            "StoredLocalComponent",
+            "StoredSecret",
             "call_write_on_stored_component_in_owned_component",
             to_struct!(),
         )
@@ -52,11 +52,11 @@ fn should_be_able_to_call_write_method_on_a_stored_component_in_owned_component(
 fn should_be_able_to_call_read_method_on_a_stored_component_in_global_component() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
-    let package_address = test_runner.extract_and_publish_package("component");
+    let package_address = test_runner.extract_and_publish_package("local_component");
     let manifest = ManifestBuilder::new()
         .call_function(
             package_address,
-            "StoredLocalComponent",
+            "StoredSecret",
             "new_global",
             to_struct!(34567u32),
         )
@@ -81,11 +81,11 @@ fn should_be_able_to_call_read_method_on_a_stored_component_in_global_component(
 fn should_be_able_to_call_write_method_on_a_stored_component_in_global_component() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
-    let package_address = test_runner.extract_and_publish_package("component");
+    let package_address = test_runner.extract_and_publish_package("local_component");
     let manifest = ManifestBuilder::new()
         .call_function(
             package_address,
-            "StoredLocalComponent",
+            "StoredSecret",
             "new_global",
             to_struct!(34567u32),
         )
@@ -111,13 +111,13 @@ fn should_be_able_to_call_write_method_on_a_stored_component_in_global_component
 fn should_be_able_to_call_read_method_on_a_kv_stored_component_in_owned_component() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
-    let package_address = test_runner.extract_and_publish_package("component");
+    let package_address = test_runner.extract_and_publish_package("local_component");
 
     // Act
     let manifest = ManifestBuilder::new()
         .call_function(
             package_address,
-            "StoredKVLocalComponent",
+            "StoredKVLocal",
             "call_read_on_stored_component_in_owned_component",
             to_struct!(),
         )
@@ -132,13 +132,13 @@ fn should_be_able_to_call_read_method_on_a_kv_stored_component_in_owned_componen
 fn should_be_able_to_call_write_method_on_a_kv_stored_component_in_owned_component() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
-    let package_address = test_runner.extract_and_publish_package("component");
+    let package_address = test_runner.extract_and_publish_package("local_component");
 
     // Act
     let manifest = ManifestBuilder::new()
         .call_function(
             package_address,
-            "StoredKVLocalComponent",
+            "StoredKVLocal",
             "call_write_on_stored_component_in_owned_component",
             to_struct!(),
         )
@@ -153,11 +153,11 @@ fn should_be_able_to_call_write_method_on_a_kv_stored_component_in_owned_compone
 fn should_be_able_to_call_read_method_on_a_kv_stored_component_in_global_component() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
-    let package_address = test_runner.extract_and_publish_package("component");
+    let package_address = test_runner.extract_and_publish_package("local_component");
     let manifest = ManifestBuilder::new()
         .call_function(
             package_address,
-            "StoredKVLocalComponent",
+            "StoredKVLocal",
             "new_global",
             to_struct!(34567u32),
         )
@@ -182,11 +182,11 @@ fn should_be_able_to_call_read_method_on_a_kv_stored_component_in_global_compone
 fn should_be_able_to_call_write_method_on_a_kv_stored_component_in_global_component() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
-    let package_address = test_runner.extract_and_publish_package("component");
+    let package_address = test_runner.extract_and_publish_package("local_component");
     let manifest = ManifestBuilder::new()
         .call_function(
             package_address,
-            "StoredKVLocalComponent",
+            "StoredKVLocal",
             "new_global",
             to_struct!(34567u32),
         )
