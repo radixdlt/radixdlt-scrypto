@@ -79,15 +79,27 @@ where
         let mut cost_unit_counter = CostUnitCounter::new(MAX_TRANSACTION_COST, SYSTEM_LOAN_AMOUNT);
         let fee_table = FeeTable::new();
 
-        // Charge transaction size
+        // Charge transaction decoding and stateless verification
         cost_unit_counter
             .consume(
-                fee_table
-                    .tx_validation_cost_per_byte()
-                    .checked_mul(transaction.transaction_payload_size())
-                    .expect("No overflow should ocurr with transaction size checked"),
+                fee_table.tx_decoding_per_byte() * transaction.transaction_payload_size() as u32,
+                "tx_decoding",
             )
-            .expect("System loan should cover transaction validation cost");
+            .expect("System loan should cover this");
+        cost_unit_counter
+            .consume(
+                fee_table.tx_verification_per_byte()
+                    * transaction.transaction_payload_size() as u32,
+                "tx_verification",
+            )
+            .expect("System loan should cover this");
+        cost_unit_counter
+            .consume(
+                fee_table.tx_signature_validation_per_sig()
+                    * transaction.signer_public_keys().len() as u32,
+                "signature_validation",
+            )
+            .expect("System loan should cover this");
 
         // Create root call frame.
         let mut root_frame = CallFrame::new_root(
@@ -150,6 +162,15 @@ where
         let execution_time = None;
         #[cfg(not(feature = "alloc"))]
         let execution_time = Some(now.elapsed().as_millis());
+
+        #[cfg(not(feature = "alloc"))]
+        if self.trace {
+            println!("+{}+", "-".repeat(30));
+            for (k, v) in cost_unit_counter.analysis {
+                println!("|{:>20}: {:>8}|", k, v);
+            }
+            println!("+{}+", "-".repeat(30));
+        }
 
         Receipt {
             transaction_network,

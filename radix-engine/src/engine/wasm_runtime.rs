@@ -17,6 +17,10 @@ use crate::ledger::ReadableSubstateStore;
 use crate::model::Component;
 use crate::wasm::*;
 
+/// A glue between system api (call frame and track abstraction) and WASM.
+///
+/// Execution is free from a costing perspective, as we assume
+/// the system api will bill properly.
 pub struct RadixEngineWasmRuntime<'y, 'p, 's, Y, W, I, S>
 where
     Y: SystemApi<'p, 's, W, I, S>,
@@ -54,10 +58,6 @@ where
 
     fn cost_unit_counter(&mut self) -> &mut CostUnitCounter {
         self.system_api.cost_unit_counter()
-    }
-
-    fn fee_table(&self) -> &FeeTable {
-        self.system_api.fee_table()
     }
 
     // FIXME: limit access to the API
@@ -139,12 +139,17 @@ where
     }
 
     fn handle_generate_uuid(&mut self) -> Result<u128, RuntimeError> {
-        let uuid = self.system_api.generate_uuid();
+        let uuid = self
+            .system_api
+            .generate_uuid()
+            .map_err(RuntimeError::CostingError)?;
         Ok(uuid)
     }
 
-    fn handle_user_log(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
-        self.system_api.user_log(level, message);
+    fn handle_emit_log(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
+        self.system_api
+            .emit_log(level, message)
+            .map_err(RuntimeError::CostingError)?;
         Ok(())
     }
 
@@ -172,9 +177,6 @@ impl<
     > WasmRuntime for RadixEngineWasmRuntime<'y, 'p, 's, Y, W, I, S>
 {
     fn main(&mut self, input: ScryptoValue) -> Result<ScryptoValue, InvokeError> {
-        let cost = self.fee_table().wasm_engine_call_cost();
-        self.consume_cost_units(cost)?;
-
         let input: RadixEngineInput =
             scrypto_decode(&input.raw).map_err(|_| InvokeError::InvalidRadixEngineInput)?;
         match input {
@@ -190,7 +192,7 @@ impl<
             RadixEngineInput::WriteData(address, value) => self.handle_write_data(address, value),
             RadixEngineInput::GenerateUuid() => self.handle_generate_uuid().map(encode),
             RadixEngineInput::EmitLog(level, message) => {
-                self.handle_user_log(level, message).map(encode)
+                self.handle_emit_log(level, message).map(encode)
             }
             RadixEngineInput::CheckAccessRule(rule, proof_ids) => {
                 self.handle_check_access_rule(rule, proof_ids).map(encode)
@@ -201,7 +203,7 @@ impl<
 
     fn consume_cost_units(&mut self, n: u32) -> Result<(), InvokeError> {
         self.cost_unit_counter()
-            .consume(n)
+            .consume(n, "wasm")
             .map_err(InvokeError::CostingError)
     }
 }
@@ -226,7 +228,7 @@ impl WasmRuntime for NopWasmRuntime {
 
     fn consume_cost_units(&mut self, n: u32) -> Result<(), InvokeError> {
         self.cost_unit_counter
-            .consume(n)
+            .consume(n, "wasm")
             .map_err(InvokeError::CostingError)
     }
 }

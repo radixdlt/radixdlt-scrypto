@@ -186,6 +186,13 @@ impl ScryptoValue {
         Ok(())
     }
 
+    pub fn value_count(&self) -> usize {
+        self.bucket_ids.len()
+            + self.proof_ids.len()
+            + self.vault_ids.len()
+            + self.component_addresses.len()
+    }
+
     pub fn to_string(&self) -> String {
         ScryptoValueFormatter::format_value(&self.dom, &HashMap::new(), &HashMap::new())
     }

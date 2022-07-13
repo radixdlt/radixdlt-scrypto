@@ -1,16 +1,15 @@
 use core::num::NonZeroU32;
 
 use parity_wasm::elements::Instruction::{self, *};
+use sbor::*;
 use wasm_instrument::gas_metering::MemoryGrowCost;
 use wasm_instrument::gas_metering::Rules;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct InstructionCostRules {
     tier_1_cost: u32,
     tier_2_cost: u32,
     tier_3_cost: u32,
-    tier_4_cost: u32,
-    tier_5_cost: u32,
     grow_memory_cost: u32,
 }
 
@@ -20,8 +19,6 @@ impl InstructionCostRules {
             tier_1_cost: instruction_cost,
             tier_2_cost: instruction_cost,
             tier_3_cost: instruction_cost,
-            tier_4_cost: instruction_cost,
-            tier_5_cost: instruction_cost,
             grow_memory_cost,
         }
     }
@@ -29,10 +26,8 @@ impl InstructionCostRules {
     pub fn tiered(grow_memory_cost: u32) -> Self {
         Self {
             tier_1_cost: 1,
-            tier_2_cost: 10,
-            tier_3_cost: 100,
-            tier_4_cost: 1000,
-            tier_5_cost: 10000,
+            tier_2_cost: 5,
+            tier_3_cost: 10,
             grow_memory_cost,
         }
     }
@@ -54,17 +49,17 @@ impl Rules for InstructionCostRules {
             BrTable(_) => self.tier_1_cost,
             Return => self.tier_1_cost,
 
-            Call(_) => self.tier_4_cost,
-            CallIndirect(_, _) => self.tier_5_cost,
+            Call(_) => self.tier_3_cost,
+            CallIndirect(_, _) => self.tier_3_cost,
 
             Drop => self.tier_1_cost,
             Select => self.tier_1_cost,
 
-            GetLocal(_) => self.tier_2_cost,
-            SetLocal(_) => self.tier_2_cost,
-            TeeLocal(_) => self.tier_2_cost,
-            GetGlobal(_) => self.tier_3_cost,
-            SetGlobal(_) => self.tier_3_cost,
+            GetLocal(_) => self.tier_1_cost,
+            SetLocal(_) => self.tier_1_cost,
+            TeeLocal(_) => self.tier_1_cost,
+            GetGlobal(_) => self.tier_2_cost,
+            SetGlobal(_) => self.tier_2_cost,
 
             I32Load(_, _) => self.tier_1_cost,
             I64Load(_, _) => self.tier_1_cost,
@@ -91,7 +86,7 @@ impl Rules for InstructionCostRules {
             I64Store32(_, _) => self.tier_1_cost,
 
             CurrentMemory(_) => self.tier_1_cost,
-            GrowMemory(_) => self.tier_3_cost,
+            GrowMemory(_) => self.tier_2_cost,
 
             I32Const(_) => self.tier_1_cost,
             I64Const(_) => self.tier_1_cost,
@@ -282,13 +277,13 @@ mod tests {
                 (type (;1;) (func (param i32)))
                 (import "env" "gas" (func (;0;) (type 1)))
                 (func (;1;) (type 0) (param i32) (result i32)
-                  i32.const 12
+                  i32.const 3
                   call 0
                   local.get 0
                   i32.const 5
                   i32.mul)
                 (func (;2;) (type 0) (param i32) (result i32)
-                  i32.const 1010
+                  i32.const 11
                   call 0
                   local.get 0
                   call 1))
