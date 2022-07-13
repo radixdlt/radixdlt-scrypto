@@ -14,7 +14,7 @@ fn stored_bucket_in_committed_component_should_fail() {
     let package_address = test_runner.extract_and_publish_package("stored_values");
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(
             package_address,
             "InvalidInitStoredBucket",
@@ -35,7 +35,7 @@ fn stored_bucket_in_owned_component_should_fail() {
     let package_address = test_runner.extract_and_publish_package("stored_values");
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(
             package_address,
             "InvalidStoredBucketInOwnedComponent",

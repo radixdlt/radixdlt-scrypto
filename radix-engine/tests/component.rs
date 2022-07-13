@@ -3,6 +3,7 @@ pub mod test_runner;
 
 use crate::test_runner::TestRunner;
 use radix_engine::engine::RuntimeError;
+use scrypto::core::Network;
 use scrypto::prelude::*;
 use scrypto::to_struct;
 use transaction::builder::ManifestBuilder;
@@ -12,7 +13,7 @@ fn test_package() {
     let mut test_runner = TestRunner::new(true);
     let package = test_runner.extract_and_publish_package("component");
 
-    let manifest1 = ManifestBuilder::new()
+    let manifest1 = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(package, "PackageTest", "publish", to_struct!())
         .build();
     let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
@@ -26,7 +27,7 @@ fn test_component() {
     let package = test_runner.extract_and_publish_package("component");
 
     // Create component
-    let manifest1 = ManifestBuilder::new()
+    let manifest1 = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(package, "ComponentTest", "create_component", to_struct!())
         .build();
     let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
@@ -36,7 +37,7 @@ fn test_component() {
     let component = receipt1.new_component_addresses[0];
 
     // Call functions & methods
-    let manifest2 = ManifestBuilder::new()
+    let manifest2 = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(
             package,
             "ComponentTest",
@@ -58,7 +59,7 @@ fn invalid_blueprint_name_should_cause_error() {
     let package_address = test_runner.extract_and_publish_package("component");
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(
             package_address,
             "NonExistentBlueprint",
@@ -83,7 +84,7 @@ fn reentrancy_should_not_be_possible() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.extract_and_publish_package("component");
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(package_address, "ReentrantComponent", "new", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -91,7 +92,7 @@ fn reentrancy_should_not_be_possible() {
     let component_address = receipt.new_component_addresses[0];
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_method(component_address, "call_self", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -111,12 +112,13 @@ fn missing_component_address_should_cause_error() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
     let _ = test_runner.extract_and_publish_package("component");
-    let component_address =
-        ComponentAddress::from_str("0200000000000000000000000000000000000000000000deadbeef")
-            .unwrap();
+    let component_address = ComponentAddress::from_str(
+        "component_sim1qgqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqph4dhmhs42ee03",
+    )
+    .unwrap();
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_method(component_address, "get_component_state", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);

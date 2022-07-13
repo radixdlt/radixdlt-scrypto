@@ -5,6 +5,7 @@ pub mod test_runner;
 
 use crate::test_runner::TestRunner;
 use radix_engine::engine::RuntimeError;
+use scrypto::core::Network;
 use scrypto::prelude::*;
 use scrypto::to_struct;
 use transaction::builder::ManifestBuilder;
@@ -53,7 +54,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
     };
 
     // Act
-    let mut builder = ManifestBuilder::new();
+    let mut builder = ManifestBuilder::new(Network::LocalSimulator);
     builder.create_proof_from_account_by_amount(Decimal::one(), auth_to_use, account);
 
     match action {

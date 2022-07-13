@@ -1,5 +1,6 @@
 use sbor::rust::vec::Vec;
 use sbor::*;
+use scrypto::core::Network;
 use scrypto::crypto::*;
 
 use crate::model::*;
@@ -135,6 +136,10 @@ impl TestTransaction {
 impl ExecutableTransaction for TestTransaction {
     fn transaction_hash(&self) -> Hash {
         hash(self.nonce.to_string())
+    }
+
+    fn transaction_network(&self) -> Network {
+        Network::LocalSimulator
     }
 
     fn transaction_payload_size(&self) -> u32 {

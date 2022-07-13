@@ -3,6 +3,7 @@ pub mod test_runner;
 
 use crate::test_runner::TestRunner;
 use radix_engine::engine::RuntimeError;
+use scrypto::core::Network;
 use scrypto::engine::types::{StoredValueId, ValueId};
 use scrypto::prelude::*;
 use scrypto::to_struct;
@@ -15,7 +16,7 @@ fn can_insert_in_child_nodes() {
     let package_address = test_runner.extract_and_publish_package("kv_store");
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(package_address, "SuperKeyValueStore", "new", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -31,7 +32,7 @@ fn create_mutable_key_value_store_into_map_and_referencing_before_storing() {
     let package_address = test_runner.extract_and_publish_package("kv_store");
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(
             package_address,
             "KeyValueStoreTest",
@@ -52,7 +53,7 @@ fn cyclic_map_fails_execution() {
     let package_address = test_runner.extract_and_publish_package("kv_store");
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(package_address, "CyclicMap", "new", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -68,7 +69,7 @@ fn self_cyclic_map_fails_execution() {
     let package_address = test_runner.extract_and_publish_package("kv_store");
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(
             package_address,
             "CyclicMap",
@@ -87,7 +88,7 @@ fn cannot_remove_key_value_stores() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.extract_and_publish_package("kv_store");
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(
             package_address,
             "KeyValueStoreTest",
@@ -99,7 +100,7 @@ fn cannot_remove_key_value_stores() {
     let component_address = receipt.new_component_addresses[0];
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_method(component_address, "clear_vector", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -113,7 +114,7 @@ fn cannot_overwrite_key_value_stores() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.extract_and_publish_package("kv_store");
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(
             package_address,
             "KeyValueStoreTest",
@@ -125,7 +126,7 @@ fn cannot_overwrite_key_value_stores() {
     let component_address = receipt.new_component_addresses[0];
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_method(component_address, "overwrite_key_value_store", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -141,7 +142,7 @@ fn create_key_value_store_and_get() {
     let package_address = test_runner.extract_and_publish_package("kv_store");
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(
             package_address,
             "KeyValueStoreTest",
@@ -162,7 +163,7 @@ fn create_key_value_store_and_put() {
     let package_address = test_runner.extract_and_publish_package("kv_store");
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(
             package_address,
             "KeyValueStoreTest",
@@ -183,7 +184,7 @@ fn can_reference_in_memory_vault() {
     let package_address = test_runner.extract_and_publish_package("kv_store");
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(
             package_address,
             "Precommitted",
@@ -204,7 +205,7 @@ fn can_reference_deep_in_memory_value() {
     let package_address = test_runner.extract_and_publish_package("kv_store");
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(
             package_address,
             "Precommitted",
@@ -225,7 +226,7 @@ fn can_reference_deep_in_memory_vault() {
     let package_address = test_runner.extract_and_publish_package("kv_store");
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(
             package_address,
             "Precommitted",
@@ -246,7 +247,7 @@ fn cannot_directly_reference_inserted_vault() {
     let package_address = test_runner.extract_and_publish_package("kv_store");
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(
             package_address,
             "RefCheck",
@@ -272,7 +273,7 @@ fn cannot_directly_reference_vault_after_container_moved() {
     let package_address = test_runner.extract_and_publish_package("kv_store");
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(
             package_address,
             "RefCheck",
@@ -298,7 +299,7 @@ fn cannot_directly_reference_vault_after_container_stored() {
     let package_address = test_runner.extract_and_publish_package("kv_store");
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(
             package_address,
             "RefCheck",

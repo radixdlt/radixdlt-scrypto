@@ -2,6 +2,7 @@
 pub mod test_runner;
 use crate::test_runner::TestRunner;
 
+use scrypto::core::Network;
 use transaction::builder::ManifestBuilder;
 
 use scrypto::prelude::*;
@@ -14,7 +15,7 @@ fn vector_of_buckets_argument_should_succeed() {
     let package_address = test_runner.extract_and_publish_package("arguments");
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id1| {
             builder.take_from_worktop(RADIX_TOKEN, |builder, bucket_id2| {
                 builder.call_function(
@@ -39,7 +40,7 @@ fn tuple_of_buckets_argument_should_succeed() {
     let package_address = test_runner.extract_and_publish_package("arguments");
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id1| {
             builder.take_from_worktop(RADIX_TOKEN, |builder, bucket_id2| {
                 builder.call_function(
@@ -64,7 +65,7 @@ fn treemap_of_strings_and_buckets_argument_should_succeed() {
     let package_address = test_runner.extract_and_publish_package("arguments");
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id1| {
             builder.take_from_worktop(RADIX_TOKEN, |builder, bucket_id2| {
                 let mut map = BTreeMap::new();
@@ -93,7 +94,7 @@ fn hashmap_of_strings_and_buckets_argument_should_succeed() {
     let package_address = test_runner.extract_and_publish_package("arguments");
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id1| {
             builder.take_from_worktop(RADIX_TOKEN, |builder, bucket_id2| {
                 let mut map = HashMap::new();
@@ -122,7 +123,7 @@ fn some_optional_bucket_argument_should_succeed() {
     let package_address = test_runner.extract_and_publish_package("arguments");
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.call_function(
                 package_address,
@@ -145,7 +146,7 @@ fn none_optional_bucket_argument_should_succeed() {
     let package_address = test_runner.extract_and_publish_package("arguments");
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(
             package_address,
             "Arguments",

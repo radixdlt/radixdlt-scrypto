@@ -8,6 +8,7 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
 use scrypto::buffer::scrypto_encode;
+use scrypto::core::Network;
 use scrypto::engine::types::*;
 use scrypto::values::ScryptoValue;
 use transaction::validation::*;
@@ -37,6 +38,7 @@ impl BorrowedSubstate {
 pub struct Track<'s, S: ReadableSubstateStore> {
     substate_store: &'s mut S,
     transaction_hash: Hash,
+    transaction_network: Network,
     id_allocator: IdAllocator,
     logs: Vec<(Level, String)>,
 
@@ -394,10 +396,15 @@ impl Into<Vault> for SubstateValue {
 }
 
 impl<'s, S: ReadableSubstateStore> Track<'s, S> {
-    pub fn new(substate_store: &'s mut S, transaction_hash: Hash) -> Self {
+    pub fn new(
+        substate_store: &'s mut S,
+        transaction_hash: Hash,
+        transaction_network: Network,
+    ) -> Self {
         Self {
             substate_store,
             transaction_hash,
+            transaction_network,
             id_allocator: IdAllocator::new(IdSpace::Application),
             logs: Vec::new(),
 
@@ -414,6 +421,9 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
     /// Returns the transaction hash.
     pub fn transaction_hash(&self) -> Hash {
         self.transaction_hash
+    }
+    pub fn transaction_network(&self) -> Network {
+        self.transaction_network.clone()
     }
 
     /// Adds a log message.
@@ -690,10 +700,14 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
     }
 
     /// Creates a new component address.
-    pub fn new_component_address(&mut self) -> ComponentAddress {
+    pub fn new_component_address(&mut self, component: &Component) -> ComponentAddress {
         let component_address = self
             .id_allocator
-            .new_component_address(self.transaction_hash())
+            .new_component_address(
+                self.transaction_hash(),
+                &component.package_address(),
+                component.blueprint_name(),
+            )
             .unwrap();
         component_address
     }

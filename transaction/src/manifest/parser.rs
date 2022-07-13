@@ -746,11 +746,13 @@ mod tests {
             }
         );
         parse_instruction_ok!(
-            r#"CALL_METHOD_WITH_ALL_RESOURCES  ComponentAddress("02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1bf1de") "deposit_batch";"#,
+            r#"CALL_METHOD_WITH_ALL_RESOURCES  ComponentAddress("account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qgsy064") "deposit_batch";"#,
             Instruction::CallMethodWithAllResources {
                 component_address: Value::ComponentAddress(
-                    Value::String("02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1bf1de".into())
-                        .into()
+                    Value::String(
+                        "account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qgsy064".into()
+                    )
+                    .into()
                 ),
                 method: Value::String("deposit_batch".into()),
             }
