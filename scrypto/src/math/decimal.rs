@@ -1,7 +1,7 @@
 use core::ops::*;
 use num_bigint::BigInt;
 use num_traits::{Pow, ToPrimitive, Zero};
-use sbor::rust::convert::TryFrom;
+use sbor::rust::convert::{TryFrom, TryInto};
 use sbor::rust::fmt;
 use sbor::rust::iter;
 use sbor::rust::str::FromStr;
@@ -274,7 +274,7 @@ macro_rules! decimals {
 
                     fn add(self, other: T) -> Self::Output {
                         let a = self.0;
-                        let b: $wrapped = other.0.try_into().expect("overflow");
+                        let b: $wrapped = other.try_into().expect("overflow");
                         let c: $wrapped = a + b;
                         Self(c)
                     }
@@ -285,7 +285,7 @@ macro_rules! decimals {
 
                     fn sub(self, other: T) -> Self::Output {
                         let a = self.0;
-                        let b: $wrapped = other.0.try_into().expect("overflow");
+                        let b: $wrapped = other.try_into().expect("overflow");
                         let c: $wrapped = a - b;
                         Self(c)
                     }
@@ -296,7 +296,7 @@ macro_rules! decimals {
 
                     fn mul(self, other: T) -> Self::Output {
                         let a = self.0;
-                        let b: $wrapped = other.0.try_into().expect("overflow");
+                        let b: $wrapped = other.try_into().expect("overflow");
                         let c: $wrapped = a * b;
                         Self(c)
                     }
@@ -307,7 +307,7 @@ macro_rules! decimals {
 
                     fn div(self, other: T) -> Self::Output {
                         let a = self.0;
-                        let b: $wrapped = other.0.try_into().expect("overflow");
+                        let b: $wrapped = other.into().0;
                         let c: $wrapped = a / b;
                         Self(c)
                     }
@@ -321,27 +321,27 @@ macro_rules! decimals {
                     }
                 }
 
-                impl<T: Into<$dec>> AddAssign<T> for $dec {
+                impl<T: TryInto<$dec>> AddAssign<T> for $dec {
                     fn add_assign(&mut self, other: T) {
-                        self.0 += other.0.try_into().expect("overflow");
+                        self.0 += other.try_into().unwrap().0;
                     }
                 }
 
-                impl<T: Into<$dec>> SubAssign<T> for $dec {
+                impl<T: TryInto<$dec>> SubAssign<T> for $dec {
                     fn sub_assign(&mut self, other: T) {
-                        self.0 -= other.0.try_into().expect("overflow");
+                        self.0 -= other.try_into().unwrap().0;
                     }
                 }
 
-                impl<T: Into<$dec>> MulAssign<T> for $dec {
+                impl<T: TryInto<$dec>> MulAssign<T> for $dec {
                     fn mul_assign(&mut self, other: T) {
-                        self.0 *= other.0.try_into().expect("overflow");
+                        self.0 *= other.try_into().unwrap().0;
                     }
                 }
 
-                impl<T: Into<$dec>> DivAssign<T> for $dec {
+                impl<T: TryInto<$dec>> DivAssign<T> for $dec {
                     fn div_assign(&mut self, other: T) {
-                        self.0 /= other.0.try_into().expect("overflow");
+                        self.0 /= other.try_into().unwrap().0;
                     }
                 }
 
@@ -385,7 +385,7 @@ macro_rules! decimals {
 
                         // read sign
                         if chars[p] == '-' {
-                            sign = -1;
+                            sign = <$wrapped>::from(-1i8);
                             p += 1;
                         }
 
