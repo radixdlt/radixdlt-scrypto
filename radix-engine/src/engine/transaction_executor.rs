@@ -6,6 +6,7 @@ use scrypto::values::ScryptoValue;
 use transaction::model::*;
 use transaction::validation::{IdAllocator, IdSpace};
 
+use crate::engine::track::TrackNode;
 use crate::engine::*;
 use crate::fee::CostUnitCounter;
 use crate::fee::FeeTable;
@@ -70,7 +71,8 @@ where
         let instructions = transaction.instructions().to_vec();
 
         // Start state track
-        let mut track = Track::new(self.substate_store);
+        let mut track_node = TrackNode::new(self.substate_store);
+        let mut track = Track::new(&mut track_node);
 
         let mut id_allocator = IdAllocator::new(IdSpace::Application);
 
@@ -141,7 +143,9 @@ where
                 )
             }
 
-            let commit_receipt = track_receipt.diff.commit(self.substate_store);
+            let commit_receipt = track_receipt.diff.commit(&mut track_node);
+            track_node.merge();
+
             Some(commit_receipt)
         } else {
             None

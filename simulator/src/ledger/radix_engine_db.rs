@@ -102,7 +102,9 @@ impl ReadableSubstateStore for RadixEngineDB {
     }
 
     fn get_space(&self, address: &[u8]) -> OutputId {
-        self.read(&address).map(|b| scrypto_decode(&b).unwrap()).expect("Expected space does not exist")
+        self.read(&address)
+            .map(|b| scrypto_decode(&b).unwrap())
+            .expect("Expected space does not exist")
     }
 }
 
