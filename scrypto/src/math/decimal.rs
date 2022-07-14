@@ -1,6 +1,6 @@
 use core::ops::*;
 use num_bigint::BigInt;
-use num_traits::{Zero, ToPrimitive, Pow};
+use num_traits::{Pow, ToPrimitive, Zero};
 use sbor::rust::convert::TryFrom;
 use sbor::rust::fmt;
 use sbor::rust::iter;
@@ -11,8 +11,8 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::abi::*;
-use crate::misc::*;
 use crate::math::{I256, I384, U8};
+use crate::misc::*;
 use paste::paste;
 
 macro_rules! decimals {
@@ -468,7 +468,7 @@ macro_rules! decimals {
     }
 }
 
-decimals!{
+decimals! {
     (D256F18, I256, 18, d18),
     (D384F45, I384, 45, d45)
 }
@@ -479,12 +479,12 @@ pub type D45 = D384F45;
 #[macro_export]
 macro_rules! dec {
     ($tt:tt) => {
-        d18!{$tt}
+        d18! {$tt}
     };
 }
 
 fn read_digit(c: char) -> Result<U8, ParseDecimalError> {
-    let n = U8::from(c as u8) ;
+    let n = U8::from(c as u8);
     if n >= 48 && n <= 48 + 9 {
         Ok(n - 48)
     } else {
