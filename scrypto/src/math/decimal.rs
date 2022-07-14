@@ -3,6 +3,7 @@ use num_bigint::BigInt;
 use num_traits::{Pow, ToPrimitive, Zero};
 use sbor::rust::convert::{TryFrom, TryInto};
 use sbor::rust::fmt;
+use sbor::rust::fmt::{Display, Formatter};
 use sbor::rust::iter;
 use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
@@ -269,12 +270,12 @@ macro_rules! decimals {
                     };
                 }
 
-                impl<T: Into<$dec>> Add<T> for $dec {
+                impl<T: TryInto<$dec> + Display> Add<T> for $dec {
                     type Output = $dec;
 
                     fn add(self, other: T) -> Self::Output {
                         let a = self.0;
-                        let b: $wrapped = other.try_into().expect("overflow");
+                        let b: $wrapped = other.try_into().expect("overflow").0;
                         let c: $wrapped = a + b;
                         Self(c)
                     }
