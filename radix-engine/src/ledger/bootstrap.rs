@@ -104,6 +104,6 @@ where
     if system_substate.is_none() {
         let track = Track::new(substate_store);
         let receipt = create_genesis(track);
-        receipt.substates.commit(substate_store);
+        receipt.diff.commit(substate_store);
     }
 }

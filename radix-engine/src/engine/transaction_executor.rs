@@ -134,10 +134,14 @@ where
 
         // commit state updates
         let commit_receipt = if error.is_none() {
-            if !track_receipt.borrowed.is_empty() {
-                panic!("There should be nothing borrowed by end of transaction.");
+            if !track_receipt.borrowed_substates.is_empty() {
+                panic!(
+                    "Borrowed substates have not been returned {:?}",
+                    track_receipt.borrowed_substates
+                )
             }
-            let commit_receipt = track_receipt.substates.commit(self.substate_store);
+
+            let commit_receipt = track_receipt.diff.commit(self.substate_store);
             Some(commit_receipt)
         } else {
             None

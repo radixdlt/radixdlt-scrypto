@@ -12,11 +12,9 @@ mod wasm_runtime;
 pub use call_frame::{CallFrame, RENativeValueRef, REValueRefMut, SubstateAddress};
 pub use errors::*;
 pub use precommitted_kv_store::*;
-pub use substate_receipt::{CommitReceipt, SubstateOperation, SubstateOperationsReceipt};
+pub use substate_receipt::{CommitReceipt, HardVirtualSubstateId};
 pub use system_api::SystemApi;
-pub use track::{
-    BorrowedSNodes, SubstateParentId, SubstateUpdate, Track, TrackError, TrackReceipt,
-};
+pub use track::{SubstateParentId, SubstateUpdate, Track, TrackError, TrackReceipt};
 pub use transaction_executor::TransactionExecutor;
 pub use transaction_receipt::*;
 pub use values::*;

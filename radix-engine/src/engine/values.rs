@@ -106,7 +106,7 @@ impl Into<VaultId> for Address {
 }
 
 // TODO: Update encoding scheme to not take up so much space with the enum strings
-#[derive(Debug, Encode, Decode)]
+#[derive(Debug, TypeId, Encode, Decode)]
 pub enum Substate {
     System(System),
     Resource(ResourceManager),

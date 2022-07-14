@@ -3,13 +3,17 @@ use sbor::rust::format;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
+use scrypto::buffer::scrypto_encode;
+use scrypto::crypto::hash;
 use scrypto::engine::types::*;
 
+use crate::engine::substate_receipt::HardVirtualSubstateId;
 use crate::engine::track::BorrowedSubstate::Taken;
-use crate::engine::{Address, Substate, SubstateOperation, SubstateOperationsReceipt};
+use crate::engine::{Address, CommitReceipt, Substate};
 use crate::ledger::*;
 
-enum BorrowedSubstate {
+#[derive(Debug)]
+pub enum BorrowedSubstate {
     Loaded(Substate, u32),
     LoadedMut(Substate),
     Taken,
@@ -25,41 +29,17 @@ impl BorrowedSubstate {
     }
 }
 
-/// Facilitates transactional state updates.
-pub struct Track<'s, S: ReadableSubstateStore> {
-    logs: Vec<(Level, String)>,
-
-    new_addresses: Vec<Address>,
-    borrowed_substates: HashMap<Address, BorrowedSubstate>,
-
-    substate_store: &'s mut S,
-    downed_substates: Vec<OutputId>,
-    down_virtual_substates: Vec<VirtualSubstateId>,
-    up_substates: BTreeMap<Vec<u8>, Substate>,
-    up_virtual_substate_space: BTreeSet<Vec<u8>>,
-}
-
 #[derive(Debug)]
 pub enum TrackError {
     Reentrancy,
     NotFound,
 }
 
-pub struct BorrowedSNodes {
-    borrowed_substates: HashSet<Address>,
-}
-
-impl BorrowedSNodes {
-    pub fn is_empty(&self) -> bool {
-        self.borrowed_substates.is_empty()
-    }
-}
-
 pub struct TrackReceipt {
-    pub borrowed: BorrowedSNodes,
     pub new_addresses: Vec<Address>,
+    pub borrowed_substates: HashMap<Address, BorrowedSubstate>,
     pub logs: Vec<(Level, String)>,
-    pub substates: SubstateOperationsReceipt,
+    pub diff: TrackDiff,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -77,6 +57,17 @@ pub enum SubstateParentId {
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct VirtualSubstateId(pub SubstateParentId, pub Vec<u8>);
 
+/// Facilitates transactional state updates.
+pub struct Track<'s, S: ReadableSubstateStore> {
+    logs: Vec<(Level, String)>,
+
+    new_addresses: Vec<Address>,
+    borrowed_substates: HashMap<Address, BorrowedSubstate>,
+
+    substate_store: &'s mut S,
+    diff: TrackDiff,
+}
+
 impl<'s, S: ReadableSubstateStore> Track<'s, S> {
     pub fn new(substate_store: &'s mut S) -> Self {
         Self {
@@ -86,10 +77,12 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             new_addresses: Vec::new(),
             borrowed_substates: HashMap::new(),
 
-            downed_substates: Vec::new(),
-            down_virtual_substates: Vec::new(),
-            up_substates: BTreeMap::new(),
-            up_virtual_substate_space: BTreeSet::new(),
+            diff: TrackDiff {
+                downed_substates: Vec::new(),
+                down_virtual_substates: Vec::new(),
+                up_substates: BTreeMap::new(),
+                up_virtual_substate_space: BTreeSet::new(),
+            },
         }
     }
 
@@ -102,11 +95,13 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
     pub fn create_uuid_value<A: Into<Address>, V: Into<Substate>>(&mut self, addr: A, value: V) {
         let address = addr.into();
         self.new_addresses.push(address.clone());
-        self.up_substates.insert(address.encode(), value.into());
+        self.diff
+            .up_substates
+            .insert(address.encode(), value.into());
     }
 
     pub fn create_key_space(&mut self, address: Address) {
-        self.up_virtual_substate_space.insert(address.encode());
+        self.diff.up_virtual_substate_space.insert(address.encode());
     }
 
     pub fn take_lock<A: Into<Address>>(
@@ -115,7 +110,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         mutable: bool,
     ) -> Result<(), TrackError> {
         let address = addr.into();
-        let maybe_value = self.up_substates.remove(&address.encode());
+        let maybe_value = self.diff.up_substates.remove(&address.encode());
         if let Some(value) = maybe_value {
             self.borrowed_substates
                 .insert(address, BorrowedSubstate::loaded(value, mutable));
@@ -137,7 +132,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         }
 
         if let Some(substate) = self.substate_store.get_substate(&address.encode()) {
-            self.downed_substates.push(substate.phys_id);
+            self.diff.downed_substates.push(substate.phys_id);
             self.borrowed_substates.insert(
                 address.clone(),
                 BorrowedSubstate::loaded(substate.value, mutable),
@@ -219,12 +214,12 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         match borrowed {
             BorrowedSubstate::Taken => panic!("Value was never returned"),
             BorrowedSubstate::LoadedMut(value) => {
-                self.up_substates.insert(address.encode(), value);
+                self.diff.up_substates.insert(address.encode(), value);
             }
             BorrowedSubstate::Loaded(value, mut count) => {
                 count = count - 1;
                 if count == 0 {
-                    self.up_substates.insert(address.encode(), value);
+                    self.diff.up_substates.insert(address.encode(), value);
                 } else {
                     self.borrowed_substates
                         .insert(address, BorrowedSubstate::Loaded(value, count));
@@ -237,7 +232,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
     pub fn read_key_value(&mut self, parent_address: Address, key: Vec<u8>) -> Substate {
         let mut address = parent_address.encode();
         address.extend(key);
-        if let Some(cur) = self.up_substates.get(&address) {
+        if let Some(cur) = self.diff.up_substates.get(&address) {
             match cur {
                 Substate::KeyValueStoreEntry(e) => return Substate::KeyValueStoreEntry(e.clone()),
                 Substate::NonFungible(n) => return Substate::NonFungible(n.clone()),
@@ -269,22 +264,22 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         let mut address = parent_address.encode();
         address.extend(key.clone());
 
-        if self.up_substates.remove(&address).is_none() {
+        if self.diff.up_substates.remove(&address).is_none() {
             let cur: Option<Output> = self.substate_store.get_substate(&address);
             if let Some(Output { value: _, phys_id }) = cur {
-                self.downed_substates.push(phys_id);
+                self.diff.downed_substates.push(phys_id);
             } else {
                 let parent_id = self.get_substate_parent_id(&parent_address.encode());
                 let virtual_substate_id = VirtualSubstateId(parent_id, key);
-                self.down_virtual_substates.push(virtual_substate_id);
+                self.diff.down_virtual_substates.push(virtual_substate_id);
             }
         };
 
-        self.up_substates.insert(address, value.into());
+        self.diff.up_substates.insert(address, value.into());
     }
 
     fn get_substate_parent_id(&mut self, space_address: &[u8]) -> SubstateParentId {
-        if self.up_virtual_substate_space.contains(space_address) {
+        if self.diff.up_virtual_substate_space.contains(space_address) {
             SubstateParentId::New(space_address.to_vec())
         } else {
             let substate_id = self.substate_store.get_space(space_address).unwrap();
@@ -295,32 +290,56 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
     /// Commits changes to the underlying ledger.
     /// Currently none of these objects are deleted so all commits are puts
     pub fn to_receipt(self) -> TrackReceipt {
-        let mut store_instructions = Vec::new();
-        for space_address in self.up_virtual_substate_space {
-            store_instructions.push(SubstateOperation::VirtualUp(space_address));
-        }
-        for substate_id in self.downed_substates {
-            store_instructions.push(SubstateOperation::Down(substate_id));
-        }
-        for virtual_substate_id in self.down_virtual_substates {
-            store_instructions.push(SubstateOperation::VirtualDown(virtual_substate_id));
-        }
-        for (address, value) in self.up_substates {
-            store_instructions.push(SubstateOperation::Up(address, value));
-        }
-
-
-        let substates = SubstateOperationsReceipt {
-            substate_operations: store_instructions,
-        };
-        let borrowed = BorrowedSNodes {
-            borrowed_substates: self.borrowed_substates.into_keys().collect(),
-        };
         TrackReceipt {
             new_addresses: self.new_addresses,
-            borrowed,
-            substates,
+            borrowed_substates: self.borrowed_substates,
             logs: self.logs,
+            diff: self.diff,
         }
+    }
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct TrackDiff {
+    up_virtual_substate_space: BTreeSet<Vec<u8>>,
+    up_substates: BTreeMap<Vec<u8>, Substate>,
+    down_virtual_substates: Vec<VirtualSubstateId>,
+    downed_substates: Vec<OutputId>,
+}
+
+impl TrackDiff {
+    /// Commits changes to the underlying ledger.
+    /// Currently none of these objects are deleted so all commits are puts
+    pub fn commit<S: WriteableSubstateStore>(self, store: &mut S) -> CommitReceipt {
+        let hash = hash(scrypto_encode(&self));
+        let mut receipt = CommitReceipt::new();
+        let mut id_gen = OutputIdGenerator::new(hash);
+        let mut virtual_outputs = HashMap::new();
+
+        for space_address in self.up_virtual_substate_space {
+            let phys_id = id_gen.next();
+            receipt.virtual_space_up(phys_id.clone());
+            store.put_space(&space_address, phys_id.clone());
+            virtual_outputs.insert(space_address, phys_id);
+        }
+        for output_id in self.downed_substates {
+            receipt.down(output_id);
+        }
+        for VirtualSubstateId(parent_id, key) in self.down_virtual_substates {
+            let parent_hard_id = match parent_id {
+                SubstateParentId::Exists(real_id) => real_id,
+                SubstateParentId::New(key) => virtual_outputs.get(&key).cloned().unwrap(),
+            };
+            let virtual_substate_id = HardVirtualSubstateId(parent_hard_id, key);
+            receipt.virtual_down(virtual_substate_id);
+        }
+        for (address, value) in self.up_substates {
+            let phys_id = id_gen.next();
+            receipt.up(phys_id.clone());
+            let substate = Output { value, phys_id };
+            store.put_substate(&address, substate);
+        }
+
+        receipt
     }
 }
