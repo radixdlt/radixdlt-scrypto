@@ -94,25 +94,27 @@ try_from! {u8, (U16, U32, U64, U128, U256, U384, U512, I8, I16, I32, I64, I128, 
 try_from! {u16, (U32, U64, U128, U256, U384, U512, I8, I16, I32, I64, I128, I256, I384, I512)}
 try_from! {u32, (U64, U128, U256, U384, U512, I8, I16, I32, I64, I128, I256, I384, I512)}
 try_from! {u64, (U128, U256, U384, U512, I8, I16, I32, I64, I128, I256, I384, I512)}
+try_from! {usize, (U128, U256, U384, U512, I8, I16, I32, I64, I128, I256, I384, I512)}
 try_from! {u128, (U256, U384, U512, I8, I16, I32, I64, I128, I256, I384, I512)}
 try_from! {i8, (U8, U16, U32, U64, U128, U256, U384, U512, I16, I32, I64, I128, I256, I384, I512)}
 try_from! {i16, ( U16, U32, U64, U128, U256, U384, U512, I32, I64, I128, I256, I384, I512)}
 try_from! {i32, (U32, U64, U128, U256, U384, U512, I64, I128, I256, I384, I512)}
 try_from! {i64, (U64, U128, U256, U384, U512, I128, I256, I384, I512)}
+try_from! {isize, (U64, U128, U256, U384, U512, I128, I256, I384, I512)}
 try_from! {i128, (U128, U256, U384, U512, I256, I384, I512)}
 
-try_from! {U8, (i8, i16, i32, i64, i128, u16, u32, u64, u128)}
-try_from! {U16, (i8, i16, i32, i64, i128, u32, u64, u128)}
-try_from! {U32, (i8, i16, i32, i64, i128, u64, u128)}
-try_from! {U64, (i8, i16, i32, i64, i128, u128)}
-try_from! {U128, (i8, i16, i32, i64, i128)}
-try_from! {U256, (i8, i16, i32, i64, i128)}
-try_from! {U384, (i8, i16, i32, i64, i128)}
-try_from! {U512, (i8, i16, i32, i64, i128)}
-try_from! {I8, (u8, u16, u32, u64, u128, i16, i32, i64, i128)}
-try_from! {I16, (i32, i64, i128, u16, u32, u64, u128)}
-try_from! {I32, (i64, i128, u32, u64, u128)}
-try_from! {I64, (i128, u64, u128)}
+try_from! {U8, (i8, i16, i32, i64, isize, i128, u16, u32, u64, usize, u128)}
+try_from! {U16, (i8, i16, i32, i64, isize, i128, u32, u64, usize, u128)}
+try_from! {U32, (i8, i16, i32, i64, isize, i128, u64, usize, u128)}
+try_from! {U64, (i8, i16, i32, i64, isize, i128, u128)}
+try_from! {U128, (i8, i16, i32, i64, isize, i128)}
+try_from! {U256, (i8, i16, i32, i64, isize, i128)}
+try_from! {U384, (i8, i16, i32, i64, isize, i128)}
+try_from! {U512, (i8, i16, i32, i64, isize, i128)}
+try_from! {I8, (u8, u16, u32, u64, usize, u128, i16, i32, i64, isize, i128)}
+try_from! {I16, (i32, i64, isize, i128, u16, u32, u64, usize, u128)}
+try_from! {I32, (i64, isize, i128, u32, u64, usize, u128)}
+try_from! {I64, (i128, u64, usize, u128)}
 try_from! {I128, (u128)}
 
 try_from! {U256, (I8, I16, I32, I64, I128, I256, I384, I512)}
@@ -550,6 +552,9 @@ from_int! {i32, (U8, U16)}
 from_int! {i64, (I8, I16, I32, I64)}
 from_int! {i64, (U8, U16, U32)}
 
+from_int! {isize, (I8, I16, I32, I64)}
+from_int! {isize, (U8, U16, U32)}
+
 from_int! {i128, (I8, I16, I32, I64, I128)}
 from_int! {i128, (U8, U16, U32, U64)}
 
@@ -561,6 +566,8 @@ from_int! {u32, (U8, U16, U32)}
 
 from_int! {u64, (U8, U16, U32, U64)}
 
+from_int! {usize, (U8, U16, U32, U64)}
+
 from_int! {u128, (U8, U16, U32, U64, U128)}
 
 from_int! {I8, (i8)}
@@ -571,20 +578,20 @@ from_int! {I16, (u8)}
 from_int! {I32, (i8, i16, i32)}
 from_int! {I32, (u8, u16)}
 
-from_int! {I64, (i8, i16, i32, i64)}
+from_int! {I64, (i8, i16, i32, i64, isize)}
 from_int! {I64, (u8, u16, u32)}
 
-from_int! {I128, (i8, i16, i32, i64, i128)}
-from_int! {I128, (u8, u16, u32, u64)}
+from_int! {I128, (i8, i16, i32, i64, isize, i128)}
+from_int! {I128, (u8, u16, u32, u64, usize)}
 
-from_int! {I256, (i8, i16, i32, i64, i128)}
-from_int! {I256, (u8, u16, u32, u64, u128)}
+from_int! {I256, (i8, i16, i32, i64, isize, i128)}
+from_int! {I256, (u8, u16, u32, u64, usize, u128)}
 
-from_int! {I384, (i8, i16, i32, i64, i128)}
-from_int! {I384, (u8, u16, u32, u64, u128)}
+from_int! {I384, (i8, i16, i32, i64, isize, i128)}
+from_int! {I384, (u8, u16, u32, u64, usize, u128)}
 
-from_int! {I512, (i8, i16, i32, i64, i128)}
-from_int! {I512, (u8, u16, u32, u64, u128)}
+from_int! {I512, (i8, i16, i32, i64, isize, i128)}
+from_int! {I512, (u8, u16, u32, u64, usize, u128)}
 
 from_int! {U8, (u8)}
 
@@ -592,15 +599,15 @@ from_int! {U16, (u8, u16)}
 
 from_int! {U32, (u8, u16, u32)}
 
-from_int! {U64, (u8, u16, u32, u64)}
+from_int! {U64, (u8, u16, u32, u64, usize)}
 
-from_int! {U128, (u8, u16, u32, u64, u128)}
+from_int! {U128, (u8, u16, u32, u64, usize, u128)}
 
-from_int! {U256, (u8, u16, u32, u64, u128)}
+from_int! {U256, (u8, u16, u32, u64, usize, u128)}
 
-from_int! {U384, (u8, u16, u32, u64, u128)}
+from_int! {U384, (u8, u16, u32, u64, usize, u128)}
 
-from_int! {U512, (u8, u16, u32, u64, u128)}
+from_int! {U512, (u8, u16, u32, u64, usize, u128)}
 
 from_int! {I16, (I8)}
 from_int! {I16, (U8)}
