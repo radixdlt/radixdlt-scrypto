@@ -35,6 +35,10 @@ impl TestRunner {
         }
     }
 
+    pub fn substate_store(&self) -> &InMemorySubstateStore {
+        &self.substate_store
+    }
+
     pub fn new_key_pair(&mut self) -> (EcdsaPublicKey, EcdsaPrivateKey) {
         let private_key = EcdsaPrivateKey::from_u64(self.next_private_key).unwrap();
         let public_key = private_key.public_key();
@@ -115,6 +119,27 @@ impl TestRunner {
         track_node.merge();
 
         receipt
+    }
+
+    pub fn execute_batch(
+        &mut self,
+        manifests: Vec<(TransactionManifest, Vec<EcdsaPublicKey>)>,
+    ) {
+        let mut track_node = TrackNode::new(&mut self.substate_store);
+
+        for (manifest, signer_public_keys) in manifests {
+            let transaction =
+                TestTransaction::new(manifest, self.next_transaction_nonce, signer_public_keys);
+            self.next_transaction_nonce += 1;
+            TransactionExecutor::new(
+                &mut track_node,
+                &mut self.wasm_engine,
+                &mut self.wasm_instrumenter,
+                self.trace,
+            ).execute(&transaction);
+        }
+
+        track_node.merge();
     }
 
     pub fn inspect_component(&self, component_address: ComponentAddress) -> Component {
