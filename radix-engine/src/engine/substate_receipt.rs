@@ -68,12 +68,14 @@ impl SubstateOperationsReceipt {
         let mut receipt = CommitReceipt::new();
         let mut id_gen = OutputIdGenerator::new(hash);
 
+        let mut virtual_outputs = HashMap::new();
+
         for instruction in self.substate_operations.drain(RangeFull) {
             match instruction {
                 SubstateOperation::VirtualDown(VirtualSubstateId(parent_id, key)) => {
                     let parent_hard_id = match parent_id {
                         SubstateParentId::Exists(real_id) => real_id,
-                        SubstateParentId::New(index) => OutputId(hash, index.try_into().unwrap()),
+                        SubstateParentId::New(key) => virtual_outputs.get(&key).cloned().unwrap(),
                     };
                     let virtual_substate_id = HardVirtualSubstateId(parent_hard_id, key);
                     receipt.virtual_down(virtual_substate_id);
@@ -82,7 +84,8 @@ impl SubstateOperationsReceipt {
                 SubstateOperation::VirtualUp(address) => {
                     let phys_id = id_gen.next();
                     receipt.virtual_space_up(phys_id.clone());
-                    store.put_space(&address, phys_id);
+                    store.put_space(&address, phys_id.clone());
+                    virtual_outputs.insert(address, phys_id);
                 }
                 SubstateOperation::Up(key, value) => {
                     let phys_id = id_gen.next();

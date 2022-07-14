@@ -1,7 +1,5 @@
-use indexmap::{IndexMap, IndexSet};
 use sbor::rust::collections::*;
 use sbor::rust::format;
-use sbor::rust::ops::RangeFull;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
@@ -29,16 +27,16 @@ impl BorrowedSubstate {
 
 /// Facilitates transactional state updates.
 pub struct Track<'s, S: ReadableSubstateStore> {
-    substate_store: &'s mut S,
     logs: Vec<(Level, String)>,
 
     new_addresses: Vec<Address>,
     borrowed_substates: HashMap<Address, BorrowedSubstate>,
 
+    substate_store: &'s mut S,
     downed_substates: Vec<OutputId>,
     down_virtual_substates: Vec<VirtualSubstateId>,
-    up_substates: IndexMap<Vec<u8>, Substate>,
-    up_virtual_substate_space: IndexSet<Vec<u8>>,
+    up_substates: BTreeMap<Vec<u8>, Substate>,
+    up_virtual_substate_space: BTreeSet<Vec<u8>>,
 }
 
 #[derive(Debug)]
@@ -73,7 +71,7 @@ pub struct SubstateUpdate<T> {
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub enum SubstateParentId {
     Exists(OutputId),
-    New(usize),
+    New(Vec<u8>),
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
@@ -90,8 +88,8 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
 
             downed_substates: Vec::new(),
             down_virtual_substates: Vec::new(),
-            up_substates: IndexMap::new(),
-            up_virtual_substate_space: IndexSet::new(),
+            up_substates: BTreeMap::new(),
+            up_virtual_substate_space: BTreeSet::new(),
         }
     }
 
@@ -286,8 +284,8 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
     }
 
     fn get_substate_parent_id(&mut self, space_address: &[u8]) -> SubstateParentId {
-        if let Some(index) = self.up_virtual_substate_space.get_index_of(space_address) {
-            SubstateParentId::New(index)
+        if self.up_virtual_substate_space.contains(space_address) {
+            SubstateParentId::New(space_address.to_vec())
         } else {
             let substate_id = self.substate_store.get_space(space_address).unwrap();
             SubstateParentId::Exists(substate_id)
@@ -296,20 +294,21 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
 
     /// Commits changes to the underlying ledger.
     /// Currently none of these objects are deleted so all commits are puts
-    pub fn to_receipt(mut self) -> TrackReceipt {
+    pub fn to_receipt(self) -> TrackReceipt {
         let mut store_instructions = Vec::new();
+        for space_address in self.up_virtual_substate_space {
+            store_instructions.push(SubstateOperation::VirtualUp(space_address));
+        }
         for substate_id in self.downed_substates {
             store_instructions.push(SubstateOperation::Down(substate_id));
         }
         for virtual_substate_id in self.down_virtual_substates {
             store_instructions.push(SubstateOperation::VirtualDown(virtual_substate_id));
         }
-        for (address, value) in self.up_substates.drain(RangeFull) {
+        for (address, value) in self.up_substates {
             store_instructions.push(SubstateOperation::Up(address, value));
         }
-        for space_address in self.up_virtual_substate_space.drain(RangeFull) {
-            store_instructions.push(SubstateOperation::VirtualUp(space_address));
-        }
+
 
         let substates = SubstateOperationsReceipt {
             substate_operations: store_instructions,
