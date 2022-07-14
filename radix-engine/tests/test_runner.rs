@@ -1,4 +1,4 @@
-use radix_engine::engine::{Receipt, TransactionExecutor};
+use radix_engine::engine::{Receipt, TrackNode, TransactionExecutor};
 use radix_engine::ledger::*;
 use radix_engine::model::{export_abi, export_abi_by_component, extract_package, Component};
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter};
@@ -102,13 +102,17 @@ impl TestRunner {
             TestTransaction::new(manifest, self.next_transaction_nonce, signer_public_keys);
         self.next_transaction_nonce += 1;
 
+        let mut track_node = TrackNode::new(&mut self.substate_store);
+
         let receipt = TransactionExecutor::new(
-            &mut self.substate_store,
+            &mut track_node,
             &mut self.wasm_engine,
             &mut self.wasm_instrumenter,
             self.trace,
         )
         .execute(&transaction);
+
+        track_node.merge();
 
         receipt
     }

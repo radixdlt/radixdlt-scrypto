@@ -370,7 +370,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TrackNode<'s, S> {
 }
 
 impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> ReadableSubstateStore
-for TrackNode<'s, S>
+    for TrackNode<'s, S>
 {
     fn get_space(&self, address: &[u8]) -> OutputId {
         if let Some(output_id) = self.up_virtual_substate_space.get(address) {
@@ -392,7 +392,7 @@ for TrackNode<'s, S>
 }
 
 impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> WriteableSubstateStore
-for TrackNode<'s, S>
+    for TrackNode<'s, S>
 {
     fn put_space(&mut self, address: &[u8], phys_id: OutputId) {
         self.up_virtual_substate_space

@@ -14,7 +14,7 @@ pub use errors::*;
 pub use precommitted_kv_store::*;
 pub use substate_receipt::{CommitReceipt, HardVirtualSubstateId};
 pub use system_api::SystemApi;
-pub use track::{SubstateParentId, SubstateUpdate, Track, TrackError, TrackReceipt};
+pub use track::{SubstateParentId, SubstateUpdate, Track, TrackError, TrackNode, TrackReceipt};
 pub use transaction_executor::TransactionExecutor;
 pub use transaction_receipt::*;
 pub use values::*;
