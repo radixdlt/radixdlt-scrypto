@@ -2,6 +2,7 @@
 pub mod test_runner;
 
 use radix_engine::{fee::FeeTable, wasm::InvokeError};
+use scrypto::core::Network;
 use scrypto::prelude::Package;
 use scrypto::to_struct;
 use test_runner::{abi_single_fn_any_input_void_output, wat2wasm, TestRunner};
@@ -19,7 +20,7 @@ fn test_loop() {
         blueprints: abi_single_fn_any_input_void_output("Test", "f"),
     };
     let package_address = test_runner.publish_package(package);
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(package_address, "Test", "f", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -40,7 +41,7 @@ fn test_loop_out_of_cost_unit() {
         blueprints: abi_single_fn_any_input_void_output("Test", "f"),
     };
     let package_address = test_runner.publish_package(package);
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(package_address, "Test", "f", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -62,7 +63,7 @@ fn test_recursion() {
         blueprints: abi_single_fn_any_input_void_output("Test", "f"),
     };
     let package_address = test_runner.publish_package(package);
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(package_address, "Test", "f", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -83,7 +84,7 @@ fn test_recursion_stack_overflow() {
         blueprints: abi_single_fn_any_input_void_output("Test", "f"),
     };
     let package_address = test_runner.publish_package(package);
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(package_address, "Test", "f", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -104,7 +105,7 @@ fn test_grow_memory() {
         blueprints: abi_single_fn_any_input_void_output("Test", "f"),
     };
     let package_address = test_runner.publish_package(package);
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(package_address, "Test", "f", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -125,7 +126,7 @@ fn test_grow_memory_out_of_cost_unit() {
         blueprints: abi_single_fn_any_input_void_output("Test", "f"),
     };
     let package_address = test_runner.publish_package(package);
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(package_address, "Test", "f", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -146,7 +147,7 @@ fn test_total_cost_units_consumed() {
         blueprints: abi_single_fn_any_input_void_output("Test", "f"),
     };
     let package_address = test_runner.publish_package(package);
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(package_address, "Test", "f", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -156,7 +157,7 @@ fn test_total_cost_units_consumed() {
     Cost analysis:
     1. Transaction validation cost = TX_VALIDATION_COST_PER_BYTE * 1
     2. Engine run cost
-       * invoke_function: 4515
+       * invoke_function: 4520
          * TransactionProcessor::main
             * Scrypto::main
             * AuthZone::clear * 2
@@ -171,7 +172,7 @@ fn test_total_cost_units_consumed() {
         ft.tx_decoding_per_byte() * 1
             + ft.tx_verification_per_byte() * 1
             + ft.tx_signature_validation_per_sig() * 0
-            + 4515
+            + 4520
             + 30000
             + 10000
             + 1050

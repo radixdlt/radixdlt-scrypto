@@ -4,13 +4,14 @@ use sbor::rust::vec;
 use sbor::*;
 use scrypto::buffer::*;
 use scrypto::constants::*;
+use scrypto::core::Network;
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
 use scrypto::resource::ResourceMethodAuthKey::Withdraw;
 use scrypto::resource::LOCKED;
 use scrypto::rule;
 
-use crate::engine::{Track, TrackReceipt};
+use crate::engine::{Address, Track, TrackReceipt};
 use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
 use crate::model::ValidatedPackage;
 
@@ -76,6 +77,10 @@ where
     .unwrap();
     track.create_uuid_value_2(ECDSA_TOKEN, ecdsa_token);
 
+    let system_token =
+        ResourceManager::new(ResourceType::NonFungible, HashMap::new(), HashMap::new()).unwrap();
+    track.create_uuid_value_2(SYSTEM_TOKEN, system_token);
+
     let system_vault = Vault::new(minted_xrd);
     track.create_uuid_value_2((SYSTEM_COMPONENT, XRD_VAULT_ID), system_vault);
 
@@ -87,17 +92,18 @@ where
     );
 
     track.create_uuid_value_2(SYSTEM_COMPONENT, system_component);
+    track.create_uuid_value_2(Address::System, System { epoch: 0 });
 
     track.to_receipt()
 }
 
-pub fn bootstrap<'s, S>(substate_store: &'s mut S)
+pub fn bootstrap<'s, S>(substate_store: &'s mut S, network: Network)
 where
     S: ReadableSubstateStore + WriteableSubstateStore,
 {
     let system_substate = substate_store.get_substate(&scrypto_encode(&SYSTEM_PACKAGE));
     if system_substate.is_none() {
-        let track = Track::new(substate_store, Hash([0u8; 32]));
+        let track = Track::new(substate_store, Hash([0u8; 32]), network);
         let receipt = create_genesis(track);
         receipt.substates.commit(substate_store);
     }

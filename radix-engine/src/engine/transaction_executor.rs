@@ -64,11 +64,16 @@ where
         let now = std::time::Instant::now();
 
         let transaction_hash = transaction.transaction_hash();
+        let transaction_network = transaction.transaction_network();
         let signer_public_keys = transaction.signer_public_keys().to_vec();
         let instructions = transaction.instructions().to_vec();
 
         // Start state track
-        let mut track = Track::new(self.substate_store, transaction_hash);
+        let mut track = Track::new(
+            self.substate_store,
+            transaction_hash,
+            transaction_network.clone(),
+        );
 
         // Metering
         let mut cost_unit_counter = CostUnitCounter::new(MAX_TRANSACTION_COST, SYSTEM_LOAN_AMOUNT);
@@ -101,6 +106,7 @@ where
             self.trace,
             transaction_hash,
             signer_public_keys,
+            false,
             &mut track,
             self.wasm_engine,
             self.wasm_instrumenter,
@@ -182,6 +188,7 @@ where
         }
 
         Some(Receipt {
+            transaction_network,
             commit_receipt,
             instructions,
             result: match error {

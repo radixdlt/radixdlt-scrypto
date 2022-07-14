@@ -119,7 +119,7 @@ pub enum RuntimeError {
     CantMoveLockedBucket,
 
     /// Can't move restricted proof.
-    CantMoveRestrictedProof(ValueId),
+    CantMoveRestrictedProof,
 
     NotSupported,
 
@@ -132,6 +132,7 @@ pub enum RuntimeError {
 
 #[derive(Debug, PartialEq)]
 pub enum DropFailure {
+    System,
     Resource,
     Component,
     Bucket,

@@ -4,6 +4,7 @@ pub mod test_runner;
 use crate::test_runner::TestRunner;
 use radix_engine::engine::*;
 use radix_engine::model::{BucketError, ResourceContainerError};
+use scrypto::core::Network;
 use scrypto::prelude::*;
 use scrypto::to_struct;
 use transaction::builder::ManifestBuilder;
@@ -15,7 +16,7 @@ fn test_bucket_internal(method_name: &str) {
     let package_address = test_runner.extract_and_publish_package("bucket");
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(package_address, "BucketTest", method_name, to_struct!())
         .call_method_with_all_resources(account, "deposit_batch")
         .build();
@@ -76,7 +77,7 @@ fn test_bucket_of_badges() {
     let (public_key, _, account) = test_runner.new_account();
     let package_address = test_runner.extract_and_publish_package("bucket");
 
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(package_address, "BadgeTest", "combine", to_struct!())
         .call_function(package_address, "BadgeTest", "split", to_struct!())
         .call_function(package_address, "BadgeTest", "borrow", to_struct!())
@@ -96,7 +97,7 @@ fn test_take_with_invalid_granularity() {
     let package_address = test_runner.extract_and_publish_package("bucket");
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function_with_abi(
             package_address,
             "BucketTest",
@@ -131,7 +132,7 @@ fn test_take_with_negative_amount() {
     let package_address = test_runner.extract_and_publish_package("bucket");
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function_with_abi(
             package_address,
             "BucketTest",
@@ -164,7 +165,7 @@ fn create_empty_bucket() {
     let (public_key, _, account) = test_runner.new_account();
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .take_from_worktop(scrypto::prelude::RADIX_TOKEN, |builder, _bucket_id| builder)
         .take_from_worktop_by_amount(
             Decimal::zero(),

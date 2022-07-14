@@ -2,6 +2,8 @@
 pub mod test_runner;
 
 use crate::test_runner::TestRunner;
+use scrypto::address::Bech32Encoder;
+use scrypto::core::Network;
 use scrypto::{prelude::*, to_struct};
 use transaction::builder::ManifestBuilder;
 
@@ -23,7 +25,7 @@ fn test_external_bridges() {
         test_runner.extract_and_publish_package("external_blueprint_caller");
 
     // Part 2 - Get a target component address
-    let manifest1 = ManifestBuilder::new()
+    let manifest1 = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(
             target_package_address,
             "ExternalBlueprintTarget",
@@ -37,7 +39,7 @@ fn test_external_bridges() {
     let target_component_address = receipt1.new_component_addresses[0];
 
     // Part 3 - Get the caller component address
-    let manifest2 = ManifestBuilder::new()
+    let manifest2 = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(
             caller_package_address,
             "ExternalBlueprintCaller",
@@ -51,7 +53,7 @@ fn test_external_bridges() {
     let caller_component_address = receipt2.new_component_addresses[0];
 
     // ACT
-    let manifest3 = ManifestBuilder::new()
+    let manifest3 = ManifestBuilder::new(Network::LocalSimulator)
         .call_method(
             caller_component_address,
             "run_tests_with_external_blueprint",
@@ -78,13 +80,17 @@ fn fill_in_package_name_template(
     use std::io::{Read, Write};
     use std::path::Path;
 
-    let package_address_hex = hex::encode(combine(1, &package_address.0));
+    let bech32_encoder = Bech32Encoder::new_from_network(&Network::LocalSimulator);
+
+    let package_address_string = bech32_encoder
+        .encode_package_address(&package_address)
+        .unwrap();
 
     println!(
         "Copying template from {:?} to {:?} whilst updating package address to {}",
         Path::new(&template_file_path),
         Path::new(&code_file_path),
-        package_address_hex
+        package_address_string
     );
 
     let mut template_file = File::open(&template_file_path)?;
@@ -93,7 +99,7 @@ fn fill_in_package_name_template(
     drop(template_file);
 
     let code_file_contents =
-        template_file_contents.replace("%%PACKAGE_ADDRESS%%", &package_address_hex);
+        template_file_contents.replace("%%PACKAGE_ADDRESS%%", &package_address_string);
 
     // Recreate the file and dump the processed contents to it
     let mut code_file = File::create(&code_file_path)?;

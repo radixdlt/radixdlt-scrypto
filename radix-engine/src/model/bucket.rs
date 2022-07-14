@@ -12,7 +12,7 @@ use scrypto::prelude::{
 };
 use scrypto::values::ScryptoValue;
 
-use crate::engine::SystemApi;
+use crate::engine::{SubstateAddress, SystemApi};
 use crate::fee::CostUnitCounterError;
 use crate::ledger::ReadableSubstateStore;
 use crate::model::{
@@ -295,8 +295,10 @@ impl Bucket {
                 resource_manager.burn(bucket.total_amount());
                 if matches!(resource_manager.resource_type(), ResourceType::NonFungible) {
                     for id in bucket.total_ids().unwrap() {
-                        let non_fungible_address = NonFungibleAddress::new(resource_address, id);
-                        system_api.set_non_fungible(non_fungible_address, Option::None);
+                        let address = SubstateAddress::NonFungible(resource_address, id);
+                        system_api
+                            .remove_value_data(address)
+                            .expect("Should not fail.");
                     }
                 }
                 system_api

@@ -24,9 +24,17 @@ pub enum REValue {
     },
     Package(ValidatedPackage),
     Resource(ResourceManager),
+    System(System),
 }
 
 impl REValue {
+    pub fn system(&self) -> &System {
+        match self {
+            REValue::System(system) => system,
+            _ => panic!("Expected to be system"),
+        }
+    }
+
     pub fn resource_manager(&self) -> &ResourceManager {
         match self {
             REValue::Resource(resource_manager) => resource_manager,
@@ -111,16 +119,43 @@ impl REValue {
         }
     }
 
-    pub fn is_persistable_child(&self) -> bool {
+    pub fn verify_can_move(&self) -> Result<(), RuntimeError> {
         match self {
-            REValue::KeyValueStore { .. } => true,
-            REValue::Component { .. } => true,
-            REValue::Vault(..) => true,
-            REValue::Resource(..) => false,
-            REValue::Package(..) => false,
-            REValue::Bucket(..) => false,
-            REValue::Proof(..) => false,
-            REValue::Worktop(..) => false,
+            REValue::Bucket(bucket) => {
+                if bucket.is_locked() {
+                    Err(RuntimeError::CantMoveLockedBucket)
+                } else {
+                    Ok(())
+                }
+            }
+            REValue::Proof(proof) => {
+                if proof.is_restricted() {
+                    Err(RuntimeError::CantMoveRestrictedProof)
+                } else {
+                    Ok(())
+                }
+            }
+            REValue::KeyValueStore { .. } => Ok(()),
+            REValue::Component { .. } => Ok(()),
+            REValue::Vault(..) => Ok(()),
+            REValue::Resource(..) => Ok(()),
+            REValue::Package(..) => Ok(()),
+            REValue::Worktop(..) => Ok(()),
+            REValue::System(..) => Ok(()),
+        }
+    }
+
+    pub fn verify_can_persist(&self) -> Result<(), RuntimeError> {
+        match self {
+            REValue::KeyValueStore { .. } => Ok(()),
+            REValue::Component { .. } => Ok(()),
+            REValue::Vault(..) => Ok(()),
+            REValue::Resource(..) => Err(RuntimeError::ValueNotAllowed),
+            REValue::Package(..) => Err(RuntimeError::ValueNotAllowed),
+            REValue::Bucket(..) => Err(RuntimeError::ValueNotAllowed),
+            REValue::Proof(..) => Err(RuntimeError::ValueNotAllowed),
+            REValue::Worktop(..) => Err(RuntimeError::ValueNotAllowed),
+            REValue::System(..) => Err(RuntimeError::ValueNotAllowed),
         }
     }
 
@@ -132,6 +167,7 @@ impl REValue {
             REValue::Component { .. } => Err(DropFailure::Component),
             REValue::Bucket(..) => Err(DropFailure::Bucket),
             REValue::Resource(..) => Err(DropFailure::Resource),
+            REValue::System(..) => Err(DropFailure::System),
             REValue::Proof(proof) => {
                 proof.drop();
                 Ok(())
@@ -191,7 +227,7 @@ impl REComplexValue {
         }
     }
 
-    pub fn into_re_value(self, children: HashMap<StoredValueId, REValue>) -> REValue {
+    pub fn into_re_value(self, children: HashMap<ValueId, REValue>) -> REValue {
         match self {
             REComplexValue::Component(component) => REValue::Component {
                 component,
@@ -277,7 +313,7 @@ impl Into<REValueByComplexity> for Component {
 
 #[derive(Debug)]
 pub struct InMemoryChildren {
-    child_values: HashMap<StoredValueId, RefCell<REValue>>,
+    child_values: HashMap<ValueId, RefCell<REValue>>,
 }
 
 impl InMemoryChildren {
@@ -287,7 +323,7 @@ impl InMemoryChildren {
         }
     }
 
-    pub fn with_values(values: HashMap<StoredValueId, REValue>) -> Self {
+    pub fn with_values(values: HashMap<ValueId, REValue>) -> Self {
         let mut child_values = HashMap::new();
         for (id, value) in values.into_iter() {
             child_values.insert(id, RefCell::new(value));
@@ -295,11 +331,11 @@ impl InMemoryChildren {
         InMemoryChildren { child_values }
     }
 
-    pub fn into_iter(self) -> IntoIter<StoredValueId, RefCell<REValue>> {
+    pub fn into_iter(self) -> IntoIter<ValueId, RefCell<REValue>> {
         self.child_values.into_iter()
     }
 
-    pub fn all_descendants(&self) -> Vec<StoredValueId> {
+    pub fn all_descendants(&self) -> Vec<ValueId> {
         let mut descendents = Vec::new();
         for (id, value) in self.child_values.iter() {
             descendents.push(*id);
@@ -311,11 +347,7 @@ impl InMemoryChildren {
         descendents
     }
 
-    pub unsafe fn get_child(
-        &self,
-        ancestors: &[KeyValueStoreId],
-        id: &StoredValueId,
-    ) -> Ref<REValue> {
+    pub unsafe fn get_child(&self, ancestors: &[KeyValueStoreId], id: &ValueId) -> Ref<REValue> {
         if ancestors.is_empty() {
             let value = self.child_values.get(id).expect("Value expected to exist");
             return value.borrow();
@@ -324,7 +356,7 @@ impl InMemoryChildren {
         let (first, rest) = ancestors.split_first().unwrap();
         let value = self
             .child_values
-            .get(&StoredValueId::KeyValueStoreId(*first))
+            .get(&ValueId::Stored(StoredValueId::KeyValueStoreId(*first)))
             .unwrap();
         let value = value.try_borrow_unguarded().unwrap();
         value.get_children_store().unwrap().get_child(rest, id)
@@ -333,7 +365,7 @@ impl InMemoryChildren {
     pub fn get_child_mut(
         &mut self,
         ancestors: &[KeyValueStoreId],
-        id: &StoredValueId,
+        id: &ValueId,
     ) -> RefMut<REValue> {
         if ancestors.is_empty() {
             let value = self
@@ -346,13 +378,13 @@ impl InMemoryChildren {
         let (first, rest) = ancestors.split_first().unwrap();
         let value = self
             .child_values
-            .get_mut(&StoredValueId::KeyValueStoreId(*first))
+            .get_mut(&ValueId::Stored(StoredValueId::KeyValueStoreId(*first)))
             .unwrap();
         let children_store = value.get_mut().get_children_store_mut().unwrap();
         children_store.get_child_mut(rest, id)
     }
 
-    pub fn insert_children(&mut self, values: HashMap<StoredValueId, REValue>) {
+    pub fn insert_children(&mut self, values: HashMap<ValueId, REValue>) {
         for (id, value) in values {
             self.child_values.insert(id, RefCell::new(value));
         }

@@ -18,7 +18,7 @@ use scrypto::resource::ResourceManagerGetMetadataInput;
 use scrypto::resource::ResourceMethodAuthKey::{self, *};
 use scrypto::values::ScryptoValue;
 
-use crate::engine::SystemApi;
+use crate::engine::{SubstateAddress, SystemApi};
 use crate::fee::CostUnitCounterError;
 use crate::ledger::ReadableSubstateStore;
 use crate::model::resource_manager::ResourceMethodRule::{Protected, Public};
@@ -303,24 +303,6 @@ impl ResourceManager {
         }
     }
 
-    fn process_non_fungible_data(data: &[u8]) -> Result<ScryptoValue, ResourceManagerError> {
-        let validated = ScryptoValue::from_slice(data)
-            .map_err(|_| ResourceManagerError::InvalidNonFungibleData)?;
-        if !validated.bucket_ids.is_empty() {
-            return Err(ResourceManagerError::InvalidNonFungibleData);
-        }
-        if !validated.proof_ids.is_empty() {
-            return Err(ResourceManagerError::InvalidNonFungibleData);
-        }
-        if !validated.kv_store_ids.is_empty() {
-            return Err(ResourceManagerError::InvalidNonFungibleData);
-        }
-        if !validated.vault_ids.is_empty() {
-            return Err(ResourceManagerError::InvalidNonFungibleData);
-        }
-        Ok(validated)
-    }
-
     pub fn mint_non_fungibles<
         'p,
         's,
@@ -354,18 +336,24 @@ impl ResourceManager {
         // Allocate non-fungibles
         let mut ids = BTreeSet::new();
         for (id, data) in entries {
+            let value = system_api
+                .read_value_data(SubstateAddress::NonFungible(self_address, id.clone()))
+                .expect("Should never fail");
+            let maybe_non_fungible: Option<NonFungible> = scrypto_decode(&value.raw).unwrap();
             let non_fungible_address = NonFungibleAddress::new(self_address, id.clone());
-            if system_api.get_non_fungible(&non_fungible_address).is_some() {
+            if maybe_non_fungible.is_some() {
                 return Err(ResourceManagerError::NonFungibleAlreadyExists(
                     non_fungible_address,
                 ));
             }
 
-            let immutable_data = Self::process_non_fungible_data(&data.0)?;
-            let mutable_data = Self::process_non_fungible_data(&data.1)?;
-            let non_fungible = NonFungible::new(immutable_data.raw, mutable_data.raw);
-
-            system_api.set_non_fungible(non_fungible_address, Some(non_fungible));
+            let non_fungible = NonFungible::new(data.0, data.1);
+            system_api
+                .write_value_data(
+                    SubstateAddress::NonFungible(self_address, id.clone()),
+                    ScryptoValue::from_typed(&non_fungible),
+                )
+                .expect("Should never fail");
             ids.insert(id);
         }
 
@@ -546,31 +534,64 @@ impl ResourceManager {
             "update_non_fungible_data" => {
                 let input: ResourceManagerUpdateNonFungibleDataInput = scrypto_decode(&arg.raw)
                     .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
-                let non_fungible_address =
-                    NonFungibleAddress::new(resource_address.clone(), input.id);
-                let data = Self::process_non_fungible_data(&input.data)?;
-                let mut non_fungible = system_api.get_non_fungible(&non_fungible_address).ok_or(
-                    ResourceManagerError::NonFungibleNotFound(non_fungible_address.clone()),
-                )?;
-                non_fungible.set_mutable_data(data.raw);
-                system_api.set_non_fungible(non_fungible_address, Some(non_fungible));
+
+                // Read current value
+                let value = system_api
+                    .read_value_data(SubstateAddress::NonFungible(
+                        resource_address.clone(),
+                        input.id.clone(),
+                    ))
+                    .expect("Should never fail");
+                let maybe_non_fungible: Option<NonFungible> = scrypto_decode(&value.raw).unwrap();
+
+                // Write new value
+                if let Some(mut non_fungible) = maybe_non_fungible {
+                    non_fungible.set_mutable_data(input.data);
+                    system_api
+                        .write_value_data(
+                            SubstateAddress::NonFungible(
+                                resource_address.clone(),
+                                input.id.clone(),
+                            ),
+                            ScryptoValue::from_typed(&non_fungible),
+                        )
+                        .expect("Should never fail");
+                } else {
+                    let non_fungible_address =
+                        NonFungibleAddress::new(resource_address.clone(), input.id);
+                    return Err(ResourceManagerError::NonFungibleNotFound(
+                        non_fungible_address.clone(),
+                    ));
+                }
 
                 Ok(ScryptoValue::from_typed(&()))
             }
             "non_fungible_exists" => {
                 let input: ResourceManagerNonFungibleExistsInput = scrypto_decode(&arg.raw)
                     .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
-                let non_fungible_address =
-                    NonFungibleAddress::new(resource_address.clone(), input.id);
-                let non_fungible = system_api.get_non_fungible(&non_fungible_address);
-                Ok(ScryptoValue::from_typed(&non_fungible.is_some()))
+
+                let value = system_api
+                    .read_value_data(SubstateAddress::NonFungible(
+                        resource_address.clone(),
+                        input.id,
+                    ))
+                    .expect("Should never fail");
+                let maybe_non_fungible: Option<NonFungible> = scrypto_decode(&value.raw).unwrap();
+                Ok(ScryptoValue::from_typed(&maybe_non_fungible.is_some()))
             }
             "non_fungible_data" => {
                 let input: ResourceManagerGetNonFungibleInput = scrypto_decode(&arg.raw)
                     .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
                 let non_fungible_address =
-                    NonFungibleAddress::new(resource_address.clone(), input.id);
-                let non_fungible = system_api.get_non_fungible(&non_fungible_address).ok_or(
+                    NonFungibleAddress::new(resource_address.clone(), input.id.clone());
+                let value = system_api
+                    .read_value_data(SubstateAddress::NonFungible(
+                        resource_address.clone(),
+                        input.id,
+                    ))
+                    .expect("Should never fail");
+                let maybe_non_fungible: Option<NonFungible> = scrypto_decode(&value.raw).unwrap();
+                let non_fungible = maybe_non_fungible.ok_or(
                     ResourceManagerError::NonFungibleNotFound(non_fungible_address),
                 )?;
                 Ok(ScryptoValue::from_typed(&[

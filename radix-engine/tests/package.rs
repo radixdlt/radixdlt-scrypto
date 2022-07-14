@@ -6,6 +6,7 @@ use radix_engine::model::PackageError;
 use radix_engine::wasm::*;
 use sbor::Type;
 use scrypto::abi::*;
+use scrypto::core::Network;
 use scrypto::prelude::*;
 use scrypto::to_struct;
 use test_runner::{wat2wasm, TestRunner};
@@ -30,7 +31,9 @@ fn missing_memory_should_cause_error() {
         code,
         blueprints: HashMap::new(),
     };
-    let manifest = ManifestBuilder::new().publish_package(package).build();
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .publish_package(package)
+        .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
@@ -51,7 +54,7 @@ fn large_return_len_should_cause_memory_access_error() {
     let package = test_runner.extract_and_publish_package("package");
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(package, "LargeReturnSize", "f", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -73,7 +76,7 @@ fn overflow_return_len_should_cause_memory_access_error() {
     let package = test_runner.extract_and_publish_package("package");
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(package, "MaxReturnSize", "f", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -95,7 +98,7 @@ fn zero_return_len_should_cause_data_validation_error() {
     let package = test_runner.extract_and_publish_package("package");
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(package, "ZeroReturnSize", "f", to_struct!())
         .build();
 
@@ -116,7 +119,9 @@ fn test_basic_package() {
         code,
         blueprints: HashMap::new(),
     };
-    let manifest = ManifestBuilder::new().publish_package(package).build();
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .publish_package(package)
+        .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
@@ -145,7 +150,9 @@ fn test_basic_package_missing_export() {
     // Act
     let code = wat2wasm(include_str!("wasm/basic_package.wat"));
     let package = Package { code, blueprints };
-    let manifest = ManifestBuilder::new().publish_package(package).build();
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .publish_package(package)
+        .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert

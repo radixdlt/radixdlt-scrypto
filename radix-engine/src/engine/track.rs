@@ -3,10 +3,12 @@ use sbor::rust::collections::*;
 use sbor::rust::format;
 use sbor::rust::ops::RangeFull;
 use sbor::rust::string::String;
+use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
 use scrypto::buffer::scrypto_encode;
+use scrypto::core::Network;
 use scrypto::engine::types::*;
 use scrypto::values::ScryptoValue;
 use transaction::validation::*;
@@ -36,6 +38,7 @@ impl BorrowedSubstate {
 pub struct Track<'s, S: ReadableSubstateStore> {
     substate_store: &'s mut S,
     transaction_hash: Hash,
+    transaction_network: Network,
     id_allocator: IdAllocator,
     logs: Vec<(Level, String)>,
 
@@ -94,10 +97,12 @@ pub enum Address {
     KeyValueStore(ComponentAddress, KeyValueStoreId),
     Vault(ComponentAddress, VaultId),
     LocalComponent(ComponentAddress, ComponentAddress),
+    System,
 }
 
 #[derive(Debug)]
 pub enum SubstateValue {
+    System(System),
     Resource(ResourceManager),
     Component(Component),
     Package(ValidatedPackage),
@@ -119,6 +124,7 @@ macro_rules! resource_to_non_fungible_space {
 impl Address {
     fn encode(&self) -> Vec<u8> {
         match self {
+            Address::System => vec![0u8],
             Address::Resource(resource_address) => scrypto_encode(resource_address),
             Address::GlobalComponent(component_address) => scrypto_encode(component_address),
             Address::Package(package_address) => scrypto_encode(package_address),
@@ -229,6 +235,7 @@ impl SubstateValue {
             }
             SubstateValue::NonFungible(non_fungible) => scrypto_encode(non_fungible),
             SubstateValue::KeyValueStoreEntry(value) => scrypto_encode(value),
+            SubstateValue::System(system) => scrypto_encode(system),
         }
     }
 
@@ -253,6 +260,22 @@ impl SubstateValue {
             resource_manager
         } else {
             panic!("Not a resource manager");
+        }
+    }
+
+    pub fn system(&self) -> &System {
+        if let SubstateValue::System(system) = self {
+            system
+        } else {
+            panic!("Not a system value");
+        }
+    }
+
+    pub fn system_mut(&mut self) -> &mut System {
+        if let SubstateValue::System(system) = self {
+            system
+        } else {
+            panic!("Not a system value");
         }
     }
 
@@ -288,12 +311,26 @@ impl SubstateValue {
         }
     }
 
+    pub fn non_fungible(&self) -> &Option<NonFungible> {
+        if let SubstateValue::NonFungible(non_fungible) = self {
+            non_fungible
+        } else {
+            panic!("Not a NonFungible");
+        }
+    }
+
     pub fn kv_entry(&self) -> &Option<Vec<u8>> {
         if let SubstateValue::KeyValueStoreEntry(kv_entry) = self {
             kv_entry
         } else {
             panic!("Not a KVEntry");
         }
+    }
+}
+
+impl Into<SubstateValue> for System {
+    fn into(self) -> SubstateValue {
+        SubstateValue::System(self)
     }
 }
 
@@ -368,10 +405,15 @@ impl Into<Vault> for SubstateValue {
 }
 
 impl<'s, S: ReadableSubstateStore> Track<'s, S> {
-    pub fn new(substate_store: &'s mut S, transaction_hash: Hash) -> Self {
+    pub fn new(
+        substate_store: &'s mut S,
+        transaction_hash: Hash,
+        transaction_network: Network,
+    ) -> Self {
         Self {
             substate_store,
             transaction_hash,
+            transaction_network,
             id_allocator: IdAllocator::new(IdSpace::Application),
             logs: Vec::new(),
 
@@ -389,10 +431,8 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
     pub fn transaction_hash(&self) -> Hash {
         self.transaction_hash
     }
-
-    /// Returns the current epoch.
-    pub fn current_epoch(&self) -> u64 {
-        self.substate_store.get_epoch()
+    pub fn transaction_network(&self) -> Network {
+        self.transaction_network.clone()
     }
 
     /// Adds a log message.
@@ -508,6 +548,10 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
                 Address::Package(..) => {
                     let package = scrypto_decode(&substate.value).unwrap();
                     SubstateValue::Package(package)
+                }
+                Address::System => {
+                    let system = scrypto_decode(&substate.value).unwrap();
+                    SubstateValue::System(system)
                 }
                 _ => panic!("Attempting to borrow unsupported value {:?}", address),
             };
@@ -683,10 +727,14 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
     }
 
     /// Creates a new component address.
-    pub fn new_component_address(&mut self) -> ComponentAddress {
+    pub fn new_component_address(&mut self, component: &Component) -> ComponentAddress {
         let component_address = self
             .id_allocator
-            .new_component_address(self.transaction_hash())
+            .new_component_address(
+                self.transaction_hash(),
+                &component.package_address(),
+                component.blueprint_name(),
+            )
             .unwrap();
         component_address
     }
@@ -760,7 +808,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
 
     pub fn insert_objects_into_component(
         &mut self,
-        values: HashMap<StoredValueId, REValue>,
+        values: HashMap<ValueId, REValue>,
         component_address: ComponentAddress,
     ) {
         for (id, value) in values {

@@ -14,7 +14,7 @@ blueprint! {
 
             if let Some(b) = bucket {
                 // Test out the local component calls
-                let _: () = account.call("deposit", vec![scrypto_encode(&b)]);
+                account.deposit(b);
             }
 
             let access_rules = AccessRules::new()

@@ -19,25 +19,25 @@ impl RadixEngineDB {
 
     pub fn with_bootstrap(root: PathBuf) -> Self {
         let mut substate_store = Self::new(root);
-        bootstrap(&mut substate_store);
+        bootstrap(&mut substate_store, scrypto::core::Network::LocalSimulator);
         substate_store
     }
 
     pub fn list_packages(&self) -> Vec<PackageAddress> {
-        let start = &scrypto_encode(&PackageAddress([0; 26]));
-        let end = &scrypto_encode(&PackageAddress([255; 26]));
+        let start = &scrypto_encode(&PackageAddress([0; 27]));
+        let end = &scrypto_encode(&PackageAddress([255; 27]));
         self.list_items(start, end)
     }
 
     pub fn list_components(&self) -> Vec<ComponentAddress> {
-        let start = &scrypto_encode(&ComponentAddress([0; 26]));
-        let end = &scrypto_encode(&ComponentAddress([255; 26]));
+        let start = &scrypto_encode(&ComponentAddress([0; 27]));
+        let end = &scrypto_encode(&ComponentAddress([255; 27]));
         self.list_items(start, end)
     }
 
     pub fn list_resource_managers(&self) -> Vec<ResourceAddress> {
-        let start = &scrypto_encode(&ResourceAddress([0; 26]));
-        let end = &scrypto_encode(&ResourceAddress([255; 26]));
+        let start = &scrypto_encode(&ResourceAddress([0; 27]));
+        let end = &scrypto_encode(&ResourceAddress([255; 27]));
         self.list_items(start, end)
     }
 
@@ -103,13 +103,6 @@ impl ReadableSubstateStore for RadixEngineDB {
     fn get_space(&mut self, address: &[u8]) -> Option<PhysicalSubstateId> {
         self.read(&address).map(|b| scrypto_decode(&b).unwrap())
     }
-
-    fn get_epoch(&self) -> u64 {
-        let id = scrypto_encode(&"epoch");
-        self.read(&id)
-            .map(|v| scrypto_decode(&v).unwrap())
-            .unwrap_or(0)
-    }
 }
 
 impl WriteableSubstateStore for RadixEngineDB {
@@ -119,11 +112,5 @@ impl WriteableSubstateStore for RadixEngineDB {
 
     fn put_space(&mut self, address: &[u8], phys_id: PhysicalSubstateId) {
         self.write(&address, &scrypto_encode(&phys_id));
-    }
-
-    fn set_epoch(&mut self, epoch: u64) {
-        let id = scrypto_encode(&"epoch");
-        let value = scrypto_encode(&epoch);
-        self.write(&id, &value)
     }
 }
