@@ -752,3 +752,30 @@ big_int_from! {U128}
 big_int_from! {U256}
 big_int_from! {U384}
 big_int_from! {U512}
+
+macro_rules! array_from_large {
+    ($($t:ident),*) => {
+        $(
+            impl $t {
+                pub fn to_le_bytes(&self) -> [u8; (<$t>::BITS / 8) as usize] {
+                    self.0
+                }
+            }
+        )*
+    };
+}
+
+macro_rules! array_from_small {
+    ($($t:ident),*) => {
+        $(
+            impl $t {
+                pub fn to_le_bytes(&self) -> [u8; (<$t>::BITS / 8) as usize] {
+                    self.0.to_le_bytes()
+                }
+            }
+        )*
+    };
+}
+
+array_from_large! {I256, I384, I512, U256, U384, U512}
+array_from_small! {I8, I16, I32, I64, I128, U8, U16, U32, U64, U128}
