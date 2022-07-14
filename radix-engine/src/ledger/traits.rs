@@ -44,7 +44,7 @@ impl OutputIdGenerator {
 /// A ledger stores all transactions and substates.
 pub trait ReadableSubstateStore {
     fn get_substate(&self, address: &[u8]) -> Option<Output>;
-    fn get_space(&mut self, address: &[u8]) -> Option<OutputId>;
+    fn get_space(&self, address: &[u8]) -> OutputId;
 
     // Temporary Encoded/Decoded interface
     fn get_decoded_substate<A: Encode, T: From<Substate>>(&self, address: &A) -> Option<T> {

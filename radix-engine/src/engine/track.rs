@@ -282,7 +282,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         if self.diff.up_virtual_substate_space.contains(space_address) {
             SubstateParentId::New(space_address.to_vec())
         } else {
-            let substate_id = self.substate_store.get_space(space_address).unwrap();
+            let substate_id = self.substate_store.get_space(space_address);
             SubstateParentId::Exists(substate_id)
         }
     }

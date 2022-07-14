@@ -37,10 +37,11 @@ impl ReadableSubstateStore for InMemorySubstateStore {
             .map(|bytes| scrypto_decode(bytes).unwrap())
     }
 
-    fn get_space(&mut self, address: &[u8]) -> Option<OutputId> {
+    fn get_space(&self, address: &[u8]) -> OutputId {
         self.substates
             .get(address)
             .map(|bytes| scrypto_decode(bytes).unwrap())
+            .expect("Expected space does not exist")
     }
 }
 
