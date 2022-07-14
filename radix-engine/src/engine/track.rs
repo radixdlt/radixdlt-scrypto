@@ -3,7 +3,7 @@ use sbor::rust::format;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto::buffer::scrypto_encode;
+use scrypto::buffer::{scrypto_decode, scrypto_encode};
 use scrypto::crypto::hash;
 use scrypto::engine::types::*;
 
@@ -298,6 +298,45 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         }
     }
 }
+
+pub struct TrackNode<'s, S: ReadableSubstateStore + WriteableSubstateStore> {
+    parent: &'s S,
+    up_virtual_substate_space: BTreeMap<Vec<u8>, OutputId>,
+    up_substates: BTreeMap<Vec<u8>, Output>,
+    down_virtual_substates: Vec<VirtualSubstateId>,
+    downed_substates: Vec<OutputId>,
+}
+
+impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> ReadableSubstateStore for TrackNode<'s, S> {
+    fn get_space(&self, address: &[u8]) -> OutputId {
+        if let Some(output_id) = self.up_virtual_substate_space.get(address) {
+            return output_id.clone();
+        }
+
+        self.parent.get_space(address)
+    }
+
+    fn get_substate(&self, address: &[u8]) -> Option<Output> {
+        if let Some(output) = self.up_substates.get(address) {
+            // TODO: Remove encoding/decoding
+            let encoded_output = scrypto_encode(output);
+            return Some(scrypto_decode(&encoded_output).unwrap());
+        }
+
+        self.parent.get_substate(address)
+    }
+}
+
+impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> WriteableSubstateStore for TrackNode<'s, S> {
+    fn put_space(&mut self, address: &[u8], phys_id: OutputId) {
+        self.up_virtual_substate_space.insert(address.to_vec(), phys_id);
+    }
+
+    fn put_substate(&mut self, address: &[u8], output: Output) {
+        self.up_substates.insert(address.to_vec(), output);
+    }
+}
+
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct TrackDiff {
