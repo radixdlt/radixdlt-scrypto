@@ -449,8 +449,26 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         &mut self,
         addr: A,
         mutable: bool,
+        require_untouched: bool,
     ) -> Result<(), TrackError> {
         let address = addr.into();
+
+        // TODO: to read/write a value owned by track requires three coordinated steps:
+        // 1. Attempt to acquire the lock
+        // 2. Apply the operation
+        // 3. Release lock
+        //
+        // A better idea is properly move the lock-unlock into the operation OR to have a proper
+        // representation of locked resource and apply operation on top of it.
+        //
+        // This enables multiple write through operations for fee payments.
+        if require_untouched
+            && (self.up_substates.contains_key(&address.encode())
+                || self.borrowed_substates.contains_key(&address))
+        {
+            return Err(TrackError::NotFound);
+        }
+
         let maybe_value = self.up_substates.remove(&address.encode());
         if let Some(value) = maybe_value {
             self.borrowed_substates

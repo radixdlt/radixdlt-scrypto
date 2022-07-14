@@ -15,7 +15,7 @@ use scrypto::core::{SNodeRef, ScryptoActor};
 use scrypto::engine::types::*;
 use scrypto::prelude::ComponentOffset;
 use scrypto::resource::AuthZoneClearInput;
-use scrypto::{to_struct, values::*};
+use scrypto::values::*;
 use transaction::validation::*;
 
 use crate::engine::*;
@@ -1160,7 +1160,7 @@ where
                     REValue::Bucket(bucket) => {
                         let resource_address = bucket.resource_address();
                         self.track
-                            .take_lock(resource_address, true)
+                            .take_lock(resource_address, true, false)
                             .expect("Should not fail.");
                         locked_values.insert(resource_address.clone().into());
                         let resource_manager =
@@ -1179,7 +1179,7 @@ where
                     REValue::Component { component, .. } => {
                         let package_address = component.package_address();
                         self.track
-                            .take_lock(package_address, false)
+                            .take_lock(package_address, false, false)
                             .expect("Should not fail.");
                         locked_values.insert(package_address.clone().into());
                         value_refs.insert(
@@ -1202,7 +1202,7 @@ where
                 if let Some(auth_zone) = &self.auth_zone {
                     for resource_address in &input.resource_addresses {
                         self.track
-                            .take_lock(resource_address.clone(), false)
+                            .take_lock(resource_address.clone(), false, false)
                             .map_err(|e| match e {
                                 TrackError::NotFound => {
                                     RuntimeError::ResourceManagerNotFound(resource_address.clone())
@@ -1230,7 +1230,7 @@ where
                 let value_id = ValueId::Resource(*resource_address);
                 let address: Address = Address::Resource(*resource_address);
                 self.track
-                    .take_lock(address.clone(), true)
+                    .take_lock(address.clone(), true, false)
                     .map_err(|e| match e {
                         TrackError::NotFound => {
                             RuntimeError::ResourceManagerNotFound(resource_address.clone())
@@ -1306,7 +1306,7 @@ where
 
                 for resource_address in &input.resource_addresses {
                     self.track
-                        .take_lock(resource_address.clone(), false)
+                        .take_lock(resource_address.clone(), false, false)
                         .map_err(|e| match e {
                             TrackError::NotFound => {
                                 RuntimeError::ResourceManagerNotFound(resource_address.clone())
@@ -1330,7 +1330,7 @@ where
             SNodeRef::Scrypto(actor) => match actor {
                 ScryptoActor::Blueprint(package_address, blueprint_name) => {
                     self.track
-                        .take_lock(package_address.clone(), false)
+                        .take_lock(package_address.clone(), false, false)
                         .map_err(|e| match e {
                             TrackError::NotFound => RuntimeError::PackageNotFound(*package_address),
                             TrackError::Reentrancy => {
@@ -1390,16 +1390,16 @@ where
                                 Address::GlobalComponent(component_address)
                             };
 
-                            self.track
-                                .take_lock(address.clone(), true)
-                                .map_err(|e| match e {
+                            self.track.take_lock(address.clone(), true, false).map_err(
+                                |e| match e {
                                     TrackError::NotFound => {
                                         RuntimeError::ComponentNotFound(component_address)
                                     }
                                     TrackError::Reentrancy => {
                                         RuntimeError::ComponentReentrancy(component_address)
                                     }
-                                })?;
+                                },
+                            )?;
                             locked_values.insert(address.clone());
                             REValueLocation::Track {
                                 parent: parent.clone(),
@@ -1437,7 +1437,7 @@ where
                         let package_address = actor_info.package_address().clone();
                         let blueprint_name = actor_info.blueprint_name().to_string();
                         self.track
-                            .take_lock(package_address, false)
+                            .take_lock(package_address, false, false)
                             .expect("Should never fail");
                         locked_values.insert(package_address.clone().into());
                         let package = self.track.read_value(package_address).package();
@@ -1506,7 +1506,7 @@ where
                         // Lock package
                         let package_address = owned_ref.component().package_address();
                         self.track
-                            .take_lock(package_address, false)
+                            .take_lock(package_address, false, false)
                             .map_err(|e| match e {
                                 TrackError::NotFound => panic!("Should exist"),
                                 TrackError::Reentrancy => RuntimeError::PackageReentrancy,
@@ -1554,7 +1554,7 @@ where
                         REValueLocation::Track { parent } => {
                             let vault_address = (parent.unwrap().clone(), *vault_id);
                             self.track
-                                .take_lock(vault_address, true)
+                                .take_lock(vault_address, true, false)
                                 .expect("Should never fail.");
                             locked_values.insert(vault_address.into());
                             REValueLocation::Track {
@@ -1584,7 +1584,7 @@ where
                     );
                     let resource_address = value_ref.vault_resource_address();
                     self.track
-                        .take_lock(resource_address, true)
+                        .take_lock(resource_address, true, false)
                         .expect("Should never fail.");
                     locked_values.insert(resource_address.into());
 
@@ -1924,7 +1924,7 @@ where
             },
         );
         self.track
-            .take_lock(resource_address, true)
+            .take_lock(resource_address, true, false)
             .expect("Should never fail since it was just created.");
         self.locked_resmans.insert(resource_address.into());
 
@@ -2042,7 +2042,11 @@ where
                             },
                             None,
                         ));
-                    } else if self.track.take_lock(component_address, false).is_ok() {
+                    } else if self
+                        .track
+                        .take_lock(component_address, false, false)
+                        .is_ok()
+                    {
                         return Some((
                             &REValueInfo {
                                 location: REValueLocation::Track { parent: None },
@@ -2224,53 +2228,37 @@ where
         } else if let Some(r) = self.value_refs.get_mut(&value_id) {
             match r.location {
                 REValueLocation::Track { parent } => {
-                    // 1. Take the given amount from the vault
-                    let return_data = self.invoke_snode(
-                        SNodeRef::VaultRef(vault_id),
-                        "take".to_owned(),
-                        ScryptoValue::from_slice(&to_struct!(amount))
-                            .expect("The bytes should be a valid encoding"),
-                    )?;
-                    let returned_bucket: Bucket = self
-                        .owned_values
-                        .remove(&ValueId::Transient(TransientValueId::Bucket(
-                            *return_data
-                                .bucket_ids
-                                .keys()
-                                .next()
-                                .expect("A bucket should've been returned"),
-                        )))
-                        .expect("The bucket should exist")
-                        .into_inner()
-                        .into();
-                    let returned_resource = returned_bucket
-                        .into_container()
-                        .expect("The return should be liquid thus unwrappable");
-                    if returned_resource.resource_address() != RADIX_TOKEN {
-                        return Err(RuntimeError::PayFeeFailure(
-                            "Attempted to lock non-XRD as fee".to_owned(),
-                        ));
-                    }
-
-                    // 2. Add the taken amount to the locked
+                    // 1. Update the substate
                     let address =
                         Address::Vault(parent.expect("TODO: is this a safe unwrap?"), vault_id);
                     self.track
-                        .take_lock(address.clone(), true)
-                        .expect("TODO: is this a safe unwrap?");
+                        .take_lock(address.clone(), true, true)
+                        .map_err(|e| match e {
+                            TrackError::NotFound => RuntimeError::ValueNotFound(value_id),
+                            TrackError::Reentrancy => panic!("Vault reentrancy should never occur"),
+                        })?;
                     let mut value = self.track.take_value(address.clone());
-                    let (_, locked) = value.vault_mut();
-                    if let Some(existing_resource) = locked {
-                        existing_resource.put(returned_resource).expect(
-                            "Put additional XRD into the fee container should always succeed",
-                        );
-                    } else {
-                        *locked = Some(returned_resource);
+                    let (liquid, locked) = value.vault_mut();
+                    if liquid.resource_address() != RADIX_TOKEN {
+                        return Err(RuntimeError::PayFeeFailure(
+                            "Attempted to pay non-XRD as fee".to_owned(),
+                        ));
+                    }
+                    let fee = liquid.take(amount).map_err(RuntimeError::VaultError)?;
+                    match locked {
+                        Some(existing) => {
+                            existing
+                                .put(fee)
+                                .expect("Combining XRD fees should always succeed");
+                        }
+                        None => {
+                            *locked = Some(fee);
+                        }
                     }
                     self.track.write_value(address.clone(), value);
                     self.track.release_lock(address.clone());
 
-                    // 3. Credit cost units
+                    // 2. Credit cost units
                     // TODO: add xrd/cost unit conversion
                     self.cost_unit_counter
                         .repay(100)

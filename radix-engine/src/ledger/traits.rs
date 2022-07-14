@@ -40,7 +40,6 @@ impl SubstateIdGenerator {
     }
 }
 
-/// A ledger stores all transactions and substates.
 pub trait ReadableSubstateStore {
     fn get_substate(&self, address: &[u8]) -> Option<Substate>;
     fn get_space(&mut self, address: &[u8]) -> Option<PhysicalSubstateId>;

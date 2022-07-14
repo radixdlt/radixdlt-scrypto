@@ -52,7 +52,7 @@ impl Vault {
         self.borrow_container_mut().put(other.into_container()?)
     }
 
-    fn take(&mut self, amount: Decimal) -> Result<ResourceContainer, VaultError> {
+    pub fn take(&mut self, amount: Decimal) -> Result<ResourceContainer, VaultError> {
         let container = self
             .borrow_container_mut()
             .take_by_amount(amount)
