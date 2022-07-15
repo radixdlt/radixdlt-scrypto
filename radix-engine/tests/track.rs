@@ -16,28 +16,74 @@ fn self_transfer_txn(account: ComponentAddress, amount: Decimal) -> TransactionM
 }
 
 #[test]
-fn batched_execution_should_match_one_by_one_execution() {
+fn batched_executions_should_result_in_the_same_result() {
     // Arrange
-    // These two runners should mirror each other
+    // These runners should mirror each other
     let mut store0 = InMemorySubstateStore::with_bootstrap();
     let mut test_runner0 = TestRunner::new(true, &mut store0);
-    let mut store1 = InMemorySubstateStore::with_bootstrap();
-    let mut test_runner1 = TestRunner::new(true, &mut store1);
     let (public_key, _, account) = test_runner0.new_account();
-    let _ = test_runner1.new_account();
     let mut manifests = Vec::new();
     for amount in 0..10 {
         let manifest = self_transfer_txn(account, Decimal::from(amount));
         manifests.push((manifest, vec![public_key]));
     }
 
+    let mut store1 = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner1 = TestRunner::new(true, &mut store1);
+    let _ = test_runner1.new_account();
+    let mut store2 = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner2 = TestRunner::new(true, &mut store2);
+    let _ = test_runner2.new_account();
+    let mut store3 = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner3 = TestRunner::new(true, &mut store3);
+    let _ = test_runner3.new_account();
+    let mut store4 = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner4 = TestRunner::new(true, &mut store4);
+    let _ = test_runner4.new_account();
+
     // Act
+
+    // Test Runner 0: One by One
     for (manifest, signers) in &manifests {
         let receipt = test_runner0.execute_manifest(manifest.clone(), signers.clone());
         receipt.expect_success();
     }
-    test_runner1.execute_batch(manifests);
+
+    // Test Runner 1: Batch
+    test_runner1.execute_batch(manifests.clone());
+
+    // Test Runner 2: Multi-batch, Single-commit
+    let (batch0, batch1) = manifests.split_at(5);
+    let node_id0 = test_runner2.create_branch(0);
+    test_runner2.execute_batch_on_node(node_id0, batch0.to_vec());
+    let node_id1 = test_runner2.create_branch(node_id0);
+    test_runner2.execute_batch_on_node(node_id1, batch1.to_vec());
+    test_runner2.merge_node(node_id1);
+
+    // Test Runner 3: Multi-batch, Multi-commit
+    let (batch0, batch1) = manifests.split_at(5);
+    let node_id0 = test_runner3.create_branch(0);
+    test_runner3.execute_batch_on_node(node_id0, batch0.to_vec());
+    let node_id1 = test_runner3.create_branch(node_id0);
+    test_runner3.execute_batch_on_node(node_id1, batch1.to_vec());
+    test_runner3.merge_node(node_id0);
+    test_runner3.merge_node(node_id1);
+
+    // Test Runner 3: Multi-batch, Fork, Single-commit
+    let (batch0, batch1) = manifests.split_at(5);
+    let node_id0 = test_runner4.create_branch(0);
+    test_runner4.execute_batch_on_node(node_id0, batch0.to_vec());
+    let node_id1 = test_runner4.create_branch(node_id0);
+    test_runner4.execute_batch_on_node(node_id1, batch1.to_vec());
+    let fork_id = test_runner4.create_branch(node_id0);
+    test_runner4.execute_batch_on_node(fork_id, manifests.clone());
+    let fork_child_id = test_runner4.create_branch(fork_id);
+    test_runner4.execute_batch_on_node(fork_child_id, manifests.clone());
+    test_runner4.merge_node(node_id1);
 
     // Assert
     assert_eq!(store0, store1);
+    assert_eq!(store1, store2);
+    assert_eq!(store2, store3);
+    assert_eq!(store3, store4);
 }

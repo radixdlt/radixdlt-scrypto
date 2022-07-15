@@ -120,9 +120,21 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     }
 
     pub fn execute_batch(&mut self, manifests: Vec<(TransactionManifest, Vec<EcdsaPublicKey>)>) {
-        let node_id = self.execution_stores.new_branch(0);
-        let mut store = self.execution_stores.get_output_store(node_id);
+        let node_id = self.create_branch(0);
+        self.execute_batch_on_node(node_id, manifests);
+        self.merge_node(node_id);
+    }
 
+    pub fn create_branch(&mut self, parent_id: u64) -> u64 {
+        self.execution_stores.new_branch(parent_id)
+    }
+
+    pub fn execute_batch_on_node(
+        &mut self,
+        node_id: u64,
+        manifests: Vec<(TransactionManifest, Vec<EcdsaPublicKey>)>,
+    ) {
+        let mut store = self.execution_stores.get_output_store(node_id);
         for (manifest, signer_public_keys) in manifests {
             let transaction =
                 TestTransaction::new(manifest, self.next_transaction_nonce, signer_public_keys);
@@ -135,7 +147,9 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             )
             .execute(&transaction);
         }
+    }
 
+    pub fn merge_node(&mut self, node_id: u64) {
         self.execution_stores.merge_to_parent(node_id);
     }
 
