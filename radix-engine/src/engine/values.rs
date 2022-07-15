@@ -24,6 +24,7 @@ pub enum REValue {
     },
     Package(ValidatedPackage),
     Resource(ResourceManager),
+    NonFungibles(HashMap<NonFungibleId, NonFungible>),
     System(System),
 }
 
@@ -39,6 +40,27 @@ impl REValue {
         match self {
             REValue::Resource(resource_manager) => resource_manager,
             _ => panic!("Expected to be a resource manager"),
+        }
+    }
+
+    pub fn resource_manager_mut(&mut self) -> &mut ResourceManager {
+        match self {
+            REValue::Resource(resource_manager) => resource_manager,
+            _ => panic!("Expected to be a resource manager"),
+        }
+    }
+
+    pub fn non_fungibles(&self) -> &HashMap<NonFungibleId, NonFungible> {
+        match self {
+            REValue::NonFungibles(non_fungibles) => non_fungibles,
+            _ => panic!("Expected to be non fungibles"),
+        }
+    }
+
+    pub fn non_fungibles_mut(&mut self) -> &mut HashMap<NonFungibleId, NonFungible> {
+        match self {
+            REValue::NonFungibles(non_fungibles) => non_fungibles,
+            _ => panic!("Expected to be non fungibles"),
         }
     }
 
@@ -139,6 +161,7 @@ impl REValue {
             REValue::Component { .. } => Ok(()),
             REValue::Vault(..) => Ok(()),
             REValue::Resource(..) => Ok(()),
+            REValue::NonFungibles(..) => Ok(()),
             REValue::Package(..) => Ok(()),
             REValue::Worktop(..) => Ok(()),
             REValue::System(..) => Ok(()),
@@ -151,6 +174,7 @@ impl REValue {
             REValue::Component { .. } => Ok(()),
             REValue::Vault(..) => Ok(()),
             REValue::Resource(..) => Err(RuntimeError::ValueNotAllowed),
+            REValue::NonFungibles(..) => Err(RuntimeError::ValueNotAllowed),
             REValue::Package(..) => Err(RuntimeError::ValueNotAllowed),
             REValue::Bucket(..) => Err(RuntimeError::ValueNotAllowed),
             REValue::Proof(..) => Err(RuntimeError::ValueNotAllowed),
@@ -167,6 +191,7 @@ impl REValue {
             REValue::Component { .. } => Err(DropFailure::Component),
             REValue::Bucket(..) => Err(DropFailure::Bucket),
             REValue::Resource(..) => Err(DropFailure::Resource),
+            REValue::NonFungibles(..) => Err(DropFailure::Resource),
             REValue::System(..) => Err(DropFailure::System),
             REValue::Proof(proof) => {
                 proof.drop();
@@ -211,6 +236,15 @@ impl Into<Proof> for REValue {
     }
 }
 
+impl Into<HashMap<NonFungibleId, NonFungible>> for REValue {
+    fn into(self) -> HashMap<NonFungibleId, NonFungible> {
+        match self {
+            REValue::NonFungibles(non_fungibles) => non_fungibles,
+            _ => panic!("Expected to be non fungibles"),
+        }
+    }
+}
+
 #[derive(Debug)]
 pub enum REComplexValue {
     Component(Component),
@@ -243,6 +277,8 @@ pub enum REPrimitiveValue {
     Bucket(Bucket),
     Proof(Proof),
     KeyValue(PreCommittedKeyValueStore),
+    Resource(ResourceManager),
+    NonFungibles(ResourceAddress, HashMap<NonFungibleId, NonFungible>),
     Vault(Vault),
     Worktop(Worktop),
 }
@@ -256,6 +292,10 @@ pub enum REValueByComplexity {
 impl Into<REValue> for REPrimitiveValue {
     fn into(self) -> REValue {
         match self {
+            REPrimitiveValue::Resource(resource_manager) => REValue::Resource(resource_manager),
+            REPrimitiveValue::NonFungibles(_resource_address, non_fungibles) => {
+                REValue::NonFungibles(non_fungibles)
+            }
             REPrimitiveValue::Package(package) => REValue::Package(package),
             REPrimitiveValue::Bucket(bucket) => REValue::Bucket(bucket),
             REPrimitiveValue::Proof(proof) => REValue::Proof(proof),
@@ -266,6 +306,18 @@ impl Into<REValue> for REPrimitiveValue {
             REPrimitiveValue::Vault(vault) => REValue::Vault(vault),
             REPrimitiveValue::Worktop(worktop) => REValue::Worktop(worktop),
         }
+    }
+}
+
+impl Into<REValueByComplexity> for ResourceManager {
+    fn into(self) -> REValueByComplexity {
+        REValueByComplexity::Primitive(REPrimitiveValue::Resource(self))
+    }
+}
+
+impl Into<REValueByComplexity> for (ResourceAddress, HashMap<NonFungibleId, NonFungible>) {
+    fn into(self) -> REValueByComplexity {
+        REValueByComplexity::Primitive(REPrimitiveValue::NonFungibles(self.0, self.1))
     }
 }
 
