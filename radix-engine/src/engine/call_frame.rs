@@ -999,7 +999,7 @@ where
 
         // TODO: Remove
         for unlock in &self.locked_resmans {
-            self.track.release_lock(unlock.clone());
+            self.track.release_lock(unlock.clone(), false);
         }
 
         trace!(
@@ -1145,7 +1145,7 @@ where
 
         // TODO: Remove, currently a hack to allow for global component info retrieval
         if let Some(component_address) = address_borrowed {
-            self.track.release_lock(*component_address);
+            self.track.release_lock(*component_address, false);
         }
 
         Ok((value_id, location.clone(), current_value, cur_children))
@@ -1791,7 +1791,7 @@ where
 
         // Release locked addresses
         for l in locked_values {
-            self.track.release_lock(l);
+            self.track.release_lock(l, false);
         }
 
         // move buckets and proofs to this process.
@@ -2308,7 +2308,7 @@ where
                         }
                     }
                     self.track.write_value(address.clone(), value);
-                    self.track.release_lock(address.clone());
+                    self.track.release_lock(address.clone(), true);
 
                     // 2. Credit cost units
                     // TODO: add xrd/cost unit conversion

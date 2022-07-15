@@ -18,7 +18,7 @@ fn test_pay_fee_and_transfer() {
     let (_, _, other_account) = test_runner.new_account();
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_method(account, "pay_fee", to_struct!(Decimal::from(1)))
         .withdraw_from_account(RADIX_TOKEN, account)
         .call_method_with_all_resources(other_account, "deposit_batch")

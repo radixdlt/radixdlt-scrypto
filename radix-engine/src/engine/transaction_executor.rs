@@ -59,7 +59,7 @@ where
         self.substate_store
     }
 
-    pub fn execute<T: ExecutableTransaction>(&mut self, transaction: &T) -> Option<Receipt> {
+    pub fn execute<T: ExecutableTransaction>(&mut self, transaction: &T) -> Receipt {
         #[cfg(not(feature = "alloc"))]
         let now = std::time::Instant::now();
 
@@ -134,9 +134,8 @@ where
         // - Disburse validator tips
         let counter = root_frame.cost_unit_counter();
         if counter.owed() != 0 {
-            // If a transaction finished before the loan check point AND the
+            // TODO: If a transaction finished before the loan check point AND the
             // loan is not fully repaid, we should reject it.
-            return None;
         }
         if counter.balance() > 0 {
             // TODO: refund
@@ -187,7 +186,7 @@ where
             println!("+{}+", "-".repeat(30));
         }
 
-        Some(Receipt {
+        Receipt {
             transaction_network,
             commit_receipt,
             instructions,
@@ -202,6 +201,6 @@ where
             new_resource_addresses,
             execution_time,
             cost_units_consumed: total_consumed,
-        })
+        }
     }
 }

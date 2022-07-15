@@ -101,7 +101,7 @@ pub fn bootstrap<'s, S>(substate_store: &'s mut S, network: Network)
 where
     S: ReadableSubstateStore + WriteableSubstateStore,
 {
-    let system_substate = substate_store.get_substate(&scrypto_encode(&SYSTEM_PACKAGE));
+    let system_substate = substate_store.get_substate(&Address::Package(SYSTEM_PACKAGE));
     if system_substate.is_none() {
         let track = Track::new(substate_store, Hash([0u8; 32]), network);
         let receipt = create_genesis(track);

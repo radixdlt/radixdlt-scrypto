@@ -4,6 +4,8 @@ use sbor::*;
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
 
+use crate::engine::Address;
+
 pub trait QueryableSubstateStore {
     fn get_kv_store_entries(
         &self,
@@ -40,11 +42,11 @@ impl SubstateIdGenerator {
 }
 
 pub trait ReadableSubstateStore {
-    fn get_substate(&self, address: &[u8]) -> Option<Substate>;
-    fn get_space(&mut self, address: &[u8]) -> Option<PhysicalSubstateId>;
+    fn get_substate(&self, address: &Address) -> Option<Substate>;
+    fn get_space(&mut self, address: &Address) -> Option<PhysicalSubstateId>;
 }
 
 pub trait WriteableSubstateStore {
-    fn put_substate(&mut self, address: &[u8], substate: Substate);
-    fn put_space(&mut self, address: &[u8], phys_id: PhysicalSubstateId);
+    fn put_substate(&mut self, address: Address, substate: Substate);
+    fn put_space(&mut self, address: Address, phys_id: PhysicalSubstateId);
 }
