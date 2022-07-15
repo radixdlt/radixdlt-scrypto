@@ -10,9 +10,10 @@ use scrypto::resource::ResourceMethodAuthKey::Withdraw;
 use scrypto::resource::LOCKED;
 use scrypto::rule;
 
-use crate::engine::{Address, Track, TrackReceipt};
+use crate::engine::Address;
 use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
 use crate::model::ValidatedPackage;
+use crate::state_manager::*;
 
 #[derive(TypeId, Encode, Decode)]
 struct SystemComponentState {

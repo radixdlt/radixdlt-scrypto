@@ -21,6 +21,7 @@ use crate::engine::*;
 use crate::fee::*;
 use crate::ledger::*;
 use crate::model::*;
+use crate::state_manager::*;
 use crate::wasm::*;
 
 /// A call frame is the basic unit that forms a transaction call stack, which keeps track of the

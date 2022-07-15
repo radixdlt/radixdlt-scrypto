@@ -13,6 +13,7 @@ use crate::fee::MAX_TRANSACTION_COST;
 use crate::fee::SYSTEM_LOAN_AMOUNT;
 use crate::ledger::*;
 use crate::model::*;
+use crate::state_manager::*;
 use crate::wasm::*;
 
 /// An executor that runs transactions.

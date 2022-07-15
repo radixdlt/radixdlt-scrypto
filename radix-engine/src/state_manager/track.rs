@@ -7,9 +7,7 @@ use scrypto::buffer::{scrypto_decode, scrypto_encode};
 use scrypto::crypto::hash;
 use scrypto::engine::types::*;
 
-use crate::engine::substate_receipt::HardVirtualSubstateId;
-use crate::engine::track::BorrowedSubstate::Taken;
-use crate::engine::{Address, CommitReceipt, Substate};
+use crate::engine::*;
 use crate::ledger::*;
 
 #[derive(Debug)]
@@ -160,7 +158,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         let address: Address = addr.into();
         match self
             .borrowed_substates
-            .insert(address.clone(), Taken)
+            .insert(address.clone(), BorrowedSubstate::Taken)
             .expect(&format!("{:?} was never locked", address))
         {
             BorrowedSubstate::LoadedMut(value) => value,
