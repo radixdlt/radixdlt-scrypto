@@ -9,6 +9,8 @@ use scrypto::crypto::hash;
 
 use crate::ledger::*;
 
+use super::Address;
+
 pub struct CommitReceipt {
     pub virtual_down_substates: HashSet<HardVirtualSubstateId>,
     pub down_substates: HashSet<PhysicalSubstateId>,
@@ -79,16 +81,16 @@ impl SubstateOperationsReceipt {
                     receipt.virtual_down(virtual_substate_id);
                 }
                 SubstateOperation::Down(substate_id) => receipt.down(substate_id),
-                SubstateOperation::VirtualUp(address) => {
+                SubstateOperation::VirtualUp(key) => {
                     let phys_id = id_gen.next();
                     receipt.virtual_space_up(phys_id.clone());
-                    store.put_space(&address, phys_id);
+                    store.put_space(Address::decode(&key), phys_id);
                 }
                 SubstateOperation::Up(key, value) => {
                     let phys_id = id_gen.next();
                     receipt.up(phys_id.clone());
                     let substate = Substate { value, phys_id };
-                    store.put_substate(&key, substate);
+                    store.put_substate(Address::decode(&key), substate);
                 }
             }
         }

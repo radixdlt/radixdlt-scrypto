@@ -88,13 +88,16 @@ pub enum SubstateParentId {
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct VirtualSubstateId(pub SubstateParentId, pub Vec<u8>);
 
+/// Represents a Radix Engine address. Each maps a unique substate key.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Address {
     Resource(ResourceAddress),
     GlobalComponent(ComponentAddress),
     Package(PackageAddress),
     NonFungibleSet(ResourceAddress),
+    NonFungible(ResourceAddress, Vec<u8>),
     KeyValueStore(ComponentAddress, KeyValueStoreId),
+    KeyValueStoreEntry(ComponentAddress, KeyValueStoreId, Vec<u8>),
     Vault(ComponentAddress, VaultId),
     LocalComponent(ComponentAddress, ComponentAddress),
     System,
@@ -111,42 +114,51 @@ pub enum SubstateValue {
     KeyValueStoreEntry(Option<Vec<u8>>),
 }
 
-// TODO: Replace NonFungible with real re address
-// TODO: Move this logic into application layer
-macro_rules! resource_to_non_fungible_space {
-    ($resource_address:expr) => {{
-        let mut addr = scrypto_encode(&$resource_address);
-        addr.push(0u8);
-        addr
-    }};
-}
-
 impl Address {
-    fn encode(&self) -> Vec<u8> {
+    pub fn encode(&self) -> Vec<u8> {
+        // TODO: How much do we gain from this specialized codec?
         match self {
-            Address::System => vec![0u8],
+            Address::System => vec![0u8], // TODO: inconsistent encoding
             Address::Resource(resource_address) => scrypto_encode(resource_address),
             Address::GlobalComponent(component_address) => scrypto_encode(component_address),
             Address::Package(package_address) => scrypto_encode(package_address),
             Address::Vault(component_address, vault_id) => {
-                let mut vault_address = scrypto_encode(component_address);
-                vault_address.extend(scrypto_encode(vault_id));
-                vault_address
+                let mut substate_key = scrypto_encode(component_address);
+                substate_key.extend(scrypto_encode(vault_id));
+                substate_key
             }
             Address::LocalComponent(component_address, child_id) => {
-                let mut vault_address = scrypto_encode(component_address);
-                vault_address.extend(scrypto_encode(child_id));
-                vault_address
+                let mut substate_key = scrypto_encode(component_address);
+                substate_key.extend(scrypto_encode(child_id));
+                substate_key
             }
             Address::NonFungibleSet(resource_address) => {
-                resource_to_non_fungible_space!(resource_address.clone())
+                let mut substate_key = scrypto_encode(resource_address);
+                substate_key.extend(scrypto_encode(&()));
+                substate_key
+            }
+            Address::NonFungible(resource_address, key) => {
+                let mut substate_key = scrypto_encode(resource_address);
+                substate_key.extend(scrypto_encode(&()));
+                substate_key.extend(key); // TODO: size prefix breaks sortability, but now inconsistent encoding
+                substate_key
             }
             Address::KeyValueStore(component_address, kv_store_id) => {
-                let mut entry_address = scrypto_encode(component_address);
-                entry_address.extend(scrypto_encode(kv_store_id));
-                entry_address
+                let mut substate_key = scrypto_encode(component_address);
+                substate_key.extend(scrypto_encode(kv_store_id));
+                substate_key
+            }
+            Address::KeyValueStoreEntry(component_address, kv_store_id, key) => {
+                let mut substate_key = scrypto_encode(component_address);
+                substate_key.extend(scrypto_encode(kv_store_id));
+                substate_key.extend(key); // TODO: size prefix breaks sortability, but now inconsistent encoding
+                substate_key
             }
         }
+    }
+
+    pub fn decode(slice: &[u8]) -> Self {
+        todo!()
     }
 }
 
@@ -461,7 +473,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         };
 
         self.new_addresses.push(address.clone());
-        self.up_substates.insert(address, substate_value);
+        self.up_substates.insert(address.clone(), substate_value);
         address
     }
 
@@ -671,8 +683,17 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
 
     /// Returns the value of a key value pair
     pub fn read_key_value(&mut self, parent_address: Address, key: Vec<u8>) -> SubstateValue {
-        let mut address = parent_address;
-        address.extend(key);
+        // TODO: consider using a single address as function input
+        let address = match parent_address {
+            Address::NonFungibleSet(resource_address) => {
+                Address::NonFungible(resource_address, key)
+            }
+            Address::KeyValueStore(component_address, store_id) => {
+                Address::KeyValueStoreEntry(component_address, store_id, key)
+            }
+            _ => panic!("Unsupported key value"),
+        };
+
         if let Some(cur) = self.up_substates.get(&address) {
             match cur {
                 SubstateValue::KeyValueStoreEntry(e) => {
@@ -710,8 +731,16 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         key: Vec<u8>,
         value: V,
     ) {
-        let mut address = parent_address;
-        address.extend(key.clone());
+        // TODO: consider using a single address as function input
+        let address = match parent_address {
+            Address::NonFungibleSet(resource_address) => {
+                Address::NonFungible(resource_address, key.clone())
+            }
+            Address::KeyValueStore(component_address, store_id) => {
+                Address::KeyValueStoreEntry(component_address, store_id, key.clone())
+            }
+            _ => panic!("Unsupported key value"),
+        };
 
         if self.up_substates.remove(&address).is_none() {
             let cur: Option<Substate> = self.substate_store.get_substate(&address);
@@ -727,7 +756,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         self.up_substates.insert(address, value.into());
     }
 
-    fn get_substate_parent_id(&mut self, space_address: &[u8]) -> SubstateParentId {
+    fn get_substate_parent_id(&mut self, space_address: &Address) -> SubstateParentId {
         if let Some(index) = self.up_virtual_substate_space.get_index_of(space_address) {
             SubstateParentId::New(index)
         } else {
@@ -810,10 +839,10 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             store_instructions.push(SubstateOperation::VirtualDown(virtual_substate_id));
         }
         for (address, value) in self.up_substates.drain(RangeFull) {
-            store_instructions.push(SubstateOperation::Up(address, value.encode()));
+            store_instructions.push(SubstateOperation::Up(address.encode(), value.encode()));
         }
         for space_address in self.up_virtual_substate_space.drain(RangeFull) {
-            store_instructions.push(SubstateOperation::VirtualUp(space_address));
+            store_instructions.push(SubstateOperation::VirtualUp(space_address.encode()));
         }
 
         let substates = SubstateOperationsReceipt {
