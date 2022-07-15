@@ -1,4 +1,4 @@
-use radix_engine::engine::{Receipt, TrackNode, TransactionExecutor};
+use radix_engine::engine::{Receipt, TrackNodeDag, TransactionExecutor};
 use radix_engine::ledger::*;
 use radix_engine::model::{export_abi, export_abi_by_component, extract_package, Component};
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter};
@@ -106,40 +106,42 @@ impl TestRunner {
             TestTransaction::new(manifest, self.next_transaction_nonce, signer_public_keys);
         self.next_transaction_nonce += 1;
 
-        let mut track_node = TrackNode::new(&mut self.substate_store);
+        let mut dag = TrackNodeDag::new(&mut self.substate_store);
+        let node_id = dag.new_branch(0);
+        let mut store = dag.get_output_store(node_id);
 
         let receipt = TransactionExecutor::new(
-            &mut track_node,
+            &mut store,
             &mut self.wasm_engine,
             &mut self.wasm_instrumenter,
             self.trace,
         )
         .execute(&transaction);
 
-        track_node.merge();
+        dag.merge_to_parent(node_id);
 
         receipt
     }
 
-    pub fn execute_batch(
-        &mut self,
-        manifests: Vec<(TransactionManifest, Vec<EcdsaPublicKey>)>,
-    ) {
-        let mut track_node = TrackNode::new(&mut self.substate_store);
+    pub fn execute_batch(&mut self, manifests: Vec<(TransactionManifest, Vec<EcdsaPublicKey>)>) {
+        let mut dag = TrackNodeDag::new(&mut self.substate_store);
+        let node_id = dag.new_branch(0);
+        let mut store = dag.get_output_store(node_id);
 
         for (manifest, signer_public_keys) in manifests {
             let transaction =
                 TestTransaction::new(manifest, self.next_transaction_nonce, signer_public_keys);
             self.next_transaction_nonce += 1;
             TransactionExecutor::new(
-                &mut track_node,
+                &mut store,
                 &mut self.wasm_engine,
                 &mut self.wasm_instrumenter,
                 self.trace,
-            ).execute(&transaction);
+            )
+            .execute(&transaction);
         }
 
-        track_node.merge();
+        dag.merge_to_parent(node_id);
     }
 
     pub fn inspect_component(&self, component_address: ComponentAddress) -> Component {

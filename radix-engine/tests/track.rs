@@ -4,10 +4,8 @@ pub mod test_runner;
 use crate::test_runner::TestRunner;
 use scrypto::core::Network;
 use scrypto::prelude::*;
-use scrypto::to_struct;
 use transaction::builder::ManifestBuilder;
 use transaction::model::*;
-
 
 fn self_transfer_txn(account: ComponentAddress, amount: Decimal) -> TransactionManifest {
     ManifestBuilder::new(Network::LocalSimulator)
