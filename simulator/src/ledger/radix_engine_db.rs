@@ -90,7 +90,7 @@ impl QueryableSubstateStore for RadixEngineDB {
 
             let local_key = key.split_at(key_size).1.to_vec();
             let substate: Output = scrypto_decode(&value.to_vec()).unwrap();
-            items.insert(local_key, substate.value);
+            items.insert(local_key, substate.substate);
         }
         items
     }

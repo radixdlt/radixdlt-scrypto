@@ -19,8 +19,8 @@ pub struct OutputId(pub Hash, pub u32);
 
 #[derive(Debug, Encode, Decode, TypeId)]
 pub struct Output {
-    pub value: Substate,
-    pub phys_id: OutputId,
+    pub substate: Substate,
+    pub output_id: OutputId,
 }
 
 #[derive(Debug)]
@@ -49,11 +49,11 @@ pub trait ReadableSubstateStore {
     // Temporary Encoded/Decoded interface
     fn get_decoded_substate<A: Encode, T: From<Substate>>(&self, address: &A) -> Option<T> {
         self.get_substate(&scrypto_encode(address))
-            .map(|s| s.value.into())
+            .map(|s| s.substate.into())
     }
 }
 
 pub trait WriteableSubstateStore {
-    fn put_substate(&mut self, address: &[u8], substate: Output);
-    fn put_space(&mut self, address: &[u8], phys_id: OutputId);
+    fn put_substate(&mut self, address: &[u8], output: Output);
+    fn put_space(&mut self, address: &[u8], output_id: OutputId);
 }

@@ -184,7 +184,7 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
                 let non_fungible: Option<NonFungible> = substate_store
                     .get_substate(&nf_address)
                     .unwrap()
-                    .value
+                    .substate
                     .into();
 
                 let id = ScryptoValue::from_slice(&id.to_vec()).unwrap();
