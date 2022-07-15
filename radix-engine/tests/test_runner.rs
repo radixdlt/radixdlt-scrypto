@@ -107,7 +107,7 @@ impl TestRunner {
             TestTransaction::new(manifest, self.next_transaction_nonce, signer_public_keys);
         self.next_transaction_nonce += 1;
 
-        let mut dag = TrackNodeDag::new(&mut self.substate_store);
+        let mut dag = StagedExecutionStores::new(&mut self.substate_store);
         let node_id = dag.new_branch(0);
         let mut store = dag.get_output_store(node_id);
 
@@ -125,7 +125,7 @@ impl TestRunner {
     }
 
     pub fn execute_batch(&mut self, manifests: Vec<(TransactionManifest, Vec<EcdsaPublicKey>)>) {
-        let mut dag = TrackNodeDag::new(&mut self.substate_store);
+        let mut dag = StagedExecutionStores::new(&mut self.substate_store);
         let node_id = dag.new_branch(0);
         let mut store = dag.get_output_store(node_id);
 
