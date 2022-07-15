@@ -16,7 +16,7 @@ use transaction::model::TransactionManifest;
 use transaction::signing::EcdsaPrivateKey;
 
 pub struct TestRunner<'s, S: ReadableSubstateStore + WriteableSubstateStore> {
-    substate_store: &'s mut S,
+    execution_stores: StagedExecutionStores<'s, S>,
     wasm_engine: DefaultWasmEngine,
     wasm_instrumenter: WasmInstrumenter,
     next_private_key: u64,
@@ -27,7 +27,7 @@ pub struct TestRunner<'s, S: ReadableSubstateStore + WriteableSubstateStore> {
 impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     pub fn new(trace: bool, substate_store: &'s mut S) -> Self {
         Self {
-            substate_store,
+            execution_stores: StagedExecutionStores::new(substate_store),
             wasm_engine: DefaultWasmEngine::new(),
             wasm_instrumenter: WasmInstrumenter::new(),
             next_private_key: 1, // 0 is invalid
@@ -103,9 +103,8 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             TestTransaction::new(manifest, self.next_transaction_nonce, signer_public_keys);
         self.next_transaction_nonce += 1;
 
-        let mut execution_stores = StagedExecutionStores::new(self.substate_store);
-        let node_id = execution_stores.new_branch(0);
-        let mut store = execution_stores.get_output_store(node_id);
+        let node_id = self.execution_stores.new_branch(0);
+        let mut store = self.execution_stores.get_output_store(node_id);
 
         let receipt = TransactionExecutor::new(
             &mut store,
@@ -115,15 +114,14 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         )
         .execute(&transaction);
 
-        execution_stores.merge_to_parent(node_id);
+        self.execution_stores.merge_to_parent(node_id);
 
         receipt
     }
 
     pub fn execute_batch(&mut self, manifests: Vec<(TransactionManifest, Vec<EcdsaPublicKey>)>) {
-        let mut dag = StagedExecutionStores::new(self.substate_store);
-        let node_id = dag.new_branch(0);
-        let mut store = dag.get_output_store(node_id);
+        let node_id = self.execution_stores.new_branch(0);
+        let mut store = self.execution_stores.get_output_store(node_id);
 
         for (manifest, signer_public_keys) in manifests {
             let transaction =
@@ -138,24 +136,24 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             .execute(&transaction);
         }
 
-        dag.merge_to_parent(node_id);
+        self.execution_stores.merge_to_parent(node_id);
     }
 
     pub fn export_abi(
-        &self,
+        &mut self,
         package_address: PackageAddress,
         blueprint_name: &str,
     ) -> abi::BlueprintAbi {
-        export_abi(self.substate_store, package_address, blueprint_name)
-            .expect("Failed to export ABI")
+        let output_store = self.execution_stores.get_output_store(0);
+        export_abi(&output_store, package_address, blueprint_name).expect("Failed to export ABI")
     }
 
     pub fn export_abi_by_component(
-        &self,
+        &mut self,
         component_address: ComponentAddress,
     ) -> abi::BlueprintAbi {
-        export_abi_by_component(self.substate_store, component_address)
-            .expect("Failed to export ABI")
+        let output_store = self.execution_stores.get_output_store(0);
+        export_abi_by_component(&output_store, component_address).expect("Failed to export ABI")
     }
 
     pub fn update_resource_auth(

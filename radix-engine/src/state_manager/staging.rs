@@ -50,7 +50,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> StagedExecutionStore
     }
 
     pub fn get_output_store<'t>(&'t mut self, id: u64) -> ExecutionStore<'t, 's, S> {
-        if self.nodes.get(&id).unwrap().locked {
+        if id != 0 && self.nodes.get(&id).unwrap().locked {
             panic!("Should not write to locked node");
         }
 
