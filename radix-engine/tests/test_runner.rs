@@ -99,54 +99,46 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         manifest: TransactionManifest,
         signer_public_keys: Vec<EcdsaPublicKey>,
     ) -> Receipt {
-        let transaction =
-            TestTransaction::new(manifest, self.next_transaction_nonce, signer_public_keys);
-        self.next_transaction_nonce += 1;
-
-        let node_id = self.execution_stores.new_branch(0);
-        let mut store = self.execution_stores.get_output_store(node_id);
-
-        let receipt = TransactionExecutor::new(
-            &mut store,
-            &mut self.wasm_engine,
-            &mut self.wasm_instrumenter,
-            self.trace,
-        )
-        .execute(&transaction);
-
-        self.execution_stores.merge_to_parent(node_id);
-
-        receipt
+        let mut receipts = self.execute_batch(vec![(manifest, signer_public_keys)]);
+        receipts.pop().unwrap()
     }
 
-    pub fn execute_batch(&mut self, manifests: Vec<(TransactionManifest, Vec<EcdsaPublicKey>)>) {
-        let node_id = self.create_branch(0);
-        self.execute_batch_on_node(node_id, manifests);
+    pub fn execute_batch(
+        &mut self,
+        manifests: Vec<(TransactionManifest, Vec<EcdsaPublicKey>)>,
+    ) -> Vec<Receipt> {
+        let node_id = self.create_child_node(0);
+        let receipts = self.execute_batch_on_node(node_id, manifests);
         self.merge_node(node_id);
+        receipts
     }
 
-    pub fn create_branch(&mut self, parent_id: u64) -> u64 {
-        self.execution_stores.new_branch(parent_id)
+    pub fn create_child_node(&mut self, parent_id: u64) -> u64 {
+        self.execution_stores.new_child_node(parent_id)
     }
 
     pub fn execute_batch_on_node(
         &mut self,
         node_id: u64,
         manifests: Vec<(TransactionManifest, Vec<EcdsaPublicKey>)>,
-    ) {
+    ) -> Vec<Receipt> {
         let mut store = self.execution_stores.get_output_store(node_id);
+        let mut receipts = Vec::new();
         for (manifest, signer_public_keys) in manifests {
             let transaction =
                 TestTransaction::new(manifest, self.next_transaction_nonce, signer_public_keys);
             self.next_transaction_nonce += 1;
-            TransactionExecutor::new(
+            let receipt = TransactionExecutor::new(
                 &mut store,
                 &mut self.wasm_engine,
                 &mut self.wasm_instrumenter,
                 self.trace,
             )
             .execute(&transaction);
+            receipts.push(receipt);
         }
+
+        receipts
     }
 
     pub fn merge_node(&mut self, node_id: u64) {
