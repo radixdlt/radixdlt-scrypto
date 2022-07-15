@@ -1,6 +1,7 @@
 mod call_frame;
 mod errors;
 mod precommitted_kv_store;
+mod preview_executor;
 mod substate_receipt;
 mod system_api;
 mod track;
@@ -12,6 +13,7 @@ mod wasm_runtime;
 pub use call_frame::{CallFrame, RENativeValueRef, REValueRefMut, SubstateAddress};
 pub use errors::*;
 pub use precommitted_kv_store::*;
+pub use preview_executor::*;
 pub use substate_receipt::{CommitReceipt, SubstateOperation, SubstateOperationsReceipt};
 pub use system_api::SystemApi;
 pub use track::{
