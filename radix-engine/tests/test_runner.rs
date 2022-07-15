@@ -1,6 +1,6 @@
 use radix_engine::engine::{Receipt, TransactionExecutor};
 use radix_engine::ledger::*;
-use radix_engine::model::{export_abi, export_abi_by_component, extract_package, Component};
+use radix_engine::model::{export_abi, export_abi_by_component, extract_package};
 use radix_engine::state_manager::*;
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter};
 use sbor::describe::Fields;
@@ -15,8 +15,8 @@ use transaction::model::TestTransaction;
 use transaction::model::TransactionManifest;
 use transaction::signing::EcdsaPrivateKey;
 
-pub struct TestRunner {
-    substate_store: InMemorySubstateStore,
+pub struct TestRunner<'s, S: ReadableSubstateStore + WriteableSubstateStore> {
+    substate_store: &'s mut S,
     wasm_engine: DefaultWasmEngine,
     wasm_instrumenter: WasmInstrumenter,
     next_private_key: u64,
@@ -24,20 +24,16 @@ pub struct TestRunner {
     trace: bool,
 }
 
-impl TestRunner {
-    pub fn new(trace: bool) -> Self {
+impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
+    pub fn new(trace: bool, substate_store: &'s mut S) -> Self {
         Self {
-            substate_store: InMemorySubstateStore::with_bootstrap(),
+            substate_store,
             wasm_engine: DefaultWasmEngine::new(),
             wasm_instrumenter: WasmInstrumenter::new(),
             next_private_key: 1, // 0 is invalid
             next_transaction_nonce: 0,
             trace,
         }
-    }
-
-    pub fn substate_store(&self) -> &InMemorySubstateStore {
-        &self.substate_store
     }
 
     pub fn new_key_pair(&mut self) -> (EcdsaPublicKey, EcdsaPrivateKey) {
@@ -107,9 +103,9 @@ impl TestRunner {
             TestTransaction::new(manifest, self.next_transaction_nonce, signer_public_keys);
         self.next_transaction_nonce += 1;
 
-        let mut dag = StagedExecutionStores::new(&mut self.substate_store);
-        let node_id = dag.new_branch(0);
-        let mut store = dag.get_output_store(node_id);
+        let mut execution_stores = StagedExecutionStores::new(self.substate_store);
+        let node_id = execution_stores.new_branch(0);
+        let mut store = execution_stores.get_output_store(node_id);
 
         let receipt = TransactionExecutor::new(
             &mut store,
@@ -119,13 +115,13 @@ impl TestRunner {
         )
         .execute(&transaction);
 
-        dag.merge_to_parent(node_id);
+        execution_stores.merge_to_parent(node_id);
 
         receipt
     }
 
     pub fn execute_batch(&mut self, manifests: Vec<(TransactionManifest, Vec<EcdsaPublicKey>)>) {
-        let mut dag = StagedExecutionStores::new(&mut self.substate_store);
+        let mut dag = StagedExecutionStores::new(self.substate_store);
         let node_id = dag.new_branch(0);
         let mut store = dag.get_output_store(node_id);
 
@@ -145,18 +141,12 @@ impl TestRunner {
         dag.merge_to_parent(node_id);
     }
 
-    pub fn inspect_component(&self, component_address: ComponentAddress) -> Component {
-        self.substate_store
-            .get_decoded_substate(&component_address)
-            .unwrap()
-    }
-
     pub fn export_abi(
         &self,
         package_address: PackageAddress,
         blueprint_name: &str,
     ) -> abi::BlueprintAbi {
-        export_abi(&self.substate_store, package_address, blueprint_name)
+        export_abi(self.substate_store, package_address, blueprint_name)
             .expect("Failed to export ABI")
     }
 
@@ -164,7 +154,7 @@ impl TestRunner {
         &self,
         component_address: ComponentAddress,
     ) -> abi::BlueprintAbi {
-        export_abi_by_component(&self.substate_store, component_address)
+        export_abi_by_component(self.substate_store, component_address)
             .expect("Failed to export ABI")
     }
 

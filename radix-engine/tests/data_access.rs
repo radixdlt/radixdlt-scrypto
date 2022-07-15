@@ -3,6 +3,7 @@ pub mod test_runner;
 
 use crate::test_runner::TestRunner;
 use radix_engine::engine::RuntimeError;
+use radix_engine::ledger::InMemorySubstateStore;
 use scrypto::core::Network;
 use scrypto::prelude::*;
 use scrypto::to_struct;
@@ -11,7 +12,8 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn should_not_be_able_to_read_component_state_after_creation() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("data_access");
 
     // Act
@@ -32,7 +34,8 @@ fn should_not_be_able_to_read_component_state_after_creation() {
 #[test]
 fn should_not_be_able_to_write_component_state_after_creation() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("data_access");
 
     // Act
@@ -53,7 +56,8 @@ fn should_not_be_able_to_write_component_state_after_creation() {
 #[test]
 fn should_be_able_to_read_component_info() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("data_access");
 
     // Act
@@ -74,7 +78,8 @@ fn should_be_able_to_read_component_info() {
 #[test]
 fn should_not_be_able_to_write_component_info() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("data_access");
 
     // Act

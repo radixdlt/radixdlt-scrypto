@@ -3,6 +3,7 @@ pub mod test_runner;
 
 use crate::test_runner::TestRunner;
 use radix_engine::engine::RuntimeError;
+use radix_engine::ledger::InMemorySubstateStore;
 use scrypto::prelude::*;
 use scrypto::to_struct;
 use transaction::builder::ManifestBuilder;
@@ -10,7 +11,8 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn test_max_call_depth_success() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("recursion");
 
     // Act
@@ -33,7 +35,8 @@ fn test_max_call_depth_success() {
 #[test]
 fn test_max_call_depth_failure() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("recursion");
 
     // Act

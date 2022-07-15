@@ -3,6 +3,7 @@ pub mod test_runner;
 
 use crate::test_runner::TestRunner;
 use radix_engine::engine::RuntimeError;
+use radix_engine::ledger::InMemorySubstateStore;
 use scrypto::core::Network;
 use scrypto::prelude::*;
 use scrypto::to_struct;
@@ -10,7 +11,8 @@ use transaction::builder::ManifestBuilder;
 
 #[test]
 fn test_package() {
-    let mut test_runner = TestRunner::new(true);
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
     let package = test_runner.extract_and_publish_package("component");
 
     let manifest1 = ManifestBuilder::new(Network::LocalSimulator)
@@ -22,7 +24,8 @@ fn test_package() {
 
 #[test]
 fn test_component() {
-    let mut test_runner = TestRunner::new(true);
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account();
     let package = test_runner.extract_and_publish_package("component");
 
@@ -55,7 +58,8 @@ fn test_component() {
 #[test]
 fn invalid_blueprint_name_should_cause_error() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("component");
 
     // Act
@@ -82,7 +86,8 @@ fn invalid_blueprint_name_should_cause_error() {
 #[test]
 fn reentrancy_should_not_be_possible() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("component");
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(package_address, "ReentrantComponent", "new", to_struct!())
@@ -110,7 +115,8 @@ fn reentrancy_should_not_be_possible() {
 #[test]
 fn missing_component_address_should_cause_error() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
     let _ = test_runner.extract_and_publish_package("component");
     let component_address = ComponentAddress::from_str(
         "component_sim1qgqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqph4dhmhs42ee03",
