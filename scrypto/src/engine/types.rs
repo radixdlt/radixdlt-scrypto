@@ -59,6 +59,7 @@ pub enum ValueId {
     Transient(TransientValueId),
     Stored(StoredValueId),
     Resource(ResourceAddress),
+    NonFungibles(ResourceAddress),
     Package(PackageAddress),
     System,
 }
@@ -116,6 +117,15 @@ impl Into<PackageAddress> for ValueId {
         match self {
             ValueId::Package(package_address) => package_address,
             _ => panic!("Not a package address"),
+        }
+    }
+}
+
+impl Into<ResourceAddress> for ValueId {
+    fn into(self) -> ResourceAddress {
+        match self {
+            ValueId::Resource(resource_address) => resource_address,
+            _ => panic!("Not a resource address"),
         }
     }
 }

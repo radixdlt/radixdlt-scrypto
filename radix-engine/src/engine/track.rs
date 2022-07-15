@@ -431,32 +431,8 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         self.logs.push((level, message));
     }
 
-    /// Creates a new uuid key with a given value
-    pub fn create_uuid_value<T: Into<SubstateValue>>(&mut self, value: T) -> Address {
-        let substate_value = value.into();
-        let address = match substate_value {
-            SubstateValue::Package(_) => {
-                let package_address = self.new_package_address();
-                Address::Package(package_address)
-            }
-            SubstateValue::Resource(ref resource_manager) => {
-                let resource_address = self.new_resource_address();
-                // TODO: Move this into application layer
-                if let ResourceType::NonFungible = resource_manager.resource_type() {
-                    let space_address = resource_to_non_fungible_space!(resource_address);
-                    self.up_virtual_substate_space.insert(space_address);
-                }
-                Address::Resource(resource_address)
-            }
-            _ => panic!("Trying to create uuid value with invalid value"),
-        };
-
-        self.new_addresses.push(address.clone());
-        self.up_substates.insert(address.encode(), substate_value);
-        address
-    }
-
-    pub fn create_uuid_value_2<A: Into<Address>, V: Into<SubstateValue>>(
+    /// Creates a row with the given key/value
+    pub fn create_uuid_value<A: Into<Address>, V: Into<SubstateValue>>(
         &mut self,
         addr: A,
         value: V,
@@ -464,6 +440,12 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         let address = addr.into();
         self.new_addresses.push(address.clone());
         self.up_substates.insert(address.encode(), value.into());
+    }
+
+    // TODO: Make more generic
+    pub fn create_non_fungible_space(&mut self, resource_address: ResourceAddress) {
+        let space_address = resource_to_non_fungible_space!(resource_address);
+        self.up_virtual_substate_space.insert(space_address);
     }
 
     pub fn create_key_space(
@@ -713,7 +695,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
     }
 
     /// Creates a new resource address.
-    fn new_resource_address(&mut self) -> ResourceAddress {
+    pub fn new_resource_address(&mut self) -> ResourceAddress {
         let resource_address = self
             .id_allocator
             .new_resource_address(self.transaction_hash())
@@ -790,14 +772,14 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             match value {
                 REValue::Vault(vault) => {
                     let addr: (ComponentAddress, VaultId) = (component_address, id.into());
-                    self.create_uuid_value_2(addr, vault);
+                    self.create_uuid_value(addr, vault);
                 }
                 REValue::Component {
                     component,
                     child_values,
                 } => {
                     let addr: (ComponentAddress, ComponentAddress) = (component_address, id.into());
-                    self.create_uuid_value_2(addr, component);
+                    self.create_uuid_value(addr, component);
                     let child_values = child_values
                         .into_iter()
                         .map(|(id, v)| (id, v.into_inner()))
