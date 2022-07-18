@@ -11,7 +11,6 @@ use scrypto::values::ScryptoValue;
 
 use crate::engine::{DropFailure, SystemApi};
 use crate::fee::CostUnitCounterError;
-use crate::ledger::ReadableSubstateStore;
 use crate::model::WorktopError::InvalidMethod;
 use crate::model::{Bucket, ResourceContainer, ResourceContainerError};
 use crate::wasm::*;

@@ -20,7 +20,6 @@ use scrypto::values::ScryptoValue;
 
 use crate::engine::{SubstateAddress, SystemApi};
 use crate::fee::CostUnitCounterError;
-use crate::ledger::ReadableSubstateStore;
 use crate::model::resource_manager::ResourceMethodRule::{Protected, Public};
 use crate::model::ResourceManagerError::InvalidMethod;
 use crate::model::{convert, MethodAuthorization, ResourceContainer};
@@ -422,14 +421,7 @@ impl ResourceManager {
         }
     }
 
-    pub fn main<
-        'p,
-        's,
-        Y: SystemApi<'p, W, I>,
-        W: WasmEngine<I>,
-        I: WasmInstance,
-        S: ReadableSubstateStore,
-    >(
+    pub fn main<'p, Y: SystemApi<'p, W, I>, W: WasmEngine<I>, I: WasmInstance>(
         resource_address: ResourceAddress,
         method_name: &str,
         arg: ScryptoValue,

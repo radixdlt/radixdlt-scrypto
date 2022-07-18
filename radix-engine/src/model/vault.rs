@@ -16,7 +16,6 @@ use scrypto::values::ScryptoValue;
 
 use crate::engine::SystemApi;
 use crate::fee::CostUnitCounterError;
-use crate::ledger::ReadableSubstateStore;
 use crate::model::VaultError::MethodNotFound;
 use crate::model::{
     Bucket, Proof, ProofError, ResourceContainer, ResourceContainerError, ResourceContainerId,

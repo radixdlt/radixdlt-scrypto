@@ -9,7 +9,6 @@ use scrypto::values::ScryptoValue;
 
 use crate::engine::*;
 use crate::fee::CostUnitCounterError;
-use crate::ledger::ReadableSubstateStore;
 use crate::wasm::*;
 
 /// A collection of blueprints, compiled and published as a single unit.

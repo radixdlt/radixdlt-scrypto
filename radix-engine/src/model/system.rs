@@ -9,7 +9,6 @@ use scrypto::values::ScryptoValue;
 
 use crate::engine::SystemApi;
 use crate::fee::CostUnitCounterError;
-use crate::ledger::ReadableSubstateStore;
 use crate::model::SystemError::InvalidMethod;
 use crate::wasm::*;
 

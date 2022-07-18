@@ -15,7 +15,6 @@ use scrypto::values::ScryptoValue;
 
 use crate::engine::SystemApi;
 use crate::fee::CostUnitCounterError;
-use crate::ledger::ReadableSubstateStore;
 use crate::model::ProofError::UnknownMethod;
 use crate::model::{
     LockedAmountOrIds, ResourceContainer, ResourceContainerError, ResourceContainerId,
@@ -335,14 +334,7 @@ impl Proof {
         self.restricted
     }
 
-    pub fn main<
-        'p,
-        's,
-        Y: SystemApi<'p, W, I>,
-        W: WasmEngine<I>,
-        I: WasmInstance,
-        S: ReadableSubstateStore,
-    >(
+    pub fn main<'p, Y: SystemApi<'p, W, I>, W: WasmEngine<I>, I: WasmInstance>(
         value_id: ValueId,
         method_name: &str,
         arg: ScryptoValue,

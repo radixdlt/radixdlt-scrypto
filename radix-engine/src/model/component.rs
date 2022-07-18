@@ -1,6 +1,3 @@
-use crate::engine::SystemApi;
-use crate::fee::CostUnitCounterError;
-use crate::ledger::ReadableSubstateStore;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
@@ -12,6 +9,8 @@ use scrypto::prelude::ComponentGlobalizeInput;
 use scrypto::resource::AccessRules;
 use scrypto::values::*;
 
+use crate::engine::SystemApi;
+use crate::fee::CostUnitCounterError;
 use crate::model::{convert, MethodAuthorization};
 use crate::wasm::{WasmEngine, WasmInstance};
 
@@ -149,14 +148,7 @@ impl Component {
         Ok(rtn)
     }
 
-    pub fn main_consume<
-        'p,
-        's,
-        Y: SystemApi<'p, W, I>,
-        W: WasmEngine<I>,
-        I: WasmInstance,
-        S: ReadableSubstateStore,
-    >(
+    pub fn main_consume<'p, Y: SystemApi<'p, W, I>, W: WasmEngine<I>, I: WasmInstance>(
         value_id: ValueId,
         fn_ident: &str,
         arg: ScryptoValue,

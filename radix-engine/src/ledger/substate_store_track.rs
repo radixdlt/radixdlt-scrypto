@@ -11,7 +11,7 @@ pub struct SubstateStoreTrack {
 
 impl SubstateStoreTrack {
     // TODO: produce substate update receipt
-    
+
     pub fn new(parent: Box<dyn ReadableSubstateStore>) -> Self {
         Self {
             parent,
