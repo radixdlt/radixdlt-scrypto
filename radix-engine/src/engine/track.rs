@@ -18,6 +18,9 @@ use crate::engine::{REValue, SubstateOperation, SubstateOperationsReceipt};
 use crate::ledger::*;
 use crate::model::*;
 
+use super::StateTrack;
+use super::StateTrackParent;
+
 enum BorrowedSubstate {
     Loaded(SubstateValue, u32),
     LoadedMut(SubstateValue),
@@ -417,13 +420,19 @@ impl Track {
         transaction_hash: Hash,
         transaction_network: Network,
     ) -> Self {
+        let state_track = StateTrack::new(StateTrackParent::SubstateStore(
+            substate_store,
+            transaction_hash,
+            IdAllocator::new(IdSpace::Application),
+        ));
+
         Self {
             transaction_hash,
             transaction_network,
             id_allocator: IdAllocator::new(IdSpace::Application),
             logs: Vec::new(),
             new_addresses: Vec::new(),
-            state_track: StateTrack::new(substate_track),
+            state_track,
             borrowed_substates: HashMap::new(),
         }
     }
@@ -449,13 +458,14 @@ impl Track {
     ) {
         let address = addr.into();
         self.new_addresses.push(address.clone());
-        self.up_substates.insert(address, value.into());
+        self.state_track
+            .put_substate(address, value.into().encode());
     }
 
     // TODO: Make more generic
     pub fn create_non_fungible_space(&mut self, resource_address: ResourceAddress) {
         let space_address = Address::Resource(resource_address);
-        self.up_virtual_substate_space.insert(space_address);
+        self.state_track.put_space(space_address);
     }
 
     pub fn create_key_space(
@@ -463,8 +473,8 @@ impl Track {
         component_address: ComponentAddress,
         kv_store_id: KeyValueStoreId,
     ) {
-        self.up_virtual_substate_space
-            .insert(Address::KeyValueStore(component_address, kv_store_id));
+        self.state_track
+            .put_space(Address::KeyValueStore(component_address, kv_store_id));
     }
 
     pub fn take_lock<A: Into<Address>>(
@@ -484,20 +494,7 @@ impl Track {
         // representation of locked resource and apply operation on top of it.
 
         if write_through {
-            if self.up_substates.contains_key(&address)
-                || self.borrowed_substates.contains_key(&address)
-            {
-                return Err(TrackError::NotFound);
-            }
-
-            return Ok(());
-        }
-
-        let maybe_value = self.up_substates.remove(&address);
-        if let Some(value) = maybe_value {
-            self.borrowed_substates
-                .insert(address, BorrowedSubstate::loaded(value, mutable));
-            return Ok(());
+            // TODO:
         }
 
         if let Some(current) = self.borrowed_substates.get_mut(&address) {
@@ -514,27 +511,26 @@ impl Track {
             }
         }
 
-        if let Some(substate) = self.substate_store.get_substate(&address) {
-            self.down_substates.push(substate.phys_id);
+        if let Some(substate) = self.state_track.get_substate(&address) {
             let value = match address {
                 Address::GlobalComponent(_) | Address::LocalComponent(..) => {
-                    let component = scrypto_decode(&substate.value).unwrap();
+                    let component = scrypto_decode(&substate).unwrap();
                     SubstateValue::Component(component)
                 }
                 Address::Resource(_) => {
-                    let resource_manager = scrypto_decode(&substate.value).unwrap();
+                    let resource_manager = scrypto_decode(&substate).unwrap();
                     SubstateValue::Resource(resource_manager)
                 }
                 Address::Vault(..) => {
-                    let vault = scrypto_decode(&substate.value).unwrap();
+                    let vault = scrypto_decode(&substate).unwrap();
                     SubstateValue::Vault(vault, None)
                 }
                 Address::Package(..) => {
-                    let package = scrypto_decode(&substate.value).unwrap();
+                    let package = scrypto_decode(&substate).unwrap();
                     SubstateValue::Package(package)
                 }
                 Address::System => {
-                    let system = scrypto_decode(&substate.value).unwrap();
+                    let system = scrypto_decode(&substate).unwrap();
                     SubstateValue::System(system)
                 }
                 _ => panic!("Attempting to borrow unsupported value {:?}", address),
@@ -618,35 +614,21 @@ impl Track {
             .expect("Value was never borrowed");
 
         if write_through {
-            match borrowed {
-                BorrowedSubstate::Taken => panic!("Value was never returned"),
-                BorrowedSubstate::LoadedMut(value) => {
-                    self.up_substates.insert(address, value);
-                }
-                BorrowedSubstate::Loaded(value, mut count) => {
-                    count = count - 1;
-                    if count == 0 {
-                        self.up_substates.insert(address, value);
-                    } else {
-                        self.borrowed_substates
-                            .insert(address, BorrowedSubstate::Loaded(value, count));
-                    }
-                }
+            // TODO
+        }
+
+        match borrowed {
+            BorrowedSubstate::Taken => panic!("Value was never returned"),
+            BorrowedSubstate::LoadedMut(value) => {
+                self.state_track.put_substate(address, value.encode());
             }
-        } else {
-            match borrowed {
-                BorrowedSubstate::Taken => panic!("Value was never returned"),
-                BorrowedSubstate::LoadedMut(value) => {
-                    self.up_substates.insert(address, value);
-                }
-                BorrowedSubstate::Loaded(value, mut count) => {
-                    count = count - 1;
-                    if count == 0 {
-                        self.up_substates.insert(address, value);
-                    } else {
-                        self.borrowed_substates
-                            .insert(address, BorrowedSubstate::Loaded(value, count));
-                    }
+            BorrowedSubstate::Loaded(value, mut count) => {
+                count = count - 1;
+                if count == 0 {
+                    self.state_track.put_substate(address, value.encode());
+                } else {
+                    self.borrowed_substates
+                        .insert(address, BorrowedSubstate::Loaded(value, count));
                 }
             }
         }
@@ -665,29 +647,20 @@ impl Track {
             _ => panic!("Unsupported key value"),
         };
 
-        if let Some(cur) = self.up_substates.get(&address) {
-            match cur {
-                SubstateValue::KeyValueStoreEntry(e) => {
-                    return SubstateValue::KeyValueStoreEntry(e.clone())
-                }
-                SubstateValue::NonFungible(n) => return SubstateValue::NonFungible(n.clone()),
-                _ => panic!("Unsupported key value"),
-            }
-        }
         match parent_address {
             Address::NonFungibleSet(_) => self
-                .substate_store
+                .state_track
                 .get_substate(&address)
                 .map(|r| {
-                    let non_fungible = scrypto_decode(&r.value).unwrap();
+                    let non_fungible = scrypto_decode(&r).unwrap();
                     SubstateValue::NonFungible(non_fungible)
                 })
                 .unwrap_or(SubstateValue::NonFungible(None)),
             Address::KeyValueStore(..) => self
-                .substate_store
+                .state_track
                 .get_substate(&address)
                 .map(|r| {
-                    let kv_store_entry = scrypto_decode(&r.value).unwrap();
+                    let kv_store_entry = scrypto_decode(&r).unwrap();
                     SubstateValue::KeyValueStoreEntry(kv_store_entry)
                 })
                 .unwrap_or(SubstateValue::KeyValueStoreEntry(None)),
@@ -713,27 +686,8 @@ impl Track {
             _ => panic!("Unsupported key value"),
         };
 
-        if self.up_substates.remove(&address).is_none() {
-            let cur: Option<Substate> = self.substate_store.get_substate(&address);
-            if let Some(Substate { value: _, phys_id }) = cur {
-                self.down_substates.push(phys_id);
-            } else {
-                let parent_id = self.get_substate_parent_id(&parent_address);
-                let virtual_substate_id = VirtualSubstateId(parent_id, key);
-                self.down_virtual_substates.push(virtual_substate_id);
-            }
-        };
-
-        self.up_substates.insert(address, value.into());
-    }
-
-    fn get_substate_parent_id(&mut self, space_address: &Address) -> SubstateParentId {
-        if let Some(index) = self.up_virtual_substate_space.get_index_of(space_address) {
-            SubstateParentId::New(index)
-        } else {
-            let substate_id = self.substate_store.get_space(space_address).unwrap();
-            SubstateParentId::Exists(substate_id)
-        }
+        self.state_track
+            .put_substate(address, value.into().encode());
     }
 
     /// Creates a new package ID.
