@@ -1,3 +1,4 @@
+use transaction::errors::TransactionValidationError;
 use transaction::model::PreviewIntent;
 use transaction::validation::TestEpochManager;
 use transaction::validation::TestIntentHashManager;
@@ -13,13 +14,18 @@ pub struct PreviewResult {
     pub receipt: Receipt,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum PreviewError {
+    TransactionValidationError(TransactionValidationError),
+}
+
 pub struct PreviewExecutor;
 
 impl PreviewExecutor {
     pub fn execute_preview<S: ReadableSubstateStore + WriteableSubstateStore>(
         preview_intent: PreviewIntent,
         substate_store: &mut S,
-    ) -> PreviewResult {
+    ) -> Result<PreviewResult, PreviewError> {
         let epoch_manager = TestEpochManager::new(0);
         let intent_hash_manager = TestIntentHashManager::new();
 
@@ -27,7 +33,8 @@ impl PreviewExecutor {
             preview_intent.clone(),
             &intent_hash_manager,
             &epoch_manager,
-        );
+        )
+        .map_err(PreviewError::TransactionValidationError)?;
 
         let mut wasm_engine = DefaultWasmEngine::new();
         let mut wasm_instrumenter = WasmInstrumenter::new();
@@ -38,11 +45,11 @@ impl PreviewExecutor {
             false,
         );
 
-        let receipt = executor.execute(&validated_preview_transaction.unwrap());
+        let receipt = executor.execute(&validated_preview_transaction);
 
-        PreviewResult {
+        Ok(PreviewResult {
             intent: preview_intent,
             receipt: receipt,
-        }
+        })
     }
 }

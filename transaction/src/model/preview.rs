@@ -50,6 +50,7 @@ impl ExecutableTransaction for ValidatedPreviewTransaction {
     }
 
     fn transaction_payload_size(&self) -> u32 {
+        // TODO: update the estimation after transaction specs are finalized
         let intent_size = self.preview_intent.intent.to_bytes().len();
         let num_expected_signatures =
             self.signer_public_keys().len() /* Intent signatures */  + 1 /* Notary signature */;
