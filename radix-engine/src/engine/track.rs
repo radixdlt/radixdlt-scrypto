@@ -42,7 +42,7 @@ pub struct Track {
     id_allocator: IdAllocator,
     logs: Vec<(Level, String)>,
     new_addresses: Vec<Address>,
-    state_store_track: SubstateStoreTrack,
+    state_track: StateTrack,
     borrowed_substates: HashMap<Address, BorrowedSubstate>, // TODO: remove
 }
 
@@ -413,7 +413,7 @@ impl Into<Vault> for SubstateValue {
 
 impl Track {
     pub fn new(
-        substate_store_track: Box<dyn ReadableSubstateStore>,
+        substate_store: Box<dyn ReadableSubstateStore>,
         transaction_hash: Hash,
         transaction_network: Network,
     ) -> Self {
@@ -423,7 +423,7 @@ impl Track {
             id_allocator: IdAllocator::new(IdSpace::Application),
             logs: Vec::new(),
             new_addresses: Vec::new(),
-            state_store_track: SubstateStoreTrack::new(substate_store_track),
+            state_track: StateTrack::new(substate_track),
             borrowed_substates: HashMap::new(),
         }
     }
@@ -795,35 +795,6 @@ impl Track {
         self.id_allocator
             .new_kv_store_id(self.transaction_hash())
             .unwrap()
-    }
-
-    pub fn to_receipt(mut self) -> TrackReceipt {
-        if !self.borrowed_substates.is_empty() {
-            panic!("There should be nothing borrowed by end of transaction.");
-        }
-
-        let mut store_instructions = Vec::new();
-        for substate_id in self.down_substates {
-            store_instructions.push(SubstateOperation::Down(substate_id));
-        }
-        for virtual_substate_id in self.down_virtual_substates {
-            store_instructions.push(SubstateOperation::VirtualDown(virtual_substate_id));
-        }
-        for (address, value) in self.up_substates.drain(RangeFull) {
-            store_instructions.push(SubstateOperation::Up(address.encode(), value.encode()));
-        }
-        for space_address in self.up_virtual_substate_space.drain(RangeFull) {
-            store_instructions.push(SubstateOperation::VirtualUp(space_address.encode()));
-        }
-
-        let substates = SubstateOperationsReceipt {
-            substate_operations: store_instructions,
-        };
-        TrackReceipt {
-            new_addresses: self.new_addresses,
-            substates,
-            logs: self.logs,
-        }
     }
 
     pub fn insert_objects_into_component(

@@ -8,6 +8,7 @@ mod transaction_executor;
 mod transaction_receipt;
 mod values;
 mod wasm_runtime;
+mod state_track;
 
 pub use call_frame::{CallFrame, RENativeValueRef, REValueRefMut, SubstateAddress};
 pub use errors::*;
@@ -22,3 +23,4 @@ pub use transaction_executor::TransactionExecutor;
 pub use transaction_receipt::*;
 pub use values::*;
 pub use wasm_runtime::*;
+pub use state_track::*;
