@@ -72,7 +72,9 @@ impl System {
                 let _: SystemGetTransactionNetworkInput =
                     scrypto_decode(&arg.raw).map_err(|e| SystemError::InvalidRequestData(e))?;
                 Ok(ScryptoValue::from_typed(
-                    &system_api.get_transaction_network(),
+                    &system_api
+                        .transaction_network()
+                        .map_err(SystemError::CostingError)?,
                 ))
             }
             _ => Err(InvalidMethod),
