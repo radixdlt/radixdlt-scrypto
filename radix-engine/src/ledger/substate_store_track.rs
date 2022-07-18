@@ -4,26 +4,34 @@ use crate::engine::Address;
 use crate::ledger::*;
 
 pub struct SubstateStoreTrack {
-    substate_store: Box<dyn ReadableSubstateStore>,
+    parent: Box<dyn ReadableSubstateStore>,
     substates: HashMap<Address, Option<Vec<u8>>>,
     spaces: HashMap<Address, bool>,
 }
 
 impl SubstateStoreTrack {
     // TODO: produce substate update receipt
+    
+    pub fn new(parent: Box<dyn ReadableSubstateStore>) -> Self {
+        Self {
+            parent,
+            substates: HashMap::new(),
+            spaces: HashMap::new(),
+        }
+    }
 }
 
 impl ReadableSubstateStore for SubstateStoreTrack {
     fn get_substate(&mut self, address: &Address) -> Option<Vec<u8>> {
         self.substates
             .entry(address.clone())
-            .or_insert_with(|| self.substate_store.get_substate(address))
+            .or_insert_with(|| self.parent.get_substate(address))
             .clone()
     }
     fn get_space(&mut self, address: &Address) -> bool {
         self.spaces
             .entry(address.clone())
-            .or_insert_with(|| self.substate_store.get_space(address))
+            .or_insert_with(|| self.parent.get_space(address))
             .clone()
     }
 }
