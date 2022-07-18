@@ -5,8 +5,8 @@ use crate::ledger::*;
 
 pub struct SubstateStoreTrack {
     substate_store: Box<dyn ReadableSubstateStore>,
-    substates: HashMap<Address, Substate>,
-    spaces: HashMap<Address, PhysicalSubstateId>,
+    substates: HashMap<Address, Option<Vec<u8>>>,
+    spaces: HashMap<Address, bool>,
 }
 
 impl SubstateStoreTrack {
@@ -14,26 +14,26 @@ impl SubstateStoreTrack {
 }
 
 impl ReadableSubstateStore for SubstateStoreTrack {
-    fn get_substate(&self, address: &Address) -> Option<Substate> {
+    fn get_substate(&mut self, address: &Address) -> Option<Vec<u8>> {
         self.substates
-            .get(address)
-            .cloned()
-            .or_else(|| self.substate_store.get_substate(address))
+            .entry(address.clone())
+            .or_insert_with(|| self.substate_store.get_substate(address))
+            .clone()
     }
-    fn get_space(&mut self, address: &Address) -> Option<PhysicalSubstateId> {
+    fn get_space(&mut self, address: &Address) -> bool {
         self.spaces
-            .get(address)
-            .cloned()
-            .or_else(|| self.substate_store.get_space(address))
+            .entry(address.clone())
+            .or_insert_with(|| self.substate_store.get_space(address))
+            .clone()
     }
 }
 
 impl WriteableSubstateStore for SubstateStoreTrack {
-    fn put_substate(&mut self, address: Address, substate: Substate) {
-        self.substates.insert(address, substate);
+    fn put_substate(&mut self, address: Address, substate: Vec<u8>) {
+        self.substates.insert(address, Some(substate));
     }
 
-    fn put_space(&mut self, address: Address, phys_id: PhysicalSubstateId) {
-        self.spaces.insert(address, phys_id);
+    fn put_space(&mut self, address: Address) {
+        self.spaces.insert(address, true);
     }
 }

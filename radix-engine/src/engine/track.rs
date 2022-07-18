@@ -34,21 +34,16 @@ impl BorrowedSubstate {
     }
 }
 
-/// Facilitates transactional state updates.
-pub struct Track<'s, S: ReadableSubstateStore> {
-    substate_store: &'s mut S,
+/// Manages global objects created or loaded for transaction.
+/// TODO: rename to `TransactionGlobals` or similar
+pub struct Track {
     transaction_hash: Hash,
     transaction_network: Network,
     id_allocator: IdAllocator,
     logs: Vec<(Level, String)>,
-
     new_addresses: Vec<Address>,
-    borrowed_substates: HashMap<Address, BorrowedSubstate>,
-
-    down_substates: Vec<PhysicalSubstateId>,
-    down_virtual_substates: Vec<VirtualSubstateId>,
-    up_substates: IndexMap<Address, SubstateValue>,
-    up_virtual_substate_space: IndexSet<Address>,
+    state_store_track: SubstateStoreTrack,
+    borrowed_substates: HashMap<Address, BorrowedSubstate>, // TODO: remove
 }
 
 #[derive(Debug)]
@@ -416,26 +411,20 @@ impl Into<Vault> for SubstateValue {
     }
 }
 
-impl<'s, S: ReadableSubstateStore> Track<'s, S> {
-    pub fn new(
-        substate_store: &'s mut S,
+impl Track {
+    pub fn new<S: ReadableSubstateStore>(
+        substate_store_track: Box<dyn ReadableSubstateStore>,
         transaction_hash: Hash,
         transaction_network: Network,
     ) -> Self {
         Self {
-            substate_store,
             transaction_hash,
             transaction_network,
             id_allocator: IdAllocator::new(IdSpace::Application),
             logs: Vec::new(),
-
             new_addresses: Vec::new(),
+            state_store_track: SubstateStoreTrack::new(substate_store_track),
             borrowed_substates: HashMap::new(),
-
-            down_substates: Vec::new(),
-            down_virtual_substates: Vec::new(),
-            up_substates: IndexMap::new(),
-            up_virtual_substate_space: IndexSet::new(),
         }
     }
 

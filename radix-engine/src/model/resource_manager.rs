@@ -255,14 +255,7 @@ impl ResourceManager {
         self.total_supply
     }
 
-    pub fn mint<
-        'p,
-        's,
-        Y: SystemApi<'p, 's, W, I, S>,
-        W: WasmEngine<I>,
-        I: WasmInstance,
-        S: ReadableSubstateStore,
-    >(
+    pub fn mint<'p, Y: SystemApi<'p, W, I>, W: WasmEngine<I>, I: WasmInstance>(
         &mut self,
         mint_params: MintParams,
         self_address: ResourceAddress,
@@ -303,14 +296,7 @@ impl ResourceManager {
         }
     }
 
-    pub fn mint_non_fungibles<
-        'p,
-        's,
-        Y: SystemApi<'p, 's, W, I, S>,
-        W: WasmEngine<I>,
-        I: WasmInstance,
-        S: ReadableSubstateStore,
-    >(
+    pub fn mint_non_fungibles<'p, Y: SystemApi<'p, W, I>, W: WasmEngine<I>, I: WasmInstance>(
         &mut self,
         entries: HashMap<NonFungibleId, (Vec<u8>, Vec<u8>)>,
         self_address: ResourceAddress,
@@ -383,14 +369,7 @@ impl ResourceManager {
         }
     }
 
-    pub fn static_main<
-        'p,
-        's,
-        Y: SystemApi<'p, 's, W, I, S>,
-        W: WasmEngine<I>,
-        I: WasmInstance,
-        S: ReadableSubstateStore,
-    >(
+    pub fn static_main<'p, Y: SystemApi<'p, W, I>, W: WasmEngine<I>, I: WasmInstance>(
         method_name: &str,
         arg: ScryptoValue,
         system_api: &mut Y,
@@ -446,7 +425,7 @@ impl ResourceManager {
     pub fn main<
         'p,
         's,
-        Y: SystemApi<'p, 's, W, I, S>,
+        Y: SystemApi<'p, W, I>,
         W: WasmEngine<I>,
         I: WasmInstance,
         S: ReadableSubstateStore,

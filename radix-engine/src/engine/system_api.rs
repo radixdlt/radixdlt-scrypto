@@ -12,11 +12,10 @@ use crate::fee::*;
 use crate::ledger::ReadableSubstateStore;
 use crate::wasm::*;
 
-pub trait SystemApi<'p, 's, W, I, S>
+pub trait SystemApi<'p, W, I>
 where
     W: WasmEngine<I>,
     I: WasmInstance,
-    S: ReadableSubstateStore,
 {
     fn cost_unit_counter(&mut self) -> &mut CostUnitCounter;
 
@@ -34,7 +33,7 @@ where
     fn borrow_value(
         &mut self,
         value_id: &ValueId,
-    ) -> Result<REValueRef<'_, 'p, 's, S>, CostUnitCounterError>;
+    ) -> Result<REValueRef<'_, 'p>, CostUnitCounterError>;
 
     fn borrow_value_mut(
         &mut self,

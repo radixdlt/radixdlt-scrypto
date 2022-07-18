@@ -338,7 +338,7 @@ impl Proof {
     pub fn main<
         'p,
         's,
-        Y: SystemApi<'p, 's, W, I, S>,
+        Y: SystemApi<'p, W, I>,
         W: WasmEngine<I>,
         I: WasmInstance,
         S: ReadableSubstateStore,
@@ -388,14 +388,7 @@ impl Proof {
         Ok(rtn)
     }
 
-    pub fn main_consume<
-        'p,
-        's,
-        Y: SystemApi<'p, 's, W, I, S>,
-        W: WasmEngine<I>,
-        I: WasmInstance,
-        S: ReadableSubstateStore,
-    >(
+    pub fn main_consume<'p, Y: SystemApi<'p, W, I>, W: WasmEngine<I>, I: WasmInstance>(
         value_id: ValueId,
         method_name: &str,
         arg: ScryptoValue,

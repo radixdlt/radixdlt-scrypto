@@ -42,11 +42,11 @@ impl SubstateIdGenerator {
 }
 
 pub trait ReadableSubstateStore {
-    fn get_substate(&self, address: &Address) -> Option<Substate>;
-    fn get_space(&mut self, address: &Address) -> Option<PhysicalSubstateId>;
+    fn get_substate(&mut self, address: &Address) -> Option<Vec<u8>>;
+    fn get_space(&mut self, address: &Address) -> bool;
 }
 
 pub trait WriteableSubstateStore {
-    fn put_substate(&mut self, address: Address, substate: Substate);
-    fn put_space(&mut self, address: Address, phys_id: PhysicalSubstateId);
+    fn put_substate(&mut self, address: Address, substate: Vec<u8>);
+    fn put_space(&mut self, address: Address);
 }

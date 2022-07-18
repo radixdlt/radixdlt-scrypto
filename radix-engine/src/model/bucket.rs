@@ -164,7 +164,7 @@ impl Bucket {
     pub fn main<
         'p,
         's,
-        Y: SystemApi<'p, 's, W, I, S>,
+        Y: SystemApi<'p, W, I>,
         W: WasmEngine<I>,
         I: WasmInstance,
         S: ReadableSubstateStore,
@@ -262,14 +262,7 @@ impl Bucket {
         Ok(rtn)
     }
 
-    pub fn consuming_main<
-        'p,
-        's,
-        Y: SystemApi<'p, 's, W, I, S>,
-        W: WasmEngine<I>,
-        I: WasmInstance,
-        S: ReadableSubstateStore,
-    >(
+    pub fn consuming_main<'p, Y: SystemApi<'p, W, I>, W: WasmEngine<I>, I: WasmInstance>(
         value_id: ValueId,
         method_name: &str,
         arg: ScryptoValue,

@@ -88,14 +88,7 @@ impl Component {
         self.state = new_state;
     }
 
-    pub fn main<
-        'p,
-        's,
-        Y: SystemApi<'p, 's, W, I, S>,
-        W: WasmEngine<I>,
-        I: WasmInstance,
-        S: 's + ReadableSubstateStore,
-    >(
+    pub fn main<'p, Y: SystemApi<'p, W, I>, W: WasmEngine<I>, I: WasmInstance>(
         value_id: ValueId,
         fn_ident: &str,
         arg: ScryptoValue,
@@ -159,7 +152,7 @@ impl Component {
     pub fn main_consume<
         'p,
         's,
-        Y: SystemApi<'p, 's, W, I, S>,
+        Y: SystemApi<'p, W, I>,
         W: WasmEngine<I>,
         I: WasmInstance,
         S: ReadableSubstateStore,

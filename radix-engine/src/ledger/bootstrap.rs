@@ -32,10 +32,7 @@ const SYSTEM_COMPONENT_NAME: &str = "System";
 
 use crate::model::*;
 
-fn create_genesis<'s, S>(mut track: Track<'s, S>) -> TrackReceipt
-where
-    S: ReadableSubstateStore + WriteableSubstateStore,
-{
+fn create_genesis<'s, S>(mut track: Track) -> TrackReceipt {
     let system_package =
         extract_package(include_bytes!("../../../assets/system.wasm").to_vec()).unwrap();
     let validated_system_package = ValidatedPackage::new(system_package).unwrap();
