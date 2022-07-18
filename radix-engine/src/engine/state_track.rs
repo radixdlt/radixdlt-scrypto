@@ -1,5 +1,4 @@
-use core::ops::RangeFull;
-
+use indexmap::IndexSet;
 use sbor::rust::collections::*;
 use scrypto::crypto::Hash;
 use transaction::validation::IdAllocator;
@@ -7,7 +6,9 @@ use transaction::validation::IdAllocator;
 use crate::engine::Address;
 use crate::ledger::*;
 
-use super::{SubstateOperation, SubstateOperationsReceipt};
+use super::{
+    track::VirtualSubstateId, SubstateOperation, SubstateOperationsReceipt, SubstateParentId,
+};
 
 pub enum StateTrackParent {
     SubstateStore(Box<dyn ReadableSubstateStore>, Hash, IdAllocator),
@@ -17,10 +18,10 @@ pub enum StateTrackParent {
 pub struct StateTrack {
     /// The parent state track
     parent: StateTrackParent,
-    /// Loaded or created substates
+    /// Substates either created by transaction or loaded from substate store
     substates: HashMap<Address, Option<Vec<u8>>>,
-    /// Created spaces
-    spaces: HashSet<Address>,
+    /// Spaces created by transaction
+    spaces: IndexSet<Address>,
 }
 
 impl StateTrack {
@@ -30,7 +31,7 @@ impl StateTrack {
         Self {
             parent,
             substates: HashMap::new(),
-            spaces: HashSet::new(),
+            spaces: IndexSet::new(),
         }
     }
 
@@ -54,21 +55,118 @@ impl StateTrack {
         self.spaces.insert(address);
     }
 
-    pub fn summarize_state_changes(self) -> SubstateOperationsReceipt {
+    // Flush all changes to underlying track
+    pub fn flush(&mut self) {}
+
+    pub fn into_inner(self) -> Self {
+        match self.parent {
+            StateTrackParent::SubstateStore(..) => self,
+            StateTrackParent::StateTrack(track) => Self::into_inner(*track),
+        }
+    }
+
+    // TODO: replace recursion with iteration
+    
+    fn get_substate_id(parent: &StateTrackParent, address: &Address) -> Option<PhysicalSubstateId> {
+        match parent {
+            StateTrackParent::SubstateStore(store, ..) => {
+                store.get_substate(&address).map(|s| s.phys_id)
+            }
+            StateTrackParent::StateTrack(track) => Self::get_substate_id(&track.parent, address),
+        }
+    }
+
+    fn get_space_substate_id(
+        parent: &StateTrackParent,
+        address: &Address,
+    ) -> Option<PhysicalSubstateId> {
+        match parent {
+            StateTrackParent::SubstateStore(store, ..) => store.get_space(&address),
+            StateTrackParent::StateTrack(track) => {
+                Self::get_space_substate_id(&track.parent, address)
+            }
+        }
+    }
+
+    fn get_substate_parent_id(
+        spaces: &IndexSet<Address>,
+        parent: &StateTrackParent,
+        space_address: &Address,
+    ) -> SubstateParentId {
+        if let Some(index) = spaces.get_index_of(space_address) {
+            SubstateParentId::New(index)
+        } else {
+            let substate_id = Self::get_space_substate_id(parent, space_address)
+                .expect("Attempted to locate non-existing space");
+            SubstateParentId::Exists(substate_id)
+        }
+    }
+
+    pub fn summarize_state_changes(mut self) -> SubstateOperationsReceipt {
         let mut store_instructions = Vec::new();
 
-        // for substate_id in self.downed_substates {
-        //     store_instructions.push(SubstateOperation::Down(substate_id));
-        // }
-        // for virtual_substate_id in self.down_virtual_substates {
-        //     store_instructions.push(SubstateOperation::VirtualDown(virtual_substate_id));
-        // }
-        // for (address, value) in self.up_substates.drain(RangeFull) {
-        //     store_instructions.push(SubstateOperation::Up(address, value.encode()));
-        // }
-        // for space_address in self.up_virtual_substate_space.drain(RangeFull) {
-        //     store_instructions.push(SubstateOperation::VirtualUp(space_address));
-        // }
+        // Must be put in front of substate changes to maintain valid parent ids.
+        for space in &self.spaces {
+            store_instructions.push(SubstateOperation::VirtualUp(space.encode()));
+        }
+
+        for (address, substate) in self.substates.drain() {
+            if let Some(substate) = substate {
+                match &address {
+                    Address::NonFungible(resource_address, key) => {
+                        let parent_address = Address::Resource(*resource_address);
+
+                        if let Some(existing_substate_id) =
+                            Self::get_substate_id(&self.parent, &parent_address)
+                        {
+                            store_instructions.push(SubstateOperation::Down(existing_substate_id));
+                        } else {
+                            let parent_id = Self::get_substate_parent_id(
+                                &self.spaces,
+                                &self.parent,
+                                &parent_address,
+                            );
+                            let virtual_substate_id = VirtualSubstateId(parent_id, key.clone());
+                            store_instructions
+                                .push(SubstateOperation::VirtualDown(virtual_substate_id));
+                        }
+
+                        store_instructions.push(SubstateOperation::Up(address.encode(), substate));
+                    }
+                    Address::KeyValueStoreEntry(component_id, kv_store_id, key) => {
+                        let parent_address = Address::KeyValueStore(*component_id, *kv_store_id);
+
+                        if let Some(existing_substate_id) =
+                            Self::get_substate_id(&self.parent, &parent_address)
+                        {
+                            store_instructions.push(SubstateOperation::Down(existing_substate_id));
+                        } else {
+                            let parent_id = Self::get_substate_parent_id(
+                                &self.spaces,
+                                &self.parent,
+                                &parent_address,
+                            );
+                            let virtual_substate_id = VirtualSubstateId(parent_id, key.clone());
+                            store_instructions
+                                .push(SubstateOperation::VirtualDown(virtual_substate_id));
+                        }
+
+                        store_instructions.push(SubstateOperation::Up(address.encode(), substate));
+                    }
+                    _ => {
+                        if let Some(previous_substate_id) =
+                            Self::get_substate_id(&self.parent, &address)
+                        {
+                            store_instructions.push(SubstateOperation::Down(previous_substate_id));
+                        }
+                        store_instructions.push(SubstateOperation::Up(address.encode(), substate));
+                    }
+                }
+            } else {
+                // FIXME: How is this being recorded, considering that we're not rejecting the transaction
+                // if it attempts to touch some non-existing global addresses?
+            }
+        }
 
         SubstateOperationsReceipt {
             substate_operations: store_instructions,
