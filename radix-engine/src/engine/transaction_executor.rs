@@ -15,31 +15,31 @@ use crate::model::*;
 use crate::wasm::*;
 
 /// An executor that runs transactions.
-pub struct TransactionExecutor<'s, 'w, S, W, I>
+pub struct TransactionExecutor<'w, S, W, I>
 where
-    S: ReadableSubstateStore + WriteableSubstateStore,
+    S: ReadableSubstateStore + WriteableSubstateStore + 'static,
     W: WasmEngine<I>,
     I: WasmInstance,
 {
-    substate_store: &'s mut S,
+    substate_store: S,
     wasm_engine: &'w mut W,
     wasm_instrumenter: &'w mut WasmInstrumenter,
     trace: bool,
     phantom: PhantomData<I>,
 }
 
-impl<'s, 'w, S, W, I> TransactionExecutor<'s, 'w, S, W, I>
+impl<'w, S, W, I> TransactionExecutor<'w, S, W, I>
 where
-    S: ReadableSubstateStore + WriteableSubstateStore,
+    S: ReadableSubstateStore + WriteableSubstateStore + 'static,
     W: WasmEngine<I>,
     I: WasmInstance,
 {
     pub fn new(
-        substate_store: &'s mut S,
+        substate_store: S,
         wasm_engine: &'w mut W,
         wasm_instrumenter: &'w mut WasmInstrumenter,
         trace: bool,
-    ) -> TransactionExecutor<'s, 'w, S, W, I> {
+    ) -> TransactionExecutor<'w, S, W, I> {
         Self {
             substate_store,
             wasm_engine,
@@ -51,12 +51,12 @@ where
 
     /// Returns an immutable reference to the ledger.
     pub fn substate_store(&self) -> &S {
-        self.substate_store
+        &self.substate_store
     }
 
     /// Returns a mutable reference to the ledger.
     pub fn substate_store_mut(&mut self) -> &mut S {
-        self.substate_store
+        &mut self.substate_store
     }
 
     pub fn execute<T: ExecutableTransaction>(&mut self, transaction: &T) -> Receipt {
@@ -70,7 +70,7 @@ where
 
         // Start state track
         let mut track = Track::new(
-            self.substate_store,
+            Box::new(self.substate_store),
             transaction_hash,
             transaction_network.clone(),
         );
@@ -150,7 +150,7 @@ where
 
         // commit state updates
         let commit_receipt = if error.is_none() {
-            let commit_receipt = track_receipt.substates.commit(self.substate_store);
+            let commit_receipt = track_receipt.substates.commit(&mut self.substate_store);
             Some(commit_receipt)
         } else {
             None

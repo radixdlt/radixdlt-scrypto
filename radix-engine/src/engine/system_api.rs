@@ -9,7 +9,6 @@ use crate::engine::call_frame::{REValueRef, SubstateAddress};
 use crate::engine::values::*;
 use crate::engine::*;
 use crate::fee::*;
-use crate::ledger::ReadableSubstateStore;
 use crate::wasm::*;
 
 pub trait SystemApi<'p, W, I>

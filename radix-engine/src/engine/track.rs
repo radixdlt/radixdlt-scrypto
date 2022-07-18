@@ -412,7 +412,7 @@ impl Into<Vault> for SubstateValue {
 }
 
 impl Track {
-    pub fn new<S: ReadableSubstateStore>(
+    pub fn new(
         substate_store_track: Box<dyn ReadableSubstateStore>,
         transaction_hash: Hash,
         transaction_network: Network,

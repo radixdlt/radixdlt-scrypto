@@ -32,7 +32,7 @@ const SYSTEM_COMPONENT_NAME: &str = "System";
 
 use crate::model::*;
 
-fn create_genesis<'s, S>(mut track: Track) -> TrackReceipt {
+fn create_genesis(mut track: Track) -> TrackReceipt {
     let system_package =
         extract_package(include_bytes!("../../../assets/system.wasm").to_vec()).unwrap();
     let validated_system_package = ValidatedPackage::new(system_package).unwrap();
@@ -94,14 +94,15 @@ fn create_genesis<'s, S>(mut track: Track) -> TrackReceipt {
     track.to_receipt()
 }
 
-pub fn bootstrap<'s, S>(substate_store: &'s mut S, network: Network)
+pub fn bootstrap<S>(substate_store: S, network: Network) -> S
 where
-    S: ReadableSubstateStore + WriteableSubstateStore,
+    S: ReadableSubstateStore + WriteableSubstateStore + 'static,
 {
     let system_substate = substate_store.get_substate(&Address::Package(SYSTEM_PACKAGE));
     if system_substate.is_none() {
-        let track = Track::new(substate_store, Hash([0u8; 32]), network);
+        let track = Track::new(Box::new(substate_store), Hash([0u8; 32]), network);
         let receipt = create_genesis(track);
-        receipt.substates.commit(substate_store);
+        receipt.substates.commit(&mut substate_store);
     }
+    substate_store
 }
