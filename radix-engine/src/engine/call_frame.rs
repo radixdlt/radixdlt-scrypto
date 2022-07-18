@@ -2251,8 +2251,13 @@ where
         Ok(self.track.transaction_hash())
     }
 
-    fn get_transaction_network(&mut self) -> Network {
-        self.track.transaction_network()
+    fn transaction_network(&mut self) -> Result<Network, CostUnitCounterError> {
+        self.cost_unit_counter.consume(
+            self.fee_table
+                .system_api_cost(SystemApiCostingEntry::ReadTransactionHash),
+            "read_transaction_network",
+        )?;
+        Ok(self.track.transaction_network())
     }
 
     fn generate_uuid(&mut self) -> Result<u128, CostUnitCounterError> {
