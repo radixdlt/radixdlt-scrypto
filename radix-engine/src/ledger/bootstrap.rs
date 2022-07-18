@@ -94,7 +94,7 @@ fn create_genesis(mut track: Track) -> TrackReceipt {
     track.to_receipt()
 }
 
-pub fn bootstrap<S>(substate_store: S, network: Network) -> S
+pub fn bootstrap<S>(mut substate_store: S, network: Network) -> S
 where
     S: ReadableSubstateStore + WriteableSubstateStore + 'static,
 {

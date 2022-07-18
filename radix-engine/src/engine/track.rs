@@ -1,7 +1,5 @@
-use indexmap::{IndexMap, IndexSet};
 use sbor::rust::collections::*;
 use sbor::rust::format;
-use sbor::rust::ops::RangeFull;
 use sbor::rust::string::String;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
@@ -14,7 +12,7 @@ use scrypto::values::ScryptoValue;
 use transaction::validation::*;
 
 use crate::engine::track::BorrowedSubstate::Taken;
-use crate::engine::{REValue, SubstateOperation, SubstateOperationsReceipt};
+use crate::engine::{REValue, SubstateOperationsReceipt};
 use crate::ledger::*;
 use crate::model::*;
 
@@ -46,7 +44,7 @@ pub struct Track {
     logs: Vec<(Level, String)>,
     new_addresses: Vec<Address>,
     state_track: StateTrack,
-    borrowed_substates: HashMap<Address, BorrowedSubstate>, // TODO: remove
+    borrowed_substates: HashMap<Address, BorrowedSubstate>,
 }
 
 #[derive(Debug)]
@@ -792,6 +790,14 @@ impl Track {
                 }
                 _ => panic!("Invalid value being persisted: {:?}", value),
             }
+        }
+    }
+
+    pub fn to_receipt(mut self) -> TrackReceipt {
+        TrackReceipt {
+            new_addresses: self.new_addresses,
+            logs: self.logs,
+            substates: self.state_track.summarize_state_changes(),
         }
     }
 }
