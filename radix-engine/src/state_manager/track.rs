@@ -264,7 +264,11 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
 
         if self.diff.up_substates.remove(&address).is_none() {
             let cur: Option<Output> = self.substate_store.get_substate(&address);
-            if let Some(Output { substate: _, output_id: phys_id }) = cur {
+            if let Some(Output {
+                substate: _,
+                output_id: phys_id,
+            }) = cur
+            {
                 self.diff.downed_substates.push(phys_id);
             } else {
                 let parent_id = self.get_substate_parent_id(&parent_address.encode());
@@ -334,7 +338,10 @@ impl TrackDiff {
         for (address, value) in self.up_substates {
             let phys_id = id_gen.next();
             receipt.up(phys_id.clone());
-            let substate = Output { substate: value, output_id: phys_id };
+            let substate = Output {
+                substate: value,
+                output_id: phys_id,
+            };
             store.put_substate(&address, substate);
         }
 

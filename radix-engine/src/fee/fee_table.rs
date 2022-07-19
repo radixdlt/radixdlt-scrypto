@@ -40,6 +40,9 @@ pub enum SystemApiCostingEntry<'a> {
     /// Read the transaction hash.
     ReadTransactionHash,
 
+    /// Read the transaction network.
+    ReadTransactionNetwork,
+
     /// Generates a UUID.
     GenerateUuid,
 
@@ -221,6 +224,7 @@ impl FeeTable {
             SystemApiCostingEntry::Write { .. } => self.fixed_medium,
             SystemApiCostingEntry::ReadEpoch => self.fixed_low,
             SystemApiCostingEntry::ReadTransactionHash => self.fixed_low,
+            SystemApiCostingEntry::ReadTransactionNetwork => self.fixed_low,
             SystemApiCostingEntry::GenerateUuid => self.fixed_low,
             SystemApiCostingEntry::EmitLog { size } => self.fixed_low + 10 * size,
             SystemApiCostingEntry::CheckAccessRule => self.fixed_medium,

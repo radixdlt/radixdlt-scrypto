@@ -34,22 +34,75 @@ impl TransactionValidator {
         intent_hash_store: &I,
         epoch_manager: &E,
     ) -> Result<ValidatedTransaction, TransactionValidationError> {
-        let mut instructions = vec![];
+        // verify the intent
+        let instructions = Self::validate_intent(
+            &transaction.signed_intent.intent,
+            intent_hash_store,
+            epoch_manager,
+        )?;
 
-        // verify intent hash
-        if !intent_hash_store.allows(&transaction.signed_intent.intent.hash()) {
-            return Err(TransactionValidationError::IntentHashRejected);
-        }
-
-        // verify header and signature
-        Self::validate_header(&transaction, epoch_manager.current_epoch())
-            .map_err(TransactionValidationError::HeaderValidationError)?;
+        // verify signatures
         Self::validate_signatures(&transaction)
             .map_err(TransactionValidationError::SignatureValidationError)?;
 
+        // TODO: whether to use intent hash or transaction hash
+        let transaction_hash = transaction.hash();
+
+        let mut signer_public_keys: Vec<EcdsaPublicKey> = transaction
+            .signed_intent
+            .intent_signatures
+            .iter()
+            .map(|e| e.0)
+            .collect();
+        if transaction.signed_intent.intent.header.notary_as_signatory {
+            signer_public_keys.push(transaction.signed_intent.intent.header.notary_public_key);
+        }
+
+        Ok(ValidatedTransaction {
+            transaction,
+            transaction_hash,
+            instructions,
+            signer_public_keys,
+        })
+    }
+
+    pub fn validate_preview_intent<I: IntentHashManager, E: EpochManager>(
+        preview_intent: PreviewIntent,
+        intent_hash_store: &I,
+        epoch_manager: &E,
+    ) -> Result<ValidatedPreviewTransaction, TransactionValidationError> {
+        let intent = &preview_intent.intent;
+
+        let transaction_hash = preview_intent.hash();
+
+        let instructions = Self::validate_intent(&intent, intent_hash_store, epoch_manager)?;
+
+        Ok(ValidatedPreviewTransaction {
+            preview_intent,
+            transaction_hash,
+            instructions,
+        })
+    }
+
+    fn validate_intent<I: IntentHashManager, E: EpochManager>(
+        intent: &TransactionIntent,
+        intent_hash_store: &I,
+        epoch_manager: &E,
+    ) -> Result<Vec<ExecutableInstruction>, TransactionValidationError> {
+        // verify intent hash
+        if !intent_hash_store.allows(&intent.hash()) {
+            return Err(TransactionValidationError::IntentHashRejected);
+        }
+
+        // verify intent header
+        Self::validate_header(&intent, epoch_manager.current_epoch())
+            .map_err(TransactionValidationError::HeaderValidationError)?;
+
+        let mut instructions = vec![];
+
         // semantic analysis
         let mut id_validator = IdValidator::new();
-        for inst in &transaction.signed_intent.intent.manifest.instructions {
+        for inst in &intent.manifest.instructions {
             match inst.clone() {
                 Instruction::TakeFromWorktop { resource_address } => {
                     id_validator
@@ -221,32 +274,14 @@ impl TransactionValidator {
             }
         }
 
-        // TODO: whether to use intent hash or transaction hash
-        let transaction_hash = transaction.hash();
-
-        let mut signer_public_keys: Vec<EcdsaPublicKey> = transaction
-            .signed_intent
-            .intent_signatures
-            .iter()
-            .map(|e| e.0)
-            .collect();
-        if transaction.signed_intent.intent.header.notary_as_signatory {
-            signer_public_keys.push(transaction.signed_intent.intent.header.notary_public_key);
-        }
-
-        Ok(ValidatedTransaction {
-            transaction,
-            transaction_hash,
-            instructions,
-            signer_public_keys,
-        })
+        return Ok(instructions);
     }
 
     fn validate_header(
-        transaction: &NotarizedTransaction,
+        intent: &TransactionIntent,
         current_epoch: u64,
     ) -> Result<(), HeaderValidationError> {
-        let header = &transaction.signed_intent.intent.header;
+        let header = &intent.header;
 
         // version
         if header.version != TRANSACTION_VERSION_V1 {
@@ -398,6 +433,34 @@ mod tests {
         );
     }
 
+    #[test]
+    fn test_valid_preview() {
+        let mut hash_mgr: TestIntentHashManager = TestIntentHashManager::new();
+        let mut epoch_mgr: TestEpochManager = TestEpochManager::new(0);
+
+        // Build the whole transaction but only really care about the intent
+        let tx = create_transaction(1, 0, 100, 5, vec![1, 2], 2);
+
+        let signer_public_keys = tx
+            .signed_intent
+            .intent_signatures
+            .into_iter()
+            .map(|p| p.0)
+            .collect();
+
+        let result = TransactionValidator::validate_preview_intent(
+            PreviewIntent {
+                intent: tx.signed_intent.intent,
+                signer_public_keys: signer_public_keys,
+                flags: PreviewFlags {},
+            },
+            &mut hash_mgr,
+            &mut epoch_mgr,
+        );
+
+        assert!(result.is_ok());
+    }
+
     fn create_transaction(
         version: u8,
         start_epoch: u64,
@@ -427,7 +490,6 @@ mod tests {
         for signer in signers {
             builder = builder.sign(&EcdsaPrivateKey::from_u64(signer).unwrap());
         }
-
         builder = builder.notarize(&sk_notary);
 
         builder.build()

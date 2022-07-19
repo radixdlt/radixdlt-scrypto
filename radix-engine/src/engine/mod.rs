@@ -1,6 +1,7 @@
 mod call_frame;
 mod errors;
 mod precommitted_kv_store;
+mod preview_executor;
 mod system_api;
 mod transaction_executor;
 mod values;
@@ -10,6 +11,7 @@ pub use crate::state_manager::substate_receipt::{CommitReceipt, HardVirtualSubst
 pub use call_frame::{CallFrame, RENativeValueRef, REValueRefMut, SubstateAddress};
 pub use errors::*;
 pub use precommitted_kv_store::*;
+pub use preview_executor::*;
 pub use system_api::SystemApi;
 
 pub use crate::state_manager::transaction_receipt::*;
