@@ -52,8 +52,8 @@ pub struct HardVirtualSubstateId(PhysicalSubstateId, Vec<u8>);
 pub enum SubstateOperation {
     VirtualDown(VirtualSubstateId),
     Down(PhysicalSubstateId),
-    VirtualUp(Vec<u8>),
-    Up(Vec<u8>, Vec<u8>),
+    VirtualUp(Address),
+    Up(Address, Vec<u8>),
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
@@ -81,16 +81,16 @@ impl SubstateOperationsReceipt {
                     receipt.virtual_down(virtual_substate_id);
                 }
                 SubstateOperation::Down(substate_id) => receipt.down(substate_id),
-                SubstateOperation::VirtualUp(key) => {
+                SubstateOperation::VirtualUp(address) => {
                     let phys_id = id_gen.next();
                     receipt.virtual_space_up(phys_id.clone());
-                    store.put_space(Address::decode(&key), phys_id);
+                    store.put_space(address, phys_id);
                 }
-                SubstateOperation::Up(key, value) => {
+                SubstateOperation::Up(address, value) => {
                     let phys_id = id_gen.next();
                     receipt.up(phys_id.clone());
                     let substate = Substate { value, phys_id };
-                    store.put_substate(Address::decode(&key), substate);
+                    store.put_substate(address, substate);
                 }
             }
         }

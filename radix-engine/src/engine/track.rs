@@ -86,7 +86,7 @@ pub enum SubstateParentId {
 pub struct VirtualSubstateId(pub SubstateParentId, pub Vec<u8>);
 
 /// Represents a Radix Engine address. Each maps a unique substate key.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash)]
 pub enum Address {
     Resource(ResourceAddress),
     GlobalComponent(ComponentAddress),
@@ -112,7 +112,7 @@ pub enum SubstateValue {
 }
 
 impl Address {
-    pub fn encode(&self) -> Vec<u8> {
+    pub fn encode_as_substate_key(&self) -> Vec<u8> {
         // TODO: How much do we gain from this specialized codec?
         match self {
             Address::System => vec![0u8], // TODO: inconsistent encoding
@@ -152,10 +152,6 @@ impl Address {
                 substate_key
             }
         }
-    }
-
-    pub fn decode(slice: &[u8]) -> Self {
-        todo!()
     }
 }
 

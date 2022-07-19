@@ -106,7 +106,7 @@ impl StateTrack {
 
         // Must be put in front of substate changes to maintain valid parent ids.
         for space in &self.spaces {
-            store_instructions.push(SubstateOperation::VirtualUp(space.encode()));
+            store_instructions.push(SubstateOperation::VirtualUp(space.clone()));
         }
 
         for (address, substate) in self.substates.drain() {
@@ -130,7 +130,7 @@ impl StateTrack {
                                 .push(SubstateOperation::VirtualDown(virtual_substate_id));
                         }
 
-                        store_instructions.push(SubstateOperation::Up(address.encode(), substate));
+                        store_instructions.push(SubstateOperation::Up(address, substate));
                     }
                     Address::KeyValueStoreEntry(component_id, kv_store_id, key) => {
                         let parent_address = Address::KeyValueStore(*component_id, *kv_store_id);
@@ -150,7 +150,7 @@ impl StateTrack {
                                 .push(SubstateOperation::VirtualDown(virtual_substate_id));
                         }
 
-                        store_instructions.push(SubstateOperation::Up(address.encode(), substate));
+                        store_instructions.push(SubstateOperation::Up(address, substate));
                     }
                     _ => {
                         if let Some(previous_substate_id) =
@@ -158,7 +158,7 @@ impl StateTrack {
                         {
                             store_instructions.push(SubstateOperation::Down(previous_substate_id));
                         }
-                        store_instructions.push(SubstateOperation::Up(address.encode(), substate));
+                        store_instructions.push(SubstateOperation::Up(address, substate));
                     }
                 }
             } else {
