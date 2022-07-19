@@ -34,18 +34,14 @@ where
     fn borrow_value(
         &mut self,
         value_id: &ValueId,
-    ) -> Result<REValueRef<'_, 'p, 's, S>, CostUnitCounterError>;
+    ) -> Result<REValueRef<'_, 's, S>, CostUnitCounterError>;
 
     fn borrow_value_mut(
         &mut self,
         value_id: &ValueId,
-    ) -> Result<RENativeValueRef<'p>, CostUnitCounterError>;
+    ) -> Result<RENativeValueRef, CostUnitCounterError>;
 
-    fn return_value_mut(
-        &mut self,
-        value_id: ValueId,
-        val_ref: RENativeValueRef<'p>,
-    ) -> Result<(), CostUnitCounterError>;
+    fn return_value_mut(&mut self, val_ref: RENativeValueRef) -> Result<(), CostUnitCounterError>;
 
     fn drop_value(&mut self, value_id: &ValueId) -> Result<REValue, CostUnitCounterError>;
 

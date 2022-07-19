@@ -55,7 +55,7 @@ impl System {
                     .map_err(SystemError::CostingError)?;
                 system_value.system().epoch = epoch;
                 system_api
-                    .return_value_mut(ValueId::System, system_value)
+                    .return_value_mut(system_value)
                     .map_err(SystemError::CostingError)?;
                 Ok(ScryptoValue::from_typed(&()))
             }

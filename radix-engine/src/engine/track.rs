@@ -14,7 +14,7 @@ use scrypto::values::ScryptoValue;
 use transaction::validation::*;
 
 use crate::engine::track::BorrowedSubstate::Taken;
-use crate::engine::{REValue, SubstateOperation, SubstateOperationsReceipt};
+use crate::engine::{RENode, SubstateOperation, SubstateOperationsReceipt};
 use crate::ledger::*;
 use crate::model::*;
 
@@ -95,9 +95,9 @@ pub enum Address {
     GlobalComponent(ComponentAddress),
     Package(PackageAddress),
     NonFungibleSet(ResourceAddress),
-    KeyValueStore(ComponentAddress, KeyValueStoreId),
-    Vault(ComponentAddress, VaultId),
-    LocalComponent(ComponentAddress, ComponentAddress),
+    KeyValueStore(KeyValueStoreId),
+    Vault(VaultId),
+    LocalComponent(ComponentAddress),
     System,
 }
 
@@ -129,24 +129,12 @@ impl Address {
             Address::Resource(resource_address) => scrypto_encode(resource_address),
             Address::GlobalComponent(component_address) => scrypto_encode(component_address),
             Address::Package(package_address) => scrypto_encode(package_address),
-            Address::Vault(component_address, vault_id) => {
-                let mut vault_address = scrypto_encode(component_address);
-                vault_address.extend(scrypto_encode(vault_id));
-                vault_address
-            }
-            Address::LocalComponent(component_address, child_id) => {
-                let mut vault_address = scrypto_encode(component_address);
-                vault_address.extend(scrypto_encode(child_id));
-                vault_address
-            }
+            Address::Vault(vault_id) => scrypto_encode(vault_id),
+            Address::LocalComponent(component_address) => scrypto_encode(component_address),
             Address::NonFungibleSet(resource_address) => {
                 resource_to_non_fungible_space!(resource_address.clone())
             }
-            Address::KeyValueStore(component_address, kv_store_id) => {
-                let mut entry_address = scrypto_encode(component_address);
-                entry_address.extend(scrypto_encode(kv_store_id));
-                entry_address
-            }
+            Address::KeyValueStore(kv_store_id) => scrypto_encode(kv_store_id),
         }
     }
 }
@@ -157,27 +145,15 @@ impl Into<Address> for PackageAddress {
     }
 }
 
-impl Into<Address> for ComponentAddress {
-    fn into(self) -> Address {
-        Address::GlobalComponent(self)
-    }
-}
-
 impl Into<Address> for ResourceAddress {
     fn into(self) -> Address {
         Address::Resource(self)
     }
 }
 
-impl Into<Address> for (ComponentAddress, VaultId) {
+impl Into<Address> for VaultId {
     fn into(self) -> Address {
-        Address::Vault(self.0, self.1)
-    }
-}
-
-impl Into<Address> for (ComponentAddress, ComponentAddress) {
-    fn into(self) -> Address {
-        Address::LocalComponent(self.0, self.1)
+        Address::Vault(self)
     }
 }
 
@@ -211,10 +187,10 @@ impl Into<ResourceAddress> for Address {
     }
 }
 
-impl Into<(ComponentAddress, VaultId)> for Address {
-    fn into(self) -> (ComponentAddress, VaultId) {
-        if let Address::Vault(component_address, id) = self {
-            return (component_address, id);
+impl Into<VaultId> for Address {
+    fn into(self) -> VaultId {
+        if let Address::Vault(id) = self {
+            return id;
         } else {
             panic!("Address is not a vault address");
         }
@@ -442,20 +418,8 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         self.up_substates.insert(address.encode(), value.into());
     }
 
-    // TODO: Make more generic
-    pub fn create_non_fungible_space(&mut self, resource_address: ResourceAddress) {
-        let space_address = resource_to_non_fungible_space!(resource_address);
-        self.up_virtual_substate_space.insert(space_address);
-    }
-
-    pub fn create_key_space(
-        &mut self,
-        component_address: ComponentAddress,
-        kv_store_id: KeyValueStoreId,
-    ) {
-        let mut space_address = scrypto_encode(&component_address);
-        space_address.extend(scrypto_encode(&kv_store_id));
-        self.up_virtual_substate_space.insert(space_address);
+    pub fn create_key_space(&mut self, address: Address) {
+        self.up_virtual_substate_space.insert(address.encode());
     }
 
     pub fn take_lock<A: Into<Address>>(
@@ -763,46 +727,26 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         }
     }
 
-    pub fn insert_objects_into_component(
-        &mut self,
-        values: HashMap<ValueId, REValue>,
-        component_address: ComponentAddress,
-    ) {
-        for (id, value) in values {
-            match value {
-                REValue::Vault(vault) => {
-                    let addr: (ComponentAddress, VaultId) = (component_address, id.into());
+    pub fn insert_non_root_nodes(&mut self, values: HashMap<ValueId, RENode>) {
+        for (id, node) in values {
+            match node {
+                RENode::Vault(vault) => {
+                    let addr = Address::Vault(id.into());
                     self.create_uuid_value(addr, vault);
                 }
-                REValue::Component {
-                    component,
-                    child_values,
-                } => {
-                    let addr: (ComponentAddress, ComponentAddress) = (component_address, id.into());
+                RENode::Component(component) => {
+                    let addr = Address::LocalComponent(id.into());
                     self.create_uuid_value(addr, component);
-                    let child_values = child_values
-                        .into_iter()
-                        .map(|(id, v)| (id, v.into_inner()))
-                        .collect();
-                    self.insert_objects_into_component(child_values, component_address);
                 }
-                REValue::KeyValueStore {
-                    store,
-                    child_values,
-                } => {
+                RENode::KeyValueStore(store) => {
                     let id = id.into();
-                    self.create_key_space(component_address, id);
-                    let parent_address = Address::KeyValueStore(component_address, id);
+                    let address = Address::KeyValueStore(id);
+                    self.create_key_space(address.clone());
                     for (k, v) in store.store {
-                        self.set_key_value(parent_address.clone(), k, Some(v));
+                        self.set_key_value(address.clone(), k, Some(v));
                     }
-                    let child_values = child_values
-                        .into_iter()
-                        .map(|(id, v)| (id, v.into_inner()))
-                        .collect();
-                    self.insert_objects_into_component(child_values, component_address);
                 }
-                _ => panic!("Invalid value being persisted: {:?}", value),
+                _ => panic!("Invalid node being persisted: {:?}", node),
             }
         }
     }

@@ -422,7 +422,7 @@ impl ResourceManager {
                     let container =
                         resource_manager.mint(mint_params, resource_address, system_api)?;
                     system_api
-                        .return_value_mut(resource_value_id, resource_manager_ref)
+                        .return_value_mut(resource_manager_ref)
                         .map_err(ResourceManagerError::CostingError)?;
                     let bucket_id = system_api
                         .create_value(Bucket::new(container))
@@ -617,7 +617,7 @@ impl ResourceManager {
         }?;
 
         system_api
-            .return_value_mut(value_id, ref_mut)
+            .return_value_mut(ref_mut)
             .map_err(ResourceManagerError::CostingError)?;
 
         Ok(rtn)

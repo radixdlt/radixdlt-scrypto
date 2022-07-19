@@ -177,7 +177,7 @@ impl Vault {
         arg: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, VaultError> {
-        let value_id = ValueId::vault_id(vault_id.clone());
+        let value_id = ValueId::Vault(vault_id.clone());
         let mut ref_mut = system_api
             .borrow_value_mut(&value_id)
             .map_err(VaultError::CostingError)?;
@@ -188,9 +188,7 @@ impl Vault {
                 let input: VaultPutInput =
                     scrypto_decode(&arg.raw).map_err(|e| VaultError::InvalidRequestData(e))?;
                 let bucket = system_api
-                    .drop_value(&ValueId::Transient(TransientValueId::Bucket(
-                        input.bucket.0,
-                    )))
+                    .drop_value(&ValueId::Bucket(input.bucket.0))
                     .map_err(VaultError::CostingError)?
                     .into();
                 vault
@@ -279,7 +277,7 @@ impl Vault {
         }?;
 
         system_api
-            .return_value_mut(value_id, ref_mut)
+            .return_value_mut(ref_mut)
             .map_err(VaultError::CostingError)?;
 
         Ok(rtn)

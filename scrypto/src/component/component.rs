@@ -3,7 +3,6 @@ use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto::engine::types::StoredValueId;
 
 use crate::abi::*;
 use crate::address::{AddressError, BECH32_DECODER, BECH32_ENCODER};
@@ -75,7 +74,7 @@ impl Component {
 
     pub fn globalize(self) -> ComponentAddress {
         let input = RadixEngineInput::InvokeSNode(
-            SNodeRef::Consumed(ValueId::Stored(StoredValueId::Component(self.0))),
+            SNodeRef::Consumed(ValueId::Component(self.0)),
             "globalize".to_string(),
             scrypto_encode(&ComponentGlobalizeInput {}),
         );

@@ -82,7 +82,7 @@ where
     track.create_uuid_value(SYSTEM_TOKEN, system_token);
 
     let system_vault = Vault::new(minted_xrd);
-    track.create_uuid_value((SYSTEM_COMPONENT, XRD_VAULT_ID), system_vault);
+    track.create_uuid_value(XRD_VAULT_ID, system_vault);
 
     let system_component = Component::new(
         SYSTEM_PACKAGE,
@@ -91,7 +91,7 @@ where
         scrypto_encode(&SystemComponentState { xrd: XRD_VAULT }),
     );
 
-    track.create_uuid_value(SYSTEM_COMPONENT, system_component);
+    track.create_uuid_value(Address::GlobalComponent(SYSTEM_COMPONENT), system_component);
     track.create_uuid_value(Address::System, System { epoch: 0 });
 
     track.to_receipt()
