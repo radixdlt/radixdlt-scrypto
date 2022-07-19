@@ -1,5 +1,6 @@
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::*;
+use sbor::rust::rc::Rc;
 use sbor::rust::vec;
 use sbor::*;
 use scrypto::buffer::*;
@@ -98,11 +99,18 @@ pub fn bootstrap<S>(mut substate_store: S, network: Network) -> S
 where
     S: ReadableSubstateStore + WriteableSubstateStore + 'static,
 {
-    let system_substate = substate_store.get_substate(&Address::Package(SYSTEM_PACKAGE));
-    if system_substate.is_none() {
-        let track = Track::new(Box::new(substate_store), Hash([0u8; 32]), network);
+    if substate_store
+        .get_substate(&Address::Package(SYSTEM_PACKAGE))
+        .is_none()
+    {
+        let substate_store_rc = Rc::new(substate_store);
+        let track = Track::new(substate_store_rc.clone(), Hash([0u8; 32]), network);
         let receipt = create_genesis(track);
-        receipt.substates.commit(&mut substate_store);
+        substate_store = match Rc::try_unwrap(substate_store_rc) {
+            Ok(store) => store,
+            Err(_) => panic!("There should be no other strong refs that prevent unwrapping"),
+        };
+        receipt.state_changes.commit(&mut substate_store);
     }
     substate_store
 }

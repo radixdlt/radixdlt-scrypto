@@ -1,5 +1,6 @@
 use sbor::rust::collections::*;
 use sbor::rust::format;
+use sbor::rust::rc::Rc;
 use sbor::rust::string::String;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
@@ -66,7 +67,7 @@ impl BorrowedSNodes {
 pub struct TrackReceipt {
     pub new_addresses: Vec<Address>,
     pub logs: Vec<(Level, String)>,
-    pub substates: SubstateOperationsReceipt,
+    pub state_changes: SubstateOperationsReceipt,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -414,15 +415,11 @@ impl Into<Vault> for SubstateValue {
 
 impl Track {
     pub fn new(
-        substate_store: Box<dyn ReadableSubstateStore>,
+        substate_store: Rc<dyn ReadableSubstateStore>,
         transaction_hash: Hash,
         transaction_network: Network,
     ) -> Self {
-        let state_track = StateTrack::new(StateTrackParent::SubstateStore(
-            substate_store,
-            transaction_hash,
-            IdAllocator::new(IdSpace::Application),
-        ));
+        let state_track = StateTrack::new(StateTrackParent::SubstateStore(substate_store));
 
         Self {
             transaction_hash,
@@ -793,11 +790,11 @@ impl Track {
         }
     }
 
-    pub fn to_receipt(mut self) -> TrackReceipt {
+    pub fn to_receipt(self) -> TrackReceipt {
         TrackReceipt {
             new_addresses: self.new_addresses,
             logs: self.logs,
-            substates: self.state_track.summarize_state_changes(),
+            state_changes: self.state_track.summarize_state_changes(),
         }
     }
 }

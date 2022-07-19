@@ -1,4 +1,5 @@
 use sbor::rust::marker::PhantomData;
+use sbor::rust::rc::Rc;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use scrypto::buffer::*;
@@ -21,7 +22,7 @@ where
     W: WasmEngine<I>,
     I: WasmInstance,
 {
-    substate_store: S,
+    substate_store: Option<S>,
     wasm_engine: &'w mut W,
     wasm_instrumenter: &'w mut WasmInstrumenter,
     trace: bool,
@@ -41,7 +42,7 @@ where
         trace: bool,
     ) -> TransactionExecutor<'w, S, W, I> {
         Self {
-            substate_store,
+            substate_store: Some(substate_store),
             wasm_engine,
             wasm_instrumenter,
             trace,
@@ -51,12 +52,16 @@ where
 
     /// Returns an immutable reference to the ledger.
     pub fn substate_store(&self) -> &S {
-        &self.substate_store
+        self.substate_store
+            .as_ref()
+            .expect("Missing substate store")
     }
 
     /// Returns a mutable reference to the ledger.
     pub fn substate_store_mut(&mut self) -> &mut S {
-        &mut self.substate_store
+        self.substate_store
+            .as_mut()
+            .expect("Missing substate store")
     }
 
     pub fn execute<T: ExecutableTransaction>(&mut self, transaction: &T) -> Receipt {
@@ -68,18 +73,18 @@ where
         let signer_public_keys = transaction.signer_public_keys().to_vec();
         let instructions = transaction.instructions().to_vec();
 
-        // Start state track
+        // 1. Start state track
+        let substate_store_rc =
+            Rc::new(self.substate_store.take().expect("Missing substate store"));
         let mut track = Track::new(
-            Box::new(self.substate_store),
+            substate_store_rc.clone(),
             transaction_hash,
             transaction_network.clone(),
         );
 
-        // Metering
+        // 2. Apply pre-execution costing
         let mut cost_unit_counter = CostUnitCounter::new(MAX_TRANSACTION_COST, SYSTEM_LOAN_AMOUNT);
         let fee_table = FeeTable::new();
-
-        // Charge transaction decoding and stateless verification
         cost_unit_counter
             .consume(
                 fee_table.tx_decoding_per_byte() * transaction.transaction_payload_size() as u32,
@@ -101,7 +106,7 @@ where
             )
             .expect("System loan should cover this");
 
-        // Create root call frame.
+        // 3. Start a call frame and run the transaction
         let mut root_frame = CallFrame::new_root(
             self.trace,
             transaction_hash,
@@ -113,25 +118,17 @@ where
             &mut cost_unit_counter,
             &fee_table,
         );
+        let result = root_frame
+            .invoke_snode(
+                scrypto::core::SNodeRef::TransactionProcessor,
+                "run".to_string(),
+                ScryptoValue::from_typed(&TransactionProcessorRunInput {
+                    instructions: instructions.clone(),
+                }),
+            )
+            .map(|o| scrypto_decode::<Vec<Vec<u8>>>(&o.raw).unwrap());
 
-        // Invoke the transaction processor
-        // TODO: may consider moving transaction parsing to `TransactionProcessor` as well.
-        let result = root_frame.invoke_snode(
-            scrypto::core::SNodeRef::TransactionProcessor,
-            "run".to_string(),
-            ScryptoValue::from_typed(&TransactionProcessorRunInput {
-                instructions: instructions.clone(),
-            }),
-        );
-        let (outputs, error) = match result {
-            Ok(o) => (scrypto_decode::<Vec<Vec<u8>>>(&o.raw).unwrap(), None),
-            Err(e) => (Vec::new(), Some(e)),
-        };
-
-        // Fee finalization:
-        // - Refund overpaid fee
-        // - Burn consumed fee
-        // - Disburse validator tips
+        // 4. Settle transaction fee
         let counter = root_frame.cost_unit_counter();
         if counter.owed() != 0 {
             // TODO: If a transaction finished before the loan check point AND the
@@ -146,31 +143,15 @@ where
         let total_consumed = counter.consumed();
         let _overpaid = counter.balance();
 
+        // 5. Generate receipts and commit (TODO: split out commit phase)
         let track_receipt = track.to_receipt();
-
-        // commit state updates
-        let commit_receipt = if error.is_none() {
-            let commit_receipt = track_receipt.substates.commit(&mut self.substate_store);
-            Some(commit_receipt)
-        } else {
-            None
+        self.substate_store = match Rc::try_unwrap(substate_store_rc) {
+            Ok(store) => Some(store),
+            Err(_) => panic!("There should be no other strong refs that prevent unwrapping"),
         };
-
-        let mut new_component_addresses = Vec::new();
-        let mut new_resource_addresses = Vec::new();
-        let mut new_package_addresses = Vec::new();
-        for address in track_receipt.new_addresses {
-            match address {
-                Address::GlobalComponent(component_address) => {
-                    new_component_addresses.push(component_address)
-                }
-                Address::Resource(resource_address) => {
-                    new_resource_addresses.push(resource_address)
-                }
-                Address::Package(package_address) => new_package_addresses.push(package_address),
-                _ => {}
-            }
-        }
+        let commit_receipt = track_receipt
+            .state_changes
+            .commit(self.substate_store_mut());
 
         #[cfg(feature = "alloc")]
         let execution_time = None;
@@ -186,21 +167,36 @@ where
             println!("+{}+", "-".repeat(30));
         }
 
+        // 6. Produce the final transaction receipt
+        let mut new_component_addresses = Vec::new();
+        let mut new_resource_addresses = Vec::new();
+        let mut new_package_addresses = Vec::new();
+        for address in track_receipt.new_addresses {
+            match address {
+                Address::GlobalComponent(component_address) => {
+                    new_component_addresses.push(component_address)
+                }
+                Address::Resource(resource_address) => {
+                    new_resource_addresses.push(resource_address)
+                }
+                Address::Package(package_address) => new_package_addresses.push(package_address),
+                _ => {}
+            }
+        }
+        let logs = track_receipt.logs;
         Receipt {
             transaction_network,
-            commit_receipt,
             instructions,
-            result: match error {
-                Some(error) => Err(error),
-                None => Ok(()),
-            },
-            outputs,
-            logs: track_receipt.logs,
+            result,
+            logs,
             new_package_addresses,
             new_component_addresses,
             new_resource_addresses,
             execution_time,
             cost_units_consumed: total_consumed,
+            commit_receipt,
         }
+
+        // TODO: reject transactions not paying enough fees
     }
 }

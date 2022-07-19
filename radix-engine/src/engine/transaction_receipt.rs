@@ -17,16 +17,15 @@ use crate::engine::RuntimeError;
 /// Represents a transaction receipt.
 pub struct Receipt {
     pub transaction_network: Network,
-    pub commit_receipt: Option<CommitReceipt>,
     pub instructions: Vec<ExecutableInstruction>,
-    pub result: Result<(), RuntimeError>,
-    pub outputs: Vec<Vec<u8>>,
+    pub result: Result<Vec<Vec<u8>>, RuntimeError>,
     pub logs: Vec<(Level, String)>,
     pub new_package_addresses: Vec<PackageAddress>,
     pub new_component_addresses: Vec<ComponentAddress>,
     pub new_resource_addresses: Vec<ResourceAddress>,
     pub execution_time: Option<u128>,
     pub cost_units_consumed: u32,
+    pub commit_receipt: CommitReceipt,
 }
 
 impl Receipt {
@@ -69,7 +68,7 @@ impl fmt::Debug for Receipt {
             "{} {}",
             "Transaction Status:".bold().green(),
             match &self.result {
-                Ok(()) => "SUCCESS".blue(),
+                Ok(_) => "SUCCESS".blue(),
                 Err(e) => e.to_string().red(),
             }
             .bold()
@@ -126,14 +125,16 @@ impl fmt::Debug for Receipt {
             )?;
         }
 
-        write!(f, "\n{}", "Instruction Outputs:".bold().green())?;
-        for (i, output) in self.outputs.iter().enumerate() {
-            write!(
-                f,
-                "\n{} {:?}",
-                prefix!(i, self.outputs),
-                ScryptoValue::from_slice(output).expect("Invalid return data")
-            )?;
+        if let Ok(outputs) = &self.result {
+            write!(f, "\n{}", "Instruction Outputs:".bold().green())?;
+            for (i, output) in outputs.iter().enumerate() {
+                write!(
+                    f,
+                    "\n{} {:?}",
+                    prefix!(i, outputs),
+                    ScryptoValue::from_slice(output).expect("Invalid return data")
+                )?;
+            }
         }
 
         write!(f, "\n{} {}", "Logs:".bold().green(), self.logs.len())?;

@@ -1,7 +1,6 @@
 use indexmap::IndexSet;
 use sbor::rust::collections::*;
-use scrypto::crypto::Hash;
-use transaction::validation::IdAllocator;
+use sbor::rust::rc::Rc;
 
 use crate::engine::Address;
 use crate::ledger::*;
@@ -11,7 +10,7 @@ use super::{
 };
 
 pub enum StateTrackParent {
-    SubstateStore(Box<dyn ReadableSubstateStore>, Hash, IdAllocator),
+    SubstateStore(Rc<dyn ReadableSubstateStore>),
     StateTrack(Box<StateTrack>),
 }
 
@@ -66,7 +65,7 @@ impl StateTrack {
     }
 
     // TODO: replace recursion with iteration
-    
+
     fn get_substate_id(parent: &StateTrackParent, address: &Address) -> Option<PhysicalSubstateId> {
         match parent {
             StateTrackParent::SubstateStore(store, ..) => {
