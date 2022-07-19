@@ -107,12 +107,5 @@ impl Bech32Decoder {
     }
 }
 
-#[cfg(target_arch = "wasm32")]
-pub const BECH32_DECODER: Lazy<Bech32Decoder> = Lazy::new(|| {
-    use crate::core::Runtime;
-    Bech32Decoder::new_from_network(&Runtime::transaction_network())
-});
-
-#[cfg(not(target_arch = "wasm32"))]
 pub const BECH32_DECODER: Lazy<Bech32Decoder> =
     Lazy::new(|| Bech32Decoder::new_from_network(&Network::LocalSimulator));
