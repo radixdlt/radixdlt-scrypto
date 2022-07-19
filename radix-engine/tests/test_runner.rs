@@ -1,4 +1,4 @@
-use radix_engine::engine::{Address, Receipt, TransactionExecutor};
+use radix_engine::engine::{Address, Receipt, SubstateValue, TransactionExecutor};
 use radix_engine::ledger::*;
 use radix_engine::model::{export_abi, export_abi_by_component, extract_package, Component};
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter};
@@ -6,9 +6,9 @@ use sbor::describe::Fields;
 use sbor::Type;
 use scrypto::abi::{BlueprintAbi, Fn};
 use scrypto::core::Network;
-use scrypto::prelude::*;
 use scrypto::prelude::{HashMap, Package};
 use scrypto::{abi, to_struct};
+use scrypto::{component, prelude::*};
 use transaction::builder::ManifestBuilder;
 use transaction::model::TestTransaction;
 use transaction::model::TransactionManifest;
@@ -122,10 +122,12 @@ impl TestRunner {
     }
 
     pub fn inspect_component(&self, component_address: ComponentAddress) -> Component {
-        self.substate_store()
+        let component_value: SubstateValue = self
+            .substate_store()
             .get_substate(&Address::GlobalComponent(component_address))
             .map(|s| scrypto_decode(&s.value).unwrap())
-            .unwrap()
+            .unwrap();
+        component_value.into()
     }
 
     pub fn export_abi(

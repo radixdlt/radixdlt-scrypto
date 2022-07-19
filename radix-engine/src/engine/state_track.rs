@@ -122,7 +122,7 @@ impl StateTrack {
             if let Some(substate) = substate {
                 match &address {
                     Address::NonFungible(resource_address, key) => {
-                        let parent_address = Address::Resource(*resource_address);
+                        let parent_address = Address::NonFungibleSet(*resource_address);
 
                         if let Some(existing_substate_id) =
                             Self::get_substate_id(&self.parent, &parent_address)
