@@ -1,4 +1,4 @@
-use radix_engine::engine::{Receipt, TransactionExecutor};
+use radix_engine::engine::{Address, Receipt, TransactionExecutor};
 use radix_engine::ledger::*;
 use radix_engine::model::{export_abi, export_abi_by_component, extract_package, Component};
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter};
@@ -15,7 +15,7 @@ use transaction::model::TransactionManifest;
 use transaction::signing::EcdsaPrivateKey;
 
 pub struct TestRunner {
-    substate_store: InMemorySubstateStore,
+    substate_store: Option<InMemorySubstateStore>,
     wasm_engine: DefaultWasmEngine,
     wasm_instrumenter: WasmInstrumenter,
     next_private_key: u64,
@@ -26,7 +26,7 @@ pub struct TestRunner {
 impl TestRunner {
     pub fn new(trace: bool) -> Self {
         Self {
-            substate_store: InMemorySubstateStore::with_bootstrap(),
+            substate_store: Some(InMemorySubstateStore::with_bootstrap()),
             wasm_engine: DefaultWasmEngine::new(),
             wasm_instrumenter: WasmInstrumenter::new(),
             next_private_key: 1, // 0 is invalid
@@ -102,21 +102,29 @@ impl TestRunner {
             TestTransaction::new(manifest, self.next_transaction_nonce, signer_public_keys);
         self.next_transaction_nonce += 1;
 
-        let receipt = TransactionExecutor::new(
-            &mut self.substate_store,
+        // TODO: no need to pass ownership of substate store once commit phase is split out.
+        let mut executor = TransactionExecutor::new(
+            self.substate_store.take().expect("Missing substate store"),
             &mut self.wasm_engine,
             &mut self.wasm_instrumenter,
             self.trace,
-        )
-        .execute(&transaction);
+        );
+        let receipt = executor.execute(&transaction);
+        self.substate_store = Some(executor.destroy());
 
         receipt
     }
 
-    pub fn inspect_component(&self, component_address: ComponentAddress) -> Component {
+    pub fn substate_store(&self) -> &InMemorySubstateStore {
         self.substate_store
-            .get_decoded_substate(&component_address)
-            .map(|(component, _)| component)
+            .as_ref()
+            .expect("Missing substate store")
+    }
+
+    pub fn inspect_component(&self, component_address: ComponentAddress) -> Component {
+        self.substate_store()
+            .get_substate(&Address::GlobalComponent(component_address))
+            .map(|s| scrypto_decode(&s.value).unwrap())
             .unwrap()
     }
 
@@ -125,7 +133,7 @@ impl TestRunner {
         package_address: PackageAddress,
         blueprint_name: &str,
     ) -> abi::BlueprintAbi {
-        export_abi(&self.substate_store, package_address, blueprint_name)
+        export_abi(self.substate_store(), package_address, blueprint_name)
             .expect("Failed to export ABI")
     }
 
@@ -133,7 +141,7 @@ impl TestRunner {
         &self,
         component_address: ComponentAddress,
     ) -> abi::BlueprintAbi {
-        export_abi_by_component(&self.substate_store, component_address)
+        export_abi_by_component(self.substate_store(), component_address)
             .expect("Failed to export ABI")
     }
 

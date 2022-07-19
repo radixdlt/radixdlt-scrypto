@@ -121,11 +121,11 @@ fn test_account_balance() {
 
     // Act
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
-    receipt.result.expect("Should be okay");
+    let outputs = receipt.expect_success();
 
     // Assert
     assert_eq!(
-        receipt.outputs[0],
+        outputs[0],
         ScryptoValue::from_typed(&Decimal::from(1000000)).raw
     );
 }

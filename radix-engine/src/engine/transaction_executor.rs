@@ -199,4 +199,8 @@ where
 
         // TODO: reject transactions not paying enough fees
     }
+
+    pub fn destroy(self) -> S {
+        self.substate_store.expect("Missing substate store")
+    }
 }

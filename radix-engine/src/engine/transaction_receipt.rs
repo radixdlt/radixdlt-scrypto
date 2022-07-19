@@ -29,9 +29,10 @@ pub struct Receipt {
 }
 
 impl Receipt {
-    pub fn expect_success(&self) {
-        if self.result.is_err() {
-            panic!("Expected success but was:\n{:?}", self);
+    pub fn expect_success(&self) -> &Vec<Vec<u8>> {
+        match &self.result {
+            Ok(output) => output,
+            Err(err) => panic!("Expected success but was:\n{:?}", err),
         }
     }
 

@@ -12,11 +12,11 @@ use transaction::signing::EcdsaPrivateKey;
 
 fn bench_transfer(c: &mut Criterion) {
     // Set up environment.
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
+    let substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = DefaultWasmEngine::new();
     let mut wasm_instrumenter = WasmInstrumenter::new();
     let mut executor = TransactionExecutor::new(
-        &mut substate_store,
+        substate_store,
         &mut wasm_engine,
         &mut wasm_instrumenter,
         false,
