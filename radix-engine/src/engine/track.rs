@@ -318,6 +318,26 @@ impl Into<ResourceManager> for SubstateValue {
     }
 }
 
+impl Into<ValidatedPackage> for SubstateValue {
+    fn into(self) -> ValidatedPackage {
+        if let SubstateValue::Package(package) = self {
+            package
+        } else {
+            panic!("Not a resource manager");
+        }
+    }
+}
+
+impl Into<Option<NonFungible>> for SubstateValue {
+    fn into(self) -> Option<NonFungible> {
+        if let SubstateValue::NonFungible(non_fungible) = self {
+            non_fungible
+        } else {
+            panic!("Not a resource manager");
+        }
+    }
+}
+
 impl Into<Vault> for SubstateValue {
     fn into(self) -> Vault {
         if let SubstateValue::Vault(liquid, locked) = self {

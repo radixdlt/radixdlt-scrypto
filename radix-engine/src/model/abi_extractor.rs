@@ -2,11 +2,9 @@ use sbor::rust::borrow::ToOwned;
 use scrypto::abi;
 use scrypto::buffer::*;
 use scrypto::engine::types::*;
-use scrypto::values::ScryptoValue;
 
 use crate::engine::*;
 use crate::ledger::*;
-use crate::model::*;
 
 pub fn export_abi<S: ReadableSubstateStore>(
     substate_store: &S,

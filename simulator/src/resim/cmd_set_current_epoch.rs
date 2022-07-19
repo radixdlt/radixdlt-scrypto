@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use clap::Parser;
 use radix_engine::engine::{CallFrame, SystemApi, Track};
 use radix_engine::fee::{CostUnitCounter, FeeTable, MAX_TRANSACTION_COST, SYSTEM_LOAN_AMOUNT};
@@ -17,10 +19,12 @@ impl SetCurrentEpoch {
     pub fn run<O: std::io::Write>(&self, _out: &mut O) -> Result<(), Error> {
         let hash = Hash([0; Hash::LENGTH]);
 
-        let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?);
+        // TODO: can we construct a transaction to do the following?
+
+        let substate_store_rc = Rc::new(RadixEngineDB::with_bootstrap(get_data_dir()?));
         let mut wasm_engine = DefaultWasmEngine::new();
         let mut wasm_instrumenter = WasmInstrumenter::new();
-        let mut track = Track::new(&mut substate_store, hash, Network::LocalSimulator);
+        let mut track = Track::new(substate_store_rc.clone(), hash, Network::LocalSimulator);
         let mut cost_unit_counter = CostUnitCounter::new(MAX_TRANSACTION_COST, SYSTEM_LOAN_AMOUNT);
         let fee_table = FeeTable::new();
 
@@ -37,6 +41,7 @@ impl SetCurrentEpoch {
             &fee_table,
         );
 
+        // Invoke the system
         root_frame
             .invoke_snode(
                 SNodeRef::SystemRef,
@@ -44,6 +49,16 @@ impl SetCurrentEpoch {
                 ScryptoValue::from_typed(&SystemSetEpochInput { epoch: self.epoch }),
             )
             .map(|_| ())
-            .map_err(Error::TransactionExecutionError)
+            .map_err(Error::TransactionExecutionError)?;
+
+        // Commit
+        let track_receipt = track.to_receipt();
+        let mut substate_store = match Rc::try_unwrap(substate_store_rc) {
+            Ok(store) => store,
+            Err(_) => panic!("There should be no other strong refs that prevent unwrapping"),
+        };
+        let _commit_receipt = track_receipt.state_changes.commit(&mut substate_store);
+
+        Ok(())
     }
 }

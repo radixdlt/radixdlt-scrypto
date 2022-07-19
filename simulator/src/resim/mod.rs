@@ -153,11 +153,11 @@ pub fn handle_manifest<O: std::io::Write>(
             Ok(None)
         }
         None => {
-            let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?);
+            let substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?);
             let mut wasm_engine = DefaultWasmEngine::new();
             let mut wasm_instrumenter = WasmInstrumenter::new();
             let mut executor = TransactionExecutor::new(
-                &mut substate_store,
+                substate_store,
                 &mut wasm_engine,
                 &mut wasm_instrumenter,
                 trace,
