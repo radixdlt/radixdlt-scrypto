@@ -42,7 +42,7 @@ Documentation: https://docs.radixdlt.com/main/scrypto/introduction.html
     cd radixdlt-scrypto
     cargo install --path ./simulator
     ```
-    **If you don't have git installed, follow the instructions [here](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git).**
+    **If you don't have git installed follow the instructions [here](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git).**
 5. (Optional) Open Scrypto documentation for later use
     ```
     ./doc.sh
