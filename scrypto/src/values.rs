@@ -101,21 +101,19 @@ impl ScryptoValue {
     pub fn value_ids(&self) -> HashSet<ValueId> {
         let mut value_ids = HashSet::new();
         for vault_id in &self.vault_ids {
-            value_ids.insert(ValueId::vault_id(*vault_id));
+            value_ids.insert(ValueId::Vault(*vault_id));
         }
         for kv_store_id in &self.kv_store_ids {
-            value_ids.insert(ValueId::kv_store_id(*kv_store_id));
+            value_ids.insert(ValueId::KeyValueStore(*kv_store_id));
         }
         for component_address in &self.component_addresses {
-            value_ids.insert(ValueId::Stored(StoredValueId::Component(
-                *component_address,
-            )));
+            value_ids.insert(ValueId::Component(*component_address));
         }
         for (bucket_id, _) in &self.bucket_ids {
-            value_ids.insert(ValueId::Transient(TransientValueId::Bucket(*bucket_id)));
+            value_ids.insert(ValueId::Bucket(*bucket_id));
         }
         for (proof_id, _) in &self.proof_ids {
-            value_ids.insert(ValueId::Transient(TransientValueId::Proof(*proof_id)));
+            value_ids.insert(ValueId::Proof(*proof_id));
         }
         value_ids
     }
@@ -123,15 +121,13 @@ impl ScryptoValue {
     pub fn stored_value_ids(&self) -> HashSet<ValueId> {
         let mut value_ids = HashSet::new();
         for vault_id in &self.vault_ids {
-            value_ids.insert(ValueId::vault_id(*vault_id));
+            value_ids.insert(ValueId::Vault(*vault_id));
         }
         for kv_store_id in &self.kv_store_ids {
-            value_ids.insert(ValueId::kv_store_id(*kv_store_id));
+            value_ids.insert(ValueId::KeyValueStore(*kv_store_id));
         }
         for component_address in &self.component_addresses {
-            value_ids.insert(ValueId::Stored(StoredValueId::Component(
-                *component_address,
-            )));
+            value_ids.insert(ValueId::Component(*component_address));
         }
         value_ids
     }

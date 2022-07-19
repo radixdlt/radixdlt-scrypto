@@ -1,5 +1,3 @@
-use sbor::rust::cell::{Ref, RefCell, RefMut};
-use sbor::rust::collections::hash_map::IntoIter;
 use sbor::rust::collections::*;
 use sbor::rust::vec::Vec;
 use scrypto::engine::types::*;
@@ -9,202 +7,168 @@ use crate::engine::*;
 use crate::model::*;
 
 #[derive(Debug)]
-pub enum REValue {
+pub enum RENode {
     Bucket(Bucket),
     Proof(Proof),
     Vault(Vault),
+    KeyValueStore(PreCommittedKeyValueStore),
+    Component(Component),
     Worktop(Worktop),
-    KeyValueStore {
-        store: PreCommittedKeyValueStore,
-        child_values: InMemoryChildren,
-    },
-    Component {
-        component: Component,
-        child_values: InMemoryChildren,
-    },
     Package(ValidatedPackage),
     Resource(ResourceManager),
     NonFungibles(HashMap<NonFungibleId, NonFungible>),
     System(System),
 }
 
-impl REValue {
+impl RENode {
     pub fn system(&self) -> &System {
         match self {
-            REValue::System(system) => system,
+            RENode::System(system) => system,
             _ => panic!("Expected to be system"),
         }
     }
 
     pub fn resource_manager(&self) -> &ResourceManager {
         match self {
-            REValue::Resource(resource_manager) => resource_manager,
+            RENode::Resource(resource_manager) => resource_manager,
             _ => panic!("Expected to be a resource manager"),
         }
     }
 
     pub fn resource_manager_mut(&mut self) -> &mut ResourceManager {
         match self {
-            REValue::Resource(resource_manager) => resource_manager,
+            RENode::Resource(resource_manager) => resource_manager,
             _ => panic!("Expected to be a resource manager"),
         }
     }
 
     pub fn non_fungibles(&self) -> &HashMap<NonFungibleId, NonFungible> {
         match self {
-            REValue::NonFungibles(non_fungibles) => non_fungibles,
+            RENode::NonFungibles(non_fungibles) => non_fungibles,
             _ => panic!("Expected to be non fungibles"),
         }
     }
 
     pub fn non_fungibles_mut(&mut self) -> &mut HashMap<NonFungibleId, NonFungible> {
         match self {
-            REValue::NonFungibles(non_fungibles) => non_fungibles,
+            RENode::NonFungibles(non_fungibles) => non_fungibles,
             _ => panic!("Expected to be non fungibles"),
         }
     }
 
     pub fn package(&self) -> &ValidatedPackage {
         match self {
-            REValue::Package(package) => package,
+            RENode::Package(package) => package,
             _ => panic!("Expected to be a package"),
         }
     }
 
     pub fn component(&self) -> &Component {
         match self {
-            REValue::Component { component, .. } => component,
+            RENode::Component(component) => component,
             _ => panic!("Expected to be a store"),
         }
     }
 
     pub fn component_mut(&mut self) -> &mut Component {
         match self {
-            REValue::Component { component, .. } => component,
+            RENode::Component(component) => component,
             _ => panic!("Expected to be a store"),
         }
     }
 
     pub fn kv_store(&self) -> &PreCommittedKeyValueStore {
         match self {
-            REValue::KeyValueStore { store, .. } => store,
+            RENode::KeyValueStore(store) => store,
             _ => panic!("Expected to be a store"),
         }
     }
 
     pub fn kv_store_mut(&mut self) -> &mut PreCommittedKeyValueStore {
         match self {
-            REValue::KeyValueStore { store, .. } => store,
+            RENode::KeyValueStore(store) => store,
             _ => panic!("Expected to be a store"),
         }
     }
 
     pub fn vault(&self) -> &Vault {
         match self {
-            REValue::Vault(vault) => vault,
+            RENode::Vault(vault) => vault,
             _ => panic!("Expected to be a vault"),
         }
     }
 
     pub fn vault_mut(&mut self) -> &mut Vault {
         match self {
-            REValue::Vault(vault) => vault,
+            RENode::Vault(vault) => vault,
             _ => panic!("Expected to be a vault"),
-        }
-    }
-
-    pub fn get_children_store(&self) -> Option<&InMemoryChildren> {
-        match self {
-            REValue::KeyValueStore {
-                store: _,
-                child_values,
-            }
-            | REValue::Component {
-                component: _,
-                child_values,
-            } => Some(child_values),
-            _ => None,
-        }
-    }
-
-    pub fn get_children_store_mut(&mut self) -> Option<&mut InMemoryChildren> {
-        match self {
-            REValue::KeyValueStore {
-                store: _,
-                child_values,
-            }
-            | REValue::Component {
-                component: _,
-                child_values,
-            } => Some(child_values),
-            _ => None,
         }
     }
 
     pub fn verify_can_move(&self) -> Result<(), RuntimeError> {
         match self {
-            REValue::Bucket(bucket) => {
+            RENode::Bucket(bucket) => {
                 if bucket.is_locked() {
                     Err(RuntimeError::CantMoveLockedBucket)
                 } else {
                     Ok(())
                 }
             }
-            REValue::Proof(proof) => {
+            RENode::Proof(proof) => {
                 if proof.is_restricted() {
                     Err(RuntimeError::CantMoveRestrictedProof)
                 } else {
                     Ok(())
                 }
             }
-            REValue::KeyValueStore { .. } => Ok(()),
-            REValue::Component { .. } => Ok(()),
-            REValue::Vault(..) => Ok(()),
-            REValue::Resource(..) => Ok(()),
-            REValue::NonFungibles(..) => Ok(()),
-            REValue::Package(..) => Ok(()),
-            REValue::Worktop(..) => Ok(()),
-            REValue::System(..) => Ok(()),
+            RENode::KeyValueStore(..) => Ok(()),
+            RENode::Component(..) => Ok(()),
+            RENode::Vault(..) => Ok(()),
+            RENode::Resource(..) => Ok(()),
+            RENode::NonFungibles(..) => Ok(()),
+            RENode::Package(..) => Ok(()),
+            RENode::Worktop(..) => Ok(()),
+            RENode::System(..) => Ok(()),
         }
     }
 
     pub fn verify_can_persist(&self) -> Result<(), RuntimeError> {
         match self {
-            REValue::KeyValueStore { .. } => Ok(()),
-            REValue::Component { .. } => Ok(()),
-            REValue::Vault(..) => Ok(()),
-            REValue::Resource(..) => Err(RuntimeError::ValueNotAllowed),
-            REValue::NonFungibles(..) => Err(RuntimeError::ValueNotAllowed),
-            REValue::Package(..) => Err(RuntimeError::ValueNotAllowed),
-            REValue::Bucket(..) => Err(RuntimeError::ValueNotAllowed),
-            REValue::Proof(..) => Err(RuntimeError::ValueNotAllowed),
-            REValue::Worktop(..) => Err(RuntimeError::ValueNotAllowed),
-            REValue::System(..) => Err(RuntimeError::ValueNotAllowed),
+            RENode::KeyValueStore { .. } => Ok(()),
+            RENode::Component { .. } => Ok(()),
+            RENode::Vault(..) => Ok(()),
+            RENode::Resource(..) => Err(RuntimeError::ValueNotAllowed),
+            RENode::NonFungibles(..) => Err(RuntimeError::ValueNotAllowed),
+            RENode::Package(..) => Err(RuntimeError::ValueNotAllowed),
+            RENode::Bucket(..) => Err(RuntimeError::ValueNotAllowed),
+            RENode::Proof(..) => Err(RuntimeError::ValueNotAllowed),
+            RENode::Worktop(..) => Err(RuntimeError::ValueNotAllowed),
+            RENode::System(..) => Err(RuntimeError::ValueNotAllowed),
         }
     }
 
     pub fn try_drop(self) -> Result<(), DropFailure> {
         match self {
-            REValue::Package(..) => Err(DropFailure::Package),
-            REValue::Vault(..) => Err(DropFailure::Vault),
-            REValue::KeyValueStore { .. } => Err(DropFailure::KeyValueStore),
-            REValue::Component { .. } => Err(DropFailure::Component),
-            REValue::Bucket(..) => Err(DropFailure::Bucket),
-            REValue::Resource(..) => Err(DropFailure::Resource),
-            REValue::NonFungibles(..) => Err(DropFailure::Resource),
-            REValue::System(..) => Err(DropFailure::System),
-            REValue::Proof(proof) => {
+            RENode::Package(..) => Err(DropFailure::Package),
+            RENode::Vault(..) => Err(DropFailure::Vault),
+            RENode::KeyValueStore(..) => Err(DropFailure::KeyValueStore),
+            RENode::Component(..) => Err(DropFailure::Component),
+            RENode::Bucket(..) => Err(DropFailure::Bucket),
+            RENode::Resource(..) => Err(DropFailure::Resource),
+            RENode::NonFungibles(..) => Err(DropFailure::Resource),
+            RENode::System(..) => Err(DropFailure::System),
+            RENode::Proof(proof) => {
                 proof.drop();
                 Ok(())
             }
-            REValue::Worktop(worktop) => worktop.drop(),
+            RENode::Worktop(worktop) => worktop.drop(),
         }
     }
 
     pub fn drop_values(values: Vec<REValue>) -> Result<(), DropFailure> {
         let mut worktops = Vec::new();
         for value in values {
-            if let REValue::Worktop(worktop) = value {
+            if let RENode::Worktop(worktop) = value.root {
                 worktops.push(worktop);
             } else {
                 value.try_drop()?;
@@ -218,10 +182,66 @@ impl REValue {
     }
 }
 
+#[derive(Debug)]
+pub struct REValue {
+    pub root: RENode,
+    pub non_root_nodes: HashMap<ValueId, RENode>,
+}
+
+impl REValue {
+    pub fn root(&self) -> &RENode {
+        &self.root
+    }
+
+    pub fn root_mut(&mut self) -> &mut RENode {
+        &mut self.root
+    }
+
+    pub fn non_root(&self, id: &ValueId) -> &RENode {
+        self.non_root_nodes.get(id).unwrap()
+    }
+
+    pub fn non_root_mut(&mut self, id: &ValueId) -> &mut RENode {
+        self.non_root_nodes.get_mut(id).unwrap()
+    }
+
+    pub fn get_node(&self, id: Option<&ValueId>) -> &RENode {
+        if let Some(value_id) = id {
+            self.non_root_nodes.get(value_id).unwrap()
+        } else {
+            &self.root
+        }
+    }
+
+    pub fn get_node_mut(&mut self, id: Option<&ValueId>) -> &mut RENode {
+        if let Some(value_id) = id {
+            self.non_root_nodes.get_mut(value_id).unwrap()
+        } else {
+            &mut self.root
+        }
+    }
+
+    pub fn insert_non_root_nodes(&mut self, values: HashMap<ValueId, RENode>) {
+        for (id, value) in values {
+            self.non_root_nodes.insert(id, value);
+        }
+    }
+
+    pub fn to_nodes(self, root_id: ValueId) -> HashMap<ValueId, RENode> {
+        let mut nodes = self.non_root_nodes;
+        nodes.insert(root_id, self.root);
+        nodes
+    }
+
+    pub fn try_drop(self) -> Result<(), DropFailure> {
+        self.root.try_drop()
+    }
+}
+
 impl Into<Bucket> for REValue {
     fn into(self) -> Bucket {
-        match self {
-            REValue::Bucket(bucket) => bucket,
+        match self.root {
+            RENode::Bucket(bucket) => bucket,
             _ => panic!("Expected to be a bucket"),
         }
     }
@@ -229,8 +249,8 @@ impl Into<Bucket> for REValue {
 
 impl Into<Proof> for REValue {
     fn into(self) -> Proof {
-        match self {
-            REValue::Proof(proof) => proof,
+        match self.root {
+            RENode::Proof(proof) => proof,
             _ => panic!("Expected to be a proof"),
         }
     }
@@ -238,8 +258,8 @@ impl Into<Proof> for REValue {
 
 impl Into<HashMap<NonFungibleId, NonFungible>> for REValue {
     fn into(self) -> HashMap<NonFungibleId, NonFungible> {
-        match self {
-            REValue::NonFungibles(non_fungibles) => non_fungibles,
+        match self.root {
+            RENode::NonFungibles(non_fungibles) => non_fungibles,
             _ => panic!("Expected to be non fungibles"),
         }
     }
@@ -261,11 +281,15 @@ impl REComplexValue {
         }
     }
 
-    pub fn into_re_value(self, children: HashMap<ValueId, REValue>) -> REValue {
+    pub fn into_re_value(self, non_root_values: HashMap<ValueId, REValue>) -> REValue {
+        let mut non_root_nodes = HashMap::new();
+        for (id, val) in non_root_values {
+            non_root_nodes.extend(val.to_nodes(id));
+        }
         match self {
-            REComplexValue::Component(component) => REValue::Component {
-                component,
-                child_values: InMemoryChildren::with_values(children),
+            REComplexValue::Component(component) => REValue {
+                root: RENode::Component(component),
+                non_root_nodes,
             },
         }
     }
@@ -291,20 +315,22 @@ pub enum REValueByComplexity {
 
 impl Into<REValue> for REPrimitiveValue {
     fn into(self) -> REValue {
-        match self {
-            REPrimitiveValue::Resource(resource_manager) => REValue::Resource(resource_manager),
+        let root = match self {
+            REPrimitiveValue::Resource(resource_manager) => RENode::Resource(resource_manager),
             REPrimitiveValue::NonFungibles(_resource_address, non_fungibles) => {
-                REValue::NonFungibles(non_fungibles)
+                RENode::NonFungibles(non_fungibles)
             }
-            REPrimitiveValue::Package(package) => REValue::Package(package),
-            REPrimitiveValue::Bucket(bucket) => REValue::Bucket(bucket),
-            REPrimitiveValue::Proof(proof) => REValue::Proof(proof),
-            REPrimitiveValue::KeyValue(store) => REValue::KeyValueStore {
-                store: store,
-                child_values: InMemoryChildren::new(),
-            },
-            REPrimitiveValue::Vault(vault) => REValue::Vault(vault),
-            REPrimitiveValue::Worktop(worktop) => REValue::Worktop(worktop),
+            REPrimitiveValue::Package(package) => RENode::Package(package),
+            REPrimitiveValue::Bucket(bucket) => RENode::Bucket(bucket),
+            REPrimitiveValue::Proof(proof) => RENode::Proof(proof),
+            REPrimitiveValue::KeyValue(store) => RENode::KeyValueStore(store),
+            REPrimitiveValue::Vault(vault) => RENode::Vault(vault),
+
+            REPrimitiveValue::Worktop(worktop) => RENode::Worktop(worktop),
+        };
+        REValue {
+            root,
+            non_root_nodes: HashMap::new(),
         }
     }
 }
@@ -360,85 +386,5 @@ impl Into<REValueByComplexity> for ValidatedPackage {
 impl Into<REValueByComplexity> for Component {
     fn into(self) -> REValueByComplexity {
         REValueByComplexity::Complex(REComplexValue::Component(self))
-    }
-}
-
-#[derive(Debug)]
-pub struct InMemoryChildren {
-    child_values: HashMap<ValueId, RefCell<REValue>>,
-}
-
-impl InMemoryChildren {
-    pub fn new() -> Self {
-        InMemoryChildren {
-            child_values: HashMap::new(),
-        }
-    }
-
-    pub fn with_values(values: HashMap<ValueId, REValue>) -> Self {
-        let mut child_values = HashMap::new();
-        for (id, value) in values.into_iter() {
-            child_values.insert(id, RefCell::new(value));
-        }
-        InMemoryChildren { child_values }
-    }
-
-    pub fn into_iter(self) -> IntoIter<ValueId, RefCell<REValue>> {
-        self.child_values.into_iter()
-    }
-
-    pub fn all_descendants(&self) -> Vec<ValueId> {
-        let mut descendents = Vec::new();
-        for (id, value) in self.child_values.iter() {
-            descendents.push(*id);
-            let value = value.borrow();
-            if let Some(children_store) = value.get_children_store() {
-                descendents.extend(children_store.all_descendants());
-            }
-        }
-        descendents
-    }
-
-    pub unsafe fn get_child(&self, ancestors: &[KeyValueStoreId], id: &ValueId) -> Ref<REValue> {
-        if ancestors.is_empty() {
-            let value = self.child_values.get(id).expect("Value expected to exist");
-            return value.borrow();
-        }
-
-        let (first, rest) = ancestors.split_first().unwrap();
-        let value = self
-            .child_values
-            .get(&ValueId::Stored(StoredValueId::KeyValueStoreId(*first)))
-            .unwrap();
-        let value = value.try_borrow_unguarded().unwrap();
-        value.get_children_store().unwrap().get_child(rest, id)
-    }
-
-    pub fn get_child_mut(
-        &mut self,
-        ancestors: &[KeyValueStoreId],
-        id: &ValueId,
-    ) -> RefMut<REValue> {
-        if ancestors.is_empty() {
-            let value = self
-                .child_values
-                .get_mut(id)
-                .expect("Value expected to exist");
-            return value.borrow_mut();
-        }
-
-        let (first, rest) = ancestors.split_first().unwrap();
-        let value = self
-            .child_values
-            .get_mut(&ValueId::Stored(StoredValueId::KeyValueStoreId(*first)))
-            .unwrap();
-        let children_store = value.get_mut().get_children_store_mut().unwrap();
-        children_store.get_child_mut(rest, id)
-    }
-
-    pub fn insert_children(&mut self, values: HashMap<ValueId, REValue>) {
-        for (id, value) in values {
-            self.child_values.insert(id, RefCell::new(value));
-        }
     }
 }

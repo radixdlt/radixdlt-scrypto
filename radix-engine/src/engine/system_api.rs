@@ -5,11 +5,12 @@ use scrypto::engine::types::*;
 use scrypto::resource::AccessRule;
 use scrypto::values::*;
 
-use crate::engine::call_frame::{REValueRef, SubstateAddress};
 use crate::engine::values::*;
 use crate::engine::*;
 use crate::fee::*;
 use crate::wasm::*;
+
+use super::call_frame::REValueRef;
 
 pub trait SystemApi<'p, W, I>
 where
@@ -29,21 +30,14 @@ where
 
     fn globalize_value(&mut self, value_id: &ValueId) -> Result<(), CostUnitCounterError>;
 
-    fn borrow_value(
-        &mut self,
-        value_id: &ValueId,
-    ) -> Result<REValueRef<'_, 'p>, CostUnitCounterError>;
+    fn borrow_value(&mut self, value_id: &ValueId) -> Result<REValueRef<'_>, CostUnitCounterError>;
 
     fn borrow_value_mut(
         &mut self,
         value_id: &ValueId,
-    ) -> Result<RENativeValueRef<'p>, CostUnitCounterError>;
+    ) -> Result<RENativeValueRef, CostUnitCounterError>;
 
-    fn return_value_mut(
-        &mut self,
-        value_id: ValueId,
-        val_ref: RENativeValueRef<'p>,
-    ) -> Result<(), CostUnitCounterError>;
+    fn return_value_mut(&mut self, val_ref: RENativeValueRef) -> Result<(), CostUnitCounterError>;
 
     fn drop_value(&mut self, value_id: &ValueId) -> Result<REValue, CostUnitCounterError>;
 

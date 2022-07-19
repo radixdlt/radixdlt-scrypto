@@ -128,7 +128,7 @@ impl Component {
                 let component = ref_mut.component();
                 component.access_rules.push(input.access_rules);
                 system_api
-                    .return_value_mut(value_id, ref_mut)
+                    .return_value_mut(ref_mut)
                     .map_err(ComponentError::CostingError)?;
 
                 Ok(ScryptoValue::from_typed(&()))

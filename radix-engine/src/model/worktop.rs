@@ -228,14 +228,12 @@ impl Worktop {
             .map_err(WorktopError::CostingError)?;
         let worktop = value_ref.worktop();
 
-        match method_name {
+        let rtn = match method_name {
             "put" => {
                 let input: WorktopPutInput =
                     scrypto_decode(&arg.raw).map_err(|e| WorktopError::InvalidRequestData(e))?;
                 let bucket = system_api
-                    .drop_value(&ValueId::Transient(TransientValueId::Bucket(
-                        input.bucket.0,
-                    )))
+                    .drop_value(&ValueId::Bucket(input.bucket.0))
                     .map_err(WorktopError::CostingError)?
                     .into();
                 worktop
@@ -377,6 +375,11 @@ impl Worktop {
                 Ok(ScryptoValue::from_typed(&buckets))
             }
             _ => Err(InvalidMethod),
-        }
+        }?;
+
+        system_api
+            .return_value_mut(value_ref)
+            .map_err(WorktopError::CostingError)?;
+        Ok(rtn)
     }
 }

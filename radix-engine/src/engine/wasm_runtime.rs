@@ -87,7 +87,7 @@ where
             .system_api
             .create_value(PreCommittedKeyValueStore::new())?;
         match value_id {
-            ValueId::Stored(StoredValueId::KeyValueStoreId(kv_store_id)) => Ok(kv_store_id),
+            ValueId::KeyValueStore(kv_store_id) => Ok(kv_store_id),
             _ => panic!("Expected to be a kv store"),
         }
     }

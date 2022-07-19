@@ -4,7 +4,7 @@ pub mod test_runner;
 use crate::test_runner::TestRunner;
 use radix_engine::engine::RuntimeError;
 use scrypto::core::Network;
-use scrypto::engine::types::{StoredValueId, ValueId};
+use scrypto::engine::types::ValueId;
 use scrypto::prelude::*;
 use scrypto::to_struct;
 use transaction::builder::ManifestBuilder;
@@ -27,12 +27,7 @@ fn non_existent_vault_in_component_creation_should_fail() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_err(|e| {
-        matches!(
-            e,
-            RuntimeError::ValueNotFound(ValueId::Stored(StoredValueId::VaultId(_)))
-        )
-    });
+    receipt.expect_err(|e| matches!(e, RuntimeError::ValueNotFound(ValueId::Vault(_))));
 }
 
 #[test]
@@ -53,12 +48,7 @@ fn non_existent_vault_in_committed_component_should_fail() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_err(|e| {
-        matches!(
-            e,
-            RuntimeError::ValueNotFound(ValueId::Stored(StoredValueId::VaultId(_)))
-        )
-    });
+    receipt.expect_err(|e| matches!(e, RuntimeError::ValueNotFound(ValueId::Vault(_))));
 }
 
 #[test]
@@ -79,12 +69,7 @@ fn non_existent_vault_in_key_value_store_creation_should_fail() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_err(|e| {
-        matches!(
-            e,
-            RuntimeError::ValueNotFound(ValueId::Stored(StoredValueId::VaultId(_)))
-        )
-    });
+    receipt.expect_err(|e| matches!(e, RuntimeError::ValueNotFound(ValueId::Vault(_))));
 }
 
 #[test]
@@ -109,12 +94,7 @@ fn non_existent_vault_in_committed_key_value_store_should_fail() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_err(|e| {
-        matches!(
-            e,
-            RuntimeError::ValueNotFound(ValueId::Stored(StoredValueId::VaultId(_)))
-        )
-    });
+    receipt.expect_err(|e| matches!(e, RuntimeError::ValueNotFound(ValueId::Vault(_))));
 }
 
 #[test]
@@ -156,12 +136,7 @@ fn invalid_double_ownership_of_vault() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_err(|e| {
-        matches!(
-            e,
-            RuntimeError::ValueNotFound(ValueId::Stored(StoredValueId::VaultId(_)))
-        )
-    });
+    receipt.expect_err(|e| matches!(e, RuntimeError::ValueNotFound(ValueId::Vault(_))));
 }
 
 #[test]
@@ -210,7 +185,7 @@ fn cannot_overwrite_vault_in_map() {
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
     match runtime_error {
-        RuntimeError::StoredValueRemoved(StoredValueId::VaultId(_)) => {}
+        RuntimeError::StoredValueRemoved(ValueId::Vault(_)) => {}
         _ => panic!("Should be vault not found error but was {}", runtime_error),
     }
 }
@@ -261,7 +236,7 @@ fn cannot_remove_vaults() {
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
     match runtime_error {
-        RuntimeError::StoredValueRemoved(StoredValueId::VaultId(_)) => {}
+        RuntimeError::StoredValueRemoved(ValueId::Vault(_)) => {}
         _ => panic!("Should be vault not found error but was {}", runtime_error),
     }
 }

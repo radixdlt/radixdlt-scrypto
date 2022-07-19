@@ -114,7 +114,7 @@ impl AuthZone {
                 let input: AuthZonePushInput =
                     scrypto_decode(&arg.raw).map_err(|e| AuthZoneError::InvalidRequestData(e))?;
                 let mut proof: Proof = system_api
-                    .drop_value(&ValueId::Transient(TransientValueId::Proof(input.proof.0)))
+                    .drop_value(&ValueId::Proof(input.proof.0))
                     .map_err(AuthZoneError::CostingError)?
                     .into();
                 // FIXME: this is a hack for now until we can get snode_state into process

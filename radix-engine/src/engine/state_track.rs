@@ -132,8 +132,8 @@ impl StateTrack {
 
                         store_instructions.push(SubstateOperation::Up(address, substate));
                     }
-                    Address::KeyValueStoreEntry(component_id, kv_store_id, key) => {
-                        let parent_address = Address::KeyValueStore(*component_id, *kv_store_id);
+                    Address::KeyValueStoreEntry(kv_store_id, key) => {
+                        let parent_address = Address::KeyValueStore(*kv_store_id);
 
                         if let Some(existing_substate_id) =
                             Self::get_substate_id(&self.parent, &parent_address)

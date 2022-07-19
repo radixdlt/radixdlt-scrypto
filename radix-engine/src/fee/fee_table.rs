@@ -145,16 +145,12 @@ impl FeeTable {
             },
             // TODO: I suspect there is a bug with invoking consumed within call frame. Add tests to verify
             SNodeRef::Consumed(value_id) => match value_id {
-                ValueId::Transient(id) => match id {
-                    TransientValueId::Bucket(_) => self.fixed_medium,
-                    TransientValueId::Proof(_) => self.fixed_medium,
-                    TransientValueId::Worktop => self.fixed_medium,
-                },
-                ValueId::Stored(id) => match id {
-                    StoredValueId::KeyValueStoreId(_) => self.fixed_medium,
-                    StoredValueId::Component(_) => self.fixed_medium,
-                    StoredValueId::VaultId(_) => self.fixed_medium,
-                },
+                ValueId::Bucket(_) => self.fixed_medium,
+                ValueId::Proof(_) => self.fixed_medium,
+                ValueId::Worktop => self.fixed_medium,
+                ValueId::KeyValueStore(_) => self.fixed_medium,
+                ValueId::Component(_) => self.fixed_medium,
+                ValueId::Vault(_) => self.fixed_medium,
                 ValueId::Resource(_) => self.fixed_medium,
                 ValueId::Package(_) => self.fixed_high,
                 ValueId::System => self.fixed_high,
