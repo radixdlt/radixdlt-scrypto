@@ -1,12 +1,14 @@
 use indexmap::IndexSet;
 use sbor::rust::collections::*;
 use sbor::rust::rc::Rc;
+use scrypto::buffer::{scrypto_decode, scrypto_encode};
 
 use crate::engine::Address;
 use crate::ledger::*;
 
 use super::{
     track::VirtualSubstateId, SubstateOperation, SubstateOperationsReceipt, SubstateParentId,
+    SubstateValue,
 };
 
 pub enum StateTrackParent {
@@ -34,20 +36,27 @@ impl StateTrack {
         }
     }
 
-    pub fn get_substate(&mut self, address: &Address) -> Option<Vec<u8>> {
+    pub fn get_substate(&mut self, address: &Address) -> Option<SubstateValue> {
+        // TODO: it's very inconvenient to encode & decode. We should consider making SubstateValue cloneable
+        //  or have proper borrow mechanism implemented.
+
         self.substates
             .entry(address.clone())
             .or_insert_with(|| match &mut self.parent {
                 StateTrackParent::SubstateStore(store, ..) => {
                     store.get_substate(address).map(|s| s.value)
                 }
-                StateTrackParent::StateTrack(track) => track.get_substate(address),
+                StateTrackParent::StateTrack(track) => {
+                    track.get_substate(address).map(|s| scrypto_encode(&s))
+                }
             })
-            .clone()
+            .as_ref()
+            .map(|s| scrypto_decode(&s).unwrap())
     }
 
-    pub fn put_substate(&mut self, address: Address, substate: Vec<u8>) {
-        self.substates.insert(address, Some(substate));
+    pub fn put_substate(&mut self, address: Address, substate: SubstateValue) {
+        self.substates
+            .insert(address, Some(scrypto_encode(&substate)));
     }
 
     pub fn put_space(&mut self, address: Address) {

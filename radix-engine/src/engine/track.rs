@@ -2,11 +2,8 @@ use sbor::rust::collections::*;
 use sbor::rust::format;
 use sbor::rust::rc::Rc;
 use sbor::rust::string::String;
-use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto::buffer::scrypto_decode;
-use scrypto::buffer::scrypto_encode;
 use scrypto::core::Network;
 use scrypto::engine::types::*;
 use scrypto::values::ScryptoValue;
@@ -100,7 +97,7 @@ pub enum Address {
     System,
 }
 
-#[derive(Debug)]
+#[derive(Debug, TypeId, Encode, Decode)]
 pub enum SubstateValue {
     System(System),
     Resource(ResourceManager),
@@ -109,37 +106,6 @@ pub enum SubstateValue {
     Vault(Vault, Option<ResourceContainer>),
     NonFungible(Option<NonFungible>),
     KeyValueStoreEntry(Option<Vec<u8>>),
-}
-
-impl Address {
-    pub fn encode_as_substate_key(&self) -> Vec<u8> {
-        // TODO: How much do we gain from this specialized codec?
-        match self {
-            Address::System => vec![0u8], // TODO: inconsistent encoding
-            Address::Resource(resource_address) => scrypto_encode(resource_address),
-            Address::GlobalComponent(component_address) => scrypto_encode(component_address),
-            Address::Package(package_address) => scrypto_encode(package_address),
-            Address::Vault(vault_id) => scrypto_encode(vault_id),
-            Address::LocalComponent(component_address) => scrypto_encode(component_address),
-            Address::NonFungibleSet(resource_address) => {
-                let mut substate_key = scrypto_encode(resource_address);
-                substate_key.extend(scrypto_encode(&()));
-                substate_key
-            }
-            Address::NonFungible(resource_address, key) => {
-                let mut substate_key = scrypto_encode(resource_address);
-                substate_key.extend(scrypto_encode(&()));
-                substate_key.extend(key); // TODO: size prefix breaks sortability, but now inconsistent encoding
-                substate_key
-            }
-            Address::KeyValueStore(kv_store_id) => scrypto_encode(kv_store_id),
-            Address::KeyValueStoreEntry(kv_store_id, key) => {
-                let mut substate_key = scrypto_encode(kv_store_id);
-                substate_key.extend(key); // TODO: size prefix breaks sortability, but now inconsistent encoding
-                substate_key
-            }
-        }
-    }
 }
 
 impl Into<Address> for PackageAddress {
@@ -201,24 +167,6 @@ impl Into<VaultId> for Address {
 }
 
 impl SubstateValue {
-    fn encode(&self) -> Vec<u8> {
-        match self {
-            SubstateValue::Resource(resource_manager) => scrypto_encode(resource_manager),
-            SubstateValue::Package(package) => scrypto_encode(package),
-            SubstateValue::Component(component) => scrypto_encode(component),
-            SubstateValue::Vault(liquid, locked) => {
-                assert!(
-                    locked.is_none(),
-                    "Attempted to serialize a vault which is partially locked"
-                );
-                scrypto_encode(liquid)
-            }
-            SubstateValue::NonFungible(non_fungible) => scrypto_encode(non_fungible),
-            SubstateValue::KeyValueStoreEntry(value) => scrypto_encode(value),
-            SubstateValue::System(system) => scrypto_encode(system),
-        }
-    }
-
     pub fn vault_mut(&mut self) -> (&mut Vault, &mut Option<ResourceContainer>) {
         if let SubstateValue::Vault(liquid, locked) = self {
             (liquid, locked)
@@ -424,8 +372,7 @@ impl Track {
     ) {
         let address = addr.into();
         self.new_addresses.push(address.clone());
-        self.state_track
-            .put_substate(address, value.into().encode());
+        self.state_track.put_substate(address, value.into());
     }
 
     pub fn create_key_space(&mut self, address: Address) {
@@ -468,26 +415,12 @@ impl Track {
 
         if let Some(substate) = self.state_track.get_substate(&address) {
             let value = match address {
-                Address::GlobalComponent(_) | Address::LocalComponent(..) => {
-                    let component = scrypto_decode(&substate).unwrap();
-                    SubstateValue::Component(component)
-                }
-                Address::Resource(_) => {
-                    let resource_manager = scrypto_decode(&substate).unwrap();
-                    SubstateValue::Resource(resource_manager)
-                }
-                Address::Vault(..) => {
-                    let vault = scrypto_decode(&substate).unwrap();
-                    SubstateValue::Vault(vault, None)
-                }
-                Address::Package(..) => {
-                    let package = scrypto_decode(&substate).unwrap();
-                    SubstateValue::Package(package)
-                }
-                Address::System => {
-                    let system = scrypto_decode(&substate).unwrap();
-                    SubstateValue::System(system)
-                }
+                Address::GlobalComponent(_)
+                | Address::LocalComponent(..)
+                | Address::Resource(_)
+                | Address::Vault(..)
+                | Address::Package(..)
+                | Address::System => substate,
                 _ => panic!("Attempting to borrow unsupported value {:?}", address),
             };
 
@@ -575,12 +508,12 @@ impl Track {
         match borrowed {
             BorrowedSubstate::Taken => panic!("Value was never returned"),
             BorrowedSubstate::LoadedMut(value) => {
-                self.state_track.put_substate(address, value.encode());
+                self.state_track.put_substate(address, value);
             }
             BorrowedSubstate::Loaded(value, mut count) => {
                 count = count - 1;
                 if count == 0 {
-                    self.state_track.put_substate(address, value.encode());
+                    self.state_track.put_substate(address, value);
                 } else {
                     self.borrowed_substates
                         .insert(address, BorrowedSubstate::Loaded(value, count));
@@ -604,18 +537,10 @@ impl Track {
             Address::NonFungibleSet(_) => self
                 .state_track
                 .get_substate(&address)
-                .map(|r| {
-                    let non_fungible = scrypto_decode(&r).unwrap();
-                    SubstateValue::NonFungible(non_fungible)
-                })
                 .unwrap_or(SubstateValue::NonFungible(None)),
             Address::KeyValueStore(..) => self
                 .state_track
                 .get_substate(&address)
-                .map(|r| {
-                    let kv_store_entry = scrypto_decode(&r).unwrap();
-                    SubstateValue::KeyValueStoreEntry(kv_store_entry)
-                })
                 .unwrap_or(SubstateValue::KeyValueStoreEntry(None)),
             _ => panic!("Invalid keyed value address {:?}", parent_address),
         }
@@ -639,8 +564,7 @@ impl Track {
             _ => panic!("Unsupported key value"),
         };
 
-        self.state_track
-            .put_substate(address, value.into().encode());
+        self.state_track.put_substate(address, value.into());
     }
 
     /// Creates a new package ID.
