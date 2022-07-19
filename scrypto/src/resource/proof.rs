@@ -7,7 +7,7 @@ use sbor::*;
 
 use crate::abi::*;
 use crate::core::SNodeRef;
-use crate::engine::types::{TransientValueId, ValueId};
+use crate::engine::types::ValueId;
 use crate::engine::{api::*, call_engine, types::ProofId};
 use crate::math::*;
 use crate::misc::*;
@@ -59,7 +59,7 @@ impl Proof {
     }
 
     sfunctions! {
-        SNodeRef::Consumed(ValueId::Transient(TransientValueId::Proof(self.0))) => {
+        SNodeRef::Consumed(ValueId::Proof(self.0)) => {
             pub fn drop(self) -> () {
                 ConsumingProofDropInput {}
             }

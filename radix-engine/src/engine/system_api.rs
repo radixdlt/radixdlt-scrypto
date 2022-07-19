@@ -10,7 +10,6 @@ use crate::engine::values::*;
 use crate::engine::*;
 use crate::fee::*;
 use crate::ledger::ReadableSubstateStore;
-use crate::model::*;
 use crate::wasm::*;
 
 pub trait SystemApi<'p, 's, W, I, S>
@@ -35,18 +34,14 @@ where
     fn borrow_value(
         &mut self,
         value_id: &ValueId,
-    ) -> Result<REValueRef<'_, 'p, 's, S>, CostUnitCounterError>;
+    ) -> Result<REValueRef<'_, 's, S>, CostUnitCounterError>;
 
     fn borrow_value_mut(
         &mut self,
         value_id: &ValueId,
-    ) -> Result<RENativeValueRef<'p>, CostUnitCounterError>;
+    ) -> Result<RENativeValueRef, CostUnitCounterError>;
 
-    fn return_value_mut(
-        &mut self,
-        value_id: ValueId,
-        val_ref: RENativeValueRef<'p>,
-    ) -> Result<(), CostUnitCounterError>;
+    fn return_value_mut(&mut self, val_ref: RENativeValueRef) -> Result<(), CostUnitCounterError>;
 
     fn drop_value(&mut self, value_id: &ValueId) -> Result<REValue, CostUnitCounterError>;
 
@@ -61,7 +56,6 @@ where
     fn remove_value_data(&mut self, address: SubstateAddress)
         -> Result<ScryptoValue, RuntimeError>;
 
-    fn create_resource(&mut self, resource_manager: ResourceManager) -> ResourceAddress;
     fn transaction_hash(&mut self) -> Result<Hash, CostUnitCounterError>;
 
     fn generate_uuid(&mut self) -> Result<u128, CostUnitCounterError>;

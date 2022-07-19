@@ -174,7 +174,7 @@ impl Bucket {
         arg: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, BucketError> {
-        let value_id = ValueId::Transient(TransientValueId::Bucket(bucket_id));
+        let value_id = ValueId::Bucket(bucket_id);
         let mut value_ref = system_api
             .borrow_value_mut(&value_id)
             .map_err(BucketError::CostingError)?;
@@ -221,9 +221,7 @@ impl Bucket {
                 let input: BucketPutInput =
                     scrypto_decode(&arg.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
                 let other_bucket = system_api
-                    .drop_value(&ValueId::Transient(TransientValueId::Bucket(
-                        input.bucket.0,
-                    )))
+                    .drop_value(&ValueId::Bucket(input.bucket.0))
                     .map_err(BucketError::CostingError)?
                     .into();
                 bucket0
@@ -256,7 +254,7 @@ impl Bucket {
         }?;
 
         system_api
-            .return_value_mut(value_id, value_ref)
+            .return_value_mut(value_ref)
             .map_err(BucketError::CostingError)?;
 
         Ok(rtn)
@@ -302,7 +300,7 @@ impl Bucket {
                     }
                 }
                 system_api
-                    .return_value_mut(resource_id, value)
+                    .return_value_mut(value)
                     .map_err(BucketError::CostingError)?;
 
                 Ok(ScryptoValue::from_typed(&()))

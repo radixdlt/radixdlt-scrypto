@@ -40,6 +40,9 @@ pub enum SystemApiCostingEntry<'a> {
     /// Read the transaction hash.
     ReadTransactionHash,
 
+    /// Read the transaction network.
+    ReadTransactionNetwork,
+
     /// Generates a UUID.
     GenerateUuid,
 
@@ -142,19 +145,16 @@ impl FeeTable {
             },
             // TODO: I suspect there is a bug with invoking consumed within call frame. Add tests to verify
             SNodeRef::Consumed(value_id) => match value_id {
-                ValueId::Transient(id) => match id {
-                    TransientValueId::Bucket(_) => self.fixed_medium,
-                    TransientValueId::Proof(_) => self.fixed_medium,
-                    TransientValueId::Worktop => self.fixed_medium,
-                },
-                ValueId::Stored(id) => match id {
-                    StoredValueId::KeyValueStoreId(_) => self.fixed_medium,
-                    StoredValueId::Component(_) => self.fixed_medium,
-                    StoredValueId::VaultId(_) => self.fixed_medium,
-                },
+                ValueId::Bucket(_) => self.fixed_medium,
+                ValueId::Proof(_) => self.fixed_medium,
+                ValueId::Worktop => self.fixed_medium,
+                ValueId::KeyValueStore(_) => self.fixed_medium,
+                ValueId::Component(_) => self.fixed_medium,
+                ValueId::Vault(_) => self.fixed_medium,
                 ValueId::Resource(_) => self.fixed_medium,
                 ValueId::Package(_) => self.fixed_high,
                 ValueId::System => self.fixed_high,
+                ValueId::NonFungibles(..) => self.fixed_high,
             },
             SNodeRef::BucketRef(_) => match fn_ident {
                 "take" => self.fixed_medium,
@@ -224,6 +224,7 @@ impl FeeTable {
             SystemApiCostingEntry::Write { .. } => self.fixed_medium,
             SystemApiCostingEntry::ReadEpoch => self.fixed_low,
             SystemApiCostingEntry::ReadTransactionHash => self.fixed_low,
+            SystemApiCostingEntry::ReadTransactionNetwork => self.fixed_low,
             SystemApiCostingEntry::GenerateUuid => self.fixed_low,
             SystemApiCostingEntry::EmitLog { size } => self.fixed_low + 10 * size,
             SystemApiCostingEntry::CheckAccessRule => self.fixed_medium,

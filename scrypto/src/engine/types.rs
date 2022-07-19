@@ -22,71 +22,24 @@ pub type BucketId = u32;
 pub type ProofId = u32;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Encode, Decode)]
-pub enum TransientValueId {
+pub enum ValueId {
     Bucket(BucketId),
     Proof(ProofId),
+    KeyValueStore(KeyValueStoreId),
     Worktop,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Encode, Decode)]
-pub enum StoredValueId {
-    KeyValueStoreId(KeyValueStoreId),
     Component(ComponentAddress),
-    VaultId(VaultId),
-}
-
-impl Into<ComponentAddress> for StoredValueId {
-    fn into(self) -> ComponentAddress {
-        match self {
-            StoredValueId::Component(component_address) => component_address,
-            _ => panic!("Expected to be a component"),
-        }
-    }
-}
-
-impl Into<(Hash, u32)> for StoredValueId {
-    fn into(self) -> KeyValueStoreId {
-        match self {
-            StoredValueId::KeyValueStoreId(id) => id,
-            StoredValueId::VaultId(id) => id,
-            StoredValueId::Component(..) => panic!("ComponentAddress not expected"),
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Encode, Decode)]
-pub enum ValueId {
-    Transient(TransientValueId),
-    Stored(StoredValueId),
+    Vault(VaultId),
     Resource(ResourceAddress),
+    NonFungibles(ResourceAddress),
     Package(PackageAddress),
     System,
-}
-
-impl ValueId {
-    pub fn kv_store_id(id: KeyValueStoreId) -> Self {
-        ValueId::Stored(StoredValueId::KeyValueStoreId(id))
-    }
-
-    pub fn vault_id(id: VaultId) -> Self {
-        ValueId::Stored(StoredValueId::VaultId(id))
-    }
-}
-
-impl Into<StoredValueId> for ValueId {
-    fn into(self) -> StoredValueId {
-        match self {
-            ValueId::Stored(id) => id,
-            _ => panic!("Not a stored id"),
-        }
-    }
 }
 
 impl Into<(Hash, u32)> for ValueId {
     fn into(self) -> KeyValueStoreId {
         match self {
-            ValueId::Stored(StoredValueId::KeyValueStoreId(id)) => id,
-            ValueId::Stored(StoredValueId::VaultId(id)) => id,
+            ValueId::KeyValueStore(id) => id,
+            ValueId::Vault(id) => id,
             _ => panic!("Not a stored id"),
         }
     }
@@ -95,8 +48,8 @@ impl Into<(Hash, u32)> for ValueId {
 impl Into<u32> for ValueId {
     fn into(self) -> u32 {
         match self {
-            ValueId::Transient(TransientValueId::Bucket(id)) => id,
-            ValueId::Transient(TransientValueId::Proof(id)) => id,
+            ValueId::Bucket(id) => id,
+            ValueId::Proof(id) => id,
             _ => panic!("Not a transient id"),
         }
     }
@@ -105,7 +58,7 @@ impl Into<u32> for ValueId {
 impl Into<ComponentAddress> for ValueId {
     fn into(self) -> ComponentAddress {
         match self {
-            ValueId::Stored(StoredValueId::Component(component_address)) => component_address,
+            ValueId::Component(component_address) => component_address,
             _ => panic!("Not a component address"),
         }
     }
@@ -116,6 +69,15 @@ impl Into<PackageAddress> for ValueId {
         match self {
             ValueId::Package(package_address) => package_address,
             _ => panic!("Not a package address"),
+        }
+    }
+}
+
+impl Into<ResourceAddress> for ValueId {
+    fn into(self) -> ResourceAddress {
+        match self {
+            ValueId::Resource(resource_address) => resource_address,
+            _ => panic!("Not a resource address"),
         }
     }
 }
