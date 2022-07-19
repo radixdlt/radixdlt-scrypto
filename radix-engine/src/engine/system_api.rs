@@ -60,7 +60,7 @@ where
 
     fn transaction_hash(&mut self) -> Result<Hash, CostUnitCounterError>;
 
-    fn get_transaction_network(&mut self) -> Network;
+    fn transaction_network(&mut self) -> Result<Network, CostUnitCounterError>;
 
     fn generate_uuid(&mut self) -> Result<u128, CostUnitCounterError>;
 
