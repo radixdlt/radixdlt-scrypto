@@ -1648,6 +1648,7 @@ where
             self.owned_values.insert(id, value);
         }
 
+        trace!(self, Level::Debug, "Invoking finished!");
         Ok(result)
     }
 

@@ -67,18 +67,25 @@ impl fmt::Debug for Receipt {
         write!(
             f,
             "{} {}",
-            "Transaction Status:".green(),
+            "Transaction Status:".bold().green(),
             match &self.result {
                 Ok(_) => "SUCCESS".blue(),
                 Err(e) => e.to_string().red(),
             }
-            .bold()
+        )?;
+
+        write!(
+            f,
+            "\n{} {} XRD burned, {} XRD tipped to validators",
+            "Transaction Fee:".bold().green(),
+            1,
+            2
         )?;
 
         write!(
             f,
             "\n{} {}",
-            "Cost Units Consumed:".green(),
+            "Cost Units Consumed:".bold().green(),
             self.cost_units_consumed
         )?;
 

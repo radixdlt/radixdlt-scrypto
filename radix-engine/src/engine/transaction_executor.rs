@@ -166,7 +166,7 @@ where
         if self.trace {
             println!("{:-^80}", "Cost Analysis");
             for (k, v) in cost_unit_counter.analysis {
-                println!("{:>20}: {:>8}", k, v);
+                println!("{:<20}: {:>8}", k, v);
             }
         }
 
