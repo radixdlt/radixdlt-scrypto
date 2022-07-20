@@ -43,12 +43,15 @@ where
 
     fn create_value<V: Into<REValueByComplexity>>(&mut self, v: V)
         -> Result<ValueId, RuntimeError>;
+
     fn read_value_data(&mut self, address: SubstateAddress) -> Result<ScryptoValue, RuntimeError>;
+
     fn write_value_data(
         &mut self,
         address: SubstateAddress,
         value: ScryptoValue,
     ) -> Result<(), RuntimeError>;
+
     fn remove_value_data(&mut self, address: SubstateAddress)
         -> Result<ScryptoValue, RuntimeError>;
 

@@ -424,7 +424,19 @@ impl<'f> REValueRefMut<'f> {
             }
         };
 
-        ScryptoValue::from_typed(&wrapper)
+        // TODO: Cleanup after adding support polymorphism with SBOR
+        // For now, we have to use `Vec<u8>` within `KeyValueStoreEntryWrapper`
+        // and apply the following ugly conversion.
+        let value = wrapper.0.map_or(
+            Value::Option {
+                value: Box::new(Option::None),
+            },
+            |v| Value::Option {
+                value: Box::new(Some(decode_any(&v).unwrap())),
+            },
+        );
+
+        ScryptoValue::from_value(value).unwrap()
     }
 
     fn non_fungible_get(&mut self, id: &NonFungibleId) -> ScryptoValue {
@@ -528,6 +540,7 @@ pub enum SNodeExecution<'a> {
     Scrypto(ScryptoActorInfo, PackageAddress),
 }
 
+#[derive(Debug)]
 pub enum SubstateAddress {
     KeyValueEntry(KeyValueStoreId, ScryptoValue),
     NonFungible(ResourceAddress, NonFungibleId),
@@ -965,6 +978,14 @@ where
         fn_ident: String,
         input: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError> {
+        trace!(
+            self,
+            Level::Debug,
+            "Invoking: {:?} {:?}",
+            snode_ref,
+            &fn_ident
+        );
+
         if self.depth == MAX_CALL_DEPTH {
             return Err(RuntimeError::MaxCallDepthLimitReached);
         }
@@ -979,14 +1000,6 @@ where
                 "invoke_function",
             )
             .map_err(RuntimeError::CostingError)?;
-
-        trace!(
-            self,
-            Level::Debug,
-            "Invoking: {:?} {:?}",
-            snode_ref,
-            &fn_ident
-        );
 
         // Prevent vaults/kvstores from being moved
         Self::process_call_data(&input)?;
@@ -1631,6 +1644,7 @@ where
     }
 
     fn borrow_value(&mut self, value_id: &ValueId) -> Result<REValueRef<'_>, CostUnitCounterError> {
+        trace!(self, Level::Debug, "Borrowing value: {:?}", value_id);
         self.cost_unit_counter.consume(
             self.fee_table.system_api_cost({
                 match value_id {
@@ -1694,6 +1708,8 @@ where
         &mut self,
         value_id: &ValueId,
     ) -> Result<RENativeValueRef, CostUnitCounterError> {
+        trace!(self, Level::Debug, "Borrowing value (mut): {:?}", value_id);
+
         self.cost_unit_counter.consume(
             self.fee_table.system_api_cost({
                 match value_id {
@@ -1756,6 +1772,8 @@ where
     }
 
     fn return_value_mut(&mut self, val_ref: RENativeValueRef) -> Result<(), CostUnitCounterError> {
+        trace!(self, Level::Debug, "Returning value");
+
         self.cost_unit_counter.consume(
             self.fee_table.system_api_cost({
                 match &val_ref {
@@ -1798,6 +1816,8 @@ where
     }
 
     fn drop_value(&mut self, value_id: &ValueId) -> Result<REValue, CostUnitCounterError> {
+        trace!(self, Level::Debug, "Dropping value: {:?}", value_id);
+
         // TODO: costing
 
         Ok(self.owned_values.remove(&value_id).unwrap())
@@ -1807,6 +1827,8 @@ where
         &mut self,
         v: V,
     ) -> Result<ValueId, RuntimeError> {
+        trace!(self, Level::Debug, "Creating value");
+
         self.cost_unit_counter
             .consume(
                 self.fee_table
@@ -1889,6 +1911,8 @@ where
     }
 
     fn globalize_value(&mut self, value_id: &ValueId) -> Result<(), CostUnitCounterError> {
+        trace!(self, Level::Debug, "Globalizing value: {:?}", value_id);
+
         self.cost_unit_counter.consume(
             self.fee_table
                 .system_api_cost(SystemApiCostingEntry::Globalize {
@@ -1961,6 +1985,8 @@ where
         &mut self,
         address: SubstateAddress,
     ) -> Result<ScryptoValue, RuntimeError> {
+        trace!(self, Level::Debug, "Removing value data: {:?}", address);
+
         let (location, current_value) = self.read_value_internal(&address)?;
         let cur_children = current_value.value_ids();
         if !cur_children.is_empty() {
@@ -1987,6 +2013,8 @@ where
     }
 
     fn read_value_data(&mut self, address: SubstateAddress) -> Result<ScryptoValue, RuntimeError> {
+        trace!(self, Level::Debug, "Reading value data: {:?}", address);
+
         self.cost_unit_counter
             .consume(
                 self.fee_table.system_api_cost(SystemApiCostingEntry::Read {
@@ -2017,6 +2045,8 @@ where
         address: SubstateAddress,
         value: ScryptoValue,
     ) -> Result<(), RuntimeError> {
+        trace!(self, Level::Debug, "Writing value data: {:?}", address);
+
         self.cost_unit_counter
             .consume(
                 self.fee_table

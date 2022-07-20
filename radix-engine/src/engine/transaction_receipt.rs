@@ -67,7 +67,7 @@ impl fmt::Debug for Receipt {
         write!(
             f,
             "{} {}",
-            "Transaction Status:".bold().green(),
+            "Transaction Status:".green(),
             match &self.result {
                 Ok(_) => "SUCCESS".blue(),
                 Err(e) => e.to_string().red(),
@@ -78,7 +78,7 @@ impl fmt::Debug for Receipt {
         write!(
             f,
             "\n{} {}",
-            "Cost Units Consumed:".bold().green(),
+            "Cost Units Consumed:".green(),
             self.cost_units_consumed
         )?;
 

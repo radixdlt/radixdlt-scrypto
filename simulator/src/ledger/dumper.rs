@@ -138,7 +138,7 @@ fn dump_kv_store<T: ReadableSubstateStore + QueryableSubstateStore, O: std::io::
     for (last, (k, v)) in map.iter().identify_last() {
         let key = ScryptoValue::from_slice(k).unwrap();
         let value_wrapper: KeyValueStoreEntryWrapper = scrypto_decode(v).unwrap();
-        if let Some(v) = value_wrapper {
+        if let Some(v) = value_wrapper.0 {
             let value = ScryptoValue::from_slice(&v).unwrap();
             writeln!(output, "{} {} => {}", list_item_prefix(last), key, value);
             referenced_maps.extend(value.kv_store_ids);
@@ -195,7 +195,7 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
                     .map(|s| scrypto_decode::<SubstateValue>(&s.value).unwrap())
                     .map(|s| s.into())
                     .unwrap();
-                if let Some(non_fungible) = non_fungible {
+                if let Some(non_fungible) = non_fungible.0 {
                     let id = ScryptoValue::from_slice(&id.to_vec()).unwrap();
                     let immutable_data =
                         ScryptoValue::from_slice(&non_fungible.immutable_data()).unwrap();

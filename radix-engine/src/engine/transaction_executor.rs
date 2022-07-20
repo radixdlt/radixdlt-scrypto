@@ -67,6 +67,8 @@ where
     pub fn execute<T: ExecutableTransaction>(&mut self, transaction: &T) -> Receipt {
         #[cfg(not(feature = "alloc"))]
         let now = std::time::Instant::now();
+        #[cfg(not(feature = "alloc"))]
+        println!("{:-^80}", "Engine Execution Log");
 
         let transaction_hash = transaction.transaction_hash();
         let transaction_network = transaction.transaction_network();
@@ -160,11 +162,10 @@ where
 
         #[cfg(not(feature = "alloc"))]
         if self.trace {
-            println!("+{}+", "-".repeat(30));
+            println!("{:-^80}", "Cost Analysis");
             for (k, v) in cost_unit_counter.analysis {
-                println!("|{:>20}: {:>8}|", k, v);
+                println!("{:>20}: {:>8}", k, v);
             }
-            println!("+{}+", "-".repeat(30));
         }
 
         // 6. Produce the final transaction receipt
@@ -184,7 +185,7 @@ where
             }
         }
         let logs = track_receipt.logs;
-        Receipt {
+        let receipt = Receipt {
             transaction_network,
             instructions,
             result,
@@ -195,9 +196,16 @@ where
             execution_time,
             cost_units_consumed: total_consumed,
             commit_receipt,
-        }
+        };
+
+        #[cfg(not(feature = "alloc"))]
+        println!("{:-^80}\n{:?}", "Transaction Receipt", receipt);
+
+        #[cfg(not(feature = "alloc"))]
+        println!("{:-^80}", "");
 
         // TODO: reject transactions not paying enough fees
+        receipt
     }
 
     pub fn destroy(self) -> S {
