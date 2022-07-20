@@ -479,11 +479,15 @@ impl<'f> REValueRefMut<'f> {
     fn non_fungible_put(&mut self, id: NonFungibleId, value: ScryptoValue) {
         match self {
             REValueRefMut::Stack(re_value, re_id) => {
-                let non_fungible: NonFungible =
+                let wrapper: NonFungibleWrapper =
                     scrypto_decode(&value.raw).expect("Should not fail.");
 
                 let non_fungible_set = re_value.get_node_mut(re_id.as_ref()).non_fungibles_mut();
-                non_fungible_set.insert(id, non_fungible);
+                if let Some(non_fungible) = wrapper.0 {
+                    non_fungible_set.insert(id, non_fungible);
+                } else {
+                    panic!("TODO: invalidate this code path and possibly consolidate `non_fungible_remove` and `non_fungible_put`")
+                }
             }
             REValueRefMut::Track(track, address) => {
                 let non_fungible: NonFungible =
