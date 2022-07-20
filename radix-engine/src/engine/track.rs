@@ -85,14 +85,19 @@ pub enum SubstateParentId {
 pub struct VirtualSubstateId(pub SubstateParentId, pub Vec<u8>);
 
 /// Represents a Radix Engine address. Each maps a unique substate key.
+///
+/// TODO: separate space addresses?
+///
+/// FIXME: by using scrypto codec, we lose sorting capability of the address space
+/// RESIM listing is broken ATM. Can also be resolved by prefix search instead of range search.
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash)]
 pub enum Address {
-    Resource(ResourceAddress),
     GlobalComponent(ComponentAddress),
     Package(PackageAddress),
-    NonFungibleSet(ResourceAddress),
+    ResourceManager(ResourceAddress),
+    NonFungibleSpace(ResourceAddress),
     NonFungible(ResourceAddress, Vec<u8>),
-    KeyValueStore(KeyValueStoreId),
+    KeyValueStoreSpace(KeyValueStoreId),
     KeyValueStoreEntry(KeyValueStoreId, Vec<u8>),
     Vault(VaultId),
     LocalComponent(ComponentAddress),
@@ -118,7 +123,7 @@ impl Into<Address> for PackageAddress {
 
 impl Into<Address> for ResourceAddress {
     fn into(self) -> Address {
-        Address::Resource(self)
+        Address::ResourceManager(self)
     }
 }
 
@@ -150,7 +155,7 @@ impl Into<ComponentAddress> for Address {
 
 impl Into<ResourceAddress> for Address {
     fn into(self) -> ResourceAddress {
-        if let Address::Resource(resource_address) = self {
+        if let Address::ResourceManager(resource_address) = self {
             return resource_address;
         } else {
             panic!("Address is not a resource address");
@@ -457,7 +462,7 @@ impl Track {
                 let value = match address {
                     Address::GlobalComponent(_)
                     | Address::LocalComponent(..)
-                    | Address::Resource(_)
+                    | Address::ResourceManager(_)
                     | Address::Vault(..)
                     | Address::Package(..)
                     | Address::System => substate,
@@ -581,19 +586,21 @@ impl Track {
     pub fn read_key_value(&mut self, parent_address: Address, key: Vec<u8>) -> SubstateValue {
         // TODO: consider using a single address as function input
         let address = match parent_address {
-            Address::NonFungibleSet(resource_address) => {
+            Address::NonFungibleSpace(resource_address) => {
                 Address::NonFungible(resource_address, key)
             }
-            Address::KeyValueStore(kv_store_id) => Address::KeyValueStoreEntry(kv_store_id, key),
+            Address::KeyValueStoreSpace(kv_store_id) => {
+                Address::KeyValueStoreEntry(kv_store_id, key)
+            }
             _ => panic!("Unsupported key value"),
         };
 
         match parent_address {
-            Address::NonFungibleSet(_) => self
+            Address::NonFungibleSpace(_) => self
                 .state_track
                 .get_substate(&address)
                 .unwrap_or(SubstateValue::NonFungible(NonFungibleWrapper(None))),
-            Address::KeyValueStore(..) => self.state_track.get_substate(&address).unwrap_or(
+            Address::KeyValueStoreSpace(..) => self.state_track.get_substate(&address).unwrap_or(
                 SubstateValue::KeyValueStoreEntry(KeyValueStoreEntryWrapper(None)),
             ),
             _ => panic!("Invalid keyed value address {:?}", parent_address),
@@ -609,10 +616,10 @@ impl Track {
     ) {
         // TODO: consider using a single address as function input
         let address = match parent_address {
-            Address::NonFungibleSet(resource_address) => {
+            Address::NonFungibleSpace(resource_address) => {
                 Address::NonFungible(resource_address, key.clone())
             }
-            Address::KeyValueStore(kv_store_id) => {
+            Address::KeyValueStoreSpace(kv_store_id) => {
                 Address::KeyValueStoreEntry(kv_store_id, key.clone())
             }
             _ => panic!("Unsupported key value"),
@@ -695,7 +702,7 @@ impl Track {
                 }
                 RENode::KeyValueStore(store) => {
                     let id = id.into();
-                    let address = Address::KeyValueStore(id);
+                    let address = Address::KeyValueStoreSpace(id);
                     self.create_key_space(address.clone());
                     for (k, v) in store.store {
                         self.set_key_value(

@@ -140,7 +140,7 @@ impl REValuePointer {
             },
             REValuePointer::Track(..) => {
                 let child_address = match child_id {
-                    ValueId::KeyValueStore(kv_store_id) => Address::KeyValueStore(kv_store_id),
+                    ValueId::KeyValueStore(kv_store_id) => Address::KeyValueStoreSpace(kv_store_id),
                     ValueId::Vault(vault_id) => Address::Vault(vault_id),
                     ValueId::Component(component_id) => Address::LocalComponent(component_id),
                     _ => panic!("Unexpected"),
@@ -1065,7 +1065,7 @@ where
                         value_refs.insert(
                             ValueId::Resource(resource_address),
                             REValueInfo {
-                                location: REValuePointer::Track(Address::Resource(
+                                location: REValuePointer::Track(Address::ResourceManager(
                                     resource_address,
                                 )),
                                 visible: true,
@@ -1074,7 +1074,7 @@ where
                         value_refs.insert(
                             ValueId::NonFungibles(resource_address),
                             REValueInfo {
-                                location: REValuePointer::Track(Address::NonFungibleSet(
+                                location: REValuePointer::Track(Address::NonFungibleSpace(
                                     resource_address,
                                 )),
                                 visible: true,
@@ -1148,7 +1148,7 @@ where
                         value_refs.insert(
                             ValueId::Resource(resource_address.clone()),
                             REValueInfo {
-                                location: REValuePointer::Track(Address::Resource(
+                                location: REValuePointer::Track(Address::ResourceManager(
                                     resource_address.clone(),
                                 )),
                                 visible: true,
@@ -1163,7 +1163,7 @@ where
             }
             SNodeRef::ResourceRef(resource_address) => {
                 let value_id = ValueId::Resource(*resource_address);
-                let address: Address = Address::Resource(*resource_address);
+                let address: Address = Address::ResourceManager(*resource_address);
                 self.track
                     .acquire_lock(address.clone(), true, false)
                     .map_err(|e| match e {
@@ -1181,14 +1181,18 @@ where
                 value_refs.insert(
                     value_id.clone(),
                     REValueInfo {
-                        location: REValuePointer::Track(Address::Resource(*resource_address)),
+                        location: REValuePointer::Track(Address::ResourceManager(
+                            *resource_address,
+                        )),
                         visible: true,
                     },
                 );
                 value_refs.insert(
                     ValueId::NonFungibles(*resource_address),
                     REValueInfo {
-                        location: REValuePointer::Track(Address::NonFungibleSet(*resource_address)),
+                        location: REValuePointer::Track(Address::NonFungibleSpace(
+                            *resource_address,
+                        )),
                         visible: true,
                     },
                 );
@@ -1266,7 +1270,7 @@ where
                     value_refs.insert(
                         ValueId::Resource(resource_address.clone()),
                         REValueInfo {
-                            location: REValuePointer::Track(Address::Resource(
+                            location: REValuePointer::Track(Address::ResourceManager(
                                 resource_address.clone(),
                             )),
                             visible: true,
@@ -1784,15 +1788,17 @@ where
                     RENativeValueRef::Stack(..) => SystemApiCostingEntry::ReturnLocal,
                     RENativeValueRef::Track(address, _) => match address {
                         Address::Vault(_) => SystemApiCostingEntry::ReturnGlobal { size: 0 },
-                        Address::KeyValueStore(_) => {
+                        Address::KeyValueStoreSpace(_) => {
                             SystemApiCostingEntry::ReturnGlobal { size: 0 }
                         }
                         Address::KeyValueStoreEntry(_, _) => {
                             SystemApiCostingEntry::ReturnGlobal { size: 0 }
                         }
-                        Address::Resource(_) => SystemApiCostingEntry::ReturnGlobal { size: 0 },
+                        Address::ResourceManager(_) => {
+                            SystemApiCostingEntry::ReturnGlobal { size: 0 }
+                        }
                         Address::Package(_) => SystemApiCostingEntry::ReturnGlobal { size: 0 },
-                        Address::NonFungibleSet(_) => {
+                        Address::NonFungibleSpace(_) => {
                             SystemApiCostingEntry::ReturnGlobal { size: 0 }
                         }
                         Address::NonFungible(_, _) => {
@@ -1956,7 +1962,7 @@ where
         let address = match value_id {
             ValueId::Component(component_address) => Address::GlobalComponent(*component_address),
             ValueId::Package(package_address) => Address::Package(*package_address),
-            ValueId::Resource(resource_address) => Address::Resource(*resource_address),
+            ValueId::Resource(resource_address) => Address::ResourceManager(*resource_address),
             _ => panic!("Expected to be a component address"),
         };
 
@@ -1971,8 +1977,8 @@ where
         if let Some(non_fungibles) = maybe_non_fungibles {
             let resource_address: ResourceAddress = address.clone().into();
             self.track
-                .create_key_space(Address::NonFungibleSet(resource_address));
-            let parent_address = Address::NonFungibleSet(resource_address.clone());
+                .create_key_space(Address::NonFungibleSpace(resource_address));
+            let parent_address = Address::NonFungibleSpace(resource_address.clone());
             for (id, non_fungible) in non_fungibles {
                 self.track.set_key_value(
                     parent_address.clone(),

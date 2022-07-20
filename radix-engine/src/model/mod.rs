@@ -37,6 +37,7 @@ pub use validated_package::{PackageError, ValidatedPackage};
 pub use vault::{Vault, VaultError};
 pub use worktop::{Worktop, WorktopError};
 
+use sbor::rust::vec::Vec;
 use sbor::*;
 
 /// To support non-fungible deletion, we wrap it into a container

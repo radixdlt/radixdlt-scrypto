@@ -68,7 +68,9 @@ where
         #[cfg(not(feature = "alloc"))]
         let now = std::time::Instant::now();
         #[cfg(not(feature = "alloc"))]
-        println!("{:-^80}", "Engine Execution Log");
+        if self.trace {
+            println!("{:-^80}", "Engine Execution Log");
+        }
 
         let transaction_hash = transaction.transaction_hash();
         let transaction_network = transaction.transaction_network();
@@ -177,7 +179,7 @@ where
                 Address::GlobalComponent(component_address) => {
                     new_component_addresses.push(component_address)
                 }
-                Address::Resource(resource_address) => {
+                Address::ResourceManager(resource_address) => {
                     new_resource_addresses.push(resource_address)
                 }
                 Address::Package(package_address) => new_package_addresses.push(package_address),
@@ -199,10 +201,11 @@ where
         };
 
         #[cfg(not(feature = "alloc"))]
-        println!("{:-^80}\n{:?}", "Transaction Receipt", receipt);
-
-        #[cfg(not(feature = "alloc"))]
-        println!("{:-^80}", "");
+        if self.trace {
+            println!("{:-^80}", "Transaction Receipt");
+            println!("{:?}", receipt);
+            println!("{:-^80}", "");
+        }
 
         // TODO: reject transactions not paying enough fees
         receipt

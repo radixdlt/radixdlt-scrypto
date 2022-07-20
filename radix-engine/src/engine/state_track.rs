@@ -91,13 +91,12 @@ impl BaseStateTrack {
             if let Some(substate) = substate {
                 match &address {
                     Address::NonFungible(resource_address, key) => {
-                        let parent_address = Address::NonFungibleSet(*resource_address);
-
                         if let Some(existing_substate_id) =
-                            Self::get_substate_id(&self.substate_store, &parent_address)
+                            Self::get_substate_id(&self.substate_store, &address)
                         {
                             store_instructions.push(SubstateOperation::Down(existing_substate_id));
                         } else {
+                            let parent_address = Address::NonFungibleSpace(*resource_address);
                             let parent_id = Self::get_substate_parent_id(
                                 &self.spaces,
                                 &self.substate_store,
@@ -111,13 +110,12 @@ impl BaseStateTrack {
                         store_instructions.push(SubstateOperation::Up(address, substate));
                     }
                     Address::KeyValueStoreEntry(kv_store_id, key) => {
-                        let parent_address = Address::KeyValueStore(*kv_store_id);
-
                         if let Some(existing_substate_id) =
-                            Self::get_substate_id(&self.substate_store, &parent_address)
+                            Self::get_substate_id(&self.substate_store, &address)
                         {
                             store_instructions.push(SubstateOperation::Down(existing_substate_id));
                         } else {
+                            let parent_address = Address::KeyValueStoreSpace(*kv_store_id);
                             let parent_id = Self::get_substate_parent_id(
                                 &self.spaces,
                                 &self.substate_store,

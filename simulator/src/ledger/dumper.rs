@@ -157,14 +157,15 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
 
     writeln!(output, "{}:", "Resources".green().bold());
     for (last, vault_id) in vaults.iter().identify_last() {
-        let substate = substate_store
+        let vault: Vault = substate_store
             .get_substate(&Address::Vault(*vault_id))
+            .map(|s| scrypto_decode::<SubstateValue>(&s.value).unwrap())
+            .map(|s| s.into())
             .unwrap();
-        let vault: Vault = scrypto_decode(&substate.value).unwrap();
         let amount = vault.total_amount();
         let resource_address = vault.resource_address();
         let resource_manager: ResourceManager = substate_store
-            .get_substate(&Address::Resource(resource_address))
+            .get_substate(&Address::ResourceManager(resource_address))
             .map(|s| scrypto_decode::<SubstateValue>(&s.value).unwrap())
             .map(|s| s.into())
             .unwrap();
@@ -224,7 +225,7 @@ pub fn dump_resource_manager<T: ReadableSubstateStore, O: std::io::Write>(
     output: &mut O,
 ) -> Result<(), DisplayError> {
     let resource_manager: Option<ResourceManager> = substate_store
-        .get_substate(&Address::Resource(resource_address))
+        .get_substate(&Address::ResourceManager(resource_address))
         .map(|s| scrypto_decode::<SubstateValue>(&s.value).unwrap())
         .map(|s| s.into());
     match resource_manager {
