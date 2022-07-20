@@ -327,6 +327,22 @@ fn get_native_type(ty: &des::Type) -> Result<(Type, Vec<Item>)> {
                 ScryptoType::NonFungibleId => "::scrypto::resource::NonFungibleId",
                 ScryptoType::NonFungibleAddress => "::scrypto::resource::NonFungibleAddress",
                 ScryptoType::ResourceAddress => "::scrypto::resource::ResourceAddress",
+                ScryptoType::U8 => "::scrypto::math::U8",
+                ScryptoType::U16 => "::scrypto::math::U16",
+                ScryptoType::U32 => "::scrypto::math::U32",
+                ScryptoType::U64 => "::scrypto::math::U64",
+                ScryptoType::U128 => "::scrypto::math::U128",
+                ScryptoType::U256 => "::scrypto::math::U256",
+                ScryptoType::U384 => "::scrypto::math::U384",
+                ScryptoType::U512 => "::scrypto::math::U512",
+                ScryptoType::I8 => "::scrypto::math::I8",
+                ScryptoType::I16 => "::scrypto::math::I16",
+                ScryptoType::I32 => "::scrypto::math::I32",
+                ScryptoType::I64 => "::scrypto::math::I64",
+                ScryptoType::I128 => "::scrypto::math::I128",
+                ScryptoType::I256 => "::scrypto::math::I256",
+                ScryptoType::I384 => "::scrypto::math::I384",
+                ScryptoType::I512 => "::scrypto::math::I512",
             };
 
             let ty: Type = parse_str(canonical_name).unwrap();
