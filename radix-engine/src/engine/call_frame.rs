@@ -490,12 +490,12 @@ impl<'f> REValueRefMut<'f> {
                 }
             }
             REValueRefMut::Track(track, address) => {
-                let non_fungible: NonFungible =
+                let wrapper: NonFungibleWrapper =
                     scrypto_decode(&value.raw).expect("Should not fail.");
                 track.set_key_value(
                     address.clone(),
                     id.to_vec(),
-                    SubstateValue::NonFungible(NonFungibleWrapper(Some(non_fungible))),
+                    SubstateValue::NonFungible(wrapper),
                 );
             }
         }
