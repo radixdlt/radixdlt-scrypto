@@ -1,3 +1,5 @@
+use core::ops::RangeFull;
+
 use indexmap::IndexSet;
 use sbor::rust::collections::*;
 use sbor::rust::rc::Rc;
@@ -158,7 +160,14 @@ impl AppStateTrack {
     }
 
     /// Flush all changes to base state track
-    pub fn flush(&mut self) {}
+    pub fn flush(&mut self) {
+        self.base_state_track
+            .substates
+            .extend(self.substates.drain());
+        self.base_state_track
+            .spaces
+            .extend(self.spaces.drain(RangeFull));
+    }
 
     /// Unwraps into the base state track
     pub fn unwrap(self) -> BaseStateTrack {
