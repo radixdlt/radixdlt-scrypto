@@ -337,6 +337,54 @@ impl CustomValueVisitor for ScryptoCustomValueChecker {
             ScryptoType::Decimal => {
                 Decimal::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidDecimal)?;
             }
+            ScryptoType::U8 => {
+                U8::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidU8)?;
+            }
+            ScryptoType::U16 => {
+                U16::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidU16)?;
+            }
+            ScryptoType::U32 => {
+                U32::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidU32)?;
+            }
+            ScryptoType::U64 => {
+                U64::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidU64)?;
+            }
+            ScryptoType::U128 => {
+                U128::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidU128)?;
+            }
+            ScryptoType::U256 => {
+                U256::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidU256)?;
+            }
+            ScryptoType::U384 => {
+                U384::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidU384)?;
+            }
+            ScryptoType::U512 => {
+                U512::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidU512)?;
+            }
+            ScryptoType::I8 => {
+                I8::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidI8)?;
+            }
+            ScryptoType::I16 => {
+                I16::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidI16)?;
+            }
+            ScryptoType::I32 => {
+                I32::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidI32)?;
+            }
+            ScryptoType::I64 => {
+                I64::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidI64)?;
+            }
+            ScryptoType::I128 => {
+                I128::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidI128)?;
+            }
+            ScryptoType::I256 => {
+                I256::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidI256)?;
+            }
+            ScryptoType::I384 => {
+                I384::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidI384)?;
+            }
+            ScryptoType::I512 => {
+                I512::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidI512)?;
+            }
             ScryptoType::Bucket => {
                 let bucket =
                     Bucket::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidBucket)?;
