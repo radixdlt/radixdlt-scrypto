@@ -6,7 +6,6 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::core::Network;
 use scrypto::engine::types::*;
-use scrypto::values::ScryptoValue;
 use transaction::validation::*;
 
 use crate::engine::track::BorrowedSubstate::Taken;
@@ -107,8 +106,8 @@ pub enum SubstateValue {
     Component(Component),
     Package(ValidatedPackage),
     Vault(Vault, Option<ResourceContainer>),
-    NonFungible(Option<NonFungible>),
-    KeyValueStoreEntry(Option<Vec<u8>>),
+    NonFungible(NonFungibleWrapper),
+    KeyValueStoreEntry(KeyValueStoreEntryWrapper),
 }
 
 impl Into<Address> for PackageAddress {
@@ -242,7 +241,7 @@ impl SubstateValue {
         }
     }
 
-    pub fn non_fungible(&self) -> &Option<NonFungible> {
+    pub fn non_fungible(&self) -> &NonFungibleWrapper {
         if let SubstateValue::NonFungible(non_fungible) = self {
             non_fungible
         } else {
@@ -250,7 +249,7 @@ impl SubstateValue {
         }
     }
 
-    pub fn kv_entry(&self) -> &Option<Vec<u8>> {
+    pub fn kv_entry(&self) -> &KeyValueStoreEntryWrapper {
         if let SubstateValue::KeyValueStoreEntry(kv_entry) = self {
             kv_entry
         } else {
@@ -289,15 +288,15 @@ impl Into<SubstateValue> for Vault {
     }
 }
 
-impl Into<SubstateValue> for Option<NonFungible> {
+impl Into<SubstateValue> for NonFungibleWrapper {
     fn into(self) -> SubstateValue {
         SubstateValue::NonFungible(self)
     }
 }
 
-impl Into<SubstateValue> for Option<ScryptoValue> {
+impl Into<SubstateValue> for KeyValueStoreEntryWrapper {
     fn into(self) -> SubstateValue {
-        SubstateValue::KeyValueStoreEntry(self.map(|v| v.raw))
+        SubstateValue::KeyValueStoreEntry(self)
     }
 }
 
@@ -331,12 +330,22 @@ impl Into<ValidatedPackage> for SubstateValue {
     }
 }
 
-impl Into<Option<NonFungible>> for SubstateValue {
-    fn into(self) -> Option<NonFungible> {
+impl Into<NonFungibleWrapper> for SubstateValue {
+    fn into(self) -> NonFungibleWrapper {
         if let SubstateValue::NonFungible(non_fungible) = self {
             non_fungible
         } else {
-            panic!("Not a resource manager");
+            panic!("Not a non-fungible wrapper");
+        }
+    }
+}
+
+impl Into<KeyValueStoreEntryWrapper> for SubstateValue {
+    fn into(self) -> KeyValueStoreEntryWrapper {
+        if let SubstateValue::KeyValueStoreEntry(kv_entry) = self {
+            kv_entry
+        } else {
+            panic!("Not a key value store entry wrapper");
         }
     }
 }
@@ -583,11 +592,10 @@ impl Track {
             Address::NonFungibleSet(_) => self
                 .state_track
                 .get_substate(&address)
-                .unwrap_or(SubstateValue::NonFungible(None)),
-            Address::KeyValueStore(..) => self
-                .state_track
-                .get_substate(&address)
-                .unwrap_or(SubstateValue::KeyValueStoreEntry(None)),
+                .unwrap_or(SubstateValue::NonFungible(NonFungibleWrapper(None))),
+            Address::KeyValueStore(..) => self.state_track.get_substate(&address).unwrap_or(
+                SubstateValue::KeyValueStoreEntry(KeyValueStoreEntryWrapper(None)),
+            ),
             _ => panic!("Invalid keyed value address {:?}", parent_address),
         }
     }
@@ -690,7 +698,11 @@ impl Track {
                     let address = Address::KeyValueStore(id);
                     self.create_key_space(address.clone());
                     for (k, v) in store.store {
-                        self.set_key_value(address.clone(), k, Some(v));
+                        self.set_key_value(
+                            address.clone(),
+                            k,
+                            KeyValueStoreEntryWrapper(Some(v.raw)),
+                        );
                     }
                 }
                 _ => panic!("Invalid node being persisted: {:?}", node),

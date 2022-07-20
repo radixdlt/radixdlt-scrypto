@@ -137,7 +137,7 @@ fn dump_kv_store<T: ReadableSubstateStore + QueryableSubstateStore, O: std::io::
     );
     for (last, (k, v)) in map.iter().identify_last() {
         let key = ScryptoValue::from_slice(k).unwrap();
-        let value_wrapper: Option<Vec<u8>> = scrypto_decode(v).unwrap();
+        let value_wrapper: KeyValueStoreEntryWrapper = scrypto_decode(v).unwrap();
         if let Some(v) = value_wrapper {
             let value = ScryptoValue::from_slice(&v).unwrap();
             writeln!(output, "{} {} => {}", list_item_prefix(last), key, value);
@@ -190,7 +190,7 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
         if matches!(resource_manager.resource_type(), ResourceType::NonFungible) {
             let ids = vault.total_ids().unwrap();
             for (inner_last, id) in ids.iter().identify_last() {
-                let non_fungible: Option<NonFungible> = substate_store
+                let non_fungible: NonFungibleWrapper = substate_store
                     .get_substate(&Address::NonFungible(resource_address, id.to_vec()))
                     .map(|s| scrypto_decode::<SubstateValue>(&s.value).unwrap())
                     .map(|s| s.into())

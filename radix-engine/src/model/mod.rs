@@ -36,3 +36,15 @@ pub use transaction_processor::{
 pub use validated_package::{PackageError, ValidatedPackage};
 pub use vault::{Vault, VaultError};
 pub use worktop::{Worktop, WorktopError};
+
+use sbor::*;
+
+/// To support non-fungible deletion, we wrap it into a container
+/// when persisting into the substate store.
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct NonFungibleWrapper(pub Option<NonFungible>);
+
+/// To support key value store entry deletion, we wrap it into a container
+/// when persisting into the substate store.
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub struct KeyValueStoreEntryWrapper(pub Option<Vec<u8>>);

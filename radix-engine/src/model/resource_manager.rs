@@ -26,6 +26,8 @@ use crate::model::{convert, MethodAuthorization, ResourceContainer};
 use crate::model::{Bucket, NonFungible, Vault};
 use crate::wasm::*;
 
+use super::NonFungibleWrapper;
+
 /// Converts soft authorization rule to a hard authorization rule.
 /// Currently required as all auth is defined by soft authorization rules.
 macro_rules! convert_auth {
@@ -324,11 +326,10 @@ impl ResourceManager {
             let value = system_api
                 .read_value_data(SubstateAddress::NonFungible(self_address, id.clone()))
                 .expect("Should never fail");
-            let maybe_non_fungible: Option<NonFungible> = scrypto_decode(&value.raw).unwrap();
-            let non_fungible_address = NonFungibleAddress::new(self_address, id.clone());
-            if maybe_non_fungible.is_some() {
+            let maybe_non_fungible: NonFungibleWrapper = scrypto_decode(&value.raw).unwrap();
+            if maybe_non_fungible.0.is_some() {
                 return Err(ResourceManagerError::NonFungibleAlreadyExists(
-                    non_fungible_address,
+                    NonFungibleAddress::new(self_address, id.clone()),
                 ));
             }
 
@@ -336,7 +337,7 @@ impl ResourceManager {
             system_api
                 .write_value_data(
                     SubstateAddress::NonFungible(self_address, id.clone()),
-                    ScryptoValue::from_typed(&non_fungible),
+                    ScryptoValue::from_typed(&NonFungibleWrapper(Some(non_fungible))),
                 )
                 .expect("Should never fail");
             ids.insert(id);
@@ -527,10 +528,10 @@ impl ResourceManager {
                         input.id.clone(),
                     ))
                     .expect("Should never fail");
-                let maybe_non_fungible: Option<NonFungible> = scrypto_decode(&value.raw).unwrap();
+                let maybe_non_fungible: NonFungibleWrapper = scrypto_decode(&value.raw).unwrap();
 
                 // Write new value
-                if let Some(mut non_fungible) = maybe_non_fungible {
+                if let Some(mut non_fungible) = maybe_non_fungible.0 {
                     non_fungible.set_mutable_data(input.data);
                     system_api
                         .write_value_data(
@@ -538,7 +539,7 @@ impl ResourceManager {
                                 resource_address.clone(),
                                 input.id.clone(),
                             ),
-                            ScryptoValue::from_typed(&non_fungible),
+                            ScryptoValue::from_typed(&NonFungibleWrapper(Some(non_fungible))),
                         )
                         .expect("Should never fail");
                 } else {
@@ -561,8 +562,8 @@ impl ResourceManager {
                         input.id,
                     ))
                     .expect("Should never fail");
-                let maybe_non_fungible: Option<NonFungible> = scrypto_decode(&value.raw).unwrap();
-                Ok(ScryptoValue::from_typed(&maybe_non_fungible.is_some()))
+                let maybe_non_fungible: NonFungibleWrapper = scrypto_decode(&value.raw).unwrap();
+                Ok(ScryptoValue::from_typed(&maybe_non_fungible.0.is_some()))
             }
             "non_fungible_data" => {
                 let input: ResourceManagerGetNonFungibleInput = scrypto_decode(&arg.raw)
@@ -575,10 +576,13 @@ impl ResourceManager {
                         input.id,
                     ))
                     .expect("Should never fail");
-                let maybe_non_fungible: Option<NonFungible> = scrypto_decode(&value.raw).unwrap();
-                let non_fungible = maybe_non_fungible.ok_or(
-                    ResourceManagerError::NonFungibleNotFound(non_fungible_address),
-                )?;
+                let maybe_non_fungible: NonFungibleWrapper = scrypto_decode(&value.raw).unwrap();
+                let non_fungible =
+                    maybe_non_fungible
+                        .0
+                        .ok_or(ResourceManagerError::NonFungibleNotFound(
+                            non_fungible_address,
+                        ))?;
                 Ok(ScryptoValue::from_typed(&[
                     non_fungible.immutable_data(),
                     non_fungible.mutable_data(),

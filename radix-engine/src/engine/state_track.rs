@@ -3,6 +3,7 @@ use core::ops::RangeFull;
 use indexmap::IndexSet;
 use sbor::rust::collections::*;
 use sbor::rust::rc::Rc;
+use sbor::rust::vec::Vec;
 use scrypto::buffer::{scrypto_decode, scrypto_encode};
 
 use crate::engine::Address;

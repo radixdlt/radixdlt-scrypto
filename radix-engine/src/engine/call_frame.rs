@@ -400,7 +400,7 @@ impl<'f> REValueRefMut<'f> {
                 track.set_key_value(
                     address.clone(),
                     key,
-                    SubstateValue::KeyValueStoreEntry(Some(value.raw)),
+                    SubstateValue::KeyValueStoreEntry(KeyValueStoreEntryWrapper(Some(value.raw))),
                 );
                 for (id, val) in to_store {
                     track.insert_non_root_nodes(val.to_nodes(id));
@@ -410,46 +410,43 @@ impl<'f> REValueRefMut<'f> {
     }
 
     fn kv_store_get(&mut self, key: &[u8]) -> ScryptoValue {
-        let maybe_value = match self {
+        let wrapper = match self {
             REValueRefMut::Stack(re_value, id) => {
                 let store = re_value.get_node_mut(id.as_ref()).kv_store_mut();
-                store.get(key).map(|v| v.dom)
+                store
+                    .get(key)
+                    .map(|v| KeyValueStoreEntryWrapper(Some(v.raw)))
+                    .unwrap_or(KeyValueStoreEntryWrapper(None))
             }
             REValueRefMut::Track(track, address) => {
                 let substate_value = track.read_key_value(address.clone(), key.to_vec());
-                substate_value
-                    .kv_entry()
-                    .as_ref()
-                    .map(|bytes| decode_any(bytes).unwrap())
+                substate_value.into()
             }
         };
 
-        // TODO: Cleanup
-        let value = maybe_value.map_or(
-            Value::Option {
-                value: Box::new(Option::None),
-            },
-            |v| Value::Option {
-                value: Box::new(Some(v)),
-            },
-        );
-        ScryptoValue::from_value(value).unwrap()
+        ScryptoValue::from_typed(&wrapper)
     }
 
     fn non_fungible_get(&mut self, id: &NonFungibleId) -> ScryptoValue {
-        match self {
+        let wrapper = match self {
             REValueRefMut::Stack(value, re_id) => {
                 let non_fungible_set = re_id
                     .as_ref()
                     .map_or(value.root(), |v| value.non_root(v))
                     .non_fungibles();
-                ScryptoValue::from_typed(&non_fungible_set.get(id).cloned())
+                non_fungible_set
+                    .get(id)
+                    .cloned()
+                    .map(|v| NonFungibleWrapper(Some(v)))
+                    .unwrap_or(NonFungibleWrapper(None))
             }
             REValueRefMut::Track(track, address) => {
-                let value = track.read_key_value(address.clone(), id.to_vec());
-                ScryptoValue::from_typed(value.non_fungible())
+                let substate_value = track.read_key_value(address.clone(), id.to_vec());
+                substate_value.into()
             }
-        }
+        };
+
+        ScryptoValue::from_typed(&wrapper)
     }
 
     fn non_fungible_remove(&mut self, id: &NonFungibleId) {
@@ -461,7 +458,7 @@ impl<'f> REValueRefMut<'f> {
                 track.set_key_value(
                     address.clone(),
                     id.to_vec(),
-                    SubstateValue::NonFungible(None),
+                    SubstateValue::NonFungible(NonFungibleWrapper(None)),
                 );
             }
         }
@@ -482,7 +479,7 @@ impl<'f> REValueRefMut<'f> {
                 track.set_key_value(
                     address.clone(),
                     id.to_vec(),
-                    SubstateValue::NonFungible(Some(non_fungible)),
+                    SubstateValue::NonFungible(NonFungibleWrapper(Some(non_fungible))),
                 );
             }
         }
@@ -1952,7 +1949,7 @@ where
                 self.track.set_key_value(
                     parent_address.clone(),
                     id.to_vec(),
-                    SubstateValue::NonFungible(Some(non_fungible)),
+                    SubstateValue::NonFungible(NonFungibleWrapper(Some(non_fungible))),
                 );
             }
         }
