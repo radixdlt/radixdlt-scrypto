@@ -899,7 +899,7 @@ where
                         ));
                     } else if self
                         .track
-                        .take_lock(Address::GlobalComponent(*component_address), false, false)
+                        .acquire_lock(Address::GlobalComponent(*component_address), false, false)
                         .is_ok()
                     {
                         return Some((
@@ -1042,7 +1042,7 @@ where
                     RENode::Bucket(bucket) => {
                         let resource_address = bucket.resource_address();
                         self.track
-                            .take_lock(resource_address, true, false)
+                            .acquire_lock(resource_address, true, false)
                             .expect("Should not fail.");
                         locked_values.insert(resource_address.clone().into());
                         let resource_manager =
@@ -1072,7 +1072,7 @@ where
                     RENode::Component(component) => {
                         let package_address = component.package_address();
                         self.track
-                            .take_lock(package_address, false, false)
+                            .acquire_lock(package_address, false, false)
                             .expect("Should not fail.");
                         locked_values.insert(package_address.clone().into());
                         value_refs.insert(
@@ -1093,7 +1093,7 @@ where
             }
             SNodeRef::SystemRef => {
                 self.track
-                    .take_lock(Address::System, true, false)
+                    .acquire_lock(Address::System, true, false)
                     .expect("System access should never fail");
                 locked_values.insert(Address::System);
                 value_refs.insert(
@@ -1120,7 +1120,7 @@ where
                 if let Some(auth_zone) = &self.auth_zone {
                     for resource_address in &input.resource_addresses {
                         self.track
-                            .take_lock(resource_address.clone(), false, false)
+                            .acquire_lock(resource_address.clone(), false, false)
                             .map_err(|e| match e {
                                 TrackError::NotFound => {
                                     RuntimeError::ResourceManagerNotFound(resource_address.clone())
@@ -1128,6 +1128,7 @@ where
                                 TrackError::Reentrancy => {
                                     panic!("Package reentrancy error should never occur.")
                                 }
+                                TrackError::WriteThroughOperationError(..) => panic!("Unexpected"),
                             })?;
                         locked_values.insert(resource_address.clone().into());
                         value_refs.insert(
@@ -1150,7 +1151,7 @@ where
                 let value_id = ValueId::Resource(*resource_address);
                 let address: Address = Address::Resource(*resource_address);
                 self.track
-                    .take_lock(address.clone(), true, false)
+                    .acquire_lock(address.clone(), true, false)
                     .map_err(|e| match e {
                         TrackError::NotFound => {
                             RuntimeError::ResourceManagerNotFound(resource_address.clone())
@@ -1158,6 +1159,7 @@ where
                         TrackError::Reentrancy => {
                             panic!("Resource call has caused reentrancy")
                         }
+                        TrackError::WriteThroughOperationError(..) => panic!("Unexpected"),
                     })?;
                 locked_values.insert(address.clone());
                 let resource_manager = self.track.read_value(address).resource_manager();
@@ -1235,7 +1237,7 @@ where
 
                 for resource_address in &input.resource_addresses {
                     self.track
-                        .take_lock(resource_address.clone(), false, false)
+                        .acquire_lock(resource_address.clone(), false, false)
                         .map_err(|e| match e {
                             TrackError::NotFound => {
                                 RuntimeError::ResourceManagerNotFound(resource_address.clone())
@@ -1243,6 +1245,7 @@ where
                             TrackError::Reentrancy => {
                                 panic!("Package reentrancy error should never occur.")
                             }
+                            TrackError::WriteThroughOperationError(..) => panic!("Unexpected"),
                         })?;
 
                     locked_values.insert(resource_address.clone().into());
@@ -1262,12 +1265,13 @@ where
             SNodeRef::Scrypto(actor) => match actor {
                 ScryptoActor::Blueprint(package_address, blueprint_name) => {
                     self.track
-                        .take_lock(package_address.clone(), false, false)
+                        .acquire_lock(package_address.clone(), false, false)
                         .map_err(|e| match e {
                             TrackError::NotFound => RuntimeError::PackageNotFound(*package_address),
                             TrackError::Reentrancy => {
                                 panic!("Package reentrancy error should never occur.")
                             }
+                            TrackError::WriteThroughOperationError(..) => panic!("Unexpected"),
                         })?;
                     locked_values.insert(package_address.clone().into());
                     let package = self.track.read_value(package_address.clone()).package();
@@ -1319,16 +1323,19 @@ where
                     // Lock values and setup next frame
                     let next_location = match cur_location.clone() {
                         REValuePointer::Track(address) => {
-                            self.track.take_lock(address.clone(), true, false).map_err(
-                                |e| match e {
+                            self.track
+                                .acquire_lock(address.clone(), true, false)
+                                .map_err(|e| match e {
                                     TrackError::NotFound => {
                                         RuntimeError::ComponentNotFound(component_address)
                                     }
                                     TrackError::Reentrancy => {
                                         RuntimeError::ComponentReentrancy(component_address)
                                     }
-                                },
-                            )?;
+                                    TrackError::WriteThroughOperationError(..) => {
+                                        panic!("Unexpected")
+                                    }
+                                })?;
                             locked_values.insert(address.clone());
                             REValuePointer::Track(address)
                         }
@@ -1358,7 +1365,7 @@ where
                         let package_address = actor_info.package_address().clone();
                         let blueprint_name = actor_info.blueprint_name().to_string();
                         self.track
-                            .take_lock(package_address, false, false)
+                            .acquire_lock(package_address, false, false)
                             .expect("Should never fail");
                         locked_values.insert(package_address.clone().into());
                         let package = self.track.read_value(package_address).package();
@@ -1430,10 +1437,11 @@ where
                         // Lock package
                         let package_address = owned_ref.root().component().package_address();
                         self.track
-                            .take_lock(package_address, false, false)
+                            .acquire_lock(package_address, false, false)
                             .map_err(|e| match e {
                                 TrackError::NotFound => panic!("Should exist"),
                                 TrackError::Reentrancy => RuntimeError::PackageReentrancy,
+                                TrackError::WriteThroughOperationError(..) => panic!("Unexpected"),
                             })?;
                         locked_values.insert(package_address.into());
                         value_refs.insert(
@@ -1485,7 +1493,7 @@ where
                     let next_location = match cur_location.clone() {
                         REValuePointer::Track(address) => {
                             self.track
-                                .take_lock(address.clone(), true, false)
+                                .acquire_lock(address.clone(), true, false)
                                 .expect("Should never fail.");
                             locked_values.insert(address.clone().into());
                             REValuePointer::Track(address)
@@ -1507,7 +1515,7 @@ where
                         value_ref.vault().resource_address()
                     };
                     self.track
-                        .take_lock(resource_address, true, false)
+                        .acquire_lock(resource_address, true, false)
                         .expect("Should never fail.");
                     locked_values.insert(resource_address.into());
 
@@ -2154,8 +2162,8 @@ where
     fn pay_fee(&mut self, vault_id: VaultId, amount: Decimal) -> Result<(), RuntimeError> {
         let value_id = ValueId::Vault(vault_id);
         if self.owned_values.contains_key(&value_id) {
-            Err(RuntimeError::PayFeeFailure(
-                "Attempted to locked fee on a local vault".to_owned(),
+            Err(RuntimeError::PayFeeError(
+                PayFeeError::UsingLocallyOwnedValue,
             ))
         } else if let Some(r) = self.value_refs.get_mut(&value_id) {
             match &r.location {
@@ -2163,17 +2171,22 @@ where
                     // 1. Update the substate
                     let address = Address::Vault(vault_id);
                     self.track
-                        .take_lock(address.clone(), true, true)
+                        .acquire_lock(address.clone(), true, true)
                         .map_err(|e| match e {
                             TrackError::NotFound => RuntimeError::ValueNotFound(value_id),
                             TrackError::Reentrancy => panic!("Vault reentrancy should never occur"),
+                            TrackError::WriteThroughOperationError(e) => {
+                                RuntimeError::PayFeeError(match e {
+                                    WriteThroughOperationError::ValueAlreadyTouched => {
+                                        PayFeeError::ValueAlreadyTouched
+                                    }
+                                })
+                            }
                         })?;
                     let mut value = self.track.take_value(address.clone());
                     let (liquid, locked) = value.vault_mut();
                     if liquid.resource_address() != RADIX_TOKEN {
-                        return Err(RuntimeError::PayFeeFailure(
-                            "Attempted to pay non-XRD as fee".to_owned(),
-                        ));
+                        return Err(RuntimeError::PayFeeError(PayFeeError::NotRadixToken));
                     }
                     let fee = liquid.take(amount).map_err(RuntimeError::VaultError)?;
                     match locked {
@@ -2197,12 +2210,12 @@ where
 
                     Ok(())
                 }
-                _ => Err(RuntimeError::PayFeeFailure(
-                    "Referenced vault is not in track".to_owned(),
+                _ => Err(RuntimeError::PayFeeError(
+                    PayFeeError::UsingLocallyBorrowedValue,
                 )),
             }
         } else {
-            Err(RuntimeError::PayFeeFailure("Vault not found".to_owned()))
+            Err(RuntimeError::PayFeeError(PayFeeError::ValueNotFound))
         }
     }
 }

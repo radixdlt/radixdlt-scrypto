@@ -127,7 +127,16 @@ pub enum RuntimeError {
 
     MaxCallDepthLimitReached,
 
-    PayFeeFailure(String),
+    PayFeeError(PayFeeError),
+}
+
+#[derive(Debug, PartialEq)]
+pub enum PayFeeError {
+    UsingLocallyOwnedValue,
+    UsingLocallyBorrowedValue,
+    ValueAlreadyTouched,
+    ValueNotFound,
+    NotRadixToken,
 }
 
 #[derive(Debug, PartialEq)]

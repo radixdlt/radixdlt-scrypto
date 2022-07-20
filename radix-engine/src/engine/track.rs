@@ -17,6 +17,7 @@ use crate::model::*;
 use super::AppStateTrack;
 use super::BaseStateTrack;
 use super::StateTrack;
+use super::WriteThroughOperationError;
 
 enum BorrowedSubstate {
     Loaded(SubstateValue, u32),
@@ -34,8 +35,8 @@ impl BorrowedSubstate {
     }
 }
 
-/// Manages global objects created or loaded for transaction.
-/// TODO: rename to `TransactionGlobals` or similar
+/// Enforces borrow semantics of global objects and collects transaction-wise side effects,
+/// such as logs and events.
 pub struct Track {
     transaction_hash: Hash,
     transaction_network: Network,
@@ -50,6 +51,7 @@ pub struct Track {
 pub enum TrackError {
     Reentrancy,
     NotFound,
+    WriteThroughOperationError(WriteThroughOperationError),
 }
 
 pub struct BorrowedSNodes {
@@ -401,25 +403,23 @@ impl Track {
         self.state_track.put_space(address);
     }
 
-    pub fn take_lock<A: Into<Address>>(
+    // TODO: to read/write a value owned by track requires three coordinated steps:
+    // 1. Attempt to acquire the lock
+    // 2. Apply the operation
+    // 3. Release lock
+    //
+    // A better idea is properly move the lock-unlock into the operation OR to have a proper
+    // representation of locked resource and apply operation on top of it.
+    //
+    // Also enables us to store state associated with the lock, like the `write_through` flag.
+
+    pub fn acquire_lock<A: Into<Address>>(
         &mut self,
         addr: A,
         mutable: bool,
         write_through: bool,
     ) -> Result<(), TrackError> {
         let address = addr.into();
-
-        // TODO: to read/write a value owned by track requires three coordinated steps:
-        // 1. Attempt to acquire the lock
-        // 2. Apply the operation
-        // 3. Release lock
-        //
-        // A better idea is properly move the lock-unlock into the operation OR to have a proper
-        // representation of locked resource and apply operation on top of it.
-
-        if write_through {
-            // TODO:
-        }
 
         if let Some(current) = self.borrowed_substates.get_mut(&address) {
             if mutable {
@@ -435,22 +435,74 @@ impl Track {
             }
         }
 
-        if let Some(substate) = self.state_track.get_substate(&address) {
-            let value = match address {
-                Address::GlobalComponent(_)
-                | Address::LocalComponent(..)
-                | Address::Resource(_)
-                | Address::Vault(..)
-                | Address::Package(..)
-                | Address::System => substate,
-                _ => panic!("Attempting to borrow unsupported value {:?}", address),
-            };
-
+        if write_through {
+            let value = self
+                .state_track
+                .get_substate_from_base(&address)
+                .map_err(TrackError::WriteThroughOperationError)?;
             self.borrowed_substates
                 .insert(address.clone(), BorrowedSubstate::loaded(value, mutable));
             Ok(())
         } else {
-            Err(TrackError::NotFound)
+            if let Some(substate) = self.state_track.get_substate(&address) {
+                let value = match address {
+                    Address::GlobalComponent(_)
+                    | Address::LocalComponent(..)
+                    | Address::Resource(_)
+                    | Address::Vault(..)
+                    | Address::Package(..)
+                    | Address::System => substate,
+                    _ => panic!("Attempting to borrow unsupported value {:?}", address),
+                };
+
+                self.borrowed_substates
+                    .insert(address.clone(), BorrowedSubstate::loaded(value, mutable));
+                Ok(())
+            } else {
+                Err(TrackError::NotFound)
+            }
+        }
+    }
+
+    pub fn release_lock<A: Into<Address>>(&mut self, addr: A, write_through: bool) {
+        let address = addr.into();
+        let borrowed = self
+            .borrowed_substates
+            .remove(&address)
+            .expect("Value was never borrowed");
+
+        if write_through {
+            match borrowed {
+                BorrowedSubstate::Taken => panic!("Value was never returned"),
+                BorrowedSubstate::LoadedMut(value) => {
+                    self.state_track.put_substate_to_base(address, value);
+                }
+                BorrowedSubstate::Loaded(value, mut count) => {
+                    count = count - 1;
+                    if count == 0 {
+                        self.state_track.put_substate_to_base(address, value);
+                    } else {
+                        self.borrowed_substates
+                            .insert(address, BorrowedSubstate::Loaded(value, count));
+                    }
+                }
+            }
+        } else {
+            match borrowed {
+                BorrowedSubstate::Taken => panic!("Value was never returned"),
+                BorrowedSubstate::LoadedMut(value) => {
+                    self.state_track.put_substate(address, value);
+                }
+                BorrowedSubstate::Loaded(value, mut count) => {
+                    count = count - 1;
+                    if count == 0 {
+                        self.state_track.put_substate(address, value);
+                    } else {
+                        self.borrowed_substates
+                            .insert(address, BorrowedSubstate::Loaded(value, count));
+                    }
+                }
+            }
         }
     }
 
@@ -512,34 +564,6 @@ impl Track {
             BorrowedSubstate::Loaded(..) => panic!("Cannot write to immutable"),
             BorrowedSubstate::LoadedMut(component_val) => {
                 component_val.component_mut().set_state(value);
-            }
-        }
-    }
-
-    pub fn release_lock<A: Into<Address>>(&mut self, addr: A, write_through: bool) {
-        let address = addr.into();
-        let borrowed = self
-            .borrowed_substates
-            .remove(&address)
-            .expect("Value was never borrowed");
-
-        if write_through {
-            // TODO
-        }
-
-        match borrowed {
-            BorrowedSubstate::Taken => panic!("Value was never returned"),
-            BorrowedSubstate::LoadedMut(value) => {
-                self.state_track.put_substate(address, value);
-            }
-            BorrowedSubstate::Loaded(value, mut count) => {
-                count = count - 1;
-                if count == 0 {
-                    self.state_track.put_substate(address, value);
-                } else {
-                    self.borrowed_substates
-                        .insert(address, BorrowedSubstate::Loaded(value, count));
-                }
             }
         }
     }

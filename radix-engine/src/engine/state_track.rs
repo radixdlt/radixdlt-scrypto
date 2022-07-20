@@ -150,6 +150,11 @@ impl BaseStateTrack {
     }
 }
 
+#[derive(Debug)]
+pub enum WriteThroughOperationError {
+    ValueAlreadyTouched,
+}
+
 impl AppStateTrack {
     pub fn new(base_state_track: BaseStateTrack) -> Self {
         Self {
@@ -157,6 +162,26 @@ impl AppStateTrack {
             substates: HashMap::new(),
             spaces: IndexSet::new(),
         }
+    }
+
+    pub fn get_substate_from_base(
+        &mut self,
+        address: &Address,
+    ) -> Result<SubstateValue, WriteThroughOperationError> {
+        if self.substates.contains_key(address) {
+            return Err(WriteThroughOperationError::ValueAlreadyTouched);
+        }
+
+        Ok(self
+            .base_state_track
+            .get_substate(address)
+            .expect("Attempted to load non-existing substate with write-through mode"))
+    }
+
+    pub fn put_substate_to_base(&mut self, address: Address, substate: SubstateValue) {
+        assert!(!self.substates.contains_key(&address));
+
+        self.base_state_track.put_substate(address, substate);
     }
 
     /// Flush all changes to base state track
