@@ -3,18 +3,50 @@ use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use scrypto::buffer::*;
 use scrypto::values::ScryptoValue;
+use std::ops::DerefMut;
 use transaction::model::*;
 use transaction::validation::{IdAllocator, IdSpace};
 
 use crate::engine::*;
-use crate::fee::CostUnitCounter;
-use crate::fee::FeeTable;
-use crate::fee::MAX_TRANSACTION_COST;
-use crate::fee::SYSTEM_LOAN_AMOUNT;
+use crate::fee::*;
 use crate::ledger::*;
 use crate::model::*;
 use crate::state_manager::*;
 use crate::wasm::*;
+
+pub enum TransactionCostCounterConfig {
+    SystemLoanAndMaxCost {
+        system_loan_amount: u32,
+        max_transaction_cost: u32,
+    },
+    UnlimitedLoanAndMaxCost {
+        max_transaction_cost: u32,
+    },
+}
+
+pub struct TransactionExecutorConfig {
+    pub trace: bool,
+    pub cost_counter_config: TransactionCostCounterConfig,
+}
+
+impl TransactionExecutorConfig {
+    pub fn new(trace: bool, cost_counter_config: TransactionCostCounterConfig) -> Self {
+        TransactionExecutorConfig {
+            trace,
+            cost_counter_config,
+        }
+    }
+
+    pub fn default(trace: bool) -> Self {
+        Self::new(
+            trace,
+            TransactionCostCounterConfig::SystemLoanAndMaxCost {
+                system_loan_amount: DEFAULT_SYSTEM_LOAN_AMOUNT,
+                max_transaction_cost: DEFAULT_MAX_TRANSACTION_COST,
+            },
+        )
+    }
+}
 
 /// An executor that runs transactions.
 pub struct TransactionExecutor<'s, 'w, S, W, I>
@@ -26,7 +58,8 @@ where
     substate_store: &'s mut S,
     wasm_engine: &'w mut W,
     wasm_instrumenter: &'w mut WasmInstrumenter,
-    trace: bool,
+    config: TransactionExecutorConfig,
+    cost_unit_counter: Box<dyn CostUnitCounter>,
     phantom: PhantomData<I>,
 }
 
@@ -40,13 +73,28 @@ where
         substate_store: &'s mut S,
         wasm_engine: &'w mut W,
         wasm_instrumenter: &'w mut WasmInstrumenter,
-        trace: bool,
+        config: TransactionExecutorConfig,
     ) -> TransactionExecutor<'s, 'w, S, W, I> {
+        // Metering
+        let cost_unit_counter: Box<dyn CostUnitCounter> = match config.cost_counter_config {
+            TransactionCostCounterConfig::SystemLoanAndMaxCost {
+                system_loan_amount,
+                max_transaction_cost,
+            } => Box::new(SystemLoanCostUnitCounter::new(
+                max_transaction_cost,
+                system_loan_amount,
+            )),
+            TransactionCostCounterConfig::UnlimitedLoanAndMaxCost {
+                max_transaction_cost,
+            } => Box::new(UnlimitedLoanCostUnitCounter::new(max_transaction_cost)),
+        };
+
         Self {
             substate_store,
             wasm_engine,
             wasm_instrumenter,
-            trace,
+            config,
+            cost_unit_counter,
             phantom: PhantomData,
         }
     }
@@ -76,8 +124,8 @@ where
         let mut id_allocator = IdAllocator::new(IdSpace::Application);
 
         // Metering
-        let mut cost_unit_counter = CostUnitCounter::new(MAX_TRANSACTION_COST, SYSTEM_LOAN_AMOUNT);
         let fee_table = FeeTable::new();
+        let cost_unit_counter = self.cost_unit_counter.deref_mut();
 
         // Charge transaction decoding and stateless verification
         cost_unit_counter
@@ -103,7 +151,7 @@ where
 
         // Create root call frame.
         let mut root_frame = CallFrame::new_root(
-            self.trace,
+            self.config.trace,
             transaction_hash,
             signer_public_keys,
             false,
@@ -111,7 +159,7 @@ where
             &mut track,
             self.wasm_engine,
             self.wasm_instrumenter,
-            &mut cost_unit_counter,
+            cost_unit_counter,
             &fee_table,
         );
 
@@ -170,9 +218,9 @@ where
         let execution_time = Some(now.elapsed().as_millis());
 
         #[cfg(not(feature = "alloc"))]
-        if self.trace {
+        if self.config.trace {
             println!("+{}+", "-".repeat(30));
-            for (k, v) in cost_unit_counter.analysis {
+            for (k, v) in cost_unit_counter.analysis() {
                 println!("|{:>20}: {:>8}|", k, v);
             }
             println!("+{}+", "-".repeat(30));

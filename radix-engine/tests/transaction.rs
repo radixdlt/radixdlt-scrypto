@@ -1,4 +1,4 @@
-use radix_engine::engine::TransactionExecutor;
+use radix_engine::engine::{TransactionExecutor, TransactionExecutorConfig};
 use radix_engine::ledger::InMemorySubstateStore;
 use radix_engine::wasm::DefaultWasmEngine;
 use radix_engine::wasm::WasmInstrumenter;
@@ -30,7 +30,7 @@ fn test_normal_transaction_flow() {
         &mut substate_store,
         &mut wasm_engine,
         &mut wasm_instrumenter,
-        true,
+        TransactionExecutorConfig::default(false),
     );
     let receipt = executor.execute(&validated_transaction);
 

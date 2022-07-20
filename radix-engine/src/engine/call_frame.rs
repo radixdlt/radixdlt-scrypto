@@ -53,7 +53,7 @@ pub struct CallFrame<
     wasm_instrumenter: &'g mut WasmInstrumenter,
 
     /// Remaining cost unit counter
-    cost_unit_counter: &'g mut CostUnitCounter,
+    cost_unit_counter: &'g mut dyn CostUnitCounter,
     /// Fee table
     fee_table: &'g FeeTable,
 
@@ -582,7 +582,7 @@ where
         track: &'g mut Track<'s, S>,
         wasm_engine: &'g mut W,
         wasm_instrumenter: &'g mut WasmInstrumenter,
-        cost_unit_counter: &'g mut CostUnitCounter,
+        cost_unit_counter: &'g mut dyn CostUnitCounter,
         fee_table: &'g FeeTable,
     ) -> Self {
         // TODO: Cleanup initialization of authzone
@@ -641,7 +641,7 @@ where
         track: &'g mut Track<'s, S>,
         wasm_engine: &'g mut W,
         wasm_instrumenter: &'g mut WasmInstrumenter,
-        cost_unit_counter: &'g mut CostUnitCounter,
+        cost_unit_counter: &'g mut dyn CostUnitCounter,
         fee_table: &'g FeeTable,
         auth_zone: Option<RefCell<AuthZone>>,
         owned_values: HashMap<ValueId, REValue>,
@@ -2231,7 +2231,7 @@ where
         Ok(is_authorized)
     }
 
-    fn cost_unit_counter(&mut self) -> &mut CostUnitCounter {
+    fn cost_unit_counter(&mut self) -> &mut dyn CostUnitCounter {
         self.cost_unit_counter
     }
 

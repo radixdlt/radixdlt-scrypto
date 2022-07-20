@@ -3,11 +3,11 @@ use scrypto::buffer::scrypto_encode;
 use scrypto::core::Network;
 use scrypto::crypto::{hash, EcdsaPublicKey, EcdsaSignature, Hash};
 
-use crate::model::{ExecutableInstruction, ExecutableTransaction, TransactionIntent};
+use crate::model::{ExecutableInstruction, ExecutableTransaction, NotarizedTransaction, TransactionIntent, SignedTransactionIntent};
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct PreviewFlags {
-    // Empty for now
+    pub unlimited_loan: bool,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
@@ -51,12 +51,22 @@ impl ExecutableTransaction for ValidatedPreviewTransaction {
 
     fn transaction_payload_size(&self) -> u32 {
         // TODO: update the estimation after transaction specs are finalized
-        let intent_size = self.preview_intent.intent.to_bytes().len();
-        let num_expected_signatures =
-            self.signer_public_keys().len() /* Intent signatures */  + 1 /* Notary signature */;
-        let signatures_size = num_expected_signatures * EcdsaSignature::LENGTH;
-        let estimated_notarized_transaction_size = intent_size + signatures_size;
-        return estimated_notarized_transaction_size as u32;
+
+        // Using a mocked notarized transaction of expected size
+        // to include the sbor overhead in the payload size estimation
+        let fake_signature = EcdsaSignature([0; EcdsaSignature::LENGTH]);
+        let fake_notarized_transaction = NotarizedTransaction {
+            signed_intent: SignedTransactionIntent {
+                intent: self.preview_intent.intent.clone(),
+                intent_signatures: self.preview_intent.signer_public_keys.clone()
+                    .into_iter()
+                    .map(|pub_key| (pub_key, fake_signature.clone()))
+                    .collect(),
+            },
+            notary_signature: fake_signature
+        };
+
+        fake_notarized_transaction.to_bytes().len() as u32
     }
 
     fn instructions(&self) -> &[ExecutableInstruction] {

@@ -18,7 +18,7 @@ where
     I: WasmInstance,
     S: ReadableSubstateStore,
 {
-    fn cost_unit_counter(&mut self) -> &mut CostUnitCounter;
+    fn cost_unit_counter(&mut self) -> &mut dyn CostUnitCounter;
 
     fn fee_table(&self) -> &FeeTable;
 

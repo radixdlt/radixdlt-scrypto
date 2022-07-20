@@ -1,4 +1,4 @@
-use radix_engine::engine::TransactionExecutor;
+use radix_engine::engine::{TransactionExecutor, TransactionExecutorConfig};
 use radix_engine::ledger::*;
 use radix_engine::model::extract_package;
 use radix_engine::wasm::*;
@@ -21,7 +21,7 @@ fn test_hello() {
         &mut substate_store,
         &mut wasm_engine,
         &mut wasm_instrumenter,
-        false,
+        TransactionExecutorConfig::default(false),
     );
 
     // Create a key pair

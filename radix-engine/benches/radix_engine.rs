@@ -1,5 +1,5 @@
 use criterion::{criterion_group, criterion_main, Criterion};
-use radix_engine::engine::TransactionExecutor;
+use radix_engine::engine::{TransactionExecutor, TransactionExecutorConfig};
 use radix_engine::ledger::*;
 use radix_engine::wasm::DefaultWasmEngine;
 use radix_engine::wasm::WasmInstrumenter;
@@ -19,7 +19,7 @@ fn bench_transfer(c: &mut Criterion) {
         &mut substate_store,
         &mut wasm_engine,
         &mut wasm_instrumenter,
-        false,
+        TransactionExecutorConfig::default(false),
     );
 
     // Create a key pair

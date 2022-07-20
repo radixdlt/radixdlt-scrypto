@@ -56,7 +56,7 @@ where
         }
     }
 
-    fn cost_unit_counter(&mut self) -> &mut CostUnitCounter {
+    fn cost_unit_counter(&mut self) -> &mut dyn CostUnitCounter {
         self.system_api.cost_unit_counter()
     }
 
@@ -210,13 +210,13 @@ impl<
 
 /// A `Nop` runtime accepts any external function calls by doing nothing and returning void.
 pub struct NopWasmRuntime {
-    cost_unit_counter: CostUnitCounter,
+    cost_unit_counter: SystemLoanCostUnitCounter,
 }
 
 impl NopWasmRuntime {
     pub fn new(cost_unit_limit: u32) -> Self {
         Self {
-            cost_unit_counter: CostUnitCounter::new(cost_unit_limit, cost_unit_limit),
+            cost_unit_counter: SystemLoanCostUnitCounter::new(cost_unit_limit, cost_unit_limit),
         }
     }
 }

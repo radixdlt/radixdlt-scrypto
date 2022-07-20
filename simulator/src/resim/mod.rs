@@ -48,7 +48,7 @@ pub const ENV_DISABLE_MANIFEST_OUTPUT: &'static str = "DISABLE_MANIFEST_OUTPUT";
 
 use clap::{Parser, Subcommand};
 use radix_engine::engine::Receipt;
-use radix_engine::engine::TransactionExecutor;
+use radix_engine::engine::{TransactionExecutor, TransactionExecutorConfig};
 use radix_engine::model::*;
 use radix_engine::wasm::*;
 use scrypto::abi;
@@ -160,7 +160,7 @@ pub fn handle_manifest<O: std::io::Write>(
                 &mut substate_store,
                 &mut wasm_engine,
                 &mut wasm_instrumenter,
-                trace,
+                TransactionExecutorConfig::default(false),
             );
 
             let sks = get_signing_keys(signing_keys)?;
