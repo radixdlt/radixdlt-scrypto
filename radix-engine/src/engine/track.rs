@@ -14,8 +14,9 @@ use crate::engine::{RENode, SubstateOperationsReceipt};
 use crate::ledger::*;
 use crate::model::*;
 
+use super::AppStateTrack;
+use super::BaseStateTrack;
 use super::StateTrack;
-use super::StateTrackParent;
 
 enum BorrowedSubstate {
     Loaded(SubstateValue, u32),
@@ -41,7 +42,7 @@ pub struct Track {
     id_allocator: IdAllocator,
     logs: Vec<(Level, String)>,
     new_addresses: Vec<Address>,
-    state_track: StateTrack,
+    state_track: AppStateTrack,
     borrowed_substates: HashMap<Address, BorrowedSubstate>,
 }
 
@@ -358,7 +359,8 @@ impl Track {
         transaction_hash: Hash,
         transaction_network: Network,
     ) -> Self {
-        let state_track = StateTrack::new(StateTrackParent::SubstateStore(substate_store));
+        let base_state_track = BaseStateTrack::new(substate_store);
+        let state_track = AppStateTrack::new(base_state_track);
 
         Self {
             transaction_hash,
@@ -672,11 +674,15 @@ impl Track {
         }
     }
 
-    pub fn to_receipt(self) -> TrackReceipt {
+    pub fn to_receipt(mut self, commit_app_state_changes: bool) -> TrackReceipt {
+        if commit_app_state_changes {
+            self.state_track.flush();
+        }
+
         TrackReceipt {
             new_addresses: self.new_addresses,
             logs: self.logs,
-            state_changes: self.state_track.summarize_state_changes(),
+            state_changes: self.state_track.unwrap().to_receipt(),
         }
     }
 }

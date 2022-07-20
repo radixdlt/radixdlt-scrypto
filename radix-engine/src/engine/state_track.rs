@@ -11,106 +11,72 @@ use super::{
     SubstateValue,
 };
 
-pub enum StateTrackParent {
-    SubstateStore(Rc<dyn ReadableSubstateStore>),
-    StateTrack(Box<StateTrack>),
+pub trait StateTrack {
+    fn get_substate(&mut self, address: &Address) -> Option<SubstateValue>;
+
+    fn put_substate(&mut self, address: Address, substate: SubstateValue);
+
+    fn put_space(&mut self, address: Address);
 }
 
-pub struct StateTrack {
+/// Keeps track of state changes that that are non-reversible, such as fee payments
+pub struct BaseStateTrack {
     /// The parent state track
-    parent: StateTrackParent,
-    /// Substates either created by transaction or loaded from substate store
+    substate_store: Rc<dyn ReadableSubstateStore>,
+    /// Substates either created during the transaction or loaded from substate store
     substates: HashMap<Address, Option<Vec<u8>>>,
-    /// Spaces created by transaction
+    /// Spaces created during the transaction
     spaces: IndexSet<Address>,
 }
 
-impl StateTrack {
-    // TODO: produce substate update receipt
+/// Keeps track of state changes that may be rolled back according to transaction status
+pub struct AppStateTrack {
+    /// The parent state track
+    base_state_track: BaseStateTrack,
+    /// Substates either created during the transaction or loaded from the base state track
+    substates: HashMap<Address, Option<Vec<u8>>>,
+    /// Spaces created during the transaction
+    spaces: IndexSet<Address>,
+}
 
-    pub fn new(parent: StateTrackParent) -> Self {
+impl BaseStateTrack {
+    pub fn new(substate_store: Rc<dyn ReadableSubstateStore>) -> Self {
         Self {
-            parent,
+            substate_store,
             substates: HashMap::new(),
             spaces: IndexSet::new(),
         }
     }
 
-    pub fn get_substate(&mut self, address: &Address) -> Option<SubstateValue> {
-        // TODO: it's very inconvenient to encode & decode. We should consider making SubstateValue cloneable
-        //  or have proper borrow mechanism implemented.
-
-        self.substates
-            .entry(address.clone())
-            .or_insert_with(|| match &mut self.parent {
-                StateTrackParent::SubstateStore(store, ..) => {
-                    store.get_substate(address).map(|s| s.value)
-                }
-                StateTrackParent::StateTrack(track) => {
-                    track.get_substate(address).map(|s| scrypto_encode(&s))
-                }
-            })
-            .as_ref()
-            .map(|s| scrypto_decode(&s).unwrap())
-    }
-
-    pub fn put_substate(&mut self, address: Address, substate: SubstateValue) {
-        self.substates
-            .insert(address, Some(scrypto_encode(&substate)));
-    }
-
-    pub fn put_space(&mut self, address: Address) {
-        self.spaces.insert(address);
-    }
-
-    // Flush all changes to underlying track
-    pub fn flush(&mut self) {}
-
-    pub fn into_inner(self) -> Self {
-        match self.parent {
-            StateTrackParent::SubstateStore(..) => self,
-            StateTrackParent::StateTrack(track) => Self::into_inner(*track),
-        }
-    }
-
-    // TODO: replace recursion with iteration
-
-    fn get_substate_id(parent: &StateTrackParent, address: &Address) -> Option<PhysicalSubstateId> {
-        match parent {
-            StateTrackParent::SubstateStore(store, ..) => {
-                store.get_substate(&address).map(|s| s.phys_id)
-            }
-            StateTrackParent::StateTrack(track) => Self::get_substate_id(&track.parent, address),
-        }
+    fn get_substate_id(
+        substate_store: &Rc<dyn ReadableSubstateStore>,
+        address: &Address,
+    ) -> Option<PhysicalSubstateId> {
+        substate_store.get_substate(&address).map(|s| s.phys_id)
     }
 
     fn get_space_substate_id(
-        parent: &StateTrackParent,
+        substate_store: &Rc<dyn ReadableSubstateStore>,
         address: &Address,
     ) -> Option<PhysicalSubstateId> {
-        match parent {
-            StateTrackParent::SubstateStore(store, ..) => store.get_space(&address),
-            StateTrackParent::StateTrack(track) => {
-                Self::get_space_substate_id(&track.parent, address)
-            }
-        }
+        substate_store.get_space(&address)
     }
 
     fn get_substate_parent_id(
         spaces: &IndexSet<Address>,
-        parent: &StateTrackParent,
+        substate_store: &Rc<dyn ReadableSubstateStore>,
         space_address: &Address,
     ) -> SubstateParentId {
         if let Some(index) = spaces.get_index_of(space_address) {
             SubstateParentId::New(index)
         } else {
-            let substate_id = Self::get_space_substate_id(parent, space_address)
+            let substate_id = Self::get_space_substate_id(substate_store, space_address)
                 .expect("Attempted to locate non-existing space");
             SubstateParentId::Exists(substate_id)
         }
     }
 
-    pub fn summarize_state_changes(mut self) -> SubstateOperationsReceipt {
+    pub fn to_receipt(mut self) -> SubstateOperationsReceipt {
         let mut store_instructions = Vec::new();
 
         // Must be put in front of substate changes to maintain valid parent ids.
@@ -125,13 +91,13 @@ impl StateTrack {
                         let parent_address = Address::NonFungibleSet(*resource_address);
 
                         if let Some(existing_substate_id) =
-                            Self::get_substate_id(&self.parent, &parent_address)
+                            Self::get_substate_id(&self.substate_store, &parent_address)
                         {
                             store_instructions.push(SubstateOperation::Down(existing_substate_id));
                         } else {
                             let parent_id = Self::get_substate_parent_id(
                                 &self.spaces,
-                                &self.parent,
+                                &self.substate_store,
                                 &parent_address,
                             );
                             let virtual_substate_id = VirtualSubstateId(parent_id, key.clone());
@@ -145,13 +111,13 @@ impl StateTrack {
                         let parent_address = Address::KeyValueStore(*kv_store_id);
 
                         if let Some(existing_substate_id) =
-                            Self::get_substate_id(&self.parent, &parent_address)
+                            Self::get_substate_id(&self.substate_store, &parent_address)
                         {
                             store_instructions.push(SubstateOperation::Down(existing_substate_id));
                         } else {
                             let parent_id = Self::get_substate_parent_id(
                                 &self.spaces,
-                                &self.parent,
+                                &self.substate_store,
                                 &parent_address,
                             );
                             let virtual_substate_id = VirtualSubstateId(parent_id, key.clone());
@@ -163,7 +129,7 @@ impl StateTrack {
                     }
                     _ => {
                         if let Some(previous_substate_id) =
-                            Self::get_substate_id(&self.parent, &address)
+                            Self::get_substate_id(&self.substate_store, &address)
                         {
                             store_instructions.push(SubstateOperation::Down(previous_substate_id));
                         }
@@ -179,5 +145,69 @@ impl StateTrack {
         SubstateOperationsReceipt {
             substate_operations: store_instructions,
         }
+    }
+}
+
+impl AppStateTrack {
+    pub fn new(base_state_track: BaseStateTrack) -> Self {
+        Self {
+            base_state_track,
+            substates: HashMap::new(),
+            spaces: IndexSet::new(),
+        }
+    }
+
+    /// Flush all changes to base state track
+    pub fn flush(&mut self) {}
+
+    /// Unwraps into the base state track
+    pub fn unwrap(self) -> BaseStateTrack {
+        self.base_state_track
+    }
+}
+
+impl StateTrack for BaseStateTrack {
+    fn get_substate(&mut self, address: &Address) -> Option<SubstateValue> {
+        // TODO: consider borrow mechanism to avoid redundant encoding and decoding
+
+        self.substates
+            .entry(address.clone())
+            .or_insert_with(|| self.substate_store.get_substate(address).map(|s| s.value))
+            .as_ref()
+            .map(|s| scrypto_decode(&s).unwrap())
+    }
+
+    fn put_substate(&mut self, address: Address, substate: SubstateValue) {
+        self.substates
+            .insert(address, Some(scrypto_encode(&substate)));
+    }
+
+    fn put_space(&mut self, address: Address) {
+        self.spaces.insert(address);
+    }
+}
+
+impl StateTrack for AppStateTrack {
+    fn get_substate(&mut self, address: &Address) -> Option<SubstateValue> {
+        // TODO: consider borrow mechanism to avoid redundant encoding and decoding
+
+        self.substates
+            .entry(address.clone())
+            .or_insert_with(|| {
+                self.base_state_track
+                    .get_substate(address)
+                    .map(|s| scrypto_encode(&s))
+            })
+            .as_ref()
+            .map(|s| scrypto_decode(&s).unwrap())
+    }
+
+    fn put_substate(&mut self, address: Address, substate: SubstateValue) {
+        self.substates
+            .insert(address, Some(scrypto_encode(&substate)));
+    }
+
+    fn put_space(&mut self, address: Address) {
+        self.spaces.insert(address);
     }
 }

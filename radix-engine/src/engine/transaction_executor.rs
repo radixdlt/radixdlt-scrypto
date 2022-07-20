@@ -144,7 +144,7 @@ where
         let _overpaid = counter.balance();
 
         // 5. Generate receipts and commit (TODO: split out commit phase)
-        let track_receipt = track.to_receipt();
+        let track_receipt = track.to_receipt(result.is_ok());
         self.substate_store = match Rc::try_unwrap(substate_store_rc) {
             Ok(store) => Some(store),
             Err(_) => panic!("There should be no other strong refs that prevent unwrapping"),

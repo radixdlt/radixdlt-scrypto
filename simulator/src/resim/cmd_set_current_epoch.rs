@@ -52,7 +52,7 @@ impl SetCurrentEpoch {
             .map_err(Error::TransactionExecutionError)?;
 
         // Commit
-        let track_receipt = track.to_receipt();
+        let track_receipt = track.to_receipt(true);
         let mut substate_store = match Rc::try_unwrap(substate_store_rc) {
             Ok(store) => store,
             Err(_) => panic!("There should be no other strong refs that prevent unwrapping"),

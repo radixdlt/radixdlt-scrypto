@@ -92,7 +92,7 @@ fn create_genesis(mut track: Track) -> TrackReceipt {
     track.create_uuid_value(Address::GlobalComponent(SYSTEM_COMPONENT), system_component);
     track.create_uuid_value(Address::System, System { epoch: 0 });
 
-    track.to_receipt()
+    track.to_receipt(true)
 }
 
 pub fn bootstrap<S>(mut substate_store: S, network: Network) -> S
