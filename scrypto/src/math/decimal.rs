@@ -3,7 +3,7 @@ use num_bigint::BigInt;
 use num_traits::{Pow, ToPrimitive, Zero};
 use sbor::rust::convert::{TryFrom, TryInto};
 use sbor::rust::fmt;
-use sbor::rust::fmt::{Display, Formatter};
+use sbor::rust::fmt::Formatter;
 use sbor::rust::iter;
 use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
@@ -12,21 +12,20 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::abi::*;
-use crate::math::{I256, I384, U8};
-use crate::misc::*;
+use crate::math::{I256, I512, U8};
 use paste::paste;
 
 macro_rules! decimals {
-    ($(($dec:ident, $wrapped:ident, $scale:literal, $dec_macro:ident)),*) => {
+    ($(($dec:ident, $wrapped:ident, $scale:literal, $bits:literal , $dec_macro:ident)),*) => {
         $(
             paste! {
-                /// `$dec` represents a 128 bit representation of a fixed-scale decimal number.
+                #[ doc ="`$dec` represents a " $bits " bit representation of a fixed-scale decimal number." ]
                 ///
-                /// The finite set of values are of the form `m / 10^18`, where `m` is
-                /// an integer such that `-2^127 <= m < 2^127`.
+                #[ doc =  "The finite set of values are of the form `m / 10^" $scale "`, where `m` is"]
+                /// an integer such that `-2^($bits - 1) <= m < 2^($bits - 1)`.
                 ///
                 /// Unless otherwise specified, all operations will panic if underflow/overflow.
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+                #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
                 pub struct $dec(pub $wrapped);
 
                 impl Default for $dec {
@@ -103,7 +102,7 @@ macro_rules! decimals {
                     pub fn round(&self, decimal_places: u8, mode: RoundingMode) -> Self {
                         assert!(decimal_places <= Self::SCALE.try_into().unwrap());
 
-                        let divisor = <$wrapped>::from(10i8).pow(18 - decimal_places as u32);
+                        let divisor:$wrapped = <$wrapped>::from(10i8).pow(Self::SCALE - decimal_places as u32);
                         match mode {
                             RoundingMode::TowardsPositiveInfinity => {
                                 if self.0 % divisor == Zero::zero() {
@@ -143,8 +142,8 @@ macro_rules! decimals {
                                 if self.0 % divisor == Zero::zero() {
                                     self.clone()
                                 } else {
-                                    let digit = (self.0 / (divisor / 10) % 10).abs();
-                                    if digit > 5 {
+                                    let digit = (self.0 / (divisor / 10i128) % 10i128).abs();
+                                    if digit > 5.into() {
                                         if self.is_negative() {
                                             Self((self.0 / divisor - 1) * divisor)
                                         } else {
@@ -159,8 +158,8 @@ macro_rules! decimals {
                                 if self.0 % divisor == Zero::zero() {
                                     self.clone()
                                 } else {
-                                    let digit = (self.0 / (divisor / 10) % 10).abs();
-                                    if digit < 5 {
+                                    let digit = (self.0 / (divisor / 10i128) % 10i128).abs();
+                                    if digit < 5.into() {
                                         Self(self.0 / divisor * divisor)
                                     } else {
                                         if self.is_negative() {
@@ -192,7 +191,7 @@ macro_rules! decimals {
                         if exp % 2 == 0 {
                             return to_dec(&base * &base / &one).powi(div(exp, 2));
                         } else {
-                            return to_dec(&base * to_dec(&base * &base / &one).powi(div(sub(exp, 1), 2)).0 / &one);
+                            return to_dec(&base * &BigInt::from(to_dec(&base * &base / &one).powi(div(sub(exp, 1), 2)).0) / &one);
                         }
                     }
                 }
@@ -270,14 +269,14 @@ macro_rules! decimals {
                     };
                 }
 
-                impl<T: TryInto<$dec> + Display> Add<T> for $dec {
+                impl<T: Into<$dec>> Add<T> for $dec {
                     type Output = $dec;
 
                     fn add(self, other: T) -> Self::Output {
                         let a = self.0;
-                        let b: $wrapped = other.try_into().expect("overflow").0;
-                        let c: $wrapped = a + b;
-                        Self(c)
+                        let b: $wrapped = TryInto::<$dec>::try_into(other).expect("overflow").0;
+                        let c = a + b;
+                        $dec(c)
                     }
                 }
 
@@ -286,9 +285,9 @@ macro_rules! decimals {
 
                     fn sub(self, other: T) -> Self::Output {
                         let a = self.0;
-                        let b: $wrapped = other.try_into().expect("overflow");
+                        let b: $wrapped = TryInto::<$dec>::try_into(other).expect("overflow").0;
                         let c: $wrapped = a - b;
-                        Self(c)
+                        $dec(c)
                     }
                 }
 
@@ -297,9 +296,9 @@ macro_rules! decimals {
 
                     fn mul(self, other: T) -> Self::Output {
                         let a = self.0;
-                        let b: $wrapped = other.try_into().expect("overflow");
+                        let b: $wrapped = TryInto::<$dec>::try_into(other).expect("overflow").0;
                         let c: $wrapped = a * b;
-                        Self(c)
+                        $dec(c)
                     }
                 }
 
@@ -308,9 +307,9 @@ macro_rules! decimals {
 
                     fn div(self, other: T) -> Self::Output {
                         let a = self.0;
-                        let b: $wrapped = other.into().0;
+                        let b: $wrapped = TryInto::<$dec>::try_into(other).expect("overflow").0;
                         let c: $wrapped = a / b;
-                        Self(c)
+                        $dec(c)
                     }
                 }
 
@@ -322,27 +321,27 @@ macro_rules! decimals {
                     }
                 }
 
-                impl<T: TryInto<$dec>> AddAssign<T> for $dec {
+                impl<T: Into<$dec>> AddAssign<T> for $dec {
                     fn add_assign(&mut self, other: T) {
-                        self.0 += other.try_into().unwrap().0;
+                        self.0 += TryInto::<$dec>::try_into(other).expect("overflow").0;
                     }
                 }
 
-                impl<T: TryInto<$dec>> SubAssign<T> for $dec {
+                impl<T: Into<$dec>> SubAssign<T> for $dec {
                     fn sub_assign(&mut self, other: T) {
-                        self.0 -= other.try_into().unwrap().0;
+                        self.0 -= TryInto::<$dec>::try_into(other).expect("overflow").0;
                     }
                 }
 
-                impl<T: TryInto<$dec>> MulAssign<T> for $dec {
+                impl<T: Into<$dec>> MulAssign<T> for $dec {
                     fn mul_assign(&mut self, other: T) {
-                        self.0 *= other.try_into().unwrap().0;
+                        self.0 *= TryInto::<$dec>::try_into(other).expect("overflow").0;
                     }
                 }
 
-                impl<T: TryInto<$dec>> DivAssign<T> for $dec {
+                impl<T: Into<$dec>> DivAssign<T> for $dec {
                     fn div_assign(&mut self, other: T) {
-                        self.0 /= other.try_into().unwrap().0;
+                        self.0 /= TryInto::<$dec>::try_into(other).expect("overflow").0;
                     }
                 }
 
@@ -470,24 +469,17 @@ macro_rules! decimals {
 }
 
 decimals! {
-    (D256F18, I256, 18, d18),
-    (D384F45, I384, 45, d45)
+    (Decimal, i128, 18, 128, dec),
+    (D256, I256, 18, 256, d256),
+    (D512, I512, 64, 512, d512)
 }
 
-pub type Decimal = D256F18;
-pub type D18 = Decimal;
-pub type D45 = D384F45;
-#[macro_export]
-macro_rules! dec {
-    ($tt:tt) => {
-        d18! {$tt}
-    };
-}
+pub type D128 = Decimal;
 
 fn read_digit(c: char) -> Result<U8, ParseDecimalError> {
     let n = U8::from(c as u8);
-    if n >= 48 && n <= 48 + 9 {
-        Ok(n - 48)
+    if n >= U8(48u8) && n <= U8(48u8 + 9u8) {
+        Ok(n - 48u8)
     } else {
         Err(ParseDecimalError::InvalidChar(c))
     }

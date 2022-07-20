@@ -88,6 +88,8 @@ pub enum ScryptoType {
     I256,
     I384,
     I512,
+    D256,
+    D512,
 
     // resource,
     Bucket,
@@ -99,7 +101,7 @@ pub enum ScryptoType {
 }
 
 // Need to update `scrypto-derive/src/import.rs` after changing the table below
-const MAPPING: [(ScryptoType, u8, &str); 32] = [
+const MAPPING: [(ScryptoType, u8, &str); 34] = [
     (ScryptoType::PackageAddress, 0x80, "PackageAddress"), // 128
     (ScryptoType::ComponentAddress, 0x81, "ComponentAddress"), // 129
     (ScryptoType::Component, 0x82, "ComponentAddress"),    // 130
@@ -116,22 +118,24 @@ const MAPPING: [(ScryptoType, u8, &str); 32] = [
     (ScryptoType::NonFungibleId, 0xb4, "NonFungibleId"),   // 180
     (ScryptoType::NonFungibleAddress, 0xb5, "NonFungibleAddress"), // 181
     (ScryptoType::ResourceAddress, 0xb6, "ResourceAddress"), // 182
-    (ScryptoType::U8, 0xb7, "U8"),                         // 183
-    (ScryptoType::U16, 0xb8, "U16"),                       // 184
-    (ScryptoType::U32, 0xb9, "U32"),                       // 185
-    (ScryptoType::U64, 0xba, "U64"),                       // 186
-    (ScryptoType::U128, 0xbb, "U128"),                     // 187
-    (ScryptoType::U256, 0xbc, "U256"),                     // 188
-    (ScryptoType::U384, 0xbd, "U384"),                     // 189
-    (ScryptoType::U512, 0xbe, "U512"),                     // 190
-    (ScryptoType::I8, 0xbf, "I8"),                         // 191
-    (ScryptoType::I16, 0xc0, "I16"),                       // 192
-    (ScryptoType::I32, 0xc1, "I32"),                       // 193
-    (ScryptoType::I64, 0xc2, "I64"),                       // 194
-    (ScryptoType::I128, 0xc3, "I128"),                     // 195
-    (ScryptoType::I256, 0xc4, "I256"),                     // 196
-    (ScryptoType::I384, 0xc5, "I384"),                     // 197
-    (ScryptoType::I512, 0xc6, "I512"),                     // 198
+    (ScryptoType::U8, 0xb7, "U8"), // 183
+    (ScryptoType::U16, 0xb8, "U16"), // 184
+    (ScryptoType::U32, 0xb9, "U32"), // 185
+    (ScryptoType::U64, 0xba, "U64"), // 186
+    (ScryptoType::U128, 0xbb, "U128"), // 187
+    (ScryptoType::U256, 0xbc, "U256"), // 188
+    (ScryptoType::U384, 0xbd, "U384"), // 189
+    (ScryptoType::U512, 0xbe, "U512"), // 190
+    (ScryptoType::I8, 0xbf, "I8"), // 191
+    (ScryptoType::I16, 0xc0, "I16"), // 192
+    (ScryptoType::I32, 0xc1, "I32"), // 193
+    (ScryptoType::I64, 0xc2, "I64"), // 194
+    (ScryptoType::I128, 0xc3, "I128"), // 195
+    (ScryptoType::I256, 0xc4, "I256"), // 196
+    (ScryptoType::I384, 0xc5, "I384"), // 197
+    (ScryptoType::I512, 0xc6, "I512"), // 198
+    (ScryptoType::D256, 0xb7, "D256"), // 183
+    (ScryptoType::D512, 0xb8, "D512"), // 184
 ];
 
 impl ScryptoType {
