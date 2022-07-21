@@ -19,7 +19,7 @@ pub struct TransactionFeeSummary {
     /// Clients should use this flag to decide whether to include the transaction into a block.
     pub system_loan_fully_repaid: bool,
     /// The specified max cost units can be consumed.
-    pub max_cost_units: u32,
+    pub cost_unit_limit: u32,
     /// The total number of cost units consumed.
     pub cost_units_consumed: u32,
     /// The cost unit price in XRD.
@@ -100,9 +100,9 @@ impl fmt::Debug for Receipt {
 
         write!(
             f,
-            "\n{} {} max, {} consumed, {} XRD per cost unit",
+            "\n{} {} limit, {} consumed, {} XRD per cost unit",
             "Cost Units:".bold().green(),
-            self.transaction_fee.max_cost_units,
+            self.transaction_fee.cost_unit_limit,
             self.transaction_fee.cost_units_consumed,
             self.transaction_fee.cost_units_price,
         )?;

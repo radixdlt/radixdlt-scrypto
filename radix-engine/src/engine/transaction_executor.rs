@@ -139,7 +139,7 @@ where
         // TODO: reward validators
         // TODO: refund overpaid fees
         let system_loan_fully_repaid = counter.owed() == 0;
-        let max_cost_units = counter.limit();
+        let cost_unit_limit = counter.limit();
         let cost_units_consumed = counter.consumed();
         let cost_units_price = 0.into();
         let burned = 0.into();
@@ -188,7 +188,7 @@ where
             transaction_network,
             transaction_fee: TransactionFeeSummary {
                 system_loan_fully_repaid,
-                max_cost_units,
+                cost_unit_limit,
                 cost_units_consumed,
                 cost_units_price,
                 burned,

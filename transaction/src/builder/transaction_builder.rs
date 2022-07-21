@@ -88,6 +88,8 @@ mod tests {
                 nonce: 5,
                 notary_public_key: private_key.public_key(),
                 notary_as_signatory: true,
+                cost_unit_limit: 1_000_000,
+                tip_bps: 5,
             })
             .manifest(
                 ManifestBuilder::new(Network::LocalSimulator)

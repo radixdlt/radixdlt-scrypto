@@ -58,6 +58,8 @@ fn bench_transaction_validation(c: &mut Criterion) {
             nonce: 1,
             notary_public_key: signer.public_key(),
             notary_as_signatory: true,
+            cost_unit_limit: 1_000_000,
+            tip_bps: 5,
         })
         .manifest(
             ManifestBuilder::new(Network::LocalSimulator)
