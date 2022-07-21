@@ -1,16 +1,8 @@
 use sbor::rust::collections::HashMap;
 use scrypto::crypto::Hash;
 
-pub trait IntentHashManager {
+pub trait IntentHashStore {
     fn allows(&self, hash: &Hash) -> bool;
-}
-
-pub trait EpochManager {
-    fn current_epoch(&self) -> u64;
-}
-
-pub struct TestEpochManager {
-    current_epoch: u64,
 }
 
 pub enum HashStatus {
@@ -18,26 +10,11 @@ pub enum HashStatus {
     Cancelled,
 }
 
-pub struct TestIntentHashManager {
+pub struct TestIntentHashStore {
     hash_status_map: HashMap<Hash, HashStatus>,
 }
 
-impl TestEpochManager {
-    pub fn new(current_epoch: u64) -> Self {
-        Self { current_epoch }
-    }
-    pub fn update_epoch(&mut self, new_epoch: u64) {
-        self.current_epoch = new_epoch;
-    }
-}
-
-impl EpochManager for TestEpochManager {
-    fn current_epoch(&self) -> u64 {
-        self.current_epoch
-    }
-}
-
-impl TestIntentHashManager {
+impl TestIntentHashStore {
     pub fn new() -> Self {
         Self {
             hash_status_map: HashMap::new(),
@@ -53,7 +30,7 @@ impl TestIntentHashManager {
     }
 }
 
-impl IntentHashManager for TestIntentHashManager {
+impl IntentHashStore for TestIntentHashStore {
     fn allows(&self, hash: &Hash) -> bool {
         !self.hash_status_map.contains_key(hash)
     }

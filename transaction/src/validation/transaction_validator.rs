@@ -3,21 +3,29 @@ use std::collections::HashSet;
 use sbor::rust::vec;
 use scrypto::buffer::scrypto_decode;
 use scrypto::crypto::*;
+use scrypto::prelude::Network;
 use scrypto::values::*;
 
 use crate::errors::{SignatureValidationError, *};
 use crate::model::*;
 use crate::validation::*;
 
+pub struct ValidationParameters {
+    pub network: Network,
+    pub current_epoch: u64,
+    pub max_cost_unit_limit: u32,
+    pub min_tip_bps: u32,
+}
+
 pub struct TransactionValidator;
 
 impl TransactionValidator {
     pub const MAX_PAYLOAD_SIZE: usize = 4 * 1024 * 1024;
 
-    pub fn validate_from_slice<I: IntentHashManager, E: EpochManager>(
+    pub fn validate_from_slice<I: IntentHashStore>(
         transaction: &[u8],
         intent_hash_store: &I,
-        epoch_manager: &E,
+        parameters: &ValidationParameters,
     ) -> Result<ValidatedTransaction, TransactionValidationError> {
         if transaction.len() > Self::MAX_PAYLOAD_SIZE {
             return Err(TransactionValidationError::TransactionTooLarge);
@@ -26,19 +34,19 @@ impl TransactionValidator {
         let transaction: NotarizedTransaction = scrypto_decode(transaction)
             .map_err(TransactionValidationError::DeserializationError)?;
 
-        Self::validate(transaction, intent_hash_store, epoch_manager)
+        Self::validate(transaction, intent_hash_store, parameters)
     }
 
-    pub fn validate<I: IntentHashManager, E: EpochManager>(
+    pub fn validate<I: IntentHashStore>(
         transaction: NotarizedTransaction,
         intent_hash_store: &I,
-        epoch_manager: &E,
+        parameters: &ValidationParameters,
     ) -> Result<ValidatedTransaction, TransactionValidationError> {
         // verify the intent
         let instructions = Self::validate_intent(
             &transaction.signed_intent.intent,
             intent_hash_store,
-            epoch_manager,
+            parameters,
         )?;
 
         // verify signatures
@@ -66,16 +74,16 @@ impl TransactionValidator {
         })
     }
 
-    pub fn validate_preview_intent<I: IntentHashManager, E: EpochManager>(
+    pub fn validate_preview_intent<I: IntentHashStore>(
         preview_intent: PreviewIntent,
         intent_hash_store: &I,
-        epoch_manager: &E,
+        parameters: &ValidationParameters,
     ) -> Result<ValidatedPreviewTransaction, TransactionValidationError> {
         let intent = &preview_intent.intent;
 
         let transaction_hash = preview_intent.hash();
 
-        let instructions = Self::validate_intent(&intent, intent_hash_store, epoch_manager)?;
+        let instructions = Self::validate_intent(&intent, intent_hash_store, parameters)?;
 
         Ok(ValidatedPreviewTransaction {
             preview_intent,
@@ -84,10 +92,10 @@ impl TransactionValidator {
         })
     }
 
-    fn validate_intent<I: IntentHashManager, E: EpochManager>(
+    fn validate_intent<I: IntentHashStore>(
         intent: &TransactionIntent,
         intent_hash_store: &I,
-        epoch_manager: &E,
+        parameters: &ValidationParameters,
     ) -> Result<Vec<ExecutableInstruction>, TransactionValidationError> {
         // verify intent hash
         if !intent_hash_store.allows(&intent.hash()) {
@@ -95,7 +103,7 @@ impl TransactionValidator {
         }
 
         // verify intent header
-        Self::validate_header(&intent, epoch_manager.current_epoch())
+        Self::validate_header(&intent, parameters)
             .map_err(TransactionValidationError::HeaderValidationError)?;
 
         let mut instructions = vec![];
@@ -279,13 +287,18 @@ impl TransactionValidator {
 
     fn validate_header(
         intent: &TransactionIntent,
-        current_epoch: u64,
+        parameters: &ValidationParameters,
     ) -> Result<(), HeaderValidationError> {
         let header = &intent.header;
 
         // version
         if header.version != TRANSACTION_VERSION_V1 {
             return Err(HeaderValidationError::UnknownVersion(header.version));
+        }
+
+        // network
+        if header.network != parameters.network {
+            return Err(HeaderValidationError::InvalidNetwork);
         }
 
         // epoch
@@ -295,13 +308,19 @@ impl TransactionValidator {
         if header.end_epoch_exclusive - header.start_epoch_inclusive > MAX_EPOCH_DURATION {
             return Err(HeaderValidationError::EpochRangeTooLarge);
         }
-        if current_epoch < header.start_epoch_inclusive
-            || current_epoch >= header.end_epoch_exclusive
+        if parameters.current_epoch < header.start_epoch_inclusive
+            || parameters.current_epoch >= header.end_epoch_exclusive
         {
             return Err(HeaderValidationError::OutOfEpochRange);
         }
 
-        // TODO: Validate transaction network matches engine network
+        // cost unit limit and tip
+        if header.cost_unit_limit > parameters.max_cost_unit_limit {
+            return Err(HeaderValidationError::InvalidCostUnitLimit);
+        }
+        if header.tip_bps < parameters.min_tip_bps {
+            return Err(HeaderValidationError::InvalidTipBps);
+        }
 
         Ok(())
     }
@@ -369,8 +388,13 @@ mod tests {
 
     macro_rules! assert_invalid_tx {
         ($result: expr, ($version: expr, $start_epoch: expr, $end_epoch: expr, $nonce: expr, $signers: expr, $notary: expr)) => {{
-            let mut hash_mgr: TestIntentHashManager = TestIntentHashManager::new();
-            let mut epoch_mgr: TestEpochManager = TestEpochManager::new(0);
+            let mut intent_hash_store: TestIntentHashStore = TestIntentHashStore::new();
+            let parameters: ValidationParameters = ValidationParameters {
+                network: Network::LocalSimulator,
+                current_epoch: 1,
+                max_cost_unit_limit: 10_000_000,
+                min_tip_bps: 0,
+            };
             assert_eq!(
                 Err($result),
                 TransactionValidator::validate(
@@ -382,8 +406,8 @@ mod tests {
                         $signers,
                         $notary
                     ),
-                    &mut hash_mgr,
-                    &mut epoch_mgr,
+                    &mut intent_hash_store,
+                    &parameters,
                 )
             );
         }};
@@ -435,12 +459,16 @@ mod tests {
 
     #[test]
     fn test_valid_preview() {
-        let mut hash_mgr: TestIntentHashManager = TestIntentHashManager::new();
-        let mut epoch_mgr: TestEpochManager = TestEpochManager::new(0);
+        let mut intent_hash_store: TestIntentHashStore = TestIntentHashStore::new();
+        let parameters: ValidationParameters = ValidationParameters {
+            network: Network::LocalSimulator,
+            current_epoch: 1,
+            max_cost_unit_limit: 10_000_000,
+            min_tip_bps: 0,
+        };
 
         // Build the whole transaction but only really care about the intent
         let tx = create_transaction(1, 0, 100, 5, vec![1, 2], 2);
-
         let signer_public_keys = tx
             .signed_intent
             .intent_signatures
@@ -454,8 +482,8 @@ mod tests {
                 signer_public_keys: signer_public_keys,
                 flags: PreviewFlags {},
             },
-            &mut hash_mgr,
-            &mut epoch_mgr,
+            &mut intent_hash_store,
+            &parameters,
         );
 
         assert!(result.is_ok());

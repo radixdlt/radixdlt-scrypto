@@ -9,6 +9,9 @@ pub enum HeaderValidationError {
     InvalidEpochRange,
     EpochRangeTooLarge,
     OutOfEpochRange,
+    InvalidNetwork,
+    InvalidCostUnitLimit,
+    InvalidTipBps,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

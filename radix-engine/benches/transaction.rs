@@ -8,9 +8,9 @@ use transaction::signing::EcdsaPrivateKey;
 use transaction::signing::Ed25519PrivateKey;
 use transaction::validation::verify_ecdsa;
 use transaction::validation::verify_ed25519;
-use transaction::validation::TestEpochManager;
-use transaction::validation::TestIntentHashManager;
+use transaction::validation::TestIntentHashStore;
 use transaction::validation::TransactionValidator;
+use transaction::validation::ValidationParameters;
 
 fn bench_ecdsa_validation(c: &mut Criterion) {
     let message = "This is a long message".repeat(100);
@@ -74,13 +74,18 @@ fn bench_transaction_validation(c: &mut Criterion) {
 
     c.bench_function("Transaction validation", |b| {
         b.iter(|| {
-            let epoch_manager = TestEpochManager::new(0);
-            let intent_hash_manager = TestIntentHashManager::new();
+            let intent_hash_store = TestIntentHashStore::new();
+            let parameters: ValidationParameters = ValidationParameters {
+                network: Network::LocalSimulator,
+                current_epoch: 1,
+                max_cost_unit_limit: 10_000_000,
+                min_tip_bps: 0,
+            };
 
             TransactionValidator::validate_from_slice(
                 &transaction_bytes,
-                &intent_hash_manager,
-                &epoch_manager,
+                &intent_hash_store,
+                &parameters,
             )
             .unwrap();
         })

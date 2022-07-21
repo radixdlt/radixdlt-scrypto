@@ -1,8 +1,9 @@
+use scrypto::prelude::Network;
 use transaction::errors::TransactionValidationError;
 use transaction::model::PreviewIntent;
-use transaction::validation::TestEpochManager;
-use transaction::validation::TestIntentHashManager;
+use transaction::validation::TestIntentHashStore;
 use transaction::validation::TransactionValidator;
+use transaction::validation::ValidationParameters;
 
 use crate::engine::*;
 use crate::ledger::*;
@@ -26,13 +27,18 @@ impl PreviewExecutor {
         preview_intent: PreviewIntent,
         substate_store: S,
     ) -> Result<PreviewResult, PreviewError> {
-        let epoch_manager = TestEpochManager::new(0);
-        let intent_hash_manager = TestIntentHashManager::new();
+        let intent_hash_store = TestIntentHashStore::new();
+        let parameters: ValidationParameters = ValidationParameters {
+            network: Network::LocalSimulator,
+            current_epoch: 1,
+            max_cost_unit_limit: 10_000_000,
+            min_tip_bps: 0,
+        }; // TODO: construct validation parameters based on current world state
 
         let validated_preview_transaction = TransactionValidator::validate_preview_intent(
             preview_intent.clone(),
-            &intent_hash_manager,
-            &epoch_manager,
+            &intent_hash_store,
+            &parameters,
         )
         .map_err(PreviewError::TransactionValidationError)?;
 
