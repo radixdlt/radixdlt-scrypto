@@ -134,26 +134,23 @@ where
 
         // 4. Settle transaction fee
         let counter = root_frame.cost_unit_counter();
-        if counter.balance() > 0 {
-            // TODO: refund
-            let _overpaid = counter.balance();
-        }
-        for _i in 0..10 {
-            // TODO: burn fee + reward validators
-        }
+        // TODO: burn fee in a FILO order
+        // TODO: reward validators
+        // TODO: refund overpaid fees
         let system_loan_full_repaid = counter.owed() == 0;
         let max_cost_units = counter.limit();
         let cost_units_consumed = counter.consumed();
-        let cost_units_price = 3.into();
-        let burned = 4.into();
-        let tipped = 5.into();
+        let cost_units_price = 0.into();
+        let burned = 0.into();
+        let tipped = 0.into();
 
-        // 5. Generate receipts and commit (TODO: split out commit phase)
+        // 5. Generate receipts and commit
         let track_receipt = track.to_receipt(result.is_ok());
         self.substate_store = match Rc::try_unwrap(substate_store_rc) {
             Ok(store) => Some(store),
             Err(_) => panic!("There should be no other strong refs that prevent unwrapping"),
         };
+        // TODO: remove commit step
         let commit_receipt = track_receipt
             .state_changes
             .commit(self.substate_store_mut());

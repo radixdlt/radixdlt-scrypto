@@ -326,8 +326,8 @@ impl ResourceManager {
             let value = system_api
                 .read_value_data(SubstateAddress::NonFungible(self_address, id.clone()))
                 .expect("Should never fail");
-            let maybe_non_fungible: NonFungibleWrapper = scrypto_decode(&value.raw).unwrap();
-            if maybe_non_fungible.0.is_some() {
+            let wrapper: NonFungibleWrapper = scrypto_decode(&value.raw).unwrap();
+            if wrapper.0.is_some() {
                 return Err(ResourceManagerError::NonFungibleAlreadyExists(
                     NonFungibleAddress::new(self_address, id.clone()),
                 ));
@@ -528,10 +528,10 @@ impl ResourceManager {
                         input.id.clone(),
                     ))
                     .expect("Should never fail");
-                let maybe_non_fungible: NonFungibleWrapper = scrypto_decode(&value.raw).unwrap();
+                let wrapper: NonFungibleWrapper = scrypto_decode(&value.raw).unwrap();
 
                 // Write new value
-                if let Some(mut non_fungible) = maybe_non_fungible.0 {
+                if let Some(mut non_fungible) = wrapper.0 {
                     non_fungible.set_mutable_data(input.data);
                     system_api
                         .write_value_data(
@@ -562,8 +562,8 @@ impl ResourceManager {
                         input.id,
                     ))
                     .expect("Should never fail");
-                let maybe_non_fungible: NonFungibleWrapper = scrypto_decode(&value.raw).unwrap();
-                Ok(ScryptoValue::from_typed(&maybe_non_fungible.0.is_some()))
+                let wrapper: NonFungibleWrapper = scrypto_decode(&value.raw).unwrap();
+                Ok(ScryptoValue::from_typed(&wrapper.0.is_some()))
             }
             "non_fungible_data" => {
                 let input: ResourceManagerGetNonFungibleInput = scrypto_decode(&arg.raw)
@@ -576,13 +576,10 @@ impl ResourceManager {
                         input.id,
                     ))
                     .expect("Should never fail");
-                let maybe_non_fungible: NonFungibleWrapper = scrypto_decode(&value.raw).unwrap();
-                let non_fungible =
-                    maybe_non_fungible
-                        .0
-                        .ok_or(ResourceManagerError::NonFungibleNotFound(
-                            non_fungible_address,
-                        ))?;
+                let wrapper: NonFungibleWrapper = scrypto_decode(&value.raw).unwrap();
+                let non_fungible = wrapper.0.ok_or(ResourceManagerError::NonFungibleNotFound(
+                    non_fungible_address,
+                ))?;
                 Ok(ScryptoValue::from_typed(&[
                     non_fungible.immutable_data(),
                     non_fungible.mutable_data(),

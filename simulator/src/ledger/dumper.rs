@@ -137,8 +137,8 @@ fn dump_kv_store<T: ReadableSubstateStore + QueryableSubstateStore, O: std::io::
     );
     for (last, (k, v)) in map.iter().identify_last() {
         let key = ScryptoValue::from_slice(k).unwrap();
-        let value_wrapper: KeyValueStoreEntryWrapper = scrypto_decode(v).unwrap();
-        if let Some(v) = value_wrapper.0 {
+        let wrapper: KeyValueStoreEntryWrapper = scrypto_decode(v).unwrap();
+        if let Some(v) = wrapper.0 {
             let value = ScryptoValue::from_slice(&v).unwrap();
             writeln!(output, "{} {} => {}", list_item_prefix(last), key, value);
             referenced_maps.extend(value.kv_store_ids);

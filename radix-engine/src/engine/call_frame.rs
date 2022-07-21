@@ -424,7 +424,7 @@ impl<'f> REValueRefMut<'f> {
             }
         };
 
-        // TODO: Cleanup after adding support polymorphism with SBOR
+        // TODO: Cleanup after adding polymorphism support for SBOR
         // For now, we have to use `Vec<u8>` within `KeyValueStoreEntryWrapper`
         // and apply the following ugly conversion.
         let value = wrapper.0.map_or(
@@ -2226,6 +2226,7 @@ where
                     if liquid.resource_address() != RADIX_TOKEN {
                         return Err(RuntimeError::PayFeeError(PayFeeError::NotRadixToken));
                     }
+                    // TODO: should we do another invoke instead?
                     let fee = liquid.take(amount).map_err(RuntimeError::VaultError)?;
                     match locked {
                         Some(existing) => {

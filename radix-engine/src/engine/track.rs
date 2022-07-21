@@ -111,6 +111,7 @@ pub enum SubstateValue {
     Resource(ResourceManager),
     Component(Component),
     Package(ValidatedPackage),
+    // TODO: add a wrapper type for this
     Vault(Vault, Option<ResourceContainer>),
     NonFungible(NonFungibleWrapper),
     KeyValueStoreEntry(KeyValueStoreEntryWrapper),

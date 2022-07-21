@@ -15,18 +15,18 @@ use crate::engine::CommitReceipt;
 use crate::engine::RuntimeError;
 
 pub struct TransactionFeeSummary {
-    /// Whether the fee loan has been fully repaid.
+    /// Whether system fee loan is fully repaid.
     /// Clients should use this flag to decide whether to include the transaction into a block.
     pub system_loan_full_repaid: bool,
-    /// The specified max cost units can be consumed
+    /// The specified max cost units can be consumed.
     pub max_cost_units: u32,
-    /// The total number of cost units consumed
+    /// The total number of cost units consumed.
     pub cost_units_consumed: u32,
-    /// The cost unit price in XRD
+    /// The cost unit price in XRD.
     pub cost_units_price: Decimal,
-    /// The total amount of XRD burned
+    /// The total amount of XRD burned.
     pub burned: Decimal,
-    /// The total amount of XRD tipped to validators
+    /// The total amount of XRD tipped to validators.
     pub tipped: Decimal,
 }
 
