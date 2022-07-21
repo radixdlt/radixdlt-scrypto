@@ -6,11 +6,6 @@ use sbor::rust::convert::{From, TryFrom};
 use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
 
-#[derive(Debug)]
-pub enum ParseIntError {
-    NegativeToUnsigned,
-    Overflow,
-}
 
 /// Trait for short hand notation for try_from().unwrap()
 /// As opposed to `try_from(x).unwrap()` this will panic if the conversion fails.
@@ -58,14 +53,41 @@ macro_rules! impl_from_primitive {
 }
 impl_from_primitive! { I8, I16, I32, I64, I128, I256, I384, I512, U8, U16, U32, U64, U128, U256, U384, U512 }
 
+macro_rules! error {
+    ($($t:ident),*) => {
+        paste! {
+            $(
+                #[derive(Debug, Clone, PartialEq, Eq)]
+                pub enum [<Parse $t Error>] {
+                    NegativeToUnsigned,
+                    Overflow,
+                    InvalidLength,
+                }
+                
+                #[cfg(not(feature = "alloc"))]
+                impl std::error::Error for [<Parse $t Error>] {}
+
+                #[cfg(not(feature = "alloc"))]
+                impl fmt::Display for [<Parse $t Error>] {
+                    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                        write!(f, "{:?}", self)
+                    }
+                }
+            )*
+        }
+    };
+}
+
+error! { i8, i16, i32, i64, isize, i128, u8, u16, u32, u64, usize, u128, I8, I16, I32, I64, I128, I256, I384, I512, U8, U16, U32, U64, U128, U256, U384, U512 }
+
 macro_rules! try_from{
     ($t:ident, ($($o:ident),*)) => {
         $(
             paste! {
                 impl TryFrom<$o> for $t {
-                    type Error = ParseIntError;
-                    fn try_from(val: $o) -> Result<$t, ParseIntError> {
-                        BigInt::from(val).try_into().map_err(|_| ParseIntError::Overflow)
+                    type Error = [<Parse $t Error>];
+                    fn try_from(val: $o) -> Result<$t, [<Parse $t Error>]> {
+                        BigInt::from(val).try_into().map_err(|_| [<Parse $t Error>]::Overflow)
                     }
                 }
                 impl TFrom<$o> for $t {
@@ -151,15 +173,15 @@ macro_rules! impl_others_to_large_unsigned {
         $(
             paste! {
                 impl TryFrom<BigInt> for $t {
-                    type Error = ParseIntError;
-                    fn try_from(val: BigInt) -> Result<$t, ParseIntError> {
+                    type Error = [<Parse $t Error>];
+                    fn try_from(val: BigInt) -> Result<$t, [<Parse $t Error>]> {
                         let (sign, bytes) = val.to_bytes_le();
                         if sign == Sign::Minus {
-                            return Err(ParseIntError::NegativeToUnsigned);
+                            return Err([<Parse $t Error>]::NegativeToUnsigned);
                         }
                         const T_BYTES: usize = (<$t>::BITS / 8 ) as usize;
                         if bytes.len() > T_BYTES {
-                            return Err(ParseIntError::Overflow);
+                            return Err([<Parse $t Error>]::Overflow);
                         }
                         let mut buf = [0u8; T_BYTES];
                         buf[..bytes.len()].copy_from_slice(&bytes);
@@ -175,10 +197,10 @@ macro_rules! impl_others_to_large_unsigned {
                 }
 
                 impl TryFrom<&[u8]> for $t {
-                    type Error = ParseSliceError;
+                    type Error = [<Parse $t Error>];
                     fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
                         if bytes.len() > (<$t>::BITS / 8) as usize {
-                            Err(ParseSliceError::InvalidLength)
+                            Err([<Parse $t Error>]::InvalidLength)
                         } else {
                             let mut buf = [0u8; (<$t>::BITS / 8) as usize];
                             buf[..bytes.len()].copy_from_slice(bytes);
@@ -196,10 +218,10 @@ macro_rules! impl_others_to_large_unsigned {
 
 
                 impl TryFrom<Vec<u8>> for $t {
-                    type Error = ParseSliceError;
+                    type Error = [<Parse $t Error>];
                     fn try_from(bytes: Vec<u8>) -> Result<Self, Self::Error> {
                         if bytes.len() > (<$t>::BITS / 8) as usize {
-                            Err(ParseSliceError::InvalidLength)
+                            Err([<Parse $t Error>]::InvalidLength)
                         } else {
                             let mut buf = [0u8; (<$t>::BITS / 8) as usize];
                             buf[..bytes.len()].copy_from_slice(&bytes);
@@ -227,12 +249,12 @@ macro_rules! impl_others_to_large_signed {
         $(
             paste! {
                 impl TryFrom<BigInt> for $t {
-                    type Error = ParseIntError;
-                    fn try_from(val: BigInt) -> Result<$t, ParseIntError> {
+                    type Error = [<Parse $t Error>];
+                    fn try_from(val: BigInt) -> Result<$t, [<Parse $t Error>]> {
                         let bytes = val.to_signed_bytes_le();
                         const T_BYTES: usize = (<$t>::BITS / 8 ) as usize;
                         if bytes.len() > T_BYTES {
-                            return Err(ParseIntError::Overflow);
+                            return Err([<Parse $t Error>]::Overflow);
                         }
                         let mut buf = if val.is_negative() {
                             [255u8; T_BYTES]
@@ -252,11 +274,11 @@ macro_rules! impl_others_to_large_signed {
                 }
 
                 impl TryFrom<&[u8]> for $t {
-                    type Error = ParseSliceError;
+                    type Error = [<Parse $t Error>];
                     fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
                         const T_BYTES: usize = (<$t>::BITS / 8 ) as usize;
                         if bytes.len() > T_BYTES {
-                            Err(ParseSliceError::InvalidLength)
+                            Err([<Parse $t Error>]::InvalidLength)
                         } else {
                             let mut buf = if bytes.len() != 0 && (*bytes.iter().last().unwrap() as i8) < 0 {
                                 [255u8; T_BYTES]
@@ -278,11 +300,11 @@ macro_rules! impl_others_to_large_signed {
 
 
                 impl TryFrom<Vec<u8>> for $t {
-                    type Error = ParseSliceError;
+                    type Error = [<Parse $t Error>];
                     fn try_from(bytes: Vec<u8>) -> Result<Self, Self::Error> {
                         const T_BYTES: usize = (<$t>::BITS / 8 ) as usize;
                         if bytes.len() > T_BYTES {
-                            Err(ParseSliceError::InvalidLength)
+                            Err([<Parse $t Error>]::InvalidLength)
                         } else {
                             let mut buf = if bytes.len() != 0 && (*bytes.last().unwrap() as i8) < 0 {
                                 [255u8; T_BYTES]
@@ -312,12 +334,12 @@ macro_rules! impl_others_to_small_unsigned {
         $(
             paste! {
                 impl TryFrom<BigInt> for $t {
-                    type Error = ParseIntError;
-                    fn try_from(val: BigInt) -> Result<$t, ParseIntError> {
+                    type Error = [<Parse $t Error>];
+                    fn try_from(val: BigInt) -> Result<$t, [<Parse $t Error>]> {
                         if val.is_negative() {
-                            return Err(ParseIntError::NegativeToUnsigned);
+                            return Err([<Parse $t Error>]::NegativeToUnsigned);
                         }
-                        Ok($t(val.[<to_$t:lower>]().ok_or_else(|| ParseIntError::Overflow).unwrap()))
+                        Ok($t(val.[<to_$t:lower>]().ok_or_else(|| [<Parse $t Error>]::Overflow).unwrap()))
                     }
                 }
 
@@ -329,11 +351,11 @@ macro_rules! impl_others_to_small_unsigned {
                 }
 
                 impl TryFrom<&[u8]> for $t {
-                    type Error = ParseSliceError;
+                    type Error = [<Parse $t Error>];
                     fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
                         const T_BYTES: usize = (<$t>::BITS / 8 ) as usize;
                         if bytes.len() > T_BYTES {
-                            Err(ParseSliceError::InvalidLength)
+                            Err([<Parse $t Error>]::InvalidLength)
                         } else {
                             let mut buf = [0u8; T_BYTES];
                             buf[..bytes.len()].copy_from_slice(bytes);
@@ -351,11 +373,11 @@ macro_rules! impl_others_to_small_unsigned {
                 }
 
                 impl TryFrom<Vec<u8>> for $t {
-                    type Error = ParseSliceError;
+                    type Error = [<Parse $t Error>];
                     fn try_from(bytes: Vec<u8>) -> Result<Self, Self::Error> {
                         const T_BYTES: usize = (<$t>::BITS / 8 ) as usize;
                         if bytes.len() > T_BYTES {
-                            Err(ParseSliceError::InvalidLength)
+                            Err([<Parse $t Error>]::InvalidLength)
                         } else {
                             let mut buf = [0u8; T_BYTES];
                             buf[..bytes.len()].copy_from_slice(&bytes);
@@ -384,9 +406,9 @@ macro_rules! impl_others_to_small_signed {
         $(
             paste! {
                 impl TryFrom<BigInt> for $t {
-                    type Error = ParseIntError;
-                    fn try_from(val: BigInt) -> Result<$t, ParseIntError> {
-                        Ok($t(val.[<to_$t:lower>]().ok_or_else(|| ParseIntError::Overflow).unwrap()))
+                    type Error = [<Parse $t Error>];
+                    fn try_from(val: BigInt) -> Result<$t, [<Parse $t Error>]> {
+                        Ok($t(val.[<to_$t:lower>]().ok_or_else(|| [<Parse $t Error>]::Overflow).unwrap()))
                     }
                 }
 
@@ -398,11 +420,11 @@ macro_rules! impl_others_to_small_signed {
                 }
 
                 impl TryFrom<&[u8]> for $t {
-                    type Error = ParseSliceError;
+                    type Error = [<Parse $t Error>];
                     fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
                         const T_BYTES: usize = (<$t>::BITS / 8 ) as usize;
                         if bytes.len() > T_BYTES {
-                            Err(ParseSliceError::InvalidLength)
+                            Err([<Parse $t Error>]::InvalidLength)
                         } else {
                             let mut buf = if bytes.len() != 0 && (*bytes.last().unwrap() as i8) < 0 {
                                 [255u8; T_BYTES]
@@ -424,11 +446,11 @@ macro_rules! impl_others_to_small_signed {
                 }
 
                 impl TryFrom<Vec<u8>> for $t {
-                    type Error = ParseSliceError;
+                    type Error = [<Parse $t Error>];
                     fn try_from(bytes: Vec<u8>) -> Result<Self, Self::Error> {
                         const T_BYTES: usize = (<$t>::BITS / 8 ) as usize;
                         if bytes.len() > T_BYTES {
-                            Err(ParseSliceError::InvalidLength)
+                            Err([<Parse $t Error>]::InvalidLength)
                         } else {
                             let mut buf = if bytes.len() != 0 && (*bytes.last().unwrap() as i8) < 0 {
                                 [255u8; T_BYTES]
@@ -514,11 +536,6 @@ macro_rules! from_array_small {
 }
 
 from_array_small! { U8, U16, U32, U64, U128, I8, I16, I32, I64, I128 }
-
-#[derive(Debug)]
-pub enum ParseSliceError {
-    InvalidLength,
-}
 
 macro_rules! from_int {
     ($t:ident, ($($o:ident),*)) => {
@@ -760,29 +777,37 @@ big_int_from! {U256}
 big_int_from! {U384}
 big_int_from! {U512}
 
-macro_rules! array_from_large {
+macro_rules! seq_from_large {
     ($($t:ident),*) => {
         $(
             impl $t {
                 pub fn to_le_bytes(&self) -> [u8; (<$t>::BITS / 8) as usize] {
                     self.0
                 }
-            }
-        )*
-    };
-}
 
-macro_rules! array_from_small {
-    ($($t:ident),*) => {
-        $(
-            impl $t {
-                pub fn to_le_bytes(&self) -> [u8; (<$t>::BITS / 8) as usize] {
-                    self.0.to_le_bytes()
+                pub fn to_vec(&self) -> Vec<u8> {
+                    self.0.into()
                 }
             }
         )*
     };
 }
 
-array_from_large! {I256, I384, I512, U256, U384, U512}
-array_from_small! {I8, I16, I32, I64, I128, U8, U16, U32, U64, U128}
+macro_rules! seq_from_small {
+    ($($t:ident),*) => {
+        $(
+            impl $t {
+                pub fn to_le_bytes(&self) -> [u8; (<$t>::BITS / 8) as usize] {
+                    self.0.to_le_bytes()
+                }
+
+                pub fn to_vec(&self) -> Vec<u8> {
+                    self.0.to_le_bytes().to_vec()
+                }
+            }
+        )*
+    };
+}
+
+seq_from_large! {I256, I384, I512, U256, U384, U512}
+seq_from_small! {I8, I16, I32, I64, I128, U8, U16, U32, U64, U128}

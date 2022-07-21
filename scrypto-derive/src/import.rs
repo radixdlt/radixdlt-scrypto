@@ -321,12 +321,6 @@ fn get_native_type(ty: &des::Type) -> Result<(Type, Vec<Item>)> {
                 ScryptoType::Ed25519PublicKey => "::scrypto::crypto::Ed25519PublicKey",
                 ScryptoType::Ed25519Signature => "::scrypto::crypto::Ed25519Signature",
                 ScryptoType::Decimal => "::scrypto::math::Decimal",
-                ScryptoType::Bucket => "::scrypto::resource::Bucket",
-                ScryptoType::Proof => "::scrypto::resource::Proof",
-                ScryptoType::Vault => "::scrypto::resource::Vault",
-                ScryptoType::NonFungibleId => "::scrypto::resource::NonFungibleId",
-                ScryptoType::NonFungibleAddress => "::scrypto::resource::NonFungibleAddress",
-                ScryptoType::ResourceAddress => "::scrypto::resource::ResourceAddress",
                 ScryptoType::U8 => "::scrypto::math::U8",
                 ScryptoType::U16 => "::scrypto::math::U16",
                 ScryptoType::U32 => "::scrypto::math::U32",
@@ -343,6 +337,12 @@ fn get_native_type(ty: &des::Type) -> Result<(Type, Vec<Item>)> {
                 ScryptoType::I256 => "::scrypto::math::I256",
                 ScryptoType::I384 => "::scrypto::math::I384",
                 ScryptoType::I512 => "::scrypto::math::I512",
+                ScryptoType::Bucket => "::scrypto::resource::Bucket",
+                ScryptoType::Proof => "::scrypto::resource::Proof",
+                ScryptoType::Vault => "::scrypto::resource::Vault",
+                ScryptoType::NonFungibleId => "::scrypto::resource::NonFungibleId",
+                ScryptoType::NonFungibleAddress => "::scrypto::resource::NonFungibleAddress",
+                ScryptoType::ResourceAddress => "::scrypto::resource::ResourceAddress",
             };
 
             let ty: Type = parse_str(canonical_name).unwrap();

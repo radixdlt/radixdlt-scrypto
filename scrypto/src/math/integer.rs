@@ -4,18 +4,21 @@ use core::ops::{Add, AddAssign, BitAnd, BitAndAssign, BitOr, BitOrAssign};
 use core::ops::{BitXor, BitXorAssign, Div, DivAssign};
 use core::ops::{Mul, MulAssign, Neg, Not, Rem, RemAssign};
 use core::ops::{Shl, ShlAssign, Shr, ShrAssign, Sub, SubAssign};
+use crate::abi::*;
 use num_bigint::{BigInt, BigUint, Sign};
 use num_traits::{One, Pow, Signed, ToPrimitive, Zero};
 use paste::paste;
+use sbor::*;
 use sbor::rust::convert::{From, TryFrom};
 use sbor::rust::fmt;
 use sbor::rust::vec::Vec;
 
-mod basic;
+pub mod basic;
 pub mod bits;
 pub mod convert;
 #[cfg(test)]
 mod test;
+pub use convert::*;
 
 macro_rules! types {
 
@@ -119,6 +122,8 @@ macro_rules! types {
                     stringify!($t)
                 }
             }
+
+            scrypto_type!($t, ScryptoType::$t, Vec::new());
 
             )*
         }
@@ -397,6 +402,56 @@ macro_rules! checked_impl {
     }
 checked_impl! {
 //(self, other, output)
+(u8, U8, U8), (u8, U16, U16), (u8, U32, U32), (u8, U64, U64), (u8, U128, U128),
+(u8, U256, U256), (u8, U384, U384), (u8, U512, U512),
+(u8, I8, I8), (u8, I16, I16), (u8, I32, I32), (u8, I64, I64), (u8, I128, I128),
+(u8, I256, I256), (u8, I384, I384), (u8, I512, I512),
+
+(u16, U8, U16), (u16, U16, U16), (u16, U32, U32), (u16, U64, U64), (u16, U128, U128),
+(u16, U256, U256), (u16, U384, U384), (u16, U512, U512), (u16, I8, I16), (u16, I16, I16),
+(u16, I32, I32), (u16, I64, I64), (u16, I128, I128), (u16, I256, I256), (u16, I384, I384),
+(u16, I512, I512),
+
+(u32, U8, U32), (u32, U16, U32), (u32, U32, U32), (u32, U64, U64), (u32, U128, U128),
+(u32, U256, U256), (u32, U384, U384), (u32, U512, U512), (u32, I8, I32), (u32, I16, I32),
+(u32, I32, I32), (u32, I64, I64), (u32, I128, I128), (u32, I256, I256), (u32, I384, I384),
+(u32, I512, I512),
+
+(u64, U8, U64), (u64, U16, U64), (u64, U32, U64), (u64, U64, U64), (u64, U128, U128),
+(u64, U256, U256), (u64, U384, U384), (u64, U512, U512), (u64, I8, I64), (u64, I16, I64),
+(u64, I32, I64), (u64, I64, I64), (u64, I128, I128), (u64, I256, I256), (u64, I384, I384),
+(u64, I512, I512),
+
+(u128, U8, U128), (u128, U16, U128), (u128, U32, U128), (u128, U64, U128),
+(u128, U128, U128), (u128, U256, U256), (u128, U384, U384), (u128, U512, U512),
+(u128, I8, I128), (u128, I16, I128), (u128, I32, I128), (u128, I64, I128),
+(u128, I128, I128), (u128, I256, I256), (u128, I384, I384), (u128, I512, I512),
+
+(i8, U8, I8), (i8, U16, I16), (i8, U32, I32), (i8, U64, I64), (i8, U128, I128),
+(i8, U256, I256), (i8, U384, I384), (i8, U512, I512), (i8, I8, I8), (i8, I16, I16),
+(i8, I32, I32), (i8, I64, I64), (i8, I128, I128), (i8, I256, I256), (i8, I384, I384),
+(i8, I512, I512),
+
+(i16, U8, I16), (i16, U16, I16), (i16, U32, I32), (i16, U64, I64), (i16, U128, I128),
+(i16, U256, I256), (i16, U384, I384), (i16, U512, I512), (i16, I8, I16), (i16, I16, I16),
+(i16, I32, I32), (i16, I64, I64), (i16, I128, I128), (i16, I256, I256), (i16, I384, I384),
+(i16, I512, I512),
+
+(i32, U8, I32), (i32, U16, I32), (i32, U32, I32), (i32, U64, I64), (i32, U128, I128),
+(i32, U256, I256), (i32, U384, I384), (i32, U512, I512), (i32, I8, I32), (i32, I16, I32),
+(i32, I32, I32), (i32, I64, I64), (i32, I128, I128), (i32, I256, I256), (i32, I384, I384),
+(i32, I512, I512),
+
+(i64, U8, I64), (i64, U16, I64), (i64, U32, I64), (i64, U64, I64), (i64, U128, I128),
+(i64, U256, I256), (i64, U384, I384), (i64, U512, I512), (i64, I8, I64), (i64, I16, I64),
+(i64, I32, I64), (i64, I64, I64), (i64, I128, I128), (i64, I256, I256), (i64, I384, I384),
+(i64, I512, I512),
+
+(i128, U8, I128), (i128, U16, I128), (i128, U32, I128), (i128, U64, I128),
+(i128, U128, I128), (i128, U256, I256), (i128, U384, I384), (i128, U512, I512),
+(i128, I8, I128), (i128, I16, I128), (i128, I32, I128), (i128, I64, I128),
+(i128, I128, I128), (i128, I256, I256), (i128, I384, I384), (i128, I512, I512),
+
 (I8, u8, I8), (I8, u16, I16), (I8, u32, I32), (I8, u64, I64), (I8, u128, I128),
 (I8, i8, I8), (I8, i16, I16), (I8, i32, I32), (I8, i64, I64), (I8, i128, I128),
 (I8, U8, I8), (I8, U16, I16), (I8, U32, I32), (I8, U64, I64), (I8, U128, I128),
