@@ -10,7 +10,7 @@ use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
-use scrypto::core::{Network, SNodeRef, ScryptoActor};
+use scrypto::core::{SNodeRef, ScryptoActor};
 use scrypto::engine::types::*;
 use scrypto::prelude::ComponentOffset;
 use scrypto::resource::AuthZoneClearInput;
@@ -2125,15 +2125,6 @@ where
             "read_transaction_hash",
         )?;
         Ok(self.track.transaction_hash())
-    }
-
-    fn transaction_network(&mut self) -> Result<Network, CostUnitCounterError> {
-        self.cost_unit_counter.consume(
-            self.fee_table
-                .system_api_cost(SystemApiCostingEntry::ReadTransactionHash),
-            "read_transaction_network",
-        )?;
-        Ok(self.track.transaction_network())
     }
 
     fn generate_uuid(&mut self) -> Result<u128, CostUnitCounterError> {

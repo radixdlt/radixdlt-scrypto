@@ -5,7 +5,6 @@ use sbor::rust::vec;
 use sbor::*;
 use scrypto::buffer::*;
 use scrypto::constants::*;
-use scrypto::core::Network;
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
 use scrypto::resource::ResourceMethodAuthKey::Withdraw;
@@ -95,7 +94,7 @@ fn create_genesis(mut track: Track) -> TrackReceipt {
     track.to_receipt(true)
 }
 
-pub fn bootstrap<S>(mut substate_store: S, network: Network) -> S
+pub fn bootstrap<S>(mut substate_store: S) -> S
 where
     S: ReadableSubstateStore + WriteableSubstateStore + 'static,
 {
@@ -105,7 +104,7 @@ where
     {
         let transaction_hash = Hash([0u8; 32]);
         let substate_store_rc = Rc::new(substate_store);
-        let track = Track::new(substate_store_rc.clone(), transaction_hash, network);
+        let track = Track::new(substate_store_rc.clone(), transaction_hash);
         let receipt = create_genesis(track);
         substate_store = match Rc::try_unwrap(substate_store_rc) {
             Ok(store) => store,

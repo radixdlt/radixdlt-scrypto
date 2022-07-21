@@ -21,12 +21,10 @@ impl SetCurrentEpoch {
         // TODO: can we construct a proper transaction to do the following?
 
         let tx_hash = hash(get_nonce()?.to_string());
-        let tx_network = Network::LocalSimulator;
-
         let substate_store_rc = Rc::new(RadixEngineDB::with_bootstrap(get_data_dir()?));
         let mut wasm_engine = DefaultWasmEngine::new();
         let mut wasm_instrumenter = WasmInstrumenter::new();
-        let mut track = Track::new(substate_store_rc.clone(), tx_hash, tx_network);
+        let mut track = Track::new(substate_store_rc.clone(), tx_hash);
         let mut cost_unit_counter = CostUnitCounter::new(MAX_TRANSACTION_COST, SYSTEM_LOAN_AMOUNT);
         let fee_table = FeeTable::new();
 

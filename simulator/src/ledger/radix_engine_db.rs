@@ -20,7 +20,7 @@ impl RadixEngineDB {
 
     pub fn with_bootstrap(root: PathBuf) -> Self {
         let substate_store = Self::new(root);
-        bootstrap(substate_store, scrypto::core::Network::LocalSimulator)
+        bootstrap(substate_store)
     }
 
     pub fn list_packages(&self) -> Vec<PackageAddress> {

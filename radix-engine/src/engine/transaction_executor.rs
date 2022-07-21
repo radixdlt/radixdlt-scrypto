@@ -85,11 +85,7 @@ where
         // 1. Start state track
         let substate_store_rc =
             Rc::new(self.substate_store.take().expect("Missing substate store"));
-        let mut track = Track::new(
-            substate_store_rc.clone(),
-            transaction_hash,
-            transaction_network.clone(),
-        );
+        let mut track = Track::new(substate_store_rc.clone(), transaction_hash);
 
         // 2. Apply pre-execution costing
         let mut cost_unit_counter = CostUnitCounter::new(MAX_TRANSACTION_COST, SYSTEM_LOAN_AMOUNT);

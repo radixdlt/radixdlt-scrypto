@@ -4,7 +4,6 @@ use sbor::rust::rc::Rc;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto::core::Network;
 use scrypto::engine::types::*;
 use transaction::validation::*;
 
@@ -36,7 +35,6 @@ impl BorrowedSubstate {
 /// such as logs and events.
 pub struct Track {
     transaction_hash: Hash,
-    transaction_network: Network,
     id_allocator: IdAllocator,
     logs: Vec<(Level, String)>,
     new_addresses: Vec<Address>,
@@ -370,17 +368,12 @@ impl Into<Vault> for SubstateValue {
 }
 
 impl Track {
-    pub fn new(
-        substate_store: Rc<dyn ReadableSubstateStore>,
-        transaction_hash: Hash,
-        transaction_network: Network,
-    ) -> Self {
+    pub fn new(substate_store: Rc<dyn ReadableSubstateStore>, transaction_hash: Hash) -> Self {
         let base_state_track = BaseStateTrack::new(substate_store);
         let state_track = AppStateTrack::new(base_state_track);
 
         Self {
             transaction_hash,
-            transaction_network,
             id_allocator: IdAllocator::new(IdSpace::Application),
             logs: Vec::new(),
             new_addresses: Vec::new(),
@@ -392,9 +385,6 @@ impl Track {
     /// Returns the transaction hash.
     pub fn transaction_hash(&self) -> Hash {
         self.transaction_hash
-    }
-    pub fn transaction_network(&self) -> Network {
-        self.transaction_network.clone()
     }
 
     /// Adds a log message.

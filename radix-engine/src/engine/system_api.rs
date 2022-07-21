@@ -1,6 +1,6 @@
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
-use scrypto::core::{Network, SNodeRef};
+use scrypto::core::SNodeRef;
 use scrypto::engine::types::*;
 use scrypto::resource::AccessRule;
 use scrypto::values::*;
@@ -56,8 +56,6 @@ where
         -> Result<ScryptoValue, RuntimeError>;
 
     fn transaction_hash(&mut self) -> Result<Hash, CostUnitCounterError>;
-
-    fn transaction_network(&mut self) -> Result<Network, CostUnitCounterError>;
 
     fn generate_uuid(&mut self) -> Result<u128, CostUnitCounterError>;
 

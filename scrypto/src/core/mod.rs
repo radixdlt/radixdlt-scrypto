@@ -11,6 +11,5 @@ pub use level::Level;
 pub use logger::Logger;
 pub use network::{Network, NetworkError};
 pub use runtime::{
-    Runtime, SystemGetCurrentEpochInput, SystemGetTransactionHashInput,
-    SystemGetTransactionNetworkInput, SystemSetEpochInput,
+    Runtime, SystemGetCurrentEpochInput, SystemGetTransactionHashInput, SystemSetEpochInput,
 };
