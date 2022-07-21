@@ -9,14 +9,12 @@ use scrypto::engine::types::*;
 use transaction::validation::*;
 
 use crate::engine::track::BorrowedSubstate::Taken;
+use crate::engine::AppStateTrack;
+use crate::engine::BaseStateTrack;
+use crate::engine::StateTrackError;
 use crate::engine::{RENode, SubstateOperationsReceipt};
 use crate::ledger::*;
 use crate::model::*;
-
-use super::AppStateTrack;
-use super::BaseStateTrack;
-use super::StateTrack;
-use super::WriteThroughOperationError;
 
 enum BorrowedSubstate {
     Loaded(SubstateValue, u32),
@@ -50,7 +48,7 @@ pub struct Track {
 pub enum TrackError {
     Reentrancy,
     NotFound,
-    WriteThroughOperationError(WriteThroughOperationError),
+    StateTrackError(StateTrackError),
 }
 
 pub struct BorrowedSNodes {
@@ -455,7 +453,8 @@ impl Track {
             let value = self
                 .state_track
                 .get_substate_from_base(&address)
-                .map_err(TrackError::WriteThroughOperationError)?;
+                .map_err(TrackError::StateTrackError)?
+                .ok_or(TrackError::NotFound)?;
             self.borrowed_substates
                 .insert(address.clone(), BorrowedSubstate::loaded(value, mutable));
             Ok(())

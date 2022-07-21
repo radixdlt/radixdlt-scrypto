@@ -1142,7 +1142,7 @@ where
                                 TrackError::Reentrancy => {
                                     panic!("Package reentrancy error should never occur.")
                                 }
-                                TrackError::WriteThroughOperationError(..) => panic!("Unexpected"),
+                                TrackError::StateTrackError(..) => panic!("Unexpected"),
                             })?;
                         locked_values.insert(resource_address.clone().into());
                         value_refs.insert(
@@ -1173,7 +1173,7 @@ where
                         TrackError::Reentrancy => {
                             panic!("Resource call has caused reentrancy")
                         }
-                        TrackError::WriteThroughOperationError(..) => panic!("Unexpected"),
+                        TrackError::StateTrackError(..) => panic!("Unexpected"),
                     })?;
                 locked_values.insert(address.clone());
                 let resource_manager = self.track.read_value(address).resource_manager();
@@ -1263,7 +1263,7 @@ where
                             TrackError::Reentrancy => {
                                 panic!("Package reentrancy error should never occur.")
                             }
-                            TrackError::WriteThroughOperationError(..) => panic!("Unexpected"),
+                            TrackError::StateTrackError(..) => panic!("Unexpected"),
                         })?;
 
                     locked_values.insert(resource_address.clone().into());
@@ -1289,7 +1289,7 @@ where
                             TrackError::Reentrancy => {
                                 panic!("Package reentrancy error should never occur.")
                             }
-                            TrackError::WriteThroughOperationError(..) => panic!("Unexpected"),
+                            TrackError::StateTrackError(..) => panic!("Unexpected"),
                         })?;
                     locked_values.insert(package_address.clone().into());
                     let package = self.track.read_value(package_address.clone()).package();
@@ -1350,7 +1350,7 @@ where
                                     TrackError::Reentrancy => {
                                         RuntimeError::ComponentReentrancy(component_address)
                                     }
-                                    TrackError::WriteThroughOperationError(..) => {
+                                    TrackError::StateTrackError(..) => {
                                         panic!("Unexpected")
                                     }
                                 })?;
@@ -1459,7 +1459,7 @@ where
                             .map_err(|e| match e {
                                 TrackError::NotFound => panic!("Should exist"),
                                 TrackError::Reentrancy => RuntimeError::PackageReentrancy,
-                                TrackError::WriteThroughOperationError(..) => panic!("Unexpected"),
+                                TrackError::StateTrackError(..) => panic!("Unexpected"),
                             })?;
                         locked_values.insert(package_address.into());
                         value_refs.insert(
@@ -2213,13 +2213,11 @@ where
                         .map_err(|e| match e {
                             TrackError::NotFound => RuntimeError::ValueNotFound(value_id),
                             TrackError::Reentrancy => panic!("Vault reentrancy should never occur"),
-                            TrackError::WriteThroughOperationError(e) => {
-                                RuntimeError::PayFeeError(match e {
-                                    WriteThroughOperationError::ValueAlreadyTouched => {
-                                        PayFeeError::ValueAlreadyTouched
-                                    }
-                                })
-                            }
+                            TrackError::StateTrackError(e) => RuntimeError::PayFeeError(match e {
+                                StateTrackError::ValueAlreadyTouched => {
+                                    PayFeeError::ValueAlreadyTouched
+                                }
+                            }),
                         })?;
                     let mut value = self.track.take_value(address.clone());
                     let (liquid, locked) = value.vault_mut();

@@ -21,12 +21,11 @@ use scrypto::values::ScryptoValue;
 use crate::engine::{SubstateAddress, SystemApi};
 use crate::fee::CostUnitCounterError;
 use crate::model::resource_manager::ResourceMethodRule::{Protected, Public};
+use crate::model::NonFungibleWrapper;
 use crate::model::ResourceManagerError::InvalidMethod;
 use crate::model::{convert, MethodAuthorization, ResourceContainer};
 use crate::model::{Bucket, NonFungible, Vault};
 use crate::wasm::*;
-
-use super::NonFungibleWrapper;
 
 /// Converts soft authorization rule to a hard authorization rule.
 /// Currently required as all auth is defined by soft authorization rules.

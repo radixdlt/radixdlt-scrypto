@@ -13,14 +13,6 @@ use super::{
     SubstateValue,
 };
 
-pub trait StateTrack {
-    fn get_substate(&mut self, address: &Address) -> Option<SubstateValue>;
-
-    fn put_substate(&mut self, address: Address, substate: SubstateValue);
-
-    fn put_space(&mut self, address: Address);
-}
-
 /// Keeps track of state changes that that are non-reversible, such as fee payments
 pub struct BaseStateTrack {
     /// The parent state track
@@ -149,7 +141,7 @@ impl BaseStateTrack {
 }
 
 #[derive(Debug)]
-pub enum WriteThroughOperationError {
+pub enum StateTrackError {
     ValueAlreadyTouched,
 }
 
@@ -162,24 +154,72 @@ impl AppStateTrack {
         }
     }
 
+    /// Returns a copy of the substate associated with the given address, if exists
+    pub fn get_substate(&mut self, address: &Address) -> Option<SubstateValue> {
+        // TODO: consider borrow mechanism to avoid redundant encoding and decoding
+
+        self.substates
+            .entry(address.clone())
+            .or_insert_with(|| {
+                // First, try to copy it from the base track
+                self.base_state_track
+                    .substates
+                    .get(address)
+                    .cloned()
+                    .unwrap_or_else(|| {
+                        // If not found, load from the substate store
+                        self.base_state_track
+                            .substate_store
+                            .get_substate(address)
+                            .map(|s| s.value)
+                    })
+            })
+            .as_ref()
+            .map(|s| scrypto_decode(&s).unwrap())
+    }
+
+    /// Returns a copy of the substate associated with the given address from the base track
     pub fn get_substate_from_base(
         &mut self,
         address: &Address,
-    ) -> Result<SubstateValue, WriteThroughOperationError> {
+    ) -> Result<Option<SubstateValue>, StateTrackError> {
         if self.substates.contains_key(address) {
-            return Err(WriteThroughOperationError::ValueAlreadyTouched);
+            return Err(StateTrackError::ValueAlreadyTouched);
         }
 
         Ok(self
             .base_state_track
-            .get_substate(address)
-            .expect("Attempted to load non-existing substate with write-through mode"))
+            .substates
+            .entry(address.clone())
+            .or_insert_with(|| {
+                // Load from the substate store
+                self.base_state_track
+                    .substate_store
+                    .get_substate(address)
+                    .map(|s| s.value)
+            })
+            .as_ref()
+            .map(|s| scrypto_decode(&s).unwrap()))
     }
 
+    /// Creates a new substate and updates an existing one
+    pub fn put_substate(&mut self, address: Address, substate: SubstateValue) {
+        self.substates
+            .insert(address, Some(scrypto_encode(&substate)));
+    }
+
+    /// Creates a new substate and updates an existing one to the base track
     pub fn put_substate_to_base(&mut self, address: Address, substate: SubstateValue) {
         assert!(!self.substates.contains_key(&address));
 
-        self.base_state_track.put_substate(address, substate);
+        self.base_state_track
+            .substates
+            .insert(address, Some(scrypto_encode(&substate)));
+    }
+
+    /// Creates a new space, assuming address does not exist
+    pub fn put_space(&mut self, address: Address) {
+        self.spaces.insert(address);
     }
 
     /// Flush all changes to base state track
@@ -195,51 +235,5 @@ impl AppStateTrack {
     /// Unwraps into the base state track
     pub fn unwrap(self) -> BaseStateTrack {
         self.base_state_track
-    }
-}
-
-impl StateTrack for BaseStateTrack {
-    fn get_substate(&mut self, address: &Address) -> Option<SubstateValue> {
-        // TODO: consider borrow mechanism to avoid redundant encoding and decoding
-
-        self.substates
-            .entry(address.clone())
-            .or_insert_with(|| self.substate_store.get_substate(address).map(|s| s.value))
-            .as_ref()
-            .map(|s| scrypto_decode(&s).unwrap())
-    }
-
-    fn put_substate(&mut self, address: Address, substate: SubstateValue) {
-        self.substates
-            .insert(address, Some(scrypto_encode(&substate)));
-    }
-
-    fn put_space(&mut self, address: Address) {
-        self.spaces.insert(address);
-    }
-}
-
-impl StateTrack for AppStateTrack {
-    fn get_substate(&mut self, address: &Address) -> Option<SubstateValue> {
-        // TODO: consider borrow mechanism to avoid redundant encoding and decoding
-
-        self.substates
-            .entry(address.clone())
-            .or_insert_with(|| {
-                self.base_state_track
-                    .get_substate(address)
-                    .map(|s| scrypto_encode(&s))
-            })
-            .as_ref()
-            .map(|s| scrypto_decode(&s).unwrap())
-    }
-
-    fn put_substate(&mut self, address: Address, substate: SubstateValue) {
-        self.substates
-            .insert(address, Some(scrypto_encode(&substate)));
-    }
-
-    fn put_space(&mut self, address: Address) {
-        self.spaces.insert(address);
     }
 }
