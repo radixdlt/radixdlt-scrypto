@@ -1,7 +1,6 @@
 use core::ops::RangeFull;
 
-use indexmap::IndexSet;
-use sbor::rust::collections::*;
+use indexmap::{IndexMap, IndexSet};
 use sbor::rust::rc::Rc;
 use sbor::rust::vec::Vec;
 use scrypto::buffer::{scrypto_decode, scrypto_encode};
@@ -27,7 +26,7 @@ pub struct BaseStateTrack {
     /// The parent state track
     substate_store: Rc<dyn ReadableSubstateStore>,
     /// Substates either created during the transaction or loaded from substate store
-    substates: HashMap<Address, Option<Vec<u8>>>,
+    substates: IndexMap<Address, Option<Vec<u8>>>,
     /// Spaces created during the transaction
     spaces: IndexSet<Address>,
 }
@@ -37,7 +36,7 @@ pub struct AppStateTrack {
     /// The parent state track
     base_state_track: BaseStateTrack,
     /// Substates either created during the transaction or loaded from the base state track
-    substates: HashMap<Address, Option<Vec<u8>>>,
+    substates: IndexMap<Address, Option<Vec<u8>>>,
     /// Spaces created during the transaction
     spaces: IndexSet<Address>,
 }
@@ -46,7 +45,7 @@ impl BaseStateTrack {
     pub fn new(substate_store: Rc<dyn ReadableSubstateStore>) -> Self {
         Self {
             substate_store,
-            substates: HashMap::new(),
+            substates: IndexMap::new(),
             spaces: IndexSet::new(),
         }
     }
@@ -87,7 +86,7 @@ impl BaseStateTrack {
             store_instructions.push(SubstateOperation::VirtualUp(space.clone()));
         }
 
-        for (address, substate) in self.substates.drain() {
+        for (address, substate) in self.substates.drain(RangeFull) {
             if let Some(substate) = substate {
                 match &address {
                     Address::NonFungible(resource_address, key) => {
@@ -158,7 +157,7 @@ impl AppStateTrack {
     pub fn new(base_state_track: BaseStateTrack) -> Self {
         Self {
             base_state_track,
-            substates: HashMap::new(),
+            substates: IndexMap::new(),
             spaces: IndexSet::new(),
         }
     }
@@ -187,7 +186,7 @@ impl AppStateTrack {
     pub fn flush(&mut self) {
         self.base_state_track
             .substates
-            .extend(self.substates.drain());
+            .extend(self.substates.drain(RangeFull));
         self.base_state_track
             .spaces
             .extend(self.spaces.drain(RangeFull));

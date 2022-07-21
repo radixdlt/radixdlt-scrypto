@@ -67,15 +67,20 @@ where
     pub fn execute<T: ExecutableTransaction>(&mut self, transaction: &T) -> Receipt {
         #[cfg(not(feature = "alloc"))]
         let now = std::time::Instant::now();
-        #[cfg(not(feature = "alloc"))]
-        if self.trace {
-            println!("{:-^80}", "Engine Execution Log");
-        }
 
         let transaction_hash = transaction.transaction_hash();
         let transaction_network = transaction.transaction_network();
         let signer_public_keys = transaction.signer_public_keys().to_vec();
         let instructions = transaction.instructions().to_vec();
+        #[cfg(not(feature = "alloc"))]
+        if self.trace {
+            println!("{:-^80}", "Transaction Metadata");
+            println!("Transaction hash: {}", transaction_hash);
+            println!("Transaction network: {:?}", transaction_network);
+            println!("Transaction signers: {:?}", signer_public_keys);
+
+            println!("{:-^80}", "Engine Execution Log");
+        }
 
         // 1. Start state track
         let substate_store_rc =
@@ -153,7 +158,7 @@ where
         // TODO: remove commit step
         let commit_receipt = track_receipt
             .state_changes
-            .commit(self.substate_store_mut());
+            .commit(self.substate_store_mut(), transaction_hash);
 
         #[cfg(not(feature = "alloc"))]
         if self.trace {

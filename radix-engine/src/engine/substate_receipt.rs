@@ -4,13 +4,13 @@ use sbor::rust::collections::*;
 use sbor::rust::ops::RangeFull;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto::buffer::scrypto_encode;
-use scrypto::crypto::hash;
+use scrypto::crypto::Hash;
 
 use crate::ledger::*;
 
 use super::Address;
 
+#[derive(Debug, PartialEq, Eq)]
 pub struct CommitReceipt {
     pub virtual_down_substates: HashSet<HardVirtualSubstateId>,
     pub down_substates: HashSet<PhysicalSubstateId>,
@@ -63,10 +63,13 @@ pub struct SubstateOperationsReceipt {
 
 impl SubstateOperationsReceipt {
     /// Commits changes to the underlying substate store.
-    pub fn commit<S: WriteableSubstateStore>(mut self, store: &mut S) -> CommitReceipt {
-        let hash = hash(scrypto_encode(&self));
+    pub fn commit<S: WriteableSubstateStore>(
+        mut self,
+        store: &mut S,
+        tx_hash: Hash,
+    ) -> CommitReceipt {
         let mut receipt = CommitReceipt::new();
-        let mut id_gen = SubstateIdGenerator::new(hash);
+        let mut id_gen = SubstateIdGenerator::new(tx_hash);
 
         for instruction in self.substate_operations.drain(RangeFull) {
             match instruction {
@@ -74,7 +77,7 @@ impl SubstateOperationsReceipt {
                     let parent_hard_id = match parent_id {
                         SubstateParentId::Exists(real_id) => real_id,
                         SubstateParentId::New(index) => {
-                            PhysicalSubstateId(hash, index.try_into().unwrap())
+                            PhysicalSubstateId(tx_hash, index.try_into().unwrap())
                         }
                     };
                     let virtual_substate_id = HardVirtualSubstateId(parent_hard_id, key);
