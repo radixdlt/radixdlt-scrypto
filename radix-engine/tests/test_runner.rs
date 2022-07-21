@@ -16,7 +16,7 @@ use transaction::model::TransactionManifest;
 use transaction::signing::EcdsaPrivateKey;
 
 pub struct TestRunner<'s, S: ReadableSubstateStore + WriteableSubstateStore> {
-    execution_stores: StagedExecutionStores<'s, S>,
+    execution_stores: StagedSubstateStoreManager<'s, S>,
     wasm_engine: DefaultWasmEngine,
     wasm_instrumenter: WasmInstrumenter,
     next_private_key: u64,
@@ -27,7 +27,7 @@ pub struct TestRunner<'s, S: ReadableSubstateStore + WriteableSubstateStore> {
 impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     pub fn new(trace: bool, substate_store: &'s mut S) -> Self {
         Self {
-            execution_stores: StagedExecutionStores::new(substate_store),
+            execution_stores: StagedSubstateStoreManager::new(substate_store),
             wasm_engine: DefaultWasmEngine::new(),
             wasm_instrumenter: WasmInstrumenter::new(),
             next_private_key: 1, // 0 is invalid

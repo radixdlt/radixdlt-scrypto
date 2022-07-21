@@ -5,16 +5,16 @@ use scrypto::buffer::{scrypto_decode, scrypto_encode};
 use crate::ledger::*;
 
 /// Nodes form an acyclic graph towards the parent
-struct StagedExecutionStoreNode {
+struct StagedSubstateStoreNode {
     parent_id: u64,
     locked: bool,
     spaces: BTreeMap<Vec<u8>, OutputId>,
     outputs: BTreeMap<Vec<u8>, Output>,
 }
 
-impl StagedExecutionStoreNode {
+impl StagedSubstateStoreNode {
     fn new(parent_id: u64) -> Self {
-        StagedExecutionStoreNode {
+        StagedSubstateStoreNode {
             parent_id,
             locked: false,
             spaces: BTreeMap::new(),
@@ -24,15 +24,15 @@ impl StagedExecutionStoreNode {
 }
 
 /// Structure which manages the acyclic graph
-pub struct StagedExecutionStores<'s, S: ReadableSubstateStore + WriteableSubstateStore> {
+pub struct StagedSubstateStoreManager<'s, S: ReadableSubstateStore + WriteableSubstateStore> {
     parent: &'s mut S,
-    nodes: HashMap<u64, StagedExecutionStoreNode>,
+    nodes: HashMap<u64, StagedSubstateStoreNode>,
     cur_id: u64,
 }
 
-impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> StagedExecutionStores<'s, S> {
+impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> StagedSubstateStoreManager<'s, S> {
     pub fn new(parent: &'s mut S) -> Self {
-        StagedExecutionStores {
+        StagedSubstateStoreManager {
             parent,
             nodes: HashMap::new(),
             cur_id: 0,
@@ -47,16 +47,16 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> StagedExecutionStore
 
         self.cur_id = self.cur_id + 1;
         self.nodes
-            .insert(self.cur_id, StagedExecutionStoreNode::new(parent_id));
+            .insert(self.cur_id, StagedSubstateStoreNode::new(parent_id));
         self.cur_id
     }
 
-    pub fn get_output_store<'t>(&'t mut self, id: u64) -> ExecutionStore<'t, 's, S> {
+    pub fn get_output_store<'t>(&'t mut self, id: u64) -> StagedSubstateStore<'t, 's, S> {
         if id != 0 && self.nodes.get(&id).unwrap().locked {
             panic!("Should not write to locked node");
         }
 
-        ExecutionStore { stores: self, id }
+        StagedSubstateStore { stores: self, id }
     }
 
     fn remove_children(&mut self, id: u64) {
@@ -111,12 +111,12 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> StagedExecutionStore
     }
 }
 
-pub struct ExecutionStore<'t, 's, S: ReadableSubstateStore + WriteableSubstateStore> {
-    stores: &'t mut StagedExecutionStores<'s, S>,
+pub struct StagedSubstateStore<'t, 's, S: ReadableSubstateStore + WriteableSubstateStore> {
+    stores: &'t mut StagedSubstateStoreManager<'s, S>,
     id: u64,
 }
 
-impl<'t, 's, S: ReadableSubstateStore + WriteableSubstateStore> ExecutionStore<'t, 's, S> {
+impl<'t, 's, S: ReadableSubstateStore + WriteableSubstateStore> StagedSubstateStore<'t, 's, S> {
     fn get_substate_recurse(&self, address: &[u8], id: u64) -> Option<Output> {
         if id == 0 {
             return self.stores.parent.get_substate(address);
@@ -147,7 +147,7 @@ impl<'t, 's, S: ReadableSubstateStore + WriteableSubstateStore> ExecutionStore<'
 }
 
 impl<'t, 's, S: ReadableSubstateStore + WriteableSubstateStore> ReadableSubstateStore
-    for ExecutionStore<'t, 's, S>
+    for StagedSubstateStore<'t, 's, S>
 {
     fn get_substate(&self, address: &[u8]) -> Option<Output> {
         self.get_substate_recurse(address, self.id)
@@ -159,7 +159,7 @@ impl<'t, 's, S: ReadableSubstateStore + WriteableSubstateStore> ReadableSubstate
 }
 
 impl<'t, 's, S: ReadableSubstateStore + WriteableSubstateStore> WriteableSubstateStore
-    for ExecutionStore<'t, 's, S>
+    for StagedSubstateStore<'t, 's, S>
 {
     fn put_space(&mut self, address: &[u8], output_id: OutputId) {
         if self.id == 0 {
@@ -183,13 +183,13 @@ impl<'t, 's, S: ReadableSubstateStore + WriteableSubstateStore> WriteableSubstat
 #[cfg(test)]
 mod tests {
     use crate::ledger::InMemorySubstateStore;
-    use crate::state_manager::StagedExecutionStores;
+    use crate::state_manager::StagedSubstateStoreManager;
 
     #[test]
     fn test_complicated_merge() {
         // Arrange
         let mut store = InMemorySubstateStore::with_bootstrap();
-        let mut stores = StagedExecutionStores::new(&mut store);
+        let mut stores = StagedSubstateStoreManager::new(&mut store);
         let child_node1 = stores.new_child_node(0);
         let child_node2 = stores.new_child_node(child_node1);
         let child_node3 = stores.new_child_node(child_node2);

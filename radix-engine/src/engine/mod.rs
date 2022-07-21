@@ -3,6 +3,7 @@ mod errors;
 mod precommitted_kv_store;
 mod preview_executor;
 mod system_api;
+pub mod track;
 mod transaction_executor;
 mod values;
 mod wasm_runtime;
