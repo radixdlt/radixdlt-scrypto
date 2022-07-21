@@ -142,7 +142,7 @@ where
         // TODO: burn fee in a FILO order
         // TODO: reward validators
         // TODO: refund overpaid fees
-        let system_loan_full_repaid = counter.owed() == 0;
+        let system_loan_fully_repaid = counter.owed() == 0;
         let max_cost_units = counter.limit();
         let cost_units_consumed = counter.consumed();
         let cost_units_price = 0.into();
@@ -191,7 +191,7 @@ where
         let receipt = Receipt {
             transaction_network,
             transaction_fee: TransactionFeeSummary {
-                system_loan_full_repaid,
+                system_loan_fully_repaid,
                 max_cost_units,
                 cost_units_consumed,
                 cost_units_price,

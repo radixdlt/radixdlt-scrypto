@@ -17,7 +17,7 @@ use crate::engine::RuntimeError;
 pub struct TransactionFeeSummary {
     /// Whether system fee loan is fully repaid.
     /// Clients should use this flag to decide whether to include the transaction into a block.
-    pub system_loan_full_repaid: bool,
+    pub system_loan_fully_repaid: bool,
     /// The specified max cost units can be consumed.
     pub max_cost_units: u32,
     /// The total number of cost units consumed.
