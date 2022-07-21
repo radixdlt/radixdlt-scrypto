@@ -246,8 +246,8 @@ macro_rules! decimals {
                 /// ```ignore
                 /// use scrypto::prelude::*;
                 ///
-                /// let a = dec!(1);
-                /// let b = dec!("1.1");
+                /// let a = $dec_macro!(1);
+                /// let b = $dec_macro!("1.1");
                 /// ```
                 #[macro_export]
                 macro_rules! $dec_macro {
