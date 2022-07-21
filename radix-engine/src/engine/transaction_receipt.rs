@@ -14,17 +14,33 @@ use transaction::model::*;
 use crate::engine::CommitReceipt;
 use crate::engine::RuntimeError;
 
+pub struct TransactionFeeSummary {
+    /// Whether the fee loan has been fully repaid.
+    /// Clients should use this flag to decide whether to include the transaction into a block.
+    pub system_loan_full_repaid: bool,
+    /// The specified max cost units can be consumed
+    pub max_cost_units: u32,
+    /// The total number of cost units consumed
+    pub cost_units_consumed: u32,
+    /// The cost unit price in XRD
+    pub cost_units_price: Decimal,
+    /// The total amount of XRD burned
+    pub burned: Decimal,
+    /// The total amount of XRD tipped to validators
+    pub tipped: Decimal,
+}
+
 /// Represents a transaction receipt.
 pub struct Receipt {
     pub transaction_network: Network,
+    pub transaction_fee: TransactionFeeSummary,
+    pub execution_time: Option<u128>,
     pub instructions: Vec<ExecutableInstruction>,
     pub result: Result<Vec<Vec<u8>>, RuntimeError>,
     pub logs: Vec<(Level, String)>,
     pub new_package_addresses: Vec<PackageAddress>,
     pub new_component_addresses: Vec<ComponentAddress>,
     pub new_resource_addresses: Vec<ResourceAddress>,
-    pub execution_time: Option<u128>,
-    pub cost_units_consumed: u32,
     pub commit_receipt: CommitReceipt,
 }
 
@@ -78,15 +94,17 @@ impl fmt::Debug for Receipt {
             f,
             "\n{} {} XRD burned, {} XRD tipped to validators",
             "Transaction Fee:".bold().green(),
-            1,
-            2
+            self.transaction_fee.burned,
+            self.transaction_fee.tipped,
         )?;
 
         write!(
             f,
-            "\n{} {}",
-            "Cost Units Consumed:".bold().green(),
-            self.cost_units_consumed
+            "\n{} {} max, {} consumed, {} XRD per cost unit",
+            "Cost Units:".bold().green(),
+            self.transaction_fee.max_cost_units,
+            self.transaction_fee.cost_units_consumed,
+            self.transaction_fee.cost_units_price,
         )?;
 
         write!(

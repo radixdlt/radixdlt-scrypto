@@ -134,18 +134,19 @@ where
 
         // 4. Settle transaction fee
         let counter = root_frame.cost_unit_counter();
-        if counter.owed() != 0 {
-            // TODO: If a transaction finished before the loan check point AND the
-            // loan is not fully repaid, we should reject it.
-        }
         if counter.balance() > 0 {
             // TODO: refund
+            let _overpaid = counter.balance();
         }
         for _i in 0..10 {
             // TODO: burn fee + reward validators
         }
-        let total_consumed = counter.consumed();
-        let _overpaid = counter.balance();
+        let system_loan_full_repaid = counter.owed() == 0;
+        let max_cost_units = counter.limit();
+        let cost_units_consumed = counter.consumed();
+        let cost_units_price = 3.into();
+        let burned = 4.into();
+        let tipped = 5.into();
 
         // 5. Generate receipts and commit (TODO: split out commit phase)
         let track_receipt = track.to_receipt(result.is_ok());
@@ -156,11 +157,6 @@ where
         let commit_receipt = track_receipt
             .state_changes
             .commit(self.substate_store_mut());
-
-        #[cfg(feature = "alloc")]
-        let execution_time = None;
-        #[cfg(not(feature = "alloc"))]
-        let execution_time = Some(now.elapsed().as_millis());
 
         #[cfg(not(feature = "alloc"))]
         if self.trace {
@@ -186,17 +182,27 @@ where
                 _ => {}
             }
         }
-        let logs = track_receipt.logs;
+        #[cfg(feature = "alloc")]
+        let execution_time = None;
+        #[cfg(not(feature = "alloc"))]
+        let execution_time = Some(now.elapsed().as_millis());
         let receipt = Receipt {
             transaction_network,
+            transaction_fee: TransactionFeeSummary {
+                system_loan_full_repaid,
+                max_cost_units,
+                cost_units_consumed,
+                cost_units_price,
+                burned,
+                tipped,
+            },
             instructions,
             result,
-            logs,
+            logs: track_receipt.logs,
             new_package_addresses,
             new_component_addresses,
             new_resource_addresses,
             execution_time,
-            cost_units_consumed: total_consumed,
             commit_receipt,
         };
 
@@ -207,7 +213,6 @@ where
             println!("{:-^80}", "");
         }
 
-        // TODO: reject transactions not paying enough fees
         receipt
     }
 

@@ -88,8 +88,9 @@ pub struct VirtualSubstateId(pub SubstateParentId, pub Vec<u8>);
 ///
 /// TODO: separate space addresses?
 ///
-/// FIXME: by using scrypto codec, we lose sorting capability of the address space
-/// RESIM listing is broken ATM. Can also be resolved by prefix search instead of range search.
+/// FIXME: RESIM listing is broken ATM.
+/// By using scrypto codec, we lose sorting capability of the address space.
+/// Can also be resolved by A) using prefix search instead of range search or B) use special codec as before
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash)]
 pub enum Address {
     GlobalComponent(ComponentAddress),
@@ -422,7 +423,7 @@ impl Track {
     // 2. Apply the operation
     // 3. Release lock
     //
-    // A better idea is properly move the lock-unlock into the operation OR to have a proper
+    // A better idea is properly to move the lock-unlock logic into the operation themselves OR to have a
     // representation of locked resource and apply operation on top of it.
     //
     // Also enables us to store state associated with the lock, like the `write_through` flag.
