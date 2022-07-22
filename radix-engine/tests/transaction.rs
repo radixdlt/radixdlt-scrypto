@@ -1,3 +1,4 @@
+use radix_engine::constants::*;
 use radix_engine::engine::TransactionExecutor;
 use radix_engine::ledger::InMemorySubstateStore;
 use radix_engine::wasm::DefaultWasmEngine;
@@ -20,9 +21,14 @@ fn test_normal_transaction_flow() {
     let parameters: ValidationParameters = ValidationParameters {
         network: Network::LocalSimulator,
         current_epoch: 1,
-        max_cost_unit_limit: 10_000_000,
+        max_cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,
         min_tip_bps: 0,
     };
+    let cost_unit_price = DEFAULT_COST_UNIT_PRICE.parse().unwrap();
+    let max_call_depth = DEFAULT_MAX_CALL_DEPTH;
+    let system_loan = DEFAULT_SYSTEM_LOAN;
+    let is_system = false; // TODO: make this a parameter
+    let trace = false;
 
     let raw_transaction = create_transaction();
     let validated_transaction = TransactionValidator::validate_from_slice(
@@ -36,7 +42,11 @@ fn test_normal_transaction_flow() {
         substate_store,
         &mut wasm_engine,
         &mut wasm_instrumenter,
-        true,
+        cost_unit_price,
+        max_call_depth,
+        system_loan,
+        is_system,
+        trace,
     );
     let receipt = executor.execute(&validated_transaction);
 

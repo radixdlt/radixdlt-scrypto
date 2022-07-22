@@ -66,4 +66,8 @@ impl ExecutableTransaction for ValidatedPreviewTransaction {
     fn signer_public_keys(&self) -> &[EcdsaPublicKey] {
         &self.signer_public_keys()
     }
+
+    fn cost_unit_limit(&self) -> u32 {
+        self.preview_intent.intent.header.cost_unit_limit
+    }
 }

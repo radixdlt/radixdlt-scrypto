@@ -73,6 +73,7 @@ impl NewTokenFixed {
             manifest,
             &self.signing_keys,
             &self.manifest,
+            false,
             self.trace,
             true,
             out,

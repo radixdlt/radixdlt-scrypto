@@ -1,4 +1,5 @@
 use criterion::{criterion_group, criterion_main, Criterion};
+use radix_engine::constants::*;
 use radix_engine::engine::TransactionExecutor;
 use radix_engine::ledger::*;
 use radix_engine::wasm::DefaultWasmEngine;
@@ -15,11 +16,20 @@ fn bench_transfer(c: &mut Criterion) {
     let substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = DefaultWasmEngine::new();
     let mut wasm_instrumenter = WasmInstrumenter::new();
+    let cost_unit_price = DEFAULT_COST_UNIT_PRICE.parse().unwrap();
+    let max_call_depth = DEFAULT_MAX_CALL_DEPTH;
+    let system_loan = DEFAULT_SYSTEM_LOAN;
+    let is_system = false;
+    let trace = false;
     let mut executor = TransactionExecutor::new(
         substate_store,
         &mut wasm_engine,
         &mut wasm_instrumenter,
-        false,
+        cost_unit_price,
+        max_call_depth,
+        system_loan,
+        is_system,
+        trace,
     );
 
     // Create a key pair

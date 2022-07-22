@@ -37,6 +37,8 @@ pub struct CallFrame<
     transaction_hash: Hash,
     /// The call depth
     depth: usize,
+    /// The max call depth
+    max_depth: usize,
     /// Whether to show trace messages
     trace: bool,
 
@@ -561,6 +563,7 @@ where
         transaction_hash: Hash,
         signer_public_keys: Vec<EcdsaPublicKey>,
         is_system: bool,
+        max_depth: usize,
         track: &'g mut Track,
         wasm_engine: &'g mut W,
         wasm_instrumenter: &'g mut WasmInstrumenter,
@@ -596,6 +599,7 @@ where
         Self::new(
             transaction_hash,
             0,
+            max_depth,
             verbose,
             track,
             wasm_engine,
@@ -615,6 +619,7 @@ where
     pub fn new(
         transaction_hash: Hash,
         depth: usize,
+        max_depth: usize,
         trace: bool,
         track: &'g mut Track,
         wasm_engine: &'g mut W,
@@ -630,6 +635,7 @@ where
         Self {
             transaction_hash,
             depth,
+            max_depth,
             trace,
             track,
             wasm_engine,
@@ -990,7 +996,7 @@ where
             &fn_ident
         );
 
-        if self.depth == MAX_CALL_DEPTH {
+        if self.depth == self.max_depth {
             return Err(RuntimeError::MaxCallDepthLimitReached);
         }
 
@@ -1614,6 +1620,7 @@ where
         let mut frame = CallFrame::new(
             self.transaction_hash,
             self.depth + 1,
+            self.max_depth,
             self.trace,
             self.track,
             self.wasm_engine,

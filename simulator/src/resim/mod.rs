@@ -47,6 +47,7 @@ pub const ENV_DATA_DIR: &'static str = "DATA_DIR";
 pub const ENV_DISABLE_MANIFEST_OUTPUT: &'static str = "DISABLE_MANIFEST_OUTPUT";
 
 use clap::{Parser, Subcommand};
+use radix_engine::constants::*;
 use radix_engine::engine::Receipt;
 use radix_engine::engine::TransactionExecutor;
 use radix_engine::model::*;
@@ -137,6 +138,7 @@ pub fn handle_manifest<O: std::io::Write>(
     manifest: TransactionManifest,
     signing_keys: &Option<String>,
     manifest_path: &Option<PathBuf>,
+    is_system: bool,
     trace: bool,
     output_receipt: bool,
     out: &mut O,
@@ -156,10 +158,17 @@ pub fn handle_manifest<O: std::io::Write>(
             let substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?);
             let mut wasm_engine = DefaultWasmEngine::new();
             let mut wasm_instrumenter = WasmInstrumenter::new();
+            let cost_unit_price = DEFAULT_COST_UNIT_PRICE.parse().unwrap();
+            let max_call_depth = DEFAULT_MAX_CALL_DEPTH;
+            let system_loan = DEFAULT_SYSTEM_LOAN;
             let mut executor = TransactionExecutor::new(
                 substate_store,
                 &mut wasm_engine,
                 &mut wasm_instrumenter,
+                cost_unit_price,
+                max_call_depth,
+                system_loan,
+                is_system,
                 trace,
             );
 

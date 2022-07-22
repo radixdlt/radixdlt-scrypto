@@ -23,7 +23,7 @@ pub struct TransactionFeeSummary {
     /// The total number of cost units consumed.
     pub cost_units_consumed: u32,
     /// The cost unit price in XRD.
-    pub cost_units_price: Decimal,
+    pub cost_unit_price: Decimal,
     /// The total amount of XRD burned.
     pub burned: Decimal,
     /// The total amount of XRD tipped to validators.
@@ -104,7 +104,7 @@ impl fmt::Debug for Receipt {
             "Cost Units:".bold().green(),
             self.transaction_fee.cost_unit_limit,
             self.transaction_fee.cost_units_consumed,
-            self.transaction_fee.cost_units_price,
+            self.transaction_fee.cost_unit_price,
         )?;
 
         write!(

@@ -1,3 +1,6 @@
+use radix_engine::constants::{
+    DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN,
+};
 use radix_engine::engine::{Address, Receipt, SubstateValue, TransactionExecutor};
 use radix_engine::ledger::*;
 use radix_engine::model::{export_abi, export_abi_by_component, extract_package, Component};
@@ -102,12 +105,22 @@ impl TestRunner {
             TestTransaction::new(manifest, self.next_transaction_nonce, signer_public_keys);
         self.next_transaction_nonce += 1;
 
+        let cost_unit_price = DEFAULT_COST_UNIT_PRICE.parse().unwrap();
+        let max_call_depth = DEFAULT_MAX_CALL_DEPTH;
+        let system_loan = DEFAULT_SYSTEM_LOAN;
+        let is_system = false; // TODO: make this a parameter
+        let trace = self.trace;
+
         // TODO: no need to pass ownership of substate store once commit phase is split out.
         let mut executor = TransactionExecutor::new(
             self.substate_store.take().expect("Missing substate store"),
             &mut self.wasm_engine,
             &mut self.wasm_instrumenter,
-            self.trace,
+            cost_unit_price,
+            max_call_depth,
+            system_loan,
+            is_system,
+            trace,
         );
         let receipt = executor.execute(&transaction);
         self.substate_store = Some(executor.destroy());

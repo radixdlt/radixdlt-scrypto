@@ -3,14 +3,13 @@ use sbor::rust::rc::Rc;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use scrypto::buffer::*;
+use scrypto::math::Decimal;
 use scrypto::values::ScryptoValue;
 use transaction::model::*;
 
 use crate::engine::*;
 use crate::fee::CostUnitCounter;
 use crate::fee::FeeTable;
-use crate::fee::MAX_TRANSACTION_COST;
-use crate::fee::SYSTEM_LOAN_AMOUNT;
 use crate::ledger::*;
 use crate::model::*;
 use crate::wasm::*;
@@ -25,6 +24,10 @@ where
     substate_store: Option<S>,
     wasm_engine: &'w mut W,
     wasm_instrumenter: &'w mut WasmInstrumenter,
+    cost_unit_price: Decimal,
+    max_call_depth: usize,
+    system_loan: u32,
+    is_system: bool,
     trace: bool,
     phantom: PhantomData<I>,
 }
@@ -39,12 +42,20 @@ where
         substate_store: S,
         wasm_engine: &'w mut W,
         wasm_instrumenter: &'w mut WasmInstrumenter,
+        cost_unit_price: Decimal,
+        max_call_depth: usize,
+        system_loan: u32,
+        is_system: bool,
         trace: bool,
     ) -> TransactionExecutor<'w, S, W, I> {
         Self {
             substate_store: Some(substate_store),
             wasm_engine,
             wasm_instrumenter,
+            cost_unit_price,
+            max_call_depth,
+            system_loan,
+            is_system,
             trace,
             phantom: PhantomData,
         }
@@ -72,12 +83,14 @@ where
         let transaction_network = transaction.transaction_network();
         let signer_public_keys = transaction.signer_public_keys().to_vec();
         let instructions = transaction.instructions().to_vec();
+        let cost_unit_limit = transaction.cost_unit_limit();
         #[cfg(not(feature = "alloc"))]
         if self.trace {
             println!("{:-^80}", "Transaction Metadata");
             println!("Transaction hash: {}", transaction_hash);
             println!("Transaction network: {:?}", transaction_network);
             println!("Transaction signers: {:?}", signer_public_keys);
+            println!("Cost unit limit: {:?}", cost_unit_limit);
 
             println!("{:-^80}", "Engine Execution Log");
         }
@@ -88,7 +101,7 @@ where
         let mut track = Track::new(substate_store_rc.clone(), transaction_hash);
 
         // 2. Apply pre-execution costing
-        let mut cost_unit_counter = CostUnitCounter::new(MAX_TRANSACTION_COST, SYSTEM_LOAN_AMOUNT);
+        let mut cost_unit_counter = CostUnitCounter::new(cost_unit_limit, self.system_loan);
         let fee_table = FeeTable::new();
         cost_unit_counter
             .consume(
@@ -116,7 +129,8 @@ where
             self.trace,
             transaction_hash,
             signer_public_keys,
-            false,
+            self.is_system,
+            self.max_call_depth,
             &mut track,
             self.wasm_engine,
             self.wasm_instrumenter,
@@ -139,9 +153,8 @@ where
         // TODO: reward validators
         // TODO: refund overpaid fees
         let system_loan_fully_repaid = counter.owed() == 0;
-        let cost_unit_limit = counter.limit();
         let cost_units_consumed = counter.consumed();
-        let cost_units_price = 0.into();
+        let cost_unit_price = self.cost_unit_price;
         let burned = 0.into();
         let tipped = 0.into();
 
@@ -190,7 +203,7 @@ where
                 system_loan_fully_repaid,
                 cost_unit_limit,
                 cost_units_consumed,
-                cost_units_price,
+                cost_unit_price,
                 burned,
                 tipped,
             },
