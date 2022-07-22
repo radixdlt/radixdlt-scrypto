@@ -47,7 +47,7 @@ fn test_loop_out_of_cost_unit() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    assert_invoke_error!(receipt.result, InvokeError::CostingError { .. })
+    assert_invoke_error!(receipt.status, InvokeError::CostingError { .. })
 }
 
 #[test]
@@ -90,7 +90,7 @@ fn test_recursion_stack_overflow() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    assert_invoke_error!(receipt.result, InvokeError::WasmError { .. })
+    assert_invoke_error!(receipt.status, InvokeError::WasmError { .. })
 }
 
 #[test]
@@ -132,7 +132,7 @@ fn test_grow_memory_out_of_cost_unit() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    assert_invoke_error!(receipt.result, InvokeError::CostingError { .. })
+    assert_invoke_error!(receipt.status, InvokeError::CostingError { .. })
 }
 
 #[test]

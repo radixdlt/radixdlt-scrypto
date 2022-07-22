@@ -15,9 +15,6 @@ use crate::engine::CommitReceipt;
 use crate::engine::RuntimeError;
 
 pub struct TransactionFeeSummary {
-    /// Whether system fee loan is fully repaid.
-    /// Clients should use this flag to decide whether to include the transaction into a block.
-    pub system_loan_fully_repaid: bool,
     /// The specified max cost units can be consumed.
     pub cost_unit_limit: u32,
     /// The total number of cost units consumed.
@@ -30,13 +27,20 @@ pub struct TransactionFeeSummary {
     pub tipped: Decimal,
 }
 
+#[derive(Debug)]
+pub enum TransactionStatus {
+    Rejected,
+    Succeeded(Vec<Vec<u8>>),
+    Failed(RuntimeError),
+}
+
 /// Represents a transaction receipt.
 pub struct Receipt {
+    pub status: TransactionStatus,
     pub transaction_network: Network,
     pub transaction_fee: TransactionFeeSummary,
     pub execution_time: Option<u128>,
     pub instructions: Vec<ExecutableInstruction>,
-    pub result: Result<Vec<Vec<u8>>, RuntimeError>,
     pub logs: Vec<(Level, String)>,
     pub new_package_addresses: Vec<PackageAddress>,
     pub new_component_addresses: Vec<ComponentAddress>,
@@ -46,9 +50,10 @@ pub struct Receipt {
 
 impl Receipt {
     pub fn expect_success(&self) -> &Vec<Vec<u8>> {
-        match &self.result {
-            Ok(output) => output,
-            Err(err) => panic!("Expected success but was:\n{:?}", err),
+        match &self.status {
+            TransactionStatus::Succeeded(output) => output,
+            TransactionStatus::Failed(err) => panic!("Expected success but was:\n{:?}", err),
+            TransactionStatus::Rejected => panic!("Expected success but was rejected"),
         }
     }
 
@@ -56,12 +61,12 @@ impl Receipt {
     where
         F: FnOnce(&RuntimeError) -> bool,
     {
-        if let Err(e) = &self.result {
+        if let TransactionStatus::Failed(e) = &self.status {
             if !f(e) {
                 panic!("Expected error but was different error:\n{:?}", self);
             }
         } else {
-            panic!("Expected error but was successful:\n{:?}", self);
+            panic!("Expected error but was:\n{:?}", self);
         }
     }
 }
@@ -84,9 +89,10 @@ impl fmt::Debug for Receipt {
             f,
             "{} {}",
             "Transaction Status:".bold().green(),
-            match &self.result {
-                Ok(_) => "SUCCESS".blue(),
-                Err(e) => e.to_string().red(),
+            match &self.status {
+                TransactionStatus::Succeeded(_) => "SUCCESS".blue(),
+                TransactionStatus::Failed(e) => e.to_string().red(),
+                TransactionStatus::Rejected => "REJECTED".red(),
             }
         )?;
 
@@ -151,7 +157,7 @@ impl fmt::Debug for Receipt {
             )?;
         }
 
-        if let Ok(outputs) = &self.result {
+        if let TransactionStatus::Succeeded(outputs) = &self.status {
             write!(f, "\n{}", "Instruction Outputs:".bold().green())?;
             for (i, output) in outputs.iter().enumerate() {
                 write!(

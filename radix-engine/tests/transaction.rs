@@ -27,7 +27,7 @@ fn test_normal_transaction_flow() {
     let cost_unit_price = DEFAULT_COST_UNIT_PRICE.parse().unwrap();
     let max_call_depth = DEFAULT_MAX_CALL_DEPTH;
     let system_loan = DEFAULT_SYSTEM_LOAN;
-    let is_system = false; // TODO: make this a parameter
+    let is_system = false;
     let trace = false;
 
     let raw_transaction = create_transaction();

@@ -183,11 +183,7 @@ fn cannot_overwrite_vault_in_map() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    let runtime_error = receipt.result.expect_err("Should be runtime error");
-    match runtime_error {
-        RuntimeError::StoredValueRemoved(ValueId::Vault(_)) => {}
-        _ => panic!("Should be vault not found error but was {}", runtime_error),
-    }
+    receipt.expect_err(|e| matches!(e, RuntimeError::StoredValueRemoved(ValueId::Vault(_))));
 }
 
 #[test]
@@ -234,11 +230,7 @@ fn cannot_remove_vaults() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    let runtime_error = receipt.result.expect_err("Should be runtime error");
-    match runtime_error {
-        RuntimeError::StoredValueRemoved(ValueId::Vault(_)) => {}
-        _ => panic!("Should be vault not found error but was {}", runtime_error),
-    }
+    receipt.expect_err(|e| matches!(e, RuntimeError::StoredValueRemoved(ValueId::Vault(_))));
 }
 
 #[test]

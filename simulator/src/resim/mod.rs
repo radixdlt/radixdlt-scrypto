@@ -50,6 +50,7 @@ use clap::{Parser, Subcommand};
 use radix_engine::constants::*;
 use radix_engine::engine::Receipt;
 use radix_engine::engine::TransactionExecutor;
+use radix_engine::engine::TransactionStatus;
 use radix_engine::model::*;
 use radix_engine::wasm::*;
 use scrypto::abi;
@@ -185,13 +186,15 @@ pub fn handle_manifest<O: std::io::Write>(
                 writeln!(out, "{:?}", receipt).map_err(Error::IOError)?;
             }
 
-            if let Err(error) = receipt.result {
-                Err(Error::TransactionExecutionError(error))
-            } else {
-                let mut configs = get_configs()?;
-                configs.nonce = nonce + 1;
-                set_configs(&configs)?;
-                Ok(Some(receipt))
+            match receipt.status {
+                TransactionStatus::Failed(error) => Err(Error::TransactionExecutionError(error)),
+                TransactionStatus::Succeeded(_) => {
+                    let mut configs = get_configs()?;
+                    configs.nonce = nonce + 1;
+                    set_configs(&configs)?;
+                    Ok(Some(receipt))
+                }
+                TransactionStatus::Rejected => Err(Error::TransactionRejected),
             }
         }
     }

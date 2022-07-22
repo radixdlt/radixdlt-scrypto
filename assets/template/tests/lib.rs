@@ -56,7 +56,7 @@ fn test_hello() {
         .build();
     let receipt = executor.execute(&TestTransaction::new(manifest, 3, vec![public_key]));
     println!("{:?}\n", receipt);
-    receipt.result.expect("Should be okay.");
+    receipt.expect_success();
     let component = receipt.new_component_addresses[0];
 
     // Test the `free_token` method.
@@ -66,5 +66,5 @@ fn test_hello() {
         .build();
     let receipt = executor.execute(&TestTransaction::new(manifest, 4, vec![public_key]));
     println!("{:?}\n", receipt);
-    receipt.result.expect("Should be okay.");
+    receipt.expect_success();
 }

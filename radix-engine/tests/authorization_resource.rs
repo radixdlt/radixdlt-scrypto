@@ -3,8 +3,8 @@ extern crate core;
 #[rustfmt::skip]
 pub mod test_runner;
 
+use crate::test_runner::is_auth_error;
 use crate::test_runner::TestRunner;
-use radix_engine::engine::RuntimeError;
 use scrypto::core::Network;
 use scrypto::prelude::*;
 use scrypto::to_struct;
@@ -87,8 +87,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
 
     // Assert
     if expect_err {
-        let err = receipt.result.expect_err("Should be a runtime error");
-        assert_auth_error!(err);
+        receipt.expect_err(is_auth_error);
     } else {
         receipt.expect_success();
     }

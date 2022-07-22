@@ -1,5 +1,5 @@
 /// The default cost units loaned from the system to bootstrap execution (pay fee).
-pub const DEFAULT_SYSTEM_LOAN: u32 = 1_000_000;
+pub const DEFAULT_SYSTEM_LOAN: u32 = 10_000_000;
 
 /// The default cost unit limit for extracting blueprint ABIs.
 pub const DEFAULT_EXTRACT_ABI_COST_UNIT_LIMIT: u32 = 10_000_000;

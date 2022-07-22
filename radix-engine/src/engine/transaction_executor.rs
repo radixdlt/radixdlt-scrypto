@@ -198,9 +198,16 @@ where
         #[cfg(not(feature = "alloc"))]
         let execution_time = Some(now.elapsed().as_millis());
         let receipt = Receipt {
+            status: if system_loan_fully_repaid {
+                match result {
+                    Ok(output) => TransactionStatus::Succeeded(output),
+                    Err(error) => TransactionStatus::Failed(error),
+                }
+            } else {
+                TransactionStatus::Rejected
+            },
             transaction_network,
             transaction_fee: TransactionFeeSummary {
-                system_loan_fully_repaid,
                 cost_unit_limit,
                 cost_units_consumed,
                 cost_unit_price,
@@ -208,7 +215,6 @@ where
                 tipped,
             },
             instructions,
-            result,
             logs: track_receipt.logs,
             new_package_addresses,
             new_component_addresses,

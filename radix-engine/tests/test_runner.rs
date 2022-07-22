@@ -1,7 +1,7 @@
 use radix_engine::constants::{
     DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN,
 };
-use radix_engine::engine::{Address, Receipt, SubstateValue, TransactionExecutor};
+use radix_engine::engine::{Address, Receipt, RuntimeError, SubstateValue, TransactionExecutor};
 use radix_engine::ledger::*;
 use radix_engine::model::{export_abi, export_abi_by_component, extract_package, Component};
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter};
@@ -320,27 +320,24 @@ impl TestRunner {
     }
 }
 
-#[macro_export]
-macro_rules! assert_auth_error {
-    ($error:expr) => {{
-        if !matches!(
-            $error,
-            RuntimeError::AuthorizationError {
-                authorization: _,
-                function: _,
-                error: ::radix_engine::model::MethodAuthorizationError::NotAuthorized
-            }
-        ) {
-            panic!("Expected auth error but got: {:?}", $error);
+pub fn is_auth_error(e: &RuntimeError) -> bool {
+    matches!(
+        e,
+        RuntimeError::AuthorizationError {
+            authorization: _,
+            function: _,
+            error: ::radix_engine::model::MethodAuthorizationError::NotAuthorized
         }
-    }};
+    )
 }
 
 #[macro_export]
 macro_rules! assert_invoke_error {
     ($result:expr, $pattern:pat) => {{
         let matches = match &$result {
-            Err(radix_engine::engine::RuntimeError::InvokeError(e)) => {
+            radix_engine::engine::TransactionStatus::Failed(
+                radix_engine::engine::RuntimeError::InvokeError(e),
+            ) => {
                 matches!(e.as_ref(), $pattern)
             }
             _ => false,

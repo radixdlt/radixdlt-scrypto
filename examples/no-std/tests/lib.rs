@@ -42,5 +42,5 @@ fn test_say_hello() {
         .call_function(package_address, "NoStd", "say_hello", to_struct!())
         .build();
     let receipt = executor.execute(&TestTransaction::new(manifest, 2, vec![]));
-    receipt.result.expect("Should be okay.");
+    receipt.expect_success();
 }

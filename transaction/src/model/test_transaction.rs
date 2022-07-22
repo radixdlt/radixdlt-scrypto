@@ -155,6 +155,6 @@ impl ExecutableTransaction for TestTransaction {
     }
 
     fn cost_unit_limit(&self) -> u32 {
-        10_000_0000
+        10_000_000
     }
 }

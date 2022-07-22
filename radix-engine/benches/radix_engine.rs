@@ -68,7 +68,7 @@ fn bench_transfer(c: &mut Criterion) {
                 nonce,
                 vec![public_key],
             ));
-            receipt.result.expect("It should work");
+            receipt.expect_success();
             nonce += 1;
         })
     });
