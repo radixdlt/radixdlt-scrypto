@@ -5,13 +5,15 @@ use crate::test_runner::TestRunner;
 use scrypto::core::Network;
 use transaction::builder::ManifestBuilder;
 
+use radix_engine::ledger::InMemorySubstateStore;
 use scrypto::prelude::*;
 use scrypto::to_struct;
 
 #[test]
 fn vector_of_buckets_argument_should_succeed() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("arguments");
 
     // Act
@@ -36,7 +38,8 @@ fn vector_of_buckets_argument_should_succeed() {
 #[test]
 fn tuple_of_buckets_argument_should_succeed() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("arguments");
 
     // Act
@@ -61,7 +64,8 @@ fn tuple_of_buckets_argument_should_succeed() {
 #[test]
 fn treemap_of_strings_and_buckets_argument_should_succeed() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("arguments");
 
     // Act
@@ -90,7 +94,8 @@ fn treemap_of_strings_and_buckets_argument_should_succeed() {
 #[test]
 fn hashmap_of_strings_and_buckets_argument_should_succeed() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("arguments");
 
     // Act
@@ -119,7 +124,8 @@ fn hashmap_of_strings_and_buckets_argument_should_succeed() {
 #[test]
 fn some_optional_bucket_argument_should_succeed() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("arguments");
 
     // Act
@@ -142,7 +148,8 @@ fn some_optional_bucket_argument_should_succeed() {
 #[test]
 fn none_optional_bucket_argument_should_succeed() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("arguments");
 
     // Act

@@ -1,11 +1,12 @@
 #![allow(unused_must_use)]
 use colored::*;
+use radix_engine::engine::Substate;
 use radix_engine::ledger::*;
 use radix_engine::model::*;
 use sbor::rust::collections::HashSet;
 use scrypto::address::AddressError;
 use scrypto::address::Bech32Encoder;
-use scrypto::buffer::{scrypto_decode, scrypto_encode};
+use scrypto::buffer::scrypto_encode;
 use scrypto::core::Network;
 use scrypto::engine::types::*;
 use scrypto::values::*;
@@ -30,9 +31,7 @@ pub fn dump_package<T: ReadableSubstateStore, O: std::io::Write>(
 ) -> Result<(), DisplayError> {
     let bech32_encoder = Bech32Encoder::new_from_network(&Network::LocalSimulator);
 
-    let package: Option<ValidatedPackage> = substate_store
-        .get_decoded_substate(&package_address)
-        .map(|(package, _)| package);
+    let package: Option<ValidatedPackage> = substate_store.get_decoded_substate(&package_address);
     match package {
         Some(b) => {
             writeln!(
@@ -63,9 +62,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
 ) -> Result<(), DisplayError> {
     let bech32_encoder = Bech32Encoder::new_from_network(&Network::LocalSimulator);
 
-    let component: Option<Component> = substate_store
-        .get_decoded_substate(&component_address)
-        .map(|(component, _)| component);
+    let component: Option<Component> = substate_store.get_decoded_substate(&component_address);
     match component {
         Some(c) => {
             writeln!(
@@ -133,8 +130,7 @@ fn dump_kv_store<T: ReadableSubstateStore + QueryableSubstateStore, O: std::io::
     );
     for (last, (k, v)) in map.iter().identify_last() {
         let key = ScryptoValue::from_slice(k).unwrap();
-        let value_wrapper: Option<Vec<u8>> = scrypto_decode(v).unwrap();
-        if let Some(v) = value_wrapper {
+        if let Substate::KeyValueStoreEntry(Some(v)) = v {
             let value = ScryptoValue::from_slice(&v).unwrap();
             writeln!(output, "{} {} => {}", list_item_prefix(last), key, value);
             referenced_maps.extend(value.kv_store_ids);
@@ -153,14 +149,11 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
 
     writeln!(output, "{}:", "Resources".green().bold());
     for (last, vault_id) in vaults.iter().identify_last() {
-        let vault_address = scrypto_encode(vault_id);
-        let substate = substate_store.get_substate(&vault_address).unwrap();
-        let vault: Vault = scrypto_decode(&substate.value).unwrap();
+        let vault: Vault = substate_store.get_decoded_substate(vault_id).unwrap();
         let amount = vault.total_amount();
         let resource_address = vault.resource_address();
         let resource_manager: ResourceManager = substate_store
             .get_decoded_substate(&resource_address)
-            .map(|(resource, _)| resource)
             .unwrap();
         writeln!(
             output,
@@ -188,9 +181,11 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
                 nf_address.push(0u8);
                 nf_address.extend(id.to_vec());
 
-                let non_fungible: Option<NonFungible> =
-                    scrypto_decode(&substate_store.get_substate(&nf_address).unwrap().value)
-                        .unwrap();
+                let non_fungible: Option<NonFungible> = substate_store
+                    .get_substate(&nf_address)
+                    .unwrap()
+                    .substate
+                    .into();
 
                 let id = ScryptoValue::from_slice(&id.to_vec()).unwrap();
 
@@ -221,9 +216,8 @@ pub fn dump_resource_manager<T: ReadableSubstateStore, O: std::io::Write>(
     substate_store: &T,
     output: &mut O,
 ) -> Result<(), DisplayError> {
-    let resource_manager: Option<ResourceManager> = substate_store
-        .get_decoded_substate(&resource_address)
-        .map(|(resource, _)| resource);
+    let resource_manager: Option<ResourceManager> =
+        substate_store.get_decoded_substate(&resource_address);
     match resource_manager {
         Some(r) => {
             writeln!(

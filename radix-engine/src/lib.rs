@@ -14,5 +14,9 @@ pub mod fee;
 pub mod ledger;
 /// Radix Engine models.
 pub mod model;
+
+/// State manager for the Radix Engine
+pub mod state_manager;
+
 /// Wasm validation, instrumentation and execution.
 pub mod wasm;

@@ -3,9 +3,10 @@ use sbor::rust::vec::Vec;
 use scrypto::buffer::{scrypto_decode, scrypto_encode};
 
 use crate::ledger::*;
-use crate::ledger::{Substate, WriteableSubstateStore};
+use crate::ledger::{Output, WriteableSubstateStore};
 
 /// A substate store that stores all substates in host memory.
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct InMemorySubstateStore {
     substates: HashMap<Vec<u8>, Vec<u8>>,
 }
@@ -31,26 +32,27 @@ impl Default for InMemorySubstateStore {
 }
 
 impl ReadableSubstateStore for InMemorySubstateStore {
-    fn get_substate(&self, address: &[u8]) -> Option<Substate> {
+    fn get_substate(&self, address: &[u8]) -> Option<Output> {
         self.substates
             .get(address)
             .map(|bytes| scrypto_decode(bytes).unwrap())
     }
 
-    fn get_space(&mut self, address: &[u8]) -> Option<PhysicalSubstateId> {
+    fn get_space(&self, address: &[u8]) -> OutputId {
         self.substates
             .get(address)
             .map(|bytes| scrypto_decode(bytes).unwrap())
+            .expect("Expected space does not exist")
     }
 }
 
 impl WriteableSubstateStore for InMemorySubstateStore {
-    fn put_substate(&mut self, address: &[u8], substate: Substate) {
+    fn put_substate(&mut self, address: &[u8], substate: Output) {
         self.substates
             .insert(address.to_vec(), scrypto_encode(&substate));
     }
 
-    fn put_space(&mut self, address: &[u8], phys_id: PhysicalSubstateId) {
+    fn put_space(&mut self, address: &[u8], phys_id: OutputId) {
         self.substates
             .insert(address.to_vec(), scrypto_encode(&phys_id));
     }

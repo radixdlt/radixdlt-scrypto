@@ -3,6 +3,7 @@ pub mod test_runner;
 
 use crate::test_runner::TestRunner;
 use radix_engine::engine::RuntimeError;
+use radix_engine::ledger::InMemorySubstateStore;
 use scrypto::core::Network;
 use scrypto::prelude::*;
 use scrypto::to_struct;
@@ -17,7 +18,8 @@ fn test_dynamic_auth(
     should_succeed: bool,
 ) {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
     let key_and_addresses: Vec<(EcdsaPublicKey, EcdsaPrivateKey, NonFungibleAddress)> = (0
         ..num_keys)
         .map(|_| test_runner.new_key_pair_with_auth_address())
@@ -78,7 +80,8 @@ fn test_dynamic_authlist(
     signer_public_keys: &[usize],
     should_succeed: bool,
 ) {
-    let mut test_runner = TestRunner::new(true);
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
     let key_and_addresses: Vec<(EcdsaPublicKey, EcdsaPrivateKey, NonFungibleAddress)> = (0
         ..list_size)
         .map(|_| test_runner.new_key_pair_with_auth_address())
@@ -209,7 +212,8 @@ fn dynamic_any_of_should_fail_if_path_does_not_exist() {
 #[test]
 fn chess_should_not_allow_second_player_to_move_if_first_player_didnt_move() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
     let (pk, _, _) = test_runner.new_account();
     let (other_public_key, _, _) = test_runner.new_account();
     let package = test_runner.extract_and_publish_package("component");
@@ -241,7 +245,8 @@ fn chess_should_not_allow_second_player_to_move_if_first_player_didnt_move() {
 #[test]
 fn chess_should_allow_second_player_to_move_after_first_player() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, _) = test_runner.new_account();
     let (other_public_key, _, _) = test_runner.new_account();
     let package = test_runner.extract_and_publish_package("component");

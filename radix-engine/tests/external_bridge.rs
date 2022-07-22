@@ -2,6 +2,7 @@
 pub mod test_runner;
 
 use crate::test_runner::TestRunner;
+use radix_engine::ledger::InMemorySubstateStore;
 use scrypto::address::Bech32Encoder;
 use scrypto::core::Network;
 use scrypto::{prelude::*, to_struct};
@@ -11,7 +12,8 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn test_external_bridges() {
     // ARRANGE
-    let mut test_runner = TestRunner::new(true);
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
 
     // Part 1 - Upload the target and caller packages
     let target_package_address = test_runner.extract_and_publish_package("component");

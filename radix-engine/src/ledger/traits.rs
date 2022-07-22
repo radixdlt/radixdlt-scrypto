@@ -1,3 +1,4 @@
+use crate::engine::Substate;
 use sbor::rust::collections::*;
 use sbor::rust::vec::Vec;
 use sbor::*;
@@ -10,52 +11,49 @@ pub trait QueryableSubstateStore {
         &self,
         component_address: ComponentAddress,
         kv_store_id: &KeyValueStoreId,
-    ) -> HashMap<Vec<u8>, Vec<u8>>;
+    ) -> HashMap<Vec<u8>, Substate>;
 }
 
 #[derive(Debug, Clone, Hash, TypeId, Encode, Decode, PartialEq, Eq)]
-pub struct PhysicalSubstateId(pub Hash, pub u32);
+pub struct OutputId(pub Hash, pub u32);
 
-#[derive(Clone, Debug, Encode, Decode, TypeId)]
-pub struct Substate {
-    pub value: Vec<u8>,
-    pub phys_id: PhysicalSubstateId,
+#[derive(Debug, Encode, Decode, TypeId)]
+pub struct Output {
+    pub substate: Substate,
+    pub output_id: OutputId,
 }
 
 #[derive(Debug)]
-pub struct SubstateIdGenerator {
+pub struct OutputIdGenerator {
     tx_hash: Hash,
     count: u32,
 }
 
-impl SubstateIdGenerator {
+impl OutputIdGenerator {
     pub fn new(tx_hash: Hash) -> Self {
         Self { tx_hash, count: 0 }
     }
 
-    pub fn next(&mut self) -> PhysicalSubstateId {
+    pub fn next(&mut self) -> OutputId {
         let value = self.count;
         self.count = self.count + 1;
-        PhysicalSubstateId(self.tx_hash.clone(), value)
+        OutputId(self.tx_hash.clone(), value)
     }
 }
 
 /// A ledger stores all transactions and substates.
 pub trait ReadableSubstateStore {
-    fn get_substate(&self, address: &[u8]) -> Option<Substate>;
-    fn get_space(&mut self, address: &[u8]) -> Option<PhysicalSubstateId>;
+    fn get_substate(&self, address: &[u8]) -> Option<Output>;
+    fn get_space(&self, address: &[u8]) -> OutputId;
 
     // Temporary Encoded/Decoded interface
-    fn get_decoded_substate<A: Encode, T: Decode>(
-        &self,
-        address: &A,
-    ) -> Option<(T, PhysicalSubstateId)> {
+    fn get_decoded_substate<A: Encode, T: From<Substate>>(&self, address: &A) -> Option<T> {
         self.get_substate(&scrypto_encode(address))
-            .map(|s| (scrypto_decode(&s.value).unwrap(), s.phys_id))
+            .map(|s| s.substate.into())
     }
 }
 
 pub trait WriteableSubstateStore {
-    fn put_substate(&mut self, address: &[u8], substate: Substate);
-    fn put_space(&mut self, address: &[u8], phys_id: PhysicalSubstateId);
+    fn put_substate(&mut self, address: &[u8], output: Output);
+    fn put_space(&mut self, address: &[u8], output_id: OutputId);
 }

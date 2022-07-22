@@ -10,9 +10,10 @@ use scrypto::resource::ResourceMethodAuthKey::Withdraw;
 use scrypto::resource::LOCKED;
 use scrypto::rule;
 
-use crate::engine::{Address, Track, TrackReceipt};
+use crate::engine::Address;
 use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
 use crate::model::ValidatedPackage;
+use crate::state_manager::*;
 
 #[derive(TypeId, Encode, Decode)]
 struct SystemComponentState {
@@ -102,8 +103,8 @@ where
 {
     let system_substate = substate_store.get_substate(&scrypto_encode(&SYSTEM_PACKAGE));
     if system_substate.is_none() {
-        let track = Track::new(substate_store, Hash([0u8; 32]));
+        let track = Track::new(substate_store);
         let receipt = create_genesis(track);
-        receipt.substates.commit(substate_store);
+        receipt.diff.commit(substate_store);
     }
 }

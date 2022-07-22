@@ -4,6 +4,7 @@ use sbor::rust::vec::Vec;
 use scrypto::buffer::*;
 use scrypto::values::ScryptoValue;
 use transaction::model::*;
+use transaction::validation::{IdAllocator, IdSpace};
 
 use crate::engine::*;
 use crate::fee::CostUnitCounter;
@@ -12,6 +13,7 @@ use crate::fee::MAX_TRANSACTION_COST;
 use crate::fee::SYSTEM_LOAN_AMOUNT;
 use crate::ledger::*;
 use crate::model::*;
+use crate::state_manager::*;
 use crate::wasm::*;
 
 /// An executor that runs transactions.
@@ -69,7 +71,9 @@ where
         let instructions = transaction.instructions().to_vec();
 
         // Start state track
-        let mut track = Track::new(self.substate_store, transaction_hash);
+        let mut track = Track::new(self.substate_store);
+
+        let mut id_allocator = IdAllocator::new(IdSpace::Application);
 
         // Metering
         let mut cost_unit_counter = CostUnitCounter::new(MAX_TRANSACTION_COST, SYSTEM_LOAN_AMOUNT);
@@ -103,6 +107,7 @@ where
             transaction_hash,
             signer_public_keys,
             false,
+            &mut id_allocator,
             &mut track,
             self.wasm_engine,
             self.wasm_instrumenter,
@@ -130,10 +135,14 @@ where
 
         // commit state updates
         let commit_receipt = if error.is_none() {
-            if !track_receipt.borrowed.is_empty() {
-                panic!("There should be nothing borrowed by end of transaction.");
+            if !track_receipt.borrowed_substates.is_empty() {
+                panic!(
+                    "Borrowed substates have not been returned {:?}",
+                    track_receipt.borrowed_substates
+                )
             }
-            let commit_receipt = track_receipt.substates.commit(self.substate_store);
+
+            let commit_receipt = track_receipt.diff.commit(self.substate_store);
             Some(commit_receipt)
         } else {
             None

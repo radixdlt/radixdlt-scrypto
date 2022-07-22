@@ -13,7 +13,6 @@ pub fn export_abi<S: ReadableSubstateStore>(
 ) -> Result<abi::BlueprintAbi, RuntimeError> {
     let package: ValidatedPackage = substate_store
         .get_decoded_substate(&package_address)
-        .map(|(package, _)| package)
         .ok_or(RuntimeError::PackageNotFound(package_address))?;
 
     let abi = package
@@ -32,7 +31,6 @@ pub fn export_abi_by_component<S: ReadableSubstateStore>(
 ) -> Result<abi::BlueprintAbi, RuntimeError> {
     let component: Component = substate_store
         .get_decoded_substate(&component_address)
-        .map(|(component, _)| component)
         .ok_or(RuntimeError::ComponentNotFound(component_address))?;
     export_abi(
         substate_store,
