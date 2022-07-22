@@ -8,9 +8,9 @@ pub use crate::misc::*;
 pub use crate::resource::*;
 pub use crate::{
     access_and_or, access_rule_node, args, blueprint, borrow_component, borrow_package,
-    borrow_resource_manager, compile_package, debug, dec, error, external_blueprint,
-    external_component, import, include_package, info, resource_list, rule, trace, warn, Decode,
-    Describe, Encode, NonFungibleData, TypeId,
+    borrow_resource_manager, compile_package, debug, error, external_blueprint, external_component,
+    import, include_package, info, resource_list, rule, trace, warn, Decode, Describe, Encode,
+    NonFungibleData, TypeId,
 };
 
 pub use sbor::rust::borrow::ToOwned;

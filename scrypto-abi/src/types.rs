@@ -71,7 +71,6 @@ pub enum ScryptoType {
     Ed25519Signature,
 
     // math
-    Decimal,
     U8,
     U16,
     U32,
@@ -88,8 +87,8 @@ pub enum ScryptoType {
     I256,
     I384,
     I512,
-    D256,
-    D512,
+    Decimal,
+    LongDecimal,
 
     // resource,
     Bucket,
@@ -101,7 +100,7 @@ pub enum ScryptoType {
 }
 
 // Need to update `scrypto-derive/src/import.rs` after changing the table below
-const MAPPING: [(ScryptoType, u8, &str); 34] = [
+const MAPPING: [(ScryptoType, u8, &str); 33] = [
     (ScryptoType::PackageAddress, 0x80, "PackageAddress"), // 128
     (ScryptoType::ComponentAddress, 0x81, "ComponentAddress"), // 129
     (ScryptoType::Component, 0x82, "ComponentAddress"),    // 130
@@ -111,7 +110,7 @@ const MAPPING: [(ScryptoType, u8, &str); 34] = [
     (ScryptoType::EcdsaSignature, 0x92, "EcdsaSignature"), // 146
     (ScryptoType::Ed25519PublicKey, 0x93, "Ed25519PublicKey"), // 147
     (ScryptoType::Ed25519Signature, 0x94, "Ed25519Signature"), // 148
-    (ScryptoType::Decimal, 0xa1, "Decimal"),               // 161
+    // removed: (ScryptoType::Decimal, 0xa1, "Decimal"),   // 161
     (ScryptoType::Bucket, 0xb1, "Bucket"),                 // 177
     (ScryptoType::Proof, 0xb2, "Proof"),                   // 178
     (ScryptoType::Vault, 0xb3, "Vault"),                   // 179
@@ -134,8 +133,8 @@ const MAPPING: [(ScryptoType, u8, &str); 34] = [
     (ScryptoType::I256, 0xc4, "I256"), // 196
     (ScryptoType::I384, 0xc5, "I384"), // 197
     (ScryptoType::I512, 0xc6, "I512"), // 198
-    (ScryptoType::D256, 0xb7, "D256"), // 183
-    (ScryptoType::D512, 0xb8, "D512"), // 184
+    (ScryptoType::Decimal, 0xc7, "Decimal"), // 199
+    (ScryptoType::LongDecimal, 0xc8, "LongDecimal"), // 200
 ];
 
 impl ScryptoType {
