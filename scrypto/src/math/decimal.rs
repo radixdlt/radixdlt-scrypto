@@ -80,7 +80,6 @@ macro_rules! decimals {
 
                     /// Whether this decimal is negative.
                     pub fn is_negative(&self) -> bool {
-                        println!("self.0: {}", self.0);
                         self.0 < Zero::zero()
                     }
 
@@ -766,11 +765,6 @@ mod tests {
     #[test]
     fn test_0_pow_0() {
         let a = dec!("0");
-        println!("{:X}", I256::from(1u8).mul(10i128.pow(18u32)).swap_bytes());
-        println!(
-            "{:X}",
-            I512::from(1u8) * I512::from(10i128).pow(64u32).swap_bytes()
-        );
         assert_eq!((a.powi(0)).to_string(), "1");
     }
 
