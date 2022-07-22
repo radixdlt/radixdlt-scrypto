@@ -6,7 +6,6 @@ use sbor::rust::convert::{From, TryFrom};
 use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
 
-
 /// Trait for short hand notation for try_from().unwrap()
 /// As opposed to `try_from(x).unwrap()` this will panic if the conversion fails.
 pub trait TFrom<T> {
@@ -63,7 +62,7 @@ macro_rules! error {
                     Overflow,
                     InvalidLength,
                 }
-                
+
                 #[cfg(not(feature = "alloc"))]
                 impl std::error::Error for [<Parse $t Error>] {}
 

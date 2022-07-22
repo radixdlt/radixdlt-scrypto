@@ -1,17 +1,18 @@
 //! Definitions of safe integers and uints.
 
+use crate::abi::*;
 use core::ops::{Add, AddAssign, BitAnd, BitAndAssign, BitOr, BitOrAssign};
 use core::ops::{BitXor, BitXorAssign, Div, DivAssign};
 use core::ops::{Mul, MulAssign, Neg, Not, Rem, RemAssign};
 use core::ops::{Shl, ShlAssign, Shr, ShrAssign, Sub, SubAssign};
-use crate::abi::*;
 use num_bigint::{BigInt, BigUint, Sign};
 use num_traits::{One, Pow, Signed, ToPrimitive, Zero};
 use paste::paste;
-use sbor::*;
 use sbor::rust::convert::{From, TryFrom};
 use sbor::rust::fmt;
 use sbor::rust::vec::Vec;
+use sbor::*;
+use std::cmp::{Ord, Ordering, PartialEq, PartialOrd};
 
 pub mod basic;
 pub mod bits;
@@ -50,7 +51,7 @@ macro_rules! types {
                 ///
                 #[doc = "`" $t "` will have the same methods and traits as"]
                 /// the built-in counterpart.
-                #[derive(Clone , Copy , Eq , Hash , Ord , PartialEq , PartialOrd)]
+                #[derive(Clone , Copy , Eq , Hash)]
                 #[repr(transparent)]
                 pub struct $t(pub $wrap);
 
@@ -113,6 +114,30 @@ macro_rules! types {
             impl One for $t {
                 fn one() -> Self {
                     Self::try_from(1u8).unwrap()
+                }
+            }
+
+            impl Ord for $t {
+                fn cmp(&self, other: &Self) -> Ordering {
+                   let mut a: Vec<u8> = self.to_le_bytes().into();
+                   let mut b: Vec<u8> = other.to_le_bytes().into();
+                   a.reverse();
+                   b.reverse();
+                   a[0] ^= 0x80;
+                   b[0] ^= 0x80;
+                   a.cmp(&b)
+                }
+            }
+
+            impl PartialOrd for $t {
+                fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+                    Some(self.cmp(other))
+                }
+            }
+
+            impl PartialEq for $t {
+                fn eq(&self, other: &Self) -> bool {
+                    self.0 == other.0
                 }
             }
 
