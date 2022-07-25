@@ -1,4 +1,4 @@
-use sbor::Decode;
+use sbor::{Decode, Encode};
 use crate::buffer::*;
 use crate::component::package::Package;
 use crate::component::*;
@@ -8,11 +8,11 @@ use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::*;
 use sbor::rust::string::ToString;
 
-pub struct ComponentDataSystem<V: Decode> {
+pub struct ComponentDataSystem<V: Encode + Decode> {
     data: HashMap<ComponentAddress, V>
 }
 
-impl<V: Decode> ComponentDataSystem<V> {
+impl<V: Encode + Decode> ComponentDataSystem<V> {
     pub fn new() -> Self {
         Self {
             data: HashMap::new()
@@ -20,7 +20,7 @@ impl<V: Decode> ComponentDataSystem<V> {
     }
 
     /// Returns a reference to component data
-    pub fn get_component_data(&mut self, component_address: &ComponentAddress) -> &mut V {
+    pub fn get_data(&mut self, component_address: &ComponentAddress) -> &mut V {
         if !self.data.contains_key(component_address) {
             let address = DataAddress::Component(*component_address, ComponentOffset::State);
             let input = ::scrypto::engine::api::RadixEngineInput::ReadData(address);
@@ -29,6 +29,14 @@ impl<V: Decode> ComponentDataSystem<V> {
         }
 
         self.data.get_mut(component_address).unwrap()
+    }
+
+    pub fn flush(self) {
+        for (component_address, value) in self.data {
+            let address = DataAddress::Component(component_address, ComponentOffset::State);
+            let input = ::scrypto::engine::api::RadixEngineInput::WriteData(address, scrypto_encode(&value));
+            let _: () = ::scrypto::engine::call_engine(input);
+        }
     }
 }
 

@@ -205,17 +205,13 @@ fn generate_dispatcher(
                             // Generate a `Stmt` for loading the component state
                             assert!(get_state.is_none(), "Can't have more than 1 self reference");
                             get_state = Some(parse_quote! {
-                                let state: &mut #module_ident::#bp_ident = component_data_system.get_component_data(&component_address);
+                                let state: &mut #module_ident::#bp_ident = component_data_system.get_data(&component_address);
                             });
 
                             // Generate a `Stmt` for writing back component state
                             if mutability.is_some() {
                                 put_state = Some(parse_quote! {
-                                    {
-                                        let address = DataAddress::Component(component_address, ComponentOffset::State);
-                                        let input = ::scrypto::engine::api::RadixEngineInput::WriteData(address, scrypto_encode(state));
-                                        let _: () = ::scrypto::engine::call_engine(input);
-                                    }
+                                    component_data_system.flush();
                                 });
                             }
                         }
@@ -588,7 +584,7 @@ mod tests {
                     let input: Test_x_Input = ::scrypto::buffer::scrypto_decode_from_buffer(method_arg).unwrap();
                     let mut component_data_system = ::scrypto::component::ComponentDataSystem::new();
                     let component_address = ::scrypto::core::Runtime::actor().component_address().unwrap();
-                    let state: &mut Test_impl::Test = component_data_system.get_component_data(&component_address);
+                    let state: &mut Test_impl::Test = component_data_system.get_data(&component_address);
                     let rtn = ::scrypto::buffer::scrypto_encode_to_buffer(&Test_impl::Test::x(state, input.arg0));
                     rtn
                 }
