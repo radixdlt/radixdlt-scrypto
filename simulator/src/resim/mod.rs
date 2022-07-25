@@ -153,11 +153,11 @@ pub fn handle_manifest<O: std::io::Write>(
             Ok(None)
         }
         None => {
-            let substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?);
+            let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?);
             let mut wasm_engine = DefaultWasmEngine::new();
             let mut wasm_instrumenter = WasmInstrumenter::new();
             let mut executor = TransactionExecutor::new(
-                substate_store,
+                &mut substate_store,
                 &mut wasm_engine,
                 &mut wasm_instrumenter,
                 trace,
@@ -170,8 +170,7 @@ pub fn handle_manifest<O: std::io::Write>(
                 .collect::<Vec<EcdsaPublicKey>>();
             let nonce = get_nonce()?;
             let transaction = TestTransaction::new(manifest, nonce, pks);
-
-            let receipt = executor.execute(&transaction);
+            let receipt = executor.execute_and_commit(&transaction);
             if output_receipt {
                 writeln!(out, "{:?}", receipt).map_err(Error::IOError)?;
             }

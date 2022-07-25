@@ -11,8 +11,8 @@ use scrypto::prelude::*;
 use scrypto::to_struct;
 use transaction::builder::ManifestBuilder;
 
-fn test_auth_rule(
-    test_runner: &mut TestRunner,
+fn test_auth_rule<'s, S: ReadableSubstateStore + WriteableSubstateStore>(
+    test_runner: &mut TestRunner<'s, S>,
     auth_rule: &AccessRule,
     signer_public_keys: &[EcdsaPublicKey],
     should_succeed: bool,

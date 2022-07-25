@@ -12,7 +12,7 @@ use transaction::validation::{TestEpochManager, TestIntentHashManager, Transacti
 
 #[test]
 fn test_normal_transaction_flow() {
-    let substate_store = InMemorySubstateStore::with_bootstrap();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = DefaultWasmEngine::new();
     let mut wasm_instrumenter = WasmInstrumenter::new();
     let epoch_manager = TestEpochManager::new(0);
@@ -27,12 +27,12 @@ fn test_normal_transaction_flow() {
     .expect("Invalid transaction");
 
     let mut executor = TransactionExecutor::new(
-        substate_store,
+        &mut substate_store,
         &mut wasm_engine,
         &mut wasm_instrumenter,
         true,
     );
-    let receipt = executor.execute(&validated_transaction);
+    let receipt = executor.execute_and_commit(&validated_transaction);
 
     receipt.expect_success();
 }

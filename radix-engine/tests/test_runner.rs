@@ -1,7 +1,6 @@
-use radix_engine::engine::{Address, Substate};
 use radix_engine::ledger::*;
 use radix_engine::model::{export_abi, export_abi_by_component, extract_package};
-use radix_engine::state_manager::*;
+use radix_engine::state_manager::StagedSubstateStoreManager;
 use radix_engine::transaction::{TransactionExecutor, TransactionReceipt};
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter};
 use sbor::describe::Fields;
@@ -16,8 +15,8 @@ use transaction::model::TestTransaction;
 use transaction::model::TransactionManifest;
 use transaction::signing::EcdsaPrivateKey;
 
-pub struct TestRunner {
-    substate_store: Option<InMemorySubstateStore>,
+pub struct TestRunner<'s, S: ReadableSubstateStore + WriteableSubstateStore> {
+    execution_stores: StagedSubstateStoreManager<'s, S>,
     wasm_engine: DefaultWasmEngine,
     wasm_instrumenter: WasmInstrumenter,
     next_private_key: u64,
@@ -25,10 +24,10 @@ pub struct TestRunner {
     trace: bool,
 }
 
-impl TestRunner {
+impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     pub fn new(trace: bool, substate_store: &'s mut S) -> Self {
         Self {
-            substate_store: Some(InMemorySubstateStore::with_bootstrap()),
+            execution_stores: StagedSubstateStoreManager::new(substate_store),
             wasm_engine: DefaultWasmEngine::new(),
             wasm_instrumenter: WasmInstrumenter::new(),
             next_private_key: 1, // 0 is invalid
@@ -99,45 +98,51 @@ impl TestRunner {
         &mut self,
         manifest: TransactionManifest,
         signer_public_keys: Vec<EcdsaPublicKey>,
-    ) -> Receipt {
-        let transaction =
-            TestTransaction::new(manifest, self.next_transaction_nonce, signer_public_keys);
-        self.next_transaction_nonce += 1;
-
-        // TODO: no need to pass ownership of substate store once commit phase is split out.
-        let mut executor = TransactionExecutor::new(
-            self.substate_store.take().expect("Missing substate store"),
-            &mut self.wasm_engine,
-            &mut self.wasm_instrumenter,
-            self.trace,
-        );
-        let receipt = executor.execute(&transaction);
-        self.substate_store = Some(executor.destroy());
+    ) -> TransactionReceipt {
+        let mut receipts = self.execute_batch(vec![(manifest, signer_public_keys)]);
+        receipts.pop().unwrap()
     }
 
     pub fn execute_batch(
         &mut self,
         manifests: Vec<(TransactionManifest, Vec<EcdsaPublicKey>)>,
-    ) -> Vec<Receipt> {
+    ) -> Vec<TransactionReceipt> {
         let node_id = self.create_child_node(0);
         let receipts = self.execute_batch_on_node(node_id, manifests);
         self.merge_node(node_id);
         receipts
     }
 
-    pub fn substate_store(&self) -> &InMemorySubstateStore {
-        self.substate_store
-            .as_ref()
-            .expect("Missing substate store")
+    pub fn create_child_node(&mut self, parent_id: u64) -> u64 {
+        self.execution_stores.new_child_node(parent_id)
     }
 
-    pub fn inspect_component(&self, component_address: ComponentAddress) -> Component {
-        let component_value: Substate = self
-            .substate_store()
-            .get_substate(&Address::GlobalComponent(component_address))
-            .map(|s| s.substate)
-            .unwrap();
-        component_value.into()
+    pub fn execute_batch_on_node(
+        &mut self,
+        node_id: u64,
+        manifests: Vec<(TransactionManifest, Vec<EcdsaPublicKey>)>,
+    ) -> Vec<TransactionReceipt> {
+        let mut store = self.execution_stores.get_output_store(node_id);
+        let mut receipts = Vec::new();
+        for (manifest, signer_public_keys) in manifests {
+            let transaction =
+                TestTransaction::new(manifest, self.next_transaction_nonce, signer_public_keys);
+            self.next_transaction_nonce += 1;
+            let receipt = TransactionExecutor::new(
+                &mut store,
+                &mut self.wasm_engine,
+                &mut self.wasm_instrumenter,
+                self.trace,
+            )
+            .execute_and_commit(&transaction);
+            receipts.push(receipt);
+        }
+
+        receipts
+    }
+
+    pub fn merge_node(&mut self, node_id: u64) {
+        self.execution_stores.merge_to_parent(node_id);
     }
 
     pub fn export_abi(
@@ -145,16 +150,16 @@ impl TestRunner {
         package_address: PackageAddress,
         blueprint_name: &str,
     ) -> abi::BlueprintAbi {
-        export_abi(self.substate_store(), package_address, blueprint_name)
-            .expect("Failed to export ABI")
+        let output_store = self.execution_stores.get_output_store(0);
+        export_abi(&output_store, package_address, blueprint_name).expect("Failed to export ABI")
     }
 
     pub fn export_abi_by_component(
         &mut self,
         component_address: ComponentAddress,
     ) -> abi::BlueprintAbi {
-        export_abi_by_component(self.substate_store(), component_address)
-            .expect("Failed to export ABI")
+        let output_store = self.execution_stores.get_output_store(0);
+        export_abi_by_component(&output_store, component_address).expect("Failed to export ABI")
     }
 
     pub fn update_resource_auth(

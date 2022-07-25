@@ -5,7 +5,7 @@ use crate::ledger::*;
 use crate::ledger::{Output, WriteableSubstateStore};
 
 /// A substate store that stores all substates in host memory.
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct InMemorySubstateStore {
     substates: HashMap<Address, Output>,
     spaces: HashMap<Address, OutputId>,

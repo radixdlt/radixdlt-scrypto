@@ -23,7 +23,7 @@ pub enum ComponentError {
 }
 
 /// A component is an instance of blueprint.
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct Component {
     package_address: PackageAddress,
     blueprint_name: String,

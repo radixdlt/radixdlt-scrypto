@@ -12,31 +12,33 @@ use crate::fee::CostUnitCounter;
 use crate::fee::FeeTable;
 use crate::fee::MAX_TRANSACTION_COST;
 use crate::fee::SYSTEM_LOAN_AMOUNT;
-use crate::ledger::ReadableSubstateStore;
+use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
 use crate::model::*;
 use crate::transaction::*;
 use crate::wasm::*;
 
 /// An executor that runs transactions.
-pub struct TransactionExecutor<'s, 'w, W, I>
+pub struct TransactionExecutor<'s, 'w, S, W, I>
 where
+    S: ReadableSubstateStore + WriteableSubstateStore,
     W: WasmEngine<I>,
     I: WasmInstance,
 {
-    substate_store: &'s dyn ReadableSubstateStore,
+    substate_store: &'s mut S,
     wasm_engine: &'w mut W,
     wasm_instrumenter: &'w mut WasmInstrumenter,
     trace: bool,
     phantom: PhantomData<I>,
 }
 
-impl<'s, 'w, W, I> TransactionExecutor<'s, 'w, W, I>
+impl<'s, 'w, S, W, I> TransactionExecutor<'s, 'w, S, W, I>
 where
+    S: ReadableSubstateStore + WriteableSubstateStore,
     W: WasmEngine<I>,
     I: WasmInstance,
 {
     pub fn new(
-        substate_store: &'s dyn ReadableSubstateStore,
+        substate_store: &'s mut S,
         wasm_engine: &'w mut W,
         wasm_instrumenter: &'w mut WasmInstrumenter,
         trace: bool,
@@ -48,6 +50,15 @@ where
             trace,
             phantom: PhantomData,
         }
+    }
+
+    pub fn execute_and_commit<T: ExecutableTransaction>(
+        &mut self,
+        transaction: &T,
+    ) -> TransactionReceipt {
+        let receipt = self.execute(transaction);
+        receipt.state_updates.commit(self.substate_store);
+        receipt
     }
 
     pub fn execute<T: ExecutableTransaction>(&mut self, transaction: &T) -> TransactionReceipt {
@@ -69,7 +80,7 @@ where
         }
 
         // 1. Start state track
-        let mut track = Track::new(self.substate_store.clone());
+        let mut track = Track::new(self.substate_store);
         let mut id_allocator = IdAllocator::new(IdSpace::Application);
 
         // 2. Apply pre-execution costing

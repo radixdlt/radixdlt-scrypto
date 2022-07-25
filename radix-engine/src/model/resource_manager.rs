@@ -60,7 +60,7 @@ enum MethodAccessRuleMethod {
     Update(AccessRule),
 }
 
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 struct MethodAccessRule {
     auth: MethodAuthorization,
     update_auth: MethodAuthorization,
@@ -110,14 +110,14 @@ impl MethodAccessRule {
     }
 }
 
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 enum ResourceMethodRule {
     Public,
     Protected(ResourceMethodAuthKey),
 }
 
 /// The definition of a resource.
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct ResourceManager {
     resource_type: ResourceType,
     metadata: HashMap<String, String>,

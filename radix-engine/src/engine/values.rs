@@ -85,7 +85,7 @@ impl Into<VaultId> for Address {
     }
 }
 
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub enum Substate {
     System(System),
     Resource(ResourceManager),

@@ -23,9 +23,9 @@ pub enum PreviewError {
 pub struct PreviewExecutor;
 
 impl PreviewExecutor {
-    pub fn execute_preview<S: ReadableSubstateStore + WriteableSubstateStore + 'static>(
+    pub fn execute_preview<'s, S: ReadableSubstateStore + WriteableSubstateStore>(
         preview_intent: PreviewIntent,
-        substate_store: S,
+        substate_store: &'s mut S,
     ) -> Result<PreviewResult, PreviewError> {
         let epoch_manager = TestEpochManager::new(0);
         let intent_hash_manager = TestIntentHashManager::new();
@@ -40,7 +40,7 @@ impl PreviewExecutor {
         let mut wasm_engine = DefaultWasmEngine::new();
         let mut wasm_instrumenter = WasmInstrumenter::new();
         let mut executor = TransactionExecutor::new(
-            &substate_store,
+            substate_store,
             &mut wasm_engine,
             &mut wasm_instrumenter,
             false,

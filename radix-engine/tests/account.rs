@@ -14,7 +14,8 @@ use transaction::model::*;
 #[test]
 fn test_pay_fee_and_transfer() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account();
     let (_, _, other_account) = test_runner.new_account();
 

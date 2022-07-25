@@ -22,7 +22,7 @@ pub enum ResourceContainerError {
     ContainerLocked,
 }
 
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub enum ResourceContainer {
     Fungible {
         /// The resource address.

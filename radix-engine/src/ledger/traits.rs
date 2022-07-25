@@ -18,7 +18,7 @@ pub trait QueryableSubstateStore {
 #[derive(Debug, Clone, Hash, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct OutputId(pub Hash, pub u32);
 
-#[derive(Debug, Clone, Encode, Decode, TypeId)]
+#[derive(Debug, Clone, Encode, Decode, TypeId, PartialEq, Eq)]
 pub struct Output {
     pub substate: Substate,
     pub output_id: OutputId,

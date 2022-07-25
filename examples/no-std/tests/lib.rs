@@ -15,11 +15,11 @@ use transaction::signing::EcdsaPrivateKey;
 #[test]
 fn test_say_hello() {
     // Set up environment.
-    let substate_store = InMemorySubstateStore::with_bootstrap();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = DefaultWasmEngine::new();
     let mut wasm_instrumenter = WasmInstrumenter::new();
     let mut executor = TransactionExecutor::new(
-        substate_store,
+        &mut substate_store,
         &mut wasm_engine,
         &mut wasm_instrumenter,
         false,
@@ -34,13 +34,13 @@ fn test_say_hello() {
         .publish_package(extract_package(include_package!("no_std").to_vec()).unwrap())
         .build();
     let package_address = executor
-        .execute(&TestTransaction::new(manifest, 1, vec![public_key]))
+        .execute_and_commit(&TestTransaction::new(manifest, 1, vec![public_key]))
         .new_package_addresses[0];
 
     // Test the `say_hello` function.
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(package_address, "NoStd", "say_hello", to_struct!())
         .build();
-    let receipt = executor.execute(&TestTransaction::new(manifest, 2, vec![]));
-    receipt.result.expect("Should be okay.");
+    let receipt = executor.execute_and_commit(&TestTransaction::new(manifest, 2, vec![]));
+    receipt.expect_success();
 }
