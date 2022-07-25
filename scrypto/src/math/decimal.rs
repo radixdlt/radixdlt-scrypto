@@ -173,13 +173,13 @@ macro_rules! decimals {
                     }
 
                     /// Calculates power using "exponentiation by squaring".
-                    pub fn powi(&self, exp: i32) -> Self {
+                    pub fn powi(&self, exp: i64) -> Self {
                         let one = BigInt::from(Self::ONE.0);
                         let base = BigInt::from(self.0);
                         let to_dec = |x: BigInt| $dec(<$wrapped>::try_from(x).expect("Overflow"));
-                        let div = |x: i32, y: i32| x.checked_div(y).expect("Overflow");
-                        let sub = |x: i32, y: i32| x.checked_sub(y).expect("Overflow");
-                        let mul = |x: i32, y: i32| x.checked_mul(y).expect("Overflow");
+                        let div = |x: i128, y: i128| x.checked_div(y).expect("Overflow");
+                        let sub = |x: i128, y: i128| x.checked_sub(y).expect("Overflow");
+                        let mul = |x: i128, y: i128| x.checked_mul(y).expect("Overflow");
 
                         if exp < 0 {
                             return to_dec(&one * &one / base).powi(mul(exp, -1));
@@ -729,21 +729,21 @@ mod tests {
     #[should_panic]
     fn test_powi_exp_overflow() {
         let a = Decimal::from(5u32);
-        let b = i32::MIN;
+        let b = i128::MIN;
         assert_eq!(a.powi(b).to_string(), "0");
     }
 
     #[test]
     fn test_1_powi_max() {
         let a = Decimal::from(1u32);
-        let b = i32::MAX;
+        let b = i128::MAX;
         assert_eq!(a.powi(b).to_string(), "1");
     }
 
     #[test]
     fn test_1_powi_min() {
         let a = Decimal::from(1u32);
-        let b = i32::MAX - 1;
+        let b = i128::MAX - 1;
         assert_eq!(a.powi(b).to_string(), "1");
     }
 
