@@ -1,11 +1,36 @@
+use sbor::Decode;
 use crate::buffer::*;
 use crate::component::package::Package;
 use crate::component::*;
-use crate::core::SNodeRef;
+use crate::core::{ComponentOffset, DataAddress, SNodeRef};
 use crate::engine::{api::*, call_engine};
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::*;
 use sbor::rust::string::ToString;
+
+pub struct ComponentDataSystem<V: Decode> {
+    data: HashMap<ComponentAddress, V>
+}
+
+impl<V: Decode> ComponentDataSystem<V> {
+    pub fn new() -> Self {
+        Self {
+            data: HashMap::new()
+        }
+    }
+
+    /// Returns a reference to component data
+    pub fn get_component_data(&mut self, component_address: &ComponentAddress) -> &mut V {
+        if !self.data.contains_key(component_address) {
+            let address = DataAddress::Component(*component_address, ComponentOffset::State);
+            let input = ::scrypto::engine::api::RadixEngineInput::ReadData(address);
+            let value = call_engine(input);
+            self.data.insert(*component_address, value);
+        }
+
+        self.data.get_mut(component_address).unwrap()
+    }
+}
 
 /// Represents the Radix Engine component subsystem.
 ///

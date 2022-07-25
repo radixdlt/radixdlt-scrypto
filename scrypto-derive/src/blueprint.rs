@@ -200,16 +200,12 @@ fn generate_dispatcher(
                             let mutability = r.mutability;
 
                             // Generate an `Arg` and a loading `Stmt` for the i-th argument
-                            dispatch_args.push(parse_quote! { & #mutability state });
+                            dispatch_args.push(parse_quote! { state });
 
                             // Generate a `Stmt` for loading the component state
                             assert!(get_state.is_none(), "Can't have more than 1 self reference");
                             get_state = Some(parse_quote! {
-                                let #mutability state: #module_ident::#bp_ident = {
-                                    let address = DataAddress::Component(component_address, ComponentOffset::State);
-                                    let input = ::scrypto::engine::api::RadixEngineInput::ReadData(address);
-                                    ::scrypto::engine::call_engine(input)
-                                };
+                                let state: &mut #module_ident::#bp_ident = component_data_system.get_component_data(&component_address);
                             });
 
                             // Generate a `Stmt` for writing back component state
@@ -217,7 +213,7 @@ fn generate_dispatcher(
                                 put_state = Some(parse_quote! {
                                     {
                                         let address = DataAddress::Component(component_address, ComponentOffset::State);
-                                        let input = ::scrypto::engine::api::RadixEngineInput::WriteData(address, scrypto_encode(&state));
+                                        let input = ::scrypto::engine::api::RadixEngineInput::WriteData(address, scrypto_encode(state));
                                         let _: () = ::scrypto::engine::call_engine(input);
                                     }
                                 });
@@ -242,6 +238,9 @@ fn generate_dispatcher(
                 // load state if needed
                 if let Some(stmt) = get_state {
                     trace!("Generated stmt: {}", quote! { #stmt });
+                    stmts.push(parse_quote!{
+                        let mut component_data_system = ::scrypto::component::ComponentDataSystem::new();
+                    });
                     stmts.push(parse_quote!{
                         let component_address = ::scrypto::core::Runtime::actor().component_address().unwrap();
                     });
@@ -587,13 +586,10 @@ mod tests {
                     ::scrypto::resource::init_resource_system(::scrypto::resource::ResourceSystem::new());
 
                     let input: Test_x_Input = ::scrypto::buffer::scrypto_decode_from_buffer(method_arg).unwrap();
+                    let mut component_data_system = ::scrypto::component::ComponentDataSystem::new();
                     let component_address = ::scrypto::core::Runtime::actor().component_address().unwrap();
-                    let state: Test_impl::Test = {
-                        let address = DataAddress::Component(component_address, ComponentOffset::State);
-                        let input = ::scrypto::engine::api::RadixEngineInput::ReadData(address);
-                        ::scrypto::engine::call_engine(input)
-                    };
-                    let rtn = ::scrypto::buffer::scrypto_encode_to_buffer(&Test_impl::Test::x(&state, input.arg0));
+                    let state: &mut Test_impl::Test = component_data_system.get_component_data(&component_address);
+                    let rtn = ::scrypto::buffer::scrypto_encode_to_buffer(&Test_impl::Test::x(state, input.arg0));
                     rtn
                 }
 
