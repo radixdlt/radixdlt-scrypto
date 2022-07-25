@@ -45,7 +45,7 @@ impl PreviewExecutor {
             &mut wasm_instrumenter,
             false,
         );
-        let receipt = executor.execute(&validated_preview_transaction);
+        let receipt = executor.execute_and_commit(&validated_preview_transaction);
 
         Ok(PreviewResult {
             intent: preview_intent,

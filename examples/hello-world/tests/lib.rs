@@ -62,7 +62,7 @@ fn test_hello() {
         .call_method(component, "free_token", to_struct!())
         .call_method_with_all_resources(account, "deposit_batch")
         .build();
-    let receipt = executor.execute(&TestTransaction::new(manifest, 4, vec![public_key]));
+    let receipt = executor.execute_and_commit(&TestTransaction::new(manifest, 4, vec![public_key]));
     println!("{:?}\n", receipt);
     receipt.expect_success();
 }
