@@ -69,6 +69,4 @@ where
         access_rule: AccessRule,
         proof_ids: Vec<ProofId>,
     ) -> Result<bool, RuntimeError>;
-
-    fn pay_fee(&mut self, vault_id: VaultId, amount: Decimal) -> Result<(), RuntimeError>;
 }

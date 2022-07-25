@@ -132,8 +132,7 @@ pub enum RuntimeError {
 
 #[derive(Debug, PartialEq)]
 pub enum PayFeeError {
-    UsingLocallyOwnedValue,
-    UsingLocallyBorrowedValue,
+    ValueNotInTrack,
     ValueAlreadyTouched,
     ValueNotFound,
     NotRadixToken,

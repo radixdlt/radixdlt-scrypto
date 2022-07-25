@@ -1084,6 +1084,8 @@ where
             return Err(RuntimeError::MaxCallDepthLimitReached);
         }
 
+        let is_pay_fee = matches!(snode_ref, SNodeRef::VaultRef(..)) && &fn_ident == "pay_fee";
+
         self.cost_unit_counter
             .consume(
                 self.fee_table
@@ -1594,6 +1596,9 @@ where
                         .cloned()
                         .ok_or(RuntimeError::ValueNotFound(ValueId::Vault(*vault_id)))?
                 };
+                if is_pay_fee && !matches!(cur_location, REValuePointer::Track { .. }) {
+                    return Err(RuntimeError::PayFeeError(PayFeeError::ValueNotInTrack));
+                }
 
                 // Lock values and setup next frame
                 let next_location = {
@@ -1601,8 +1606,19 @@ where
                     let next_location = match cur_location.clone() {
                         REValuePointer::Track(address) => {
                             self.track
-                                .acquire_lock(address.clone(), true, false)
-                                .expect("Should never fail.");
+                                .acquire_lock(address.clone(), true, is_pay_fee)
+                                .map_err(|e| match e {
+                                    TrackError::NotFound | TrackError::Reentrancy => {
+                                        panic!("Illegal state")
+                                    }
+                                    TrackError::StateTrackError(e) => {
+                                        RuntimeError::PayFeeError(match e {
+                                            StateTrackError::ValueAlreadyTouched => {
+                                                PayFeeError::ValueAlreadyTouched
+                                            }
+                                        })
+                                    }
+                                })?;
                             locked_values.insert(address.clone().into());
                             REValuePointer::Track(address)
                         }
@@ -1725,18 +1741,42 @@ where
         );
 
         // invoke the main function
-        let (result, received_values) = frame.run(snode_ref, loaded_snode, &fn_ident, input)?;
+        let (mut result, received_values) = frame.run(snode_ref, loaded_snode, &fn_ident, input)?;
         drop(frame);
 
         // Release locked addresses
         for l in locked_values {
-            self.track.release_lock(l, false);
+            // TODO: refactor after introducing `Lock` representation.
+            self.track
+                .release_lock(l.clone(), is_pay_fee && matches!(l, Address::Vault(..)));
         }
 
-        // move buckets and proofs to this process.
-        for (id, value) in received_values {
-            trace!(self, Level::Debug, "Received value: {:?}", value);
-            self.owned_values.insert(id, value);
+        if is_pay_fee {
+            // fee accounting
+            let bucket: Bucket = received_values
+                .into_iter()
+                .next()
+                .expect("Expecting `pay_fee` to return a bucket")
+                .1
+                .into();
+            if bucket.resource_address() != RADIX_TOKEN {
+                return Err(RuntimeError::PayFeeError(PayFeeError::NotRadixToken));
+            }
+
+            // TODO: add xrd/cost unit conversion
+            self.cost_unit_counter
+                .repay(100)
+                .map_err(RuntimeError::CostingError)?;
+
+            // TODO: store (vault_id, amount_locked)
+
+            result = ScryptoValue::from_typed(&());
+        } else {
+            // move buckets and proofs to this process.
+            for (id, value) in received_values {
+                trace!(self, Level::Debug, "Received value: {:?}", value);
+                self.owned_values.insert(id, value);
+            }
         }
 
         trace!(self, Level::Debug, "Invoking finished!");
@@ -2280,64 +2320,5 @@ where
 
     fn fee_table(&self) -> &FeeTable {
         self.fee_table
-    }
-
-    fn pay_fee(&mut self, vault_id: VaultId, amount: Decimal) -> Result<(), RuntimeError> {
-        let value_id = ValueId::Vault(vault_id);
-        if self.owned_values.contains_key(&value_id) {
-            Err(RuntimeError::PayFeeError(
-                PayFeeError::UsingLocallyOwnedValue,
-            ))
-        } else if let Some(r) = self.value_refs.get_mut(&value_id) {
-            match &r.location {
-                REValuePointer::Track(_) => {
-                    // 1. Update the substate
-                    let address = Address::Vault(vault_id);
-                    self.track
-                        .acquire_lock(address.clone(), true, true)
-                        .map_err(|e| match e {
-                            TrackError::NotFound => RuntimeError::ValueNotFound(value_id),
-                            TrackError::Reentrancy => panic!("Vault reentrancy should never occur"),
-                            TrackError::StateTrackError(e) => RuntimeError::PayFeeError(match e {
-                                StateTrackError::ValueAlreadyTouched => {
-                                    PayFeeError::ValueAlreadyTouched
-                                }
-                            }),
-                        })?;
-                    let mut value = self.track.take_value(address.clone());
-                    let (liquid, locked) = value.vault_mut();
-                    if liquid.resource_address() != RADIX_TOKEN {
-                        return Err(RuntimeError::PayFeeError(PayFeeError::NotRadixToken));
-                    }
-                    // TODO: should we do another invoke instead?
-                    let fee = liquid.take(amount).map_err(RuntimeError::VaultError)?;
-                    match locked {
-                        Some(existing) => {
-                            existing
-                                .put(fee)
-                                .expect("Combining XRD fees should always succeed");
-                        }
-                        None => {
-                            *locked = Some(fee);
-                        }
-                    }
-                    self.track.write_value(address.clone(), value);
-                    self.track.release_lock(address.clone(), true);
-
-                    // 2. Credit cost units
-                    // TODO: add xrd/cost unit conversion
-                    self.cost_unit_counter
-                        .repay(100)
-                        .map_err(RuntimeError::CostingError)?;
-
-                    Ok(())
-                }
-                _ => Err(RuntimeError::PayFeeError(
-                    PayFeeError::UsingLocallyBorrowedValue,
-                )),
-            }
-        } else {
-            Err(RuntimeError::PayFeeError(PayFeeError::ValueNotFound))
-        }
     }
 }

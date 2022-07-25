@@ -10,7 +10,8 @@ use scrypto::prelude::{
     VaultGetNonFungibleIdsInput, VaultPutInput, VaultTakeInput,
 };
 use scrypto::resource::{
-    VaultCreateProofByAmountInput, VaultGetResourceAddressInput, VaultTakeNonFungiblesInput,
+    VaultCreateProofByAmountInput, VaultGetResourceAddressInput, VaultPayFeeInput,
+    VaultTakeNonFungiblesInput,
 };
 use scrypto::values::ScryptoValue;
 
@@ -51,7 +52,7 @@ impl Vault {
         self.borrow_container_mut().put(other.into_container()?)
     }
 
-    pub fn take(&mut self, amount: Decimal) -> Result<ResourceContainer, VaultError> {
+    fn take(&mut self, amount: Decimal) -> Result<ResourceContainer, VaultError> {
         let container = self
             .borrow_container_mut()
             .take_by_amount(amount)
@@ -190,6 +191,18 @@ impl Vault {
             }
             "take" => {
                 let input: VaultTakeInput =
+                    scrypto_decode(&arg.raw).map_err(|e| VaultError::InvalidRequestData(e))?;
+                let container = vault.take(input.amount)?;
+                let bucket_id = system_api
+                    .create_value(Bucket::new(container))
+                    .unwrap()
+                    .into();
+                Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
+                    bucket_id,
+                )))
+            }
+            "pay_fee" => {
+                let input: VaultPayFeeInput =
                     scrypto_decode(&arg.raw).map_err(|e| VaultError::InvalidRequestData(e))?;
                 let container = vault.take(input.amount)?;
                 let bucket_id = system_api

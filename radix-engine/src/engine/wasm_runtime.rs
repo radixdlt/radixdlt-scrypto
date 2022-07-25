@@ -155,10 +155,6 @@ where
     ) -> Result<bool, RuntimeError> {
         self.system_api.check_access_rule(access_rule, proof_ids)
     }
-
-    fn handle_pay_fee(&mut self, vault_id: VaultId, amount: Decimal) -> Result<(), RuntimeError> {
-        self.system_api.pay_fee(vault_id, amount)
-    }
 }
 
 fn encode<T: Encode>(output: T) -> ScryptoValue {
@@ -188,9 +184,6 @@ impl<'y, 'p, 's, Y: SystemApi<'p, 's, W, I>, W: WasmEngine<I>, I: WasmInstance> 
             }
             RadixEngineInput::CheckAccessRule(rule, proof_ids) => {
                 self.handle_check_access_rule(rule, proof_ids).map(encode)
-            }
-            RadixEngineInput::PayFee(vault_id, amount) => {
-                self.handle_pay_fee(vault_id, amount).map(encode)
             }
         }
         .map_err(InvokeError::RuntimeError)
