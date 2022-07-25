@@ -13,58 +13,42 @@ use crate::fee::CostUnitCounter;
 use crate::fee::FeeTable;
 use crate::fee::MAX_TRANSACTION_COST;
 use crate::fee::SYSTEM_LOAN_AMOUNT;
-use crate::ledger::*;
+use crate::ledger::ReadableSubstateStore;
 use crate::model::*;
 use crate::transaction::*;
 use crate::wasm::*;
 
 /// An executor that runs transactions.
-pub struct TransactionExecutor<'w, S, W, I>
+pub struct TransactionExecutor<'w, W, I>
 where
-    S: ReadableSubstateStore + WriteableSubstateStore + 'static,
     W: WasmEngine<I>,
     I: WasmInstance,
 {
-    substate_store: Option<S>,
+    substate_store: Rc<dyn ReadableSubstateStore>,
     wasm_engine: &'w mut W,
     wasm_instrumenter: &'w mut WasmInstrumenter,
     trace: bool,
     phantom: PhantomData<I>,
 }
 
-impl<'w, S, W, I> TransactionExecutor<'w, S, W, I>
+impl<'w, W, I> TransactionExecutor<'w, W, I>
 where
-    S: ReadableSubstateStore + WriteableSubstateStore + 'static,
     W: WasmEngine<I>,
     I: WasmInstance,
 {
     pub fn new(
-        substate_store: S,
+        substate_store: Rc<dyn ReadableSubstateStore>,
         wasm_engine: &'w mut W,
         wasm_instrumenter: &'w mut WasmInstrumenter,
         trace: bool,
-    ) -> TransactionExecutor<'w, S, W, I> {
+    ) -> TransactionExecutor<'w, W, I> {
         Self {
-            substate_store: Some(substate_store),
+            substate_store,
             wasm_engine,
             wasm_instrumenter,
             trace,
             phantom: PhantomData,
         }
-    }
-
-    /// Returns an immutable reference to the ledger.
-    pub fn substate_store(&self) -> &S {
-        self.substate_store
-            .as_ref()
-            .expect("Missing substate store")
-    }
-
-    /// Returns a mutable reference to the ledger.
-    pub fn substate_store_mut(&mut self) -> &mut S {
-        self.substate_store
-            .as_mut()
-            .expect("Missing substate store")
     }
 
     pub fn execute<T: ExecutableTransaction>(&mut self, transaction: &T) -> TransactionReceipt {
@@ -86,9 +70,7 @@ where
         }
 
         // 1. Start state track
-        let substate_store_rc =
-            Rc::new(self.substate_store.take().expect("Missing substate store"));
-        let mut track = Track::new(substate_store_rc.clone());
+        let mut track = Track::new(self.substate_store.clone());
         let mut id_allocator = IdAllocator::new(IdSpace::Application);
 
         // 2. Apply pre-execution costing
@@ -149,18 +131,6 @@ where
         let cost_units_price = 0u32.into();
         let burned = 0u32.into();
         let tipped = 0u32.into();
-
-        // 5. Generate receipts and commit
-        let track_receipt = track.to_receipt(result.is_ok());
-        self.substate_store = match Rc::try_unwrap(substate_store_rc) {
-            Ok(store) => Some(store),
-            Err(_) => panic!("There should be no other strong refs that prevent unwrapping"),
-        };
-        // TODO: remove commit step
-        track_receipt
-            .state_updates
-            .commit(self.substate_store_mut());
-
         #[cfg(not(feature = "alloc"))]
         if self.trace {
             println!("{:-^80}", "Cost Analysis");
@@ -169,7 +139,8 @@ where
             }
         }
 
-        // 6. Produce the final transaction receipt
+        // 5. Produce the final transaction receipt
+        let track_receipt = track.to_receipt(result.is_ok());
         let mut new_component_addresses = Vec::new();
         let mut new_resource_addresses = Vec::new();
         let mut new_package_addresses = Vec::new();
@@ -217,9 +188,5 @@ where
         }
 
         receipt
-    }
-
-    pub fn destroy(self) -> S {
-        self.substate_store.expect("Missing substate store")
     }
 }
