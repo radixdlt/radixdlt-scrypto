@@ -4,6 +4,7 @@ pub mod test_runner;
 use crate::test_runner::TestRunner;
 use radix_engine::engine::DropFailure;
 use radix_engine::engine::RuntimeError;
+use radix_engine::ledger::InMemorySubstateStore;
 use scrypto::core::Network;
 use scrypto::prelude::*;
 use transaction::builder::ManifestBuilder;
@@ -11,7 +12,8 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn test_worktop_resource_leak() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account();
 
     // Act

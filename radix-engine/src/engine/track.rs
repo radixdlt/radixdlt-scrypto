@@ -3,26 +3,26 @@ use sbor::rust::format;
 use sbor::rust::rc::Rc;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
-use sbor::*;
 use scrypto::engine::types::*;
-use transaction::validation::*;
 
-use crate::engine::track::BorrowedSubstate::Taken;
 use crate::engine::AppStateTrack;
 use crate::engine::BaseStateTrack;
 use crate::engine::StateTrackError;
-use crate::engine::{RENode, SubstateOperationsReceipt};
+use crate::engine::*;
 use crate::ledger::*;
-use crate::model::*;
+use crate::model::KeyValueStoreEntryWrapper;
+use crate::model::NonFungibleWrapper;
+use crate::state_manager::StateDiff;
 
-enum BorrowedSubstate {
-    Loaded(SubstateValue, u32),
-    LoadedMut(SubstateValue),
+#[derive(Debug)]
+pub enum BorrowedSubstate {
+    Loaded(Substate, u32),
+    LoadedMut(Substate),
     Taken,
 }
 
 impl BorrowedSubstate {
-    fn loaded(value: SubstateValue, mutable: bool) -> Self {
+    fn loaded(value: Substate, mutable: bool) -> Self {
         if mutable {
             BorrowedSubstate::LoadedMut(value)
         } else {
@@ -34,9 +34,7 @@ impl BorrowedSubstate {
 /// Enforces borrow semantics of global objects and collects transaction-wise side effects,
 /// such as logs and events.
 pub struct Track {
-    transaction_hash: Hash,
-    id_allocator: IdAllocator,
-    logs: Vec<(Level, String)>,
+    application_logs: Vec<(Level, String)>,
     new_addresses: Vec<Address>,
     state_track: AppStateTrack,
     borrowed_substates: HashMap<Address, BorrowedSubstate>,
@@ -49,355 +47,32 @@ pub enum TrackError {
     StateTrackError(StateTrackError),
 }
 
-pub struct BorrowedSNodes {
-    borrowed_substates: HashSet<Address>,
-}
-
-impl BorrowedSNodes {
-    pub fn is_empty(&self) -> bool {
-        self.borrowed_substates.is_empty()
-    }
-}
-
 pub struct TrackReceipt {
     pub new_addresses: Vec<Address>,
-    pub logs: Vec<(Level, String)>,
-    pub state_changes: SubstateOperationsReceipt,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct SubstateUpdate<T> {
-    pub prev_id: Option<PhysicalSubstateId>,
-    pub value: T,
-}
-
-#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
-pub enum SubstateParentId {
-    Exists(PhysicalSubstateId),
-    New(usize),
-}
-
-#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
-pub struct VirtualSubstateId(pub SubstateParentId, pub Vec<u8>);
-
-/// Represents a Radix Engine address. Each maps a unique substate key.
-///
-/// TODO: separate space addresses?
-///
-/// FIXME: RESIM listing is broken ATM.
-/// By using scrypto codec, we lose sorting capability of the address space.
-/// Can also be resolved by A) using prefix search instead of range search or B) use special codec as before
-#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash)]
-pub enum Address {
-    GlobalComponent(ComponentAddress),
-    Package(PackageAddress),
-    ResourceManager(ResourceAddress),
-    NonFungibleSpace(ResourceAddress),
-    NonFungible(ResourceAddress, Vec<u8>),
-    KeyValueStoreSpace(KeyValueStoreId),
-    KeyValueStoreEntry(KeyValueStoreId, Vec<u8>),
-    Vault(VaultId),
-    LocalComponent(ComponentAddress),
-    System,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub enum SubstateValue {
-    System(System),
-    Resource(ResourceManager),
-    Component(Component),
-    Package(ValidatedPackage),
-    // TODO: add a wrapper type for this
-    Vault(Vault, Option<ResourceContainer>),
-    NonFungible(NonFungibleWrapper),
-    KeyValueStoreEntry(KeyValueStoreEntryWrapper),
-}
-
-impl Into<Address> for PackageAddress {
-    fn into(self) -> Address {
-        Address::Package(self)
-    }
-}
-
-impl Into<Address> for ResourceAddress {
-    fn into(self) -> Address {
-        Address::ResourceManager(self)
-    }
-}
-
-impl Into<Address> for VaultId {
-    fn into(self) -> Address {
-        Address::Vault(self)
-    }
-}
-
-impl Into<PackageAddress> for Address {
-    fn into(self) -> PackageAddress {
-        if let Address::Package(package_address) = self {
-            return package_address;
-        } else {
-            panic!("Address is not a package address");
-        }
-    }
-}
-
-impl Into<ComponentAddress> for Address {
-    fn into(self) -> ComponentAddress {
-        if let Address::GlobalComponent(component_address) = self {
-            return component_address;
-        } else {
-            panic!("Address is not a component address");
-        }
-    }
-}
-
-impl Into<ResourceAddress> for Address {
-    fn into(self) -> ResourceAddress {
-        if let Address::ResourceManager(resource_address) = self {
-            return resource_address;
-        } else {
-            panic!("Address is not a resource address");
-        }
-    }
-}
-
-impl Into<VaultId> for Address {
-    fn into(self) -> VaultId {
-        if let Address::Vault(id) = self {
-            return id;
-        } else {
-            panic!("Address is not a vault address");
-        }
-    }
-}
-
-impl SubstateValue {
-    pub fn vault_mut(&mut self) -> (&mut Vault, &mut Option<ResourceContainer>) {
-        if let SubstateValue::Vault(liquid, locked) = self {
-            (liquid, locked)
-        } else {
-            panic!("Not a vault");
-        }
-    }
-
-    pub fn vault(&self) -> (&Vault, &Option<ResourceContainer>) {
-        if let SubstateValue::Vault(liquid, locked) = self {
-            (liquid, locked)
-        } else {
-            panic!("Not a vault");
-        }
-    }
-
-    pub fn resource_manager_mut(&mut self) -> &mut ResourceManager {
-        if let SubstateValue::Resource(resource_manager) = self {
-            resource_manager
-        } else {
-            panic!("Not a resource manager");
-        }
-    }
-
-    pub fn system(&self) -> &System {
-        if let SubstateValue::System(system) = self {
-            system
-        } else {
-            panic!("Not a system value");
-        }
-    }
-
-    pub fn system_mut(&mut self) -> &mut System {
-        if let SubstateValue::System(system) = self {
-            system
-        } else {
-            panic!("Not a system value");
-        }
-    }
-
-    pub fn resource_manager(&self) -> &ResourceManager {
-        if let SubstateValue::Resource(resource_manager) = self {
-            resource_manager
-        } else {
-            panic!("Not a resource manager");
-        }
-    }
-
-    pub fn component(&self) -> &Component {
-        if let SubstateValue::Component(component) = self {
-            component
-        } else {
-            panic!("Not a component");
-        }
-    }
-
-    pub fn component_mut(&mut self) -> &mut Component {
-        if let SubstateValue::Component(component) = self {
-            component
-        } else {
-            panic!("Not a component");
-        }
-    }
-
-    pub fn package(&self) -> &ValidatedPackage {
-        if let SubstateValue::Package(package) = self {
-            package
-        } else {
-            panic!("Not a package");
-        }
-    }
-
-    pub fn non_fungible(&self) -> &NonFungibleWrapper {
-        if let SubstateValue::NonFungible(non_fungible) = self {
-            non_fungible
-        } else {
-            panic!("Not a NonFungible");
-        }
-    }
-
-    pub fn kv_entry(&self) -> &KeyValueStoreEntryWrapper {
-        if let SubstateValue::KeyValueStoreEntry(kv_entry) = self {
-            kv_entry
-        } else {
-            panic!("Not a KVEntry");
-        }
-    }
-}
-
-impl Into<SubstateValue> for System {
-    fn into(self) -> SubstateValue {
-        SubstateValue::System(self)
-    }
-}
-
-impl Into<SubstateValue> for ValidatedPackage {
-    fn into(self) -> SubstateValue {
-        SubstateValue::Package(self)
-    }
-}
-
-impl Into<SubstateValue> for Component {
-    fn into(self) -> SubstateValue {
-        SubstateValue::Component(self)
-    }
-}
-
-impl Into<SubstateValue> for ResourceManager {
-    fn into(self) -> SubstateValue {
-        SubstateValue::Resource(self)
-    }
-}
-
-impl Into<SubstateValue> for Vault {
-    fn into(self) -> SubstateValue {
-        SubstateValue::Vault(self, None)
-    }
-}
-
-impl Into<SubstateValue> for NonFungibleWrapper {
-    fn into(self) -> SubstateValue {
-        SubstateValue::NonFungible(self)
-    }
-}
-
-impl Into<SubstateValue> for KeyValueStoreEntryWrapper {
-    fn into(self) -> SubstateValue {
-        SubstateValue::KeyValueStoreEntry(self)
-    }
-}
-
-impl Into<Component> for SubstateValue {
-    fn into(self) -> Component {
-        if let SubstateValue::Component(component) = self {
-            component
-        } else {
-            panic!("Not a component");
-        }
-    }
-}
-
-impl Into<ResourceManager> for SubstateValue {
-    fn into(self) -> ResourceManager {
-        if let SubstateValue::Resource(resource_manager) = self {
-            resource_manager
-        } else {
-            panic!("Not a resource manager");
-        }
-    }
-}
-
-impl Into<ValidatedPackage> for SubstateValue {
-    fn into(self) -> ValidatedPackage {
-        if let SubstateValue::Package(package) = self {
-            package
-        } else {
-            panic!("Not a resource manager");
-        }
-    }
-}
-
-impl Into<NonFungibleWrapper> for SubstateValue {
-    fn into(self) -> NonFungibleWrapper {
-        if let SubstateValue::NonFungible(non_fungible) = self {
-            non_fungible
-        } else {
-            panic!("Not a non-fungible wrapper");
-        }
-    }
-}
-
-impl Into<KeyValueStoreEntryWrapper> for SubstateValue {
-    fn into(self) -> KeyValueStoreEntryWrapper {
-        if let SubstateValue::KeyValueStoreEntry(kv_entry) = self {
-            kv_entry
-        } else {
-            panic!("Not a key value store entry wrapper");
-        }
-    }
-}
-
-impl Into<Vault> for SubstateValue {
-    fn into(self) -> Vault {
-        if let SubstateValue::Vault(liquid, locked) = self {
-            assert!(
-                locked.is_none(),
-                "Attempted to convert a partially-locked vault into substate value"
-            );
-            liquid
-        } else {
-            panic!("Not a vault");
-        }
-    }
+    pub application_logs: Vec<(Level, String)>,
+    pub state_updates: StateDiff,
 }
 
 impl Track {
-    pub fn new(substate_store: Rc<dyn ReadableSubstateStore>, transaction_hash: Hash) -> Self {
+    pub fn new(substate_store: Rc<dyn ReadableSubstateStore>) -> Self {
         let base_state_track = BaseStateTrack::new(substate_store);
         let state_track = AppStateTrack::new(base_state_track);
 
         Self {
-            transaction_hash,
-            id_allocator: IdAllocator::new(IdSpace::Application),
-            logs: Vec::new(),
+            application_logs: Vec::new(),
             new_addresses: Vec::new(),
             state_track,
             borrowed_substates: HashMap::new(),
         }
     }
 
-    /// Returns the transaction hash.
-    pub fn transaction_hash(&self) -> Hash {
-        self.transaction_hash
-    }
-
     /// Adds a log message.
     pub fn add_log(&mut self, level: Level, message: String) {
-        self.logs.push((level, message));
+        self.application_logs.push((level, message));
     }
 
     /// Creates a row with the given key/value
-    pub fn create_uuid_value<A: Into<Address>, V: Into<SubstateValue>>(
-        &mut self,
-        addr: A,
-        value: V,
-    ) {
+    pub fn create_uuid_value<A: Into<Address>, V: Into<Substate>>(&mut self, addr: A, value: V) {
         let address = addr.into();
         self.new_addresses.push(address.clone());
         self.state_track.put_substate(address, value.into());
@@ -511,7 +186,7 @@ impl Track {
         }
     }
 
-    pub fn read_value<A: Into<Address>>(&self, addr: A) -> &SubstateValue {
+    pub fn read_value<A: Into<Address>>(&self, addr: A) -> &Substate {
         let address: Address = addr.into();
         match self
             .borrowed_substates
@@ -524,11 +199,11 @@ impl Track {
         }
     }
 
-    pub fn take_value<A: Into<Address>>(&mut self, addr: A) -> SubstateValue {
+    pub fn take_value<A: Into<Address>>(&mut self, addr: A) -> Substate {
         let address: Address = addr.into();
         match self
             .borrowed_substates
-            .insert(address.clone(), Taken)
+            .insert(address.clone(), BorrowedSubstate::Taken)
             .expect(&format!("{:?} was never locked", address))
         {
             BorrowedSubstate::LoadedMut(value) => value,
@@ -537,7 +212,7 @@ impl Track {
         }
     }
 
-    pub fn write_value<A: Into<Address>, V: Into<SubstateValue>>(&mut self, addr: A, value: V) {
+    pub fn write_value<A: Into<Address>, V: Into<Substate>>(&mut self, addr: A, value: V) {
         let address: Address = addr.into();
 
         let cur_value = self
@@ -574,7 +249,7 @@ impl Track {
     }
 
     /// Returns the value of a key value pair
-    pub fn read_key_value(&mut self, parent_address: Address, key: Vec<u8>) -> SubstateValue {
+    pub fn read_key_value(&mut self, parent_address: Address, key: Vec<u8>) -> Substate {
         // TODO: consider using a single address as function input
         let address = match parent_address {
             Address::NonFungibleSpace(resource_address) => {
@@ -590,16 +265,20 @@ impl Track {
             Address::NonFungibleSpace(_) => self
                 .state_track
                 .get_substate(&address)
-                .unwrap_or(SubstateValue::NonFungible(NonFungibleWrapper(None))),
-            Address::KeyValueStoreSpace(..) => self.state_track.get_substate(&address).unwrap_or(
-                SubstateValue::KeyValueStoreEntry(KeyValueStoreEntryWrapper(None)),
-            ),
+                .unwrap_or(Substate::NonFungible(NonFungibleWrapper(None))),
+            Address::KeyValueStoreSpace(..) => {
+                self.state_track
+                    .get_substate(&address)
+                    .unwrap_or(Substate::KeyValueStoreEntry(KeyValueStoreEntryWrapper(
+                        None,
+                    )))
+            }
             _ => panic!("Invalid keyed value address {:?}", parent_address),
         }
     }
 
     /// Sets a key value
-    pub fn set_key_value<V: Into<SubstateValue>>(
+    pub fn set_key_value<V: Into<Substate>>(
         &mut self,
         parent_address: Address,
         key: Vec<u8>,
@@ -619,104 +298,15 @@ impl Track {
         self.state_track.put_substate(address, value.into());
     }
 
-    /// Creates a new package ID.
-    pub fn new_package_address(&mut self) -> PackageAddress {
-        // Security Alert: ensure ID allocating will practically never fail
-        let package_address = self
-            .id_allocator
-            .new_package_address(self.transaction_hash())
-            .unwrap();
-        package_address
-    }
-
-    /// Creates a new component address.
-    pub fn new_component_address(&mut self, component: &Component) -> ComponentAddress {
-        let component_address = self
-            .id_allocator
-            .new_component_address(
-                self.transaction_hash(),
-                &component.package_address(),
-                component.blueprint_name(),
-            )
-            .unwrap();
-        component_address
-    }
-
-    /// Creates a new resource address.
-    pub fn new_resource_address(&mut self) -> ResourceAddress {
-        let resource_address = self
-            .id_allocator
-            .new_resource_address(self.transaction_hash())
-            .unwrap();
-        resource_address
-    }
-
-    /// Creates a new UUID.
-    pub fn new_uuid(&mut self) -> u128 {
-        self.id_allocator.new_uuid(self.transaction_hash()).unwrap()
-    }
-
-    /// Creates a new bucket ID.
-    pub fn new_bucket_id(&mut self) -> BucketId {
-        self.id_allocator.new_bucket_id().unwrap()
-    }
-
-    /// Creates a new vault ID.
-    pub fn new_vault_id(&mut self) -> VaultId {
-        self.id_allocator
-            .new_vault_id(self.transaction_hash())
-            .unwrap()
-    }
-
-    /// Creates a new reference id.
-    pub fn new_proof_id(&mut self) -> ProofId {
-        self.id_allocator.new_proof_id().unwrap()
-    }
-
-    /// Creates a new map id.
-    pub fn new_kv_store_id(&mut self) -> KeyValueStoreId {
-        self.id_allocator
-            .new_kv_store_id(self.transaction_hash())
-            .unwrap()
-    }
-
-    pub fn insert_non_root_nodes(&mut self, values: HashMap<ValueId, RENode>) {
-        for (id, node) in values {
-            match node {
-                RENode::Vault(vault) => {
-                    let addr = Address::Vault(id.into());
-                    self.create_uuid_value(addr, vault);
-                }
-                RENode::Component(component) => {
-                    let addr = Address::LocalComponent(id.into());
-                    self.create_uuid_value(addr, component);
-                }
-                RENode::KeyValueStore(store) => {
-                    let id = id.into();
-                    let address = Address::KeyValueStoreSpace(id);
-                    self.create_key_space(address.clone());
-                    for (k, v) in store.store {
-                        self.set_key_value(
-                            address.clone(),
-                            k,
-                            KeyValueStoreEntryWrapper(Some(v.raw)),
-                        );
-                    }
-                }
-                _ => panic!("Invalid node being persisted: {:?}", node),
-            }
-        }
-    }
-
-    pub fn to_receipt(mut self, commit_app_state_changes: bool) -> TrackReceipt {
-        if commit_app_state_changes {
+    pub fn to_receipt(mut self, commit_app_state_updates: bool) -> TrackReceipt {
+        if commit_app_state_updates {
             self.state_track.flush();
         }
 
         TrackReceipt {
             new_addresses: self.new_addresses,
-            logs: self.logs,
-            state_changes: self.state_track.unwrap().to_receipt(),
+            application_logs: self.application_logs,
+            state_updates: self.state_track.into_base().generate_diff(),
         }
     }
 }

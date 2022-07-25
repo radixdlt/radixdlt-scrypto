@@ -95,7 +95,7 @@ pub struct ResourceManagerGetNonFungibleInput {
 }
 
 /// Represents a resource address.
-#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct ResourceAddress(pub [u8; 27]);
 
 impl ResourceAddress {}

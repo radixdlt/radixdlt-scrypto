@@ -35,7 +35,7 @@ pub enum VaultError {
 }
 
 /// A persistent resource container.
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct Vault {
     container: Rc<RefCell<ResourceContainer>>,
 }

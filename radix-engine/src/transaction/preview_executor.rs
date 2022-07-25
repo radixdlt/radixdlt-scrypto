@@ -4,14 +4,15 @@ use transaction::validation::TestEpochManager;
 use transaction::validation::TestIntentHashManager;
 use transaction::validation::TransactionValidator;
 
-use crate::engine::*;
 use crate::ledger::*;
+use crate::transaction::TransactionReceipt;
+use crate::transaction::*;
 use crate::wasm::{DefaultWasmEngine, WasmInstrumenter};
 
 #[derive(Debug)]
 pub struct PreviewResult {
     pub intent: PreviewIntent,
-    pub receipt: Receipt,
+    pub receipt: TransactionReceipt,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

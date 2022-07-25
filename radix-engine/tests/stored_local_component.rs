@@ -2,6 +2,7 @@
 pub mod test_runner;
 
 use crate::test_runner::TestRunner;
+use radix_engine::ledger::InMemorySubstateStore;
 use scrypto::core::Network;
 use scrypto::prelude::*;
 use scrypto::to_struct;
@@ -10,7 +11,8 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn should_be_able_to_call_read_method_on_a_stored_component_in_owned_component() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("local_component");
 
     // Act
@@ -31,7 +33,8 @@ fn should_be_able_to_call_read_method_on_a_stored_component_in_owned_component()
 #[test]
 fn should_be_able_to_call_write_method_on_a_stored_component_in_owned_component() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("local_component");
 
     // Act
@@ -52,7 +55,8 @@ fn should_be_able_to_call_write_method_on_a_stored_component_in_owned_component(
 #[test]
 fn should_be_able_to_call_read_method_on_a_stored_component_in_global_component() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("local_component");
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(
@@ -81,7 +85,8 @@ fn should_be_able_to_call_read_method_on_a_stored_component_in_global_component(
 #[test]
 fn should_be_able_to_call_write_method_on_a_stored_component_in_global_component() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("local_component");
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(
@@ -111,7 +116,8 @@ fn should_be_able_to_call_write_method_on_a_stored_component_in_global_component
 #[test]
 fn should_be_able_to_call_read_method_on_a_kv_stored_component_in_owned_component() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("local_component");
 
     // Act
@@ -132,7 +138,8 @@ fn should_be_able_to_call_read_method_on_a_kv_stored_component_in_owned_componen
 #[test]
 fn should_be_able_to_call_write_method_on_a_kv_stored_component_in_owned_component() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("local_component");
 
     // Act
@@ -153,7 +160,8 @@ fn should_be_able_to_call_write_method_on_a_kv_stored_component_in_owned_compone
 #[test]
 fn should_be_able_to_call_read_method_on_a_kv_stored_component_in_global_component() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("local_component");
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(
@@ -182,7 +190,8 @@ fn should_be_able_to_call_read_method_on_a_kv_stored_component_in_global_compone
 #[test]
 fn should_be_able_to_call_write_method_on_a_kv_stored_component_in_global_component() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("local_component");
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(

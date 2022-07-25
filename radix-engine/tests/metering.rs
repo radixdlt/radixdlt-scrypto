@@ -1,6 +1,7 @@
 #[rustfmt::skip]
 pub mod test_runner;
 
+use radix_engine::ledger::InMemorySubstateStore;
 use radix_engine::{fee::FeeTable, wasm::InvokeError};
 use scrypto::core::Network;
 use scrypto::prelude::Package;
@@ -11,7 +12,8 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn test_loop() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
 
     // Act
     let code = wat2wasm(&include_str!("wasm/loop.wat").replace("${n}", "2000"));
@@ -32,7 +34,8 @@ fn test_loop() {
 #[test]
 fn test_loop_out_of_cost_unit() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
 
     // Act
     let code = wat2wasm(&include_str!("wasm/loop.wat").replace("${n}", "2000000"));
@@ -53,7 +56,8 @@ fn test_loop_out_of_cost_unit() {
 #[test]
 fn test_recursion() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
 
     // Act
     // In this test case, each call frame costs 4 stack units
@@ -75,7 +79,8 @@ fn test_recursion() {
 #[test]
 fn test_recursion_stack_overflow() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
 
     // Act
     let code = wat2wasm(&include_str!("wasm/recursion.wat").replace("${n}", "129"));
@@ -96,7 +101,8 @@ fn test_recursion_stack_overflow() {
 #[test]
 fn test_grow_memory() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
 
     // Act
     let code = wat2wasm(&include_str!("wasm/memory.wat").replace("${n}", "100"));
@@ -117,7 +123,8 @@ fn test_grow_memory() {
 #[test]
 fn test_grow_memory_out_of_cost_unit() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
 
     // Act
     let code = wat2wasm(&include_str!("wasm/memory.wat").replace("${n}", "100000"));
@@ -138,7 +145,8 @@ fn test_grow_memory_out_of_cost_unit() {
 #[test]
 fn test_total_cost_units_consumed() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
 
     // Act
     let code = wat2wasm(&include_str!("wasm/syscall.wat"));

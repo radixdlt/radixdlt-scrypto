@@ -5,7 +5,9 @@ use sbor::rust::vec::Vec;
 use scrypto::buffer::*;
 use scrypto::values::ScryptoValue;
 use transaction::model::*;
+use transaction::validation::{IdAllocator, IdSpace};
 
+use crate::engine::Track;
 use crate::engine::*;
 use crate::fee::CostUnitCounter;
 use crate::fee::FeeTable;
@@ -13,6 +15,7 @@ use crate::fee::MAX_TRANSACTION_COST;
 use crate::fee::SYSTEM_LOAN_AMOUNT;
 use crate::ledger::*;
 use crate::model::*;
+use crate::transaction::*;
 use crate::wasm::*;
 
 /// An executor that runs transactions.
@@ -64,7 +67,7 @@ where
             .expect("Missing substate store")
     }
 
-    pub fn execute<T: ExecutableTransaction>(&mut self, transaction: &T) -> Receipt {
+    pub fn execute<T: ExecutableTransaction>(&mut self, transaction: &T) -> TransactionReceipt {
         #[cfg(not(feature = "alloc"))]
         let now = std::time::Instant::now();
 
@@ -85,7 +88,8 @@ where
         // 1. Start state track
         let substate_store_rc =
             Rc::new(self.substate_store.take().expect("Missing substate store"));
-        let mut track = Track::new(substate_store_rc.clone(), transaction_hash);
+        let mut track = Track::new(substate_store_rc.clone());
+        let mut id_allocator = IdAllocator::new(IdSpace::Application);
 
         // 2. Apply pre-execution costing
         let mut cost_unit_counter = CostUnitCounter::new(MAX_TRANSACTION_COST, SYSTEM_LOAN_AMOUNT);
@@ -117,6 +121,7 @@ where
             transaction_hash,
             signer_public_keys,
             false,
+            &mut id_allocator,
             &mut track,
             self.wasm_engine,
             self.wasm_instrumenter,
@@ -141,9 +146,9 @@ where
         let system_loan_fully_repaid = counter.owed() == 0;
         let max_cost_units = counter.limit();
         let cost_units_consumed = counter.consumed();
-        let cost_units_price = 0.into();
-        let burned = 0.into();
-        let tipped = 0.into();
+        let cost_units_price = 0u32.into();
+        let burned = 0u32.into();
+        let tipped = 0u32.into();
 
         // 5. Generate receipts and commit
         let track_receipt = track.to_receipt(result.is_ok());
@@ -152,9 +157,9 @@ where
             Err(_) => panic!("There should be no other strong refs that prevent unwrapping"),
         };
         // TODO: remove commit step
-        let commit_receipt = track_receipt
-            .state_changes
-            .commit(self.substate_store_mut(), transaction_hash);
+        track_receipt
+            .state_updates
+            .commit(self.substate_store_mut());
 
         #[cfg(not(feature = "alloc"))]
         if self.trace {
@@ -184,7 +189,7 @@ where
         let execution_time = None;
         #[cfg(not(feature = "alloc"))]
         let execution_time = Some(now.elapsed().as_millis());
-        let receipt = Receipt {
+        let receipt = TransactionReceipt {
             transaction_network,
             transaction_fee: TransactionFeeSummary {
                 system_loan_fully_repaid,
@@ -196,12 +201,12 @@ where
             },
             instructions,
             result,
-            logs: track_receipt.logs,
+            application_logs: track_receipt.application_logs,
             new_package_addresses,
             new_component_addresses,
             new_resource_addresses,
             execution_time,
-            commit_receipt,
+            state_updates: track_receipt.state_updates,
         };
 
         #[cfg(not(feature = "alloc"))]

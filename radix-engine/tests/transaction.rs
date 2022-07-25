@@ -1,5 +1,5 @@
-use radix_engine::engine::TransactionExecutor;
 use radix_engine::ledger::InMemorySubstateStore;
+use radix_engine::transaction::TransactionExecutor;
 use radix_engine::wasm::DefaultWasmEngine;
 use radix_engine::wasm::WasmInstrumenter;
 use scrypto::core::Network;

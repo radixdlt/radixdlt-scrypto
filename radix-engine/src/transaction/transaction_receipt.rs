@@ -11,9 +11,10 @@ use scrypto::engine::types::*;
 use scrypto::values::*;
 use transaction::model::*;
 
-use crate::engine::CommitReceipt;
 use crate::engine::RuntimeError;
+use crate::state_manager::StateDiff;
 
+#[derive(Debug)]
 pub struct TransactionFeeSummary {
     /// Whether system fee loan is fully repaid.
     /// Clients should use this flag to decide whether to include the transaction into a block.
@@ -31,20 +32,20 @@ pub struct TransactionFeeSummary {
 }
 
 /// Represents a transaction receipt.
-pub struct Receipt {
+pub struct TransactionReceipt {
     pub transaction_network: Network,
     pub transaction_fee: TransactionFeeSummary,
     pub execution_time: Option<u128>,
     pub instructions: Vec<ExecutableInstruction>,
     pub result: Result<Vec<Vec<u8>>, RuntimeError>,
-    pub logs: Vec<(Level, String)>,
+    pub application_logs: Vec<(Level, String)>,
     pub new_package_addresses: Vec<PackageAddress>,
     pub new_component_addresses: Vec<ComponentAddress>,
     pub new_resource_addresses: Vec<ResourceAddress>,
-    pub commit_receipt: CommitReceipt,
+    pub state_updates: StateDiff,
 }
 
-impl Receipt {
+impl TransactionReceipt {
     pub fn expect_success(&self) -> &Vec<Vec<u8>> {
         match &self.result {
             Ok(output) => output,
@@ -76,7 +77,7 @@ macro_rules! prefix {
     };
 }
 
-impl fmt::Debug for Receipt {
+impl fmt::Debug for TransactionReceipt {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let bech32_encoder = Bech32Encoder::new_from_network(&self.transaction_network);
 
@@ -130,7 +131,7 @@ impl fmt::Debug for Receipt {
                         arg,
                     } => format!(
                         "CallFunction {{ package_address: {}, blueprint_name: {:?}, method_name: {:?}, arg: {:?} }}",
-                        bech32_encoder.encode_package_address(package_address).unwrap(),
+                        bech32_encoder.encode_package_address(&package_address).unwrap(),
                         blueprint_name,
                         method_name,
                         ScryptoValue::from_slice(&arg).expect("Invalid call data")
@@ -141,7 +142,7 @@ impl fmt::Debug for Receipt {
                         arg,
                     } => format!(
                         "CallMethod {{ component_address: {}, method_name: {:?}, call_data: {:?} }}",
-                        bech32_encoder.encode_component_address(component_address).unwrap(),
+                        bech32_encoder.encode_component_address(&component_address).unwrap(),
                         method_name,
                         ScryptoValue::from_slice(&arg).expect("Invalid call data")
                     ),
@@ -163,8 +164,13 @@ impl fmt::Debug for Receipt {
             }
         }
 
-        write!(f, "\n{} {}", "Logs:".bold().green(), self.logs.len())?;
-        for (i, (level, msg)) in self.logs.iter().enumerate() {
+        write!(
+            f,
+            "\n{} {}",
+            "Logs:".bold().green(),
+            self.application_logs.len()
+        )?;
+        for (i, (level, msg)) in self.application_logs.iter().enumerate() {
             let (l, m) = match level {
                 Level::Error => ("ERROR".red(), msg.red()),
                 Level::Warn => ("WARN".yellow(), msg.yellow()),
@@ -172,7 +178,7 @@ impl fmt::Debug for Receipt {
                 Level::Debug => ("DEBUG".cyan(), msg.cyan()),
                 Level::Trace => ("TRACE".normal(), msg.normal()),
             };
-            write!(f, "\n{} [{:5}] {}", prefix!(i, self.logs), l, m)?;
+            write!(f, "\n{} [{:5}] {}", prefix!(i, self.application_logs), l, m)?;
         }
 
         write!(

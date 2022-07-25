@@ -52,6 +52,8 @@ pub struct CallFrame<
     /// Fee table
     fee_table: &'g FeeTable,
 
+    id_allocator: &'g mut IdAllocator,
+
     /// All ref values accessible by this call frame. The value may be located in one of the following:
     /// 1. borrowed values
     /// 2. track
@@ -112,6 +114,30 @@ fn verify_stored_key(value: &ScryptoValue) -> Result<(), RuntimeError> {
         return Err(RuntimeError::KeyValueStoreNotAllowed);
     }
     Ok(())
+}
+
+pub fn insert_non_root_nodes(track: &mut Track, values: HashMap<ValueId, RENode>) {
+    for (id, node) in values {
+        match node {
+            RENode::Vault(vault) => {
+                let addr = Address::Vault(id.into());
+                track.create_uuid_value(addr, vault);
+            }
+            RENode::Component(component) => {
+                let addr = Address::LocalComponent(id.into());
+                track.create_uuid_value(addr, component);
+            }
+            RENode::KeyValueStore(store) => {
+                let id = id.into();
+                let address = Address::KeyValueStoreSpace(id);
+                track.create_key_space(address.clone());
+                for (k, v) in store.store {
+                    track.set_key_value(address.clone(), k, KeyValueStoreEntryWrapper(Some(v.raw)));
+                }
+            }
+            _ => panic!("Invalid node being persisted: {:?}", node),
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -214,7 +240,7 @@ impl REValuePointer {
 
 pub enum RENativeValueRef {
     Stack(REValue, Option<usize>, ValueId, Option<ValueId>),
-    Track(Address, SubstateValue),
+    Track(Address, Substate),
 }
 
 impl RENativeValueRef {
@@ -400,10 +426,10 @@ impl<'f> REValueRefMut<'f> {
                 track.set_key_value(
                     address.clone(),
                     key,
-                    SubstateValue::KeyValueStoreEntry(KeyValueStoreEntryWrapper(Some(value.raw))),
+                    Substate::KeyValueStoreEntry(KeyValueStoreEntryWrapper(Some(value.raw))),
                 );
                 for (id, val) in to_store {
-                    track.insert_non_root_nodes(val.to_nodes(id));
+                    insert_non_root_nodes(track, val.to_nodes(id));
                 }
             }
         }
@@ -470,7 +496,7 @@ impl<'f> REValueRefMut<'f> {
                 track.set_key_value(
                     address.clone(),
                     id.to_vec(),
-                    SubstateValue::NonFungible(NonFungibleWrapper(None)),
+                    Substate::NonFungible(NonFungibleWrapper(None)),
                 );
             }
         }
@@ -492,11 +518,7 @@ impl<'f> REValueRefMut<'f> {
             REValueRefMut::Track(track, address) => {
                 let wrapper: NonFungibleWrapper =
                     scrypto_decode(&value.raw).expect("Should not fail.");
-                track.set_key_value(
-                    address.clone(),
-                    id.to_vec(),
-                    SubstateValue::NonFungible(wrapper),
-                );
+                track.set_key_value(address.clone(), id.to_vec(), Substate::NonFungible(wrapper));
             }
         }
     }
@@ -513,7 +535,7 @@ impl<'f> REValueRefMut<'f> {
             REValueRefMut::Track(track, address) => {
                 track.write_component_value(address.clone(), value.raw);
                 for (id, val) in to_store {
-                    track.insert_non_root_nodes(val.to_nodes(id));
+                    insert_non_root_nodes(track, val.to_nodes(id));
                 }
             }
         }
@@ -561,6 +583,7 @@ where
         transaction_hash: Hash,
         signer_public_keys: Vec<EcdsaPublicKey>,
         is_system: bool,
+        id_allocator: &'g mut IdAllocator,
         track: &'g mut Track,
         wasm_engine: &'g mut W,
         wasm_instrumenter: &'g mut WasmInstrumenter,
@@ -589,7 +612,9 @@ where
             let id = [NonFungibleId::from_u32(0)].into_iter().collect();
             let mut system_bucket =
                 Bucket::new(ResourceContainer::new_non_fungible(SYSTEM_TOKEN, id));
-            let system_proof = system_bucket.create_proof(track.new_bucket_id()).unwrap();
+            let system_proof = system_bucket
+                .create_proof(id_allocator.new_bucket_id().unwrap())
+                .unwrap();
             initial_auth_zone_proofs.push(system_proof);
         }
 
@@ -597,6 +622,7 @@ where
             transaction_hash,
             0,
             verbose,
+            id_allocator,
             track,
             wasm_engine,
             wasm_instrumenter,
@@ -616,6 +642,7 @@ where
         transaction_hash: Hash,
         depth: usize,
         trace: bool,
+        id_allocator: &'g mut IdAllocator,
         track: &'g mut Track,
         wasm_engine: &'g mut W,
         wasm_instrumenter: &'g mut WasmInstrumenter,
@@ -631,6 +658,7 @@ where
             transaction_hash,
             depth,
             trace,
+            id_allocator,
             track,
             wasm_engine,
             wasm_instrumenter,
@@ -968,6 +996,67 @@ where
         }
 
         Ok((location.clone(), current_value))
+    }
+
+    /// Creates a new package ID.
+    pub fn new_package_address(&mut self) -> PackageAddress {
+        // Security Alert: ensure ID allocating will practically never fail
+        let package_address = self
+            .id_allocator
+            .new_package_address(self.transaction_hash)
+            .unwrap();
+        package_address
+    }
+
+    /// Creates a new component address.
+    pub fn new_component_address(&mut self, component: &Component) -> ComponentAddress {
+        let component_address = self
+            .id_allocator
+            .new_component_address(
+                self.transaction_hash,
+                &component.package_address(),
+                component.blueprint_name(),
+            )
+            .unwrap();
+        component_address
+    }
+
+    /// Creates a new resource address.
+    pub fn new_resource_address(&mut self) -> ResourceAddress {
+        let resource_address = self
+            .id_allocator
+            .new_resource_address(self.transaction_hash)
+            .unwrap();
+        resource_address
+    }
+
+    /// Creates a new UUID.
+    pub fn new_uuid(&mut self) -> u128 {
+        self.id_allocator.new_uuid(self.transaction_hash).unwrap()
+    }
+
+    /// Creates a new bucket ID.
+    pub fn new_bucket_id(&mut self) -> BucketId {
+        self.id_allocator.new_bucket_id().unwrap()
+    }
+
+    /// Creates a new vault ID.
+    pub fn new_vault_id(&mut self) -> VaultId {
+        self.id_allocator
+            .new_vault_id(self.transaction_hash)
+            .unwrap()
+    }
+
+    /// Creates a new reference id.
+    pub fn new_proof_id(&mut self) -> ProofId {
+        self.id_allocator.new_proof_id().unwrap()
+    }
+
+    /// Creates a new map id.
+    pub fn new_kv_store_id(&mut self) -> KeyValueStoreId {
+        self.id_allocator
+            .new_kv_store_id(self.transaction_hash)
+            .unwrap()
     }
 }
 
@@ -1615,6 +1704,7 @@ where
             self.transaction_hash,
             self.depth + 1,
             self.trace,
+            self.id_allocator,
             self.track,
             self.wasm_engine,
             self.wasm_instrumenter,
@@ -1853,28 +1943,28 @@ where
         let value_by_complexity = v.into();
         let id = match value_by_complexity {
             REValueByComplexity::Primitive(REPrimitiveValue::Bucket(..)) => {
-                let bucket_id = self.track.new_bucket_id();
+                let bucket_id = self.new_bucket_id();
                 ValueId::Bucket(bucket_id)
             }
             REValueByComplexity::Primitive(REPrimitiveValue::Proof(..)) => {
-                let proof_id = self.track.new_proof_id();
+                let proof_id = self.new_proof_id();
                 ValueId::Proof(proof_id)
             }
             REValueByComplexity::Primitive(REPrimitiveValue::Worktop(..)) => ValueId::Worktop,
             REValueByComplexity::Primitive(REPrimitiveValue::Vault(..)) => {
-                let vault_id = self.track.new_vault_id();
+                let vault_id = self.new_vault_id();
                 ValueId::Vault(vault_id)
             }
             REValueByComplexity::Primitive(REPrimitiveValue::KeyValue(..)) => {
-                let kv_store_id = self.track.new_kv_store_id();
+                let kv_store_id = self.new_kv_store_id();
                 ValueId::KeyValueStore(kv_store_id)
             }
             REValueByComplexity::Primitive(REPrimitiveValue::Package(..)) => {
-                let package_address = self.track.new_package_address();
+                let package_address = self.new_package_address();
                 ValueId::Package(package_address)
             }
             REValueByComplexity::Primitive(REPrimitiveValue::Resource(..)) => {
-                let resource_address = self.track.new_resource_address();
+                let resource_address = self.new_resource_address();
                 ValueId::Resource(resource_address)
             }
             REValueByComplexity::Primitive(REPrimitiveValue::NonFungibles(
@@ -1882,7 +1972,7 @@ where
                 ..,
             )) => ValueId::NonFungibles(resource_address),
             REValueByComplexity::Complex(REComplexValue::Component(ref component)) => {
-                let component_address = self.track.new_component_address(component);
+                let component_address = self.new_component_address(component);
                 ValueId::Component(component_address)
             }
         };
@@ -1940,8 +2030,8 @@ where
         let value = taken_values.into_values().nth(0).unwrap();
 
         let (substate, maybe_non_fungibles) = match value.root {
-            RENode::Component(component) => (SubstateValue::Component(component), None),
-            RENode::Package(package) => (SubstateValue::Package(package), None),
+            RENode::Component(component) => (Substate::Component(component), None),
+            RENode::Package(package) => (Substate::Package(package), None),
             RENode::Resource(resource_manager) => {
                 let non_fungibles =
                     if matches!(resource_manager.resource_type(), ResourceType::NonFungible) {
@@ -1955,7 +2045,7 @@ where
                     } else {
                         None
                     };
-                (SubstateValue::Resource(resource_manager), non_fungibles)
+                (Substate::Resource(resource_manager), non_fungibles)
             }
             _ => panic!("Not expected"),
         };
@@ -1973,7 +2063,7 @@ where
         for (id, value) in value.non_root_nodes.into_iter() {
             to_store_values.insert(id, value);
         }
-        self.track.insert_non_root_nodes(to_store_values);
+        insert_non_root_nodes(self.track, to_store_values);
 
         if let Some(non_fungibles) = maybe_non_fungibles {
             let resource_address: ResourceAddress = address.clone().into();
@@ -1984,7 +2074,7 @@ where
                 self.track.set_key_value(
                     parent_address.clone(),
                     id.to_vec(),
-                    SubstateValue::NonFungible(NonFungibleWrapper(Some(non_fungible))),
+                    Substate::NonFungible(NonFungibleWrapper(Some(non_fungible))),
                 );
             }
         }
@@ -2124,7 +2214,7 @@ where
                 .system_api_cost(SystemApiCostingEntry::ReadTransactionHash),
             "read_transaction_hash",
         )?;
-        Ok(self.track.transaction_hash())
+        Ok(self.transaction_hash)
     }
 
     fn generate_uuid(&mut self) -> Result<u128, CostUnitCounterError> {
@@ -2133,7 +2223,7 @@ where
                 .system_api_cost(SystemApiCostingEntry::GenerateUuid),
             "generate_uuid",
         )?;
-        Ok(self.track.new_uuid())
+        Ok(self.new_uuid())
     }
 
     fn emit_log(&mut self, level: Level, message: String) -> Result<(), CostUnitCounterError> {

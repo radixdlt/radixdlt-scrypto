@@ -10,7 +10,7 @@ use crate::abi::*;
 use crate::misc::*;
 
 /// Represents a 32-byte hash digest.
-#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Hash(pub [u8; Self::LENGTH]);
 
 impl Hash {

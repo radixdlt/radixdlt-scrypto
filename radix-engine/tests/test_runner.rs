@@ -1,6 +1,8 @@
-use radix_engine::engine::{Address, Receipt, SubstateValue, TransactionExecutor};
+use radix_engine::engine::{Address, Substate};
 use radix_engine::ledger::*;
-use radix_engine::model::{export_abi, export_abi_by_component, extract_package, Component};
+use radix_engine::model::{export_abi, export_abi_by_component, extract_package};
+use radix_engine::state_manager::*;
+use radix_engine::transaction::{TransactionExecutor, TransactionReceipt};
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter};
 use sbor::describe::Fields;
 use sbor::Type;
@@ -24,7 +26,7 @@ pub struct TestRunner {
 }
 
 impl TestRunner {
-    pub fn new(trace: bool) -> Self {
+    pub fn new(trace: bool, substate_store: &'s mut S) -> Self {
         Self {
             substate_store: Some(InMemorySubstateStore::with_bootstrap()),
             wasm_engine: DefaultWasmEngine::new(),
@@ -111,8 +113,16 @@ impl TestRunner {
         );
         let receipt = executor.execute(&transaction);
         self.substate_store = Some(executor.destroy());
+    }
 
-        receipt
+    pub fn execute_batch(
+        &mut self,
+        manifests: Vec<(TransactionManifest, Vec<EcdsaPublicKey>)>,
+    ) -> Vec<Receipt> {
+        let node_id = self.create_child_node(0);
+        let receipts = self.execute_batch_on_node(node_id, manifests);
+        self.merge_node(node_id);
+        receipts
     }
 
     pub fn substate_store(&self) -> &InMemorySubstateStore {
@@ -122,16 +132,16 @@ impl TestRunner {
     }
 
     pub fn inspect_component(&self, component_address: ComponentAddress) -> Component {
-        let component_value: SubstateValue = self
+        let component_value: Substate = self
             .substate_store()
             .get_substate(&Address::GlobalComponent(component_address))
-            .map(|s| scrypto_decode(&s.value).unwrap())
+            .map(|s| s.substate)
             .unwrap();
         component_value.into()
     }
 
     pub fn export_abi(
-        &self,
+        &mut self,
         package_address: PackageAddress,
         blueprint_name: &str,
     ) -> abi::BlueprintAbi {
@@ -140,7 +150,7 @@ impl TestRunner {
     }
 
     pub fn export_abi_by_component(
-        &self,
+        &mut self,
         component_address: ComponentAddress,
     ) -> abi::BlueprintAbi {
         export_abi_by_component(self.substate_store(), component_address)

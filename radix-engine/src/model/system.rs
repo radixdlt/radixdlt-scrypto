@@ -18,7 +18,7 @@ pub enum SystemError {
     CostingError(CostUnitCounterError),
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct System {
     pub epoch: u64,
 }

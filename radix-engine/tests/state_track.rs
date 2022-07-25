@@ -2,16 +2,16 @@
 pub mod test_runner;
 
 use crate::test_runner::TestRunner;
-use radix_engine::engine::CommitReceipt;
 use radix_engine::engine::RuntimeError;
-use radix_engine::ledger::PhysicalSubstateId;
+use radix_engine::engine::SubstateReceipt;
+use radix_engine::ledger::OutputId;
 use scrypto::core::Network;
 use scrypto::prelude::*;
 use transaction::builder::ManifestBuilder;
 
 macro_rules! substate_id {
     ($tx_hash:expr, $idx:expr) => {
-        PhysicalSubstateId(Hash::from_str($tx_hash).unwrap(), $idx)
+        OutputId(Hash::from_str($tx_hash).unwrap(), $idx)
     };
 }
 
@@ -101,8 +101,8 @@ fn test_state_track_success() {
         ),
     ];
     assert_eq!(
-        receipt.commit_receipt,
-        CommitReceipt {
+        receipt.state_updates,
+        SubstateReceipt {
             virtual_down_substates: HashSet::new(),
             down_substates: expected_downs,
             virtual_up_substates: Vec::new(),
@@ -131,8 +131,8 @@ fn test_state_track_failure() {
     let expected_downs = HashSet::new();
     let expected_ups = vec![];
     assert_eq!(
-        receipt.commit_receipt,
-        CommitReceipt {
+        receipt.state_updates,
+        SubstateReceipt {
             virtual_down_substates: HashSet::new(),
             down_substates: expected_downs,
             virtual_up_substates: Vec::new(),

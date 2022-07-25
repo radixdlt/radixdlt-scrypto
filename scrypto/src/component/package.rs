@@ -23,7 +23,7 @@ pub struct Package {
 }
 
 /// A collection of blueprints, compiled and published as a single unit.
-#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct PackageAddress(pub [u8; 27]);
 
 impl PackageAddress {}
