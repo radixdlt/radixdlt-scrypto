@@ -91,24 +91,23 @@ pub enum Substate {
     Resource(ResourceManager),
     Component(Component),
     Package(ValidatedPackage),
-    // TODO: add a wrapper type for this
-    Vault(Vault, Option<ResourceContainer>),
+    Vault(Vault),
     NonFungible(NonFungibleWrapper),
     KeyValueStoreEntry(KeyValueStoreEntryWrapper),
 }
 
 impl Substate {
-    pub fn vault_mut(&mut self) -> (&mut Vault, &mut Option<ResourceContainer>) {
-        if let Substate::Vault(liquid, locked) = self {
-            (liquid, locked)
+    pub fn vault_mut(&mut self) -> &mut Vault {
+        if let Substate::Vault(vault) = self {
+            vault
         } else {
             panic!("Not a vault");
         }
     }
 
-    pub fn vault(&self) -> (&Vault, &Option<ResourceContainer>) {
-        if let Substate::Vault(liquid, locked) = self {
-            (liquid, locked)
+    pub fn vault(&self) -> &Vault {
+        if let Substate::Vault(vault) = self {
+            vault
         } else {
             panic!("Not a vault");
         }
@@ -213,7 +212,7 @@ impl Into<Substate> for ResourceManager {
 
 impl Into<Substate> for Vault {
     fn into(self) -> Substate {
-        Substate::Vault(self, None)
+        Substate::Vault(self)
     }
 }
 
@@ -281,12 +280,8 @@ impl Into<KeyValueStoreEntryWrapper> for Substate {
 
 impl Into<Vault> for Substate {
     fn into(self) -> Vault {
-        if let Substate::Vault(liquid, locked) = self {
-            assert!(
-                locked.is_none(),
-                "Attempted to convert a partially-locked vault into substate value"
-            );
-            liquid
+        if let Substate::Vault(vault) = self {
+            vault
         } else {
             panic!("Not a vault");
         }

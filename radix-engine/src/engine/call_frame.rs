@@ -286,7 +286,7 @@ impl RENativeValueRef {
             RENativeValueRef::Stack(root, _frame_id, _root_id, maybe_child) => {
                 root.get_node_mut(maybe_child.as_ref()).vault_mut()
             }
-            RENativeValueRef::Track(_address, value) => value.vault_mut().0,
+            RENativeValueRef::Track(_address, value) => value.vault_mut(),
         }
     }
 
@@ -354,7 +354,7 @@ impl<'f, 's> REValueRef<'f, 's> {
                 .as_ref()
                 .map_or(value.root(), |v| value.non_root(v))
                 .vault(),
-            REValueRef::Track(track, address) => track.read_value(address.clone()).vault().0,
+            REValueRef::Track(track, address) => track.read_value(address.clone()).vault(),
         }
     }
 
