@@ -1,5 +1,4 @@
 use sbor::rust::marker::PhantomData;
-use sbor::rust::rc::Rc;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use scrypto::buffer::*;
@@ -19,29 +18,29 @@ use crate::transaction::*;
 use crate::wasm::*;
 
 /// An executor that runs transactions.
-pub struct TransactionExecutor<'w, W, I>
+pub struct TransactionExecutor<'s, 'w, W, I>
 where
     W: WasmEngine<I>,
     I: WasmInstance,
 {
-    substate_store: Rc<dyn ReadableSubstateStore>,
+    substate_store: &'s dyn ReadableSubstateStore,
     wasm_engine: &'w mut W,
     wasm_instrumenter: &'w mut WasmInstrumenter,
     trace: bool,
     phantom: PhantomData<I>,
 }
 
-impl<'w, W, I> TransactionExecutor<'w, W, I>
+impl<'s, 'w, W, I> TransactionExecutor<'s, 'w, W, I>
 where
     W: WasmEngine<I>,
     I: WasmInstance,
 {
     pub fn new(
-        substate_store: Rc<dyn ReadableSubstateStore>,
+        substate_store: &'s dyn ReadableSubstateStore,
         wasm_engine: &'w mut W,
         wasm_instrumenter: &'w mut WasmInstrumenter,
         trace: bool,
-    ) -> TransactionExecutor<'w, W, I> {
+    ) -> Self {
         Self {
             substate_store,
             wasm_engine,

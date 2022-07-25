@@ -51,3 +51,7 @@ pub trait WriteableSubstateStore {
     fn put_substate(&mut self, address: Address, substate: Output);
     fn put_space(&mut self, address: Address, output_id: OutputId);
 }
+
+pub trait SubstateStore: ReadableSubstateStore + WriteableSubstateStore {}
+
+impl<T: ReadableSubstateStore + WriteableSubstateStore> SubstateStore for T {}

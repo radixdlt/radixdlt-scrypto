@@ -61,7 +61,7 @@ impl TransactionProcessor {
         Ok(value)
     }
 
-    pub fn static_main<'p, Y: SystemApi<'p, W, I>, W: WasmEngine<I>, I: WasmInstance>(
+    pub fn static_main<'p, 's, Y: SystemApi<'p, 's, W, I>, W: WasmEngine<I>, I: WasmInstance>(
         function_name: &str,
         call_data: ScryptoValue,
         system_api: &mut Y,

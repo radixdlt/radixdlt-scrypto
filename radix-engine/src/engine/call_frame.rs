@@ -27,6 +27,7 @@ use crate::wasm::*;
 pub struct CallFrame<
     'p, // parent lifetime
     'g, // lifetime of values outliving all frames
+    's, // Substate store lifetime
     W,  // WASM engine type
     I,  // WASM instance type
 > where
@@ -41,7 +42,7 @@ pub struct CallFrame<
     trace: bool,
 
     /// State track
-    track: &'g mut Track,
+    track: &'g mut Track<'s>,
     /// Wasm engine
     wasm_engine: &'g mut W,
     /// Wasm Instrumenter
@@ -116,7 +117,7 @@ fn verify_stored_key(value: &ScryptoValue) -> Result<(), RuntimeError> {
     Ok(())
 }
 
-pub fn insert_non_root_nodes(track: &mut Track, values: HashMap<ValueId, RENode>) {
+pub fn insert_non_root_nodes<'s>(track: &mut Track<'s>, values: HashMap<ValueId, RENode>) {
     for (id, node) in values {
         match node {
             RENode::Vault(vault) => {
@@ -176,11 +177,11 @@ impl REValuePointer {
         }
     }
 
-    fn borrow_native_ref<'p>(
+    fn borrow_native_ref<'p, 's>(
         &self, // TODO: Consider changing this to self
         owned_values: &mut HashMap<ValueId, REValue>,
         borrowed_values: &mut Vec<&'p mut HashMap<ValueId, REValue>>,
-        track: &mut Track,
+        track: &mut Track<'s>,
     ) -> RENativeValueRef {
         match self {
             REValuePointer::Stack { frame_id, root, id } => {
@@ -199,12 +200,12 @@ impl REValuePointer {
         }
     }
 
-    fn to_ref<'f, 'p>(
+    fn to_ref<'f, 'p, 's>(
         &self,
         owned_values: &'f HashMap<ValueId, REValue>,
         borrowed_values: &'f Vec<&'p mut HashMap<ValueId, REValue>>,
-        track: &'f Track,
-    ) -> REValueRef<'f> {
+        track: &'f Track<'s>,
+    ) -> REValueRef<'f, 's> {
         match self {
             REValuePointer::Stack { frame_id, root, id } => {
                 let frame = if let Some(frame_id) = frame_id {
@@ -218,12 +219,12 @@ impl REValuePointer {
         }
     }
 
-    fn to_ref_mut<'f, 'p>(
+    fn to_ref_mut<'f, 'p, 's>(
         &self,
         owned_values: &'f mut HashMap<ValueId, REValue>,
         borrowed_values: &'f mut Vec<&'p mut HashMap<ValueId, REValue>>,
-        track: &'f mut Track,
-    ) -> REValueRefMut<'f> {
+        track: &'f mut Track<'s>,
+    ) -> REValueRefMut<'f, 's> {
         match self {
             REValuePointer::Stack { frame_id, root, id } => {
                 let frame = if let Some(frame_id) = frame_id {
@@ -321,11 +322,11 @@ impl RENativeValueRef {
         }
     }
 
-    pub fn return_to_location<'a, 'p>(
+    pub fn return_to_location<'a, 'p, 's>(
         self,
         owned_values: &'a mut HashMap<ValueId, REValue>,
         borrowed_values: &'a mut Vec<&'p mut HashMap<ValueId, REValue>>,
-        track: &mut Track,
+        track: &mut Track<'s>,
     ) {
         match self {
             RENativeValueRef::Stack(owned, frame_id, value_id, ..) => {
@@ -341,12 +342,12 @@ impl RENativeValueRef {
     }
 }
 
-pub enum REValueRef<'f> {
+pub enum REValueRef<'f, 's> {
     Stack(&'f REValue, Option<ValueId>),
-    Track(&'f Track, Address),
+    Track(&'f Track<'s>, Address),
 }
 
-impl<'f, 'p> REValueRef<'f> {
+impl<'f, 's> REValueRef<'f, 's> {
     pub fn vault(&self) -> &Vault {
         match self {
             REValueRef::Stack(value, id) => id
@@ -400,12 +401,12 @@ impl<'f, 'p> REValueRef<'f> {
     }
 }
 
-pub enum REValueRefMut<'f> {
+pub enum REValueRefMut<'f, 's> {
     Stack(&'f mut REValue, Option<ValueId>),
-    Track(&'f mut Track, Address),
+    Track(&'f mut Track<'s>, Address),
 }
 
-impl<'f> REValueRefMut<'f> {
+impl<'f, 's> REValueRefMut<'f, 's> {
     fn kv_store_put(
         &mut self,
         key: Vec<u8>,
@@ -573,7 +574,7 @@ pub enum SubstateAddress {
     Component(ComponentAddress, ComponentOffset),
 }
 
-impl<'p, 'g, W, I> CallFrame<'p, 'g, W, I>
+impl<'p, 'g, 's, W, I> CallFrame<'p, 'g, 's, W, I>
 where
     W: WasmEngine<I>,
     I: WasmInstance,
@@ -584,7 +585,7 @@ where
         signer_public_keys: Vec<EcdsaPublicKey>,
         is_system: bool,
         id_allocator: &'g mut IdAllocator,
-        track: &'g mut Track,
+        track: &'g mut Track<'s>,
         wasm_engine: &'g mut W,
         wasm_instrumenter: &'g mut WasmInstrumenter,
         cost_unit_counter: &'g mut CostUnitCounter,
@@ -643,7 +644,7 @@ where
         depth: usize,
         trace: bool,
         id_allocator: &'g mut IdAllocator,
-        track: &'g mut Track,
+        track: &'g mut Track<'s>,
         wasm_engine: &'g mut W,
         wasm_instrumenter: &'g mut WasmInstrumenter,
         cost_unit_counter: &'g mut CostUnitCounter,
@@ -1060,7 +1061,7 @@ where
     }
 }
 
-impl<'p, 'g, W, I> SystemApi<'p, W, I> for CallFrame<'p, 'g, W, I>
+impl<'p, 'g, 's, W, I> SystemApi<'p, 's, W, I> for CallFrame<'p, 'g, 's, W, I>
 where
     W: WasmEngine<I>,
     I: WasmInstance,
@@ -1742,7 +1743,10 @@ where
         Ok(result)
     }
 
-    fn borrow_value(&mut self, value_id: &ValueId) -> Result<REValueRef<'_>, CostUnitCounterError> {
+    fn borrow_value(
+        &mut self,
+        value_id: &ValueId,
+    ) -> Result<REValueRef<'_, 's>, CostUnitCounterError> {
         trace!(self, Level::Debug, "Borrowing value: {:?}", value_id);
         self.cost_unit_counter.consume(
             self.fee_table.system_api_cost({

@@ -20,9 +20,9 @@ use crate::wasm::*;
 ///
 /// Execution is free from a costing perspective, as we assume
 /// the system api will bill properly.
-pub struct RadixEngineWasmRuntime<'y, 'p, Y, W, I>
+pub struct RadixEngineWasmRuntime<'y, 'p, 's, Y, W, I>
 where
-    Y: SystemApi<'p, W, I>,
+    Y: SystemApi<'p, 's, W, I>,
     W: WasmEngine<I>,
     I: WasmInstance,
 {
@@ -31,11 +31,12 @@ where
     phantom1: PhantomData<W>,
     phantom2: PhantomData<I>,
     phantom3: PhantomData<&'p ()>,
+    phantom4: PhantomData<&'s ()>,
 }
 
-impl<'y, 'p, Y, W, I> RadixEngineWasmRuntime<'y, 'p, Y, W, I>
+impl<'y, 'p, 's, Y, W, I> RadixEngineWasmRuntime<'y, 'p, 's, Y, W, I>
 where
-    Y: SystemApi<'p, W, I>,
+    Y: SystemApi<'p, 's, W, I>,
     W: WasmEngine<I>,
     I: WasmInstance,
 {
@@ -46,6 +47,7 @@ where
             phantom1: PhantomData,
             phantom2: PhantomData,
             phantom3: PhantomData,
+            phantom4: PhantomData,
         }
     }
 
@@ -163,8 +165,8 @@ fn encode<T: Encode>(output: T) -> ScryptoValue {
     ScryptoValue::from_typed(&output)
 }
 
-impl<'y, 'p, 's, Y: SystemApi<'p, W, I>, W: WasmEngine<I>, I: WasmInstance> WasmRuntime
-    for RadixEngineWasmRuntime<'y, 'p, Y, W, I>
+impl<'y, 'p, 's, Y: SystemApi<'p, 's, W, I>, W: WasmEngine<I>, I: WasmInstance> WasmRuntime
+    for RadixEngineWasmRuntime<'y, 'p, 's, Y, W, I>
 {
     fn main(&mut self, input: ScryptoValue) -> Result<ScryptoValue, InvokeError> {
         let input: RadixEngineInput =

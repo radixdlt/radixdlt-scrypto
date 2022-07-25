@@ -1,4 +1,3 @@
-use sbor::rust::rc::Rc;
 use transaction::errors::TransactionValidationError;
 use transaction::model::PreviewIntent;
 use transaction::validation::TestEpochManager;
@@ -41,7 +40,7 @@ impl PreviewExecutor {
         let mut wasm_engine = DefaultWasmEngine::new();
         let mut wasm_instrumenter = WasmInstrumenter::new();
         let mut executor = TransactionExecutor::new(
-            Rc::new(substate_store),
+            &substate_store,
             &mut wasm_engine,
             &mut wasm_instrumenter,
             false,

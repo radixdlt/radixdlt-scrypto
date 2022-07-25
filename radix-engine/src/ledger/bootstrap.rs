@@ -1,6 +1,5 @@
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::*;
-use sbor::rust::rc::Rc;
 use sbor::rust::vec;
 use sbor::*;
 use scrypto::buffer::*;
@@ -104,13 +103,8 @@ where
         .get_substate(&Address::Package(SYSTEM_PACKAGE))
         .is_none()
     {
-        let substate_store_rc = Rc::new(substate_store);
-        let track = Track::new(substate_store_rc.clone());
+        let track = Track::new(&substate_store);
         let receipt = create_genesis(track);
-        substate_store = match Rc::try_unwrap(substate_store_rc) {
-            Ok(store) => store,
-            Err(_) => panic!("There should be no other strong refs that prevent unwrapping"),
-        };
         receipt.state_updates.commit(&mut substate_store);
     }
     substate_store

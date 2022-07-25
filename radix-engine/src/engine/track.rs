@@ -1,6 +1,5 @@
 use sbor::rust::collections::*;
 use sbor::rust::format;
-use sbor::rust::rc::Rc;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use scrypto::engine::types::*;
@@ -33,10 +32,10 @@ impl BorrowedSubstate {
 
 /// Enforces borrow semantics of global objects and collects transaction-wise side effects,
 /// such as logs and events.
-pub struct Track {
+pub struct Track<'s> {
     application_logs: Vec<(Level, String)>,
     new_addresses: Vec<Address>,
-    state_track: AppStateTrack,
+    state_track: AppStateTrack<'s>,
     borrowed_substates: HashMap<Address, BorrowedSubstate>,
 }
 
@@ -53,8 +52,8 @@ pub struct TrackReceipt {
     pub state_updates: StateDiff,
 }
 
-impl Track {
-    pub fn new(substate_store: Rc<dyn ReadableSubstateStore>) -> Self {
+impl<'s> Track<'s> {
+    pub fn new(substate_store: &'s dyn ReadableSubstateStore) -> Self {
         let base_state_track = BaseStateTrack::new(substate_store);
         let state_track = AppStateTrack::new(base_state_track);
 

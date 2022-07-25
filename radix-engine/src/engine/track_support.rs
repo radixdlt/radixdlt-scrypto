@@ -1,7 +1,6 @@
 use core::ops::RangeFull;
 
 use indexmap::{IndexMap, IndexSet};
-use sbor::rust::rc::Rc;
 
 use crate::engine::*;
 use crate::ledger::*;
@@ -10,9 +9,9 @@ use crate::state_manager::SubstateParentId;
 use crate::state_manager::VirtualSubstateId;
 
 /// Keeps track of state changes that that are non-reversible, such as fee payments
-pub struct BaseStateTrack {
+pub struct BaseStateTrack<'s> {
     /// The parent state track
-    substate_store: Rc<dyn ReadableSubstateStore>,
+    substate_store: &'s dyn ReadableSubstateStore,
     /// Substates either created during the transaction or loaded from substate store
     substates: IndexMap<Address, Option<Substate>>,
     /// Spaces created during the transaction
@@ -20,17 +19,17 @@ pub struct BaseStateTrack {
 }
 
 /// Keeps track of state changes that may be rolled back according to transaction status
-pub struct AppStateTrack {
+pub struct AppStateTrack<'s> {
     /// The parent state track
-    base_state_track: BaseStateTrack,
+    base_state_track: BaseStateTrack<'s>,
     /// Substates either created during the transaction or loaded from the base state track
     substates: IndexMap<Address, Option<Substate>>,
     /// Spaces created during the transaction
     spaces: IndexSet<Address>,
 }
 
-impl BaseStateTrack {
-    pub fn new(substate_store: Rc<dyn ReadableSubstateStore>) -> Self {
+impl<'s> BaseStateTrack<'s> {
+    pub fn new(substate_store: &'s dyn ReadableSubstateStore) -> Self {
         Self {
             substate_store,
             substates: IndexMap::new(),
@@ -39,14 +38,14 @@ impl BaseStateTrack {
     }
 
     fn get_substate_output_id(
-        substate_store: &Rc<dyn ReadableSubstateStore>,
+        substate_store: &&'s dyn ReadableSubstateStore,
         address: &Address,
     ) -> Option<OutputId> {
         substate_store.get_substate(&address).map(|s| s.output_id)
     }
 
     fn get_space_output_id(
-        substate_store: &Rc<dyn ReadableSubstateStore>,
+        substate_store: &&'s dyn ReadableSubstateStore,
         address: &Address,
     ) -> OutputId {
         substate_store.get_space(&address)
@@ -54,7 +53,7 @@ impl BaseStateTrack {
 
     fn get_substate_parent_id(
         spaces: &IndexSet<Address>,
-        substate_store: &Rc<dyn ReadableSubstateStore>,
+        substate_store: &&'s dyn ReadableSubstateStore,
         space_address: &Address,
     ) -> SubstateParentId {
         if spaces.contains(space_address) {
@@ -135,8 +134,8 @@ pub enum StateTrackError {
     ValueAlreadyTouched,
 }
 
-impl AppStateTrack {
-    pub fn new(base_state_track: BaseStateTrack) -> Self {
+impl<'s> AppStateTrack<'s> {
+    pub fn new(base_state_track: BaseStateTrack<'s>) -> Self {
         Self {
             base_state_track,
             substates: IndexMap::new(),
@@ -218,7 +217,7 @@ impl AppStateTrack {
     }
 
     /// Unwraps into the base state track
-    pub fn into_base(self) -> BaseStateTrack {
+    pub fn into_base(self) -> BaseStateTrack<'s> {
         self.base_state_track
     }
 }
