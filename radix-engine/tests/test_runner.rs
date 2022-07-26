@@ -123,8 +123,11 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         transaction: &T,
         config: TransactionExecutorConfig,
     ) -> Receipt {
+        let node_id = self.create_child_node(0);
+        let substate_store = &mut self.execution_stores.get_output_store(node_id);
+
         TransactionExecutor::new(
-            &mut self.substate_store,
+            substate_store,
             &mut self.wasm_engine,
             &mut self.wasm_instrumenter,
             config,
@@ -136,8 +139,11 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         &mut self,
         preview_intent: PreviewIntent,
     ) -> Result<PreviewResult, PreviewError> {
+        let node_id = self.create_child_node(0);
+        let substate_store = &mut self.execution_stores.get_output_store(node_id);
+
         PreviewExecutor::new(
-            &mut self.substate_store,
+            substate_store,
             &mut self.wasm_engine,
             &mut self.wasm_instrumenter,
             self.epoch_manager.deref_mut(),
@@ -175,7 +181,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
                 &mut store,
                 &mut self.wasm_engine,
                 &mut self.wasm_instrumenter,
-                self.trace,
+                TransactionExecutorConfig::default(self.trace),
             )
             .execute(&transaction);
             receipts.push(receipt);
