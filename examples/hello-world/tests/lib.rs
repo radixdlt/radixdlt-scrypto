@@ -1,3 +1,4 @@
+use radix_engine::constants::*;
 use radix_engine::ledger::*;
 use radix_engine::model::extract_package;
 use radix_engine::transaction::TransactionExecutor;
@@ -15,11 +16,20 @@ fn test_hello() {
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = DefaultWasmEngine::new();
     let mut wasm_instrumenter = WasmInstrumenter::new();
+    let cost_unit_price = DEFAULT_COST_UNIT_PRICE.parse().unwrap();
+    let max_call_depth = DEFAULT_MAX_CALL_DEPTH;
+    let system_loan = DEFAULT_SYSTEM_LOAN;
+    let is_system = false;
+    let trace = true;
     let mut executor = TransactionExecutor::new(
         &mut substate_store,
         &mut wasm_engine,
         &mut wasm_instrumenter,
-        false,
+        cost_unit_price,
+        max_call_depth,
+        system_loan,
+        is_system,
+        trace,
     );
 
     // Create a key pair
