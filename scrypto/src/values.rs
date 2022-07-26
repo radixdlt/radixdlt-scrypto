@@ -17,6 +17,7 @@ use crate::component::*;
 use crate::crypto::*;
 use crate::engine::types::*;
 use crate::math::*;
+use crate::misc::copy_u8_array;
 use crate::resource::*;
 
 pub enum ScryptoValueReplaceError {
@@ -71,7 +72,7 @@ impl ScryptoValue {
                 .map(|(e, path)| (e.0, path))
                 .collect(),
             vault_ids: checker.vaults.iter().map(|e| e.0).collect(),
-            kv_store_ids: checker.kv_stores.iter().map(|e| e.id).collect(),
+            kv_store_ids: checker.kv_stores,
             component_addresses: checker.components.iter().map(|e| e.0).collect(),
             resource_addresses: checker
                 .resource_addresses
@@ -243,7 +244,7 @@ pub struct ScryptoCustomValueChecker {
     pub buckets: HashMap<Bucket, SborPath>,
     pub proofs: HashMap<Proof, SborPath>,
     pub vaults: HashSet<Vault>,
-    pub kv_stores: HashSet<KeyValueStore<(), ()>>,
+    pub kv_stores: HashSet<KeyValueStoreId>,
     pub components: HashSet<Component>,
     pub resource_addresses: HashSet<ResourceAddress>,
 }
@@ -309,9 +310,12 @@ impl CustomValueVisitor for ScryptoCustomValueChecker {
                 }
             }
             ScryptoType::KeyValueStore => {
-                let map = KeyValueStore::try_from(data)
-                    .map_err(ScryptoCustomValueCheckError::InvalidKeyValueStore)?;
-                if !self.kv_stores.insert(map) {
+                let kv_store_id: KeyValueStoreId = match data.len() {
+                    36 => (Hash(copy_u8_array(&data[0..32])), u32::from_le_bytes(copy_u8_array(&data[32..]))),
+                    _ => return Err(ScryptoCustomValueCheckError::InvalidKeyValueStore(ParseKeyValueStoreError::InvalidLength(data.len())))
+                };
+
+                if !self.kv_stores.insert(kv_store_id) {
                     return Err(ScryptoCustomValueCheckError::DuplicateIds);
                 }
             }
