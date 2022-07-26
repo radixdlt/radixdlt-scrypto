@@ -452,7 +452,7 @@ mod tests {
             PreviewIntent {
                 intent: tx.signed_intent.intent,
                 signer_public_keys: signer_public_keys,
-                flags: PreviewFlags {},
+                flags: PreviewFlags { unlimited_loan: true },
             },
             &mut hash_mgr,
             &mut epoch_mgr,

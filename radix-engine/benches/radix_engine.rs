@@ -21,7 +21,6 @@ fn bench_transfer(c: &mut Criterion) {
         &mut wasm_engine,
         &mut wasm_instrumenter,
         TransactionExecutorConfig::new(false),
-        SystemLoanCostUnitCounter::default(),
     );
 
     // Create a key pair
@@ -39,10 +38,16 @@ fn bench_transfer(c: &mut Criterion) {
         })
         .build();
     let account1 = executor
-        .execute(&TestTransaction::new(manifest.clone(), 1, vec![public_key]))
+        .execute(
+            &TestTransaction::new(manifest.clone(), 1, vec![public_key]),
+            SystemLoanCostUnitCounter::default(),
+        )
         .new_component_addresses[0];
     let account2 = executor
-        .execute(&TestTransaction::new(manifest, 2, vec![public_key]))
+        .execute(
+            &TestTransaction::new(manifest, 2, vec![public_key]),
+            SystemLoanCostUnitCounter::default(),
+        )
         .new_component_addresses[0];
 
     // Create a transfer manifest
@@ -55,11 +60,10 @@ fn bench_transfer(c: &mut Criterion) {
     let mut nonce = 3;
     c.bench_function("Transfer", |b| {
         b.iter(|| {
-            let receipt = executor.execute(&TestTransaction::new(
-                manifest.clone(),
-                nonce,
-                vec![public_key],
-            ));
+            let receipt = executor.execute(
+                &TestTransaction::new(manifest.clone(), nonce, vec![public_key]),
+                SystemLoanCostUnitCounter::default(),
+            );
             receipt.result.expect("It should work");
             nonce += 1;
         })

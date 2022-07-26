@@ -32,9 +32,8 @@ fn test_normal_transaction_flow() {
         &mut wasm_engine,
         &mut wasm_instrumenter,
         TransactionExecutorConfig::new(false),
-        SystemLoanCostUnitCounter::default(),
     );
-    let receipt = executor.execute(&validated_transaction);
+    let receipt = executor.execute(&validated_transaction, SystemLoanCostUnitCounter::default());
 
     receipt.expect_success();
 }

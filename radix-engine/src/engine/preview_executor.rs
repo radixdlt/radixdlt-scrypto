@@ -71,24 +71,23 @@ where
         )
         .map_err(PreviewError::TransactionValidationError)?;
 
+        let mut transaction_executor = TransactionExecutor::new(
+            self.substate_store,
+            self.wasm_engine,
+            self.wasm_instrumenter,
+            TransactionExecutorConfig::new(false),
+        );
+
         let receipt = if preview_intent.flags.unlimited_loan {
-            TransactionExecutor::new(
-                self.substate_store,
-                self.wasm_engine,
-                self.wasm_instrumenter,
-                TransactionExecutorConfig::new(false),
+            transaction_executor.execute(
+                &validated_preview_transaction,
                 UnlimitedLoanCostUnitCounter::default(),
             )
-            .execute(&validated_preview_transaction)
         } else {
-            TransactionExecutor::new(
-                self.substate_store,
-                self.wasm_engine,
-                self.wasm_instrumenter,
-                TransactionExecutorConfig::new(false),
+            transaction_executor.execute(
+                &validated_preview_transaction,
                 SystemLoanCostUnitCounter::default(),
             )
-            .execute(&validated_preview_transaction)
         };
 
         Ok(PreviewResult {

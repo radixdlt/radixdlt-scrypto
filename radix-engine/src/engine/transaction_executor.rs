@@ -24,41 +24,36 @@ impl TransactionExecutorConfig {
 }
 
 /// An executor that runs transactions.
-pub struct TransactionExecutor<'s, 'w, S, W, I, C>
+pub struct TransactionExecutor<'s, 'w, S, W, I>
 where
     S: ReadableSubstateStore + WriteableSubstateStore,
     W: WasmEngine<I>,
     I: WasmInstance,
-    C: CostUnitCounter,
 {
     substate_store: &'s mut S,
     wasm_engine: &'w mut W,
     wasm_instrumenter: &'w mut WasmInstrumenter,
     config: TransactionExecutorConfig,
-    cost_unit_counter: C,
     phantom: PhantomData<I>,
 }
 
-impl<'s, 'w, S, W, I, C> TransactionExecutor<'s, 'w, S, W, I, C>
+impl<'s, 'w, S, W, I> TransactionExecutor<'s, 'w, S, W, I>
 where
     S: ReadableSubstateStore + WriteableSubstateStore,
     W: WasmEngine<I>,
     I: WasmInstance,
-    C: CostUnitCounter,
 {
     pub fn new(
         substate_store: &'s mut S,
         wasm_engine: &'w mut W,
         wasm_instrumenter: &'w mut WasmInstrumenter,
         config: TransactionExecutorConfig,
-        cost_unit_counter: C,
-    ) -> TransactionExecutor<'s, 'w, S, W, I, C> {
+    ) -> TransactionExecutor<'s, 'w, S, W, I> {
         Self {
             substate_store,
             wasm_engine,
             wasm_instrumenter,
             config,
-            cost_unit_counter,
             phantom: PhantomData,
         }
     }
@@ -73,7 +68,11 @@ where
         self.substate_store
     }
 
-    pub fn execute<T: ExecutableTransaction>(&mut self, transaction: &T) -> Receipt {
+    pub fn execute<T: ExecutableTransaction, C: CostUnitCounter>(
+        &mut self,
+        transaction: &T,
+        mut cost_unit_counter: C,
+    ) -> Receipt {
         #[cfg(not(feature = "alloc"))]
         let now = std::time::Instant::now();
 
@@ -89,7 +88,6 @@ where
 
         // Metering
         let fee_table = FeeTable::new();
-        let cost_unit_counter = &mut self.cost_unit_counter;
 
         // Charge transaction decoding and stateless verification
         cost_unit_counter
@@ -123,7 +121,7 @@ where
             &mut track,
             self.wasm_engine,
             self.wasm_instrumenter,
-            cost_unit_counter,
+            &mut cost_unit_counter,
             &fee_table,
         );
 

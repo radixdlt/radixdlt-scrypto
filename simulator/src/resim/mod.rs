@@ -162,7 +162,6 @@ pub fn handle_manifest<O: std::io::Write>(
                 &mut wasm_engine,
                 &mut wasm_instrumenter,
                 TransactionExecutorConfig::new(trace),
-                SystemLoanCostUnitCounter::default(),
             );
 
             let sks = get_signing_keys(signing_keys)?;
@@ -173,7 +172,7 @@ pub fn handle_manifest<O: std::io::Write>(
             let nonce = get_nonce()?;
             let transaction = TestTransaction::new(manifest, nonce, pks);
 
-            let receipt = executor.execute(&transaction);
+            let receipt = executor.execute(&transaction, SystemLoanCostUnitCounter::default());
             if output_receipt {
                 writeln!(out, "{:?}", receipt).map_err(Error::IOError)?;
             }

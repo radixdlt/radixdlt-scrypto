@@ -130,9 +130,8 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             &mut self.wasm_engine,
             &mut self.wasm_instrumenter,
             config,
-            cost_unit_counter,
         )
-        .execute(transaction)
+        .execute(transaction, cost_unit_counter)
     }
 
     pub fn execute_preview(
@@ -182,9 +181,8 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
                 &mut self.wasm_engine,
                 &mut self.wasm_instrumenter,
                 TransactionExecutorConfig::new(self.trace),
-                SystemLoanCostUnitCounter::default(),
             )
-            .execute(&transaction);
+            .execute(&transaction, SystemLoanCostUnitCounter::default());
             receipts.push(receipt);
         }
 
