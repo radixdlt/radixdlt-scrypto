@@ -2,8 +2,7 @@
 pub mod test_runner;
 
 use crate::test_runner::TestRunner;
-use radix_engine::engine::{RuntimeError, TransactionCostCounterConfig, TransactionExecutorConfig};
-use radix_engine::fee::{CostUnitCounterError, DEFAULT_MAX_TRANSACTION_COST};
+use radix_engine::engine::TransactionExecutorConfig;
 use radix_engine::ledger::InMemorySubstateStore;
 use scrypto::core::Network;
 use transaction::builder::ManifestBuilder;
@@ -19,28 +18,8 @@ fn test_transaction_preview_cost_estimate() {
     let mut test_runner = TestRunner::new(true, &mut substate_store);
     let (validated_transaction, preview_intent) = prepare_test_tx_and_preview_intent(&test_runner);
 
-    // Act & Assert #1: Execute the test transaction with not enough cost units,
-    // just to verify that it can fail with OutOfCostUnit when run outside of the preview context
-    let receipt_execute_out_of_cost_units = test_runner.execute_transaction(
-        &validated_transaction,
-        TransactionExecutorConfig::new(
-            true,
-            TransactionCostCounterConfig::SystemLoanAndMaxCost {
-                system_loan_amount: 10_000, // Too little
-                max_transaction_cost: DEFAULT_MAX_TRANSACTION_COST,
-            },
-        ),
-    );
-    receipt_execute_out_of_cost_units.expect_err(|e| {
-        matches!(
-            e,
-            RuntimeError::CostingError(CostUnitCounterError::OutOfCostUnit)
-        )
-    });
-
-    // Act & Assert #2: Execute the preview followed by a normal execution, this time with
-    // sufficient cost units. Ensure that both preview and normal execution succeed
-    // and that the preview result provides an accurate cost estimate
+    // Act & Assert: Execute the preview, followed by a normal execution.
+    // Ensure that both succeed and that the preview result provides an accurate cost estimate
     let preview_result = test_runner.execute_preview(preview_intent);
     let preview_receipt = preview_result.unwrap().receipt;
     preview_receipt.expect_success();
