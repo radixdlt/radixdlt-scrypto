@@ -5,7 +5,7 @@ use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::*;
 use radix_engine::model::{export_abi, export_abi_by_component, extract_package};
 use radix_engine::state_manager::StagedSubstateStoreManager;
-use radix_engine::transaction::{TransactionExecutor, TransactionReceipt};
+use radix_engine::transaction::{ExecutionParameters, TransactionExecutor, TransactionReceipt};
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter};
 use sbor::describe::Fields;
 use sbor::Type;
@@ -132,24 +132,21 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             let transaction =
                 TestTransaction::new(manifest, self.next_transaction_nonce, signer_public_keys);
             self.next_transaction_nonce += 1;
-
-            let cost_unit_price = DEFAULT_COST_UNIT_PRICE.parse().unwrap();
-            let max_call_depth = DEFAULT_MAX_CALL_DEPTH;
-            let system_loan = DEFAULT_SYSTEM_LOAN;
-            let is_system = false; // TODO: make this a parameter
-            let trace = self.trace;
-
             let receipt = TransactionExecutor::new(
                 &mut store,
                 &mut self.wasm_engine,
                 &mut self.wasm_instrumenter,
-                cost_unit_price,
-                max_call_depth,
-                system_loan,
-                is_system,
-                trace,
             )
-            .execute_and_commit(&transaction);
+            .execute_and_commit(
+                &transaction,
+                &ExecutionParameters {
+                    cost_unit_price: DEFAULT_COST_UNIT_PRICE.parse().unwrap(),
+                    max_call_depth: DEFAULT_MAX_CALL_DEPTH,
+                    system_loan: DEFAULT_SYSTEM_LOAN,
+                    is_system: false,
+                    trace: self.trace,
+                },
+            );
             receipts.push(receipt);
         }
 

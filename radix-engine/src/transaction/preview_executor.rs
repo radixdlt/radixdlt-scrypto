@@ -1,6 +1,3 @@
-use core::str::FromStr;
-
-use scrypto::math::Decimal;
 use scrypto::prelude::Network;
 use transaction::errors::TransactionValidationError;
 use transaction::model::PreviewIntent;
@@ -8,9 +5,7 @@ use transaction::validation::TestIntentHashStore;
 use transaction::validation::TransactionValidator;
 use transaction::validation::ValidationParameters;
 
-use crate::constants::DEFAULT_MAX_CALL_DEPTH;
 use crate::constants::DEFAULT_MAX_COST_UNIT_LIMIT;
-use crate::constants::DEFAULT_SYSTEM_LOAN;
 use crate::ledger::*;
 use crate::transaction::TransactionReceipt;
 use crate::transaction::*;
@@ -36,36 +31,29 @@ impl PreviewExecutor {
     ) -> Result<PreviewResult, PreviewError> {
         // TODO: construct validation parameters based on current world state
         let intent_hash_store = TestIntentHashStore::new();
-        let parameters: ValidationParameters = ValidationParameters {
+        let validation_params: ValidationParameters = ValidationParameters {
             network: Network::LocalSimulator,
             current_epoch: 1,
             max_cost_unit_limit: DEFAULT_MAX_COST_UNIT_LIMIT,
             min_tip_bps: 0,
         };
-        let cost_unit_price = Decimal::from_str("0.000001").unwrap();
-        let max_call_depth = DEFAULT_MAX_CALL_DEPTH;
-        let system_loan = DEFAULT_SYSTEM_LOAN;
+        let execution_params: ExecutionParameters = ExecutionParameters::default();
 
+        // validate
         let validated_preview_transaction = TransactionValidator::validate_preview_intent(
             preview_intent.clone(),
             &intent_hash_store,
-            &parameters,
+            &validation_params,
         )
         .map_err(PreviewError::TransactionValidationError)?;
 
+        // execute
         let mut wasm_engine = DefaultWasmEngine::new();
         let mut wasm_instrumenter = WasmInstrumenter::new();
-        let mut executor = TransactionExecutor::new(
-            substate_store,
-            &mut wasm_engine,
-            &mut wasm_instrumenter,
-            cost_unit_price,
-            max_call_depth,
-            system_loan,
-            false,
-            false,
-        );
-        let receipt = executor.execute_and_commit(&validated_preview_transaction);
+        let mut executor =
+            TransactionExecutor::new(substate_store, &mut wasm_engine, &mut wasm_instrumenter);
+        let receipt =
+            executor.execute_and_commit(&validated_preview_transaction, &execution_params);
 
         Ok(PreviewResult {
             intent: preview_intent,

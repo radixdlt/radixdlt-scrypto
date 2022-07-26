@@ -19,11 +19,6 @@ fn test_say_hello() {
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = DefaultWasmEngine::new();
     let mut wasm_instrumenter = WasmInstrumenter::new();
-    let cost_unit_price = DEFAULT_COST_UNIT_PRICE.parse().unwrap();
-    let max_call_depth = DEFAULT_MAX_CALL_DEPTH;
-    let system_loan = DEFAULT_SYSTEM_LOAN;
-    let is_system = false;
-    let trace = true;
     let mut executor = TransactionExecutor::new(
         &mut substate_store,
         &mut wasm_engine,
@@ -44,13 +39,19 @@ fn test_say_hello() {
         .publish_package(extract_package(include_package!("no_std").to_vec()).unwrap())
         .build();
     let package_address = executor
-        .execute_and_commit(&TestTransaction::new(manifest, 1, vec![public_key]))
+        .execute_and_commit(
+            &TestTransaction::new(manifest, 1, vec![public_key]),
+            &ExecutionParameters::default(),
+        )
         .new_package_addresses[0];
 
     // Test the `say_hello` function.
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(package_address, "NoStd", "say_hello", to_struct!())
         .build();
-    let receipt = executor.execute_and_commit(&TestTransaction::new(manifest, 2, vec![]));
+    let receipt = executor.execute_and_commit(
+        &TestTransaction::new(manifest, 2, vec![]),
+        &ExecutionParameters::default(),
+    );
     receipt.expect_success();
 }

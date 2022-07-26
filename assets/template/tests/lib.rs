@@ -16,20 +16,10 @@ fn test_hello() {
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = DefaultWasmEngine::new();
     let mut wasm_instrumenter = WasmInstrumenter::new();
-    let cost_unit_price = DEFAULT_COST_UNIT_PRICE.parse().unwrap();
-    let max_call_depth = DEFAULT_MAX_CALL_DEPTH;
-    let system_loan = DEFAULT_SYSTEM_LOAN;
-    let is_system = false;
-    let trace = true;
     let mut executor = TransactionExecutor::new(
         &mut substate_store,
         &mut wasm_engine,
         &mut wasm_instrumenter,
-        cost_unit_price,
-        max_call_depth,
-        system_loan,
-        is_system,
-        trace,
     );
 
     // Create a key pair
@@ -41,7 +31,10 @@ fn test_hello() {
         .publish_package(extract_package(compile_package!()).unwrap())
         .build();
     let package_address = executor
-        .execute_and_commit(&TestTransaction::new(manifest, 1, vec![public_key]))
+        .execute_and_commit(
+            &TestTransaction::new(manifest, 1, vec![public_key]),
+            &ExecutionParameters::default(),
+        )
         .new_package_addresses[0];
 
     // Create an account
@@ -62,7 +55,10 @@ fn test_hello() {
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(package_address, "Hello", "instantiate_hello", to_struct!())
         .build();
-    let receipt = executor.execute_and_commit(&TestTransaction::new(manifest, 3, vec![public_key]));
+    let receipt = executor.execute_and_commit(
+        &TestTransaction::new(manifest, 3, vec![public_key]),
+        &ExecutionParameters::default(),
+    );
     println!("{:?}\n", receipt);
     receipt.expect_success();
     let component = receipt.new_component_addresses[0];

@@ -1,6 +1,6 @@
 use criterion::{criterion_group, criterion_main, Criterion};
-use radix_engine::constants::*;
 use radix_engine::ledger::*;
+use radix_engine::transaction::ExecutionParameters;
 use radix_engine::transaction::TransactionExecutor;
 use radix_engine::wasm::DefaultWasmEngine;
 use radix_engine::wasm::WasmInstrumenter;
@@ -16,20 +16,10 @@ fn bench_transfer(c: &mut Criterion) {
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = DefaultWasmEngine::new();
     let mut wasm_instrumenter = WasmInstrumenter::new();
-    let cost_unit_price = DEFAULT_COST_UNIT_PRICE.parse().unwrap();
-    let max_call_depth = DEFAULT_MAX_CALL_DEPTH;
-    let system_loan = DEFAULT_SYSTEM_LOAN;
-    let is_system = false;
-    let trace = false;
     let mut executor = TransactionExecutor::new(
         &mut substate_store,
         &mut wasm_engine,
         &mut wasm_instrumenter,
-        cost_unit_price,
-        max_call_depth,
-        system_loan,
-        is_system,
-        trace,
     );
 
     // Create a key pair
@@ -47,10 +37,16 @@ fn bench_transfer(c: &mut Criterion) {
         })
         .build();
     let account1 = executor
-        .execute_and_commit(&TestTransaction::new(manifest.clone(), 1, vec![public_key]))
+        .execute_and_commit(
+            &TestTransaction::new(manifest.clone(), 1, vec![public_key]),
+            &ExecutionParameters::default(),
+        )
         .new_component_addresses[0];
     let account2 = executor
-        .execute_and_commit(&TestTransaction::new(manifest, 2, vec![public_key]))
+        .execute_and_commit(
+            &TestTransaction::new(manifest, 2, vec![public_key]),
+            &ExecutionParameters::default(),
+        )
         .new_component_addresses[0];
 
     // Create a transfer manifest
@@ -63,11 +59,10 @@ fn bench_transfer(c: &mut Criterion) {
     let mut nonce = 3;
     c.bench_function("Transfer", |b| {
         b.iter(|| {
-            let receipt = executor.execute_and_commit(&TestTransaction::new(
-                manifest.clone(),
-                nonce,
-                vec![public_key],
-            ));
+            let receipt = executor.execute_and_commit(
+                &TestTransaction::new(manifest.clone(), nonce, vec![public_key]),
+                &ExecutionParameters::default(),
+            );
             receipt.expect_success();
             nonce += 1;
         })

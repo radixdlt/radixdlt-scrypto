@@ -7,6 +7,7 @@ use scrypto::values::ScryptoValue;
 use transaction::model::*;
 use transaction::validation::{IdAllocator, IdSpace};
 
+use crate::constants::{DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN};
 use crate::engine::Track;
 use crate::engine::*;
 use crate::fee::CostUnitCounter;
@@ -15,6 +16,26 @@ use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
 use crate::model::*;
 use crate::transaction::*;
 use crate::wasm::*;
+
+pub struct ExecutionParameters {
+    pub cost_unit_price: Decimal,
+    pub max_call_depth: usize,
+    pub system_loan: u32,
+    pub is_system: bool,
+    pub trace: bool,
+}
+
+impl Default for ExecutionParameters {
+    fn default() -> Self {
+        Self {
+            cost_unit_price: DEFAULT_COST_UNIT_PRICE.parse().unwrap(),
+            max_call_depth: DEFAULT_MAX_CALL_DEPTH,
+            system_loan: DEFAULT_SYSTEM_LOAN,
+            is_system: false,
+            trace: false,
+        }
+    }
+}
 
 /// An executor that runs transactions.
 pub struct TransactionExecutor<'s, 'w, S, W, I>
@@ -26,11 +47,6 @@ where
     substate_store: &'s mut S,
     wasm_engine: &'w mut W,
     wasm_instrumenter: &'w mut WasmInstrumenter,
-    cost_unit_price: Decimal,
-    max_call_depth: usize,
-    system_loan: u32,
-    is_system: bool,
-    trace: bool,
     phantom: PhantomData<I>,
 }
 
@@ -44,21 +60,11 @@ where
         substate_store: &'s mut S,
         wasm_engine: &'w mut W,
         wasm_instrumenter: &'w mut WasmInstrumenter,
-        cost_unit_price: Decimal,
-        max_call_depth: usize,
-        system_loan: u32,
-        is_system: bool,
-        trace: bool,
     ) -> Self {
         Self {
             substate_store,
             wasm_engine,
             wasm_instrumenter,
-            cost_unit_price,
-            max_call_depth,
-            system_loan,
-            is_system,
-            trace,
             phantom: PhantomData,
         }
     }
@@ -66,13 +72,18 @@ where
     pub fn execute_and_commit<T: ExecutableTransaction>(
         &mut self,
         transaction: &T,
+        params: &ExecutionParameters,
     ) -> TransactionReceipt {
-        let receipt = self.execute(transaction);
+        let receipt = self.execute(transaction, params);
         receipt.state_updates.commit(self.substate_store);
         receipt
     }
 
-    pub fn execute<T: ExecutableTransaction>(&mut self, transaction: &T) -> TransactionReceipt {
+    pub fn execute<T: ExecutableTransaction>(
+        &mut self,
+        transaction: &T,
+        params: &ExecutionParameters,
+    ) -> TransactionReceipt {
         #[cfg(not(feature = "alloc"))]
         let now = std::time::Instant::now();
 
@@ -82,7 +93,7 @@ where
         let instructions = transaction.instructions().to_vec();
         let cost_unit_limit = transaction.cost_unit_limit();
         #[cfg(not(feature = "alloc"))]
-        if self.trace {
+        if params.trace {
             println!("{:-^80}", "Transaction Metadata");
             println!("Transaction hash: {}", transaction_hash);
             println!("Transaction network: {:?}", transaction_network);
@@ -97,7 +108,7 @@ where
         let mut id_allocator = IdAllocator::new(IdSpace::Application);
 
         // 2. Apply pre-execution costing
-        let mut cost_unit_counter = CostUnitCounter::new(cost_unit_limit, self.system_loan);
+        let mut cost_unit_counter = CostUnitCounter::new(cost_unit_limit, params.system_loan);
         let fee_table = FeeTable::new();
         cost_unit_counter
             .consume(
@@ -122,11 +133,11 @@ where
 
         // 3. Start a call frame and run the transaction
         let mut root_frame = CallFrame::new_root(
-            self.trace,
+            params.trace,
             transaction_hash,
             signer_public_keys,
-            self.is_system,
-            self.max_call_depth,
+            params.is_system,
+            params.max_call_depth,
             &mut id_allocator,
             &mut track,
             self.wasm_engine,
@@ -151,11 +162,11 @@ where
         // TODO: refund overpaid fees
         let system_loan_fully_repaid = counter.owed() == 0;
         let cost_unit_consumed = counter.consumed();
-        let cost_unit_price = self.cost_unit_price;
+        let cost_unit_price = params.cost_unit_price;
         let burned = 0u32.into();
         let tipped = 0u32.into();
         #[cfg(not(feature = "alloc"))]
-        if self.trace {
+        if params.trace {
             println!("{:-^80}", "Cost Analysis");
             for (k, v) in cost_unit_counter.analysis {
                 println!("{:<20}: {:>8}", k, v);
@@ -214,7 +225,7 @@ where
         };
 
         #[cfg(not(feature = "alloc"))]
-        if self.trace {
+        if params.trace {
             println!("{:-^80}", "Transaction Receipt");
             println!("{:?}", receipt);
             println!("{:-^80}", "");

@@ -1,5 +1,6 @@
 use radix_engine::constants::*;
 use radix_engine::ledger::InMemorySubstateStore;
+use radix_engine::transaction::ExecutionParameters;
 use radix_engine::transaction::TransactionExecutor;
 use radix_engine::wasm::DefaultWasmEngine;
 use radix_engine::wasm::WasmInstrumenter;
@@ -18,23 +19,19 @@ fn test_normal_transaction_flow() {
     let mut wasm_engine = DefaultWasmEngine::new();
     let mut wasm_instrumenter = WasmInstrumenter::new();
     let intent_hash_store = TestIntentHashStore::new();
-    let parameters: ValidationParameters = ValidationParameters {
+    let validation_params = ValidationParameters {
         network: Network::LocalSimulator,
         current_epoch: 1,
         max_cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,
         min_tip_bps: 0,
     };
-    let cost_unit_price = DEFAULT_COST_UNIT_PRICE.parse().unwrap();
-    let max_call_depth = DEFAULT_MAX_CALL_DEPTH;
-    let system_loan = DEFAULT_SYSTEM_LOAN;
-    let is_system = false;
-    let trace = false;
+    let execution_params = ExecutionParameters::default();
 
     let raw_transaction = create_transaction();
     let validated_transaction = TransactionValidator::validate_from_slice(
         &raw_transaction,
         &intent_hash_store,
-        &parameters,
+        &validation_params,
     )
     .expect("Invalid transaction");
 
@@ -42,13 +39,8 @@ fn test_normal_transaction_flow() {
         &mut substate_store,
         &mut wasm_engine,
         &mut wasm_instrumenter,
-        cost_unit_price,
-        max_call_depth,
-        system_loan,
-        is_system,
-        trace,
     );
-    let receipt = executor.execute_and_commit(&validated_transaction);
+    let receipt = executor.execute_and_commit(&validated_transaction, &execution_params);
 
     receipt.expect_success();
 }

@@ -49,6 +49,7 @@ pub const ENV_DISABLE_MANIFEST_OUTPUT: &'static str = "DISABLE_MANIFEST_OUTPUT";
 use clap::{Parser, Subcommand};
 use radix_engine::constants::*;
 use radix_engine::model::*;
+use radix_engine::transaction::ExecutionParameters;
 use radix_engine::transaction::TransactionExecutor;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::transaction::TransactionStatus;
@@ -159,18 +160,10 @@ pub fn handle_manifest<O: std::io::Write>(
             let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?);
             let mut wasm_engine = DefaultWasmEngine::new();
             let mut wasm_instrumenter = WasmInstrumenter::new();
-            let cost_unit_price = DEFAULT_COST_UNIT_PRICE.parse().unwrap();
-            let max_call_depth = DEFAULT_MAX_CALL_DEPTH;
-            let system_loan = DEFAULT_SYSTEM_LOAN;
             let mut executor = TransactionExecutor::new(
                 &mut substate_store,
                 &mut wasm_engine,
                 &mut wasm_instrumenter,
-                cost_unit_price,
-                max_call_depth,
-                system_loan,
-                is_system,
-                trace,
             );
 
             let sks = get_signing_keys(signing_keys)?;
@@ -180,7 +173,19 @@ pub fn handle_manifest<O: std::io::Write>(
                 .collect::<Vec<EcdsaPublicKey>>();
             let nonce = get_nonce()?;
             let transaction = TestTransaction::new(manifest, nonce, pks);
-            let receipt = executor.execute_and_commit(&transaction);
+
+
+            let receipt = executor.execute_and_commit(
+                &transaction,
+                &ExecutionParameters {
+                    cost_unit_price: DEFAULT_COST_UNIT_PRICE.parse().unwrap(),
+                    max_call_depth: DEFAULT_MAX_CALL_DEPTH,
+                    system_loan: DEFAULT_SYSTEM_LOAN,
+                    is_system,
+                    trace,
+                },
+            );
+
             if output_receipt {
                 writeln!(out, "{:?}", receipt).map_err(Error::IOError)?;
             }
