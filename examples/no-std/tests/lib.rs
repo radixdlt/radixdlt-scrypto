@@ -1,9 +1,9 @@
 // This is optional, as you may choose to use std for testing only.
 #![no_std]
 
-use radix_engine::constants::*;
 use radix_engine::ledger::*;
 use radix_engine::model::extract_package;
+use radix_engine::transaction::ExecutionParameters;
 use radix_engine::transaction::TransactionExecutor;
 use radix_engine::wasm::*;
 use scrypto::core::Network;
@@ -23,11 +23,6 @@ fn test_say_hello() {
         &mut substate_store,
         &mut wasm_engine,
         &mut wasm_instrumenter,
-        cost_unit_price,
-        max_call_depth,
-        system_loan,
-        is_system,
-        trace,
     );
 
     // Create a key pair

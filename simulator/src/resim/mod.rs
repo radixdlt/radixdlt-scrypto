@@ -174,7 +174,6 @@ pub fn handle_manifest<O: std::io::Write>(
             let nonce = get_nonce()?;
             let transaction = TestTransaction::new(manifest, nonce, pks);
 
-
             let receipt = executor.execute_and_commit(
                 &transaction,
                 &ExecutionParameters {

@@ -1,6 +1,6 @@
-use radix_engine::constants::*;
 use radix_engine::ledger::*;
 use radix_engine::model::extract_package;
+use radix_engine::transaction::ExecutionParameters;
 use radix_engine::transaction::TransactionExecutor;
 use radix_engine::wasm::*;
 use scrypto::core::Network;
@@ -48,7 +48,10 @@ fn test_hello() {
         })
         .build();
     let account = executor
-        .execute_and_commit(&TestTransaction::new(manifest, 2, vec![public_key]))
+        .execute_and_commit(
+            &TestTransaction::new(manifest, 2, vec![public_key]),
+            &ExecutionParameters::default(),
+        )
         .new_component_addresses[0];
 
     // Test the `instantiate_hello` function.
@@ -68,7 +71,10 @@ fn test_hello() {
         .call_method(component, "free_token", to_struct!())
         .call_method_with_all_resources(account, "deposit_batch")
         .build();
-    let receipt = executor.execute_and_commit(&TestTransaction::new(manifest, 4, vec![public_key]));
+    let receipt = executor.execute_and_commit(
+        &TestTransaction::new(manifest, 4, vec![public_key]),
+        &ExecutionParameters::default(),
+    );
     println!("{:?}\n", receipt);
     receipt.expect_success();
 }
