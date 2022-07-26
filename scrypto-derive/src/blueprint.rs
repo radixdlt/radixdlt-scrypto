@@ -200,20 +200,22 @@ fn generate_dispatcher(
                             let mutability = r.mutability;
 
                             // Generate an `Arg` and a loading `Stmt` for the i-th argument
-                            dispatch_args.push(parse_quote! { state });
+                            dispatch_args.push(parse_quote! { state.deref_mut() });
 
                             // Generate a `Stmt` for loading the component state
                             assert!(get_state.is_none(), "Can't have more than 1 self reference");
                             get_state = Some(parse_quote! {
-                                let state: &mut #module_ident::#bp_ident = component_data_system.get_data(&component_address);
+                                let mut state: ComponentDataRef<#module_ident::#bp_ident> = component_data_system.get_data(&component_address);
                             });
 
                             // Generate a `Stmt` for writing back component state
+                            /*
                             if mutability.is_some() {
                                 put_state = Some(parse_quote! {
                                     component_data_system.flush();
                                 });
                             }
+                             */
                         }
                         FnArg::Typed(_) => {
                             let arg_index = if get_state.is_some() { i - 1 } else { i };
@@ -263,6 +265,8 @@ fn generate_dispatcher(
                 let extern_function = quote! {
                     #[no_mangle]
                     pub extern "C" fn #fn_ident(method_arg: *mut u8) -> *mut u8 {
+                        use ::sbor::rust::ops::DerefMut;
+
                         // Set up panic hook
                         ::scrypto::misc::set_up_panic_hook();
 

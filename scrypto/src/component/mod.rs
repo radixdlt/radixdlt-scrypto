@@ -9,4 +9,4 @@ pub use component::{
 };
 pub use kv_store::{KeyValueStore, ParseKeyValueStoreError};
 pub use package::{BorrowedPackage, Package, PackageAddress, PackagePublishInput};
-pub use system::{component_system, init_component_system, ComponentDataSystem, ComponentSystem};
+pub use system::{component_system, init_component_system, ComponentDataRef, ComponentDataSystem, ComponentSystem};

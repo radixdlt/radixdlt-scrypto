@@ -1,3 +1,6 @@
+use sbor::rust::any::Any;
+use sbor::rust::ops::{Deref, DerefMut};
+use sbor::rust::boxed::Box;
 use sbor::{Decode, Encode};
 use crate::buffer::*;
 use crate::component::package::Package;
@@ -8,11 +11,39 @@ use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::*;
 use sbor::rust::string::ToString;
 
-pub struct ComponentDataSystem<V: Encode + Decode> {
-    data: HashMap<ComponentAddress, V>
+pub struct ComponentDataRef<'a, V: Encode> {
+    address: ComponentAddress,
+    value: &'a mut V,
 }
 
-impl<V: Encode + Decode> ComponentDataSystem<V> {
+impl<'a, V: Encode> Drop for ComponentDataRef<'a, V> {
+    fn drop(&mut self) {
+        let address = DataAddress::Component(self.address.clone(), ComponentOffset::State);
+        let bytes = scrypto_encode(self.value);
+        let input = ::scrypto::engine::api::RadixEngineInput::WriteData(address, bytes);
+        let _: () = ::scrypto::engine::call_engine(input);
+    }
+}
+
+impl<'a, V: Encode> Deref for ComponentDataRef<'a, V> {
+    type Target = V;
+
+    fn deref(&self) -> &Self::Target {
+        self.value
+    }
+}
+
+impl<'a, V: Encode> DerefMut for ComponentDataRef<'a, V> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.value
+    }
+}
+
+pub struct ComponentDataSystem {
+    data: HashMap<ComponentAddress, Box<dyn Any>>
+}
+
+impl ComponentDataSystem {
     pub fn new() -> Self {
         Self {
             data: HashMap::new()
@@ -20,22 +51,18 @@ impl<V: Encode + Decode> ComponentDataSystem<V> {
     }
 
     /// Returns a reference to component data
-    pub fn get_data(&mut self, component_address: &ComponentAddress) -> &mut V {
+    pub fn get_data<V: 'static + Encode + Decode>(&mut self, component_address: &ComponentAddress) -> ComponentDataRef<V> {
         if !self.data.contains_key(component_address) {
             let address = DataAddress::Component(*component_address, ComponentOffset::State);
             let input = ::scrypto::engine::api::RadixEngineInput::ReadData(address);
-            let value = call_engine(input);
-            self.data.insert(*component_address, value);
+            let value: V = call_engine(input);
+            self.data.insert(*component_address, Box::new(value));
         }
 
-        self.data.get_mut(component_address).unwrap()
-    }
-
-    pub fn flush(self) {
-        for (component_address, value) in self.data {
-            let address = DataAddress::Component(component_address, ComponentOffset::State);
-            let input = ::scrypto::engine::api::RadixEngineInput::WriteData(address, scrypto_encode(&value));
-            let _: () = ::scrypto::engine::call_engine(input);
+        let value = self.data.get_mut(component_address).unwrap().downcast_mut().unwrap();
+        ComponentDataRef {
+            address: *component_address,
+            value
         }
     }
 }
