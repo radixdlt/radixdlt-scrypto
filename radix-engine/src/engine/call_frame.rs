@@ -1741,7 +1741,7 @@ where
         );
 
         // invoke the main function
-        let (mut result, received_values) = frame.run(snode_ref, loaded_snode, &fn_ident, input)?;
+        let (result, received_values) = frame.run(snode_ref, loaded_snode, &fn_ident, input)?;
         drop(frame);
 
         // Release locked addresses
@@ -1751,32 +1751,10 @@ where
                 .release_lock(l.clone(), is_pay_fee && matches!(l, Address::Vault(..)));
         }
 
-        if is_pay_fee {
-            // fee accounting
-            let bucket: Bucket = received_values
-                .into_iter()
-                .next()
-                .expect("Expecting `pay_fee` to return a bucket")
-                .1
-                .into();
-            if bucket.resource_address() != RADIX_TOKEN {
-                return Err(RuntimeError::PayFeeError(PayFeeError::NotRadixToken));
-            }
-
-            // TODO: add xrd/cost unit conversion
-            self.cost_unit_counter
-                .repay(100)
-                .map_err(RuntimeError::CostingError)?;
-
-            // TODO: store (vault_id, amount_locked)
-
-            result = ScryptoValue::from_typed(&());
-        } else {
-            // move buckets and proofs to this process.
-            for (id, value) in received_values {
-                trace!(self, Level::Debug, "Received value: {:?}", value);
-                self.owned_values.insert(id, value);
-            }
+        // move buckets and proofs to this process.
+        for (id, value) in received_values {
+            trace!(self, Level::Debug, "Received value: {:?}", value);
+            self.owned_values.insert(id, value);
         }
 
         trace!(self, Level::Debug, "Invoking finished!");

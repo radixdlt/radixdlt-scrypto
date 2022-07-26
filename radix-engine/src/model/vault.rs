@@ -15,7 +15,7 @@ use scrypto::resource::{
 };
 use scrypto::values::ScryptoValue;
 
-use crate::engine::SystemApi;
+use crate::engine::{PayFeeError, SystemApi};
 use crate::fee::CostUnitCounterError;
 use crate::model::VaultError::MethodNotFound;
 use crate::model::{
@@ -23,7 +23,7 @@ use crate::model::{
 };
 use crate::wasm::*;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum VaultError {
     InvalidRequestData(DecodeError),
     ResourceContainerError(ResourceContainerError),
@@ -33,6 +33,7 @@ pub enum VaultError {
     CouldNotCreateProof,
     MethodNotFound,
     CostingError(CostUnitCounterError),
+    PayFeeError(PayFeeError),
 }
 
 /// A persistent resource container.
@@ -204,14 +205,22 @@ impl Vault {
             "pay_fee" => {
                 let input: VaultPayFeeInput =
                     scrypto_decode(&arg.raw).map_err(|e| VaultError::InvalidRequestData(e))?;
-                let container = vault.take(input.amount)?;
-                let bucket_id = system_api
-                    .create_value(Bucket::new(container))
-                    .unwrap()
-                    .into();
-                Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
-                    bucket_id,
-                )))
+
+                // Check resource and take amount
+                if vault.resource_address() != RADIX_TOKEN {
+                    return Err(VaultError::PayFeeError(PayFeeError::NotRadixToken));
+                }
+                let _fee = vault.take(input.amount)?;
+
+                // TODO: add xrd/cost unit conversion
+                system_api
+                    .cost_unit_counter()
+                    .repay(100)
+                    .map_err(VaultError::CostingError)?;
+
+                // TODO: store (vault_id, amount_locked) in cost unit counter
+
+                Ok(ScryptoValue::from_typed(&()))
             }
             "take_non_fungibles" => {
                 let input: VaultTakeNonFungiblesInput =
