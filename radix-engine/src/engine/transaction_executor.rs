@@ -3,7 +3,6 @@ use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use scrypto::buffer::*;
 use scrypto::values::ScryptoValue;
-use std::ops::DerefMut;
 use transaction::model::*;
 use transaction::validation::{IdAllocator, IdSpace};
 
@@ -14,81 +13,46 @@ use crate::model::*;
 use crate::state_manager::*;
 use crate::wasm::*;
 
-pub enum TransactionCostCounterConfig {
-    SystemLoanAndMaxCost {
-        system_loan_amount: u32,
-        max_transaction_cost: u32,
-    },
-    UnlimitedLoanAndMaxCost {
-        max_transaction_cost: u32,
-    },
-}
-
 pub struct TransactionExecutorConfig {
     pub trace: bool,
-    pub cost_counter_config: TransactionCostCounterConfig,
 }
 
 impl TransactionExecutorConfig {
-    pub fn new(trace: bool, cost_counter_config: TransactionCostCounterConfig) -> Self {
-        TransactionExecutorConfig {
-            trace,
-            cost_counter_config,
-        }
-    }
-
-    pub fn default(trace: bool) -> Self {
-        Self::new(
-            trace,
-            TransactionCostCounterConfig::SystemLoanAndMaxCost {
-                system_loan_amount: DEFAULT_SYSTEM_LOAN_AMOUNT,
-                max_transaction_cost: DEFAULT_MAX_TRANSACTION_COST,
-            },
-        )
+    pub fn new(trace: bool) -> Self {
+        TransactionExecutorConfig { trace }
     }
 }
 
 /// An executor that runs transactions.
-pub struct TransactionExecutor<'s, 'w, S, W, I>
+pub struct TransactionExecutor<'s, 'w, S, W, I, C>
 where
     S: ReadableSubstateStore + WriteableSubstateStore,
     W: WasmEngine<I>,
     I: WasmInstance,
+    C: CostUnitCounter,
 {
     substate_store: &'s mut S,
     wasm_engine: &'w mut W,
     wasm_instrumenter: &'w mut WasmInstrumenter,
     config: TransactionExecutorConfig,
-    cost_unit_counter: Box<dyn CostUnitCounter>,
+    cost_unit_counter: C,
     phantom: PhantomData<I>,
 }
 
-impl<'s, 'w, S, W, I> TransactionExecutor<'s, 'w, S, W, I>
+impl<'s, 'w, S, W, I, C> TransactionExecutor<'s, 'w, S, W, I, C>
 where
     S: ReadableSubstateStore + WriteableSubstateStore,
     W: WasmEngine<I>,
     I: WasmInstance,
+    C: CostUnitCounter,
 {
     pub fn new(
         substate_store: &'s mut S,
         wasm_engine: &'w mut W,
         wasm_instrumenter: &'w mut WasmInstrumenter,
         config: TransactionExecutorConfig,
-    ) -> TransactionExecutor<'s, 'w, S, W, I> {
-        // Metering
-        let cost_unit_counter: Box<dyn CostUnitCounter> = match config.cost_counter_config {
-            TransactionCostCounterConfig::SystemLoanAndMaxCost {
-                system_loan_amount,
-                max_transaction_cost,
-            } => Box::new(SystemLoanCostUnitCounter::new(
-                max_transaction_cost,
-                system_loan_amount,
-            )),
-            TransactionCostCounterConfig::UnlimitedLoanAndMaxCost {
-                max_transaction_cost,
-            } => Box::new(UnlimitedLoanCostUnitCounter::new(max_transaction_cost)),
-        };
-
+        cost_unit_counter: C,
+    ) -> TransactionExecutor<'s, 'w, S, W, I, C> {
         Self {
             substate_store,
             wasm_engine,
@@ -125,7 +89,7 @@ where
 
         // Metering
         let fee_table = FeeTable::new();
-        let cost_unit_counter = self.cost_unit_counter.deref_mut();
+        let cost_unit_counter = &mut self.cost_unit_counter;
 
         // Charge transaction decoding and stateless verification
         cost_unit_counter

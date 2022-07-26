@@ -3,6 +3,7 @@ pub mod test_runner;
 
 use crate::test_runner::TestRunner;
 use radix_engine::engine::TransactionExecutorConfig;
+use radix_engine::fee::SystemLoanCostUnitCounter;
 use radix_engine::ledger::InMemorySubstateStore;
 use scrypto::core::Network;
 use transaction::builder::ManifestBuilder;
@@ -26,7 +27,8 @@ fn test_transaction_preview_cost_estimate() {
 
     let receipt = test_runner.execute_transaction(
         &validated_transaction,
-        TransactionExecutorConfig::default(false),
+        TransactionExecutorConfig::new(false),
+        SystemLoanCostUnitCounter::default(),
     );
     receipt.expect_success();
 

@@ -1,5 +1,5 @@
 use crate::engine::SystemApi;
-use crate::fee::CostUnitCounterError;
+use crate::fee::{CostUnitCounter, CostUnitCounterError};
 use crate::ledger::ReadableSubstateStore;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::string::String;
@@ -91,10 +91,11 @@ impl Component {
     pub fn main<
         'p,
         's,
-        Y: SystemApi<'p, 's, W, I, S>,
+        Y: SystemApi<'p, 's, W, I, S, C>,
         W: WasmEngine<I>,
         I: WasmInstance,
         S: 's + ReadableSubstateStore,
+        C: CostUnitCounter,
     >(
         value_id: ValueId,
         fn_ident: &str,
@@ -159,10 +160,11 @@ impl Component {
     pub fn main_consume<
         'p,
         's,
-        Y: SystemApi<'p, 's, W, I, S>,
+        Y: SystemApi<'p, 's, W, I, S, C>,
         W: WasmEngine<I>,
         I: WasmInstance,
         S: ReadableSubstateStore,
+        C: CostUnitCounter,
     >(
         value_id: ValueId,
         fn_ident: &str,

@@ -1,10 +1,10 @@
-use crate::fee::DEFAULT_MAX_TRANSACTION_COST;
 use sbor::rust::marker::PhantomData;
 use transaction::errors::TransactionValidationError;
-use transaction::model::{PreviewFlags, PreviewIntent};
+use transaction::model::PreviewIntent;
 use transaction::validation::*;
 
 use crate::engine::*;
+use crate::fee::{SystemLoanCostUnitCounter, UnlimitedLoanCostUnitCounter};
 use crate::ledger::*;
 use crate::wasm::*;
 
@@ -19,33 +19,37 @@ pub enum PreviewError {
     TransactionValidationError(TransactionValidationError),
 }
 
-pub struct PreviewExecutor<'s, 'w, S, W, I>
+pub struct PreviewExecutor<'s, 'w, S, W, I, EM, IHM>
 where
     S: ReadableSubstateStore + WriteableSubstateStore,
     W: WasmEngine<I>,
     I: WasmInstance,
+    EM: EpochManager,
+    IHM: IntentHashManager,
 {
     substate_store: &'s mut S,
     wasm_engine: &'w mut W,
     wasm_instrumenter: &'w mut WasmInstrumenter,
-    epoch_manager: &'w dyn EpochManager,
-    intent_hash_manager: &'w dyn IntentHashManager,
+    epoch_manager: &'w EM,
+    intent_hash_manager: &'w IHM,
     phantom: PhantomData<I>,
 }
 
-impl<'s, 'w, S, W, I> PreviewExecutor<'s, 'w, S, W, I>
+impl<'s, 'w, S, W, I, EM, IHM> PreviewExecutor<'s, 'w, S, W, I, EM, IHM>
 where
     S: ReadableSubstateStore + WriteableSubstateStore,
     W: WasmEngine<I>,
     I: WasmInstance,
+    EM: EpochManager,
+    IHM: IntentHashManager,
 {
     pub fn new(
         substate_store: &'s mut S,
         wasm_engine: &'w mut W,
         wasm_instrumenter: &'w mut WasmInstrumenter,
-        epoch_manager: &'w dyn EpochManager,
-        intent_hash_manager: &'w dyn IntentHashManager,
-    ) -> PreviewExecutor<'s, 'w, S, W, I> {
+        epoch_manager: &'w EM,
+        intent_hash_manager: &'w IHM,
+    ) -> PreviewExecutor<'s, 'w, S, W, I, EM, IHM> {
         PreviewExecutor {
             substate_store,
             wasm_engine,
@@ -67,33 +71,29 @@ where
         )
         .map_err(PreviewError::TransactionValidationError)?;
 
-        let mut executor = TransactionExecutor::new(
-            self.substate_store,
-            self.wasm_engine,
-            self.wasm_instrumenter,
-            (&preview_intent.flags).into(),
-        );
-
-        let receipt = executor.execute(&validated_preview_transaction);
+        let receipt = if preview_intent.flags.unlimited_loan {
+            TransactionExecutor::new(
+                self.substate_store,
+                self.wasm_engine,
+                self.wasm_instrumenter,
+                TransactionExecutorConfig::new(false),
+                UnlimitedLoanCostUnitCounter::default(),
+            )
+            .execute(&validated_preview_transaction)
+        } else {
+            TransactionExecutor::new(
+                self.substate_store,
+                self.wasm_engine,
+                self.wasm_instrumenter,
+                TransactionExecutorConfig::new(false),
+                SystemLoanCostUnitCounter::default(),
+            )
+            .execute(&validated_preview_transaction)
+        };
 
         Ok(PreviewResult {
             intent: preview_intent,
             receipt: receipt,
         })
-    }
-}
-
-impl Into<TransactionExecutorConfig> for &PreviewFlags {
-    fn into(self) -> TransactionExecutorConfig {
-        if self.unlimited_loan {
-            TransactionExecutorConfig::new(
-                false,
-                TransactionCostCounterConfig::UnlimitedLoanAndMaxCost {
-                    max_transaction_cost: DEFAULT_MAX_TRANSACTION_COST,
-                },
-            )
-        } else {
-            TransactionExecutorConfig::default(false)
-        }
     }
 }

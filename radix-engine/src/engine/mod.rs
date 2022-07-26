@@ -16,8 +16,6 @@ pub use preview_executor::*;
 pub use system_api::SystemApi;
 
 pub use crate::state_manager::transaction_receipt::*;
-pub use transaction_executor::{
-    TransactionCostCounterConfig, TransactionExecutor, TransactionExecutorConfig,
-};
+pub use transaction_executor::{TransactionExecutor, TransactionExecutorConfig};
 pub use values::*;
 pub use wasm_runtime::*;

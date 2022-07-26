@@ -12,13 +12,14 @@ use crate::fee::*;
 use crate::ledger::ReadableSubstateStore;
 use crate::wasm::*;
 
-pub trait SystemApi<'p, 's, W, I, S>
+pub trait SystemApi<'p, 's, W, I, S, C>
 where
     W: WasmEngine<I>,
     I: WasmInstance,
     S: ReadableSubstateStore,
+    C: CostUnitCounter,
 {
-    fn cost_unit_counter(&mut self) -> &mut dyn CostUnitCounter;
+    fn cost_unit_counter(&mut self) -> &mut C;
 
     fn fee_table(&self) -> &FeeTable;
 

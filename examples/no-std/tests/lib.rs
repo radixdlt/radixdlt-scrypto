@@ -22,7 +22,8 @@ fn test_say_hello() {
         &mut substate_store,
         &mut wasm_engine,
         &mut wasm_instrumenter,
-        TransactionExecutorConfig::default(false),
+        TransactionExecutorConfig::new(false),
+        SystemLoanCostUnitCounter::default(),
     );
 
     // Create a key pair

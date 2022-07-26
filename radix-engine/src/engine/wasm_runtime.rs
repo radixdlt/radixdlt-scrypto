@@ -21,12 +21,13 @@ use crate::wasm::*;
 ///
 /// Execution is free from a costing perspective, as we assume
 /// the system api will bill properly.
-pub struct RadixEngineWasmRuntime<'y, 'p, 's, Y, W, I, S>
+pub struct RadixEngineWasmRuntime<'y, 'p, 's, Y, W, I, S, C>
 where
-    Y: SystemApi<'p, 's, W, I, S>,
+    Y: SystemApi<'p, 's, W, I, S, C>,
     W: WasmEngine<I>,
     I: WasmInstance,
     S: ReadableSubstateStore,
+    C: CostUnitCounter,
 {
     this: ScryptoActorInfo,
     system_api: &'y mut Y,
@@ -35,14 +36,16 @@ where
     phantom3: PhantomData<S>,
     phantom4: PhantomData<&'p ()>,
     phantom5: PhantomData<&'s ()>,
+    phantom6: PhantomData<C>,
 }
 
-impl<'y, 'p, 's, Y, W, I, S> RadixEngineWasmRuntime<'y, 'p, 's, Y, W, I, S>
+impl<'y, 'p, 's, Y, W, I, S, C> RadixEngineWasmRuntime<'y, 'p, 's, Y, W, I, S, C>
 where
-    Y: SystemApi<'p, 's, W, I, S>,
+    Y: SystemApi<'p, 's, W, I, S, C>,
     W: WasmEngine<I>,
     I: WasmInstance,
     S: ReadableSubstateStore,
+    C: CostUnitCounter,
 {
     pub fn new(this: ScryptoActorInfo, system_api: &'y mut Y) -> Self {
         RadixEngineWasmRuntime {
@@ -53,10 +56,11 @@ where
             phantom3: PhantomData,
             phantom4: PhantomData,
             phantom5: PhantomData,
+            phantom6: PhantomData,
         }
     }
 
-    fn cost_unit_counter(&mut self) -> &mut dyn CostUnitCounter {
+    fn cost_unit_counter(&mut self) -> &mut C {
         self.system_api.cost_unit_counter()
     }
 
@@ -171,10 +175,11 @@ impl<
         'p,
         's,
         S: ReadableSubstateStore,
-        Y: SystemApi<'p, 's, W, I, S>,
+        Y: SystemApi<'p, 's, W, I, S, C>,
         W: WasmEngine<I>,
         I: WasmInstance,
-    > WasmRuntime for RadixEngineWasmRuntime<'y, 'p, 's, Y, W, I, S>
+        C: CostUnitCounter,
+    > WasmRuntime for RadixEngineWasmRuntime<'y, 'p, 's, Y, W, I, S, C>
 {
     fn main(&mut self, input: ScryptoValue) -> Result<ScryptoValue, InvokeError> {
         let input: RadixEngineInput =

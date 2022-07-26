@@ -1,5 +1,6 @@
 use core::ops::AddAssign;
 
+use crate::fee::{DEFAULT_MAX_TRANSACTION_COST, DEFAULT_SYSTEM_LOAN_AMOUNT};
 use sbor::rust::collections::HashMap;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -110,6 +111,12 @@ impl CostUnitCounter for SystemLoanCostUnitCounter {
     }
 }
 
+impl Default for SystemLoanCostUnitCounter {
+    fn default() -> SystemLoanCostUnitCounter {
+        SystemLoanCostUnitCounter::new(DEFAULT_MAX_TRANSACTION_COST, DEFAULT_SYSTEM_LOAN_AMOUNT)
+    }
+}
+
 pub struct UnlimitedLoanCostUnitCounter {
     /// The total cost units consumed so far
     consumed: u32,
@@ -163,6 +170,12 @@ impl CostUnitCounter for UnlimitedLoanCostUnitCounter {
 
     fn analysis(&self) -> &HashMap<&'static str, u32> {
         &self.analysis
+    }
+}
+
+impl Default for UnlimitedLoanCostUnitCounter {
+    fn default() -> UnlimitedLoanCostUnitCounter {
+        UnlimitedLoanCostUnitCounter::new(DEFAULT_MAX_TRANSACTION_COST)
     }
 }
 

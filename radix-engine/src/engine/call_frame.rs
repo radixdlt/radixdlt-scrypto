@@ -33,10 +33,12 @@ pub struct CallFrame<
     S,  // Substore store type
     W,  // WASM engine type
     I,  // WASM instance type
+    C,  // Cost unit counter type
 > where
     S: ReadableSubstateStore,
     W: WasmEngine<I>,
     I: WasmInstance,
+    C: CostUnitCounter,
 {
     /// The transaction hash
     transaction_hash: Hash,
@@ -53,7 +55,7 @@ pub struct CallFrame<
     wasm_instrumenter: &'g mut WasmInstrumenter,
 
     /// Remaining cost unit counter
-    cost_unit_counter: &'g mut dyn CostUnitCounter,
+    cost_unit_counter: &'g mut C,
     /// Fee table
     fee_table: &'g FeeTable,
 
@@ -567,11 +569,12 @@ pub enum SubstateAddress {
     Component(ComponentAddress, ComponentOffset),
 }
 
-impl<'p, 'g, 's, S, W, I> CallFrame<'p, 'g, 's, S, W, I>
+impl<'p, 'g, 's, S, W, I, C> CallFrame<'p, 'g, 's, S, W, I, C>
 where
     S: ReadableSubstateStore,
     W: WasmEngine<I>,
     I: WasmInstance,
+    C: CostUnitCounter,
 {
     pub fn new_root(
         verbose: bool,
@@ -582,7 +585,7 @@ where
         track: &'g mut Track<'s, S>,
         wasm_engine: &'g mut W,
         wasm_instrumenter: &'g mut WasmInstrumenter,
-        cost_unit_counter: &'g mut dyn CostUnitCounter,
+        cost_unit_counter: &'g mut C,
         fee_table: &'g FeeTable,
     ) -> Self {
         // TODO: Cleanup initialization of authzone
@@ -641,7 +644,7 @@ where
         track: &'g mut Track<'s, S>,
         wasm_engine: &'g mut W,
         wasm_instrumenter: &'g mut WasmInstrumenter,
-        cost_unit_counter: &'g mut dyn CostUnitCounter,
+        cost_unit_counter: &'g mut C,
         fee_table: &'g FeeTable,
         auth_zone: Option<RefCell<AuthZone>>,
         owned_values: HashMap<ValueId, REValue>,
@@ -1055,11 +1058,12 @@ where
     }
 }
 
-impl<'p, 'g, 's, S, W, I> SystemApi<'p, 's, W, I, S> for CallFrame<'p, 'g, 's, S, W, I>
+impl<'p, 'g, 's, S, W, I, C> SystemApi<'p, 's, W, I, S, C> for CallFrame<'p, 'g, 's, S, W, I, C>
 where
     S: ReadableSubstateStore,
     W: WasmEngine<I>,
     I: WasmInstance,
+    C: CostUnitCounter,
 {
     fn invoke_snode(
         &mut self,
@@ -2231,7 +2235,7 @@ where
         Ok(is_authorized)
     }
 
-    fn cost_unit_counter(&mut self) -> &mut dyn CostUnitCounter {
+    fn cost_unit_counter(&mut self) -> &mut C {
         self.cost_unit_counter
     }
 

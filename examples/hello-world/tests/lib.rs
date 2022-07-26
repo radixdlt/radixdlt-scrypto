@@ -8,6 +8,7 @@ use scrypto::to_struct;
 use transaction::builder::ManifestBuilder;
 use transaction::model::TestTransaction;
 use transaction::signing::EcdsaPrivateKey;
+use radix_engine::fee::SystemLoanCostUnitCounter;
 
 #[test]
 fn test_hello() {
@@ -21,7 +22,8 @@ fn test_hello() {
         &mut substate_store,
         &mut wasm_engine,
         &mut wasm_instrumenter,
-        TransactionExecutorConfig::default(false),
+        TransactionExecutorConfig::new(false),
+        SystemLoanCostUnitCounter::default(),
     );
 
     // Create a key pair

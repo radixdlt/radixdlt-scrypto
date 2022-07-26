@@ -2,6 +2,7 @@ use radix_engine::engine::{
     PreviewError, PreviewExecutor, PreviewResult, Receipt, TransactionExecutor,
     TransactionExecutorConfig,
 };
+use radix_engine::fee::{CostUnitCounter, SystemLoanCostUnitCounter};
 use radix_engine::ledger::*;
 use radix_engine::model::{export_abi, export_abi_by_component, extract_package};
 use radix_engine::state_manager::*;
@@ -13,21 +14,18 @@ use scrypto::core::Network;
 use scrypto::prelude::*;
 use scrypto::prelude::{HashMap, Package};
 use scrypto::{abi, to_struct};
-use std::ops::DerefMut;
 use transaction::builder::ManifestBuilder;
 use transaction::model::{ExecutableTransaction, TransactionManifest};
 use transaction::model::{PreviewIntent, TestTransaction};
 use transaction::signing::EcdsaPrivateKey;
-use transaction::validation::{
-    EpochManager, IntentHashManager, TestEpochManager, TestIntentHashManager,
-};
+use transaction::validation::{TestEpochManager, TestIntentHashManager};
 
 pub struct TestRunner<'s, S: ReadableSubstateStore + WriteableSubstateStore> {
     execution_stores: StagedSubstateStoreManager<'s, S>,
     wasm_engine: DefaultWasmEngine,
     wasm_instrumenter: WasmInstrumenter,
-    epoch_manager: Box<dyn EpochManager>,
-    intent_hash_manager: Box<dyn IntentHashManager>,
+    epoch_manager: TestEpochManager,
+    intent_hash_manager: TestIntentHashManager,
     next_private_key: u64,
     next_transaction_nonce: u64,
     trace: bool,
@@ -39,8 +37,8 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             execution_stores: StagedSubstateStoreManager::new(substate_store),
             wasm_engine: DefaultWasmEngine::new(),
             wasm_instrumenter: WasmInstrumenter::new(),
-            epoch_manager: Box::new(TestEpochManager::new(0)),
-            intent_hash_manager: Box::new(TestIntentHashManager::new()),
+            epoch_manager: TestEpochManager::new(0),
+            intent_hash_manager: TestIntentHashManager::new(),
             next_private_key: 1, // 0 is invalid
             next_transaction_nonce: 0,
             trace,
@@ -118,10 +116,11 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         receipts.pop().unwrap()
     }
 
-    pub fn execute_transaction<T: ExecutableTransaction>(
+    pub fn execute_transaction<T: ExecutableTransaction, C: CostUnitCounter>(
         &mut self,
         transaction: &T,
         config: TransactionExecutorConfig,
+        cost_unit_counter: C,
     ) -> Receipt {
         let node_id = self.create_child_node(0);
         let substate_store = &mut self.execution_stores.get_output_store(node_id);
@@ -131,6 +130,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             &mut self.wasm_engine,
             &mut self.wasm_instrumenter,
             config,
+            cost_unit_counter,
         )
         .execute(transaction)
     }
@@ -146,8 +146,8 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             substate_store,
             &mut self.wasm_engine,
             &mut self.wasm_instrumenter,
-            self.epoch_manager.deref_mut(),
-            self.intent_hash_manager.deref_mut(),
+            &self.epoch_manager,
+            &self.intent_hash_manager,
         )
         .execute(preview_intent)
     }
@@ -181,7 +181,8 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
                 &mut store,
                 &mut self.wasm_engine,
                 &mut self.wasm_instrumenter,
-                TransactionExecutorConfig::default(self.trace),
+                TransactionExecutorConfig::new(self.trace),
+                SystemLoanCostUnitCounter::default(),
             )
             .execute(&transaction);
             receipts.push(receipt);

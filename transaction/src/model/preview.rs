@@ -3,7 +3,10 @@ use scrypto::buffer::scrypto_encode;
 use scrypto::core::Network;
 use scrypto::crypto::{hash, EcdsaPublicKey, EcdsaSignature, Hash};
 
-use crate::model::{ExecutableInstruction, ExecutableTransaction, NotarizedTransaction, TransactionIntent, SignedTransactionIntent};
+use crate::model::{
+    ExecutableInstruction, ExecutableTransaction, NotarizedTransaction, SignedTransactionIntent,
+    TransactionIntent,
+};
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct PreviewFlags {
@@ -58,12 +61,15 @@ impl ExecutableTransaction for ValidatedPreviewTransaction {
         let fake_notarized_transaction = NotarizedTransaction {
             signed_intent: SignedTransactionIntent {
                 intent: self.preview_intent.intent.clone(),
-                intent_signatures: self.preview_intent.signer_public_keys.clone()
+                intent_signatures: self
+                    .preview_intent
+                    .signer_public_keys
+                    .clone()
                     .into_iter()
                     .map(|pub_key| (pub_key, fake_signature.clone()))
                     .collect(),
             },
-            notary_signature: fake_signature
+            notary_signature: fake_signature,
         };
 
         fake_notarized_transaction.to_bytes().len() as u32

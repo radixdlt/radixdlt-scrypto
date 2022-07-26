@@ -68,8 +68,8 @@ impl TransactionValidator {
 
     pub fn validate_preview_intent(
         preview_intent: PreviewIntent,
-        intent_hash_store: & dyn IntentHashManager,
-        epoch_manager: & dyn EpochManager,
+        intent_hash_store: &dyn IntentHashManager,
+        epoch_manager: &dyn EpochManager,
     ) -> Result<ValidatedPreviewTransaction, TransactionValidationError> {
         let intent = &preview_intent.intent;
 
@@ -86,8 +86,8 @@ impl TransactionValidator {
 
     fn validate_intent(
         intent: &TransactionIntent,
-        intent_hash_store: & dyn IntentHashManager,
-        epoch_manager: & dyn EpochManager,
+        intent_hash_store: &dyn IntentHashManager,
+        epoch_manager: &dyn EpochManager,
     ) -> Result<Vec<ExecutableInstruction>, TransactionValidationError> {
         // verify intent hash
         if !intent_hash_store.allows(&intent.hash()) {

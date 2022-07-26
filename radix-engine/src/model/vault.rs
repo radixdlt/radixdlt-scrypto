@@ -15,7 +15,7 @@ use scrypto::resource::{
 use scrypto::values::ScryptoValue;
 
 use crate::engine::SystemApi;
-use crate::fee::CostUnitCounterError;
+use crate::fee::{CostUnitCounter, CostUnitCounterError};
 use crate::ledger::ReadableSubstateStore;
 use crate::model::VaultError::MethodNotFound;
 use crate::model::{
@@ -167,10 +167,11 @@ impl Vault {
     pub fn main<
         'p,
         's,
-        Y: SystemApi<'p, 's, W, I, S>,
+        Y: SystemApi<'p, 's, W, I, S, C>,
         W: WasmEngine<I>,
         I: WasmInstance,
         S: ReadableSubstateStore,
+        C: CostUnitCounter,
     >(
         vault_id: VaultId,
         method_name: &str,
