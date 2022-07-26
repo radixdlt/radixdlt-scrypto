@@ -2,12 +2,13 @@ use sbor::rust::collections::HashMap;
 
 use crate::engine::Address;
 use crate::ledger::*;
-use crate::ledger::{Substate, WriteableSubstateStore};
+use crate::ledger::{Output, WriteableSubstateStore};
 
 /// A substate store that stores all substates in host memory.
+#[derive(Debug, PartialEq, Eq)]
 pub struct InMemorySubstateStore {
-    substates: HashMap<Address, Substate>,
-    spaces: HashMap<Address, PhysicalSubstateId>,
+    substates: HashMap<Address, Output>,
+    spaces: HashMap<Address, OutputId>,
 }
 
 impl InMemorySubstateStore {
@@ -31,21 +32,24 @@ impl Default for InMemorySubstateStore {
 }
 
 impl ReadableSubstateStore for InMemorySubstateStore {
-    fn get_substate(&self, address: &Address) -> Option<Substate> {
+    fn get_substate(&self, address: &Address) -> Option<Output> {
         self.substates.get(address).cloned()
     }
 
-    fn get_space(&self, address: &Address) -> Option<PhysicalSubstateId> {
-        self.spaces.get(address).cloned()
+    fn get_space(&self, address: &Address) -> OutputId {
+        self.spaces
+            .get(address)
+            .cloned()
+            .expect("Expected space does not exist")
     }
 }
 
 impl WriteableSubstateStore for InMemorySubstateStore {
-    fn put_substate(&mut self, address: Address, substate: Substate) {
+    fn put_substate(&mut self, address: Address, substate: Output) {
         self.substates.insert(address, substate);
     }
 
-    fn put_space(&mut self, address: Address, phys_id: PhysicalSubstateId) {
-        self.spaces.insert(address, phys_id);
+    fn put_space(&mut self, address: Address, output_id: OutputId) {
+        self.spaces.insert(address, output_id);
     }
 }

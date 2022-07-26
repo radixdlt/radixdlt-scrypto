@@ -60,7 +60,7 @@ enum MethodAccessRuleMethod {
     Update(AccessRule),
 }
 
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 struct MethodAccessRule {
     auth: MethodAuthorization,
     update_auth: MethodAuthorization,
@@ -110,14 +110,14 @@ impl MethodAccessRule {
     }
 }
 
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 enum ResourceMethodRule {
     Public,
     Protected(ResourceMethodAuthKey),
 }
 
 /// The definition of a resource.
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct ResourceManager {
     resource_type: ResourceType,
     metadata: HashMap<String, String>,
@@ -134,6 +134,7 @@ impl ResourceManager {
         mut auth: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
     ) -> Result<Self, ResourceManagerError> {
         let mut vault_method_table: HashMap<String, ResourceMethodRule> = HashMap::new();
+        vault_method_table.insert("pay_fee".to_string(), Protected(Withdraw));
         vault_method_table.insert("take".to_string(), Protected(Withdraw));
         vault_method_table.insert("put".to_string(), Protected(Deposit));
         for pub_method in [
@@ -255,7 +256,7 @@ impl ResourceManager {
         self.total_supply
     }
 
-    pub fn mint<'p, Y: SystemApi<'p, W, I>, W: WasmEngine<I>, I: WasmInstance>(
+    pub fn mint<'p, 's, Y: SystemApi<'p, 's, W, I>, W: WasmEngine<I>, I: WasmInstance>(
         &mut self,
         mint_params: MintParams,
         self_address: ResourceAddress,
@@ -296,7 +297,13 @@ impl ResourceManager {
         }
     }
 
-    pub fn mint_non_fungibles<'p, Y: SystemApi<'p, W, I>, W: WasmEngine<I>, I: WasmInstance>(
+    pub fn mint_non_fungibles<
+        'p,
+        's,
+        Y: SystemApi<'p, 's, W, I>,
+        W: WasmEngine<I>,
+        I: WasmInstance,
+    >(
         &mut self,
         entries: HashMap<NonFungibleId, (Vec<u8>, Vec<u8>)>,
         self_address: ResourceAddress,
@@ -368,7 +375,7 @@ impl ResourceManager {
         }
     }
 
-    pub fn static_main<'p, Y: SystemApi<'p, W, I>, W: WasmEngine<I>, I: WasmInstance>(
+    pub fn static_main<'p, 's, Y: SystemApi<'p, 's, W, I>, W: WasmEngine<I>, I: WasmInstance>(
         method_name: &str,
         arg: ScryptoValue,
         system_api: &mut Y,
@@ -421,7 +428,7 @@ impl ResourceManager {
         }
     }
 
-    pub fn main<'p, Y: SystemApi<'p, W, I>, W: WasmEngine<I>, I: WasmInstance>(
+    pub fn main<'p, 's, Y: SystemApi<'p, 's, W, I>, W: WasmEngine<I>, I: WasmInstance>(
         resource_address: ResourceAddress,
         method_name: &str,
         arg: ScryptoValue,

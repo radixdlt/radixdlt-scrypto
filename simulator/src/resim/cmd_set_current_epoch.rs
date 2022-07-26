@@ -1,12 +1,12 @@
-use std::rc::Rc;
-
 use clap::Parser;
 use radix_engine::constants::*;
-use radix_engine::engine::{CallFrame, SystemApi, Track};
+use radix_engine::engine::Track;
+use radix_engine::engine::{CallFrame, SystemApi};
 use radix_engine::fee::{CostUnitCounter, FeeTable};
 use scrypto::core::{SNodeRef, SystemSetEpochInput};
 use scrypto::crypto::hash;
 use scrypto::values::ScryptoValue;
+use transaction::validation::{IdAllocator, IdSpace};
 
 use crate::resim::*;
 
@@ -22,10 +22,11 @@ impl SetCurrentEpoch {
         // TODO: can we construct a proper transaction to do the following?
 
         let tx_hash = hash(get_nonce()?.to_string());
-        let substate_store_rc = Rc::new(RadixEngineDB::with_bootstrap(get_data_dir()?));
+        let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?);
         let mut wasm_engine = DefaultWasmEngine::new();
         let mut wasm_instrumenter = WasmInstrumenter::new();
-        let mut track = Track::new(substate_store_rc.clone(), tx_hash);
+        let mut id_allocator = IdAllocator::new(IdSpace::Application);
+        let mut track = Track::new(&substate_store);
         let mut cost_unit_counter =
             CostUnitCounter::new(DEFAULT_COST_UNIT_LIMIT, DEFAULT_SYSTEM_LOAN);
         let fee_table = FeeTable::new();
@@ -37,6 +38,7 @@ impl SetCurrentEpoch {
             vec![],
             true,
             DEFAULT_MAX_CALL_DEPTH,
+            &mut id_allocator,
             &mut track,
             &mut wasm_engine,
             &mut wasm_instrumenter,
@@ -56,13 +58,7 @@ impl SetCurrentEpoch {
 
         // Commit
         let track_receipt = track.to_receipt(true);
-        let mut substate_store = match Rc::try_unwrap(substate_store_rc) {
-            Ok(store) => store,
-            Err(_) => panic!("There should be no other strong refs that prevent unwrapping"),
-        };
-        let _commit_receipt = track_receipt
-            .state_changes
-            .commit(&mut substate_store, tx_hash);
+        track_receipt.state_updates.commit(&mut substate_store);
 
         Ok(())
     }

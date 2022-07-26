@@ -3,6 +3,7 @@ pub mod test_runner;
 
 use crate::test_runner::TestRunner;
 use radix_engine::engine::RuntimeError;
+use radix_engine::ledger::InMemorySubstateStore;
 use scrypto::core::Network;
 use scrypto::engine::types::ValueId;
 use scrypto::prelude::*;
@@ -12,7 +13,8 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn non_existent_vault_in_component_creation_should_fail() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("vault");
 
     // Act
@@ -33,7 +35,8 @@ fn non_existent_vault_in_component_creation_should_fail() {
 #[test]
 fn non_existent_vault_in_committed_component_should_fail() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("vault");
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(package_address, "NonExistentVault", "new", to_struct!())
@@ -54,7 +57,8 @@ fn non_existent_vault_in_committed_component_should_fail() {
 #[test]
 fn non_existent_vault_in_key_value_store_creation_should_fail() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("vault");
 
     // Act
@@ -75,7 +79,8 @@ fn non_existent_vault_in_key_value_store_creation_should_fail() {
 #[test]
 fn non_existent_vault_in_committed_key_value_store_should_fail() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("vault");
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(package_address, "NonExistentVault", "new", to_struct!())
@@ -100,7 +105,8 @@ fn non_existent_vault_in_committed_key_value_store_should_fail() {
 #[test]
 fn create_mutable_vault_into_map() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("vault");
 
     // Act
@@ -121,7 +127,8 @@ fn create_mutable_vault_into_map() {
 #[test]
 fn invalid_double_ownership_of_vault() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("vault");
 
     // Act
@@ -142,7 +149,8 @@ fn invalid_double_ownership_of_vault() {
 #[test]
 fn create_mutable_vault_into_map_and_referencing_before_storing() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("vault");
 
     // Act
@@ -163,7 +171,8 @@ fn create_mutable_vault_into_map_and_referencing_before_storing() {
 #[test]
 fn cannot_overwrite_vault_in_map() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("vault");
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(
@@ -189,7 +198,8 @@ fn cannot_overwrite_vault_in_map() {
 #[test]
 fn create_mutable_vault_into_vector() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("vault");
 
     // Act
@@ -210,7 +220,8 @@ fn create_mutable_vault_into_vector() {
 #[test]
 fn cannot_remove_vaults() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("vault");
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(
@@ -236,7 +247,8 @@ fn cannot_remove_vaults() {
 #[test]
 fn can_push_vault_into_vector() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("vault");
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(
@@ -262,7 +274,8 @@ fn can_push_vault_into_vector() {
 #[test]
 fn create_mutable_vault_with_take() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("vault");
 
     // Act
@@ -283,7 +296,8 @@ fn create_mutable_vault_with_take() {
 #[test]
 fn create_mutable_vault_with_take_non_fungible() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("vault");
 
     // Act
@@ -304,7 +318,8 @@ fn create_mutable_vault_with_take_non_fungible() {
 #[test]
 fn create_mutable_vault_with_get_nonfungible_ids() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("vault");
 
     // Act
@@ -325,7 +340,8 @@ fn create_mutable_vault_with_get_nonfungible_ids() {
 #[test]
 fn create_mutable_vault_with_get_amount() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("vault");
 
     // Act
@@ -346,7 +362,8 @@ fn create_mutable_vault_with_get_amount() {
 #[test]
 fn create_mutable_vault_with_get_resource_manager() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("vault");
 
     // Act

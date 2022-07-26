@@ -3,6 +3,7 @@ pub mod test_runner;
 
 use crate::test_runner::TestRunner;
 use radix_engine::engine::RuntimeError;
+use radix_engine::ledger::InMemorySubstateStore;
 use scrypto::core::Network;
 use scrypto::prelude::*;
 use scrypto::to_struct;
@@ -11,7 +12,8 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn local_component_should_return_correct_info() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("local_component");
 
     // Act
@@ -32,7 +34,8 @@ fn local_component_should_return_correct_info() {
 #[test]
 fn local_component_should_be_callable_read_only() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("local_component");
 
     // Act
@@ -53,7 +56,8 @@ fn local_component_should_be_callable_read_only() {
 #[test]
 fn local_component_should_be_callable_with_write() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("local_component");
 
     // Act
@@ -74,7 +78,8 @@ fn local_component_should_be_callable_with_write() {
 #[test]
 fn local_component_with_access_rules_should_not_be_callable() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("local_component");
     let (public_key, _, account) = test_runner.new_account();
     let auth_resource_address = test_runner.create_non_fungible_resource(account);
@@ -99,7 +104,8 @@ fn local_component_with_access_rules_should_not_be_callable() {
 #[test]
 fn local_component_with_access_rules_should_be_callable() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("local_component");
     let (public_key, _, account) = test_runner.new_account();
     let auth_resource_address = test_runner.create_non_fungible_resource(account);
@@ -129,7 +135,8 @@ fn local_component_with_access_rules_should_be_callable() {
 #[test]
 fn recursion_bomb() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account();
     let package_address = test_runner.extract_and_publish_package("local_recursion");
 
@@ -156,7 +163,8 @@ fn recursion_bomb() {
 #[test]
 fn recursion_bomb_to_failure() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account();
     let package_address = test_runner.extract_and_publish_package("local_recursion");
 
@@ -182,7 +190,8 @@ fn recursion_bomb_to_failure() {
 #[test]
 fn recursion_bomb_2() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account();
     let package_address = test_runner.extract_and_publish_package("local_recursion");
 
@@ -209,7 +218,8 @@ fn recursion_bomb_2() {
 #[test]
 fn recursion_bomb_2_to_failure() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account();
     let package_address = test_runner.extract_and_publish_package("local_recursion");
 

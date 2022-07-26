@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 
 use radix_engine::engine::Address;
+use radix_engine::engine::Substate;
 use radix_engine::ledger::*;
 use rocksdb::{DBWithThreadMode, Direction, IteratorMode, SingleThreaded, DB};
 use sbor::Decode;
@@ -72,7 +73,7 @@ impl QueryableSubstateStore for RadixEngineDB {
         &self,
         component_address: ComponentAddress,
         kv_store_id: &KeyValueStoreId,
-    ) -> HashMap<Vec<u8>, Vec<u8>> {
+    ) -> HashMap<Vec<u8>, Substate> {
         let mut id = scrypto_encode(&component_address);
         id.extend(scrypto_encode(kv_store_id));
         let key_size = id.len();
@@ -88,29 +89,31 @@ impl QueryableSubstateStore for RadixEngineDB {
             }
 
             let local_key = key.split_at(key_size).1.to_vec();
-            let substate: Substate = scrypto_decode(&value.to_vec()).unwrap();
-            items.insert(local_key, substate.value);
+            let substate: Output = scrypto_decode(&value.to_vec()).unwrap();
+            items.insert(local_key, substate.substate);
         }
         items
     }
 }
 
 impl ReadableSubstateStore for RadixEngineDB {
-    fn get_substate(&self, address: &Address) -> Option<Substate> {
+    fn get_substate(&self, address: &Address) -> Option<Output> {
         self.read(address).map(|b| scrypto_decode(&b).unwrap())
     }
 
-    fn get_space(&self, address: &Address) -> Option<PhysicalSubstateId> {
-        self.read(address).map(|b| scrypto_decode(&b).unwrap())
+    fn get_space(&self, address: &Address) -> OutputId {
+        self.read(address)
+            .map(|b| scrypto_decode(&b).unwrap())
+            .expect("Expected space does not exist")
     }
 }
 
 impl WriteableSubstateStore for RadixEngineDB {
-    fn put_substate(&mut self, address: Address, substate: Substate) {
+    fn put_substate(&mut self, address: Address, substate: Output) {
         self.write(address, scrypto_encode(&substate));
     }
 
-    fn put_space(&mut self, address: Address, phys_id: PhysicalSubstateId) {
-        self.write(address, scrypto_encode(&phys_id));
+    fn put_space(&mut self, address: Address, output_id: OutputId) {
+        self.write(address, scrypto_encode(&output_id));
     }
 }

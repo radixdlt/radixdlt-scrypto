@@ -18,13 +18,13 @@ pub enum SystemError {
     CostingError(CostUnitCounterError),
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct System {
     pub epoch: u64,
 }
 
 impl System {
-    pub fn main<'p, Y: SystemApi<'p, W, I>, W: WasmEngine<I>, I: WasmInstance>(
+    pub fn main<'p, 's, Y: SystemApi<'p, 's, W, I>, W: WasmEngine<I>, I: WasmInstance>(
         method_name: &str,
         arg: ScryptoValue,
         system_api: &mut Y,

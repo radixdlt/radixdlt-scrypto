@@ -1,27 +1,29 @@
 use sbor::rust::marker::PhantomData;
-use sbor::rust::rc::Rc;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use scrypto::buffer::*;
 use scrypto::math::Decimal;
 use scrypto::values::ScryptoValue;
 use transaction::model::*;
+use transaction::validation::{IdAllocator, IdSpace};
 
+use crate::engine::Track;
 use crate::engine::*;
 use crate::fee::CostUnitCounter;
 use crate::fee::FeeTable;
-use crate::ledger::*;
+use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
 use crate::model::*;
+use crate::transaction::*;
 use crate::wasm::*;
 
 /// An executor that runs transactions.
-pub struct TransactionExecutor<'w, S, W, I>
+pub struct TransactionExecutor<'s, 'w, S, W, I>
 where
-    S: ReadableSubstateStore + WriteableSubstateStore + 'static,
+    S: ReadableSubstateStore + WriteableSubstateStore,
     W: WasmEngine<I>,
     I: WasmInstance,
 {
-    substate_store: Option<S>,
+    substate_store: &'s mut S,
     wasm_engine: &'w mut W,
     wasm_instrumenter: &'w mut WasmInstrumenter,
     cost_unit_price: Decimal,
@@ -32,14 +34,14 @@ where
     phantom: PhantomData<I>,
 }
 
-impl<'w, S, W, I> TransactionExecutor<'w, S, W, I>
+impl<'s, 'w, S, W, I> TransactionExecutor<'s, 'w, S, W, I>
 where
-    S: ReadableSubstateStore + WriteableSubstateStore + 'static,
+    S: ReadableSubstateStore + WriteableSubstateStore,
     W: WasmEngine<I>,
     I: WasmInstance,
 {
     pub fn new(
-        substate_store: S,
+        substate_store: &'s mut S,
         wasm_engine: &'w mut W,
         wasm_instrumenter: &'w mut WasmInstrumenter,
         cost_unit_price: Decimal,
@@ -47,9 +49,9 @@ where
         system_loan: u32,
         is_system: bool,
         trace: bool,
-    ) -> TransactionExecutor<'w, S, W, I> {
+    ) -> Self {
         Self {
-            substate_store: Some(substate_store),
+            substate_store,
             wasm_engine,
             wasm_instrumenter,
             cost_unit_price,
@@ -61,21 +63,16 @@ where
         }
     }
 
-    /// Returns an immutable reference to the ledger.
-    pub fn substate_store(&self) -> &S {
-        self.substate_store
-            .as_ref()
-            .expect("Missing substate store")
+    pub fn execute_and_commit<T: ExecutableTransaction>(
+        &mut self,
+        transaction: &T,
+    ) -> TransactionReceipt {
+        let receipt = self.execute(transaction);
+        receipt.state_updates.commit(self.substate_store);
+        receipt
     }
 
-    /// Returns a mutable reference to the ledger.
-    pub fn substate_store_mut(&mut self) -> &mut S {
-        self.substate_store
-            .as_mut()
-            .expect("Missing substate store")
-    }
-
-    pub fn execute<T: ExecutableTransaction>(&mut self, transaction: &T) -> Receipt {
+    pub fn execute<T: ExecutableTransaction>(&mut self, transaction: &T) -> TransactionReceipt {
         #[cfg(not(feature = "alloc"))]
         let now = std::time::Instant::now();
 
@@ -96,9 +93,8 @@ where
         }
 
         // 1. Start state track
-        let substate_store_rc =
-            Rc::new(self.substate_store.take().expect("Missing substate store"));
-        let mut track = Track::new(substate_store_rc.clone(), transaction_hash);
+        let mut track = Track::new(self.substate_store);
+        let mut id_allocator = IdAllocator::new(IdSpace::Application);
 
         // 2. Apply pre-execution costing
         let mut cost_unit_counter = CostUnitCounter::new(cost_unit_limit, self.system_loan);
@@ -131,6 +127,7 @@ where
             signer_public_keys,
             self.is_system,
             self.max_call_depth,
+            &mut id_allocator,
             &mut track,
             self.wasm_engine,
             self.wasm_instrumenter,
@@ -153,22 +150,10 @@ where
         // TODO: reward validators
         // TODO: refund overpaid fees
         let system_loan_fully_repaid = counter.owed() == 0;
-        let cost_units_consumed = counter.consumed();
+        let cost_unit_consumed = counter.consumed();
         let cost_unit_price = self.cost_unit_price;
-        let burned = 0.into();
-        let tipped = 0.into();
-
-        // 5. Generate receipts and commit
-        let track_receipt = track.to_receipt(result.is_ok());
-        self.substate_store = match Rc::try_unwrap(substate_store_rc) {
-            Ok(store) => Some(store),
-            Err(_) => panic!("There should be no other strong refs that prevent unwrapping"),
-        };
-        // TODO: remove commit step
-        let commit_receipt = track_receipt
-            .state_changes
-            .commit(self.substate_store_mut(), transaction_hash);
-
+        let burned = 0u32.into();
+        let tipped = 0u32.into();
         #[cfg(not(feature = "alloc"))]
         if self.trace {
             println!("{:-^80}", "Cost Analysis");
@@ -177,7 +162,8 @@ where
             }
         }
 
-        // 6. Produce the final transaction receipt
+        // 5. Produce the final transaction receipt
+        let track_receipt = track.to_receipt(result.is_ok());
         let mut new_component_addresses = Vec::new();
         let mut new_resource_addresses = Vec::new();
         let mut new_package_addresses = Vec::new();
@@ -197,7 +183,7 @@ where
         let execution_time = None;
         #[cfg(not(feature = "alloc"))]
         let execution_time = Some(now.elapsed().as_millis());
-        let receipt = Receipt {
+        let receipt = TransactionReceipt {
             status: if system_loan_fully_repaid {
                 match result {
                     Ok(output) => TransactionStatus::Succeeded(output),
@@ -213,18 +199,18 @@ where
             transaction_network,
             transaction_fee: TransactionFeeSummary {
                 cost_unit_limit,
-                cost_units_consumed,
+                cost_unit_consumed,
                 cost_unit_price,
                 burned,
                 tipped,
             },
             instructions,
-            logs: track_receipt.logs,
+            application_logs: track_receipt.application_logs,
             new_package_addresses,
             new_component_addresses,
             new_resource_addresses,
             execution_time,
-            commit_receipt,
+            state_updates: track_receipt.state_updates,
         };
 
         #[cfg(not(feature = "alloc"))]
@@ -235,9 +221,5 @@ where
         }
 
         receipt
-    }
-
-    pub fn destroy(self) -> S {
-        self.substate_store.expect("Missing substate store")
     }
 }

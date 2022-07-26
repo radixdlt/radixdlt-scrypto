@@ -1,6 +1,6 @@
 use radix_engine::constants::*;
-use radix_engine::engine::TransactionExecutor;
 use radix_engine::ledger::InMemorySubstateStore;
+use radix_engine::transaction::TransactionExecutor;
 use radix_engine::wasm::DefaultWasmEngine;
 use radix_engine::wasm::WasmInstrumenter;
 use scrypto::core::Network;
@@ -14,7 +14,7 @@ use transaction::validation::{TestIntentHashStore, TransactionValidator};
 
 #[test]
 fn test_normal_transaction_flow() {
-    let substate_store = InMemorySubstateStore::with_bootstrap();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = DefaultWasmEngine::new();
     let mut wasm_instrumenter = WasmInstrumenter::new();
     let intent_hash_store = TestIntentHashStore::new();
@@ -39,7 +39,7 @@ fn test_normal_transaction_flow() {
     .expect("Invalid transaction");
 
     let mut executor = TransactionExecutor::new(
-        substate_store,
+        &mut substate_store,
         &mut wasm_engine,
         &mut wasm_instrumenter,
         cost_unit_price,
@@ -48,7 +48,7 @@ fn test_normal_transaction_flow() {
         is_system,
         trace,
     );
-    let receipt = executor.execute(&validated_transaction);
+    let receipt = executor.execute_and_commit(&validated_transaction);
 
     receipt.expect_success();
 }

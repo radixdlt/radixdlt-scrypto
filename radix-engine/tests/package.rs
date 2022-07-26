@@ -2,6 +2,7 @@
 pub mod test_runner;
 
 use radix_engine::engine::RuntimeError;
+use radix_engine::ledger::InMemorySubstateStore;
 use radix_engine::model::PackageError;
 use radix_engine::wasm::*;
 use sbor::Type;
@@ -15,7 +16,8 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn missing_memory_should_cause_error() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
 
     // Act
     let code = wat2wasm(
@@ -50,7 +52,8 @@ fn missing_memory_should_cause_error() {
 #[test]
 fn large_return_len_should_cause_memory_access_error() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
     let package = test_runner.extract_and_publish_package("package");
 
     // Act
@@ -72,7 +75,8 @@ fn large_return_len_should_cause_memory_access_error() {
 #[test]
 fn overflow_return_len_should_cause_memory_access_error() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
     let package = test_runner.extract_and_publish_package("package");
 
     // Act
@@ -94,7 +98,8 @@ fn overflow_return_len_should_cause_memory_access_error() {
 #[test]
 fn zero_return_len_should_cause_data_validation_error() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
     let package = test_runner.extract_and_publish_package("package");
 
     // Act
@@ -111,7 +116,8 @@ fn zero_return_len_should_cause_data_validation_error() {
 #[test]
 fn test_basic_package() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
 
     // Act
     let code = wat2wasm(include_str!("wasm/basic_package.wat"));
@@ -131,7 +137,8 @@ fn test_basic_package() {
 #[test]
 fn test_basic_package_missing_export() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
     let mut blueprints = HashMap::new();
     blueprints.insert(
         "some_blueprint".to_string(),

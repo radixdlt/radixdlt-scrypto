@@ -6,6 +6,288 @@ use scrypto::values::ScryptoValue;
 use crate::engine::*;
 use crate::model::*;
 
+/// Represents a Radix Engine address. Each maps a unique substate key.
+///
+/// TODO: separate space addresses?
+///
+/// FIXME: RESIM listing is broken ATM.
+/// By using scrypto codec, we lose sorting capability of the address space.
+/// Can also be resolved by A) using prefix search instead of range search or B) use special codec as before
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum Address {
+    GlobalComponent(ComponentAddress),
+    Package(PackageAddress),
+    ResourceManager(ResourceAddress),
+    NonFungibleSpace(ResourceAddress),
+    NonFungible(ResourceAddress, Vec<u8>),
+    KeyValueStoreSpace(KeyValueStoreId),
+    KeyValueStoreEntry(KeyValueStoreId, Vec<u8>),
+    Vault(VaultId),
+    LocalComponent(ComponentAddress),
+    System,
+}
+
+impl Into<Address> for PackageAddress {
+    fn into(self) -> Address {
+        Address::Package(self)
+    }
+}
+
+impl Into<Address> for ResourceAddress {
+    fn into(self) -> Address {
+        Address::ResourceManager(self)
+    }
+}
+
+impl Into<Address> for VaultId {
+    fn into(self) -> Address {
+        Address::Vault(self)
+    }
+}
+
+impl Into<PackageAddress> for Address {
+    fn into(self) -> PackageAddress {
+        if let Address::Package(package_address) = self {
+            return package_address;
+        } else {
+            panic!("Address is not a package address");
+        }
+    }
+}
+
+impl Into<ComponentAddress> for Address {
+    fn into(self) -> ComponentAddress {
+        if let Address::GlobalComponent(component_address) = self {
+            return component_address;
+        } else {
+            panic!("Address is not a component address");
+        }
+    }
+}
+
+impl Into<ResourceAddress> for Address {
+    fn into(self) -> ResourceAddress {
+        if let Address::ResourceManager(resource_address) = self {
+            return resource_address;
+        } else {
+            panic!("Address is not a resource address");
+        }
+    }
+}
+
+impl Into<VaultId> for Address {
+    fn into(self) -> VaultId {
+        if let Address::Vault(id) = self {
+            return id;
+        } else {
+            panic!("Address is not a vault address");
+        }
+    }
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
+pub enum Substate {
+    System(System),
+    Resource(ResourceManager),
+    Component(Component),
+    Package(ValidatedPackage),
+    Vault(Vault),
+    NonFungible(NonFungibleWrapper),
+    KeyValueStoreEntry(KeyValueStoreEntryWrapper),
+}
+
+impl Substate {
+    pub fn vault_mut(&mut self) -> &mut Vault {
+        if let Substate::Vault(vault) = self {
+            vault
+        } else {
+            panic!("Not a vault");
+        }
+    }
+
+    pub fn vault(&self) -> &Vault {
+        if let Substate::Vault(vault) = self {
+            vault
+        } else {
+            panic!("Not a vault");
+        }
+    }
+
+    pub fn resource_manager_mut(&mut self) -> &mut ResourceManager {
+        if let Substate::Resource(resource_manager) = self {
+            resource_manager
+        } else {
+            panic!("Not a resource manager");
+        }
+    }
+
+    pub fn system(&self) -> &System {
+        if let Substate::System(system) = self {
+            system
+        } else {
+            panic!("Not a system value");
+        }
+    }
+
+    pub fn system_mut(&mut self) -> &mut System {
+        if let Substate::System(system) = self {
+            system
+        } else {
+            panic!("Not a system value");
+        }
+    }
+
+    pub fn resource_manager(&self) -> &ResourceManager {
+        if let Substate::Resource(resource_manager) = self {
+            resource_manager
+        } else {
+            panic!("Not a resource manager");
+        }
+    }
+
+    pub fn component(&self) -> &Component {
+        if let Substate::Component(component) = self {
+            component
+        } else {
+            panic!("Not a component");
+        }
+    }
+
+    pub fn component_mut(&mut self) -> &mut Component {
+        if let Substate::Component(component) = self {
+            component
+        } else {
+            panic!("Not a component");
+        }
+    }
+
+    pub fn package(&self) -> &ValidatedPackage {
+        if let Substate::Package(package) = self {
+            package
+        } else {
+            panic!("Not a package");
+        }
+    }
+
+    pub fn non_fungible(&self) -> &NonFungibleWrapper {
+        if let Substate::NonFungible(non_fungible) = self {
+            non_fungible
+        } else {
+            panic!("Not a NonFungible");
+        }
+    }
+
+    pub fn kv_entry(&self) -> &KeyValueStoreEntryWrapper {
+        if let Substate::KeyValueStoreEntry(kv_entry) = self {
+            kv_entry
+        } else {
+            panic!("Not a KVEntry");
+        }
+    }
+}
+
+impl Into<Substate> for System {
+    fn into(self) -> Substate {
+        Substate::System(self)
+    }
+}
+
+impl Into<Substate> for ValidatedPackage {
+    fn into(self) -> Substate {
+        Substate::Package(self)
+    }
+}
+
+impl Into<Substate> for Component {
+    fn into(self) -> Substate {
+        Substate::Component(self)
+    }
+}
+
+impl Into<Substate> for ResourceManager {
+    fn into(self) -> Substate {
+        Substate::Resource(self)
+    }
+}
+
+impl Into<Substate> for Vault {
+    fn into(self) -> Substate {
+        Substate::Vault(self)
+    }
+}
+
+impl Into<Substate> for NonFungibleWrapper {
+    fn into(self) -> Substate {
+        Substate::NonFungible(self)
+    }
+}
+
+impl Into<Substate> for KeyValueStoreEntryWrapper {
+    fn into(self) -> Substate {
+        Substate::KeyValueStoreEntry(self)
+    }
+}
+
+impl Into<Component> for Substate {
+    fn into(self) -> Component {
+        if let Substate::Component(component) = self {
+            component
+        } else {
+            panic!("Not a component");
+        }
+    }
+}
+
+impl Into<ResourceManager> for Substate {
+    fn into(self) -> ResourceManager {
+        if let Substate::Resource(resource_manager) = self {
+            resource_manager
+        } else {
+            panic!("Not a resource manager");
+        }
+    }
+}
+
+impl Into<ValidatedPackage> for Substate {
+    fn into(self) -> ValidatedPackage {
+        if let Substate::Package(package) = self {
+            package
+        } else {
+            panic!("Not a resource manager");
+        }
+    }
+}
+
+impl Into<NonFungibleWrapper> for Substate {
+    fn into(self) -> NonFungibleWrapper {
+        if let Substate::NonFungible(non_fungible) = self {
+            non_fungible
+        } else {
+            panic!("Not a non-fungible wrapper");
+        }
+    }
+}
+
+impl Into<KeyValueStoreEntryWrapper> for Substate {
+    fn into(self) -> KeyValueStoreEntryWrapper {
+        if let Substate::KeyValueStoreEntry(kv_entry) = self {
+            kv_entry
+        } else {
+            panic!("Not a key value store entry wrapper");
+        }
+    }
+}
+
+impl Into<Vault> for Substate {
+    fn into(self) -> Vault {
+        if let Substate::Vault(vault) = self {
+            vault
+        } else {
+            panic!("Not a vault");
+        }
+    }
+}
+
 #[derive(Debug)]
 pub enum RENode {
     Bucket(Bucket),

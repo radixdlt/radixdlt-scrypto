@@ -39,5 +39,4 @@ pub enum RadixEngineInput {
     EmitLog(Level, String),
     GenerateUuid(),
     CheckAccessRule(AccessRule, Vec<ProofId>),
-    PayFee(VaultId, Decimal),
 }

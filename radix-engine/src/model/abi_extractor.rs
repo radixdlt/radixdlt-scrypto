@@ -1,6 +1,5 @@
 use sbor::rust::borrow::ToOwned;
 use scrypto::abi;
-use scrypto::buffer::*;
 use scrypto::engine::types::*;
 
 use crate::engine::*;
@@ -11,9 +10,9 @@ pub fn export_abi<S: ReadableSubstateStore>(
     package_address: PackageAddress,
     blueprint_name: &str,
 ) -> Result<abi::BlueprintAbi, RuntimeError> {
-    let package_value: SubstateValue = substate_store
+    let package_value: Substate = substate_store
         .get_substate(&Address::Package(package_address))
-        .map(|s| scrypto_decode(&s.value).unwrap())
+        .map(|s| s.substate)
         .ok_or(RuntimeError::PackageNotFound(package_address))?;
 
     let abi = package_value
@@ -31,9 +30,9 @@ pub fn export_abi_by_component<S: ReadableSubstateStore>(
     substate_store: &S,
     component_address: ComponentAddress,
 ) -> Result<abi::BlueprintAbi, RuntimeError> {
-    let component_value: SubstateValue = substate_store
+    let component_value: Substate = substate_store
         .get_substate(&Address::GlobalComponent(component_address))
-        .map(|s| scrypto_decode(&s.value).unwrap())
+        .map(|s| s.substate)
         .ok_or(RuntimeError::ComponentNotFound(component_address))?;
     let component = component_value.component();
     export_abi(

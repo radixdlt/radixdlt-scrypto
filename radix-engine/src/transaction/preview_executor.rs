@@ -11,14 +11,15 @@ use transaction::validation::ValidationParameters;
 use crate::constants::DEFAULT_MAX_CALL_DEPTH;
 use crate::constants::DEFAULT_MAX_COST_UNIT_LIMIT;
 use crate::constants::DEFAULT_SYSTEM_LOAN;
-use crate::engine::*;
 use crate::ledger::*;
+use crate::transaction::TransactionReceipt;
+use crate::transaction::*;
 use crate::wasm::{DefaultWasmEngine, WasmInstrumenter};
 
 #[derive(Debug)]
 pub struct PreviewResult {
     pub intent: PreviewIntent,
-    pub receipt: Receipt,
+    pub receipt: TransactionReceipt,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -29,9 +30,9 @@ pub enum PreviewError {
 pub struct PreviewExecutor;
 
 impl PreviewExecutor {
-    pub fn execute_preview<S: ReadableSubstateStore + WriteableSubstateStore + 'static>(
+    pub fn execute_preview<'s, S: ReadableSubstateStore + WriteableSubstateStore>(
         preview_intent: PreviewIntent,
-        substate_store: S,
+        substate_store: &'s mut S,
     ) -> Result<PreviewResult, PreviewError> {
         // TODO: construct validation parameters based on current world state
         let intent_hash_store = TestIntentHashStore::new();
@@ -64,8 +65,7 @@ impl PreviewExecutor {
             false,
             false,
         );
-
-        let receipt = executor.execute(&validated_preview_transaction);
+        let receipt = executor.execute_and_commit(&validated_preview_transaction);
 
         Ok(PreviewResult {
             intent: preview_intent,

@@ -54,6 +54,11 @@ pub struct VaultCreateProofByIdsInput {
     pub ids: BTreeSet<NonFungibleId>,
 }
 
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct VaultPayFeeInput {
+    pub amount: Decimal,
+}
+
 /// Represents a persistent resource container on ledger state.
 #[derive(PartialEq, Eq, Hash)]
 pub struct Vault(pub VaultId);
@@ -80,6 +85,15 @@ impl Vault {
         let input = RadixEngineInput::InvokeSNode(
             SNodeRef::VaultRef(self.0),
             "take".to_string(),
+            scrypto_encode(&VaultTakeInput { amount }),
+        );
+        call_engine(input)
+    }
+
+    fn pay_fee_internal(&mut self, amount: Decimal) {
+        let input = RadixEngineInput::InvokeSNode(
+            SNodeRef::VaultRef(self.0),
+            "pay_fee".to_string(),
             scrypto_encode(&VaultTakeInput { amount }),
         );
         call_engine(input)
@@ -125,6 +139,13 @@ impl Vault {
         }
     }
 
+    /// Locks the specified amount as transaction fee.
+    ///
+    /// Unused fee will be refunded to the vaults from the most recently locked to the least.
+    pub fn pay_fee<A: Into<Decimal>>(&mut self, amount: A) {
+        self.pay_fee_internal(amount.into())
+    }
+
     /// Takes some amount of resource from this vault into a bucket.
     pub fn take<A: Into<Decimal>>(&mut self, amount: A) -> Bucket {
         self.take_internal(amount.into())
@@ -141,14 +162,6 @@ impl Vault {
     /// Panics if this is not a non-fungible vault or the specified non-fungible resource is not found.
     pub fn take_non_fungible(&mut self, non_fungible_id: &NonFungibleId) -> Bucket {
         self.take_non_fungibles(&BTreeSet::from([non_fungible_id.clone()]))
-    }
-
-    /// Locks the specified amount as transaction fee.
-    ///
-    /// Unused fee will be refunded to the vaults from the most recently locked to the least.
-    pub fn pay_fee(&mut self, amount: Decimal) -> () {
-        let input = RadixEngineInput::PayFee(self.0, amount);
-        call_engine(input)
     }
 
     /// Uses resources in this vault as authorization for an operation.

@@ -1,6 +1,5 @@
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::*;
-use sbor::rust::rc::Rc;
 use sbor::rust::vec;
 use sbor::*;
 use scrypto::buffer::*;
@@ -11,7 +10,9 @@ use scrypto::resource::ResourceMethodAuthKey::Withdraw;
 use scrypto::resource::LOCKED;
 use scrypto::rule;
 
-use crate::engine::{Address, Track, TrackReceipt};
+use crate::engine::Address;
+use crate::engine::Track;
+use crate::engine::TrackReceipt;
 use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
 use crate::model::ValidatedPackage;
 
@@ -102,17 +103,9 @@ where
         .get_substate(&Address::Package(SYSTEM_PACKAGE))
         .is_none()
     {
-        let transaction_hash = Hash([0u8; 32]);
-        let substate_store_rc = Rc::new(substate_store);
-        let track = Track::new(substate_store_rc.clone(), transaction_hash);
+        let track = Track::new(&substate_store);
         let receipt = create_genesis(track);
-        substate_store = match Rc::try_unwrap(substate_store_rc) {
-            Ok(store) => store,
-            Err(_) => panic!("There should be no other strong refs that prevent unwrapping"),
-        };
-        receipt
-            .state_changes
-            .commit(&mut substate_store, transaction_hash);
+        receipt.state_updates.commit(&mut substate_store);
     }
     substate_store
 }

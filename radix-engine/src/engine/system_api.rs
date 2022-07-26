@@ -12,7 +12,7 @@ use crate::wasm::*;
 
 use super::call_frame::REValueRef;
 
-pub trait SystemApi<'p, W, I>
+pub trait SystemApi<'p, 's, W, I>
 where
     W: WasmEngine<I>,
     I: WasmInstance,
@@ -30,7 +30,10 @@ where
 
     fn globalize_value(&mut self, value_id: &ValueId) -> Result<(), CostUnitCounterError>;
 
-    fn borrow_value(&mut self, value_id: &ValueId) -> Result<REValueRef<'_>, CostUnitCounterError>;
+    fn borrow_value(
+        &mut self,
+        value_id: &ValueId,
+    ) -> Result<REValueRef<'_, 's>, CostUnitCounterError>;
 
     fn borrow_value_mut(
         &mut self,
@@ -66,6 +69,4 @@ where
         access_rule: AccessRule,
         proof_ids: Vec<ProofId>,
     ) -> Result<bool, RuntimeError>;
-
-    fn pay_fee(&mut self, vault_id: VaultId, amount: Decimal) -> Result<(), RuntimeError>;
 }

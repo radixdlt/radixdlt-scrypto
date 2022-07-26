@@ -4,6 +4,7 @@ pub mod test_runner;
 use crate::test_runner::TestRunner;
 use crate::ExpectedResult::{InvalidInput, InvalidOutput, Success};
 use radix_engine::engine::RuntimeError;
+use radix_engine::ledger::InMemorySubstateStore;
 use radix_engine::model::ComponentError;
 use scrypto::core::Network;
 use scrypto::prelude::*;
@@ -13,7 +14,8 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn test_invalid_access_rule_methods() {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("abi");
 
     // Act
@@ -44,7 +46,8 @@ enum ExpectedResult {
 
 fn test_arg(method_name: &str, arg: Vec<u8>, expected_result: ExpectedResult) {
     // Arrange
-    let mut test_runner = TestRunner::new(true);
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("abi");
 
     // Act
