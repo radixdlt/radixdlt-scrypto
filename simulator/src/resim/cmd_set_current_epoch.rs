@@ -1,6 +1,8 @@
 use clap::Parser;
 use radix_engine::engine::{CallFrame, SystemApi};
-use radix_engine::fee::{CostUnitCounter, FeeTable, DEFAULT_MAX_TRANSACTION_COST, DEFAULT_SYSTEM_LOAN_AMOUNT};
+use radix_engine::fee::{
+    FeeTable, SystemLoanCostUnitCounter, DEFAULT_MAX_TRANSACTION_COST, DEFAULT_SYSTEM_LOAN_AMOUNT,
+};
 use radix_engine::state_manager::Track;
 use scrypto::core::{SNodeRef, SystemSetEpochInput};
 use scrypto::values::ScryptoValue;
@@ -24,7 +26,10 @@ impl SetCurrentEpoch {
         let mut wasm_engine = DefaultWasmEngine::new();
         let mut wasm_instrumenter = WasmInstrumenter::new();
         let mut track = Track::new(&mut substate_store);
-        let mut cost_unit_counter = DefaultCostUnitCounter::new(DEFAULT_MAX_TRANSACTION_COST, DEFAULT_SYSTEM_LOAN_AMOUNT);
+        let mut cost_unit_counter = SystemLoanCostUnitCounter::new(
+            DEFAULT_MAX_TRANSACTION_COST,
+            DEFAULT_SYSTEM_LOAN_AMOUNT,
+        );
         let fee_table = FeeTable::new();
 
         // Create root call frame.

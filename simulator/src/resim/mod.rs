@@ -160,7 +160,7 @@ pub fn handle_manifest<O: std::io::Write>(
                 &mut substate_store,
                 &mut wasm_engine,
                 &mut wasm_instrumenter,
-                TransactionExecutorConfig::default(false),
+                TransactionExecutorConfig::default(trace),
             );
 
             let sks = get_signing_keys(signing_keys)?;
