@@ -11,10 +11,11 @@ use scrypto::core::DataAddress;
 
 use crate::abi::*;
 use crate::buffer::*;
+use crate::core::{DataRef, DataRefMut};
 use crate::crypto::*;
 use crate::engine::{api::*, call_engine, types::KeyValueStoreId};
 use crate::misc::*;
-use crate::prelude::{DataValueRef, DataValueRefMut, HashMap};
+use crate::prelude::HashMap;
 
 /// A scalable key-value map which loads entries on demand.
 pub struct KeyValueStore<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> {
@@ -39,7 +40,7 @@ impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> KeyValueStore<K,
     }
 
     /// Returns the value that is associated with the given key.
-    pub fn get(&self, key: &K) -> Option<DataValueRef<V>> {
+    pub fn get(&self, key: &K) -> Option<DataRef<V>> {
         let address = DataAddress::KeyValueEntry(self.id, scrypto_encode(key));
         let mut borrowed_map = self.map.borrow_mut();
         if !borrowed_map.contains_key(&address) {
@@ -53,13 +54,13 @@ impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> KeyValueStore<K,
                 map.get_mut(&address).unwrap().as_mut().unwrap()
             });
 
-            Some(DataValueRef { value: ref_mut })
+            Some(DataRef { value: ref_mut })
         } else {
             None
         }
     }
 
-    pub fn get_mut(&mut self, key: &K) -> Option<DataValueRefMut<V>> {
+    pub fn get_mut(&mut self, key: &K) -> Option<DataRefMut<V>> {
         let address = DataAddress::KeyValueEntry(self.id, scrypto_encode(key));
         let mut borrowed_map = self.map.borrow_mut();
         if !borrowed_map.contains_key(&address) {
@@ -73,7 +74,7 @@ impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> KeyValueStore<K,
                 map.get_mut(&address).unwrap().as_mut().unwrap()
             });
 
-            Some(DataValueRefMut {
+            Some(DataRefMut {
                 value: ref_mut,
                 address,
             })

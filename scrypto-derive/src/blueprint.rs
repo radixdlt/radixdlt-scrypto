@@ -204,12 +204,12 @@ fn generate_dispatcher(
                                 // Generate an `Arg` and a loading `Stmt` for the i-th argument
                                 dispatch_args.push(parse_quote! { state.deref_mut() });
                                 get_state = Some(parse_quote! {
-                                    let mut state: DataValueRefMut<#module_ident::#bp_ident> = component_data.get_data_mut();
+                                    let mut state: DataRefMut<#module_ident::#bp_ident> = component_data.get_mut();
                                 });
                             } else {
                                 dispatch_args.push(parse_quote! { state.deref() });
                                 get_state = Some(parse_quote! {
-                                    let state: DataValueRef<#module_ident::#bp_ident> = component_data.get_data();
+                                    let state: DataRef<#module_ident::#bp_ident> = component_data.get();
                                 });
                             }
                         }
@@ -582,7 +582,7 @@ mod tests {
                     let input: Test_x_Input = ::scrypto::buffer::scrypto_decode_from_buffer(method_arg).unwrap();
                     let component_address = ::scrypto::core::Runtime::actor().component_address().unwrap();
                     let mut component_data = ::scrypto::component::DataValue::new(DataAddress::Component(component_address, ComponentOffset::State));
-                    let state: DataValueRef<Test_impl::Test> = component_data.get_data();
+                    let state: DataRef<Test_impl::Test> = component_data.get();
 
                     let rtn = ::scrypto::buffer::scrypto_encode_to_buffer(&Test_impl::Test::x(state.deref(), input.arg0));
                     rtn

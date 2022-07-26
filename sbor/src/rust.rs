@@ -17,8 +17,6 @@ pub use alloc::string;
 #[cfg(feature = "alloc")]
 pub use alloc::vec;
 #[cfg(feature = "alloc")]
-pub use core::any;
-#[cfg(feature = "alloc")]
 pub use core::cell;
 #[cfg(feature = "alloc")]
 pub use core::convert;
@@ -37,8 +35,6 @@ pub use core::ptr;
 #[cfg(feature = "alloc")]
 pub use core::slice;
 
-#[cfg(not(feature = "alloc"))]
-pub use std::any;
 #[cfg(not(feature = "alloc"))]
 pub use std::borrow;
 #[cfg(not(feature = "alloc"))]

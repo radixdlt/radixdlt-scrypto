@@ -1,54 +1,14 @@
 use crate::buffer::*;
 use crate::component::package::Package;
 use crate::component::*;
-use crate::core::{DataAddress, SNodeRef};
+use crate::core::{DataAddress, DataRef, SNodeRef};
 use crate::engine::{api::*, call_engine};
+use crate::prelude::DataRefMut;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::cell::{RefCell, RefMut};
 use sbor::rust::collections::*;
-use sbor::rust::ops::{Deref, DerefMut};
 use sbor::rust::string::ToString;
 use sbor::{Decode, Encode};
-
-pub struct DataValueRef<'a, V: Encode> {
-    pub value: RefMut<'a, V>,
-}
-
-impl<'a, V: Encode> Deref for DataValueRef<'a, V> {
-    type Target = V;
-
-    fn deref(&self) -> &Self::Target {
-        self.value.deref()
-    }
-}
-
-pub struct DataValueRefMut<'a, V: Encode> {
-    pub address: DataAddress,
-    pub value: RefMut<'a, V>,
-}
-
-impl<'a, V: Encode> Drop for DataValueRefMut<'a, V> {
-    fn drop(&mut self) {
-        let bytes = scrypto_encode(self.value.deref());
-        let input =
-            ::scrypto::engine::api::RadixEngineInput::WriteData(self.address.clone(), bytes);
-        let _: () = ::scrypto::engine::call_engine(input);
-    }
-}
-
-impl<'a, V: Encode> Deref for DataValueRefMut<'a, V> {
-    type Target = V;
-
-    fn deref(&self) -> &Self::Target {
-        self.value.deref()
-    }
-}
-
-impl<'a, V: Encode> DerefMut for DataValueRefMut<'a, V> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        self.value.deref_mut()
-    }
-}
 
 pub struct DataValue<V: 'static + Encode + Decode> {
     address: DataAddress,
@@ -64,7 +24,7 @@ impl<V: 'static + Encode + Decode> DataValue<V> {
     }
 
     /// Returns a reference to component data
-    pub fn get_data_mut(&mut self) -> DataValueRefMut<V> {
+    pub fn get_mut(&mut self) -> DataRefMut<V> {
         let value = RefMut::map(self.value.borrow_mut(), |v| {
             v.get_or_insert_with(|| {
                 let input =
@@ -73,13 +33,13 @@ impl<V: 'static + Encode + Decode> DataValue<V> {
                 value
             })
         });
-        DataValueRefMut {
+        DataRefMut {
             address: self.address.clone(),
             value,
         }
     }
 
-    pub fn get_data(&self) -> DataValueRef<V> {
+    pub fn get(&self) -> DataRef<V> {
         let value = RefMut::map(self.value.borrow_mut(), |v| {
             v.get_or_insert_with(|| {
                 let input =
@@ -89,7 +49,7 @@ impl<V: 'static + Encode + Decode> DataValue<V> {
             })
         });
 
-        DataValueRef { value }
+        DataRef { value }
     }
 }
 
