@@ -204,12 +204,12 @@ fn generate_dispatcher(
                                 // Generate an `Arg` and a loading `Stmt` for the i-th argument
                                 dispatch_args.push(parse_quote! { state.deref_mut() });
                                 get_state = Some(parse_quote! {
-                                    let mut state: ComponentDataRefMut<#module_ident::#bp_ident> = component_data_system.get_data_mut(&component_address);
+                                    let mut state: DataValueRefMut<#module_ident::#bp_ident> = component_data.get_data_mut();
                                 });
                             } else {
                                 dispatch_args.push(parse_quote! { state.deref() });
                                 get_state = Some(parse_quote! {
-                                    let state: ComponentDataRef<#module_ident::#bp_ident> = component_data_system.get_data(&component_address);
+                                    let state: DataValueRef<#module_ident::#bp_ident> = component_data.get_data();
                                 });
                             }
                         }
@@ -233,10 +233,10 @@ fn generate_dispatcher(
                 if let Some(stmt) = get_state {
                     trace!("Generated stmt: {}", quote! { #stmt });
                     stmts.push(parse_quote!{
-                        let mut component_data_system = ::scrypto::component::ComponentDataSystem::new();
+                        let component_address = ::scrypto::core::Runtime::actor().component_address().unwrap();
                     });
                     stmts.push(parse_quote!{
-                        let component_address = ::scrypto::core::Runtime::actor().component_address().unwrap();
+                        let mut component_data = ::scrypto::component::DataValue::new(DataAddress::Component(component_address, ComponentOffset::State));
                     });
                     stmts.push(stmt);
                 }
@@ -580,9 +580,9 @@ mod tests {
                     ::scrypto::resource::init_resource_system(::scrypto::resource::ResourceSystem::new());
 
                     let input: Test_x_Input = ::scrypto::buffer::scrypto_decode_from_buffer(method_arg).unwrap();
-                    let mut component_data_system = ::scrypto::component::ComponentDataSystem::new();
                     let component_address = ::scrypto::core::Runtime::actor().component_address().unwrap();
-                    let state: ComponentDataRef<Test_impl::Test> = component_data_system.get_data(&component_address);
+                    let mut component_data = ::scrypto::component::DataValue::new(DataAddress::Component(component_address, ComponentOffset::State));
+                    let state: DataValueRef<Test_impl::Test> = component_data.get_data();
 
                     let rtn = ::scrypto::buffer::scrypto_encode_to_buffer(&Test_impl::Test::x(state.deref(), input.arg0));
                     rtn

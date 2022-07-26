@@ -37,14 +37,17 @@ blueprint! {
         pub fn invalid_double_ownership_of_vault() -> ComponentAddress {
             let bucket = Self::new_fungible();
             let vault = Vault::new(bucket.resource_address());
-            let vaults = KeyValueStore::new();
+            let vault_id = vault.0.clone();
+            let mut vaults = KeyValueStore::new();
             vaults.insert(0, vault);
-            let mut vault = vaults.get(&0).unwrap();
-            vault.put(bucket);
+            {
+                let mut vault = vaults.get_mut(&0).unwrap();
+                vault.put(bucket);
+            }
 
             let vault_vector = Vec::new();
             VaultTest {
-                vault,
+                vault: Vault(vault_id),
                 vaults,
                 vault_vector,
             }
@@ -55,10 +58,12 @@ blueprint! {
         pub fn new_vault_into_map_then_get() -> ComponentAddress {
             let bucket = Self::new_fungible();
             let vault = Vault::new(bucket.resource_address());
-            let vaults = KeyValueStore::new();
+            let mut vaults = KeyValueStore::new();
             vaults.insert(0, vault);
-            let mut vault = vaults.get(&0).unwrap();
-            vault.put(bucket);
+            {
+                let mut vault = vaults.get_mut(&0).unwrap();
+                vault.put(bucket);
+            }
 
             let vault_vector = Vec::new();
             VaultTest {
@@ -79,7 +84,7 @@ blueprint! {
             let bucket = Self::new_fungible();
             let vault = Vault::with_bucket(bucket);
             let bucket = Self::new_fungible();
-            let vaults = KeyValueStore::new();
+            let mut vaults = KeyValueStore::new();
             let mut vault_vector = Vec::new();
             vault_vector.push(Vault::with_bucket(bucket));
             VaultTest {
@@ -105,7 +110,7 @@ blueprint! {
             let mut vault = Vault::with_bucket(bucket);
             let bucket = vault.take(1);
             vault.put(bucket);
-            let vaults = KeyValueStore::new();
+            let mut vaults = KeyValueStore::new();
             let vault_vector = Vec::new();
             VaultTest {
                 vault,
@@ -127,7 +132,7 @@ blueprint! {
             let mut vault = Self::create_non_fungible_vault();
             let bucket = vault.take_non_fungible(&NonFungibleId::from_u32(1));
             vault.put(bucket);
-            let vaults = KeyValueStore::new();
+            let mut vaults = KeyValueStore::new();
             let vault_vector = Vec::new();
             VaultTest {
                 vault,
@@ -141,7 +146,7 @@ blueprint! {
         pub fn new_vault_with_get_non_fungible_ids() -> ComponentAddress {
             let vault = Self::create_non_fungible_vault();
             let _ids = vault.non_fungible_ids();
-            let vaults = KeyValueStore::new();
+            let mut vaults = KeyValueStore::new();
             let vault_vector = Vec::new();
             VaultTest {
                 vault,
@@ -155,7 +160,7 @@ blueprint! {
         pub fn new_vault_with_get_amount() -> ComponentAddress {
             let vault = Self::create_non_fungible_vault();
             let _amount = vault.amount();
-            let vaults = KeyValueStore::new();
+            let mut vaults = KeyValueStore::new();
             let vault_vector = Vec::new();
             VaultTest {
                 vault,
@@ -169,7 +174,7 @@ blueprint! {
         pub fn new_vault_with_get_resource_manager() -> ComponentAddress {
             let vault = Self::create_non_fungible_vault();
             let _resource_manager = vault.resource_address();
-            let vaults = KeyValueStore::new();
+            let mut vaults = KeyValueStore::new();
             let vault_vector = Vec::new();
             VaultTest {
                 vault,

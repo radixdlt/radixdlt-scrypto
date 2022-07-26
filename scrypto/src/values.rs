@@ -311,8 +311,15 @@ impl CustomValueVisitor for ScryptoCustomValueChecker {
             }
             ScryptoType::KeyValueStore => {
                 let kv_store_id: KeyValueStoreId = match data.len() {
-                    36 => (Hash(copy_u8_array(&data[0..32])), u32::from_le_bytes(copy_u8_array(&data[32..]))),
-                    _ => return Err(ScryptoCustomValueCheckError::InvalidKeyValueStore(ParseKeyValueStoreError::InvalidLength(data.len())))
+                    36 => (
+                        Hash(copy_u8_array(&data[0..32])),
+                        u32::from_le_bytes(copy_u8_array(&data[32..])),
+                    ),
+                    _ => {
+                        return Err(ScryptoCustomValueCheckError::InvalidKeyValueStore(
+                            ParseKeyValueStoreError::InvalidLength(data.len()),
+                        ))
+                    }
                 };
 
                 if !self.kv_stores.insert(kv_store_id) {

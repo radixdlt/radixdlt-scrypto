@@ -38,7 +38,7 @@ blueprint! {
 
     impl LocalRecursionBomb2 {
         pub fn recurse(&mut self) -> Bucket {
-            let mut vault = self.vaults.get(&0u32).unwrap();
+            let mut vault = self.vaults.get_mut(&0u32).unwrap();
             let amount_to_take = vault.amount() - 1;
             let bucket = vault.take(amount_to_take);
             let mut returned_bucket = Self::recursion_bomb(bucket);

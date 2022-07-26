@@ -1,4 +1,5 @@
 use sbor::rust::borrow::ToOwned;
+use sbor::rust::cell::{RefCell, RefMut};
 use sbor::rust::fmt;
 use sbor::rust::marker::PhantomData;
 use sbor::rust::str::FromStr;
@@ -13,16 +14,17 @@ use crate::buffer::*;
 use crate::crypto::*;
 use crate::engine::{api::*, call_engine, types::KeyValueStoreId};
 use crate::misc::*;
+use crate::prelude::{DataValueRef, DataValueRefMut, HashMap};
 
 /// A scalable key-value map which loads entries on demand.
-#[derive(PartialEq, Eq, Hash)]
-pub struct KeyValueStore<K: Encode + Decode, V: Encode + Decode> {
+pub struct KeyValueStore<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> {
     pub id: KeyValueStoreId,
+    pub map: RefCell<HashMap<DataAddress, Option<V>>>,
     pub key: PhantomData<K>,
     pub value: PhantomData<V>,
 }
 
-impl<K: Encode + Decode, V: Encode + Decode> KeyValueStore<K, V> {
+impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> KeyValueStore<K, V> {
     /// Creates a new key value store.
     pub fn new() -> Self {
         let input = RadixEngineInput::CreateKeyValueStore();
@@ -30,16 +32,54 @@ impl<K: Encode + Decode, V: Encode + Decode> KeyValueStore<K, V> {
 
         Self {
             id: output,
+            map: RefCell::new(HashMap::new()),
             key: PhantomData,
             value: PhantomData,
         }
     }
 
     /// Returns the value that is associated with the given key.
-    pub fn get(&self, key: &K) -> Option<V> {
+    pub fn get(&self, key: &K) -> Option<DataValueRef<V>> {
         let address = DataAddress::KeyValueEntry(self.id, scrypto_encode(key));
-        let input = RadixEngineInput::ReadData(address);
-        call_engine(input)
+        let mut borrowed_map = self.map.borrow_mut();
+        if !borrowed_map.contains_key(&address) {
+            let input = ::scrypto::engine::api::RadixEngineInput::ReadData(address.clone());
+            let value: Option<V> = call_engine(input);
+            borrowed_map.insert(address.clone(), value);
+        }
+
+        if borrowed_map.get(&address).unwrap().is_some() {
+            let ref_mut = RefMut::map(borrowed_map, |map| {
+                map.get_mut(&address).unwrap().as_mut().unwrap()
+            });
+
+            Some(DataValueRef { value: ref_mut })
+        } else {
+            None
+        }
+    }
+
+    pub fn get_mut(&mut self, key: &K) -> Option<DataValueRefMut<V>> {
+        let address = DataAddress::KeyValueEntry(self.id, scrypto_encode(key));
+        let mut borrowed_map = self.map.borrow_mut();
+        if !borrowed_map.contains_key(&address) {
+            let input = ::scrypto::engine::api::RadixEngineInput::ReadData(address.clone());
+            let value: Option<V> = call_engine(input);
+            borrowed_map.insert(address.clone(), value);
+        }
+
+        if borrowed_map.get(&address).unwrap().is_some() {
+            let ref_mut = RefMut::map(borrowed_map, |map| {
+                map.get_mut(&address).unwrap().as_mut().unwrap()
+            });
+
+            Some(DataValueRefMut {
+                value: ref_mut,
+                address,
+            })
+        } else {
+            None
+        }
     }
 
     /// Inserts a new key-value pair into this map.
@@ -75,7 +115,9 @@ impl fmt::Display for ParseKeyValueStoreError {
 // binary
 //========
 
-impl<K: Encode + Decode, V: Encode + Decode> TryFrom<&[u8]> for KeyValueStore<K, V> {
+impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> TryFrom<&[u8]>
+    for KeyValueStore<K, V>
+{
     type Error = ParseKeyValueStoreError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
@@ -85,6 +127,7 @@ impl<K: Encode + Decode, V: Encode + Decode> TryFrom<&[u8]> for KeyValueStore<K,
                     Hash(copy_u8_array(&slice[0..32])),
                     u32::from_le_bytes(copy_u8_array(&slice[32..])),
                 ),
+                map: RefCell::new(HashMap::new()),
                 key: PhantomData,
                 value: PhantomData,
             }),
@@ -93,7 +136,7 @@ impl<K: Encode + Decode, V: Encode + Decode> TryFrom<&[u8]> for KeyValueStore<K,
     }
 }
 
-impl<K: Encode + Decode, V: Encode + Decode> KeyValueStore<K, V> {
+impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> KeyValueStore<K, V> {
     pub fn to_vec(&self) -> Vec<u8> {
         let mut v = self.id.0.to_vec();
         v.extend(self.id.1.to_le_bytes());
@@ -101,14 +144,14 @@ impl<K: Encode + Decode, V: Encode + Decode> KeyValueStore<K, V> {
     }
 }
 
-impl<K: Encode + Decode, V: Encode + Decode> TypeId for KeyValueStore<K, V> {
+impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> TypeId for KeyValueStore<K, V> {
     #[inline]
     fn type_id() -> u8 {
         ScryptoType::KeyValueStore.id()
     }
 }
 
-impl<K: Encode + Decode, V: Encode + Decode> Encode for KeyValueStore<K, V> {
+impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> Encode for KeyValueStore<K, V> {
     #[inline]
     fn encode_type(&self, encoder: &mut Encoder) {
         encoder.write_type(Self::type_id());
@@ -122,7 +165,7 @@ impl<K: Encode + Decode, V: Encode + Decode> Encode for KeyValueStore<K, V> {
     }
 }
 
-impl<K: Encode + Decode, V: Encode + Decode> Decode for KeyValueStore<K, V> {
+impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> Decode for KeyValueStore<K, V> {
     fn decode_type(decoder: &mut Decoder) -> Result<(), DecodeError> {
         decoder.check_type(Self::type_id())
     }
@@ -135,7 +178,7 @@ impl<K: Encode + Decode, V: Encode + Decode> Decode for KeyValueStore<K, V> {
     }
 }
 
-impl<K: Encode + Decode + Describe, V: Encode + Decode + Describe> Describe
+impl<K: Encode + Decode + Describe, V: 'static + Encode + Decode + TypeId + Describe> Describe
     for KeyValueStore<K, V>
 {
     fn describe() -> Type {
@@ -150,7 +193,7 @@ impl<K: Encode + Decode + Describe, V: Encode + Decode + Describe> Describe
 // text
 //======
 
-impl<K: Encode + Decode, V: Encode + Decode> FromStr for KeyValueStore<K, V> {
+impl<K: Encode + Decode, V: Encode + Decode + TypeId> FromStr for KeyValueStore<K, V> {
     type Err = ParseKeyValueStoreError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -160,13 +203,13 @@ impl<K: Encode + Decode, V: Encode + Decode> FromStr for KeyValueStore<K, V> {
     }
 }
 
-impl<K: Encode + Decode, V: Encode + Decode> fmt::Display for KeyValueStore<K, V> {
+impl<K: Encode + Decode, V: Encode + Decode + TypeId> fmt::Display for KeyValueStore<K, V> {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(f, "{}", hex::encode(self.to_vec()))
     }
 }
 
-impl<K: Encode + Decode, V: Encode + Decode> fmt::Debug for KeyValueStore<K, V> {
+impl<K: Encode + Decode, V: Encode + Decode + TypeId> fmt::Debug for KeyValueStore<K, V> {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(f, "{}", self)
     }
