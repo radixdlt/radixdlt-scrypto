@@ -2,7 +2,6 @@ use radix_engine::engine::{
     PreviewError, PreviewExecutor, PreviewResult, Receipt, TransactionExecutor,
     TransactionExecutorConfig,
 };
-use radix_engine::fee::{CostUnitCounter, SystemLoanCostUnitCounter};
 use radix_engine::ledger::*;
 use radix_engine::model::{export_abi, export_abi_by_component, extract_package};
 use radix_engine::state_manager::*;
@@ -116,11 +115,10 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         receipts.pop().unwrap()
     }
 
-    pub fn execute_transaction<T: ExecutableTransaction, C: CostUnitCounter>(
+    pub fn execute_transaction<T: ExecutableTransaction>(
         &mut self,
         transaction: &T,
         config: TransactionExecutorConfig,
-        cost_unit_counter: C,
     ) -> Receipt {
         let node_id = self.create_child_node(0);
         let substate_store = &mut self.execution_stores.get_output_store(node_id);
@@ -131,7 +129,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             &mut self.wasm_instrumenter,
             config,
         )
-        .execute(transaction, cost_unit_counter)
+        .execute(transaction)
     }
 
     pub fn execute_preview(
@@ -182,7 +180,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
                 &mut self.wasm_instrumenter,
                 TransactionExecutorConfig::new(self.trace),
             )
-            .execute(&transaction, SystemLoanCostUnitCounter::default());
+            .execute(&transaction);
             receipts.push(receipt);
         }
 

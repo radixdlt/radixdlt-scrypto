@@ -79,12 +79,12 @@ where
         );
 
         let receipt = if preview_intent.flags.unlimited_loan {
-            transaction_executor.execute(
+            transaction_executor.execute_with_cost_unit_counter(
                 &validated_preview_transaction,
                 UnlimitedLoanCostUnitCounter::default(),
             )
         } else {
-            transaction_executor.execute(
+            transaction_executor.execute_with_cost_unit_counter(
                 &validated_preview_transaction,
                 SystemLoanCostUnitCounter::default(),
             )

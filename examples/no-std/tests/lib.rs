@@ -34,19 +34,13 @@ fn test_say_hello() {
         .publish_package(extract_package(include_package!("no_std").to_vec()).unwrap())
         .build();
     let package_address = executor
-        .execute(
-            &TestTransaction::new(manifest, 1, vec![public_key]),
-            SystemLoanCostUnitCounter::default(),
-        )
+        .execute(&TestTransaction::new(manifest, 1, vec![public_key]))
         .new_package_addresses[0];
 
     // Test the `say_hello` function.
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(package_address, "NoStd", "say_hello", to_struct!())
         .build();
-    let receipt = executor.execute(
-        &TestTransaction::new(manifest, 2, vec![]),
-        SystemLoanCostUnitCounter::default(),
-    );
+    let receipt = executor.execute(&TestTransaction::new(manifest, 2, vec![]));
     receipt.result.expect("Should be okay.");
 }

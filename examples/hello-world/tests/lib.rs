@@ -8,7 +8,6 @@ use scrypto::to_struct;
 use transaction::builder::ManifestBuilder;
 use transaction::model::TestTransaction;
 use transaction::signing::EcdsaPrivateKey;
-use radix_engine::fee::SystemLoanCostUnitCounter;
 
 #[test]
 fn test_hello() {
@@ -55,10 +54,7 @@ fn test_hello() {
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(package_address, "Hello", "instantiate_hello", to_struct!())
         .build();
-    let receipt = executor.execute(
-        &TestTransaction::new(manifest, 3, vec![public_key]),
-        SystemLoanCostUnitCounter::default(),
-    );
+    let receipt = executor.execute(&TestTransaction::new(manifest, 3, vec![public_key]));
     println!("{:?}\n", receipt);
     receipt.result.expect("Should be okay.");
     let component = receipt.new_component_addresses[0];
@@ -68,9 +64,7 @@ fn test_hello() {
         .call_method(component, "free_token", to_struct!())
         .call_method_with_all_resources(account, "deposit_batch")
         .build();
-    let receipt = executor.execute(
-        &TestTransaction::new(manifest, 4, vec![public_key]),
-        SystemLoanCostUnitCounter::default());
+    let receipt = executor.execute(&TestTransaction::new(manifest, 4, vec![public_key]));
     println!("{:?}\n", receipt);
     receipt.result.expect("Should be okay.");
 }

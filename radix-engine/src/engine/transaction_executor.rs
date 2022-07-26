@@ -68,7 +68,11 @@ where
         self.substate_store
     }
 
-    pub fn execute<T: ExecutableTransaction, C: CostUnitCounter>(
+    pub fn execute<T: ExecutableTransaction>(&mut self, transaction: &T) -> Receipt {
+        self.execute_with_cost_unit_counter(transaction, SystemLoanCostUnitCounter::default())
+    }
+
+    pub fn execute_with_cost_unit_counter<T: ExecutableTransaction, C: CostUnitCounter>(
         &mut self,
         transaction: &T,
         mut cost_unit_counter: C,

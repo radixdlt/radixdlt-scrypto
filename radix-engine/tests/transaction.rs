@@ -1,5 +1,4 @@
 use radix_engine::engine::{TransactionExecutor, TransactionExecutorConfig};
-use radix_engine::fee::SystemLoanCostUnitCounter;
 use radix_engine::ledger::InMemorySubstateStore;
 use radix_engine::wasm::DefaultWasmEngine;
 use radix_engine::wasm::WasmInstrumenter;
@@ -33,7 +32,7 @@ fn test_normal_transaction_flow() {
         &mut wasm_instrumenter,
         TransactionExecutorConfig::new(false),
     );
-    let receipt = executor.execute(&validated_transaction, SystemLoanCostUnitCounter::default());
+    let receipt = executor.execute(&validated_transaction);
 
     receipt.expect_success();
 }

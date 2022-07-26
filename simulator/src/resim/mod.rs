@@ -49,7 +49,6 @@ pub const ENV_DISABLE_MANIFEST_OUTPUT: &'static str = "DISABLE_MANIFEST_OUTPUT";
 use clap::{Parser, Subcommand};
 use radix_engine::engine::Receipt;
 use radix_engine::engine::{TransactionExecutor, TransactionExecutorConfig};
-use radix_engine::fee::SystemLoanCostUnitCounter;
 use radix_engine::model::*;
 use radix_engine::wasm::*;
 use scrypto::abi;
@@ -172,7 +171,7 @@ pub fn handle_manifest<O: std::io::Write>(
             let nonce = get_nonce()?;
             let transaction = TestTransaction::new(manifest, nonce, pks);
 
-            let receipt = executor.execute(&transaction, SystemLoanCostUnitCounter::default());
+            let receipt = executor.execute(&transaction);
             if output_receipt {
                 writeln!(out, "{:?}", receipt).map_err(Error::IOError)?;
             }
