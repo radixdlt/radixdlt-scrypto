@@ -510,7 +510,7 @@ macro_rules! pow_impl {
         ($($t:ty),*) => {
             paste! {
                 $(
-                    impl Pow<u32> for $t 
+                    impl Pow<u32> for $t
                     {
                         type Output = $t;
 
