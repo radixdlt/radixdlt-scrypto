@@ -1,12 +1,13 @@
 use core::ops::AddAssign;
-
-use crate::constants::{DEFAULT_COST_UNIT_LIMIT, DEFAULT_COST_UNIT_PRICE, DEFAULT_SYSTEM_LOAN};
 use sbor::rust::collections::HashMap;
 use sbor::rust::str::FromStr;
+use sbor::rust::vec::Vec;
 use scrypto::{
     engine::types::VaultId,
     math::{Decimal, RoundingMode},
 };
+
+use crate::constants::{DEFAULT_COST_UNIT_LIMIT, DEFAULT_COST_UNIT_PRICE, DEFAULT_SYSTEM_LOAN};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CostUnitCounterError {
@@ -233,11 +234,13 @@ mod tests {
     use super::*;
     use scrypto::crypto::Hash;
 
+    const TEST_VAULT_ID: VaultId = (Hash([0u8; 32]), 1);
+
     #[test]
     fn test_consume_and_repay() {
         let mut counter = SystemLoanCostUnitCounter::new(1.into(), 100, 5);
         counter.consume(2, "test").unwrap();
-        counter.repay((Hash([0u8; 32]), 1), 3.into()).unwrap();
+        counter.repay(TEST_VAULT_ID, 3.into()).unwrap();
         assert_eq!(3, counter.balance());
         assert_eq!(2, counter.consumed());
         assert_eq!(2, counter.owed());
@@ -257,18 +260,18 @@ mod tests {
         let mut counter = SystemLoanCostUnitCounter::new(1.into(), 100, 0);
         assert_eq!(
             Ok(u32::max_value().into()),
-            counter.repay((Hash([0u8; 32]), 1), u32::max_value().into())
+            counter.repay(TEST_VAULT_ID, u32::max_value().into())
         );
         assert_eq!(
             Err(CostUnitCounterError::CounterOverflow),
-            counter.repay((Hash([0u8; 32]), 1), 1.into())
+            counter.repay(TEST_VAULT_ID, 1.into())
         );
     }
 
     #[test]
     fn test_repay() {
         let mut counter = SystemLoanCostUnitCounter::new(1.into(), 100, 500);
-        counter.repay((Hash([0u8; 32]), 1), 100.into()).unwrap();
+        counter.repay(TEST_VAULT_ID, 100.into()).unwrap();
         assert_eq!(500, counter.balance());
         assert_eq!(400, counter.owed());
     }
@@ -276,9 +279,9 @@ mod tests {
     #[test]
     fn test_xrd_cost_unit_conversion() {
         let mut counter = SystemLoanCostUnitCounter::new(5.into(), 100, 500);
-        counter.repay((Hash([0u8; 32]), 1), 100.into()).unwrap();
+        counter.repay(TEST_VAULT_ID, 100.into()).unwrap();
         assert_eq!(500, counter.balance());
         assert_eq!(500 - 100 / 5, counter.owed());
-        assert_eq!(vec![((Hash([0u8; 32]), 1), 20)], counter.payments())
+        assert_eq!(vec![(TEST_VAULT_ID, 20)], counter.payments())
     }
 }
