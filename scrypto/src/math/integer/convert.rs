@@ -124,48 +124,48 @@ try_from! {i64, (U64, U128, U256, U384, U512, I128, I256, I384, I512)}
 try_from! {isize, (U64, U128, U256, U384, U512, I128, I256, I384, I512)}
 try_from! {i128, (U128, U256, U384, U512, I256, I384, I512)}
 
+try_from! {U8, (I8, I16, I32, I64, I128)}
+try_from! {U8, (U16, U32, U64, U128)}
 try_from! {U8, (i8, i16, i32, i64, isize, i128, u16, u32, u64, usize, u128)}
+try_from! {U16, (I8, I16, I32, I64, I128)}
+try_from! {U16, (U32, U64, U128)}
 try_from! {U16, (i8, i16, i32, i64, isize, i128, u32, u64, usize, u128)}
+try_from! {U32, (I8, I16, I32, I64, I128)}
+try_from! {U32, (U64, U128)}
 try_from! {U32, (i8, i16, i32, i64, isize, i128, u64, usize, u128)}
+try_from! {U64, (I8, I16, I32, I64, I128)}
+try_from! {U64, (U128)}
 try_from! {U64, (i8, i16, i32, i64, isize, i128, u128)}
+try_from! {U128, (I8, I16, I32, I64, I128)}
 try_from! {U128, (i8, i16, i32, i64, isize, i128)}
-try_from! {U256, (i8, i16, i32, i64, isize, i128)}
-try_from! {U384, (i8, i16, i32, i64, isize, i128)}
-try_from! {U512, (i8, i16, i32, i64, isize, i128)}
-try_from! {I8, (u8, u16, u32, u64, usize, u128, i16, i32, i64, isize, i128)}
-try_from! {I16, (i32, i64, isize, i128, u16, u32, u64, usize, u128)}
-try_from! {I32, (i64, isize, i128, u32, u64, usize, u128)}
-try_from! {I64, (i128, u64, usize, u128)}
-try_from! {I128, (u128)}
-
 try_from! {U256, (I8, I16, I32, I64, I128, I256, I384, I512)}
-try_from! {U384, (I8, I16, I32, I64, I128, I256, I384, I512)}
-try_from! {U512, (I8, I16, I32, I64, I128, I256, I384, I512)}
 try_from! {U256, (U384, U512)}
+try_from! {U256, (i8, i16, i32, i64, isize, i128)}
+try_from! {U384, (I8, I16, I32, I64, I128, I256, I384, I512)}
 try_from! {U384, (U512)}
+try_from! {U384, (i8, i16, i32, i64, isize, i128)}
+try_from! {U512, (I8, I16, I32, I64, I128, I256, I384, I512)}
+try_from! {U512, (i8, i16, i32, i64, isize, i128)}
+
+try_from! {I8, (I16, I32, I64, I128)}
+try_from! {I8, (U8, U16, U32, U64, U128)}
+try_from! {I8, (u8, u16, u32, u64, usize, u128, i16, i32, i64, isize, i128)}
+try_from! {I16, (I32, I64, I128)}
+try_from! {I16, (U16, U32, U64, U128)}
+try_from! {I16, (i32, i64, isize, i128, u16, u32, u64, usize, u128)}
+try_from! {I32, (I64, I128)}
+try_from! {I32, (U32, U64, U128)}
+try_from! {I32, (i64, isize, i128, u32, u64, usize, u128)}
+try_from! {I64, (I128)}
+try_from! {I64, (U64, U128)}
+try_from! {I64, (i128, u64, usize, u128)}
+try_from! {I128, (U128)}
+try_from! {I128, (u128)}
+try_from! {I256, (I384, I512)}
 try_from! {I256, (U256, U384, U512)}
+try_from! {I384, (I512)}
 try_from! {I384, (U384, U512)}
 try_from! {I512, (U512)}
-try_from! {I256, (I384, I512)}
-try_from! {I384, (I512)}
-try_from! {U8, (I8, I16, I32, I64, I128)}
-try_from! {U16, (I8, I16, I32, I64, I128)}
-try_from! {U32, (I8, I16, I32, I64, I128)}
-try_from! {U64, (I8, I16, I32, I64, I128)}
-try_from! {U128, (I8, I16, I32, I64, I128)}
-try_from! {I8, (U8, U16, U32, U64, U128)}
-try_from! {I16, (U16, U32, U64, U128)}
-try_from! {I32, (U32, U64, U128)}
-try_from! {I64, (U64, U128)}
-try_from! {I128, (U128)}
-try_from! {U8, (U16, U32, U64, U128)}
-try_from! {U16, (U32, U64, U128)}
-try_from! {U32, (U64, U128)}
-try_from! {U64, (U128)}
-try_from! {I8, (I16, I32, I64, I128)}
-try_from! {I16, (I32, I64, I128)}
-try_from! {I32, (I64, I128)}
-try_from! {I64, (I128)}
 
 macro_rules! impl_others_to_large_unsigned {
     ($($t:ty),*) => {
