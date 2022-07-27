@@ -501,7 +501,9 @@ impl<'f, 's> REValueRefMut<'f, 's> {
                     .unwrap_or(NonFungibleWrapper(None))
             }
             REValueRefMut::Track(track, address) => {
-                let substate_value = track.read_key_value(address.clone(), id.to_vec());
+                let resource_address: ResourceAddress = address.clone().into();
+                let substate_value =
+                    track.read_key_value(Address::NonFungibleSpace(resource_address), id.to_vec());
                 substate_value.into()
             }
         };
@@ -515,8 +517,9 @@ impl<'f, 's> REValueRefMut<'f, 's> {
                 panic!("Not supported");
             }
             REValueRefMut::Track(track, address) => {
+                let resource_address: ResourceAddress = address.clone().into();
                 track.set_key_value(
-                    address.clone(),
+                    Address::NonFungibleSpace(resource_address),
                     id.to_vec(),
                     Substate::NonFungible(NonFungibleWrapper(None)),
                 );
@@ -540,7 +543,12 @@ impl<'f, 's> REValueRefMut<'f, 's> {
             REValueRefMut::Track(track, address) => {
                 let wrapper: NonFungibleWrapper =
                     scrypto_decode(&value.raw).expect("Should not fail.");
-                track.set_key_value(address.clone(), id.to_vec(), Substate::NonFungible(wrapper));
+                let resource_address: ResourceAddress = address.clone().into();
+                track.set_key_value(
+                    Address::NonFungibleSpace(resource_address),
+                    id.to_vec(),
+                    Substate::NonFungible(wrapper),
+                );
             }
         }
     }
@@ -951,7 +959,7 @@ where
                 ValueId::Component(*component_address)
             }
             SubstateAddress::NonFungible(resource_address, ..) => {
-                ValueId::NonFungibles(*resource_address)
+                ValueId::Resource(*resource_address)
             }
             SubstateAddress::KeyValueEntry(kv_store_id, ..) => ValueId::KeyValueStore(*kv_store_id),
         };
@@ -1205,15 +1213,6 @@ where
                                 visible: true,
                             },
                         );
-                        value_refs.insert(
-                            ValueId::NonFungibles(resource_address),
-                            REValueInfo {
-                                location: REValuePointer::Track(Address::NonFungibleSpace(
-                                    resource_address,
-                                )),
-                                visible: true,
-                            },
-                        );
                         vec![method_auth.clone()]
                     }
                     RENode::Proof(_) => vec![],
@@ -1316,15 +1315,6 @@ where
                     value_id.clone(),
                     REValueInfo {
                         location: REValuePointer::Track(Address::ResourceManager(
-                            *resource_address,
-                        )),
-                        visible: true,
-                    },
-                );
-                value_refs.insert(
-                    ValueId::NonFungibles(*resource_address),
-                    REValueInfo {
-                        location: REValuePointer::Track(Address::NonFungibleSpace(
                             *resource_address,
                         )),
                         visible: true,
@@ -1868,11 +1858,6 @@ where
                         loaded: false,
                         size: 0,
                     },
-                    ValueId::NonFungibles(..) => SystemApiCostingEntry::BorrowGlobal {
-                        // TODO: figure out loaded state and size
-                        loaded: false,
-                        size: 0,
-                    },
                 }
             }),
             "borrow",
@@ -1929,11 +1914,6 @@ where
                         size: 0,
                     },
                     ValueId::System => SystemApiCostingEntry::BorrowGlobal {
-                        // TODO: figure out loaded state and size
-                        loaded: false,
-                        size: 0,
-                    },
-                    ValueId::NonFungibles(..) => SystemApiCostingEntry::BorrowGlobal {
                         // TODO: figure out loaded state and size
                         loaded: false,
                         size: 0,
@@ -2058,10 +2038,6 @@ where
                 let resource_address = self.new_resource_address();
                 ValueId::Resource(resource_address)
             }
-            REValueByComplexity::Primitive(REPrimitiveValue::NonFungibles(
-                resource_address,
-                ..,
-            )) => ValueId::NonFungibles(resource_address),
             REValueByComplexity::Complex(REComplexValue::Component(ref component, ..)) => {
                 let component_address = self.new_component_address(component);
                 ValueId::Component(component_address)
@@ -2083,7 +2059,7 @@ where
         self.owned_values.insert(id, re_value);
 
         match id {
-            ValueId::KeyValueStore(..) | ValueId::Resource(..) | ValueId::NonFungibles(..) => {
+            ValueId::KeyValueStore(..) | ValueId::Resource(..) => {
                 self.value_refs.insert(
                     id.clone(),
                     REValueInfo {
@@ -2143,22 +2119,9 @@ where
                 );
                 (substates, None)
             }
-            RENode::Resource(resource_manager) => {
-                let resource_address: ResourceAddress = value_id.clone().into();
-
-                let non_fungibles =
-                    if matches!(resource_manager.resource_type(), ResourceType::NonFungible) {
-                        let re_value = self
-                            .owned_values
-                            .remove(&ValueId::NonFungibles(resource_address.clone()))
-                            .unwrap();
-                        let non_fungibles: HashMap<NonFungibleId, NonFungible> = re_value.into();
-                        Some(non_fungibles)
-                    } else {
-                        None
-                    };
-
+            RENode::Resource(resource_manager, non_fungibles) => {
                 let mut substates = HashMap::new();
+                let resource_address: ResourceAddress = value_id.clone().into();
                 substates.insert(
                     Address::ResourceManager(resource_address),
                     Substate::Resource(resource_manager),

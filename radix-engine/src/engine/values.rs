@@ -331,8 +331,7 @@ pub enum RENode {
     Component(Component, ComponentState),
     Worktop(Worktop),
     Package(ValidatedPackage),
-    Resource(ResourceManager),
-    NonFungibles(HashMap<NonFungibleId, NonFungible>),
+    Resource(ResourceManager, Option<HashMap<NonFungibleId, NonFungible>>),
     System(System),
 }
 
@@ -346,28 +345,28 @@ impl RENode {
 
     pub fn resource_manager(&self) -> &ResourceManager {
         match self {
-            RENode::Resource(resource_manager) => resource_manager,
+            RENode::Resource(resource_manager, ..) => resource_manager,
             _ => panic!("Expected to be a resource manager"),
         }
     }
 
     pub fn resource_manager_mut(&mut self) -> &mut ResourceManager {
         match self {
-            RENode::Resource(resource_manager) => resource_manager,
+            RENode::Resource(resource_manager, ..) => resource_manager,
             _ => panic!("Expected to be a resource manager"),
         }
     }
 
     pub fn non_fungibles(&self) -> &HashMap<NonFungibleId, NonFungible> {
         match self {
-            RENode::NonFungibles(non_fungibles) => non_fungibles,
+            RENode::Resource(_, non_fungibles) => non_fungibles.as_ref().unwrap(),
             _ => panic!("Expected to be non fungibles"),
         }
     }
 
     pub fn non_fungibles_mut(&mut self) -> &mut HashMap<NonFungibleId, NonFungible> {
         match self {
-            RENode::NonFungibles(non_fungibles) => non_fungibles,
+            RENode::Resource(_, non_fungibles) => non_fungibles.as_mut().unwrap(),
             _ => panic!("Expected to be non fungibles"),
         }
     }
@@ -455,7 +454,6 @@ impl RENode {
             RENode::Component(..) => Ok(()),
             RENode::Vault(..) => Ok(()),
             RENode::Resource(..) => Ok(()),
-            RENode::NonFungibles(..) => Ok(()),
             RENode::Package(..) => Ok(()),
             RENode::Worktop(..) => Ok(()),
             RENode::System(..) => Ok(()),
@@ -468,7 +466,6 @@ impl RENode {
             RENode::Component { .. } => Ok(()),
             RENode::Vault(..) => Ok(()),
             RENode::Resource(..) => Err(RuntimeError::ValueNotAllowed),
-            RENode::NonFungibles(..) => Err(RuntimeError::ValueNotAllowed),
             RENode::Package(..) => Err(RuntimeError::ValueNotAllowed),
             RENode::Bucket(..) => Err(RuntimeError::ValueNotAllowed),
             RENode::Proof(..) => Err(RuntimeError::ValueNotAllowed),
@@ -485,7 +482,6 @@ impl RENode {
             RENode::Component(..) => Err(DropFailure::Component),
             RENode::Bucket(..) => Err(DropFailure::Bucket),
             RENode::Resource(..) => Err(DropFailure::Resource),
-            RENode::NonFungibles(..) => Err(DropFailure::Resource),
             RENode::System(..) => Err(DropFailure::System),
             RENode::Proof(proof) => {
                 proof.drop();
@@ -586,15 +582,6 @@ impl Into<Proof> for REValue {
     }
 }
 
-impl Into<HashMap<NonFungibleId, NonFungible>> for REValue {
-    fn into(self) -> HashMap<NonFungibleId, NonFungible> {
-        match self.root {
-            RENode::NonFungibles(non_fungibles) => non_fungibles,
-            _ => panic!("Expected to be non fungibles"),
-        }
-    }
-}
-
 #[derive(Debug)]
 pub enum REComplexValue {
     Component(Component, ComponentState),
@@ -631,8 +618,7 @@ pub enum REPrimitiveValue {
     Bucket(Bucket),
     Proof(Proof),
     KeyValue(PreCommittedKeyValueStore),
-    Resource(ResourceManager),
-    NonFungibles(ResourceAddress, HashMap<NonFungibleId, NonFungible>),
+    Resource(ResourceManager, Option<HashMap<NonFungibleId, NonFungible>>),
     Vault(Vault),
     Worktop(Worktop),
 }
@@ -646,9 +632,8 @@ pub enum REValueByComplexity {
 impl Into<REValue> for REPrimitiveValue {
     fn into(self) -> REValue {
         let root = match self {
-            REPrimitiveValue::Resource(resource_manager) => RENode::Resource(resource_manager),
-            REPrimitiveValue::NonFungibles(_resource_address, non_fungibles) => {
-                RENode::NonFungibles(non_fungibles)
+            REPrimitiveValue::Resource(resource_manager, maybe_non_fungibles) => {
+                RENode::Resource(resource_manager, maybe_non_fungibles)
             }
             REPrimitiveValue::Package(package) => RENode::Package(package),
             REPrimitiveValue::Bucket(bucket) => RENode::Bucket(bucket),
@@ -665,15 +650,9 @@ impl Into<REValue> for REPrimitiveValue {
     }
 }
 
-impl Into<REValueByComplexity> for ResourceManager {
+impl Into<REValueByComplexity> for (ResourceManager, Option<HashMap<NonFungibleId, NonFungible>>) {
     fn into(self) -> REValueByComplexity {
-        REValueByComplexity::Primitive(REPrimitiveValue::Resource(self))
-    }
-}
-
-impl Into<REValueByComplexity> for (ResourceAddress, HashMap<NonFungibleId, NonFungible>) {
-    fn into(self) -> REValueByComplexity {
-        REValueByComplexity::Primitive(REPrimitiveValue::NonFungibles(self.0, self.1))
+        REValueByComplexity::Primitive(REPrimitiveValue::Resource(self.0, self.1))
     }
 }
 

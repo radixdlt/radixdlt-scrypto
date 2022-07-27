@@ -30,7 +30,6 @@ pub enum ValueId {
     Component(ComponentAddress),
     Vault(VaultId),
     Resource(ResourceAddress),
-    NonFungibles(ResourceAddress),
     Package(PackageAddress),
     System,
 }

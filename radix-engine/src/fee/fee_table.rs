@@ -154,7 +154,6 @@ impl FeeTable {
                 ValueId::Resource(_) => self.fixed_medium,
                 ValueId::Package(_) => self.fixed_high,
                 ValueId::System => self.fixed_high,
-                ValueId::NonFungibles(..) => self.fixed_high,
             },
             SNodeRef::BucketRef(_) => match fn_ident {
                 "take" => self.fixed_medium,
