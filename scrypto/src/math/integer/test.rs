@@ -136,6 +136,53 @@ macro_rules! test_impl {
                     assert_eq!(zero.is_one(), true);
                 }
 
+                #[test]
+                fn [<test_ord_ $i:lower>]() {
+                    let zero = <$i>::try_from(0u8).unwrap();
+                    let one = <$i>::try_from(1u8).unwrap();
+                    assert_eq!(zero.cmp(&one), Ordering::Less);
+                }
+
+                #[test]
+                fn [<test_ord_5_1_ $i:lower>]() {
+                    let five = <$i>::try_from(5u8).unwrap();
+                    let one = <$i>::try_from(1u8).unwrap();
+                    assert_eq!(five.cmp(&one), Ordering::Greater);
+                }
+
+                #[test]
+                fn [<test_ord_5_5_ $i:lower>]() {
+                    let five = <$i>::try_from(5u8).unwrap();
+                    assert_eq!(five.cmp(&five), Ordering::Equal);
+                }
+
+                #[test]
+                fn [<test_ord_min_min_ $i:lower>]() {
+                    let min = <$i>::MIN;
+                    assert_eq!(min.cmp(&min), Ordering::Equal);
+                }
+
+                #[test]
+                fn [<test_ord_max_max_ $i:lower>]() {
+                    let max = <$i>::MAX;
+                    assert_eq!(max.cmp(&max), Ordering::Equal);
+                }
+
+                #[test]
+                fn [<test_ord_max_min_ $i:lower>]() {
+                    let max = <$i>::MAX;
+                    let min = <$i>::MIN;
+                    assert_eq!(max.cmp(&min), Ordering::Greater);
+                }
+
+                #[test]
+                fn [<test_ord_min_max_ $i:lower>]() {
+                    let max = <$i>::MAX;
+                    let min = <$i>::MIN;
+                    println!("max: {:x}", max);
+                    println!("min: {:x}", min);
+                    assert_eq!(min.cmp(&max), Ordering::Less);
+                }
 
                 test_from_builtin!{$i, (i8, i16, i32, i64, i128, u8, u16, u32, u64, u128)}
 
@@ -1015,6 +1062,12 @@ macro_rules! test_signed {
                     assert_eq!(<$i>::MAX, expect);
                 }
 
+                #[test]
+                fn [<test_ord_neg_ $i:lower>]() {
+                    let zero = <$i>::try_from(0i8).unwrap();
+                    let minus_one = <$i>::try_from(-1i8).unwrap();
+                    assert_eq!(zero.cmp(&minus_one), Ordering::Greater);
+                }
             )*
         }
     };

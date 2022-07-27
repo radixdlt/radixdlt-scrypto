@@ -123,8 +123,10 @@ macro_rules! types {
                    let mut b: Vec<u8> = other.to_le_bytes().into();
                    a.reverse();
                    b.reverse();
-                   a[0] ^= 0x80;
-                   b[0] ^= 0x80;
+                   if Self::MIN != Zero::zero() {
+                       a[0] ^= 0x80;
+                       b[0] ^= 0x80;
+                   }
                    a.cmp(&b)
                 }
             }
