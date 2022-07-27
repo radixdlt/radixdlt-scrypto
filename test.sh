@@ -10,6 +10,7 @@ echo "Testing with std..."
 (cd sbor-derive; cargo test)
 (cd sbor-tests; cargo test)
 (cd scrypto; cargo test)
+(cd scrypto; cargo test --release)
 (cd scrypto-derive; cargo test)
 (cd scrypto-tests; cargo test)
 (cd radix-engine; cargo test)
