@@ -1,6 +1,6 @@
 use criterion::{criterion_group, criterion_main, Criterion};
-use radix_engine::engine::TransactionExecutor;
 use radix_engine::ledger::*;
+use radix_engine::transaction::TransactionExecutor;
 use radix_engine::wasm::DefaultWasmEngine;
 use radix_engine::wasm::WasmInstrumenter;
 use scrypto::core::Network;
@@ -37,10 +37,10 @@ fn bench_transfer(c: &mut Criterion) {
         })
         .build();
     let account1 = executor
-        .execute(&TestTransaction::new(manifest.clone(), 1, vec![public_key]))
+        .execute_and_commit(&TestTransaction::new(manifest.clone(), 1, vec![public_key]))
         .new_component_addresses[0];
     let account2 = executor
-        .execute(&TestTransaction::new(manifest, 2, vec![public_key]))
+        .execute_and_commit(&TestTransaction::new(manifest, 2, vec![public_key]))
         .new_component_addresses[0];
 
     // Create a transfer manifest
@@ -53,7 +53,7 @@ fn bench_transfer(c: &mut Criterion) {
     let mut nonce = 3;
     c.bench_function("Transfer", |b| {
         b.iter(|| {
-            let receipt = executor.execute(&TestTransaction::new(
+            let receipt = executor.execute_and_commit(&TestTransaction::new(
                 manifest.clone(),
                 nonce,
                 vec![public_key],

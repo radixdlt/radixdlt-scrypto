@@ -4,14 +4,15 @@ use transaction::validation::TestEpochManager;
 use transaction::validation::TestIntentHashManager;
 use transaction::validation::TransactionValidator;
 
-use crate::engine::*;
 use crate::ledger::*;
+use crate::transaction::TransactionReceipt;
+use crate::transaction::*;
 use crate::wasm::{DefaultWasmEngine, WasmInstrumenter};
 
 #[derive(Debug)]
 pub struct PreviewResult {
     pub intent: PreviewIntent,
-    pub receipt: Receipt,
+    pub receipt: TransactionReceipt,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -22,9 +23,9 @@ pub enum PreviewError {
 pub struct PreviewExecutor;
 
 impl PreviewExecutor {
-    pub fn execute_preview<S: ReadableSubstateStore + WriteableSubstateStore>(
+    pub fn execute_preview<'s, S: ReadableSubstateStore + WriteableSubstateStore>(
         preview_intent: PreviewIntent,
-        substate_store: &mut S,
+        substate_store: &'s mut S,
     ) -> Result<PreviewResult, PreviewError> {
         let epoch_manager = TestEpochManager::new(0);
         let intent_hash_manager = TestIntentHashManager::new();
@@ -44,8 +45,7 @@ impl PreviewExecutor {
             &mut wasm_instrumenter,
             false,
         );
-
-        let receipt = executor.execute(&validated_preview_transaction);
+        let receipt = executor.execute_and_commit(&validated_preview_transaction);
 
         Ok(PreviewResult {
             intent: preview_intent,

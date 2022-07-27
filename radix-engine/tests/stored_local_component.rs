@@ -77,8 +77,8 @@ fn should_be_able_to_call_read_method_on_a_stored_component_in_global_component(
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_success();
-    let rtn: u32 = scrypto_decode(&receipt.outputs[0]).unwrap();
+    let outputs = receipt.expect_success();
+    let rtn: u32 = scrypto_decode(&outputs[0]).unwrap();
     assert_eq!(rtn, 34567u32);
 }
 
@@ -108,8 +108,8 @@ fn should_be_able_to_call_write_method_on_a_stored_component_in_global_component
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_success();
-    let rtn: u32 = scrypto_decode(&receipt.outputs[1]).unwrap();
+    let outputs = receipt.expect_success();
+    let rtn: u32 = scrypto_decode(&outputs[1]).unwrap();
     assert_eq!(rtn, 8888u32);
 }
 
@@ -182,8 +182,8 @@ fn should_be_able_to_call_read_method_on_a_kv_stored_component_in_global_compone
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_success();
-    let rtn: u32 = scrypto_decode(&receipt.outputs[0]).unwrap();
+    let outputs = receipt.expect_success();
+    let rtn: u32 = scrypto_decode(&outputs[0]).unwrap();
     assert_eq!(rtn, 34567u32);
 }
 
@@ -213,7 +213,7 @@ fn should_be_able_to_call_write_method_on_a_kv_stored_component_in_global_compon
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_success();
-    let rtn: u32 = scrypto_decode(&receipt.outputs[1]).unwrap();
+    let outputs = receipt.expect_success();
+    let rtn: u32 = scrypto_decode(&outputs[1]).unwrap();
     assert_eq!(rtn, 8888u32);
 }

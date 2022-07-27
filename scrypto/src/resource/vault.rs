@@ -54,6 +54,11 @@ pub struct VaultCreateProofByIdsInput {
     pub ids: BTreeSet<NonFungibleId>,
 }
 
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct VaultPayFeeInput {
+    pub amount: Decimal,
+}
+
 /// Represents a persistent resource container on ledger state.
 #[derive(PartialEq, Eq, Hash)]
 pub struct Vault(pub VaultId);
@@ -80,6 +85,15 @@ impl Vault {
         let input = RadixEngineInput::InvokeSNode(
             SNodeRef::VaultRef(self.0),
             "take".to_string(),
+            scrypto_encode(&VaultTakeInput { amount }),
+        );
+        call_engine(input)
+    }
+
+    fn pay_fee_internal(&mut self, amount: Decimal) {
+        let input = RadixEngineInput::InvokeSNode(
+            SNodeRef::VaultRef(self.0),
+            "pay_fee".to_string(),
             scrypto_encode(&VaultTakeInput { amount }),
         );
         call_engine(input)
@@ -123,6 +137,13 @@ impl Vault {
                 VaultCreateProofByIdsInput { ids: ids.clone() }
             }
         }
+    }
+
+    /// Locks the specified amount as transaction fee.
+    ///
+    /// Unused fee will be refunded to the vaults from the most recently locked to the least.
+    pub fn pay_fee<A: Into<Decimal>>(&mut self, amount: A) {
+        self.pay_fee_internal(amount.into())
     }
 
     /// Takes some amount of resource from this vault into a bucket.

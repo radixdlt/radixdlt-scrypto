@@ -5,18 +5,17 @@ use scrypto::engine::types::*;
 use scrypto::resource::AccessRule;
 use scrypto::values::*;
 
-use crate::engine::call_frame::{REValueRef, SubstateAddress};
 use crate::engine::values::*;
 use crate::engine::*;
 use crate::fee::*;
-use crate::ledger::ReadableSubstateStore;
 use crate::wasm::*;
 
-pub trait SystemApi<'p, 's, W, I, S>
+use super::call_frame::REValueRef;
+
+pub trait SystemApi<'p, 's, W, I>
 where
     W: WasmEngine<I>,
     I: WasmInstance,
-    S: ReadableSubstateStore,
 {
     fn cost_unit_counter(&mut self) -> &mut CostUnitCounter;
 
@@ -34,7 +33,7 @@ where
     fn borrow_value(
         &mut self,
         value_id: &ValueId,
-    ) -> Result<REValueRef<'_, 's, S>, CostUnitCounterError>;
+    ) -> Result<REValueRef<'_, 's>, CostUnitCounterError>;
 
     fn borrow_value_mut(
         &mut self,
@@ -47,12 +46,15 @@ where
 
     fn create_value<V: Into<REValueByComplexity>>(&mut self, v: V)
         -> Result<ValueId, RuntimeError>;
+
     fn read_value_data(&mut self, address: SubstateAddress) -> Result<ScryptoValue, RuntimeError>;
+
     fn write_value_data(
         &mut self,
         address: SubstateAddress,
         value: ScryptoValue,
     ) -> Result<(), RuntimeError>;
+
     fn remove_value_data(&mut self, address: SubstateAddress)
         -> Result<ScryptoValue, RuntimeError>;
 

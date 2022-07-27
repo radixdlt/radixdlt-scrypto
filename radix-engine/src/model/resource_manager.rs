@@ -20,8 +20,8 @@ use scrypto::values::ScryptoValue;
 
 use crate::engine::{SubstateAddress, SystemApi};
 use crate::fee::CostUnitCounterError;
-use crate::ledger::ReadableSubstateStore;
 use crate::model::resource_manager::ResourceMethodRule::{Protected, Public};
+use crate::model::NonFungibleWrapper;
 use crate::model::ResourceManagerError::InvalidMethod;
 use crate::model::{convert, MethodAuthorization, ResourceContainer};
 use crate::model::{Bucket, NonFungible, Vault};
@@ -60,7 +60,7 @@ enum MethodAccessRuleMethod {
     Update(AccessRule),
 }
 
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 struct MethodAccessRule {
     auth: MethodAuthorization,
     update_auth: MethodAuthorization,
@@ -110,14 +110,14 @@ impl MethodAccessRule {
     }
 }
 
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 enum ResourceMethodRule {
     Public,
     Protected(ResourceMethodAuthKey),
 }
 
 /// The definition of a resource.
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct ResourceManager {
     resource_type: ResourceType,
     metadata: HashMap<String, String>,
@@ -134,6 +134,7 @@ impl ResourceManager {
         mut auth: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
     ) -> Result<Self, ResourceManagerError> {
         let mut vault_method_table: HashMap<String, ResourceMethodRule> = HashMap::new();
+        vault_method_table.insert("pay_fee".to_string(), Protected(Withdraw));
         vault_method_table.insert("take".to_string(), Protected(Withdraw));
         vault_method_table.insert("put".to_string(), Protected(Deposit));
         for pub_method in [
@@ -255,14 +256,7 @@ impl ResourceManager {
         self.total_supply
     }
 
-    pub fn mint<
-        'p,
-        's,
-        Y: SystemApi<'p, 's, W, I, S>,
-        W: WasmEngine<I>,
-        I: WasmInstance,
-        S: ReadableSubstateStore,
-    >(
+    pub fn mint<'p, 's, Y: SystemApi<'p, 's, W, I>, W: WasmEngine<I>, I: WasmInstance>(
         &mut self,
         mint_params: MintParams,
         self_address: ResourceAddress,
@@ -306,10 +300,9 @@ impl ResourceManager {
     pub fn mint_non_fungibles<
         'p,
         's,
-        Y: SystemApi<'p, 's, W, I, S>,
+        Y: SystemApi<'p, 's, W, I>,
         W: WasmEngine<I>,
         I: WasmInstance,
-        S: ReadableSubstateStore,
     >(
         &mut self,
         entries: HashMap<NonFungibleId, (Vec<u8>, Vec<u8>)>,
@@ -339,11 +332,10 @@ impl ResourceManager {
             let value = system_api
                 .read_value_data(SubstateAddress::NonFungible(self_address, id.clone()))
                 .expect("Should never fail");
-            let maybe_non_fungible: Option<NonFungible> = scrypto_decode(&value.raw).unwrap();
-            let non_fungible_address = NonFungibleAddress::new(self_address, id.clone());
-            if maybe_non_fungible.is_some() {
+            let wrapper: NonFungibleWrapper = scrypto_decode(&value.raw).unwrap();
+            if wrapper.0.is_some() {
                 return Err(ResourceManagerError::NonFungibleAlreadyExists(
-                    non_fungible_address,
+                    NonFungibleAddress::new(self_address, id.clone()),
                 ));
             }
 
@@ -351,7 +343,7 @@ impl ResourceManager {
             system_api
                 .write_value_data(
                     SubstateAddress::NonFungible(self_address, id.clone()),
-                    ScryptoValue::from_typed(&non_fungible),
+                    ScryptoValue::from_typed(&NonFungibleWrapper(Some(non_fungible))),
                 )
                 .expect("Should never fail");
             ids.insert(id);
@@ -383,14 +375,7 @@ impl ResourceManager {
         }
     }
 
-    pub fn static_main<
-        'p,
-        's,
-        Y: SystemApi<'p, 's, W, I, S>,
-        W: WasmEngine<I>,
-        I: WasmInstance,
-        S: ReadableSubstateStore,
-    >(
+    pub fn static_main<'p, 's, Y: SystemApi<'p, 's, W, I>, W: WasmEngine<I>, I: WasmInstance>(
         method_name: &str,
         arg: ScryptoValue,
         system_api: &mut Y,
@@ -443,14 +428,7 @@ impl ResourceManager {
         }
     }
 
-    pub fn main<
-        'p,
-        's,
-        Y: SystemApi<'p, 's, W, I, S>,
-        W: WasmEngine<I>,
-        I: WasmInstance,
-        S: ReadableSubstateStore,
-    >(
+    pub fn main<'p, 's, Y: SystemApi<'p, 's, W, I>, W: WasmEngine<I>, I: WasmInstance>(
         resource_address: ResourceAddress,
         method_name: &str,
         arg: ScryptoValue,
@@ -556,10 +534,10 @@ impl ResourceManager {
                         input.id.clone(),
                     ))
                     .expect("Should never fail");
-                let maybe_non_fungible: Option<NonFungible> = scrypto_decode(&value.raw).unwrap();
+                let wrapper: NonFungibleWrapper = scrypto_decode(&value.raw).unwrap();
 
                 // Write new value
-                if let Some(mut non_fungible) = maybe_non_fungible {
+                if let Some(mut non_fungible) = wrapper.0 {
                     non_fungible.set_mutable_data(input.data);
                     system_api
                         .write_value_data(
@@ -567,7 +545,7 @@ impl ResourceManager {
                                 resource_address.clone(),
                                 input.id.clone(),
                             ),
-                            ScryptoValue::from_typed(&non_fungible),
+                            ScryptoValue::from_typed(&NonFungibleWrapper(Some(non_fungible))),
                         )
                         .expect("Should never fail");
                 } else {
@@ -590,8 +568,8 @@ impl ResourceManager {
                         input.id,
                     ))
                     .expect("Should never fail");
-                let maybe_non_fungible: Option<NonFungible> = scrypto_decode(&value.raw).unwrap();
-                Ok(ScryptoValue::from_typed(&maybe_non_fungible.is_some()))
+                let wrapper: NonFungibleWrapper = scrypto_decode(&value.raw).unwrap();
+                Ok(ScryptoValue::from_typed(&wrapper.0.is_some()))
             }
             "non_fungible_data" => {
                 let input: ResourceManagerGetNonFungibleInput = scrypto_decode(&arg.raw)
@@ -604,10 +582,10 @@ impl ResourceManager {
                         input.id,
                     ))
                     .expect("Should never fail");
-                let maybe_non_fungible: Option<NonFungible> = scrypto_decode(&value.raw).unwrap();
-                let non_fungible = maybe_non_fungible.ok_or(
-                    ResourceManagerError::NonFungibleNotFound(non_fungible_address),
-                )?;
+                let wrapper: NonFungibleWrapper = scrypto_decode(&value.raw).unwrap();
+                let non_fungible = wrapper.0.ok_or(ResourceManagerError::NonFungibleNotFound(
+                    non_fungible_address,
+                ))?;
                 Ok(ScryptoValue::from_typed(&[
                     non_fungible.immutable_data(),
                     non_fungible.mutable_data(),

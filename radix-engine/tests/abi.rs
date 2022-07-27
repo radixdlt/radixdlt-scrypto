@@ -62,18 +62,14 @@ fn test_arg(method_name: &str, arg: Vec<u8>, expected_result: ExpectedResult) {
 
     // Assert
     match expected_result {
-        ExpectedResult::Success => receipt.result.expect("Should be okay."),
+        ExpectedResult::Success => {
+            receipt.expect_success();
+        }
         ExpectedResult::InvalidInput => {
-            let error = receipt.result.expect_err("Should be an error.");
-            if !matches!(error, RuntimeError::InvalidFnInput { .. }) {
-                panic!("Error should be InvalidMethodArgument but was {:?}", error)
-            }
+            receipt.expect_err(|e| matches!(e, RuntimeError::InvalidFnInput { .. }));
         }
         ExpectedResult::InvalidOutput => {
-            let error = receipt.result.expect_err("Should be an error.");
-            if !matches!(error, RuntimeError::InvalidFnOutput { .. }) {
-                panic!("Error should be InvalidMethodArgument but was {:?}", error)
-            }
+            receipt.expect_err(|e| matches!(e, RuntimeError::InvalidFnOutput { .. }));
         }
     }
 }

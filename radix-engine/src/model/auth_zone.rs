@@ -11,7 +11,6 @@ use scrypto::values::ScryptoValue;
 
 use crate::engine::SystemApi;
 use crate::fee::CostUnitCounterError;
-use crate::ledger::ReadableSubstateStore;
 use crate::model::AuthZoneError::InvalidMethod;
 use crate::model::{Proof, ProofError};
 use crate::wasm::*;
@@ -95,14 +94,7 @@ impl AuthZone {
             .map_err(AuthZoneError::ProofError)
     }
 
-    pub fn main<
-        'p,
-        's,
-        Y: SystemApi<'p, 's, W, I, S>,
-        W: WasmEngine<I>,
-        I: WasmInstance,
-        S: 's + ReadableSubstateStore,
-    >(
+    pub fn main<'p, 's, Y: SystemApi<'p, 's, W, I>, W: WasmEngine<I>, I: WasmInstance>(
         &mut self,
         method_name: &str,
         arg: ScryptoValue,

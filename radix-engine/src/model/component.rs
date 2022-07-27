@@ -1,6 +1,3 @@
-use crate::engine::SystemApi;
-use crate::fee::CostUnitCounterError;
-use crate::ledger::ReadableSubstateStore;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
@@ -12,6 +9,8 @@ use scrypto::prelude::ComponentGlobalizeInput;
 use scrypto::resource::AccessRules;
 use scrypto::values::*;
 
+use crate::engine::SystemApi;
+use crate::fee::CostUnitCounterError;
 use crate::model::{convert, MethodAuthorization};
 use crate::wasm::{WasmEngine, WasmInstance};
 
@@ -24,7 +23,7 @@ pub enum ComponentError {
 }
 
 /// A component is an instance of blueprint.
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct Component {
     package_address: PackageAddress,
     blueprint_name: String,
@@ -88,14 +87,7 @@ impl Component {
         self.state = new_state;
     }
 
-    pub fn main<
-        'p,
-        's,
-        Y: SystemApi<'p, 's, W, I, S>,
-        W: WasmEngine<I>,
-        I: WasmInstance,
-        S: 's + ReadableSubstateStore,
-    >(
+    pub fn main<'p, 's, Y: SystemApi<'p, 's, W, I>, W: WasmEngine<I>, I: WasmInstance>(
         value_id: ValueId,
         fn_ident: &str,
         arg: ScryptoValue,
@@ -156,14 +148,7 @@ impl Component {
         Ok(rtn)
     }
 
-    pub fn main_consume<
-        'p,
-        's,
-        Y: SystemApi<'p, 's, W, I, S>,
-        W: WasmEngine<I>,
-        I: WasmInstance,
-        S: ReadableSubstateStore,
-    >(
+    pub fn main_consume<'p, 's, Y: SystemApi<'p, 's, W, I>, W: WasmEngine<I>, I: WasmInstance>(
         value_id: ValueId,
         fn_ident: &str,
         arg: ScryptoValue,

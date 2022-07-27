@@ -129,7 +129,7 @@ fn local_component_with_access_rules_should_be_callable() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
-    receipt.expect_success()
+    receipt.expect_success();
 }
 
 #[test]

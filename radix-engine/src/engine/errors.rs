@@ -126,6 +126,16 @@ pub enum RuntimeError {
     CostingError(CostUnitCounterError),
 
     MaxCallDepthLimitReached,
+
+    PayFeeError(PayFeeError),
+}
+
+#[derive(Debug, PartialEq)]
+pub enum PayFeeError {
+    ValueNotInTrack,
+    ValueAlreadyTouched,
+    ValueNotFound,
+    NotRadixToken,
 }
 
 #[derive(Debug, PartialEq)]

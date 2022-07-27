@@ -13,7 +13,6 @@ use scrypto::values::ScryptoValue;
 use crate::engine::SystemApi;
 use crate::engine::{PreCommittedKeyValueStore, RuntimeError};
 use crate::fee::*;
-use crate::ledger::ReadableSubstateStore;
 use crate::model::Component;
 use crate::wasm::*;
 
@@ -21,28 +20,25 @@ use crate::wasm::*;
 ///
 /// Execution is free from a costing perspective, as we assume
 /// the system api will bill properly.
-pub struct RadixEngineWasmRuntime<'y, 'p, 's, Y, W, I, S>
+pub struct RadixEngineWasmRuntime<'y, 'p, 's, Y, W, I>
 where
-    Y: SystemApi<'p, 's, W, I, S>,
+    Y: SystemApi<'p, 's, W, I>,
     W: WasmEngine<I>,
     I: WasmInstance,
-    S: ReadableSubstateStore,
 {
     this: ScryptoActorInfo,
     system_api: &'y mut Y,
     phantom1: PhantomData<W>,
     phantom2: PhantomData<I>,
-    phantom3: PhantomData<S>,
-    phantom4: PhantomData<&'p ()>,
-    phantom5: PhantomData<&'s ()>,
+    phantom3: PhantomData<&'p ()>,
+    phantom4: PhantomData<&'s ()>,
 }
 
-impl<'y, 'p, 's, Y, W, I, S> RadixEngineWasmRuntime<'y, 'p, 's, Y, W, I, S>
+impl<'y, 'p, 's, Y, W, I> RadixEngineWasmRuntime<'y, 'p, 's, Y, W, I>
 where
-    Y: SystemApi<'p, 's, W, I, S>,
+    Y: SystemApi<'p, 's, W, I>,
     W: WasmEngine<I>,
     I: WasmInstance,
-    S: ReadableSubstateStore,
 {
     pub fn new(this: ScryptoActorInfo, system_api: &'y mut Y) -> Self {
         RadixEngineWasmRuntime {
@@ -52,7 +48,6 @@ where
             phantom2: PhantomData,
             phantom3: PhantomData,
             phantom4: PhantomData,
-            phantom5: PhantomData,
         }
     }
 
@@ -166,15 +161,8 @@ fn encode<T: Encode>(output: T) -> ScryptoValue {
     ScryptoValue::from_typed(&output)
 }
 
-impl<
-        'y,
-        'p,
-        's,
-        S: ReadableSubstateStore,
-        Y: SystemApi<'p, 's, W, I, S>,
-        W: WasmEngine<I>,
-        I: WasmInstance,
-    > WasmRuntime for RadixEngineWasmRuntime<'y, 'p, 's, Y, W, I, S>
+impl<'y, 'p, 's, Y: SystemApi<'p, 's, W, I>, W: WasmEngine<I>, I: WasmInstance> WasmRuntime
+    for RadixEngineWasmRuntime<'y, 'p, 's, Y, W, I>
 {
     fn main(&mut self, input: ScryptoValue) -> Result<ScryptoValue, InvokeError> {
         let input: RadixEngineInput =

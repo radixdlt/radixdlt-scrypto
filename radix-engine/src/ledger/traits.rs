@@ -2,9 +2,10 @@ use crate::engine::Substate;
 use sbor::rust::collections::*;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto::buffer::*;
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
+
+use crate::engine::Address;
 
 pub trait QueryableSubstateStore {
     fn get_kv_store_entries(
@@ -17,7 +18,7 @@ pub trait QueryableSubstateStore {
 #[derive(Debug, Clone, Hash, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct OutputId(pub Hash, pub u32);
 
-#[derive(Debug, Encode, Decode, TypeId)]
+#[derive(Debug, Clone, Encode, Decode, TypeId, PartialEq, Eq)]
 pub struct Output {
     pub substate: Substate,
     pub output_id: OutputId,
@@ -41,19 +42,16 @@ impl OutputIdGenerator {
     }
 }
 
-/// A ledger stores all transactions and substates.
 pub trait ReadableSubstateStore {
-    fn get_substate(&self, address: &[u8]) -> Option<Output>;
-    fn get_space(&self, address: &[u8]) -> OutputId;
-
-    // Temporary Encoded/Decoded interface
-    fn get_decoded_substate<A: Encode, T: From<Substate>>(&self, address: &A) -> Option<T> {
-        self.get_substate(&scrypto_encode(address))
-            .map(|s| s.substate.into())
-    }
+    fn get_substate(&self, address: &Address) -> Option<Output>;
+    fn get_space(&self, address: &Address) -> OutputId;
 }
 
 pub trait WriteableSubstateStore {
-    fn put_substate(&mut self, address: &[u8], output: Output);
-    fn put_space(&mut self, address: &[u8], output_id: OutputId);
+    fn put_substate(&mut self, address: Address, substate: Output);
+    fn put_space(&mut self, address: Address, output_id: OutputId);
 }
+
+pub trait SubstateStore: ReadableSubstateStore + WriteableSubstateStore {}
+
+impl<T: ReadableSubstateStore + WriteableSubstateStore> SubstateStore for T {}
