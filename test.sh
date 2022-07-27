@@ -20,6 +20,7 @@ echo "Testing with no_std..."
 (cd sbor; cargo test --no-default-features --features alloc)
 (cd sbor-tests; cargo test --no-default-features --features alloc)
 (cd scrypto; cargo test --no-default-features --features alloc)
+(cd scrypto; cargo test --no-default-features --features alloc --release)
 (cd scrypto-abi; cargo test --no-default-features --features alloc)
 (cd scrypto-tests; cargo test --no-default-features --features alloc)
 
