@@ -1,4 +1,3 @@
-use sbor::rust::cell::RefCell;
 use scrypto::engine::api::*;
 use scrypto::engine::call_engine;
 use scrypto::prelude::*;

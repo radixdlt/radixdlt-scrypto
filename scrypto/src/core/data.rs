@@ -2,12 +2,19 @@ use crate::buffer::*;
 use crate::core::DataAddress;
 use crate::engine::api::RadixEngineInput::WriteData;
 use crate::engine::call_engine;
+use sbor::rust::fmt;
 use sbor::rust::marker::PhantomData;
 use sbor::rust::ops::{Deref, DerefMut};
 use sbor::{Decode, Encode};
 
 pub struct DataRef<V: Encode> {
     value: V,
+}
+
+impl<V: fmt::Display + Encode> fmt::Display for DataRef<V> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.value.fmt(f)
+    }
 }
 
 impl<V: Encode> DataRef<V> {
@@ -27,6 +34,12 @@ impl<V: Encode> Deref for DataRef<V> {
 pub struct DataRefMut<V: Encode> {
     address: DataAddress,
     value: V,
+}
+
+impl<V: fmt::Display + Encode> fmt::Display for DataRefMut<V> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.value.fmt(f)
+    }
 }
 
 impl<V: Encode> DataRefMut<V> {
