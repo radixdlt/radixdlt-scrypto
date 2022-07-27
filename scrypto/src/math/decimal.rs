@@ -1,6 +1,5 @@
 use core::ops::*;
-use num_bigint::BigInt;
-use num_traits::{Pow, ToPrimitive, Zero, One};
+use num_traits::{Pow, ToPrimitive, Zero};
 use sbor::rust::convert::{TryFrom, TryInto};
 use sbor::rust::fmt;
 use sbor::rust::iter;
@@ -173,36 +172,23 @@ macro_rules! decimals {
                     }
 
                     /// Calculates power using "exponentiation by squaring".
-                    pub fn powi<T: Ord + Rem<Output=T> + TryFrom<u8> + Zero + One + Mul<Output=T> + Div<Output=T> + Sub<Output=T> + Clone>(&self, exp: T) -> Self 
-                    where <T as TryFrom<u8>>::Error: fmt::Debug
-                    {
+                    pub fn powi(&self, exp: i64) -> Self {
                         let one = Self::ONE.0;
                         let base = self.0;
-                        let t_0 = T::zero();
-                        let t_1 = T::one();
-                        let t_2 = T::try_from(2u8).expect("Overflow");
+                        let div = |x: i64, y: i64| x.checked_div(y).expect("Overflow");
+                        let sub = |x: i64, y: i64| x.checked_sub(y).expect("Overflow");
+                        let mul = |x: i64, y: i64| x.checked_mul(y).expect("Overflow");
 
-                        if exp < t_0 {
-                            return $dec(&one * &one / base).powi(exp * (t_0.clone() - t_1.clone()));
+                        if exp < 0 {
+                            return $dec(&one * &one / base).powi(mul(exp, -1));
                         }
-                        if exp == t_0 {
+                        if exp == 0 {
                             return Self::ONE;
                         }
-                        if exp > t_0 && exp < t_1 {
-                            panic!("exp should be an integer");
-                        }
-                        if exp.clone() % t_2.clone() == t_0 {
-                            return $dec(&base * &base / &one)
-                                .powi(exp / t_2);
+                        if exp % 2 == 0 {
+                            return $dec(&base * &base / &one).powi(div(exp, 2));
                         } else {
-                            return $dec(
-                                &base * 
-                                $dec( &base * &base / &one)
-                                .powi( (exp - t_1) / t_2)
-                                .0
-                                /
-                                &one
-                            );
+                            return $dec(&base * $dec(&base * &base / &one).powi(div(sub(exp, 1), 2)).0 / &one);
                         }
                     }
                 }
@@ -741,21 +727,21 @@ mod tests {
     #[should_panic]
     fn test_powi_exp_overflow() {
         let a = Decimal::from(5u32);
-        let b = i128::MIN;
+        let b = i64::MIN;
         assert_eq!(a.powi(b).to_string(), "0");
     }
 
     #[test]
     fn test_1_powi_max() {
         let a = Decimal::from(1u32);
-        let b = i128::MAX;
+        let b = i64::MAX;
         assert_eq!(a.powi(b).to_string(), "1");
     }
 
     #[test]
     fn test_1_powi_min() {
         let a = Decimal::from(1u32);
-        let b = i128::MAX - 1;
+        let b = i64::MAX - 1;
         assert_eq!(a.powi(b).to_string(), "1");
     }
 
