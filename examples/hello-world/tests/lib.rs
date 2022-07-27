@@ -1,6 +1,7 @@
 use radix_engine::ledger::*;
 use radix_engine::model::extract_package;
 use radix_engine::transaction::TransactionExecutor;
+use radix_engine::transaction::TransactionExecutorConfig;
 use radix_engine::wasm::*;
 use scrypto::core::Network;
 use scrypto::prelude::*;
@@ -19,7 +20,7 @@ fn test_hello() {
         &mut substate_store,
         &mut wasm_engine,
         &mut wasm_instrumenter,
-        false,
+        TransactionExecutorConfig::new(false),
     );
 
     // Create a key pair

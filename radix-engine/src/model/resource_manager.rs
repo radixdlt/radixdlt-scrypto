@@ -19,6 +19,7 @@ use scrypto::resource::ResourceMethodAuthKey::{self, *};
 use scrypto::values::ScryptoValue;
 
 use crate::engine::{SubstateAddress, SystemApi};
+use crate::fee::CostUnitCounter;
 use crate::fee::CostUnitCounterError;
 use crate::model::resource_manager::ResourceMethodRule::{Protected, Public};
 use crate::model::NonFungibleWrapper;
@@ -256,7 +257,14 @@ impl ResourceManager {
         self.total_supply
     }
 
-    pub fn mint<'p, 's, Y: SystemApi<'p, 's, W, I>, W: WasmEngine<I>, I: WasmInstance>(
+    pub fn mint<
+        'p,
+        's,
+        Y: SystemApi<'p, 's, W, I, C>,
+        W: WasmEngine<I>,
+        I: WasmInstance,
+        C: CostUnitCounter,
+    >(
         &mut self,
         mint_params: MintParams,
         self_address: ResourceAddress,
@@ -300,9 +308,10 @@ impl ResourceManager {
     pub fn mint_non_fungibles<
         'p,
         's,
-        Y: SystemApi<'p, 's, W, I>,
+        Y: SystemApi<'p, 's, W, I, C>,
         W: WasmEngine<I>,
         I: WasmInstance,
+        C: CostUnitCounter,
     >(
         &mut self,
         entries: HashMap<NonFungibleId, (Vec<u8>, Vec<u8>)>,
@@ -375,7 +384,14 @@ impl ResourceManager {
         }
     }
 
-    pub fn static_main<'p, 's, Y: SystemApi<'p, 's, W, I>, W: WasmEngine<I>, I: WasmInstance>(
+    pub fn static_main<
+        'p,
+        's,
+        Y: SystemApi<'p, 's, W, I, C>,
+        W: WasmEngine<I>,
+        I: WasmInstance,
+        C: CostUnitCounter,
+    >(
         method_name: &str,
         arg: ScryptoValue,
         system_api: &mut Y,
@@ -428,7 +444,14 @@ impl ResourceManager {
         }
     }
 
-    pub fn main<'p, 's, Y: SystemApi<'p, 's, W, I>, W: WasmEngine<I>, I: WasmInstance>(
+    pub fn main<
+        'p,
+        's,
+        Y: SystemApi<'p, 's, W, I, C>,
+        W: WasmEngine<I>,
+        I: WasmInstance,
+        C: CostUnitCounter,
+    >(
         resource_address: ResourceAddress,
         method_name: &str,
         arg: ScryptoValue,

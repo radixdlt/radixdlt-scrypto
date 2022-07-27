@@ -8,14 +8,22 @@ use transaction::validation::{IdAllocator, IdSpace};
 
 use crate::engine::Track;
 use crate::engine::*;
-use crate::fee::CostUnitCounter;
 use crate::fee::FeeTable;
-use crate::fee::MAX_TRANSACTION_COST;
-use crate::fee::SYSTEM_LOAN_AMOUNT;
+use crate::fee::{CostUnitCounter, SystemLoanCostUnitCounter};
 use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
 use crate::model::*;
 use crate::transaction::*;
 use crate::wasm::*;
+
+pub struct TransactionExecutorConfig {
+    pub trace: bool,
+}
+
+impl TransactionExecutorConfig {
+    pub fn new(trace: bool) -> Self {
+        TransactionExecutorConfig { trace }
+    }
+}
 
 /// An executor that runs transactions.
 pub struct TransactionExecutor<'s, 'w, S, W, I>
@@ -27,8 +35,8 @@ where
     substate_store: &'s mut S,
     wasm_engine: &'w mut W,
     wasm_instrumenter: &'w mut WasmInstrumenter,
-    trace: bool,
-    phantom: PhantomData<I>,
+    config: TransactionExecutorConfig,
+    phantom1: PhantomData<I>,
 }
 
 impl<'s, 'w, S, W, I> TransactionExecutor<'s, 'w, S, W, I>
@@ -41,14 +49,14 @@ where
         substate_store: &'s mut S,
         wasm_engine: &'w mut W,
         wasm_instrumenter: &'w mut WasmInstrumenter,
-        trace: bool,
-    ) -> Self {
+        config: TransactionExecutorConfig,
+    ) -> TransactionExecutor<'s, 'w, S, W, I> {
         Self {
             substate_store,
             wasm_engine,
             wasm_instrumenter,
-            trace,
-            phantom: PhantomData,
+            config,
+            phantom1: PhantomData,
         }
     }
 
@@ -62,6 +70,14 @@ where
     }
 
     pub fn execute<T: ExecutableTransaction>(&mut self, transaction: &T) -> TransactionReceipt {
+        self.execute_with_cost_unit_counter(transaction, SystemLoanCostUnitCounter::default())
+    }
+
+    pub fn execute_with_cost_unit_counter<T: ExecutableTransaction, C: CostUnitCounter>(
+        &mut self,
+        transaction: &T,
+        mut cost_unit_counter: C,
+    ) -> TransactionReceipt {
         #[cfg(not(feature = "alloc"))]
         let now = std::time::Instant::now();
 
@@ -70,7 +86,7 @@ where
         let signer_public_keys = transaction.signer_public_keys().to_vec();
         let instructions = transaction.instructions().to_vec();
         #[cfg(not(feature = "alloc"))]
-        if self.trace {
+        if self.config.trace {
             println!("{:-^80}", "Transaction Metadata");
             println!("Transaction hash: {}", transaction_hash);
             println!("Transaction network: {:?}", transaction_network);
@@ -84,7 +100,6 @@ where
         let mut id_allocator = IdAllocator::new(IdSpace::Application);
 
         // 2. Apply pre-execution costing
-        let mut cost_unit_counter = CostUnitCounter::new(MAX_TRANSACTION_COST, SYSTEM_LOAN_AMOUNT);
         let fee_table = FeeTable::new();
         cost_unit_counter
             .consume(
@@ -109,7 +124,7 @@ where
 
         // 3. Start a call frame and run the transaction
         let mut root_frame = CallFrame::new_root(
-            self.trace,
+            self.config.trace,
             transaction_hash,
             signer_public_keys,
             false,
@@ -142,9 +157,9 @@ where
         let burned = 0u32.into();
         let tipped = 0u32.into();
         #[cfg(not(feature = "alloc"))]
-        if self.trace {
+        if self.config.trace {
             println!("{:-^80}", "Cost Analysis");
-            for (k, v) in cost_unit_counter.analysis {
+            for (k, v) in cost_unit_counter.analysis() {
                 println!("{:<20}: {:>8}", k, v);
             }
         }
@@ -191,7 +206,7 @@ where
         };
 
         #[cfg(not(feature = "alloc"))]
-        if self.trace {
+        if self.config.trace {
             println!("{:-^80}", "Transaction Receipt");
             println!("{:?}", receipt);
             println!("{:-^80}", "");

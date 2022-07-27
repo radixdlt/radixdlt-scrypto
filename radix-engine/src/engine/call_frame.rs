@@ -30,9 +30,11 @@ pub struct CallFrame<
     's, // Substate store lifetime
     W,  // WASM engine type
     I,  // WASM instance type
+    C,  // Cost unit counter type
 > where
     W: WasmEngine<I>,
     I: WasmInstance,
+    C: CostUnitCounter,
 {
     /// The transaction hash
     transaction_hash: Hash,
@@ -49,7 +51,7 @@ pub struct CallFrame<
     wasm_instrumenter: &'g mut WasmInstrumenter,
 
     /// Remaining cost unit counter
-    cost_unit_counter: &'g mut CostUnitCounter,
+    cost_unit_counter: &'g mut C,
     /// Fee table
     fee_table: &'g FeeTable,
 
@@ -574,10 +576,11 @@ pub enum SubstateAddress {
     Component(ComponentAddress, ComponentOffset),
 }
 
-impl<'p, 'g, 's, W, I> CallFrame<'p, 'g, 's, W, I>
+impl<'p, 'g, 's, W, I, C> CallFrame<'p, 'g, 's, W, I, C>
 where
     W: WasmEngine<I>,
     I: WasmInstance,
+    C: CostUnitCounter,
 {
     pub fn new_root(
         verbose: bool,
@@ -588,7 +591,7 @@ where
         track: &'g mut Track<'s>,
         wasm_engine: &'g mut W,
         wasm_instrumenter: &'g mut WasmInstrumenter,
-        cost_unit_counter: &'g mut CostUnitCounter,
+        cost_unit_counter: &'g mut C,
         fee_table: &'g FeeTable,
     ) -> Self {
         // TODO: Cleanup initialization of authzone
@@ -647,7 +650,7 @@ where
         track: &'g mut Track<'s>,
         wasm_engine: &'g mut W,
         wasm_instrumenter: &'g mut WasmInstrumenter,
-        cost_unit_counter: &'g mut CostUnitCounter,
+        cost_unit_counter: &'g mut C,
         fee_table: &'g FeeTable,
         auth_zone: Option<RefCell<AuthZone>>,
         owned_values: HashMap<ValueId, REValue>,
@@ -1061,10 +1064,11 @@ where
     }
 }
 
-impl<'p, 'g, 's, W, I> SystemApi<'p, 's, W, I> for CallFrame<'p, 'g, 's, W, I>
+impl<'p, 'g, 's, W, I, C> SystemApi<'p, 's, W, I, C> for CallFrame<'p, 'g, 's, W, I, C>
 where
     W: WasmEngine<I>,
     I: WasmInstance,
+    C: CostUnitCounter,
 {
     fn invoke_snode(
         &mut self,
@@ -2293,7 +2297,7 @@ where
         Ok(is_authorized)
     }
 
-    fn cost_unit_counter(&mut self) -> &mut CostUnitCounter {
+    fn cost_unit_counter(&mut self) -> &mut C {
         self.cost_unit_counter
     }
 

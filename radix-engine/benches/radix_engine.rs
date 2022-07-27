@@ -1,6 +1,7 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use radix_engine::ledger::*;
 use radix_engine::transaction::TransactionExecutor;
+use radix_engine::transaction::TransactionExecutorConfig;
 use radix_engine::wasm::DefaultWasmEngine;
 use radix_engine::wasm::WasmInstrumenter;
 use scrypto::core::Network;
@@ -19,7 +20,7 @@ fn bench_transfer(c: &mut Criterion) {
         &mut substate_store,
         &mut wasm_engine,
         &mut wasm_instrumenter,
-        false,
+        TransactionExecutorConfig::new(false),
     );
 
     // Create a key pair
