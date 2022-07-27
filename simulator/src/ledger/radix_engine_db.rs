@@ -89,7 +89,7 @@ impl QueryableSubstateStore for RadixEngineDB {
             }
 
             let local_key = key.split_at(key_size).1.to_vec();
-            let substate: Output = scrypto_decode(&value.to_vec()).unwrap();
+            let substate: OutputValue = scrypto_decode(&value.to_vec()).unwrap();
             items.insert(local_key, substate.substate);
         }
         items
@@ -97,7 +97,7 @@ impl QueryableSubstateStore for RadixEngineDB {
 }
 
 impl ReadableSubstateStore for RadixEngineDB {
-    fn get_substate(&self, address: &Address) -> Option<Output> {
+    fn get_substate(&self, address: &Address) -> Option<OutputValue> {
         self.read(address).map(|b| scrypto_decode(&b).unwrap())
     }
 
@@ -109,7 +109,7 @@ impl ReadableSubstateStore for RadixEngineDB {
 }
 
 impl WriteableSubstateStore for RadixEngineDB {
-    fn put_substate(&mut self, address: Address, substate: Output) {
+    fn put_substate(&mut self, address: Address, substate: OutputValue) {
         self.write(address, scrypto_encode(&substate));
     }
 

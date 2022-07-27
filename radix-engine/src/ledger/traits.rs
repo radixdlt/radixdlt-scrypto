@@ -16,39 +16,25 @@ pub trait QueryableSubstateStore {
 }
 
 #[derive(Debug, Clone, Hash, TypeId, Encode, Decode, PartialEq, Eq)]
-pub struct OutputId(pub Hash, pub u32);
+pub struct OutputId {
+    pub address: Address,
+    pub substate_hash: Hash,
+    pub version: u32,
+}
 
 #[derive(Debug, Clone, Encode, Decode, TypeId, PartialEq, Eq)]
-pub struct Output {
+pub struct OutputValue {
     pub substate: Substate,
-    pub output_id: OutputId,
-}
-
-#[derive(Debug)]
-pub struct OutputIdGenerator {
-    tx_hash: Hash,
-    count: u32,
-}
-
-impl OutputIdGenerator {
-    pub fn new(tx_hash: Hash) -> Self {
-        Self { tx_hash, count: 0 }
-    }
-
-    pub fn next(&mut self) -> OutputId {
-        let value = self.count;
-        self.count = self.count + 1;
-        OutputId(self.tx_hash.clone(), value)
-    }
+    pub version: u32,
 }
 
 pub trait ReadableSubstateStore {
-    fn get_substate(&self, address: &Address) -> Option<Output>;
+    fn get_substate(&self, address: &Address) -> Option<OutputValue>;
     fn get_space(&self, address: &Address) -> OutputId;
 }
 
 pub trait WriteableSubstateStore {
-    fn put_substate(&mut self, address: Address, substate: Output);
+    fn put_substate(&mut self, address: Address, substate: OutputValue);
     fn put_space(&mut self, address: Address, output_id: OutputId);
 }
 

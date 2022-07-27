@@ -1,6 +1,8 @@
 use core::ops::RangeFull;
 
 use indexmap::{IndexMap, IndexSet};
+use scrypto::crypto::hash;
+use scrypto::prelude::scrypto_encode;
 
 use crate::engine::*;
 use crate::ledger::*;
@@ -41,7 +43,11 @@ impl<'s> BaseStateTrack<'s> {
         substate_store: &&'s dyn ReadableSubstateStore,
         address: &Address,
     ) -> Option<OutputId> {
-        substate_store.get_substate(&address).map(|s| s.output_id)
+        substate_store.get_substate(&address).map(|s| OutputId {
+            address: address.clone(),
+            substate_hash: hash(scrypto_encode(&s.substate)),
+            version: s.version,
+        })
     }
 
     fn get_space_output_id(
@@ -75,10 +81,12 @@ impl<'s> BaseStateTrack<'s> {
             if let Some(substate) = substate {
                 match &address {
                     Address::NonFungible(resource_address, key) => {
-                        if let Some(existing_output_id) =
+                        let next_version = if let Some(existing_output_id) =
                             Self::get_substate_output_id(&self.substate_store, &address)
                         {
+                            let next_version = existing_output_id.version + 1;
                             diff.down_substates.push(existing_output_id);
+                            next_version
                         } else {
                             let parent_address = Address::NonFungibleSpace(*resource_address);
                             let parent_id = Self::get_substate_parent_id(
@@ -88,15 +96,22 @@ impl<'s> BaseStateTrack<'s> {
                             );
                             let virtual_output_id = VirtualSubstateId(parent_id, key.clone());
                             diff.down_virtual_substates.push(virtual_output_id);
-                        }
+                            0
+                        };
 
-                        diff.up_substates.insert(address.clone(), substate.clone());
+                        let output_value = OutputValue {
+                            substate: substate.clone(),
+                            version: next_version
+                        };
+                        diff.up_substates.insert(address.clone(), output_value);
                     }
                     Address::KeyValueStoreEntry(kv_store_id, key) => {
-                        if let Some(existing_output_id) =
+                        let next_version = if let Some(existing_output_id) =
                             Self::get_substate_output_id(&self.substate_store, &address)
                         {
+                            let next_version = existing_output_id.version + 1;
                             diff.down_substates.push(existing_output_id);
+                            next_version
                         } else {
                             let parent_address = Address::KeyValueStoreSpace(*kv_store_id);
                             let parent_id = Self::get_substate_parent_id(
@@ -106,17 +121,30 @@ impl<'s> BaseStateTrack<'s> {
                             );
                             let virtual_output_id = VirtualSubstateId(parent_id, key.clone());
                             diff.down_virtual_substates.push(virtual_output_id);
-                        }
+                            0
+                        };
 
-                        diff.up_substates.insert(address.clone(), substate.clone());
+                        let output_value = OutputValue {
+                            substate: substate.clone(),
+                            version: next_version
+                        };
+                        diff.up_substates.insert(address.clone(), output_value);
                     }
                     _ => {
-                        if let Some(existing_output_id) =
+                        let next_version = if let Some(existing_output_id) =
                             Self::get_substate_output_id(&self.substate_store, &address)
                         {
+                            let next_version = existing_output_id.version + 1;
                             diff.down_substates.push(existing_output_id);
-                        }
-                        diff.up_substates.insert(address.clone(), substate.clone());
+                            next_version
+                        } else {
+                            0
+                        };
+                        let output_value = OutputValue {
+                            substate: substate.clone(),
+                            version: next_version
+                        };
+                        diff.up_substates.insert(address.clone(), output_value);
                     }
                 }
             } else {
