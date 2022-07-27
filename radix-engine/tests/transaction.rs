@@ -23,7 +23,7 @@ fn test_normal_transaction_flow() {
         network: Network::LocalSimulator,
         current_epoch: 1,
         max_cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,
-        min_tip_bps: 0,
+        min_tip_percentage: 0,
     };
     let execution_params = ExecutionParameters::default();
 
@@ -61,7 +61,7 @@ fn create_transaction() -> Vec<u8> {
             notary_public_key: sk_notary.public_key(),
             notary_as_signatory: false,
             cost_unit_limit: 1_000_000,
-            tip_bps: 5,
+            tip_percentage: 5,
         })
         .manifest(
             ManifestBuilder::new(Network::LocalSimulator)

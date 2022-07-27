@@ -83,11 +83,14 @@ where
         transaction: &T,
         params: &ExecutionParameters,
     ) -> TransactionReceipt {
-        self.execute_with_cost_unit_counter(
-            transaction,
-            params,
-            SystemLoanCostUnitCounter::default(),
-        )
+        let cost_unit_counter = SystemLoanCostUnitCounter::new(
+            transaction.cost_unit_limit(),
+            transaction.tip_percentage(),
+            params.cost_unit_price,
+            params.system_loan,
+        );
+
+        self.execute_with_cost_unit_counter(transaction, params, cost_unit_counter)
     }
 
     pub fn execute_with_cost_unit_counter<T: ExecutableTransaction, C: CostUnitCounter>(
@@ -103,14 +106,12 @@ where
         let transaction_network = transaction.transaction_network();
         let signer_public_keys = transaction.signer_public_keys().to_vec();
         let instructions = transaction.instructions().to_vec();
-        let cost_unit_limit = transaction.cost_unit_limit();
         #[cfg(not(feature = "alloc"))]
         if params.trace {
             println!("{:-^80}", "Transaction Metadata");
             println!("Transaction hash: {}", transaction_hash);
             println!("Transaction network: {:?}", transaction_network);
             println!("Transaction signers: {:?}", signer_public_keys);
-            println!("Cost unit limit: {:?}", cost_unit_limit);
 
             println!("{:-^80}", "Engine Execution Log");
         }
@@ -129,16 +130,16 @@ where
             .expect("System loan should cover this");
         cost_unit_counter
             .consume(
-                fee_table.tx_verification_per_byte()
+                fee_table.tx_manifest_verification_per_byte()
                     * transaction.transaction_payload_size() as u32,
-                "tx_verification",
+                "tx_manifest_verification",
             )
             .expect("System loan should cover this");
         cost_unit_counter
             .consume(
-                fee_table.tx_signature_validation_per_sig()
+                fee_table.tx_signature_verification_per_sig()
                     * transaction.signer_public_keys().len() as u32,
-                "signature_validation",
+                "tx_signature_verification",
             )
             .expect("System loan should cover this");
 
@@ -168,19 +169,19 @@ where
 
         // 4. Settle transaction fee
         let counter = root_frame.cost_unit_counter();
-        // TODO: burn fee in a FILO order
-        // TODO: reward validators
-        // TODO: refund overpaid fees
+        let cost_unit_limit = counter.limit();
         let system_loan_fully_repaid = counter.owed() == 0;
         let cost_unit_consumed = counter.consumed();
-        let cost_unit_price = params.cost_unit_price;
-        let burned = 0u32.into();
-        let tipped = 0u32.into();
+        let cost_unit_price = counter.cost_unit_price();
+        let tip_percentage = counter.tip_percentage();
+        let burned = cost_unit_price * cost_unit_consumed;
+        let tipped = burned * tip_percentage / 100;
+        // TODO: pay tips to the lead validator
         #[cfg(not(feature = "alloc"))]
         if params.trace {
             println!("{:-^80}", "Cost Analysis");
             for (k, v) in cost_unit_counter.analysis() {
-                println!("{:<20}: {:>8}", k, v);
+                println!("{:<30}: {:>8}", k, v);
             }
         }
 
@@ -219,6 +220,7 @@ where
                 cost_unit_limit,
                 cost_unit_consumed,
                 cost_unit_price,
+                tip_percentage,
                 burned,
                 tipped,
             },

@@ -86,4 +86,8 @@ impl ExecutableTransaction for ValidatedPreviewTransaction {
     fn cost_unit_limit(&self) -> u32 {
         self.preview_intent.intent.header.cost_unit_limit
     }
+
+    fn tip_percentage(&self) -> u32 {
+        self.preview_intent.intent.header.tip_percentage
+    }
 }

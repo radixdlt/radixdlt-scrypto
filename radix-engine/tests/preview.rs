@@ -52,7 +52,7 @@ fn prepare_test_tx_and_preview_intent(
             notary_public_key: notary_priv_key.public_key(),
             notary_as_signatory: false,
             cost_unit_limit: 10_000_000,
-            tip_bps: 0,
+            tip_percentage: 0,
         })
         .manifest(
             ManifestBuilder::new(Network::LocalSimulator)
@@ -71,7 +71,7 @@ fn prepare_test_tx_and_preview_intent(
             network: Network::LocalSimulator,
             current_epoch: 1,
             max_cost_unit_limit: 10_000_000,
-            min_tip_bps: 0,
+            min_tip_percentage: 0,
         },
     )
     .unwrap();

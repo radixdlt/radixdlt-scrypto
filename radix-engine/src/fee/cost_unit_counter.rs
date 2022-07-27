@@ -1,5 +1,5 @@
 use core::ops::AddAssign;
-use sbor::rust::collections::HashMap;
+use sbor::rust::collections::BTreeMap;
 use sbor::rust::str::FromStr;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
@@ -35,14 +35,20 @@ pub trait CostUnitCounter {
 
     fn owed(&self) -> u32;
 
+    fn cost_unit_price(&self) -> Decimal;
+
+    fn tip_percentage(&self) -> u32;
+
     fn payments(&self) -> &[(VaultId, u32)];
 
-    fn analysis(&self) -> &HashMap<&'static str, u32>;
+    fn analysis(&self) -> &BTreeMap<&'static str, u32>;
 }
 
 pub struct SystemLoanCostUnitCounter {
     /// The price of cost unit
     cost_unit_price: Decimal,
+    /// The tip percentage
+    tip_percentage: u32,
     /// Payments made during the execution of a transaction.
     payments: Vec<(VaultId, u32)>,
     /// The balance cost units
@@ -56,20 +62,26 @@ pub struct SystemLoanCostUnitCounter {
     /// At which point the system loan repayment is checked
     check_point: u32,
     /// Costing analysis
-    analysis: HashMap<&'static str, u32>,
+    analysis: BTreeMap<&'static str, u32>,
 }
 
 impl SystemLoanCostUnitCounter {
-    pub fn new(cost_unit_price: Decimal, cost_unit_limit: u32, system_loan: u32) -> Self {
+    pub fn new(
+        cost_unit_limit: u32,
+        tip_percentage: u32,
+        cost_unit_price: Decimal,
+        system_loan: u32,
+    ) -> Self {
         Self {
             cost_unit_price,
+            tip_percentage,
             payments: Vec::new(),
             balance: system_loan,
             owed: system_loan,
             consumed: 0,
             limit: cost_unit_limit,
             check_point: system_loan,
-            analysis: HashMap::new(),
+            analysis: BTreeMap::new(),
         }
     }
 }
@@ -101,9 +113,11 @@ impl CostUnitCounter for SystemLoanCostUnitCounter {
         vault_id: VaultId,
         amount: Decimal,
     ) -> Result<Decimal, CostUnitCounterError> {
+        let effective_cost_unit_price = self.cost_unit_price * (100 + self.tip_percentage) / 100;
+
         // TODO: Add `TryInto` implementation once the new decimal types are in place
         let n = u32::from_str(
-            (amount / self.cost_unit_price)
+            (amount / effective_cost_unit_price)
                 .round(0, RoundingMode::TowardsZero)
                 .to_string()
                 .as_str(),
@@ -122,7 +136,7 @@ impl CostUnitCounter for SystemLoanCostUnitCounter {
 
         self.payments.push((vault_id, n));
 
-        Ok(self.cost_unit_price * n)
+        Ok(effective_cost_unit_price * n)
     }
 
     fn limit(&self) -> u32 {
@@ -141,40 +155,55 @@ impl CostUnitCounter for SystemLoanCostUnitCounter {
         self.owed
     }
 
-    fn analysis(&self) -> &HashMap<&'static str, u32> {
-        &self.analysis
+    fn cost_unit_price(&self) -> Decimal {
+        self.cost_unit_price
+    }
+
+    fn tip_percentage(&self) -> u32 {
+        self.tip_percentage
     }
 
     fn payments(&self) -> &[(VaultId, u32)] {
         &self.payments
     }
+
+    fn analysis(&self) -> &BTreeMap<&'static str, u32> {
+        &self.analysis
+    }
 }
 
 impl Default for SystemLoanCostUnitCounter {
-    fn default() -> SystemLoanCostUnitCounter {
-        SystemLoanCostUnitCounter::new(
-            DEFAULT_COST_UNIT_PRICE.parse().unwrap(),
+    fn default() -> Self {
+        Self::new(
             DEFAULT_COST_UNIT_LIMIT,
+            0,
+            DEFAULT_COST_UNIT_PRICE.parse().unwrap(),
             DEFAULT_SYSTEM_LOAN,
         )
     }
 }
 
 pub struct UnlimitedLoanCostUnitCounter {
+    /// The price of cost unit
+    cost_unit_price: Decimal,
+    /// The tip percentage
+    tip_percentage: u32,
     /// The total cost units consumed so far
     consumed: u32,
     /// The max number of cost units that can be consumed
     limit: u32,
     /// Costing analysis
-    pub analysis: HashMap<&'static str, u32>,
+    pub analysis: BTreeMap<&'static str, u32>,
 }
 
 impl UnlimitedLoanCostUnitCounter {
-    pub fn new(limit: u32) -> Self {
+    pub fn new(limit: u32, tip_percentage: u32, cost_unit_price: Decimal) -> Self {
         Self {
+            cost_unit_price,
+            tip_percentage,
             consumed: 0,
             limit: limit,
-            analysis: HashMap::new(),
+            analysis: BTreeMap::new(),
         }
     }
 }
@@ -219,14 +248,26 @@ impl CostUnitCounter for UnlimitedLoanCostUnitCounter {
         &[]
     }
 
-    fn analysis(&self) -> &HashMap<&'static str, u32> {
+    fn cost_unit_price(&self) -> Decimal {
+        self.cost_unit_price
+    }
+
+    fn tip_percentage(&self) -> u32 {
+        self.tip_percentage
+    }
+
+    fn analysis(&self) -> &BTreeMap<&'static str, u32> {
         &self.analysis
     }
 }
 
 impl Default for UnlimitedLoanCostUnitCounter {
     fn default() -> UnlimitedLoanCostUnitCounter {
-        UnlimitedLoanCostUnitCounter::new(DEFAULT_COST_UNIT_LIMIT)
+        UnlimitedLoanCostUnitCounter::new(
+            DEFAULT_COST_UNIT_LIMIT,
+            0,
+            DEFAULT_COST_UNIT_PRICE.parse().unwrap(),
+        )
     }
 }
 
@@ -239,7 +280,7 @@ mod tests {
 
     #[test]
     fn test_consume_and_repay() {
-        let mut counter = SystemLoanCostUnitCounter::new(1.into(), 100, 5);
+        let mut counter = SystemLoanCostUnitCounter::new(100, 0, 1.into(), 5);
         counter.consume(2, "test").unwrap();
         counter.repay(TEST_VAULT_ID, 3.into()).unwrap();
         assert_eq!(3, counter.balance());
@@ -249,7 +290,7 @@ mod tests {
 
     #[test]
     fn test_out_of_cost_unit() {
-        let mut counter = SystemLoanCostUnitCounter::new(1.into(), 100, 5);
+        let mut counter = SystemLoanCostUnitCounter::new(100, 0, 1.into(), 5);
         assert_eq!(
             Err(CostUnitCounterError::OutOfCostUnit),
             counter.consume(6, "test")
@@ -258,7 +299,7 @@ mod tests {
 
     #[test]
     fn test_overflow() {
-        let mut counter = SystemLoanCostUnitCounter::new(1.into(), 100, 0);
+        let mut counter = SystemLoanCostUnitCounter::new(100, 0, 1.into(), 0);
         assert_eq!(
             Ok(u32::max_value().into()),
             counter.repay(TEST_VAULT_ID, u32::max_value().into())
@@ -271,7 +312,7 @@ mod tests {
 
     #[test]
     fn test_repay() {
-        let mut counter = SystemLoanCostUnitCounter::new(1.into(), 100, 500);
+        let mut counter = SystemLoanCostUnitCounter::new(100, 0, 1.into(), 500);
         counter.repay(TEST_VAULT_ID, 100.into()).unwrap();
         assert_eq!(500, counter.balance());
         assert_eq!(400, counter.owed());
@@ -279,7 +320,7 @@ mod tests {
 
     #[test]
     fn test_xrd_cost_unit_conversion() {
-        let mut counter = SystemLoanCostUnitCounter::new(5.into(), 100, 500);
+        let mut counter = SystemLoanCostUnitCounter::new(100, 0, 5.into(), 500);
         counter.repay(TEST_VAULT_ID, 100.into()).unwrap();
         assert_eq!(500, counter.balance());
         assert_eq!(500 - 100 / 5, counter.owed());

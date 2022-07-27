@@ -19,7 +19,7 @@ pub struct TransactionHeader {
     pub notary_public_key: EcdsaPublicKey,
     pub notary_as_signatory: bool,
     pub cost_unit_limit: u32,
-    pub tip_bps: u32,
+    pub tip_percentage: u32,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
@@ -119,7 +119,7 @@ mod tests {
                 notary_public_key: sk_notary.public_key(),
                 notary_as_signatory: false,
                 cost_unit_limit: 1_000_000,
-                tip_bps: 5,
+                tip_percentage: 5,
             },
             "CLEAR_AUTH_ZONE;",
         )

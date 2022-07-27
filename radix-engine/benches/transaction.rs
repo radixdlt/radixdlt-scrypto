@@ -59,7 +59,7 @@ fn bench_transaction_validation(c: &mut Criterion) {
             notary_public_key: signer.public_key(),
             notary_as_signatory: true,
             cost_unit_limit: 1_000_000,
-            tip_bps: 5,
+            tip_percentage: 5,
         })
         .manifest(
             ManifestBuilder::new(Network::LocalSimulator)
@@ -79,7 +79,7 @@ fn bench_transaction_validation(c: &mut Criterion) {
                 network: Network::LocalSimulator,
                 current_epoch: 1,
                 max_cost_unit_limit: 10_000_000,
-                min_tip_bps: 0,
+                min_tip_percentage: 0,
             };
 
             TransactionValidator::validate_from_slice(

@@ -14,7 +14,7 @@ pub struct ValidationParameters {
     pub network: Network,
     pub current_epoch: u64,
     pub max_cost_unit_limit: u32,
-    pub min_tip_bps: u32,
+    pub min_tip_percentage: u32,
 }
 
 pub struct TransactionValidator;
@@ -318,7 +318,7 @@ impl TransactionValidator {
         if header.cost_unit_limit > parameters.max_cost_unit_limit {
             return Err(HeaderValidationError::InvalidCostUnitLimit);
         }
-        if header.tip_bps < parameters.min_tip_bps {
+        if header.tip_percentage < parameters.min_tip_percentage {
             return Err(HeaderValidationError::InvalidTipBps);
         }
 
@@ -393,7 +393,7 @@ mod tests {
                 network: Network::LocalSimulator,
                 current_epoch: 1,
                 max_cost_unit_limit: 10_000_000,
-                min_tip_bps: 0,
+                min_tip_percentage: 0,
             };
             assert_eq!(
                 Err($result),
@@ -464,7 +464,7 @@ mod tests {
             network: Network::LocalSimulator,
             current_epoch: 1,
             max_cost_unit_limit: 10_000_000,
-            min_tip_bps: 0,
+            min_tip_percentage: 0,
         };
 
         // Build the whole transaction but only really care about the intent
@@ -511,7 +511,7 @@ mod tests {
                 notary_public_key: sk_notary.public_key(),
                 notary_as_signatory: false,
                 cost_unit_limit: 1_000_000,
-                tip_bps: 5,
+                tip_percentage: 5,
             })
             .manifest(
                 ManifestBuilder::new(Network::LocalSimulator)
