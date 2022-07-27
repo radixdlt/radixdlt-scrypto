@@ -13,7 +13,7 @@ use scrypto::values::ScryptoValue;
 use crate::engine::SystemApi;
 use crate::engine::{PreCommittedKeyValueStore, RuntimeError};
 use crate::fee::*;
-use crate::model::Component;
+use crate::model::{Component, ComponentState};
 use crate::wasm::*;
 
 /// A glue between system api (call frame and track abstraction) and WASM.
@@ -81,10 +81,10 @@ where
             self.this.package_address().clone(),
             blueprint_name,
             Vec::new(),
-            state,
         );
+        let component_state = ComponentState::new(state);
 
-        let id = self.system_api.create_value(component)?;
+        let id = self.system_api.create_value((component, component_state))?;
         Ok(id.into())
     }
 

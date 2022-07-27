@@ -82,14 +82,14 @@ fn create_genesis(mut track: Track) -> TrackReceipt {
     let system_vault = Vault::new(minted_xrd);
     track.create_uuid_value(XRD_VAULT_ID, system_vault);
 
-    let system_component = Component::new(
-        SYSTEM_PACKAGE,
-        SYSTEM_COMPONENT_NAME.to_owned(),
-        vec![],
-        scrypto_encode(&SystemComponentState { xrd: XRD_VAULT }),
-    );
-
+    let system_component = Component::new(SYSTEM_PACKAGE, SYSTEM_COMPONENT_NAME.to_owned(), vec![]);
+    let system_component_state =
+        ComponentState::new(scrypto_encode(&SystemComponentState { xrd: XRD_VAULT }));
     track.create_uuid_value(Address::GlobalComponent(SYSTEM_COMPONENT), system_component);
+    track.create_uuid_value(
+        Address::ComponentState(SYSTEM_COMPONENT),
+        system_component_state,
+    );
     track.create_uuid_value(Address::System, System { epoch: 0 });
 
     track.to_receipt(true)

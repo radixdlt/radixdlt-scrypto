@@ -126,6 +126,7 @@ impl<'s> Track<'s> {
                     | Address::ResourceManager(_)
                     | Address::Vault(..)
                     | Address::Package(..)
+                    | Address::ComponentState(..)
                     | Address::System => substate,
                     _ => panic!("Attempting to borrow unsupported value {:?}", address),
                 };
@@ -221,26 +222,6 @@ impl<'s> Track<'s> {
 
         self.borrowed_substates
             .insert(address, BorrowedSubstate::LoadedMut(value.into()));
-    }
-
-    // TODO: Replace with more generic write_value once Component is split into more substates
-    pub fn write_component_value(&mut self, address: Address, value: Vec<u8>) {
-        match address {
-            Address::GlobalComponent(..) | Address::LocalComponent(..) => {}
-            _ => panic!("Unexpected address"),
-        }
-
-        let borrowed = self
-            .borrowed_substates
-            .get_mut(&address)
-            .expect("Value was never locked");
-        match borrowed {
-            BorrowedSubstate::Taken => panic!("Value was taken"),
-            BorrowedSubstate::Loaded(..) => panic!("Cannot write to immutable"),
-            BorrowedSubstate::LoadedMut(component_val) => {
-                component_val.component_mut().set_state(value);
-            }
-        }
     }
 
     /// Returns the value of a key value pair

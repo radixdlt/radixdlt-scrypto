@@ -24,6 +24,7 @@ pub enum Address {
     KeyValueStoreEntry(KeyValueStoreId, Vec<u8>),
     Vault(VaultId),
     LocalComponent(ComponentAddress),
+    ComponentState(ComponentAddress),
     System,
 }
 
@@ -57,10 +58,11 @@ impl Into<PackageAddress> for Address {
 
 impl Into<ComponentAddress> for Address {
     fn into(self) -> ComponentAddress {
-        if let Address::GlobalComponent(component_address) = self {
-            return component_address;
-        } else {
-            panic!("Address is not a component address");
+        match self {
+            Address::GlobalComponent(component_address)
+            | Address::LocalComponent(component_address)
+            | Address::ComponentState(component_address) => component_address,
+            _ => panic!("Address is not a component address"),
         }
     }
 }
@@ -90,6 +92,7 @@ pub enum Substate {
     System(System),
     Resource(ResourceManager),
     Component(Component),
+    ComponentState(ComponentState),
     Package(ValidatedPackage),
     Vault(Vault),
     NonFungible(NonFungibleWrapper),
@@ -145,10 +148,25 @@ impl Substate {
         }
     }
 
+    pub fn component_state(&self) -> &ComponentState {
+        if let Substate::ComponentState(state) = self {
+            state
+        } else {
+            panic!("Not component state");
+        }
+    }
+
     pub fn component(&self) -> &Component {
         if let Substate::Component(component) = self {
             component
         } else {
+            match self {
+                Substate::ComponentState(component_state) => {
+                    let value = decode_any(component_state.state()).unwrap();
+                    panic!("Not a component {:?}", value);
+                }
+                _ => {}
+            }
             panic!("Not a component");
         }
     }
@@ -204,6 +222,12 @@ impl Into<Substate> for Component {
     }
 }
 
+impl Into<Substate> for ComponentState {
+    fn into(self) -> Substate {
+        Substate::ComponentState(self)
+    }
+}
+
 impl Into<Substate> for ResourceManager {
     fn into(self) -> Substate {
         Substate::Resource(self)
@@ -232,6 +256,16 @@ impl Into<Component> for Substate {
     fn into(self) -> Component {
         if let Substate::Component(component) = self {
             component
+        } else {
+            panic!("Not a component");
+        }
+    }
+}
+
+impl Into<ComponentState> for Substate {
+    fn into(self) -> ComponentState {
+        if let Substate::ComponentState(component_state) = self {
+            component_state
         } else {
             panic!("Not a component");
         }
@@ -294,7 +328,7 @@ pub enum RENode {
     Proof(Proof),
     Vault(Vault),
     KeyValueStore(PreCommittedKeyValueStore),
-    Component(Component),
+    Component(Component, ComponentState),
     Worktop(Worktop),
     Package(ValidatedPackage),
     Resource(ResourceManager),
@@ -347,14 +381,28 @@ impl RENode {
 
     pub fn component(&self) -> &Component {
         match self {
-            RENode::Component(component) => component,
+            RENode::Component(component, ..) => component,
             _ => panic!("Expected to be a store"),
         }
     }
 
     pub fn component_mut(&mut self) -> &mut Component {
         match self {
-            RENode::Component(component) => component,
+            RENode::Component(component, ..) => component,
+            _ => panic!("Expected to be a store"),
+        }
+    }
+
+    pub fn component_state(&self) -> &ComponentState {
+        match self {
+            RENode::Component(_, component_state) => component_state,
+            _ => panic!("Expected to be a store"),
+        }
+    }
+
+    pub fn component_state_mut(&mut self) -> &mut ComponentState {
+        match self {
+            RENode::Component(_, component_state) => component_state,
             _ => panic!("Expected to be a store"),
         }
     }
@@ -549,14 +597,14 @@ impl Into<HashMap<NonFungibleId, NonFungible>> for REValue {
 
 #[derive(Debug)]
 pub enum REComplexValue {
-    Component(Component),
+    Component(Component, ComponentState),
 }
 
 impl REComplexValue {
     pub fn get_children(&self) -> Result<HashSet<ValueId>, RuntimeError> {
         match self {
-            REComplexValue::Component(component) => {
-                let value = ScryptoValue::from_slice(component.state())
+            REComplexValue::Component(_, component_state) => {
+                let value = ScryptoValue::from_slice(component_state.state())
                     .map_err(RuntimeError::DecodeError)?;
                 Ok(value.value_ids())
             }
@@ -569,8 +617,8 @@ impl REComplexValue {
             non_root_nodes.extend(val.to_nodes(id));
         }
         match self {
-            REComplexValue::Component(component) => REValue {
-                root: RENode::Component(component),
+            REComplexValue::Component(component, component_state) => REValue {
+                root: RENode::Component(component, component_state),
                 non_root_nodes,
             },
         }
@@ -665,8 +713,8 @@ impl Into<REValueByComplexity> for ValidatedPackage {
     }
 }
 
-impl Into<REValueByComplexity> for Component {
+impl Into<REValueByComplexity> for (Component, ComponentState) {
     fn into(self) -> REValueByComplexity {
-        REValueByComplexity::Complex(REComplexValue::Component(self))
+        REValueByComplexity::Complex(REComplexValue::Component(self.0, self.1))
     }
 }

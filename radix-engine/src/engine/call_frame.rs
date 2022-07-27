@@ -126,9 +126,11 @@ pub fn insert_non_root_nodes<'s>(track: &mut Track<'s>, values: HashMap<ValueId,
                 let addr = Address::Vault(id.into());
                 track.create_uuid_value(addr, vault);
             }
-            RENode::Component(component) => {
-                let addr = Address::LocalComponent(id.into());
-                track.create_uuid_value(addr, component);
+            RENode::Component(component, component_state) => {
+                let component_address = id.into();
+                track.create_uuid_value(Address::LocalComponent(component_address), component);
+                track
+                    .create_uuid_value(Address::ComponentState(component_address), component_state);
             }
             RENode::KeyValueStore(store) => {
                 let id = id.into();
@@ -381,6 +383,24 @@ impl<'f, 's> REValueRef<'f, 's> {
         }
     }
 
+    pub fn component_state(&self) -> &ComponentState {
+        match self {
+            REValueRef::Stack(value, id) => id
+                .as_ref()
+                .map_or(value.root(), |v| value.non_root(v))
+                .component_state(),
+            REValueRef::Track(track, address) => {
+                let component_state_address = match address {
+                    Address::GlobalComponent(address) | Address::LocalComponent(address) => {
+                        Address::ComponentState(*address)
+                    }
+                    _ => panic!("Unexpected"),
+                };
+                track.read_value(component_state_address).component_state()
+            }
+        }
+    }
+
     pub fn component(&self) -> &Component {
         match self {
             REValueRef::Stack(value, id) => id
@@ -525,17 +545,21 @@ impl<'f, 's> REValueRefMut<'f, 's> {
         }
     }
 
-    fn component_put(&mut self, value: ScryptoValue, to_store: HashMap<ValueId, REValue>) {
+    fn component_state_set(&mut self, value: ScryptoValue, to_store: HashMap<ValueId, REValue>) {
         match self {
             REValueRefMut::Stack(re_value, id) => {
-                let component = re_value.get_node_mut(id.as_ref()).component_mut();
-                component.set_state(value.raw);
+                let component_state = re_value.get_node_mut(id.as_ref()).component_state_mut();
+                component_state.set_state(value.raw);
                 for (id, val) in to_store {
                     re_value.insert_non_root_nodes(val.to_nodes(id));
                 }
             }
             REValueRefMut::Track(track, address) => {
-                track.write_component_value(address.clone(), value.raw);
+                let component_address: ComponentAddress = address.clone().into();
+                track.write_value(
+                    Address::ComponentState(component_address),
+                    ComponentState::new(value.raw),
+                );
                 for (id, val) in to_store {
                     insert_non_root_nodes(track, val.to_nodes(id));
                 }
@@ -549,6 +573,20 @@ impl<'f, 's> REValueRefMut<'f, 's> {
             REValueRefMut::Track(track, address) => {
                 let component_val = track.read_value(address.clone());
                 component_val.component()
+            }
+        }
+    }
+
+    fn component_state(&mut self) -> &ComponentState {
+        match self {
+            REValueRefMut::Stack(re_value, id) => {
+                re_value.get_node_mut(id.as_ref()).component_state()
+            }
+            REValueRefMut::Track(track, address) => {
+                let component_address: ComponentAddress = address.clone().into();
+                let component_state_address = Address::ComponentState(component_address);
+                let component_val = track.read_value(component_state_address.clone());
+                component_val.component_state()
             }
         }
     }
@@ -977,7 +1015,7 @@ where
             match &address {
                 SubstateAddress::Component(.., offset) => match offset {
                     ComponentOffset::State => {
-                        ScryptoValue::from_slice(value_ref.component().state())
+                        ScryptoValue::from_slice(value_ref.component_state().state())
                             .expect("Expected to decode")
                     }
                     ComponentOffset::Info => {
@@ -1179,7 +1217,7 @@ where
                         vec![method_auth.clone()]
                     }
                     RENode::Proof(_) => vec![],
-                    RENode::Component(component) => {
+                    RENode::Component(component, ..) => {
                         let package_address = component.package_address();
                         self.track
                             .acquire_lock(package_address, false, false)
@@ -1451,6 +1489,25 @@ where
                                     }
                                 })?;
                             locked_values.insert(address.clone());
+
+                            let component_address: ComponentAddress = address.clone().into();
+                            let component_state_address =
+                                Address::ComponentState(component_address);
+                            self.track
+                                .acquire_lock(component_state_address.clone(), true, false)
+                                .map_err(|e| match e {
+                                    TrackError::NotFound => {
+                                        RuntimeError::ComponentNotFound(component_address)
+                                    }
+                                    TrackError::Reentrancy => {
+                                        RuntimeError::ComponentReentrancy(component_address)
+                                    }
+                                    TrackError::StateTrackError(..) => {
+                                        panic!("Unexpected")
+                                    }
+                                })?;
+                            locked_values.insert(component_state_address);
+
                             REValuePointer::Track(address)
                         }
                         REValuePointer::Stack { frame_id, root, id } => REValuePointer::Stack {
@@ -1502,9 +1559,14 @@ where
                                 &self.parent_values,
                                 &self.track,
                             );
-                            value_ref
-                                .component()
-                                .method_authorization(&abi.structure, &fn_ident)
+
+                            let component = value_ref.component();
+                            let component_state = value_ref.component_state();
+                            component.method_authorization(
+                                component_state,
+                                &abi.structure,
+                                &fn_ident,
+                            )
                         };
 
                         (method_auths, package_address)
@@ -1927,6 +1989,9 @@ where
                         Address::LocalComponent(_) => {
                             SystemApiCostingEntry::ReturnGlobal { size: 0 }
                         }
+                        Address::ComponentState(_) => {
+                            SystemApiCostingEntry::ReturnGlobal { size: 0 }
+                        }
                         Address::System => SystemApiCostingEntry::ReturnGlobal { size: 0 },
                     },
                 }
@@ -1997,7 +2062,7 @@ where
                 resource_address,
                 ..,
             )) => ValueId::NonFungibles(resource_address),
-            REValueByComplexity::Complex(REComplexValue::Component(ref component)) => {
+            REValueByComplexity::Complex(REComplexValue::Component(ref component, ..)) => {
                 let component_address = self.new_component_address(component);
                 ValueId::Component(component_address)
             }
@@ -2055,35 +2120,57 @@ where
         assert!(taken_values.len() == 1);
         let value = taken_values.into_values().nth(0).unwrap();
 
-        let (substate, maybe_non_fungibles) = match value.root {
-            RENode::Component(component) => (Substate::Component(component), None),
-            RENode::Package(package) => (Substate::Package(package), None),
+        let (substates, maybe_non_fungibles) = match value.root {
+            RENode::Component(component, component_state) => {
+                let mut substates = HashMap::new();
+                let component_address = value_id.clone().into();
+                substates.insert(
+                    Address::GlobalComponent(component_address),
+                    Substate::Component(component),
+                );
+                substates.insert(
+                    Address::ComponentState(component_address),
+                    Substate::ComponentState(component_state),
+                );
+                (substates, None)
+            }
+            RENode::Package(package) => {
+                let mut substates = HashMap::new();
+                let package_address = value_id.clone().into();
+                substates.insert(
+                    Address::Package(package_address),
+                    Substate::Package(package),
+                );
+                (substates, None)
+            }
             RENode::Resource(resource_manager) => {
+                let resource_address: ResourceAddress = value_id.clone().into();
+
                 let non_fungibles =
                     if matches!(resource_manager.resource_type(), ResourceType::NonFungible) {
-                        let resource_address: ResourceAddress = value_id.clone().into();
                         let re_value = self
                             .owned_values
-                            .remove(&ValueId::NonFungibles(resource_address))
+                            .remove(&ValueId::NonFungibles(resource_address.clone()))
                             .unwrap();
                         let non_fungibles: HashMap<NonFungibleId, NonFungible> = re_value.into();
                         Some(non_fungibles)
                     } else {
                         None
                     };
-                (Substate::Resource(resource_manager), non_fungibles)
+
+                let mut substates = HashMap::new();
+                substates.insert(
+                    Address::ResourceManager(resource_address),
+                    Substate::Resource(resource_manager),
+                );
+                (substates, non_fungibles)
             }
             _ => panic!("Not expected"),
         };
 
-        let address = match value_id {
-            ValueId::Component(component_address) => Address::GlobalComponent(*component_address),
-            ValueId::Package(package_address) => Address::Package(*package_address),
-            ValueId::Resource(resource_address) => Address::ResourceManager(*resource_address),
-            _ => panic!("Expected to be a component address"),
-        };
-
-        self.track.create_uuid_value(address.clone(), substate);
+        for (address, substate) in substates {
+            self.track.create_uuid_value(address.clone(), substate);
+        }
 
         let mut to_store_values = HashMap::new();
         for (id, value) in value.non_root_nodes.into_iter() {
@@ -2092,7 +2179,7 @@ where
         insert_non_root_nodes(self.track, to_store_values);
 
         if let Some(non_fungibles) = maybe_non_fungibles {
-            let resource_address: ResourceAddress = address.clone().into();
+            let resource_address: ResourceAddress = value_id.clone().into();
             let parent_address = Address::NonFungibleSpace(resource_address.clone());
             for (id, non_fungible) in non_fungibles {
                 self.track.set_key_value(
@@ -2218,7 +2305,7 @@ where
         );
         match address {
             SubstateAddress::Component(.., offset) => match offset {
-                ComponentOffset::State => value_ref.component_put(value, taken_values),
+                ComponentOffset::State => value_ref.component_state_set(value, taken_values),
                 ComponentOffset::Info => {
                     return Err(RuntimeError::InvalidDataWrite);
                 }

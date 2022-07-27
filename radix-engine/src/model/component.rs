@@ -23,13 +23,31 @@ pub enum ComponentError {
     CostingError(CostUnitCounterError),
 }
 
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
+pub struct ComponentState {
+    state: Vec<u8>,
+}
+
+impl ComponentState {
+    pub fn new(state: Vec<u8>) -> Self {
+        ComponentState { state }
+    }
+
+    pub fn state(&self) -> &[u8] {
+        &self.state
+    }
+
+    pub fn set_state(&mut self, new_state: Vec<u8>) {
+        self.state = new_state;
+    }
+}
+
 /// A component is an instance of blueprint.
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct Component {
     package_address: PackageAddress,
     blueprint_name: String,
     access_rules: Vec<AccessRules>,
-    state: Vec<u8>,
 }
 
 impl Component {
@@ -37,22 +55,21 @@ impl Component {
         package_address: PackageAddress,
         blueprint_name: String,
         access_rules: Vec<AccessRules>,
-        state: Vec<u8>,
     ) -> Self {
         Self {
             package_address,
             blueprint_name,
             access_rules,
-            state,
         }
     }
 
     pub fn method_authorization(
         &self,
+        component_state: &ComponentState,
         schema: &Type,
         method_name: &str,
     ) -> Vec<MethodAuthorization> {
-        let data = ScryptoValue::from_slice(&self.state).unwrap();
+        let data = ScryptoValue::from_slice(&component_state.state).unwrap();
 
         let mut authorizations = Vec::new();
         for auth in &self.access_rules {
@@ -78,14 +95,6 @@ impl Component {
 
     pub fn blueprint_name(&self) -> &str {
         &self.blueprint_name
-    }
-
-    pub fn state(&self) -> &[u8] {
-        &self.state
-    }
-
-    pub fn set_state(&mut self, new_state: Vec<u8>) {
-        self.state = new_state;
     }
 
     pub fn main<
