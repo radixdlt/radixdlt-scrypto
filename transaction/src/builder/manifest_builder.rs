@@ -617,6 +617,16 @@ impl ManifestBuilder {
     }
 
     /// Withdraws resource from an account.
+    pub fn pay_fee(&mut self, amount: Decimal, account: ComponentAddress) -> &mut Self {
+        self.add_instruction(Instruction::CallMethod {
+            component_address: account,
+            method_name: "pay_fee".to_string(),
+            arg: to_struct!(amount),
+        })
+        .0
+    }
+
+    /// Withdraws resource from an account.
     pub fn withdraw_from_account(
         &mut self,
         resource_address: ResourceAddress,

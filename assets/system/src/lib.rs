@@ -31,5 +31,11 @@ blueprint! {
         pub fn free_xrd(&mut self) -> Bucket {
             self.xrd.take(1_000_000)
         }
+
+        /// Pays fee to bootstrap account creation.
+        /// TESTING ONLY. TODO: Remove
+        pub fn pay_fee(&mut self, amount: Decimal) {
+            self.xrd.pay_fee(amount);
+        }
     }
 }

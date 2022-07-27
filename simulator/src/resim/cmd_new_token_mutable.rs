@@ -65,6 +65,7 @@ impl NewTokenMutable {
         };
 
         let manifest = ManifestBuilder::new(Network::LocalSimulator)
+            .pay_fee(10.into(), SYSTEM_COMPONENT)
             .new_token_mutable(metadata, self.minter_resource_address)
             .build();
         handle_manifest(

@@ -18,6 +18,7 @@ fn test_get_epoch() {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .pay_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(package_address, "SystemTest", "get_epoch", to_struct![])
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -38,6 +39,7 @@ fn test_set_epoch_without_system_auth_fails() {
     // Act
     let epoch = 9876u64;
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .pay_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(
             package_address,
             "SystemTest",

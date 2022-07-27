@@ -15,6 +15,7 @@ fn test_process_and_transaction() {
     let package_address = test_runner.extract_and_publish_package("core");
 
     let manifest1 = ManifestBuilder::new(Network::LocalSimulator)
+        .pay_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(package_address, "CoreTest", "query", to_struct![])
         .build();
     let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
@@ -29,6 +30,7 @@ fn test_call() {
     let package_address = test_runner.extract_and_publish_package("core");
 
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .pay_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(package_address, "MoveTest", "move_bucket", to_struct![])
         .call_function(package_address, "MoveTest", "move_proof", to_struct![])
         .call_method_with_all_resources(account, "deposit_batch")

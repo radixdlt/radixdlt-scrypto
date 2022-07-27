@@ -16,6 +16,7 @@ fn test_package() {
     let package = test_runner.extract_and_publish_package("component");
 
     let manifest1 = ManifestBuilder::new(Network::LocalSimulator)
+        .pay_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(package, "PackageTest", "publish", to_struct!())
         .build();
     let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
@@ -31,6 +32,7 @@ fn test_component() {
 
     // Create component
     let manifest1 = ManifestBuilder::new(Network::LocalSimulator)
+        .pay_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(package, "ComponentTest", "create_component", to_struct!())
         .build();
     let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
@@ -41,6 +43,7 @@ fn test_component() {
 
     // Call functions & methods
     let manifest2 = ManifestBuilder::new(Network::LocalSimulator)
+        .pay_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(
             package,
             "ComponentTest",
@@ -64,6 +67,7 @@ fn invalid_blueprint_name_should_cause_error() {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .pay_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(
             package_address,
             "NonExistentBlueprint",
@@ -90,6 +94,7 @@ fn reentrancy_should_not_be_possible() {
     let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("component");
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .pay_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(package_address, "ReentrantComponent", "new", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -98,6 +103,7 @@ fn reentrancy_should_not_be_possible() {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .pay_fee(10.into(), SYSTEM_COMPONENT)
         .call_method(component_address, "call_self", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -125,6 +131,7 @@ fn missing_component_address_should_cause_error() {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .pay_fee(10.into(), SYSTEM_COMPONENT)
         .call_method(component_address, "get_component_state", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);

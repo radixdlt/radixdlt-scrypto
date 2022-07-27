@@ -1,6 +1,7 @@
 use core::ops::AddAssign;
 use sbor::rust::collections::HashMap;
 use sbor::rust::str::FromStr;
+use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use scrypto::{
     engine::types::VaultId,

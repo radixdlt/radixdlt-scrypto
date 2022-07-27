@@ -28,6 +28,7 @@ fn test_hello() {
 
     // Publish package
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .pay_fee(10.into(), SYSTEM_COMPONENT)
         .publish_package(extract_package(compile_package!()).unwrap())
         .build();
     let package_address = executor
@@ -39,6 +40,7 @@ fn test_hello() {
 
     // Create an account
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .pay_fee(10.into(), SYSTEM_COMPONENT)
         .call_method(SYSTEM_COMPONENT, "free_xrd", to_struct!())
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.new_account_with_resource(
@@ -56,6 +58,7 @@ fn test_hello() {
 
     // Test the `instantiate_hello` function.
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .pay_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(package_address, "Hello", "instantiate_hello", to_struct!())
         .build();
     let receipt = executor.execute_and_commit(
@@ -68,6 +71,7 @@ fn test_hello() {
 
     // Test the `free_token` method.
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .pay_fee(10.into(), SYSTEM_COMPONENT)
         .call_method(component, "free_token", to_struct!())
         .call_method_with_all_resources(account, "deposit_batch")
         .build();

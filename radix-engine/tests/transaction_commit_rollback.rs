@@ -18,6 +18,7 @@ fn test_state_track_success() {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .pay_fee(10.into(), account)
         .withdraw_from_account(RADIX_TOKEN, account)
         .call_method_with_all_resources(other_account, "deposit_batch")
         .build();
@@ -41,6 +42,7 @@ fn test_state_track_failure() {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .pay_fee(10.into(), account)
         .withdraw_from_account(RADIX_TOKEN, account)
         .call_method_with_all_resources(other_account, "deposit_batch")
         .assert_worktop_contains_by_amount(Decimal::from(5), RADIX_TOKEN)

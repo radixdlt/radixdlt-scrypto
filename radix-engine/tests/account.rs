@@ -21,7 +21,7 @@ fn test_pay_fee_and_transfer() {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
-        .call_method(account, "pay_fee", to_struct!(Decimal::from(1)))
+        .pay_fee(10.into(), account)
         .withdraw_from_account(RADIX_TOKEN, account)
         .call_method_with_all_resources(other_account, "deposit_batch")
         .build();
@@ -41,6 +41,7 @@ fn can_withdraw_from_my_account() {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .pay_fee(10.into(), account)
         .withdraw_from_account(RADIX_TOKEN, account)
         .call_method_with_all_resources(other_account, "deposit_batch")
         .build();
@@ -61,6 +62,7 @@ fn can_withdraw_non_fungible_from_my_account() {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .pay_fee(10.into(), account)
         .withdraw_from_account(resource_address, account)
         .call_method_with_all_resources(other_account, "deposit_batch")
         .build();
@@ -75,15 +77,16 @@ fn cannot_withdraw_from_other_account() {
     // Arrange
     let mut store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let (_, _, account) = test_runner.new_account();
-    let (other_public_key, _, other_account) = test_runner.new_account();
+    let (public_key, _, account) = test_runner.new_account();
+    let (_, _, other_account) = test_runner.new_account();
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
-        .withdraw_from_account(RADIX_TOKEN, account)
-        .call_method_with_all_resources(other_account, "deposit_batch")
+        .pay_fee(10.into(), account)
+        .withdraw_from_account(RADIX_TOKEN, other_account)
+        .call_method_with_all_resources(account, "deposit_batch")
         .build();
 
     // Act
-    let receipt = test_runner.execute_manifest(manifest, vec![other_public_key]);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
     receipt.expect_err(is_auth_error);
@@ -96,6 +99,7 @@ fn account_to_bucket_to_account() {
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account();
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .pay_fee(10.into(), account)
         .withdraw_from_account(RADIX_TOKEN, account)
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder
@@ -120,9 +124,11 @@ fn test_account_balance() {
     // Arrange
     let mut store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let (public_key, _, account) = test_runner.new_account();
+    let (public_key, _, account1) = test_runner.new_account();
+    let (_, _, account2) = test_runner.new_account();
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
-        .call_method(account, "balance", to_struct!(RADIX_TOKEN))
+        .pay_fee(10.into(), account1)
+        .call_method(account2, "balance", to_struct!(RADIX_TOKEN))
         .build();
 
     // Act
@@ -131,7 +137,7 @@ fn test_account_balance() {
 
     // Assert
     assert_eq!(
-        outputs[0],
+        outputs[1],
         ScryptoValue::from_typed(&Decimal::from(1000000)).raw
     );
 }

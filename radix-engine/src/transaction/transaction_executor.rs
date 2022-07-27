@@ -212,11 +212,7 @@ where
                     Err(error) => TransactionStatus::Failed(error),
                 }
             } else {
-                // TODO: TransactionStatus::Rejected
-                match result {
-                    Ok(output) => TransactionStatus::Succeeded(output),
-                    Err(error) => TransactionStatus::Failed(error),
-                }
+                TransactionStatus::Rejected
             },
             transaction_network,
             transaction_fee: TransactionFeeSummary {

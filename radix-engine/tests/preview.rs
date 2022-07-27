@@ -5,6 +5,7 @@ use crate::test_runner::TestRunner;
 use radix_engine::ledger::InMemorySubstateStore;
 use radix_engine::transaction::ExecutionParameters;
 use scrypto::core::Network;
+use scrypto::prelude::SYSTEM_COMPONENT;
 use transaction::builder::ManifestBuilder;
 use transaction::builder::TransactionBuilder;
 use transaction::model::*;
@@ -55,6 +56,7 @@ fn prepare_test_tx_and_preview_intent(
         })
         .manifest(
             ManifestBuilder::new(Network::LocalSimulator)
+                .pay_fee(10.into(), SYSTEM_COMPONENT)
                 .clear_auth_zone()
                 .build(),
         )

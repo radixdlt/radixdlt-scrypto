@@ -20,6 +20,7 @@ fn can_create_clone_and_drop_bucket_proof() {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .pay_fee(10.into(), SYSTEM_COMPONENT)
         .call_function_with_abi(
             package_address,
             "BucketProof",
@@ -57,6 +58,7 @@ fn can_create_clone_and_drop_vault_proof() {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .pay_fee(10.into(), SYSTEM_COMPONENT)
         .call_method(
             component_address,
             "create_clone_drop_vault_proof",
@@ -90,6 +92,7 @@ fn can_create_clone_and_drop_vault_proof_by_amount() {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .pay_fee(10.into(), SYSTEM_COMPONENT)
         .call_method_with_abi(
             component_address,
             "create_clone_drop_vault_proof_by_amount",
@@ -131,6 +134,7 @@ fn can_create_clone_and_drop_vault_proof_by_ids() {
     ]);
     let proof_ids = BTreeSet::from([NonFungibleId::from_u32(2)]);
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .pay_fee(10.into(), SYSTEM_COMPONENT)
         .call_method(
             component_address,
             "create_clone_drop_vault_proof_by_ids",
@@ -155,6 +159,7 @@ fn can_use_bucket_for_authorization() {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .pay_fee(10.into(), SYSTEM_COMPONENT)
         .call_function_with_abi(
             package_address,
             "BucketProof",
@@ -195,6 +200,7 @@ fn can_use_vault_for_authorization() {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .pay_fee(10.into(), SYSTEM_COMPONENT)
         .call_method_with_abi(
             component_address,
             "use_vault_proof_for_auth",
@@ -222,6 +228,7 @@ fn can_create_proof_from_account_and_pass_on() {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .pay_fee(10.into(), SYSTEM_COMPONENT)
         .call_function_with_abi(
             package_address,
             "VaultProof",
@@ -250,6 +257,7 @@ fn cant_move_restricted_proof() {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .pay_fee(10.into(), SYSTEM_COMPONENT)
         .call_function_with_abi(
             package_address,
             "VaultProof",
@@ -278,6 +286,7 @@ fn cant_move_locked_bucket() {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .pay_fee(10.into(), SYSTEM_COMPONENT)
         .call_function_with_abi(
             package_address,
             "BucketProof",
@@ -314,6 +323,7 @@ fn can_compose_bucket_and_vault_proof() {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .pay_fee(10.into(), SYSTEM_COMPONENT)
         .withdraw_from_account_by_amount(99.into(), resource_address, account)
         .take_from_worktop_by_amount(99.into(), resource_address, |builder, bucket_id| {
             builder.call_method(
@@ -349,6 +359,7 @@ fn can_compose_bucket_and_vault_proof_by_amount() {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .pay_fee(10.into(), SYSTEM_COMPONENT)
         .withdraw_from_account_by_amount(99.into(), resource_address, account)
         .take_from_worktop_by_amount(99.into(), resource_address, |builder, bucket_id| {
             builder.call_method(
@@ -383,6 +394,7 @@ fn can_compose_bucket_and_vault_proof_by_ids() {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .pay_fee(10.into(), SYSTEM_COMPONENT)
         .withdraw_from_account_by_ids(
             &BTreeSet::from([NonFungibleId::from_u32(2), NonFungibleId::from_u32(3)]),
             resource_address,
@@ -428,6 +440,7 @@ fn can_create_vault_proof_by_amount_from_non_fungibles() {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .pay_fee(10.into(), SYSTEM_COMPONENT)
         .call_method(
             component_address,
             "create_clone_drop_vault_proof_by_amount",
@@ -451,6 +464,7 @@ fn can_create_auth_zone_proof_by_amount_from_non_fungibles() {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .pay_fee(10.into(), SYSTEM_COMPONENT)
         .create_proof_from_account_by_ids(
             &BTreeSet::from([NonFungibleId::from_u32(1), NonFungibleId::from_u32(2)]),
             resource_address,

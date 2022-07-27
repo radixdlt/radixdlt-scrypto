@@ -66,6 +66,7 @@ impl NewTokenFixed {
         };
 
         let manifest = ManifestBuilder::new(Network::LocalSimulator)
+            .pay_fee(10.into(), SYSTEM_COMPONENT)
             .new_token_fixed(metadata, self.total_supply)
             .call_method_with_all_resources(default_account, "deposit_batch")
             .build();

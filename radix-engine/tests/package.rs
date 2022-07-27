@@ -34,6 +34,7 @@ fn missing_memory_should_cause_error() {
         blueprints: HashMap::new(),
     };
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .pay_fee(10.into(), SYSTEM_COMPONENT)
         .publish_package(package)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -58,6 +59,7 @@ fn large_return_len_should_cause_memory_access_error() {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .pay_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(package, "LargeReturnSize", "f", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -81,6 +83,7 @@ fn overflow_return_len_should_cause_memory_access_error() {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .pay_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(package, "MaxReturnSize", "f", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -104,6 +107,7 @@ fn zero_return_len_should_cause_data_validation_error() {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .pay_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(package, "ZeroReturnSize", "f", to_struct!())
         .build();
 
@@ -126,6 +130,7 @@ fn test_basic_package() {
         blueprints: HashMap::new(),
     };
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .pay_fee(10.into(), SYSTEM_COMPONENT)
         .publish_package(package)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -158,6 +163,7 @@ fn test_basic_package_missing_export() {
     let code = wat2wasm(include_str!("wasm/basic_package.wat"));
     let package = Package { code, blueprints };
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .pay_fee(10.into(), SYSTEM_COMPONENT)
         .publish_package(package)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
