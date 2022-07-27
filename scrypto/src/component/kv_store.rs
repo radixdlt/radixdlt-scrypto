@@ -1,5 +1,4 @@
 use sbor::rust::borrow::ToOwned;
-use sbor::rust::cell::{RefCell, RefMut};
 use sbor::rust::fmt;
 use sbor::rust::marker::PhantomData;
 use sbor::rust::str::FromStr;
@@ -11,16 +10,14 @@ use scrypto::core::DataAddress;
 
 use crate::abi::*;
 use crate::buffer::*;
-use crate::core::{DataRefMut, DataValueRef};
+use crate::core::{DataValueRef, DataValueRefMut};
 use crate::crypto::*;
 use crate::engine::{api::*, call_engine, types::KeyValueStoreId};
 use crate::misc::*;
-use crate::prelude::HashMap;
 
 /// A scalable key-value map which loads entries on demand.
 pub struct KeyValueStore<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> {
     pub id: KeyValueStoreId,
-    pub map: RefCell<HashMap<DataAddress, Option<V>>>,
     pub key: PhantomData<K>,
     pub value: PhantomData<V>,
 }
@@ -33,7 +30,6 @@ impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> KeyValueStore<K,
 
         Self {
             id: output,
-            map: RefCell::new(HashMap::new()),
             key: PhantomData,
             value: PhantomData,
         }
@@ -47,27 +43,11 @@ impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> KeyValueStore<K,
         value.map(|value| DataValueRef { value })
     }
 
-    pub fn get_mut(&mut self, key: &K) -> Option<DataRefMut<V>> {
+    pub fn get_mut(&mut self, key: &K) -> Option<DataValueRefMut<V>> {
         let address = DataAddress::KeyValueEntry(self.id, scrypto_encode(key));
-        let mut borrowed_map = self.map.borrow_mut();
-        if !borrowed_map.contains_key(&address) {
-            let input = ::scrypto::engine::api::RadixEngineInput::ReadData(address.clone());
-            let value: Option<V> = call_engine(input);
-            borrowed_map.insert(address.clone(), value);
-        }
-
-        if borrowed_map.get(&address).unwrap().is_some() {
-            let ref_mut = RefMut::map(borrowed_map, |map| {
-                map.get_mut(&address).unwrap().as_mut().unwrap()
-            });
-
-            Some(DataRefMut {
-                value: ref_mut,
-                address,
-            })
-        } else {
-            None
-        }
+        let input = ::scrypto::engine::api::RadixEngineInput::ReadData(address.clone());
+        let value: Option<V> = call_engine(input);
+        value.map(|value| DataValueRefMut { address, value })
     }
 
     /// Inserts a new key-value pair into this map.
@@ -115,7 +95,6 @@ impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> TryFrom<&[u8]>
                     Hash(copy_u8_array(&slice[0..32])),
                     u32::from_le_bytes(copy_u8_array(&slice[32..])),
                 ),
-                map: RefCell::new(HashMap::new()),
                 key: PhantomData,
                 value: PhantomData,
             }),

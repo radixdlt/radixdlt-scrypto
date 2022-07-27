@@ -18,6 +18,32 @@ impl<V: Encode> Deref for DataValueRef<V> {
     }
 }
 
+pub struct DataValueRefMut<V: Encode> {
+    pub address: DataAddress,
+    pub value: V,
+}
+
+impl<V: Encode> Drop for DataValueRefMut<V> {
+    fn drop(&mut self) {
+        let bytes = scrypto_encode(&self.value);
+        let input = WriteData(self.address.clone(), bytes);
+        let _: () = call_engine(input);
+    }
+}
+
+impl<V: Encode> Deref for DataValueRefMut<V> {
+    type Target = V;
+
+    fn deref(&self) -> &Self::Target {
+        &self.value
+    }
+}
+
+impl<V: Encode> DerefMut for DataValueRefMut<V> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.value
+    }
+}
 
 pub struct DataRef<'a, V: Encode> {
     pub value: Ref<'a, V>,

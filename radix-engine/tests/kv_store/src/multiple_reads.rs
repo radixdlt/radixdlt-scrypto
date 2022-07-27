@@ -16,9 +16,7 @@ blueprint! {
                 assert_eq!(*maybe_entry.unwrap(), "hello");
                 assert_eq!(*maybe_entry2.unwrap(), "hello2");
             }
-            MultipleReads {
-                map
-            }.instantiate().globalize()
+            MultipleReads { map }.instantiate().globalize()
         }
     }
 }
