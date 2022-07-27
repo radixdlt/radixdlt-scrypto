@@ -1,6 +1,6 @@
 use core::ops::RangeFull;
 
-use indexmap::{IndexMap, IndexSet};
+use indexmap::IndexMap;
 use scrypto::crypto::hash;
 use scrypto::prelude::scrypto_encode;
 
@@ -15,8 +15,6 @@ pub struct BaseStateTrack<'s> {
     substate_store: &'s dyn ReadableSubstateStore,
     /// Substates either created during the transaction or loaded from substate store
     substates: IndexMap<Address, Option<Substate>>,
-    /// Spaces created during the transaction
-    spaces: IndexSet<Address>,
 }
 
 /// Keeps track of state changes that may be rolled back according to transaction status
@@ -25,8 +23,6 @@ pub struct AppStateTrack<'s> {
     base_state_track: BaseStateTrack<'s>,
     /// Substates either created during the transaction or loaded from the base state track
     substates: IndexMap<Address, Option<Substate>>,
-    /// Spaces created during the transaction
-    spaces: IndexSet<Address>,
 }
 
 impl<'s> BaseStateTrack<'s> {
@@ -34,7 +30,6 @@ impl<'s> BaseStateTrack<'s> {
         Self {
             substate_store,
             substates: IndexMap::new(),
-            spaces: IndexSet::new(),
         }
     }
 
@@ -51,10 +46,6 @@ impl<'s> BaseStateTrack<'s> {
 
     pub fn generate_diff(&self) -> StateDiff {
         let mut diff = StateDiff::new();
-
-        for space in &self.spaces {
-            diff.up_virtual_substates.insert(space.clone());
-        }
 
         for (address, substate) in &self.substates {
             if let Some(substate) = substate {
@@ -136,7 +127,6 @@ impl<'s> AppStateTrack<'s> {
         Self {
             base_state_track,
             substates: IndexMap::new(),
-            spaces: IndexSet::new(),
         }
     }
 
@@ -198,19 +188,11 @@ impl<'s> AppStateTrack<'s> {
             .insert(address, Some(substate));
     }
 
-    /// Creates a new space, assuming address does not exist
-    pub fn put_space(&mut self, address: Address) {
-        self.spaces.insert(address);
-    }
-
     /// Flush all changes to base state track
     pub fn flush(&mut self) {
         self.base_state_track
             .substates
             .extend(self.substates.drain(RangeFull));
-        self.base_state_track
-            .spaces
-            .extend(self.spaces.drain(RangeFull));
     }
 
     /// Unwraps into the base state track

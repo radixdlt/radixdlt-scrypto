@@ -131,7 +131,6 @@ pub fn insert_non_root_nodes<'s>(track: &mut Track<'s>, values: HashMap<ValueId,
             RENode::KeyValueStore(store) => {
                 let id = id.into();
                 let address = Address::KeyValueStoreSpace(id);
-                track.create_key_space(address.clone());
                 for (k, v) in store.store {
                     track.set_key_value(address.clone(), k, KeyValueStoreEntryWrapper(Some(v.raw)));
                 }
@@ -2090,8 +2089,6 @@ where
 
         if let Some(non_fungibles) = maybe_non_fungibles {
             let resource_address: ResourceAddress = address.clone().into();
-            self.track
-                .create_key_space(Address::NonFungibleSpace(resource_address));
             let parent_address = Address::NonFungibleSpace(resource_address.clone());
             for (id, non_fungible) in non_fungibles {
                 self.track.set_key_value(

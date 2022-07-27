@@ -30,12 +30,10 @@ pub struct OutputValue {
 
 pub trait ReadableSubstateStore {
     fn get_substate(&self, address: &Address) -> Option<OutputValue>;
-    fn get_space(&self, address: &Address) -> OutputId;
 }
 
 pub trait WriteableSubstateStore {
     fn put_substate(&mut self, address: Address, substate: OutputValue);
-    fn put_space(&mut self, address: Address, output_id: OutputId);
 }
 
 pub trait SubstateStore: ReadableSubstateStore + WriteableSubstateStore {}

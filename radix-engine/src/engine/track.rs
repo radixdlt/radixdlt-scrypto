@@ -77,10 +77,6 @@ impl<'s> Track<'s> {
         self.state_track.put_substate(address, value.into());
     }
 
-    pub fn create_key_space(&mut self, address: Address) {
-        self.state_track.put_space(address);
-    }
-
     // TODO: to read/write a value owned by track requires three coordinated steps:
     // 1. Attempt to acquire the lock
     // 2. Apply the operation

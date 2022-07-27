@@ -100,20 +100,10 @@ impl ReadableSubstateStore for RadixEngineDB {
     fn get_substate(&self, address: &Address) -> Option<OutputValue> {
         self.read(address).map(|b| scrypto_decode(&b).unwrap())
     }
-
-    fn get_space(&self, address: &Address) -> OutputId {
-        self.read(address)
-            .map(|b| scrypto_decode(&b).unwrap())
-            .expect("Expected space does not exist")
-    }
 }
 
 impl WriteableSubstateStore for RadixEngineDB {
     fn put_substate(&mut self, address: Address, substate: OutputValue) {
         self.write(address, scrypto_encode(&substate));
-    }
-
-    fn put_space(&mut self, address: Address, output_id: OutputId) {
-        self.write(address, scrypto_encode(&output_id));
     }
 }

@@ -9,7 +9,6 @@ use indexmap::IndexMap;
 struct StagedSubstateStoreNode {
     parent_id: u64,
     locked: bool,
-    spaces: IndexMap<Address, OutputId>,
     outputs: IndexMap<Address, OutputValue>,
 }
 
@@ -18,7 +17,6 @@ impl StagedSubstateStoreNode {
         StagedSubstateStoreNode {
             parent_id,
             locked: false,
-            spaces: IndexMap::new(),
             outputs: IndexMap::new(),
         }
     }
@@ -98,10 +96,6 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> StagedSubstateStoreM
 
         self.merge_to_parent_recurse(node.parent_id, true);
 
-        for (address, output_id) in node.spaces {
-            self.parent.put_space(address, output_id);
-        }
-
         for (address, output) in node.outputs {
             self.parent.put_substate(address, output);
         }
@@ -132,19 +126,6 @@ impl<'t, 's, S: ReadableSubstateStore + WriteableSubstateStore> StagedSubstateSt
 
         self.get_substate_recurse(address, node.parent_id)
     }
-
-    fn get_space_recurse(&self, address: &Address, id: u64) -> OutputId {
-        if id == 0 {
-            return self.stores.parent.get_space(address);
-        }
-
-        let node = self.stores.nodes.get(&id).unwrap();
-        if let Some(output_id) = node.spaces.get(address) {
-            return output_id.clone();
-        }
-
-        self.get_space_recurse(address, node.parent_id)
-    }
 }
 
 impl<'t, 's, S: ReadableSubstateStore + WriteableSubstateStore> ReadableSubstateStore
@@ -153,24 +134,11 @@ impl<'t, 's, S: ReadableSubstateStore + WriteableSubstateStore> ReadableSubstate
     fn get_substate(&self, address: &Address) -> Option<OutputValue> {
         self.get_substate_recurse(address, self.id)
     }
-
-    fn get_space(&self, address: &Address) -> OutputId {
-        self.get_space_recurse(address, self.id)
-    }
 }
 
 impl<'t, 's, S: ReadableSubstateStore + WriteableSubstateStore> WriteableSubstateStore
     for StagedSubstateStore<'t, 's, S>
 {
-    fn put_space(&mut self, address: Address, output_id: OutputId) {
-        if self.id == 0 {
-            self.stores.parent.put_space(address, output_id);
-        } else {
-            let node = self.stores.nodes.get_mut(&self.id).unwrap();
-            node.spaces.insert(address, output_id);
-        }
-    }
-
     fn put_substate(&mut self, address: Address, output: OutputValue) {
         if self.id == 0 {
             self.stores.parent.put_substate(address, output);

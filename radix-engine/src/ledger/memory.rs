@@ -8,14 +8,12 @@ use crate::ledger::{OutputValue, WriteableSubstateStore};
 #[derive(Debug, PartialEq, Eq)]
 pub struct InMemorySubstateStore {
     substates: HashMap<Address, OutputValue>,
-    spaces: HashMap<Address, OutputId>,
 }
 
 impl InMemorySubstateStore {
     pub fn new() -> Self {
         Self {
             substates: HashMap::new(),
-            spaces: HashMap::new(),
         }
     }
 
@@ -35,21 +33,10 @@ impl ReadableSubstateStore for InMemorySubstateStore {
     fn get_substate(&self, address: &Address) -> Option<OutputValue> {
         self.substates.get(address).cloned()
     }
-
-    fn get_space(&self, address: &Address) -> OutputId {
-        self.spaces
-            .get(address)
-            .cloned()
-            .expect("Expected space does not exist")
-    }
 }
 
 impl WriteableSubstateStore for InMemorySubstateStore {
     fn put_substate(&mut self, address: Address, substate: OutputValue) {
         self.substates.insert(address, substate);
-    }
-
-    fn put_space(&mut self, address: Address, output_id: OutputId) {
-        self.spaces.insert(address, output_id);
     }
 }

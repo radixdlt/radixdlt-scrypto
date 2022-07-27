@@ -13,7 +13,6 @@ pub struct VirtualSubstateId(pub Address, pub Vec<u8>);
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct StateDiff {
-    pub up_virtual_substates: BTreeSet<Address>,
     pub down_virtual_substates: Vec<VirtualSubstateId>,
     pub up_substates: BTreeMap<Address, OutputValue>,
     pub down_substates: Vec<OutputId>,
@@ -22,7 +21,6 @@ pub struct StateDiff {
 impl StateDiff {
     pub fn new() -> Self {
         Self {
-            up_virtual_substates: BTreeSet::new(),
             up_substates: BTreeMap::new(),
             down_virtual_substates: Vec::new(),
             down_substates: Vec::new(),
@@ -32,18 +30,7 @@ impl StateDiff {
     /// Applies the state changes to some substate store.
     pub fn commit<S: WriteableSubstateStore>(&self, store: &mut S) -> CommitReceipt {
         let mut receipt = CommitReceipt::new();
-        let mut virtual_outputs = HashMap::new();
 
-        for space_address in &self.up_virtual_substates {
-            let output_id = OutputId {
-                address: space_address.clone(),
-                substate_hash: hash(scrypto_encode(&())),
-                version: 0,
-            };
-            receipt.virtual_space_up(output_id.clone());
-            store.put_space(space_address.clone(), output_id.clone());
-            virtual_outputs.insert(space_address, output_id);
-        }
         for virtual_substate_id in &self.down_virtual_substates {
             receipt.virtual_down(virtual_substate_id.clone());
         }
