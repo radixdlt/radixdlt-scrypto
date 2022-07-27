@@ -2,7 +2,7 @@ use clap::Parser;
 use radix_engine::constants::*;
 use radix_engine::engine::Track;
 use radix_engine::engine::{CallFrame, SystemApi};
-use radix_engine::fee::{CostUnitCounter, FeeTable};
+use radix_engine::fee::{FeeTable, SystemLoanCostUnitCounter};
 use scrypto::core::{SNodeRef, SystemSetEpochInput};
 use scrypto::crypto::hash;
 use scrypto::values::ScryptoValue;
