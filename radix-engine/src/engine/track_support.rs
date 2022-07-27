@@ -7,7 +7,6 @@ use scrypto::prelude::scrypto_encode;
 use crate::engine::*;
 use crate::ledger::*;
 use crate::state_manager::StateDiff;
-use crate::state_manager::SubstateParentId;
 use crate::state_manager::VirtualSubstateId;
 
 /// Keeps track of state changes that that are non-reversible, such as fee payments
@@ -50,26 +49,6 @@ impl<'s> BaseStateTrack<'s> {
         })
     }
 
-    fn get_space_output_id(
-        substate_store: &&'s dyn ReadableSubstateStore,
-        address: &Address,
-    ) -> OutputId {
-        substate_store.get_space(&address)
-    }
-
-    fn get_substate_parent_id(
-        spaces: &IndexSet<Address>,
-        substate_store: &&'s dyn ReadableSubstateStore,
-        space_address: &Address,
-    ) -> SubstateParentId {
-        if spaces.contains(space_address) {
-            SubstateParentId::New(space_address.clone())
-        } else {
-            let output_id = Self::get_space_output_id(substate_store, space_address);
-            SubstateParentId::Exists(output_id)
-        }
-    }
-
     pub fn generate_diff(&self) -> StateDiff {
         let mut diff = StateDiff::new();
 
@@ -89,19 +68,14 @@ impl<'s> BaseStateTrack<'s> {
                             next_version
                         } else {
                             let parent_address = Address::NonFungibleSpace(*resource_address);
-                            let parent_id = Self::get_substate_parent_id(
-                                &self.spaces,
-                                &self.substate_store,
-                                &parent_address,
-                            );
-                            let virtual_output_id = VirtualSubstateId(parent_id, key.clone());
+                            let virtual_output_id = VirtualSubstateId(parent_address, key.clone());
                             diff.down_virtual_substates.push(virtual_output_id);
                             0
                         };
 
                         let output_value = OutputValue {
                             substate: substate.clone(),
-                            version: next_version
+                            version: next_version,
                         };
                         diff.up_substates.insert(address.clone(), output_value);
                     }
@@ -114,19 +88,14 @@ impl<'s> BaseStateTrack<'s> {
                             next_version
                         } else {
                             let parent_address = Address::KeyValueStoreSpace(*kv_store_id);
-                            let parent_id = Self::get_substate_parent_id(
-                                &self.spaces,
-                                &self.substate_store,
-                                &parent_address,
-                            );
-                            let virtual_output_id = VirtualSubstateId(parent_id, key.clone());
+                            let virtual_output_id = VirtualSubstateId(parent_address, key.clone());
                             diff.down_virtual_substates.push(virtual_output_id);
                             0
                         };
 
                         let output_value = OutputValue {
                             substate: substate.clone(),
-                            version: next_version
+                            version: next_version,
                         };
                         diff.up_substates.insert(address.clone(), output_value);
                     }
@@ -142,7 +111,7 @@ impl<'s> BaseStateTrack<'s> {
                         };
                         let output_value = OutputValue {
                             substate: substate.clone(),
-                            version: next_version
+                            version: next_version,
                         };
                         diff.up_substates.insert(address.clone(), output_value);
                     }

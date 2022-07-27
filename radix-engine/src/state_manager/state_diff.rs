@@ -1,5 +1,4 @@
 use sbor::rust::collections::*;
-use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::buffer::scrypto_encode;
@@ -8,16 +7,9 @@ use scrypto::crypto::hash;
 use crate::engine::Address;
 use crate::ledger::*;
 use crate::state_manager::CommitReceipt;
-use crate::state_manager::HardVirtualSubstateId;
 
-#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
-pub enum SubstateParentId {
-    Exists(OutputId),
-    New(Address),
-}
-
-#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
-pub struct VirtualSubstateId(pub SubstateParentId, pub Vec<u8>);
+#[derive(Debug, Clone, Hash, TypeId, Encode, Decode, PartialEq, Eq)]
+pub struct VirtualSubstateId(pub Address, pub Vec<u8>);
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct StateDiff {
@@ -46,19 +38,14 @@ impl StateDiff {
             let output_id = OutputId {
                 address: space_address.clone(),
                 substate_hash: hash(scrypto_encode(&())),
-                version: 0
+                version: 0,
             };
             receipt.virtual_space_up(output_id.clone());
             store.put_space(space_address.clone(), output_id.clone());
             virtual_outputs.insert(space_address, output_id);
         }
-        for VirtualSubstateId(parent_id, key) in &self.down_virtual_substates {
-            let parent_hard_id = match parent_id {
-                SubstateParentId::Exists(real_id) => real_id.clone(),
-                SubstateParentId::New(key) => virtual_outputs.get(&key).cloned().unwrap(),
-            };
-            let virtual_substate_id = HardVirtualSubstateId(parent_hard_id, key.clone());
-            receipt.virtual_down(virtual_substate_id);
+        for virtual_substate_id in &self.down_virtual_substates {
+            receipt.virtual_down(virtual_substate_id.clone());
         }
 
         for output_id in &self.down_substates {
@@ -68,7 +55,7 @@ impl StateDiff {
             let output_id = OutputId {
                 address: address.clone(),
                 substate_hash: hash(scrypto_encode(&output_value.substate)),
-                version: output_value.version
+                version: output_value.version,
             };
             receipt.up(output_id);
             store.put_substate(address.clone(), output_value.clone());

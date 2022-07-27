@@ -1,13 +1,13 @@
 use sbor::rust::collections::*;
 use sbor::rust::vec::Vec;
-use sbor::*;
 
 use crate::ledger::*;
+use crate::state_manager::VirtualSubstateId;
 
 pub struct CommitReceipt {
-    pub virtual_down_substates: HashSet<HardVirtualSubstateId>,
-    pub down_substates: HashSet<OutputId>,
+    pub virtual_down_substates: HashSet<VirtualSubstateId>,
     pub virtual_up_substates: Vec<OutputId>,
+    pub down_substates: HashSet<OutputId>,
     pub up_substates: Vec<OutputId>,
 }
 
@@ -21,22 +21,19 @@ impl CommitReceipt {
         }
     }
 
-    pub fn virtual_down(&mut self, id: HardVirtualSubstateId) {
+    pub fn virtual_down(&mut self, id: VirtualSubstateId) {
         self.virtual_down_substates.insert(id);
-    }
-
-    pub fn down(&mut self, id: OutputId) {
-        self.down_substates.insert(id);
     }
 
     pub fn virtual_space_up(&mut self, id: OutputId) {
         self.up_substates.push(id);
     }
 
+    pub fn down(&mut self, id: OutputId) {
+        self.down_substates.insert(id);
+    }
+
     pub fn up(&mut self, id: OutputId) {
         self.up_substates.push(id);
     }
 }
-
-#[derive(Debug, Clone, Hash, TypeId, Encode, Decode, PartialEq, Eq)]
-pub struct HardVirtualSubstateId(pub OutputId, pub Vec<u8>);
