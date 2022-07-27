@@ -223,7 +223,7 @@ impl Vault {
                 // TODO: add xrd/cost unit conversion
                 system_api
                     .cost_unit_counter()
-                    .repay(100)
+                    .repay(vault_id, 100)
                     .map_err(VaultError::CostingError)?;
 
                 // TODO: store (vault_id, amount_locked) in cost unit counter
