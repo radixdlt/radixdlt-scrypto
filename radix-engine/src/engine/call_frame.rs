@@ -1084,6 +1084,7 @@ where
             return Err(RuntimeError::MaxCallDepthLimitReached);
         }
 
+        // TODO: find a better way to handle this
         let is_pay_fee = matches!(snode_ref, SNodeRef::VaultRef(..)) && &fn_ident == "pay_fee";
 
         self.cost_unit_counter
