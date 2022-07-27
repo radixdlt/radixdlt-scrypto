@@ -1,6 +1,6 @@
 use core::ops::*;
 use num_bigint::BigInt;
-use num_traits::{Pow, ToPrimitive, Zero};
+use num_traits::{Pow, ToPrimitive, Zero, One};
 use sbor::rust::convert::{TryFrom, TryInto};
 use sbor::rust::fmt;
 use sbor::rust::iter;
@@ -173,24 +173,36 @@ macro_rules! decimals {
                     }
 
                     /// Calculates power using "exponentiation by squaring".
-                    pub fn powi(&self, exp: i64) -> Self {
-                        let one = BigInt::from(Self::ONE.0);
-                        let base = BigInt::from(self.0);
-                        let to_dec = |x: BigInt| $dec(<$wrapped>::try_from(x).expect("Overflow"));
-                        let div = |x: i128, y: i128| x.checked_div(y).expect("Overflow");
-                        let sub = |x: i128, y: i128| x.checked_sub(y).expect("Overflow");
-                        let mul = |x: i128, y: i128| x.checked_mul(y).expect("Overflow");
+                    pub fn powi<T: Ord + Rem<Output=T> + TryFrom<u8> + Zero + One + Mul<Output=T> + Div<Output=T> + Sub<Output=T> + Clone>(&self, exp: T) -> Self 
+                    where <T as TryFrom<u8>>::Error: fmt::Debug
+                    {
+                        let one = Self::ONE.0;
+                        let base = self.0;
+                        let t_0 = T::zero();
+                        let t_1 = T::one();
+                        let t_2 = T::try_from(2u8).expect("Overflow");
 
-                        if exp < 0 {
-                            return to_dec(&one * &one / base).powi(mul(exp, -1));
+                        if exp < t_0 {
+                            return $dec(&one * &one / base).powi(exp * (t_0.clone() - t_1.clone()));
                         }
-                        if exp == 0 {
+                        if exp == t_0 {
                             return Self::ONE;
                         }
-                        if exp % 2 == 0 {
-                            return to_dec(&base * &base / &one).powi(div(exp, 2));
+                        if exp > t_0 && exp < t_1 {
+                            panic!("exp should be an integer");
+                        }
+                        if exp.clone() % t_2.clone() == t_0 {
+                            return $dec(&base * &base / &one)
+                                .powi(exp / t_2);
                         } else {
-                            return to_dec(&base * &BigInt::from(to_dec(&base * &base / &one).powi(div(sub(exp, 1), 2)).0) / &one);
+                            return $dec(
+                                &base * 
+                                $dec( &base * &base / &one)
+                                .powi( (exp - t_1) / t_2)
+                                .0
+                                /
+                                &one
+                            );
                         }
                     }
                 }
