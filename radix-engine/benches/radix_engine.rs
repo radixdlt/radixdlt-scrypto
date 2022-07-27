@@ -28,6 +28,7 @@ fn bench_transfer(c: &mut Criterion) {
 
     // Create two accounts
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .pay_fee(10.into(), SYSTEM_COMPONENT)
         .call_method(SYSTEM_COMPONENT, "free_xrd", to_struct!())
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.new_account_with_resource(
@@ -51,6 +52,7 @@ fn bench_transfer(c: &mut Criterion) {
 
     // Create a transfer manifest
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .pay_fee(10.into(), account1)
         .withdraw_from_account_by_amount(1.into(), RADIX_TOKEN, account1)
         .call_method_with_all_resources(account2, "deposit_batch")
         .build();
