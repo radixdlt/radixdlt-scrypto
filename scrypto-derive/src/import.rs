@@ -337,7 +337,7 @@ fn get_native_type(ty: &des::Type) -> Result<(Type, Vec<Item>)> {
                 ScryptoType::I384 => "::scrypto::math::I384",
                 ScryptoType::I512 => "::scrypto::math::I512",
                 ScryptoType::Decimal => "::scrypto::math::Decimal",
-                ScryptoType::LongDecimal => "::scrypto::math::LongDecimal",
+                ScryptoType::PreciseDecimal => "::scrypto::math::PreciseDecimal",
                 ScryptoType::Bucket => "::scrypto::resource::Bucket",
                 ScryptoType::Proof => "::scrypto::resource::Proof",
                 ScryptoType::Vault => "::scrypto::resource::Vault",

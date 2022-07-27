@@ -415,8 +415,8 @@ impl CustomValueVisitor for ScryptoCustomValueChecker {
             ScryptoType::Decimal => {
                 Decimal::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidDecimal)?;
             }
-            ScryptoType::LongDecimal => {
-                LongDecimal::try_from(data)
+            ScryptoType::PreciseDecimal => {
+                PreciseDecimal::try_from(data)
                     .map_err(ScryptoCustomValueCheckError::InvalidLongDecimal)?;
             }
             ScryptoType::Bucket => {
@@ -641,8 +641,8 @@ impl ScryptoValueFormatter {
             ScryptoType::I384 => format!("I384(\"{}\")", I384::try_from(data).unwrap()),
             ScryptoType::I512 => format!("I512(\"{}\")", I512::try_from(data).unwrap()),
             ScryptoType::Decimal => format!("Decimal(\"{}\")", Decimal::try_from(data).unwrap()),
-            ScryptoType::LongDecimal => {
-                format!("LongDecimal(\"{}\")", LongDecimal::try_from(data).unwrap())
+            ScryptoType::PreciseDecimal => {
+                format!("PreciseDecimal(\"{}\")", PreciseDecimal::try_from(data).unwrap())
             }
             ScryptoType::PackageAddress => {
                 format!(
