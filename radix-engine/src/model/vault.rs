@@ -218,15 +218,15 @@ impl Vault {
                 if vault.resource_address() != RADIX_TOKEN {
                     return Err(VaultError::PayFeeError(PayFeeError::NotRadixToken));
                 }
-                let _fee = vault.take(input.amount)?;
 
-                // TODO: add xrd/cost unit conversion
-                system_api
+                // Refill new cost units
+                let actual_amount = system_api
                     .cost_unit_counter()
-                    .repay(vault_id, 100)
+                    .repay(vault_id, input.amount)
                     .map_err(VaultError::CostingError)?;
 
-                // TODO: store (vault_id, amount_locked) in cost unit counter
+                // Temporarily burn the amount
+                let _destroyed = vault.take(actual_amount)?;
 
                 Ok(ScryptoValue::from_typed(&()))
             }
