@@ -13,7 +13,6 @@ use scrypto::values::ScryptoValue;
 use crate::engine::SystemApi;
 use crate::engine::{PreCommittedKeyValueStore, RuntimeError};
 use crate::fee::*;
-use crate::ledger::ReadableSubstateStore;
 use crate::model::Component;
 use crate::wasm::*;
 
@@ -21,28 +20,28 @@ use crate::wasm::*;
 ///
 /// Execution is free from a costing perspective, as we assume
 /// the system api will bill properly.
-pub struct RadixEngineWasmRuntime<'y, 'p, 's, Y, W, I, S>
+pub struct RadixEngineWasmRuntime<'y, 'p, 's, Y, W, I, C>
 where
-    Y: SystemApi<'p, 's, W, I, S>,
+    Y: SystemApi<'p, 's, W, I, C>,
     W: WasmEngine<I>,
     I: WasmInstance,
-    S: ReadableSubstateStore,
+    C: CostUnitCounter,
 {
     this: ScryptoActorInfo,
     system_api: &'y mut Y,
     phantom1: PhantomData<W>,
     phantom2: PhantomData<I>,
-    phantom3: PhantomData<S>,
+    phantom3: PhantomData<C>,
     phantom4: PhantomData<&'p ()>,
     phantom5: PhantomData<&'s ()>,
 }
 
-impl<'y, 'p, 's, Y, W, I, S> RadixEngineWasmRuntime<'y, 'p, 's, Y, W, I, S>
+impl<'y, 'p, 's, Y, W, I, C> RadixEngineWasmRuntime<'y, 'p, 's, Y, W, I, C>
 where
-    Y: SystemApi<'p, 's, W, I, S>,
+    Y: SystemApi<'p, 's, W, I, C>,
     W: WasmEngine<I>,
     I: WasmInstance,
-    S: ReadableSubstateStore,
+    C: CostUnitCounter,
 {
     pub fn new(this: ScryptoActorInfo, system_api: &'y mut Y) -> Self {
         RadixEngineWasmRuntime {
@@ -56,7 +55,7 @@ where
         }
     }
 
-    fn cost_unit_counter(&mut self) -> &mut CostUnitCounter {
+    fn cost_unit_counter(&mut self) -> &mut C {
         self.system_api.cost_unit_counter()
     }
 
@@ -170,11 +169,11 @@ impl<
         'y,
         'p,
         's,
-        S: ReadableSubstateStore,
-        Y: SystemApi<'p, 's, W, I, S>,
+        Y: SystemApi<'p, 's, W, I, C>,
         W: WasmEngine<I>,
         I: WasmInstance,
-    > WasmRuntime for RadixEngineWasmRuntime<'y, 'p, 's, Y, W, I, S>
+        C: CostUnitCounter,
+    > WasmRuntime for RadixEngineWasmRuntime<'y, 'p, 's, Y, W, I, C>
 {
     fn main(&mut self, input: ScryptoValue) -> Result<ScryptoValue, InvokeError> {
         let input: RadixEngineInput =
@@ -210,13 +209,13 @@ impl<
 
 /// A `Nop` runtime accepts any external function calls by doing nothing and returning void.
 pub struct NopWasmRuntime {
-    cost_unit_counter: CostUnitCounter,
+    cost_unit_counter: SystemLoanCostUnitCounter,
 }
 
 impl NopWasmRuntime {
     pub fn new(cost_unit_limit: u32) -> Self {
         Self {
-            cost_unit_counter: CostUnitCounter::new(cost_unit_limit, cost_unit_limit),
+            cost_unit_counter: SystemLoanCostUnitCounter::new(cost_unit_limit, cost_unit_limit),
         }
     }
 }

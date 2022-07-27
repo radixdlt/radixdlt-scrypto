@@ -14,6 +14,8 @@ pub mod fee;
 pub mod ledger;
 /// Radix Engine models.
 pub mod model;
+/// Radix Engine transaction interface.
+pub mod transaction;
 
 /// State manager for the Radix Engine
 pub mod state_manager;

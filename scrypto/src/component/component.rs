@@ -129,7 +129,7 @@ impl fmt::Debug for Component {
 }
 
 /// An instance of a blueprint, which lives in the ledger state.
-#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct ComponentAddress(pub [u8; 27]);
 
 impl ComponentAddress {}

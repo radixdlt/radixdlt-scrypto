@@ -1,8 +1,9 @@
 use clap::Parser;
+use radix_engine::engine::Track;
 use radix_engine::engine::{CallFrame, SystemApi};
-use radix_engine::fee::{CostUnitCounter, FeeTable, MAX_TRANSACTION_COST, SYSTEM_LOAN_AMOUNT};
-use radix_engine::state_manager::Track;
+use radix_engine::fee::{FeeTable, SystemLoanCostUnitCounter};
 use scrypto::core::{SNodeRef, SystemSetEpochInput};
+use scrypto::crypto::hash;
 use scrypto::values::ScryptoValue;
 use transaction::validation::{IdAllocator, IdSpace};
 
@@ -17,20 +18,21 @@ pub struct SetCurrentEpoch {
 
 impl SetCurrentEpoch {
     pub fn run<O: std::io::Write>(&self, _out: &mut O) -> Result<(), Error> {
-        let hash = Hash([0; Hash::LENGTH]);
+        // TODO: can we construct a proper transaction to do the following?
 
-        let mut id_allocator = IdAllocator::new(IdSpace::Application);
+        let tx_hash = hash(get_nonce()?.to_string());
         let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?);
         let mut wasm_engine = DefaultWasmEngine::new();
         let mut wasm_instrumenter = WasmInstrumenter::new();
-        let mut track = Track::new(&mut substate_store);
-        let mut cost_unit_counter = CostUnitCounter::new(MAX_TRANSACTION_COST, SYSTEM_LOAN_AMOUNT);
+        let mut id_allocator = IdAllocator::new(IdSpace::Application);
+        let mut track = Track::new(&substate_store);
+        let mut cost_unit_counter = SystemLoanCostUnitCounter::default();
         let fee_table = FeeTable::new();
 
         // Create root call frame.
         let mut root_frame = CallFrame::new_root(
             false,
-            hash,
+            tx_hash,
             vec![],
             true,
             &mut id_allocator,
@@ -41,6 +43,7 @@ impl SetCurrentEpoch {
             &fee_table,
         );
 
+        // Invoke the system
         root_frame
             .invoke_snode(
                 SNodeRef::SystemRef,
@@ -48,6 +51,12 @@ impl SetCurrentEpoch {
                 ScryptoValue::from_typed(&SystemSetEpochInput { epoch: self.epoch }),
             )
             .map(|_| ())
-            .map_err(Error::TransactionExecutionError)
+            .map_err(Error::TransactionExecutionError)?;
+
+        // Commit
+        let track_receipt = track.to_receipt(true);
+        track_receipt.state_updates.commit(&mut substate_store);
+
+        Ok(())
     }
 }

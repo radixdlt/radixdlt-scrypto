@@ -8,7 +8,7 @@ use sbor::*;
 use crate::resource::*;
 
 /// Method authorization rules for a component
-#[derive(Debug, Clone, PartialEq, Describe, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, Describe, TypeId, Encode, Decode)]
 pub struct AccessRules {
     method_auth: HashMap<String, AccessRule>,
     default_auth: AccessRule,

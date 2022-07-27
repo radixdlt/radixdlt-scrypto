@@ -13,8 +13,8 @@ use scrypto::prelude::{
 use scrypto::values::ScryptoValue;
 
 use crate::engine::{SubstateAddress, SystemApi};
+use crate::fee::CostUnitCounter;
 use crate::fee::CostUnitCounterError;
-use crate::ledger::ReadableSubstateStore;
 use crate::model::{
     Proof, ProofError, ResourceContainer, ResourceContainerError, ResourceContainerId,
 };
@@ -164,10 +164,10 @@ impl Bucket {
     pub fn main<
         'p,
         's,
-        Y: SystemApi<'p, 's, W, I, S>,
+        Y: SystemApi<'p, 's, W, I, C>,
         W: WasmEngine<I>,
         I: WasmInstance,
-        S: ReadableSubstateStore,
+        C: CostUnitCounter,
     >(
         bucket_id: BucketId,
         method_name: &str,
@@ -263,10 +263,10 @@ impl Bucket {
     pub fn consuming_main<
         'p,
         's,
-        Y: SystemApi<'p, 's, W, I, S>,
+        Y: SystemApi<'p, 's, W, I, C>,
         W: WasmEngine<I>,
         I: WasmInstance,
-        S: ReadableSubstateStore,
+        C: CostUnitCounter,
     >(
         value_id: ValueId,
         method_name: &str,

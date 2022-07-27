@@ -1,7 +1,10 @@
-use radix_engine::engine::{Receipt, TransactionExecutor};
 use radix_engine::ledger::*;
 use radix_engine::model::{export_abi, export_abi_by_component, extract_package};
-use radix_engine::state_manager::*;
+use radix_engine::state_manager::StagedSubstateStoreManager;
+use radix_engine::transaction::{
+    PreviewError, PreviewExecutor, PreviewResult, TransactionExecutor, TransactionExecutorConfig,
+    TransactionReceipt,
+};
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter};
 use sbor::describe::Fields;
 use sbor::Type;
@@ -11,14 +14,17 @@ use scrypto::prelude::*;
 use scrypto::prelude::{HashMap, Package};
 use scrypto::{abi, to_struct};
 use transaction::builder::ManifestBuilder;
-use transaction::model::TestTransaction;
-use transaction::model::TransactionManifest;
+use transaction::model::{ExecutableTransaction, TransactionManifest};
+use transaction::model::{PreviewIntent, TestTransaction};
 use transaction::signing::EcdsaPrivateKey;
+use transaction::validation::{TestEpochManager, TestIntentHashManager};
 
 pub struct TestRunner<'s, S: ReadableSubstateStore + WriteableSubstateStore> {
     execution_stores: StagedSubstateStoreManager<'s, S>,
     wasm_engine: DefaultWasmEngine,
     wasm_instrumenter: WasmInstrumenter,
+    epoch_manager: TestEpochManager,
+    intent_hash_manager: TestIntentHashManager,
     next_private_key: u64,
     next_transaction_nonce: u64,
     trace: bool,
@@ -30,10 +36,16 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             execution_stores: StagedSubstateStoreManager::new(substate_store),
             wasm_engine: DefaultWasmEngine::new(),
             wasm_instrumenter: WasmInstrumenter::new(),
+            epoch_manager: TestEpochManager::new(0),
+            intent_hash_manager: TestIntentHashManager::new(),
             next_private_key: 1, // 0 is invalid
             next_transaction_nonce: 0,
             trace,
         }
+    }
+
+    pub fn next_transaction_nonce(&self) -> u64 {
+        self.next_transaction_nonce
     }
 
     pub fn new_key_pair(&mut self) -> (EcdsaPublicKey, EcdsaPrivateKey) {
@@ -98,15 +110,49 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         &mut self,
         manifest: TransactionManifest,
         signer_public_keys: Vec<EcdsaPublicKey>,
-    ) -> Receipt {
+    ) -> TransactionReceipt {
         let mut receipts = self.execute_batch(vec![(manifest, signer_public_keys)]);
         receipts.pop().unwrap()
+    }
+
+    pub fn execute_transaction<T: ExecutableTransaction>(
+        &mut self,
+        transaction: &T,
+        config: TransactionExecutorConfig,
+    ) -> TransactionReceipt {
+        let node_id = self.create_child_node(0);
+        let substate_store = &mut self.execution_stores.get_output_store(node_id);
+
+        TransactionExecutor::new(
+            substate_store,
+            &mut self.wasm_engine,
+            &mut self.wasm_instrumenter,
+            config,
+        )
+        .execute(transaction)
+    }
+
+    pub fn execute_preview(
+        &mut self,
+        preview_intent: PreviewIntent,
+    ) -> Result<PreviewResult, PreviewError> {
+        let node_id = self.create_child_node(0);
+        let substate_store = &mut self.execution_stores.get_output_store(node_id);
+
+        PreviewExecutor::new(
+            substate_store,
+            &mut self.wasm_engine,
+            &mut self.wasm_instrumenter,
+            &self.epoch_manager,
+            &self.intent_hash_manager,
+        )
+        .execute(preview_intent)
     }
 
     pub fn execute_batch(
         &mut self,
         manifests: Vec<(TransactionManifest, Vec<EcdsaPublicKey>)>,
-    ) -> Vec<Receipt> {
+    ) -> Vec<TransactionReceipt> {
         let node_id = self.create_child_node(0);
         let receipts = self.execute_batch_on_node(node_id, manifests);
         self.merge_node(node_id);
@@ -121,7 +167,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         &mut self,
         node_id: u64,
         manifests: Vec<(TransactionManifest, Vec<EcdsaPublicKey>)>,
-    ) -> Vec<Receipt> {
+    ) -> Vec<TransactionReceipt> {
         let mut store = self.execution_stores.get_output_store(node_id);
         let mut receipts = Vec::new();
         for (manifest, signer_public_keys) in manifests {
@@ -132,9 +178,9 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
                 &mut store,
                 &mut self.wasm_engine,
                 &mut self.wasm_instrumenter,
-                self.trace,
+                TransactionExecutorConfig::new(self.trace),
             )
-            .execute(&transaction);
+            .execute_and_commit(&transaction);
             receipts.push(receipt);
         }
 

@@ -19,9 +19,7 @@ use transaction::validation::*;
 
 use crate::engine::*;
 use crate::fee::*;
-use crate::ledger::*;
 use crate::model::*;
-use crate::state_manager::*;
 use crate::wasm::*;
 
 /// A call frame is the basic unit that forms a transaction call stack, which keeps track of the
@@ -30,13 +28,13 @@ pub struct CallFrame<
     'p, // parent lifetime
     'g, // lifetime of values outliving all frames
     's, // Substate store lifetime
-    S,  // Substore store type
     W,  // WASM engine type
     I,  // WASM instance type
+    C,  // Cost unit counter type
 > where
-    S: ReadableSubstateStore,
     W: WasmEngine<I>,
     I: WasmInstance,
+    C: CostUnitCounter,
 {
     /// The transaction hash
     transaction_hash: Hash,
@@ -46,14 +44,14 @@ pub struct CallFrame<
     trace: bool,
 
     /// State track
-    track: &'g mut Track<'s, S>,
+    track: &'g mut Track<'s>,
     /// Wasm engine
     wasm_engine: &'g mut W,
     /// Wasm Instrumenter
     wasm_instrumenter: &'g mut WasmInstrumenter,
 
     /// Remaining cost unit counter
-    cost_unit_counter: &'g mut CostUnitCounter,
+    cost_unit_counter: &'g mut C,
     /// Fee table
     fee_table: &'g FeeTable,
 
@@ -121,10 +119,7 @@ fn verify_stored_key(value: &ScryptoValue) -> Result<(), RuntimeError> {
     Ok(())
 }
 
-pub fn insert_non_root_nodes<'s, S: ReadableSubstateStore>(
-    track: &mut Track<'s, S>,
-    values: HashMap<ValueId, RENode>,
-) {
+pub fn insert_non_root_nodes<'s>(track: &mut Track<'s>, values: HashMap<ValueId, RENode>) {
     for (id, node) in values {
         match node {
             RENode::Vault(vault) => {
@@ -137,10 +132,10 @@ pub fn insert_non_root_nodes<'s, S: ReadableSubstateStore>(
             }
             RENode::KeyValueStore(store) => {
                 let id = id.into();
-                let address = Address::KeyValueStore(id);
+                let address = Address::KeyValueStoreSpace(id);
                 track.create_key_space(address.clone());
                 for (k, v) in store.store {
-                    track.set_key_value(address.clone(), k, Some(v));
+                    track.set_key_value(address.clone(), k, KeyValueStoreEntryWrapper(Some(v.raw)));
                 }
             }
             _ => panic!("Invalid node being persisted: {:?}", node),
@@ -174,7 +169,7 @@ impl REValuePointer {
             },
             REValuePointer::Track(..) => {
                 let child_address = match child_id {
-                    ValueId::KeyValueStore(kv_store_id) => Address::KeyValueStore(kv_store_id),
+                    ValueId::KeyValueStore(kv_store_id) => Address::KeyValueStoreSpace(kv_store_id),
                     ValueId::Vault(vault_id) => Address::Vault(vault_id),
                     ValueId::Component(component_id) => Address::LocalComponent(component_id),
                     _ => panic!("Unexpected"),
@@ -184,11 +179,11 @@ impl REValuePointer {
         }
     }
 
-    fn borrow_native_ref<'p, S: ReadableSubstateStore>(
+    fn borrow_native_ref<'p, 's>(
         &self, // TODO: Consider changing this to self
         owned_values: &mut HashMap<ValueId, REValue>,
         borrowed_values: &mut Vec<&'p mut HashMap<ValueId, REValue>>,
-        track: &mut Track<S>,
+        track: &mut Track<'s>,
     ) -> RENativeValueRef {
         match self {
             REValuePointer::Stack { frame_id, root, id } => {
@@ -207,12 +202,12 @@ impl REValuePointer {
         }
     }
 
-    fn to_ref<'f, 'p, 's, S: ReadableSubstateStore>(
+    fn to_ref<'f, 'p, 's>(
         &self,
         owned_values: &'f HashMap<ValueId, REValue>,
         borrowed_values: &'f Vec<&'p mut HashMap<ValueId, REValue>>,
-        track: &'f Track<'s, S>,
-    ) -> REValueRef<'f, 's, S> {
+        track: &'f Track<'s>,
+    ) -> REValueRef<'f, 's> {
         match self {
             REValuePointer::Stack { frame_id, root, id } => {
                 let frame = if let Some(frame_id) = frame_id {
@@ -226,12 +221,12 @@ impl REValuePointer {
         }
     }
 
-    fn to_ref_mut<'f, 'p, 's, S: ReadableSubstateStore>(
+    fn to_ref_mut<'f, 'p, 's>(
         &self,
         owned_values: &'f mut HashMap<ValueId, REValue>,
         borrowed_values: &'f mut Vec<&'p mut HashMap<ValueId, REValue>>,
-        track: &'f mut Track<'s, S>,
-    ) -> REValueRefMut<'f, 's, S> {
+        track: &'f mut Track<'s>,
+    ) -> REValueRefMut<'f, 's> {
         match self {
             REValuePointer::Stack { frame_id, root, id } => {
                 let frame = if let Some(frame_id) = frame_id {
@@ -329,11 +324,11 @@ impl RENativeValueRef {
         }
     }
 
-    pub fn return_to_location<'a, 'p, S: ReadableSubstateStore>(
+    pub fn return_to_location<'a, 'p, 's>(
         self,
         owned_values: &'a mut HashMap<ValueId, REValue>,
         borrowed_values: &'a mut Vec<&'p mut HashMap<ValueId, REValue>>,
-        track: &mut Track<S>,
+        track: &mut Track<'s>,
     ) {
         match self {
             RENativeValueRef::Stack(owned, frame_id, value_id, ..) => {
@@ -349,12 +344,12 @@ impl RENativeValueRef {
     }
 }
 
-pub enum REValueRef<'f, 's, S: ReadableSubstateStore> {
+pub enum REValueRef<'f, 's> {
     Stack(&'f REValue, Option<ValueId>),
-    Track(&'f Track<'s, S>, Address),
+    Track(&'f Track<'s>, Address),
 }
 
-impl<'f, 'p, 's, S: ReadableSubstateStore> REValueRef<'f, 's, S> {
+impl<'f, 's> REValueRef<'f, 's> {
     pub fn vault(&self) -> &Vault {
         match self {
             REValueRef::Stack(value, id) => id
@@ -408,12 +403,12 @@ impl<'f, 'p, 's, S: ReadableSubstateStore> REValueRef<'f, 's, S> {
     }
 }
 
-pub enum REValueRefMut<'f, 's, S: ReadableSubstateStore> {
+pub enum REValueRefMut<'f, 's> {
     Stack(&'f mut REValue, Option<ValueId>),
-    Track(&'f mut Track<'s, S>, Address),
+    Track(&'f mut Track<'s>, Address),
 }
 
-impl<'f, 's, S: ReadableSubstateStore> REValueRefMut<'f, 's, S> {
+impl<'f, 's> REValueRefMut<'f, 's> {
     fn kv_store_put(
         &mut self,
         key: Vec<u8>,
@@ -434,7 +429,7 @@ impl<'f, 's, S: ReadableSubstateStore> REValueRefMut<'f, 's, S> {
                 track.set_key_value(
                     address.clone(),
                     key,
-                    Substate::KeyValueStoreEntry(Some(value.raw)),
+                    Substate::KeyValueStoreEntry(KeyValueStoreEntryWrapper(Some(value.raw))),
                 );
                 for (id, val) in to_store {
                     insert_non_root_nodes(track, val.to_nodes(id));
@@ -444,46 +439,55 @@ impl<'f, 's, S: ReadableSubstateStore> REValueRefMut<'f, 's, S> {
     }
 
     fn kv_store_get(&mut self, key: &[u8]) -> ScryptoValue {
-        let maybe_value = match self {
+        let wrapper = match self {
             REValueRefMut::Stack(re_value, id) => {
                 let store = re_value.get_node_mut(id.as_ref()).kv_store_mut();
-                store.get(key).map(|v| v.dom)
+                store
+                    .get(key)
+                    .map(|v| KeyValueStoreEntryWrapper(Some(v.raw)))
+                    .unwrap_or(KeyValueStoreEntryWrapper(None))
             }
             REValueRefMut::Track(track, address) => {
                 let substate_value = track.read_key_value(address.clone(), key.to_vec());
-                substate_value
-                    .kv_entry()
-                    .as_ref()
-                    .map(|bytes| decode_any(bytes).unwrap())
+                substate_value.into()
             }
         };
 
-        // TODO: Cleanup
-        let value = maybe_value.map_or(
+        // TODO: Cleanup after adding polymorphism support for SBOR
+        // For now, we have to use `Vec<u8>` within `KeyValueStoreEntryWrapper`
+        // and apply the following ugly conversion.
+        let value = wrapper.0.map_or(
             Value::Option {
                 value: Box::new(Option::None),
             },
             |v| Value::Option {
-                value: Box::new(Some(v)),
+                value: Box::new(Some(decode_any(&v).unwrap())),
             },
         );
+
         ScryptoValue::from_value(value).unwrap()
     }
 
     fn non_fungible_get(&mut self, id: &NonFungibleId) -> ScryptoValue {
-        match self {
+        let wrapper = match self {
             REValueRefMut::Stack(value, re_id) => {
                 let non_fungible_set = re_id
                     .as_ref()
                     .map_or(value.root(), |v| value.non_root(v))
                     .non_fungibles();
-                ScryptoValue::from_typed(&non_fungible_set.get(id).cloned())
+                non_fungible_set
+                    .get(id)
+                    .cloned()
+                    .map(|v| NonFungibleWrapper(Some(v)))
+                    .unwrap_or(NonFungibleWrapper(None))
             }
             REValueRefMut::Track(track, address) => {
-                let value = track.read_key_value(address.clone(), id.to_vec());
-                ScryptoValue::from_typed(value.non_fungible())
+                let substate_value = track.read_key_value(address.clone(), id.to_vec());
+                substate_value.into()
             }
-        }
+        };
+
+        ScryptoValue::from_typed(&wrapper)
     }
 
     fn non_fungible_remove(&mut self, id: &NonFungibleId) {
@@ -492,7 +496,11 @@ impl<'f, 's, S: ReadableSubstateStore> REValueRefMut<'f, 's, S> {
                 panic!("Not supported");
             }
             REValueRefMut::Track(track, address) => {
-                track.set_key_value(address.clone(), id.to_vec(), Substate::NonFungible(None));
+                track.set_key_value(
+                    address.clone(),
+                    id.to_vec(),
+                    Substate::NonFungible(NonFungibleWrapper(None)),
+                );
             }
         }
     }
@@ -500,20 +508,20 @@ impl<'f, 's, S: ReadableSubstateStore> REValueRefMut<'f, 's, S> {
     fn non_fungible_put(&mut self, id: NonFungibleId, value: ScryptoValue) {
         match self {
             REValueRefMut::Stack(re_value, re_id) => {
-                let non_fungible: NonFungible =
+                let wrapper: NonFungibleWrapper =
                     scrypto_decode(&value.raw).expect("Should not fail.");
 
                 let non_fungible_set = re_value.get_node_mut(re_id.as_ref()).non_fungibles_mut();
-                non_fungible_set.insert(id, non_fungible);
+                if let Some(non_fungible) = wrapper.0 {
+                    non_fungible_set.insert(id, non_fungible);
+                } else {
+                    panic!("TODO: invalidate this code path and possibly consolidate `non_fungible_remove` and `non_fungible_put`")
+                }
             }
             REValueRefMut::Track(track, address) => {
-                let non_fungible: NonFungible =
+                let wrapper: NonFungibleWrapper =
                     scrypto_decode(&value.raw).expect("Should not fail.");
-                track.set_key_value(
-                    address.clone(),
-                    id.to_vec(),
-                    Substate::NonFungible(Some(non_fungible)),
-                );
+                track.set_key_value(address.clone(), id.to_vec(), Substate::NonFungible(wrapper));
             }
         }
     }
@@ -561,17 +569,18 @@ pub enum SNodeExecution<'a> {
     Scrypto(ScryptoActorInfo, PackageAddress),
 }
 
+#[derive(Debug)]
 pub enum SubstateAddress {
     KeyValueEntry(KeyValueStoreId, ScryptoValue),
     NonFungible(ResourceAddress, NonFungibleId),
     Component(ComponentAddress, ComponentOffset),
 }
 
-impl<'p, 'g, 's, S, W, I> CallFrame<'p, 'g, 's, S, W, I>
+impl<'p, 'g, 's, W, I, C> CallFrame<'p, 'g, 's, W, I, C>
 where
-    S: ReadableSubstateStore,
     W: WasmEngine<I>,
     I: WasmInstance,
+    C: CostUnitCounter,
 {
     pub fn new_root(
         verbose: bool,
@@ -579,10 +588,10 @@ where
         signer_public_keys: Vec<EcdsaPublicKey>,
         is_system: bool,
         id_allocator: &'g mut IdAllocator,
-        track: &'g mut Track<'s, S>,
+        track: &'g mut Track<'s>,
         wasm_engine: &'g mut W,
         wasm_instrumenter: &'g mut WasmInstrumenter,
-        cost_unit_counter: &'g mut CostUnitCounter,
+        cost_unit_counter: &'g mut C,
         fee_table: &'g FeeTable,
     ) -> Self {
         // TODO: Cleanup initialization of authzone
@@ -638,10 +647,10 @@ where
         depth: usize,
         trace: bool,
         id_allocator: &'g mut IdAllocator,
-        track: &'g mut Track<'s, S>,
+        track: &'g mut Track<'s>,
         wasm_engine: &'g mut W,
         wasm_instrumenter: &'g mut WasmInstrumenter,
-        cost_unit_counter: &'g mut CostUnitCounter,
+        cost_unit_counter: &'g mut C,
         fee_table: &'g FeeTable,
         auth_zone: Option<RefCell<AuthZone>>,
         owned_values: HashMap<ValueId, REValue>,
@@ -936,7 +945,7 @@ where
                         ));
                     } else if self
                         .track
-                        .take_lock(Address::GlobalComponent(*component_address), false)
+                        .acquire_lock(Address::GlobalComponent(*component_address), false, false)
                         .is_ok()
                     {
                         return Some((
@@ -987,7 +996,7 @@ where
         // TODO: Remove, currently a hack to allow for global component info retrieval
         if let Some(component_address) = address_borrowed {
             self.track
-                .release_lock(Address::GlobalComponent(*component_address));
+                .release_lock(Address::GlobalComponent(*component_address), false);
         }
 
         Ok((location.clone(), current_value))
@@ -1055,11 +1064,11 @@ where
     }
 }
 
-impl<'p, 'g, 's, S, W, I> SystemApi<'p, 's, W, I, S> for CallFrame<'p, 'g, 's, S, W, I>
+impl<'p, 'g, 's, W, I, C> SystemApi<'p, 's, W, I, C> for CallFrame<'p, 'g, 's, W, I, C>
 where
-    S: ReadableSubstateStore,
     W: WasmEngine<I>,
     I: WasmInstance,
+    C: CostUnitCounter,
 {
     fn invoke_snode(
         &mut self,
@@ -1067,9 +1076,20 @@ where
         fn_ident: String,
         input: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError> {
+        trace!(
+            self,
+            Level::Debug,
+            "Invoking: {:?} {:?}",
+            snode_ref,
+            &fn_ident
+        );
+
         if self.depth == MAX_CALL_DEPTH {
             return Err(RuntimeError::MaxCallDepthLimitReached);
         }
+
+        // TODO: find a better way to handle this
+        let is_pay_fee = matches!(snode_ref, SNodeRef::VaultRef(..)) && &fn_ident == "pay_fee";
 
         self.cost_unit_counter
             .consume(
@@ -1081,14 +1101,6 @@ where
                 "invoke_function",
             )
             .map_err(RuntimeError::CostingError)?;
-
-        trace!(
-            self,
-            Level::Debug,
-            "Invoking: {:?} {:?}",
-            snode_ref,
-            &fn_ident
-        );
 
         // Prevent vaults/kvstores from being moved
         Self::process_call_data(&input)?;
@@ -1141,7 +1153,7 @@ where
                     RENode::Bucket(bucket) => {
                         let resource_address = bucket.resource_address();
                         self.track
-                            .take_lock(resource_address, true)
+                            .acquire_lock(resource_address, true, false)
                             .expect("Should not fail.");
                         locked_values.insert(resource_address.clone().into());
                         let resource_manager =
@@ -1150,7 +1162,7 @@ where
                         value_refs.insert(
                             ValueId::Resource(resource_address),
                             REValueInfo {
-                                location: REValuePointer::Track(Address::Resource(
+                                location: REValuePointer::Track(Address::ResourceManager(
                                     resource_address,
                                 )),
                                 visible: true,
@@ -1159,7 +1171,7 @@ where
                         value_refs.insert(
                             ValueId::NonFungibles(resource_address),
                             REValueInfo {
-                                location: REValuePointer::Track(Address::NonFungibleSet(
+                                location: REValuePointer::Track(Address::NonFungibleSpace(
                                     resource_address,
                                 )),
                                 visible: true,
@@ -1171,7 +1183,7 @@ where
                     RENode::Component(component) => {
                         let package_address = component.package_address();
                         self.track
-                            .take_lock(package_address, false)
+                            .acquire_lock(package_address, false, false)
                             .expect("Should not fail.");
                         locked_values.insert(package_address.clone().into());
                         value_refs.insert(
@@ -1192,7 +1204,7 @@ where
             }
             SNodeRef::SystemRef => {
                 self.track
-                    .take_lock(Address::System, true)
+                    .acquire_lock(Address::System, true, false)
                     .expect("System access should never fail");
                 locked_values.insert(Address::System);
                 value_refs.insert(
@@ -1219,7 +1231,7 @@ where
                 if let Some(auth_zone) = &self.auth_zone {
                     for resource_address in &input.resource_addresses {
                         self.track
-                            .take_lock(resource_address.clone(), false)
+                            .acquire_lock(resource_address.clone(), false, false)
                             .map_err(|e| match e {
                                 TrackError::NotFound => {
                                     RuntimeError::ResourceManagerNotFound(resource_address.clone())
@@ -1227,12 +1239,13 @@ where
                                 TrackError::Reentrancy => {
                                     panic!("Package reentrancy error should never occur.")
                                 }
+                                TrackError::StateTrackError(..) => panic!("Unexpected"),
                             })?;
                         locked_values.insert(resource_address.clone().into());
                         value_refs.insert(
                             ValueId::Resource(resource_address.clone()),
                             REValueInfo {
-                                location: REValuePointer::Track(Address::Resource(
+                                location: REValuePointer::Track(Address::ResourceManager(
                                     resource_address.clone(),
                                 )),
                                 visible: true,
@@ -1247,9 +1260,9 @@ where
             }
             SNodeRef::ResourceRef(resource_address) => {
                 let value_id = ValueId::Resource(*resource_address);
-                let address: Address = Address::Resource(*resource_address);
+                let address: Address = Address::ResourceManager(*resource_address);
                 self.track
-                    .take_lock(address.clone(), true)
+                    .acquire_lock(address.clone(), true, false)
                     .map_err(|e| match e {
                         TrackError::NotFound => {
                             RuntimeError::ResourceManagerNotFound(resource_address.clone())
@@ -1257,6 +1270,7 @@ where
                         TrackError::Reentrancy => {
                             panic!("Resource call has caused reentrancy")
                         }
+                        TrackError::StateTrackError(..) => panic!("Unexpected"),
                     })?;
                 locked_values.insert(address.clone());
                 let resource_manager = self.track.read_value(address).resource_manager();
@@ -1264,14 +1278,18 @@ where
                 value_refs.insert(
                     value_id.clone(),
                     REValueInfo {
-                        location: REValuePointer::Track(Address::Resource(*resource_address)),
+                        location: REValuePointer::Track(Address::ResourceManager(
+                            *resource_address,
+                        )),
                         visible: true,
                     },
                 );
                 value_refs.insert(
                     ValueId::NonFungibles(*resource_address),
                     REValueInfo {
-                        location: REValuePointer::Track(Address::NonFungibleSet(*resource_address)),
+                        location: REValuePointer::Track(Address::NonFungibleSpace(
+                            *resource_address,
+                        )),
                         visible: true,
                     },
                 );
@@ -1334,7 +1352,7 @@ where
 
                 for resource_address in &input.resource_addresses {
                     self.track
-                        .take_lock(resource_address.clone(), false)
+                        .acquire_lock(resource_address.clone(), false, false)
                         .map_err(|e| match e {
                             TrackError::NotFound => {
                                 RuntimeError::ResourceManagerNotFound(resource_address.clone())
@@ -1342,13 +1360,14 @@ where
                             TrackError::Reentrancy => {
                                 panic!("Package reentrancy error should never occur.")
                             }
+                            TrackError::StateTrackError(..) => panic!("Unexpected"),
                         })?;
 
                     locked_values.insert(resource_address.clone().into());
                     value_refs.insert(
                         ValueId::Resource(resource_address.clone()),
                         REValueInfo {
-                            location: REValuePointer::Track(Address::Resource(
+                            location: REValuePointer::Track(Address::ResourceManager(
                                 resource_address.clone(),
                             )),
                             visible: true,
@@ -1361,12 +1380,13 @@ where
             SNodeRef::Scrypto(actor) => match actor {
                 ScryptoActor::Blueprint(package_address, blueprint_name) => {
                     self.track
-                        .take_lock(package_address.clone(), false)
+                        .acquire_lock(package_address.clone(), false, false)
                         .map_err(|e| match e {
                             TrackError::NotFound => RuntimeError::PackageNotFound(*package_address),
                             TrackError::Reentrancy => {
                                 panic!("Package reentrancy error should never occur.")
                             }
+                            TrackError::StateTrackError(..) => panic!("Unexpected"),
                         })?;
                     locked_values.insert(package_address.clone().into());
                     let package = self.track.read_value(package_address.clone()).package();
@@ -1419,13 +1439,16 @@ where
                     let next_location = match cur_location.clone() {
                         REValuePointer::Track(address) => {
                             self.track
-                                .take_lock(address.clone(), true)
+                                .acquire_lock(address.clone(), true, false)
                                 .map_err(|e| match e {
                                     TrackError::NotFound => {
                                         RuntimeError::ComponentNotFound(component_address)
                                     }
                                     TrackError::Reentrancy => {
                                         RuntimeError::ComponentReentrancy(component_address)
+                                    }
+                                    TrackError::StateTrackError(..) => {
+                                        panic!("Unexpected")
                                     }
                                 })?;
                             locked_values.insert(address.clone());
@@ -1457,7 +1480,7 @@ where
                         let package_address = actor_info.package_address().clone();
                         let blueprint_name = actor_info.blueprint_name().to_string();
                         self.track
-                            .take_lock(package_address, false)
+                            .acquire_lock(package_address, false, false)
                             .expect("Should never fail");
                         locked_values.insert(package_address.clone().into());
                         let package = self.track.read_value(package_address).package();
@@ -1529,10 +1552,11 @@ where
                         // Lock package
                         let package_address = owned_ref.root().component().package_address();
                         self.track
-                            .take_lock(package_address, false)
+                            .acquire_lock(package_address, false, false)
                             .map_err(|e| match e {
                                 TrackError::NotFound => panic!("Should exist"),
                                 TrackError::Reentrancy => RuntimeError::PackageReentrancy,
+                                TrackError::StateTrackError(..) => panic!("Unexpected"),
                             })?;
                         locked_values.insert(package_address.into());
                         value_refs.insert(
@@ -1577,6 +1601,9 @@ where
                         .cloned()
                         .ok_or(RuntimeError::ValueNotFound(ValueId::Vault(*vault_id)))?
                 };
+                if is_pay_fee && !matches!(cur_location, REValuePointer::Track { .. }) {
+                    return Err(RuntimeError::PayFeeError(PayFeeError::ValueNotInTrack));
+                }
 
                 // Lock values and setup next frame
                 let next_location = {
@@ -1584,8 +1611,19 @@ where
                     let next_location = match cur_location.clone() {
                         REValuePointer::Track(address) => {
                             self.track
-                                .take_lock(address.clone(), true)
-                                .expect("Should never fail.");
+                                .acquire_lock(address.clone(), true, is_pay_fee)
+                                .map_err(|e| match e {
+                                    TrackError::NotFound | TrackError::Reentrancy => {
+                                        panic!("Illegal state")
+                                    }
+                                    TrackError::StateTrackError(e) => {
+                                        RuntimeError::PayFeeError(match e {
+                                            StateTrackError::ValueAlreadyTouched => {
+                                                PayFeeError::ValueAlreadyTouched
+                                            }
+                                        })
+                                    }
+                                })?;
                             locked_values.insert(address.clone().into());
                             REValuePointer::Track(address)
                         }
@@ -1606,7 +1644,7 @@ where
                         value_ref.vault().resource_address()
                     };
                     self.track
-                        .take_lock(resource_address, true)
+                        .acquire_lock(resource_address, true, false)
                         .expect("Should never fail.");
                     locked_values.insert(resource_address.into());
 
@@ -1713,7 +1751,9 @@ where
 
         // Release locked addresses
         for l in locked_values {
-            self.track.release_lock(l);
+            // TODO: refactor after introducing `Lock` representation.
+            self.track
+                .release_lock(l.clone(), is_pay_fee && matches!(l, Address::Vault(..)));
         }
 
         // move buckets and proofs to this process.
@@ -1722,13 +1762,15 @@ where
             self.owned_values.insert(id, value);
         }
 
+        trace!(self, Level::Debug, "Invoking finished!");
         Ok(result)
     }
 
     fn borrow_value(
         &mut self,
         value_id: &ValueId,
-    ) -> Result<REValueRef<'_, 's, S>, CostUnitCounterError> {
+    ) -> Result<REValueRef<'_, 's>, CostUnitCounterError> {
+        trace!(self, Level::Debug, "Borrowing value: {:?}", value_id);
         self.cost_unit_counter.consume(
             self.fee_table.system_api_cost({
                 match value_id {
@@ -1792,6 +1834,8 @@ where
         &mut self,
         value_id: &ValueId,
     ) -> Result<RENativeValueRef, CostUnitCounterError> {
+        trace!(self, Level::Debug, "Borrowing value (mut): {:?}", value_id);
+
         self.cost_unit_counter.consume(
             self.fee_table.system_api_cost({
                 match value_id {
@@ -1854,18 +1898,28 @@ where
     }
 
     fn return_value_mut(&mut self, val_ref: RENativeValueRef) -> Result<(), CostUnitCounterError> {
+        trace!(self, Level::Debug, "Returning value");
+
         self.cost_unit_counter.consume(
             self.fee_table.system_api_cost({
                 match &val_ref {
                     RENativeValueRef::Stack(..) => SystemApiCostingEntry::ReturnLocal,
                     RENativeValueRef::Track(address, _) => match address {
                         Address::Vault(_) => SystemApiCostingEntry::ReturnGlobal { size: 0 },
-                        Address::KeyValueStore(_) => {
+                        Address::KeyValueStoreSpace(_) => {
                             SystemApiCostingEntry::ReturnGlobal { size: 0 }
                         }
-                        Address::Resource(_) => SystemApiCostingEntry::ReturnGlobal { size: 0 },
+                        Address::KeyValueStoreEntry(_, _) => {
+                            SystemApiCostingEntry::ReturnGlobal { size: 0 }
+                        }
+                        Address::ResourceManager(_) => {
+                            SystemApiCostingEntry::ReturnGlobal { size: 0 }
+                        }
                         Address::Package(_) => SystemApiCostingEntry::ReturnGlobal { size: 0 },
-                        Address::NonFungibleSet(_) => {
+                        Address::NonFungibleSpace(_) => {
+                            SystemApiCostingEntry::ReturnGlobal { size: 0 }
+                        }
+                        Address::NonFungible(_, _) => {
                             SystemApiCostingEntry::ReturnGlobal { size: 0 }
                         }
                         Address::GlobalComponent(_) => {
@@ -1890,6 +1944,8 @@ where
     }
 
     fn drop_value(&mut self, value_id: &ValueId) -> Result<REValue, CostUnitCounterError> {
+        trace!(self, Level::Debug, "Dropping value: {:?}", value_id);
+
         // TODO: costing
 
         Ok(self.owned_values.remove(&value_id).unwrap())
@@ -1899,6 +1955,8 @@ where
         &mut self,
         v: V,
     ) -> Result<ValueId, RuntimeError> {
+        trace!(self, Level::Debug, "Creating value");
+
         self.cost_unit_counter
             .consume(
                 self.fee_table
@@ -1981,6 +2039,8 @@ where
     }
 
     fn globalize_value(&mut self, value_id: &ValueId) -> Result<(), CostUnitCounterError> {
+        trace!(self, Level::Debug, "Globalizing value: {:?}", value_id);
+
         self.cost_unit_counter.consume(
             self.fee_table
                 .system_api_cost(SystemApiCostingEntry::Globalize {
@@ -2020,7 +2080,7 @@ where
         let address = match value_id {
             ValueId::Component(component_address) => Address::GlobalComponent(*component_address),
             ValueId::Package(package_address) => Address::Package(*package_address),
-            ValueId::Resource(resource_address) => Address::Resource(*resource_address),
+            ValueId::Resource(resource_address) => Address::ResourceManager(*resource_address),
             _ => panic!("Expected to be a component address"),
         };
 
@@ -2035,13 +2095,13 @@ where
         if let Some(non_fungibles) = maybe_non_fungibles {
             let resource_address: ResourceAddress = address.clone().into();
             self.track
-                .create_key_space(Address::NonFungibleSet(resource_address));
-            let parent_address = Address::NonFungibleSet(resource_address.clone());
+                .create_key_space(Address::NonFungibleSpace(resource_address));
+            let parent_address = Address::NonFungibleSpace(resource_address.clone());
             for (id, non_fungible) in non_fungibles {
                 self.track.set_key_value(
                     parent_address.clone(),
                     id.to_vec(),
-                    Substate::NonFungible(Some(non_fungible)),
+                    Substate::NonFungible(NonFungibleWrapper(Some(non_fungible))),
                 );
             }
         }
@@ -2053,6 +2113,8 @@ where
         &mut self,
         address: SubstateAddress,
     ) -> Result<ScryptoValue, RuntimeError> {
+        trace!(self, Level::Debug, "Removing value data: {:?}", address);
+
         let (location, current_value) = self.read_value_internal(&address)?;
         let cur_children = current_value.value_ids();
         if !cur_children.is_empty() {
@@ -2079,6 +2141,8 @@ where
     }
 
     fn read_value_data(&mut self, address: SubstateAddress) -> Result<ScryptoValue, RuntimeError> {
+        trace!(self, Level::Debug, "Reading value data: {:?}", address);
+
         self.cost_unit_counter
             .consume(
                 self.fee_table.system_api_cost(SystemApiCostingEntry::Read {
@@ -2109,6 +2173,8 @@ where
         address: SubstateAddress,
         value: ScryptoValue,
     ) -> Result<(), RuntimeError> {
+        trace!(self, Level::Debug, "Writing value data: {:?}", address);
+
         self.cost_unit_counter
             .consume(
                 self.fee_table
@@ -2231,7 +2297,7 @@ where
         Ok(is_authorized)
     }
 
-    fn cost_unit_counter(&mut self) -> &mut CostUnitCounter {
+    fn cost_unit_counter(&mut self) -> &mut C {
         self.cost_unit_counter
     }
 
