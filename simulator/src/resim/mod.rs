@@ -49,6 +49,7 @@ pub const ENV_DISABLE_MANIFEST_OUTPUT: &'static str = "DISABLE_MANIFEST_OUTPUT";
 use clap::{Parser, Subcommand};
 use radix_engine::model::*;
 use radix_engine::transaction::TransactionExecutor;
+use radix_engine::transaction::TransactionExecutorConfig;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::wasm::*;
 use scrypto::abi;
