@@ -5,7 +5,7 @@ use crate::core::{DataAddress, DataRef, SNodeRef};
 use crate::engine::{api::*, call_engine};
 use crate::prelude::DataRefMut;
 use sbor::rust::borrow::ToOwned;
-use sbor::rust::cell::{RefCell, RefMut};
+use sbor::rust::cell::{Ref, RefCell, RefMut};
 use sbor::rust::collections::*;
 use sbor::rust::string::ToString;
 use sbor::{Decode, Encode};
@@ -40,13 +40,15 @@ impl<V: 'static + Encode + Decode> DataValue<V> {
     }
 
     pub fn get(&self) -> DataRef<V> {
-        let value = RefMut::map(self.value.borrow_mut(), |v| {
-            v.get_or_insert_with(|| {
-                let input =
-                    ::scrypto::engine::api::RadixEngineInput::ReadData(self.address.clone());
-                let value: V = call_engine(input);
-                value
-            })
+        self.value.borrow_mut().get_or_insert_with(|| {
+            let input =
+                ::scrypto::engine::api::RadixEngineInput::ReadData(self.address.clone());
+            let value: V = call_engine(input);
+            value
+        });
+
+        let value = Ref::map(self.value.borrow(), |v| {
+            v.as_ref().unwrap()
         });
 
         DataRef { value }

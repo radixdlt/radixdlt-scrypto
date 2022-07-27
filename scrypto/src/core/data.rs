@@ -2,12 +2,25 @@ use crate::buffer::*;
 use crate::core::DataAddress;
 use crate::engine::api::RadixEngineInput::WriteData;
 use crate::engine::call_engine;
-use sbor::rust::cell::RefMut;
+use sbor::rust::cell::{Ref, RefMut};
 use sbor::rust::ops::{Deref, DerefMut};
 use sbor::Encode;
 
+pub struct DataValueRef<V: Encode> {
+    pub value: V,
+}
+
+impl<V: Encode> Deref for DataValueRef<V> {
+    type Target = V;
+
+    fn deref(&self) -> &Self::Target {
+        &self.value
+    }
+}
+
+
 pub struct DataRef<'a, V: Encode> {
-    pub value: RefMut<'a, V>,
+    pub value: Ref<'a, V>,
 }
 
 impl<'a, V: Encode> Deref for DataRef<'a, V> {
