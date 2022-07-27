@@ -1,18 +1,18 @@
 //! Definitions of safe integers and uints.
 
-use crate::abi::*;
+use core::cmp::{Ord, Ordering, PartialEq, PartialOrd};
 use core::ops::{Add, AddAssign, BitAnd, BitAndAssign, BitOr, BitOrAssign};
 use core::ops::{BitXor, BitXorAssign, Div, DivAssign};
 use core::ops::{Mul, MulAssign, Neg, Not, Rem, RemAssign};
 use core::ops::{Shl, ShlAssign, Shr, ShrAssign, Sub, SubAssign};
+use crate::abi::*;
 use num_bigint::{BigInt, Sign};
 use num_traits::{One, Pow, Signed, ToPrimitive, Zero};
 use paste::paste;
+use sbor::*;
 use sbor::rust::convert::{From, TryFrom};
 use sbor::rust::fmt;
 use sbor::rust::vec::Vec;
-use sbor::*;
-use std::cmp::{Ord, Ordering, PartialEq, PartialOrd};
 
 pub mod basic;
 pub mod bits;
