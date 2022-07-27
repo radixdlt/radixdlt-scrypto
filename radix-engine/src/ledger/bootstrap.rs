@@ -11,9 +11,10 @@ use scrypto::resource::LOCKED;
 use scrypto::rule;
 
 use crate::engine::Address;
+use crate::engine::Track;
+use crate::engine::TrackReceipt;
 use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
 use crate::model::ValidatedPackage;
-use crate::state_manager::*;
 
 #[derive(TypeId, Encode, Decode)]
 struct SystemComponentState {
@@ -32,10 +33,7 @@ const SYSTEM_COMPONENT_NAME: &str = "System";
 
 use crate::model::*;
 
-fn create_genesis<'s, S>(mut track: Track<'s, S>) -> TrackReceipt
-where
-    S: ReadableSubstateStore + WriteableSubstateStore,
-{
+fn create_genesis(mut track: Track) -> TrackReceipt {
     let system_package =
         extract_package(include_bytes!("../../../assets/system.wasm").to_vec()).unwrap();
     let validated_system_package = ValidatedPackage::new(system_package).unwrap();
@@ -94,17 +92,20 @@ where
     track.create_uuid_value(Address::GlobalComponent(SYSTEM_COMPONENT), system_component);
     track.create_uuid_value(Address::System, System { epoch: 0 });
 
-    track.to_receipt()
+    track.to_receipt(true)
 }
 
-pub fn bootstrap<'s, S>(substate_store: &'s mut S)
+pub fn bootstrap<S>(mut substate_store: S) -> S
 where
-    S: ReadableSubstateStore + WriteableSubstateStore,
+    S: ReadableSubstateStore + WriteableSubstateStore + 'static,
 {
-    let system_substate = substate_store.get_substate(&scrypto_encode(&SYSTEM_PACKAGE));
-    if system_substate.is_none() {
-        let track = Track::new(substate_store);
+    if substate_store
+        .get_substate(&Address::Package(SYSTEM_PACKAGE))
+        .is_none()
+    {
+        let track = Track::new(&substate_store);
         let receipt = create_genesis(track);
-        receipt.diff.commit(substate_store);
+        receipt.state_updates.commit(&mut substate_store);
     }
+    substate_store
 }

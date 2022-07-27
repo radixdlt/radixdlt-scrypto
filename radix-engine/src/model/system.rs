@@ -7,8 +7,8 @@ use scrypto::engine::types::ValueId;
 use scrypto::values::ScryptoValue;
 
 use crate::engine::SystemApi;
-use crate::fee::{CostUnitCounter, CostUnitCounterError};
-use crate::ledger::ReadableSubstateStore;
+use crate::fee::CostUnitCounter;
+use crate::fee::CostUnitCounterError;
 use crate::model::SystemError::InvalidMethod;
 use crate::wasm::*;
 
@@ -19,7 +19,7 @@ pub enum SystemError {
     CostingError(CostUnitCounterError),
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct System {
     pub epoch: u64,
 }
@@ -28,10 +28,9 @@ impl System {
     pub fn main<
         'p,
         's,
-        Y: SystemApi<'p, 's, W, I, S, C>,
+        Y: SystemApi<'p, 's, W, I, C>,
         W: WasmEngine<I>,
         I: WasmInstance,
-        S: 's + ReadableSubstateStore,
         C: CostUnitCounter,
     >(
         method_name: &str,

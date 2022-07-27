@@ -11,28 +11,45 @@ use scrypto::engine::types::*;
 use scrypto::values::*;
 use transaction::model::*;
 
-use crate::engine::CommitReceipt;
 use crate::engine::RuntimeError;
+use crate::state_manager::StateDiff;
+
+#[derive(Debug)]
+pub struct TransactionFeeSummary {
+    /// Whether system fee loan is fully repaid.
+    /// Clients should use this flag to decide whether to include the transaction into a block.
+    pub system_loan_fully_repaid: bool,
+    /// The specified max cost units can be consumed.
+    pub max_cost_units: u32,
+    /// The total number of cost units consumed.
+    pub cost_units_consumed: u32,
+    /// The cost unit price in XRD.
+    pub cost_units_price: Decimal,
+    /// The total amount of XRD burned.
+    pub burned: Decimal,
+    /// The total amount of XRD tipped to validators.
+    pub tipped: Decimal,
+}
 
 /// Represents a transaction receipt.
-pub struct Receipt {
+pub struct TransactionReceipt {
     pub transaction_network: Network,
-    pub commit_receipt: Option<CommitReceipt>,
+    pub transaction_fee: TransactionFeeSummary,
+    pub execution_time: Option<u128>,
     pub instructions: Vec<ExecutableInstruction>,
-    pub result: Result<(), RuntimeError>,
-    pub outputs: Vec<Vec<u8>>,
-    pub logs: Vec<(Level, String)>,
+    pub result: Result<Vec<Vec<u8>>, RuntimeError>,
+    pub application_logs: Vec<(Level, String)>,
     pub new_package_addresses: Vec<PackageAddress>,
     pub new_component_addresses: Vec<ComponentAddress>,
     pub new_resource_addresses: Vec<ResourceAddress>,
-    pub execution_time: Option<u128>,
-    pub cost_units_consumed: u32,
+    pub state_updates: StateDiff,
 }
 
-impl Receipt {
-    pub fn expect_success(&self) {
-        if self.result.is_err() {
-            panic!("Expected success but was:\n{:?}", self);
+impl TransactionReceipt {
+    pub fn expect_success(&self) -> &Vec<Vec<u8>> {
+        match &self.result {
+            Ok(output) => output,
+            Err(err) => panic!("Expected success but was:\n{:?}", err),
         }
     }
 
@@ -60,7 +77,7 @@ macro_rules! prefix {
     };
 }
 
-impl fmt::Debug for Receipt {
+impl fmt::Debug for TransactionReceipt {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let bech32_encoder = Bech32Encoder::new_from_network(&self.transaction_network);
 
@@ -69,17 +86,26 @@ impl fmt::Debug for Receipt {
             "{} {}",
             "Transaction Status:".bold().green(),
             match &self.result {
-                Ok(()) => "SUCCESS".blue(),
+                Ok(_) => "SUCCESS".blue(),
                 Err(e) => e.to_string().red(),
             }
-            .bold()
         )?;
 
         write!(
             f,
-            "\n{} {}",
-            "Cost Units Consumed:".bold().green(),
-            self.cost_units_consumed
+            "\n{} {} XRD burned, {} XRD tipped to validators",
+            "Transaction Fee:".bold().green(),
+            self.transaction_fee.burned,
+            self.transaction_fee.tipped,
+        )?;
+
+        write!(
+            f,
+            "\n{} {} max, {} consumed, {} XRD per cost unit",
+            "Cost Units:".bold().green(),
+            self.transaction_fee.max_cost_units,
+            self.transaction_fee.cost_units_consumed,
+            self.transaction_fee.cost_units_price,
         )?;
 
         write!(
@@ -105,7 +131,7 @@ impl fmt::Debug for Receipt {
                         arg,
                     } => format!(
                         "CallFunction {{ package_address: {}, blueprint_name: {:?}, method_name: {:?}, arg: {:?} }}",
-                        bech32_encoder.encode_package_address(package_address).unwrap(),
+                        bech32_encoder.encode_package_address(&package_address).unwrap(),
                         blueprint_name,
                         method_name,
                         ScryptoValue::from_slice(&arg).expect("Invalid call data")
@@ -116,7 +142,7 @@ impl fmt::Debug for Receipt {
                         arg,
                     } => format!(
                         "CallMethod {{ component_address: {}, method_name: {:?}, call_data: {:?} }}",
-                        bech32_encoder.encode_component_address(component_address).unwrap(),
+                        bech32_encoder.encode_component_address(&component_address).unwrap(),
                         method_name,
                         ScryptoValue::from_slice(&arg).expect("Invalid call data")
                     ),
@@ -126,18 +152,25 @@ impl fmt::Debug for Receipt {
             )?;
         }
 
-        write!(f, "\n{}", "Instruction Outputs:".bold().green())?;
-        for (i, output) in self.outputs.iter().enumerate() {
-            write!(
-                f,
-                "\n{} {:?}",
-                prefix!(i, self.outputs),
-                ScryptoValue::from_slice(output).expect("Invalid return data")
-            )?;
+        if let Ok(outputs) = &self.result {
+            write!(f, "\n{}", "Instruction Outputs:".bold().green())?;
+            for (i, output) in outputs.iter().enumerate() {
+                write!(
+                    f,
+                    "\n{} {:?}",
+                    prefix!(i, outputs),
+                    ScryptoValue::from_slice(output).expect("Invalid return data")
+                )?;
+            }
         }
 
-        write!(f, "\n{} {}", "Logs:".bold().green(), self.logs.len())?;
-        for (i, (level, msg)) in self.logs.iter().enumerate() {
+        write!(
+            f,
+            "\n{} {}",
+            "Logs:".bold().green(),
+            self.application_logs.len()
+        )?;
+        for (i, (level, msg)) in self.application_logs.iter().enumerate() {
             let (l, m) = match level {
                 Level::Error => ("ERROR".red(), msg.red()),
                 Level::Warn => ("WARN".yellow(), msg.yellow()),
@@ -145,7 +178,7 @@ impl fmt::Debug for Receipt {
                 Level::Debug => ("DEBUG".cyan(), msg.cyan()),
                 Level::Trace => ("TRACE".normal(), msg.normal()),
             };
-            write!(f, "\n{} [{:5}] {}", prefix!(i, self.logs), l, m)?;
+            write!(f, "\n{} [{:5}] {}", prefix!(i, self.application_logs), l, m)?;
         }
 
         write!(

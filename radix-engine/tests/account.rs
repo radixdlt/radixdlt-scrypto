@@ -12,6 +12,26 @@ use transaction::builder::ManifestBuilder;
 use transaction::model::*;
 
 #[test]
+fn test_pay_fee_and_transfer() {
+    // Arrange
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
+    let (public_key, _, account) = test_runner.new_account();
+    let (_, _, other_account) = test_runner.new_account();
+
+    // Act
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .call_method(account, "pay_fee", to_struct!(Decimal::from(1)))
+        .withdraw_from_account(RADIX_TOKEN, account)
+        .call_method_with_all_resources(other_account, "deposit_batch")
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+
+    // Assert
+    receipt.expect_success();
+}
+
+#[test]
 fn can_withdraw_from_my_account() {
     // Arrange
     let mut store = InMemorySubstateStore::with_bootstrap();
@@ -108,11 +128,11 @@ fn test_account_balance() {
 
     // Act
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
-    receipt.result.expect("Should be okay");
+    let outputs = receipt.expect_success();
 
     // Assert
     assert_eq!(
-        receipt.outputs[0],
+        outputs[0],
         ScryptoValue::from_typed(&Decimal::from(1000000)).raw
     );
 }

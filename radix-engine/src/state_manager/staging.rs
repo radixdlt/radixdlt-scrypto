@@ -2,14 +2,15 @@ use sbor::rust::collections::*;
 use sbor::rust::vec::Vec;
 use scrypto::buffer::{scrypto_decode, scrypto_encode};
 
-use crate::ledger::*;
+use crate::{engine::Address, ledger::*};
+use indexmap::IndexMap;
 
 /// Nodes form an acyclic graph towards the parent
 struct StagedSubstateStoreNode {
     parent_id: u64,
     locked: bool,
-    spaces: BTreeMap<Vec<u8>, OutputId>,
-    outputs: BTreeMap<Vec<u8>, Output>,
+    spaces: IndexMap<Address, OutputId>,
+    outputs: IndexMap<Address, Output>,
 }
 
 impl StagedSubstateStoreNode {
@@ -17,8 +18,8 @@ impl StagedSubstateStoreNode {
         StagedSubstateStoreNode {
             parent_id,
             locked: false,
-            spaces: BTreeMap::new(),
-            outputs: BTreeMap::new(),
+            spaces: IndexMap::new(),
+            outputs: IndexMap::new(),
         }
     }
 }
@@ -98,11 +99,11 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> StagedSubstateStoreM
         self.merge_to_parent_recurse(node.parent_id, true);
 
         for (address, output_id) in node.spaces {
-            self.parent.put_space(&address, output_id);
+            self.parent.put_space(address, output_id);
         }
 
         for (address, output) in node.outputs {
-            self.parent.put_substate(&address, output);
+            self.parent.put_substate(address, output);
         }
 
         if !remove_children {
@@ -117,7 +118,7 @@ pub struct StagedSubstateStore<'t, 's, S: ReadableSubstateStore + WriteableSubst
 }
 
 impl<'t, 's, S: ReadableSubstateStore + WriteableSubstateStore> StagedSubstateStore<'t, 's, S> {
-    fn get_substate_recurse(&self, address: &[u8], id: u64) -> Option<Output> {
+    fn get_substate_recurse(&self, address: &Address, id: u64) -> Option<Output> {
         if id == 0 {
             return self.stores.parent.get_substate(address);
         }
@@ -132,7 +133,7 @@ impl<'t, 's, S: ReadableSubstateStore + WriteableSubstateStore> StagedSubstateSt
         self.get_substate_recurse(address, node.parent_id)
     }
 
-    fn get_space_recurse(&self, address: &[u8], id: u64) -> OutputId {
+    fn get_space_recurse(&self, address: &Address, id: u64) -> OutputId {
         if id == 0 {
             return self.stores.parent.get_space(address);
         }
@@ -149,11 +150,11 @@ impl<'t, 's, S: ReadableSubstateStore + WriteableSubstateStore> StagedSubstateSt
 impl<'t, 's, S: ReadableSubstateStore + WriteableSubstateStore> ReadableSubstateStore
     for StagedSubstateStore<'t, 's, S>
 {
-    fn get_substate(&self, address: &[u8]) -> Option<Output> {
+    fn get_substate(&self, address: &Address) -> Option<Output> {
         self.get_substate_recurse(address, self.id)
     }
 
-    fn get_space(&self, address: &[u8]) -> OutputId {
+    fn get_space(&self, address: &Address) -> OutputId {
         self.get_space_recurse(address, self.id)
     }
 }
@@ -161,21 +162,21 @@ impl<'t, 's, S: ReadableSubstateStore + WriteableSubstateStore> ReadableSubstate
 impl<'t, 's, S: ReadableSubstateStore + WriteableSubstateStore> WriteableSubstateStore
     for StagedSubstateStore<'t, 's, S>
 {
-    fn put_space(&mut self, address: &[u8], output_id: OutputId) {
+    fn put_space(&mut self, address: Address, output_id: OutputId) {
         if self.id == 0 {
             self.stores.parent.put_space(address, output_id);
         } else {
             let node = self.stores.nodes.get_mut(&self.id).unwrap();
-            node.spaces.insert(address.to_vec(), output_id);
+            node.spaces.insert(address, output_id);
         }
     }
 
-    fn put_substate(&mut self, address: &[u8], output: Output) {
+    fn put_substate(&mut self, address: Address, output: Output) {
         if self.id == 0 {
             self.stores.parent.put_substate(address, output);
         } else {
             let node = self.stores.nodes.get_mut(&self.id).unwrap();
-            node.outputs.insert(address.to_vec(), output);
+            node.outputs.insert(address, output);
         }
     }
 }

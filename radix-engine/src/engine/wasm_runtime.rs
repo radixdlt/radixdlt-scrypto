@@ -13,7 +13,6 @@ use scrypto::values::ScryptoValue;
 use crate::engine::SystemApi;
 use crate::engine::{PreCommittedKeyValueStore, RuntimeError};
 use crate::fee::*;
-use crate::ledger::ReadableSubstateStore;
 use crate::model::Component;
 use crate::wasm::*;
 
@@ -21,30 +20,27 @@ use crate::wasm::*;
 ///
 /// Execution is free from a costing perspective, as we assume
 /// the system api will bill properly.
-pub struct RadixEngineWasmRuntime<'y, 'p, 's, Y, W, I, S, C>
+pub struct RadixEngineWasmRuntime<'y, 'p, 's, Y, W, I, C>
 where
-    Y: SystemApi<'p, 's, W, I, S, C>,
+    Y: SystemApi<'p, 's, W, I, C>,
     W: WasmEngine<I>,
     I: WasmInstance,
-    S: ReadableSubstateStore,
     C: CostUnitCounter,
 {
     this: ScryptoActorInfo,
     system_api: &'y mut Y,
     phantom1: PhantomData<W>,
     phantom2: PhantomData<I>,
-    phantom3: PhantomData<S>,
+    phantom3: PhantomData<C>,
     phantom4: PhantomData<&'p ()>,
     phantom5: PhantomData<&'s ()>,
-    phantom6: PhantomData<C>,
 }
 
-impl<'y, 'p, 's, Y, W, I, S, C> RadixEngineWasmRuntime<'y, 'p, 's, Y, W, I, S, C>
+impl<'y, 'p, 's, Y, W, I, C> RadixEngineWasmRuntime<'y, 'p, 's, Y, W, I, C>
 where
-    Y: SystemApi<'p, 's, W, I, S, C>,
+    Y: SystemApi<'p, 's, W, I, C>,
     W: WasmEngine<I>,
     I: WasmInstance,
-    S: ReadableSubstateStore,
     C: CostUnitCounter,
 {
     pub fn new(this: ScryptoActorInfo, system_api: &'y mut Y) -> Self {
@@ -56,7 +52,6 @@ where
             phantom3: PhantomData,
             phantom4: PhantomData,
             phantom5: PhantomData,
-            phantom6: PhantomData,
         }
     }
 
@@ -174,12 +169,11 @@ impl<
         'y,
         'p,
         's,
-        S: ReadableSubstateStore,
-        Y: SystemApi<'p, 's, W, I, S, C>,
+        Y: SystemApi<'p, 's, W, I, C>,
         W: WasmEngine<I>,
         I: WasmInstance,
         C: CostUnitCounter,
-    > WasmRuntime for RadixEngineWasmRuntime<'y, 'p, 's, Y, W, I, S, C>
+    > WasmRuntime for RadixEngineWasmRuntime<'y, 'p, 's, Y, W, I, C>
 {
     fn main(&mut self, input: ScryptoValue) -> Result<ScryptoValue, InvokeError> {
         let input: RadixEngineInput =

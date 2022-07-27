@@ -2,8 +2,8 @@
 pub mod test_runner;
 
 use crate::test_runner::TestRunner;
-use radix_engine::engine::TransactionExecutorConfig;
 use radix_engine::ledger::InMemorySubstateStore;
+use radix_engine::transaction::TransactionExecutorConfig;
 use scrypto::core::Network;
 use transaction::builder::ManifestBuilder;
 use transaction::builder::TransactionBuilder;
@@ -31,8 +31,8 @@ fn test_transaction_preview_cost_estimate() {
     receipt.expect_success();
 
     assert_eq!(
-        preview_receipt.cost_units_consumed,
-        receipt.cost_units_consumed
+        preview_receipt.transaction_fee.cost_units_consumed,
+        receipt.transaction_fee.cost_units_consumed
     );
 }
 

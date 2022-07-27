@@ -10,8 +10,8 @@ use scrypto::resource::{
 use scrypto::values::ScryptoValue;
 
 use crate::engine::SystemApi;
-use crate::fee::{CostUnitCounter, CostUnitCounterError};
-use crate::ledger::ReadableSubstateStore;
+use crate::fee::CostUnitCounter;
+use crate::fee::CostUnitCounterError;
 use crate::model::AuthZoneError::InvalidMethod;
 use crate::model::{Proof, ProofError};
 use crate::wasm::*;
@@ -98,10 +98,9 @@ impl AuthZone {
     pub fn main<
         'p,
         's,
-        Y: SystemApi<'p, 's, W, I, S, C>,
+        Y: SystemApi<'p, 's, W, I, C>,
         W: WasmEngine<I>,
         I: WasmInstance,
-        S: 's + ReadableSubstateStore,
         C: CostUnitCounter,
     >(
         &mut self,

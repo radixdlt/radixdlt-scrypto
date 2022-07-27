@@ -3,15 +3,16 @@ use transaction::errors::TransactionValidationError;
 use transaction::model::PreviewIntent;
 use transaction::validation::*;
 
-use crate::engine::*;
 use crate::fee::{SystemLoanCostUnitCounter, UnlimitedLoanCostUnitCounter};
 use crate::ledger::*;
-use crate::wasm::*;
+use crate::transaction::TransactionReceipt;
+use crate::transaction::*;
+use crate::wasm::{WasmEngine, WasmInstance, WasmInstrumenter};
 
 #[derive(Debug)]
 pub struct PreviewResult {
     pub intent: PreviewIntent,
-    pub receipt: Receipt,
+    pub receipt: TransactionReceipt,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -32,7 +33,7 @@ where
     wasm_instrumenter: &'w mut WasmInstrumenter,
     epoch_manager: &'w EM,
     intent_hash_manager: &'w IHM,
-    phantom: PhantomData<I>,
+    phantom1: PhantomData<I>,
 }
 
 impl<'s, 'w, S, W, I, EM, IHM> PreviewExecutor<'s, 'w, S, W, I, EM, IHM>
@@ -49,14 +50,14 @@ where
         wasm_instrumenter: &'w mut WasmInstrumenter,
         epoch_manager: &'w EM,
         intent_hash_manager: &'w IHM,
-    ) -> PreviewExecutor<'s, 'w, S, W, I, EM, IHM> {
+    ) -> Self {
         PreviewExecutor {
             substate_store,
             wasm_engine,
             wasm_instrumenter,
             epoch_manager,
             intent_hash_manager,
-            phantom: PhantomData,
+            phantom1: PhantomData,
         }
     }
 

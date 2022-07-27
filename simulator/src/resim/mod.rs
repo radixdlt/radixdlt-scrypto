@@ -47,9 +47,9 @@ pub const ENV_DATA_DIR: &'static str = "DATA_DIR";
 pub const ENV_DISABLE_MANIFEST_OUTPUT: &'static str = "DISABLE_MANIFEST_OUTPUT";
 
 use clap::{Parser, Subcommand};
-use radix_engine::engine::Receipt;
-use radix_engine::engine::{TransactionExecutor, TransactionExecutorConfig};
 use radix_engine::model::*;
+use radix_engine::transaction::TransactionExecutor;
+use radix_engine::transaction::TransactionReceipt;
 use radix_engine::wasm::*;
 use scrypto::abi;
 use scrypto::address::Bech32Encoder;
@@ -140,7 +140,7 @@ pub fn handle_manifest<O: std::io::Write>(
     trace: bool,
     output_receipt: bool,
     out: &mut O,
-) -> Result<Option<Receipt>, Error> {
+) -> Result<Option<TransactionReceipt>, Error> {
     match manifest_path {
         Some(path) => {
             if !env::var(ENV_DISABLE_MANIFEST_OUTPUT).is_ok() {
@@ -170,8 +170,7 @@ pub fn handle_manifest<O: std::io::Write>(
                 .collect::<Vec<EcdsaPublicKey>>();
             let nonce = get_nonce()?;
             let transaction = TestTransaction::new(manifest, nonce, pks);
-
-            let receipt = executor.execute(&transaction);
+            let receipt = executor.execute_and_commit(&transaction);
             if output_receipt {
                 writeln!(out, "{:?}", receipt).map_err(Error::IOError)?;
             }

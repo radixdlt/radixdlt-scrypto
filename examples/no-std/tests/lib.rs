@@ -1,9 +1,9 @@
 // This is optional, as you may choose to use std for testing only.
 #![no_std]
 
-use radix_engine::engine::{TransactionExecutor, TransactionExecutorConfig};
 use radix_engine::ledger::*;
 use radix_engine::model::extract_package;
+use radix_engine::transaction::TransactionExecutor;
 use radix_engine::wasm::*;
 use scrypto::core::Network;
 use scrypto::prelude::*;
@@ -34,13 +34,13 @@ fn test_say_hello() {
         .publish_package(extract_package(include_package!("no_std").to_vec()).unwrap())
         .build();
     let package_address = executor
-        .execute(&TestTransaction::new(manifest, 1, vec![public_key]))
+        .execute_and_commit(&TestTransaction::new(manifest, 1, vec![public_key]))
         .new_package_addresses[0];
 
     // Test the `say_hello` function.
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(package_address, "NoStd", "say_hello", to_struct!())
         .build();
-    let receipt = executor.execute(&TestTransaction::new(manifest, 2, vec![]));
-    receipt.result.expect("Should be okay.");
+    let receipt = executor.execute_and_commit(&TestTransaction::new(manifest, 2, vec![]));
+    receipt.expect_success();
 }

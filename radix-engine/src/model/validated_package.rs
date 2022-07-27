@@ -9,11 +9,10 @@ use scrypto::values::ScryptoValue;
 
 use crate::engine::*;
 use crate::fee::{CostUnitCounter, CostUnitCounterError};
-use crate::ledger::ReadableSubstateStore;
 use crate::wasm::*;
 
 /// A collection of blueprints, compiled and published as a single unit.
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct ValidatedPackage {
     code: Vec<u8>,
     blueprint_abis: HashMap<String, BlueprintAbi>,
@@ -46,16 +45,15 @@ impl ValidatedPackage {
         self.blueprint_abis.get(blueprint_name)
     }
 
-    pub fn static_main<'p, 's, Y, W, I, S, C>(
+    pub fn static_main<'p, 's, Y, W, I, C>(
         method_name: &str,
         call_data: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, PackageError>
     where
-        Y: SystemApi<'p, 's, W, I, S, C>,
+        Y: SystemApi<'p, 's, W, I, C>,
         W: WasmEngine<I>,
         I: WasmInstance,
-        S: ReadableSubstateStore,
         C: CostUnitCounter,
     {
         match method_name {
