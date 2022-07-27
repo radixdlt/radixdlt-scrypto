@@ -179,8 +179,6 @@ macro_rules! test_impl {
                 fn [<test_ord_min_max_ $i:lower>]() {
                     let max = <$i>::MAX;
                     let min = <$i>::MIN;
-                    println!("max: {:x}", max);
-                    println!("min: {:x}", min);
                     assert_eq!(min.cmp(&max), Ordering::Less);
                 }
 
