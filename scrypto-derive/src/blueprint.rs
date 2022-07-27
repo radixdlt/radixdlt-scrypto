@@ -236,7 +236,7 @@ fn generate_dispatcher(
                         let component_address = ::scrypto::core::Runtime::actor().component_address().unwrap();
                     });
                     stmts.push(parse_quote!{
-                        let mut component_data = ::scrypto::component::DataValue::new(DataAddress::Component(component_address, ComponentOffset::State));
+                        let mut component_data = ::scrypto::core::DataPointer::new(DataAddress::Component(component_address, ComponentOffset::State));
                     });
                     stmts.push(stmt);
                 }
@@ -581,7 +581,7 @@ mod tests {
 
                     let input: Test_x_Input = ::scrypto::buffer::scrypto_decode_from_buffer(method_arg).unwrap();
                     let component_address = ::scrypto::core::Runtime::actor().component_address().unwrap();
-                    let mut component_data = ::scrypto::component::DataValue::new(DataAddress::Component(component_address, ComponentOffset::State));
+                    let mut component_data = ::scrypto::core::DataPointer::new(DataAddress::Component(component_address, ComponentOffset::State));
                     let state: DataRef<Test_impl::Test> = component_data.get();
 
                     let rtn = ::scrypto::buffer::scrypto_encode_to_buffer(&Test_impl::Test::x(state.deref(), input.arg0));

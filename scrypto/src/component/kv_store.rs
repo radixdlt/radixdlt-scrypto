@@ -10,7 +10,7 @@ use scrypto::core::DataAddress;
 
 use crate::abi::*;
 use crate::buffer::*;
-use crate::core::{DataValueRef, DataValueRefMut};
+use crate::core::{DataRef, DataRefMut};
 use crate::crypto::*;
 use crate::engine::{api::*, call_engine, types::KeyValueStoreId};
 use crate::misc::*;
@@ -36,18 +36,18 @@ impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> KeyValueStore<K,
     }
 
     /// Returns the value that is associated with the given key.
-    pub fn get(&self, key: &K) -> Option<DataValueRef<V>> {
+    pub fn get(&self, key: &K) -> Option<DataRef<V>> {
         let address = DataAddress::KeyValueEntry(self.id, scrypto_encode(key));
         let input = ::scrypto::engine::api::RadixEngineInput::ReadData(address.clone());
         let value: Option<V> = call_engine(input);
-        value.map(|value| DataValueRef { value })
+        value.map(|value| DataRef::new(value))
     }
 
-    pub fn get_mut(&mut self, key: &K) -> Option<DataValueRefMut<V>> {
+    pub fn get_mut(&mut self, key: &K) -> Option<DataRefMut<V>> {
         let address = DataAddress::KeyValueEntry(self.id, scrypto_encode(key));
         let input = ::scrypto::engine::api::RadixEngineInput::ReadData(address.clone());
         let value: Option<V> = call_engine(input);
-        value.map(|value| DataValueRefMut { address, value })
+        value.map(|value| DataRefMut::new(address, value))
     }
 
     /// Inserts a new key-value pair into this map.

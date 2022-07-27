@@ -2,15 +2,21 @@ use crate::buffer::*;
 use crate::core::DataAddress;
 use crate::engine::api::RadixEngineInput::WriteData;
 use crate::engine::call_engine;
-use sbor::rust::cell::{Ref, RefMut};
+use sbor::rust::marker::PhantomData;
 use sbor::rust::ops::{Deref, DerefMut};
-use sbor::Encode;
+use sbor::{Decode, Encode};
 
-pub struct DataValueRef<V: Encode> {
-    pub value: V,
+pub struct DataRef<V: Encode> {
+    value: V,
 }
 
-impl<V: Encode> Deref for DataValueRef<V> {
+impl<V: Encode> DataRef<V> {
+    pub fn new(value: V) -> DataRef<V> {
+        DataRef { value }
+    }
+}
+
+impl<V: Encode> Deref for DataRef<V> {
     type Target = V;
 
     fn deref(&self) -> &Self::Target {
@@ -18,12 +24,18 @@ impl<V: Encode> Deref for DataValueRef<V> {
     }
 }
 
-pub struct DataValueRefMut<V: Encode> {
-    pub address: DataAddress,
-    pub value: V,
+pub struct DataRefMut<V: Encode> {
+    address: DataAddress,
+    value: V,
 }
 
-impl<V: Encode> Drop for DataValueRefMut<V> {
+impl<V: Encode> DataRefMut<V> {
+    pub fn new(address: DataAddress, value: V) -> DataRefMut<V> {
+        DataRefMut { address, value }
+    }
+}
+
+impl<V: Encode> Drop for DataRefMut<V> {
     fn drop(&mut self) {
         let bytes = scrypto_encode(&self.value);
         let input = WriteData(self.address.clone(), bytes);
@@ -31,7 +43,7 @@ impl<V: Encode> Drop for DataValueRefMut<V> {
     }
 }
 
-impl<V: Encode> Deref for DataValueRefMut<V> {
+impl<V: Encode> Deref for DataRefMut<V> {
     type Target = V;
 
     fn deref(&self) -> &Self::Target {
@@ -39,47 +51,37 @@ impl<V: Encode> Deref for DataValueRefMut<V> {
     }
 }
 
-impl<V: Encode> DerefMut for DataValueRefMut<V> {
+impl<V: Encode> DerefMut for DataRefMut<V> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.value
     }
 }
 
-pub struct DataRef<'a, V: Encode> {
-    pub value: Ref<'a, V>,
+pub struct DataPointer<V: 'static + Encode + Decode> {
+    address: DataAddress,
+    phantom_data: PhantomData<V>,
 }
 
-impl<'a, V: Encode> Deref for DataRef<'a, V> {
-    type Target = V;
-
-    fn deref(&self) -> &Self::Target {
-        self.value.deref()
+impl<V: 'static + Encode + Decode> DataPointer<V> {
+    pub fn new(address: DataAddress) -> Self {
+        Self {
+            address,
+            phantom_data: PhantomData,
+        }
     }
-}
 
-pub struct DataRefMut<'a, V: Encode> {
-    pub address: DataAddress,
-    pub value: RefMut<'a, V>,
-}
-
-impl<'a, V: Encode> Drop for DataRefMut<'a, V> {
-    fn drop(&mut self) {
-        let bytes = scrypto_encode(self.value.deref());
-        let input = WriteData(self.address.clone(), bytes);
-        let _: () = call_engine(input);
+    pub fn get_mut(&mut self) -> DataRefMut<V> {
+        let input = ::scrypto::engine::api::RadixEngineInput::ReadData(self.address.clone());
+        let value: V = call_engine(input);
+        DataRefMut {
+            address: self.address.clone(),
+            value,
+        }
     }
-}
 
-impl<'a, V: Encode> Deref for DataRefMut<'a, V> {
-    type Target = V;
-
-    fn deref(&self) -> &Self::Target {
-        self.value.deref()
-    }
-}
-
-impl<'a, V: Encode> DerefMut for DataRefMut<'a, V> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        self.value.deref_mut()
+    pub fn get(&self) -> DataRef<V> {
+        let input = ::scrypto::engine::api::RadixEngineInput::ReadData(self.address.clone());
+        let value: V = call_engine(input);
+        DataRef { value }
     }
 }

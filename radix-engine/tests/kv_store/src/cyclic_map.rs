@@ -27,7 +27,6 @@ blueprint! {
                 address,
                 scrypto_encode(&KeyValueStore::<(), ()> {
                     id: kv_store0_id,
-                    map: RefCell::new(HashMap::new()),
                     key: PhantomData,
                     value: PhantomData,
                 }),
@@ -46,7 +45,6 @@ blueprint! {
                 address,
                 scrypto_encode(&KeyValueStore::<(), ()> {
                     id: kv_store_id,
-                    map: RefCell::new(HashMap::new()),
                     key: PhantomData,
                     value: PhantomData,
                 }),
