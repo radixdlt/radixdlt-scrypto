@@ -12,12 +12,13 @@ use crate::wasm::*;
 
 use super::call_frame::REValueRef;
 
-pub trait SystemApi<'p, 's, W, I>
+pub trait SystemApi<'p, 's, W, I, C>
 where
     W: WasmEngine<I>,
     I: WasmInstance,
+    C: CostUnitCounter,
 {
-    fn cost_unit_counter(&mut self) -> &mut CostUnitCounter;
+    fn cost_unit_counter(&mut self) -> &mut C;
 
     fn fee_table(&self) -> &FeeTable;
 

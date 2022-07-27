@@ -11,14 +11,14 @@ use transaction::builder::TransactionBuilder;
 use transaction::model::TransactionHeader;
 use transaction::signing::EcdsaPrivateKey;
 use transaction::validation::ValidationParameters;
-use transaction::validation::{TestIntentHashStore, TransactionValidator};
+use transaction::validation::{TestIntentHashManager, TransactionValidator};
 
 #[test]
 fn test_normal_transaction_flow() {
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = DefaultWasmEngine::new();
     let mut wasm_instrumenter = WasmInstrumenter::new();
-    let intent_hash_store = TestIntentHashStore::new();
+    let intent_hash_manager = TestIntentHashManager::new();
     let validation_params = ValidationParameters {
         network: Network::LocalSimulator,
         current_epoch: 1,
@@ -30,7 +30,7 @@ fn test_normal_transaction_flow() {
     let raw_transaction = create_transaction();
     let validated_transaction = TransactionValidator::validate_from_slice(
         &raw_transaction,
-        &intent_hash_store,
+        &intent_hash_manager,
         &validation_params,
     )
     .expect("Invalid transaction");

@@ -8,7 +8,7 @@ use scrypto::prelude::{PackageAddress, PackagePublishInput};
 use scrypto::values::ScryptoValue;
 
 use crate::engine::*;
-use crate::fee::CostUnitCounterError;
+use crate::fee::{CostUnitCounter, CostUnitCounterError};
 use crate::wasm::*;
 
 /// A collection of blueprints, compiled and published as a single unit.
@@ -45,15 +45,16 @@ impl ValidatedPackage {
         self.blueprint_abis.get(blueprint_name)
     }
 
-    pub fn static_main<'p, 's, Y, W, I>(
+    pub fn static_main<'p, 's, Y, W, I, C>(
         method_name: &str,
         call_data: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, PackageError>
     where
-        Y: SystemApi<'p, 's, W, I>,
+        Y: SystemApi<'p, 's, W, I, C>,
         W: WasmEngine<I>,
         I: WasmInstance,
+        C: CostUnitCounter,
     {
         match method_name {
             "publish" => {

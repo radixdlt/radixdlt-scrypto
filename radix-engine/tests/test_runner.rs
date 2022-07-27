@@ -5,7 +5,10 @@ use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::*;
 use radix_engine::model::{export_abi, export_abi_by_component, extract_package};
 use radix_engine::state_manager::StagedSubstateStoreManager;
-use radix_engine::transaction::{ExecutionParameters, TransactionExecutor, TransactionReceipt};
+use radix_engine::transaction::{
+    ExecutionParameters, PreviewError, PreviewExecutor, PreviewResult, TransactionExecutor,
+    TransactionReceipt,
+};
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter};
 use sbor::describe::Fields;
 use sbor::Type;
@@ -15,14 +18,16 @@ use scrypto::prelude::*;
 use scrypto::prelude::{HashMap, Package};
 use scrypto::{abi, to_struct};
 use transaction::builder::ManifestBuilder;
-use transaction::model::TestTransaction;
-use transaction::model::TransactionManifest;
+use transaction::model::{ExecutableTransaction, TransactionManifest};
+use transaction::model::{PreviewIntent, TestTransaction};
 use transaction::signing::EcdsaPrivateKey;
+use transaction::validation::TestIntentHashManager;
 
 pub struct TestRunner<'s, S: ReadableSubstateStore + WriteableSubstateStore> {
     execution_stores: StagedSubstateStoreManager<'s, S>,
     wasm_engine: DefaultWasmEngine,
     wasm_instrumenter: WasmInstrumenter,
+    intent_hash_manager: TestIntentHashManager,
     next_private_key: u64,
     next_transaction_nonce: u64,
     trace: bool,
@@ -34,10 +39,15 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             execution_stores: StagedSubstateStoreManager::new(substate_store),
             wasm_engine: DefaultWasmEngine::new(),
             wasm_instrumenter: WasmInstrumenter::new(),
+            intent_hash_manager: TestIntentHashManager::new(),
             next_private_key: 1, // 0 is invalid
             next_transaction_nonce: 0,
             trace,
         }
+    }
+
+    pub fn next_transaction_nonce(&self) -> u64 {
+        self.next_transaction_nonce
     }
 
     pub fn new_key_pair(&mut self) -> (EcdsaPublicKey, EcdsaPrivateKey) {
@@ -105,6 +115,38 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     ) -> TransactionReceipt {
         let mut receipts = self.execute_batch(vec![(manifest, signer_public_keys)]);
         receipts.pop().unwrap()
+    }
+
+    pub fn execute_transaction<T: ExecutableTransaction>(
+        &mut self,
+        transaction: &T,
+        params: &ExecutionParameters,
+    ) -> TransactionReceipt {
+        let node_id = self.create_child_node(0);
+        let substate_store = &mut self.execution_stores.get_output_store(node_id);
+
+        TransactionExecutor::new(
+            substate_store,
+            &mut self.wasm_engine,
+            &mut self.wasm_instrumenter,
+        )
+        .execute(transaction, params)
+    }
+
+    pub fn execute_preview(
+        &mut self,
+        preview_intent: PreviewIntent,
+    ) -> Result<PreviewResult, PreviewError> {
+        let node_id = self.create_child_node(0);
+        let substate_store = &mut self.execution_stores.get_output_store(node_id);
+
+        PreviewExecutor::new(
+            substate_store,
+            &mut self.wasm_engine,
+            &mut self.wasm_instrumenter,
+            &self.intent_hash_manager,
+        )
+        .execute(preview_intent)
     }
 
     pub fn execute_batch(

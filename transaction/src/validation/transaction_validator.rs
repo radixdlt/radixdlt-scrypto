@@ -22,9 +22,9 @@ pub struct TransactionValidator;
 impl TransactionValidator {
     pub const MAX_PAYLOAD_SIZE: usize = 4 * 1024 * 1024;
 
-    pub fn validate_from_slice<I: IntentHashStore>(
+    pub fn validate_from_slice<I: IntentHashManager>(
         transaction: &[u8],
-        intent_hash_store: &I,
+        intent_hash_manager: &I,
         parameters: &ValidationParameters,
     ) -> Result<ValidatedTransaction, TransactionValidationError> {
         if transaction.len() > Self::MAX_PAYLOAD_SIZE {
@@ -34,18 +34,18 @@ impl TransactionValidator {
         let transaction: NotarizedTransaction = scrypto_decode(transaction)
             .map_err(TransactionValidationError::DeserializationError)?;
 
-        Self::validate(transaction, intent_hash_store, parameters)
+        Self::validate(transaction, intent_hash_manager, parameters)
     }
 
-    pub fn validate<I: IntentHashStore>(
+    pub fn validate<I: IntentHashManager>(
         transaction: NotarizedTransaction,
-        intent_hash_store: &I,
+        intent_hash_manager: &I,
         parameters: &ValidationParameters,
     ) -> Result<ValidatedTransaction, TransactionValidationError> {
         // verify the intent
         let instructions = Self::validate_intent(
             &transaction.signed_intent.intent,
-            intent_hash_store,
+            intent_hash_manager,
             parameters,
         )?;
 
@@ -74,16 +74,16 @@ impl TransactionValidator {
         })
     }
 
-    pub fn validate_preview_intent<I: IntentHashStore>(
+    pub fn validate_preview_intent<I: IntentHashManager>(
         preview_intent: PreviewIntent,
-        intent_hash_store: &I,
+        intent_hash_manager: &I,
         parameters: &ValidationParameters,
     ) -> Result<ValidatedPreviewTransaction, TransactionValidationError> {
         let intent = &preview_intent.intent;
 
         let transaction_hash = preview_intent.hash();
 
-        let instructions = Self::validate_intent(&intent, intent_hash_store, parameters)?;
+        let instructions = Self::validate_intent(&intent, intent_hash_manager, parameters)?;
 
         Ok(ValidatedPreviewTransaction {
             preview_intent,
@@ -92,13 +92,13 @@ impl TransactionValidator {
         })
     }
 
-    fn validate_intent<I: IntentHashStore>(
+    fn validate_intent<I: IntentHashManager>(
         intent: &TransactionIntent,
-        intent_hash_store: &I,
+        intent_hash_manager: &I,
         parameters: &ValidationParameters,
     ) -> Result<Vec<ExecutableInstruction>, TransactionValidationError> {
         // verify intent hash
-        if !intent_hash_store.allows(&intent.hash()) {
+        if !intent_hash_manager.allows(&intent.hash()) {
             return Err(TransactionValidationError::IntentHashRejected);
         }
 
@@ -388,7 +388,7 @@ mod tests {
 
     macro_rules! assert_invalid_tx {
         ($result: expr, ($version: expr, $start_epoch: expr, $end_epoch: expr, $nonce: expr, $signers: expr, $notary: expr)) => {{
-            let mut intent_hash_store: TestIntentHashStore = TestIntentHashStore::new();
+            let mut intent_hash_manager: TestIntentHashManager = TestIntentHashManager::new();
             let parameters: ValidationParameters = ValidationParameters {
                 network: Network::LocalSimulator,
                 current_epoch: 1,
@@ -406,7 +406,7 @@ mod tests {
                         $signers,
                         $notary
                     ),
-                    &mut intent_hash_store,
+                    &mut intent_hash_manager,
                     &parameters,
                 )
             );
@@ -459,7 +459,7 @@ mod tests {
 
     #[test]
     fn test_valid_preview() {
-        let mut intent_hash_store: TestIntentHashStore = TestIntentHashStore::new();
+        let mut intent_hash_manager: TestIntentHashManager = TestIntentHashManager::new();
         let parameters: ValidationParameters = ValidationParameters {
             network: Network::LocalSimulator,
             current_epoch: 1,
@@ -480,9 +480,11 @@ mod tests {
             PreviewIntent {
                 intent: tx.signed_intent.intent,
                 signer_public_keys: signer_public_keys,
-                flags: PreviewFlags {},
+                flags: PreviewFlags {
+                    unlimited_loan: true,
+                },
             },
-            &mut intent_hash_store,
+            &mut intent_hash_manager,
             &parameters,
         );
 

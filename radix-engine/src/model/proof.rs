@@ -14,6 +14,7 @@ use scrypto::resource::ConsumingProofDropInput;
 use scrypto::values::ScryptoValue;
 
 use crate::engine::SystemApi;
+use crate::fee::CostUnitCounter;
 use crate::fee::CostUnitCounterError;
 use crate::model::ProofError::UnknownMethod;
 use crate::model::{
@@ -334,7 +335,14 @@ impl Proof {
         self.restricted
     }
 
-    pub fn main<'p, 's, Y: SystemApi<'p, 's, W, I>, W: WasmEngine<I>, I: WasmInstance>(
+    pub fn main<
+        'p,
+        's,
+        Y: SystemApi<'p, 's, W, I, C>,
+        W: WasmEngine<I>,
+        I: WasmInstance,
+        C: CostUnitCounter,
+    >(
         value_id: ValueId,
         method_name: &str,
         arg: ScryptoValue,
@@ -380,7 +388,14 @@ impl Proof {
         Ok(rtn)
     }
 
-    pub fn main_consume<'p, 's, Y: SystemApi<'p, 's, W, I>, W: WasmEngine<I>, I: WasmInstance>(
+    pub fn main_consume<
+        'p,
+        's,
+        Y: SystemApi<'p, 's, W, I, C>,
+        W: WasmEngine<I>,
+        I: WasmInstance,
+        C: CostUnitCounter,
+    >(
         value_id: ValueId,
         method_name: &str,
         arg: ScryptoValue,

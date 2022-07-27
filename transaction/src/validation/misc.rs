@@ -1,7 +1,7 @@
 use sbor::rust::collections::HashMap;
 use scrypto::crypto::Hash;
 
-pub trait IntentHashStore {
+pub trait IntentHashManager {
     fn allows(&self, hash: &Hash) -> bool;
 }
 
@@ -10,11 +10,11 @@ pub enum HashStatus {
     Cancelled,
 }
 
-pub struct TestIntentHashStore {
+pub struct TestIntentHashManager {
     hash_status_map: HashMap<Hash, HashStatus>,
 }
 
-impl TestIntentHashStore {
+impl TestIntentHashManager {
     pub fn new() -> Self {
         Self {
             hash_status_map: HashMap::new(),
@@ -30,7 +30,7 @@ impl TestIntentHashStore {
     }
 }
 
-impl IntentHashStore for TestIntentHashStore {
+impl IntentHashManager for TestIntentHashManager {
     fn allows(&self, hash: &Hash) -> bool {
         !self.hash_status_map.contains_key(hash)
     }

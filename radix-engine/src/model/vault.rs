@@ -16,6 +16,7 @@ use scrypto::resource::{
 use scrypto::values::ScryptoValue;
 
 use crate::engine::{PayFeeError, SystemApi};
+use crate::fee::CostUnitCounter;
 use crate::fee::CostUnitCounterError;
 use crate::model::VaultError::MethodNotFound;
 use crate::model::{
@@ -165,7 +166,14 @@ impl Vault {
         self.container.borrow_mut()
     }
 
-    pub fn main<'p, 's, Y: SystemApi<'p, 's, W, I>, W: WasmEngine<I>, I: WasmInstance>(
+    pub fn main<
+        'p,
+        's,
+        Y: SystemApi<'p, 's, W, I, C>,
+        W: WasmEngine<I>,
+        I: WasmInstance,
+        C: CostUnitCounter,
+    >(
         vault_id: VaultId,
         method_name: &str,
         arg: ScryptoValue,

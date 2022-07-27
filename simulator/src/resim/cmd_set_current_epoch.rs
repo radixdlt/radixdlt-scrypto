@@ -27,8 +27,7 @@ impl SetCurrentEpoch {
         let mut wasm_instrumenter = WasmInstrumenter::new();
         let mut id_allocator = IdAllocator::new(IdSpace::Application);
         let mut track = Track::new(&substate_store);
-        let mut cost_unit_counter =
-            CostUnitCounter::new(DEFAULT_COST_UNIT_LIMIT, DEFAULT_SYSTEM_LOAN);
+        let mut cost_unit_counter = SystemLoanCostUnitCounter::default();
         let fee_table = FeeTable::new();
 
         // Create root call frame.

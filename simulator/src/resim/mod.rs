@@ -51,6 +51,7 @@ use radix_engine::constants::*;
 use radix_engine::model::*;
 use radix_engine::transaction::ExecutionParameters;
 use radix_engine::transaction::TransactionExecutor;
+use radix_engine::transaction::TransactionExecutorConfig;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::transaction::TransactionStatus;
 use radix_engine::wasm::*;

@@ -10,8 +10,7 @@ use transaction::validation::{IdAllocator, IdSpace};
 use crate::constants::{DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN};
 use crate::engine::Track;
 use crate::engine::*;
-use crate::fee::CostUnitCounter;
-use crate::fee::FeeTable;
+use crate::fee::{CostUnitCounter, FeeTable, SystemLoanCostUnitCounter};
 use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
 use crate::model::*;
 use crate::transaction::*;
@@ -84,6 +83,19 @@ where
         transaction: &T,
         params: &ExecutionParameters,
     ) -> TransactionReceipt {
+        self.execute_with_cost_unit_counter(
+            transaction,
+            params,
+            SystemLoanCostUnitCounter::default(),
+        )
+    }
+
+    pub fn execute_with_cost_unit_counter<T: ExecutableTransaction, C: CostUnitCounter>(
+        &mut self,
+        transaction: &T,
+        params: &ExecutionParameters,
+        mut cost_unit_counter: C,
+    ) -> TransactionReceipt {
         #[cfg(not(feature = "alloc"))]
         let now = std::time::Instant::now();
 
@@ -108,7 +120,6 @@ where
         let mut id_allocator = IdAllocator::new(IdSpace::Application);
 
         // 2. Apply pre-execution costing
-        let mut cost_unit_counter = CostUnitCounter::new(cost_unit_limit, params.system_loan);
         let fee_table = FeeTable::new();
         cost_unit_counter
             .consume(
@@ -168,7 +179,7 @@ where
         #[cfg(not(feature = "alloc"))]
         if params.trace {
             println!("{:-^80}", "Cost Analysis");
-            for (k, v) in cost_unit_counter.analysis {
+            for (k, v) in cost_unit_counter.analysis() {
                 println!("{:<20}: {:>8}", k, v);
             }
         }

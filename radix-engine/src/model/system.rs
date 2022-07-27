@@ -7,6 +7,7 @@ use scrypto::engine::types::ValueId;
 use scrypto::values::ScryptoValue;
 
 use crate::engine::SystemApi;
+use crate::fee::CostUnitCounter;
 use crate::fee::CostUnitCounterError;
 use crate::model::SystemError::InvalidMethod;
 use crate::wasm::*;
@@ -24,7 +25,14 @@ pub struct System {
 }
 
 impl System {
-    pub fn main<'p, 's, Y: SystemApi<'p, 's, W, I>, W: WasmEngine<I>, I: WasmInstance>(
+    pub fn main<
+        'p,
+        's,
+        Y: SystemApi<'p, 's, W, I, C>,
+        W: WasmEngine<I>,
+        I: WasmInstance,
+        C: CostUnitCounter,
+    >(
         method_name: &str,
         arg: ScryptoValue,
         system_api: &mut Y,
