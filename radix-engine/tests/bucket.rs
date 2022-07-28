@@ -118,7 +118,7 @@ fn test_take_with_invalid_granularity() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
-    receipt.expect_err(|e| {
+    receipt.expect_failure(|e| {
         if let RuntimeError::BucketError(BucketError::ResourceContainerError(
             ResourceContainerError::InvalidAmount(amount, granularity),
         )) = e
@@ -155,7 +155,7 @@ fn test_take_with_negative_amount() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
-    receipt.expect_err(|e| {
+    receipt.expect_failure(|e| {
         if let RuntimeError::BucketError(BucketError::ResourceContainerError(
             ResourceContainerError::InvalidAmount(amount, granularity),
         )) = e

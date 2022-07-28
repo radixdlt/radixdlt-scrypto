@@ -31,7 +31,7 @@ fn test_invalid_access_rule_methods() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_err(|e| {
+    receipt.expect_failure(|e| {
         matches!(
             e,
             RuntimeError::ComponentError(ComponentError::BlueprintFunctionDoesNotExist(..))
@@ -64,10 +64,10 @@ fn test_arg(method_name: &str, arg: Vec<u8>, expected_result: ExpectedResult) {
             receipt.expect_success();
         }
         ExpectedResult::InvalidInput => {
-            receipt.expect_err(|e| matches!(e, RuntimeError::InvalidFnInput { .. }));
+            receipt.expect_failure(|e| matches!(e, RuntimeError::InvalidFnInput { .. }));
         }
         ExpectedResult::InvalidOutput => {
-            receipt.expect_err(|e| matches!(e, RuntimeError::InvalidFnOutput { .. }));
+            receipt.expect_failure(|e| matches!(e, RuntimeError::InvalidFnOutput { .. }));
         }
     }
 }

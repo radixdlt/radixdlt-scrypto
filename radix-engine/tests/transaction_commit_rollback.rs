@@ -50,7 +50,7 @@ fn test_state_track_failure() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
-    receipt.expect_err(|e| matches!(e, RuntimeError::WorktopError(_)));
+    receipt.expect_failure(|e| matches!(e, RuntimeError::WorktopError(_)));
     assert!(
         receipt.state_updates.down_substates.is_empty()
             && receipt.state_updates.up_substates.is_empty()

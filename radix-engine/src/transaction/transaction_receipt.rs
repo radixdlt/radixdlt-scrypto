@@ -56,20 +56,26 @@ impl TransactionReceipt {
         match &self.status {
             TransactionStatus::Succeeded(output) => output,
             TransactionStatus::Failed(err) => panic!("Expected success but was:\n{:?}", err),
-            TransactionStatus::Rejected => panic!("Expected success but was rejected"),
+            TransactionStatus::Rejected => panic!("Expected success but was rejection"),
         }
     }
 
-    pub fn expect_err<F>(&self, f: F)
+    pub fn expect_failure<F>(&self, f: F)
     where
         F: FnOnce(&RuntimeError) -> bool,
     {
         if let TransactionStatus::Failed(e) = &self.status {
             if !f(e) {
-                panic!("Expected error but was different error:\n{:?}", self);
+                panic!("Expected failure but was different error:\n{:?}", self);
             }
         } else {
-            panic!("Expected error but was:\n{:?}", self);
+            panic!("Expected failure but was:\n{:?}", self);
+        }
+    }
+
+    pub fn expect_rejection(&self) {
+        if !matches!(self.status, TransactionStatus::Rejected) {
+            panic!("Expected rejection but was:\n{:?}", self);
         }
     }
 }
@@ -94,8 +100,8 @@ impl fmt::Debug for TransactionReceipt {
             "Transaction Status:".bold().green(),
             match &self.status {
                 TransactionStatus::Succeeded(_) => "SUCCESS".blue(),
-                TransactionStatus::Failed(e) => e.to_string().red(),
-                TransactionStatus::Rejected => "REJECTED".red(),
+                TransactionStatus::Failed(e) => format!("FAILURE: {}", e).red(),
+                TransactionStatus::Rejected => "REJECTION".red(),
             }
         )?;
 

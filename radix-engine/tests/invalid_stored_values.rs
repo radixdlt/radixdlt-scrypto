@@ -28,7 +28,7 @@ fn stored_bucket_in_committed_component_should_fail() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_err(|e| matches!(e, RuntimeError::ValueNotAllowed));
+    receipt.expect_failure(|e| matches!(e, RuntimeError::ValueNotAllowed));
 }
 
 #[test]
@@ -51,5 +51,5 @@ fn stored_bucket_in_owned_component_should_fail() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_err(|e| matches!(e, RuntimeError::ValueNotAllowed));
+    receipt.expect_failure(|e| matches!(e, RuntimeError::ValueNotAllowed));
 }

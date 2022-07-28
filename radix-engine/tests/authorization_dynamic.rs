@@ -72,7 +72,7 @@ fn test_dynamic_auth(
     if should_succeed {
         receipt2.expect_success();
     } else {
-        receipt2.expect_err(is_auth_error);
+        receipt2.expect_failure(is_auth_error);
     }
 }
 
@@ -124,7 +124,7 @@ fn test_dynamic_authlist(
     if should_succeed {
         receipt.expect_success();
     } else {
-        receipt.expect_err(is_auth_error);
+        receipt.expect_failure(is_auth_error);
     }
 }
 
@@ -243,7 +243,7 @@ fn chess_should_not_allow_second_player_to_move_if_first_player_didnt_move() {
     let receipt = test_runner.execute_manifest(manifest2, vec![other_public_key]);
 
     // Assert
-    receipt.expect_err(is_auth_error);
+    receipt.expect_failure(is_auth_error);
 }
 
 #[test]

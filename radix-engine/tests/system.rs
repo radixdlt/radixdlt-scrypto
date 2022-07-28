@@ -51,5 +51,5 @@ fn test_set_epoch_without_system_auth_fails() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_err(|e| matches!(e, RuntimeError::AuthorizationError { .. }));
+    receipt.expect_failure(|e| matches!(e, RuntimeError::AuthorizationError { .. }));
 }

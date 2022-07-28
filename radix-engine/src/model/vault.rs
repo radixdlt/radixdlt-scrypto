@@ -226,7 +226,9 @@ impl Vault {
                     .map_err(VaultError::CostingError)?;
 
                 // Temporarily burn the amount
-                let _destroyed = vault.take(actual_amount)?;
+                let _destroyed = vault
+                    .take(actual_amount)
+                    .map_err(|_| VaultError::PayFeeError(PayFeeError::InsufficientBalance))?;
 
                 Ok(ScryptoValue::from_typed(&()))
             }

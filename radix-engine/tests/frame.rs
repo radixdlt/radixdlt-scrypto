@@ -48,5 +48,5 @@ fn test_max_call_depth_failure() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_err(|e| matches!(e, RuntimeError::MaxCallDepthLimitReached));
+    receipt.expect_failure(|e| matches!(e, RuntimeError::MaxCallDepthLimitReached));
 }

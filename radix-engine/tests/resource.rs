@@ -65,7 +65,7 @@ fn mint_with_bad_granularity_should_fail() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
-    receipt.expect_err(|e| {
+    receipt.expect_failure(|e| {
         if let RuntimeError::ResourceManagerError(ResourceManagerError::InvalidAmount(
             amount,
             granularity,
@@ -100,7 +100,7 @@ fn mint_too_much_should_fail() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
-    receipt.expect_err(|e| {
+    receipt.expect_failure(|e| {
         matches!(
             e,
             RuntimeError::ResourceManagerError(ResourceManagerError::MaxMintAmountExceeded)

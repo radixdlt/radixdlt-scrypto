@@ -136,6 +136,7 @@ pub enum PayFeeError {
     ValueAlreadyTouched,
     ValueNotFound,
     NotRadixToken,
+    InsufficientBalance,
 }
 
 #[derive(Debug, PartialEq)]

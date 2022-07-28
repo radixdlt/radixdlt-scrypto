@@ -33,7 +33,7 @@ fn test_auth_rule<'s, S: ReadableSubstateStore + WriteableSubstateStore>(
     if should_succeed {
         receipt.expect_success();
     } else {
-        receipt.expect_err(is_auth_error);
+        receipt.expect_failure(is_auth_error);
     }
 }
 
@@ -309,5 +309,5 @@ fn cannot_withdraw_from_my_any_xrd_auth_account_with_less_than_amount_of_proof()
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_err(is_auth_error)
+    receipt.expect_failure(is_auth_error)
 }

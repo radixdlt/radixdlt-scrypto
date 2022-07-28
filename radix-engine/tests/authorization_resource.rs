@@ -90,7 +90,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
 
     // Assert
     if expect_err {
-        receipt.expect_err(is_auth_error);
+        receipt.expect_failure(is_auth_error);
     } else {
         receipt.expect_success();
     }

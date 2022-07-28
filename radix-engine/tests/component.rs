@@ -78,7 +78,7 @@ fn invalid_blueprint_name_should_cause_error() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_err(|e| {
+    receipt.expect_failure(|e| {
         if let RuntimeError::BlueprintNotFound(addr, blueprint) = e {
             addr.eq(&package_address) && blueprint.eq("NonExistentBlueprint")
         } else {
@@ -109,7 +109,7 @@ fn reentrancy_should_not_be_possible() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_err(|e| {
+    receipt.expect_failure(|e| {
         if let RuntimeError::ComponentReentrancy(address) = e {
             address.eq(&component_address)
         } else {
@@ -137,7 +137,7 @@ fn missing_component_address_should_cause_error() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_err(|e| {
+    receipt.expect_failure(|e| {
         if let RuntimeError::ComponentNotFound(address) = e {
             address.eq(&component_address)
         } else {
