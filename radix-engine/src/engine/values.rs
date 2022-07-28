@@ -6,6 +6,115 @@ use scrypto::values::ScryptoValue;
 use crate::engine::*;
 use crate::model::*;
 
+fn verify_stored_key(value: &ScryptoValue) -> Result<(), RuntimeError> {
+    if !value.bucket_ids.is_empty() {
+        return Err(RuntimeError::BucketNotAllowed);
+    }
+    if !value.proof_ids.is_empty() {
+        return Err(RuntimeError::ProofNotAllowed);
+    }
+    if !value.vault_ids.is_empty() {
+        return Err(RuntimeError::VaultNotAllowed);
+    }
+    if !value.kv_store_ids.is_empty() {
+        return Err(RuntimeError::KeyValueStoreNotAllowed);
+    }
+    Ok(())
+}
+
+#[derive(Debug)]
+pub enum SubstateAddress {
+    KeyValueEntry(KeyValueStoreId, ScryptoValue),
+    NonFungible(ResourceAddress, NonFungibleId),
+    Component(ComponentAddress),
+    ComponentState(ComponentAddress),
+}
+
+impl SubstateAddress {
+    pub fn get_value_id(&self) -> ValueId {
+        match self {
+            SubstateAddress::Component(component_address)
+            | SubstateAddress::ComponentState(component_address) => {
+                ValueId::Component(*component_address)
+            }
+            SubstateAddress::NonFungible(resource_address, ..) => {
+                ValueId::Resource(*resource_address)
+            }
+            SubstateAddress::KeyValueEntry(kv_store_id, ..) => ValueId::KeyValueStore(*kv_store_id),
+        }
+    }
+
+    pub fn read_scrypto_value(
+        &self,
+        mut value_ref: REValueRefMut,
+    ) -> Result<ScryptoValue, RuntimeError> {
+        match self {
+            SubstateAddress::Component(..) => {
+                Ok(ScryptoValue::from_typed(&value_ref.component().info()))
+            }
+            SubstateAddress::ComponentState(..) => Ok(ScryptoValue::from_slice(
+                value_ref.component_state().state(),
+            )
+            .expect("Expected to decode")),
+            SubstateAddress::KeyValueEntry(.., key) => {
+                verify_stored_key(key)?;
+                Ok(value_ref.kv_store_get(&key.raw))
+            }
+            SubstateAddress::NonFungible(.., id) => Ok(value_ref.non_fungible_get(id)),
+        }
+    }
+
+    pub fn replace_with_default(&self, mut value_ref: REValueRefMut) {
+        match self {
+            SubstateAddress::Component(..) | SubstateAddress::ComponentState(..) => {
+                panic!("Should not get here");
+            }
+            SubstateAddress::KeyValueEntry(..) => {
+                panic!("Should not get here");
+            }
+            SubstateAddress::NonFungible(.., id) => value_ref.non_fungible_remove(&id),
+        }
+    }
+
+    pub fn verify_can_write(&self) -> Result<(), RuntimeError> {
+        match self {
+            SubstateAddress::KeyValueEntry(..)
+            | SubstateAddress::ComponentState(..)
+            | SubstateAddress::NonFungible(..) => Ok(()),
+            SubstateAddress::Component(..) => Err(RuntimeError::InvalidDataWrite),
+        }
+    }
+
+    pub fn can_store_values(&self) -> bool {
+        match self {
+            SubstateAddress::KeyValueEntry(..) => true,
+            SubstateAddress::ComponentState(..) => true,
+            SubstateAddress::Component(..) => false,
+            SubstateAddress::NonFungible(..) => false,
+        }
+    }
+
+    pub fn write_value(
+        self,
+        mut value_ref: REValueRefMut,
+        value: ScryptoValue,
+        values: HashMap<ValueId, REValue>,
+    ) {
+        match self {
+            SubstateAddress::Component(..) => {
+                panic!("Should not get here");
+            }
+            SubstateAddress::ComponentState(..) => {
+                value_ref.component_state_set(value, values);
+            }
+            SubstateAddress::KeyValueEntry(.., key) => {
+                value_ref.kv_store_put(key.raw, value, values);
+            }
+            SubstateAddress::NonFungible(.., id) => value_ref.non_fungible_put(id, value),
+        }
+    }
+}
+
 /// Represents a Radix Engine address. Each maps a unique substate key.
 ///
 /// TODO: separate space addresses?

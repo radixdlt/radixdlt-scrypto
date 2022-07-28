@@ -206,7 +206,7 @@ fn generate_dispatcher(
                             assert!(get_state.is_none(), "Can't have more than 1 self reference");
                             get_state = Some(parse_quote! {
                                 let #mutability state: #module_ident::#bp_ident = {
-                                    let address = DataAddress::Component(component_address, ComponentOffset::State);
+                                    let address = DataAddress::ComponentState(component_address);
                                     let input = ::scrypto::engine::api::RadixEngineInput::ReadData(address);
                                     ::scrypto::engine::call_engine(input)
                                 };
@@ -216,7 +216,7 @@ fn generate_dispatcher(
                             if mutability.is_some() {
                                 put_state = Some(parse_quote! {
                                     {
-                                        let address = DataAddress::Component(component_address, ComponentOffset::State);
+                                        let address = DataAddress::ComponentState(component_address);
                                         let input = ::scrypto::engine::api::RadixEngineInput::WriteData(address, scrypto_encode(&state));
                                         let _: () = ::scrypto::engine::call_engine(input);
                                     }
@@ -589,7 +589,7 @@ mod tests {
                     let input: Test_x_Input = ::scrypto::buffer::scrypto_decode_from_buffer(method_arg).unwrap();
                     let component_address = ::scrypto::core::Runtime::actor().component_address().unwrap();
                     let state: Test_impl::Test = {
-                        let address = DataAddress::Component(component_address, ComponentOffset::State);
+                        let address = DataAddress::ComponentState(component_address);
                         let input = ::scrypto::engine::api::RadixEngineInput::ReadData(address);
                         ::scrypto::engine::call_engine(input)
                     };

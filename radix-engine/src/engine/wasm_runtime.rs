@@ -1,4 +1,3 @@
-use crate::engine::call_frame::SubstateAddress;
 use sbor::rust::marker::PhantomData;
 use sbor::rust::vec::Vec;
 use sbor::*;
@@ -10,8 +9,8 @@ use scrypto::engine::types::*;
 use scrypto::resource::AccessRule;
 use scrypto::values::ScryptoValue;
 
-use crate::engine::SystemApi;
 use crate::engine::{PreCommittedKeyValueStore, RuntimeError};
+use crate::engine::{SubstateAddress, SystemApi};
 use crate::fee::*;
 use crate::model::{Component, ComponentState};
 use crate::wasm::*;
@@ -105,8 +104,11 @@ where
                     ScryptoValue::from_slice(&key_bytes).map_err(RuntimeError::DecodeError)?;
                 SubstateAddress::KeyValueEntry(kv_store_id, scrypto_key)
             }
-            DataAddress::Component(component_address, offset) => {
-                SubstateAddress::Component(component_address, offset)
+            DataAddress::Component(component_address) => {
+                SubstateAddress::Component(component_address)
+            }
+            DataAddress::ComponentState(component_address) => {
+                SubstateAddress::ComponentState(component_address)
             }
         };
 
@@ -124,8 +126,11 @@ where
                     ScryptoValue::from_slice(&key_bytes).map_err(RuntimeError::DecodeError)?;
                 SubstateAddress::KeyValueEntry(kv_store_id, scrypto_key)
             }
-            DataAddress::Component(component_address, offset) => {
-                SubstateAddress::Component(component_address, offset)
+            DataAddress::Component(component_address) => {
+                SubstateAddress::Component(component_address)
+            }
+            DataAddress::ComponentState(component_address) => {
+                SubstateAddress::ComponentState(component_address)
             }
         };
         let scrypto_value = ScryptoValue::from_slice(&value).map_err(RuntimeError::DecodeError)?;

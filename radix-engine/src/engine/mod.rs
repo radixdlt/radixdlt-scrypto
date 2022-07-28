@@ -7,7 +7,7 @@ mod track_support;
 mod values;
 mod wasm_runtime;
 
-pub use call_frame::{CallFrame, RENativeValueRef, REValueRefMut, SubstateAddress};
+pub use call_frame::{CallFrame, RENativeValueRef, REValueRefMut};
 pub use errors::*;
 pub use precommitted_kv_store::*;
 pub use system_api::SystemApi;

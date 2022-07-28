@@ -12,7 +12,6 @@ use sbor::*;
 use scrypto::buffer::scrypto_decode;
 use scrypto::core::{SNodeRef, ScryptoActor};
 use scrypto::engine::types::*;
-use scrypto::prelude::ComponentOffset;
 use scrypto::resource::AuthZoneClearInput;
 use scrypto::values::*;
 use transaction::validation::*;
@@ -100,22 +99,6 @@ fn verify_stored_value_update(
         }
     }
 
-    Ok(())
-}
-
-fn verify_stored_key(value: &ScryptoValue) -> Result<(), RuntimeError> {
-    if !value.bucket_ids.is_empty() {
-        return Err(RuntimeError::BucketNotAllowed);
-    }
-    if !value.proof_ids.is_empty() {
-        return Err(RuntimeError::ProofNotAllowed);
-    }
-    if !value.vault_ids.is_empty() {
-        return Err(RuntimeError::VaultNotAllowed);
-    }
-    if !value.kv_store_ids.is_empty() {
-        return Err(RuntimeError::KeyValueStoreNotAllowed);
-    }
     Ok(())
 }
 
@@ -428,7 +411,7 @@ pub enum REValueRefMut<'f, 's> {
 }
 
 impl<'f, 's> REValueRefMut<'f, 's> {
-    fn kv_store_put(
+    pub fn kv_store_put(
         &mut self,
         key: Vec<u8>,
         value: ScryptoValue,
@@ -457,7 +440,7 @@ impl<'f, 's> REValueRefMut<'f, 's> {
         }
     }
 
-    fn kv_store_get(&mut self, key: &[u8]) -> ScryptoValue {
+    pub fn kv_store_get(&mut self, key: &[u8]) -> ScryptoValue {
         let wrapper = match self {
             REValueRefMut::Stack(re_value, id) => {
                 let store = re_value.get_node_mut(id.as_ref()).kv_store_mut();
@@ -487,7 +470,7 @@ impl<'f, 's> REValueRefMut<'f, 's> {
         ScryptoValue::from_value(value).unwrap()
     }
 
-    fn non_fungible_get(&mut self, id: &NonFungibleId) -> ScryptoValue {
+    pub fn non_fungible_get(&mut self, id: &NonFungibleId) -> ScryptoValue {
         let wrapper = match self {
             REValueRefMut::Stack(value, re_id) => {
                 let non_fungible_set = re_id
@@ -511,7 +494,7 @@ impl<'f, 's> REValueRefMut<'f, 's> {
         ScryptoValue::from_typed(&wrapper)
     }
 
-    fn non_fungible_remove(&mut self, id: &NonFungibleId) {
+    pub fn non_fungible_remove(&mut self, id: &NonFungibleId) {
         match self {
             REValueRefMut::Stack(..) => {
                 panic!("Not supported");
@@ -527,7 +510,7 @@ impl<'f, 's> REValueRefMut<'f, 's> {
         }
     }
 
-    fn non_fungible_put(&mut self, id: NonFungibleId, value: ScryptoValue) {
+    pub fn non_fungible_put(&mut self, id: NonFungibleId, value: ScryptoValue) {
         match self {
             REValueRefMut::Stack(re_value, re_id) => {
                 let wrapper: NonFungibleWrapper =
@@ -553,7 +536,11 @@ impl<'f, 's> REValueRefMut<'f, 's> {
         }
     }
 
-    fn component_state_set(&mut self, value: ScryptoValue, to_store: HashMap<ValueId, REValue>) {
+    pub fn component_state_set(
+        &mut self,
+        value: ScryptoValue,
+        to_store: HashMap<ValueId, REValue>,
+    ) {
         match self {
             REValueRefMut::Stack(re_value, id) => {
                 let component_state = re_value.get_node_mut(id.as_ref()).component_state_mut();
@@ -575,7 +562,7 @@ impl<'f, 's> REValueRefMut<'f, 's> {
         }
     }
 
-    fn component(&mut self) -> &Component {
+    pub fn component(&mut self) -> &Component {
         match self {
             REValueRefMut::Stack(re_value, id) => re_value.get_node_mut(id.as_ref()).component(),
             REValueRefMut::Track(track, address) => {
@@ -585,7 +572,7 @@ impl<'f, 's> REValueRefMut<'f, 's> {
         }
     }
 
-    fn component_state(&mut self) -> &ComponentState {
+    pub fn component_state(&mut self) -> &ComponentState {
         match self {
             REValueRefMut::Stack(re_value, id) => {
                 re_value.get_node_mut(id.as_ref()).component_state()
@@ -612,13 +599,6 @@ pub enum SNodeExecution<'a> {
     AuthZone(RefMut<'a, AuthZone>),
     ValueRef(ValueId),
     Scrypto(ScryptoActorInfo, PackageAddress),
-}
-
-#[derive(Debug)]
-pub enum SubstateAddress {
-    KeyValueEntry(KeyValueStoreId, ScryptoValue),
-    NonFungible(ResourceAddress, NonFungibleId),
-    Component(ComponentAddress, ComponentOffset),
 }
 
 impl<'p, 'g, 's, W, I, C> CallFrame<'p, 'g, 's, W, I, C>
@@ -954,15 +934,7 @@ where
         &mut self,
         address: &SubstateAddress,
     ) -> Result<(REValuePointer, ScryptoValue), RuntimeError> {
-        let value_id = match address {
-            SubstateAddress::Component(component_address, ..) => {
-                ValueId::Component(*component_address)
-            }
-            SubstateAddress::NonFungible(resource_address, ..) => {
-                ValueId::Resource(*resource_address)
-            }
-            SubstateAddress::KeyValueEntry(kv_store_id, ..) => ValueId::KeyValueStore(*kv_store_id),
-        };
+        let value_id = address.get_value_id();
 
         // Get location
         // Note this must be run AFTER values are taken, otherwise there would be inconsistent readable_values state
@@ -973,9 +945,7 @@ where
             .map(|v| (v, None))
             .or_else(|| {
                 // Allow global read access to any component info
-                if let SubstateAddress::Component(component_address, ComponentOffset::Info) =
-                    address
-                {
+                if let SubstateAddress::Component(component_address) = address {
                     if self.owned_values.contains_key(&value_id) {
                         return Some((
                             REValueInfo {
@@ -1015,27 +985,12 @@ where
 
         // Read current value
         let current_value = {
-            let mut value_ref = location.to_ref_mut(
+            let value_ref = location.to_ref_mut(
                 &mut self.owned_values,
                 &mut self.parent_values,
                 &mut self.track,
             );
-            match &address {
-                SubstateAddress::Component(.., offset) => match offset {
-                    ComponentOffset::State => {
-                        ScryptoValue::from_slice(value_ref.component_state().state())
-                            .expect("Expected to decode")
-                    }
-                    ComponentOffset::Info => {
-                        ScryptoValue::from_typed(&value_ref.component().info())
-                    }
-                },
-                SubstateAddress::KeyValueEntry(.., key) => {
-                    verify_stored_key(key)?;
-                    value_ref.kv_store_get(&key.raw)
-                }
-                SubstateAddress::NonFungible(.., id) => value_ref.non_fungible_get(id),
-            }
+            address.read_scrypto_value(value_ref)?
         };
 
         // TODO: Remove, currently a hack to allow for global component info retrieval
@@ -2169,20 +2124,12 @@ where
         }
 
         // Write values
-        let mut value_ref = location.to_ref_mut(
+        let value_ref = location.to_ref_mut(
             &mut self.owned_values,
             &mut self.parent_values,
             &mut self.track,
         );
-        match address {
-            SubstateAddress::Component(..) => {
-                panic!("Should not get here");
-            }
-            SubstateAddress::KeyValueEntry(..) => {
-                panic!("Should not get here");
-            }
-            SubstateAddress::NonFungible(.., id) => value_ref.non_fungible_remove(&id),
-        }
+        address.replace_with_default(value_ref);
 
         Ok(current_value)
     }
@@ -2232,23 +2179,19 @@ where
             )
             .map_err(RuntimeError::CostingError)?;
 
+        address.verify_can_write()?;
+
         // If write, take values from current frame
         let (taken_values, missing) = {
             let value_ids = value.value_ids();
-            match address {
-                SubstateAddress::KeyValueEntry(..)
-                | SubstateAddress::Component(_, ComponentOffset::State) => {
-                    self.take_available_values(value_ids, true)?
+            if !value_ids.is_empty() {
+                if !address.can_store_values() {
+                    return Err(RuntimeError::ValueNotAllowed);
                 }
-                SubstateAddress::Component(_, ComponentOffset::Info) => {
-                    return Err(RuntimeError::InvalidDataWrite)
-                }
-                SubstateAddress::NonFungible(..) => {
-                    if !value_ids.is_empty() {
-                        return Err(RuntimeError::ValueNotAllowed);
-                    }
-                    (HashMap::new(), HashSet::new())
-                }
+
+                self.take_available_values(value_ids, true)?
+            } else {
+                (HashMap::new(), HashSet::new())
             }
         };
 
@@ -2261,23 +2204,12 @@ where
         // TODO: verify against some schema
 
         // Write values
-        let mut value_ref = location.to_ref_mut(
+        let value_ref = location.to_ref_mut(
             &mut self.owned_values,
             &mut self.parent_values,
             &mut self.track,
         );
-        match address {
-            SubstateAddress::Component(.., offset) => match offset {
-                ComponentOffset::State => value_ref.component_state_set(value, taken_values),
-                ComponentOffset::Info => {
-                    return Err(RuntimeError::InvalidDataWrite);
-                }
-            },
-            SubstateAddress::KeyValueEntry(.., key) => {
-                value_ref.kv_store_put(key.raw, value, taken_values);
-            }
-            SubstateAddress::NonFungible(.., id) => value_ref.non_fungible_put(id, value),
-        }
+        address.write_value(value_ref, value, taken_values);
 
         Ok(())
     }
