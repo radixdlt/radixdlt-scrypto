@@ -82,7 +82,7 @@ fn should_be_able_to_call_read_method_on_a_stored_component_in_global_component(
 
     // Assert
     let outputs = receipt.expect_success();
-    let rtn: u32 = scrypto_decode(&outputs[0]).unwrap();
+    let rtn: u32 = scrypto_decode(&outputs[1]).unwrap();
     assert_eq!(rtn, 34567u32);
 }
 
@@ -115,7 +115,7 @@ fn should_be_able_to_call_write_method_on_a_stored_component_in_global_component
 
     // Assert
     let outputs = receipt.expect_success();
-    let rtn: u32 = scrypto_decode(&outputs[1]).unwrap();
+    let rtn: u32 = scrypto_decode(&outputs[2]).unwrap();
     assert_eq!(rtn, 8888u32);
 }
 
@@ -193,7 +193,7 @@ fn should_be_able_to_call_read_method_on_a_kv_stored_component_in_global_compone
 
     // Assert
     let outputs = receipt.expect_success();
-    let rtn: u32 = scrypto_decode(&outputs[0]).unwrap();
+    let rtn: u32 = scrypto_decode(&outputs[1]).unwrap();
     assert_eq!(rtn, 34567u32);
 }
 
@@ -226,6 +226,6 @@ fn should_be_able_to_call_write_method_on_a_kv_stored_component_in_global_compon
 
     // Assert
     let outputs = receipt.expect_success();
-    let rtn: u32 = scrypto_decode(&outputs[1]).unwrap();
+    let rtn: u32 = scrypto_decode(&outputs[2]).unwrap();
     assert_eq!(rtn, 8888u32);
 }
