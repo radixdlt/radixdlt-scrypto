@@ -27,6 +27,8 @@ pub trait CostUnitCounter {
         amount: Decimal,
     ) -> Result<Decimal, CostUnitCounterError>;
 
+    fn finalize(&mut self);
+
     fn limit(&self) -> u32;
 
     fn consumed(&self) -> u32;
@@ -139,6 +141,14 @@ impl CostUnitCounter for SystemLoanCostUnitCounter {
         Ok(effective_cost_unit_price * n)
     }
 
+    fn finalize(&mut self) {
+        if self.owed > 0 && self.balance != 0 {
+            let n = u32::min(self.owed, self.balance);
+            self.owed -= n;
+            self.balance -= n;
+        }
+    }
+
     fn limit(&self) -> u32 {
         self.limit
     }
@@ -227,6 +237,8 @@ impl CostUnitCounter for UnlimitedLoanCostUnitCounter {
     ) -> Result<Decimal, CostUnitCounterError> {
         Ok(amount) // No-op
     }
+
+    fn finalize(&mut self) {}
 
     fn limit(&self) -> u32 {
         self.limit

@@ -169,6 +169,7 @@ where
 
         // 4. Settle transaction fee
         let counter = root_frame.cost_unit_counter();
+        counter.finalize();
         let cost_unit_limit = counter.limit();
         let system_loan_fully_repaid = counter.owed() == 0;
         let cost_unit_consumed = counter.consumed();
