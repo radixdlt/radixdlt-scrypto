@@ -6,7 +6,8 @@ use sbor::*;
 use scrypto::buffer::scrypto_decode;
 use scrypto::engine::types::*;
 use scrypto::prelude::{
-    ResourceManagerCreateBucketInput, ResourceManagerCreateInput, ResourceManagerCreateVaultInput,
+    ResourceManagerCheckBehaviorInput, ResourceManagerCreateBucketInput,
+    ResourceManagerCreateInput, ResourceManagerCreateVaultInput,
     ResourceManagerGetNonFungibleInput, ResourceManagerGetResourceTypeInput,
     ResourceManagerGetTotalSupplyInput, ResourceManagerLockAuthInput, ResourceManagerMintInput,
     ResourceManagerNonFungibleExistsInput, ResourceManagerUpdateAuthInput,
@@ -161,6 +162,7 @@ impl ResourceManager {
             "resource_type",
             "total_supply",
             "create_vault",
+            "check_behavior",
         ] {
             method_table.insert(pub_method.to_string(), Public);
         }
@@ -481,6 +483,18 @@ impl ResourceManager {
                     .get_mut(&input.method)
                     .unwrap();
                 method_entry.main(MethodAccessRuleMethod::Lock())
+            }
+            "check_behavior" => {
+                let input: ResourceManagerCheckBehaviorInput = scrypto_decode(&arg.raw)
+                    .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
+                let behavior = match resource_manager.authorization.get(&input.method) {
+                    Some(method_access_rule) => Some((
+                        !matches!(method_access_rule.auth, MethodAuthorization::DenyAll),
+                        matches!(method_access_rule.update_auth, MethodAuthorization::DenyAll),
+                    )),
+                    None => None,
+                };
+                Ok(ScryptoValue::from_typed(&behavior))
             }
             "create_vault" => {
                 let _: ResourceManagerCreateVaultInput = scrypto_decode(&arg.raw)
