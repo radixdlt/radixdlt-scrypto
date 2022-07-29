@@ -87,7 +87,7 @@ impl Proof {
     ///
     /// This method skips the validation of the resource address of the proof. Therefore, the data, or `NonFungibleId`
     /// of of the returned `ValidatedProof` should **NOT** be trusted as the proof could potentially belong to any
-    /// resource address. If you call this method, you should perform your own proof validation.
+    /// resource address. If you call this method, you should perform your own validation.
     pub fn unsafe_skip_proof_validation(self) -> ValidatedProof {
         ValidatedProof(self.0)
     }
