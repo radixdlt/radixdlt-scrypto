@@ -159,6 +159,6 @@ impl ExecutableTransaction for TestTransaction {
     }
 
     fn tip_percentage(&self) -> u32 {
-        0
+        1
     }
 }

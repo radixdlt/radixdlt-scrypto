@@ -1,5 +1,3 @@
-use core::borrow::BorrowMut;
-
 use sbor::rust::marker::PhantomData;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
@@ -189,26 +187,20 @@ where
         };
 
         if matches!(status, TransactionStatus::Succeeded(..)) {
-            track.commit_app_state_updates();
+            track.commit();
         } else {
-            track.rollback_app_state_updates();
+            track.rollback();
         }
 
         let mut remaining = fee_summary.burned + fee_summary.tipped;
         for (vault_id, mut locked) in fee_summary.payments.iter().cloned().rev() {
             if locked.liquid_amount() > remaining {
-                locked.take_by_amount(remaining).expect("Illegal state");
+                locked.take_by_amount(remaining).unwrap();
 
                 let address = Address::Vault(vault_id);
-                track
-                    .acquire_lock(address.clone(), true, true)
-                    .expect("Illegal state");
+                track.acquire_lock(address.clone(), true, true).unwrap();
                 let mut substate = track.take_value(address.clone());
-                substate
-                    .vault_mut()
-                    .borrow_mut()
-                    .put(Bucket::new(locked))
-                    .expect("Illegal state");
+                substate.vault_mut().put(Bucket::new(locked)).unwrap();
                 track.write_value(address.clone(), substate);
                 track.release_lock(address, true);
 

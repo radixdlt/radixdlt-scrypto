@@ -92,7 +92,7 @@ fn create_genesis(mut track: Track) -> TrackReceipt {
     track.create_uuid_value(Address::GlobalComponent(SYSTEM_COMPONENT), system_component);
     track.create_uuid_value(Address::System, System { epoch: 0 });
 
-    track.commit_app_state_updates();
+    track.commit();
     track.to_receipt()
 }
 

@@ -206,7 +206,7 @@ impl<'s> AppStateTrack<'s> {
         self.spaces.insert(address);
     }
 
-    /// Commit all changes base state track
+    /// Commit all state changes into base state track
     pub fn commit(&mut self) {
         self.base_state_track
             .substates
@@ -216,7 +216,7 @@ impl<'s> AppStateTrack<'s> {
             .extend(self.spaces.drain(RangeFull));
     }
 
-    /// Rollback all changes
+    /// Rollback all state changes
     pub fn rollback(&mut self) {
         self.substates.clear();
         self.spaces.clear();

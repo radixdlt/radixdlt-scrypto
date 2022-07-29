@@ -297,12 +297,16 @@ impl<'s> Track<'s> {
         self.state_track.put_substate(address, value.into());
     }
 
-    pub fn commit_app_state_updates(&mut self) {
+    pub fn commit(&mut self) {
         self.state_track.commit();
     }
 
-    pub fn rollback_app_state_updates(&mut self) {
+    pub fn rollback(&mut self) {
         self.state_track.rollback();
+
+        self.application_logs.clear();
+        self.new_addresses.clear();
+        self.borrowed_substates.clear();
     }
 
     pub fn to_receipt(self) -> TrackReceipt {

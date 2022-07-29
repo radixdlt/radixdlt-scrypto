@@ -1,7 +1,7 @@
 use radix_engine::constants::{
     DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN,
 };
-use radix_engine::engine::RuntimeError;
+use radix_engine::engine::{Address, RuntimeError};
 use radix_engine::ledger::*;
 use radix_engine::model::{export_abi, export_abi_by_component, extract_package};
 use radix_engine::state_manager::StagedSubstateStoreManager;
@@ -14,6 +14,7 @@ use sbor::describe::Fields;
 use sbor::Type;
 use scrypto::abi::{BlueprintAbi, Fn};
 use scrypto::core::Network;
+use scrypto::engine::types::{KeyValueStoreId, VaultId};
 use scrypto::prelude::*;
 use scrypto::prelude::{HashMap, Package};
 use scrypto::{abi, to_struct};
@@ -67,6 +68,34 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             key_pair.1,
             NonFungibleAddress::from_public_key(&key_pair.0),
         )
+    }
+
+    pub fn inspect_component(
+        &mut self,
+        component_address: ComponentAddress,
+    ) -> Option<radix_engine::model::Component> {
+        self.execution_stores
+            .get_output_store(0)
+            .get_substate(&Address::GlobalComponent(component_address))
+            .map(|output| output.substate.into())
+    }
+
+    pub fn inspect_key_value_entry(
+        &mut self,
+        kv_store_id: KeyValueStoreId,
+        key: Vec<u8>,
+    ) -> Option<radix_engine::model::KeyValueStoreEntryWrapper> {
+        self.execution_stores
+            .get_output_store(0)
+            .get_substate(&Address::KeyValueStoreEntry(kv_store_id, key))
+            .map(|output| output.substate.into())
+    }
+
+    pub fn inspect_vault(&mut self, vault_id: VaultId) -> Option<radix_engine::model::Vault> {
+        self.execution_stores
+            .get_output_store(0)
+            .get_substate(&Address::Vault(vault_id))
+            .map(|output| output.substate.into())
     }
 
     pub fn new_account_with_auth_rule(&mut self, withdraw_auth: &AccessRule) -> ComponentAddress {
