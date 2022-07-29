@@ -317,3 +317,25 @@ fn cannot_directly_reference_vault_after_container_stored() {
     // Assert
     receipt.expect_err(|e| matches!(e, RuntimeError::ValueNotFound(ValueId::Vault(_))));
 }
+
+#[test]
+fn multiple_reads_should_work() {
+    // Arrange
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
+    let package_address = test_runner.extract_and_publish_package("kv_store");
+
+    // Act
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .call_function(
+            package_address,
+            "MultipleReads",
+            "multiple_reads",
+            to_struct!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_success();
+}

@@ -35,12 +35,15 @@ blueprint! {
                 .metadata("name", "TestToken")
                 .initial_supply(1);
             let vault = Vault::with_bucket(bucket);
+            let vault_id = vault.0.clone();
             store.insert(0u32, vault);
-
-            let vault = store.get(&0u32).expect("Should be a vault");
+            {
+                let _vault = store.get(&0u32).expect("Should be a vault");
+            }
             let store_store = KeyValueStore::new();
             store_store.insert(0u32, store);
 
+            let vault = Vault(vault_id);
             vault.is_empty();
 
             RefCheck {
@@ -58,9 +61,8 @@ blueprint! {
                 .metadata("name", "TestToken")
                 .initial_supply(1);
             let vault = Vault::with_bucket(bucket);
+            let vault_id = vault.0.clone();
             store.insert(0u32, vault);
-
-            let vault = store.get(&0u32).expect("Should be a vault");
 
             RefCheck {
                 store,
@@ -69,6 +71,7 @@ blueprint! {
             .instantiate()
             .globalize();
 
+            let vault = Vault(vault_id);
             vault.is_empty()
         }
     }
