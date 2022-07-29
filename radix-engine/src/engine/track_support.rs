@@ -1,6 +1,7 @@
 use core::ops::RangeFull;
 
 use indexmap::{IndexMap, IndexSet};
+use sbor::rust::vec::Vec;
 use scrypto::buffer::scrypto_decode;
 use scrypto::buffer::scrypto_encode;
 
