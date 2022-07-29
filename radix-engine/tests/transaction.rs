@@ -65,6 +65,7 @@ fn create_transaction() -> Vec<u8> {
         })
         .manifest(
             ManifestBuilder::new(Network::LocalSimulator)
+                .lock_fee(10.into(), SYSTEM_COMPONENT)
                 .clear_auth_zone()
                 .build(),
         )

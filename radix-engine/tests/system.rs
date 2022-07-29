@@ -25,7 +25,7 @@ fn test_get_epoch() {
 
     // Assert
     let outputs = receipt.expect_success();
-    let epoch: u64 = scrypto_decode(&outputs[0]).unwrap();
+    let epoch: u64 = scrypto_decode(&outputs[1]).unwrap();
     assert_eq!(epoch, 0);
 }
 
