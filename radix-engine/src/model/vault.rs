@@ -219,16 +219,25 @@ impl Vault {
                     return Err(VaultError::PayFeeError(PayFeeError::NotRadixToken));
                 }
 
+                // Take fee from the vault
+                let mut fee = vault
+                    .take(input.amount)
+                    .map_err(|_| VaultError::PayFeeError(PayFeeError::InsufficientBalance))?;
+
                 // Refill new cost units
-                let actual_amount = system_api
+                let changes = system_api
                     .cost_unit_counter()
                     .repay(vault_id, input.amount)
                     .map_err(VaultError::CostingError)?;
 
-                // Temporarily burn the amount
-                let _destroyed = vault
-                    .take(actual_amount)
-                    .map_err(|_| VaultError::PayFeeError(PayFeeError::InsufficientBalance))?;
+                // Return changes
+                vault
+                    .borrow_container_mut()
+                    .put(
+                        fee.take_by_amount(changes)
+                            .expect("Taking changes should always succeed"),
+                    )
+                    .expect("Returning changes should result in no error");
 
                 Ok(ScryptoValue::from_typed(&()))
             }

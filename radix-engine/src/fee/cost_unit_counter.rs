@@ -138,7 +138,7 @@ impl CostUnitCounter for SystemLoanCostUnitCounter {
 
         self.payments.push((vault_id, n));
 
-        Ok(effective_cost_unit_price * n)
+        Ok(amount - effective_cost_unit_price * n)
     }
 
     fn finalize(&mut self) {
