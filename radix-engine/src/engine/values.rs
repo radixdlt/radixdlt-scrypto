@@ -116,6 +116,143 @@ pub enum Address {
     System,
 }
 
+impl Address {
+    pub fn get_node_id(&self) -> RENodeId {
+        match self {
+            Address::GlobalComponent(component_address) => RENodeId::Component(*component_address),
+            Address::LocalComponent(component_address) => RENodeId::Component(*component_address),
+            Address::ComponentState(component_address) => RENodeId::Component(*component_address),
+            Address::NonFungibleSpace(resource_address) => RENodeId::Resource(*resource_address),
+            Address::NonFungible(resource_address, ..) => RENodeId::Resource(*resource_address),
+            Address::KeyValueStoreSpace(kv_store_id) => RENodeId::KeyValueStore(*kv_store_id),
+            Address::KeyValueStoreEntry(kv_store_id, ..) => RENodeId::KeyValueStore(*kv_store_id),
+            Address::Vault(vault_id) => RENodeId::Vault(*vault_id),
+            Address::Package(package_address) => RENodeId::Package(*package_address),
+            Address::ResourceManager(resource_address) => RENodeId::Resource(*resource_address),
+            Address::System => RENodeId::System,
+        }
+    }
+
+    pub fn read_scrypto_value(
+        &self,
+        mut value_ref: REValueRefMut,
+    ) -> Result<ScryptoValue, RuntimeError> {
+        match self {
+            Address::GlobalComponent(..) => {
+                Ok(ScryptoValue::from_typed(&value_ref.component().info()))
+            }
+            Address::LocalComponent(..) => {
+                Ok(ScryptoValue::from_typed(&value_ref.component().info()))
+            }
+            Address::ComponentState(..) => Ok(ScryptoValue::from_slice(
+                value_ref.component_state().state(),
+            )
+            .expect("Expected to decode")),
+            Address::NonFungible(.., id) => Ok(value_ref.non_fungible_get(id)),
+            Address::KeyValueStoreEntry(.., key) => Ok(value_ref.kv_store_get(key)),
+            Address::NonFungibleSpace(..)
+            | Address::Vault(..)
+            | Address::KeyValueStoreSpace(..)
+            | Address::Package(..)
+            | Address::ResourceManager(..)
+            | Address::System => {
+                panic!("Should never have received permissions to read this native type.");
+            }
+        }
+    }
+
+    pub fn replace_value_with_default(&self, mut value_ref: REValueRefMut) {
+        match self {
+            Address::GlobalComponent(..)
+            | Address::LocalComponent(..)
+            | Address::ComponentState(..)
+            | Address::NonFungibleSpace(..)
+            | Address::KeyValueStoreSpace(..)
+            | Address::KeyValueStoreEntry(..)
+            | Address::Vault(..)
+            | Address::Package(..)
+            | Address::ResourceManager(..)
+            | Address::System => {
+                panic!("Should not get here");
+            }
+            Address::NonFungible(.., id) => value_ref.non_fungible_remove(&id),
+        }
+    }
+
+    pub fn verify_can_write(&self) -> Result<(), RuntimeError> {
+        match self {
+            Address::KeyValueStoreEntry(..) => Ok(()),
+            Address::ComponentState(..) => Ok(()),
+            Address::NonFungible(..) => Ok(()),
+            Address::GlobalComponent(..) => Err(RuntimeError::InvalidDataWrite),
+            Address::LocalComponent(..) => Err(RuntimeError::InvalidDataWrite),
+            Address::NonFungibleSpace(..) => Err(RuntimeError::InvalidDataWrite),
+            Address::KeyValueStoreSpace(..) => Err(RuntimeError::InvalidDataWrite),
+            Address::Vault(..) => Err(RuntimeError::InvalidDataWrite),
+            Address::Package(..) => Err(RuntimeError::InvalidDataWrite),
+            Address::ResourceManager(..) => Err(RuntimeError::InvalidDataWrite),
+            Address::System => Err(RuntimeError::InvalidDataWrite),
+        }
+    }
+
+    pub fn can_own_nodes(&self) -> bool {
+        match self {
+            Address::KeyValueStoreEntry(..) => true,
+            Address::ComponentState(..) => true,
+            Address::GlobalComponent(..) => false,
+            Address::LocalComponent(..) => false,
+            Address::NonFungible(..) => false,
+            Address::NonFungibleSpace(..) => false,
+            Address::KeyValueStoreSpace(..) => false,
+            Address::Vault(..) => false,
+            Address::Package(..) => false,
+            Address::ResourceManager(..) => false,
+            Address::System => false,
+        }
+    }
+
+    pub fn write_value(
+        self,
+        mut value_ref: REValueRefMut,
+        value: ScryptoValue,
+        values: HashMap<RENodeId, REValue>,
+    ) {
+        match self {
+            Address::GlobalComponent(..) => {
+                panic!("Should not get here");
+            }
+            Address::LocalComponent(..) => {
+                panic!("Should not get here");
+            }
+            Address::ComponentState(..) => {
+                value_ref.component_state_set(value, values);
+            }
+            Address::KeyValueStoreSpace(..) => {
+                panic!("Should not get here");
+            }
+            Address::KeyValueStoreEntry(.., key) => {
+                value_ref.kv_store_put(key, value, values);
+            }
+            Address::NonFungibleSpace(..) => {
+                panic!("Should not get here");
+            }
+            Address::NonFungible(.., id) => value_ref.non_fungible_put(id, value),
+            Address::Vault(..) => {
+                panic!("Should not get here");
+            }
+            Address::Package(..) => {
+                panic!("Should not get here");
+            }
+            Address::ResourceManager(..) => {
+                panic!("Should not get here");
+            }
+            Address::System => {
+                panic!("Should not get here");
+            }
+        }
+    }
+}
+
 impl Into<Address> for PackageAddress {
     fn into(self) -> Address {
         Address::Package(self)
