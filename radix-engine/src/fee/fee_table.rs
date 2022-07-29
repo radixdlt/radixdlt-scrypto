@@ -131,7 +131,7 @@ impl FeeTable {
             SNodeRef::ResourceRef(_) => match fn_ident {
                 "update_auth" => self.fixed_medium,
                 "lock_auth" => self.fixed_medium,
-                "check_behavior" => self.fixed_low,
+                "get_behavior" => self.fixed_low,
                 "create_vault" => self.fixed_medium,
                 "create_bucket" => self.fixed_medium,
                 "mint" => self.fixed_high,

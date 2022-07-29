@@ -91,32 +91,20 @@ blueprint! {
             );
 
             let resource_manager = borrow_resource_manager!(resource_address);
-            match check_for_behavior {
-                ResourceMethodAuthKey::Mint => (
-                    resource_manager.is_mintable(),
-                    resource_manager.is_mintable_locked(),
-                ),
-                ResourceMethodAuthKey::Burn => (
-                    resource_manager.is_burnable(),
-                    resource_manager.is_burnable_locked(),
-                ),
-                ResourceMethodAuthKey::Deposit => (
-                    resource_manager.is_depositable(),
-                    resource_manager.is_depositable_locked(),
-                ),
-                ResourceMethodAuthKey::Withdraw => (
-                    resource_manager.is_withdrawable(),
-                    resource_manager.is_withdrawable_locked(),
-                ),
-                ResourceMethodAuthKey::UpdateMetadata => (
-                    resource_manager.is_updatable_metadata(),
-                    resource_manager.is_updatable_metadata_locked(),
-                ),
-                ResourceMethodAuthKey::UpdateNonFungibleData => (
-                    resource_manager.is_updatable_non_fungible_data(),
-                    resource_manager.is_updatable_non_fungible_data_locked(),
-                ),
-            }
+            let behavior = match check_for_behavior {
+                ResourceMethodAuthKey::Mint => resource_manager.mint_behavior(),
+                ResourceMethodAuthKey::Burn => resource_manager.burn_behavior(),
+                ResourceMethodAuthKey::Deposit => resource_manager.deposit_behavior(),
+                ResourceMethodAuthKey::Withdraw => resource_manager.withdraw_behavior(),
+                ResourceMethodAuthKey::UpdateMetadata => {
+                    resource_manager.updatable_metadata_behavior()
+                }
+                ResourceMethodAuthKey::UpdateNonFungibleData => {
+                    resource_manager.updatable_non_fungible_data_behavior()
+                }
+            };
+
+            (behavior.is_enabled(), behavior.is_locked())
         }
     }
 }

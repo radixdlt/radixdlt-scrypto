@@ -248,148 +248,41 @@ impl ResourceManager {
         call_engine(input)
     }
 
-    pub fn is_mintable(&self) -> bool {
-        let input = RadixEngineInput::InvokeSNode(
-            SNodeRef::ResourceRef(self.0),
-            "check_behavior".to_string(),
-            scrypto_encode(&ResourceManagerCheckBehaviorInput {
-                method: ResourceMethodAuthKey::Mint,
-            }),
-        );
-        let behavior: Option<(bool, bool)> = call_engine(input);
-        behavior.unwrap().0
+    pub fn mint_behavior(&self) -> ResourceBehavior {
+        self.internal_get_behavior(ResourceMethodAuthKey::Mint)
     }
 
-    pub fn is_mintable_locked(&self) -> bool {
-        let input = RadixEngineInput::InvokeSNode(
-            SNodeRef::ResourceRef(self.0),
-            "check_behavior".to_string(),
-            scrypto_encode(&ResourceManagerCheckBehaviorInput {
-                method: ResourceMethodAuthKey::Mint,
-            }),
-        );
-        let behavior: Option<(bool, bool)> = call_engine(input);
-        behavior.unwrap().1
+    pub fn burn_behavior(&self) -> ResourceBehavior {
+        self.internal_get_behavior(ResourceMethodAuthKey::Burn)
     }
 
-    pub fn is_burnable(&self) -> bool {
-        let input = RadixEngineInput::InvokeSNode(
-            SNodeRef::ResourceRef(self.0),
-            "check_behavior".to_string(),
-            scrypto_encode(&ResourceManagerCheckBehaviorInput {
-                method: ResourceMethodAuthKey::Burn,
-            }),
-        );
-        let behavior: Option<(bool, bool)> = call_engine(input);
-        behavior.unwrap().0
+    pub fn withdraw_behavior(&self) -> ResourceBehavior {
+        self.internal_get_behavior(ResourceMethodAuthKey::Withdraw)
     }
 
-    pub fn is_burnable_locked(&self) -> bool {
-        let input = RadixEngineInput::InvokeSNode(
-            SNodeRef::ResourceRef(self.0),
-            "check_behavior".to_string(),
-            scrypto_encode(&ResourceManagerCheckBehaviorInput {
-                method: ResourceMethodAuthKey::Burn,
-            }),
-        );
-        let behavior: Option<(bool, bool)> = call_engine(input);
-        behavior.unwrap().1
+    pub fn deposit_behavior(&self) -> ResourceBehavior {
+        self.internal_get_behavior(ResourceMethodAuthKey::Deposit)
     }
 
-    pub fn is_withdrawable(&self) -> bool {
-        let input = RadixEngineInput::InvokeSNode(
-            SNodeRef::ResourceRef(self.0),
-            "check_behavior".to_string(),
-            scrypto_encode(&ResourceManagerCheckBehaviorInput {
-                method: ResourceMethodAuthKey::Withdraw,
-            }),
-        );
-        let behavior: Option<(bool, bool)> = call_engine(input);
-        behavior.unwrap().0
+    pub fn updatable_metadata_behavior(&self) -> ResourceBehavior {
+        self.internal_get_behavior(ResourceMethodAuthKey::UpdateMetadata)
     }
 
-    pub fn is_withdrawable_locked(&self) -> bool {
-        let input = RadixEngineInput::InvokeSNode(
-            SNodeRef::ResourceRef(self.0),
-            "check_behavior".to_string(),
-            scrypto_encode(&ResourceManagerCheckBehaviorInput {
-                method: ResourceMethodAuthKey::Withdraw,
-            }),
-        );
-        let behavior: Option<(bool, bool)> = call_engine(input);
-        behavior.unwrap().1
+    pub fn updatable_non_fungible_data_behavior(&self) -> ResourceBehavior {
+        self.internal_get_behavior(ResourceMethodAuthKey::UpdateNonFungibleData)
     }
 
-    pub fn is_depositable(&self) -> bool {
+    fn internal_get_behavior(&self, behavior: ResourceMethodAuthKey) -> ResourceBehavior {
         let input = RadixEngineInput::InvokeSNode(
             SNodeRef::ResourceRef(self.0),
-            "check_behavior".to_string(),
-            scrypto_encode(&ResourceManagerCheckBehaviorInput {
-                method: ResourceMethodAuthKey::Deposit,
-            }),
+            "get_behavior".to_string(),
+            scrypto_encode(&ResourceManagerCheckBehaviorInput { method: behavior }),
         );
-        let behavior: Option<(bool, bool)> = call_engine(input);
-        behavior.unwrap().0
-    }
-
-    pub fn is_depositable_locked(&self) -> bool {
-        let input = RadixEngineInput::InvokeSNode(
-            SNodeRef::ResourceRef(self.0),
-            "check_behavior".to_string(),
-            scrypto_encode(&ResourceManagerCheckBehaviorInput {
-                method: ResourceMethodAuthKey::Deposit,
-            }),
-        );
-        let behavior: Option<(bool, bool)> = call_engine(input);
-        behavior.unwrap().1
-    }
-
-    pub fn is_updatable_metadata(&self) -> bool {
-        let input = RadixEngineInput::InvokeSNode(
-            SNodeRef::ResourceRef(self.0),
-            "check_behavior".to_string(),
-            scrypto_encode(&ResourceManagerCheckBehaviorInput {
-                method: ResourceMethodAuthKey::UpdateMetadata,
-            }),
-        );
-        let behavior: Option<(bool, bool)> = call_engine(input);
-        behavior.unwrap().0
-    }
-
-    pub fn is_updatable_metadata_locked(&self) -> bool {
-        let input = RadixEngineInput::InvokeSNode(
-            SNodeRef::ResourceRef(self.0),
-            "check_behavior".to_string(),
-            scrypto_encode(&ResourceManagerCheckBehaviorInput {
-                method: ResourceMethodAuthKey::UpdateMetadata,
-            }),
-        );
-        let behavior: Option<(bool, bool)> = call_engine(input);
-        behavior.unwrap().1
-    }
-
-    pub fn is_updatable_non_fungible_data(&self) -> bool {
-        let input = RadixEngineInput::InvokeSNode(
-            SNodeRef::ResourceRef(self.0),
-            "check_behavior".to_string(),
-            scrypto_encode(&ResourceManagerCheckBehaviorInput {
-                method: ResourceMethodAuthKey::UpdateNonFungibleData,
-            }),
-        );
-        let behavior: Option<(bool, bool)> = call_engine(input);
-        behavior.unwrap().0
-    }
-
-    pub fn is_updatable_non_fungible_data_locked(&self) -> bool {
-        let input = RadixEngineInput::InvokeSNode(
-            SNodeRef::ResourceRef(self.0),
-            "check_behavior".to_string(),
-            scrypto_encode(&ResourceManagerCheckBehaviorInput {
-                method: ResourceMethodAuthKey::UpdateNonFungibleData,
-            }),
-        );
-        let behavior: Option<(bool, bool)> = call_engine(input);
-        behavior.unwrap().1
+        let behavior: (bool, bool) = call_engine(input);
+        ResourceBehavior {
+            is_enabled: behavior.0,
+            is_locked: behavior.1,
+        }
     }
 
     fn mint_internal(&mut self, mint_params: MintParams) -> Bucket {
@@ -481,6 +374,44 @@ impl ResourceManager {
         new_data: T,
     ) {
         self.update_non_fungible_data_internal(id.clone(), new_data.mutable_data())
+    }
+}
+
+/// Represents the behavior of a resource.
+pub struct ResourceBehavior {
+    pub(crate) is_enabled: bool,
+    pub(crate) is_locked: bool,
+}
+
+impl ResourceBehavior {
+    /// Returns a boolean representing whether a specific behavior is currently enabled.
+    pub fn is_enabled(&self) -> bool {
+        self.is_enabled
+    }
+
+    /// Returns a boolean representing whether a specific behavior is permanently locked.
+    pub fn is_locked(&self) -> bool {
+        self.is_locked
+    }
+
+    /// Returns a boolean representing whether a specific behavior is currently disabled.
+    pub fn is_disabled(&self) -> bool {
+        !self.is_enabled
+    }
+
+    /// Returns a boolean representing whether a specific behavior is mutable (can change).
+    pub fn is_mutable(&self) -> bool {
+        !self.is_locked
+    }
+
+    /// Returns a boolean representing whether a specific behavior is permanently enabled.
+    pub fn is_permanently_enabled(&self) -> bool {
+        self.is_enabled && self.is_locked
+    }
+
+    /// Returns a boolean representing whether a specific behavior is permanently disabled.
+    pub fn is_permanently_disabled(&self) -> bool {
+        self.is_disabled() && self.is_locked
     }
 }
 

@@ -162,7 +162,7 @@ impl ResourceManager {
             "resource_type",
             "total_supply",
             "create_vault",
-            "check_behavior",
+            "get_behavior",
         ] {
             method_table.insert(pub_method.to_string(), Public);
         }
@@ -484,16 +484,14 @@ impl ResourceManager {
                     .unwrap();
                 method_entry.main(MethodAccessRuleMethod::Lock())
             }
-            "check_behavior" => {
+            "get_behavior" => {
                 let input: ResourceManagerCheckBehaviorInput = scrypto_decode(&arg.raw)
                     .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
-                let behavior = match resource_manager.authorization.get(&input.method) {
-                    Some(method_access_rule) => Some((
-                        !matches!(method_access_rule.auth, MethodAuthorization::DenyAll),
-                        matches!(method_access_rule.update_auth, MethodAuthorization::DenyAll),
-                    )),
-                    None => None,
-                };
+                let method_entry = resource_manager.authorization.get(&input.method).unwrap();
+                let behavior = (
+                    !matches!(method_entry.auth, MethodAuthorization::DenyAll),
+                    matches!(method_entry.update_auth, MethodAuthorization::DenyAll),
+                );
                 Ok(ScryptoValue::from_typed(&behavior))
             }
             "create_vault" => {
