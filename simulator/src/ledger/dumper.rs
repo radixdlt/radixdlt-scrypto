@@ -194,7 +194,7 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
             let ids = vault.total_ids().unwrap();
             for (inner_last, id) in ids.iter().identify_last() {
                 let non_fungible: NonFungibleWrapper = substate_store
-                    .get_substate(&Address::NonFungible(resource_address, id.to_vec()))
+                    .get_substate(&Address::NonFungible(resource_address, id.clone()))
                     .map(|s| s.substate)
                     .map(|s| s.into())
                     .unwrap();

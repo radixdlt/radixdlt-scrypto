@@ -128,7 +128,7 @@ pub enum Address {
     Package(PackageAddress),
     ResourceManager(ResourceAddress),
     NonFungibleSpace(ResourceAddress),
-    NonFungible(ResourceAddress, Vec<u8>),
+    NonFungible(ResourceAddress, NonFungibleId),
     KeyValueStoreSpace(KeyValueStoreId),
     KeyValueStoreEntry(KeyValueStoreId, Vec<u8>),
     Vault(VaultId),

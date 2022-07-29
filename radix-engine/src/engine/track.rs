@@ -229,7 +229,7 @@ impl<'s> Track<'s> {
         // TODO: consider using a single address as function input
         let address = match parent_address {
             Address::NonFungibleSpace(resource_address) => {
-                Address::NonFungible(resource_address, key)
+                Address::NonFungible(resource_address, NonFungibleId(key))
             }
             Address::KeyValueStoreSpace(kv_store_id) => {
                 Address::KeyValueStoreEntry(kv_store_id, key)
@@ -263,7 +263,7 @@ impl<'s> Track<'s> {
         // TODO: consider using a single address as function input
         let address = match parent_address {
             Address::NonFungibleSpace(resource_address) => {
-                Address::NonFungible(resource_address, key.clone())
+                Address::NonFungible(resource_address, NonFungibleId(key.clone()))
             }
             Address::KeyValueStoreSpace(kv_store_id) => {
                 Address::KeyValueStoreEntry(kv_store_id, key.clone())
