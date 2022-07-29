@@ -1,8 +1,8 @@
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::ops::AddAssign;
 use sbor::rust::str::FromStr;
-use sbor::rust::string::ToString;
 use sbor::rust::string::String;
+use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use scrypto::{
     engine::types::VaultId,
