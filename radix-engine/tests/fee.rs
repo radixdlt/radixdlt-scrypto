@@ -242,3 +242,23 @@ fn test_fee_accounting_failure() {
     );
     assert_eq!(account2_new_balance, account2_balance);
 }
+
+#[test]
+fn test_fee_accounting_rejection() {
+    // Arrange
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
+    let (public_key, _, account1) = test_runner.new_account();
+    let account1_balance = query_account_balance(&mut test_runner, account1, RADIX_TOKEN);
+
+    // Act
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .lock_fee(Decimal::from_str("0.000000000000000001").unwrap(), account1)
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+
+    // Assert
+    receipt.expect_rejection();
+    let account1_new_balance = query_account_balance(&mut test_runner, account1, RADIX_TOKEN);
+    assert_eq!(account1_new_balance, account1_balance);
+}
