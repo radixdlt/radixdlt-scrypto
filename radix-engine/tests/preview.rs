@@ -56,7 +56,7 @@ fn prepare_test_tx_and_preview_intent(
         })
         .manifest(
             ManifestBuilder::new(Network::LocalSimulator)
-                .pay_fee(10.into(), SYSTEM_COMPONENT)
+                .lock_fee(10.into(), SYSTEM_COMPONENT)
                 .clear_auth_zone()
                 .build(),
         )

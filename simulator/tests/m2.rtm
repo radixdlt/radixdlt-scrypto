@@ -1,4 +1,4 @@
-CALL_METHOD ComponentAddress("${account}") "pay_fee" Decimal("10");
+CALL_METHOD ComponentAddress("${account}") "lock_fee" Decimal("10");
 
 # Prepare - grab token from the `Hello` component
 CALL_METHOD ComponentAddress("${component}") "free_token";

@@ -24,31 +24,31 @@ blueprint! {
             .globalize()
         }
 
-        pub fn pay_fee(&mut self, amount: Decimal) {
-            self.xrd.pay_fee(amount);
+        pub fn lock_fee(&mut self, amount: Decimal) {
+            self.xrd.lock_fee(amount);
         }
 
-        pub fn pay_fee_with_empty_vault(&mut self, amount: Decimal) {
-            self.xrd_empty.pay_fee(amount);
+        pub fn lock_fee_with_empty_vault(&mut self, amount: Decimal) {
+            self.xrd_empty.lock_fee(amount);
         }
 
-        pub fn pay_fee_with_doge(&mut self, amount: Decimal) {
-            self.doge.pay_fee(amount);
+        pub fn lock_fee_with_doge(&mut self, amount: Decimal) {
+            self.doge.lock_fee(amount);
         }
 
-        pub fn pay_fee_with_temp_vault(&mut self, amount: Decimal) {
+        pub fn lock_fee_with_temp_vault(&mut self, amount: Decimal) {
             let mut vault = Vault::with_bucket(self.xrd.take(amount));
-            vault.pay_fee(amount);
+            vault.lock_fee(amount);
             self.garbage_vaults.push(vault);
         }
 
-        pub fn query_vault_and_pay_fee(&mut self, amount: Decimal) {
+        pub fn query_vault_and_lock_fee(&mut self, amount: Decimal) {
             info!("Balance: {}", self.xrd.amount());
-            self.xrd.pay_fee(amount);
+            self.xrd.lock_fee(amount);
         }
 
-        pub fn pay_fee_and_query_vault(&mut self, amount: Decimal) {
-            self.xrd.pay_fee(amount);
+        pub fn lock_fee_and_query_vault(&mut self, amount: Decimal) {
+            self.xrd.lock_fee(amount);
             info!("Balance: {}", self.xrd.amount());
         }
     }

@@ -38,7 +38,7 @@ impl CallFunction {
         let default_account = get_default_account()?;
 
         let manifest = ManifestBuilder::new(Network::LocalSimulator)
-            .pay_fee(10.into(), SYSTEM_COMPONENT)
+            .lock_fee(10.into(), SYSTEM_COMPONENT)
             .call_function_with_abi(
                 self.package_address,
                 &self.blueprint_name,

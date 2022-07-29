@@ -183,7 +183,7 @@ impl FeeTable {
                 "create_proof" => self.fixed_high, // TODO: fungibility
                 "create_proof_by_amount" => self.fixed_high,
                 "create_proof_by_ids" => self.fixed_high,
-                "pay_fee" => self.fixed_medium,
+                "lock_fee" => self.fixed_medium,
                 _ => self.fixed_high,
             },
             SNodeRef::TransactionProcessor => match fn_ident {

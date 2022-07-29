@@ -20,7 +20,7 @@ fn test_resource_manager() {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
-        .pay_fee(10.into(), SYSTEM_COMPONENT)
+        .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(
             package_address,
             "ResourceTest",
@@ -53,7 +53,7 @@ fn mint_with_bad_granularity_should_fail() {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
-        .pay_fee(10.into(), SYSTEM_COMPONENT)
+        .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(
             package_address,
             "ResourceTest",
@@ -88,7 +88,7 @@ fn mint_too_much_should_fail() {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
-        .pay_fee(10.into(), SYSTEM_COMPONENT)
+        .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(
             package_address,
             "ResourceTest",

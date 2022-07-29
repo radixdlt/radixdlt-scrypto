@@ -18,7 +18,7 @@ fn should_not_be_able_to_read_component_state_after_creation() {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
-        .pay_fee(10.into(), SYSTEM_COMPONENT)
+        .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(
             package_address,
             "DataAccess",
@@ -41,7 +41,7 @@ fn should_not_be_able_to_write_component_state_after_creation() {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
-        .pay_fee(10.into(), SYSTEM_COMPONENT)
+        .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(
             package_address,
             "DataAccess",
@@ -64,7 +64,7 @@ fn should_be_able_to_read_component_info() {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
-        .pay_fee(10.into(), SYSTEM_COMPONENT)
+        .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(
             package_address,
             "DataAccess",
@@ -87,7 +87,7 @@ fn should_not_be_able_to_write_component_info() {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
-        .pay_fee(10.into(), SYSTEM_COMPONENT)
+        .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(
             package_address,
             "DataAccess",

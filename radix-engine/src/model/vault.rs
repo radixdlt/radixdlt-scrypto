@@ -10,12 +10,12 @@ use scrypto::prelude::{
     VaultGetNonFungibleIdsInput, VaultPutInput, VaultTakeInput,
 };
 use scrypto::resource::{
-    VaultCreateProofByAmountInput, VaultGetResourceAddressInput, VaultPayFeeInput,
+    VaultCreateProofByAmountInput, VaultGetResourceAddressInput, VaultLockFeeInput,
     VaultTakeNonFungiblesInput,
 };
 use scrypto::values::ScryptoValue;
 
-use crate::engine::{PayFeeError, SystemApi};
+use crate::engine::{LockFeeError, SystemApi};
 use crate::fee::CostUnitCounter;
 use crate::fee::CostUnitCounterError;
 use crate::model::VaultError::MethodNotFound;
@@ -34,7 +34,7 @@ pub enum VaultError {
     CouldNotCreateProof,
     MethodNotFound,
     CostingError(CostUnitCounterError),
-    PayFeeError(PayFeeError),
+    LockFeeError(LockFeeError),
 }
 
 /// A persistent resource container.
@@ -210,19 +210,19 @@ impl Vault {
                     bucket_id,
                 )))
             }
-            "pay_fee" => {
-                let input: VaultPayFeeInput =
+            "lock_fee" => {
+                let input: VaultLockFeeInput =
                     scrypto_decode(&arg.raw).map_err(|e| VaultError::InvalidRequestData(e))?;
 
                 // Check resource and take amount
                 if vault.resource_address() != RADIX_TOKEN {
-                    return Err(VaultError::PayFeeError(PayFeeError::NotRadixToken));
+                    return Err(VaultError::LockFeeError(LockFeeError::NotRadixToken));
                 }
 
                 // Take fee from the vault
                 let mut fee = vault
                     .take(input.amount)
-                    .map_err(|_| VaultError::PayFeeError(PayFeeError::InsufficientBalance))?;
+                    .map_err(|_| VaultError::LockFeeError(LockFeeError::InsufficientBalance))?;
 
                 // Refill new cost units
                 let changes = system_api

@@ -66,7 +66,7 @@ impl NewBadgeFixed {
         };
 
         let manifest = ManifestBuilder::new(Network::LocalSimulator)
-            .pay_fee(10.into(), SYSTEM_COMPONENT)
+            .lock_fee(10.into(), SYSTEM_COMPONENT)
             .new_badge_fixed(metadata, self.total_supply)
             .call_method_with_all_resources(default_account, "deposit_batch")
             .build();

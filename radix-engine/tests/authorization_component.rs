@@ -23,7 +23,7 @@ fn cannot_make_cross_component_call_without_authorization() {
 
     let package_address = test_runner.extract_and_publish_package("component");
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
-        .pay_fee(10.into(), SYSTEM_COMPONENT)
+        .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(
             package_address,
             "CrossComponent",
@@ -36,7 +36,7 @@ fn cannot_make_cross_component_call_without_authorization() {
     let secured_component = receipt.new_component_addresses[0];
 
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
-        .pay_fee(10.into(), SYSTEM_COMPONENT)
+        .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(
             package_address,
             "CrossComponent",
@@ -50,7 +50,7 @@ fn cannot_make_cross_component_call_without_authorization() {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
-        .pay_fee(10.into(), SYSTEM_COMPONENT)
+        .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_method(
             my_component,
             "cross_component_call",
@@ -77,7 +77,7 @@ fn can_make_cross_component_call_with_authorization() {
 
     let package_address = test_runner.extract_and_publish_package("component");
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
-        .pay_fee(10.into(), SYSTEM_COMPONENT)
+        .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(
             package_address,
             "CrossComponent",
@@ -90,7 +90,7 @@ fn can_make_cross_component_call_with_authorization() {
     let secured_component = receipt.new_component_addresses[0];
 
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
-        .pay_fee(10.into(), SYSTEM_COMPONENT)
+        .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(
             package_address,
             "CrossComponent",
@@ -103,7 +103,7 @@ fn can_make_cross_component_call_with_authorization() {
     let my_component = receipt.new_component_addresses[0];
 
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
-        .pay_fee(10.into(), SYSTEM_COMPONENT)
+        .lock_fee(10.into(), SYSTEM_COMPONENT)
         .withdraw_from_account_by_ids(&BTreeSet::from([auth_id.clone()]), auth, account)
         .call_method_with_all_resources(my_component, "put_auth")
         .build();
@@ -112,7 +112,7 @@ fn can_make_cross_component_call_with_authorization() {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
-        .pay_fee(10.into(), SYSTEM_COMPONENT)
+        .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_method(
             my_component,
             "cross_component_call",

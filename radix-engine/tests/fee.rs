@@ -23,7 +23,7 @@ where
     let package_address = test_runner.extract_and_publish_package("fee");
     let receipt1 = test_runner.execute_manifest(
         ManifestBuilder::new(Network::LocalSimulator)
-            .pay_fee(10.into(), account)
+            .lock_fee(10.into(), account)
             .withdraw_from_account_by_amount(1000.into(), RADIX_TOKEN, account)
             .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
                 builder.call_function(package_address, "Fee", "new", to_struct!(Bucket(bucket_id)));
@@ -43,7 +43,7 @@ where
 fn should_succeed_when_fee_is_paid() {
     let receipt = run_manifest(|component_address| {
         ManifestBuilder::new(Network::LocalSimulator)
-            .call_method(component_address, "pay_fee", to_struct!(Decimal::from(10)))
+            .call_method(component_address, "lock_fee", to_struct!(Decimal::from(10)))
             .build()
     });
 
@@ -63,7 +63,7 @@ fn should_be_rejected_when_insufficient_balance() {
         ManifestBuilder::new(Network::LocalSimulator)
             .call_method(
                 component_address,
-                "pay_fee_with_empty_vault",
+                "lock_fee_with_empty_vault",
                 to_struct!(Decimal::from(10)),
             )
             .build()
@@ -78,7 +78,7 @@ fn should_be_rejected_when_non_xrd() {
         ManifestBuilder::new(Network::LocalSimulator)
             .call_method(
                 component_address,
-                "pay_fee_with_doge",
+                "lock_fee_with_doge",
                 to_struct!(Decimal::from(10)),
             )
             .build()
@@ -93,7 +93,7 @@ fn should_be_rejected_when_system_loan_is_not_fully_repaid() {
         ManifestBuilder::new(Network::LocalSimulator)
             .call_method(
                 component_address,
-                "pay_fee",
+                "lock_fee",
                 to_struct!(Decimal::from_str("0.001").unwrap()), // = 1000 cost units
             )
             .build()

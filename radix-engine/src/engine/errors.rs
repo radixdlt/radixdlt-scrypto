@@ -127,11 +127,11 @@ pub enum RuntimeError {
 
     MaxCallDepthLimitReached,
 
-    PayFeeError(PayFeeError),
+    LockFeeError(LockFeeError),
 }
 
 #[derive(Debug, PartialEq)]
-pub enum PayFeeError {
+pub enum LockFeeError {
     ValueNotInTrack,
     ValueAlreadyTouched,
     ValueNotFound,

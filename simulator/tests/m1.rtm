@@ -1,4 +1,4 @@
-CALL_METHOD ComponentAddress("${account}") "pay_fee" Decimal("10");
+CALL_METHOD ComponentAddress("${account}") "lock_fee" Decimal("10");
 
 # Prepare - instantiate a `Hello` component
 CALL_FUNCTION PackageAddress("${package}") "Hello" "instantiate_hello";

@@ -23,7 +23,7 @@ fn test_loop() {
     };
     let package_address = test_runner.publish_package(package);
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
-        .pay_fee(10.into(), SYSTEM_COMPONENT)
+        .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(package_address, "Test", "f", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -46,7 +46,7 @@ fn test_loop_out_of_cost_unit() {
     };
     let package_address = test_runner.publish_package(package);
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
-        .pay_fee(10.into(), SYSTEM_COMPONENT)
+        .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(package_address, "Test", "f", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -70,7 +70,7 @@ fn test_recursion() {
     };
     let package_address = test_runner.publish_package(package);
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
-        .pay_fee(10.into(), SYSTEM_COMPONENT)
+        .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(package_address, "Test", "f", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -93,7 +93,7 @@ fn test_recursion_stack_overflow() {
     };
     let package_address = test_runner.publish_package(package);
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
-        .pay_fee(10.into(), SYSTEM_COMPONENT)
+        .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(package_address, "Test", "f", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -116,7 +116,7 @@ fn test_grow_memory() {
     };
     let package_address = test_runner.publish_package(package);
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
-        .pay_fee(10.into(), SYSTEM_COMPONENT)
+        .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(package_address, "Test", "f", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -139,7 +139,7 @@ fn test_grow_memory_out_of_cost_unit() {
     };
     let package_address = test_runner.publish_package(package);
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
-        .pay_fee(10.into(), SYSTEM_COMPONENT)
+        .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(package_address, "Test", "f", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -162,7 +162,7 @@ fn test_total_cost_unit_consumed() {
     };
     let package_address = test_runner.publish_package(package);
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
-        .pay_fee(10.into(), SYSTEM_COMPONENT)
+        .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(package_address, "Test", "f", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);

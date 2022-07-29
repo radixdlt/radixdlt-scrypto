@@ -34,8 +34,8 @@ blueprint! {
 
         /// Pays fee to bootstrap account creation.
         /// TESTING ONLY. TODO: Remove
-        pub fn pay_fee(&mut self, amount: Decimal) {
-            self.xrd.pay_fee(amount);
+        pub fn lock_fee(&mut self, amount: Decimal) {
+            self.xrd.lock_fee(amount);
         }
     }
 }

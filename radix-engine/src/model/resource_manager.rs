@@ -135,7 +135,7 @@ impl ResourceManager {
         mut auth: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
     ) -> Result<Self, ResourceManagerError> {
         let mut vault_method_table: HashMap<String, ResourceMethodRule> = HashMap::new();
-        vault_method_table.insert("pay_fee".to_string(), Protected(Withdraw));
+        vault_method_table.insert("lock_fee".to_string(), Protected(Withdraw));
         vault_method_table.insert("take".to_string(), Protected(Withdraw));
         vault_method_table.insert("put".to_string(), Protected(Deposit));
         for pub_method in [

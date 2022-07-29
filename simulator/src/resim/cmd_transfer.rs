@@ -33,7 +33,7 @@ pub struct Transfer {
 impl Transfer {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
         let manifest = ManifestBuilder::new(Network::LocalSimulator)
-            .pay_fee(10.into(), SYSTEM_COMPONENT)
+            .lock_fee(10.into(), SYSTEM_COMPONENT)
             .withdraw_from_account_by_amount(
                 self.amount,
                 self.resource_address,

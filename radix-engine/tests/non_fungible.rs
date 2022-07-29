@@ -18,7 +18,7 @@ fn create_non_fungible_mutable() {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
-        .pay_fee(10.into(), SYSTEM_COMPONENT)
+        .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(
             package,
             "NonFungibleTest",
@@ -41,7 +41,7 @@ fn can_burn_non_fungible() {
     let (public_key, _, account) = test_runner.new_account();
     let package = test_runner.extract_and_publish_package("non_fungible");
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
-        .pay_fee(10.into(), SYSTEM_COMPONENT)
+        .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(
             package,
             "NonFungibleTest",
@@ -60,7 +60,7 @@ fn can_burn_non_fungible() {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
-        .pay_fee(10.into(), SYSTEM_COMPONENT)
+        .lock_fee(10.into(), SYSTEM_COMPONENT)
         .withdraw_from_account(resource_address, account)
         .burn_non_fungible(non_fungible_address.clone())
         .call_function(
@@ -85,7 +85,7 @@ fn test_non_fungible() {
     let package_address = test_runner.extract_and_publish_package("non_fungible");
 
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
-        .pay_fee(10.into(), SYSTEM_COMPONENT)
+        .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(
             package_address,
             "NonFungibleTest",
@@ -142,7 +142,7 @@ fn test_singleton_non_fungible() {
     let package_address = test_runner.extract_and_publish_package("non_fungible");
 
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
-        .pay_fee(10.into(), SYSTEM_COMPONENT)
+        .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(
             package_address,
             "NonFungibleTest",
