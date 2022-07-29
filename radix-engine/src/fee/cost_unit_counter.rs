@@ -11,6 +11,7 @@ use scrypto::{
 
 use crate::constants::{DEFAULT_COST_UNIT_LIMIT, DEFAULT_COST_UNIT_PRICE, DEFAULT_SYSTEM_LOAN};
 use crate::fee::FeeSummary;
+use crate::model::ResourceContainer;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CostUnitCounterError {
@@ -20,14 +21,15 @@ pub enum CostUnitCounterError {
     SystemLoanNotCleared,
 }
 
+// TODO: rename to `FeeReserve`
 pub trait CostUnitCounter {
     fn consume<T: ToString>(&mut self, n: u32, reason: T) -> Result<(), CostUnitCounterError>;
 
     fn repay(
         &mut self,
         vault_id: VaultId,
-        amount: Decimal,
-    ) -> Result<Decimal, CostUnitCounterError>;
+        fee: ResourceContainer,
+    ) -> Result<ResourceContainer, CostUnitCounterError>;
 
     fn finalize(self) -> FeeSummary;
 
@@ -46,7 +48,7 @@ pub struct SystemLoanCostUnitCounter {
     /// The tip percentage
     tip_percentage: u32,
     /// Payments made during the execution of a transaction.
-    payments: Vec<(VaultId, u32)>,
+    payments: Vec<(VaultId, ResourceContainer)>,
     /// The balance cost units
     balance: u32,
     /// The number of cost units owed to the system
@@ -110,14 +112,14 @@ impl CostUnitCounter for SystemLoanCostUnitCounter {
     fn repay(
         &mut self,
         vault_id: VaultId,
-        amount: Decimal,
-    ) -> Result<Decimal, CostUnitCounterError> {
+        mut fee: ResourceContainer,
+    ) -> Result<ResourceContainer, CostUnitCounterError> {
         let effective_cost_unit_price =
             self.cost_unit_price + self.cost_unit_price * self.tip_percentage / 100;
 
         // TODO: Add `TryInto` implementation once the new decimal types are in place
         let n = u32::from_str(
-            (amount / effective_cost_unit_price)
+            (fee.liquid_amount() / effective_cost_unit_price)
                 .round(0, RoundingMode::TowardsZero)
                 .to_string()
                 .as_str(),
@@ -134,9 +136,14 @@ impl CostUnitCounter for SystemLoanCostUnitCounter {
             self.owed -= n;
         }
 
-        self.payments.push((vault_id, n));
+        let actual_amount = effective_cost_unit_price * n;
+        self.payments.push((
+            vault_id,
+            fee.take_by_amount(actual_amount)
+                .expect("Check manual accounting"),
+        ));
 
-        Ok(amount - effective_cost_unit_price * n)
+        Ok(fee)
     }
 
     fn finalize(mut self) -> FeeSummary {
@@ -230,9 +237,9 @@ impl CostUnitCounter for UnlimitedLoanCostUnitCounter {
     fn repay(
         &mut self,
         _vault_id: VaultId,
-        amount: Decimal,
-    ) -> Result<Decimal, CostUnitCounterError> {
-        Ok(amount) // No-op
+        fee: ResourceContainer,
+    ) -> Result<ResourceContainer, CostUnitCounterError> {
+        Ok(fee) // No-op
     }
 
     fn finalize(self) -> FeeSummary {
@@ -279,15 +286,19 @@ impl Default for UnlimitedLoanCostUnitCounter {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use scrypto::crypto::Hash;
+    use scrypto::{crypto::Hash, prelude::RADIX_TOKEN};
 
     const TEST_VAULT_ID: VaultId = (Hash([0u8; 32]), 1);
+
+    fn xrd<T: Into<Decimal>>(amount: T) -> ResourceContainer {
+        ResourceContainer::new_fungible(RADIX_TOKEN, 18, amount.into())
+    }
 
     #[test]
     fn test_consume_and_repay() {
         let mut counter = SystemLoanCostUnitCounter::new(100, 0, 1.into(), 5);
         counter.consume(2, "test").unwrap();
-        counter.repay(TEST_VAULT_ID, 3.into()).unwrap();
+        counter.repay(TEST_VAULT_ID, xrd(3)).unwrap();
         assert_eq!(3, counter.balance());
         assert_eq!(2, counter.consumed());
         assert_eq!(2, counter.owed());
@@ -306,19 +317,19 @@ mod tests {
     fn test_overflow() {
         let mut counter = SystemLoanCostUnitCounter::new(100, 0, 1.into(), 0);
         assert_eq!(
-            Ok(0.into()),
-            counter.repay(TEST_VAULT_ID, u32::max_value().into())
+            Ok(xrd(0)),
+            counter.repay(TEST_VAULT_ID, xrd(u32::max_value()))
         );
         assert_eq!(
             Err(CostUnitCounterError::CounterOverflow),
-            counter.repay(TEST_VAULT_ID, 1.into())
+            counter.repay(TEST_VAULT_ID, xrd(1))
         );
     }
 
     #[test]
     fn test_repay() {
         let mut counter = SystemLoanCostUnitCounter::new(100, 0, 1.into(), 500);
-        counter.repay(TEST_VAULT_ID, 100.into()).unwrap();
+        counter.repay(TEST_VAULT_ID, xrd(100)).unwrap();
         assert_eq!(500, counter.balance());
         assert_eq!(400, counter.owed());
     }
@@ -326,9 +337,9 @@ mod tests {
     #[test]
     fn test_xrd_cost_unit_conversion() {
         let mut counter = SystemLoanCostUnitCounter::new(100, 0, 5.into(), 500);
-        counter.repay(TEST_VAULT_ID, 100.into()).unwrap();
+        counter.repay(TEST_VAULT_ID, xrd(100)).unwrap();
         assert_eq!(500, counter.balance());
         assert_eq!(500 - 100 / 5, counter.owed());
-        assert_eq!(vec![(TEST_VAULT_ID, 20)], counter.finalize().payments)
+        assert_eq!(vec![(TEST_VAULT_ID, xrd(100))], counter.finalize().payments)
     }
 }

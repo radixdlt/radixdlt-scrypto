@@ -220,24 +220,21 @@ impl Vault {
                 }
 
                 // Take fee from the vault
-                let mut fee = vault
+                let fee = vault
                     .take(input.amount)
                     .map_err(|_| VaultError::LockFeeError(LockFeeError::InsufficientBalance))?;
 
                 // Refill fee reserve
                 let changes = system_api
                     .cost_unit_counter()
-                    .repay(vault_id, input.amount)
+                    .repay(vault_id, fee)
                     .map_err(VaultError::CostingError)?;
 
                 // Return changes
                 vault
                     .borrow_container_mut()
-                    .put(
-                        fee.take_by_amount(changes)
-                            .expect("Taking changes should always succeed"),
-                    )
-                    .expect("Returning changes should result in no error");
+                    .put(changes)
+                    .expect("Returning changes should not error");
 
                 Ok(ScryptoValue::from_typed(&()))
             }

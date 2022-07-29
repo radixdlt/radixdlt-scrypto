@@ -1,3 +1,5 @@
+use core::borrow::BorrowMut;
+
 use sbor::rust::marker::PhantomData;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
@@ -169,8 +171,6 @@ where
 
         // 4. Settle transaction fee
         let fee_summary = cost_unit_counter.finalize();
-        // TODO: refund
-        // TODO: pay tips to the lead validator
         #[cfg(not(feature = "alloc"))]
         if params.trace {
             println!("{:-^80}", "Cost Analysis");
@@ -179,8 +179,50 @@ where
             }
         }
 
+        let status = if fee_summary.loan_fully_repaid {
+            match result {
+                Ok(output) => TransactionStatus::Succeeded(output),
+                Err(error) => TransactionStatus::Failed(error),
+            }
+        } else {
+            TransactionStatus::Rejected
+        };
+
+        if matches!(status, TransactionStatus::Succeeded(..)) {
+            track.commit_app_state_updates();
+        } else {
+            track.rollback_app_state_updates();
+        }
+
+        let mut remaining = fee_summary.burned + fee_summary.tipped;
+        for (vault_id, mut locked) in fee_summary.payments.iter().cloned().rev() {
+            if locked.liquid_amount() > remaining {
+                locked.take_by_amount(remaining).expect("Illegal state");
+
+                let address = Address::Vault(vault_id);
+                track
+                    .acquire_lock(address.clone(), true, true)
+                    .expect("Illegal state");
+                let mut substate = track.take_value(address.clone());
+                substate
+                    .vault_mut()
+                    .borrow_mut()
+                    .put(Bucket::new(locked))
+                    .expect("Illegal state");
+                track.write_value(address.clone(), substate);
+                track.release_lock(address, true);
+
+                remaining = 0.into();
+            } else {
+                remaining = remaining - locked.liquid_amount();
+            }
+        }
+
+        // TODO: pay tips to the lead validator
+
         // 5. Produce the final transaction receipt
-        let track_receipt = track.to_receipt(result.is_ok());
+        let track_receipt = track.to_receipt();
+
         let mut new_component_addresses = Vec::new();
         let mut new_resource_addresses = Vec::new();
         let mut new_package_addresses = Vec::new();
@@ -196,19 +238,14 @@ where
                 _ => {}
             }
         }
+
         #[cfg(feature = "alloc")]
         let execution_time = None;
         #[cfg(not(feature = "alloc"))]
         let execution_time = Some(now.elapsed().as_millis());
+
         let receipt = TransactionReceipt {
-            status: if fee_summary.loan_fully_repaid {
-                match result {
-                    Ok(output) => TransactionStatus::Succeeded(output),
-                    Err(error) => TransactionStatus::Failed(error),
-                }
-            } else {
-                TransactionStatus::Rejected
-            },
+            status,
             transaction_network,
             fee_summary: fee_summary,
             instructions,
@@ -219,7 +256,6 @@ where
             execution_time,
             state_updates: track_receipt.state_updates,
         };
-
         #[cfg(not(feature = "alloc"))]
         if params.trace {
             println!("{:-^80}", "Transaction Receipt");

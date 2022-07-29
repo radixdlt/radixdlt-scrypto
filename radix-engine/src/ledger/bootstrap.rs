@@ -92,7 +92,8 @@ fn create_genesis(mut track: Track) -> TrackReceipt {
     track.create_uuid_value(Address::GlobalComponent(SYSTEM_COMPONENT), system_component);
     track.create_uuid_value(Address::System, System { epoch: 0 });
 
-    track.to_receipt(true)
+    track.commit_app_state_updates();
+    track.to_receipt()
 }
 
 pub fn bootstrap<S>(mut substate_store: S) -> S

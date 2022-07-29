@@ -206,14 +206,20 @@ impl<'s> AppStateTrack<'s> {
         self.spaces.insert(address);
     }
 
-    /// Flush all changes to base state track
-    pub fn flush(&mut self) {
+    /// Commit all changes base state track
+    pub fn commit(&mut self) {
         self.base_state_track
             .substates
             .extend(self.substates.drain(RangeFull));
         self.base_state_track
             .spaces
             .extend(self.spaces.drain(RangeFull));
+    }
+
+    /// Rollback all changes
+    pub fn rollback(&mut self) {
+        self.substates.clear();
+        self.spaces.clear();
     }
 
     /// Unwraps into the base state track
