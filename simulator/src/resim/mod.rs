@@ -47,10 +47,12 @@ pub const ENV_DATA_DIR: &'static str = "DATA_DIR";
 pub const ENV_DISABLE_MANIFEST_OUTPUT: &'static str = "DISABLE_MANIFEST_OUTPUT";
 
 use clap::{Parser, Subcommand};
+use radix_engine::constants::*;
 use radix_engine::model::*;
+use radix_engine::transaction::ExecutionParameters;
 use radix_engine::transaction::TransactionExecutor;
-use radix_engine::transaction::TransactionExecutorConfig;
 use radix_engine::transaction::TransactionReceipt;
+use radix_engine::transaction::TransactionStatus;
 use radix_engine::wasm::*;
 use scrypto::abi;
 use scrypto::address::Bech32Encoder;
@@ -138,6 +140,7 @@ pub fn handle_manifest<O: std::io::Write>(
     manifest: TransactionManifest,
     signing_keys: &Option<String>,
     manifest_path: &Option<PathBuf>,
+    is_system: bool,
     trace: bool,
     output_receipt: bool,
     out: &mut O,
@@ -161,7 +164,6 @@ pub fn handle_manifest<O: std::io::Write>(
                 &mut substate_store,
                 &mut wasm_engine,
                 &mut wasm_instrumenter,
-                TransactionExecutorConfig::new(trace),
             );
 
             let sks = get_signing_keys(signing_keys)?;
@@ -171,18 +173,31 @@ pub fn handle_manifest<O: std::io::Write>(
                 .collect::<Vec<EcdsaPublicKey>>();
             let nonce = get_nonce()?;
             let transaction = TestTransaction::new(manifest, nonce, pks);
-            let receipt = executor.execute_and_commit(&transaction);
+
+            let receipt = executor.execute_and_commit(
+                &transaction,
+                &ExecutionParameters {
+                    cost_unit_price: DEFAULT_COST_UNIT_PRICE.parse().unwrap(),
+                    max_call_depth: DEFAULT_MAX_CALL_DEPTH,
+                    system_loan: DEFAULT_SYSTEM_LOAN,
+                    is_system,
+                    trace,
+                },
+            );
+
             if output_receipt {
                 writeln!(out, "{:?}", receipt).map_err(Error::IOError)?;
             }
 
-            if let Err(error) = receipt.result {
-                Err(Error::TransactionExecutionError(error))
-            } else {
-                let mut configs = get_configs()?;
-                configs.nonce = nonce + 1;
-                set_configs(&configs)?;
-                Ok(Some(receipt))
+            match receipt.status {
+                TransactionStatus::Failed(error) => Err(Error::TransactionExecutionError(error)),
+                TransactionStatus::Succeeded(_) => {
+                    let mut configs = get_configs()?;
+                    configs.nonce = nonce + 1;
+                    set_configs(&configs)?;
+                    Ok(Some(receipt))
+                }
+                TransactionStatus::Rejected => Err(Error::TransactionRejected),
             }
         }
     }

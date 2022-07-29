@@ -1,8 +1,8 @@
 #[rustfmt::skip]
 pub mod test_runner;
 
+use crate::test_runner::is_auth_error;
 use crate::test_runner::TestRunner;
-use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::InMemorySubstateStore;
 use scrypto::core::Network;
 use scrypto::prelude::*;
@@ -57,8 +57,7 @@ fn cannot_make_cross_component_call_without_authorization() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    let error = receipt.result.expect_err("Should be error");
-    assert_auth_error!(error);
+    receipt.expect_err(is_auth_error);
 }
 
 #[test]

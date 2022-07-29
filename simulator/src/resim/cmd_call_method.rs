@@ -51,6 +51,7 @@ impl CallMethod {
             manifest,
             &self.signing_keys,
             &self.manifest,
+            false,
             self.trace,
             true,
             out,

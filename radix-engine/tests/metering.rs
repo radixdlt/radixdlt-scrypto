@@ -50,7 +50,7 @@ fn test_loop_out_of_cost_unit() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    assert_invoke_error!(receipt.result, InvokeError::CostingError { .. })
+    assert_invoke_error!(receipt.status, InvokeError::CostingError { .. })
 }
 
 #[test]
@@ -95,7 +95,7 @@ fn test_recursion_stack_overflow() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    assert_invoke_error!(receipt.result, InvokeError::WasmError { .. })
+    assert_invoke_error!(receipt.status, InvokeError::WasmError { .. })
 }
 
 #[test]
@@ -139,11 +139,11 @@ fn test_grow_memory_out_of_cost_unit() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    assert_invoke_error!(receipt.result, InvokeError::CostingError { .. })
+    assert_invoke_error!(receipt.status, InvokeError::CostingError { .. })
 }
 
 #[test]
-fn test_total_cost_units_consumed() {
+fn test_total_cost_unit_consumed() {
     // Arrange
     let mut store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
@@ -185,6 +185,6 @@ fn test_total_cost_units_consumed() {
             + 10000
             + 1050
             + 343,
-        receipt.transaction_fee.cost_units_consumed
+        receipt.transaction_fee.cost_unit_consumed
     );
 }

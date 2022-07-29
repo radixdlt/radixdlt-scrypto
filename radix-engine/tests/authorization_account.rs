@@ -3,8 +3,8 @@ extern crate core;
 #[rustfmt::skip]
 pub mod test_runner;
 
+use crate::test_runner::is_auth_error;
 use crate::test_runner::TestRunner;
-use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::{InMemorySubstateStore, ReadableSubstateStore, WriteableSubstateStore};
 use scrypto::core::Network;
 use scrypto::prelude::*;
@@ -32,8 +32,7 @@ fn test_auth_rule<'s, S: ReadableSubstateStore + WriteableSubstateStore>(
     if should_succeed {
         receipt.expect_success();
     } else {
-        let error = receipt.result.expect_err("Should be an error");
-        assert_auth_error!(error);
+        receipt.expect_err(is_auth_error);
     }
 }
 
@@ -306,6 +305,5 @@ fn cannot_withdraw_from_my_any_xrd_auth_account_with_less_than_amount_of_proof()
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    let error = receipt.result.expect_err("Should be an error");
-    assert_auth_error!(error);
+    receipt.expect_err(is_auth_error)
 }

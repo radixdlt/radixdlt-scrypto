@@ -38,6 +38,7 @@ impl NewAccount {
             manifest,
             &Some("".to_string()), // explicit empty signer public keys
             &self.manifest,
+            false,
             self.trace,
             false,
             out,

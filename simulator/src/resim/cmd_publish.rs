@@ -38,7 +38,15 @@ impl Publish {
             .publish_package(extract_package(code).map_err(Error::PackageError)?)
             .build();
 
-        let receipt = handle_manifest(manifest, &None, &self.manifest, self.trace, false, out)?;
+        let receipt = handle_manifest(
+            manifest,
+            &None,
+            &self.manifest,
+            false,
+            self.trace,
+            false,
+            out,
+        )?;
         if let Some(receipt) = receipt {
             writeln!(
                 out,
