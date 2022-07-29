@@ -72,7 +72,7 @@ impl Proof {
         if proof_resource_address == expected_resource_address {
             Ok(ValidatedProof(self.0))
         } else {
-            Err(ValidateProofError::InvalidResourceAddress(self))
+            Err(ValidateProofError::ProofResourceAddressValidationError(self))
         }
     }
 
@@ -228,7 +228,7 @@ impl fmt::Display for ParseProofError {
 /// Represents an error when validating proof.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ValidateProofError {
-    InvalidResourceAddress(Proof),
+    ProofResourceAddressValidationError(Proof),
 }
 
 #[cfg(not(feature = "alloc"))]
