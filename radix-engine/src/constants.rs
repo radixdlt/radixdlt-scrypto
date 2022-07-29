@@ -1,5 +1,6 @@
 /// The default cost units loaned from the system to bootstrap execution (lock fee).
-pub const DEFAULT_SYSTEM_LOAN: u32 = 10_000_000;
+/// TODO: reduce this number by crazy optimization
+pub const DEFAULT_SYSTEM_LOAN: u32 = 5_000_000;
 
 /// The default cost unit limit for extracting blueprint ABIs.
 pub const DEFAULT_EXTRACT_ABI_COST_UNIT_LIMIT: u32 = 10_000_000;
