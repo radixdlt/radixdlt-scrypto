@@ -225,7 +225,7 @@ impl Worktop {
         I: WasmInstance,
         C: CostUnitCounter,
     >(
-        value_id: ValueId,
+        value_id: RENodeId,
         method_name: &str,
         arg: ScryptoValue,
         system_api: &mut Y,
@@ -240,7 +240,7 @@ impl Worktop {
                 let input: WorktopPutInput =
                     scrypto_decode(&arg.raw).map_err(|e| WorktopError::InvalidRequestData(e))?;
                 let bucket = system_api
-                    .drop_value(&ValueId::Bucket(input.bucket.0))
+                    .drop_value(&RENodeId::Bucket(input.bucket.0))
                     .map_err(WorktopError::CostingError)?
                     .into();
                 worktop
@@ -259,7 +259,7 @@ impl Worktop {
                 } else {
                     let resource_type = {
                         let value = system_api
-                            .borrow_value(&ValueId::Resource(input.resource_address))
+                            .borrow_value(&RENodeId::Resource(input.resource_address))
                             .map_err(WorktopError::CostingError)?;
                         let resource_manager = value.resource_manager();
                         resource_manager.resource_type()
@@ -286,7 +286,7 @@ impl Worktop {
                 } else {
                     let resource_type = {
                         let value = system_api
-                            .borrow_value(&ValueId::Resource(input.resource_address))
+                            .borrow_value(&RENodeId::Resource(input.resource_address))
                             .map_err(WorktopError::CostingError)?;
                         let resource_manager = value.resource_manager();
                         resource_manager.resource_type()
@@ -314,7 +314,7 @@ impl Worktop {
                 } else {
                     let resource_type = {
                         let value = system_api
-                            .borrow_value(&ValueId::Resource(input.resource_address))
+                            .borrow_value(&RENodeId::Resource(input.resource_address))
                             .map_err(WorktopError::CostingError)?;
                         let resource_manager = value.resource_manager();
                         resource_manager.resource_type()

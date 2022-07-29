@@ -3,7 +3,7 @@ use scrypto::buffer::scrypto_decode;
 use scrypto::core::{
     SystemGetCurrentEpochInput, SystemGetTransactionHashInput, SystemSetEpochInput,
 };
-use scrypto::engine::types::ValueId;
+use scrypto::engine::types::RENodeId;
 use scrypto::values::ScryptoValue;
 
 use crate::engine::SystemApi;
@@ -42,7 +42,7 @@ impl System {
                 let _: SystemGetCurrentEpochInput =
                     scrypto_decode(&arg.raw).map_err(|e| SystemError::InvalidRequestData(e))?;
                 let value = system_api
-                    .borrow_value(&ValueId::System)
+                    .borrow_value(&RENodeId::System)
                     .map_err(SystemError::CostingError)?;
                 Ok(ScryptoValue::from_typed(&value.system().epoch))
             }
@@ -50,7 +50,7 @@ impl System {
                 let SystemSetEpochInput { epoch } =
                     scrypto_decode(&arg.raw).map_err(|e| SystemError::InvalidRequestData(e))?;
                 let mut system_value = system_api
-                    .borrow_value_mut(&ValueId::System)
+                    .borrow_value_mut(&RENodeId::System)
                     .map_err(SystemError::CostingError)?;
                 system_value.system().epoch = epoch;
                 system_api

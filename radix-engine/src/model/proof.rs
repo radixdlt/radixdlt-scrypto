@@ -343,7 +343,7 @@ impl Proof {
         I: WasmInstance,
         C: CostUnitCounter,
     >(
-        value_id: ValueId,
+        value_id: RENodeId,
         method_name: &str,
         arg: ScryptoValue,
         system_api: &mut Y,
@@ -396,7 +396,7 @@ impl Proof {
         I: WasmInstance,
         C: CostUnitCounter,
     >(
-        value_id: ValueId,
+        value_id: RENodeId,
         method_name: &str,
         arg: ScryptoValue,
         system_api: &mut Y,

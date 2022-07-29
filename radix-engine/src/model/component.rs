@@ -105,7 +105,7 @@ impl Component {
         I: WasmInstance,
         C: CostUnitCounter,
     >(
-        value_id: ValueId,
+        value_id: RENodeId,
         fn_ident: &str,
         arg: ScryptoValue,
         system_api: &mut Y,
@@ -122,7 +122,7 @@ impl Component {
                         .map_err(ComponentError::CostingError)?;
                     let component = component_ref.component();
                     let component_name = component.blueprint_name().to_owned();
-                    let package_id = ValueId::Package(component.package_address.clone());
+                    let package_id = RENodeId::Package(component.package_address.clone());
                     drop(component);
                     drop(component_ref);
                     let package_ref = system_api
@@ -173,7 +173,7 @@ impl Component {
         I: WasmInstance,
         C: CostUnitCounter,
     >(
-        value_id: ValueId,
+        value_id: RENodeId,
         fn_ident: &str,
         arg: ScryptoValue,
         system_api: &mut Y,

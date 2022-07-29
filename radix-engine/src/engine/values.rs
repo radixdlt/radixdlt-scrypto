@@ -7,24 +7,22 @@ use crate::engine::*;
 use crate::model::*;
 
 #[derive(Debug)]
-pub enum SubstateAddress {
+pub enum SubstateId {
     KeyValueEntry(KeyValueStoreId, Vec<u8>),
     NonFungible(ResourceAddress, NonFungibleId),
     Component(ComponentAddress),
     ComponentState(ComponentAddress),
 }
 
-impl SubstateAddress {
-    pub fn get_value_id(&self) -> ValueId {
+impl SubstateId {
+    pub fn get_node_id(&self) -> RENodeId {
         match self {
-            SubstateAddress::Component(component_address)
-            | SubstateAddress::ComponentState(component_address) => {
-                ValueId::Component(*component_address)
+            SubstateId::Component(component_address) => RENodeId::Component(*component_address),
+            SubstateId::ComponentState(component_address) => {
+                RENodeId::Component(*component_address)
             }
-            SubstateAddress::NonFungible(resource_address, ..) => {
-                ValueId::Resource(*resource_address)
-            }
-            SubstateAddress::KeyValueEntry(kv_store_id, ..) => ValueId::KeyValueStore(*kv_store_id),
+            SubstateId::NonFungible(resource_address, ..) => RENodeId::Resource(*resource_address),
+            SubstateId::KeyValueEntry(kv_store_id, ..) => RENodeId::KeyValueStore(*kv_store_id),
         }
     }
 
@@ -33,45 +31,45 @@ impl SubstateAddress {
         mut value_ref: REValueRefMut,
     ) -> Result<ScryptoValue, RuntimeError> {
         match self {
-            SubstateAddress::Component(..) => {
+            SubstateId::Component(..) => {
                 Ok(ScryptoValue::from_typed(&value_ref.component().info()))
             }
-            SubstateAddress::ComponentState(..) => Ok(ScryptoValue::from_slice(
+            SubstateId::ComponentState(..) => Ok(ScryptoValue::from_slice(
                 value_ref.component_state().state(),
             )
             .expect("Expected to decode")),
-            SubstateAddress::KeyValueEntry(.., key) => Ok(value_ref.kv_store_get(key)),
-            SubstateAddress::NonFungible(.., id) => Ok(value_ref.non_fungible_get(id)),
+            SubstateId::KeyValueEntry(.., key) => Ok(value_ref.kv_store_get(key)),
+            SubstateId::NonFungible(.., id) => Ok(value_ref.non_fungible_get(id)),
         }
     }
 
     pub fn replace_with_default(&self, mut value_ref: REValueRefMut) {
         match self {
-            SubstateAddress::Component(..) | SubstateAddress::ComponentState(..) => {
+            SubstateId::Component(..) | SubstateId::ComponentState(..) => {
                 panic!("Should not get here");
             }
-            SubstateAddress::KeyValueEntry(..) => {
+            SubstateId::KeyValueEntry(..) => {
                 panic!("Should not get here");
             }
-            SubstateAddress::NonFungible(.., id) => value_ref.non_fungible_remove(&id),
+            SubstateId::NonFungible(.., id) => value_ref.non_fungible_remove(&id),
         }
     }
 
     pub fn verify_can_write(&self) -> Result<(), RuntimeError> {
         match self {
-            SubstateAddress::KeyValueEntry(..)
-            | SubstateAddress::ComponentState(..)
-            | SubstateAddress::NonFungible(..) => Ok(()),
-            SubstateAddress::Component(..) => Err(RuntimeError::InvalidDataWrite),
+            SubstateId::KeyValueEntry(..)
+            | SubstateId::ComponentState(..)
+            | SubstateId::NonFungible(..) => Ok(()),
+            SubstateId::Component(..) => Err(RuntimeError::InvalidDataWrite),
         }
     }
 
     pub fn can_store_values(&self) -> bool {
         match self {
-            SubstateAddress::KeyValueEntry(..) => true,
-            SubstateAddress::ComponentState(..) => true,
-            SubstateAddress::Component(..) => false,
-            SubstateAddress::NonFungible(..) => false,
+            SubstateId::KeyValueEntry(..) => true,
+            SubstateId::ComponentState(..) => true,
+            SubstateId::Component(..) => false,
+            SubstateId::NonFungible(..) => false,
         }
     }
 
@@ -79,19 +77,19 @@ impl SubstateAddress {
         self,
         mut value_ref: REValueRefMut,
         value: ScryptoValue,
-        values: HashMap<ValueId, REValue>,
+        values: HashMap<RENodeId, REValue>,
     ) {
         match self {
-            SubstateAddress::Component(..) => {
+            SubstateId::Component(..) => {
                 panic!("Should not get here");
             }
-            SubstateAddress::ComponentState(..) => {
+            SubstateId::ComponentState(..) => {
                 value_ref.component_state_set(value, values);
             }
-            SubstateAddress::KeyValueEntry(.., key) => {
+            SubstateId::KeyValueEntry(.., key) => {
                 value_ref.kv_store_put(key, value, values);
             }
-            SubstateAddress::NonFungible(.., id) => value_ref.non_fungible_put(id, value),
+            SubstateId::NonFungible(.., id) => value_ref.non_fungible_put(id, value),
         }
     }
 }
@@ -601,7 +599,7 @@ impl RENode {
 #[derive(Debug)]
 pub struct REValue {
     pub root: RENode,
-    pub non_root_nodes: HashMap<ValueId, RENode>,
+    pub non_root_nodes: HashMap<RENodeId, RENode>,
 }
 
 impl REValue {
@@ -613,15 +611,15 @@ impl REValue {
         &mut self.root
     }
 
-    pub fn non_root(&self, id: &ValueId) -> &RENode {
+    pub fn non_root(&self, id: &RENodeId) -> &RENode {
         self.non_root_nodes.get(id).unwrap()
     }
 
-    pub fn non_root_mut(&mut self, id: &ValueId) -> &mut RENode {
+    pub fn non_root_mut(&mut self, id: &RENodeId) -> &mut RENode {
         self.non_root_nodes.get_mut(id).unwrap()
     }
 
-    pub fn get_node(&self, id: Option<&ValueId>) -> &RENode {
+    pub fn get_node(&self, id: Option<&RENodeId>) -> &RENode {
         if let Some(value_id) = id {
             self.non_root_nodes.get(value_id).unwrap()
         } else {
@@ -629,7 +627,7 @@ impl REValue {
         }
     }
 
-    pub fn get_node_mut(&mut self, id: Option<&ValueId>) -> &mut RENode {
+    pub fn get_node_mut(&mut self, id: Option<&RENodeId>) -> &mut RENode {
         if let Some(value_id) = id {
             self.non_root_nodes.get_mut(value_id).unwrap()
         } else {
@@ -637,13 +635,13 @@ impl REValue {
         }
     }
 
-    pub fn insert_non_root_nodes(&mut self, values: HashMap<ValueId, RENode>) {
+    pub fn insert_non_root_nodes(&mut self, values: HashMap<RENodeId, RENode>) {
         for (id, value) in values {
             self.non_root_nodes.insert(id, value);
         }
     }
 
-    pub fn to_nodes(self, root_id: ValueId) -> HashMap<ValueId, RENode> {
+    pub fn to_nodes(self, root_id: RENodeId) -> HashMap<RENodeId, RENode> {
         let mut nodes = self.non_root_nodes;
         nodes.insert(root_id, self.root);
         nodes
@@ -678,7 +676,7 @@ pub enum REComplexValue {
 }
 
 impl REComplexValue {
-    pub fn get_children(&self) -> Result<HashSet<ValueId>, RuntimeError> {
+    pub fn get_children(&self) -> Result<HashSet<RENodeId>, RuntimeError> {
         match self {
             REComplexValue::Component(_, component_state) => {
                 let value = ScryptoValue::from_slice(component_state.state())
@@ -688,7 +686,7 @@ impl REComplexValue {
         }
     }
 
-    pub fn into_re_value(self, non_root_values: HashMap<ValueId, REValue>) -> REValue {
+    pub fn into_re_value(self, non_root_values: HashMap<RENodeId, REValue>) -> REValue {
         let mut non_root_nodes = HashMap::new();
         for (id, val) in non_root_values {
             non_root_nodes.extend(val.to_nodes(id));

@@ -12,7 +12,7 @@ use scrypto::prelude::{
 };
 use scrypto::values::ScryptoValue;
 
-use crate::engine::{SubstateAddress, SystemApi};
+use crate::engine::{SubstateId, SystemApi};
 use crate::fee::CostUnitCounter;
 use crate::fee::CostUnitCounterError;
 use crate::model::{
@@ -174,7 +174,7 @@ impl Bucket {
         arg: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, BucketError> {
-        let value_id = ValueId::Bucket(bucket_id);
+        let value_id = RENodeId::Bucket(bucket_id);
         let mut value_ref = system_api
             .borrow_value_mut(&value_id)
             .map_err(BucketError::CostingError)?;
@@ -221,7 +221,7 @@ impl Bucket {
                 let input: BucketPutInput =
                     scrypto_decode(&arg.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
                 let other_bucket = system_api
-                    .drop_value(&ValueId::Bucket(input.bucket.0))
+                    .drop_value(&RENodeId::Bucket(input.bucket.0))
                     .map_err(BucketError::CostingError)?
                     .into();
                 bucket0
@@ -268,7 +268,7 @@ impl Bucket {
         I: WasmInstance,
         C: CostUnitCounter,
     >(
-        value_id: ValueId,
+        value_id: RENodeId,
         method_name: &str,
         arg: ScryptoValue,
         system_api: &mut Y,
@@ -285,7 +285,7 @@ impl Bucket {
 
                 // Notify resource manager, TODO: Should not need to notify manually
                 let resource_address = bucket.resource_address();
-                let resource_id = ValueId::Resource(resource_address);
+                let resource_id = RENodeId::Resource(resource_address);
                 let mut value = system_api
                     .borrow_value_mut(&resource_id)
                     .map_err(BucketError::CostingError)?;
@@ -293,7 +293,7 @@ impl Bucket {
                 resource_manager.burn(bucket.total_amount());
                 if matches!(resource_manager.resource_type(), ResourceType::NonFungible) {
                     for id in bucket.total_ids().unwrap() {
-                        let address = SubstateAddress::NonFungible(resource_address, id);
+                        let address = SubstateId::NonFungible(resource_address, id);
                         system_api
                             .remove_value_data(address)
                             .expect("Should not fail.");

@@ -58,12 +58,12 @@ pub enum RuntimeError {
     /// Resource manager does not exist.
     ResourceManagerNotFound(ResourceAddress),
 
-    InvalidDataAccess(ValueId),
+    InvalidDataAccess(RENodeId),
     InvalidDataWrite,
-    ValueNotFound(ValueId),
+    ValueNotFound(RENodeId),
 
     MovingInvalidType,
-    StoredValueRemoved(ValueId),
+    StoredValueRemoved(RENodeId),
     StoredValueChangedChildren,
 
     /// Bucket does not exist.
