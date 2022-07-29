@@ -1,6 +1,8 @@
 use core::ops::RangeFull;
 
 use indexmap::{IndexMap, IndexSet};
+use scrypto::buffer::scrypto_decode;
+use scrypto::buffer::scrypto_encode;
 
 use crate::engine::*;
 use crate::ledger::*;
@@ -13,7 +15,12 @@ pub struct BaseStateTrack<'s> {
     /// The parent state track
     substate_store: &'s dyn ReadableSubstateStore,
     /// Substates either created during the transaction or loaded from substate store
-    substates: IndexMap<Address, Option<Substate>>,
+    ///
+    /// TODO: can we use Substate instead of `Vec<u8>`?
+    /// We're currently blocked by some Substate using `Rc<RefCell<T>>`, which may break
+    /// the separation between app state track and base stack track.
+    ///
+    substates: IndexMap<Address, Option<Vec<u8>>>,
     /// Spaces created during the transaction
     spaces: IndexSet<Address>,
 }
@@ -23,7 +30,7 @@ pub struct AppStateTrack<'s> {
     /// The parent state track
     base_state_track: BaseStateTrack<'s>,
     /// Substates either created during the transaction or loaded from the base state track
-    substates: IndexMap<Address, Option<Substate>>,
+    substates: IndexMap<Address, Option<Vec<u8>>>,
     /// Spaces created during the transaction
     spaces: IndexSet<Address>,
 }
@@ -90,7 +97,8 @@ impl<'s> BaseStateTrack<'s> {
                             diff.down_virtual_substates.push(virtual_output_id);
                         }
 
-                        diff.up_substates.insert(address.clone(), substate.clone());
+                        diff.up_substates
+                            .insert(address.clone(), scrypto_decode(substate).unwrap());
                     }
                     Address::KeyValueStoreEntry(kv_store_id, key) => {
                         if let Some(existing_output_id) =
@@ -108,7 +116,8 @@ impl<'s> BaseStateTrack<'s> {
                             diff.down_virtual_substates.push(virtual_output_id);
                         }
 
-                        diff.up_substates.insert(address.clone(), substate.clone());
+                        diff.up_substates
+                            .insert(address.clone(), scrypto_decode(substate).unwrap());
                     }
                     _ => {
                         if let Some(existing_output_id) =
@@ -116,7 +125,8 @@ impl<'s> BaseStateTrack<'s> {
                         {
                             diff.down_substates.push(existing_output_id);
                         }
-                        diff.up_substates.insert(address.clone(), substate.clone());
+                        diff.up_substates
+                            .insert(address.clone(), scrypto_decode(substate).unwrap());
                     }
                 }
             } else {
@@ -158,10 +168,11 @@ impl<'s> AppStateTrack<'s> {
                         self.base_state_track
                             .substate_store
                             .get_substate(address)
-                            .map(|s| s.substate)
+                            .map(|s| scrypto_encode(&s.substate))
                     })
             })
-            .clone()
+            .as_ref()
+            .map(|x| scrypto_decode(x).unwrap())
     }
 
     /// Returns a copy of the substate associated with the given address from the base track
@@ -182,14 +193,16 @@ impl<'s> AppStateTrack<'s> {
                 self.base_state_track
                     .substate_store
                     .get_substate(address)
-                    .map(|s| s.substate)
+                    .map(|s| scrypto_encode(&s.substate))
             })
-            .clone())
+            .as_ref()
+            .map(|x| scrypto_decode(x).unwrap()))
     }
 
     /// Creates a new substate and updates an existing one
     pub fn put_substate(&mut self, address: Address, substate: Substate) {
-        self.substates.insert(address, Some(substate));
+        self.substates
+            .insert(address, Some(scrypto_encode(&substate)));
     }
 
     /// Creates a new substate and updates an existing one to the base track
@@ -198,7 +211,7 @@ impl<'s> AppStateTrack<'s> {
 
         self.base_state_track
             .substates
-            .insert(address, Some(substate));
+            .insert(address, Some(scrypto_encode(&substate)));
     }
 
     /// Creates a new space, assuming address does not exist
