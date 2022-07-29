@@ -50,10 +50,6 @@ impl ComponentAuthZone {
                 AuthZonePopInput {}
             }
 
-            pub fn push(proof: Proof) -> () {
-                AuthZonePushInput { proof }
-            }
-
             pub fn create_proof(resource_address: ResourceAddress) -> Proof {
                 AuthZoneCreateProofInput {
                     resource_address
@@ -73,5 +69,15 @@ impl ComponentAuthZone {
                 }
             }
         }
+    }
+
+    pub fn push<P: Into<Proof>>(proof: P) {
+        let proof: Proof = proof.into();
+        let input = RadixEngineInput::InvokeSNode(
+            SNodeRef::AuthZoneRef,
+            "push".to_string(),
+            scrypto::buffer::scrypto_encode(&(AuthZonePushInput { proof })),
+        );
+        call_engine(input)
     }
 }
