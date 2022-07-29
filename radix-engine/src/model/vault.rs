@@ -224,7 +224,7 @@ impl Vault {
                     .take(input.amount)
                     .map_err(|_| VaultError::LockFeeError(LockFeeError::InsufficientBalance))?;
 
-                // Refill new cost units
+                // Refill fee reserve
                 let changes = system_api
                     .cost_unit_counter()
                     .repay(vault_id, input.amount)

@@ -101,3 +101,48 @@ fn should_be_rejected_when_system_loan_is_not_fully_repaid() {
 
     receipt.expect_rejection();
 }
+
+#[test]
+fn should_be_rejected_when_lock_fee_with_temp_vault() {
+    let receipt = run_manifest(|component_address| {
+        ManifestBuilder::new(Network::LocalSimulator)
+            .call_method(
+                component_address,
+                "lock_fee_with_temp_vault",
+                to_struct!(Decimal::from(10)),
+            )
+            .build()
+    });
+
+    receipt.expect_rejection();
+}
+
+#[test]
+fn should_be_rejected_when_query_vault_and_lock_fee() {
+    let receipt = run_manifest(|component_address| {
+        ManifestBuilder::new(Network::LocalSimulator)
+            .call_method(
+                component_address,
+                "query_vault_and_lock_fee",
+                to_struct!(Decimal::from(10)),
+            )
+            .build()
+    });
+
+    receipt.expect_rejection();
+}
+
+#[test]
+fn should_succeed_when_lock_fee_and_query_vault() {
+    let receipt = run_manifest(|component_address| {
+        ManifestBuilder::new(Network::LocalSimulator)
+            .call_method(
+                component_address,
+                "lock_fee_and_query_vault",
+                to_struct!(Decimal::from(10)),
+            )
+            .build()
+    });
+
+    receipt.expect_success();
+}
