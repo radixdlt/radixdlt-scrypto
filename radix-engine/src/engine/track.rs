@@ -304,7 +304,7 @@ impl<'s> Track<'s> {
     pub fn rollback(&mut self) {
         self.state_track.rollback();
 
-        self.application_logs.clear();
+        // self.application_logs.clear();
         self.new_addresses.clear();
         self.borrowed_substates.clear();
     }
