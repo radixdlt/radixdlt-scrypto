@@ -121,9 +121,8 @@ impl<'s> Track<'s> {
         } else {
             if let Some(substate) = self.state_track.get_substate(&address) {
                 let value = match address {
-                    Address::GlobalComponent(_)
-                    | Address::LocalComponent(..)
-                    | Address::ResourceManager(_)
+                    Address::ComponentInfo(..)
+                    | Address::ResourceManager(..)
                     | Address::Vault(..)
                     | Address::Package(..)
                     | Address::ComponentState(..)

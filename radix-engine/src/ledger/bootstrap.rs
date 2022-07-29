@@ -85,7 +85,10 @@ fn create_genesis(mut track: Track) -> TrackReceipt {
     let system_component = Component::new(SYSTEM_PACKAGE, SYSTEM_COMPONENT_NAME.to_owned(), vec![]);
     let system_component_state =
         ComponentState::new(scrypto_encode(&SystemComponentState { xrd: XRD_VAULT }));
-    track.create_uuid_value(Address::GlobalComponent(SYSTEM_COMPONENT), system_component);
+    track.create_uuid_value(
+        Address::ComponentInfo(SYSTEM_COMPONENT, true),
+        system_component,
+    );
     track.create_uuid_value(
         Address::ComponentState(SYSTEM_COMPONENT),
         system_component_state,

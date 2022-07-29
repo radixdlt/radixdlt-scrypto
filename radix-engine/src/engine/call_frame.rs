@@ -111,7 +111,8 @@ pub fn insert_non_root_nodes<'s>(track: &mut Track<'s>, values: HashMap<RENodeId
             }
             RENode::Component(component, component_state) => {
                 let component_address = id.into();
-                track.create_uuid_value(Address::LocalComponent(component_address), component);
+                track
+                    .create_uuid_value(Address::ComponentInfo(component_address, false), component);
                 track
                     .create_uuid_value(Address::ComponentState(component_address), component_state);
             }
@@ -157,7 +158,9 @@ impl REValuePointer {
                         Address::KeyValueStoreSpace(kv_store_id)
                     }
                     RENodeId::Vault(vault_id) => Address::Vault(vault_id),
-                    RENodeId::Component(component_id) => Address::LocalComponent(component_id),
+                    RENodeId::Component(component_id) => {
+                        Address::ComponentInfo(component_id, false)
+                    }
                     _ => panic!("Unexpected"),
                 };
                 REValuePointer::Track(child_address)
@@ -376,9 +379,7 @@ impl<'f, 's> REValueRef<'f, 's> {
                 .component_state(),
             REValueRef::Track(track, address) => {
                 let component_state_address = match address {
-                    Address::GlobalComponent(address) | Address::LocalComponent(address) => {
-                        Address::ComponentState(*address)
-                    }
+                    Address::ComponentInfo(address, ..) => Address::ComponentState(*address),
                     _ => panic!("Unexpected"),
                 };
                 track.read_value(component_state_address).component_state()
@@ -962,13 +963,18 @@ where
                         ));
                     } else if self
                         .track
-                        .acquire_lock(Address::GlobalComponent(*component_address), false, false)
+                        .acquire_lock(
+                            Address::ComponentInfo(*component_address, true),
+                            false,
+                            false,
+                        )
                         .is_ok()
                     {
                         return Some((
                             REValueInfo {
-                                location: REValuePointer::Track(Address::GlobalComponent(
+                                location: REValuePointer::Track(Address::ComponentInfo(
                                     *component_address,
+                                    true,
                                 )),
                                 visible: true,
                             },
@@ -998,7 +1004,7 @@ where
         // TODO: Remove, currently a hack to allow for global component info retrieval
         if let Some(component_address) = address_borrowed {
             self.track
-                .release_lock(Address::GlobalComponent(*component_address), false);
+                .release_lock(Address::ComponentInfo(*component_address, true), false);
         }
 
         Ok((location.clone(), current_value))
@@ -1416,7 +1422,7 @@ where
                     {
                         location.clone()
                     } else {
-                        REValuePointer::Track(Address::GlobalComponent(component_address))
+                        REValuePointer::Track(Address::ComponentInfo(component_address, true))
                     };
 
                     // Lock values and setup next frame
@@ -1920,10 +1926,7 @@ where
                         Address::NonFungible(_, _) => {
                             SystemApiCostingEntry::ReturnGlobal { size: 0 }
                         }
-                        Address::GlobalComponent(_) => {
-                            SystemApiCostingEntry::ReturnGlobal { size: 0 }
-                        }
-                        Address::LocalComponent(_) => {
+                        Address::ComponentInfo(..) => {
                             SystemApiCostingEntry::ReturnGlobal { size: 0 }
                         }
                         Address::ComponentState(_) => {
@@ -2058,7 +2061,7 @@ where
                 let mut substates = HashMap::new();
                 let component_address = value_id.clone().into();
                 substates.insert(
-                    Address::GlobalComponent(component_address),
+                    Address::ComponentInfo(component_address, true),
                     Substate::Component(component),
                 );
                 substates.insert(

@@ -103,7 +103,7 @@ impl SubstateId {
 /// Can also be resolved by A) using prefix search instead of range search or B) use special codec as before
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum Address {
-    GlobalComponent(ComponentAddress),
+    ComponentInfo(ComponentAddress, bool),
     Package(PackageAddress),
     ResourceManager(ResourceAddress),
     NonFungibleSpace(ResourceAddress),
@@ -111,7 +111,6 @@ pub enum Address {
     KeyValueStoreSpace(KeyValueStoreId),
     KeyValueStoreEntry(KeyValueStoreId, Vec<u8>),
     Vault(VaultId),
-    LocalComponent(ComponentAddress),
     ComponentState(ComponentAddress),
     System,
 }
@@ -119,8 +118,9 @@ pub enum Address {
 impl Address {
     pub fn get_node_id(&self) -> RENodeId {
         match self {
-            Address::GlobalComponent(component_address) => RENodeId::Component(*component_address),
-            Address::LocalComponent(component_address) => RENodeId::Component(*component_address),
+            Address::ComponentInfo(component_address, ..) => {
+                RENodeId::Component(*component_address)
+            }
             Address::ComponentState(component_address) => RENodeId::Component(*component_address),
             Address::NonFungibleSpace(resource_address) => RENodeId::Resource(*resource_address),
             Address::NonFungible(resource_address, ..) => RENodeId::Resource(*resource_address),
@@ -138,10 +138,7 @@ impl Address {
         mut value_ref: REValueRefMut,
     ) -> Result<ScryptoValue, RuntimeError> {
         match self {
-            Address::GlobalComponent(..) => {
-                Ok(ScryptoValue::from_typed(&value_ref.component().info()))
-            }
-            Address::LocalComponent(..) => {
+            Address::ComponentInfo(..) => {
                 Ok(ScryptoValue::from_typed(&value_ref.component().info()))
             }
             Address::ComponentState(..) => Ok(ScryptoValue::from_slice(
@@ -163,8 +160,7 @@ impl Address {
 
     pub fn replace_value_with_default(&self, mut value_ref: REValueRefMut) {
         match self {
-            Address::GlobalComponent(..)
-            | Address::LocalComponent(..)
+            Address::ComponentInfo(..)
             | Address::ComponentState(..)
             | Address::NonFungibleSpace(..)
             | Address::KeyValueStoreSpace(..)
@@ -184,8 +180,7 @@ impl Address {
             Address::KeyValueStoreEntry(..) => Ok(()),
             Address::ComponentState(..) => Ok(()),
             Address::NonFungible(..) => Ok(()),
-            Address::GlobalComponent(..) => Err(RuntimeError::InvalidDataWrite),
-            Address::LocalComponent(..) => Err(RuntimeError::InvalidDataWrite),
+            Address::ComponentInfo(..) => Err(RuntimeError::InvalidDataWrite),
             Address::NonFungibleSpace(..) => Err(RuntimeError::InvalidDataWrite),
             Address::KeyValueStoreSpace(..) => Err(RuntimeError::InvalidDataWrite),
             Address::Vault(..) => Err(RuntimeError::InvalidDataWrite),
@@ -199,8 +194,7 @@ impl Address {
         match self {
             Address::KeyValueStoreEntry(..) => true,
             Address::ComponentState(..) => true,
-            Address::GlobalComponent(..) => false,
-            Address::LocalComponent(..) => false,
+            Address::ComponentInfo(..) => false,
             Address::NonFungible(..) => false,
             Address::NonFungibleSpace(..) => false,
             Address::KeyValueStoreSpace(..) => false,
@@ -218,10 +212,7 @@ impl Address {
         values: HashMap<RENodeId, REValue>,
     ) {
         match self {
-            Address::GlobalComponent(..) => {
-                panic!("Should not get here");
-            }
-            Address::LocalComponent(..) => {
+            Address::ComponentInfo(..) => {
                 panic!("Should not get here");
             }
             Address::ComponentState(..) => {
@@ -284,8 +275,7 @@ impl Into<PackageAddress> for Address {
 impl Into<ComponentAddress> for Address {
     fn into(self) -> ComponentAddress {
         match self {
-            Address::GlobalComponent(component_address)
-            | Address::LocalComponent(component_address)
+            Address::ComponentInfo(component_address, ..)
             | Address::ComponentState(component_address) => component_address,
             _ => panic!("Address is not a component address"),
         }
