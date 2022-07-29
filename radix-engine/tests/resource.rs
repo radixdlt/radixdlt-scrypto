@@ -424,7 +424,7 @@ fn test_updatable_metadata_resource_with_mutable_updatable_metadata() {
 }
 
 #[test]
-fn test_non_non_fungible_data_resource_with_locked_non_fungible_data() {
+fn test_non_non_fungible_data_updatable_resource_with_locked_non_fungible_data() {
     let (is_non_fungible_data, is_non_fungible_data_locked): (bool, bool) = (false, true);
 
     test_resource_behavior_internal(
@@ -438,7 +438,7 @@ fn test_non_non_fungible_data_resource_with_locked_non_fungible_data() {
 }
 
 #[test]
-fn test_non_non_fungible_data_resource_with_mutable_non_fungible_data() {
+fn test_non_non_fungible_data_updatable_resource_with_mutable_non_fungible_data() {
     let (is_non_fungible_data, is_non_fungible_data_locked): (bool, bool) = (false, false);
 
     test_resource_behavior_internal(
@@ -452,7 +452,7 @@ fn test_non_non_fungible_data_resource_with_mutable_non_fungible_data() {
 }
 
 #[test]
-fn test_non_fungible_data_resource_with_locked_non_fungible_data() {
+fn test_non_fungible_data_updatable_resource_with_locked_non_fungible_data() {
     let (is_non_fungible_data, is_non_fungible_data_locked): (bool, bool) = (true, true);
 
     test_resource_behavior_internal(
@@ -466,7 +466,7 @@ fn test_non_fungible_data_resource_with_locked_non_fungible_data() {
 }
 
 #[test]
-fn test_non_fungible_data_resource_with_mutable_non_fungible_data() {
+fn test_non_fungible_data_updatable_resource_with_mutable_non_fungible_data() {
     let (is_non_fungible_data, is_non_fungible_data_locked): (bool, bool) = (true, false);
 
     test_resource_behavior_internal(
