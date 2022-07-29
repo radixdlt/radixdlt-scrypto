@@ -45,19 +45,19 @@ impl Clone for Proof {
 
 impl Proof {
     /// Validates a `Proof`'s resource address creating a `ValidatedProof` if the validation succeeds.
-    /// 
-    /// This method takes ownership of the proof and validates that its resource address matches that expected by the 
+    ///
+    /// This method takes ownership of the proof and validates that its resource address matches that expected by the
     /// caller. If the validation is successful, then a `ValidatedProof` is returned, otherwise, a `ValidateProofError`
-    /// is returned. 
-    /// 
+    /// is returned.
+    ///
     /// # Example:
-    /// 
+    ///
     /// ```ignore
     /// let proof: Proof = bucket.create_proof();
     /// match proof.validate_proof(admin_badge) {
     ///     Ok(validated_proof) => {
     ///         info!(
-    ///             "Validation successful. Proof has a resource address of {} and amount of {}", 
+    ///             "Validation successful. Proof has a resource address of {} and amount of {}",
     ///             validated_proof.resource_address(),
     ///             validated_proof.amount(),
     ///         );
@@ -67,31 +67,36 @@ impl Proof {
     ///     },
     /// }
     /// ```
-    pub fn validate_proof(self, expected_resource_address: ResourceAddress) -> Result<ValidatedProof, ValidateProofError> {
+    pub fn validate_proof(
+        self,
+        expected_resource_address: ResourceAddress,
+    ) -> Result<ValidatedProof, ValidateProofError> {
         let proof_resource_address = self.resource_address();
         if proof_resource_address == expected_resource_address {
             Ok(ValidatedProof(self.0))
         } else {
-            Err(ValidateProofError::ProofResourceAddressValidationError(self))
+            Err(ValidateProofError::ProofResourceAddressValidationError(
+                self,
+            ))
         }
     }
 
     /// Skips the validation process of the proof producing a validated proof **WITHOUT** performing any validation.
-    /// 
+    ///
     /// # WARNING:
-    /// 
-    /// This method skips the validation of the resource address of the proof. Therefore, the data, or `NonFungibleId` 
-    /// of of the returned `ValidatedProof` should **NOT** be trusted as the proof could potentially belong to any 
+    ///
+    /// This method skips the validation of the resource address of the proof. Therefore, the data, or `NonFungibleId`
+    /// of of the returned `ValidatedProof` should **NOT** be trusted as the proof could potentially belong to any
     /// resource address. If you call this method, you should perform your own proof validation.
     pub fn unsafe_skip_proof_validation(self) -> ValidatedProof {
         ValidatedProof(self.0)
     }
 
-    /// Converts a `ValidatedProof` into a `Proof`. 
+    /// Converts a `ValidatedProof` into a `Proof`.
     pub fn from_validated_proof(validated_proof: ValidatedProof) -> Self {
         Self(validated_proof.0)
     }
-    
+
     sfunctions! {
         SNodeRef::ProofRef(self.0) => {
             fn resource_address(&self) -> ResourceAddress {
@@ -279,7 +284,7 @@ impl ValidatedProof {
     }
 }
 
-// Note: Only `Proof` is a Scrypto type, `ValidatedProof` is not. This is because `ValidatedProof`s doesn't need to 
+// Note: Only `Proof` is a Scrypto type, `ValidatedProof` is not. This is because `ValidatedProof`s doesn't need to
 // implement the sbor::Encode and sbor::Decode traits as they are not meant to be used as arguments and returns to and
 // from methods. They are meant ot be used inside methods.
 
