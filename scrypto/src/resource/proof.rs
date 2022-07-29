@@ -279,8 +279,8 @@ impl ValidatedProof {
     }
 }
 
-// Note: Only `Proof` is a Scrypto type, `ValidatedProof` is not. This is because `ValidatedProof`s do not need to 
-// implement the sbor::Encode and sbor::Decode trait as they are not meant to be used as arguments and returns to and
+// Note: Only `Proof` is a Scrypto type, `ValidatedProof` is not. This is because `ValidatedProof`s doesn't need to 
+// implement the sbor::Encode and sbor::Decode traits as they are not meant to be used as arguments and returns to and
 // from methods. They are meant ot be used inside methods.
 
 scrypto_type!(Proof, ScryptoType::Proof, Vec::new());
