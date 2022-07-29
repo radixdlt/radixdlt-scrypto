@@ -20,7 +20,7 @@ pub enum CostUnitCounterError {
 }
 
 pub trait CostUnitCounter {
-    fn consume(&mut self, n: u32, reason: &'static str) -> Result<(), CostUnitCounterError>;
+    fn consume<T: ToString>(&mut self, n: u32, reason: T) -> Result<(), CostUnitCounterError>;
 
     fn repay(
         &mut self,
@@ -28,7 +28,7 @@ pub trait CostUnitCounter {
         amount: Decimal,
     ) -> Result<Decimal, CostUnitCounterError>;
 
-    fn finalize(&mut self) -> FeeSummary;
+    fn finalize(self) -> FeeSummary;
 
     fn limit(&self) -> u32;
 
@@ -37,14 +37,6 @@ pub trait CostUnitCounter {
     fn balance(&self) -> u32;
 
     fn owed(&self) -> u32;
-
-    fn cost_unit_price(&self) -> Decimal;
-
-    fn tip_percentage(&self) -> u32;
-
-    fn payments(&self) -> &[(VaultId, u32)];
-
-    fn analysis(&self) -> &BTreeMap<&'static str, u32>;
 }
 
 pub struct SystemLoanCostUnitCounter {
@@ -64,8 +56,8 @@ pub struct SystemLoanCostUnitCounter {
     limit: u32,
     /// At which point the system loan repayment is checked
     check_point: u32,
-    /// Costing analysis
-    analysis: BTreeMap<&'static str, u32>,
+    /// Cost breakdown
+    cost_breakdown: BTreeMap<String, u32>,
 }
 
 impl SystemLoanCostUnitCounter {
@@ -84,13 +76,13 @@ impl SystemLoanCostUnitCounter {
             consumed: 0,
             limit: cost_unit_limit,
             check_point: system_loan,
-            analysis: BTreeMap::new(),
+            cost_breakdown: BTreeMap::new(),
         }
     }
 }
 
 impl CostUnitCounter for SystemLoanCostUnitCounter {
-    fn consume(&mut self, n: u32, reason: &'static str) -> Result<(), CostUnitCounterError> {
+    fn consume<T: ToString>(&mut self, n: u32, reason: T) -> Result<(), CostUnitCounterError> {
         self.balance = self
             .balance
             .checked_sub(n)
@@ -100,7 +92,10 @@ impl CostUnitCounter for SystemLoanCostUnitCounter {
             .checked_add(n)
             .ok_or(CostUnitCounterError::CounterOverflow)?;
 
-        self.analysis.entry(reason).or_default().add_assign(n);
+        self.cost_breakdown
+            .entry(reason.to_string())
+            .or_default()
+            .add_assign(n);
 
         if self.consumed > self.limit {
             return Err(CostUnitCounterError::LimitExceeded);
@@ -143,7 +138,7 @@ impl CostUnitCounter for SystemLoanCostUnitCounter {
         Ok(amount - effective_cost_unit_price * n)
     }
 
-    fn finalize(&mut self) -> FeeSummary {
+    fn finalize(mut self) -> FeeSummary {
         if self.owed > 0 && self.balance != 0 {
             let n = u32::min(self.owed, self.balance);
             self.owed -= n;
@@ -151,12 +146,15 @@ impl CostUnitCounter for SystemLoanCostUnitCounter {
         }
 
         FeeSummary {
+            loan_fully_repaid: self.owed == 0,
             cost_unit_limit: self.limit,
             cost_unit_consumed: self.consumed,
             cost_unit_price: self.cost_unit_price,
             tip_percentage: self.tip_percentage,
             burned: self.cost_unit_price * self.consumed,
             tipped: self.cost_unit_price * self.tip_percentage / 100 * self.consumed,
+            payments: self.payments,
+            cost_breakdown: self.cost_breakdown,
         }
     }
 
@@ -174,22 +172,6 @@ impl CostUnitCounter for SystemLoanCostUnitCounter {
 
     fn owed(&self) -> u32 {
         self.owed
-    }
-
-    fn cost_unit_price(&self) -> Decimal {
-        self.cost_unit_price
-    }
-
-    fn tip_percentage(&self) -> u32 {
-        self.tip_percentage
-    }
-
-    fn payments(&self) -> &[(VaultId, u32)] {
-        &self.payments
-    }
-
-    fn analysis(&self) -> &BTreeMap<&'static str, u32> {
-        &self.analysis
     }
 }
 
@@ -213,8 +195,8 @@ pub struct UnlimitedLoanCostUnitCounter {
     consumed: u32,
     /// The max number of cost units that can be consumed
     limit: u32,
-    /// Costing analysis
-    pub analysis: BTreeMap<&'static str, u32>,
+    /// The cost breakdown
+    cost_breakdown: BTreeMap<String, u32>,
 }
 
 impl UnlimitedLoanCostUnitCounter {
@@ -224,19 +206,22 @@ impl UnlimitedLoanCostUnitCounter {
             tip_percentage,
             consumed: 0,
             limit: limit,
-            analysis: BTreeMap::new(),
+            cost_breakdown: BTreeMap::new(),
         }
     }
 }
 
 impl CostUnitCounter for UnlimitedLoanCostUnitCounter {
-    fn consume(&mut self, n: u32, reason: &'static str) -> Result<(), CostUnitCounterError> {
+    fn consume<T: ToString>(&mut self, n: u32, reason: T) -> Result<(), CostUnitCounterError> {
         self.consumed = self
             .consumed
             .checked_add(n)
             .ok_or(CostUnitCounterError::CounterOverflow)?;
 
-        self.analysis.entry(reason).or_default().add_assign(n);
+        self.cost_breakdown
+            .entry(reason.to_string())
+            .or_default()
+            .add_assign(n);
 
         Ok(())
     }
@@ -249,14 +234,17 @@ impl CostUnitCounter for UnlimitedLoanCostUnitCounter {
         Ok(amount) // No-op
     }
 
-    fn finalize(&mut self) -> FeeSummary {
+    fn finalize(self) -> FeeSummary {
         FeeSummary {
+            loan_fully_repaid: true,
             cost_unit_limit: self.limit,
             cost_unit_consumed: self.consumed,
             cost_unit_price: self.cost_unit_price,
             tip_percentage: self.tip_percentage,
             burned: self.cost_unit_price * self.consumed,
             tipped: self.cost_unit_price * self.tip_percentage / 100 * self.consumed,
+            payments: Vec::new(),
+            cost_breakdown: self.cost_breakdown,
         }
     }
 
@@ -274,22 +262,6 @@ impl CostUnitCounter for UnlimitedLoanCostUnitCounter {
 
     fn owed(&self) -> u32 {
         0
-    }
-
-    fn payments(&self) -> &[(VaultId, u32)] {
-        &[]
-    }
-
-    fn cost_unit_price(&self) -> Decimal {
-        self.cost_unit_price
-    }
-
-    fn tip_percentage(&self) -> u32 {
-        self.tip_percentage
-    }
-
-    fn analysis(&self) -> &BTreeMap<&'static str, u32> {
-        &self.analysis
     }
 }
 
@@ -356,6 +328,6 @@ mod tests {
         counter.repay(TEST_VAULT_ID, 100.into()).unwrap();
         assert_eq!(500, counter.balance());
         assert_eq!(500 - 100 / 5, counter.owed());
-        assert_eq!(vec![(TEST_VAULT_ID, 20)], counter.payments())
+        assert_eq!(vec![(TEST_VAULT_ID, 20)], counter.finalize().payments)
     }
 }

@@ -172,14 +172,14 @@ fn test_total_cost_unit_consumed() {
         borrow                        :     1000
         create                        :    10000
         emit_log                      :     1050
-        invoke_function               :     8275
+        invoke_function               :     8280
         read                          :     5000
         return                        :     1000
         run_function                  :    45000
         tx_decoding                   :        4
         tx_manifest_verification      :        1
         tx_signature_verification     :        0
-        wasm                          :    96723
+        wasm                          :    96779
         write                         :     5000
     */
     let ft = FeeTable::new();
@@ -190,11 +190,11 @@ fn test_total_cost_unit_consumed() {
             + 1000
             + 10000
             + 1050
-            + 8275
+            + 8280
             + 5000
             + 1000
             + 45000
-            + 96723
+            + 96779
             + 5000,
         receipt.fee_summary.cost_unit_consumed
     );

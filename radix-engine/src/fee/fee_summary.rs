@@ -1,7 +1,10 @@
+use sbor::rust::collections::BTreeMap;
 use scrypto::engine::types::*;
 
 #[derive(Debug)]
 pub struct FeeSummary {
+    /// Whether the system loan is fully repaid
+    pub loan_fully_repaid: bool,
     /// The specified max cost units can be consumed.
     pub cost_unit_limit: u32,
     /// The total number of cost units consumed.
@@ -14,4 +17,8 @@ pub struct FeeSummary {
     pub burned: Decimal,
     /// The total amount of XRD tipped to validators.
     pub tipped: Decimal,
+    /// The fee payments
+    pub payments: Vec<(VaultId, u32)>,
+    /// The cost breakdown
+    pub cost_breakdown: BTreeMap<String, u32>,
 }

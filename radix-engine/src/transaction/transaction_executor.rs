@@ -168,14 +168,13 @@ where
             .map(|o| scrypto_decode::<Vec<Vec<u8>>>(&o.raw).unwrap());
 
         // 4. Settle transaction fee
-        let counter = root_frame.cost_unit_counter();
-        let fee_summary = counter.finalize();
-        let system_loan_fully_repaid = counter.owed() == 0;
+        let fee_summary = cost_unit_counter.finalize();
+        // TODO: refund
         // TODO: pay tips to the lead validator
         #[cfg(not(feature = "alloc"))]
         if params.trace {
             println!("{:-^80}", "Cost Analysis");
-            for (k, v) in cost_unit_counter.analysis() {
+            for (k, v) in &fee_summary.cost_breakdown {
                 println!("{:<30}: {:>8}", k, v);
             }
         }
@@ -202,7 +201,7 @@ where
         #[cfg(not(feature = "alloc"))]
         let execution_time = Some(now.elapsed().as_millis());
         let receipt = TransactionReceipt {
-            status: if system_loan_fully_repaid {
+            status: if fee_summary.loan_fully_repaid {
                 match result {
                     Ok(output) => TransactionStatus::Succeeded(output),
                     Err(error) => TransactionStatus::Failed(error),
