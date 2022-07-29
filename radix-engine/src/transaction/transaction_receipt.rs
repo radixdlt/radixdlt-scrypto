@@ -12,23 +12,8 @@ use scrypto::values::*;
 use transaction::model::*;
 
 use crate::engine::RuntimeError;
+use crate::fee::FeeSummary;
 use crate::state_manager::StateDiff;
-
-#[derive(Debug)]
-pub struct TransactionFeeSummary {
-    /// The specified max cost units can be consumed.
-    pub cost_unit_limit: u32,
-    /// The total number of cost units consumed.
-    pub cost_unit_consumed: u32,
-    /// The cost unit price in XRD.
-    pub cost_unit_price: Decimal,
-    /// The tip percentage
-    pub tip_percentage: u32,
-    /// The total amount of XRD burned.
-    pub burned: Decimal,
-    /// The total amount of XRD tipped to validators.
-    pub tipped: Decimal,
-}
 
 #[derive(Debug)]
 pub enum TransactionStatus {
@@ -40,8 +25,8 @@ pub enum TransactionStatus {
 /// Represents a transaction receipt.
 pub struct TransactionReceipt {
     pub status: TransactionStatus,
+    pub fee_summary: FeeSummary,
     pub transaction_network: Network,
-    pub transaction_fee: TransactionFeeSummary,
     pub execution_time: Option<u128>,
     pub instructions: Vec<ExecutableInstruction>,
     pub application_logs: Vec<(Level, String)>,
@@ -109,17 +94,17 @@ impl fmt::Debug for TransactionReceipt {
             f,
             "\n{} {} XRD burned, {} XRD tipped to validators",
             "Transaction Fee:".bold().green(),
-            self.transaction_fee.burned,
-            self.transaction_fee.tipped,
+            self.fee_summary.burned,
+            self.fee_summary.tipped,
         )?;
 
         write!(
             f,
             "\n{} {} limit, {} consumed, {} XRD per cost unit",
             "Cost Units:".bold().green(),
-            self.transaction_fee.cost_unit_limit,
-            self.transaction_fee.cost_unit_consumed,
-            self.transaction_fee.cost_unit_price,
+            self.fee_summary.cost_unit_limit,
+            self.fee_summary.cost_unit_consumed,
+            self.fee_summary.cost_unit_price,
         )?;
 
         write!(

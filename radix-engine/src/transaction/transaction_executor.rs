@@ -169,14 +169,8 @@ where
 
         // 4. Settle transaction fee
         let counter = root_frame.cost_unit_counter();
-        counter.finalize();
-        let cost_unit_limit = counter.limit();
+        let fee_summary = counter.finalize();
         let system_loan_fully_repaid = counter.owed() == 0;
-        let cost_unit_consumed = counter.consumed();
-        let cost_unit_price = counter.cost_unit_price();
-        let tip_percentage = counter.tip_percentage();
-        let burned = cost_unit_price * cost_unit_consumed;
-        let tipped = burned * tip_percentage / 100;
         // TODO: pay tips to the lead validator
         #[cfg(not(feature = "alloc"))]
         if params.trace {
@@ -217,14 +211,7 @@ where
                 TransactionStatus::Rejected
             },
             transaction_network,
-            transaction_fee: TransactionFeeSummary {
-                cost_unit_limit,
-                cost_unit_consumed,
-                cost_unit_price,
-                tip_percentage,
-                burned,
-                tipped,
-            },
+            fee_summary: fee_summary,
             instructions,
             application_logs: track_receipt.application_logs,
             new_package_addresses,

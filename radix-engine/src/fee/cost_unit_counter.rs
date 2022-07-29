@@ -9,6 +9,7 @@ use scrypto::{
 };
 
 use crate::constants::{DEFAULT_COST_UNIT_LIMIT, DEFAULT_COST_UNIT_PRICE, DEFAULT_SYSTEM_LOAN};
+use crate::fee::FeeSummary;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CostUnitCounterError {
@@ -27,7 +28,7 @@ pub trait CostUnitCounter {
         amount: Decimal,
     ) -> Result<Decimal, CostUnitCounterError>;
 
-    fn finalize(&mut self);
+    fn finalize(&mut self) -> FeeSummary;
 
     fn limit(&self) -> u32;
 
@@ -115,7 +116,8 @@ impl CostUnitCounter for SystemLoanCostUnitCounter {
         vault_id: VaultId,
         amount: Decimal,
     ) -> Result<Decimal, CostUnitCounterError> {
-        let effective_cost_unit_price = self.cost_unit_price * (100 + self.tip_percentage) / 100;
+        let effective_cost_unit_price =
+            self.cost_unit_price + self.cost_unit_price * self.tip_percentage / 100;
 
         // TODO: Add `TryInto` implementation once the new decimal types are in place
         let n = u32::from_str(
@@ -141,11 +143,20 @@ impl CostUnitCounter for SystemLoanCostUnitCounter {
         Ok(amount - effective_cost_unit_price * n)
     }
 
-    fn finalize(&mut self) {
+    fn finalize(&mut self) -> FeeSummary {
         if self.owed > 0 && self.balance != 0 {
             let n = u32::min(self.owed, self.balance);
             self.owed -= n;
             self.balance -= n;
+        }
+
+        FeeSummary {
+            cost_unit_limit: self.limit,
+            cost_unit_consumed: self.consumed,
+            cost_unit_price: self.cost_unit_price,
+            tip_percentage: self.tip_percentage,
+            burned: self.cost_unit_price * self.consumed,
+            tipped: self.cost_unit_price * self.tip_percentage / 100 * self.consumed,
         }
     }
 
@@ -238,7 +249,16 @@ impl CostUnitCounter for UnlimitedLoanCostUnitCounter {
         Ok(amount) // No-op
     }
 
-    fn finalize(&mut self) {}
+    fn finalize(&mut self) -> FeeSummary {
+        FeeSummary {
+            cost_unit_limit: self.limit,
+            cost_unit_consumed: self.consumed,
+            cost_unit_price: self.cost_unit_price,
+            tip_percentage: self.tip_percentage,
+            burned: self.cost_unit_price * self.consumed,
+            tipped: self.cost_unit_price * self.tip_percentage / 100 * self.consumed,
+        }
+    }
 
     fn limit(&self) -> u32 {
         self.limit
@@ -313,7 +333,7 @@ mod tests {
     fn test_overflow() {
         let mut counter = SystemLoanCostUnitCounter::new(100, 0, 1.into(), 0);
         assert_eq!(
-            Ok(u32::max_value().into()),
+            Ok(0.into()),
             counter.repay(TEST_VAULT_ID, u32::max_value().into())
         );
         assert_eq!(

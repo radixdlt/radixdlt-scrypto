@@ -196,6 +196,6 @@ fn test_total_cost_unit_consumed() {
             + 45000
             + 96723
             + 5000,
-        receipt.transaction_fee.cost_unit_consumed
+        receipt.fee_summary.cost_unit_consumed
     );
 }
