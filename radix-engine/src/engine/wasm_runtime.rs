@@ -97,12 +97,29 @@ where
         }
     }
 
+    // TODO: This logic should move into KeyValueEntry decoding
+    fn verify_stored_key(value: &ScryptoValue) -> Result<(), RuntimeError> {
+        if !value.bucket_ids.is_empty() {
+            return Err(RuntimeError::BucketNotAllowed);
+        }
+        if !value.proof_ids.is_empty() {
+            return Err(RuntimeError::ProofNotAllowed);
+        }
+        if !value.vault_ids.is_empty() {
+            return Err(RuntimeError::VaultNotAllowed);
+        }
+        if !value.kv_store_ids.is_empty() {
+            return Err(RuntimeError::KeyValueStoreNotAllowed);
+        }
+        Ok(())
+    }
+
     fn handle_read_data(&mut self, address: DataAddress) -> Result<ScryptoValue, RuntimeError> {
         let address = match address {
             DataAddress::KeyValueEntry(kv_store_id, key_bytes) => {
-                let scrypto_key =
-                    ScryptoValue::from_slice(&key_bytes).map_err(RuntimeError::DecodeError)?;
-                SubstateAddress::KeyValueEntry(kv_store_id, scrypto_key)
+                let key_data = ScryptoValue::from_slice(&key_bytes).map_err(RuntimeError::DecodeError)?;
+                Self::verify_stored_key(&key_data)?;
+                SubstateAddress::KeyValueEntry(kv_store_id, key_bytes)
             }
             DataAddress::Component(component_address) => {
                 SubstateAddress::Component(component_address)
@@ -122,9 +139,9 @@ where
     ) -> Result<ScryptoValue, RuntimeError> {
         let address = match address {
             DataAddress::KeyValueEntry(kv_store_id, key_bytes) => {
-                let scrypto_key =
-                    ScryptoValue::from_slice(&key_bytes).map_err(RuntimeError::DecodeError)?;
-                SubstateAddress::KeyValueEntry(kv_store_id, scrypto_key)
+                let key_data = ScryptoValue::from_slice(&key_bytes).map_err(RuntimeError::DecodeError)?;
+                Self::verify_stored_key(&key_data)?;
+                SubstateAddress::KeyValueEntry(kv_store_id, key_bytes)
             }
             DataAddress::Component(component_address) => {
                 SubstateAddress::Component(component_address)

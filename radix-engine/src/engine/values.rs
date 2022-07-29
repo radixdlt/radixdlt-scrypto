@@ -6,25 +6,9 @@ use scrypto::values::ScryptoValue;
 use crate::engine::*;
 use crate::model::*;
 
-fn verify_stored_key(value: &ScryptoValue) -> Result<(), RuntimeError> {
-    if !value.bucket_ids.is_empty() {
-        return Err(RuntimeError::BucketNotAllowed);
-    }
-    if !value.proof_ids.is_empty() {
-        return Err(RuntimeError::ProofNotAllowed);
-    }
-    if !value.vault_ids.is_empty() {
-        return Err(RuntimeError::VaultNotAllowed);
-    }
-    if !value.kv_store_ids.is_empty() {
-        return Err(RuntimeError::KeyValueStoreNotAllowed);
-    }
-    Ok(())
-}
-
 #[derive(Debug)]
 pub enum SubstateAddress {
-    KeyValueEntry(KeyValueStoreId, ScryptoValue),
+    KeyValueEntry(KeyValueStoreId, Vec<u8>),
     NonFungible(ResourceAddress, NonFungibleId),
     Component(ComponentAddress),
     ComponentState(ComponentAddress),
@@ -56,10 +40,7 @@ impl SubstateAddress {
                 value_ref.component_state().state(),
             )
             .expect("Expected to decode")),
-            SubstateAddress::KeyValueEntry(.., key) => {
-                verify_stored_key(key)?;
-                Ok(value_ref.kv_store_get(&key.raw))
-            }
+            SubstateAddress::KeyValueEntry(.., key) => Ok(value_ref.kv_store_get(key)),
             SubstateAddress::NonFungible(.., id) => Ok(value_ref.non_fungible_get(id)),
         }
     }
@@ -108,7 +89,7 @@ impl SubstateAddress {
                 value_ref.component_state_set(value, values);
             }
             SubstateAddress::KeyValueEntry(.., key) => {
-                value_ref.kv_store_put(key.raw, value, values);
+                value_ref.kv_store_put(key, value, values);
             }
             SubstateAddress::NonFungible(.., id) => value_ref.non_fungible_put(id, value),
         }
