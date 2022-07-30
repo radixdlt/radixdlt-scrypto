@@ -27,6 +27,10 @@ impl ExecutableTransaction for ValidatedTransaction {
         self.transaction.to_bytes().len() as u32
     }
 
+    fn cost_unit_limit(&self) -> u32 {
+        self.transaction.signed_intent.intent.header.cost_unit_limit
+    }
+
     fn instructions(&self) -> &[ExecutableInstruction] {
         &self.instructions
     }

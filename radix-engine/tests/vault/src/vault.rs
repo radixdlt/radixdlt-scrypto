@@ -37,14 +37,17 @@ blueprint! {
         pub fn invalid_double_ownership_of_vault() -> ComponentAddress {
             let bucket = Self::new_fungible();
             let vault = Vault::new(bucket.resource_address());
-            let vaults = KeyValueStore::new();
+            let vault_id = vault.0.clone();
+            let mut vaults = KeyValueStore::new();
             vaults.insert(0, vault);
-            let mut vault = vaults.get(&0).unwrap();
-            vault.put(bucket);
+            {
+                let mut vault = vaults.get_mut(&0).unwrap();
+                vault.put(bucket);
+            }
 
             let vault_vector = Vec::new();
             VaultTest {
-                vault,
+                vault: Vault(vault_id),
                 vaults,
                 vault_vector,
             }
@@ -55,10 +58,12 @@ blueprint! {
         pub fn new_vault_into_map_then_get() -> ComponentAddress {
             let bucket = Self::new_fungible();
             let vault = Vault::new(bucket.resource_address());
-            let vaults = KeyValueStore::new();
+            let mut vaults = KeyValueStore::new();
             vaults.insert(0, vault);
-            let mut vault = vaults.get(&0).unwrap();
-            vault.put(bucket);
+            {
+                let mut vault = vaults.get_mut(&0).unwrap();
+                vault.put(bucket);
+            }
 
             let vault_vector = Vec::new();
             VaultTest {

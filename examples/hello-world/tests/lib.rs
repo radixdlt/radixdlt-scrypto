@@ -1,7 +1,7 @@
 use radix_engine::ledger::*;
 use radix_engine::model::extract_package;
+use radix_engine::transaction::ExecutionParameters;
 use radix_engine::transaction::TransactionExecutor;
-use radix_engine::transaction::TransactionExecutorConfig;
 use radix_engine::wasm::*;
 use scrypto::core::Network;
 use scrypto::prelude::*;
@@ -20,7 +20,6 @@ fn test_hello() {
         &mut substate_store,
         &mut wasm_engine,
         &mut wasm_instrumenter,
-        TransactionExecutorConfig::new(false),
     );
 
     // Create a key pair
@@ -32,7 +31,10 @@ fn test_hello() {
         .publish_package(extract_package(compile_package!()).unwrap())
         .build();
     let package_address = executor
-        .execute_and_commit(&TestTransaction::new(manifest, 1, vec![public_key]))
+        .execute_and_commit(
+            &TestTransaction::new(manifest, 1, vec![public_key]),
+            &ExecutionParameters::default(),
+        )
         .new_package_addresses[0];
 
     // Create an account
@@ -46,14 +48,20 @@ fn test_hello() {
         })
         .build();
     let account = executor
-        .execute_and_commit(&TestTransaction::new(manifest, 2, vec![public_key]))
+        .execute_and_commit(
+            &TestTransaction::new(manifest, 2, vec![public_key]),
+            &ExecutionParameters::default(),
+        )
         .new_component_addresses[0];
 
     // Test the `instantiate_hello` function.
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(package_address, "Hello", "instantiate_hello", to_struct!())
         .build();
-    let receipt = executor.execute_and_commit(&TestTransaction::new(manifest, 3, vec![public_key]));
+    let receipt = executor.execute_and_commit(
+        &TestTransaction::new(manifest, 3, vec![public_key]),
+        &ExecutionParameters::default(),
+    );
     println!("{:?}\n", receipt);
     receipt.expect_success();
     let component = receipt.new_component_addresses[0];
@@ -63,7 +71,10 @@ fn test_hello() {
         .call_method(component, "free_token", to_struct!())
         .call_method_with_all_resources(account, "deposit_batch")
         .build();
-    let receipt = executor.execute_and_commit(&TestTransaction::new(manifest, 4, vec![public_key]));
+    let receipt = executor.execute_and_commit(
+        &TestTransaction::new(manifest, 4, vec![public_key]),
+        &ExecutionParameters::default(),
+    );
     println!("{:?}\n", receipt);
     receipt.expect_success();
 }

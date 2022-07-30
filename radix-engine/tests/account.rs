@@ -1,8 +1,8 @@
 #[rustfmt::skip]
 pub mod test_runner;
 
+use crate::test_runner::is_auth_error;
 use crate::test_runner::TestRunner;
-use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::InMemorySubstateStore;
 use scrypto::core::Network;
 use scrypto::prelude::*;
@@ -86,8 +86,7 @@ fn cannot_withdraw_from_other_account() {
     let receipt = test_runner.execute_manifest(manifest, vec![other_public_key]);
 
     // Assert
-    let error = receipt.result.expect_err("Should be runtime error");
-    assert_auth_error!(error);
+    receipt.expect_err(is_auth_error);
 }
 
 #[test]

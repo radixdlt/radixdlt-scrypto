@@ -1,6 +1,6 @@
 use core::ops::AddAssign;
 
-use crate::fee::{DEFAULT_MAX_TRANSACTION_COST, DEFAULT_SYSTEM_LOAN_AMOUNT};
+use crate::constants::{DEFAULT_COST_UNIT_LIMIT, DEFAULT_SYSTEM_LOAN};
 use sbor::rust::collections::HashMap;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -113,7 +113,7 @@ impl CostUnitCounter for SystemLoanCostUnitCounter {
 
 impl Default for SystemLoanCostUnitCounter {
     fn default() -> SystemLoanCostUnitCounter {
-        SystemLoanCostUnitCounter::new(DEFAULT_MAX_TRANSACTION_COST, DEFAULT_SYSTEM_LOAN_AMOUNT)
+        SystemLoanCostUnitCounter::new(DEFAULT_COST_UNIT_LIMIT, DEFAULT_SYSTEM_LOAN)
     }
 }
 
@@ -175,7 +175,7 @@ impl CostUnitCounter for UnlimitedLoanCostUnitCounter {
 
 impl Default for UnlimitedLoanCostUnitCounter {
     fn default() -> UnlimitedLoanCostUnitCounter {
-        UnlimitedLoanCostUnitCounter::new(DEFAULT_MAX_TRANSACTION_COST)
+        UnlimitedLoanCostUnitCounter::new(DEFAULT_COST_UNIT_LIMIT)
     }
 }
 

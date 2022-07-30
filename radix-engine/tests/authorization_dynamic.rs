@@ -1,8 +1,8 @@
 #[rustfmt::skip]
 pub mod test_runner;
 
+use crate::test_runner::is_auth_error;
 use crate::test_runner::TestRunner;
-use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::InMemorySubstateStore;
 use scrypto::core::Network;
 use scrypto::prelude::*;
@@ -69,8 +69,7 @@ fn test_dynamic_auth(
     if should_succeed {
         receipt2.expect_success();
     } else {
-        let error = receipt2.result.expect_err("Should be an error.");
-        assert_auth_error!(error);
+        receipt2.expect_err(is_auth_error);
     }
 }
 
@@ -120,8 +119,7 @@ fn test_dynamic_authlist(
     if should_succeed {
         receipt.expect_success();
     } else {
-        let error = receipt.result.expect_err("Should be an error.");
-        assert_auth_error!(error);
+        receipt.expect_err(is_auth_error);
     }
 }
 
@@ -238,8 +236,7 @@ fn chess_should_not_allow_second_player_to_move_if_first_player_didnt_move() {
     let receipt = test_runner.execute_manifest(manifest2, vec![other_public_key]);
 
     // Assert
-    let error = receipt.result.expect_err("Should be an error");
-    assert_auth_error!(error);
+    receipt.expect_err(is_auth_error);
 }
 
 #[test]
@@ -264,8 +261,7 @@ fn chess_should_allow_second_player_to_move_after_first_player() {
         .build();
     test_runner
         .execute_manifest(manifest2, vec![public_key])
-        .result
-        .expect("Should be okay.");
+        .expect_success();
 
     // Act
     let manifest3 = ManifestBuilder::new(Network::LocalSimulator)
@@ -274,5 +270,5 @@ fn chess_should_allow_second_player_to_move_after_first_player() {
     let receipt = test_runner.execute_manifest(manifest3, vec![other_public_key]);
 
     // Assert
-    receipt.result.expect("Should be okay.");
+    receipt.expect_success();
 }

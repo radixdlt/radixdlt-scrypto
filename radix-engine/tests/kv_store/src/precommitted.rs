@@ -16,8 +16,10 @@ blueprint! {
                 .initial_supply(1);
             let vault = Vault::with_bucket(bucket);
             store.insert(0u32, vault);
-            let vault = store.get(&0u32).expect("Should be a vault");
-            assert!(!vault.is_empty());
+            {
+                let vault = store.get(&0u32).expect("Should be a vault");
+                assert!(!vault.is_empty());
+            }
             Precommitted {
                 store,
                 deep_store: KeyValueStore::new(),
@@ -33,7 +35,7 @@ blueprint! {
             sub_store.insert(0u32, 2u32);
             deep_store.insert(0u32, sub_store);
 
-            let value: u32 = deep_store.get(&0u32).unwrap().get(&0u32).unwrap();
+            let value: u32 = *deep_store.get(&0u32).unwrap().get(&0u32).unwrap();
             assert!(value == 2u32);
 
             Precommitted {
@@ -56,8 +58,11 @@ blueprint! {
             sub_store.insert(0u32, vault);
             deep_vault.insert(0u32, sub_store);
 
-            let vault: Vault = deep_vault.get(&0u32).unwrap().get(&0u32).unwrap();
-            assert!(!vault.is_empty());
+            {
+                let store = deep_vault.get(&0u32).unwrap();
+                let vault = store.get(&0u32).unwrap();
+                assert!(!vault.is_empty());
+            }
 
             Precommitted {
                 store: KeyValueStore::new(),

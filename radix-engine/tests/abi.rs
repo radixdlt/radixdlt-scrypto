@@ -30,16 +30,12 @@ fn test_invalid_access_rule_methods() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    let error = receipt.result.expect_err("Should be an error.");
-    if !matches!(
-        error,
-        RuntimeError::ComponentError(ComponentError::BlueprintFunctionDoesNotExist(..))
-    ) {
-        panic!(
-            "Should be an function does not exist but error was {}",
-            error
-        );
-    }
+    receipt.expect_err(|e| {
+        matches!(
+            e,
+            RuntimeError::ComponentError(ComponentError::BlueprintFunctionDoesNotExist(..))
+        )
+    })
 }
 
 enum ExpectedResult {
