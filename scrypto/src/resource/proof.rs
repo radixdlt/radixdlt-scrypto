@@ -267,17 +267,6 @@ impl Proof {
     }
 }
 
-impl TryFrom<&[u8]> for ValidatedProof {
-    type Error = ParseProofError;
-
-    fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-        match slice.len() {
-            4 => Ok(Self(u32::from_le_bytes(copy_u8_array(slice)))),
-            _ => Err(ParseProofError::InvalidLength(slice.len())),
-        }
-    }
-}
-
 impl ValidatedProof {
     pub fn to_vec(&self) -> Vec<u8> {
         self.0.to_le_bytes().to_vec()
