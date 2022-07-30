@@ -243,7 +243,10 @@ fn generate_dispatcher(
                 if let Some(stmt) = get_state {
                     trace!("Generated stmt: {}", quote! { #stmt });
                     stmts.push(parse_quote!{
-                        let component_address = ::scrypto::core::Runtime::actor().component_address().unwrap();
+                        let actor = ::scrypto::core::Runtime::actor();
+                    });
+                    stmts.push(parse_quote!{
+                        let (component_address, _is_global) = actor.component_address().unwrap();
                     });
                     stmts.push(stmt);
                 }
@@ -587,7 +590,8 @@ mod tests {
                     ::scrypto::resource::init_resource_system(::scrypto::resource::ResourceSystem::new());
 
                     let input: Test_x_Input = ::scrypto::buffer::scrypto_decode_from_buffer(method_arg).unwrap();
-                    let component_address = ::scrypto::core::Runtime::actor().component_address().unwrap();
+                    let actor = ::scrypto::core::Runtime::actor();
+                    let (component_address, _is_global) = actor.component_address().unwrap();
                     let state: Test_impl::Test = {
                         let address = DataAddress::ComponentState(component_address);
                         let input = ::scrypto::engine::api::RadixEngineInput::ReadData(address);

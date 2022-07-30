@@ -1426,7 +1426,7 @@ where
                     };
 
                     // Lock values and setup next frame
-                    let next_location = match cur_location.clone() {
+                    let (next_location, is_global) = match cur_location.clone() {
                         REValuePointer::Track(address) => {
                             self.track
                                 .acquire_lock(address.clone(), true, false)
@@ -1461,12 +1461,23 @@ where
                                 })?;
                             locked_values.insert(component_state_address);
 
-                            REValuePointer::Track(address)
+                            let is_global = if let Address::ComponentInfo(_component_address, is_global) = address {
+                                is_global
+                            } else {
+                                panic!("Unexpected address");
+                            };
+
+                            (REValuePointer::Track(address), is_global)
                         }
-                        REValuePointer::Stack { frame_id, root, id } => REValuePointer::Stack {
-                            frame_id: frame_id.or(Some(self.depth)),
-                            root,
-                            id,
+                        REValuePointer::Stack { frame_id, root, id } => {
+                            (
+                                REValuePointer::Stack {
+                                    frame_id: frame_id.or(Some(self.depth)),
+                                    root,
+                                    id,
+                                },
+                                false
+                            )
                         },
                     };
 
@@ -1481,6 +1492,7 @@ where
                             component.package_address(),
                             component.blueprint_name().to_string(),
                             component_address,
+                            is_global,
                         )
                     };
 

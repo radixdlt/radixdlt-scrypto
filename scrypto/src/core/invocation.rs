@@ -27,6 +27,6 @@ pub enum SNodeRef {
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub enum DataAddress {
     KeyValueEntry(KeyValueStoreId, Vec<u8>),
-    Component(ComponentAddress),
+    ComponentInfo(ComponentAddress, bool),
     ComponentState(ComponentAddress),
 }

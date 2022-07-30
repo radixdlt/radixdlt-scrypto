@@ -103,6 +103,7 @@ impl SubstateId {
 /// Can also be resolved by A) using prefix search instead of range search or B) use special codec as before
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum Address {
+    // TODO: Remove this bool which represents globalization
     ComponentInfo(ComponentAddress, bool),
     Package(PackageAddress),
     ResourceManager(ResourceAddress),

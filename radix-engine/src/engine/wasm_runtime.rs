@@ -122,7 +122,7 @@ where
                 Self::verify_stored_key(&key_data)?;
                 SubstateId::KeyValueEntry(kv_store_id, key_bytes)
             }
-            DataAddress::Component(component_address) => SubstateId::Component(component_address),
+            DataAddress::ComponentInfo(component_address, ..) => SubstateId::Component(component_address),
             DataAddress::ComponentState(component_address) => {
                 SubstateId::ComponentState(component_address)
             }
@@ -143,7 +143,7 @@ where
                 Self::verify_stored_key(&key_data)?;
                 SubstateId::KeyValueEntry(kv_store_id, key_bytes)
             }
-            DataAddress::Component(component_address) => SubstateId::Component(component_address),
+            DataAddress::ComponentInfo(component_address, ..) => SubstateId::Component(component_address),
             DataAddress::ComponentState(component_address) => {
                 SubstateId::ComponentState(component_address)
             }
