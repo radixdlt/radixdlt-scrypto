@@ -155,7 +155,7 @@ impl Component {
                     scrypto_decode(&arg.raw).map_err(|e| ComponentError::InvalidRequestData(e))?;
 
                 system_api
-                    .globalize_value(&value_id)
+                    .globalize_node(&value_id)
                     .map_err(ComponentError::CostingError)?;
                 Ok(ScryptoValue::from_typed(&()))
             }
@@ -184,7 +184,7 @@ impl Component {
                     scrypto_decode(&arg.raw).map_err(|e| ComponentError::InvalidRequestData(e))?;
 
                 system_api
-                    .globalize_value(&value_id)
+                    .globalize_node(&value_id)
                     .map_err(ComponentError::CostingError)?;
                 Ok(ScryptoValue::from_typed(&()))
             }

@@ -14,7 +14,7 @@ use crate::model::*;
 /// By using scrypto codec, we lose sorting capability of the address space.
 /// Can also be resolved by A) using prefix search instead of range search or B) use special codec as before
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub enum Address {
+pub enum SubstateId {
     // TODO: Remove this bool which represents globalization
     ComponentInfo(ComponentAddress, bool),
     Package(PackageAddress),
@@ -28,21 +28,25 @@ pub enum Address {
     System,
 }
 
-impl Address {
+impl SubstateId {
     pub fn get_node_id(&self) -> RENodeId {
         match self {
-            Address::ComponentInfo(component_address, ..) => {
+            SubstateId::ComponentInfo(component_address, ..) => {
                 RENodeId::Component(*component_address)
             }
-            Address::ComponentState(component_address) => RENodeId::Component(*component_address),
-            Address::NonFungibleSpace(resource_address) => RENodeId::Resource(*resource_address),
-            Address::NonFungible(resource_address, ..) => RENodeId::Resource(*resource_address),
-            Address::KeyValueStoreSpace(kv_store_id) => RENodeId::KeyValueStore(*kv_store_id),
-            Address::KeyValueStoreEntry(kv_store_id, ..) => RENodeId::KeyValueStore(*kv_store_id),
-            Address::Vault(vault_id) => RENodeId::Vault(*vault_id),
-            Address::Package(package_address) => RENodeId::Package(*package_address),
-            Address::ResourceManager(resource_address) => RENodeId::Resource(*resource_address),
-            Address::System => RENodeId::System,
+            SubstateId::ComponentState(component_address) => {
+                RENodeId::Component(*component_address)
+            }
+            SubstateId::NonFungibleSpace(resource_address) => RENodeId::Resource(*resource_address),
+            SubstateId::NonFungible(resource_address, ..) => RENodeId::Resource(*resource_address),
+            SubstateId::KeyValueStoreSpace(kv_store_id) => RENodeId::KeyValueStore(*kv_store_id),
+            SubstateId::KeyValueStoreEntry(kv_store_id, ..) => {
+                RENodeId::KeyValueStore(*kv_store_id)
+            }
+            SubstateId::Vault(vault_id) => RENodeId::Vault(*vault_id),
+            SubstateId::Package(package_address) => RENodeId::Package(*package_address),
+            SubstateId::ResourceManager(resource_address) => RENodeId::Resource(*resource_address),
+            SubstateId::System => RENodeId::System,
         }
     }
 
@@ -51,21 +55,21 @@ impl Address {
         mut value_ref: REValueRefMut,
     ) -> Result<ScryptoValue, RuntimeError> {
         match self {
-            Address::ComponentInfo(..) => {
+            SubstateId::ComponentInfo(..) => {
                 Ok(ScryptoValue::from_typed(&value_ref.component().info()))
             }
-            Address::ComponentState(..) => Ok(ScryptoValue::from_slice(
+            SubstateId::ComponentState(..) => Ok(ScryptoValue::from_slice(
                 value_ref.component_state().state(),
             )
             .expect("Expected to decode")),
-            Address::NonFungible(.., id) => Ok(value_ref.non_fungible_get(id)),
-            Address::KeyValueStoreEntry(.., key) => Ok(value_ref.kv_store_get(key)),
-            Address::NonFungibleSpace(..)
-            | Address::Vault(..)
-            | Address::KeyValueStoreSpace(..)
-            | Address::Package(..)
-            | Address::ResourceManager(..)
-            | Address::System => {
+            SubstateId::NonFungible(.., id) => Ok(value_ref.non_fungible_get(id)),
+            SubstateId::KeyValueStoreEntry(.., key) => Ok(value_ref.kv_store_get(key)),
+            SubstateId::NonFungibleSpace(..)
+            | SubstateId::Vault(..)
+            | SubstateId::KeyValueStoreSpace(..)
+            | SubstateId::Package(..)
+            | SubstateId::ResourceManager(..)
+            | SubstateId::System => {
                 panic!("Should never have received permissions to read this native type.");
             }
         }
@@ -73,48 +77,48 @@ impl Address {
 
     pub fn replace_value_with_default(&self, mut value_ref: REValueRefMut) {
         match self {
-            Address::ComponentInfo(..)
-            | Address::ComponentState(..)
-            | Address::NonFungibleSpace(..)
-            | Address::KeyValueStoreSpace(..)
-            | Address::KeyValueStoreEntry(..)
-            | Address::Vault(..)
-            | Address::Package(..)
-            | Address::ResourceManager(..)
-            | Address::System => {
+            SubstateId::ComponentInfo(..)
+            | SubstateId::ComponentState(..)
+            | SubstateId::NonFungibleSpace(..)
+            | SubstateId::KeyValueStoreSpace(..)
+            | SubstateId::KeyValueStoreEntry(..)
+            | SubstateId::Vault(..)
+            | SubstateId::Package(..)
+            | SubstateId::ResourceManager(..)
+            | SubstateId::System => {
                 panic!("Should not get here");
             }
-            Address::NonFungible(.., id) => value_ref.non_fungible_remove(&id),
+            SubstateId::NonFungible(.., id) => value_ref.non_fungible_remove(&id),
         }
     }
 
     pub fn verify_can_write(&self) -> Result<(), RuntimeError> {
         match self {
-            Address::KeyValueStoreEntry(..) => Ok(()),
-            Address::ComponentState(..) => Ok(()),
-            Address::NonFungible(..) => Ok(()),
-            Address::ComponentInfo(..) => Err(RuntimeError::InvalidDataWrite),
-            Address::NonFungibleSpace(..) => Err(RuntimeError::InvalidDataWrite),
-            Address::KeyValueStoreSpace(..) => Err(RuntimeError::InvalidDataWrite),
-            Address::Vault(..) => Err(RuntimeError::InvalidDataWrite),
-            Address::Package(..) => Err(RuntimeError::InvalidDataWrite),
-            Address::ResourceManager(..) => Err(RuntimeError::InvalidDataWrite),
-            Address::System => Err(RuntimeError::InvalidDataWrite),
+            SubstateId::KeyValueStoreEntry(..) => Ok(()),
+            SubstateId::ComponentState(..) => Ok(()),
+            SubstateId::NonFungible(..) => Ok(()),
+            SubstateId::ComponentInfo(..) => Err(RuntimeError::InvalidDataWrite),
+            SubstateId::NonFungibleSpace(..) => Err(RuntimeError::InvalidDataWrite),
+            SubstateId::KeyValueStoreSpace(..) => Err(RuntimeError::InvalidDataWrite),
+            SubstateId::Vault(..) => Err(RuntimeError::InvalidDataWrite),
+            SubstateId::Package(..) => Err(RuntimeError::InvalidDataWrite),
+            SubstateId::ResourceManager(..) => Err(RuntimeError::InvalidDataWrite),
+            SubstateId::System => Err(RuntimeError::InvalidDataWrite),
         }
     }
 
     pub fn can_own_nodes(&self) -> bool {
         match self {
-            Address::KeyValueStoreEntry(..) => true,
-            Address::ComponentState(..) => true,
-            Address::ComponentInfo(..) => false,
-            Address::NonFungible(..) => false,
-            Address::NonFungibleSpace(..) => false,
-            Address::KeyValueStoreSpace(..) => false,
-            Address::Vault(..) => false,
-            Address::Package(..) => false,
-            Address::ResourceManager(..) => false,
-            Address::System => false,
+            SubstateId::KeyValueStoreEntry(..) => true,
+            SubstateId::ComponentState(..) => true,
+            SubstateId::ComponentInfo(..) => false,
+            SubstateId::NonFungible(..) => false,
+            SubstateId::NonFungibleSpace(..) => false,
+            SubstateId::KeyValueStoreSpace(..) => false,
+            SubstateId::Vault(..) => false,
+            SubstateId::Package(..) => false,
+            SubstateId::ResourceManager(..) => false,
+            SubstateId::System => false,
         }
     }
 
@@ -125,59 +129,59 @@ impl Address {
         values: HashMap<RENodeId, REValue>,
     ) {
         match self {
-            Address::ComponentInfo(..) => {
+            SubstateId::ComponentInfo(..) => {
                 panic!("Should not get here");
             }
-            Address::ComponentState(..) => {
+            SubstateId::ComponentState(..) => {
                 value_ref.component_state_set(value, values);
             }
-            Address::KeyValueStoreSpace(..) => {
+            SubstateId::KeyValueStoreSpace(..) => {
                 panic!("Should not get here");
             }
-            Address::KeyValueStoreEntry(.., key) => {
+            SubstateId::KeyValueStoreEntry(.., key) => {
                 value_ref.kv_store_put(key, value, values);
             }
-            Address::NonFungibleSpace(..) => {
+            SubstateId::NonFungibleSpace(..) => {
                 panic!("Should not get here");
             }
-            Address::NonFungible(.., id) => value_ref.non_fungible_put(id, value),
-            Address::Vault(..) => {
+            SubstateId::NonFungible(.., id) => value_ref.non_fungible_put(id, value),
+            SubstateId::Vault(..) => {
                 panic!("Should not get here");
             }
-            Address::Package(..) => {
+            SubstateId::Package(..) => {
                 panic!("Should not get here");
             }
-            Address::ResourceManager(..) => {
+            SubstateId::ResourceManager(..) => {
                 panic!("Should not get here");
             }
-            Address::System => {
+            SubstateId::System => {
                 panic!("Should not get here");
             }
         }
     }
 }
 
-impl Into<Address> for PackageAddress {
-    fn into(self) -> Address {
-        Address::Package(self)
+impl Into<SubstateId> for PackageAddress {
+    fn into(self) -> SubstateId {
+        SubstateId::Package(self)
     }
 }
 
-impl Into<Address> for ResourceAddress {
-    fn into(self) -> Address {
-        Address::ResourceManager(self)
+impl Into<SubstateId> for ResourceAddress {
+    fn into(self) -> SubstateId {
+        SubstateId::ResourceManager(self)
     }
 }
 
-impl Into<Address> for VaultId {
-    fn into(self) -> Address {
-        Address::Vault(self)
+impl Into<SubstateId> for VaultId {
+    fn into(self) -> SubstateId {
+        SubstateId::Vault(self)
     }
 }
 
-impl Into<PackageAddress> for Address {
+impl Into<PackageAddress> for SubstateId {
     fn into(self) -> PackageAddress {
-        if let Address::Package(package_address) = self {
+        if let SubstateId::Package(package_address) = self {
             return package_address;
         } else {
             panic!("Address is not a package address");
@@ -185,19 +189,19 @@ impl Into<PackageAddress> for Address {
     }
 }
 
-impl Into<ComponentAddress> for Address {
+impl Into<ComponentAddress> for SubstateId {
     fn into(self) -> ComponentAddress {
         match self {
-            Address::ComponentInfo(component_address, ..)
-            | Address::ComponentState(component_address) => component_address,
+            SubstateId::ComponentInfo(component_address, ..)
+            | SubstateId::ComponentState(component_address) => component_address,
             _ => panic!("Address is not a component address"),
         }
     }
 }
 
-impl Into<ResourceAddress> for Address {
+impl Into<ResourceAddress> for SubstateId {
     fn into(self) -> ResourceAddress {
-        if let Address::ResourceManager(resource_address) = self {
+        if let SubstateId::ResourceManager(resource_address) = self {
             return resource_address;
         } else {
             panic!("Address is not a resource address");
@@ -205,9 +209,9 @@ impl Into<ResourceAddress> for Address {
     }
 }
 
-impl Into<VaultId> for Address {
+impl Into<VaultId> for SubstateId {
     fn into(self) -> VaultId {
-        if let Address::Vault(id) = self {
+        if let SubstateId::Vault(id) = self {
             return id;
         } else {
             panic!("Address is not a vault address");

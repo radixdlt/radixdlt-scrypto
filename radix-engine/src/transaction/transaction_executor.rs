@@ -171,13 +171,13 @@ where
         let mut new_package_addresses = Vec::new();
         for address in track_receipt.new_addresses {
             match address {
-                Address::ComponentInfo(component_address, true) => {
+                SubstateId::ComponentInfo(component_address, true) => {
                     new_component_addresses.push(component_address)
                 }
-                Address::ResourceManager(resource_address) => {
+                SubstateId::ResourceManager(resource_address) => {
                     new_resource_addresses.push(resource_address)
                 }
-                Address::Package(package_address) => new_package_addresses.push(package_address),
+                SubstateId::Package(package_address) => new_package_addresses.push(package_address),
                 _ => {}
             }
         }

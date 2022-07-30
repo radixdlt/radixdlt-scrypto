@@ -62,9 +62,9 @@ impl ValidatedPackage {
                     .map_err(|e| PackageError::InvalidRequestData(e))?;
                 let package =
                     ValidatedPackage::new(input.package).map_err(PackageError::InvalidWasm)?;
-                let value_id = system_api.create_value(package).unwrap(); // FIXME: update all `create_value` calls to handle errors correctly
+                let value_id = system_api.create_node(package).unwrap(); // FIXME: update all `create_value` calls to handle errors correctly
                 system_api
-                    .globalize_value(&value_id)
+                    .globalize_node(&value_id)
                     .map_err(PackageError::CostingError)?;
                 let package_address: PackageAddress = value_id.into();
                 Ok(ScryptoValue::from_typed(&package_address))

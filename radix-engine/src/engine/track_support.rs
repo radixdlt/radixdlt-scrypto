@@ -14,7 +14,7 @@ pub struct BaseStateTrack<'s> {
     /// The parent state track
     substate_store: &'s dyn ReadableSubstateStore,
     /// Substates either created during the transaction or loaded from substate store
-    substates: IndexMap<Address, Option<Substate>>,
+    substates: IndexMap<SubstateId, Option<Substate>>,
 }
 
 /// Keeps track of state changes that may be rolled back according to transaction status
@@ -22,7 +22,7 @@ pub struct AppStateTrack<'s> {
     /// The parent state track
     base_state_track: BaseStateTrack<'s>,
     /// Substates either created during the transaction or loaded from the base state track
-    substates: IndexMap<Address, Option<Substate>>,
+    substates: IndexMap<SubstateId, Option<Substate>>,
 }
 
 impl<'s> BaseStateTrack<'s> {
@@ -35,7 +35,7 @@ impl<'s> BaseStateTrack<'s> {
 
     fn get_substate_output_id(
         substate_store: &&'s dyn ReadableSubstateStore,
-        address: &Address,
+        address: &SubstateId,
     ) -> Option<OutputId> {
         substate_store.get_substate(&address).map(|s| OutputId {
             address: address.clone(),
@@ -50,7 +50,7 @@ impl<'s> BaseStateTrack<'s> {
         for (address, substate) in &self.substates {
             if let Some(substate) = substate {
                 match &address {
-                    Address::NonFungible(resource_address, key) => {
+                    SubstateId::NonFungible(resource_address, key) => {
                         let next_version = if let Some(existing_output_id) =
                             Self::get_substate_output_id(&self.substate_store, &address)
                         {
@@ -58,7 +58,7 @@ impl<'s> BaseStateTrack<'s> {
                             diff.down_substates.push(existing_output_id);
                             next_version
                         } else {
-                            let parent_address = Address::NonFungibleSpace(*resource_address);
+                            let parent_address = SubstateId::NonFungibleSpace(*resource_address);
                             let virtual_output_id =
                                 VirtualSubstateId(parent_address, key.0.clone());
                             diff.down_virtual_substates.push(virtual_output_id);
@@ -71,7 +71,7 @@ impl<'s> BaseStateTrack<'s> {
                         };
                         diff.up_substates.insert(address.clone(), output_value);
                     }
-                    Address::KeyValueStoreEntry(kv_store_id, key) => {
+                    SubstateId::KeyValueStoreEntry(kv_store_id, key) => {
                         let next_version = if let Some(existing_output_id) =
                             Self::get_substate_output_id(&self.substate_store, &address)
                         {
@@ -79,7 +79,7 @@ impl<'s> BaseStateTrack<'s> {
                             diff.down_substates.push(existing_output_id);
                             next_version
                         } else {
-                            let parent_address = Address::KeyValueStoreSpace(*kv_store_id);
+                            let parent_address = SubstateId::KeyValueStoreSpace(*kv_store_id);
                             let virtual_output_id = VirtualSubstateId(parent_address, key.clone());
                             diff.down_virtual_substates.push(virtual_output_id);
                             0
@@ -132,7 +132,7 @@ impl<'s> AppStateTrack<'s> {
     }
 
     /// Returns a copy of the substate associated with the given address, if exists
-    pub fn get_substate(&mut self, address: &Address) -> Option<Substate> {
+    pub fn get_substate(&mut self, address: &SubstateId) -> Option<Substate> {
         self.substates
             .entry(address.clone())
             .or_insert_with(|| {
@@ -155,7 +155,7 @@ impl<'s> AppStateTrack<'s> {
     /// Returns a copy of the substate associated with the given address from the base track
     pub fn get_substate_from_base(
         &mut self,
-        address: &Address,
+        address: &SubstateId,
     ) -> Result<Option<Substate>, StateTrackError> {
         if self.substates.contains_key(address) {
             return Err(StateTrackError::ValueAlreadyTouched);
@@ -176,12 +176,12 @@ impl<'s> AppStateTrack<'s> {
     }
 
     /// Creates a new substate and updates an existing one
-    pub fn put_substate(&mut self, address: Address, substate: Substate) {
+    pub fn put_substate(&mut self, address: SubstateId, substate: Substate) {
         self.substates.insert(address, Some(substate));
     }
 
     /// Creates a new substate and updates an existing one to the base track
-    pub fn put_substate_to_base(&mut self, address: Address, substate: Substate) {
+    pub fn put_substate_to_base(&mut self, address: SubstateId, substate: Substate) {
         assert!(!self.substates.contains_key(&address));
 
         self.base_state_track

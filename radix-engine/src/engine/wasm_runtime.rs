@@ -10,7 +10,7 @@ use scrypto::resource::AccessRule;
 use scrypto::values::ScryptoValue;
 
 use crate::engine::SystemApi;
-use crate::engine::{Address, PreCommittedKeyValueStore, RuntimeError};
+use crate::engine::{PreCommittedKeyValueStore, RuntimeError, SubstateId};
 use crate::fee::*;
 use crate::model::{Component, ComponentState};
 use crate::wasm::*;
@@ -83,14 +83,14 @@ where
         );
         let component_state = ComponentState::new(state);
 
-        let id = self.system_api.create_value((component, component_state))?;
+        let id = self.system_api.create_node((component, component_state))?;
         Ok(id.into())
     }
 
     fn handle_create_kv_store(&mut self) -> Result<KeyValueStoreId, RuntimeError> {
         let value_id = self
             .system_api
-            .create_value(PreCommittedKeyValueStore::new())?;
+            .create_node(PreCommittedKeyValueStore::new())?;
         match value_id {
             RENodeId::KeyValueStore(kv_store_id) => Ok(kv_store_id),
             _ => panic!("Expected to be a kv store"),
@@ -120,17 +120,17 @@ where
                 let key_data =
                     ScryptoValue::from_slice(&key_bytes).map_err(RuntimeError::DecodeError)?;
                 Self::verify_stored_key(&key_data)?;
-                Address::KeyValueStoreEntry(kv_store_id, key_bytes)
+                SubstateId::KeyValueStoreEntry(kv_store_id, key_bytes)
             }
             DataAddress::ComponentInfo(component_address, is_global) => {
-                Address::ComponentInfo(component_address, is_global)
+                SubstateId::ComponentInfo(component_address, is_global)
             }
             DataAddress::ComponentState(component_address) => {
-                Address::ComponentState(component_address)
+                SubstateId::ComponentState(component_address)
             }
         };
 
-        self.system_api.read_value_data(address)
+        self.system_api.read_substate(address)
     }
 
     fn handle_write_data(
@@ -143,17 +143,17 @@ where
                 let key_data =
                     ScryptoValue::from_slice(&key_bytes).map_err(RuntimeError::DecodeError)?;
                 Self::verify_stored_key(&key_data)?;
-                Address::KeyValueStoreEntry(kv_store_id, key_bytes)
+                SubstateId::KeyValueStoreEntry(kv_store_id, key_bytes)
             }
             DataAddress::ComponentInfo(component_address, is_global) => {
-                Address::ComponentInfo(component_address, is_global)
+                SubstateId::ComponentInfo(component_address, is_global)
             }
             DataAddress::ComponentState(component_address) => {
-                Address::ComponentState(component_address)
+                SubstateId::ComponentState(component_address)
             }
         };
         let scrypto_value = ScryptoValue::from_slice(&value).map_err(RuntimeError::DecodeError)?;
-        self.system_api.write_value_data(address, scrypto_value)?;
+        self.system_api.write_substate(address, scrypto_value)?;
         Ok(ScryptoValue::unit())
     }
 

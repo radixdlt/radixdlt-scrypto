@@ -29,7 +29,7 @@ where
         input: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError>;
 
-    fn globalize_value(&mut self, value_id: &RENodeId) -> Result<(), CostUnitCounterError>;
+    fn globalize_node(&mut self, value_id: &RENodeId) -> Result<(), CostUnitCounterError>;
 
     fn borrow_value(
         &mut self,
@@ -43,22 +43,17 @@ where
 
     fn return_value_mut(&mut self, val_ref: RENativeValueRef) -> Result<(), CostUnitCounterError>;
 
-    fn drop_value(&mut self, value_id: &RENodeId) -> Result<REValue, CostUnitCounterError>;
+    fn drop_node(&mut self, value_id: &RENodeId) -> Result<REValue, CostUnitCounterError>;
+    fn create_node<V: Into<REValueByComplexity>>(&mut self, v: V)
+        -> Result<RENodeId, RuntimeError>;
 
-    fn create_value<V: Into<REValueByComplexity>>(
+    fn read_substate(&mut self, substate_id: SubstateId) -> Result<ScryptoValue, RuntimeError>;
+    fn write_substate(
         &mut self,
-        v: V,
-    ) -> Result<RENodeId, RuntimeError>;
-
-    fn read_value_data(&mut self, address: Address) -> Result<ScryptoValue, RuntimeError>;
-
-    fn write_value_data(
-        &mut self,
-        address: Address,
+        substate_id: SubstateId,
         value: ScryptoValue,
     ) -> Result<(), RuntimeError>;
-
-    fn remove_value_data(&mut self, address: Address) -> Result<ScryptoValue, RuntimeError>;
+    fn take_substate(&mut self, substate_id: SubstateId) -> Result<ScryptoValue, RuntimeError>;
 
     fn transaction_hash(&mut self) -> Result<Hash, CostUnitCounterError>;
 

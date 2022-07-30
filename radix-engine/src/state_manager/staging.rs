@@ -2,14 +2,14 @@ use sbor::rust::collections::*;
 use sbor::rust::vec::Vec;
 use scrypto::buffer::{scrypto_decode, scrypto_encode};
 
-use crate::{engine::Address, ledger::*};
+use crate::{engine::SubstateId, ledger::*};
 use indexmap::IndexMap;
 
 /// Nodes form an acyclic graph towards the parent
 struct StagedSubstateStoreNode {
     parent_id: u64,
     locked: bool,
-    outputs: IndexMap<Address, OutputValue>,
+    outputs: IndexMap<SubstateId, OutputValue>,
 }
 
 impl StagedSubstateStoreNode {
@@ -112,7 +112,7 @@ pub struct StagedSubstateStore<'t, 's, S: ReadableSubstateStore + WriteableSubst
 }
 
 impl<'t, 's, S: ReadableSubstateStore + WriteableSubstateStore> StagedSubstateStore<'t, 's, S> {
-    fn get_substate_recurse(&self, address: &Address, id: u64) -> Option<OutputValue> {
+    fn get_substate_recurse(&self, address: &SubstateId, id: u64) -> Option<OutputValue> {
         if id == 0 {
             return self.stores.parent.get_substate(address);
         }
@@ -131,7 +131,7 @@ impl<'t, 's, S: ReadableSubstateStore + WriteableSubstateStore> StagedSubstateSt
 impl<'t, 's, S: ReadableSubstateStore + WriteableSubstateStore> ReadableSubstateStore
     for StagedSubstateStore<'t, 's, S>
 {
-    fn get_substate(&self, address: &Address) -> Option<OutputValue> {
+    fn get_substate(&self, address: &SubstateId) -> Option<OutputValue> {
         self.get_substate_recurse(address, self.id)
     }
 }
@@ -139,7 +139,7 @@ impl<'t, 's, S: ReadableSubstateStore + WriteableSubstateStore> ReadableSubstate
 impl<'t, 's, S: ReadableSubstateStore + WriteableSubstateStore> WriteableSubstateStore
     for StagedSubstateStore<'t, 's, S>
 {
-    fn put_substate(&mut self, address: Address, output: OutputValue) {
+    fn put_substate(&mut self, address: SubstateId, output: OutputValue) {
         if self.id == 0 {
             self.stores.parent.put_substate(address, output);
         } else {

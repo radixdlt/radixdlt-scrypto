@@ -12,7 +12,7 @@ use scrypto::prelude::{
 };
 use scrypto::values::ScryptoValue;
 
-use crate::engine::{Address, SystemApi};
+use crate::engine::{SubstateId, SystemApi};
 use crate::fee::CostUnitCounter;
 use crate::fee::CostUnitCounterError;
 use crate::model::{
@@ -188,7 +188,7 @@ impl Bucket {
                     .take(input.amount)
                     .map_err(BucketError::ResourceContainerError)?;
                 let bucket_id = system_api
-                    .create_value(Bucket::new(container))
+                    .create_node(Bucket::new(container))
                     .unwrap()
                     .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
@@ -202,7 +202,7 @@ impl Bucket {
                     .take_non_fungibles(&input.ids)
                     .map_err(BucketError::ResourceContainerError)?;
                 let bucket_id = system_api
-                    .create_value(Bucket::new(container))
+                    .create_node(Bucket::new(container))
                     .unwrap()
                     .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
@@ -221,7 +221,7 @@ impl Bucket {
                 let input: BucketPutInput =
                     scrypto_decode(&arg.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
                 let other_bucket = system_api
-                    .drop_value(&RENodeId::Bucket(input.bucket.0))
+                    .drop_node(&RENodeId::Bucket(input.bucket.0))
                     .map_err(BucketError::CostingError)?
                     .into();
                 bucket0
@@ -245,7 +245,7 @@ impl Bucket {
                 let proof = bucket0
                     .create_proof(bucket_id)
                     .map_err(BucketError::ProofError)?;
-                let proof_id = system_api.create_value(proof).unwrap().into();
+                let proof_id = system_api.create_node(proof).unwrap().into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Proof(
                     proof_id,
                 )))
@@ -279,7 +279,7 @@ impl Bucket {
                     scrypto_decode(&arg.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
 
                 let bucket: Bucket = system_api
-                    .drop_value(&value_id)
+                    .drop_node(&value_id)
                     .map_err(BucketError::CostingError)?
                     .into();
 
@@ -293,10 +293,8 @@ impl Bucket {
                 resource_manager.burn(bucket.total_amount());
                 if matches!(resource_manager.resource_type(), ResourceType::NonFungible) {
                     for id in bucket.total_ids().unwrap() {
-                        let address = Address::NonFungible(resource_address, id);
-                        system_api
-                            .remove_value_data(address)
-                            .expect("Should not fail.");
+                        let address = SubstateId::NonFungible(resource_address, id);
+                        system_api.take_substate(address).expect("Should not fail.");
                     }
                 }
                 system_api

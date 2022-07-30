@@ -4,17 +4,17 @@ use sbor::*;
 use scrypto::buffer::scrypto_encode;
 use scrypto::crypto::hash;
 
-use crate::engine::Address;
+use crate::engine::SubstateId;
 use crate::ledger::*;
 use crate::state_manager::CommitReceipt;
 
 #[derive(Debug, Clone, Hash, TypeId, Encode, Decode, PartialEq, Eq)]
-pub struct VirtualSubstateId(pub Address, pub Vec<u8>);
+pub struct VirtualSubstateId(pub SubstateId, pub Vec<u8>);
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct StateDiff {
     pub down_virtual_substates: Vec<VirtualSubstateId>,
-    pub up_substates: BTreeMap<Address, OutputValue>,
+    pub up_substates: BTreeMap<SubstateId, OutputValue>,
     pub down_substates: Vec<OutputId>,
 }
 

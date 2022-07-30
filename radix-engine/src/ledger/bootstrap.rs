@@ -10,7 +10,7 @@ use scrypto::resource::ResourceMethodAuthKey::Withdraw;
 use scrypto::resource::LOCKED;
 use scrypto::rule;
 
-use crate::engine::Address;
+use crate::engine::SubstateId;
 use crate::engine::Track;
 use crate::engine::TrackReceipt;
 use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
@@ -86,14 +86,14 @@ fn create_genesis(mut track: Track) -> TrackReceipt {
     let system_component_state =
         ComponentState::new(scrypto_encode(&SystemComponentState { xrd: XRD_VAULT }));
     track.create_uuid_value(
-        Address::ComponentInfo(SYSTEM_COMPONENT, true),
+        SubstateId::ComponentInfo(SYSTEM_COMPONENT, true),
         system_component,
     );
     track.create_uuid_value(
-        Address::ComponentState(SYSTEM_COMPONENT),
+        SubstateId::ComponentState(SYSTEM_COMPONENT),
         system_component_state,
     );
-    track.create_uuid_value(Address::System, System { epoch: 0 });
+    track.create_uuid_value(SubstateId::System, System { epoch: 0 });
 
     track.to_receipt(true)
 }
@@ -103,7 +103,7 @@ where
     S: ReadableSubstateStore + WriteableSubstateStore + 'static,
 {
     if substate_store
-        .get_substate(&Address::Package(SYSTEM_PACKAGE))
+        .get_substate(&SubstateId::Package(SYSTEM_PACKAGE))
         .is_none()
     {
         let track = Track::new(&substate_store);

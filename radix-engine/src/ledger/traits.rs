@@ -5,7 +5,7 @@ use sbor::*;
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
 
-use crate::engine::Address;
+use crate::engine::SubstateId;
 
 pub trait QueryableSubstateStore {
     fn get_kv_store_entries(
@@ -17,7 +17,7 @@ pub trait QueryableSubstateStore {
 
 #[derive(Debug, Clone, Hash, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct OutputId {
-    pub address: Address,
+    pub address: SubstateId,
     pub substate_hash: Hash,
     pub version: u32,
 }
@@ -29,11 +29,11 @@ pub struct OutputValue {
 }
 
 pub trait ReadableSubstateStore {
-    fn get_substate(&self, address: &Address) -> Option<OutputValue>;
+    fn get_substate(&self, address: &SubstateId) -> Option<OutputValue>;
 }
 
 pub trait WriteableSubstateStore {
-    fn put_substate(&mut self, address: Address, substate: OutputValue);
+    fn put_substate(&mut self, address: SubstateId, substate: OutputValue);
 }
 
 pub trait SubstateStore: ReadableSubstateStore + WriteableSubstateStore {}

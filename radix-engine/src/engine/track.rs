@@ -34,9 +34,9 @@ impl BorrowedSubstate {
 /// such as logs and events.
 pub struct Track<'s> {
     application_logs: Vec<(Level, String)>,
-    new_addresses: Vec<Address>,
+    new_addresses: Vec<SubstateId>,
     state_track: AppStateTrack<'s>,
-    borrowed_substates: HashMap<Address, BorrowedSubstate>,
+    borrowed_substates: HashMap<SubstateId, BorrowedSubstate>,
 }
 
 #[derive(Debug)]
@@ -47,7 +47,7 @@ pub enum TrackError {
 }
 
 pub struct TrackReceipt {
-    pub new_addresses: Vec<Address>,
+    pub new_addresses: Vec<SubstateId>,
     pub application_logs: Vec<(Level, String)>,
     pub state_updates: StateDiff,
 }
@@ -71,7 +71,7 @@ impl<'s> Track<'s> {
     }
 
     /// Creates a row with the given key/value
-    pub fn create_uuid_value<A: Into<Address>, V: Into<Substate>>(&mut self, addr: A, value: V) {
+    pub fn create_uuid_value<A: Into<SubstateId>, V: Into<Substate>>(&mut self, addr: A, value: V) {
         let address = addr.into();
         self.new_addresses.push(address.clone());
         self.state_track.put_substate(address, value.into());
@@ -87,7 +87,7 @@ impl<'s> Track<'s> {
     //
     // Also enables us to store state associated with the lock, like the `write_through` flag.
 
-    pub fn acquire_lock<A: Into<Address>>(
+    pub fn acquire_lock<A: Into<SubstateId>>(
         &mut self,
         addr: A,
         mutable: bool,
@@ -121,12 +121,12 @@ impl<'s> Track<'s> {
         } else {
             if let Some(substate) = self.state_track.get_substate(&address) {
                 let value = match address {
-                    Address::ComponentInfo(..)
-                    | Address::ResourceManager(..)
-                    | Address::Vault(..)
-                    | Address::Package(..)
-                    | Address::ComponentState(..)
-                    | Address::System => substate,
+                    SubstateId::ComponentInfo(..)
+                    | SubstateId::ResourceManager(..)
+                    | SubstateId::Vault(..)
+                    | SubstateId::Package(..)
+                    | SubstateId::ComponentState(..)
+                    | SubstateId::System => substate,
                     _ => panic!("Attempting to borrow unsupported value {:?}", address),
                 };
 
@@ -139,7 +139,7 @@ impl<'s> Track<'s> {
         }
     }
 
-    pub fn release_lock<A: Into<Address>>(&mut self, addr: A, write_through: bool) {
+    pub fn release_lock<A: Into<SubstateId>>(&mut self, addr: A, write_through: bool) {
         let address = addr.into();
         let borrowed = self
             .borrowed_substates
@@ -181,8 +181,8 @@ impl<'s> Track<'s> {
         }
     }
 
-    pub fn read_value<A: Into<Address>>(&self, addr: A) -> &Substate {
-        let address: Address = addr.into();
+    pub fn read_value<A: Into<SubstateId>>(&self, addr: A) -> &Substate {
+        let address: SubstateId = addr.into();
         match self
             .borrowed_substates
             .get(&address)
@@ -194,8 +194,8 @@ impl<'s> Track<'s> {
         }
     }
 
-    pub fn take_value<A: Into<Address>>(&mut self, addr: A) -> Substate {
-        let address: Address = addr.into();
+    pub fn take_value<A: Into<SubstateId>>(&mut self, addr: A) -> Substate {
+        let address: SubstateId = addr.into();
         match self
             .borrowed_substates
             .insert(address.clone(), BorrowedSubstate::Taken)
@@ -207,8 +207,8 @@ impl<'s> Track<'s> {
         }
     }
 
-    pub fn write_value<A: Into<Address>, V: Into<Substate>>(&mut self, addr: A, value: V) {
-        let address: Address = addr.into();
+    pub fn write_value<A: Into<SubstateId>, V: Into<Substate>>(&mut self, addr: A, value: V) {
+        let address: SubstateId = addr.into();
 
         let cur_value = self
             .borrowed_substates
@@ -224,30 +224,29 @@ impl<'s> Track<'s> {
     }
 
     /// Returns the value of a key value pair
-    pub fn read_key_value(&mut self, parent_address: Address, key: Vec<u8>) -> Substate {
+    pub fn read_key_value(&mut self, parent_address: SubstateId, key: Vec<u8>) -> Substate {
         // TODO: consider using a single address as function input
         let address = match parent_address {
-            Address::NonFungibleSpace(resource_address) => {
-                Address::NonFungible(resource_address, NonFungibleId(key))
+            SubstateId::NonFungibleSpace(resource_address) => {
+                SubstateId::NonFungible(resource_address, NonFungibleId(key))
             }
-            Address::KeyValueStoreSpace(kv_store_id) => {
-                Address::KeyValueStoreEntry(kv_store_id, key)
+            SubstateId::KeyValueStoreSpace(kv_store_id) => {
+                SubstateId::KeyValueStoreEntry(kv_store_id, key)
             }
             _ => panic!("Unsupported key value"),
         };
 
         match parent_address {
-            Address::NonFungibleSpace(_) => self
+            SubstateId::NonFungibleSpace(_) => self
                 .state_track
                 .get_substate(&address)
                 .unwrap_or(Substate::NonFungible(NonFungibleWrapper(None))),
-            Address::KeyValueStoreSpace(..) => {
-                self.state_track
-                    .get_substate(&address)
-                    .unwrap_or(Substate::KeyValueStoreEntry(KeyValueStoreEntryWrapper(
-                        None,
-                    )))
-            }
+            SubstateId::KeyValueStoreSpace(..) => self
+                .state_track
+                .get_substate(&address)
+                .unwrap_or(Substate::KeyValueStoreEntry(KeyValueStoreEntryWrapper(
+                    None,
+                ))),
             _ => panic!("Invalid keyed value address {:?}", parent_address),
         }
     }
@@ -255,17 +254,17 @@ impl<'s> Track<'s> {
     /// Sets a key value
     pub fn set_key_value<V: Into<Substate>>(
         &mut self,
-        parent_address: Address,
+        parent_address: SubstateId,
         key: Vec<u8>,
         value: V,
     ) {
         // TODO: consider using a single address as function input
         let address = match parent_address {
-            Address::NonFungibleSpace(resource_address) => {
-                Address::NonFungible(resource_address, NonFungibleId(key.clone()))
+            SubstateId::NonFungibleSpace(resource_address) => {
+                SubstateId::NonFungible(resource_address, NonFungibleId(key.clone()))
             }
-            Address::KeyValueStoreSpace(kv_store_id) => {
-                Address::KeyValueStoreEntry(kv_store_id, key.clone())
+            SubstateId::KeyValueStoreSpace(kv_store_id) => {
+                SubstateId::KeyValueStoreEntry(kv_store_id, key.clone())
             }
             _ => panic!("Unsupported key value"),
         };

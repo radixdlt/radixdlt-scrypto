@@ -106,21 +106,29 @@ pub fn insert_non_root_nodes<'s>(track: &mut Track<'s>, values: HashMap<RENodeId
     for (id, node) in values {
         match node {
             RENode::Vault(vault) => {
-                let addr = Address::Vault(id.into());
+                let addr = SubstateId::Vault(id.into());
                 track.create_uuid_value(addr, vault);
             }
             RENode::Component(component, component_state) => {
                 let component_address = id.into();
-                track
-                    .create_uuid_value(Address::ComponentInfo(component_address, false), component);
-                track
-                    .create_uuid_value(Address::ComponentState(component_address), component_state);
+                track.create_uuid_value(
+                    SubstateId::ComponentInfo(component_address, false),
+                    component,
+                );
+                track.create_uuid_value(
+                    SubstateId::ComponentState(component_address),
+                    component_state,
+                );
             }
             RENode::KeyValueStore(store) => {
                 let id = id.into();
-                let address = Address::KeyValueStoreSpace(id);
+                let substate_id = SubstateId::KeyValueStoreSpace(id);
                 for (k, v) in store.store {
-                    track.set_key_value(address.clone(), k, KeyValueStoreEntryWrapper(Some(v.raw)));
+                    track.set_key_value(
+                        substate_id.clone(),
+                        k,
+                        KeyValueStoreEntryWrapper(Some(v.raw)),
+                    );
                 }
             }
             _ => panic!("Invalid node being persisted: {:?}", node),
@@ -141,7 +149,7 @@ pub enum REValuePointer {
         root: RENodeId,
         id: Option<RENodeId>,
     },
-    Track(Address),
+    Track(SubstateId),
 }
 
 impl REValuePointer {
@@ -155,11 +163,11 @@ impl REValuePointer {
             REValuePointer::Track(..) => {
                 let child_address = match child_id {
                     RENodeId::KeyValueStore(kv_store_id) => {
-                        Address::KeyValueStoreSpace(kv_store_id)
+                        SubstateId::KeyValueStoreSpace(kv_store_id)
                     }
-                    RENodeId::Vault(vault_id) => Address::Vault(vault_id),
+                    RENodeId::Vault(vault_id) => SubstateId::Vault(vault_id),
                     RENodeId::Component(component_id) => {
-                        Address::ComponentInfo(component_id, false)
+                        SubstateId::ComponentInfo(component_id, false)
                     }
                     _ => panic!("Unexpected"),
                 };
@@ -184,9 +192,9 @@ impl REValuePointer {
                 let re_value = frame.remove(root).expect("Should exist");
                 RENativeValueRef::Stack(re_value, frame_id.clone(), root.clone(), id.clone())
             }
-            REValuePointer::Track(address) => {
-                let value = track.take_value(address.clone());
-                RENativeValueRef::Track(address.clone(), value)
+            REValuePointer::Track(substate_id) => {
+                let value = track.take_value(substate_id.clone());
+                RENativeValueRef::Track(substate_id.clone(), value)
             }
         }
     }
@@ -206,7 +214,7 @@ impl REValuePointer {
                 };
                 REValueRef::Stack(frame.get(root).unwrap(), id.clone())
             }
-            REValuePointer::Track(address) => REValueRef::Track(track, address.clone()),
+            REValuePointer::Track(substate_id) => REValueRef::Track(track, substate_id.clone()),
         }
     }
 
@@ -225,14 +233,14 @@ impl REValuePointer {
                 };
                 REValueRefMut::Stack(frame.get_mut(root).unwrap(), id.clone())
             }
-            REValuePointer::Track(address) => REValueRefMut::Track(track, address.clone()),
+            REValuePointer::Track(substate_id) => REValueRefMut::Track(track, substate_id.clone()),
         }
     }
 }
 
 pub enum RENativeValueRef {
     Stack(REValue, Option<usize>, RENodeId, Option<RENodeId>),
-    Track(Address, Substate),
+    Track(SubstateId, Substate),
 }
 
 impl RENativeValueRef {
@@ -328,14 +336,14 @@ impl RENativeValueRef {
                 };
                 frame.insert(value_id, owned);
             }
-            RENativeValueRef::Track(address, value) => track.write_value(address, value),
+            RENativeValueRef::Track(substate_id, value) => track.write_value(substate_id, value),
         }
     }
 }
 
 pub enum REValueRef<'f, 's> {
     Stack(&'f REValue, Option<RENodeId>),
-    Track(&'f Track<'s>, Address),
+    Track(&'f Track<'s>, SubstateId),
 }
 
 impl<'f, 's> REValueRef<'f, 's> {
@@ -345,7 +353,7 @@ impl<'f, 's> REValueRef<'f, 's> {
                 .as_ref()
                 .map_or(value.root(), |v| value.non_root(v))
                 .vault(),
-            REValueRef::Track(track, address) => track.read_value(address.clone()).vault(),
+            REValueRef::Track(track, substate_id) => track.read_value(substate_id.clone()).vault(),
         }
     }
 
@@ -355,7 +363,7 @@ impl<'f, 's> REValueRef<'f, 's> {
                 .as_ref()
                 .map_or(value.root(), |v| value.non_root(v))
                 .system(),
-            REValueRef::Track(track, address) => track.read_value(address.clone()).system(),
+            REValueRef::Track(track, substate_id) => track.read_value(substate_id.clone()).system(),
         }
     }
 
@@ -365,8 +373,8 @@ impl<'f, 's> REValueRef<'f, 's> {
                 .as_ref()
                 .map_or(value.root(), |v| value.non_root(v))
                 .resource_manager(),
-            REValueRef::Track(track, address) => {
-                track.read_value(address.clone()).resource_manager()
+            REValueRef::Track(track, substate_id) => {
+                track.read_value(substate_id.clone()).resource_manager()
             }
         }
     }
@@ -377,9 +385,11 @@ impl<'f, 's> REValueRef<'f, 's> {
                 .as_ref()
                 .map_or(value.root(), |v| value.non_root(v))
                 .component_state(),
-            REValueRef::Track(track, address) => {
-                let component_state_address = match address {
-                    Address::ComponentInfo(address, ..) => Address::ComponentState(*address),
+            REValueRef::Track(track, substate_id) => {
+                let component_state_address = match substate_id {
+                    SubstateId::ComponentInfo(substate_id, ..) => {
+                        SubstateId::ComponentState(*substate_id)
+                    }
                     _ => panic!("Unexpected"),
                 };
                 track.read_value(component_state_address).component_state()
@@ -393,7 +403,9 @@ impl<'f, 's> REValueRef<'f, 's> {
                 .as_ref()
                 .map_or(value.root(), |v| value.non_root(v))
                 .component(),
-            REValueRef::Track(track, address) => track.read_value(address.clone()).component(),
+            REValueRef::Track(track, substate_id) => {
+                track.read_value(substate_id.clone()).component()
+            }
         }
     }
 
@@ -403,14 +415,16 @@ impl<'f, 's> REValueRef<'f, 's> {
                 .as_ref()
                 .map_or(value.root(), |v| value.non_root(v))
                 .package(),
-            REValueRef::Track(track, address) => track.read_value(address.clone()).package(),
+            REValueRef::Track(track, substate_id) => {
+                track.read_value(substate_id.clone()).package()
+            }
         }
     }
 }
 
 pub enum REValueRefMut<'f, 's> {
     Stack(&'f mut REValue, Option<RENodeId>),
-    Track(&'f mut Track<'s>, Address),
+    Track(&'f mut Track<'s>, SubstateId),
 }
 
 impl<'f, 's> REValueRefMut<'f, 's> {
@@ -430,9 +444,9 @@ impl<'f, 's> REValueRefMut<'f, 's> {
                     re_value.insert_non_root_nodes(val.to_nodes(id));
                 }
             }
-            REValueRefMut::Track(track, address) => {
+            REValueRefMut::Track(track, substate_id) => {
                 track.set_key_value(
-                    address.clone(),
+                    substate_id.clone(),
                     key,
                     Substate::KeyValueStoreEntry(KeyValueStoreEntryWrapper(Some(value.raw))),
                 );
@@ -452,8 +466,8 @@ impl<'f, 's> REValueRefMut<'f, 's> {
                     .map(|v| KeyValueStoreEntryWrapper(Some(v.raw)))
                     .unwrap_or(KeyValueStoreEntryWrapper(None))
             }
-            REValueRefMut::Track(track, address) => {
-                let substate_value = track.read_key_value(address.clone(), key.to_vec());
+            REValueRefMut::Track(track, substate_id) => {
+                let substate_value = track.read_key_value(substate_id.clone(), key.to_vec());
                 substate_value.into()
             }
         };
@@ -486,10 +500,10 @@ impl<'f, 's> REValueRefMut<'f, 's> {
                     .map(|v| NonFungibleWrapper(Some(v)))
                     .unwrap_or(NonFungibleWrapper(None))
             }
-            REValueRefMut::Track(track, address) => {
-                let resource_address: ResourceAddress = address.clone().into();
-                let substate_value =
-                    track.read_key_value(Address::NonFungibleSpace(resource_address), id.to_vec());
+            REValueRefMut::Track(track, substate_id) => {
+                let resource_address: ResourceAddress = substate_id.clone().into();
+                let substate_value = track
+                    .read_key_value(SubstateId::NonFungibleSpace(resource_address), id.to_vec());
                 substate_value.into()
             }
         };
@@ -502,10 +516,10 @@ impl<'f, 's> REValueRefMut<'f, 's> {
             REValueRefMut::Stack(..) => {
                 panic!("Not supported");
             }
-            REValueRefMut::Track(track, address) => {
-                let resource_address: ResourceAddress = address.clone().into();
+            REValueRefMut::Track(track, substate_id) => {
+                let resource_address: ResourceAddress = substate_id.clone().into();
                 track.set_key_value(
-                    Address::NonFungibleSpace(resource_address),
+                    SubstateId::NonFungibleSpace(resource_address),
                     id.to_vec(),
                     Substate::NonFungible(NonFungibleWrapper(None)),
                 );
@@ -526,12 +540,12 @@ impl<'f, 's> REValueRefMut<'f, 's> {
                     panic!("TODO: invalidate this code path and possibly consolidate `non_fungible_remove` and `non_fungible_put`")
                 }
             }
-            REValueRefMut::Track(track, address) => {
+            REValueRefMut::Track(track, substate_id) => {
                 let wrapper: NonFungibleWrapper =
                     scrypto_decode(&value.raw).expect("Should not fail.");
-                let resource_address: ResourceAddress = address.clone().into();
+                let resource_address: ResourceAddress = substate_id.clone().into();
                 track.set_key_value(
-                    Address::NonFungibleSpace(resource_address),
+                    SubstateId::NonFungibleSpace(resource_address),
                     id.to_vec(),
                     Substate::NonFungible(wrapper),
                 );
@@ -552,10 +566,10 @@ impl<'f, 's> REValueRefMut<'f, 's> {
                     re_value.insert_non_root_nodes(val.to_nodes(id));
                 }
             }
-            REValueRefMut::Track(track, address) => {
-                let component_address: ComponentAddress = address.clone().into();
+            REValueRefMut::Track(track, substate_id) => {
+                let component_address: ComponentAddress = substate_id.clone().into();
                 track.write_value(
-                    Address::ComponentState(component_address),
+                    SubstateId::ComponentState(component_address),
                     ComponentState::new(value.raw),
                 );
                 for (id, val) in to_store {
@@ -568,8 +582,8 @@ impl<'f, 's> REValueRefMut<'f, 's> {
     pub fn component(&mut self) -> &Component {
         match self {
             REValueRefMut::Stack(re_value, id) => re_value.get_node_mut(id.as_ref()).component(),
-            REValueRefMut::Track(track, address) => {
-                let component_val = track.read_value(address.clone());
+            REValueRefMut::Track(track, substate_id) => {
+                let component_val = track.read_value(substate_id.clone());
                 component_val.component()
             }
         }
@@ -580,9 +594,9 @@ impl<'f, 's> REValueRefMut<'f, 's> {
             REValueRefMut::Stack(re_value, id) => {
                 re_value.get_node_mut(id.as_ref()).component_state()
             }
-            REValueRefMut::Track(track, address) => {
-                let component_address: ComponentAddress = address.clone().into();
-                let component_state_address = Address::ComponentState(component_address);
+            REValueRefMut::Track(track, substate_id) => {
+                let component_address: ComponentAddress = substate_id.clone().into();
+                let component_state_address = SubstateId::ComponentState(component_address);
                 let component_val = track.read_value(component_state_address.clone());
                 component_val.component_state()
             }
@@ -935,9 +949,9 @@ where
 
     fn read_value_internal(
         &mut self,
-        address: &Address,
+        substate_id: &SubstateId,
     ) -> Result<(REValuePointer, ScryptoValue), RuntimeError> {
-        let value_id = address.get_node_id();
+        let value_id = substate_id.get_node_id();
 
         // Get location
         // Note this must be run AFTER values are taken, otherwise there would be inconsistent readable_values state
@@ -948,7 +962,7 @@ where
             .map(|v| (v, None))
             .or_else(|| {
                 // Allow global read access to any component info
-                if let Address::ComponentInfo(component_address, ..) = address {
+                if let SubstateId::ComponentInfo(component_address, ..) = substate_id {
                     if self.owned_values.contains_key(&value_id) {
                         return Some((
                             REValueInfo {
@@ -964,7 +978,7 @@ where
                     } else if self
                         .track
                         .acquire_lock(
-                            Address::ComponentInfo(*component_address, true),
+                            SubstateId::ComponentInfo(*component_address, true),
                             false,
                             false,
                         )
@@ -972,7 +986,7 @@ where
                     {
                         return Some((
                             REValueInfo {
-                                location: REValuePointer::Track(Address::ComponentInfo(
+                                location: REValuePointer::Track(SubstateId::ComponentInfo(
                                     *component_address,
                                     true,
                                 )),
@@ -998,13 +1012,13 @@ where
                 &mut self.parent_values,
                 &mut self.track,
             );
-            address.read_scrypto_value(value_ref)?
+            substate_id.read_scrypto_value(value_ref)?
         };
 
         // TODO: Remove, currently a hack to allow for global component info retrieval
         if let Some(component_address) = address_borrowed {
             self.track
-                .release_lock(Address::ComponentInfo(*component_address, true), false);
+                .release_lock(SubstateId::ComponentInfo(*component_address, true), false);
         }
 
         Ok((location.clone(), current_value))
@@ -1170,7 +1184,7 @@ where
                         value_refs.insert(
                             RENodeId::Resource(resource_address),
                             REValueInfo {
-                                location: REValuePointer::Track(Address::ResourceManager(
+                                location: REValuePointer::Track(SubstateId::ResourceManager(
                                     resource_address,
                                 )),
                                 visible: true,
@@ -1188,7 +1202,9 @@ where
                         value_refs.insert(
                             RENodeId::Package(package_address),
                             REValueInfo {
-                                location: REValuePointer::Track(Address::Package(package_address)),
+                                location: REValuePointer::Track(SubstateId::Package(
+                                    package_address,
+                                )),
                                 visible: true,
                             },
                         );
@@ -1203,13 +1219,13 @@ where
             }
             SNodeRef::SystemRef => {
                 self.track
-                    .acquire_lock(Address::System, true, false)
+                    .acquire_lock(SubstateId::System, true, false)
                     .expect("System access should never fail");
-                locked_values.insert(Address::System);
+                locked_values.insert(SubstateId::System);
                 value_refs.insert(
                     RENodeId::System,
                     REValueInfo {
-                        location: REValuePointer::Track(Address::System),
+                        location: REValuePointer::Track(SubstateId::System),
                         visible: true,
                     },
                 );
@@ -1244,7 +1260,7 @@ where
                         value_refs.insert(
                             RENodeId::Resource(resource_address.clone()),
                             REValueInfo {
-                                location: REValuePointer::Track(Address::ResourceManager(
+                                location: REValuePointer::Track(SubstateId::ResourceManager(
                                     resource_address.clone(),
                                 )),
                                 visible: true,
@@ -1259,9 +1275,9 @@ where
             }
             SNodeRef::ResourceRef(resource_address) => {
                 let value_id = RENodeId::Resource(*resource_address);
-                let address: Address = Address::ResourceManager(*resource_address);
+                let substate_id: SubstateId = SubstateId::ResourceManager(*resource_address);
                 self.track
-                    .acquire_lock(address.clone(), true, false)
+                    .acquire_lock(substate_id.clone(), true, false)
                     .map_err(|e| match e {
                         TrackError::NotFound => {
                             RuntimeError::ResourceManagerNotFound(resource_address.clone())
@@ -1271,13 +1287,13 @@ where
                         }
                         TrackError::StateTrackError(..) => panic!("Unexpected"),
                     })?;
-                locked_values.insert(address.clone());
-                let resource_manager = self.track.read_value(address).resource_manager();
+                locked_values.insert(substate_id.clone());
+                let resource_manager = self.track.read_value(substate_id).resource_manager();
                 let method_auth = resource_manager.get_auth(&fn_ident, &input).clone();
                 value_refs.insert(
                     value_id.clone(),
                     REValueInfo {
-                        location: REValuePointer::Track(Address::ResourceManager(
+                        location: REValuePointer::Track(SubstateId::ResourceManager(
                             *resource_address,
                         )),
                         visible: true,
@@ -1357,7 +1373,7 @@ where
                     value_refs.insert(
                         RENodeId::Resource(resource_address.clone()),
                         REValueInfo {
-                            location: REValuePointer::Track(Address::ResourceManager(
+                            location: REValuePointer::Track(SubstateId::ResourceManager(
                                 resource_address.clone(),
                             )),
                             visible: true,
@@ -1422,14 +1438,14 @@ where
                     {
                         location.clone()
                     } else {
-                        REValuePointer::Track(Address::ComponentInfo(component_address, true))
+                        REValuePointer::Track(SubstateId::ComponentInfo(component_address, true))
                     };
 
                     // Lock values and setup next frame
                     let (next_location, is_global) = match cur_location.clone() {
-                        REValuePointer::Track(address) => {
+                        REValuePointer::Track(substate_id) => {
                             self.track
-                                .acquire_lock(address.clone(), true, false)
+                                .acquire_lock(substate_id.clone(), true, false)
                                 .map_err(|e| match e {
                                     TrackError::NotFound => {
                                         RuntimeError::ComponentNotFound(component_address)
@@ -1441,11 +1457,11 @@ where
                                         panic!("Unexpected")
                                     }
                                 })?;
-                            locked_values.insert(address.clone());
+                            locked_values.insert(substate_id.clone());
 
-                            let component_address: ComponentAddress = address.clone().into();
+                            let component_address: ComponentAddress = substate_id.clone().into();
                             let component_state_address =
-                                Address::ComponentState(component_address);
+                                SubstateId::ComponentState(component_address);
                             self.track
                                 .acquire_lock(component_state_address.clone(), true, false)
                                 .map_err(|e| match e {
@@ -1462,15 +1478,15 @@ where
                             locked_values.insert(component_state_address);
 
                             let is_global =
-                                if let Address::ComponentInfo(_component_address, is_global) =
-                                    address
+                                if let SubstateId::ComponentInfo(_component_address, is_global) =
+                                    substate_id
                                 {
                                     is_global
                                 } else {
-                                    panic!("Unexpected address");
+                                    panic!("Unexpected substate_id");
                                 };
 
-                            (REValuePointer::Track(address), is_global)
+                            (REValuePointer::Track(substate_id), is_global)
                         }
                         REValuePointer::Stack { frame_id, root, id } => (
                             REValuePointer::Stack {
@@ -1589,7 +1605,9 @@ where
                         value_refs.insert(
                             RENodeId::Package(package_address),
                             REValueInfo {
-                                location: REValuePointer::Track(Address::Package(package_address)),
+                                location: REValuePointer::Track(SubstateId::Package(
+                                    package_address,
+                                )),
                                 visible: true,
                             },
                         );
@@ -1636,9 +1654,9 @@ where
                 let next_location = {
                     // Lock Vault
                     let next_location = match cur_location.clone() {
-                        REValuePointer::Track(address) => {
+                        REValuePointer::Track(substate_id) => {
                             self.track
-                                .acquire_lock(address.clone(), true, is_pay_fee)
+                                .acquire_lock(substate_id.clone(), true, is_pay_fee)
                                 .map_err(|e| match e {
                                     TrackError::NotFound | TrackError::Reentrancy => {
                                         panic!("Illegal state")
@@ -1651,8 +1669,8 @@ where
                                         })
                                     }
                                 })?;
-                            locked_values.insert(address.clone().into());
-                            REValuePointer::Track(address)
+                            locked_values.insert(substate_id.clone().into());
+                            REValuePointer::Track(substate_id)
                         }
                         REValuePointer::Stack { frame_id, root, id } => REValuePointer::Stack {
                             frame_id: frame_id.or(Some(self.depth)),
@@ -1780,7 +1798,7 @@ where
         for l in locked_values {
             // TODO: refactor after introducing `Lock` representation.
             self.track
-                .release_lock(l.clone(), is_pay_fee && matches!(l, Address::Vault(..)));
+                .release_lock(l.clone(), is_pay_fee && matches!(l, SubstateId::Vault(..)));
         }
 
         // move buckets and proofs to this process.
@@ -1921,31 +1939,31 @@ where
             self.fee_table.system_api_cost({
                 match &val_ref {
                     RENativeValueRef::Stack(..) => SystemApiCostingEntry::ReturnLocal,
-                    RENativeValueRef::Track(address, _) => match address {
-                        Address::Vault(_) => SystemApiCostingEntry::ReturnGlobal { size: 0 },
-                        Address::KeyValueStoreSpace(_) => {
+                    RENativeValueRef::Track(substate_id, _) => match substate_id {
+                        SubstateId::Vault(_) => SystemApiCostingEntry::ReturnGlobal { size: 0 },
+                        SubstateId::KeyValueStoreSpace(_) => {
                             SystemApiCostingEntry::ReturnGlobal { size: 0 }
                         }
-                        Address::KeyValueStoreEntry(_, _) => {
+                        SubstateId::KeyValueStoreEntry(_, _) => {
                             SystemApiCostingEntry::ReturnGlobal { size: 0 }
                         }
-                        Address::ResourceManager(_) => {
+                        SubstateId::ResourceManager(_) => {
                             SystemApiCostingEntry::ReturnGlobal { size: 0 }
                         }
-                        Address::Package(_) => SystemApiCostingEntry::ReturnGlobal { size: 0 },
-                        Address::NonFungibleSpace(_) => {
+                        SubstateId::Package(_) => SystemApiCostingEntry::ReturnGlobal { size: 0 },
+                        SubstateId::NonFungibleSpace(_) => {
                             SystemApiCostingEntry::ReturnGlobal { size: 0 }
                         }
-                        Address::NonFungible(_, _) => {
+                        SubstateId::NonFungible(_, _) => {
                             SystemApiCostingEntry::ReturnGlobal { size: 0 }
                         }
-                        Address::ComponentInfo(..) => {
+                        SubstateId::ComponentInfo(..) => {
                             SystemApiCostingEntry::ReturnGlobal { size: 0 }
                         }
-                        Address::ComponentState(_) => {
+                        SubstateId::ComponentState(_) => {
                             SystemApiCostingEntry::ReturnGlobal { size: 0 }
                         }
-                        Address::System => SystemApiCostingEntry::ReturnGlobal { size: 0 },
+                        SubstateId::System => SystemApiCostingEntry::ReturnGlobal { size: 0 },
                     },
                 }
             }),
@@ -1960,7 +1978,7 @@ where
         Ok(())
     }
 
-    fn drop_value(&mut self, value_id: &RENodeId) -> Result<REValue, CostUnitCounterError> {
+    fn drop_node(&mut self, value_id: &RENodeId) -> Result<REValue, CostUnitCounterError> {
         trace!(self, Level::Debug, "Dropping value: {:?}", value_id);
 
         // TODO: costing
@@ -1968,7 +1986,7 @@ where
         Ok(self.owned_values.remove(&value_id).unwrap())
     }
 
-    fn create_value<V: Into<REValueByComplexity>>(
+    fn create_node<V: Into<REValueByComplexity>>(
         &mut self,
         v: V,
     ) -> Result<RENodeId, RuntimeError> {
@@ -2051,7 +2069,7 @@ where
         Ok(id)
     }
 
-    fn globalize_value(&mut self, value_id: &RENodeId) -> Result<(), CostUnitCounterError> {
+    fn globalize_node(&mut self, value_id: &RENodeId) -> Result<(), CostUnitCounterError> {
         trace!(self, Level::Debug, "Globalizing value: {:?}", value_id);
 
         self.cost_unit_counter.consume(
@@ -2074,11 +2092,11 @@ where
                 let mut substates = HashMap::new();
                 let component_address = value_id.clone().into();
                 substates.insert(
-                    Address::ComponentInfo(component_address, true),
+                    SubstateId::ComponentInfo(component_address, true),
                     Substate::Component(component),
                 );
                 substates.insert(
-                    Address::ComponentState(component_address),
+                    SubstateId::ComponentState(component_address),
                     Substate::ComponentState(component_state),
                 );
                 (substates, None)
@@ -2087,7 +2105,7 @@ where
                 let mut substates = HashMap::new();
                 let package_address = value_id.clone().into();
                 substates.insert(
-                    Address::Package(package_address),
+                    SubstateId::Package(package_address),
                     Substate::Package(package),
                 );
                 (substates, None)
@@ -2096,7 +2114,7 @@ where
                 let mut substates = HashMap::new();
                 let resource_address: ResourceAddress = value_id.clone().into();
                 substates.insert(
-                    Address::ResourceManager(resource_address),
+                    SubstateId::ResourceManager(resource_address),
                     Substate::Resource(resource_manager),
                 );
                 (substates, non_fungibles)
@@ -2104,8 +2122,8 @@ where
             _ => panic!("Not expected"),
         };
 
-        for (address, substate) in substates {
-            self.track.create_uuid_value(address.clone(), substate);
+        for (substate_id, substate) in substates {
+            self.track.create_uuid_value(substate_id.clone(), substate);
         }
 
         let mut to_store_values = HashMap::new();
@@ -2116,7 +2134,7 @@ where
 
         if let Some(non_fungibles) = maybe_non_fungibles {
             let resource_address: ResourceAddress = value_id.clone().into();
-            let parent_address = Address::NonFungibleSpace(resource_address.clone());
+            let parent_address = SubstateId::NonFungibleSpace(resource_address.clone());
             for (id, non_fungible) in non_fungibles {
                 self.track.set_key_value(
                     parent_address.clone(),
@@ -2129,10 +2147,10 @@ where
         Ok(())
     }
 
-    fn remove_value_data(&mut self, address: Address) -> Result<ScryptoValue, RuntimeError> {
-        trace!(self, Level::Debug, "Removing value data: {:?}", address);
+    fn take_substate(&mut self, substate_id: SubstateId) -> Result<ScryptoValue, RuntimeError> {
+        trace!(self, Level::Debug, "Removing value data: {:?}", substate_id);
 
-        let (location, current_value) = self.read_value_internal(&address)?;
+        let (location, current_value) = self.read_value_internal(&substate_id)?;
         let cur_children = current_value.value_ids();
         if !cur_children.is_empty() {
             return Err(RuntimeError::ValueNotAllowed);
@@ -2144,13 +2162,13 @@ where
             &mut self.parent_values,
             &mut self.track,
         );
-        address.replace_value_with_default(value_ref);
+        substate_id.replace_value_with_default(value_ref);
 
         Ok(current_value)
     }
 
-    fn read_value_data(&mut self, address: Address) -> Result<ScryptoValue, RuntimeError> {
-        trace!(self, Level::Debug, "Reading value data: {:?}", address);
+    fn read_substate(&mut self, substate_id: SubstateId) -> Result<ScryptoValue, RuntimeError> {
+        trace!(self, Level::Debug, "Reading value data: {:?}", substate_id);
 
         self.cost_unit_counter
             .consume(
@@ -2161,7 +2179,7 @@ where
             )
             .map_err(RuntimeError::CostingError)?;
 
-        let (parent_location, current_value) = self.read_value_internal(&address)?;
+        let (parent_location, current_value) = self.read_value_internal(&substate_id)?;
         let cur_children = current_value.value_ids();
         for child_id in cur_children {
             let child_location = parent_location.child(child_id);
@@ -2177,12 +2195,12 @@ where
         Ok(current_value)
     }
 
-    fn write_value_data(
+    fn write_substate(
         &mut self,
-        address: Address,
+        substate_id: SubstateId,
         value: ScryptoValue,
     ) -> Result<(), RuntimeError> {
-        trace!(self, Level::Debug, "Writing value data: {:?}", address);
+        trace!(self, Level::Debug, "Writing value data: {:?}", substate_id);
 
         self.cost_unit_counter
             .consume(
@@ -2194,13 +2212,13 @@ where
             )
             .map_err(RuntimeError::CostingError)?;
 
-        address.verify_can_write()?;
+        substate_id.verify_can_write()?;
 
         // If write, take values from current frame
         let (taken_values, missing) = {
             let value_ids = value.value_ids();
             if !value_ids.is_empty() {
-                if !address.can_own_nodes() {
+                if !substate_id.can_own_nodes() {
                     return Err(RuntimeError::ValueNotAllowed);
                 }
 
@@ -2210,7 +2228,7 @@ where
             }
         };
 
-        let (location, current_value) = self.read_value_internal(&address)?;
+        let (location, current_value) = self.read_value_internal(&substate_id)?;
         let cur_children = current_value.value_ids();
 
         // Fulfill method
@@ -2224,7 +2242,7 @@ where
             &mut self.parent_values,
             &mut self.track,
         );
-        address.write_value(value_ref, value, taken_values);
+        substate_id.write_value(value_ref, value, taken_values);
 
         Ok(())
     }

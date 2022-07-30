@@ -84,7 +84,7 @@ impl TransactionProcessor {
                 let mut id_allocator = IdAllocator::new(IdSpace::Transaction);
 
                 let _worktop_id = system_api
-                    .create_value(Worktop::new())
+                    .create_node(Worktop::new())
                     .expect("Should never fail.");
 
                 for inst in &input.instructions.clone() {
