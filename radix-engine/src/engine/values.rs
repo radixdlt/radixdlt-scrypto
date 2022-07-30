@@ -725,7 +725,7 @@ impl REComplexValue {
             REComplexValue::Component(_, component_state) => {
                 let value = ScryptoValue::from_slice(component_state.state())
                     .map_err(RuntimeError::DecodeError)?;
-                Ok(value.value_ids())
+                Ok(value.node_ids())
             }
         }
     }

@@ -328,13 +328,13 @@ impl RENativeValueRef {
         track: &mut Track<'s>,
     ) {
         match self {
-            RENativeValueRef::Stack(owned, frame_id, value_id, ..) => {
+            RENativeValueRef::Stack(owned, frame_id, node_id, ..) => {
                 let frame = if let Some(frame_id) = frame_id {
                     borrowed_values.get_mut(frame_id).unwrap()
                 } else {
                     owned_values
                 };
-                frame.insert(value_id, owned);
+                frame.insert(node_id, owned);
             }
             RENativeValueRef::Track(substate_id, value) => track.write_value(substate_id, value),
         }
@@ -800,13 +800,13 @@ where
                             .map_err(RuntimeError::ResourceManagerError)
                     }
                 },
-                SNodeExecution::Consumed(value_id) => match value_id {
-                    RENodeId::Bucket(..) => Bucket::consuming_main(value_id, fn_ident, input, self)
+                SNodeExecution::Consumed(node_id) => match node_id {
+                    RENodeId::Bucket(..) => Bucket::consuming_main(node_id, fn_ident, input, self)
                         .map_err(RuntimeError::BucketError),
-                    RENodeId::Proof(..) => Proof::main_consume(value_id, fn_ident, input, self)
+                    RENodeId::Proof(..) => Proof::main_consume(node_id, fn_ident, input, self)
                         .map_err(RuntimeError::ProofError),
                     RENodeId::Component(..) => {
-                        Component::main_consume(value_id, fn_ident, input, self)
+                        Component::main_consume(node_id, fn_ident, input, self)
                             .map_err(RuntimeError::ComponentError)
                     }
                     _ => panic!("Unexpected"),
@@ -814,16 +814,16 @@ where
                 SNodeExecution::AuthZone(mut auth_zone) => auth_zone
                     .main(fn_ident, input, self)
                     .map_err(RuntimeError::AuthZoneError),
-                SNodeExecution::ValueRef(value_id) => match value_id {
+                SNodeExecution::ValueRef(node_id) => match node_id {
                     RENodeId::Bucket(bucket_id) => Bucket::main(bucket_id, fn_ident, input, self)
                         .map_err(RuntimeError::BucketError),
-                    RENodeId::Proof(..) => Proof::main(value_id, fn_ident, input, self)
+                    RENodeId::Proof(..) => Proof::main(node_id, fn_ident, input, self)
                         .map_err(RuntimeError::ProofError),
-                    RENodeId::Worktop => Worktop::main(value_id, fn_ident, input, self)
+                    RENodeId::Worktop => Worktop::main(node_id, fn_ident, input, self)
                         .map_err(RuntimeError::WorktopError),
                     RENodeId::Vault(vault_id) => Vault::main(vault_id, fn_ident, input, self)
                         .map_err(RuntimeError::VaultError),
-                    RENodeId::Component(..) => Component::main(value_id, fn_ident, input, self)
+                    RENodeId::Component(..) => Component::main(node_id, fn_ident, input, self)
                         .map_err(RuntimeError::ComponentError),
                     RENodeId::Resource(resource_address) => {
                         ResourceManager::main(resource_address, fn_ident, input, self)
@@ -884,7 +884,7 @@ where
         self.process_return_data(snode_ref, &output)?;
 
         // Take values to return
-        let values_to_take = output.value_ids();
+        let values_to_take = output.node_ids();
         let (taken_values, mut missing) = self.take_available_values(values_to_take, false)?;
         let first_missing_value = missing.drain().nth(0);
         if let Some(missing_value) = first_missing_value {
@@ -913,14 +913,14 @@ where
 
     fn take_available_values(
         &mut self,
-        value_ids: HashSet<RENodeId>,
+        node_ids: HashSet<RENodeId>,
         persist_only: bool,
     ) -> Result<(HashMap<RENodeId, REValue>, HashSet<RENodeId>), RuntimeError> {
         let (taken, missing) = {
             let mut taken_values = HashMap::new();
             let mut missing_values = HashSet::new();
 
-            for id in value_ids {
+            for id in node_ids {
                 let maybe = self.owned_values.remove(&id);
                 if let Some(value) = maybe {
                     value.root().verify_can_move()?;
@@ -951,24 +951,24 @@ where
         &mut self,
         substate_id: &SubstateId,
     ) -> Result<(REValuePointer, ScryptoValue), RuntimeError> {
-        let value_id = substate_id.get_node_id();
+        let node_id = substate_id.get_node_id();
 
         // Get location
         // Note this must be run AFTER values are taken, otherwise there would be inconsistent readable_values state
         let (value_info, address_borrowed) = self
             .value_refs
-            .get(&value_id)
+            .get(&node_id)
             .cloned()
             .map(|v| (v, None))
             .or_else(|| {
                 // Allow global read access to any component info
                 if let SubstateId::ComponentInfo(component_address, ..) = substate_id {
-                    if self.owned_values.contains_key(&value_id) {
+                    if self.owned_values.contains_key(&node_id) {
                         return Some((
                             REValueInfo {
                                 location: REValuePointer::Stack {
                                     frame_id: Option::None,
-                                    root: value_id.clone(),
+                                    root: node_id.clone(),
                                     id: Option::None,
                                 },
                                 visible: true,
@@ -999,9 +999,9 @@ where
 
                 None
             })
-            .ok_or_else(|| RuntimeError::InvalidDataAccess(value_id))?;
+            .ok_or_else(|| RuntimeError::InvalidDataAccess(node_id))?;
         if !value_info.visible {
-            return Err(RuntimeError::InvalidDataAccess(value_id));
+            return Err(RuntimeError::InvalidDataAccess(node_id));
         }
         let location = &value_info.location;
 
@@ -1128,7 +1128,7 @@ where
         Self::process_call_data(&input)?;
 
         // Figure out what buckets and proofs to move from this process
-        let values_to_take = input.value_ids();
+        let values_to_take = input.node_ids();
         let (taken_values, mut missing) = self.take_available_values(values_to_take, false)?;
         let first_missing_value = missing.drain().nth(0);
         if let Some(missing_value) = first_missing_value {
@@ -1165,11 +1165,11 @@ where
             SNodeRef::ResourceStatic => {
                 Ok((SNodeExecution::Static(StaticSNodeState::Resource), vec![]))
             }
-            SNodeRef::Consumed(value_id) => {
+            SNodeRef::Consumed(node_id) => {
                 let value = self
                     .owned_values
-                    .remove(value_id)
-                    .ok_or(RuntimeError::ValueNotFound(*value_id))?;
+                    .remove(node_id)
+                    .ok_or(RuntimeError::ValueNotFound(*node_id))?;
 
                 let method_auths = match &value.root() {
                     RENode::Bucket(bucket) => {
@@ -1213,9 +1213,9 @@ where
                     _ => return Err(RuntimeError::MethodDoesNotExist(fn_ident.clone())),
                 };
 
-                next_owned_values.insert(*value_id, value);
+                next_owned_values.insert(*node_id, value);
 
-                Ok((SNodeExecution::Consumed(*value_id), method_auths))
+                Ok((SNodeExecution::Consumed(*node_id), method_auths))
             }
             SNodeRef::SystemRef => {
                 self.track
@@ -1274,7 +1274,7 @@ where
                 }
             }
             SNodeRef::ResourceRef(resource_address) => {
-                let value_id = RENodeId::Resource(*resource_address);
+                let node_id = RENodeId::Resource(*resource_address);
                 let substate_id: SubstateId = SubstateId::ResourceManager(*resource_address);
                 self.track
                     .acquire_lock(substate_id.clone(), true, false)
@@ -1291,7 +1291,7 @@ where
                 let resource_manager = self.track.read_value(substate_id).resource_manager();
                 let method_auth = resource_manager.get_auth(&fn_ident, &input).clone();
                 value_refs.insert(
-                    value_id.clone(),
+                    node_id.clone(),
                     REValueInfo {
                         location: REValuePointer::Track(SubstateId::ResourceManager(
                             *resource_address,
@@ -1300,56 +1300,56 @@ where
                     },
                 );
 
-                Ok((SNodeExecution::ValueRef(value_id), vec![method_auth]))
+                Ok((SNodeExecution::ValueRef(node_id), vec![method_auth]))
             }
             SNodeRef::BucketRef(bucket_id) => {
-                let value_id = RENodeId::Bucket(*bucket_id);
-                if !self.owned_values.contains_key(&value_id) {
+                let node_id = RENodeId::Bucket(*bucket_id);
+                if !self.owned_values.contains_key(&node_id) {
                     return Err(RuntimeError::BucketNotFound(bucket_id.clone()));
                 }
                 value_refs.insert(
-                    value_id.clone(),
+                    node_id.clone(),
                     REValueInfo {
                         location: REValuePointer::Stack {
                             frame_id: Some(self.depth),
-                            root: value_id.clone(),
+                            root: node_id.clone(),
                             id: None,
                         },
                         visible: true,
                     },
                 );
 
-                Ok((SNodeExecution::ValueRef(value_id), vec![]))
+                Ok((SNodeExecution::ValueRef(node_id), vec![]))
             }
             SNodeRef::ProofRef(proof_id) => {
-                let value_id = RENodeId::Proof(*proof_id);
-                if !self.owned_values.contains_key(&value_id) {
+                let node_id = RENodeId::Proof(*proof_id);
+                if !self.owned_values.contains_key(&node_id) {
                     return Err(RuntimeError::ProofNotFound(proof_id.clone()));
                 }
                 value_refs.insert(
-                    value_id.clone(),
+                    node_id.clone(),
                     REValueInfo {
                         location: REValuePointer::Stack {
                             frame_id: Some(self.depth),
-                            root: value_id.clone(),
+                            root: node_id.clone(),
                             id: None,
                         },
                         visible: true,
                     },
                 );
-                Ok((SNodeExecution::ValueRef(value_id), vec![]))
+                Ok((SNodeExecution::ValueRef(node_id), vec![]))
             }
             SNodeRef::WorktopRef => {
-                let value_id = RENodeId::Worktop;
-                if !self.owned_values.contains_key(&value_id) {
-                    return Err(RuntimeError::ValueNotFound(value_id));
+                let node_id = RENodeId::Worktop;
+                if !self.owned_values.contains_key(&node_id) {
+                    return Err(RuntimeError::ValueNotFound(node_id));
                 }
                 value_refs.insert(
-                    value_id.clone(),
+                    node_id.clone(),
                     REValueInfo {
                         location: REValuePointer::Stack {
                             frame_id: Some(self.depth),
-                            root: value_id.clone(),
+                            root: node_id.clone(),
                             id: None,
                         },
                         visible: true,
@@ -1381,7 +1381,7 @@ where
                     );
                 }
 
-                Ok((SNodeExecution::ValueRef(value_id), vec![]))
+                Ok((SNodeExecution::ValueRef(node_id), vec![]))
             }
             SNodeRef::Scrypto(actor) => match actor {
                 ScryptoActor::Blueprint(package_address, blueprint_name) => {
@@ -1426,15 +1426,15 @@ where
                     let component_address = *component_address;
 
                     // Find value
-                    let value_id = RENodeId::Component(component_address);
-                    let cur_location = if self.owned_values.contains_key(&value_id) {
+                    let node_id = RENodeId::Component(component_address);
+                    let cur_location = if self.owned_values.contains_key(&node_id) {
                         REValuePointer::Stack {
                             frame_id: None,
-                            root: value_id.clone(),
+                            root: node_id.clone(),
                             id: None,
                         }
                     } else if let Some(REValueInfo { location, .. }) =
-                        self.value_refs.get(&value_id)
+                        self.value_refs.get(&node_id)
                     {
                         location.clone()
                     } else {
@@ -1555,7 +1555,7 @@ where
                     };
 
                     value_refs.insert(
-                        value_id,
+                        node_id,
                         REValueInfo {
                             location: next_location,
                             visible: true,
@@ -1572,11 +1572,11 @@ where
                 let component_address = *component_address;
 
                 // Find value
-                let value_id = RENodeId::Component(component_address);
-                let cur_location = if self.owned_values.contains_key(&value_id) {
+                let node_id = RENodeId::Component(component_address);
+                let cur_location = if self.owned_values.contains_key(&node_id) {
                     REValuePointer::Stack {
                         frame_id: None,
-                        root: value_id.clone(),
+                        root: node_id.clone(),
                         id: None,
                     }
                 } else {
@@ -1613,7 +1613,7 @@ where
                         );
 
                         value_refs.insert(
-                            value_id,
+                            node_id,
                             REValueInfo {
                                 location: REValuePointer::Stack {
                                     frame_id: Some(self.depth),
@@ -1627,20 +1627,20 @@ where
                     _ => panic!("Unexpected"),
                 }
 
-                Ok((SNodeExecution::ValueRef(value_id), vec![]))
+                Ok((SNodeExecution::ValueRef(node_id), vec![]))
             }
 
             SNodeRef::VaultRef(vault_id) => {
                 // Find value
-                let value_id = RENodeId::Vault(*vault_id);
-                let cur_location = if self.owned_values.contains_key(&value_id) {
+                let node_id = RENodeId::Vault(*vault_id);
+                let cur_location = if self.owned_values.contains_key(&node_id) {
                     REValuePointer::Stack {
                         frame_id: None,
-                        root: value_id.clone(),
+                        root: node_id.clone(),
                         id: Option::None,
                     }
                 } else {
-                    let maybe_value_ref = self.value_refs.get(&value_id);
+                    let maybe_value_ref = self.value_refs.get(&node_id);
                     maybe_value_ref
                         .map(|info| &info.location)
                         .cloned()
@@ -1712,14 +1712,14 @@ where
                 };
 
                 value_refs.insert(
-                    value_id.clone(),
+                    node_id.clone(),
                     REValueInfo {
                         location: next_location,
                         visible: true,
                     },
                 );
 
-                Ok((SNodeExecution::ValueRef(value_id), vec![method_auth]))
+                Ok((SNodeExecution::ValueRef(node_id), vec![method_auth]))
             }
         }?;
 
@@ -1813,12 +1813,12 @@ where
 
     fn borrow_value(
         &mut self,
-        value_id: &RENodeId,
+        node_id: &RENodeId,
     ) -> Result<REValueRef<'_, 's>, CostUnitCounterError> {
-        trace!(self, Level::Debug, "Borrowing value: {:?}", value_id);
+        trace!(self, Level::Debug, "Borrowing value: {:?}", node_id);
         self.cost_unit_counter.consume(
             self.fee_table.system_api_cost({
-                match value_id {
+                match node_id {
                     RENodeId::Bucket(_) => SystemApiCostingEntry::BorrowLocal,
                     RENodeId::Proof(_) => SystemApiCostingEntry::BorrowLocal,
                     RENodeId::Worktop => SystemApiCostingEntry::BorrowLocal,
@@ -1859,8 +1859,8 @@ where
 
         let info = self
             .value_refs
-            .get(value_id)
-            .expect(&format!("{:?} is unknown.", value_id));
+            .get(node_id)
+            .expect(&format!("{:?} is unknown.", node_id));
         if !info.visible {
             panic!("Trying to read value which is not visible.")
         }
@@ -1872,13 +1872,13 @@ where
 
     fn borrow_value_mut(
         &mut self,
-        value_id: &RENodeId,
+        node_id: &RENodeId,
     ) -> Result<RENativeValueRef, CostUnitCounterError> {
-        trace!(self, Level::Debug, "Borrowing value (mut): {:?}", value_id);
+        trace!(self, Level::Debug, "Borrowing value (mut): {:?}", node_id);
 
         self.cost_unit_counter.consume(
             self.fee_table.system_api_cost({
-                match value_id {
+                match node_id {
                     RENodeId::Bucket(_) => SystemApiCostingEntry::BorrowLocal,
                     RENodeId::Proof(_) => SystemApiCostingEntry::BorrowLocal,
                     RENodeId::Worktop => SystemApiCostingEntry::BorrowLocal,
@@ -1919,8 +1919,8 @@ where
 
         let info = self
             .value_refs
-            .get(value_id)
-            .expect(&format!("Value should exist {:?}", value_id));
+            .get(node_id)
+            .expect(&format!("Value should exist {:?}", node_id));
         if !info.visible {
             panic!("Trying to read value which is not visible.")
         }
@@ -1978,12 +1978,12 @@ where
         Ok(())
     }
 
-    fn drop_node(&mut self, value_id: &RENodeId) -> Result<REValue, CostUnitCounterError> {
-        trace!(self, Level::Debug, "Dropping value: {:?}", value_id);
+    fn drop_node(&mut self, node_id: &RENodeId) -> Result<REValue, CostUnitCounterError> {
+        trace!(self, Level::Debug, "Dropping value: {:?}", node_id);
 
         // TODO: costing
 
-        Ok(self.owned_values.remove(&value_id).unwrap())
+        Ok(self.owned_values.remove(&node_id).unwrap())
     }
 
     fn create_node<V: Into<REValueByComplexity>>(
@@ -2069,8 +2069,8 @@ where
         Ok(id)
     }
 
-    fn globalize_node(&mut self, value_id: &RENodeId) -> Result<(), CostUnitCounterError> {
-        trace!(self, Level::Debug, "Globalizing value: {:?}", value_id);
+    fn globalize_node(&mut self, node_id: &RENodeId) -> Result<(), CostUnitCounterError> {
+        trace!(self, Level::Debug, "Globalizing value: {:?}", node_id);
 
         self.cost_unit_counter.consume(
             self.fee_table
@@ -2081,7 +2081,7 @@ where
         )?;
 
         let mut values = HashSet::new();
-        values.insert(value_id.clone());
+        values.insert(node_id.clone());
         let (taken_values, missing) = self.take_available_values(values, false).unwrap();
         assert!(missing.is_empty());
         assert!(taken_values.len() == 1);
@@ -2090,7 +2090,7 @@ where
         let (substates, maybe_non_fungibles) = match value.root {
             RENode::Component(component, component_state) => {
                 let mut substates = HashMap::new();
-                let component_address = value_id.clone().into();
+                let component_address = node_id.clone().into();
                 substates.insert(
                     SubstateId::ComponentInfo(component_address, true),
                     Substate::Component(component),
@@ -2103,7 +2103,7 @@ where
             }
             RENode::Package(package) => {
                 let mut substates = HashMap::new();
-                let package_address = value_id.clone().into();
+                let package_address = node_id.clone().into();
                 substates.insert(
                     SubstateId::Package(package_address),
                     Substate::Package(package),
@@ -2112,7 +2112,7 @@ where
             }
             RENode::Resource(resource_manager, non_fungibles) => {
                 let mut substates = HashMap::new();
-                let resource_address: ResourceAddress = value_id.clone().into();
+                let resource_address: ResourceAddress = node_id.clone().into();
                 substates.insert(
                     SubstateId::ResourceManager(resource_address),
                     Substate::Resource(resource_manager),
@@ -2133,7 +2133,7 @@ where
         insert_non_root_nodes(self.track, to_store_values);
 
         if let Some(non_fungibles) = maybe_non_fungibles {
-            let resource_address: ResourceAddress = value_id.clone().into();
+            let resource_address: ResourceAddress = node_id.clone().into();
             let parent_address = SubstateId::NonFungibleSpace(resource_address.clone());
             for (id, non_fungible) in non_fungibles {
                 self.track.set_key_value(
@@ -2151,7 +2151,7 @@ where
         trace!(self, Level::Debug, "Removing value data: {:?}", substate_id);
 
         let (location, current_value) = self.read_value_internal(&substate_id)?;
-        let cur_children = current_value.value_ids();
+        let cur_children = current_value.node_ids();
         if !cur_children.is_empty() {
             return Err(RuntimeError::ValueNotAllowed);
         }
@@ -2180,7 +2180,7 @@ where
             .map_err(RuntimeError::CostingError)?;
 
         let (parent_location, current_value) = self.read_value_internal(&substate_id)?;
-        let cur_children = current_value.value_ids();
+        let cur_children = current_value.node_ids();
         for child_id in cur_children {
             let child_location = parent_location.child(child_id);
 
@@ -2216,20 +2216,20 @@ where
 
         // If write, take values from current frame
         let (taken_values, missing) = {
-            let value_ids = value.value_ids();
-            if !value_ids.is_empty() {
+            let node_ids = value.node_ids();
+            if !node_ids.is_empty() {
                 if !substate_id.can_own_nodes() {
                     return Err(RuntimeError::ValueNotAllowed);
                 }
 
-                self.take_available_values(value_ids, true)?
+                self.take_available_values(node_ids, true)?
             } else {
                 (HashMap::new(), HashSet::new())
             }
         };
 
         let (location, current_value) = self.read_value_internal(&substate_id)?;
-        let cur_children = current_value.value_ids();
+        let cur_children = current_value.node_ids();
 
         // Fulfill method
         verify_stored_value_update(&cur_children, &missing)?;
