@@ -73,7 +73,7 @@ impl Proof {
     ) -> Result<ValidatedProof, ValidateProofError> {
         let proof_resource_address = self.resource_address();
         if proof_resource_address == expected_resource_address {
-            Ok(ValidatedProof(self.0))
+            Ok(ValidatedProof(self))
         } else {
             Err(ValidateProofError::ProofResourceAddressValidationError(
                 self,
@@ -89,12 +89,12 @@ impl Proof {
     /// of of the returned `ValidatedProof` should **NOT** be trusted as the proof could potentially belong to any
     /// resource address. If you call this method, you should perform your own validation.
     pub fn unsafe_skip_proof_validation(self) -> ValidatedProof {
-        ValidatedProof(self.0)
+        ValidatedProof(self)
     }
 
     /// Converts a `ValidatedProof` into a `Proof`.
     pub fn from_validated_proof(validated_proof: ValidatedProof) -> Self {
-        Self(validated_proof.0)
+        validated_proof.into()
     }
 
     sfunctions! {
@@ -116,23 +116,17 @@ impl Proof {
 
 /// Represents a proof of owning some resource that has had its resource address validated.
 #[derive(Debug, PartialEq, Eq, Hash)]
-pub struct ValidatedProof(pub ProofId);
+pub struct ValidatedProof(pub(crate) Proof);
 
 impl Clone for ValidatedProof {
     fn clone(&self) -> Self {
-        let input = RadixEngineInput::InvokeSNode(
-            SNodeRef::ProofRef(self.0),
-            "clone".to_string(),
-            scrypto::buffer::scrypto_encode(&(ProofCloneInput {})),
-        );
-        let proof: Proof = call_engine(input);
-        ValidatedProof(proof.0)
+        ValidatedProof(self.0.clone())
     }
 }
 
 impl ValidatedProof {
     sfunctions! {
-        SNodeRef::ProofRef(self.0) => {
+        SNodeRef::ProofRef(self.proof_id()) => {
             pub fn amount(&self) -> Decimal {
                 ProofGetAmountInput {}
             }
@@ -146,7 +140,7 @@ impl ValidatedProof {
     }
 
     sfunctions! {
-        SNodeRef::Consumed(ValueId::Proof(self.0)) => {
+        SNodeRef::Consumed(ValueId::Proof(self.proof_id())) => {
             pub fn drop(self) -> () {
                 ConsumingProofDropInput {}
             }
@@ -202,11 +196,15 @@ impl ValidatedProof {
     pub fn is_empty(&self) -> bool {
         self.amount() == 0.into()
     }
+
+    fn proof_id(&self) -> ProofId {
+        self.0 .0
+    }
 }
 
 impl Into<Proof> for ValidatedProof {
     fn into(self) -> Proof {
-        Proof::from_validated_proof(self)
+        self.0
     }
 }
 
@@ -269,7 +267,7 @@ impl Proof {
 
 impl ValidatedProof {
     pub fn to_vec(&self) -> Vec<u8> {
-        self.0.to_le_bytes().to_vec()
+        self.0.to_vec()
     }
 }
 

@@ -401,7 +401,7 @@ impl<'p> AccessRuleCheckInput<'p> {
     pub(crate) fn proof_ids(&self) -> Vec<ProofId> {
         match self {
             Self::Proofs(proofs) => proofs.iter().map(|proof| proof.0).collect(),
-            Self::ValidatedProofs(proofs) => proofs.iter().map(|proof| proof.0).collect(),
+            Self::ValidatedProofs(proofs) => proofs.iter().map(|proof| proof.0.0).collect(),
         }
     }
 }
