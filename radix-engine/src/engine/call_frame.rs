@@ -935,7 +935,7 @@ where
 
     fn read_value_internal(
         &mut self,
-        address: &SubstateId,
+        address: &Address,
     ) -> Result<(REValuePointer, ScryptoValue), RuntimeError> {
         let value_id = address.get_node_id();
 
@@ -948,7 +948,7 @@ where
             .map(|v| (v, None))
             .or_else(|| {
                 // Allow global read access to any component info
-                if let SubstateId::Component(component_address) = address {
+                if let Address::ComponentInfo(component_address, ..) = address {
                     if self.owned_values.contains_key(&value_id) {
                         return Some((
                             REValueInfo {
@@ -1461,24 +1461,25 @@ where
                                 })?;
                             locked_values.insert(component_state_address);
 
-                            let is_global = if let Address::ComponentInfo(_component_address, is_global) = address {
-                                is_global
-                            } else {
-                                panic!("Unexpected address");
-                            };
+                            let is_global =
+                                if let Address::ComponentInfo(_component_address, is_global) =
+                                    address
+                                {
+                                    is_global
+                                } else {
+                                    panic!("Unexpected address");
+                                };
 
                             (REValuePointer::Track(address), is_global)
                         }
-                        REValuePointer::Stack { frame_id, root, id } => {
-                            (
-                                REValuePointer::Stack {
-                                    frame_id: frame_id.or(Some(self.depth)),
-                                    root,
-                                    id,
-                                },
-                                false
-                            )
-                        },
+                        REValuePointer::Stack { frame_id, root, id } => (
+                            REValuePointer::Stack {
+                                frame_id: frame_id.or(Some(self.depth)),
+                                root,
+                                id,
+                            },
+                            false,
+                        ),
                     };
 
                     let actor_info = {
@@ -2128,7 +2129,7 @@ where
         Ok(())
     }
 
-    fn remove_value_data(&mut self, address: SubstateId) -> Result<ScryptoValue, RuntimeError> {
+    fn remove_value_data(&mut self, address: Address) -> Result<ScryptoValue, RuntimeError> {
         trace!(self, Level::Debug, "Removing value data: {:?}", address);
 
         let (location, current_value) = self.read_value_internal(&address)?;
@@ -2143,12 +2144,12 @@ where
             &mut self.parent_values,
             &mut self.track,
         );
-        address.replace_with_default(value_ref);
+        address.replace_value_with_default(value_ref);
 
         Ok(current_value)
     }
 
-    fn read_value_data(&mut self, address: SubstateId) -> Result<ScryptoValue, RuntimeError> {
+    fn read_value_data(&mut self, address: Address) -> Result<ScryptoValue, RuntimeError> {
         trace!(self, Level::Debug, "Reading value data: {:?}", address);
 
         self.cost_unit_counter
@@ -2178,7 +2179,7 @@ where
 
     fn write_value_data(
         &mut self,
-        address: SubstateId,
+        address: Address,
         value: ScryptoValue,
     ) -> Result<(), RuntimeError> {
         trace!(self, Level::Debug, "Writing value data: {:?}", address);
@@ -2199,7 +2200,7 @@ where
         let (taken_values, missing) = {
             let value_ids = value.value_ids();
             if !value_ids.is_empty() {
-                if !address.can_store_values() {
+                if !address.can_own_nodes() {
                     return Err(RuntimeError::ValueNotAllowed);
                 }
 

@@ -242,10 +242,10 @@ fn generate_dispatcher(
                 // load state if needed
                 if let Some(stmt) = get_state {
                     trace!("Generated stmt: {}", quote! { #stmt });
-                    stmts.push(parse_quote!{
+                    stmts.push(parse_quote! {
                         let actor = ::scrypto::core::Runtime::actor();
                     });
-                    stmts.push(parse_quote!{
+                    stmts.push(parse_quote! {
                         let (component_address, _is_global) = actor.component_address().unwrap();
                     });
                     stmts.push(stmt);

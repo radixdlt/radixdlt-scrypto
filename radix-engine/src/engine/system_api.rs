@@ -50,15 +50,15 @@ where
         v: V,
     ) -> Result<RENodeId, RuntimeError>;
 
-    fn read_value_data(&mut self, address: SubstateId) -> Result<ScryptoValue, RuntimeError>;
+    fn read_value_data(&mut self, address: Address) -> Result<ScryptoValue, RuntimeError>;
 
     fn write_value_data(
         &mut self,
-        address: SubstateId,
+        address: Address,
         value: ScryptoValue,
     ) -> Result<(), RuntimeError>;
 
-    fn remove_value_data(&mut self, address: SubstateId) -> Result<ScryptoValue, RuntimeError>;
+    fn remove_value_data(&mut self, address: Address) -> Result<ScryptoValue, RuntimeError>;
 
     fn transaction_hash(&mut self) -> Result<Hash, CostUnitCounterError>;
 

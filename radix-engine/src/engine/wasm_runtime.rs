@@ -9,8 +9,8 @@ use scrypto::engine::types::*;
 use scrypto::resource::AccessRule;
 use scrypto::values::ScryptoValue;
 
-use crate::engine::{PreCommittedKeyValueStore, RuntimeError};
-use crate::engine::{SubstateId, SystemApi};
+use crate::engine::SystemApi;
+use crate::engine::{Address, PreCommittedKeyValueStore, RuntimeError};
 use crate::fee::*;
 use crate::model::{Component, ComponentState};
 use crate::wasm::*;
@@ -120,11 +120,13 @@ where
                 let key_data =
                     ScryptoValue::from_slice(&key_bytes).map_err(RuntimeError::DecodeError)?;
                 Self::verify_stored_key(&key_data)?;
-                SubstateId::KeyValueEntry(kv_store_id, key_bytes)
+                Address::KeyValueStoreEntry(kv_store_id, key_bytes)
             }
-            DataAddress::ComponentInfo(component_address, ..) => SubstateId::Component(component_address),
+            DataAddress::ComponentInfo(component_address, is_global) => {
+                Address::ComponentInfo(component_address, is_global)
+            }
             DataAddress::ComponentState(component_address) => {
-                SubstateId::ComponentState(component_address)
+                Address::ComponentState(component_address)
             }
         };
 
@@ -141,11 +143,13 @@ where
                 let key_data =
                     ScryptoValue::from_slice(&key_bytes).map_err(RuntimeError::DecodeError)?;
                 Self::verify_stored_key(&key_data)?;
-                SubstateId::KeyValueEntry(kv_store_id, key_bytes)
+                Address::KeyValueStoreEntry(kv_store_id, key_bytes)
             }
-            DataAddress::ComponentInfo(component_address, ..) => SubstateId::Component(component_address),
+            DataAddress::ComponentInfo(component_address, is_global) => {
+                Address::ComponentInfo(component_address, is_global)
+            }
             DataAddress::ComponentState(component_address) => {
-                SubstateId::ComponentState(component_address)
+                Address::ComponentState(component_address)
             }
         };
         let scrypto_value = ScryptoValue::from_slice(&value).map_err(RuntimeError::DecodeError)?;
