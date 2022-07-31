@@ -71,8 +71,7 @@ impl Proof {
         self,
         expected_resource_address: ResourceAddress,
     ) -> Result<ValidatedProof, ValidateProofError> {
-        let proof_resource_address = self.resource_address();
-        if proof_resource_address == expected_resource_address {
+        if self.resource_address() == expected_resource_address {
             Ok(ValidatedProof(self))
         } else {
             Err(ValidateProofError::ProofResourceAddressValidationError(
