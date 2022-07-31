@@ -454,43 +454,40 @@ impl TransactionProcessor {
                         ExecutableInstruction::CallMethodWithAllResources {
                             component_address,
                             method,
-                        } => system_api
-                            .invoke_snode(
-                                SNodeRef::AuthZoneRef,
-                                "clear".to_string(),
-                                ScryptoValue::from_typed(&AuthZoneClearInput {}),
-                            )
-                            .and_then(|_| {
-                                for (_, real_id) in proof_id_mapping.drain() {
-                                    system_api
-                                        .invoke_snode(
-                                            SNodeRef::Consumed(ValueId::Proof(real_id)),
-                                            "drop".to_string(),
-                                            ScryptoValue::from_typed(&ConsumingProofDropInput {}),
-                                        )
-                                        .unwrap();
-                                }
-                                system_api.invoke_snode(
+                        } => {
+                            for (_, real_id) in proof_id_mapping.drain() {
+                                system_api
+                                    .invoke_snode(
+                                        SNodeRef::Consumed(ValueId::Proof(real_id)),
+                                        "drop".to_string(),
+                                        ScryptoValue::from_typed(&ConsumingProofDropInput {}),
+                                    )
+                                    .unwrap();
+                            }
+                            system_api
+                                .invoke_snode(
                                     SNodeRef::WorktopRef,
                                     "drain".to_string(),
                                     ScryptoValue::from_typed(&WorktopDrainInput {}),
                                 )
-                            })
-                            .and_then(|result| {
-                                let mut buckets = Vec::new();
-                                for (bucket_id, _) in result.bucket_ids {
-                                    buckets.push(scrypto::resource::Bucket(bucket_id));
-                                }
-                                for (_, real_id) in bucket_id_mapping.drain() {
-                                    buckets.push(scrypto::resource::Bucket(real_id));
-                                }
-                                let encoded = to_struct!(buckets);
-                                system_api.invoke_snode(
-                                    SNodeRef::Scrypto(ScryptoActor::Component(*component_address)),
-                                    method.to_string(),
-                                    ScryptoValue::from_slice(&encoded).unwrap(),
-                                )
-                            }),
+                                .and_then(|result| {
+                                    let mut buckets = Vec::new();
+                                    for (bucket_id, _) in result.bucket_ids {
+                                        buckets.push(scrypto::resource::Bucket(bucket_id));
+                                    }
+                                    for (_, real_id) in bucket_id_mapping.drain() {
+                                        buckets.push(scrypto::resource::Bucket(real_id));
+                                    }
+                                    let encoded = to_struct!(buckets);
+                                    system_api.invoke_snode(
+                                        SNodeRef::Scrypto(ScryptoActor::Component(
+                                            *component_address,
+                                        )),
+                                        method.to_string(),
+                                        ScryptoValue::from_slice(&encoded).unwrap(),
+                                    )
+                                })
+                        }
                         ExecutableInstruction::PublishPackage { package } => {
                             scrypto_decode::<Package>(package)
                                 .map_err(|e| RuntimeError::InvalidPackage(e))
