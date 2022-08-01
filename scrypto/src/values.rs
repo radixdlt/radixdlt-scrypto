@@ -99,38 +99,38 @@ impl ScryptoValue {
         })
     }
 
-    pub fn value_ids(&self) -> HashSet<ValueId> {
-        let mut value_ids = HashSet::new();
+    pub fn node_ids(&self) -> HashSet<RENodeId> {
+        let mut node_ids = HashSet::new();
         for vault_id in &self.vault_ids {
-            value_ids.insert(ValueId::Vault(*vault_id));
+            node_ids.insert(RENodeId::Vault(*vault_id));
         }
         for kv_store_id in &self.kv_store_ids {
-            value_ids.insert(ValueId::KeyValueStore(*kv_store_id));
+            node_ids.insert(RENodeId::KeyValueStore(*kv_store_id));
         }
         for component_address in &self.component_addresses {
-            value_ids.insert(ValueId::Component(*component_address));
+            node_ids.insert(RENodeId::Component(*component_address));
         }
         for (bucket_id, _) in &self.bucket_ids {
-            value_ids.insert(ValueId::Bucket(*bucket_id));
+            node_ids.insert(RENodeId::Bucket(*bucket_id));
         }
         for (proof_id, _) in &self.proof_ids {
-            value_ids.insert(ValueId::Proof(*proof_id));
+            node_ids.insert(RENodeId::Proof(*proof_id));
         }
-        value_ids
+        node_ids
     }
 
-    pub fn stored_value_ids(&self) -> HashSet<ValueId> {
-        let mut value_ids = HashSet::new();
+    pub fn stored_node_ids(&self) -> HashSet<RENodeId> {
+        let mut node_ids = HashSet::new();
         for vault_id in &self.vault_ids {
-            value_ids.insert(ValueId::Vault(*vault_id));
+            node_ids.insert(RENodeId::Vault(*vault_id));
         }
         for kv_store_id in &self.kv_store_ids {
-            value_ids.insert(ValueId::KeyValueStore(*kv_store_id));
+            node_ids.insert(RENodeId::KeyValueStore(*kv_store_id));
         }
         for component_address in &self.component_addresses {
-            value_ids.insert(ValueId::Component(*component_address));
+            node_ids.insert(RENodeId::Component(*component_address));
         }
-        value_ids
+        node_ids
     }
 
     pub fn replace_ids(

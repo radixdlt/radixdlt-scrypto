@@ -179,9 +179,9 @@ impl Vault {
         arg: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, VaultError> {
-        let value_id = ValueId::Vault(vault_id.clone());
+        let node_id = RENodeId::Vault(vault_id.clone());
         let mut ref_mut = system_api
-            .borrow_value_mut(&value_id)
+            .borrow_node_mut(&node_id)
             .map_err(VaultError::CostingError)?;
         let vault = ref_mut.vault();
 
@@ -190,7 +190,7 @@ impl Vault {
                 let input: VaultPutInput =
                     scrypto_decode(&arg.raw).map_err(|e| VaultError::InvalidRequestData(e))?;
                 let bucket = system_api
-                    .drop_value(&ValueId::Bucket(input.bucket.0))
+                    .drop_node(&RENodeId::Bucket(input.bucket.0))
                     .map_err(VaultError::CostingError)?
                     .into();
                 vault
@@ -203,7 +203,7 @@ impl Vault {
                     scrypto_decode(&arg.raw).map_err(|e| VaultError::InvalidRequestData(e))?;
                 let container = vault.take(input.amount)?;
                 let bucket_id = system_api
-                    .create_value(Bucket::new(container))
+                    .create_node(Bucket::new(container))
                     .unwrap()
                     .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
@@ -235,7 +235,7 @@ impl Vault {
                     scrypto_decode(&arg.raw).map_err(|e| VaultError::InvalidRequestData(e))?;
                 let container = vault.take_non_fungibles(&input.non_fungible_ids)?;
                 let bucket_id = system_api
-                    .create_value(Bucket::new(container))
+                    .create_node(Bucket::new(container))
                     .unwrap()
                     .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
@@ -268,7 +268,7 @@ impl Vault {
                 let proof = vault
                     .create_proof(ResourceContainerId::Vault(vault_id))
                     .map_err(VaultError::ProofError)?;
-                let proof_id = system_api.create_value(proof).unwrap().into();
+                let proof_id = system_api.create_node(proof).unwrap().into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Proof(
                     proof_id,
                 )))
@@ -279,7 +279,7 @@ impl Vault {
                 let proof = vault
                     .create_proof_by_amount(input.amount, ResourceContainerId::Vault(vault_id))
                     .map_err(VaultError::ProofError)?;
-                let proof_id = system_api.create_value(proof).unwrap().into();
+                let proof_id = system_api.create_node(proof).unwrap().into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Proof(
                     proof_id,
                 )))
@@ -290,7 +290,7 @@ impl Vault {
                 let proof = vault
                     .create_proof_by_ids(&input.ids, ResourceContainerId::Vault(vault_id))
                     .map_err(VaultError::ProofError)?;
-                let proof_id = system_api.create_value(proof).unwrap().into();
+                let proof_id = system_api.create_node(proof).unwrap().into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Proof(
                     proof_id,
                 )))
@@ -299,7 +299,7 @@ impl Vault {
         }?;
 
         system_api
-            .return_value_mut(ref_mut)
+            .return_node_mut(ref_mut)
             .map_err(VaultError::CostingError)?;
 
         Ok(rtn)

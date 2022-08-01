@@ -4,17 +4,17 @@ use sbor::*;
 use scrypto::buffer::scrypto_encode;
 use scrypto::crypto::hash;
 
-use crate::engine::Address;
+use crate::engine::SubstateId;
 use crate::ledger::*;
 use crate::state_manager::CommitReceipt;
 
 #[derive(Debug, Clone, Hash, TypeId, Encode, Decode, PartialEq, Eq)]
-pub struct VirtualSubstateId(pub Address, pub Vec<u8>);
+pub struct VirtualSubstateId(pub SubstateId, pub Vec<u8>);
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct StateDiff {
     pub down_virtual_substates: Vec<VirtualSubstateId>,
-    pub up_substates: BTreeMap<Address, OutputValue>,
+    pub up_substates: BTreeMap<SubstateId, OutputValue>,
     pub down_substates: Vec<OutputId>,
 }
 
@@ -38,14 +38,14 @@ impl StateDiff {
         for output_id in &self.down_substates {
             receipt.down(output_id.clone());
         }
-        for (address, output_value) in &self.up_substates {
+        for (substate_id, output_value) in &self.up_substates {
             let output_id = OutputId {
-                address: address.clone(),
+                substate_id: substate_id.clone(),
                 substate_hash: hash(scrypto_encode(&output_value.substate)),
                 version: output_value.version,
             };
             receipt.up(output_id);
-            store.put_substate(address.clone(), output_value.clone());
+            store.put_substate(substate_id.clone(), output_value.clone());
         }
         receipt
     }

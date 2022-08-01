@@ -232,11 +232,14 @@ fn generate_dispatcher(
                 // load state if needed
                 if let Some(stmt) = get_state {
                     trace!("Generated stmt: {}", quote! { #stmt });
-                    stmts.push(parse_quote!{
-                        let component_address = ::scrypto::core::Runtime::actor().component_address().unwrap();
+                    stmts.push(parse_quote! {
+                        let actor = ::scrypto::core::Runtime::actor();
+                    });
+                    stmts.push(parse_quote! {
+                        let (component_address, _is_global) = actor.component_address().unwrap();
                     });
                     stmts.push(parse_quote!{
-                        let mut component_data = ::scrypto::core::DataPointer::new(DataAddress::Component(component_address, ComponentOffset::State));
+                        let mut component_data = ::scrypto::core::DataPointer::new(DataAddress::ComponentState(component_address));
                     });
                     stmts.push(stmt);
                 }
@@ -580,8 +583,9 @@ mod tests {
                     ::scrypto::resource::init_resource_system(::scrypto::resource::ResourceSystem::new());
 
                     let input: Test_x_Input = ::scrypto::buffer::scrypto_decode_from_buffer(method_arg).unwrap();
-                    let component_address = ::scrypto::core::Runtime::actor().component_address().unwrap();
-                    let mut component_data = ::scrypto::core::DataPointer::new(DataAddress::Component(component_address, ComponentOffset::State));
+                    let actor = ::scrypto::core::Runtime::actor();
+                    let (component_address, _is_global) = actor.component_address().unwrap();
+                    let mut component_data = ::scrypto::core::DataPointer::new(DataAddress::ComponentState(component_address));
                     let state: DataRef<Test_impl::Test> = component_data.get();
 
                     let rtn = ::scrypto::buffer::scrypto_encode_to_buffer(&Test_impl::Test::x(state.deref(), input.arg0));

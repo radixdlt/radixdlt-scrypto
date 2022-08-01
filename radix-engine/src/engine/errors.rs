@@ -58,13 +58,13 @@ pub enum RuntimeError {
     /// Resource manager does not exist.
     ResourceManagerNotFound(ResourceAddress),
 
-    InvalidDataAccess(ValueId),
+    InvalidDataAccess(RENodeId),
     InvalidDataWrite,
-    ValueNotFound(ValueId),
+    RENodeNotFound(RENodeId),
 
     MovingInvalidType,
-    StoredValueRemoved(ValueId),
-    StoredValueChangedChildren,
+    StoredNodeRemoved(RENodeId),
+    StoredNodeChangedChildren,
 
     /// Bucket does not exist.
     BucketNotFound(BucketId),
@@ -132,9 +132,9 @@ pub enum RuntimeError {
 
 #[derive(Debug, PartialEq)]
 pub enum PayFeeError {
-    ValueNotInTrack,
-    ValueAlreadyTouched,
-    ValueNotFound,
+    RENodeNotInTrack,
+    RENodeAlreadyTouched,
+    RENodeNotFound,
     NotRadixToken,
 }
 

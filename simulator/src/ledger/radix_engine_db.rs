@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-use radix_engine::engine::Address;
 use radix_engine::engine::Substate;
+use radix_engine::engine::SubstateId;
 use radix_engine::ledger::*;
 use rocksdb::{DBWithThreadMode, Direction, IteratorMode, SingleThreaded, DB};
 use sbor::Decode;
@@ -58,13 +58,13 @@ impl RadixEngineDB {
         items
     }
 
-    fn read(&self, key: &Address) -> Option<Vec<u8>> {
+    fn read(&self, substate_id: &SubstateId) -> Option<Vec<u8>> {
         // TODO: Use get_pinned
-        self.db.get(scrypto_encode(key)).unwrap()
+        self.db.get(scrypto_encode(substate_id)).unwrap()
     }
 
-    fn write(&self, key: Address, value: Vec<u8>) {
-        self.db.put(scrypto_encode(&key), value).unwrap();
+    fn write(&self, substate_id: SubstateId, value: Vec<u8>) {
+        self.db.put(scrypto_encode(&substate_id), value).unwrap();
     }
 }
 
@@ -97,13 +97,13 @@ impl QueryableSubstateStore for RadixEngineDB {
 }
 
 impl ReadableSubstateStore for RadixEngineDB {
-    fn get_substate(&self, address: &Address) -> Option<OutputValue> {
-        self.read(address).map(|b| scrypto_decode(&b).unwrap())
+    fn get_substate(&self, substate_id: &SubstateId) -> Option<OutputValue> {
+        self.read(substate_id).map(|b| scrypto_decode(&b).unwrap())
     }
 }
 
 impl WriteableSubstateStore for RadixEngineDB {
-    fn put_substate(&mut self, address: Address, substate: OutputValue) {
-        self.write(address, scrypto_encode(&substate));
+    fn put_substate(&mut self, substate_id: SubstateId, substate: OutputValue) {
+        self.write(substate_id, scrypto_encode(&substate));
     }
 }
