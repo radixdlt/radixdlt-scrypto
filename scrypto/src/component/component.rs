@@ -9,7 +9,7 @@ use crate::address::{AddressError, BECH32_DECODER, BECH32_ENCODER};
 use crate::buffer::scrypto_encode;
 use crate::component::*;
 use crate::core::*;
-use crate::engine::types::ValueId;
+use crate::engine::types::RENodeId;
 use crate::engine::{api::*, call_engine};
 use crate::misc::*;
 use crate::resource::AccessRules;
@@ -47,7 +47,7 @@ impl Component {
 
     /// Returns the package ID of this component.
     pub fn package_address(&self) -> PackageAddress {
-        let address = DataAddress::Component(self.0, ComponentOffset::Info);
+        let address = DataAddress::ComponentInfo(self.0, true);
         let input = RadixEngineInput::ReadData(address);
         let output: (PackageAddress, String) = call_engine(input);
         output.0
@@ -55,7 +55,7 @@ impl Component {
 
     /// Returns the blueprint name of this component.
     pub fn blueprint_name(&self) -> String {
-        let address = DataAddress::Component(self.0, ComponentOffset::Info);
+        let address = DataAddress::ComponentInfo(self.0, true);
         let input = RadixEngineInput::ReadData(address);
         let output: (PackageAddress, String) = call_engine(input);
         output.1
@@ -74,7 +74,7 @@ impl Component {
 
     pub fn globalize(self) -> ComponentAddress {
         let input = RadixEngineInput::InvokeSNode(
-            SNodeRef::Consumed(ValueId::Component(self.0)),
+            SNodeRef::Consumed(RENodeId::Component(self.0)),
             "globalize".to_string(),
             scrypto_encode(&ComponentGlobalizeInput {}),
         );

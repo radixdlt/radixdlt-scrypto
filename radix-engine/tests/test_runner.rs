@@ -1,7 +1,7 @@
 use radix_engine::constants::{
     DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN,
 };
-use radix_engine::engine::{Address, RuntimeError};
+use radix_engine::engine::{RuntimeError, SubstateId};
 use radix_engine::ledger::*;
 use radix_engine::model::{export_abi, export_abi_by_component, extract_package};
 use radix_engine::state_manager::StagedSubstateStoreManager;
@@ -76,7 +76,17 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     ) -> Option<radix_engine::model::Component> {
         self.execution_stores
             .get_output_store(0)
-            .get_substate(&Address::GlobalComponent(component_address))
+            .get_substate(&SubstateId::ComponentInfo(component_address, true))
+            .map(|output| output.substate.into())
+    }
+
+    pub fn inspect_component_state(
+        &mut self,
+        component_address: ComponentAddress,
+    ) -> Option<radix_engine::model::ComponentState> {
+        self.execution_stores
+            .get_output_store(0)
+            .get_substate(&SubstateId::ComponentState(component_address))
             .map(|output| output.substate.into())
     }
 
@@ -87,14 +97,14 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     ) -> Option<radix_engine::model::KeyValueStoreEntryWrapper> {
         self.execution_stores
             .get_output_store(0)
-            .get_substate(&Address::KeyValueStoreEntry(kv_store_id, key))
+            .get_substate(&SubstateId::KeyValueStoreEntry(kv_store_id, key))
             .map(|output| output.substate.into())
     }
 
     pub fn inspect_vault(&mut self, vault_id: VaultId) -> Option<radix_engine::model::Vault> {
         self.execution_stores
             .get_output_store(0)
-            .get_substate(&Address::Vault(vault_id))
+            .get_substate(&SubstateId::Vault(vault_id))
             .map(|output| output.substate.into())
     }
 

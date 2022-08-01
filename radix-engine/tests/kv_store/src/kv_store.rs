@@ -41,8 +41,10 @@ blueprint! {
             let key_value_store = KeyValueStore::new();
             let key_value_stores = KeyValueStore::new();
             key_value_stores.insert("hello".to_owned(), key_value_store);
-            let key_value_store = key_value_stores.get(&"hello".to_owned()).unwrap();
-            key_value_store.insert("hello".to_owned(), "hello".to_owned());
+            {
+                let key_value_store = key_value_stores.get(&"hello".to_owned()).unwrap();
+                key_value_store.insert("hello".to_owned(), "hello".to_owned());
+            }
             KeyValueStoreTest {
                 map: KeyValueStore::new(),
                 vector: Vec::new(),

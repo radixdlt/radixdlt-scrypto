@@ -197,12 +197,12 @@ where
             if locked.liquid_amount() > remaining {
                 locked.take_by_amount(remaining).unwrap();
 
-                let address = Address::Vault(vault_id);
-                track.acquire_lock(address.clone(), true, true).unwrap();
-                let mut substate = track.take_value(address.clone());
+                let substate_id = SubstateId::Vault(vault_id);
+                track.acquire_lock(substate_id.clone(), true, true).unwrap();
+                let mut substate = track.take_substate(substate_id.clone());
                 substate.vault_mut().put(Bucket::new(locked)).unwrap();
-                track.write_value(address.clone(), substate);
-                track.release_lock(address, true);
+                track.write_substate(substate_id.clone(), substate);
+                track.release_lock(substate_id, true);
 
                 remaining = 0.into();
             } else {
@@ -220,13 +220,13 @@ where
         let mut new_package_addresses = Vec::new();
         for address in track_receipt.new_addresses {
             match address {
-                Address::GlobalComponent(component_address) => {
+                SubstateId::ComponentInfo(component_address, true) => {
                     new_component_addresses.push(component_address)
                 }
-                Address::ResourceManager(resource_address) => {
+                SubstateId::ResourceManager(resource_address) => {
                     new_resource_addresses.push(resource_address)
                 }
-                Address::Package(package_address) => new_package_addresses.push(package_address),
+                SubstateId::Package(package_address) => new_package_addresses.push(package_address),
                 _ => {}
             }
         }

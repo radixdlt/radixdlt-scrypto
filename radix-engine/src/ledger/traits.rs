@@ -5,7 +5,7 @@ use sbor::*;
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
 
-use crate::engine::Address;
+use crate::engine::SubstateId;
 
 pub trait QueryableSubstateStore {
     fn get_kv_store_entries(
@@ -16,40 +16,24 @@ pub trait QueryableSubstateStore {
 }
 
 #[derive(Debug, Clone, Hash, TypeId, Encode, Decode, PartialEq, Eq)]
-pub struct OutputId(pub Hash, pub u32);
+pub struct OutputId {
+    pub substate_id: SubstateId,
+    pub substate_hash: Hash,
+    pub version: u32,
+}
 
 #[derive(Debug, Clone, Encode, Decode, TypeId, PartialEq, Eq)]
-pub struct Output {
+pub struct OutputValue {
     pub substate: Substate,
-    pub output_id: OutputId,
-}
-
-#[derive(Debug)]
-pub struct OutputIdGenerator {
-    tx_hash: Hash,
-    count: u32,
-}
-
-impl OutputIdGenerator {
-    pub fn new(tx_hash: Hash) -> Self {
-        Self { tx_hash, count: 0 }
-    }
-
-    pub fn next(&mut self) -> OutputId {
-        let value = self.count;
-        self.count = self.count + 1;
-        OutputId(self.tx_hash.clone(), value)
-    }
+    pub version: u32,
 }
 
 pub trait ReadableSubstateStore {
-    fn get_substate(&self, address: &Address) -> Option<Output>;
-    fn get_space(&self, address: &Address) -> OutputId;
+    fn get_substate(&self, substate_id: &SubstateId) -> Option<OutputValue>;
 }
 
 pub trait WriteableSubstateStore {
-    fn put_substate(&mut self, address: Address, substate: Output);
-    fn put_space(&mut self, address: Address, output_id: OutputId);
+    fn put_substate(&mut self, substate_id: SubstateId, substate: OutputValue);
 }
 
 pub trait SubstateStore: ReadableSubstateStore + WriteableSubstateStore {}

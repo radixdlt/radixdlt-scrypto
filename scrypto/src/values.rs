@@ -17,6 +17,7 @@ use crate::component::*;
 use crate::crypto::*;
 use crate::engine::types::*;
 use crate::math::*;
+use crate::misc::copy_u8_array;
 use crate::resource::*;
 
 pub enum ScryptoValueReplaceError {
@@ -71,7 +72,7 @@ impl ScryptoValue {
                 .map(|(e, path)| (e.0, path))
                 .collect(),
             vault_ids: checker.vaults.iter().map(|e| e.0).collect(),
-            kv_store_ids: checker.kv_stores.iter().map(|e| e.id).collect(),
+            kv_store_ids: checker.kv_stores,
             component_addresses: checker.components.iter().map(|e| e.0).collect(),
             resource_addresses: checker
                 .resource_addresses
@@ -98,38 +99,38 @@ impl ScryptoValue {
         })
     }
 
-    pub fn value_ids(&self) -> HashSet<ValueId> {
-        let mut value_ids = HashSet::new();
+    pub fn node_ids(&self) -> HashSet<RENodeId> {
+        let mut node_ids = HashSet::new();
         for vault_id in &self.vault_ids {
-            value_ids.insert(ValueId::Vault(*vault_id));
+            node_ids.insert(RENodeId::Vault(*vault_id));
         }
         for kv_store_id in &self.kv_store_ids {
-            value_ids.insert(ValueId::KeyValueStore(*kv_store_id));
+            node_ids.insert(RENodeId::KeyValueStore(*kv_store_id));
         }
         for component_address in &self.component_addresses {
-            value_ids.insert(ValueId::Component(*component_address));
+            node_ids.insert(RENodeId::Component(*component_address));
         }
         for (bucket_id, _) in &self.bucket_ids {
-            value_ids.insert(ValueId::Bucket(*bucket_id));
+            node_ids.insert(RENodeId::Bucket(*bucket_id));
         }
         for (proof_id, _) in &self.proof_ids {
-            value_ids.insert(ValueId::Proof(*proof_id));
+            node_ids.insert(RENodeId::Proof(*proof_id));
         }
-        value_ids
+        node_ids
     }
 
-    pub fn stored_value_ids(&self) -> HashSet<ValueId> {
-        let mut value_ids = HashSet::new();
+    pub fn stored_node_ids(&self) -> HashSet<RENodeId> {
+        let mut node_ids = HashSet::new();
         for vault_id in &self.vault_ids {
-            value_ids.insert(ValueId::Vault(*vault_id));
+            node_ids.insert(RENodeId::Vault(*vault_id));
         }
         for kv_store_id in &self.kv_store_ids {
-            value_ids.insert(ValueId::KeyValueStore(*kv_store_id));
+            node_ids.insert(RENodeId::KeyValueStore(*kv_store_id));
         }
         for component_address in &self.component_addresses {
-            value_ids.insert(ValueId::Component(*component_address));
+            node_ids.insert(RENodeId::Component(*component_address));
         }
-        value_ids
+        node_ids
     }
 
     pub fn replace_ids(
@@ -243,7 +244,7 @@ pub struct ScryptoCustomValueChecker {
     pub buckets: HashMap<Bucket, SborPath>,
     pub proofs: HashMap<Proof, SborPath>,
     pub vaults: HashSet<Vault>,
-    pub kv_stores: HashSet<KeyValueStore<(), ()>>,
+    pub kv_stores: HashSet<KeyValueStoreId>,
     pub components: HashSet<Component>,
     pub resource_addresses: HashSet<ResourceAddress>,
 }
@@ -309,9 +310,19 @@ impl CustomValueVisitor for ScryptoCustomValueChecker {
                 }
             }
             ScryptoType::KeyValueStore => {
-                let map = KeyValueStore::try_from(data)
-                    .map_err(ScryptoCustomValueCheckError::InvalidKeyValueStore)?;
-                if !self.kv_stores.insert(map) {
+                let kv_store_id: KeyValueStoreId = match data.len() {
+                    36 => (
+                        Hash(copy_u8_array(&data[0..32])),
+                        u32::from_le_bytes(copy_u8_array(&data[32..])),
+                    ),
+                    _ => {
+                        return Err(ScryptoCustomValueCheckError::InvalidKeyValueStore(
+                            ParseKeyValueStoreError::InvalidLength(data.len()),
+                        ))
+                    }
+                };
+
+                if !self.kv_stores.insert(kv_store_id) {
                     return Err(ScryptoCustomValueCheckError::DuplicateIds);
                 }
             }

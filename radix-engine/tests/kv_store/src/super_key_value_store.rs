@@ -19,9 +19,11 @@ blueprint! {
             map0.insert(1u32, map1);
             map0.insert(2u32, map2);
 
-            let map2 = map0.get(&2u32).unwrap();
-            let map3 = map2.get(&3u32).unwrap();
-            map3.insert(4u32, map4);
+            {
+                let map2 = map0.get(&2u32).unwrap();
+                let map3 = map2.get(&3u32).unwrap();
+                map3.insert(4u32, map4);
+            }
 
             SuperKeyValueStore { maps: map0 }.instantiate().globalize()
         }

@@ -5,7 +5,7 @@ use crate::test_runner::TestRunner;
 use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::InMemorySubstateStore;
 use scrypto::core::Network;
-use scrypto::engine::types::ValueId;
+use scrypto::engine::types::RENodeId;
 use scrypto::prelude::*;
 use scrypto::to_struct;
 use transaction::builder::ManifestBuilder;
@@ -118,7 +118,7 @@ fn cannot_remove_key_value_stores() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| matches!(e, RuntimeError::StoredValueRemoved(_)));
+    receipt.expect_failure(|e| matches!(e, RuntimeError::StoredNodeRemoved(_)));
 }
 
 #[test]
@@ -147,7 +147,7 @@ fn cannot_overwrite_key_value_stores() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| matches!(e, RuntimeError::StoredValueRemoved(_)));
+    receipt.expect_failure(|e| matches!(e, RuntimeError::StoredNodeRemoved(_)));
 }
 
 #[test]
@@ -285,7 +285,7 @@ fn cannot_directly_reference_inserted_vault() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| matches!(e, RuntimeError::ValueNotFound(ValueId::Vault(_))));
+    receipt.expect_failure(|e| matches!(e, RuntimeError::RENodeNotFound(RENodeId::Vault(_))));
 }
 
 #[test]
@@ -308,7 +308,7 @@ fn cannot_directly_reference_vault_after_container_moved() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| matches!(e, RuntimeError::ValueNotFound(ValueId::Vault(_))));
+    receipt.expect_failure(|e| matches!(e, RuntimeError::RENodeNotFound(RENodeId::Vault(_))));
 }
 
 #[test]
@@ -331,5 +331,28 @@ fn cannot_directly_reference_vault_after_container_stored() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| matches!(e, RuntimeError::ValueNotFound(ValueId::Vault(_))));
+    receipt.expect_failure(|e| matches!(e, RuntimeError::RENodeNotFound(RENodeId::Vault(_))));
+}
+
+#[test]
+fn multiple_reads_should_work() {
+    // Arrange
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
+    let package_address = test_runner.extract_and_publish_package("kv_store");
+
+    // Act
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .lock_fee(10.into(), SYSTEM_COMPONENT)
+        .call_function(
+            package_address,
+            "MultipleReads",
+            "multiple_reads",
+            to_struct!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_success();
 }

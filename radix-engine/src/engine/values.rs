@@ -14,40 +14,174 @@ use crate::model::*;
 /// By using scrypto codec, we lose sorting capability of the address space.
 /// Can also be resolved by A) using prefix search instead of range search or B) use special codec as before
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub enum Address {
-    GlobalComponent(ComponentAddress),
+pub enum SubstateId {
+    // TODO: Remove this bool which represents globalization
+    ComponentInfo(ComponentAddress, bool),
     Package(PackageAddress),
     ResourceManager(ResourceAddress),
     NonFungibleSpace(ResourceAddress),
-    NonFungible(ResourceAddress, Vec<u8>),
+    NonFungible(ResourceAddress, NonFungibleId),
     KeyValueStoreSpace(KeyValueStoreId),
     KeyValueStoreEntry(KeyValueStoreId, Vec<u8>),
     Vault(VaultId),
-    LocalComponent(ComponentAddress),
+    ComponentState(ComponentAddress),
     System,
 }
 
-impl Into<Address> for PackageAddress {
-    fn into(self) -> Address {
-        Address::Package(self)
+impl SubstateId {
+    pub fn get_node_id(&self) -> RENodeId {
+        match self {
+            SubstateId::ComponentInfo(component_address, ..) => {
+                RENodeId::Component(*component_address)
+            }
+            SubstateId::ComponentState(component_address) => {
+                RENodeId::Component(*component_address)
+            }
+            SubstateId::NonFungibleSpace(resource_address) => RENodeId::Resource(*resource_address),
+            SubstateId::NonFungible(resource_address, ..) => RENodeId::Resource(*resource_address),
+            SubstateId::KeyValueStoreSpace(kv_store_id) => RENodeId::KeyValueStore(*kv_store_id),
+            SubstateId::KeyValueStoreEntry(kv_store_id, ..) => {
+                RENodeId::KeyValueStore(*kv_store_id)
+            }
+            SubstateId::Vault(vault_id) => RENodeId::Vault(*vault_id),
+            SubstateId::Package(package_address) => RENodeId::Package(*package_address),
+            SubstateId::ResourceManager(resource_address) => RENodeId::Resource(*resource_address),
+            SubstateId::System => RENodeId::System,
+        }
+    }
+
+    pub fn read_scrypto_value(
+        &self,
+        mut value_ref: RENodeRefMut,
+    ) -> Result<ScryptoValue, RuntimeError> {
+        match self {
+            SubstateId::ComponentInfo(..) => {
+                Ok(ScryptoValue::from_typed(&value_ref.component().info()))
+            }
+            SubstateId::ComponentState(..) => Ok(ScryptoValue::from_slice(
+                value_ref.component_state().state(),
+            )
+            .expect("Expected to decode")),
+            SubstateId::NonFungible(.., id) => Ok(value_ref.non_fungible_get(id)),
+            SubstateId::KeyValueStoreEntry(.., key) => Ok(value_ref.kv_store_get(key)),
+            SubstateId::NonFungibleSpace(..)
+            | SubstateId::Vault(..)
+            | SubstateId::KeyValueStoreSpace(..)
+            | SubstateId::Package(..)
+            | SubstateId::ResourceManager(..)
+            | SubstateId::System => {
+                panic!("Should never have received permissions to read this native type.");
+            }
+        }
+    }
+
+    pub fn replace_value_with_default(&self, mut value_ref: RENodeRefMut) {
+        match self {
+            SubstateId::ComponentInfo(..)
+            | SubstateId::ComponentState(..)
+            | SubstateId::NonFungibleSpace(..)
+            | SubstateId::KeyValueStoreSpace(..)
+            | SubstateId::KeyValueStoreEntry(..)
+            | SubstateId::Vault(..)
+            | SubstateId::Package(..)
+            | SubstateId::ResourceManager(..)
+            | SubstateId::System => {
+                panic!("Should not get here");
+            }
+            SubstateId::NonFungible(.., id) => value_ref.non_fungible_remove(&id),
+        }
+    }
+
+    pub fn verify_can_write(&self) -> Result<(), RuntimeError> {
+        match self {
+            SubstateId::KeyValueStoreEntry(..) => Ok(()),
+            SubstateId::ComponentState(..) => Ok(()),
+            SubstateId::NonFungible(..) => Ok(()),
+            SubstateId::ComponentInfo(..) => Err(RuntimeError::InvalidDataWrite),
+            SubstateId::NonFungibleSpace(..) => Err(RuntimeError::InvalidDataWrite),
+            SubstateId::KeyValueStoreSpace(..) => Err(RuntimeError::InvalidDataWrite),
+            SubstateId::Vault(..) => Err(RuntimeError::InvalidDataWrite),
+            SubstateId::Package(..) => Err(RuntimeError::InvalidDataWrite),
+            SubstateId::ResourceManager(..) => Err(RuntimeError::InvalidDataWrite),
+            SubstateId::System => Err(RuntimeError::InvalidDataWrite),
+        }
+    }
+
+    pub fn can_own_nodes(&self) -> bool {
+        match self {
+            SubstateId::KeyValueStoreEntry(..) => true,
+            SubstateId::ComponentState(..) => true,
+            SubstateId::ComponentInfo(..) => false,
+            SubstateId::NonFungible(..) => false,
+            SubstateId::NonFungibleSpace(..) => false,
+            SubstateId::KeyValueStoreSpace(..) => false,
+            SubstateId::Vault(..) => false,
+            SubstateId::Package(..) => false,
+            SubstateId::ResourceManager(..) => false,
+            SubstateId::System => false,
+        }
+    }
+
+    pub fn write_value(
+        self,
+        mut value_ref: RENodeRefMut,
+        value: ScryptoValue,
+        values: HashMap<RENodeId, HeapRootRENode>,
+    ) {
+        match self {
+            SubstateId::ComponentInfo(..) => {
+                panic!("Should not get here");
+            }
+            SubstateId::ComponentState(..) => {
+                value_ref.component_state_set(value, values);
+            }
+            SubstateId::KeyValueStoreSpace(..) => {
+                panic!("Should not get here");
+            }
+            SubstateId::KeyValueStoreEntry(.., key) => {
+                value_ref.kv_store_put(key, value, values);
+            }
+            SubstateId::NonFungibleSpace(..) => {
+                panic!("Should not get here");
+            }
+            SubstateId::NonFungible(.., id) => value_ref.non_fungible_put(id, value),
+            SubstateId::Vault(..) => {
+                panic!("Should not get here");
+            }
+            SubstateId::Package(..) => {
+                panic!("Should not get here");
+            }
+            SubstateId::ResourceManager(..) => {
+                panic!("Should not get here");
+            }
+            SubstateId::System => {
+                panic!("Should not get here");
+            }
+        }
     }
 }
 
-impl Into<Address> for ResourceAddress {
-    fn into(self) -> Address {
-        Address::ResourceManager(self)
+impl Into<SubstateId> for PackageAddress {
+    fn into(self) -> SubstateId {
+        SubstateId::Package(self)
     }
 }
 
-impl Into<Address> for VaultId {
-    fn into(self) -> Address {
-        Address::Vault(self)
+impl Into<SubstateId> for ResourceAddress {
+    fn into(self) -> SubstateId {
+        SubstateId::ResourceManager(self)
     }
 }
 
-impl Into<PackageAddress> for Address {
+impl Into<SubstateId> for VaultId {
+    fn into(self) -> SubstateId {
+        SubstateId::Vault(self)
+    }
+}
+
+impl Into<PackageAddress> for SubstateId {
     fn into(self) -> PackageAddress {
-        if let Address::Package(package_address) = self {
+        if let SubstateId::Package(package_address) = self {
             return package_address;
         } else {
             panic!("Address is not a package address");
@@ -55,19 +189,19 @@ impl Into<PackageAddress> for Address {
     }
 }
 
-impl Into<ComponentAddress> for Address {
+impl Into<ComponentAddress> for SubstateId {
     fn into(self) -> ComponentAddress {
-        if let Address::GlobalComponent(component_address) = self {
-            return component_address;
-        } else {
-            panic!("Address is not a component address");
+        match self {
+            SubstateId::ComponentInfo(component_address, ..)
+            | SubstateId::ComponentState(component_address) => component_address,
+            _ => panic!("Address is not a component address"),
         }
     }
 }
 
-impl Into<ResourceAddress> for Address {
+impl Into<ResourceAddress> for SubstateId {
     fn into(self) -> ResourceAddress {
-        if let Address::ResourceManager(resource_address) = self {
+        if let SubstateId::ResourceManager(resource_address) = self {
             return resource_address;
         } else {
             panic!("Address is not a resource address");
@@ -75,9 +209,9 @@ impl Into<ResourceAddress> for Address {
     }
 }
 
-impl Into<VaultId> for Address {
+impl Into<VaultId> for SubstateId {
     fn into(self) -> VaultId {
-        if let Address::Vault(id) = self {
+        if let SubstateId::Vault(id) = self {
             return id;
         } else {
             panic!("Address is not a vault address");
@@ -90,6 +224,7 @@ pub enum Substate {
     System(System),
     Resource(ResourceManager),
     Component(Component),
+    ComponentState(ComponentState),
     Package(ValidatedPackage),
     Vault(Vault),
     NonFungible(NonFungibleWrapper),
@@ -145,10 +280,25 @@ impl Substate {
         }
     }
 
+    pub fn component_state(&self) -> &ComponentState {
+        if let Substate::ComponentState(state) = self {
+            state
+        } else {
+            panic!("Not component state");
+        }
+    }
+
     pub fn component(&self) -> &Component {
         if let Substate::Component(component) = self {
             component
         } else {
+            match self {
+                Substate::ComponentState(component_state) => {
+                    let value = decode_any(component_state.state()).unwrap();
+                    panic!("Not a component {:?}", value);
+                }
+                _ => {}
+            }
             panic!("Not a component");
         }
     }
@@ -204,6 +354,12 @@ impl Into<Substate> for Component {
     }
 }
 
+impl Into<Substate> for ComponentState {
+    fn into(self) -> Substate {
+        Substate::ComponentState(self)
+    }
+}
+
 impl Into<Substate> for ResourceManager {
     fn into(self) -> Substate {
         Substate::Resource(self)
@@ -232,6 +388,16 @@ impl Into<Component> for Substate {
     fn into(self) -> Component {
         if let Substate::Component(component) = self {
             component
+        } else {
+            panic!("Not a component");
+        }
+    }
+}
+
+impl Into<ComponentState> for Substate {
+    fn into(self) -> ComponentState {
+        if let Substate::ComponentState(component_state) = self {
+            component_state
         } else {
             panic!("Not a component");
         }
@@ -294,11 +460,10 @@ pub enum RENode {
     Proof(Proof),
     Vault(Vault),
     KeyValueStore(PreCommittedKeyValueStore),
-    Component(Component),
+    Component(Component, ComponentState),
     Worktop(Worktop),
     Package(ValidatedPackage),
-    Resource(ResourceManager),
-    NonFungibles(HashMap<NonFungibleId, NonFungible>),
+    Resource(ResourceManager, Option<HashMap<NonFungibleId, NonFungible>>),
     System(System),
 }
 
@@ -312,28 +477,28 @@ impl RENode {
 
     pub fn resource_manager(&self) -> &ResourceManager {
         match self {
-            RENode::Resource(resource_manager) => resource_manager,
+            RENode::Resource(resource_manager, ..) => resource_manager,
             _ => panic!("Expected to be a resource manager"),
         }
     }
 
     pub fn resource_manager_mut(&mut self) -> &mut ResourceManager {
         match self {
-            RENode::Resource(resource_manager) => resource_manager,
+            RENode::Resource(resource_manager, ..) => resource_manager,
             _ => panic!("Expected to be a resource manager"),
         }
     }
 
     pub fn non_fungibles(&self) -> &HashMap<NonFungibleId, NonFungible> {
         match self {
-            RENode::NonFungibles(non_fungibles) => non_fungibles,
+            RENode::Resource(_, non_fungibles) => non_fungibles.as_ref().unwrap(),
             _ => panic!("Expected to be non fungibles"),
         }
     }
 
     pub fn non_fungibles_mut(&mut self) -> &mut HashMap<NonFungibleId, NonFungible> {
         match self {
-            RENode::NonFungibles(non_fungibles) => non_fungibles,
+            RENode::Resource(_, non_fungibles) => non_fungibles.as_mut().unwrap(),
             _ => panic!("Expected to be non fungibles"),
         }
     }
@@ -347,14 +512,28 @@ impl RENode {
 
     pub fn component(&self) -> &Component {
         match self {
-            RENode::Component(component) => component,
+            RENode::Component(component, ..) => component,
             _ => panic!("Expected to be a store"),
         }
     }
 
     pub fn component_mut(&mut self) -> &mut Component {
         match self {
-            RENode::Component(component) => component,
+            RENode::Component(component, ..) => component,
+            _ => panic!("Expected to be a store"),
+        }
+    }
+
+    pub fn component_state(&self) -> &ComponentState {
+        match self {
+            RENode::Component(_, component_state) => component_state,
+            _ => panic!("Expected to be a store"),
+        }
+    }
+
+    pub fn component_state_mut(&mut self) -> &mut ComponentState {
+        match self {
+            RENode::Component(_, component_state) => component_state,
             _ => panic!("Expected to be a store"),
         }
     }
@@ -407,7 +586,6 @@ impl RENode {
             RENode::Component(..) => Ok(()),
             RENode::Vault(..) => Ok(()),
             RENode::Resource(..) => Ok(()),
-            RENode::NonFungibles(..) => Ok(()),
             RENode::Package(..) => Ok(()),
             RENode::Worktop(..) => Ok(()),
             RENode::System(..) => Ok(()),
@@ -420,7 +598,6 @@ impl RENode {
             RENode::Component { .. } => Ok(()),
             RENode::Vault(..) => Ok(()),
             RENode::Resource(..) => Err(RuntimeError::ValueNotAllowed),
-            RENode::NonFungibles(..) => Err(RuntimeError::ValueNotAllowed),
             RENode::Package(..) => Err(RuntimeError::ValueNotAllowed),
             RENode::Bucket(..) => Err(RuntimeError::ValueNotAllowed),
             RENode::Proof(..) => Err(RuntimeError::ValueNotAllowed),
@@ -437,7 +614,6 @@ impl RENode {
             RENode::Component(..) => Err(DropFailure::Component),
             RENode::Bucket(..) => Err(DropFailure::Bucket),
             RENode::Resource(..) => Err(DropFailure::Resource),
-            RENode::NonFungibles(..) => Err(DropFailure::Resource),
             RENode::System(..) => Err(DropFailure::System),
             RENode::Proof(proof) => {
                 proof.drop();
@@ -447,13 +623,13 @@ impl RENode {
         }
     }
 
-    pub fn drop_values(values: Vec<REValue>) -> Result<(), DropFailure> {
+    pub fn drop_nodes(nodes: Vec<HeapRootRENode>) -> Result<(), DropFailure> {
         let mut worktops = Vec::new();
-        for value in values {
-            if let RENode::Worktop(worktop) = value.root {
+        for node in nodes {
+            if let RENode::Worktop(worktop) = node.root {
                 worktops.push(worktop);
             } else {
-                value.try_drop()?;
+                node.try_drop()?;
             }
         }
         for worktop in worktops {
@@ -465,12 +641,12 @@ impl RENode {
 }
 
 #[derive(Debug)]
-pub struct REValue {
+pub struct HeapRootRENode {
     pub root: RENode,
-    pub non_root_nodes: HashMap<ValueId, RENode>,
+    pub non_root_nodes: HashMap<RENodeId, RENode>,
 }
 
-impl REValue {
+impl HeapRootRENode {
     pub fn root(&self) -> &RENode {
         &self.root
     }
@@ -479,37 +655,37 @@ impl REValue {
         &mut self.root
     }
 
-    pub fn non_root(&self, id: &ValueId) -> &RENode {
+    pub fn non_root(&self, id: &RENodeId) -> &RENode {
         self.non_root_nodes.get(id).unwrap()
     }
 
-    pub fn non_root_mut(&mut self, id: &ValueId) -> &mut RENode {
+    pub fn non_root_mut(&mut self, id: &RENodeId) -> &mut RENode {
         self.non_root_nodes.get_mut(id).unwrap()
     }
 
-    pub fn get_node(&self, id: Option<&ValueId>) -> &RENode {
-        if let Some(value_id) = id {
-            self.non_root_nodes.get(value_id).unwrap()
+    pub fn get_node(&self, id: Option<&RENodeId>) -> &RENode {
+        if let Some(node_id) = id {
+            self.non_root_nodes.get(node_id).unwrap()
         } else {
             &self.root
         }
     }
 
-    pub fn get_node_mut(&mut self, id: Option<&ValueId>) -> &mut RENode {
-        if let Some(value_id) = id {
-            self.non_root_nodes.get_mut(value_id).unwrap()
+    pub fn get_node_mut(&mut self, id: Option<&RENodeId>) -> &mut RENode {
+        if let Some(node_id) = id {
+            self.non_root_nodes.get_mut(node_id).unwrap()
         } else {
             &mut self.root
         }
     }
 
-    pub fn insert_non_root_nodes(&mut self, values: HashMap<ValueId, RENode>) {
-        for (id, value) in values {
-            self.non_root_nodes.insert(id, value);
+    pub fn insert_non_root_nodes(&mut self, nodes: HashMap<RENodeId, RENode>) {
+        for (id, node) in nodes {
+            self.non_root_nodes.insert(id, node);
         }
     }
 
-    pub fn to_nodes(self, root_id: ValueId) -> HashMap<ValueId, RENode> {
+    pub fn to_nodes(self, root_id: RENodeId) -> HashMap<RENodeId, RENode> {
         let mut nodes = self.non_root_nodes;
         nodes.insert(root_id, self.root);
         nodes
@@ -520,7 +696,7 @@ impl REValue {
     }
 }
 
-impl Into<Bucket> for REValue {
+impl Into<Bucket> for HeapRootRENode {
     fn into(self) -> Bucket {
         match self.root {
             RENode::Bucket(bucket) => bucket,
@@ -529,7 +705,7 @@ impl Into<Bucket> for REValue {
     }
 }
 
-impl Into<Proof> for REValue {
+impl Into<Proof> for HeapRootRENode {
     fn into(self) -> Proof {
         match self.root {
             RENode::Proof(proof) => proof,
@@ -538,39 +714,30 @@ impl Into<Proof> for REValue {
     }
 }
 
-impl Into<HashMap<NonFungibleId, NonFungible>> for REValue {
-    fn into(self) -> HashMap<NonFungibleId, NonFungible> {
-        match self.root {
-            RENode::NonFungibles(non_fungibles) => non_fungibles,
-            _ => panic!("Expected to be non fungibles"),
-        }
-    }
-}
-
 #[derive(Debug)]
 pub enum REComplexValue {
-    Component(Component),
+    Component(Component, ComponentState),
 }
 
 impl REComplexValue {
-    pub fn get_children(&self) -> Result<HashSet<ValueId>, RuntimeError> {
+    pub fn get_children(&self) -> Result<HashSet<RENodeId>, RuntimeError> {
         match self {
-            REComplexValue::Component(component) => {
-                let value = ScryptoValue::from_slice(component.state())
+            REComplexValue::Component(_, component_state) => {
+                let value = ScryptoValue::from_slice(component_state.state())
                     .map_err(RuntimeError::DecodeError)?;
-                Ok(value.value_ids())
+                Ok(value.node_ids())
             }
         }
     }
 
-    pub fn into_re_value(self, non_root_values: HashMap<ValueId, REValue>) -> REValue {
+    pub fn into_re_node(self, child_nodes: HashMap<RENodeId, HeapRootRENode>) -> HeapRootRENode {
         let mut non_root_nodes = HashMap::new();
-        for (id, val) in non_root_values {
+        for (id, val) in child_nodes {
             non_root_nodes.extend(val.to_nodes(id));
         }
         match self {
-            REComplexValue::Component(component) => REValue {
-                root: RENode::Component(component),
+            REComplexValue::Component(component, component_state) => HeapRootRENode {
+                root: RENode::Component(component, component_state),
                 non_root_nodes,
             },
         }
@@ -578,95 +745,87 @@ impl REComplexValue {
 }
 
 #[derive(Debug)]
-pub enum REPrimitiveValue {
+pub enum REPrimitiveNode {
     Package(ValidatedPackage),
     Bucket(Bucket),
     Proof(Proof),
     KeyValue(PreCommittedKeyValueStore),
-    Resource(ResourceManager),
-    NonFungibles(ResourceAddress, HashMap<NonFungibleId, NonFungible>),
+    Resource(ResourceManager, Option<HashMap<NonFungibleId, NonFungible>>),
     Vault(Vault),
     Worktop(Worktop),
 }
 
 #[derive(Debug)]
-pub enum REValueByComplexity {
-    Primitive(REPrimitiveValue),
+pub enum RENodeByComplexity {
+    Primitive(REPrimitiveNode),
     Complex(REComplexValue),
 }
 
-impl Into<REValue> for REPrimitiveValue {
-    fn into(self) -> REValue {
+impl Into<HeapRootRENode> for REPrimitiveNode {
+    fn into(self) -> HeapRootRENode {
         let root = match self {
-            REPrimitiveValue::Resource(resource_manager) => RENode::Resource(resource_manager),
-            REPrimitiveValue::NonFungibles(_resource_address, non_fungibles) => {
-                RENode::NonFungibles(non_fungibles)
+            REPrimitiveNode::Resource(resource_manager, maybe_non_fungibles) => {
+                RENode::Resource(resource_manager, maybe_non_fungibles)
             }
-            REPrimitiveValue::Package(package) => RENode::Package(package),
-            REPrimitiveValue::Bucket(bucket) => RENode::Bucket(bucket),
-            REPrimitiveValue::Proof(proof) => RENode::Proof(proof),
-            REPrimitiveValue::KeyValue(store) => RENode::KeyValueStore(store),
-            REPrimitiveValue::Vault(vault) => RENode::Vault(vault),
+            REPrimitiveNode::Package(package) => RENode::Package(package),
+            REPrimitiveNode::Bucket(bucket) => RENode::Bucket(bucket),
+            REPrimitiveNode::Proof(proof) => RENode::Proof(proof),
+            REPrimitiveNode::KeyValue(store) => RENode::KeyValueStore(store),
+            REPrimitiveNode::Vault(vault) => RENode::Vault(vault),
 
-            REPrimitiveValue::Worktop(worktop) => RENode::Worktop(worktop),
+            REPrimitiveNode::Worktop(worktop) => RENode::Worktop(worktop),
         };
-        REValue {
+        HeapRootRENode {
             root,
             non_root_nodes: HashMap::new(),
         }
     }
 }
 
-impl Into<REValueByComplexity> for ResourceManager {
-    fn into(self) -> REValueByComplexity {
-        REValueByComplexity::Primitive(REPrimitiveValue::Resource(self))
+impl Into<RENodeByComplexity> for (ResourceManager, Option<HashMap<NonFungibleId, NonFungible>>) {
+    fn into(self) -> RENodeByComplexity {
+        RENodeByComplexity::Primitive(REPrimitiveNode::Resource(self.0, self.1))
     }
 }
 
-impl Into<REValueByComplexity> for (ResourceAddress, HashMap<NonFungibleId, NonFungible>) {
-    fn into(self) -> REValueByComplexity {
-        REValueByComplexity::Primitive(REPrimitiveValue::NonFungibles(self.0, self.1))
+impl Into<RENodeByComplexity> for Bucket {
+    fn into(self) -> RENodeByComplexity {
+        RENodeByComplexity::Primitive(REPrimitiveNode::Bucket(self))
     }
 }
 
-impl Into<REValueByComplexity> for Bucket {
-    fn into(self) -> REValueByComplexity {
-        REValueByComplexity::Primitive(REPrimitiveValue::Bucket(self))
+impl Into<RENodeByComplexity> for Proof {
+    fn into(self) -> RENodeByComplexity {
+        RENodeByComplexity::Primitive(REPrimitiveNode::Proof(self))
     }
 }
 
-impl Into<REValueByComplexity> for Proof {
-    fn into(self) -> REValueByComplexity {
-        REValueByComplexity::Primitive(REPrimitiveValue::Proof(self))
+impl Into<RENodeByComplexity> for Vault {
+    fn into(self) -> RENodeByComplexity {
+        RENodeByComplexity::Primitive(REPrimitiveNode::Vault(self))
     }
 }
 
-impl Into<REValueByComplexity> for Vault {
-    fn into(self) -> REValueByComplexity {
-        REValueByComplexity::Primitive(REPrimitiveValue::Vault(self))
+impl Into<RENodeByComplexity> for Worktop {
+    fn into(self) -> RENodeByComplexity {
+        RENodeByComplexity::Primitive(REPrimitiveNode::Worktop(self))
     }
 }
 
-impl Into<REValueByComplexity> for Worktop {
-    fn into(self) -> REValueByComplexity {
-        REValueByComplexity::Primitive(REPrimitiveValue::Worktop(self))
+impl Into<RENodeByComplexity> for PreCommittedKeyValueStore {
+    fn into(self) -> RENodeByComplexity {
+        RENodeByComplexity::Primitive(REPrimitiveNode::KeyValue(self))
     }
 }
 
-impl Into<REValueByComplexity> for PreCommittedKeyValueStore {
-    fn into(self) -> REValueByComplexity {
-        REValueByComplexity::Primitive(REPrimitiveValue::KeyValue(self))
+impl Into<RENodeByComplexity> for ValidatedPackage {
+    fn into(self) -> RENodeByComplexity {
+        RENodeByComplexity::Primitive(REPrimitiveNode::Package(self))
     }
 }
 
-impl Into<REValueByComplexity> for ValidatedPackage {
-    fn into(self) -> REValueByComplexity {
-        REValueByComplexity::Primitive(REPrimitiveValue::Package(self))
-    }
-}
-
-impl Into<REValueByComplexity> for Component {
-    fn into(self) -> REValueByComplexity {
-        REValueByComplexity::Complex(REComplexValue::Component(self))
+impl Into<RENodeByComplexity> for (Component, ComponentState) {
+    fn into(self) -> RENodeByComplexity {
+        RENodeByComplexity::Complex(REComplexValue::Component(self.0, self.1))
     }
 }
