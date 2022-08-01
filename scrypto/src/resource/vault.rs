@@ -99,6 +99,15 @@ impl Vault {
         call_engine(input)
     }
 
+    fn lock_contingent_fee_internal(&mut self, amount: Decimal) {
+        let input = RadixEngineInput::InvokeSNode(
+            SNodeRef::VaultRef(self.0),
+            "lock_contingent_fee".to_string(),
+            scrypto_encode(&VaultTakeInput { amount }),
+        );
+        call_engine(input)
+    }
+
     sfunctions! {
         SNodeRef::VaultRef(self.0) => {
             pub fn put(&mut self, bucket: Bucket) -> () {
@@ -144,6 +153,14 @@ impl Vault {
     /// Unused fee will be refunded to the vaults from the most recently locked to the least.
     pub fn lock_fee<A: Into<Decimal>>(&mut self, amount: A) {
         self.lock_fee_internal(amount.into())
+    }
+
+    /// Locks the given amount of resource as contingent fee.
+    ///
+    /// The locked amount will be used as transaction only if the transaction succeeds;
+    /// Unused amount will be refunded the original vault.
+    pub fn lock_contingent_fee<A: Into<Decimal>>(&mut self, amount: A) {
+        self.lock_contingent_fee_internal(amount.into())
     }
 
     /// Takes some amount of resource from this vault into a bucket.
