@@ -343,15 +343,15 @@ impl Proof {
         I: WasmInstance,
         C: CostUnitCounter,
     >(
-        value_id: RENodeId,
+        node_id: RENodeId,
         method_name: &str,
         arg: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, ProofError> {
-        let mut value_ref = system_api
-            .borrow_value_mut(&value_id)
+        let mut node_ref = system_api
+            .borrow_node_mut(&node_id)
             .map_err(ProofError::CostingError)?;
-        let proof = value_ref.proof();
+        let proof = node_ref.proof();
 
         let rtn = match method_name {
             "amount" => {
@@ -383,7 +383,7 @@ impl Proof {
         }?;
 
         system_api
-            .return_value_mut(value_ref)
+            .return_node_mut(node_ref)
             .map_err(ProofError::CostingError)?;
         Ok(rtn)
     }
@@ -396,13 +396,13 @@ impl Proof {
         I: WasmInstance,
         C: CostUnitCounter,
     >(
-        value_id: RENodeId,
+        node_id: RENodeId,
         method_name: &str,
         arg: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, ProofError> {
         let proof: Proof = system_api
-            .drop_node(&value_id)
+            .drop_node(&node_id)
             .map_err(ProofError::CostingError)?
             .into();
         match method_name {

@@ -225,15 +225,15 @@ impl Worktop {
         I: WasmInstance,
         C: CostUnitCounter,
     >(
-        value_id: RENodeId,
+        node_id: RENodeId,
         method_name: &str,
         arg: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, WorktopError> {
-        let mut value_ref = system_api
-            .borrow_value_mut(&value_id)
+        let mut node_ref = system_api
+            .borrow_node_mut(&node_id)
             .map_err(WorktopError::CostingError)?;
-        let worktop = value_ref.worktop();
+        let worktop = node_ref.worktop();
 
         let rtn = match method_name {
             "put" => {
@@ -258,10 +258,10 @@ impl Worktop {
                     container
                 } else {
                     let resource_type = {
-                        let value = system_api
-                            .borrow_value(&RENodeId::Resource(input.resource_address))
+                        let node_ref = system_api
+                            .borrow_node(&RENodeId::Resource(input.resource_address))
                             .map_err(WorktopError::CostingError)?;
-                        let resource_manager = value.resource_manager();
+                        let resource_manager = node_ref.resource_manager();
                         resource_manager.resource_type()
                     };
 
@@ -285,10 +285,10 @@ impl Worktop {
                     container
                 } else {
                     let resource_type = {
-                        let value = system_api
-                            .borrow_value(&RENodeId::Resource(input.resource_address))
+                        let node_ref = system_api
+                            .borrow_node(&RENodeId::Resource(input.resource_address))
                             .map_err(WorktopError::CostingError)?;
-                        let resource_manager = value.resource_manager();
+                        let resource_manager = node_ref.resource_manager();
                         resource_manager.resource_type()
                     };
 
@@ -313,10 +313,10 @@ impl Worktop {
                     container
                 } else {
                     let resource_type = {
-                        let value = system_api
-                            .borrow_value(&RENodeId::Resource(input.resource_address))
+                        let node_ref = system_api
+                            .borrow_node(&RENodeId::Resource(input.resource_address))
                             .map_err(WorktopError::CostingError)?;
-                        let resource_manager = value.resource_manager();
+                        let resource_manager = node_ref.resource_manager();
                         resource_manager.resource_type()
                     };
 
@@ -385,7 +385,7 @@ impl Worktop {
         }?;
 
         system_api
-            .return_value_mut(value_ref)
+            .return_node_mut(node_ref)
             .map_err(WorktopError::CostingError)?;
         Ok(rtn)
     }

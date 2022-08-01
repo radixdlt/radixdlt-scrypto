@@ -179,9 +179,9 @@ impl Vault {
         arg: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, VaultError> {
-        let value_id = RENodeId::Vault(vault_id.clone());
+        let node_id = RENodeId::Vault(vault_id.clone());
         let mut ref_mut = system_api
-            .borrow_value_mut(&value_id)
+            .borrow_node_mut(&node_id)
             .map_err(VaultError::CostingError)?;
         let vault = ref_mut.vault();
 
@@ -299,7 +299,7 @@ impl Vault {
         }?;
 
         system_api
-            .return_value_mut(ref_mut)
+            .return_node_mut(ref_mut)
             .map_err(VaultError::CostingError)?;
 
         Ok(rtn)

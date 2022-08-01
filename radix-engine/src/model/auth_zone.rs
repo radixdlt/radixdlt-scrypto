@@ -137,7 +137,7 @@ impl AuthZone {
                     scrypto_decode(&arg.raw).map_err(|e| AuthZoneError::InvalidRequestData(e))?;
                 let resource_type = {
                     let value = system_api
-                        .borrow_value(&RENodeId::Resource(input.resource_address))
+                        .borrow_node(&RENodeId::Resource(input.resource_address))
                         .map_err(AuthZoneError::CostingError)?;
                     let resource_manager = value.resource_manager();
                     resource_manager.resource_type()
@@ -153,7 +153,7 @@ impl AuthZone {
                     scrypto_decode(&arg.raw).map_err(|e| AuthZoneError::InvalidRequestData(e))?;
                 let resource_type = {
                     let value = system_api
-                        .borrow_value(&RENodeId::Resource(input.resource_address))
+                        .borrow_node(&RENodeId::Resource(input.resource_address))
                         .map_err(AuthZoneError::CostingError)?;
                     let resource_manager = value.resource_manager();
                     resource_manager.resource_type()
@@ -173,7 +173,7 @@ impl AuthZone {
                     scrypto_decode(&arg.raw).map_err(|e| AuthZoneError::InvalidRequestData(e))?;
                 let resource_type = {
                     let value = system_api
-                        .borrow_value(&RENodeId::Resource(input.resource_address))
+                        .borrow_node(&RENodeId::Resource(input.resource_address))
                         .map_err(AuthZoneError::CostingError)?;
                     let resource_manager = value.resource_manager();
                     resource_manager.resource_type()

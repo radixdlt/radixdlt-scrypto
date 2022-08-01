@@ -41,20 +41,20 @@ impl System {
             "get_epoch" => {
                 let _: SystemGetCurrentEpochInput =
                     scrypto_decode(&arg.raw).map_err(|e| SystemError::InvalidRequestData(e))?;
-                let value = system_api
-                    .borrow_value(&RENodeId::System)
+                let node_ref = system_api
+                    .borrow_node(&RENodeId::System)
                     .map_err(SystemError::CostingError)?;
-                Ok(ScryptoValue::from_typed(&value.system().epoch))
+                Ok(ScryptoValue::from_typed(&node_ref.system().epoch))
             }
             "set_epoch" => {
                 let SystemSetEpochInput { epoch } =
                     scrypto_decode(&arg.raw).map_err(|e| SystemError::InvalidRequestData(e))?;
-                let mut system_value = system_api
-                    .borrow_value_mut(&RENodeId::System)
+                let mut system_node_ref = system_api
+                    .borrow_node_mut(&RENodeId::System)
                     .map_err(SystemError::CostingError)?;
-                system_value.system().epoch = epoch;
+                system_node_ref.system().epoch = epoch;
                 system_api
-                    .return_value_mut(system_value)
+                    .return_node_mut(system_node_ref)
                     .map_err(SystemError::CostingError)?;
                 Ok(ScryptoValue::from_typed(&()))
             }

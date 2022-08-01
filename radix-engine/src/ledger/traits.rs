@@ -17,7 +17,7 @@ pub trait QueryableSubstateStore {
 
 #[derive(Debug, Clone, Hash, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct OutputId {
-    pub address: SubstateId,
+    pub substate_id: SubstateId,
     pub substate_hash: Hash,
     pub version: u32,
 }
@@ -29,11 +29,11 @@ pub struct OutputValue {
 }
 
 pub trait ReadableSubstateStore {
-    fn get_substate(&self, address: &SubstateId) -> Option<OutputValue>;
+    fn get_substate(&self, substate_id: &SubstateId) -> Option<OutputValue>;
 }
 
 pub trait WriteableSubstateStore {
-    fn put_substate(&mut self, address: SubstateId, substate: OutputValue);
+    fn put_substate(&mut self, substate_id: SubstateId, substate: OutputValue);
 }
 
 pub trait SubstateStore: ReadableSubstateStore + WriteableSubstateStore {}

@@ -10,7 +10,7 @@ use crate::engine::*;
 use crate::fee::*;
 use crate::wasm::*;
 
-use super::call_frame::REValueRef;
+use super::call_frame::RENodeRef;
 
 pub trait SystemApi<'p, 's, W, I, C>
 where
@@ -31,17 +31,17 @@ where
 
     fn globalize_node(&mut self, value_id: &RENodeId) -> Result<(), CostUnitCounterError>;
 
-    fn borrow_value(
+    fn borrow_node(
         &mut self,
         value_id: &RENodeId,
-    ) -> Result<REValueRef<'_, 's>, CostUnitCounterError>;
+    ) -> Result<RENodeRef<'_, 's>, CostUnitCounterError>;
 
-    fn borrow_value_mut(
+    fn borrow_node_mut(
         &mut self,
         value_id: &RENodeId,
-    ) -> Result<RENativeValueRef, CostUnitCounterError>;
+    ) -> Result<NativeRENodeRef, CostUnitCounterError>;
 
-    fn return_value_mut(&mut self, val_ref: RENativeValueRef) -> Result<(), CostUnitCounterError>;
+    fn return_node_mut(&mut self, val_ref: NativeRENodeRef) -> Result<(), CostUnitCounterError>;
 
     fn drop_node(&mut self, value_id: &RENodeId) -> Result<REValue, CostUnitCounterError>;
     fn create_node<V: Into<REValueByComplexity>>(&mut self, v: V)

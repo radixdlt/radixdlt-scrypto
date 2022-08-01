@@ -109,15 +109,15 @@ pub fn insert_non_root_nodes<'s>(track: &mut Track<'s>, values: HashMap<RENodeId
         match node {
             RENode::Vault(vault) => {
                 let addr = SubstateId::Vault(id.into());
-                track.create_uuid_value(addr, vault);
+                track.create_uuid_substate(addr, vault);
             }
             RENode::Component(component, component_state) => {
                 let component_address = id.into();
-                track.create_uuid_value(
+                track.create_uuid_substate(
                     SubstateId::ComponentInfo(component_address, false),
                     component,
                 );
-                track.create_uuid_value(
+                track.create_uuid_substate(
                     SubstateId::ComponentState(component_address),
                     component_state,
                 );
@@ -183,7 +183,7 @@ impl REValuePointer {
         owned_values: &mut HashMap<RENodeId, REValue>,
         borrowed_values: &mut Vec<&'p mut HashMap<RENodeId, REValue>>,
         track: &mut Track<'s>,
-    ) -> RENativeValueRef {
+    ) -> NativeRENodeRef {
         match self {
             REValuePointer::Stack { frame_id, root, id } => {
                 let frame = if let Some(frame_id) = frame_id {
@@ -192,11 +192,11 @@ impl REValuePointer {
                     owned_values
                 };
                 let re_value = frame.remove(root).expect("Should exist");
-                RENativeValueRef::Stack(re_value, frame_id.clone(), root.clone(), id.clone())
+                NativeRENodeRef::Stack(re_value, frame_id.clone(), root.clone(), id.clone())
             }
             REValuePointer::Track(substate_id) => {
                 let value = track.take_value(substate_id.clone());
-                RENativeValueRef::Track(substate_id.clone(), value)
+                NativeRENodeRef::Track(substate_id.clone(), value)
             }
         }
     }
@@ -206,7 +206,7 @@ impl REValuePointer {
         owned_values: &'f HashMap<RENodeId, REValue>,
         borrowed_values: &'f Vec<&'p mut HashMap<RENodeId, REValue>>,
         track: &'f Track<'s>,
-    ) -> REValueRef<'f, 's> {
+    ) -> RENodeRef<'f, 's> {
         match self {
             REValuePointer::Stack { frame_id, root, id } => {
                 let frame = if let Some(frame_id) = frame_id {
@@ -214,9 +214,9 @@ impl REValuePointer {
                 } else {
                     owned_values
                 };
-                REValueRef::Stack(frame.get(root).unwrap(), id.clone())
+                RENodeRef::Stack(frame.get(root).unwrap(), id.clone())
             }
-            REValuePointer::Track(substate_id) => REValueRef::Track(track, substate_id.clone()),
+            REValuePointer::Track(substate_id) => RENodeRef::Track(track, substate_id.clone()),
         }
     }
 
@@ -225,7 +225,7 @@ impl REValuePointer {
         owned_values: &'f mut HashMap<RENodeId, REValue>,
         borrowed_values: &'f mut Vec<&'p mut HashMap<RENodeId, REValue>>,
         track: &'f mut Track<'s>,
-    ) -> REValueRefMut<'f, 's> {
+    ) -> RENodeRefMut<'f, 's> {
         match self {
             REValuePointer::Stack { frame_id, root, id } => {
                 let frame = if let Some(frame_id) = frame_id {
@@ -233,22 +233,22 @@ impl REValuePointer {
                 } else {
                     owned_values
                 };
-                REValueRefMut::Stack(frame.get_mut(root).unwrap(), id.clone())
+                RENodeRefMut::Stack(frame.get_mut(root).unwrap(), id.clone())
             }
-            REValuePointer::Track(substate_id) => REValueRefMut::Track(track, substate_id.clone()),
+            REValuePointer::Track(substate_id) => RENodeRefMut::Track(track, substate_id.clone()),
         }
     }
 }
 
-pub enum RENativeValueRef {
+pub enum NativeRENodeRef {
     Stack(REValue, Option<usize>, RENodeId, Option<RENodeId>),
     Track(SubstateId, Substate),
 }
 
-impl RENativeValueRef {
+impl NativeRENodeRef {
     pub fn bucket(&mut self) -> &mut Bucket {
         match self {
-            RENativeValueRef::Stack(root, _frame_id, _root_id, maybe_child) => {
+            NativeRENodeRef::Stack(root, _frame_id, _root_id, maybe_child) => {
                 match root.get_node_mut(maybe_child.as_ref()) {
                     RENode::Bucket(bucket) => bucket,
                     _ => panic!("Expecting to be a bucket"),
@@ -260,7 +260,7 @@ impl RENativeValueRef {
 
     pub fn proof(&mut self) -> &mut Proof {
         match self {
-            RENativeValueRef::Stack(ref mut root, _frame_id, _root_id, maybe_child) => {
+            NativeRENodeRef::Stack(ref mut root, _frame_id, _root_id, maybe_child) => {
                 match root.get_node_mut(maybe_child.as_ref()) {
                     RENode::Proof(proof) => proof,
                     _ => panic!("Expecting to be a proof"),
@@ -272,7 +272,7 @@ impl RENativeValueRef {
 
     pub fn worktop(&mut self) -> &mut Worktop {
         match self {
-            RENativeValueRef::Stack(ref mut root, _frame_id, _root_id, maybe_child) => {
+            NativeRENodeRef::Stack(ref mut root, _frame_id, _root_id, maybe_child) => {
                 match root.get_node_mut(maybe_child.as_ref()) {
                     RENode::Worktop(worktop) => worktop,
                     _ => panic!("Expecting to be a worktop"),
@@ -284,23 +284,23 @@ impl RENativeValueRef {
 
     pub fn vault(&mut self) -> &mut Vault {
         match self {
-            RENativeValueRef::Stack(root, _frame_id, _root_id, maybe_child) => {
+            NativeRENodeRef::Stack(root, _frame_id, _root_id, maybe_child) => {
                 root.get_node_mut(maybe_child.as_ref()).vault_mut()
             }
-            RENativeValueRef::Track(_address, value) => value.vault_mut(),
+            NativeRENodeRef::Track(_address, value) => value.vault_mut(),
         }
     }
 
     pub fn system(&mut self) -> &mut System {
         match self {
-            RENativeValueRef::Track(_address, value) => value.system_mut(),
+            NativeRENodeRef::Track(_address, value) => value.system_mut(),
             _ => panic!("Expecting to be system"),
         }
     }
 
     pub fn component(&mut self) -> &mut Component {
         match self {
-            RENativeValueRef::Stack(root, _frame_id, _root_id, maybe_child) => {
+            NativeRENodeRef::Stack(root, _frame_id, _root_id, maybe_child) => {
                 root.get_node_mut(maybe_child.as_ref()).component_mut()
             }
             _ => panic!("Expecting to be a component"),
@@ -309,17 +309,17 @@ impl RENativeValueRef {
 
     pub fn package(&mut self) -> &ValidatedPackage {
         match self {
-            RENativeValueRef::Track(_address, value) => value.package(),
+            NativeRENodeRef::Track(_address, value) => value.package(),
             _ => panic!("Expecting to be tracked"),
         }
     }
 
     pub fn resource_manager(&mut self) -> &mut ResourceManager {
         match self {
-            RENativeValueRef::Stack(value, _frame_id, _root_id, maybe_child) => value
+            NativeRENodeRef::Stack(value, _frame_id, _root_id, maybe_child) => value
                 .get_node_mut(maybe_child.as_ref())
                 .resource_manager_mut(),
-            RENativeValueRef::Track(_address, value) => value.resource_manager_mut(),
+            NativeRENodeRef::Track(_address, value) => value.resource_manager_mut(),
         }
     }
 
@@ -330,7 +330,7 @@ impl RENativeValueRef {
         track: &mut Track<'s>,
     ) {
         match self {
-            RENativeValueRef::Stack(owned, frame_id, node_id, ..) => {
+            NativeRENodeRef::Stack(owned, frame_id, node_id, ..) => {
                 let frame = if let Some(frame_id) = frame_id {
                     borrowed_values.get_mut(frame_id).unwrap()
                 } else {
@@ -338,44 +338,44 @@ impl RENativeValueRef {
                 };
                 frame.insert(node_id, owned);
             }
-            RENativeValueRef::Track(substate_id, value) => track.write_value(substate_id, value),
+            NativeRENodeRef::Track(substate_id, value) => track.write_value(substate_id, value),
         }
     }
 }
 
-pub enum REValueRef<'f, 's> {
+pub enum RENodeRef<'f, 's> {
     Stack(&'f REValue, Option<RENodeId>),
     Track(&'f Track<'s>, SubstateId),
 }
 
-impl<'f, 's> REValueRef<'f, 's> {
+impl<'f, 's> RENodeRef<'f, 's> {
     pub fn vault(&self) -> &Vault {
         match self {
-            REValueRef::Stack(value, id) => id
+            RENodeRef::Stack(value, id) => id
                 .as_ref()
                 .map_or(value.root(), |v| value.non_root(v))
                 .vault(),
-            REValueRef::Track(track, substate_id) => track.read_value(substate_id.clone()).vault(),
+            RENodeRef::Track(track, substate_id) => track.read_value(substate_id.clone()).vault(),
         }
     }
 
     pub fn system(&self) -> &System {
         match self {
-            REValueRef::Stack(value, id) => id
+            RENodeRef::Stack(value, id) => id
                 .as_ref()
                 .map_or(value.root(), |v| value.non_root(v))
                 .system(),
-            REValueRef::Track(track, substate_id) => track.read_value(substate_id.clone()).system(),
+            RENodeRef::Track(track, substate_id) => track.read_value(substate_id.clone()).system(),
         }
     }
 
     pub fn resource_manager(&self) -> &ResourceManager {
         match self {
-            REValueRef::Stack(value, id) => id
+            RENodeRef::Stack(value, id) => id
                 .as_ref()
                 .map_or(value.root(), |v| value.non_root(v))
                 .resource_manager(),
-            REValueRef::Track(track, substate_id) => {
+            RENodeRef::Track(track, substate_id) => {
                 track.read_value(substate_id.clone()).resource_manager()
             }
         }
@@ -383,11 +383,11 @@ impl<'f, 's> REValueRef<'f, 's> {
 
     pub fn component_state(&self) -> &ComponentState {
         match self {
-            REValueRef::Stack(value, id) => id
+            RENodeRef::Stack(value, id) => id
                 .as_ref()
                 .map_or(value.root(), |v| value.non_root(v))
                 .component_state(),
-            REValueRef::Track(track, substate_id) => {
+            RENodeRef::Track(track, substate_id) => {
                 let component_state_address = match substate_id {
                     SubstateId::ComponentInfo(substate_id, ..) => {
                         SubstateId::ComponentState(*substate_id)
@@ -401,11 +401,11 @@ impl<'f, 's> REValueRef<'f, 's> {
 
     pub fn component(&self) -> &Component {
         match self {
-            REValueRef::Stack(value, id) => id
+            RENodeRef::Stack(value, id) => id
                 .as_ref()
                 .map_or(value.root(), |v| value.non_root(v))
                 .component(),
-            REValueRef::Track(track, substate_id) => {
+            RENodeRef::Track(track, substate_id) => {
                 track.read_value(substate_id.clone()).component()
             }
         }
@@ -413,23 +413,21 @@ impl<'f, 's> REValueRef<'f, 's> {
 
     pub fn package(&self) -> &ValidatedPackage {
         match self {
-            REValueRef::Stack(value, id) => id
+            RENodeRef::Stack(value, id) => id
                 .as_ref()
                 .map_or(value.root(), |v| value.non_root(v))
                 .package(),
-            REValueRef::Track(track, substate_id) => {
-                track.read_value(substate_id.clone()).package()
-            }
+            RENodeRef::Track(track, substate_id) => track.read_value(substate_id.clone()).package(),
         }
     }
 }
 
-pub enum REValueRefMut<'f, 's> {
+pub enum RENodeRefMut<'f, 's> {
     Stack(&'f mut REValue, Option<RENodeId>),
     Track(&'f mut Track<'s>, SubstateId),
 }
 
-impl<'f, 's> REValueRefMut<'f, 's> {
+impl<'f, 's> RENodeRefMut<'f, 's> {
     pub fn kv_store_put(
         &mut self,
         key: Vec<u8>,
@@ -437,7 +435,7 @@ impl<'f, 's> REValueRefMut<'f, 's> {
         to_store: HashMap<RENodeId, REValue>,
     ) {
         match self {
-            REValueRefMut::Stack(re_value, id) => {
+            RENodeRefMut::Stack(re_value, id) => {
                 re_value
                     .get_node_mut(id.as_ref())
                     .kv_store_mut()
@@ -446,7 +444,7 @@ impl<'f, 's> REValueRefMut<'f, 's> {
                     re_value.insert_non_root_nodes(val.to_nodes(id));
                 }
             }
-            REValueRefMut::Track(track, substate_id) => {
+            RENodeRefMut::Track(track, substate_id) => {
                 track.set_key_value(
                     substate_id.clone(),
                     key,
@@ -461,14 +459,14 @@ impl<'f, 's> REValueRefMut<'f, 's> {
 
     pub fn kv_store_get(&mut self, key: &[u8]) -> ScryptoValue {
         let wrapper = match self {
-            REValueRefMut::Stack(re_value, id) => {
+            RENodeRefMut::Stack(re_value, id) => {
                 let store = re_value.get_node_mut(id.as_ref()).kv_store_mut();
                 store
                     .get(key)
                     .map(|v| KeyValueStoreEntryWrapper(Some(v.raw)))
                     .unwrap_or(KeyValueStoreEntryWrapper(None))
             }
-            REValueRefMut::Track(track, substate_id) => {
+            RENodeRefMut::Track(track, substate_id) => {
                 let substate_value = track.read_key_value(substate_id.clone(), key.to_vec());
                 substate_value.into()
             }
@@ -491,7 +489,7 @@ impl<'f, 's> REValueRefMut<'f, 's> {
 
     pub fn non_fungible_get(&mut self, id: &NonFungibleId) -> ScryptoValue {
         let wrapper = match self {
-            REValueRefMut::Stack(value, re_id) => {
+            RENodeRefMut::Stack(value, re_id) => {
                 let non_fungible_set = re_id
                     .as_ref()
                     .map_or(value.root(), |v| value.non_root(v))
@@ -502,7 +500,7 @@ impl<'f, 's> REValueRefMut<'f, 's> {
                     .map(|v| NonFungibleWrapper(Some(v)))
                     .unwrap_or(NonFungibleWrapper(None))
             }
-            REValueRefMut::Track(track, substate_id) => {
+            RENodeRefMut::Track(track, substate_id) => {
                 let resource_address: ResourceAddress = substate_id.clone().into();
                 let substate_value = track
                     .read_key_value(SubstateId::NonFungibleSpace(resource_address), id.to_vec());
@@ -515,10 +513,10 @@ impl<'f, 's> REValueRefMut<'f, 's> {
 
     pub fn non_fungible_remove(&mut self, id: &NonFungibleId) {
         match self {
-            REValueRefMut::Stack(..) => {
+            RENodeRefMut::Stack(..) => {
                 panic!("Not supported");
             }
-            REValueRefMut::Track(track, substate_id) => {
+            RENodeRefMut::Track(track, substate_id) => {
                 let resource_address: ResourceAddress = substate_id.clone().into();
                 track.set_key_value(
                     SubstateId::NonFungibleSpace(resource_address),
@@ -531,7 +529,7 @@ impl<'f, 's> REValueRefMut<'f, 's> {
 
     pub fn non_fungible_put(&mut self, id: NonFungibleId, value: ScryptoValue) {
         match self {
-            REValueRefMut::Stack(re_value, re_id) => {
+            RENodeRefMut::Stack(re_value, re_id) => {
                 let wrapper: NonFungibleWrapper =
                     scrypto_decode(&value.raw).expect("Should not fail.");
 
@@ -542,7 +540,7 @@ impl<'f, 's> REValueRefMut<'f, 's> {
                     panic!("TODO: invalidate this code path and possibly consolidate `non_fungible_remove` and `non_fungible_put`")
                 }
             }
-            REValueRefMut::Track(track, substate_id) => {
+            RENodeRefMut::Track(track, substate_id) => {
                 let wrapper: NonFungibleWrapper =
                     scrypto_decode(&value.raw).expect("Should not fail.");
                 let resource_address: ResourceAddress = substate_id.clone().into();
@@ -561,14 +559,14 @@ impl<'f, 's> REValueRefMut<'f, 's> {
         to_store: HashMap<RENodeId, REValue>,
     ) {
         match self {
-            REValueRefMut::Stack(re_value, id) => {
+            RENodeRefMut::Stack(re_value, id) => {
                 let component_state = re_value.get_node_mut(id.as_ref()).component_state_mut();
                 component_state.set_state(value.raw);
                 for (id, val) in to_store {
                     re_value.insert_non_root_nodes(val.to_nodes(id));
                 }
             }
-            REValueRefMut::Track(track, substate_id) => {
+            RENodeRefMut::Track(track, substate_id) => {
                 let component_address: ComponentAddress = substate_id.clone().into();
                 track.write_value(
                     SubstateId::ComponentState(component_address),
@@ -583,8 +581,8 @@ impl<'f, 's> REValueRefMut<'f, 's> {
 
     pub fn component(&mut self) -> &Component {
         match self {
-            REValueRefMut::Stack(re_value, id) => re_value.get_node_mut(id.as_ref()).component(),
-            REValueRefMut::Track(track, substate_id) => {
+            RENodeRefMut::Stack(re_value, id) => re_value.get_node_mut(id.as_ref()).component(),
+            RENodeRefMut::Track(track, substate_id) => {
                 let component_val = track.read_value(substate_id.clone());
                 component_val.component()
             }
@@ -593,10 +591,10 @@ impl<'f, 's> REValueRefMut<'f, 's> {
 
     pub fn component_state(&mut self) -> &ComponentState {
         match self {
-            REValueRefMut::Stack(re_value, id) => {
+            RENodeRefMut::Stack(re_value, id) => {
                 re_value.get_node_mut(id.as_ref()).component_state()
             }
-            REValueRefMut::Track(track, substate_id) => {
+            RENodeRefMut::Track(track, substate_id) => {
                 let component_address: ComponentAddress = substate_id.clone().into();
                 let component_state_address = SubstateId::ComponentState(component_address);
                 let component_val = track.read_value(component_state_address.clone());
@@ -1817,10 +1815,10 @@ where
         Ok(result)
     }
 
-    fn borrow_value(
+    fn borrow_node(
         &mut self,
         node_id: &RENodeId,
-    ) -> Result<REValueRef<'_, 's>, CostUnitCounterError> {
+    ) -> Result<RENodeRef<'_, 's>, CostUnitCounterError> {
         trace!(self, Level::Debug, "Borrowing value: {:?}", node_id);
         self.cost_unit_counter.consume(
             self.fee_table.system_api_cost({
@@ -1876,10 +1874,10 @@ where
             .to_ref(&self.owned_values, &self.parent_values, &self.track))
     }
 
-    fn borrow_value_mut(
+    fn borrow_node_mut(
         &mut self,
         node_id: &RENodeId,
-    ) -> Result<RENativeValueRef, CostUnitCounterError> {
+    ) -> Result<NativeRENodeRef, CostUnitCounterError> {
         trace!(self, Level::Debug, "Borrowing value (mut): {:?}", node_id);
 
         self.cost_unit_counter.consume(
@@ -1938,14 +1936,14 @@ where
         ))
     }
 
-    fn return_value_mut(&mut self, val_ref: RENativeValueRef) -> Result<(), CostUnitCounterError> {
+    fn return_node_mut(&mut self, val_ref: NativeRENodeRef) -> Result<(), CostUnitCounterError> {
         trace!(self, Level::Debug, "Returning value");
 
         self.cost_unit_counter.consume(
             self.fee_table.system_api_cost({
                 match &val_ref {
-                    RENativeValueRef::Stack(..) => SystemApiCostingEntry::ReturnLocal,
-                    RENativeValueRef::Track(substate_id, _) => match substate_id {
+                    NativeRENodeRef::Stack(..) => SystemApiCostingEntry::ReturnLocal,
+                    NativeRENodeRef::Track(substate_id, _) => match substate_id {
                         SubstateId::Vault(_) => SystemApiCostingEntry::ReturnGlobal { size: 0 },
                         SubstateId::KeyValueStoreSpace(_) => {
                             SystemApiCostingEntry::ReturnGlobal { size: 0 }
@@ -2129,7 +2127,8 @@ where
         };
 
         for (substate_id, substate) in substates {
-            self.track.create_uuid_value(substate_id.clone(), substate);
+            self.track
+                .create_uuid_substate(substate_id.clone(), substate);
         }
 
         let mut to_store_values = HashMap::new();

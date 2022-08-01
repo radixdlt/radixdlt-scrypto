@@ -71,7 +71,11 @@ impl<'s> Track<'s> {
     }
 
     /// Creates a row with the given key/value
-    pub fn create_uuid_value<A: Into<SubstateId>, V: Into<Substate>>(&mut self, addr: A, value: V) {
+    pub fn create_uuid_substate<A: Into<SubstateId>, V: Into<Substate>>(
+        &mut self,
+        addr: A,
+        value: V,
+    ) {
         let address = addr.into();
         self.new_addresses.push(address.clone());
         self.state_track.put_substate(address, value.into());

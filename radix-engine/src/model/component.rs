@@ -105,7 +105,7 @@ impl Component {
         I: WasmInstance,
         C: CostUnitCounter,
     >(
-        value_id: RENodeId,
+        node_id: RENodeId,
         fn_ident: &str,
         arg: ScryptoValue,
         system_api: &mut Y,
@@ -118,7 +118,7 @@ impl Component {
                 // Abi checks
                 {
                     let component_ref = system_api
-                        .borrow_value(&value_id)
+                        .borrow_node(&node_id)
                         .map_err(ComponentError::CostingError)?;
                     let component = component_ref.component();
                     let component_name = component.blueprint_name().to_owned();
@@ -126,7 +126,7 @@ impl Component {
                     drop(component);
                     drop(component_ref);
                     let package_ref = system_api
-                        .borrow_value(&package_id)
+                        .borrow_node(&package_id)
                         .map_err(ComponentError::CostingError)?;
                     let package = package_ref.package();
                     let blueprint_abi = package.blueprint_abi(&component_name).unwrap();
@@ -140,12 +140,12 @@ impl Component {
                 }
 
                 let mut ref_mut = system_api
-                    .borrow_value_mut(&value_id)
+                    .borrow_node_mut(&node_id)
                     .map_err(ComponentError::CostingError)?;
                 let component = ref_mut.component();
                 component.access_rules.push(input.access_rules);
                 system_api
-                    .return_value_mut(ref_mut)
+                    .return_node_mut(ref_mut)
                     .map_err(ComponentError::CostingError)?;
 
                 Ok(ScryptoValue::from_typed(&()))
@@ -155,7 +155,7 @@ impl Component {
                     scrypto_decode(&arg.raw).map_err(|e| ComponentError::InvalidRequestData(e))?;
 
                 system_api
-                    .globalize_node(&value_id)
+                    .globalize_node(&node_id)
                     .map_err(ComponentError::CostingError)?;
                 Ok(ScryptoValue::from_typed(&()))
             }
@@ -173,7 +173,7 @@ impl Component {
         I: WasmInstance,
         C: CostUnitCounter,
     >(
-        value_id: RENodeId,
+        node_id: RENodeId,
         fn_ident: &str,
         arg: ScryptoValue,
         system_api: &mut Y,
@@ -184,7 +184,7 @@ impl Component {
                     scrypto_decode(&arg.raw).map_err(|e| ComponentError::InvalidRequestData(e))?;
 
                 system_api
-                    .globalize_node(&value_id)
+                    .globalize_node(&node_id)
                     .map_err(ComponentError::CostingError)?;
                 Ok(ScryptoValue::from_typed(&()))
             }

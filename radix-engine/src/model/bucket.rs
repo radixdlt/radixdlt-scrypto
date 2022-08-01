@@ -174,11 +174,11 @@ impl Bucket {
         arg: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, BucketError> {
-        let value_id = RENodeId::Bucket(bucket_id);
-        let mut value_ref = system_api
-            .borrow_value_mut(&value_id)
+        let node_id = RENodeId::Bucket(bucket_id);
+        let mut node_ref = system_api
+            .borrow_node_mut(&node_id)
             .map_err(BucketError::CostingError)?;
-        let bucket0 = value_ref.bucket();
+        let bucket0 = node_ref.bucket();
 
         let rtn = match method_name {
             "take" => {
@@ -254,7 +254,7 @@ impl Bucket {
         }?;
 
         system_api
-            .return_value_mut(value_ref)
+            .return_node_mut(node_ref)
             .map_err(BucketError::CostingError)?;
 
         Ok(rtn)
@@ -268,7 +268,7 @@ impl Bucket {
         I: WasmInstance,
         C: CostUnitCounter,
     >(
-        value_id: RENodeId,
+        node_id: RENodeId,
         method_name: &str,
         arg: ScryptoValue,
         system_api: &mut Y,
@@ -279,7 +279,7 @@ impl Bucket {
                     scrypto_decode(&arg.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
 
                 let bucket: Bucket = system_api
-                    .drop_node(&value_id)
+                    .drop_node(&node_id)
                     .map_err(BucketError::CostingError)?
                     .into();
 
@@ -287,7 +287,7 @@ impl Bucket {
                 let resource_address = bucket.resource_address();
                 let resource_id = RENodeId::Resource(resource_address);
                 let mut value = system_api
-                    .borrow_value_mut(&resource_id)
+                    .borrow_node_mut(&resource_id)
                     .map_err(BucketError::CostingError)?;
                 let resource_manager = value.resource_manager();
                 resource_manager.burn(bucket.total_amount());
@@ -298,7 +298,7 @@ impl Bucket {
                     }
                 }
                 system_api
-                    .return_value_mut(value)
+                    .return_node_mut(value)
                     .map_err(BucketError::CostingError)?;
 
                 Ok(ScryptoValue::from_typed(&()))

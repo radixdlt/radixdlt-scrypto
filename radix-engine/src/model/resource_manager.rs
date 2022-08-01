@@ -404,8 +404,7 @@ impl ResourceManager {
                 let mut resource_manager =
                     ResourceManager::new(input.resource_type, input.metadata, input.access_rules)?;
 
-                let resource_value_id = if matches!(input.resource_type, ResourceType::NonFungible)
-                {
+                let resource_node_id = if matches!(input.resource_type, ResourceType::NonFungible) {
                     let mut non_fungibles: HashMap<NonFungibleId, NonFungible> = HashMap::new();
                     if let Some(mint_params) = &input.mint_params {
                         if let MintParams::NonFungible { entries } = mint_params {
@@ -439,7 +438,7 @@ impl ResourceManager {
                         .create_node((resource_manager, None))
                         .expect("Should never fail")
                 };
-                let resource_address = resource_value_id.clone().into();
+                let resource_address = resource_node_id.clone().into();
 
                 let bucket_id = if let Some(mint_params) = input.mint_params {
                     let container = match mint_params {
@@ -463,7 +462,7 @@ impl ResourceManager {
                 };
 
                 system_api
-                    .globalize_node(&resource_value_id)
+                    .globalize_node(&resource_node_id)
                     .map_err(ResourceManagerError::CostingError)?;
 
                 Ok(ScryptoValue::from_typed(&(resource_address, bucket_id)))
@@ -485,9 +484,9 @@ impl ResourceManager {
         arg: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, ResourceManagerError> {
-        let value_id = RENodeId::Resource(resource_address);
+        let node_id = RENodeId::Resource(resource_address);
         let mut ref_mut = system_api
-            .borrow_value_mut(&value_id)
+            .borrow_node_mut(&node_id)
             .map_err(ResourceManagerError::CostingError)?;
         let resource_manager = ref_mut.resource_manager();
 
@@ -637,7 +636,7 @@ impl ResourceManager {
         }?;
 
         system_api
-            .return_value_mut(ref_mut)
+            .return_node_mut(ref_mut)
             .map_err(ResourceManagerError::CostingError)?;
 
         Ok(rtn)

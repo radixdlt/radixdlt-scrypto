@@ -40,7 +40,7 @@ impl StateDiff {
         }
         for (address, output_value) in &self.up_substates {
             let output_id = OutputId {
-                address: address.clone(),
+                substate_id: address.clone(),
                 substate_hash: hash(scrypto_encode(&output_value.substate)),
                 version: output_value.version,
             };

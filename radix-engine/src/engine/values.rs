@@ -52,7 +52,7 @@ impl SubstateId {
 
     pub fn read_scrypto_value(
         &self,
-        mut value_ref: REValueRefMut,
+        mut value_ref: RENodeRefMut,
     ) -> Result<ScryptoValue, RuntimeError> {
         match self {
             SubstateId::ComponentInfo(..) => {
@@ -75,7 +75,7 @@ impl SubstateId {
         }
     }
 
-    pub fn replace_value_with_default(&self, mut value_ref: REValueRefMut) {
+    pub fn replace_value_with_default(&self, mut value_ref: RENodeRefMut) {
         match self {
             SubstateId::ComponentInfo(..)
             | SubstateId::ComponentState(..)
@@ -124,7 +124,7 @@ impl SubstateId {
 
     pub fn write_value(
         self,
-        mut value_ref: REValueRefMut,
+        mut value_ref: RENodeRefMut,
         value: ScryptoValue,
         values: HashMap<RENodeId, REValue>,
     ) {
