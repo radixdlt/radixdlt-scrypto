@@ -145,7 +145,7 @@ impl CostUnitCounter for SystemLoanCostUnitCounter {
             vault_id,
             fee.take_by_amount(actual_amount)
                 .expect("Check manual accounting"),
-                contingent,
+            contingent,
         ));
 
         Ok(fee)
@@ -346,6 +346,9 @@ mod tests {
         counter.repay(TEST_VAULT_ID, xrd(100), false).unwrap();
         assert_eq!(500, counter.balance());
         assert_eq!(500 - 100 / 5, counter.owed());
-        assert_eq!(vec![(TEST_VAULT_ID, xrd(100), false)], counter.finalize().payments)
+        assert_eq!(
+            vec![(TEST_VAULT_ID, xrd(100), false)],
+            counter.finalize().payments
+        )
     }
 }

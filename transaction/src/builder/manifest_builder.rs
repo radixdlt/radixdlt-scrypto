@@ -616,11 +616,19 @@ impl ManifestBuilder {
         .0
     }
 
-    /// Withdraws resource from an account.
     pub fn lock_fee(&mut self, amount: Decimal, account: ComponentAddress) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
             component_address: account,
             method_name: "lock_fee".to_string(),
+            arg: to_struct!(amount),
+        })
+        .0
+    }
+
+    pub fn lock_contingent_fee(&mut self, amount: Decimal, account: ComponentAddress) -> &mut Self {
+        self.add_instruction(Instruction::CallMethod {
+            component_address: account,
+            method_name: "lock_contingent_fee".to_string(),
             arg: to_struct!(amount),
         })
         .0

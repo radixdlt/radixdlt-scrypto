@@ -184,6 +184,7 @@ impl FeeTable {
                 "create_proof_by_amount" => self.fixed_high,
                 "create_proof_by_ids" => self.fixed_high,
                 "lock_fee" => self.fixed_medium,
+                "lock_contingent_fee" => self.fixed_medium,
                 _ => self.fixed_high,
             },
             SNodeRef::TransactionProcessor => match fn_ident {

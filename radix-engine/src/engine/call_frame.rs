@@ -1095,7 +1095,8 @@ where
         }
 
         // TODO: find a better way to handle this
-        let is_lock_fee = matches!(snode_ref, SNodeRef::VaultRef(..)) && &fn_ident == "lock_fee";
+        let is_lock_fee = matches!(snode_ref, SNodeRef::VaultRef(..))
+            && (&fn_ident == "lock_fee" || &fn_ident == "lock_contingent_fee");
 
         self.cost_unit_counter
             .consume(
