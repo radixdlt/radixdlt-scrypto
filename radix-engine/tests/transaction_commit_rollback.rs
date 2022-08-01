@@ -26,8 +26,8 @@ fn test_state_track_success() {
 
     // Assert
     receipt.expect_success();
-    assert_eq!(8, receipt.state_updates.down_substates.len());
-    assert_eq!(8, receipt.state_updates.up_substates.len());
+    assert_eq!(10, receipt.state_updates.down_substates.len());
+    assert_eq!(10, receipt.state_updates.up_substates.len());
 }
 
 #[test]
