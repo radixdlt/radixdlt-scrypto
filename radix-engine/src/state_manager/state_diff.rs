@@ -38,14 +38,14 @@ impl StateDiff {
         for output_id in &self.down_substates {
             receipt.down(output_id.clone());
         }
-        for (address, output_value) in &self.up_substates {
+        for (substate_id, output_value) in &self.up_substates {
             let output_id = OutputId {
-                substate_id: address.clone(),
+                substate_id: substate_id.clone(),
                 substate_hash: hash(scrypto_encode(&output_value.substate)),
                 version: output_value.version,
             };
             receipt.up(output_id);
-            store.put_substate(address.clone(), output_value.clone());
+            store.put_substate(substate_id.clone(), output_value.clone());
         }
         receipt
     }

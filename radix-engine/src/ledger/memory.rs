@@ -30,13 +30,13 @@ impl Default for InMemorySubstateStore {
 }
 
 impl ReadableSubstateStore for InMemorySubstateStore {
-    fn get_substate(&self, address: &SubstateId) -> Option<OutputValue> {
-        self.substates.get(address).cloned()
+    fn get_substate(&self, substate_id: &SubstateId) -> Option<OutputValue> {
+        self.substates.get(substate_id).cloned()
     }
 }
 
 impl WriteableSubstateStore for InMemorySubstateStore {
-    fn put_substate(&mut self, address: SubstateId, substate: OutputValue) {
-        self.substates.insert(address, substate);
+    fn put_substate(&mut self, substate_id: SubstateId, substate: OutputValue) {
+        self.substates.insert(substate_id, substate);
     }
 }

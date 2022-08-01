@@ -112,7 +112,7 @@ fn cannot_remove_key_value_stores() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_err(|e| matches!(e, RuntimeError::StoredValueRemoved(_)));
+    receipt.expect_err(|e| matches!(e, RuntimeError::StoredNodeRemoved(_)));
 }
 
 #[test]
@@ -139,7 +139,7 @@ fn cannot_overwrite_key_value_stores() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_err(|e| matches!(e, RuntimeError::StoredValueRemoved(_)));
+    receipt.expect_err(|e| matches!(e, RuntimeError::StoredNodeRemoved(_)));
 }
 
 #[test]
@@ -271,7 +271,7 @@ fn cannot_directly_reference_inserted_vault() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_err(|e| matches!(e, RuntimeError::ValueNotFound(RENodeId::Vault(_))));
+    receipt.expect_err(|e| matches!(e, RuntimeError::RENodeNotFound(RENodeId::Vault(_))));
 }
 
 #[test]
@@ -293,7 +293,7 @@ fn cannot_directly_reference_vault_after_container_moved() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_err(|e| matches!(e, RuntimeError::ValueNotFound(RENodeId::Vault(_))));
+    receipt.expect_err(|e| matches!(e, RuntimeError::RENodeNotFound(RENodeId::Vault(_))));
 }
 
 #[test]
@@ -315,7 +315,7 @@ fn cannot_directly_reference_vault_after_container_stored() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_err(|e| matches!(e, RuntimeError::ValueNotFound(RENodeId::Vault(_))));
+    receipt.expect_err(|e| matches!(e, RuntimeError::RENodeNotFound(RENodeId::Vault(_))));
 }
 
 #[test]

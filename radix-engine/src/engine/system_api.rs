@@ -43,9 +43,8 @@ where
 
     fn return_node_mut(&mut self, val_ref: NativeRENodeRef) -> Result<(), CostUnitCounterError>;
 
-    fn drop_node(&mut self, value_id: &RENodeId) -> Result<REValue, CostUnitCounterError>;
-    fn create_node<V: Into<REValueByComplexity>>(&mut self, v: V)
-        -> Result<RENodeId, RuntimeError>;
+    fn drop_node(&mut self, value_id: &RENodeId) -> Result<HeapRootRENode, CostUnitCounterError>;
+    fn create_node<V: Into<RENodeByComplexity>>(&mut self, v: V) -> Result<RENodeId, RuntimeError>;
 
     fn read_substate(&mut self, substate_id: SubstateId) -> Result<ScryptoValue, RuntimeError>;
     fn write_substate(

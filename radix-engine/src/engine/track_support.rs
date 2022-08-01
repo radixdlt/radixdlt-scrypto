@@ -120,7 +120,7 @@ impl<'s> BaseStateTrack<'s> {
 
 #[derive(Debug)]
 pub enum StateTrackError {
-    ValueAlreadyTouched,
+    RENodeAlreadyTouched,
 }
 
 impl<'s> AppStateTrack<'s> {
@@ -158,7 +158,7 @@ impl<'s> AppStateTrack<'s> {
         substate_id: &SubstateId,
     ) -> Result<Option<Substate>, StateTrackError> {
         if self.substates.contains_key(substate_id) {
-            return Err(StateTrackError::ValueAlreadyTouched);
+            return Err(StateTrackError::RENodeAlreadyTouched);
         }
 
         Ok(self

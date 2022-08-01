@@ -29,7 +29,7 @@ fn non_existent_vault_in_component_creation_should_fail() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_err(|e| matches!(e, RuntimeError::ValueNotFound(RENodeId::Vault(_))));
+    receipt.expect_err(|e| matches!(e, RuntimeError::RENodeNotFound(RENodeId::Vault(_))));
 }
 
 #[test]
@@ -51,7 +51,7 @@ fn non_existent_vault_in_committed_component_should_fail() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_err(|e| matches!(e, RuntimeError::ValueNotFound(RENodeId::Vault(_))));
+    receipt.expect_err(|e| matches!(e, RuntimeError::RENodeNotFound(RENodeId::Vault(_))));
 }
 
 #[test]
@@ -73,7 +73,7 @@ fn non_existent_vault_in_key_value_store_creation_should_fail() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_err(|e| matches!(e, RuntimeError::ValueNotFound(RENodeId::Vault(_))));
+    receipt.expect_err(|e| matches!(e, RuntimeError::RENodeNotFound(RENodeId::Vault(_))));
 }
 
 #[test]
@@ -99,7 +99,7 @@ fn non_existent_vault_in_committed_key_value_store_should_fail() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_err(|e| matches!(e, RuntimeError::ValueNotFound(RENodeId::Vault(_))));
+    receipt.expect_err(|e| matches!(e, RuntimeError::RENodeNotFound(RENodeId::Vault(_))));
 }
 
 #[test]
@@ -143,7 +143,7 @@ fn invalid_double_ownership_of_vault() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_err(|e| matches!(e, RuntimeError::ValueNotFound(RENodeId::Vault(_))));
+    receipt.expect_err(|e| matches!(e, RuntimeError::RENodeNotFound(RENodeId::Vault(_))));
 }
 
 #[test]
@@ -192,7 +192,7 @@ fn cannot_overwrite_vault_in_map() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_err(|e| matches!(e, RuntimeError::StoredValueRemoved(RENodeId::Vault(_))));
+    receipt.expect_err(|e| matches!(e, RuntimeError::StoredNodeRemoved(RENodeId::Vault(_))));
 }
 
 #[test]
@@ -241,7 +241,7 @@ fn cannot_remove_vaults() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_err(|e| matches!(e, RuntimeError::StoredValueRemoved(RENodeId::Vault(_))));
+    receipt.expect_err(|e| matches!(e, RuntimeError::StoredNodeRemoved(RENodeId::Vault(_))));
 }
 
 #[test]

@@ -96,8 +96,8 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> StagedSubstateStoreM
 
         self.merge_to_parent_recurse(node.parent_id, true);
 
-        for (address, output) in node.outputs {
-            self.parent.put_substate(address, output);
+        for (substate_id, output) in node.outputs {
+            self.parent.put_substate(substate_id, output);
         }
 
         if !remove_children {
@@ -112,39 +112,39 @@ pub struct StagedSubstateStore<'t, 's, S: ReadableSubstateStore + WriteableSubst
 }
 
 impl<'t, 's, S: ReadableSubstateStore + WriteableSubstateStore> StagedSubstateStore<'t, 's, S> {
-    fn get_substate_recurse(&self, address: &SubstateId, id: u64) -> Option<OutputValue> {
+    fn get_substate_recurse(&self, substate_id: &SubstateId, id: u64) -> Option<OutputValue> {
         if id == 0 {
-            return self.stores.parent.get_substate(address);
+            return self.stores.parent.get_substate(substate_id);
         }
 
         let node = self.stores.nodes.get(&id).unwrap();
-        if let Some(output) = node.outputs.get(address) {
+        if let Some(output) = node.outputs.get(substate_id) {
             // TODO: Remove encoding/decoding
             let encoded_output = scrypto_encode(output);
             return Some(scrypto_decode(&encoded_output).unwrap());
         }
 
-        self.get_substate_recurse(address, node.parent_id)
+        self.get_substate_recurse(substate_id, node.parent_id)
     }
 }
 
 impl<'t, 's, S: ReadableSubstateStore + WriteableSubstateStore> ReadableSubstateStore
     for StagedSubstateStore<'t, 's, S>
 {
-    fn get_substate(&self, address: &SubstateId) -> Option<OutputValue> {
-        self.get_substate_recurse(address, self.id)
+    fn get_substate(&self, substate_id: &SubstateId) -> Option<OutputValue> {
+        self.get_substate_recurse(substate_id, self.id)
     }
 }
 
 impl<'t, 's, S: ReadableSubstateStore + WriteableSubstateStore> WriteableSubstateStore
     for StagedSubstateStore<'t, 's, S>
 {
-    fn put_substate(&mut self, address: SubstateId, output: OutputValue) {
+    fn put_substate(&mut self, substate_id: SubstateId, output: OutputValue) {
         if self.id == 0 {
-            self.stores.parent.put_substate(address, output);
+            self.stores.parent.put_substate(substate_id, output);
         } else {
             let node = self.stores.nodes.get_mut(&self.id).unwrap();
-            node.outputs.insert(address, output);
+            node.outputs.insert(substate_id, output);
         }
     }
 }

@@ -61,14 +61,14 @@ pub struct CallFrame<
     /// All ref values accessible by this call frame. The value may be located in one of the following:
     /// 1. borrowed values
     /// 2. track
-    value_refs: HashMap<RENodeId, REValueInfo>,
+    node_refs: HashMap<RENodeId, RENodeInfo>,
 
     /// Owned Values
-    owned_values: HashMap<RENodeId, REValue>,
+    owned_heap_nodes: HashMap<RENodeId, HeapRootRENode>,
     auth_zone: Option<RefCell<AuthZone>>,
 
     /// Borrowed Values from call frames up the stack
-    parent_values: Vec<&'p mut HashMap<RENodeId, REValue>>,
+    parent_heap_nodes: Vec<&'p mut HashMap<RENodeId, HeapRootRENode>>,
     caller_auth_zone: Option<&'p RefCell<AuthZone>>,
 
     phantom: PhantomData<I>,
@@ -91,13 +91,13 @@ fn verify_stored_value_update(
     // TODO: optimize intersection search
     for old_id in old.iter() {
         if !missing.contains(&old_id) {
-            return Err(RuntimeError::StoredValueRemoved(old_id.clone()));
+            return Err(RuntimeError::StoredNodeRemoved(old_id.clone()));
         }
     }
 
     for missing_id in missing.iter() {
         if !old.contains(missing_id) {
-            return Err(RuntimeError::ValueNotFound(*missing_id));
+            return Err(RuntimeError::RENodeNotFound(*missing_id));
         }
     }
 
@@ -139,13 +139,13 @@ pub fn insert_non_root_nodes<'s>(track: &mut Track<'s>, values: HashMap<RENodeId
 }
 
 #[derive(Debug, Clone)]
-pub struct REValueInfo {
+pub struct RENodeInfo {
     visible: bool,
-    location: REValuePointer,
+    location: RENodePointer,
 }
 
 #[derive(Debug, Clone)]
-pub enum REValuePointer {
+pub enum RENodePointer {
     Stack {
         frame_id: Option<usize>,
         root: RENodeId,
@@ -154,15 +154,15 @@ pub enum REValuePointer {
     Track(SubstateId),
 }
 
-impl REValuePointer {
-    fn child(&self, child_id: RENodeId) -> REValuePointer {
+impl RENodePointer {
+    fn child(&self, child_id: RENodeId) -> RENodePointer {
         match self {
-            REValuePointer::Stack { frame_id, root, .. } => REValuePointer::Stack {
+            RENodePointer::Stack { frame_id, root, .. } => RENodePointer::Stack {
                 frame_id: frame_id.clone(),
                 root: root.clone(),
                 id: Option::Some(child_id),
             },
-            REValuePointer::Track(..) => {
+            RENodePointer::Track(..) => {
                 let child_address = match child_id {
                     RENodeId::KeyValueStore(kv_store_id) => {
                         SubstateId::KeyValueStoreSpace(kv_store_id)
@@ -173,19 +173,19 @@ impl REValuePointer {
                     }
                     _ => panic!("Unexpected"),
                 };
-                REValuePointer::Track(child_address)
+                RENodePointer::Track(child_address)
             }
         }
     }
 
     fn borrow_native_ref<'p, 's>(
         &self, // TODO: Consider changing this to self
-        owned_values: &mut HashMap<RENodeId, REValue>,
-        borrowed_values: &mut Vec<&'p mut HashMap<RENodeId, REValue>>,
+        owned_values: &mut HashMap<RENodeId, HeapRootRENode>,
+        borrowed_values: &mut Vec<&'p mut HashMap<RENodeId, HeapRootRENode>>,
         track: &mut Track<'s>,
     ) -> NativeRENodeRef {
         match self {
-            REValuePointer::Stack { frame_id, root, id } => {
+            RENodePointer::Stack { frame_id, root, id } => {
                 let frame = if let Some(frame_id) = frame_id {
                     borrowed_values.get_mut(*frame_id).unwrap()
                 } else {
@@ -194,8 +194,8 @@ impl REValuePointer {
                 let re_value = frame.remove(root).expect("Should exist");
                 NativeRENodeRef::Stack(re_value, frame_id.clone(), root.clone(), id.clone())
             }
-            REValuePointer::Track(substate_id) => {
-                let value = track.take_value(substate_id.clone());
+            RENodePointer::Track(substate_id) => {
+                let value = track.take_substate(substate_id.clone());
                 NativeRENodeRef::Track(substate_id.clone(), value)
             }
         }
@@ -203,12 +203,12 @@ impl REValuePointer {
 
     fn to_ref<'f, 'p, 's>(
         &self,
-        owned_values: &'f HashMap<RENodeId, REValue>,
-        borrowed_values: &'f Vec<&'p mut HashMap<RENodeId, REValue>>,
+        owned_values: &'f HashMap<RENodeId, HeapRootRENode>,
+        borrowed_values: &'f Vec<&'p mut HashMap<RENodeId, HeapRootRENode>>,
         track: &'f Track<'s>,
     ) -> RENodeRef<'f, 's> {
         match self {
-            REValuePointer::Stack { frame_id, root, id } => {
+            RENodePointer::Stack { frame_id, root, id } => {
                 let frame = if let Some(frame_id) = frame_id {
                     borrowed_values.get(*frame_id).unwrap()
                 } else {
@@ -216,18 +216,18 @@ impl REValuePointer {
                 };
                 RENodeRef::Stack(frame.get(root).unwrap(), id.clone())
             }
-            REValuePointer::Track(substate_id) => RENodeRef::Track(track, substate_id.clone()),
+            RENodePointer::Track(substate_id) => RENodeRef::Track(track, substate_id.clone()),
         }
     }
 
     fn to_ref_mut<'f, 'p, 's>(
         &self,
-        owned_values: &'f mut HashMap<RENodeId, REValue>,
-        borrowed_values: &'f mut Vec<&'p mut HashMap<RENodeId, REValue>>,
+        owned_values: &'f mut HashMap<RENodeId, HeapRootRENode>,
+        borrowed_values: &'f mut Vec<&'p mut HashMap<RENodeId, HeapRootRENode>>,
         track: &'f mut Track<'s>,
     ) -> RENodeRefMut<'f, 's> {
         match self {
-            REValuePointer::Stack { frame_id, root, id } => {
+            RENodePointer::Stack { frame_id, root, id } => {
                 let frame = if let Some(frame_id) = frame_id {
                     borrowed_values.get_mut(*frame_id).unwrap()
                 } else {
@@ -235,13 +235,13 @@ impl REValuePointer {
                 };
                 RENodeRefMut::Stack(frame.get_mut(root).unwrap(), id.clone())
             }
-            REValuePointer::Track(substate_id) => RENodeRefMut::Track(track, substate_id.clone()),
+            RENodePointer::Track(substate_id) => RENodeRefMut::Track(track, substate_id.clone()),
         }
     }
 }
 
 pub enum NativeRENodeRef {
-    Stack(REValue, Option<usize>, RENodeId, Option<RENodeId>),
+    Stack(HeapRootRENode, Option<usize>, RENodeId, Option<RENodeId>),
     Track(SubstateId, Substate),
 }
 
@@ -325,8 +325,8 @@ impl NativeRENodeRef {
 
     pub fn return_to_location<'a, 'p, 's>(
         self,
-        owned_values: &'a mut HashMap<RENodeId, REValue>,
-        borrowed_values: &'a mut Vec<&'p mut HashMap<RENodeId, REValue>>,
+        owned_values: &'a mut HashMap<RENodeId, HeapRootRENode>,
+        borrowed_values: &'a mut Vec<&'p mut HashMap<RENodeId, HeapRootRENode>>,
         track: &mut Track<'s>,
     ) {
         match self {
@@ -338,13 +338,13 @@ impl NativeRENodeRef {
                 };
                 frame.insert(node_id, owned);
             }
-            NativeRENodeRef::Track(substate_id, value) => track.write_value(substate_id, value),
+            NativeRENodeRef::Track(substate_id, value) => track.write_substate(substate_id, value),
         }
     }
 }
 
 pub enum RENodeRef<'f, 's> {
-    Stack(&'f REValue, Option<RENodeId>),
+    Stack(&'f HeapRootRENode, Option<RENodeId>),
     Track(&'f Track<'s>, SubstateId),
 }
 
@@ -355,7 +355,9 @@ impl<'f, 's> RENodeRef<'f, 's> {
                 .as_ref()
                 .map_or(value.root(), |v| value.non_root(v))
                 .vault(),
-            RENodeRef::Track(track, substate_id) => track.read_value(substate_id.clone()).vault(),
+            RENodeRef::Track(track, substate_id) => {
+                track.read_substate(substate_id.clone()).vault()
+            }
         }
     }
 
@@ -365,7 +367,9 @@ impl<'f, 's> RENodeRef<'f, 's> {
                 .as_ref()
                 .map_or(value.root(), |v| value.non_root(v))
                 .system(),
-            RENodeRef::Track(track, substate_id) => track.read_value(substate_id.clone()).system(),
+            RENodeRef::Track(track, substate_id) => {
+                track.read_substate(substate_id.clone()).system()
+            }
         }
     }
 
@@ -376,7 +380,7 @@ impl<'f, 's> RENodeRef<'f, 's> {
                 .map_or(value.root(), |v| value.non_root(v))
                 .resource_manager(),
             RENodeRef::Track(track, substate_id) => {
-                track.read_value(substate_id.clone()).resource_manager()
+                track.read_substate(substate_id.clone()).resource_manager()
             }
         }
     }
@@ -394,7 +398,9 @@ impl<'f, 's> RENodeRef<'f, 's> {
                     }
                     _ => panic!("Unexpected"),
                 };
-                track.read_value(component_state_address).component_state()
+                track
+                    .read_substate(component_state_address)
+                    .component_state()
             }
         }
     }
@@ -406,7 +412,7 @@ impl<'f, 's> RENodeRef<'f, 's> {
                 .map_or(value.root(), |v| value.non_root(v))
                 .component(),
             RENodeRef::Track(track, substate_id) => {
-                track.read_value(substate_id.clone()).component()
+                track.read_substate(substate_id.clone()).component()
             }
         }
     }
@@ -417,13 +423,15 @@ impl<'f, 's> RENodeRef<'f, 's> {
                 .as_ref()
                 .map_or(value.root(), |v| value.non_root(v))
                 .package(),
-            RENodeRef::Track(track, substate_id) => track.read_value(substate_id.clone()).package(),
+            RENodeRef::Track(track, substate_id) => {
+                track.read_substate(substate_id.clone()).package()
+            }
         }
     }
 }
 
 pub enum RENodeRefMut<'f, 's> {
-    Stack(&'f mut REValue, Option<RENodeId>),
+    Stack(&'f mut HeapRootRENode, Option<RENodeId>),
     Track(&'f mut Track<'s>, SubstateId),
 }
 
@@ -432,7 +440,7 @@ impl<'f, 's> RENodeRefMut<'f, 's> {
         &mut self,
         key: Vec<u8>,
         value: ScryptoValue,
-        to_store: HashMap<RENodeId, REValue>,
+        to_store: HashMap<RENodeId, HeapRootRENode>,
     ) {
         match self {
             RENodeRefMut::Stack(re_value, id) => {
@@ -556,7 +564,7 @@ impl<'f, 's> RENodeRefMut<'f, 's> {
     pub fn component_state_set(
         &mut self,
         value: ScryptoValue,
-        to_store: HashMap<RENodeId, REValue>,
+        to_store: HashMap<RENodeId, HeapRootRENode>,
     ) {
         match self {
             RENodeRefMut::Stack(re_value, id) => {
@@ -568,7 +576,7 @@ impl<'f, 's> RENodeRefMut<'f, 's> {
             }
             RENodeRefMut::Track(track, substate_id) => {
                 let component_address: ComponentAddress = substate_id.clone().into();
-                track.write_value(
+                track.write_substate(
                     SubstateId::ComponentState(component_address),
                     ComponentState::new(value.raw),
                 );
@@ -583,7 +591,7 @@ impl<'f, 's> RENodeRefMut<'f, 's> {
         match self {
             RENodeRefMut::Stack(re_value, id) => re_value.get_node_mut(id.as_ref()).component(),
             RENodeRefMut::Track(track, substate_id) => {
-                let component_val = track.read_value(substate_id.clone());
+                let component_val = track.read_substate(substate_id.clone());
                 component_val.component()
             }
         }
@@ -597,7 +605,7 @@ impl<'f, 's> RENodeRefMut<'f, 's> {
             RENodeRefMut::Track(track, substate_id) => {
                 let component_address: ComponentAddress = substate_id.clone().into();
                 let component_state_address = SubstateId::ComponentState(component_address);
-                let component_val = track.read_value(component_state_address.clone());
+                let component_val = track.read_substate(component_state_address.clone());
                 component_val.component_state()
             }
         }
@@ -614,7 +622,7 @@ pub enum SNodeExecution<'a> {
     Static(StaticSNodeState),
     Consumed(RENodeId),
     AuthZone(RefMut<'a, AuthZone>),
-    ValueRef(RENodeId),
+    RENodeRef(RENodeId),
     Scrypto(ScryptoActorInfo, PackageAddress),
 }
 
@@ -698,9 +706,9 @@ where
         cost_unit_counter: &'g mut C,
         fee_table: &'g FeeTable,
         auth_zone: Option<RefCell<AuthZone>>,
-        owned_values: HashMap<RENodeId, REValue>,
-        value_refs: HashMap<RENodeId, REValueInfo>,
-        parent_values: Vec<&'p mut HashMap<RENodeId, REValue>>,
+        owned_heap_nodes: HashMap<RENodeId, HeapRootRENode>,
+        node_refs: HashMap<RENodeId, RENodeInfo>,
+        parent_heap_nodes: Vec<&'p mut HashMap<RENodeId, HeapRootRENode>>,
         caller_auth_zone: Option<&'p RefCell<AuthZone>>,
     ) -> Self {
         Self {
@@ -714,9 +722,9 @@ where
             wasm_instrumenter,
             cost_unit_counter,
             fee_table,
-            owned_values,
-            value_refs,
-            parent_values,
+            owned_heap_nodes,
+            node_refs,
+            parent_heap_nodes,
             auth_zone,
             caller_auth_zone,
             phantom: PhantomData,
@@ -725,11 +733,11 @@ where
 
     fn drop_owned_values(&mut self) -> Result<(), RuntimeError> {
         let values = self
-            .owned_values
+            .owned_heap_nodes
             .drain()
             .map(|(_id, value)| value)
             .collect();
-        RENode::drop_values(values).map_err(|e| RuntimeError::DropFailure(e))
+        RENode::drop_nodes(values).map_err(|e| RuntimeError::DropFailure(e))
     }
 
     fn process_call_data(validated: &ScryptoValue) -> Result<(), RuntimeError> {
@@ -768,7 +776,7 @@ where
         execution: SNodeExecution<'p>,
         fn_ident: &str,
         input: ScryptoValue,
-    ) -> Result<(ScryptoValue, HashMap<RENodeId, REValue>), RuntimeError> {
+    ) -> Result<(ScryptoValue, HashMap<RENodeId, HeapRootRENode>), RuntimeError> {
         trace!(
             self,
             Level::Debug,
@@ -818,7 +826,7 @@ where
                 SNodeExecution::AuthZone(mut auth_zone) => auth_zone
                     .main(fn_ident, input, self)
                     .map_err(RuntimeError::AuthZoneError),
-                SNodeExecution::ValueRef(node_id) => match node_id {
+                SNodeExecution::RENodeRef(node_id) => match node_id {
                     RENodeId::Bucket(bucket_id) => Bucket::main(bucket_id, fn_ident, input, self)
                         .map_err(RuntimeError::BucketError),
                     RENodeId::Proof(..) => Proof::main(node_id, fn_ident, input, self)
@@ -840,7 +848,7 @@ where
                 },
                 SNodeExecution::Scrypto(ref actor, package_address) => {
                     let output = {
-                        let package = self.track.read_value(package_address).package();
+                        let package = self.track.read_substate(package_address).package();
                         let wasm_metering_params = self.fee_table.wasm_metering_params();
                         let instrumented_code = self
                             .wasm_instrumenter
@@ -865,7 +873,7 @@ where
                             })?
                     };
 
-                    let package = self.track.read_value(package_address).package();
+                    let package = self.track.read_substate(package_address).package();
                     let blueprint_abi = package
                         .blueprint_abi(actor.blueprint_name())
                         .expect("Blueprint should exist");
@@ -891,8 +899,8 @@ where
         let values_to_take = output.node_ids();
         let (taken_values, mut missing) = self.take_available_values(values_to_take, false)?;
         let first_missing_value = missing.drain().nth(0);
-        if let Some(missing_value) = first_missing_value {
-            return Err(RuntimeError::ValueNotFound(missing_value));
+        if let Some(missing_node) = first_missing_value {
+            return Err(RuntimeError::RENodeNotFound(missing_node));
         }
 
         // drop proofs and check resource leak
@@ -919,13 +927,13 @@ where
         &mut self,
         node_ids: HashSet<RENodeId>,
         persist_only: bool,
-    ) -> Result<(HashMap<RENodeId, REValue>, HashSet<RENodeId>), RuntimeError> {
+    ) -> Result<(HashMap<RENodeId, HeapRootRENode>, HashSet<RENodeId>), RuntimeError> {
         let (taken, missing) = {
             let mut taken_values = HashMap::new();
             let mut missing_values = HashSet::new();
 
             for id in node_ids {
-                let maybe = self.owned_values.remove(&id);
+                let maybe = self.owned_heap_nodes.remove(&id);
                 if let Some(value) = maybe {
                     value.root().verify_can_move()?;
                     if persist_only {
@@ -942,9 +950,9 @@ where
 
         // Moved values must have their references removed
         for (id, value) in &taken {
-            self.value_refs.remove(id);
+            self.node_refs.remove(id);
             for (id, ..) in &value.non_root_nodes {
-                self.value_refs.remove(id);
+                self.node_refs.remove(id);
             }
         }
 
@@ -954,23 +962,23 @@ where
     fn read_value_internal(
         &mut self,
         substate_id: &SubstateId,
-    ) -> Result<(REValuePointer, ScryptoValue), RuntimeError> {
+    ) -> Result<(RENodePointer, ScryptoValue), RuntimeError> {
         let node_id = substate_id.get_node_id();
 
         // Get location
         // Note this must be run AFTER values are taken, otherwise there would be inconsistent readable_values state
         let (value_info, address_borrowed) = self
-            .value_refs
+            .node_refs
             .get(&node_id)
             .cloned()
             .map(|v| (v, None))
             .or_else(|| {
                 // Allow global read access to any component info
                 if let SubstateId::ComponentInfo(component_address, ..) = substate_id {
-                    if self.owned_values.contains_key(&node_id) {
+                    if self.owned_heap_nodes.contains_key(&node_id) {
                         return Some((
-                            REValueInfo {
-                                location: REValuePointer::Stack {
+                            RENodeInfo {
+                                location: RENodePointer::Stack {
                                     frame_id: Option::None,
                                     root: node_id.clone(),
                                     id: Option::None,
@@ -989,8 +997,8 @@ where
                         .is_ok()
                     {
                         return Some((
-                            REValueInfo {
-                                location: REValuePointer::Track(SubstateId::ComponentInfo(
+                            RENodeInfo {
+                                location: RENodePointer::Track(SubstateId::ComponentInfo(
                                     *component_address,
                                     true,
                                 )),
@@ -1012,8 +1020,8 @@ where
         // Read current value
         let current_value = {
             let value_ref = location.to_ref_mut(
-                &mut self.owned_values,
-                &mut self.parent_values,
+                &mut self.owned_heap_nodes,
+                &mut self.parent_heap_nodes,
                 &mut self.track,
             );
             substate_id.read_scrypto_value(value_ref)?
@@ -1136,7 +1144,7 @@ where
         let (taken_values, mut missing) = self.take_available_values(values_to_take, false)?;
         let first_missing_value = missing.drain().nth(0);
         if let Some(missing_value) = first_missing_value {
-            return Err(RuntimeError::ValueNotFound(missing_value));
+            return Err(RuntimeError::RENodeNotFound(missing_value));
         }
 
         let mut next_owned_values = HashMap::new();
@@ -1171,9 +1179,9 @@ where
             }
             SNodeRef::Consumed(node_id) => {
                 let value = self
-                    .owned_values
+                    .owned_heap_nodes
                     .remove(node_id)
-                    .ok_or(RuntimeError::ValueNotFound(*node_id))?;
+                    .ok_or(RuntimeError::RENodeNotFound(*node_id))?;
 
                 let method_auths = match &value.root() {
                     RENode::Bucket(bucket) => {
@@ -1182,13 +1190,15 @@ where
                             .acquire_lock(resource_address, true, false)
                             .expect("Should not fail.");
                         locked_values.insert(resource_address.clone().into());
-                        let resource_manager =
-                            self.track.read_value(resource_address).resource_manager();
+                        let resource_manager = self
+                            .track
+                            .read_substate(resource_address)
+                            .resource_manager();
                         let method_auth = resource_manager.get_consuming_bucket_auth(&fn_ident);
                         value_refs.insert(
                             RENodeId::Resource(resource_address),
-                            REValueInfo {
-                                location: REValuePointer::Track(SubstateId::ResourceManager(
+                            RENodeInfo {
+                                location: RENodePointer::Track(SubstateId::ResourceManager(
                                     resource_address,
                                 )),
                                 visible: true,
@@ -1205,8 +1215,8 @@ where
                         locked_values.insert(package_address.clone().into());
                         value_refs.insert(
                             RENodeId::Package(package_address),
-                            REValueInfo {
-                                location: REValuePointer::Track(SubstateId::Package(
+                            RENodeInfo {
+                                location: RENodePointer::Track(SubstateId::Package(
                                     package_address,
                                 )),
                                 visible: true,
@@ -1228,8 +1238,8 @@ where
                 locked_values.insert(SubstateId::System);
                 value_refs.insert(
                     RENodeId::System,
-                    REValueInfo {
-                        location: REValuePointer::Track(SubstateId::System),
+                    RENodeInfo {
+                        location: RENodePointer::Track(SubstateId::System),
                         visible: true,
                     },
                 );
@@ -1244,7 +1254,7 @@ where
                     }
                     _ => vec![],
                 };
-                Ok((SNodeExecution::ValueRef(RENodeId::System), access_rules))
+                Ok((SNodeExecution::RENodeRef(RENodeId::System), access_rules))
             }
             SNodeRef::AuthZoneRef => {
                 if let Some(auth_zone) = &self.auth_zone {
@@ -1263,8 +1273,8 @@ where
                         locked_values.insert(resource_address.clone().into());
                         value_refs.insert(
                             RENodeId::Resource(resource_address.clone()),
-                            REValueInfo {
-                                location: REValuePointer::Track(SubstateId::ResourceManager(
+                            RENodeInfo {
+                                location: RENodePointer::Track(SubstateId::ResourceManager(
                                     resource_address.clone(),
                                 )),
                                 visible: true,
@@ -1292,29 +1302,29 @@ where
                         TrackError::StateTrackError(..) => panic!("Unexpected"),
                     })?;
                 locked_values.insert(substate_id.clone());
-                let resource_manager = self.track.read_value(substate_id).resource_manager();
+                let resource_manager = self.track.read_substate(substate_id).resource_manager();
                 let method_auth = resource_manager.get_auth(&fn_ident, &input).clone();
                 value_refs.insert(
                     node_id.clone(),
-                    REValueInfo {
-                        location: REValuePointer::Track(SubstateId::ResourceManager(
+                    RENodeInfo {
+                        location: RENodePointer::Track(SubstateId::ResourceManager(
                             *resource_address,
                         )),
                         visible: true,
                     },
                 );
 
-                Ok((SNodeExecution::ValueRef(node_id), vec![method_auth]))
+                Ok((SNodeExecution::RENodeRef(node_id), vec![method_auth]))
             }
             SNodeRef::BucketRef(bucket_id) => {
                 let node_id = RENodeId::Bucket(*bucket_id);
-                if !self.owned_values.contains_key(&node_id) {
+                if !self.owned_heap_nodes.contains_key(&node_id) {
                     return Err(RuntimeError::BucketNotFound(bucket_id.clone()));
                 }
                 value_refs.insert(
                     node_id.clone(),
-                    REValueInfo {
-                        location: REValuePointer::Stack {
+                    RENodeInfo {
+                        location: RENodePointer::Stack {
                             frame_id: Some(self.depth),
                             root: node_id.clone(),
                             id: None,
@@ -1323,17 +1333,17 @@ where
                     },
                 );
 
-                Ok((SNodeExecution::ValueRef(node_id), vec![]))
+                Ok((SNodeExecution::RENodeRef(node_id), vec![]))
             }
             SNodeRef::ProofRef(proof_id) => {
                 let node_id = RENodeId::Proof(*proof_id);
-                if !self.owned_values.contains_key(&node_id) {
+                if !self.owned_heap_nodes.contains_key(&node_id) {
                     return Err(RuntimeError::ProofNotFound(proof_id.clone()));
                 }
                 value_refs.insert(
                     node_id.clone(),
-                    REValueInfo {
-                        location: REValuePointer::Stack {
+                    RENodeInfo {
+                        location: RENodePointer::Stack {
                             frame_id: Some(self.depth),
                             root: node_id.clone(),
                             id: None,
@@ -1341,17 +1351,17 @@ where
                         visible: true,
                     },
                 );
-                Ok((SNodeExecution::ValueRef(node_id), vec![]))
+                Ok((SNodeExecution::RENodeRef(node_id), vec![]))
             }
             SNodeRef::WorktopRef => {
                 let node_id = RENodeId::Worktop;
-                if !self.owned_values.contains_key(&node_id) {
-                    return Err(RuntimeError::ValueNotFound(node_id));
+                if !self.owned_heap_nodes.contains_key(&node_id) {
+                    return Err(RuntimeError::RENodeNotFound(node_id));
                 }
                 value_refs.insert(
                     node_id.clone(),
-                    REValueInfo {
-                        location: REValuePointer::Stack {
+                    RENodeInfo {
+                        location: RENodePointer::Stack {
                             frame_id: Some(self.depth),
                             root: node_id.clone(),
                             id: None,
@@ -1376,8 +1386,8 @@ where
                     locked_values.insert(resource_address.clone().into());
                     value_refs.insert(
                         RENodeId::Resource(resource_address.clone()),
-                        REValueInfo {
-                            location: REValuePointer::Track(SubstateId::ResourceManager(
+                        RENodeInfo {
+                            location: RENodePointer::Track(SubstateId::ResourceManager(
                                 resource_address.clone(),
                             )),
                             visible: true,
@@ -1385,7 +1395,7 @@ where
                     );
                 }
 
-                Ok((SNodeExecution::ValueRef(node_id), vec![]))
+                Ok((SNodeExecution::RENodeRef(node_id), vec![]))
             }
             SNodeRef::Scrypto(actor) => match actor {
                 ScryptoActor::Blueprint(package_address, blueprint_name) => {
@@ -1399,7 +1409,7 @@ where
                             TrackError::StateTrackError(..) => panic!("Unexpected"),
                         })?;
                     locked_values.insert(package_address.clone().into());
-                    let package = self.track.read_value(package_address.clone()).package();
+                    let package = self.track.read_substate(package_address.clone()).package();
                     let abi = package.blueprint_abi(blueprint_name).ok_or(
                         RuntimeError::BlueprintNotFound(
                             package_address.clone(),
@@ -1431,22 +1441,21 @@ where
 
                     // Find value
                     let node_id = RENodeId::Component(component_address);
-                    let cur_location = if self.owned_values.contains_key(&node_id) {
-                        REValuePointer::Stack {
+                    let cur_location = if self.owned_heap_nodes.contains_key(&node_id) {
+                        RENodePointer::Stack {
                             frame_id: None,
                             root: node_id.clone(),
                             id: None,
                         }
-                    } else if let Some(REValueInfo { location, .. }) = self.value_refs.get(&node_id)
-                    {
+                    } else if let Some(RENodeInfo { location, .. }) = self.node_refs.get(&node_id) {
                         location.clone()
                     } else {
-                        REValuePointer::Track(SubstateId::ComponentInfo(component_address, true))
+                        RENodePointer::Track(SubstateId::ComponentInfo(component_address, true))
                     };
 
                     // Lock values and setup next frame
                     let (next_location, is_global) = match cur_location.clone() {
-                        REValuePointer::Track(substate_id) => {
+                        RENodePointer::Track(substate_id) => {
                             self.track
                                 .acquire_lock(substate_id.clone(), true, false)
                                 .map_err(|e| match e {
@@ -1489,10 +1498,10 @@ where
                                     panic!("Unexpected substate_id");
                                 };
 
-                            (REValuePointer::Track(substate_id), is_global)
+                            (RENodePointer::Track(substate_id), is_global)
                         }
-                        REValuePointer::Stack { frame_id, root, id } => (
-                            REValuePointer::Stack {
+                        RENodePointer::Stack { frame_id, root, id } => (
+                            RENodePointer::Stack {
                                 frame_id: frame_id.or(Some(self.depth)),
                                 root,
                                 id,
@@ -1503,8 +1512,8 @@ where
 
                     let actor_info = {
                         let value_ref = cur_location.to_ref(
-                            &self.owned_values,
-                            &self.parent_values,
+                            &self.owned_heap_nodes,
+                            &self.parent_heap_nodes,
                             &mut self.track,
                         );
                         let component = value_ref.component();
@@ -1524,7 +1533,7 @@ where
                             .acquire_lock(package_address, false, false)
                             .expect("Should never fail");
                         locked_values.insert(package_address.clone().into());
-                        let package = self.track.read_value(package_address).package();
+                        let package = self.track.read_substate(package_address).package();
                         let abi = package
                             .blueprint_abi(&blueprint_name)
                             .expect("Blueprint not found for existing component");
@@ -1540,8 +1549,8 @@ where
 
                         let method_auths = {
                             let value_ref = cur_location.to_ref(
-                                &self.owned_values,
-                                &self.parent_values,
+                                &self.owned_heap_nodes,
+                                &self.parent_heap_nodes,
                                 &self.track,
                             );
 
@@ -1559,7 +1568,7 @@ where
 
                     value_refs.insert(
                         node_id,
-                        REValueInfo {
+                        RENodeInfo {
                             location: next_location,
                             visible: true,
                         },
@@ -1576,8 +1585,8 @@ where
 
                 // Find value
                 let node_id = RENodeId::Component(component_address);
-                let cur_location = if self.owned_values.contains_key(&node_id) {
-                    REValuePointer::Stack {
+                let cur_location = if self.owned_heap_nodes.contains_key(&node_id) {
+                    RENodePointer::Stack {
                         frame_id: None,
                         root: node_id.clone(),
                         id: None,
@@ -1588,12 +1597,12 @@ where
 
                 // Setup next frame
                 match cur_location {
-                    REValuePointer::Stack {
+                    RENodePointer::Stack {
                         frame_id: _,
                         root,
                         id,
                     } => {
-                        let owned_ref = self.owned_values.get_mut(&root).unwrap();
+                        let owned_ref = self.owned_heap_nodes.get_mut(&root).unwrap();
 
                         // Lock package
                         let package_address = owned_ref.root().component().package_address();
@@ -1607,8 +1616,8 @@ where
                         locked_values.insert(package_address.into());
                         value_refs.insert(
                             RENodeId::Package(package_address),
-                            REValueInfo {
-                                location: REValuePointer::Track(SubstateId::Package(
+                            RENodeInfo {
+                                location: RENodePointer::Track(SubstateId::Package(
                                     package_address,
                                 )),
                                 visible: true,
@@ -1617,8 +1626,8 @@ where
 
                         value_refs.insert(
                             node_id,
-                            REValueInfo {
-                                location: REValuePointer::Stack {
+                            RENodeInfo {
+                                location: RENodePointer::Stack {
                                     frame_id: Some(self.depth),
                                     root: root.clone(),
                                     id: id.clone(),
@@ -1630,34 +1639,34 @@ where
                     _ => panic!("Unexpected"),
                 }
 
-                Ok((SNodeExecution::ValueRef(node_id), vec![]))
+                Ok((SNodeExecution::RENodeRef(node_id), vec![]))
             }
 
             SNodeRef::VaultRef(vault_id) => {
                 // Find value
                 let node_id = RENodeId::Vault(*vault_id);
-                let cur_location = if self.owned_values.contains_key(&node_id) {
-                    REValuePointer::Stack {
+                let cur_location = if self.owned_heap_nodes.contains_key(&node_id) {
+                    RENodePointer::Stack {
                         frame_id: None,
                         root: node_id.clone(),
                         id: Option::None,
                     }
                 } else {
-                    let maybe_value_ref = self.value_refs.get(&node_id);
+                    let maybe_value_ref = self.node_refs.get(&node_id);
                     maybe_value_ref
                         .map(|info| &info.location)
                         .cloned()
-                        .ok_or(RuntimeError::ValueNotFound(RENodeId::Vault(*vault_id)))?
+                        .ok_or(RuntimeError::RENodeNotFound(RENodeId::Vault(*vault_id)))?
                 };
-                if is_pay_fee && !matches!(cur_location, REValuePointer::Track { .. }) {
-                    return Err(RuntimeError::PayFeeError(PayFeeError::ValueNotInTrack));
+                if is_pay_fee && !matches!(cur_location, RENodePointer::Track { .. }) {
+                    return Err(RuntimeError::PayFeeError(PayFeeError::RENodeNotInTrack));
                 }
 
                 // Lock values and setup next frame
                 let next_location = {
                     // Lock Vault
                     let next_location = match cur_location.clone() {
-                        REValuePointer::Track(substate_id) => {
+                        RENodePointer::Track(substate_id) => {
                             self.track
                                 .acquire_lock(substate_id.clone(), true, is_pay_fee)
                                 .map_err(|e| match e {
@@ -1666,16 +1675,16 @@ where
                                     }
                                     TrackError::StateTrackError(e) => {
                                         RuntimeError::PayFeeError(match e {
-                                            StateTrackError::ValueAlreadyTouched => {
-                                                PayFeeError::ValueAlreadyTouched
+                                            StateTrackError::RENodeAlreadyTouched => {
+                                                PayFeeError::RENodeAlreadyTouched
                                             }
                                         })
                                     }
                                 })?;
                             locked_values.insert(substate_id.clone().into());
-                            REValuePointer::Track(substate_id)
+                            RENodePointer::Track(substate_id)
                         }
-                        REValuePointer::Stack { frame_id, root, id } => REValuePointer::Stack {
+                        RENodePointer::Stack { frame_id, root, id } => RENodePointer::Stack {
                             frame_id: frame_id.or(Some(self.depth)),
                             root,
                             id,
@@ -1685,8 +1694,8 @@ where
                     // Lock Resource
                     let resource_address = {
                         let value_ref = cur_location.to_ref(
-                            &mut self.owned_values,
-                            &mut self.parent_values,
+                            &mut self.owned_heap_nodes,
+                            &mut self.parent_heap_nodes,
                             &mut self.track,
                         );
                         value_ref.vault().resource_address()
@@ -1703,26 +1712,28 @@ where
                 let method_auth = {
                     let resource_address = {
                         let value_ref = cur_location.to_ref(
-                            &mut self.owned_values,
-                            &mut self.parent_values,
+                            &mut self.owned_heap_nodes,
+                            &mut self.parent_heap_nodes,
                             &mut self.track,
                         );
                         value_ref.vault().resource_address()
                     };
-                    let resource_manager =
-                        self.track.read_value(resource_address).resource_manager();
+                    let resource_manager = self
+                        .track
+                        .read_substate(resource_address)
+                        .resource_manager();
                     resource_manager.get_vault_auth(&fn_ident).clone()
                 };
 
                 value_refs.insert(
                     node_id.clone(),
-                    REValueInfo {
+                    RENodeInfo {
                         location: next_location,
                         visible: true,
                     },
                 );
 
-                Ok((SNodeExecution::ValueRef(node_id), vec![method_auth]))
+                Ok((SNodeExecution::RENodeRef(node_id), vec![method_auth]))
             }
         }?;
 
@@ -1736,8 +1747,8 @@ where
             match &loaded_snode {
                 // Resource auth check includes caller
                 SNodeExecution::Scrypto(..)
-                | SNodeExecution::ValueRef(RENodeId::Resource(..), ..)
-                | SNodeExecution::ValueRef(RENodeId::Vault(..), ..)
+                | SNodeExecution::RENodeRef(RENodeId::Resource(..), ..)
+                | SNodeExecution::RENodeRef(RENodeId::Vault(..), ..)
                 | SNodeExecution::Consumed(RENodeId::Bucket(..)) => {
                     if let Some(auth_zone) = self.caller_auth_zone {
                         auth_zones.push(auth_zone.borrow());
@@ -1763,11 +1774,11 @@ where
         }
 
         // Setup next parent frame
-        let mut next_borrowed_values: Vec<&mut HashMap<RENodeId, REValue>> = Vec::new();
-        for parent_values in &mut self.parent_values {
+        let mut next_borrowed_values: Vec<&mut HashMap<RENodeId, HeapRootRENode>> = Vec::new();
+        for parent_values in &mut self.parent_heap_nodes {
             next_borrowed_values.push(parent_values);
         }
-        next_borrowed_values.push(&mut self.owned_values);
+        next_borrowed_values.push(&mut self.owned_heap_nodes);
 
         // start a new frame
         let mut frame = CallFrame::new(
@@ -1808,7 +1819,7 @@ where
         // move buckets and proofs to this process.
         for (id, value) in received_values {
             trace!(self, Level::Debug, "Received value: {:?}", value);
-            self.owned_values.insert(id, value);
+            self.owned_heap_nodes.insert(id, value);
         }
 
         trace!(self, Level::Debug, "Invoking finished!");
@@ -1862,7 +1873,7 @@ where
         )?;
 
         let info = self
-            .value_refs
+            .node_refs
             .get(node_id)
             .expect(&format!("{:?} is unknown.", node_id));
         if !info.visible {
@@ -1871,7 +1882,7 @@ where
 
         Ok(info
             .location
-            .to_ref(&self.owned_values, &self.parent_values, &self.track))
+            .to_ref(&self.owned_heap_nodes, &self.parent_heap_nodes, &self.track))
     }
 
     fn borrow_node_mut(
@@ -1922,16 +1933,16 @@ where
         )?;
 
         let info = self
-            .value_refs
+            .node_refs
             .get(node_id)
-            .expect(&format!("Value should exist {:?}", node_id));
+            .expect(&format!("Node should exist {:?}", node_id));
         if !info.visible {
             panic!("Trying to read value which is not visible.")
         }
 
         Ok(info.location.borrow_native_ref(
-            &mut self.owned_values,
-            &mut self.parent_values,
+            &mut self.owned_heap_nodes,
+            &mut self.parent_heap_nodes,
             &mut self.track,
         ))
     }
@@ -1975,25 +1986,22 @@ where
         )?;
 
         val_ref.return_to_location(
-            &mut self.owned_values,
-            &mut self.parent_values,
+            &mut self.owned_heap_nodes,
+            &mut self.parent_heap_nodes,
             &mut self.track,
         );
         Ok(())
     }
 
-    fn drop_node(&mut self, node_id: &RENodeId) -> Result<REValue, CostUnitCounterError> {
+    fn drop_node(&mut self, node_id: &RENodeId) -> Result<HeapRootRENode, CostUnitCounterError> {
         trace!(self, Level::Debug, "Dropping value: {:?}", node_id);
 
         // TODO: costing
 
-        Ok(self.owned_values.remove(&node_id).unwrap())
+        Ok(self.owned_heap_nodes.remove(&node_id).unwrap())
     }
 
-    fn create_node<V: Into<REValueByComplexity>>(
-        &mut self,
-        v: V,
-    ) -> Result<RENodeId, RuntimeError> {
+    fn create_node<V: Into<RENodeByComplexity>>(&mut self, v: V) -> Result<RENodeId, RuntimeError> {
         trace!(self, Level::Debug, "Creating value");
 
         self.cost_unit_counter
@@ -2008,57 +2016,57 @@ where
 
         let value_by_complexity = v.into();
         let id = match value_by_complexity {
-            REValueByComplexity::Primitive(REPrimitiveValue::Bucket(..)) => {
+            RENodeByComplexity::Primitive(REPrimitiveNode::Bucket(..)) => {
                 let bucket_id = self.new_bucket_id();
                 RENodeId::Bucket(bucket_id)
             }
-            REValueByComplexity::Primitive(REPrimitiveValue::Proof(..)) => {
+            RENodeByComplexity::Primitive(REPrimitiveNode::Proof(..)) => {
                 let proof_id = self.new_proof_id();
                 RENodeId::Proof(proof_id)
             }
-            REValueByComplexity::Primitive(REPrimitiveValue::Worktop(..)) => RENodeId::Worktop,
-            REValueByComplexity::Primitive(REPrimitiveValue::Vault(..)) => {
+            RENodeByComplexity::Primitive(REPrimitiveNode::Worktop(..)) => RENodeId::Worktop,
+            RENodeByComplexity::Primitive(REPrimitiveNode::Vault(..)) => {
                 let vault_id = self.new_vault_id();
                 RENodeId::Vault(vault_id)
             }
-            REValueByComplexity::Primitive(REPrimitiveValue::KeyValue(..)) => {
+            RENodeByComplexity::Primitive(REPrimitiveNode::KeyValue(..)) => {
                 let kv_store_id = self.new_kv_store_id();
                 RENodeId::KeyValueStore(kv_store_id)
             }
-            REValueByComplexity::Primitive(REPrimitiveValue::Package(..)) => {
+            RENodeByComplexity::Primitive(REPrimitiveNode::Package(..)) => {
                 let package_address = self.new_package_address();
                 RENodeId::Package(package_address)
             }
-            REValueByComplexity::Primitive(REPrimitiveValue::Resource(..)) => {
+            RENodeByComplexity::Primitive(REPrimitiveNode::Resource(..)) => {
                 let resource_address = self.new_resource_address();
                 RENodeId::Resource(resource_address)
             }
-            REValueByComplexity::Complex(REComplexValue::Component(ref component, ..)) => {
+            RENodeByComplexity::Complex(REComplexValue::Component(ref component, ..)) => {
                 let component_address = self.new_component_address(component);
                 RENodeId::Component(component_address)
             }
         };
 
         let re_value = match value_by_complexity {
-            REValueByComplexity::Primitive(primitive) => primitive.into(),
-            REValueByComplexity::Complex(complex) => {
+            RENodeByComplexity::Primitive(primitive) => primitive.into(),
+            RENodeByComplexity::Complex(complex) => {
                 let children = complex.get_children()?;
                 let (child_values, mut missing) = self.take_available_values(children, true)?;
                 let first_missing_value = missing.drain().nth(0);
                 if let Some(missing_value) = first_missing_value {
-                    return Err(RuntimeError::ValueNotFound(missing_value));
+                    return Err(RuntimeError::RENodeNotFound(missing_value));
                 }
-                complex.into_re_value(child_values)
+                complex.into_re_node(child_values)
             }
         };
-        self.owned_values.insert(id, re_value);
+        self.owned_heap_nodes.insert(id, re_value);
 
         match id {
             RENodeId::KeyValueStore(..) | RENodeId::Resource(..) => {
-                self.value_refs.insert(
+                self.node_refs.insert(
                     id.clone(),
-                    REValueInfo {
-                        location: REValuePointer::Stack {
+                    RENodeInfo {
+                        location: RENodePointer::Stack {
                             frame_id: None,
                             root: id.clone(),
                             id: None,
@@ -2163,8 +2171,8 @@ where
 
         // Write values
         let value_ref = location.to_ref_mut(
-            &mut self.owned_values,
-            &mut self.parent_values,
+            &mut self.owned_heap_nodes,
+            &mut self.parent_heap_nodes,
             &mut self.track,
         );
         substate_id.replace_value_with_default(value_ref);
@@ -2191,11 +2199,11 @@ where
 
             // Extend current readable space when kv stores are found
             let visible = matches!(child_id, RENodeId::KeyValueStore(..));
-            let child_info = REValueInfo {
+            let child_info = RENodeInfo {
                 location: child_location,
                 visible,
             };
-            self.value_refs.insert(child_id, child_info);
+            self.node_refs.insert(child_id, child_info);
         }
         Ok(current_value)
     }
@@ -2220,7 +2228,7 @@ where
         substate_id.verify_can_write()?;
 
         // If write, take values from current frame
-        let (taken_values, missing) = {
+        let (taken_nodes, missing_nodes) = {
             let node_ids = value.node_ids();
             if !node_ids.is_empty() {
                 if !substate_id.can_own_nodes() {
@@ -2237,17 +2245,17 @@ where
         let cur_children = current_value.node_ids();
 
         // Fulfill method
-        verify_stored_value_update(&cur_children, &missing)?;
+        verify_stored_value_update(&cur_children, &missing_nodes)?;
 
         // TODO: verify against some schema
 
         // Write values
-        let value_ref = location.to_ref_mut(
-            &mut self.owned_values,
-            &mut self.parent_values,
+        let node_ref = location.to_ref_mut(
+            &mut self.owned_heap_nodes,
+            &mut self.parent_heap_nodes,
             &mut self.track,
         );
-        substate_id.write_value(value_ref, value, taken_values);
+        substate_id.write_value(node_ref, value, taken_nodes);
 
         Ok(())
     }
@@ -2290,7 +2298,7 @@ where
         let proofs = proof_ids
             .iter()
             .map(|proof_id| {
-                self.owned_values
+                self.owned_heap_nodes
                     .get(&RENodeId::Proof(*proof_id))
                     .map(|p| match p.root() {
                         RENode::Proof(proof) => proof.clone(),

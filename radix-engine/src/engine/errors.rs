@@ -60,11 +60,11 @@ pub enum RuntimeError {
 
     InvalidDataAccess(RENodeId),
     InvalidDataWrite,
-    ValueNotFound(RENodeId),
+    RENodeNotFound(RENodeId),
 
     MovingInvalidType,
-    StoredValueRemoved(RENodeId),
-    StoredValueChangedChildren,
+    StoredNodeRemoved(RENodeId),
+    StoredNodeChangedChildren,
 
     /// Bucket does not exist.
     BucketNotFound(BucketId),
@@ -132,9 +132,9 @@ pub enum RuntimeError {
 
 #[derive(Debug, PartialEq)]
 pub enum PayFeeError {
-    ValueNotInTrack,
-    ValueAlreadyTouched,
-    ValueNotFound,
+    RENodeNotInTrack,
+    RENodeAlreadyTouched,
+    RENodeNotFound,
     NotRadixToken,
 }
 

@@ -58,13 +58,13 @@ impl RadixEngineDB {
         items
     }
 
-    fn read(&self, key: &SubstateId) -> Option<Vec<u8>> {
+    fn read(&self, substate_id: &SubstateId) -> Option<Vec<u8>> {
         // TODO: Use get_pinned
-        self.db.get(scrypto_encode(key)).unwrap()
+        self.db.get(scrypto_encode(substate_id)).unwrap()
     }
 
-    fn write(&self, key: SubstateId, value: Vec<u8>) {
-        self.db.put(scrypto_encode(&key), value).unwrap();
+    fn write(&self, substate_id: SubstateId, value: Vec<u8>) {
+        self.db.put(scrypto_encode(&substate_id), value).unwrap();
     }
 }
 
@@ -97,13 +97,13 @@ impl QueryableSubstateStore for RadixEngineDB {
 }
 
 impl ReadableSubstateStore for RadixEngineDB {
-    fn get_substate(&self, address: &SubstateId) -> Option<OutputValue> {
-        self.read(address).map(|b| scrypto_decode(&b).unwrap())
+    fn get_substate(&self, substate_id: &SubstateId) -> Option<OutputValue> {
+        self.read(substate_id).map(|b| scrypto_decode(&b).unwrap())
     }
 }
 
 impl WriteableSubstateStore for RadixEngineDB {
-    fn put_substate(&mut self, address: SubstateId, substate: OutputValue) {
-        self.write(address, scrypto_encode(&substate));
+    fn put_substate(&mut self, substate_id: SubstateId, substate: OutputValue) {
+        self.write(substate_id, scrypto_encode(&substate));
     }
 }
