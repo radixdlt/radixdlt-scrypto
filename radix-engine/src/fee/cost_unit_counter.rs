@@ -29,6 +29,7 @@ pub trait CostUnitCounter {
         &mut self,
         vault_id: VaultId,
         fee: ResourceContainer,
+        contingent: bool,
     ) -> Result<ResourceContainer, CostUnitCounterError>;
 
     fn finalize(self) -> FeeSummary;
@@ -48,7 +49,7 @@ pub struct SystemLoanCostUnitCounter {
     /// The tip percentage
     tip_percentage: u32,
     /// Payments made during the execution of a transaction.
-    payments: Vec<(VaultId, ResourceContainer)>,
+    payments: Vec<(VaultId, ResourceContainer, bool)>,
     /// The balance cost units
     balance: u32,
     /// The number of cost units owed to the system
@@ -113,6 +114,7 @@ impl CostUnitCounter for SystemLoanCostUnitCounter {
         &mut self,
         vault_id: VaultId,
         mut fee: ResourceContainer,
+        contingent: bool,
     ) -> Result<ResourceContainer, CostUnitCounterError> {
         let effective_cost_unit_price =
             self.cost_unit_price + self.cost_unit_price * self.tip_percentage / 100;
@@ -126,14 +128,16 @@ impl CostUnitCounter for SystemLoanCostUnitCounter {
         )
         .map_err(|_| CostUnitCounterError::CounterOverflow)?;
 
-        if n >= self.owed {
-            self.balance = self
-                .balance
-                .checked_add(n - self.owed)
-                .ok_or(CostUnitCounterError::CounterOverflow)?;
-            self.owed = 0;
-        } else {
-            self.owed -= n;
+        if !contingent {
+            if n >= self.owed {
+                self.balance = self
+                    .balance
+                    .checked_add(n - self.owed)
+                    .ok_or(CostUnitCounterError::CounterOverflow)?;
+                self.owed = 0;
+            } else {
+                self.owed -= n;
+            }
         }
 
         let actual_amount = effective_cost_unit_price * n;
@@ -141,6 +145,7 @@ impl CostUnitCounter for SystemLoanCostUnitCounter {
             vault_id,
             fee.take_by_amount(actual_amount)
                 .expect("Check manual accounting"),
+                contingent,
         ));
 
         Ok(fee)
@@ -238,6 +243,7 @@ impl CostUnitCounter for UnlimitedLoanCostUnitCounter {
         &mut self,
         _vault_id: VaultId,
         fee: ResourceContainer,
+        _contingent: bool,
     ) -> Result<ResourceContainer, CostUnitCounterError> {
         Ok(fee) // No-op
     }
@@ -298,7 +304,7 @@ mod tests {
     fn test_consume_and_repay() {
         let mut counter = SystemLoanCostUnitCounter::new(100, 0, 1.into(), 5);
         counter.consume(2, "test").unwrap();
-        counter.repay(TEST_VAULT_ID, xrd(3)).unwrap();
+        counter.repay(TEST_VAULT_ID, xrd(3), false).unwrap();
         assert_eq!(3, counter.balance());
         assert_eq!(2, counter.consumed());
         assert_eq!(2, counter.owed());
@@ -318,18 +324,18 @@ mod tests {
         let mut counter = SystemLoanCostUnitCounter::new(100, 0, 1.into(), 0);
         assert_eq!(
             Ok(xrd(0)),
-            counter.repay(TEST_VAULT_ID, xrd(u32::max_value()))
+            counter.repay(TEST_VAULT_ID, xrd(u32::max_value()), false)
         );
         assert_eq!(
             Err(CostUnitCounterError::CounterOverflow),
-            counter.repay(TEST_VAULT_ID, xrd(1))
+            counter.repay(TEST_VAULT_ID, xrd(1), false)
         );
     }
 
     #[test]
     fn test_repay() {
         let mut counter = SystemLoanCostUnitCounter::new(100, 0, 1.into(), 500);
-        counter.repay(TEST_VAULT_ID, xrd(100)).unwrap();
+        counter.repay(TEST_VAULT_ID, xrd(100), false).unwrap();
         assert_eq!(500, counter.balance());
         assert_eq!(400, counter.owed());
     }
@@ -337,9 +343,9 @@ mod tests {
     #[test]
     fn test_xrd_cost_unit_conversion() {
         let mut counter = SystemLoanCostUnitCounter::new(100, 0, 5.into(), 500);
-        counter.repay(TEST_VAULT_ID, xrd(100)).unwrap();
+        counter.repay(TEST_VAULT_ID, xrd(100), false).unwrap();
         assert_eq!(500, counter.balance());
         assert_eq!(500 - 100 / 5, counter.owed());
-        assert_eq!(vec![(TEST_VAULT_ID, xrd(100))], counter.finalize().payments)
+        assert_eq!(vec![(TEST_VAULT_ID, xrd(100), false)], counter.finalize().payments)
     }
 }
