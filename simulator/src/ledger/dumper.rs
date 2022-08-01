@@ -1,6 +1,6 @@
 #![allow(unused_must_use)]
 use colored::*;
-use radix_engine::engine::Address;
+use radix_engine::engine::SubstateId;
 use radix_engine::ledger::*;
 use radix_engine::model::*;
 use sbor::rust::collections::HashSet;
@@ -31,7 +31,7 @@ pub fn dump_package<T: ReadableSubstateStore, O: std::io::Write>(
     let bech32_encoder = Bech32Encoder::new_from_network(&Network::LocalSimulator);
 
     let package: Option<ValidatedPackage> = substate_store
-        .get_substate(&Address::Package(package_address))
+        .get_substate(&SubstateId::Package(package_address))
         .map(|s| s.substate)
         .map(|s| s.into());
     match package {
@@ -65,7 +65,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
     let bech32_encoder = Bech32Encoder::new_from_network(&Network::LocalSimulator);
 
     let component: Option<Component> = substate_store
-        .get_substate(&Address::GlobalComponent(component_address))
+        .get_substate(&SubstateId::ComponentInfo(component_address, true))
         .map(|s| s.substate)
         .map(|s| s.into());
     match component {
@@ -94,8 +94,13 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
                 }
             }
 
-            let state = c.state();
-            let state_data = ScryptoValue::from_slice(state).unwrap();
+            let state: ComponentState = substate_store
+                .get_substate(&SubstateId::ComponentState(component_address))
+                .map(|s| s.substate)
+                .map(|s| s.into())
+                .unwrap();
+
+            let state_data = ScryptoValue::from_slice(state.state()).unwrap();
             writeln!(output, "{}: {}", "State".green().bold(), state_data);
 
             // Find all vaults owned by the component, assuming a tree structure.
@@ -155,14 +160,14 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
     writeln!(output, "{}:", "Resources".green().bold());
     for (last, vault_id) in vaults.iter().identify_last() {
         let vault: Vault = substate_store
-            .get_substate(&Address::Vault(*vault_id))
+            .get_substate(&SubstateId::Vault(*vault_id))
             .map(|s| s.substate)
             .map(|s| s.into())
             .unwrap();
         let amount = vault.total_amount();
         let resource_address = vault.resource_address();
         let resource_manager: ResourceManager = substate_store
-            .get_substate(&Address::ResourceManager(resource_address))
+            .get_substate(&SubstateId::ResourceManager(resource_address))
             .map(|s| s.substate)
             .map(|s| s.into())
             .unwrap();
@@ -189,7 +194,7 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
             let ids = vault.total_ids().unwrap();
             for (inner_last, id) in ids.iter().identify_last() {
                 let non_fungible: NonFungibleWrapper = substate_store
-                    .get_substate(&Address::NonFungible(resource_address, id.to_vec()))
+                    .get_substate(&SubstateId::NonFungible(resource_address, id.clone()))
                     .map(|s| s.substate)
                     .map(|s| s.into())
                     .unwrap();
@@ -222,7 +227,7 @@ pub fn dump_resource_manager<T: ReadableSubstateStore, O: std::io::Write>(
     output: &mut O,
 ) -> Result<(), DisplayError> {
     let resource_manager: Option<ResourceManager> = substate_store
-        .get_substate(&Address::ResourceManager(resource_address))
+        .get_substate(&SubstateId::ResourceManager(resource_address))
         .map(|s| s.substate)
         .map(|s| s.into());
     match resource_manager {

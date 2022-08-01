@@ -343,15 +343,15 @@ impl Proof {
         I: WasmInstance,
         C: CostUnitCounter,
     >(
-        value_id: ValueId,
+        node_id: RENodeId,
         method_name: &str,
         arg: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, ProofError> {
-        let mut value_ref = system_api
-            .borrow_value_mut(&value_id)
+        let mut node_ref = system_api
+            .borrow_node_mut(&node_id)
             .map_err(ProofError::CostingError)?;
-        let proof = value_ref.proof();
+        let proof = node_ref.proof();
 
         let rtn = match method_name {
             "amount" => {
@@ -374,7 +374,7 @@ impl Proof {
                 let _: ProofCloneInput =
                     scrypto_decode(&arg.raw).map_err(|e| ProofError::InvalidRequestData(e))?;
                 let cloned_proof = proof.clone();
-                let proof_id = system_api.create_value(cloned_proof).unwrap().into();
+                let proof_id = system_api.create_node(cloned_proof).unwrap().into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Proof(
                     proof_id,
                 )))
@@ -383,7 +383,7 @@ impl Proof {
         }?;
 
         system_api
-            .return_value_mut(value_ref)
+            .return_node_mut(node_ref)
             .map_err(ProofError::CostingError)?;
         Ok(rtn)
     }
@@ -396,13 +396,13 @@ impl Proof {
         I: WasmInstance,
         C: CostUnitCounter,
     >(
-        value_id: ValueId,
+        node_id: RENodeId,
         method_name: &str,
         arg: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, ProofError> {
         let proof: Proof = system_api
-            .drop_value(&value_id)
+            .drop_node(&node_id)
             .map_err(ProofError::CostingError)?
             .into();
         match method_name {

@@ -10,7 +10,7 @@ use crate::engine::*;
 use crate::fee::*;
 use crate::wasm::*;
 
-use super::call_frame::REValueRef;
+use super::call_frame::RENodeRef;
 
 pub trait SystemApi<'p, 's, W, I, C>
 where
@@ -29,35 +29,30 @@ where
         input: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError>;
 
-    fn globalize_value(&mut self, value_id: &ValueId) -> Result<(), CostUnitCounterError>;
+    fn globalize_node(&mut self, value_id: &RENodeId) -> Result<(), CostUnitCounterError>;
 
-    fn borrow_value(
+    fn borrow_node(
         &mut self,
-        value_id: &ValueId,
-    ) -> Result<REValueRef<'_, 's>, CostUnitCounterError>;
+        value_id: &RENodeId,
+    ) -> Result<RENodeRef<'_, 's>, CostUnitCounterError>;
 
-    fn borrow_value_mut(
+    fn borrow_node_mut(
         &mut self,
-        value_id: &ValueId,
-    ) -> Result<RENativeValueRef, CostUnitCounterError>;
+        value_id: &RENodeId,
+    ) -> Result<NativeRENodeRef, CostUnitCounterError>;
 
-    fn return_value_mut(&mut self, val_ref: RENativeValueRef) -> Result<(), CostUnitCounterError>;
+    fn return_node_mut(&mut self, val_ref: NativeRENodeRef) -> Result<(), CostUnitCounterError>;
 
-    fn drop_value(&mut self, value_id: &ValueId) -> Result<REValue, CostUnitCounterError>;
+    fn drop_node(&mut self, value_id: &RENodeId) -> Result<HeapRootRENode, CostUnitCounterError>;
+    fn create_node<V: Into<RENodeByComplexity>>(&mut self, v: V) -> Result<RENodeId, RuntimeError>;
 
-    fn create_value<V: Into<REValueByComplexity>>(&mut self, v: V)
-        -> Result<ValueId, RuntimeError>;
-
-    fn read_value_data(&mut self, address: SubstateAddress) -> Result<ScryptoValue, RuntimeError>;
-
-    fn write_value_data(
+    fn read_substate(&mut self, substate_id: SubstateId) -> Result<ScryptoValue, RuntimeError>;
+    fn write_substate(
         &mut self,
-        address: SubstateAddress,
+        substate_id: SubstateId,
         value: ScryptoValue,
     ) -> Result<(), RuntimeError>;
-
-    fn remove_value_data(&mut self, address: SubstateAddress)
-        -> Result<ScryptoValue, RuntimeError>;
+    fn take_substate(&mut self, substate_id: SubstateId) -> Result<ScryptoValue, RuntimeError>;
 
     fn transaction_hash(&mut self) -> Result<Hash, CostUnitCounterError>;
 

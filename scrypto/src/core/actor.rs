@@ -14,7 +14,7 @@ pub enum ScryptoActor {
 pub struct ScryptoActorInfo {
     package_address: PackageAddress,
     blueprint_name: String,
-    component_address: Option<ComponentAddress>,
+    component_address: Option<(ComponentAddress, bool)>,
 }
 
 impl ScryptoActorInfo {
@@ -30,20 +30,21 @@ impl ScryptoActorInfo {
         package_address: PackageAddress,
         blueprint_name: String,
         component_address: ComponentAddress,
+        is_global: bool,
     ) -> Self {
         Self {
             package_address,
             blueprint_name,
-            component_address: Some(component_address),
+            component_address: Some((component_address, is_global)),
         }
     }
 
-    pub fn component_address(&self) -> Option<ComponentAddress> {
+    pub fn component_address(&self) -> Option<(ComponentAddress, bool)> {
         self.component_address
     }
 
     pub fn actor(&self) -> ScryptoActor {
-        if let Some(addr) = self.component_address {
+        if let Some((addr, ..)) = self.component_address {
             ScryptoActor::Component(addr)
         } else {
             ScryptoActor::Blueprint(self.package_address.clone(), self.blueprint_name.clone())

@@ -189,7 +189,6 @@ fn generate_dispatcher(
                 let mut dispatch_args: Vec<Expr> = vec![];
                 let mut stmts: Vec<Stmt> = vec![];
                 let mut get_state: Option<Stmt> = None;
-                let mut put_state: Option<Stmt> = None;
                 for (i, input) in (&m.sig.inputs).into_iter().enumerate() {
                     match input {
                         FnArg::Receiver(ref r) => {
@@ -199,27 +198,18 @@ fn generate_dispatcher(
                             }
                             let mutability = r.mutability;
 
-                            // Generate an `Arg` and a loading `Stmt` for the i-th argument
-                            dispatch_args.push(parse_quote! { & #mutability state });
-
                             // Generate a `Stmt` for loading the component state
                             assert!(get_state.is_none(), "Can't have more than 1 self reference");
-                            get_state = Some(parse_quote! {
-                                let #mutability state: #module_ident::#bp_ident = {
-                                    let address = DataAddress::Component(component_address, ComponentOffset::State);
-                                    let input = ::scrypto::engine::api::RadixEngineInput::ReadData(address);
-                                    ::scrypto::engine::call_engine(input)
-                                };
-                            });
-
-                            // Generate a `Stmt` for writing back component state
                             if mutability.is_some() {
-                                put_state = Some(parse_quote! {
-                                    {
-                                        let address = DataAddress::Component(component_address, ComponentOffset::State);
-                                        let input = ::scrypto::engine::api::RadixEngineInput::WriteData(address, scrypto_encode(&state));
-                                        let _: () = ::scrypto::engine::call_engine(input);
-                                    }
+                                // Generate an `Arg` and a loading `Stmt` for the i-th argument
+                                dispatch_args.push(parse_quote! { state.deref_mut() });
+                                get_state = Some(parse_quote! {
+                                    let mut state: DataRefMut<#module_ident::#bp_ident> = component_data.get_mut();
+                                });
+                            } else {
+                                dispatch_args.push(parse_quote! { state.deref() });
+                                get_state = Some(parse_quote! {
+                                    let state: DataRef<#module_ident::#bp_ident> = component_data.get();
                                 });
                             }
                         }
@@ -242,8 +232,14 @@ fn generate_dispatcher(
                 // load state if needed
                 if let Some(stmt) = get_state {
                     trace!("Generated stmt: {}", quote! { #stmt });
+                    stmts.push(parse_quote! {
+                        let actor = ::scrypto::core::Runtime::actor();
+                    });
+                    stmts.push(parse_quote! {
+                        let (component_address, _is_global) = actor.component_address().unwrap();
+                    });
                     stmts.push(parse_quote!{
-                        let component_address = ::scrypto::core::Runtime::actor().component_address().unwrap();
+                        let mut component_data = ::scrypto::core::DataPointer::new(DataAddress::ComponentState(component_address));
                     });
                     stmts.push(stmt);
                 }
@@ -258,16 +254,14 @@ fn generate_dispatcher(
                 stmts.push(stmt);
 
                 // update state
-                if let Some(stmt) = put_state {
-                    trace!("Generated stmt: {}", quote! { #stmt });
-                    stmts.push(stmt);
-                }
                 stmts.push(Stmt::Expr(parse_quote! { rtn }));
 
                 let fn_ident = format_ident!("{}_{}", bp_ident, ident);
                 let extern_function = quote! {
                     #[no_mangle]
                     pub extern "C" fn #fn_ident(method_arg: *mut u8) -> *mut u8 {
+                        use ::sbor::rust::ops::{Deref, DerefMut};
+
                         // Set up panic hook
                         ::scrypto::misc::set_up_panic_hook();
 
@@ -579,6 +573,8 @@ mod tests {
 
                 #[no_mangle]
                 pub extern "C" fn Test_x(method_arg: *mut u8) -> *mut u8 {
+                    use ::sbor::rust::ops::{Deref, DerefMut};
+
                     // Set up panic hook
                     ::scrypto::misc::set_up_panic_hook();
 
@@ -587,18 +583,19 @@ mod tests {
                     ::scrypto::resource::init_resource_system(::scrypto::resource::ResourceSystem::new());
 
                     let input: Test_x_Input = ::scrypto::buffer::scrypto_decode_from_buffer(method_arg).unwrap();
-                    let component_address = ::scrypto::core::Runtime::actor().component_address().unwrap();
-                    let state: Test_impl::Test = {
-                        let address = DataAddress::Component(component_address, ComponentOffset::State);
-                        let input = ::scrypto::engine::api::RadixEngineInput::ReadData(address);
-                        ::scrypto::engine::call_engine(input)
-                    };
-                    let rtn = ::scrypto::buffer::scrypto_encode_to_buffer(&Test_impl::Test::x(&state, input.arg0));
+                    let actor = ::scrypto::core::Runtime::actor();
+                    let (component_address, _is_global) = actor.component_address().unwrap();
+                    let mut component_data = ::scrypto::core::DataPointer::new(DataAddress::ComponentState(component_address));
+                    let state: DataRef<Test_impl::Test> = component_data.get();
+
+                    let rtn = ::scrypto::buffer::scrypto_encode_to_buffer(&Test_impl::Test::x(state.deref(), input.arg0));
                     rtn
                 }
 
                 #[no_mangle]
                 pub extern "C" fn Test_y(method_arg: *mut u8) -> *mut u8 {
+                    use ::sbor::rust::ops::{Deref, DerefMut};
+
                     // Set up panic hook
                     ::scrypto::misc::set_up_panic_hook();
 

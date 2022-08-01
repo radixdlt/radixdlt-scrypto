@@ -84,7 +84,7 @@ impl TransactionProcessor {
                 let mut id_allocator = IdAllocator::new(IdSpace::Transaction);
 
                 let _worktop_id = system_api
-                    .create_value(Worktop::new())
+                    .create_node(Worktop::new())
                     .expect("Should never fail.");
 
                 for inst in &input.instructions.clone() {
@@ -351,7 +351,7 @@ impl TransactionProcessor {
                             .remove(proof_id)
                             .map(|real_id| {
                                 system_api.invoke_snode(
-                                    SNodeRef::Consumed(ValueId::Proof(real_id)),
+                                    SNodeRef::Consumed(RENodeId::Proof(real_id)),
                                     "drop".to_string(),
                                     ScryptoValue::from_typed(&ConsumingProofDropInput {}),
                                 )
@@ -464,7 +464,7 @@ impl TransactionProcessor {
                                 for (_, real_id) in proof_id_mapping.drain() {
                                     system_api
                                         .invoke_snode(
-                                            SNodeRef::Consumed(ValueId::Proof(real_id)),
+                                            SNodeRef::Consumed(RENodeId::Proof(real_id)),
                                             "drop".to_string(),
                                             ScryptoValue::from_typed(&ConsumingProofDropInput {}),
                                         )

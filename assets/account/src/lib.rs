@@ -43,7 +43,7 @@ blueprint! {
         }
 
         pub fn lock_fee(&mut self, amount: Decimal) {
-            let vault = self.vaults.get(&RADIX_TOKEN);
+            let vault = self.vaults.get_mut(&RADIX_TOKEN);
             match vault {
                 Some(mut vault) => vault.lock_fee(amount),
                 None => {
@@ -53,7 +53,7 @@ blueprint! {
         }
 
         pub fn lock_contingent_fee(&mut self, amount: Decimal) {
-            let vault = self.vaults.get(&RADIX_TOKEN);
+            let vault = self.vaults.get_mut(&RADIX_TOKEN);
             match vault {
                 Some(mut vault) => vault.lock_contingent_fee(amount),
                 None => {
@@ -65,14 +65,12 @@ blueprint! {
         /// Deposits resource into this account.
         pub fn deposit(&mut self, bucket: Bucket) {
             let resource_address = bucket.resource_address();
-            match self.vaults.get(&resource_address) {
-                Some(mut v) => {
-                    v.put(bucket);
-                }
-                None => {
-                    let v = Vault::with_bucket(bucket);
-                    self.vaults.insert(resource_address, v);
-                }
+            if self.vaults.get(&resource_address).is_none() {
+                let v = Vault::with_bucket(bucket);
+                self.vaults.insert(resource_address, v);
+            } else {
+                let mut v = self.vaults.get_mut(&resource_address).unwrap();
+                v.put(bucket);
             }
         }
 
@@ -85,7 +83,7 @@ blueprint! {
 
         /// Withdraws resource from this account.
         pub fn withdraw(&mut self, resource_address: ResourceAddress) -> Bucket {
-            let vault = self.vaults.get(&resource_address);
+            let vault = self.vaults.get_mut(&resource_address);
             match vault {
                 Some(mut vault) => vault.take_all(),
                 None => {
@@ -100,7 +98,7 @@ blueprint! {
             amount: Decimal,
             resource_address: ResourceAddress,
         ) -> Bucket {
-            let vault = self.vaults.get(&resource_address);
+            let vault = self.vaults.get_mut(&resource_address);
             match vault {
                 Some(mut vault) => vault.take(amount),
                 None => {
@@ -115,7 +113,7 @@ blueprint! {
             ids: BTreeSet<NonFungibleId>,
             resource_address: ResourceAddress,
         ) -> Bucket {
-            let vault = self.vaults.get(&resource_address);
+            let vault = self.vaults.get_mut(&resource_address);
             match vault {
                 Some(mut vault) => vault.take_non_fungibles(&ids),
                 None => {

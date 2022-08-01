@@ -16,8 +16,10 @@ blueprint! {
             kv_store0.insert(1u32, kv_store1);
 
             // Retrieve reference
-            let kv_store1 = kv_store0.get(&1u32).unwrap();
-            let kv_store1_id = kv_store1.id.clone();
+            let kv_store1_id = {
+                let kv_store1 = kv_store0.get(&1u32).unwrap();
+                kv_store1.id.clone()
+            };
 
             let address = DataAddress::KeyValueEntry(kv_store1_id, scrypto_encode(&0u32));
             let input = RadixEngineInput::WriteData(

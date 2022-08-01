@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-use radix_engine::engine::Address;
 use radix_engine::engine::Substate;
+use radix_engine::engine::SubstateId;
 use radix_engine::ledger::*;
 use rocksdb::{DBWithThreadMode, Direction, IteratorMode, SingleThreaded, DB};
 use sbor::Decode;
@@ -58,13 +58,13 @@ impl RadixEngineDB {
         items
     }
 
-    fn read(&self, key: &Address) -> Option<Vec<u8>> {
+    fn read(&self, substate_id: &SubstateId) -> Option<Vec<u8>> {
         // TODO: Use get_pinned
-        self.db.get(scrypto_encode(key)).unwrap()
+        self.db.get(scrypto_encode(substate_id)).unwrap()
     }
 
-    fn write(&self, key: Address, value: Vec<u8>) {
-        self.db.put(scrypto_encode(&key), value).unwrap();
+    fn write(&self, substate_id: SubstateId, value: Vec<u8>) {
+        self.db.put(scrypto_encode(&substate_id), value).unwrap();
     }
 }
 
@@ -89,7 +89,7 @@ impl QueryableSubstateStore for RadixEngineDB {
             }
 
             let local_key = key.split_at(key_size).1.to_vec();
-            let substate: Output = scrypto_decode(&value.to_vec()).unwrap();
+            let substate: OutputValue = scrypto_decode(&value.to_vec()).unwrap();
             items.insert(local_key, substate.substate);
         }
         items
@@ -97,23 +97,13 @@ impl QueryableSubstateStore for RadixEngineDB {
 }
 
 impl ReadableSubstateStore for RadixEngineDB {
-    fn get_substate(&self, address: &Address) -> Option<Output> {
-        self.read(address).map(|b| scrypto_decode(&b).unwrap())
-    }
-
-    fn get_space(&self, address: &Address) -> OutputId {
-        self.read(address)
-            .map(|b| scrypto_decode(&b).unwrap())
-            .expect("Expected space does not exist")
+    fn get_substate(&self, substate_id: &SubstateId) -> Option<OutputValue> {
+        self.read(substate_id).map(|b| scrypto_decode(&b).unwrap())
     }
 }
 
 impl WriteableSubstateStore for RadixEngineDB {
-    fn put_substate(&mut self, address: Address, substate: Output) {
-        self.write(address, scrypto_encode(&substate));
-    }
-
-    fn put_space(&mut self, address: Address, output_id: OutputId) {
-        self.write(address, scrypto_encode(&output_id));
+    fn put_substate(&mut self, substate_id: SubstateId, substate: OutputValue) {
+        self.write(substate_id, scrypto_encode(&substate));
     }
 }

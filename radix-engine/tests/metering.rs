@@ -179,7 +179,7 @@ fn test_total_cost_unit_consumed() {
         tx_decoding                   :        4
         tx_manifest_verification      :        1
         tx_signature_verification     :        0
-        wasm                          :    96779
+        wasm                          :    97130
         write                         :     5000
     */
     let ft = FeeTable::new();
@@ -194,7 +194,7 @@ fn test_total_cost_unit_consumed() {
             + 5000
             + 1000
             + 45000
-            + 96779
+            + 97130
             + 5000,
         receipt.fee_summary.cost_unit_consumed
     );

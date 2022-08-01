@@ -160,7 +160,7 @@ fn query_account_balance<'s, S>(
 where
     S: radix_engine::ledger::ReadableSubstateStore + WriteableSubstateStore,
 {
-    if let Some(account_comp) = test_runner.inspect_component(account_address) {
+    if let Some(account_comp) = test_runner.inspect_component_state(account_address) {
         let account_comp_state = ScryptoValue::from_slice(account_comp.state()).unwrap();
         if let Some(kv_store_id) = account_comp_state.kv_store_ids.iter().next() {
             if let Some(KeyValueStoreEntryWrapper(Some(value))) = test_runner
