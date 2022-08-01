@@ -1,8 +1,10 @@
 use core::ops::RangeFull;
 
 use indexmap::IndexMap;
+use sbor::rust::vec::Vec;
+use scrypto::buffer::scrypto_decode;
+use scrypto::buffer::scrypto_encode;
 use scrypto::crypto::hash;
-use scrypto::prelude::scrypto_encode;
 
 use crate::engine::*;
 use crate::ledger::*;
@@ -14,7 +16,12 @@ pub struct BaseStateTrack<'s> {
     /// The parent state track
     substate_store: &'s dyn ReadableSubstateStore,
     /// Substates either created during the transaction or loaded from substate store
-    substates: IndexMap<SubstateId, Option<Substate>>,
+    ///
+    /// TODO: can we use Substate instead of `Vec<u8>`?
+    /// We're currently blocked by some Substate using `Rc<RefCell<T>>`, which may break
+    /// the separation between app state track and base stack track.
+    ///
+    substates: IndexMap<SubstateId, Option<Vec<u8>>>,
 }
 
 /// Keeps track of state changes that may be rolled back according to transaction status
@@ -22,7 +29,7 @@ pub struct AppStateTrack<'s> {
     /// The parent state track
     base_state_track: BaseStateTrack<'s>,
     /// Substates either created during the transaction or loaded from the base state track
-    substates: IndexMap<SubstateId, Option<Substate>>,
+    substates: IndexMap<SubstateId, Option<Vec<u8>>>,
 }
 
 impl<'s> BaseStateTrack<'s> {
@@ -66,7 +73,7 @@ impl<'s> BaseStateTrack<'s> {
                         };
 
                         let output_value = OutputValue {
-                            substate: substate.clone(),
+                            substate: scrypto_decode(&substate).unwrap(),
                             version: next_version,
                         };
                         diff.up_substates.insert(substate_id.clone(), output_value);
@@ -86,7 +93,7 @@ impl<'s> BaseStateTrack<'s> {
                         };
 
                         let output_value = OutputValue {
-                            substate: substate.clone(),
+                            substate: scrypto_decode(&substate).unwrap(),
                             version: next_version,
                         };
                         diff.up_substates.insert(substate_id.clone(), output_value);
@@ -102,7 +109,7 @@ impl<'s> BaseStateTrack<'s> {
                             0
                         };
                         let output_value = OutputValue {
-                            substate: substate.clone(),
+                            substate: scrypto_decode(&substate).unwrap(),
                             version: next_version,
                         };
                         diff.up_substates.insert(substate_id.clone(), output_value);
@@ -146,10 +153,11 @@ impl<'s> AppStateTrack<'s> {
                         self.base_state_track
                             .substate_store
                             .get_substate(substate_id)
-                            .map(|s| s.substate)
+                            .map(|s| scrypto_encode(&s.substate))
                     })
             })
-            .clone()
+            .as_ref()
+            .map(|x| scrypto_decode(x).unwrap())
     }
 
     /// Returns a copy of the substate associated with the given address from the base track
@@ -170,14 +178,16 @@ impl<'s> AppStateTrack<'s> {
                 self.base_state_track
                     .substate_store
                     .get_substate(substate_id)
-                    .map(|s| s.substate)
+                    .map(|s| scrypto_encode(&s.substate))
             })
-            .clone())
+            .as_ref()
+            .map(|x| scrypto_decode(x).unwrap()))
     }
 
     /// Creates a new substate and updates an existing one
     pub fn put_substate(&mut self, substate_id: SubstateId, substate: Substate) {
-        self.substates.insert(substate_id, Some(substate));
+        self.substates
+            .insert(substate_id, Some(scrypto_encode(&substate)));
     }
 
     /// Creates a new substate and updates an existing one to the base track
@@ -186,14 +196,19 @@ impl<'s> AppStateTrack<'s> {
 
         self.base_state_track
             .substates
-            .insert(substate_id, Some(substate));
+            .insert(substate_id, Some(scrypto_encode(&substate)));
     }
 
-    /// Flush all changes to base state track
-    pub fn flush(&mut self) {
+    /// Commit all state changes into base state track
+    pub fn commit(&mut self) {
         self.base_state_track
             .substates
             .extend(self.substates.drain(RangeFull));
+    }
+
+    /// Rollback all state changes
+    pub fn rollback(&mut self) {
+        self.substates.clear();
     }
 
     /// Unwraps into the base state track

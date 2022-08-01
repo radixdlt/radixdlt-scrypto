@@ -57,6 +57,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
 
     // Act
     let mut builder = ManifestBuilder::new(Network::LocalSimulator);
+    builder.lock_fee(10.into(), SYSTEM_COMPONENT);
     builder.create_proof_from_account_by_amount(Decimal::one(), auth_to_use, account);
 
     match action {
@@ -89,7 +90,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
 
     // Assert
     if expect_err {
-        receipt.expect_err(is_auth_error);
+        receipt.expect_failure(is_auth_error);
     } else {
         receipt.expect_success();
     }

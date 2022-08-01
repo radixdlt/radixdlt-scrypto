@@ -237,10 +237,8 @@ pub struct NopWasmRuntime {
 }
 
 impl NopWasmRuntime {
-    pub fn new(cost_unit_limit: u32) -> Self {
-        Self {
-            cost_unit_counter: SystemLoanCostUnitCounter::new(cost_unit_limit, cost_unit_limit),
-        }
+    pub fn new(cost_unit_counter: SystemLoanCostUnitCounter) -> Self {
+        Self { cost_unit_counter }
     }
 }
 

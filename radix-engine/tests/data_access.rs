@@ -18,6 +18,7 @@ fn should_not_be_able_to_read_component_state_after_creation() {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(
             package_address,
             "DataAccess",
@@ -28,7 +29,7 @@ fn should_not_be_able_to_read_component_state_after_creation() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_err(|e| matches!(e, RuntimeError::InvalidDataAccess(..)))
+    receipt.expect_failure(|e| matches!(e, RuntimeError::InvalidDataAccess(..)))
 }
 
 #[test]
@@ -40,6 +41,7 @@ fn should_not_be_able_to_write_component_state_after_creation() {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(
             package_address,
             "DataAccess",
@@ -50,7 +52,7 @@ fn should_not_be_able_to_write_component_state_after_creation() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_err(|e| matches!(e, RuntimeError::InvalidDataAccess(..)))
+    receipt.expect_failure(|e| matches!(e, RuntimeError::InvalidDataAccess(..)))
 }
 
 #[test]
@@ -62,6 +64,7 @@ fn should_be_able_to_read_component_info() {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(
             package_address,
             "DataAccess",
@@ -84,6 +87,7 @@ fn should_not_be_able_to_write_component_info() {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(
             package_address,
             "DataAccess",
@@ -94,5 +98,5 @@ fn should_not_be_able_to_write_component_info() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_err(|e| matches!(e, RuntimeError::InvalidDataWrite));
+    receipt.expect_failure(|e| matches!(e, RuntimeError::InvalidDataWrite));
 }

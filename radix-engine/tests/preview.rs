@@ -5,6 +5,7 @@ use crate::test_runner::TestRunner;
 use radix_engine::ledger::InMemorySubstateStore;
 use radix_engine::transaction::ExecutionParameters;
 use scrypto::core::Network;
+use scrypto::prelude::SYSTEM_COMPONENT;
 use transaction::builder::ManifestBuilder;
 use transaction::builder::TransactionBuilder;
 use transaction::model::*;
@@ -30,8 +31,8 @@ fn test_transaction_preview_cost_estimate() {
     receipt.expect_success();
 
     assert_eq!(
-        preview_receipt.transaction_fee.cost_unit_consumed,
-        receipt.transaction_fee.cost_unit_consumed
+        preview_receipt.fee_summary.cost_unit_consumed,
+        receipt.fee_summary.cost_unit_consumed
     );
 }
 
@@ -51,10 +52,11 @@ fn prepare_test_tx_and_preview_intent(
             notary_public_key: notary_priv_key.public_key(),
             notary_as_signatory: false,
             cost_unit_limit: 10_000_000,
-            tip_bps: 0,
+            tip_percentage: 0,
         })
         .manifest(
             ManifestBuilder::new(Network::LocalSimulator)
+                .lock_fee(10.into(), SYSTEM_COMPONENT)
                 .clear_auth_zone()
                 .build(),
         )
@@ -69,7 +71,7 @@ fn prepare_test_tx_and_preview_intent(
             network: Network::LocalSimulator,
             current_epoch: 1,
             max_cost_unit_limit: 10_000_000,
-            min_tip_bps: 0,
+            min_tip_percentage: 0,
         },
     )
     .unwrap();

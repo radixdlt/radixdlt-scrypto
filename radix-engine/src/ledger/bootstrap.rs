@@ -95,7 +95,8 @@ fn create_genesis(mut track: Track) -> TrackReceipt {
     );
     track.create_uuid_substate(SubstateId::System, System { epoch: 0 });
 
-    track.to_receipt(true)
+    track.commit();
+    track.to_receipt()
 }
 
 pub fn bootstrap<S>(mut substate_store: S) -> S

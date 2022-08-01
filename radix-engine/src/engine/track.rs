@@ -281,11 +281,19 @@ impl<'s> Track<'s> {
         self.state_track.put_substate(substate_id, value.into());
     }
 
-    pub fn to_receipt(mut self, commit_app_state_updates: bool) -> TrackReceipt {
-        if commit_app_state_updates {
-            self.state_track.flush();
-        }
+    pub fn commit(&mut self) {
+        self.state_track.commit();
+    }
 
+    pub fn rollback(&mut self) {
+        self.state_track.rollback();
+
+        // self.application_logs.clear();
+        self.new_substates.clear();
+        self.borrowed_substates.clear();
+    }
+
+    pub fn to_receipt(self) -> TrackReceipt {
         TrackReceipt {
             new_addresses: self.new_substates,
             application_logs: self.application_logs,

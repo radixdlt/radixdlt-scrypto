@@ -37,6 +37,7 @@ impl CallMethod {
         let default_account = get_default_account()?;
 
         let manifest = ManifestBuilder::new(Network::LocalSimulator)
+            .lock_fee(10.into(), SYSTEM_COMPONENT)
             .call_method_with_abi(
                 self.component_address,
                 &self.method_name,

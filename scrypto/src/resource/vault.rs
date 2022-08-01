@@ -55,7 +55,7 @@ pub struct VaultCreateProofByIdsInput {
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct VaultPayFeeInput {
+pub struct VaultLockFeeInput {
     pub amount: Decimal,
 }
 
@@ -90,10 +90,10 @@ impl Vault {
         call_engine(input)
     }
 
-    fn pay_fee_internal(&mut self, amount: Decimal) {
+    fn lock_fee_internal(&mut self, amount: Decimal) {
         let input = RadixEngineInput::InvokeSNode(
             SNodeRef::VaultRef(self.0),
-            "pay_fee".to_string(),
+            "lock_fee".to_string(),
             scrypto_encode(&VaultTakeInput { amount }),
         );
         call_engine(input)
@@ -142,8 +142,8 @@ impl Vault {
     /// Locks the specified amount as transaction fee.
     ///
     /// Unused fee will be refunded to the vaults from the most recently locked to the least.
-    pub fn pay_fee<A: Into<Decimal>>(&mut self, amount: A) {
-        self.pay_fee_internal(amount.into())
+    pub fn lock_fee<A: Into<Decimal>>(&mut self, amount: A) {
+        self.lock_fee_internal(amount.into())
     }
 
     /// Takes some amount of resource from this vault into a bucket.

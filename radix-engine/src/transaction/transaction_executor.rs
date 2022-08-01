@@ -83,11 +83,14 @@ where
         transaction: &T,
         params: &ExecutionParameters,
     ) -> TransactionReceipt {
-        self.execute_with_cost_unit_counter(
-            transaction,
-            params,
-            SystemLoanCostUnitCounter::default(),
-        )
+        let cost_unit_counter = SystemLoanCostUnitCounter::new(
+            transaction.cost_unit_limit(),
+            transaction.tip_percentage(),
+            params.cost_unit_price,
+            params.system_loan,
+        );
+
+        self.execute_with_cost_unit_counter(transaction, params, cost_unit_counter)
     }
 
     pub fn execute_with_cost_unit_counter<T: ExecutableTransaction, C: CostUnitCounter>(
@@ -103,14 +106,12 @@ where
         let transaction_network = transaction.transaction_network();
         let signer_public_keys = transaction.signer_public_keys().to_vec();
         let instructions = transaction.instructions().to_vec();
-        let cost_unit_limit = transaction.cost_unit_limit();
         #[cfg(not(feature = "alloc"))]
         if params.trace {
             println!("{:-^80}", "Transaction Metadata");
             println!("Transaction hash: {}", transaction_hash);
             println!("Transaction network: {:?}", transaction_network);
             println!("Transaction signers: {:?}", signer_public_keys);
-            println!("Cost unit limit: {:?}", cost_unit_limit);
 
             println!("{:-^80}", "Engine Execution Log");
         }
@@ -129,16 +130,16 @@ where
             .expect("System loan should cover this");
         cost_unit_counter
             .consume(
-                fee_table.tx_verification_per_byte()
+                fee_table.tx_manifest_verification_per_byte()
                     * transaction.transaction_payload_size() as u32,
-                "tx_verification",
+                "tx_manifest_verification",
             )
             .expect("System loan should cover this");
         cost_unit_counter
             .consume(
-                fee_table.tx_signature_validation_per_sig()
+                fee_table.tx_signature_verification_per_sig()
                     * transaction.signer_public_keys().len() as u32,
-                "signature_validation",
+                "tx_signature_verification",
             )
             .expect("System loan should cover this");
 
@@ -167,25 +168,53 @@ where
             .map(|o| scrypto_decode::<Vec<Vec<u8>>>(&o.raw).unwrap());
 
         // 4. Settle transaction fee
-        let counter = root_frame.cost_unit_counter();
-        // TODO: burn fee in a FILO order
-        // TODO: reward validators
-        // TODO: refund overpaid fees
-        let system_loan_fully_repaid = counter.owed() == 0;
-        let cost_unit_consumed = counter.consumed();
-        let cost_unit_price = params.cost_unit_price;
-        let burned = 0u32.into();
-        let tipped = 0u32.into();
+        let fee_summary = cost_unit_counter.finalize();
         #[cfg(not(feature = "alloc"))]
         if params.trace {
             println!("{:-^80}", "Cost Analysis");
-            for (k, v) in cost_unit_counter.analysis() {
-                println!("{:<20}: {:>8}", k, v);
+            for (k, v) in &fee_summary.cost_breakdown {
+                println!("{:<30}: {:>8}", k, v);
             }
         }
 
+        let status = if fee_summary.loan_fully_repaid {
+            match result {
+                Ok(output) => TransactionStatus::Succeeded(output),
+                Err(error) => TransactionStatus::Failed(error),
+            }
+        } else {
+            TransactionStatus::Rejected
+        };
+
+        if matches!(status, TransactionStatus::Succeeded(..)) {
+            track.commit();
+        } else {
+            track.rollback();
+        }
+
+        let mut remaining = fee_summary.burned + fee_summary.tipped;
+        for (vault_id, mut locked) in fee_summary.payments.iter().cloned().rev() {
+            if locked.liquid_amount() > remaining {
+                locked.take_by_amount(remaining).unwrap();
+
+                let substate_id = SubstateId::Vault(vault_id);
+                track.acquire_lock(substate_id.clone(), true, true).unwrap();
+                let mut substate = track.take_substate(substate_id.clone());
+                substate.vault_mut().put(Bucket::new(locked)).unwrap();
+                track.write_substate(substate_id.clone(), substate);
+                track.release_lock(substate_id, true);
+
+                remaining = 0.into();
+            } else {
+                remaining = remaining - locked.liquid_amount();
+            }
+        }
+
+        // TODO: pay tips to the lead validator
+
         // 5. Produce the final transaction receipt
-        let track_receipt = track.to_receipt(result.is_ok());
+        let track_receipt = track.to_receipt();
+
         let mut new_component_addresses = Vec::new();
         let mut new_resource_addresses = Vec::new();
         let mut new_package_addresses = Vec::new();
@@ -201,31 +230,16 @@ where
                 _ => {}
             }
         }
+
         #[cfg(feature = "alloc")]
         let execution_time = None;
         #[cfg(not(feature = "alloc"))]
         let execution_time = Some(now.elapsed().as_millis());
+
         let receipt = TransactionReceipt {
-            status: if system_loan_fully_repaid {
-                match result {
-                    Ok(output) => TransactionStatus::Succeeded(output),
-                    Err(error) => TransactionStatus::Failed(error),
-                }
-            } else {
-                // TODO: TransactionStatus::Rejected
-                match result {
-                    Ok(output) => TransactionStatus::Succeeded(output),
-                    Err(error) => TransactionStatus::Failed(error),
-                }
-            },
+            status,
             transaction_network,
-            transaction_fee: TransactionFeeSummary {
-                cost_unit_limit,
-                cost_unit_consumed,
-                cost_unit_price,
-                burned,
-                tipped,
-            },
+            fee_summary: fee_summary,
             instructions,
             application_logs: track_receipt.application_logs,
             new_package_addresses,
@@ -234,7 +248,6 @@ where
             execution_time,
             state_updates: track_receipt.state_updates,
         };
-
         #[cfg(not(feature = "alloc"))]
         if params.trace {
             println!("{:-^80}", "Transaction Receipt");

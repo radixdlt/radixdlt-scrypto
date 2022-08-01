@@ -19,13 +19,14 @@ fn cannot_withdraw_restricted_transfer_from_my_account_with_no_auth() {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .lock_fee(10.into(), account)
         .withdraw_from_account_by_amount(Decimal::one(), token_resource_address, account)
         .call_method_with_all_resources(other_account, "deposit_batch")
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
-    receipt.expect_err(is_auth_error);
+    receipt.expect_failure(is_auth_error);
 }
 
 #[test]
@@ -40,6 +41,7 @@ fn can_withdraw_restricted_transfer_from_my_account_with_auth() {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .lock_fee(10.into(), account)
         .withdraw_from_account_by_ids(
             &BTreeSet::from([NonFungibleId::from_u32(1)]),
             auth_resource_address,

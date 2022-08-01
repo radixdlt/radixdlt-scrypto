@@ -23,6 +23,7 @@ fn test_auth_rule<'s, S: ReadableSubstateStore + WriteableSubstateStore>(
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .lock_fee(10.into(), SYSTEM_COMPONENT)
         .withdraw_from_account(RADIX_TOKEN, account)
         .call_method_with_all_resources(other_account, "deposit_batch")
         .build();
@@ -32,7 +33,7 @@ fn test_auth_rule<'s, S: ReadableSubstateStore + WriteableSubstateStore>(
     if should_succeed {
         receipt.expect_success();
     } else {
-        receipt.expect_err(is_auth_error);
+        receipt.expect_failure(is_auth_error);
     }
 }
 
@@ -232,6 +233,7 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_no_signature() {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_method(SYSTEM_COMPONENT, "free_xrd", to_struct!())
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.create_proof_from_bucket(bucket_id, |builder, proof_id| {
@@ -261,6 +263,7 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_right_amount_of_proof() {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_method(SYSTEM_COMPONENT, "free_xrd", to_struct!())
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.create_proof_from_bucket(bucket_id, |builder, proof_id| {
@@ -290,6 +293,7 @@ fn cannot_withdraw_from_my_any_xrd_auth_account_with_less_than_amount_of_proof()
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_method(SYSTEM_COMPONENT, "free_xrd", to_struct!())
         .take_from_worktop_by_amount(Decimal::from("0.9"), RADIX_TOKEN, |builder, bucket_id| {
             builder.create_proof_from_bucket(bucket_id, |builder, proof_id| {
@@ -305,5 +309,5 @@ fn cannot_withdraw_from_my_any_xrd_auth_account_with_less_than_amount_of_proof()
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_err(is_auth_error)
+    receipt.expect_failure(is_auth_error)
 }

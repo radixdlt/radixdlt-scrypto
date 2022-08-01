@@ -19,6 +19,7 @@ fn test_bucket_internal(method_name: &str) {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .lock_fee(10.into(), account)
         .call_function(package_address, "BucketTest", method_name, to_struct!())
         .call_method_with_all_resources(account, "deposit_batch")
         .build();
@@ -81,6 +82,7 @@ fn test_bucket_of_badges() {
     let package_address = test_runner.extract_and_publish_package("bucket");
 
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .lock_fee(10.into(), account)
         .call_function(package_address, "BadgeTest", "combine", to_struct!())
         .call_function(package_address, "BadgeTest", "split", to_struct!())
         .call_function(package_address, "BadgeTest", "borrow", to_struct!())
@@ -102,6 +104,7 @@ fn test_take_with_invalid_granularity() {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .lock_fee(10.into(), account)
         .call_function_with_abi(
             package_address,
             "BucketTest",
@@ -115,7 +118,7 @@ fn test_take_with_invalid_granularity() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
-    receipt.expect_err(|e| {
+    receipt.expect_failure(|e| {
         if let RuntimeError::BucketError(BucketError::ResourceContainerError(
             ResourceContainerError::InvalidAmount(amount, granularity),
         )) = e
@@ -138,6 +141,7 @@ fn test_take_with_negative_amount() {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .lock_fee(10.into(), account)
         .call_function_with_abi(
             package_address,
             "BucketTest",
@@ -151,7 +155,7 @@ fn test_take_with_negative_amount() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
-    receipt.expect_err(|e| {
+    receipt.expect_failure(|e| {
         if let RuntimeError::BucketError(BucketError::ResourceContainerError(
             ResourceContainerError::InvalidAmount(amount, granularity),
         )) = e
@@ -172,6 +176,7 @@ fn create_empty_bucket() {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .lock_fee(10.into(), account)
         .take_from_worktop(scrypto::prelude::RADIX_TOKEN, |builder, _bucket_id| builder)
         .take_from_worktop_by_amount(
             Decimal::zero(),

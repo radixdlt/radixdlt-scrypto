@@ -56,8 +56,9 @@ impl SetCurrentEpoch {
             .map_err(Error::TransactionExecutionError)?;
 
         // Commit
-        let track_receipt = track.to_receipt(true);
-        track_receipt.state_updates.commit(&mut substate_store);
+        track.commit();
+        let receipt = track.to_receipt();
+        receipt.state_updates.commit(&mut substate_store);
 
         Ok(())
     }

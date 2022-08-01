@@ -10,12 +10,12 @@ use scrypto::prelude::{
     VaultGetNonFungibleIdsInput, VaultPutInput, VaultTakeInput,
 };
 use scrypto::resource::{
-    VaultCreateProofByAmountInput, VaultGetResourceAddressInput, VaultPayFeeInput,
+    VaultCreateProofByAmountInput, VaultGetResourceAddressInput, VaultLockFeeInput,
     VaultTakeNonFungiblesInput,
 };
 use scrypto::values::ScryptoValue;
 
-use crate::engine::{PayFeeError, SystemApi};
+use crate::engine::{LockFeeError, SystemApi};
 use crate::fee::CostUnitCounter;
 use crate::fee::CostUnitCounterError;
 use crate::model::VaultError::MethodNotFound;
@@ -34,7 +34,7 @@ pub enum VaultError {
     CouldNotCreateProof,
     MethodNotFound,
     CostingError(CostUnitCounterError),
-    PayFeeError(PayFeeError),
+    LockFeeError(LockFeeError),
 }
 
 /// A persistent resource container.
@@ -210,23 +210,31 @@ impl Vault {
                     bucket_id,
                 )))
             }
-            "pay_fee" => {
-                let input: VaultPayFeeInput =
+            "lock_fee" => {
+                let input: VaultLockFeeInput =
                     scrypto_decode(&arg.raw).map_err(|e| VaultError::InvalidRequestData(e))?;
 
                 // Check resource and take amount
                 if vault.resource_address() != RADIX_TOKEN {
-                    return Err(VaultError::PayFeeError(PayFeeError::NotRadixToken));
+                    return Err(VaultError::LockFeeError(LockFeeError::NotRadixToken));
                 }
-                let _fee = vault.take(input.amount)?;
 
-                // TODO: add xrd/cost unit conversion
-                system_api
+                // Take fee from the vault
+                let fee = vault
+                    .take(input.amount)
+                    .map_err(|_| VaultError::LockFeeError(LockFeeError::InsufficientBalance))?;
+
+                // Refill fee reserve
+                let changes = system_api
                     .cost_unit_counter()
-                    .repay(100)
+                    .repay(vault_id, fee)
                     .map_err(VaultError::CostingError)?;
 
-                // TODO: store (vault_id, amount_locked) in cost unit counter
+                // Return changes
+                vault
+                    .borrow_container_mut()
+                    .put(changes)
+                    .expect("Returning changes should not error");
 
                 Ok(ScryptoValue::from_typed(&()))
             }

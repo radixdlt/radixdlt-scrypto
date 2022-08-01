@@ -31,6 +31,10 @@ impl ExecutableTransaction for ValidatedTransaction {
         self.transaction.signed_intent.intent.header.cost_unit_limit
     }
 
+    fn tip_percentage(&self) -> u32 {
+        self.transaction.signed_intent.intent.header.tip_percentage
+    }
+
     fn instructions(&self) -> &[ExecutableInstruction] {
         &self.instructions
     }

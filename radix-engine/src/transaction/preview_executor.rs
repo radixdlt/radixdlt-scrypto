@@ -70,7 +70,7 @@ where
             network: Network::LocalSimulator,
             current_epoch: 1,
             max_cost_unit_limit: DEFAULT_MAX_COST_UNIT_LIMIT,
-            min_tip_bps: 0,
+            min_tip_percentage: 0,
         };
         let execution_params = ExecutionParameters::default();
 

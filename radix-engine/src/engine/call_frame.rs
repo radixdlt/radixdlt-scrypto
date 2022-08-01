@@ -1123,7 +1123,7 @@ where
         }
 
         // TODO: find a better way to handle this
-        let is_pay_fee = matches!(snode_ref, SNodeRef::VaultRef(..)) && &fn_ident == "pay_fee";
+        let is_lock_fee = matches!(snode_ref, SNodeRef::VaultRef(..)) && &fn_ident == "lock_fee";
 
         self.cost_unit_counter
             .consume(
@@ -1658,8 +1658,8 @@ where
                         .cloned()
                         .ok_or(RuntimeError::RENodeNotFound(RENodeId::Vault(*vault_id)))?
                 };
-                if is_pay_fee && !matches!(cur_location, RENodePointer::Track { .. }) {
-                    return Err(RuntimeError::PayFeeError(PayFeeError::RENodeNotInTrack));
+                if is_lock_fee && !matches!(cur_location, RENodePointer::Track { .. }) {
+                    return Err(RuntimeError::LockFeeError(LockFeeError::RENodeNotInTrack));
                 }
 
                 // Lock values and setup next frame
@@ -1668,15 +1668,15 @@ where
                     let next_location = match cur_location.clone() {
                         RENodePointer::Track(substate_id) => {
                             self.track
-                                .acquire_lock(substate_id.clone(), true, is_pay_fee)
+                                .acquire_lock(substate_id.clone(), true, is_lock_fee)
                                 .map_err(|e| match e {
                                     TrackError::NotFound | TrackError::Reentrancy => {
                                         panic!("Illegal state")
                                     }
                                     TrackError::StateTrackError(e) => {
-                                        RuntimeError::PayFeeError(match e {
+                                        RuntimeError::LockFeeError(match e {
                                             StateTrackError::RENodeAlreadyTouched => {
-                                                PayFeeError::RENodeAlreadyTouched
+                                                LockFeeError::RENodeAlreadyTouched
                                             }
                                         })
                                     }
@@ -1813,7 +1813,7 @@ where
         for l in locked_values {
             // TODO: refactor after introducing `Lock` representation.
             self.track
-                .release_lock(l.clone(), is_pay_fee && matches!(l, SubstateId::Vault(..)));
+                .release_lock(l.clone(), is_lock_fee && matches!(l, SubstateId::Vault(..)));
         }
 
         // move buckets and proofs to this process.

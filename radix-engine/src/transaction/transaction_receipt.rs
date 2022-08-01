@@ -12,21 +12,8 @@ use scrypto::values::*;
 use transaction::model::*;
 
 use crate::engine::RuntimeError;
+use crate::fee::FeeSummary;
 use crate::state_manager::StateDiff;
-
-#[derive(Debug)]
-pub struct TransactionFeeSummary {
-    /// The specified max cost units can be consumed.
-    pub cost_unit_limit: u32,
-    /// The total number of cost units consumed.
-    pub cost_unit_consumed: u32,
-    /// The cost unit price in XRD.
-    pub cost_unit_price: Decimal,
-    /// The total amount of XRD burned.
-    pub burned: Decimal,
-    /// The total amount of XRD tipped to validators.
-    pub tipped: Decimal,
-}
 
 #[derive(Debug)]
 pub enum TransactionStatus {
@@ -38,8 +25,8 @@ pub enum TransactionStatus {
 /// Represents a transaction receipt.
 pub struct TransactionReceipt {
     pub status: TransactionStatus,
+    pub fee_summary: FeeSummary,
     pub transaction_network: Network,
-    pub transaction_fee: TransactionFeeSummary,
     pub execution_time: Option<u128>,
     pub instructions: Vec<ExecutableInstruction>,
     pub application_logs: Vec<(Level, String)>,
@@ -54,20 +41,26 @@ impl TransactionReceipt {
         match &self.status {
             TransactionStatus::Succeeded(output) => output,
             TransactionStatus::Failed(err) => panic!("Expected success but was:\n{:?}", err),
-            TransactionStatus::Rejected => panic!("Expected success but was rejected"),
+            TransactionStatus::Rejected => panic!("Expected success but was rejection"),
         }
     }
 
-    pub fn expect_err<F>(&self, f: F)
+    pub fn expect_failure<F>(&self, f: F)
     where
         F: FnOnce(&RuntimeError) -> bool,
     {
         if let TransactionStatus::Failed(e) = &self.status {
             if !f(e) {
-                panic!("Expected error but was different error:\n{:?}", self);
+                panic!("Expected failure but was different error:\n{:?}", self);
             }
         } else {
-            panic!("Expected error but was:\n{:?}", self);
+            panic!("Expected failure but was:\n{:?}", self);
+        }
+    }
+
+    pub fn expect_rejection(&self) {
+        if !matches!(self.status, TransactionStatus::Rejected) {
+            panic!("Expected rejection but was:\n{:?}", self);
         }
     }
 }
@@ -92,8 +85,8 @@ impl fmt::Debug for TransactionReceipt {
             "Transaction Status:".bold().green(),
             match &self.status {
                 TransactionStatus::Succeeded(_) => "SUCCESS".blue(),
-                TransactionStatus::Failed(e) => e.to_string().red(),
-                TransactionStatus::Rejected => "REJECTED".red(),
+                TransactionStatus::Failed(e) => format!("FAILURE: {}", e).red(),
+                TransactionStatus::Rejected => "REJECTION".red(),
             }
         )?;
 
@@ -101,17 +94,17 @@ impl fmt::Debug for TransactionReceipt {
             f,
             "\n{} {} XRD burned, {} XRD tipped to validators",
             "Transaction Fee:".bold().green(),
-            self.transaction_fee.burned,
-            self.transaction_fee.tipped,
+            self.fee_summary.burned,
+            self.fee_summary.tipped,
         )?;
 
         write!(
             f,
             "\n{} {} limit, {} consumed, {} XRD per cost unit",
             "Cost Units:".bold().green(),
-            self.transaction_fee.cost_unit_limit,
-            self.transaction_fee.cost_unit_consumed,
-            self.transaction_fee.cost_unit_price,
+            self.fee_summary.cost_unit_limit,
+            self.fee_summary.cost_unit_consumed,
+            self.fee_summary.cost_unit_price,
         )?;
 
         write!(

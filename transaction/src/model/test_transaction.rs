@@ -157,4 +157,8 @@ impl ExecutableTransaction for TestTransaction {
     fn cost_unit_limit(&self) -> u32 {
         10_000_000
     }
+
+    fn tip_percentage(&self) -> u32 {
+        1
+    }
 }

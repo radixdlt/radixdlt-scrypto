@@ -31,6 +31,7 @@ fn test_say_hello() {
 
     // Publish package
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .lock_fee(10.into(), SYSTEM_COMPONENT)
         .publish_package(extract_package(include_package!("no_std").to_vec()).unwrap())
         .build();
     let package_address = executor
@@ -42,6 +43,7 @@ fn test_say_hello() {
 
     // Test the `say_hello` function.
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(package_address, "NoStd", "say_hello", to_struct!())
         .build();
     let receipt = executor.execute_and_commit(

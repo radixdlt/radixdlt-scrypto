@@ -127,15 +127,16 @@ pub enum RuntimeError {
 
     MaxCallDepthLimitReached,
 
-    PayFeeError(PayFeeError),
+    LockFeeError(LockFeeError),
 }
 
 #[derive(Debug, PartialEq)]
-pub enum PayFeeError {
+pub enum LockFeeError {
     RENodeNotInTrack,
     RENodeAlreadyTouched,
     RENodeNotFound,
     NotRadixToken,
+    InsufficientBalance,
 }
 
 #[derive(Debug, PartialEq)]
