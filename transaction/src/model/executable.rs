@@ -59,6 +59,7 @@ pub enum ExecutableInstruction {
     DropProof {
         proof_id: ProofId,
     },
+    DropAllProofs,
     CallFunction {
         package_address: PackageAddress,
         blueprint_name: String,
