@@ -2,7 +2,7 @@ use sbor::rust::marker::PhantomData;
 use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
-use scrypto::core::{DataAddress, Receiver, ScryptoActor, TypeName};
+use scrypto::core::{Receiver, ScryptoActor, TypeName};
 use scrypto::engine::api::RadixEngineInput;
 use scrypto::engine::types::*;
 use scrypto::resource::AccessRule;
@@ -121,46 +121,37 @@ where
         Ok(())
     }
 
-    fn handle_read_data(&mut self, address: DataAddress) -> Result<ScryptoValue, RuntimeError> {
-        let address = match address {
-            DataAddress::KeyValueEntry(kv_store_id, key_bytes) => {
+    fn handle_substate_read(
+        &mut self,
+        substate_id: SubstateId,
+    ) -> Result<ScryptoValue, RuntimeError> {
+        match &substate_id {
+            SubstateId::KeyValueStoreEntry(_kv_store_id, key_bytes) => {
                 let key_data =
                     ScryptoValue::from_slice(&key_bytes).map_err(RuntimeError::DecodeError)?;
                 Self::verify_stored_key(&key_data)?;
-                SubstateId::KeyValueStoreEntry(kv_store_id, key_bytes)
             }
-            DataAddress::ComponentInfo(component_address, is_global) => {
-                SubstateId::ComponentInfo(component_address, is_global)
-            }
-            DataAddress::ComponentState(component_address) => {
-                SubstateId::ComponentState(component_address)
-            }
-        };
+            _ => {}
+        }
 
-        self.system_api.read_substate(address)
+        self.system_api.read_substate(substate_id)
     }
 
-    fn handle_write_data(
+    fn handle_substate_write(
         &mut self,
-        address: DataAddress,
+        substate_id: SubstateId,
         value: Vec<u8>,
     ) -> Result<ScryptoValue, RuntimeError> {
-        let address = match address {
-            DataAddress::KeyValueEntry(kv_store_id, key_bytes) => {
+        match &substate_id {
+            SubstateId::KeyValueStoreEntry(_kv_store_id, key_bytes) => {
                 let key_data =
                     ScryptoValue::from_slice(&key_bytes).map_err(RuntimeError::DecodeError)?;
                 Self::verify_stored_key(&key_data)?;
-                SubstateId::KeyValueStoreEntry(kv_store_id, key_bytes)
             }
-            DataAddress::ComponentInfo(component_address, is_global) => {
-                SubstateId::ComponentInfo(component_address, is_global)
-            }
-            DataAddress::ComponentState(component_address) => {
-                SubstateId::ComponentState(component_address)
-            }
-        };
+            _ => {}
+        }
         let scrypto_value = ScryptoValue::from_slice(&value).map_err(RuntimeError::DecodeError)?;
-        self.system_api.write_substate(address, scrypto_value)?;
+        self.system_api.write_substate(substate_id, scrypto_value)?;
         Ok(ScryptoValue::unit())
     }
 
@@ -221,8 +212,10 @@ impl<
                 .map(encode),
             RadixEngineInput::CreateKeyValueStore() => self.handle_create_kv_store().map(encode),
             RadixEngineInput::GetActor() => self.handle_get_actor().map(encode),
-            RadixEngineInput::ReadData(address) => self.handle_read_data(address),
-            RadixEngineInput::WriteData(address, value) => self.handle_write_data(address, value),
+            RadixEngineInput::SubstateRead(substate_id) => self.handle_substate_read(substate_id),
+            RadixEngineInput::SubstateWrite(substate_id, value) => {
+                self.handle_substate_write(substate_id, value)
+            }
             RadixEngineInput::GenerateUuid() => self.handle_generate_uuid().map(encode),
             RadixEngineInput::EmitLog(level, message) => {
                 self.handle_emit_log(level, message).map(encode)

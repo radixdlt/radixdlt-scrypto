@@ -9,7 +9,7 @@ use crate::address::{AddressError, BECH32_DECODER, BECH32_ENCODER};
 use crate::buffer::scrypto_encode;
 use crate::component::*;
 use crate::core::*;
-use crate::engine::types::RENodeId;
+use crate::engine::types::{RENodeId, SubstateId};
 use crate::engine::{api::*, call_engine};
 use crate::misc::*;
 use crate::resource::AccessRules;
@@ -47,16 +47,16 @@ impl Component {
 
     /// Returns the package ID of this component.
     pub fn package_address(&self) -> PackageAddress {
-        let address = DataAddress::ComponentInfo(self.0, true);
-        let input = RadixEngineInput::ReadData(address);
+        let substate_id = SubstateId::ComponentInfo(self.0, true);
+        let input = RadixEngineInput::SubstateRead(substate_id);
         let output: (PackageAddress, String) = call_engine(input);
         output.0
     }
 
     /// Returns the blueprint name of this component.
     pub fn blueprint_name(&self) -> String {
-        let address = DataAddress::ComponentInfo(self.0, true);
-        let input = RadixEngineInput::ReadData(address);
+        let substate_id = SubstateId::ComponentInfo(self.0, true);
+        let input = RadixEngineInput::SubstateRead(substate_id);
         let output: (PackageAddress, String) = call_engine(input);
         output.1
     }

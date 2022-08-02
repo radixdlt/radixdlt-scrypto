@@ -3,7 +3,7 @@ use sbor::rust::vec::Vec;
 use sbor::{Decode, Encode, TypeId};
 use scrypto::prelude::AccessRule;
 
-use crate::core::{DataAddress, Receiver, TypeName};
+use crate::core::{Receiver, TypeName};
 use crate::engine::types::*;
 
 #[cfg(target_arch = "wasm32")]
@@ -34,8 +34,8 @@ pub enum RadixEngineInput {
     InvokeMethod(Receiver, String, Vec<u8>),
     CreateComponent(PackageAddress, String, Vec<u8>),
     CreateKeyValueStore(),
-    ReadData(DataAddress),
-    WriteData(DataAddress, Vec<u8>),
+    SubstateRead(SubstateId),
+    SubstateWrite(SubstateId, Vec<u8>),
     GetActor(),
     EmitLog(Level, String),
     GenerateUuid(),

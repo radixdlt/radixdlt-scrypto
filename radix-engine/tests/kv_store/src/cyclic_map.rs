@@ -1,4 +1,5 @@
 use scrypto::engine::api::*;
+use scrypto::engine::types::*;
 use scrypto::engine::call_engine;
 use scrypto::prelude::*;
 use std::marker::PhantomData;
@@ -21,9 +22,9 @@ blueprint! {
                 kv_store1.id.clone()
             };
 
-            let address = DataAddress::KeyValueEntry(kv_store1_id, scrypto_encode(&0u32));
-            let input = RadixEngineInput::WriteData(
-                address,
+            let substate_id = SubstateId::KeyValueStoreEntry(kv_store1_id, scrypto_encode(&0u32));
+            let input = RadixEngineInput::SubstateWrite(
+                substate_id,
                 scrypto_encode(&KeyValueStore::<(), ()> {
                     id: kv_store0_id,
                     key: PhantomData,
@@ -39,9 +40,9 @@ blueprint! {
             let kv_store = KeyValueStore::new();
             let kv_store_id = kv_store.id.clone();
 
-            let address = DataAddress::KeyValueEntry(kv_store_id.clone(), scrypto_encode(&0u32));
-            let input = RadixEngineInput::WriteData(
-                address,
+            let substate_id = SubstateId::KeyValueStoreEntry(kv_store_id.clone(), scrypto_encode(&0u32));
+            let input = RadixEngineInput::SubstateWrite(
+                substate_id,
                 scrypto_encode(&KeyValueStore::<(), ()> {
                     id: kv_store_id,
                     key: PhantomData,

@@ -2,7 +2,7 @@ use sbor::rust::collections::*;
 use sbor::rust::vec::Vec;
 use scrypto::buffer::{scrypto_decode, scrypto_encode};
 
-use crate::{ledger::*};
+use crate::ledger::*;
 use indexmap::IndexMap;
 use scrypto::engine::types::SubstateId;
 

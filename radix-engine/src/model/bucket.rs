@@ -12,7 +12,7 @@ use scrypto::prelude::{
 };
 use scrypto::values::ScryptoValue;
 
-use crate::engine::{SystemApi};
+use crate::engine::SystemApi;
 use crate::fee::CostUnitCounter;
 use crate::fee::CostUnitCounterError;
 use crate::model::{

@@ -1,4 +1,4 @@
-use scrypto::engine::{api::*, call_engine};
+use scrypto::engine::{types::*, api::*, call_engine};
 use scrypto::prelude::*;
 
 blueprint! {
@@ -7,29 +7,29 @@ blueprint! {
     impl DataAccess {
         pub fn create_component_and_read_state() {
             let component_address = Self {}.instantiate().globalize();
-            let address = DataAddress::ComponentState(component_address);
-            let input = RadixEngineInput::ReadData(address);
+            let substate_id = SubstateId::ComponentState(component_address);
+            let input = RadixEngineInput::SubstateRead(substate_id);
             call_engine(input)
         }
 
         pub fn create_component_and_write_state() {
             let component_address = Self {}.instantiate().globalize();
-            let address = DataAddress::ComponentState(component_address);
-            let input = RadixEngineInput::WriteData(address, scrypto_encode(&()));
+            let substate_id = SubstateId::ComponentState(component_address);
+            let input = RadixEngineInput::SubstateWrite(substate_id, scrypto_encode(&()));
             call_engine(input)
         }
 
         pub fn create_component_and_read_info() -> (PackageAddress, String) {
             let component_address = Self {}.instantiate().globalize();
-            let address = DataAddress::ComponentInfo(component_address, true);
-            let input = RadixEngineInput::ReadData(address);
+            let substate_id = SubstateId::ComponentInfo(component_address, true);
+            let input = RadixEngineInput::SubstateRead(substate_id);
             call_engine(input)
         }
 
         pub fn create_component_and_write_info() -> () {
             let component_address = Self {}.instantiate().globalize();
-            let address = DataAddress::ComponentInfo(component_address, true);
-            let input = RadixEngineInput::WriteData(address, scrypto_encode(&()));
+            let substate_id = SubstateId::ComponentInfo(component_address, true);
+            let input = RadixEngineInput::SubstateWrite(substate_id, scrypto_encode(&()));
             call_engine(input)
         }
     }
