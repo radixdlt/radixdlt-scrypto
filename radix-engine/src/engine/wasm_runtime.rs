@@ -100,10 +100,10 @@ where
     }
 
     fn handle_create_kv_store(&mut self) -> Result<KeyValueStoreId, RuntimeError> {
-        let value_id = self
+        let node_id = self
             .system_api
             .create_node(PreCommittedKeyValueStore::new())?;
-        match value_id {
+        match node_id {
             RENodeId::KeyValueStore(kv_store_id) => Ok(kv_store_id),
             _ => panic!("Expected to be a kv store"),
         }

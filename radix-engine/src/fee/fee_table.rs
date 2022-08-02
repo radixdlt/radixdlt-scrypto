@@ -151,10 +151,10 @@ impl FeeTable {
             Receiver::Scrypto(_) => {
                 0 // Costing is through instrumentation
             }
-            Receiver::Component(_) => {
+            Receiver::ComponentMetaRef(_) => {
                 0 // Costing is through instrumentation
             }
-            Receiver::ResourceRef(_) => match fn_ident {
+            Receiver::ResourceManagerRef(_) => match fn_ident {
                 "update_auth" => self.fixed_medium,
                 "lock_auth" => self.fixed_medium,
                 "create_vault" => self.fixed_medium,
@@ -170,7 +170,7 @@ impl FeeTable {
                 _ => self.fixed_high,
             },
             // TODO: I suspect there is a bug with invoking consumed within call frame. Add tests to verify
-            Receiver::Consumed(value_id) => match value_id {
+            Receiver::Consumed(node_id) => match node_id {
                 RENodeId::Bucket(_) => self.fixed_medium,
                 RENodeId::Proof(_) => self.fixed_medium,
                 RENodeId::Worktop => self.fixed_medium,

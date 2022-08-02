@@ -37,21 +37,21 @@ where
         input: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError>;
 
-    fn globalize_node(&mut self, value_id: &RENodeId) -> Result<(), CostUnitCounterError>;
+    fn globalize_node(&mut self, node_id: &RENodeId) -> Result<(), CostUnitCounterError>;
 
     fn borrow_node(
         &mut self,
-        value_id: &RENodeId,
+        node_id: &RENodeId,
     ) -> Result<RENodeRef<'_, 's>, CostUnitCounterError>;
 
     fn borrow_node_mut(
         &mut self,
-        value_id: &RENodeId,
+        node_id: &RENodeId,
     ) -> Result<NativeRENodeRef, CostUnitCounterError>;
 
     fn return_node_mut(&mut self, val_ref: NativeRENodeRef) -> Result<(), CostUnitCounterError>;
 
-    fn drop_node(&mut self, value_id: &RENodeId) -> Result<HeapRootRENode, CostUnitCounterError>;
+    fn drop_node(&mut self, node_id: &RENodeId) -> Result<HeapRootRENode, CostUnitCounterError>;
     fn create_node<V: Into<RENodeByComplexity>>(&mut self, v: V) -> Result<RENodeId, RuntimeError>;
 
     fn read_substate(&mut self, substate_id: SubstateId) -> Result<ScryptoValue, RuntimeError>;

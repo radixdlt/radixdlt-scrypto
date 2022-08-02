@@ -16,16 +16,16 @@ pub enum TypeName {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub enum Receiver {
-    AuthZoneRef,
-    Scrypto(ScryptoActor),
-    Component(ComponentAddress),
-    ResourceRef(ResourceAddress),
     Consumed(RENodeId),
+    Scrypto(ScryptoActor),
+    ComponentMetaRef(ComponentAddress),
+    ResourceManagerRef(ResourceAddress),
     BucketRef(BucketId),
     ProofRef(ProofId),
+    VaultRef(VaultId),
     SystemRef,
     WorktopRef,
-    VaultRef(VaultId),
+    AuthZoneRef,
 }
 
 #[derive(Debug, Clone, Eq, Hash, PartialEq, TypeId, Encode, Decode)]

@@ -67,7 +67,7 @@ impl Vault {
     /// Creates an empty vault to permanently hold resource of the given definition.
     pub fn new(resource_address: ResourceAddress) -> Self {
         let input = RadixEngineInput::InvokeMethod(
-            Receiver::ResourceRef(resource_address),
+            Receiver::ResourceManagerRef(resource_address),
             "create_vault".to_string(),
             scrypto_encode(&ResourceManagerCreateVaultInput {}),
         );

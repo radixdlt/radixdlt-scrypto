@@ -53,7 +53,7 @@ impl Bucket {
     /// Creates a new bucket to hold resources of the given definition.
     pub fn new(resource_address: ResourceAddress) -> Self {
         let input = RadixEngineInput::InvokeMethod(
-            Receiver::ResourceRef(resource_address),
+            Receiver::ResourceManagerRef(resource_address),
             "create_bucket".to_string(),
             scrypto_encode(&ResourceManagerCreateBucketInput {}),
         );

@@ -107,7 +107,7 @@ pub struct ResourceManager(pub(crate) ResourceAddress);
 impl ResourceManager {
     pub fn set_mintable(&mut self, access_rule: AccessRule) -> () {
         let input = RadixEngineInput::InvokeMethod(
-            Receiver::ResourceRef(self.0),
+            Receiver::ResourceManagerRef(self.0),
             "update_auth".to_string(),
             scrypto_encode(&ResourceManagerUpdateAuthInput {
                 method: ResourceMethodAuthKey::Mint,
@@ -119,7 +119,7 @@ impl ResourceManager {
 
     pub fn set_burnable(&mut self, access_rule: AccessRule) -> () {
         let input = RadixEngineInput::InvokeMethod(
-            Receiver::ResourceRef(self.0),
+            Receiver::ResourceManagerRef(self.0),
             "update_auth".to_string(),
             scrypto_encode(&ResourceManagerUpdateAuthInput {
                 method: ResourceMethodAuthKey::Burn,
@@ -131,7 +131,7 @@ impl ResourceManager {
 
     pub fn set_withdrawable(&mut self, access_rule: AccessRule) -> () {
         let input = RadixEngineInput::InvokeMethod(
-            Receiver::ResourceRef(self.0),
+            Receiver::ResourceManagerRef(self.0),
             "update_auth".to_string(),
             scrypto_encode(&ResourceManagerUpdateAuthInput {
                 method: ResourceMethodAuthKey::Withdraw,
@@ -143,7 +143,7 @@ impl ResourceManager {
 
     pub fn set_depositable(&mut self, access_rule: AccessRule) -> () {
         let input = RadixEngineInput::InvokeMethod(
-            Receiver::ResourceRef(self.0),
+            Receiver::ResourceManagerRef(self.0),
             "update_auth".to_string(),
             scrypto_encode(&ResourceManagerUpdateAuthInput {
                 method: ResourceMethodAuthKey::Deposit,
@@ -155,7 +155,7 @@ impl ResourceManager {
 
     pub fn set_updateable_metadata(&self, access_rule: AccessRule) -> () {
         let input = RadixEngineInput::InvokeMethod(
-            Receiver::ResourceRef(self.0),
+            Receiver::ResourceManagerRef(self.0),
             "update_auth".to_string(),
             scrypto_encode(&ResourceManagerUpdateAuthInput {
                 method: ResourceMethodAuthKey::UpdateMetadata,
@@ -167,7 +167,7 @@ impl ResourceManager {
 
     pub fn set_updateable_non_fungible_data(&self, access_rule: AccessRule) -> () {
         let input = RadixEngineInput::InvokeMethod(
-            Receiver::ResourceRef(self.0),
+            Receiver::ResourceManagerRef(self.0),
             "update_auth".to_string(),
             scrypto_encode(&ResourceManagerUpdateAuthInput {
                 method: ResourceMethodAuthKey::UpdateNonFungibleData,
@@ -179,7 +179,7 @@ impl ResourceManager {
 
     pub fn lock_mintable(&mut self) -> () {
         let input = RadixEngineInput::InvokeMethod(
-            Receiver::ResourceRef(self.0),
+            Receiver::ResourceManagerRef(self.0),
             "lock_auth".to_string(),
             scrypto_encode(&ResourceManagerLockAuthInput {
                 method: ResourceMethodAuthKey::Mint,
@@ -190,7 +190,7 @@ impl ResourceManager {
 
     pub fn lock_burnable(&mut self) -> () {
         let input = RadixEngineInput::InvokeMethod(
-            Receiver::ResourceRef(self.0),
+            Receiver::ResourceManagerRef(self.0),
             "lock_auth".to_string(),
             scrypto_encode(&ResourceManagerLockAuthInput {
                 method: ResourceMethodAuthKey::Burn,
@@ -201,7 +201,7 @@ impl ResourceManager {
 
     pub fn lock_withdrawable(&mut self) -> () {
         let input = RadixEngineInput::InvokeMethod(
-            Receiver::ResourceRef(self.0),
+            Receiver::ResourceManagerRef(self.0),
             "lock_auth".to_string(),
             scrypto_encode(&ResourceManagerLockAuthInput {
                 method: ResourceMethodAuthKey::Withdraw,
@@ -212,7 +212,7 @@ impl ResourceManager {
 
     pub fn lock_depositable(&mut self) -> () {
         let input = RadixEngineInput::InvokeMethod(
-            Receiver::ResourceRef(self.0),
+            Receiver::ResourceManagerRef(self.0),
             "lock_auth".to_string(),
             scrypto_encode(&ResourceManagerLockAuthInput {
                 method: ResourceMethodAuthKey::Deposit,
@@ -223,7 +223,7 @@ impl ResourceManager {
 
     pub fn lock_updateable_metadata(&mut self) -> () {
         let input = RadixEngineInput::InvokeMethod(
-            Receiver::ResourceRef(self.0),
+            Receiver::ResourceManagerRef(self.0),
             "lock_auth".to_string(),
             scrypto_encode(&ResourceManagerLockAuthInput {
                 method: ResourceMethodAuthKey::UpdateMetadata,
@@ -234,7 +234,7 @@ impl ResourceManager {
 
     pub fn lock_updateable_non_fungible_data(&mut self) -> () {
         let input = RadixEngineInput::InvokeMethod(
-            Receiver::ResourceRef(self.0),
+            Receiver::ResourceManagerRef(self.0),
             "lock_auth".to_string(),
             scrypto_encode(&ResourceManagerLockAuthInput {
                 method: ResourceMethodAuthKey::UpdateNonFungibleData,
@@ -245,7 +245,7 @@ impl ResourceManager {
 
     fn mint_internal(&mut self, mint_params: MintParams) -> Bucket {
         let input = RadixEngineInput::InvokeMethod(
-            Receiver::ResourceRef(self.0),
+            Receiver::ResourceManagerRef(self.0),
             "mint".to_string(),
             scrypto_encode(&ResourceManagerMintInput { mint_params }),
         );
@@ -254,7 +254,7 @@ impl ResourceManager {
 
     fn update_non_fungible_data_internal(&mut self, id: NonFungibleId, data: Vec<u8>) -> () {
         let input = RadixEngineInput::InvokeMethod(
-            Receiver::ResourceRef(self.0),
+            Receiver::ResourceManagerRef(self.0),
             "update_non_fungible_data".to_string(),
             scrypto_encode(&ResourceManagerUpdateNonFungibleDataInput { id, data }),
         );
@@ -263,7 +263,7 @@ impl ResourceManager {
 
     fn get_non_fungible_data_internal(&self, id: NonFungibleId) -> [Vec<u8>; 2] {
         let input = RadixEngineInput::InvokeMethod(
-            Receiver::ResourceRef(self.0),
+            Receiver::ResourceManagerRef(self.0),
             "non_fungible_data".to_string(),
             scrypto_encode(&ResourceManagerGetNonFungibleInput { id }),
         );
@@ -271,7 +271,7 @@ impl ResourceManager {
     }
 
     sfunctions! {
-        Receiver::ResourceRef(self.0) => {
+        Receiver::ResourceManagerRef(self.0) => {
             pub fn metadata(&self) -> HashMap<String, String> {
                 ResourceManagerGetMetadataInput {}
             }

@@ -1375,7 +1375,7 @@ where
                     Err(RuntimeError::AuthZoneDoesNotExist)
                 }
             }
-            Receiver::ResourceRef(resource_address) => {
+            Receiver::ResourceManagerRef(resource_address) => {
                 let node_id = RENodeId::Resource(*resource_address);
                 let substate_id: SubstateId = SubstateId::ResourceManager(*resource_address);
                 self.track
@@ -1668,7 +1668,7 @@ where
                     ))
                 }
             },
-            Receiver::Component(component_address) => {
+            Receiver::ComponentMetaRef(component_address) => {
                 let component_address = *component_address;
 
                 // Find value
