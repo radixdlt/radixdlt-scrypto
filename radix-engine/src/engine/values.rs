@@ -81,34 +81,6 @@ impl SubstateId {
     }
 }
 
-impl Into<SubstateId> for PackageAddress {
-    fn into(self) -> SubstateId {
-        SubstateId::Package(self)
-    }
-}
-
-impl Into<SubstateId> for ResourceAddress {
-    fn into(self) -> SubstateId {
-        SubstateId::ResourceManager(self)
-    }
-}
-
-impl Into<SubstateId> for VaultId {
-    fn into(self) -> SubstateId {
-        SubstateId::Vault(self)
-    }
-}
-
-impl Into<PackageAddress> for SubstateId {
-    fn into(self) -> PackageAddress {
-        if let SubstateId::Package(package_address) = self {
-            return package_address;
-        } else {
-            panic!("Address is not a package address");
-        }
-    }
-}
-
 impl Into<ComponentAddress> for SubstateId {
     fn into(self) -> ComponentAddress {
         match self {
@@ -125,16 +97,6 @@ impl Into<ResourceAddress> for SubstateId {
             return resource_address;
         } else {
             panic!("Address is not a resource address");
-        }
-    }
-}
-
-impl Into<VaultId> for SubstateId {
-    fn into(self) -> VaultId {
-        if let SubstateId::Vault(id) = self {
-            return id;
-        } else {
-            panic!("Address is not a vault address");
         }
     }
 }
