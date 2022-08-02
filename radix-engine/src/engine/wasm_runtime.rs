@@ -241,7 +241,7 @@ impl<
 
     fn consume_cost_units(&mut self, n: u32) -> Result<(), InvokeError> {
         self.cost_unit_counter()
-            .consume(n, "wasm")
+            .consume(n, "run_wasm")
             .map_err(InvokeError::CostingError)
     }
 }
@@ -264,7 +264,7 @@ impl WasmRuntime for NopWasmRuntime {
 
     fn consume_cost_units(&mut self, n: u32) -> Result<(), InvokeError> {
         self.cost_unit_counter
-            .consume(n, "wasm")
+            .consume(n, "run_wasm")
             .map_err(InvokeError::CostingError)
     }
 }

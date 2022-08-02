@@ -779,7 +779,7 @@ where
                     .consume(
                         self.fee_table
                             .run_function_cost(&type_name, fn_ident, &input),
-                        "run",
+                        "run_function",
                     )
                     .map_err(RuntimeError::CostingError)?;
             }
@@ -787,7 +787,7 @@ where
                 self.cost_unit_counter
                     .consume(
                         self.fee_table.run_method_cost(&receiver, fn_ident, &input),
-                        "run",
+                        "run_method",
                     )
                     .map_err(RuntimeError::CostingError)?;
             }
