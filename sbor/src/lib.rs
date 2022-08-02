@@ -26,7 +26,6 @@ pub use any::{decode_any, encode_any, encode_any_with_buffer, Value};
 pub use decode::{Decode, DecodeError, Decoder};
 pub use describe::{Describe, Type};
 pub use encode::{Encode, Encoder};
-pub use type_id::TypeId;
 
 use crate::rust::vec::Vec;
 

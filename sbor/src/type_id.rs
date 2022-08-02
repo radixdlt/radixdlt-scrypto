@@ -1,236 +1,83 @@
-use crate::rust::boxed::Box;
-use crate::rust::cell::RefCell;
-use crate::rust::collections::*;
-use crate::rust::rc::Rc;
-use crate::rust::string::String;
-use crate::rust::vec::Vec;
+/**
+ * NOTE: In the below, + means byte concatenation
+ * 
+ * Encoding modes:
+ * 
+ * > "with_type" means that type data is included so that data can be decoded without a codec/schema
+ * > "without_type" means that type data known statically by the codec is not output.
+ * 
+ * A type encoding is in two parts:
+ * 
+ * > STATIC_TYPE_DATA
+ *   Type data statically computable from the type being encoded.
+ *   This type data is fixed for the type and can be lifted up to its ancestor types where
+ *   this would result in improved performance / deduplication (eg parent collection types).
+ *   This data can be exluded in the "without_type" encoding.
+ * > VALUE
+ *   The encoded value itself. This part can differ depending on the runtime value being encoded.
+ *   This value encoding can itself output STATIC_TYPE_DATA of child types, for runtime resolution
+ *   when type information can't be  "without_type" encoding mode.
+ * 
+ * STATIC_TYPE_DATA is TYPE_ID + EXTRA_TYPE_DATA. Each TYPE_ID below includes a comment explaining
+ * how it encodes its EXTRA_TYPE_DATA (ETD), and VALUE.
+ */
 
-// TODO: fine-tune the codes
-
-// primitive types
+// Primitive types: General
 pub const TYPE_UNIT: u8 = 0x00;
 pub const TYPE_BOOL: u8 = 0x01;
-pub const TYPE_I8: u8 = 0x02;
-pub const TYPE_I16: u8 = 0x03;
-pub const TYPE_I32: u8 = 0x04;
-pub const TYPE_I64: u8 = 0x05;
-pub const TYPE_I128: u8 = 0x06;
-pub const TYPE_U8: u8 = 0x07;
-pub const TYPE_U16: u8 = 0x08;
-pub const TYPE_U32: u8 = 0x09;
-pub const TYPE_U64: u8 = 0x0a;
-pub const TYPE_U128: u8 = 0x0b;
-pub const TYPE_STRING: u8 = 0x0c;
-// enum and struct
-pub const TYPE_STRUCT: u8 = 0x10;
-pub const TYPE_ENUM: u8 = 0x11;
-// composite types
-pub const TYPE_OPTION: u8 = 0x20;
-pub const TYPE_ARRAY: u8 = 0x22;
-pub const TYPE_TUPLE: u8 = 0x23;
-pub const TYPE_RESULT: u8 = 0x24;
-// collections
-pub const TYPE_VEC: u8 = 0x30;
-pub const TYPE_TREE_SET: u8 = 0x31;
-pub const TYPE_TREE_MAP: u8 = 0x32;
-pub const TYPE_HASH_SET: u8 = 0x33;
-pub const TYPE_HASH_MAP: u8 = 0x34;
-// custom types start from 0x80 and values are encoded as `len + data`
+
+// Primitive types: Signed Integers
+pub const TYPE_I8: u8 = 0x13;
+pub const TYPE_I16: u8 = 0x14;
+pub const TYPE_I32: u8 = 0x15;
+pub const TYPE_I64: u8 = 0x16;
+pub const TYPE_I128: u8 = 0x17;
+
+// Primitive types: Unsigned Integers
+pub const TYPE_U8: u8 = 0x23;
+pub const TYPE_U16: u8 = 0x24;
+pub const TYPE_U32: u8 = 0x25;
+pub const TYPE_U64: u8 = 0x26;
+pub const TYPE_U128: u8 = 0x27;
+
+// Primitive types: Other
+pub const TYPE_STRING_KNOWN_SIZE: u8 = 0x30; // ETD: (length), value: (concat of UTF8 chars)
+pub const TYPE_STRING_VAR_SIZE: u8 = 0x30; // ETD: (), value: (size + concat of UTF8 chars)
+
+// Collection types: Array
+pub const TYPE_ARRAY_KNOWN_SIZE: u8 = 0x40; // ETD: (size + item_type_data), value: (concat of each value)
+pub const TYPE_ARRAY_VAR_SIZE: u8 = 0x41; // ETD: (item_type_data), value: (size + concat of each value)
+
+// Collection types: Set
+pub const TYPE_SET_KNOWN_SIZE: u8 = 0x42; // ETD: (size + item_type_data), value: (concat of each ordered value)
+pub const TYPE_SET_VAR_SIZE: u8 = 0x43; // ETD: (item_type_data), value: (size + concat of each value)
+
+// Collection types: Map
+pub const TYPE_MAP_KNOWN_SIZE: u8 = 0x44; // ETD: (size + key_type_data + value_type_data), value: (concat of each (key + value))
+pub const TYPE_MAP_VAR_SIZE: u8 = 0x45; // ETD: (key_type_data + value_type_data), value: (size + concat of each (key + value))
+
+// >> Sum types: Generic
+pub const TYPE_SUM_TYPE_GENERIC: u8 = 0x50; // ETD: (discriminator_type_data), value: (discriminator_value + value_type_data + value)
+
+// >> Sum types: Explicit
+pub const TYPE_OPTION: u8 = 0x52; // ETD: () - discriminator type is u8 (specifically OPTION_TYPE_NONE or OPTION_TYPE_SOME), value as above
+pub const TYPE_RESULT: u8 = 0x53; // ETD: () - discriminator type is u8 (specifically RESULT_TYPE_OK or RESULT_TYPE_ERR), value as above
+pub const TYPE_SUM_TYPE_STRING_KEY: u8 = 0x54; // ETD: () - discriminator_type_data = string, value as above
+
+// >> Product types: Generic
+pub const TYPE_PRODUCT_TYPE_FIXED: u8 = 0x60; // We know exactly the types in the product type. ETD: (size + concat of type_data[i]); Value: (concat of value[i])
+pub const TYPE_PRODUCT_TYPE_KNOWN_SIZE: u8 = 0x60; // We know the size of the product type. ETD: (size); Value: (concat of (type_data[i] + value[i]))
+pub const TYPE_PRODUCT_TYPE_VAR_SIZE: u8 = 0x61;  // Any product type. ETD: (); Value: size + (loop over i: type_data[i] + value[i])
+
+// Custom types start from 0x80 and values are encoded as `len + data`
 pub const TYPE_CUSTOM_START: u8 = 0x80;
 
-// Sub type index
+//------
+
+// Explicit subtypes of sum-types
 pub const OPTION_TYPE_NONE: u8 = 0x00;
 pub const OPTION_TYPE_SOME: u8 = 0x01;
 pub const RESULT_TYPE_OK: u8 = 0x00;
 pub const RESULT_TYPE_ERR: u8 = 0x01;
 
-/// A SBOR type ID.
-pub trait TypeId {
-    fn type_id() -> u8;
-}
-
-impl TypeId for () {
-    #[inline]
-    fn type_id() -> u8 {
-        TYPE_UNIT
-    }
-}
-
-impl TypeId for bool {
-    #[inline]
-    fn type_id() -> u8 {
-        TYPE_BOOL
-    }
-}
-
-impl TypeId for i8 {
-    #[inline]
-    fn type_id() -> u8 {
-        TYPE_I8
-    }
-}
-impl TypeId for u8 {
-    #[inline]
-    fn type_id() -> u8 {
-        TYPE_U8
-    }
-}
-
-macro_rules! type_id_int {
-    ($type:ident, $type_id:ident) => {
-        impl TypeId for $type {
-            #[inline]
-            fn type_id() -> u8 {
-                $type_id
-            }
-        }
-    };
-}
-
-type_id_int!(i16, TYPE_I16);
-type_id_int!(i32, TYPE_I32);
-type_id_int!(i64, TYPE_I64);
-type_id_int!(i128, TYPE_I128);
-type_id_int!(u16, TYPE_U16);
-type_id_int!(u32, TYPE_U32);
-type_id_int!(u64, TYPE_U64);
-type_id_int!(u128, TYPE_U128);
-
-impl TypeId for isize {
-    #[inline]
-    fn type_id() -> u8 {
-        i64::type_id()
-    }
-}
-
-impl TypeId for usize {
-    #[inline]
-    fn type_id() -> u8 {
-        u64::type_id()
-    }
-}
-
-impl TypeId for str {
-    #[inline]
-    fn type_id() -> u8 {
-        TYPE_STRING
-    }
-}
-
-impl TypeId for &str {
-    #[inline]
-    fn type_id() -> u8 {
-        TYPE_STRING
-    }
-}
-
-impl TypeId for String {
-    #[inline]
-    fn type_id() -> u8 {
-        TYPE_STRING
-    }
-}
-
-impl<T> TypeId for Option<T> {
-    #[inline]
-    fn type_id() -> u8 {
-        TYPE_OPTION
-    }
-}
-
-impl<T: TypeId> TypeId for Box<T> {
-    #[inline]
-    fn type_id() -> u8 {
-        T::type_id()
-    }
-}
-
-impl<T: TypeId> TypeId for Rc<T> {
-    #[inline]
-    fn type_id() -> u8 {
-        T::type_id()
-    }
-}
-
-impl<T: TypeId> TypeId for RefCell<T> {
-    #[inline]
-    fn type_id() -> u8 {
-        T::type_id()
-    }
-}
-
-impl<T, const N: usize> TypeId for [T; N] {
-    #[inline]
-    fn type_id() -> u8 {
-        TYPE_ARRAY
-    }
-}
-macro_rules! type_id_tuple {
-    ($n:tt $($idx:tt $name:ident)+) => {
-        impl<$($name),+> TypeId for ($($name,)+) {
-            #[inline]
-            fn type_id() -> u8 {
-                TYPE_TUPLE
-            }
-        }
-    };
-}
-
-type_id_tuple! { 2 0 A 1 B }
-type_id_tuple! { 3 0 A 1 B 2 C }
-type_id_tuple! { 4 0 A 1 B 2 C 3 D }
-type_id_tuple! { 5 0 A 1 B 2 C 3 D 4 E }
-type_id_tuple! { 6 0 A 1 B 2 C 3 D 4 E 5 F }
-type_id_tuple! { 7 0 A 1 B 2 C 3 D 4 E 5 F 6 G }
-type_id_tuple! { 8 0 A 1 B 2 C 3 D 4 E 5 F 6 G 7 H }
-type_id_tuple! { 9 0 A 1 B 2 C 3 D 4 E 5 F 6 G 7 H 8 I }
-type_id_tuple! { 10 0 A 1 B 2 C 3 D 4 E 5 F 6 G 7 H 8 I 9 J }
-
-impl<T, E> TypeId for Result<T, E> {
-    #[inline]
-    fn type_id() -> u8 {
-        TYPE_RESULT
-    }
-}
-
-impl<T> TypeId for Vec<T> {
-    #[inline]
-    fn type_id() -> u8 {
-        TYPE_VEC
-    }
-}
-
-impl<T> TypeId for [T] {
-    #[inline]
-    fn type_id() -> u8 {
-        TYPE_VEC
-    }
-}
-
-impl<T> TypeId for BTreeSet<T> {
-    #[inline]
-    fn type_id() -> u8 {
-        TYPE_TREE_SET
-    }
-}
-
-impl<K, V> TypeId for BTreeMap<K, V> {
-    #[inline]
-    fn type_id() -> u8 {
-        TYPE_TREE_MAP
-    }
-}
-
-impl<T> TypeId for HashSet<T> {
-    #[inline]
-    fn type_id() -> u8 {
-        TYPE_HASH_SET
-    }
-}
-
-impl<K, V> TypeId for HashMap<K, V> {
-    #[inline]
-    fn type_id() -> u8 {
-        TYPE_HASH_MAP
-    }
-}
+//------

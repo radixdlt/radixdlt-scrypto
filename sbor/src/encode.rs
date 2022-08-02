@@ -9,12 +9,14 @@ use crate::type_id::*;
 
 /// A data structure that can be serialized into a byte array using SBOR.
 pub trait Encode {
+    #[inline]
     fn encode(&self, encoder: &mut Encoder) {
-        self.encode_type(encoder);
+        Self::encode_type_data(encoder);
         self.encode_value(encoder);
     }
 
-    fn encode_type(&self, encoder: &mut Encoder);
+    #[inline]
+    fn encode_static_type_data(encoder: &mut Encoder);
 
     fn encode_value(&self, encoder: &mut Encoder);
 }
@@ -24,6 +26,8 @@ pub struct Encoder<'a> {
     buf: &'a mut Vec<u8>,
     with_type: bool,
 }
+
+// David TODO - split Encoder into two - WithTypeEncoder and WithoutTypeEncoder
 
 impl<'a> Encoder<'a> {
     pub fn new(buf: &'a mut Vec<u8>, with_type: bool) -> Self {
@@ -38,15 +42,22 @@ impl<'a> Encoder<'a> {
         Self::new(buf, false)
     }
 
-    pub fn write_type(&mut self, ty: u8) {
+    pub fn write_type_id(&mut self, ty: u8) {
         // May use compile-time feature flag, instead of runtime check, for performance.
         if self.with_type {
             self.buf.push(ty);
         }
     }
 
-    pub fn write_len(&mut self, len: usize) {
-        self.buf.extend(&(len as u32).to_le_bytes());
+    pub fn write_fixed_size(&mut self, size: usize) {
+        // May use compile-time feature flag, instead of runtime check, for performance.
+        if self.with_type {
+            self.buf.extend(&(size as u32).to_le_bytes());
+        }
+    }
+
+    pub fn write_variable_size(&mut self, size: usize) {
+        self.buf.extend(&(size as u32).to_le_bytes());
     }
 
     pub fn write_u8(&mut self, n: u8) {
@@ -58,24 +69,29 @@ impl<'a> Encoder<'a> {
     }
 
     pub fn encode<T: Encode + ?Sized>(&mut self, value: &T) {
-        value.encode(self)
+        if self.with_type {
+            value.encode_type_data(self);
+        }
+        value.encode_value(self);
     }
 }
 
 impl Encode for () {
     #[inline]
-    fn encode_type(&self, encoder: &mut Encoder) {
-        encoder.write_type(Self::type_id());
+    fn encode_static_type_data(encoder: &mut Encoder) {
+        encoder.write_type_id(TYPE_UNIT);
     }
+
     #[inline]
     fn encode_value(&self, _encoder: &mut Encoder) {}
 }
 
 impl Encode for bool {
     #[inline]
-    fn encode_type(&self, encoder: &mut Encoder) {
-        encoder.write_type(Self::type_id());
+    fn encode_static_type_data(encoder: &mut Encoder) {
+        encoder.write_type_id(TYPE_BOOL);
     }
+
     #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
         encoder.write_u8(if *self { 1u8 } else { 0u8 })
@@ -84,9 +100,10 @@ impl Encode for bool {
 
 impl Encode for i8 {
     #[inline]
-    fn encode_type(&self, encoder: &mut Encoder) {
-        encoder.write_type(Self::type_id());
+    fn encode_static_type_data(encoder: &mut Encoder) {
+        encoder.write_type_id(TYPE_I8);
     }
+
     #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
         encoder.write_u8(*self as u8);
@@ -95,9 +112,10 @@ impl Encode for i8 {
 
 impl Encode for u8 {
     #[inline]
-    fn encode_type(&self, encoder: &mut Encoder) {
-        encoder.write_type(Self::type_id());
+    fn encode_static_type_data(encoder: &mut Encoder) {
+        encoder.write_type_id(TYPE_U8);
     }
+
     #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
         encoder.write_u8(*self);
@@ -108,9 +126,10 @@ macro_rules! encode_int {
     ($type:ident, $type_id:ident) => {
         impl Encode for $type {
             #[inline]
-            fn encode_type(&self, encoder: &mut Encoder) {
-                encoder.write_type(Self::type_id());
+            fn encode_static_type_data(encoder: &mut Encoder) {
+                encoder.write_type_id($type_id);
             }
+        
             #[inline]
             fn encode_value(&self, encoder: &mut Encoder) {
                 encoder.write_slice(&(*self).to_le_bytes());
@@ -130,9 +149,10 @@ encode_int!(u128, TYPE_U128);
 
 impl Encode for isize {
     #[inline]
-    fn encode_type(&self, encoder: &mut Encoder) {
-        encoder.write_type(Self::type_id());
+    fn encode_static_type_data(encoder: &mut Encoder) {
+        encoder.write_type_id(TYPE_I64);
     }
+
     #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
         (*self as i64).encode_value(encoder);
@@ -141,9 +161,10 @@ impl Encode for isize {
 
 impl Encode for usize {
     #[inline]
-    fn encode_type(&self, encoder: &mut Encoder) {
-        encoder.write_type(Self::type_id());
+    fn encode_static_type_data(encoder: &mut Encoder) {
+        encoder.write_type_id(TYPE_U64);
     }
+
     #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
         (*self as u64).encode_value(encoder);
@@ -152,44 +173,48 @@ impl Encode for usize {
 
 impl Encode for str {
     #[inline]
-    fn encode_type(&self, encoder: &mut Encoder) {
-        encoder.write_type(Self::type_id());
+    fn encode_static_type_data(encoder: &mut Encoder) {
+        encoder.write_type_id(TYPE_STRING_VAR_SIZE);
     }
+
     #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
-        encoder.write_len(self.len());
+        encoder.write_variable_size(self.len());
         encoder.write_slice(self.as_bytes());
     }
 }
 
 impl Encode for &str {
     #[inline]
-    fn encode_type(&self, encoder: &mut Encoder) {
-        encoder.write_type(Self::type_id());
+    fn encode_static_type_data(encoder: &mut Encoder) {
+        encoder.write_type_id(TYPE_STRING_VAR_SIZE);
     }
+
     #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
-        encoder.write_len(self.len());
+        encoder.write_variable_size(self.len());
         encoder.write_slice(self.as_bytes());
     }
 }
 
 impl Encode for String {
     #[inline]
-    fn encode_type(&self, encoder: &mut Encoder) {
-        encoder.write_type(Self::type_id());
+    fn encode_static_type_data(encoder: &mut Encoder) {
+        encoder.write_type_id(TYPE_STRING_VAR_SIZE);
     }
+
     #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
         self.as_str().encode_value(encoder);
     }
 }
 
-impl<T: Encode + TypeId> Encode for Option<T> {
+impl<T: Encode> Encode for Option<T> {
     #[inline]
-    fn encode_type(&self, encoder: &mut Encoder) {
-        encoder.write_type(Self::type_id());
+    fn encode_static_type_data(encoder: &mut Encoder) {
+        encoder.write_type_id(TYPE_OPTION);
     }
+
     #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
         match self {
@@ -206,9 +231,10 @@ impl<T: Encode + TypeId> Encode for Option<T> {
 
 impl<T: Encode> Encode for Box<T> {
     #[inline]
-    fn encode_type(&self, encoder: &mut Encoder) {
-        self.as_ref().encode_type(encoder)
+    fn encode_static_type_data(encoder: &mut Encoder) {
+        T::encode_static_type_data(encoder)
     }
+
     #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
         self.as_ref().encode_value(encoder);
@@ -217,24 +243,26 @@ impl<T: Encode> Encode for Box<T> {
 
 impl<T: Encode> Encode for RefCell<T> {
     #[inline]
-    fn encode_type(&self, encoder: &mut Encoder) {
-        self.borrow().encode_type(encoder)
+    fn encode_static_type_data(encoder: &mut Encoder) {
+        T::encode_static_type_data(encoder)
     }
+
     #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
         self.borrow().encode_value(encoder);
     }
 }
 
-impl<T: Encode + TypeId, const N: usize> Encode for [T; N] {
+impl<T: Encode, const N: usize> Encode for [T; N] {
     #[inline]
-    fn encode_type(&self, encoder: &mut Encoder) {
-        encoder.write_type(Self::type_id());
+    fn encode_static_type_data(encoder: &mut Encoder) {
+        encoder.write_type_id(TYPE_ARRAY_KNOWN_SIZE);
+        T::encode_type_data(encoder);
+        encoder.write_fixed_size(N);
     }
+
     #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
-        encoder.write_type(T::type_id());
-        encoder.write_len(self.len());
         for v in self {
             v.encode_value(encoder);
         }
@@ -245,14 +273,15 @@ macro_rules! encode_tuple {
     ($n:tt $($idx:tt $name:ident)+) => {
         impl<$($name: Encode),+> Encode for ($($name,)+) {
             #[inline]
-            fn encode_type(&self, encoder: &mut Encoder) {
-                encoder.write_type(Self::type_id());
+            fn encode_static_type_data(encoder: &mut Encoder) {
+                encoder.write_type_id(TYPE_PRODUCT_TYPE_FIXED);
+                encoder.write_fixed_size($n);
+                $($name::encode_static_type_data(encoder);)+
             }
+        
             #[inline]
             fn encode_value(&self, encoder: &mut Encoder) {
-                encoder.write_len($n);
-
-                $(self.$idx.encode(encoder);)+
+                $(self.$idx.encode_value(encoder);)+
             }
         }
     };
@@ -270,9 +299,10 @@ encode_tuple! { 10 0 A 1 B 2 C 3 D 4 E 5 F 6 G 7 H 8 I 9 J }
 
 impl<T: Encode, E: Encode> Encode for Result<T, E> {
     #[inline]
-    fn encode_type(&self, encoder: &mut Encoder) {
-        encoder.write_type(Self::type_id());
+    fn encode_static_type_data(encoder: &mut Encoder) {
+        encoder.write_type_id(TYPE_RESULT);
     }
+
     #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
         match self {
@@ -288,26 +318,29 @@ impl<T: Encode, E: Encode> Encode for Result<T, E> {
     }
 }
 
-impl<T: Encode + TypeId> Encode for Vec<T> {
+impl<T: Encode> Encode for Vec<T> {
     #[inline]
-    fn encode_type(&self, encoder: &mut Encoder) {
-        encoder.write_type(Self::type_id());
+    fn encode_static_type_data(encoder: &mut Encoder) {
+        encoder.write_type_id(TYPE_ARRAY_VAR_SIZE);
+        T::encode_static_type_data(encoder);
     }
+
     #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
         self.as_slice().encode_value(encoder);
     }
 }
 
-impl<T: Encode + TypeId> Encode for [T] {
+impl<T: Encode> Encode for [T] {
     #[inline]
-    fn encode_type(&self, encoder: &mut Encoder) {
-        encoder.write_type(Self::type_id());
+    fn encode_static_type_data(encoder: &mut Encoder) {
+        encoder.write_type_id(TYPE_ARRAY_VAR_SIZE);
+        T::encode_static_type_data(encoder);
     }
+
     #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
-        encoder.write_type(T::type_id());
-        encoder.write_len(self.len());
+        encoder.write_variable_size(self.len());
         if T::type_id() == TYPE_U8 || T::type_id() == TYPE_I8 {
             let mut buf = Vec::<u8>::with_capacity(self.len());
             unsafe {
@@ -323,31 +356,33 @@ impl<T: Encode + TypeId> Encode for [T] {
     }
 }
 
-impl<T: Encode + TypeId> Encode for BTreeSet<T> {
+impl<T: Encode> Encode for BTreeSet<T> {
     #[inline]
-    fn encode_type(&self, encoder: &mut Encoder) {
-        encoder.write_type(Self::type_id());
+    fn encode_static_type_data(encoder: &mut Encoder) {
+        encoder.write_type_id(TYPE_SET_VAR_SIZE);
+        T::encode_static_type_data(encoder);
     }
+
     #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
-        encoder.write_type(T::type_id());
-        encoder.write_len(self.len());
+        encoder.write_variable_size(self.len());
         for v in self {
             v.encode_value(encoder);
         }
     }
 }
 
-impl<K: Encode + TypeId, V: Encode + TypeId> Encode for BTreeMap<K, V> {
+impl<K: Encode, V: Encode> Encode for BTreeMap<K, V> {
     #[inline]
-    fn encode_type(&self, encoder: &mut Encoder) {
-        encoder.write_type(Self::type_id());
+    fn encode_static_type_data(encoder: &mut Encoder) {
+        encoder.write_type_id(TYPE_MAP_VAR_SIZE);
+        K::encode_static_type_data(encoder);
+        V::encode_static_type_data(encoder);
     }
+
     #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
-        encoder.write_type(K::type_id());
-        encoder.write_type(V::type_id());
-        encoder.write_len(self.len());
+        encoder.write_variable_size(self.len());
         for (k, v) in self {
             k.encode_value(encoder);
             v.encode_value(encoder);
@@ -355,15 +390,16 @@ impl<K: Encode + TypeId, V: Encode + TypeId> Encode for BTreeMap<K, V> {
     }
 }
 
-impl<T: Encode + TypeId + Ord + Hash> Encode for HashSet<T> {
+impl<T: Encode + Ord + Hash> Encode for HashSet<T> {
     #[inline]
-    fn encode_type(&self, encoder: &mut Encoder) {
-        encoder.write_type(Self::type_id());
+    fn encode_static_type_data(encoder: &mut Encoder) {
+        encoder.write_type_id(TYPE_SET_VAR_SIZE);
+        T::encode_static_type_data(encoder);
     }
+
     #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
-        encoder.write_type(T::type_id());
-        encoder.write_len(self.len());
+        encoder.write_variable_size(self.len());
         // Encode elements based on the order defined on the key type to generate deterministic bytes.
         let values: BTreeSet<&T> = self.iter().collect();
         for v in values {
@@ -372,16 +408,17 @@ impl<T: Encode + TypeId + Ord + Hash> Encode for HashSet<T> {
     }
 }
 
-impl<K: Encode + TypeId + Ord + Hash, V: Encode + TypeId> Encode for HashMap<K, V> {
+impl<K: Encode + Ord + Hash, V: Encode> Encode for HashMap<K, V> {
     #[inline]
-    fn encode_type(&self, encoder: &mut Encoder) {
-        encoder.write_type(Self::type_id());
+    fn encode_static_type_data(encoder: &mut Encoder) {
+        encoder.write_type_id(TYPE_MAP_VAR_SIZE);
+        K::encode_static_type_data(encoder);
+        V::encode_static_type_data(encoder);
     }
+
     #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
-        encoder.write_type(K::type_id());
-        encoder.write_type(V::type_id());
-        encoder.write_len(self.len());
+        encoder.write_variable_size(self.len());
         // Encode elements based on the order defined on the key type to generate deterministic bytes.
         let keys: BTreeSet<&K> = self.keys().collect();
         for key in keys {

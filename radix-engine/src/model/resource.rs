@@ -41,7 +41,7 @@ pub enum ResourceContainer {
         locked_ids: HashMap<NonFungibleId, usize>,
         /// The liquid non-fungible ids.
         liquid_ids: BTreeSet<NonFungibleId>,
-    },
+    }
 }
 
 /// The locked amount or non-fungible IDs.
