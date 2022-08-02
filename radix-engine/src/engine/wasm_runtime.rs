@@ -2,11 +2,9 @@ use sbor::rust::marker::PhantomData;
 use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
-use scrypto::core::ScryptoActorInfo;
-use scrypto::core::{DataAddress, Receiver};
+use scrypto::core::{DataAddress, Receiver, ScryptoActor, TypeName};
 use scrypto::engine::api::RadixEngineInput;
 use scrypto::engine::types::*;
-use scrypto::prelude::TypeName;
 use scrypto::resource::AccessRule;
 use scrypto::values::ScryptoValue;
 
@@ -27,7 +25,7 @@ where
     I: WasmInstance,
     C: CostUnitCounter,
 {
-    this: ScryptoActorInfo,
+    actor: ScryptoActor,
     system_api: &'y mut Y,
     phantom1: PhantomData<W>,
     phantom2: PhantomData<I>,
@@ -43,9 +41,9 @@ where
     I: WasmInstance,
     C: CostUnitCounter,
 {
-    pub fn new(this: ScryptoActorInfo, system_api: &'y mut Y) -> Self {
+    pub fn new(actor: ScryptoActor, system_api: &'y mut Y) -> Self {
         RadixEngineWasmRuntime {
-            this,
+            actor,
             system_api,
             phantom1: PhantomData,
             phantom2: PhantomData,
@@ -84,15 +82,12 @@ where
 
     fn handle_create_local_component(
         &mut self,
+        package_address: PackageAddress, // FIXME only allow creation of local component from the owning package?
         blueprint_name: String,
         state: Vec<u8>,
     ) -> Result<ComponentAddress, RuntimeError> {
         // Create component
-        let component = Component::new(
-            self.this.package_address().clone(),
-            blueprint_name,
-            Vec::new(),
-        );
+        let component = Component::new(package_address, blueprint_name, Vec::new());
         let component_state = ComponentState::new(state);
 
         let id = self.system_api.create_node((component, component_state))?;
@@ -109,7 +104,7 @@ where
         }
     }
 
-    // TODO: This logic should move into KeyValueEntry decoding
+    // TODO: actor logic should move into KeyValueEntry decoding
     fn verify_stored_key(value: &ScryptoValue) -> Result<(), RuntimeError> {
         if !value.bucket_ids.is_empty() {
             return Err(RuntimeError::BucketNotAllowed);
@@ -169,8 +164,8 @@ where
         Ok(ScryptoValue::unit())
     }
 
-    fn handle_get_actor(&mut self) -> Result<ScryptoActorInfo, RuntimeError> {
-        return Ok(self.this.clone());
+    fn handle_get_actor(&mut self) -> Result<ScryptoActor, RuntimeError> {
+        return Ok(self.actor.clone());
     }
 
     fn handle_generate_uuid(&mut self) -> Result<u128, RuntimeError> {
@@ -221,8 +216,8 @@ impl<
             RadixEngineInput::InvokeMethod(receiver, fn_ident, input_bytes) => {
                 self.handle_invoke_method(receiver, fn_ident, input_bytes)
             }
-            RadixEngineInput::CreateComponent(blueprint_name, state) => self
-                .handle_create_local_component(blueprint_name, state)
+            RadixEngineInput::CreateComponent(package_address, blueprint_name, state) => self
+                .handle_create_local_component(package_address, blueprint_name, state)
                 .map(encode),
             RadixEngineInput::CreateKeyValueStore() => self.handle_create_kv_store().map(encode),
             RadixEngineInput::GetActor() => self.handle_get_actor().map(encode),

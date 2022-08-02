@@ -2,22 +2,21 @@ use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use sbor::*;
 
-use crate::core::ScryptoActor;
-use crate::engine::types::{BucketId, KeyValueStoreId, ProofId, RENodeId, VaultId};
-use crate::prelude::ComponentAddress;
-use crate::resource::ResourceAddress;
+use crate::engine::types::{BucketId, KeyValueStoreId, PackageAddress, ProofId, RENodeId, VaultId};
+use crate::prelude::{ComponentAddress, ResourceAddress};
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub enum TypeName {
     Package,
     ResourceManager,
     TransactionProcessor,
+    Blueprint(PackageAddress, String),
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub enum Receiver {
     Consumed(RENodeId),
-    Scrypto(ScryptoActor),
+    Component(ComponentAddress),
     ComponentMetaRef(ComponentAddress),
     ResourceManagerRef(ResourceAddress),
     BucketRef(BucketId),

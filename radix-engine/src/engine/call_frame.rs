@@ -10,9 +10,9 @@ use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
-use scrypto::core::{Receiver, ScryptoActor};
+use scrypto::core::Receiver;
 use scrypto::engine::types::*;
-use scrypto::prelude::TypeName;
+use scrypto::prelude::{ScryptoActor, TypeName};
 use scrypto::resource::AuthZoneClearInput;
 use scrypto::values::*;
 use transaction::validation::*;
@@ -622,7 +622,7 @@ pub enum ExecutionState<'a> {
     Consumed(RENodeId),
     AuthZone(RefMut<'a, AuthZone>),
     RENodeRef(RENodeId),
-    Scrypto(ScryptoActorInfo, PackageAddress),
+    Component(PackageAddress, String, ComponentAddress, bool),
 }
 
 impl<'p, 'g, 's, W, I, C> CallFrame<'p, 'g, 's, W, I, C>
@@ -810,6 +810,53 @@ where
                         ResourceManager::static_main(fn_ident, input, self)
                             .map_err(RuntimeError::ResourceManagerError)
                     }
+                    TypeName::Blueprint(package_address, blueprint_name) => {
+                        let output = {
+                            let package = self.track.read_substate(package_address).package();
+                            let wasm_metering_params = self.fee_table.wasm_metering_params();
+                            let instrumented_code = self
+                                .wasm_instrumenter
+                                .instrument(package.code(), &wasm_metering_params);
+                            let mut instance = self.wasm_engine.instantiate(instrumented_code);
+                            let blueprint_abi = package
+                                .blueprint_abi(&blueprint_name)
+                                .expect("Blueprint should exist");
+                            let export_name = &blueprint_abi
+                                .get_fn_abi(fn_ident)
+                                .unwrap()
+                                .export_name
+                                .to_string();
+                            let mut runtime: Box<dyn WasmRuntime> =
+                                Box::new(RadixEngineWasmRuntime::new(
+                                    ScryptoActor::blueprint(
+                                        package_address,
+                                        blueprint_name.clone(),
+                                    ),
+                                    self,
+                                ));
+                            instance
+                                .invoke_export(&export_name, &input, &mut runtime)
+                                .map_err(|e| match e {
+                                    // Flatten error code for more readable transaction receipt
+                                    InvokeError::RuntimeError(e) => e,
+                                    e @ _ => RuntimeError::InvokeError(e.into()),
+                                })?
+                        };
+
+                        let package = self.track.read_substate(package_address).package();
+                        let blueprint_abi = package
+                            .blueprint_abi(&blueprint_name)
+                            .expect("Blueprint should exist");
+                        let fn_abi = blueprint_abi.get_fn_abi(fn_ident).unwrap();
+                        if !fn_abi.output.matches(&output.dom) {
+                            Err(RuntimeError::InvalidFnOutput {
+                                fn_ident: fn_ident.to_string(),
+                                output: output.dom,
+                            })
+                        } else {
+                            Ok(output)
+                        }
+                    }
                 },
                 ExecutionEntity::Method(_, state) => match state {
                     ExecutionState::Consumed(node_id) => match node_id {
@@ -850,7 +897,12 @@ where
                         }
                         _ => panic!("Unexpected"),
                     },
-                    ExecutionState::Scrypto(ref actor, package_address) => {
+                    ExecutionState::Component(
+                        package_address,
+                        blueprint_name,
+                        component_address,
+                        is_global,
+                    ) => {
                         let output = {
                             let package = self.track.read_substate(package_address).package();
                             let wasm_metering_params = self.fee_table.wasm_metering_params();
@@ -859,7 +911,7 @@ where
                                 .instrument(package.code(), &wasm_metering_params);
                             let mut instance = self.wasm_engine.instantiate(instrumented_code);
                             let blueprint_abi = package
-                                .blueprint_abi(actor.blueprint_name())
+                                .blueprint_abi(&blueprint_name)
                                 .expect("Blueprint should exist");
                             let export_name = &blueprint_abi
                                 .get_fn_abi(fn_ident)
@@ -867,7 +919,10 @@ where
                                 .export_name
                                 .to_string();
                             let mut runtime: Box<dyn WasmRuntime> =
-                                Box::new(RadixEngineWasmRuntime::new(actor.clone(), self));
+                                Box::new(RadixEngineWasmRuntime::new(
+                                    ScryptoActor::Component(component_address, is_global),
+                                    self,
+                                ));
                             instance
                                 .invoke_export(&export_name, &input, &mut runtime)
                                 .map_err(|e| match e {
@@ -879,7 +934,7 @@ where
 
                         let package = self.track.read_substate(package_address).package();
                         let blueprint_abi = package
-                            .blueprint_abi(actor.blueprint_name())
+                            .blueprint_abi(&blueprint_name)
                             .expect("Blueprint should exist");
                         let fn_abi = blueprint_abi.get_fn_abi(fn_ident).unwrap();
                         if !fn_abi.output.matches(&output.dom) {
@@ -1161,6 +1216,41 @@ where
             next_owned_values.insert(id, value);
         }
 
+        let mut locked_values = HashSet::<SubstateId>::new();
+
+        // No authorization but state load
+        match &type_name {
+            TypeName::Blueprint(package_address, blueprint_name) => {
+                self.track
+                    .acquire_lock(package_address.clone(), false, false)
+                    .map_err(|e| match e {
+                        TrackError::NotFound => RuntimeError::PackageNotFound(*package_address),
+                        TrackError::Reentrancy => {
+                            panic!("Package reentrancy error should never occur.")
+                        }
+                        TrackError::StateTrackError(..) => panic!("Unexpected"),
+                    })?;
+                locked_values.insert(package_address.clone().into());
+                let package = self.track.read_substate(package_address.clone()).package();
+                let abi = package.blueprint_abi(blueprint_name).ok_or(
+                    RuntimeError::BlueprintNotFound(
+                        package_address.clone(),
+                        blueprint_name.clone(),
+                    ),
+                )?;
+                let fn_abi = abi
+                    .get_fn_abi(&fn_ident)
+                    .ok_or(RuntimeError::MethodDoesNotExist(fn_ident.clone()))?;
+                if !fn_abi.input.matches(&input.dom) {
+                    return Err(RuntimeError::InvalidFnInput {
+                        fn_ident,
+                        input: input.dom,
+                    });
+                }
+            }
+            TypeName::Package | TypeName::ResourceManager | TypeName::TransactionProcessor => {}
+        }
+
         // Setup next parent frame
         let mut next_borrowed_values: Vec<&mut HashMap<RENodeId, HeapRootRENode>> = Vec::new();
         for parent_values in &mut self.parent_heap_nodes {
@@ -1181,7 +1271,9 @@ where
             self.cost_unit_counter,
             self.fee_table,
             match type_name {
-                TypeName::TransactionProcessor => Some(RefCell::new(AuthZone::new())),
+                TypeName::TransactionProcessor | TypeName::Blueprint(_, _) => {
+                    Some(RefCell::new(AuthZone::new()))
+                }
                 _ => None,
             },
             next_owned_values,
@@ -1194,6 +1286,12 @@ where
         let (result, received_values) =
             frame.run(ExecutionEntity::Function(type_name), &fn_ident, input)?;
         drop(frame);
+
+        // Release locked addresses
+        for l in locked_values {
+            // TODO: refactor after introducing `Lock` representation.
+            self.track.release_lock(l.clone(), false);
+        }
 
         // move buckets and proofs to this process.
         for (id, value) in received_values {
@@ -1485,25 +1583,104 @@ where
 
                 Ok((ExecutionState::RENodeRef(node_id), vec![]))
             }
-            Receiver::Scrypto(actor) => match actor {
-                ScryptoActor::Blueprint(package_address, blueprint_name) => {
+            Receiver::Component(component_address) => {
+                let component_address = component_address.clone();
+
+                // Find value
+                let node_id = RENodeId::Component(component_address);
+                let cur_location = if self.owned_heap_nodes.contains_key(&node_id) {
+                    RENodePointer::Stack {
+                        frame_id: None,
+                        root: node_id.clone(),
+                        id: None,
+                    }
+                } else if let Some(RENodeInfo { location, .. }) = self.node_refs.get(&node_id) {
+                    location.clone()
+                } else {
+                    RENodePointer::Track(SubstateId::ComponentInfo(component_address, true))
+                };
+
+                // Lock values and setup next frame
+                let (next_location, is_global) = match cur_location.clone() {
+                    RENodePointer::Track(substate_id) => {
+                        self.track
+                            .acquire_lock(substate_id.clone(), true, false)
+                            .map_err(|e| match e {
+                                TrackError::NotFound => {
+                                    RuntimeError::ComponentNotFound(component_address)
+                                }
+                                TrackError::Reentrancy => {
+                                    RuntimeError::ComponentReentrancy(component_address)
+                                }
+                                TrackError::StateTrackError(..) => {
+                                    panic!("Unexpected")
+                                }
+                            })?;
+                        locked_values.insert(substate_id.clone());
+
+                        let component_address: ComponentAddress = substate_id.clone().into();
+                        let component_state_address = SubstateId::ComponentState(component_address);
+                        self.track
+                            .acquire_lock(component_state_address.clone(), true, false)
+                            .map_err(|e| match e {
+                                TrackError::NotFound => {
+                                    RuntimeError::ComponentNotFound(component_address)
+                                }
+                                TrackError::Reentrancy => {
+                                    RuntimeError::ComponentReentrancy(component_address)
+                                }
+                                TrackError::StateTrackError(..) => {
+                                    panic!("Unexpected")
+                                }
+                            })?;
+                        locked_values.insert(component_state_address);
+
+                        let is_global =
+                            if let SubstateId::ComponentInfo(_component_address, is_global) =
+                                substate_id
+                            {
+                                is_global
+                            } else {
+                                panic!("Unexpected substate_id");
+                            };
+
+                        (RENodePointer::Track(substate_id), is_global)
+                    }
+                    RENodePointer::Stack { frame_id, root, id } => (
+                        RENodePointer::Stack {
+                            frame_id: frame_id.or(Some(self.depth)),
+                            root,
+                            id,
+                        },
+                        false,
+                    ),
+                };
+
+                let (package_address, blueprint_name, component_address, is_global) = {
+                    let value_ref = cur_location.to_ref(
+                        &self.owned_heap_nodes,
+                        &self.parent_heap_nodes,
+                        &mut self.track,
+                    );
+                    let component = value_ref.component();
+                    (
+                        component.package_address(),
+                        component.blueprint_name().to_string(),
+                        component_address,
+                        is_global,
+                    )
+                };
+
+                // Retrieve Method Authorization
+                let method_auths = {
                     self.track
-                        .acquire_lock(package_address.clone(), false, false)
-                        .map_err(|e| match e {
-                            TrackError::NotFound => RuntimeError::PackageNotFound(*package_address),
-                            TrackError::Reentrancy => {
-                                panic!("Package reentrancy error should never occur.")
-                            }
-                            TrackError::StateTrackError(..) => panic!("Unexpected"),
-                        })?;
+                        .acquire_lock(package_address, false, false)
+                        .expect("Should never fail");
                     locked_values.insert(package_address.clone().into());
-                    let package = self.track.read_substate(package_address.clone()).package();
-                    let abi = package.blueprint_abi(blueprint_name).ok_or(
-                        RuntimeError::BlueprintNotFound(
-                            package_address.clone(),
-                            blueprint_name.clone(),
-                        ),
-                    )?;
+                    let package = self.track.read_substate(package_address).package();
+                    let abi = package
+                        .blueprint_abi(&blueprint_name)
+                        .expect("Blueprint not found for existing component");
                     let fn_abi = abi
                         .get_fn_abi(&fn_ident)
                         .ok_or(RuntimeError::MethodDoesNotExist(fn_ident.clone()))?;
@@ -1513,161 +1690,38 @@ where
                             input: input.dom,
                         });
                     }
-                    Ok((
-                        ExecutionState::Scrypto(
-                            ScryptoActorInfo::blueprint(
-                                package_address.clone(),
-                                blueprint_name.clone(),
-                            ),
-                            package_address.clone(),
-                        ),
-                        vec![],
-                    ))
-                }
-                ScryptoActor::Component(component_address) => {
-                    let component_address = *component_address;
 
-                    // Find value
-                    let node_id = RENodeId::Component(component_address);
-                    let cur_location = if self.owned_heap_nodes.contains_key(&node_id) {
-                        RENodePointer::Stack {
-                            frame_id: None,
-                            root: node_id.clone(),
-                            id: None,
-                        }
-                    } else if let Some(RENodeInfo { location, .. }) = self.node_refs.get(&node_id) {
-                        location.clone()
-                    } else {
-                        RENodePointer::Track(SubstateId::ComponentInfo(component_address, true))
-                    };
-
-                    // Lock values and setup next frame
-                    let (next_location, is_global) = match cur_location.clone() {
-                        RENodePointer::Track(substate_id) => {
-                            self.track
-                                .acquire_lock(substate_id.clone(), true, false)
-                                .map_err(|e| match e {
-                                    TrackError::NotFound => {
-                                        RuntimeError::ComponentNotFound(component_address)
-                                    }
-                                    TrackError::Reentrancy => {
-                                        RuntimeError::ComponentReentrancy(component_address)
-                                    }
-                                    TrackError::StateTrackError(..) => {
-                                        panic!("Unexpected")
-                                    }
-                                })?;
-                            locked_values.insert(substate_id.clone());
-
-                            let component_address: ComponentAddress = substate_id.clone().into();
-                            let component_state_address =
-                                SubstateId::ComponentState(component_address);
-                            self.track
-                                .acquire_lock(component_state_address.clone(), true, false)
-                                .map_err(|e| match e {
-                                    TrackError::NotFound => {
-                                        RuntimeError::ComponentNotFound(component_address)
-                                    }
-                                    TrackError::Reentrancy => {
-                                        RuntimeError::ComponentReentrancy(component_address)
-                                    }
-                                    TrackError::StateTrackError(..) => {
-                                        panic!("Unexpected")
-                                    }
-                                })?;
-                            locked_values.insert(component_state_address);
-
-                            let is_global =
-                                if let SubstateId::ComponentInfo(_component_address, is_global) =
-                                    substate_id
-                                {
-                                    is_global
-                                } else {
-                                    panic!("Unexpected substate_id");
-                                };
-
-                            (RENodePointer::Track(substate_id), is_global)
-                        }
-                        RENodePointer::Stack { frame_id, root, id } => (
-                            RENodePointer::Stack {
-                                frame_id: frame_id.or(Some(self.depth)),
-                                root,
-                                id,
-                            },
-                            false,
-                        ),
-                    };
-
-                    let actor_info = {
+                    {
                         let value_ref = cur_location.to_ref(
                             &self.owned_heap_nodes,
                             &self.parent_heap_nodes,
-                            &mut self.track,
+                            &self.track,
                         );
+
                         let component = value_ref.component();
-                        ScryptoActorInfo::component(
-                            component.package_address(),
-                            component.blueprint_name().to_string(),
-                            component_address,
-                            is_global,
-                        )
-                    };
+                        let component_state = value_ref.component_state();
+                        component.method_authorization(component_state, &abi.structure, &fn_ident)
+                    }
+                };
 
-                    // Retrieve Method Authorization
-                    let (method_auths, package_address) = {
-                        let package_address = actor_info.package_address().clone();
-                        let blueprint_name = actor_info.blueprint_name().to_string();
-                        self.track
-                            .acquire_lock(package_address, false, false)
-                            .expect("Should never fail");
-                        locked_values.insert(package_address.clone().into());
-                        let package = self.track.read_substate(package_address).package();
-                        let abi = package
-                            .blueprint_abi(&blueprint_name)
-                            .expect("Blueprint not found for existing component");
-                        let fn_abi = abi
-                            .get_fn_abi(&fn_ident)
-                            .ok_or(RuntimeError::MethodDoesNotExist(fn_ident.clone()))?;
-                        if !fn_abi.input.matches(&input.dom) {
-                            return Err(RuntimeError::InvalidFnInput {
-                                fn_ident,
-                                input: input.dom,
-                            });
-                        }
+                value_refs.insert(
+                    node_id,
+                    RENodeInfo {
+                        location: next_location,
+                        visible: true,
+                    },
+                );
 
-                        let method_auths = {
-                            let value_ref = cur_location.to_ref(
-                                &self.owned_heap_nodes,
-                                &self.parent_heap_nodes,
-                                &self.track,
-                            );
-
-                            let component = value_ref.component();
-                            let component_state = value_ref.component_state();
-                            component.method_authorization(
-                                component_state,
-                                &abi.structure,
-                                &fn_ident,
-                            )
-                        };
-
-                        (method_auths, package_address)
-                    };
-
-                    value_refs.insert(
-                        node_id,
-                        RENodeInfo {
-                            location: next_location,
-                            visible: true,
-                        },
-                    );
-
-                    Ok((
-                        ExecutionState::Scrypto(actor_info, package_address),
-                        method_auths,
-                    ))
-                }
-            },
+                Ok((
+                    ExecutionState::Component(
+                        package_address,
+                        blueprint_name,
+                        component_address,
+                        is_global,
+                    ),
+                    method_auths,
+                ))
+            }
             Receiver::ComponentMetaRef(component_address) => {
                 let component_address = *component_address;
 
@@ -1834,7 +1888,7 @@ where
 
             match &execution_state {
                 // Resource auth check includes caller
-                ExecutionState::Scrypto(..)
+                ExecutionState::Component(..)
                 | ExecutionState::RENodeRef(RENodeId::Resource(..), ..)
                 | ExecutionState::RENodeRef(RENodeId::Vault(..), ..)
                 | ExecutionState::Consumed(RENodeId::Bucket(..)) => {
@@ -1881,7 +1935,7 @@ where
             self.cost_unit_counter,
             self.fee_table,
             match receiver {
-                Receiver::Scrypto(_) => Some(RefCell::new(AuthZone::new())),
+                Receiver::Component(_) => Some(RefCell::new(AuthZone::new())),
                 _ => None,
             },
             next_owned_values,

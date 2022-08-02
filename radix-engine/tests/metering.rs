@@ -172,13 +172,13 @@ fn test_total_cost_unit_consumed() {
         borrow                        :     1000
         create                        :    10000
         emit_log                      :     1050
-        invoke_function               :     1920
-        invoke_method                 :     6360
+        invoke_function               :     2945
+        invoke_method                 :     4310
         read                          :     5000
         return                        :     1000
         run_function                  :    10000
-        run_method                    :    35000
-        run_wasm                      :    96984
+        run_method                    :    25000
+        run_wasm                      :    94921
         tx_decoding                   :        4
         tx_manifest_verification      :        1
         tx_signature_verification     :        0
@@ -192,13 +192,13 @@ fn test_total_cost_unit_consumed() {
             + 1000
             + 10000
             + 1050
-            + 1920
-            + 6360
+            + 2945
+            + 4310
             + 5000
             + 1000
             + 10000
-            + 35000
-            + 96984
+            + 25000
+            + 94921
             + 5000,
         receipt.fee_summary.cost_unit_consumed
     );

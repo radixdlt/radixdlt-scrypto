@@ -6,7 +6,7 @@ mod logger;
 mod network;
 mod runtime;
 
-pub use actor::{ScryptoActor, ScryptoActorInfo};
+pub use actor::ScryptoActor;
 pub use data::*;
 pub use invocation::{DataAddress, Receiver, TypeName};
 pub use level::Level;

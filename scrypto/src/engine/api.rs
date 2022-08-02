@@ -32,7 +32,7 @@ macro_rules! sfunctions {
 pub enum RadixEngineInput {
     InvokeFunction(TypeName, String, Vec<u8>),
     InvokeMethod(Receiver, String, Vec<u8>),
-    CreateComponent(String, Vec<u8>),
+    CreateComponent(PackageAddress, String, Vec<u8>),
     CreateKeyValueStore(),
     ReadData(DataAddress),
     WriteData(DataAddress, Vec<u8>),

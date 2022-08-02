@@ -4,7 +4,7 @@ use sbor::rust::vec::Vec;
 use sbor::{Decode, Encode, TypeId};
 use scrypto::buffer::scrypto_decode;
 use scrypto::component::Package;
-use scrypto::core::{Receiver, ScryptoActor};
+use scrypto::core::Receiver;
 use scrypto::engine::types::*;
 use scrypto::prelude::{
     AuthZoneClearInput, AuthZoneCreateProofByAmountInput, AuthZoneCreateProofByIdsInput,
@@ -369,11 +369,11 @@ impl TransactionProcessor {
                                 ScryptoValue::from_slice(arg).expect("Should be valid arg"),
                             )
                             .and_then(|call_data| {
-                                system_api.invoke_method(
-                                    Receiver::Scrypto(ScryptoActor::Blueprint(
+                                system_api.invoke_function(
+                                    TypeName::Blueprint(
                                         *package_address,
                                         blueprint_name.to_string(),
-                                    )),
+                                    ),
                                     method_name.to_string(),
                                     call_data,
                                 )
@@ -418,7 +418,7 @@ impl TransactionProcessor {
                             )
                             .and_then(|call_data| {
                                 system_api.invoke_method(
-                                    Receiver::Scrypto(ScryptoActor::Component(*component_address)),
+                                    Receiver::Component(*component_address),
                                     method_name.to_string(),
                                     call_data,
                                 )
@@ -486,7 +486,7 @@ impl TransactionProcessor {
                                 }
                                 let encoded = to_struct!(buckets);
                                 system_api.invoke_method(
-                                    Receiver::Scrypto(ScryptoActor::Component(*component_address)),
+                                    Receiver::Component(*component_address),
                                     method.to_string(),
                                     ScryptoValue::from_slice(&encoded).unwrap(),
                                 )

@@ -124,6 +124,9 @@ impl FeeTable {
                 "run" => self.fixed_high, // TODO: per manifest instruction
                 _ => self.fixed_high,
             },
+            TypeName::Blueprint(_, _) => {
+                0 // Costing is through instrumentation
+            }
         }
     }
 
@@ -148,12 +151,15 @@ impl FeeTable {
                 "clear" => self.fixed_high,
                 _ => self.fixed_high,
             },
-            Receiver::Scrypto(_) => {
+            Receiver::Component(_) => {
                 0 // Costing is through instrumentation
             }
-            Receiver::ComponentMetaRef(_) => {
-                0 // Costing is through instrumentation
-            }
+            Receiver::ComponentMetaRef(_) => match fn_ident {
+                "package_address" => self.fixed_low,
+                "blueprint_name" => self.fixed_low,
+                "add_access_check" => self.fixed_medium,
+                _ => self.fixed_high,
+            },
             Receiver::ResourceManagerRef(_) => match fn_ident {
                 "update_auth" => self.fixed_medium,
                 "lock_auth" => self.fixed_medium,
