@@ -69,17 +69,17 @@ macro_rules! decimals {
 
                     /// Whether this decimal is zero.
                     pub fn is_zero(&self) -> bool {
-                        self.0 == Zero::zero()
+                        self.0 == Self::zero()
                     }
 
                     /// Whether this decimal is positive.
                     pub fn is_positive(&self) -> bool {
-                        self.0 > Zero::zero()
+                        self.0 > Self::zero()
                     }
 
                     /// Whether this decimal is negative.
                     pub fn is_negative(&self) -> bool {
-                        self.0 < Zero::zero()
+                        self.0 < Self::zero()
                     }
 
                     /// Returns the absolute value.
@@ -103,7 +103,7 @@ macro_rules! decimals {
                         let divisor:$wrapped = <$wrapped>::from(10i8).pow(Self::SCALE - decimal_places);
                         match mode {
                             RoundingMode::TowardsPositiveInfinity => {
-                                if self.0 % divisor == Zero::zero() {
+                                if self.0 % divisor == Self::zero() {
                                     self.clone()
                                 } else if self.is_negative() {
                                     Self(self.0 / divisor * divisor)
@@ -112,7 +112,7 @@ macro_rules! decimals {
                                 }
                             }
                             RoundingMode::TowardsNegativeInfinity => {
-                                if self.0 % divisor == Zero::zero() {
+                                if self.0 % divisor == Self::zero() {
                                     self.clone()
                                 } else if self.is_negative() {
                                     Self((self.0 / divisor - 1) * divisor)
@@ -121,14 +121,14 @@ macro_rules! decimals {
                                 }
                             }
                             RoundingMode::TowardsZero => {
-                                if self.0 % divisor == Zero::zero() {
+                                if self.0 % divisor == Self::zero() {
                                     self.clone()
                                 } else {
                                     Self(self.0 / divisor * divisor)
                                 }
                             }
                             RoundingMode::AwayFromZero => {
-                                if self.0 % divisor == Zero::zero() {
+                                if self.0 % divisor == Self::zero() {
                                     self.clone()
                                 } else if self.is_negative() {
                                     Self((self.0 / divisor - 1) * divisor)
@@ -137,7 +137,7 @@ macro_rules! decimals {
                                 }
                             }
                             RoundingMode::TowardsNearestAndHalfTowardsZero => {
-                                if self.0 % divisor == Zero::zero() {
+                                if self.0 % divisor == Self::zero() {
                                     self.clone()
                                 } else {
                                     let digit = (self.0 / (divisor / 10i128) % 10i128).abs();
@@ -153,7 +153,7 @@ macro_rules! decimals {
                                 }
                             }
                             RoundingMode::TowardsNearestAndHalfAwayFromZero => {
-                                if self.0 % divisor == Zero::zero() {
+                                if self.0 % divisor == Self::zero() {
                                     self.clone()
                                 } else {
                                     let digit = (self.0 / (divisor / 10i128) % 10i128).abs();
@@ -435,10 +435,10 @@ macro_rules! decimals {
                             buf.push('.');
                         }
 
-                        if a == Zero::zero() {
+                        if a == 0.into() {
                             buf.push('0')
                         } else {
-                            while a != Zero::zero() {
+                            while a != 0.into() {
                                 let m: $wrapped = a % 10;
                                 buf.push(char::from_digit(m.abs().to_u32().expect("Overflow"), 10).unwrap());
                                 a /= 10
