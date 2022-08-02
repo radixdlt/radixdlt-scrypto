@@ -307,8 +307,6 @@ impl Proof {
         }
     }
 
-    // FIXME: this is a hack for now until we can get snode_state into process
-    // FIXME: and be able to determine which snode the proof is going into
     pub fn change_to_unrestricted(&mut self) {
         self.restricted = false;
     }

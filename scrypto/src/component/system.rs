@@ -1,7 +1,7 @@
 use crate::buffer::*;
 use crate::component::package::Package;
 use crate::component::*;
-use crate::core::SNodeRef;
+use crate::core::{Runtime, TypeName};
 use crate::engine::{api::*, call_engine};
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::*;
@@ -45,8 +45,8 @@ impl ComponentSystem {
 
     /// Publishes a package.
     pub fn publish_package(&mut self, package: Package) -> PackageAddress {
-        let input = RadixEngineInput::InvokeSNode(
-            SNodeRef::PackageStatic,
+        let input = RadixEngineInput::InvokeFunction(
+            TypeName::Package,
             "publish".to_string(),
             scrypto_encode(&PackagePublishInput { package }),
         );
@@ -59,8 +59,11 @@ impl ComponentSystem {
         blueprint_name: &str,
         state: T,
     ) -> Component {
-        let input =
-            RadixEngineInput::CreateComponent(blueprint_name.to_owned(), scrypto_encode(&state));
+        let input = RadixEngineInput::CreateComponent(
+            Runtime::package_address(),
+            blueprint_name.to_owned(),
+            scrypto_encode(&state),
+        );
         let component_address: ComponentAddress = call_engine(input);
 
         Component(component_address)

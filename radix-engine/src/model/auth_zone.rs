@@ -125,8 +125,6 @@ impl AuthZone {
                     .drop_node(&RENodeId::Proof(input.proof.0))
                     .map_err(AuthZoneError::CostingError)?
                     .into();
-                // FIXME: this is a hack for now until we can get snode_state into process
-                // FIXME: and be able to determine which snode the proof is going into
                 proof.change_to_unrestricted();
 
                 self.push(proof);

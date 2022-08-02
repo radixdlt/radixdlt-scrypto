@@ -2,7 +2,7 @@ use sbor::rust::collections::BTreeSet;
 use sbor::rust::string::ToString;
 use sbor::*;
 
-use crate::core::SNodeRef;
+use crate::core::Receiver;
 use crate::engine::{api::*, call_engine};
 use crate::math::Decimal;
 use crate::resource::*;
@@ -45,7 +45,7 @@ pub struct ComponentAuthZone {}
 
 impl ComponentAuthZone {
     sfunctions! {
-        SNodeRef::AuthZoneRef => {
+        Receiver::AuthZoneRef => {
             pub fn pop() -> Proof {
                 AuthZonePopInput {}
             }
@@ -73,8 +73,8 @@ impl ComponentAuthZone {
 
     pub fn push<P: Into<Proof>>(proof: P) {
         let proof: Proof = proof.into();
-        let input = RadixEngineInput::InvokeSNode(
-            SNodeRef::AuthZoneRef,
+        let input = RadixEngineInput::InvokeMethod(
+            Receiver::AuthZoneRef,
             "push".to_string(),
             scrypto::buffer::scrypto_encode(&(AuthZonePushInput { proof })),
         );
