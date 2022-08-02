@@ -17,7 +17,7 @@ use scrypto::values::*;
 use transaction::model::*;
 use transaction::validation::*;
 
-use crate::engine::{RuntimeError, RuntimeError::ProofNotFound, SystemApi};
+use crate::engine::{HeapRENode, RuntimeError, RuntimeError::ProofNotFound, SystemApi};
 use crate::fee::CostUnitCounter;
 use crate::model::worktop::{
     WorktopAssertContainsAmountInput, WorktopAssertContainsInput,
@@ -84,7 +84,7 @@ impl TransactionProcessor {
                 let mut id_allocator = IdAllocator::new(IdSpace::Transaction);
 
                 let _worktop_id = system_api
-                    .create_node(Worktop::new())
+                    .node_create(HeapRENode::Worktop(Worktop::new()))
                     .expect("Should never fail.");
 
                 for inst in &input.instructions.clone() {

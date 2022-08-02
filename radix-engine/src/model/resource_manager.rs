@@ -18,7 +18,7 @@ use scrypto::resource::ResourceManagerGetMetadataInput;
 use scrypto::resource::ResourceMethodAuthKey::{self, *};
 use scrypto::values::ScryptoValue;
 
-use crate::engine::{RuntimeError, SystemApi};
+use crate::engine::{HeapRENode, RuntimeError, SystemApi};
 use crate::fee::CostUnitCounter;
 use crate::fee::CostUnitCounterError;
 use crate::model::resource_manager::ResourceMethodRule::{Protected, Public};
@@ -418,7 +418,7 @@ impl ResourceManager {
                         }
                     }
                     system_api
-                        .create_node((resource_manager, Some(non_fungibles)))
+                        .node_create(HeapRENode::Resource(resource_manager, Some(non_fungibles)))
                         .expect("Should never fail")
                 } else {
                     if let Some(mint_params) = &input.mint_params {
@@ -435,7 +435,7 @@ impl ResourceManager {
                         }
                     }
                     system_api
-                        .create_node((resource_manager, None))
+                        .node_create(HeapRENode::Resource(resource_manager, None))
                         .expect("Should never fail")
                 };
                 let resource_address = resource_node_id.clone().into();
@@ -453,7 +453,7 @@ impl ResourceManager {
                         ),
                     };
                     let bucket_id = system_api
-                        .create_node(Bucket::new(container))
+                        .node_create(HeapRENode::Bucket(Bucket::new(container)))
                         .unwrap()
                         .into();
                     Some(scrypto::resource::Bucket(bucket_id))
@@ -522,7 +522,7 @@ impl ResourceManager {
                     resource_manager.resource_type(),
                 );
                 let vault_id = system_api
-                    .create_node(Vault::new(container))
+                    .node_create(HeapRENode::Vault(Vault::new(container)))
                     .unwrap()
                     .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Vault(
@@ -537,7 +537,7 @@ impl ResourceManager {
                     resource_manager.resource_type(),
                 );
                 let bucket_id = system_api
-                    .create_node(Bucket::new(container))
+                    .node_create(HeapRENode::Bucket(Bucket::new(container)))
                     .unwrap()
                     .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
@@ -550,7 +550,7 @@ impl ResourceManager {
                 let container =
                     resource_manager.mint(input.mint_params, resource_address, system_api)?;
                 let bucket_id = system_api
-                    .create_node(Bucket::new(container))
+                    .node_create(HeapRENode::Bucket(Bucket::new(container)))
                     .unwrap()
                     .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(

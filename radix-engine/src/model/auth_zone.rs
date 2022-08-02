@@ -9,7 +9,7 @@ use scrypto::resource::{
 };
 use scrypto::values::ScryptoValue;
 
-use crate::engine::SystemApi;
+use crate::engine::{HeapRENode, SystemApi};
 use crate::fee::CostUnitCounter;
 use crate::fee::CostUnitCounterError;
 use crate::model::AuthZoneError::InvalidMethod;
@@ -113,7 +113,10 @@ impl AuthZone {
                 let _: AuthZonePopInput =
                     scrypto_decode(&arg.raw).map_err(|e| AuthZoneError::InvalidRequestData(e))?;
                 let proof = self.pop()?;
-                let proof_id = system_api.create_node(proof).unwrap().into();
+                let proof_id = system_api
+                    .node_create(HeapRENode::Proof(proof))
+                    .unwrap()
+                    .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Proof(
                     proof_id,
                 )))
@@ -141,7 +144,10 @@ impl AuthZone {
                     resource_manager.resource_type()
                 };
                 let proof = self.create_proof(input.resource_address, resource_type)?;
-                let proof_id = system_api.create_node(proof).unwrap().into();
+                let proof_id = system_api
+                    .node_create(HeapRENode::Proof(proof))
+                    .unwrap()
+                    .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Proof(
                     proof_id,
                 )))
@@ -161,7 +167,10 @@ impl AuthZone {
                     input.resource_address,
                     resource_type,
                 )?;
-                let proof_id = system_api.create_node(proof).unwrap().into();
+                let proof_id = system_api
+                    .node_create(HeapRENode::Proof(proof))
+                    .unwrap()
+                    .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Proof(
                     proof_id,
                 )))
@@ -178,7 +187,10 @@ impl AuthZone {
                 };
                 let proof =
                     self.create_proof_by_ids(&input.ids, input.resource_address, resource_type)?;
-                let proof_id = system_api.create_node(proof).unwrap().into();
+                let proof_id = system_api
+                    .node_create(HeapRENode::Proof(proof))
+                    .unwrap()
+                    .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Proof(
                     proof_id,
                 )))

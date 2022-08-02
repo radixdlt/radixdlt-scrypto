@@ -2231,7 +2231,7 @@ where
         Ok(self.owned_heap_nodes.remove(&node_id).unwrap())
     }
 
-    fn create_node<V: Into<HeapRENode>>(&mut self, v: V) -> Result<RENodeId, RuntimeError> {
+    fn node_create(&mut self, re_node: HeapRENode) -> Result<RENodeId, RuntimeError> {
         trace!(self, Level::Debug, "Creating value");
 
         self.cost_unit_counter
@@ -2244,7 +2244,6 @@ where
             )
             .map_err(RuntimeError::CostingError)?;
 
-        let re_node = v.into();
         let id = match re_node {
             HeapRENode::Bucket(..) => {
                 let bucket_id = self.new_bucket_id();

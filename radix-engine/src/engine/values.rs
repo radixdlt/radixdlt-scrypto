@@ -254,54 +254,6 @@ pub enum HeapRENode {
     System(System),
 }
 
-impl Into<HeapRENode> for (ResourceManager, Option<HashMap<NonFungibleId, NonFungible>>) {
-    fn into(self) -> HeapRENode {
-        HeapRENode::Resource(self.0, self.1)
-    }
-}
-
-impl Into<HeapRENode> for Bucket {
-    fn into(self) -> HeapRENode {
-        HeapRENode::Bucket(self)
-    }
-}
-
-impl Into<HeapRENode> for Proof {
-    fn into(self) -> HeapRENode {
-        HeapRENode::Proof(self)
-    }
-}
-
-impl Into<HeapRENode> for Vault {
-    fn into(self) -> HeapRENode {
-        HeapRENode::Vault(self)
-    }
-}
-
-impl Into<HeapRENode> for Worktop {
-    fn into(self) -> HeapRENode {
-        HeapRENode::Worktop(self)
-    }
-}
-
-impl Into<HeapRENode> for HeapKeyValueStore {
-    fn into(self) -> HeapRENode {
-        HeapRENode::KeyValueStore(self)
-    }
-}
-
-impl Into<HeapRENode> for ValidatedPackage {
-    fn into(self) -> HeapRENode {
-        HeapRENode::Package(self)
-    }
-}
-
-impl Into<HeapRENode> for (Component, ComponentState) {
-    fn into(self) -> HeapRENode {
-        HeapRENode::Component(self.0, self.1)
-    }
-}
-
 impl HeapRENode {
     pub fn get_child_nodes(&self) -> Result<HashSet<RENodeId>, RuntimeError> {
         match self {

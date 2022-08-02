@@ -8,8 +8,8 @@ use scrypto::engine::types::*;
 use scrypto::resource::AccessRule;
 use scrypto::values::ScryptoValue;
 
-use crate::engine::SystemApi;
 use crate::engine::{HeapKeyValueStore, RuntimeError};
+use crate::engine::{HeapRENode, SystemApi};
 use crate::fee::*;
 use crate::model::{Component, ComponentState};
 use crate::wasm::*;
@@ -90,12 +90,16 @@ where
         let component = Component::new(package_address, blueprint_name, Vec::new());
         let component_state = ComponentState::new(state);
 
-        let id = self.system_api.create_node((component, component_state))?;
+        let id = self
+            .system_api
+            .node_create(HeapRENode::Component(component, component_state))?;
         Ok(id.into())
     }
 
     fn handle_create_kv_store(&mut self) -> Result<KeyValueStoreId, RuntimeError> {
-        let node_id = self.system_api.create_node(HeapKeyValueStore::new())?;
+        let node_id = self
+            .system_api
+            .node_create(HeapRENode::KeyValueStore(HeapKeyValueStore::new()))?;
         match node_id {
             RENodeId::KeyValueStore(kv_store_id) => Ok(kv_store_id),
             _ => panic!("Expected to be a kv store"),

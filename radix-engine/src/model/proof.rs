@@ -13,7 +13,7 @@ use scrypto::prelude::{
 use scrypto::resource::ConsumingProofDropInput;
 use scrypto::values::ScryptoValue;
 
-use crate::engine::SystemApi;
+use crate::engine::{HeapRENode, SystemApi};
 use crate::fee::CostUnitCounter;
 use crate::fee::CostUnitCounterError;
 use crate::model::ProofError::UnknownMethod;
@@ -372,7 +372,10 @@ impl Proof {
                 let _: ProofCloneInput =
                     scrypto_decode(&arg.raw).map_err(|e| ProofError::InvalidRequestData(e))?;
                 let cloned_proof = proof.clone();
-                let proof_id = system_api.create_node(cloned_proof).unwrap().into();
+                let proof_id = system_api
+                    .node_create(HeapRENode::Proof(cloned_proof))
+                    .unwrap()
+                    .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Proof(
                     proof_id,
                 )))
