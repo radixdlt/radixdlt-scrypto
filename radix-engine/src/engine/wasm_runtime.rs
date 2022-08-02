@@ -2,8 +2,7 @@ use sbor::rust::marker::PhantomData;
 use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
-use scrypto::core::ScryptoActorInfo;
-use scrypto::core::{DataAddress, SNodeRef};
+use scrypto::core::{DataAddress, Receiver, ScryptoActor, TypeName};
 use scrypto::engine::api::RadixEngineInput;
 use scrypto::engine::types::*;
 use scrypto::resource::AccessRule;
@@ -26,7 +25,7 @@ where
     I: WasmInstance,
     C: CostUnitCounter,
 {
-    this: ScryptoActorInfo,
+    actor: ScryptoActor,
     system_api: &'y mut Y,
     phantom1: PhantomData<W>,
     phantom2: PhantomData<I>,
@@ -42,9 +41,9 @@ where
     I: WasmInstance,
     C: CostUnitCounter,
 {
-    pub fn new(this: ScryptoActorInfo, system_api: &'y mut Y) -> Self {
+    pub fn new(actor: ScryptoActor, system_api: &'y mut Y) -> Self {
         RadixEngineWasmRuntime {
-            this,
+            actor,
             system_api,
             phantom1: PhantomData,
             phantom2: PhantomData,
@@ -60,27 +59,35 @@ where
 
     // FIXME: limit access to the API
 
-    fn handle_invoke_snode(
+    fn handle_invoke_function(
         &mut self,
-        snode_ref: SNodeRef,
+        type_name: TypeName,
         fn_ident: String,
         input: Vec<u8>,
     ) -> Result<ScryptoValue, RuntimeError> {
         let call_data = ScryptoValue::from_slice(&input).map_err(RuntimeError::DecodeError)?;
-        self.system_api.invoke_snode(snode_ref, fn_ident, call_data)
+        self.system_api
+            .invoke_function(type_name, fn_ident, call_data)
+    }
+
+    fn handle_invoke_method(
+        &mut self,
+        receiver: Receiver,
+        fn_ident: String,
+        input: Vec<u8>,
+    ) -> Result<ScryptoValue, RuntimeError> {
+        let call_data = ScryptoValue::from_slice(&input).map_err(RuntimeError::DecodeError)?;
+        self.system_api.invoke_method(receiver, fn_ident, call_data)
     }
 
     fn handle_create_local_component(
         &mut self,
+        package_address: PackageAddress, // FIXME only allow creation of local component from the owning package?
         blueprint_name: String,
         state: Vec<u8>,
     ) -> Result<ComponentAddress, RuntimeError> {
         // Create component
-        let component = Component::new(
-            self.this.package_address().clone(),
-            blueprint_name,
-            Vec::new(),
-        );
+        let component = Component::new(package_address, blueprint_name, Vec::new());
         let component_state = ComponentState::new(state);
 
         let id = self.system_api.create_node((component, component_state))?;
@@ -88,10 +95,10 @@ where
     }
 
     fn handle_create_kv_store(&mut self) -> Result<KeyValueStoreId, RuntimeError> {
-        let value_id = self
+        let node_id = self
             .system_api
             .create_node(PreCommittedKeyValueStore::new())?;
-        match value_id {
+        match node_id {
             RENodeId::KeyValueStore(kv_store_id) => Ok(kv_store_id),
             _ => panic!("Expected to be a kv store"),
         }
@@ -157,8 +164,8 @@ where
         Ok(ScryptoValue::unit())
     }
 
-    fn handle_get_actor(&mut self) -> Result<ScryptoActorInfo, RuntimeError> {
-        return Ok(self.this.clone());
+    fn handle_get_actor(&mut self) -> Result<ScryptoActor, RuntimeError> {
+        return Ok(self.actor.clone());
     }
 
     fn handle_generate_uuid(&mut self) -> Result<u128, RuntimeError> {
@@ -203,11 +210,14 @@ impl<
         let input: RadixEngineInput =
             scrypto_decode(&input.raw).map_err(|_| InvokeError::InvalidRadixEngineInput)?;
         match input {
-            RadixEngineInput::InvokeSNode(snode_ref, fn_ident, input_bytes) => {
-                self.handle_invoke_snode(snode_ref, fn_ident, input_bytes)
+            RadixEngineInput::InvokeFunction(type_name, fn_ident, input_bytes) => {
+                self.handle_invoke_function(type_name, fn_ident, input_bytes)
             }
-            RadixEngineInput::CreateComponent(blueprint_name, state) => self
-                .handle_create_local_component(blueprint_name, state)
+            RadixEngineInput::InvokeMethod(receiver, fn_ident, input_bytes) => {
+                self.handle_invoke_method(receiver, fn_ident, input_bytes)
+            }
+            RadixEngineInput::CreateComponent(package_address, blueprint_name, state) => self
+                .handle_create_local_component(package_address, blueprint_name, state)
                 .map(encode),
             RadixEngineInput::CreateKeyValueStore() => self.handle_create_kv_store().map(encode),
             RadixEngineInput::GetActor() => self.handle_get_actor().map(encode),
@@ -226,7 +236,7 @@ impl<
 
     fn consume_cost_units(&mut self, n: u32) -> Result<(), InvokeError> {
         self.cost_unit_counter()
-            .consume(n, "wasm")
+            .consume(n, "run_wasm")
             .map_err(InvokeError::CostingError)
     }
 }
@@ -249,7 +259,7 @@ impl WasmRuntime for NopWasmRuntime {
 
     fn consume_cost_units(&mut self, n: u32) -> Result<(), InvokeError> {
         self.cost_unit_counter
-            .consume(n, "wasm")
+            .consume(n, "run_wasm")
             .map_err(InvokeError::CostingError)
     }
 }
