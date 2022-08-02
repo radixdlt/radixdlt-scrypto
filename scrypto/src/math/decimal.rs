@@ -351,7 +351,10 @@ macro_rules! decimals {
 
                     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
                         if slice.len() == 16 {
-                            Ok(Self(<$wrapped>::try_from(slice).unwrap()))
+                            match <$wrapped>::try_from(slice) {
+                                Ok(val) => Ok(Self(val)),
+                                Err(err) => Err([<Parse $dec Error>]::Overflow),
+                            }
                         } else {
                             Err([<Parse $dec Error>]::InvalidLength(slice.len()))
                         }
