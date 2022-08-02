@@ -172,7 +172,7 @@ fn test_total_cost_unit_consumed() {
         borrow                        :     1000
         create                        :    10000
         emit_log                      :     1050
-        invoke_function               :     8280
+        invoke_method               :     8280
         read                          :     5000
         return                        :     1000
         run_function                  :    45000

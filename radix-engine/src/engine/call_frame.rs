@@ -12,6 +12,7 @@ use sbor::*;
 use scrypto::buffer::scrypto_decode;
 use scrypto::core::{Receiver, ScryptoActor};
 use scrypto::engine::types::*;
+use scrypto::prelude::TypeName;
 use scrypto::resource::AuthZoneClearInput;
 use scrypto::values::*;
 use transaction::validation::*;
@@ -612,14 +613,12 @@ impl<'f, 's> RENodeRefMut<'f, 's> {
     }
 }
 
-pub enum StaticSNodeState {
-    Package,
-    Resource,
-    TransactionProcessor,
+pub enum ExecutionEntity<'a> {
+    Function(TypeName),
+    Method(Receiver, ExecutionState<'a>),
 }
 
-pub enum SNodeExecution<'a> {
-    Static(StaticSNodeState),
+pub enum ExecutionState<'a> {
     Consumed(RENodeId),
     AuthZone(RefMut<'a, AuthZone>),
     RENodeRef(RENodeId),
@@ -750,30 +749,19 @@ where
         Ok(())
     }
 
-    fn process_return_data(
-        &mut self,
-        from: Receiver,
-        validated: &ScryptoValue,
-    ) -> Result<(), RuntimeError> {
+    fn process_return_data(&mut self, validated: &ScryptoValue) -> Result<(), RuntimeError> {
         if !validated.kv_store_ids.is_empty() {
             return Err(RuntimeError::KeyValueStoreNotAllowed);
         }
 
-        // Allow vaults to be returned from ResourceStatic
-        // TODO: Should we allow vaults to be returned by any component?
-        if !matches!(from, Receiver::ResourceRef(_)) {
-            if !validated.vault_ids.is_empty() {
-                return Err(RuntimeError::VaultNotAllowed);
-            }
-        }
+        // TODO: Should we disallow vaults to be moved?
 
         Ok(())
     }
 
     pub fn run(
         &mut self,
-        receiver: Receiver, // TODO: Remove, abstractions between invoke_function() and run() are a bit messy right now
-        execution: SNodeExecution<'p>,
+        execution_entity: ExecutionEntity<'p>,
         fn_ident: &str,
         input: ScryptoValue,
     ) -> Result<(ScryptoValue, HashMap<RENodeId, HeapRootRENode>), RuntimeError> {
@@ -785,17 +773,30 @@ where
             self.cost_unit_counter.balance()
         );
 
-        self.cost_unit_counter
-            .consume(
-                self.fee_table.function_cost(&receiver, fn_ident, &input),
-                "run_function",
-            )
-            .map_err(RuntimeError::CostingError)?;
+        match &execution_entity {
+            ExecutionEntity::Function(type_name) => {
+                self.cost_unit_counter
+                    .consume(
+                        self.fee_table
+                            .run_function_cost(&type_name, fn_ident, &input),
+                        "run",
+                    )
+                    .map_err(RuntimeError::CostingError)?;
+            }
+            ExecutionEntity::Method(receiver, _) => {
+                self.cost_unit_counter
+                    .consume(
+                        self.fee_table.run_method_cost(&receiver, fn_ident, &input),
+                        "run",
+                    )
+                    .map_err(RuntimeError::CostingError)?;
+            }
+        }
 
         let output = {
-            let rtn = match execution {
-                SNodeExecution::Static(state) => match state {
-                    StaticSNodeState::TransactionProcessor => TransactionProcessor::static_main(
+            let rtn = match execution_entity {
+                ExecutionEntity::Function(type_name) => match type_name {
+                    TypeName::TransactionProcessor => TransactionProcessor::static_main(
                         fn_ident, input, self,
                     )
                     .map_err(|e| match e {
@@ -803,97 +804,101 @@ where
                         TransactionProcessorError::InvalidMethod => panic!("Illegal state"),
                         TransactionProcessorError::RuntimeError(e) => e,
                     }),
-                    StaticSNodeState::Package => {
-                        ValidatedPackage::static_main(fn_ident, input, self)
-                            .map_err(RuntimeError::PackageError)
-                    }
-                    StaticSNodeState::Resource => {
+                    TypeName::Package => ValidatedPackage::static_main(fn_ident, input, self)
+                        .map_err(RuntimeError::PackageError),
+                    TypeName::ResourceManager => {
                         ResourceManager::static_main(fn_ident, input, self)
                             .map_err(RuntimeError::ResourceManagerError)
                     }
                 },
-                SNodeExecution::Consumed(node_id) => match node_id {
-                    RENodeId::Bucket(..) => Bucket::consuming_main(node_id, fn_ident, input, self)
-                        .map_err(RuntimeError::BucketError),
-                    RENodeId::Proof(..) => Proof::main_consume(node_id, fn_ident, input, self)
-                        .map_err(RuntimeError::ProofError),
-                    RENodeId::Component(..) => {
-                        Component::main_consume(node_id, fn_ident, input, self)
-                            .map_err(RuntimeError::ComponentError)
-                    }
-                    _ => panic!("Unexpected"),
-                },
-                SNodeExecution::AuthZone(mut auth_zone) => auth_zone
-                    .main(fn_ident, input, self)
-                    .map_err(RuntimeError::AuthZoneError),
-                SNodeExecution::RENodeRef(node_id) => match node_id {
-                    RENodeId::Bucket(bucket_id) => Bucket::main(bucket_id, fn_ident, input, self)
-                        .map_err(RuntimeError::BucketError),
-                    RENodeId::Proof(..) => Proof::main(node_id, fn_ident, input, self)
-                        .map_err(RuntimeError::ProofError),
-                    RENodeId::Worktop => Worktop::main(node_id, fn_ident, input, self)
-                        .map_err(RuntimeError::WorktopError),
-                    RENodeId::Vault(vault_id) => Vault::main(vault_id, fn_ident, input, self)
-                        .map_err(RuntimeError::VaultError),
-                    RENodeId::Component(..) => Component::main(node_id, fn_ident, input, self)
-                        .map_err(RuntimeError::ComponentError),
-                    RENodeId::Resource(resource_address) => {
-                        ResourceManager::main(resource_address, fn_ident, input, self)
-                            .map_err(RuntimeError::ResourceManagerError)
-                    }
-                    RENodeId::System => {
-                        System::main(fn_ident, input, self).map_err(RuntimeError::SystemError)
-                    }
-                    _ => panic!("Unexpected"),
-                },
-                SNodeExecution::Scrypto(ref actor, package_address) => {
-                    let output = {
+                ExecutionEntity::Method(_, state) => match state {
+                    ExecutionState::Consumed(node_id) => match node_id {
+                        RENodeId::Bucket(..) => {
+                            Bucket::consuming_main(node_id, fn_ident, input, self)
+                                .map_err(RuntimeError::BucketError)
+                        }
+                        RENodeId::Proof(..) => Proof::main_consume(node_id, fn_ident, input, self)
+                            .map_err(RuntimeError::ProofError),
+                        RENodeId::Component(..) => {
+                            Component::main_consume(node_id, fn_ident, input, self)
+                                .map_err(RuntimeError::ComponentError)
+                        }
+                        _ => panic!("Unexpected"),
+                    },
+                    ExecutionState::AuthZone(mut auth_zone) => auth_zone
+                        .main(fn_ident, input, self)
+                        .map_err(RuntimeError::AuthZoneError),
+                    ExecutionState::RENodeRef(node_id) => match node_id {
+                        RENodeId::Bucket(bucket_id) => {
+                            Bucket::main(bucket_id, fn_ident, input, self)
+                                .map_err(RuntimeError::BucketError)
+                        }
+                        RENodeId::Proof(..) => Proof::main(node_id, fn_ident, input, self)
+                            .map_err(RuntimeError::ProofError),
+                        RENodeId::Worktop => Worktop::main(node_id, fn_ident, input, self)
+                            .map_err(RuntimeError::WorktopError),
+                        RENodeId::Vault(vault_id) => Vault::main(vault_id, fn_ident, input, self)
+                            .map_err(RuntimeError::VaultError),
+                        RENodeId::Component(..) => Component::main(node_id, fn_ident, input, self)
+                            .map_err(RuntimeError::ComponentError),
+                        RENodeId::Resource(resource_address) => {
+                            ResourceManager::main(resource_address, fn_ident, input, self)
+                                .map_err(RuntimeError::ResourceManagerError)
+                        }
+                        RENodeId::System => {
+                            System::main(fn_ident, input, self).map_err(RuntimeError::SystemError)
+                        }
+                        _ => panic!("Unexpected"),
+                    },
+                    ExecutionState::Scrypto(ref actor, package_address) => {
+                        let output = {
+                            let package = self.track.read_substate(package_address).package();
+                            let wasm_metering_params = self.fee_table.wasm_metering_params();
+                            let instrumented_code = self
+                                .wasm_instrumenter
+                                .instrument(package.code(), &wasm_metering_params);
+                            let mut instance = self.wasm_engine.instantiate(instrumented_code);
+                            let blueprint_abi = package
+                                .blueprint_abi(actor.blueprint_name())
+                                .expect("Blueprint should exist");
+                            let export_name = &blueprint_abi
+                                .get_fn_abi(fn_ident)
+                                .unwrap()
+                                .export_name
+                                .to_string();
+                            let mut runtime: Box<dyn WasmRuntime> =
+                                Box::new(RadixEngineWasmRuntime::new(actor.clone(), self));
+                            instance
+                                .invoke_export(&export_name, &input, &mut runtime)
+                                .map_err(|e| match e {
+                                    // Flatten error code for more readable transaction receipt
+                                    InvokeError::RuntimeError(e) => e,
+                                    e @ _ => RuntimeError::InvokeError(e.into()),
+                                })?
+                        };
+
                         let package = self.track.read_substate(package_address).package();
-                        let wasm_metering_params = self.fee_table.wasm_metering_params();
-                        let instrumented_code = self
-                            .wasm_instrumenter
-                            .instrument(package.code(), &wasm_metering_params);
-                        let mut instance = self.wasm_engine.instantiate(instrumented_code);
                         let blueprint_abi = package
                             .blueprint_abi(actor.blueprint_name())
                             .expect("Blueprint should exist");
-                        let export_name = &blueprint_abi
-                            .get_fn_abi(fn_ident)
-                            .unwrap()
-                            .export_name
-                            .to_string();
-                        let mut runtime: Box<dyn WasmRuntime> =
-                            Box::new(RadixEngineWasmRuntime::new(actor.clone(), self));
-                        instance
-                            .invoke_export(&export_name, &input, &mut runtime)
-                            .map_err(|e| match e {
-                                // Flatten error code for more readable transaction receipt
-                                InvokeError::RuntimeError(e) => e,
-                                e @ _ => RuntimeError::InvokeError(e.into()),
-                            })?
-                    };
-
-                    let package = self.track.read_substate(package_address).package();
-                    let blueprint_abi = package
-                        .blueprint_abi(actor.blueprint_name())
-                        .expect("Blueprint should exist");
-                    let fn_abi = blueprint_abi.get_fn_abi(fn_ident).unwrap();
-                    if !fn_abi.output.matches(&output.dom) {
-                        Err(RuntimeError::InvalidFnOutput {
-                            fn_ident: fn_ident.to_string(),
-                            output: output.dom,
-                        })
-                    } else {
-                        Ok(output)
+                        let fn_abi = blueprint_abi.get_fn_abi(fn_ident).unwrap();
+                        if !fn_abi.output.matches(&output.dom) {
+                            Err(RuntimeError::InvalidFnOutput {
+                                fn_ident: fn_ident.to_string(),
+                                output: output.dom,
+                            })
+                        } else {
+                            Ok(output)
+                        }
                     }
-                }
+                },
             }?;
 
             rtn
         };
 
         // Prevent vaults/kvstores from being returned
-        self.process_return_data(receiver, &output)?;
+        self.process_return_data(&output)?;
 
         // Take values to return
         let values_to_take = output.node_ids();
@@ -905,7 +910,7 @@ where
 
         // drop proofs and check resource leak
         if self.auth_zone.is_some() {
-            self.invoke_function(
+            self.invoke_method(
                 Receiver::AuthZoneRef,
                 "clear".to_string(),
                 ScryptoValue::from_typed(&AuthZoneClearInput {}),
@@ -1106,15 +1111,15 @@ where
 {
     fn invoke_function(
         &mut self,
-        receiver: Receiver,
+        type_name: TypeName,
         fn_ident: String,
         input: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError> {
         trace!(
             self,
             Level::Debug,
-            "Invoking: {:?} {:?}",
-            receiver,
+            "Invoking function: {:?} {:?}",
+            type_name,
             &fn_ident
         );
 
@@ -1122,14 +1127,11 @@ where
             return Err(RuntimeError::MaxCallDepthLimitReached);
         }
 
-        // TODO: find a better way to handle this
-        let is_lock_fee = matches!(receiver, Receiver::VaultRef(..)) && &fn_ident == "lock_fee";
-
         self.cost_unit_counter
             .consume(
                 self.fee_table
                     .system_api_cost(SystemApiCostingEntry::InvokeFunction {
-                        receiver: &receiver,
+                        type_name: type_name.clone(),
                         input: &input,
                     }),
                 "invoke_function",
@@ -1159,24 +1161,110 @@ where
             next_owned_values.insert(id, value);
         }
 
+        // Setup next parent frame
+        let mut next_borrowed_values: Vec<&mut HashMap<RENodeId, HeapRootRENode>> = Vec::new();
+        for parent_values in &mut self.parent_heap_nodes {
+            next_borrowed_values.push(parent_values);
+        }
+        next_borrowed_values.push(&mut self.owned_heap_nodes);
+
+        // start a new frame
+        let mut frame = CallFrame::new(
+            self.transaction_hash,
+            self.depth + 1,
+            self.max_depth,
+            self.trace,
+            self.id_allocator,
+            self.track,
+            self.wasm_engine,
+            self.wasm_instrumenter,
+            self.cost_unit_counter,
+            self.fee_table,
+            match type_name {
+                TypeName::TransactionProcessor => Some(RefCell::new(AuthZone::new())),
+                _ => None,
+            },
+            next_owned_values,
+            HashMap::new(),
+            next_borrowed_values,
+            self.auth_zone.as_ref(),
+        );
+
+        // invoke the main function
+        let (result, received_values) =
+            frame.run(ExecutionEntity::Function(type_name), &fn_ident, input)?;
+        drop(frame);
+
+        // move buckets and proofs to this process.
+        for (id, value) in received_values {
+            trace!(self, Level::Debug, "Received value: {:?}", value);
+            self.owned_heap_nodes.insert(id, value);
+        }
+
+        trace!(self, Level::Debug, "Invoking finished!");
+        Ok(result)
+    }
+
+    fn invoke_method(
+        &mut self,
+        receiver: Receiver,
+        fn_ident: String,
+        input: ScryptoValue,
+    ) -> Result<ScryptoValue, RuntimeError> {
+        trace!(
+            self,
+            Level::Debug,
+            "Invoking method: {:?} {:?}",
+            receiver,
+            &fn_ident
+        );
+
+        if self.depth == self.max_depth {
+            return Err(RuntimeError::MaxCallDepthLimitReached);
+        }
+
+        self.cost_unit_counter
+            .consume(
+                self.fee_table
+                    .system_api_cost(SystemApiCostingEntry::InvokeMethod {
+                        receiver: receiver.clone(),
+                        input: &input,
+                    }),
+                "invoke_method",
+            )
+            .map_err(RuntimeError::CostingError)?;
+
+        // TODO: find a better way to handle this
+        let is_lock_fee = matches!(receiver, Receiver::VaultRef(..)) && &fn_ident == "lock_fee";
+
+        // Prevent vaults/kvstores from being moved
+        Self::process_call_data(&input)?;
+
+        // Figure out what buckets and proofs to move from this process
+        let values_to_take = input.node_ids();
+        let (taken_values, mut missing) = self.take_available_values(values_to_take, false)?;
+        let first_missing_value = missing.drain().nth(0);
+        if let Some(missing_value) = first_missing_value {
+            return Err(RuntimeError::RENodeNotFound(missing_value));
+        }
+
+        let mut next_owned_values = HashMap::new();
+
+        // Internal state update to taken values
+        for (id, mut value) in taken_values {
+            trace!(self, Level::Debug, "Sending value: {:?}", value);
+            match &mut value.root_mut() {
+                RENode::Proof(proof) => proof.change_to_restricted(),
+                _ => {}
+            }
+            next_owned_values.insert(id, value);
+        }
+
         let mut locked_values = HashSet::new();
         let mut value_refs = HashMap::new();
 
         // Authorization and state load
-        let (loaded_node, method_auths) = match &receiver {
-            Receiver::TransactionProcessor => {
-                // FIXME: only TransactionExecutor can invoke this function
-                Ok((
-                    SNodeExecution::Static(StaticSNodeState::TransactionProcessor),
-                    vec![],
-                ))
-            }
-            Receiver::PackageStatic => {
-                Ok((SNodeExecution::Static(StaticSNodeState::Package), vec![]))
-            }
-            Receiver::ResourceStatic => {
-                Ok((SNodeExecution::Static(StaticSNodeState::Resource), vec![]))
-            }
+        let (execution_state, method_auths) = match &receiver {
             Receiver::Consumed(node_id) => {
                 let value = self
                     .owned_heap_nodes
@@ -1229,7 +1317,7 @@ where
 
                 next_owned_values.insert(*node_id, value);
 
-                Ok((SNodeExecution::Consumed(*node_id), method_auths))
+                Ok((ExecutionState::Consumed(*node_id), method_auths))
             }
             Receiver::SystemRef => {
                 self.track
@@ -1254,7 +1342,7 @@ where
                     }
                     _ => vec![],
                 };
-                Ok((SNodeExecution::RENodeRef(RENodeId::System), access_rules))
+                Ok((ExecutionState::RENodeRef(RENodeId::System), access_rules))
             }
             Receiver::AuthZoneRef => {
                 if let Some(auth_zone) = &self.auth_zone {
@@ -1282,7 +1370,7 @@ where
                         );
                     }
                     let borrowed = auth_zone.borrow_mut();
-                    Ok((SNodeExecution::AuthZone(borrowed), vec![]))
+                    Ok((ExecutionState::AuthZone(borrowed), vec![]))
                 } else {
                     Err(RuntimeError::AuthZoneDoesNotExist)
                 }
@@ -1314,7 +1402,7 @@ where
                     },
                 );
 
-                Ok((SNodeExecution::RENodeRef(node_id), vec![method_auth]))
+                Ok((ExecutionState::RENodeRef(node_id), vec![method_auth]))
             }
             Receiver::BucketRef(bucket_id) => {
                 let node_id = RENodeId::Bucket(*bucket_id);
@@ -1333,7 +1421,7 @@ where
                     },
                 );
 
-                Ok((SNodeExecution::RENodeRef(node_id), vec![]))
+                Ok((ExecutionState::RENodeRef(node_id), vec![]))
             }
             Receiver::ProofRef(proof_id) => {
                 let node_id = RENodeId::Proof(*proof_id);
@@ -1351,7 +1439,7 @@ where
                         visible: true,
                     },
                 );
-                Ok((SNodeExecution::RENodeRef(node_id), vec![]))
+                Ok((ExecutionState::RENodeRef(node_id), vec![]))
             }
             Receiver::WorktopRef => {
                 let node_id = RENodeId::Worktop;
@@ -1395,7 +1483,7 @@ where
                     );
                 }
 
-                Ok((SNodeExecution::RENodeRef(node_id), vec![]))
+                Ok((ExecutionState::RENodeRef(node_id), vec![]))
             }
             Receiver::Scrypto(actor) => match actor {
                 ScryptoActor::Blueprint(package_address, blueprint_name) => {
@@ -1426,7 +1514,7 @@ where
                         });
                     }
                     Ok((
-                        SNodeExecution::Scrypto(
+                        ExecutionState::Scrypto(
                             ScryptoActorInfo::blueprint(
                                 package_address.clone(),
                                 blueprint_name.clone(),
@@ -1575,7 +1663,7 @@ where
                     );
 
                     Ok((
-                        SNodeExecution::Scrypto(actor_info, package_address),
+                        ExecutionState::Scrypto(actor_info, package_address),
                         method_auths,
                     ))
                 }
@@ -1639,7 +1727,7 @@ where
                     _ => panic!("Unexpected"),
                 }
 
-                Ok((SNodeExecution::RENodeRef(node_id), vec![]))
+                Ok((ExecutionState::RENodeRef(node_id), vec![]))
             }
 
             Receiver::VaultRef(vault_id) => {
@@ -1733,7 +1821,7 @@ where
                     },
                 );
 
-                Ok((SNodeExecution::RENodeRef(node_id), vec![method_auth]))
+                Ok((ExecutionState::RENodeRef(node_id), vec![method_auth]))
             }
         }?;
 
@@ -1744,12 +1832,12 @@ where
                 auth_zones.push(self_auth_zone.borrow());
             }
 
-            match &loaded_node {
+            match &execution_state {
                 // Resource auth check includes caller
-                SNodeExecution::Scrypto(..)
-                | SNodeExecution::RENodeRef(RENodeId::Resource(..), ..)
-                | SNodeExecution::RENodeRef(RENodeId::Vault(..), ..)
-                | SNodeExecution::Consumed(RENodeId::Bucket(..)) => {
+                ExecutionState::Scrypto(..)
+                | ExecutionState::RENodeRef(RENodeId::Resource(..), ..)
+                | ExecutionState::RENodeRef(RENodeId::Vault(..), ..)
+                | ExecutionState::Consumed(RENodeId::Bucket(..)) => {
                     if let Some(auth_zone) = self.caller_auth_zone {
                         auth_zones.push(auth_zone.borrow());
                     }
@@ -1792,11 +1880,8 @@ where
             self.wasm_instrumenter,
             self.cost_unit_counter,
             self.fee_table,
-            match loaded_node {
-                SNodeExecution::Scrypto(..)
-                | SNodeExecution::Static(StaticSNodeState::TransactionProcessor) => {
-                    Some(RefCell::new(AuthZone::new()))
-                }
+            match receiver {
+                Receiver::Scrypto(_) => Some(RefCell::new(AuthZone::new())),
                 _ => None,
             },
             next_owned_values,
@@ -1806,7 +1891,11 @@ where
         );
 
         // invoke the main function
-        let (result, received_values) = frame.run(receiver, loaded_node, &fn_ident, input)?;
+        let (result, received_values) = frame.run(
+            ExecutionEntity::Method(receiver, execution_state),
+            &fn_ident,
+            input,
+        )?;
         drop(frame);
 
         // Release locked addresses

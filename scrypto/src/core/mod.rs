@@ -8,7 +8,7 @@ mod runtime;
 
 pub use actor::{ScryptoActor, ScryptoActorInfo};
 pub use data::*;
-pub use invocation::{DataAddress, Receiver};
+pub use invocation::{DataAddress, Receiver, TypeName};
 pub use level::Level;
 pub use logger::Logger;
 pub use network::{Network, NetworkError};

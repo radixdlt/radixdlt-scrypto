@@ -3,6 +3,7 @@ use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use scrypto::buffer::*;
 use scrypto::math::Decimal;
+use scrypto::prelude::TypeName;
 use scrypto::values::ScryptoValue;
 use transaction::model::*;
 use transaction::validation::{IdAllocator, IdSpace};
@@ -159,7 +160,7 @@ where
         );
         let result = root_frame
             .invoke_function(
-                scrypto::core::Receiver::TransactionProcessor,
+                TypeName::TransactionProcessor,
                 "run".to_string(),
                 ScryptoValue::from_typed(&TransactionProcessorRunInput {
                     instructions: instructions.clone(),

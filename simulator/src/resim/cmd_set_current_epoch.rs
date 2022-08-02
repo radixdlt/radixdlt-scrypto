@@ -47,7 +47,7 @@ impl SetCurrentEpoch {
 
         // Invoke the system
         root_frame
-            .invoke_fn(
+            .invoke_method(
                 Receiver::SystemRef,
                 "set_epoch".to_string(),
                 ScryptoValue::from_typed(&SystemSetEpochInput { epoch: self.epoch }),

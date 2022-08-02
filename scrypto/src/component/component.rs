@@ -62,7 +62,7 @@ impl Component {
     }
 
     pub fn add_access_check(&mut self, access_rules: AccessRules) -> &mut Self {
-        let input = RadixEngineInput::InvokeFunction(
+        let input = RadixEngineInput::InvokeMethod(
             Receiver::Component(self.0),
             "add_access_check".to_string(),
             scrypto_encode(&ComponentAddAccessCheckInput { access_rules }),
@@ -73,7 +73,7 @@ impl Component {
     }
 
     pub fn globalize(self) -> ComponentAddress {
-        let input = RadixEngineInput::InvokeFunction(
+        let input = RadixEngineInput::InvokeMethod(
             Receiver::Consumed(RENodeId::Component(self.0)),
             "globalize".to_string(),
             scrypto_encode(&ComponentGlobalizeInput {}),

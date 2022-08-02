@@ -55,7 +55,7 @@ impl Runtime {
         function: S,
         args: Vec<Vec<u8>>,
     ) -> T {
-        let input = RadixEngineInput::InvokeFunction(
+        let input = RadixEngineInput::InvokeMethod(
             Receiver::Scrypto(ScryptoActor::Blueprint(
                 package_address,
                 blueprint_name.as_ref().to_owned(),
@@ -72,7 +72,7 @@ impl Runtime {
         method: S,
         args: Vec<Vec<u8>>,
     ) -> T {
-        let input = RadixEngineInput::InvokeFunction(
+        let input = RadixEngineInput::InvokeMethod(
             Receiver::Scrypto(ScryptoActor::Component(component_address)),
             method.as_ref().to_string(),
             bytes_vec_to_struct!(args),
@@ -82,7 +82,7 @@ impl Runtime {
 
     /// Returns the transaction hash.
     pub fn transaction_hash() -> Hash {
-        let input = RadixEngineInput::InvokeFunction(
+        let input = RadixEngineInput::InvokeMethod(
             Receiver::SystemRef,
             "transaction_hash".to_string(),
             scrypto_encode(&SystemGetTransactionHashInput {}),
@@ -92,7 +92,7 @@ impl Runtime {
 
     /// Returns the current epoch number.
     pub fn current_epoch() -> u64 {
-        let input = RadixEngineInput::InvokeFunction(
+        let input = RadixEngineInput::InvokeMethod(
             Receiver::SystemRef,
             "get_epoch".to_string(),
             scrypto_encode(&SystemGetCurrentEpochInput {}),

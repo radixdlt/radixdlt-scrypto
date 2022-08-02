@@ -6,6 +6,7 @@ use scrypto::core::ScryptoActorInfo;
 use scrypto::core::{DataAddress, Receiver};
 use scrypto::engine::api::RadixEngineInput;
 use scrypto::engine::types::*;
+use scrypto::prelude::TypeName;
 use scrypto::resource::AccessRule;
 use scrypto::values::ScryptoValue;
 
@@ -62,13 +63,23 @@ where
 
     fn handle_invoke_function(
         &mut self,
-        receiver: Receiver,
+        type_name: TypeName,
         fn_ident: String,
         input: Vec<u8>,
     ) -> Result<ScryptoValue, RuntimeError> {
         let call_data = ScryptoValue::from_slice(&input).map_err(RuntimeError::DecodeError)?;
         self.system_api
-            .invoke_function(receiver, fn_ident, call_data)
+            .invoke_function(type_name, fn_ident, call_data)
+    }
+
+    fn handle_invoke_method(
+        &mut self,
+        receiver: Receiver,
+        fn_ident: String,
+        input: Vec<u8>,
+    ) -> Result<ScryptoValue, RuntimeError> {
+        let call_data = ScryptoValue::from_slice(&input).map_err(RuntimeError::DecodeError)?;
+        self.system_api.invoke_method(receiver, fn_ident, call_data)
     }
 
     fn handle_create_local_component(
@@ -204,8 +215,11 @@ impl<
         let input: RadixEngineInput =
             scrypto_decode(&input.raw).map_err(|_| InvokeError::InvalidRadixEngineInput)?;
         match input {
-            RadixEngineInput::InvokeFunction(receiver, fn_ident, input_bytes) => {
-                self.handle_invoke_function(receiver, fn_ident, input_bytes)
+            RadixEngineInput::InvokeFunction(type_name, fn_ident, input_bytes) => {
+                self.handle_invoke_function(type_name, fn_ident, input_bytes)
+            }
+            RadixEngineInput::InvokeMethod(receiver, fn_ident, input_bytes) => {
+                self.handle_invoke_method(receiver, fn_ident, input_bytes)
             }
             RadixEngineInput::CreateComponent(blueprint_name, state) => self
                 .handle_create_local_component(blueprint_name, state)

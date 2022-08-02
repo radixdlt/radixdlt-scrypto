@@ -3,7 +3,7 @@ use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 
 use crate::buffer::scrypto_encode;
-use crate::core::Receiver;
+use crate::core::TypeName;
 use crate::engine::{api::*, call_engine};
 use crate::resource::*;
 
@@ -49,7 +49,7 @@ impl ResourceSystem {
         mint_params: Option<MintParams>,
     ) -> (ResourceAddress, Option<Bucket>) {
         let input = RadixEngineInput::InvokeFunction(
-            Receiver::ResourceStatic,
+            TypeName::ResourceManager,
             "create".to_string(),
             scrypto_encode(&ResourceManagerCreateInput {
                 resource_type,

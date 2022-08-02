@@ -1,4 +1,5 @@
 use scrypto::engine::types::*;
+use scrypto::prelude::TypeName;
 use scrypto::{core::Receiver, values::ScryptoValue};
 
 use crate::wasm::{InstructionCostRules, WasmMeteringParams};
@@ -6,7 +7,13 @@ use crate::wasm::{InstructionCostRules, WasmMeteringParams};
 pub enum SystemApiCostingEntry<'a> {
     /// Invokes a function, native or wasm.
     InvokeFunction {
-        receiver: &'a Receiver,
+        type_name: TypeName,
+        input: &'a ScryptoValue,
+    },
+
+    /// Invokes a method, native or wasm.
+    InvokeMethod {
+        receiver: Receiver,
         input: &'a ScryptoValue,
     },
 
@@ -98,15 +105,38 @@ impl FeeTable {
         self.wasm_metering_params.clone()
     }
 
-    pub fn function_cost(&self, receiver: &Receiver, fn_ident: &str, input: &ScryptoValue) -> u32 {
+    pub fn run_function_cost(
+        &self,
+        type_name: &TypeName,
+        fn_ident: &str,
+        input: &ScryptoValue,
+    ) -> u32 {
+        match type_name {
+            TypeName::Package => match fn_ident {
+                "publish" => self.fixed_low + input.raw.len() as u32 * 2,
+                _ => self.fixed_high,
+            },
+            TypeName::ResourceManager => match fn_ident {
+                "create" => self.fixed_high, // TODO: more investigation about fungibility
+                _ => self.fixed_high,
+            },
+            TypeName::TransactionProcessor => match fn_ident {
+                "run" => self.fixed_high, // TODO: per manifest instruction
+                _ => self.fixed_high,
+            },
+        }
+    }
+
+    pub fn run_method_cost(
+        &self,
+        receiver: &Receiver,
+        fn_ident: &str,
+        _input: &ScryptoValue,
+    ) -> u32 {
         match receiver {
             Receiver::SystemRef => match fn_ident {
                 "current_epoch" => self.fixed_low,
                 "transaction_hash" => self.fixed_low,
-                _ => self.fixed_high,
-            },
-            Receiver::PackageStatic => match fn_ident {
-                "publish" => self.fixed_low + input.raw.len() as u32 * 2,
                 _ => self.fixed_high,
             },
             Receiver::AuthZoneRef => match fn_ident {
@@ -124,10 +154,6 @@ impl FeeTable {
             Receiver::Component(_) => {
                 0 // Costing is through instrumentation
             }
-            Receiver::ResourceStatic => match fn_ident {
-                "create" => self.fixed_high, // TODO: more investigation about fungibility
-                _ => self.fixed_high,
-            },
             Receiver::ResourceRef(_) => match fn_ident {
                 "update_auth" => self.fixed_medium,
                 "lock_auth" => self.fixed_medium,
@@ -185,10 +211,6 @@ impl FeeTable {
                 "lock_fee" => self.fixed_medium,
                 _ => self.fixed_high,
             },
-            Receiver::TransactionProcessor => match fn_ident {
-                "run" => self.fixed_high, // TODO: per manifest instruction
-                _ => self.fixed_high,
-            },
             Receiver::WorktopRef => match fn_ident {
                 "put" => self.fixed_medium,
                 "take_amount" => self.fixed_medium,
@@ -206,6 +228,9 @@ impl FeeTable {
     pub fn system_api_cost(&self, entry: SystemApiCostingEntry) -> u32 {
         match entry {
             SystemApiCostingEntry::InvokeFunction { input, .. } => {
+                self.fixed_low + (5 * input.raw.len() + 10 * input.value_count()) as u32
+            }
+            SystemApiCostingEntry::InvokeMethod { input, .. } => {
                 self.fixed_low + (5 * input.raw.len() + 10 * input.value_count()) as u32
             }
             SystemApiCostingEntry::Globalize { size } => self.fixed_high + 200 * size,

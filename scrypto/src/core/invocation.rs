@@ -8,12 +8,17 @@ use crate::prelude::ComponentAddress;
 use crate::resource::ResourceAddress;
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub enum TypeName {
+    Package,
+    ResourceManager,
+    TransactionProcessor,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub enum Receiver {
-    PackageStatic,
     AuthZoneRef,
     Scrypto(ScryptoActor),
     Component(ComponentAddress),
-    ResourceStatic,
     ResourceRef(ResourceAddress),
     Consumed(RENodeId),
     BucketRef(BucketId),
@@ -21,7 +26,6 @@ pub enum Receiver {
     SystemRef,
     WorktopRef,
     VaultRef(VaultId),
-    TransactionProcessor,
 }
 
 #[derive(Debug, Clone, Eq, Hash, PartialEq, TypeId, Encode, Decode)]
