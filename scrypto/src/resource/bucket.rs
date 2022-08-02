@@ -7,7 +7,7 @@ use sbor::*;
 
 use crate::abi::*;
 use crate::buffer::scrypto_encode;
-use crate::core::SNodeRef;
+use crate::core::Receiver;
 use crate::engine::types::RENodeId;
 use crate::engine::{api::*, call_engine, types::BucketId};
 use crate::math::*;
@@ -52,8 +52,8 @@ pub struct Bucket(pub BucketId);
 impl Bucket {
     /// Creates a new bucket to hold resources of the given definition.
     pub fn new(resource_address: ResourceAddress) -> Self {
-        let input = RadixEngineInput::InvokeSNode(
-            SNodeRef::ResourceRef(resource_address),
+        let input = RadixEngineInput::InvokeFunction(
+            Receiver::ResourceRef(resource_address),
             "create_bucket".to_string(),
             scrypto_encode(&ResourceManagerCreateBucketInput {}),
         );
@@ -61,7 +61,7 @@ impl Bucket {
     }
 
     sfunctions! {
-        SNodeRef::Consumed(RENodeId::Bucket(self.0)) => {
+        Receiver::Consumed(RENodeId::Bucket(self.0)) => {
            pub fn burn(self) -> () {
                 ConsumingBucketBurnInput {}
             }
@@ -69,8 +69,8 @@ impl Bucket {
     }
 
     fn take_internal(&mut self, amount: Decimal) -> Self {
-        let input = RadixEngineInput::InvokeSNode(
-            SNodeRef::BucketRef(self.0),
+        let input = RadixEngineInput::InvokeFunction(
+            Receiver::BucketRef(self.0),
             "take".to_string(),
             scrypto_encode(&BucketTakeInput { amount }),
         );
@@ -78,7 +78,7 @@ impl Bucket {
     }
 
     sfunctions! {
-        SNodeRef::BucketRef(self.0) => {
+        Receiver::BucketRef(self.0) => {
             pub fn take_non_fungibles(&mut self, non_fungible_ids: &BTreeSet<NonFungibleId>) -> Self {
                 BucketTakeNonFungiblesInput {
                     ids: non_fungible_ids.clone()

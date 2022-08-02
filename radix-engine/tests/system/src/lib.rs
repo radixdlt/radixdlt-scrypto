@@ -10,8 +10,8 @@ blueprint! {
         }
 
         pub fn set_epoch(epoch: u64) {
-            let input = RadixEngineInput::InvokeSNode(
-                SNodeRef::SystemRef,
+            let input = RadixEngineInput::InvokeFunction(
+                Receiver::SystemRef,
                 "set_epoch".to_string(),
                 scrypto_encode(&SystemSetEpochInput { epoch }),
             );

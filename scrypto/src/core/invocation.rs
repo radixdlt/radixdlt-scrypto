@@ -8,7 +8,7 @@ use crate::prelude::ComponentAddress;
 use crate::resource::ResourceAddress;
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub enum SNodeRef {
+pub enum Receiver {
     PackageStatic,
     AuthZoneRef,
     Scrypto(ScryptoActor),

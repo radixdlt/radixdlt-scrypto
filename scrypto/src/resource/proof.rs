@@ -6,7 +6,7 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::abi::*;
-use crate::core::SNodeRef;
+use crate::core::Receiver;
 use crate::engine::types::RENodeId;
 use crate::engine::{api::*, call_engine, types::ProofId};
 use crate::math::*;
@@ -35,7 +35,7 @@ pub struct Proof(pub ProofId);
 
 impl Clone for Proof {
     sfunctions! {
-        SNodeRef::ProofRef(self.0) => {
+        Receiver::ProofRef(self.0) => {
             fn clone(&self) -> Self {
                 ProofCloneInput {}
             }
@@ -45,7 +45,7 @@ impl Clone for Proof {
 
 impl Proof {
     sfunctions! {
-        SNodeRef::ProofRef(self.0) => {
+        Receiver::ProofRef(self.0) => {
             pub fn amount(&self) -> Decimal {
                 ProofGetAmountInput {}
             }
@@ -59,7 +59,7 @@ impl Proof {
     }
 
     sfunctions! {
-        SNodeRef::Consumed(RENodeId::Proof(self.0)) => {
+        Receiver::Consumed(RENodeId::Proof(self.0)) => {
             pub fn drop(self) -> () {
                 ConsumingProofDropInput {}
             }

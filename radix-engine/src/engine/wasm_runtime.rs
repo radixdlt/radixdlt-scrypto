@@ -3,7 +3,7 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
 use scrypto::core::ScryptoActorInfo;
-use scrypto::core::{DataAddress, SNodeRef};
+use scrypto::core::{DataAddress, Receiver};
 use scrypto::engine::api::RadixEngineInput;
 use scrypto::engine::types::*;
 use scrypto::resource::AccessRule;
@@ -60,14 +60,15 @@ where
 
     // FIXME: limit access to the API
 
-    fn handle_invoke_snode(
+    fn handle_invoke_function(
         &mut self,
-        snode_ref: SNodeRef,
+        receiver: Receiver,
         fn_ident: String,
         input: Vec<u8>,
     ) -> Result<ScryptoValue, RuntimeError> {
         let call_data = ScryptoValue::from_slice(&input).map_err(RuntimeError::DecodeError)?;
-        self.system_api.invoke_snode(snode_ref, fn_ident, call_data)
+        self.system_api
+            .invoke_function(receiver, fn_ident, call_data)
     }
 
     fn handle_create_local_component(
@@ -203,8 +204,8 @@ impl<
         let input: RadixEngineInput =
             scrypto_decode(&input.raw).map_err(|_| InvokeError::InvalidRadixEngineInput)?;
         match input {
-            RadixEngineInput::InvokeSNode(snode_ref, fn_ident, input_bytes) => {
-                self.handle_invoke_snode(snode_ref, fn_ident, input_bytes)
+            RadixEngineInput::InvokeFunction(receiver, fn_ident, input_bytes) => {
+                self.handle_invoke_function(receiver, fn_ident, input_bytes)
             }
             RadixEngineInput::CreateComponent(blueprint_name, state) => self
                 .handle_create_local_component(blueprint_name, state)

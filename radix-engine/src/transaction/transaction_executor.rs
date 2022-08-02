@@ -158,8 +158,8 @@ where
             &fee_table,
         );
         let result = root_frame
-            .invoke_snode(
-                scrypto::core::SNodeRef::TransactionProcessor,
+            .invoke_function(
+                scrypto::core::Receiver::TransactionProcessor,
                 "run".to_string(),
                 ScryptoValue::from_typed(&TransactionProcessorRunInput {
                     instructions: instructions.clone(),

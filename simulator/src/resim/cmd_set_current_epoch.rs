@@ -3,7 +3,7 @@ use radix_engine::constants::*;
 use radix_engine::engine::Track;
 use radix_engine::engine::{CallFrame, SystemApi};
 use radix_engine::fee::{FeeTable, SystemLoanCostUnitCounter};
-use scrypto::core::{SNodeRef, SystemSetEpochInput};
+use scrypto::core::{Receiver, SystemSetEpochInput};
 use scrypto::crypto::hash;
 use scrypto::values::ScryptoValue;
 use transaction::validation::{IdAllocator, IdSpace};
@@ -47,8 +47,8 @@ impl SetCurrentEpoch {
 
         // Invoke the system
         root_frame
-            .invoke_snode(
-                SNodeRef::SystemRef,
+            .invoke_fn(
+                Receiver::SystemRef,
                 "set_epoch".to_string(),
                 ScryptoValue::from_typed(&SystemSetEpochInput { epoch: self.epoch }),
             )

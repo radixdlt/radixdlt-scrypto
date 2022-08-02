@@ -10,7 +10,7 @@ use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
-use scrypto::core::{SNodeRef, ScryptoActor};
+use scrypto::core::{Receiver, ScryptoActor};
 use scrypto::engine::types::*;
 use scrypto::resource::AuthZoneClearInput;
 use scrypto::values::*;
@@ -752,7 +752,7 @@ where
 
     fn process_return_data(
         &mut self,
-        from: SNodeRef,
+        from: Receiver,
         validated: &ScryptoValue,
     ) -> Result<(), RuntimeError> {
         if !validated.kv_store_ids.is_empty() {
@@ -761,7 +761,7 @@ where
 
         // Allow vaults to be returned from ResourceStatic
         // TODO: Should we allow vaults to be returned by any component?
-        if !matches!(from, SNodeRef::ResourceRef(_)) {
+        if !matches!(from, Receiver::ResourceRef(_)) {
             if !validated.vault_ids.is_empty() {
                 return Err(RuntimeError::VaultNotAllowed);
             }
@@ -772,7 +772,7 @@ where
 
     pub fn run(
         &mut self,
-        snode_ref: SNodeRef, // TODO: Remove, abstractions between invoke_snode() and run() are a bit messy right now
+        receiver: Receiver, // TODO: Remove, abstractions between invoke_function() and run() are a bit messy right now
         execution: SNodeExecution<'p>,
         fn_ident: &str,
         input: ScryptoValue,
@@ -787,7 +787,7 @@ where
 
         self.cost_unit_counter
             .consume(
-                self.fee_table.function_cost(&snode_ref, fn_ident, &input),
+                self.fee_table.function_cost(&receiver, fn_ident, &input),
                 "run_function",
             )
             .map_err(RuntimeError::CostingError)?;
@@ -893,7 +893,7 @@ where
         };
 
         // Prevent vaults/kvstores from being returned
-        self.process_return_data(snode_ref, &output)?;
+        self.process_return_data(receiver, &output)?;
 
         // Take values to return
         let values_to_take = output.node_ids();
@@ -905,8 +905,8 @@ where
 
         // drop proofs and check resource leak
         if self.auth_zone.is_some() {
-            self.invoke_snode(
-                SNodeRef::AuthZoneRef,
+            self.invoke_function(
+                Receiver::AuthZoneRef,
                 "clear".to_string(),
                 ScryptoValue::from_typed(&AuthZoneClearInput {}),
             )?;
@@ -1104,9 +1104,9 @@ where
     I: WasmInstance,
     C: CostUnitCounter,
 {
-    fn invoke_snode(
+    fn invoke_function(
         &mut self,
-        snode_ref: SNodeRef,
+        receiver: Receiver,
         fn_ident: String,
         input: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError> {
@@ -1114,7 +1114,7 @@ where
             self,
             Level::Debug,
             "Invoking: {:?} {:?}",
-            snode_ref,
+            receiver,
             &fn_ident
         );
 
@@ -1123,13 +1123,13 @@ where
         }
 
         // TODO: find a better way to handle this
-        let is_lock_fee = matches!(snode_ref, SNodeRef::VaultRef(..)) && &fn_ident == "lock_fee";
+        let is_lock_fee = matches!(receiver, Receiver::VaultRef(..)) && &fn_ident == "lock_fee";
 
         self.cost_unit_counter
             .consume(
                 self.fee_table
                     .system_api_cost(SystemApiCostingEntry::InvokeFunction {
-                        receiver: &snode_ref,
+                        receiver: &receiver,
                         input: &input,
                     }),
                 "invoke_function",
@@ -1163,21 +1163,21 @@ where
         let mut value_refs = HashMap::new();
 
         // Authorization and state load
-        let (loaded_snode, method_auths) = match &snode_ref {
-            SNodeRef::TransactionProcessor => {
+        let (loaded_node, method_auths) = match &receiver {
+            Receiver::TransactionProcessor => {
                 // FIXME: only TransactionExecutor can invoke this function
                 Ok((
                     SNodeExecution::Static(StaticSNodeState::TransactionProcessor),
                     vec![],
                 ))
             }
-            SNodeRef::PackageStatic => {
+            Receiver::PackageStatic => {
                 Ok((SNodeExecution::Static(StaticSNodeState::Package), vec![]))
             }
-            SNodeRef::ResourceStatic => {
+            Receiver::ResourceStatic => {
                 Ok((SNodeExecution::Static(StaticSNodeState::Resource), vec![]))
             }
-            SNodeRef::Consumed(node_id) => {
+            Receiver::Consumed(node_id) => {
                 let value = self
                     .owned_heap_nodes
                     .remove(node_id)
@@ -1231,7 +1231,7 @@ where
 
                 Ok((SNodeExecution::Consumed(*node_id), method_auths))
             }
-            SNodeRef::SystemRef => {
+            Receiver::SystemRef => {
                 self.track
                     .acquire_lock(SubstateId::System, true, false)
                     .expect("System access should never fail");
@@ -1256,7 +1256,7 @@ where
                 };
                 Ok((SNodeExecution::RENodeRef(RENodeId::System), access_rules))
             }
-            SNodeRef::AuthZoneRef => {
+            Receiver::AuthZoneRef => {
                 if let Some(auth_zone) = &self.auth_zone {
                     for resource_address in &input.resource_addresses {
                         self.track
@@ -1287,7 +1287,7 @@ where
                     Err(RuntimeError::AuthZoneDoesNotExist)
                 }
             }
-            SNodeRef::ResourceRef(resource_address) => {
+            Receiver::ResourceRef(resource_address) => {
                 let node_id = RENodeId::Resource(*resource_address);
                 let substate_id: SubstateId = SubstateId::ResourceManager(*resource_address);
                 self.track
@@ -1316,7 +1316,7 @@ where
 
                 Ok((SNodeExecution::RENodeRef(node_id), vec![method_auth]))
             }
-            SNodeRef::BucketRef(bucket_id) => {
+            Receiver::BucketRef(bucket_id) => {
                 let node_id = RENodeId::Bucket(*bucket_id);
                 if !self.owned_heap_nodes.contains_key(&node_id) {
                     return Err(RuntimeError::BucketNotFound(bucket_id.clone()));
@@ -1335,7 +1335,7 @@ where
 
                 Ok((SNodeExecution::RENodeRef(node_id), vec![]))
             }
-            SNodeRef::ProofRef(proof_id) => {
+            Receiver::ProofRef(proof_id) => {
                 let node_id = RENodeId::Proof(*proof_id);
                 if !self.owned_heap_nodes.contains_key(&node_id) {
                     return Err(RuntimeError::ProofNotFound(proof_id.clone()));
@@ -1353,7 +1353,7 @@ where
                 );
                 Ok((SNodeExecution::RENodeRef(node_id), vec![]))
             }
-            SNodeRef::WorktopRef => {
+            Receiver::WorktopRef => {
                 let node_id = RENodeId::Worktop;
                 if !self.owned_heap_nodes.contains_key(&node_id) {
                     return Err(RuntimeError::RENodeNotFound(node_id));
@@ -1397,7 +1397,7 @@ where
 
                 Ok((SNodeExecution::RENodeRef(node_id), vec![]))
             }
-            SNodeRef::Scrypto(actor) => match actor {
+            Receiver::Scrypto(actor) => match actor {
                 ScryptoActor::Blueprint(package_address, blueprint_name) => {
                     self.track
                         .acquire_lock(package_address.clone(), false, false)
@@ -1580,7 +1580,7 @@ where
                     ))
                 }
             },
-            SNodeRef::Component(component_address) => {
+            Receiver::Component(component_address) => {
                 let component_address = *component_address;
 
                 // Find value
@@ -1642,7 +1642,7 @@ where
                 Ok((SNodeExecution::RENodeRef(node_id), vec![]))
             }
 
-            SNodeRef::VaultRef(vault_id) => {
+            Receiver::VaultRef(vault_id) => {
                 // Find value
                 let node_id = RENodeId::Vault(*vault_id);
                 let cur_location = if self.owned_heap_nodes.contains_key(&node_id) {
@@ -1744,7 +1744,7 @@ where
                 auth_zones.push(self_auth_zone.borrow());
             }
 
-            match &loaded_snode {
+            match &loaded_node {
                 // Resource auth check includes caller
                 SNodeExecution::Scrypto(..)
                 | SNodeExecution::RENodeRef(RENodeId::Resource(..), ..)
@@ -1792,7 +1792,7 @@ where
             self.wasm_instrumenter,
             self.cost_unit_counter,
             self.fee_table,
-            match loaded_snode {
+            match loaded_node {
                 SNodeExecution::Scrypto(..)
                 | SNodeExecution::Static(StaticSNodeState::TransactionProcessor) => {
                     Some(RefCell::new(AuthZone::new()))
@@ -1806,7 +1806,7 @@ where
         );
 
         // invoke the main function
-        let (result, received_values) = frame.run(snode_ref, loaded_snode, &fn_ident, input)?;
+        let (result, received_values) = frame.run(receiver, loaded_node, &fn_ident, input)?;
         drop(frame);
 
         // Release locked addresses

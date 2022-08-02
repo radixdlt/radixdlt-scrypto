@@ -1,7 +1,7 @@
 use crate::buffer::*;
 use crate::component::package::Package;
 use crate::component::*;
-use crate::core::SNodeRef;
+use crate::core::Receiver;
 use crate::engine::{api::*, call_engine};
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::*;
@@ -45,8 +45,8 @@ impl ComponentSystem {
 
     /// Publishes a package.
     pub fn publish_package(&mut self, package: Package) -> PackageAddress {
-        let input = RadixEngineInput::InvokeSNode(
-            SNodeRef::PackageStatic,
+        let input = RadixEngineInput::InvokeFunction(
+            Receiver::PackageStatic,
             "publish".to_string(),
             scrypto_encode(&PackagePublishInput { package }),
         );
