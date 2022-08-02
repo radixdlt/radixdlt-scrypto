@@ -9,7 +9,7 @@ use scrypto::resource::AccessRule;
 use scrypto::values::ScryptoValue;
 
 use crate::engine::SystemApi;
-use crate::engine::{PreCommittedKeyValueStore, RuntimeError};
+use crate::engine::{HeapKeyValueStore, RuntimeError};
 use crate::fee::*;
 use crate::model::{Component, ComponentState};
 use crate::wasm::*;
@@ -95,9 +95,7 @@ where
     }
 
     fn handle_create_kv_store(&mut self) -> Result<KeyValueStoreId, RuntimeError> {
-        let node_id = self
-            .system_api
-            .create_node(PreCommittedKeyValueStore::new())?;
+        let node_id = self.system_api.create_node(HeapKeyValueStore::new())?;
         match node_id {
             RENodeId::KeyValueStore(kv_store_id) => Ok(kv_store_id),
             _ => panic!("Expected to be a kv store"),

@@ -2231,7 +2231,7 @@ where
         Ok(self.owned_heap_nodes.remove(&node_id).unwrap())
     }
 
-    fn create_node<V: Into<REPrimitiveNode>>(&mut self, v: V) -> Result<RENodeId, RuntimeError> {
+    fn create_node<V: Into<HeapRENode>>(&mut self, v: V) -> Result<RENodeId, RuntimeError> {
         trace!(self, Level::Debug, "Creating value");
 
         self.cost_unit_counter
@@ -2246,38 +2246,41 @@ where
 
         let re_node = v.into();
         let id = match re_node {
-            REPrimitiveNode::Bucket(..) => {
+            HeapRENode::Bucket(..) => {
                 let bucket_id = self.new_bucket_id();
                 RENodeId::Bucket(bucket_id)
             }
-            REPrimitiveNode::Proof(..) => {
+            HeapRENode::Proof(..) => {
                 let proof_id = self.new_proof_id();
                 RENodeId::Proof(proof_id)
             }
-            REPrimitiveNode::Worktop(..) => RENodeId::Worktop,
-            REPrimitiveNode::Vault(..) => {
+            HeapRENode::Worktop(..) => RENodeId::Worktop,
+            HeapRENode::Vault(..) => {
                 let vault_id = self.new_vault_id();
                 RENodeId::Vault(vault_id)
             }
-            REPrimitiveNode::KeyValue(..) => {
+            HeapRENode::KeyValueStore(..) => {
                 let kv_store_id = self.new_kv_store_id();
                 RENodeId::KeyValueStore(kv_store_id)
             }
-            REPrimitiveNode::Package(..) => {
+            HeapRENode::Package(..) => {
                 let package_address = self.new_package_address();
                 RENodeId::Package(package_address)
             }
-            REPrimitiveNode::Resource(..) => {
+            HeapRENode::Resource(..) => {
                 let resource_address = self.new_resource_address();
                 RENodeId::Resource(resource_address)
             }
-            REPrimitiveNode::Component(ref component, ..) => {
+            HeapRENode::Component(ref component, ..) => {
                 let component_address = self.new_component_address(component);
                 RENodeId::Component(component_address)
             }
+            HeapRENode::System(..) => {
+                panic!("Should not get here.");
+            }
         };
 
-        let children = re_node.get_children()?;
+        let children = re_node.get_child_nodes()?;
         let (taken_root_nodes, mut missing) = self.take_available_values(children, true)?;
         let first_missing_value = missing.drain().nth(0);
         if let Some(missing_value) = first_missing_value {
@@ -2288,7 +2291,7 @@ where
             child_nodes.extend(taken_root_node.to_nodes(id));
         }
         let heap_root_node = HeapRootRENode {
-            root: re_node.into(),
+            root: re_node,
             child_nodes,
         };
 

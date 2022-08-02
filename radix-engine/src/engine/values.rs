@@ -246,7 +246,7 @@ pub enum HeapRENode {
     Bucket(Bucket),
     Proof(Proof),
     Vault(Vault),
-    KeyValueStore(PreCommittedKeyValueStore),
+    KeyValueStore(HeapKeyValueStore),
     Component(Component, ComponentState),
     Worktop(Worktop),
     Package(ValidatedPackage),
@@ -254,7 +254,79 @@ pub enum HeapRENode {
     System(System),
 }
 
+impl Into<HeapRENode> for (ResourceManager, Option<HashMap<NonFungibleId, NonFungible>>) {
+    fn into(self) -> HeapRENode {
+        HeapRENode::Resource(self.0, self.1)
+    }
+}
+
+impl Into<HeapRENode> for Bucket {
+    fn into(self) -> HeapRENode {
+        HeapRENode::Bucket(self)
+    }
+}
+
+impl Into<HeapRENode> for Proof {
+    fn into(self) -> HeapRENode {
+        HeapRENode::Proof(self)
+    }
+}
+
+impl Into<HeapRENode> for Vault {
+    fn into(self) -> HeapRENode {
+        HeapRENode::Vault(self)
+    }
+}
+
+impl Into<HeapRENode> for Worktop {
+    fn into(self) -> HeapRENode {
+        HeapRENode::Worktop(self)
+    }
+}
+
+impl Into<HeapRENode> for HeapKeyValueStore {
+    fn into(self) -> HeapRENode {
+        HeapRENode::KeyValueStore(self)
+    }
+}
+
+impl Into<HeapRENode> for ValidatedPackage {
+    fn into(self) -> HeapRENode {
+        HeapRENode::Package(self)
+    }
+}
+
+impl Into<HeapRENode> for (Component, ComponentState) {
+    fn into(self) -> HeapRENode {
+        HeapRENode::Component(self.0, self.1)
+    }
+}
+
 impl HeapRENode {
+    pub fn get_child_nodes(&self) -> Result<HashSet<RENodeId>, RuntimeError> {
+        match self {
+            HeapRENode::Component(_, component_state) => {
+                let value = ScryptoValue::from_slice(component_state.state())
+                    .map_err(RuntimeError::DecodeError)?;
+                Ok(value.node_ids())
+            }
+            HeapRENode::Resource(..) => Ok(HashSet::new()),
+            HeapRENode::Package(..) => Ok(HashSet::new()),
+            HeapRENode::Bucket(..) => Ok(HashSet::new()),
+            HeapRENode::Proof(..) => Ok(HashSet::new()),
+            HeapRENode::KeyValueStore(kv_store) => {
+                let mut child_nodes = HashSet::new();
+                for (_id, value) in &kv_store.store {
+                    child_nodes.extend(value.node_ids());
+                }
+                Ok(child_nodes)
+            }
+            HeapRENode::Vault(..) => Ok(HashSet::new()),
+            HeapRENode::Worktop(..) => Ok(HashSet::new()),
+            HeapRENode::System(..) => Ok(HashSet::new()),
+        }
+    }
+
     pub fn system(&self) -> &System {
         match self {
             HeapRENode::System(system) => system,
@@ -325,14 +397,14 @@ impl HeapRENode {
         }
     }
 
-    pub fn kv_store(&self) -> &PreCommittedKeyValueStore {
+    pub fn kv_store(&self) -> &HeapKeyValueStore {
         match self {
             HeapRENode::KeyValueStore(store) => store,
             _ => panic!("Expected to be a store"),
         }
     }
 
-    pub fn kv_store_mut(&mut self) -> &mut PreCommittedKeyValueStore {
+    pub fn kv_store_mut(&mut self) -> &mut HeapKeyValueStore {
         match self {
             HeapRENode::KeyValueStore(store) => store,
             _ => panic!("Expected to be a store"),
@@ -498,104 +570,5 @@ impl Into<Proof> for HeapRootRENode {
             HeapRENode::Proof(proof) => proof,
             _ => panic!("Expected to be a proof"),
         }
-    }
-}
-
-#[derive(Debug)]
-pub enum REPrimitiveNode {
-    Component(Component, ComponentState),
-    Package(ValidatedPackage),
-    Bucket(Bucket),
-    Proof(Proof),
-    KeyValue(PreCommittedKeyValueStore),
-    Resource(ResourceManager, Option<HashMap<NonFungibleId, NonFungible>>),
-    Vault(Vault),
-    Worktop(Worktop),
-}
-
-impl REPrimitiveNode {
-    pub fn get_children(&self) -> Result<HashSet<RENodeId>, RuntimeError> {
-        match self {
-            REPrimitiveNode::Component(_, component_state) => {
-                let value = ScryptoValue::from_slice(component_state.state())
-                    .map_err(RuntimeError::DecodeError)?;
-                Ok(value.node_ids())
-            }
-            REPrimitiveNode::Resource(..) => Ok(HashSet::new()),
-            REPrimitiveNode::Package(..) => Ok(HashSet::new()),
-            REPrimitiveNode::Bucket(..) => Ok(HashSet::new()),
-            REPrimitiveNode::Proof(..) => Ok(HashSet::new()),
-            REPrimitiveNode::KeyValue(..) => Ok(HashSet::new()),
-            REPrimitiveNode::Vault(..) => Ok(HashSet::new()),
-            REPrimitiveNode::Worktop(..) => Ok(HashSet::new()),
-        }
-    }
-}
-
-impl Into<HeapRENode> for REPrimitiveNode {
-    fn into(self) -> HeapRENode {
-        match self {
-            REPrimitiveNode::Component(component, component_state) => {
-                HeapRENode::Component(component, component_state)
-            }
-            REPrimitiveNode::Resource(resource_manager, maybe_non_fungibles) => {
-                HeapRENode::Resource(resource_manager, maybe_non_fungibles)
-            }
-            REPrimitiveNode::Package(package) => HeapRENode::Package(package),
-            REPrimitiveNode::Bucket(bucket) => HeapRENode::Bucket(bucket),
-            REPrimitiveNode::Proof(proof) => HeapRENode::Proof(proof),
-            REPrimitiveNode::KeyValue(store) => HeapRENode::KeyValueStore(store),
-            REPrimitiveNode::Vault(vault) => HeapRENode::Vault(vault),
-
-            REPrimitiveNode::Worktop(worktop) => HeapRENode::Worktop(worktop),
-        }
-    }
-}
-
-impl Into<REPrimitiveNode> for (ResourceManager, Option<HashMap<NonFungibleId, NonFungible>>) {
-    fn into(self) -> REPrimitiveNode {
-        REPrimitiveNode::Resource(self.0, self.1)
-    }
-}
-
-impl Into<REPrimitiveNode> for Bucket {
-    fn into(self) -> REPrimitiveNode {
-        REPrimitiveNode::Bucket(self)
-    }
-}
-
-impl Into<REPrimitiveNode> for Proof {
-    fn into(self) -> REPrimitiveNode {
-        REPrimitiveNode::Proof(self)
-    }
-}
-
-impl Into<REPrimitiveNode> for Vault {
-    fn into(self) -> REPrimitiveNode {
-        REPrimitiveNode::Vault(self)
-    }
-}
-
-impl Into<REPrimitiveNode> for Worktop {
-    fn into(self) -> REPrimitiveNode {
-        REPrimitiveNode::Worktop(self)
-    }
-}
-
-impl Into<REPrimitiveNode> for PreCommittedKeyValueStore {
-    fn into(self) -> REPrimitiveNode {
-        REPrimitiveNode::KeyValue(self)
-    }
-}
-
-impl Into<REPrimitiveNode> for ValidatedPackage {
-    fn into(self) -> REPrimitiveNode {
-        REPrimitiveNode::Package(self)
-    }
-}
-
-impl Into<REPrimitiveNode> for (Component, ComponentState) {
-    fn into(self) -> REPrimitiveNode {
-        REPrimitiveNode::Component(self.0, self.1)
     }
 }
