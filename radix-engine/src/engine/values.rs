@@ -50,18 +50,18 @@ impl SubstateId {
         }
     }
 
-    pub fn verify_can_write(&self) -> Result<(), RuntimeError> {
+    pub fn is_native(&self) -> bool {
         match self {
-            SubstateId::KeyValueStoreEntry(..) => Ok(()),
-            SubstateId::ComponentState(..) => Ok(()),
-            SubstateId::NonFungible(..) => Ok(()),
-            SubstateId::ComponentInfo(..) => Err(RuntimeError::InvalidDataWrite),
-            SubstateId::NonFungibleSpace(..) => Err(RuntimeError::InvalidDataWrite),
-            SubstateId::KeyValueStoreSpace(..) => Err(RuntimeError::InvalidDataWrite),
-            SubstateId::Vault(..) => Err(RuntimeError::InvalidDataWrite),
-            SubstateId::Package(..) => Err(RuntimeError::InvalidDataWrite),
-            SubstateId::ResourceManager(..) => Err(RuntimeError::InvalidDataWrite),
-            SubstateId::System => Err(RuntimeError::InvalidDataWrite),
+            SubstateId::KeyValueStoreEntry(..) => false,
+            SubstateId::ComponentState(..) => false,
+            SubstateId::NonFungible(..) => false,
+            SubstateId::ComponentInfo(..) => true,
+            SubstateId::NonFungibleSpace(..) => true,
+            SubstateId::KeyValueStoreSpace(..) => true,
+            SubstateId::Vault(..) => true,
+            SubstateId::Package(..) => true,
+            SubstateId::ResourceManager(..) => true,
+            SubstateId::System => true,
         }
     }
 

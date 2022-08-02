@@ -37,12 +37,18 @@ fn create_genesis(mut track: Track) -> TrackReceipt {
     let system_package =
         extract_package(include_bytes!("../../../assets/system.wasm").to_vec()).unwrap();
     let validated_system_package = ValidatedPackage::new(system_package).unwrap();
-    track.create_uuid_substate(SubstateId::Package(SYSTEM_PACKAGE), validated_system_package);
+    track.create_uuid_substate(
+        SubstateId::Package(SYSTEM_PACKAGE),
+        validated_system_package,
+    );
 
     let account_package =
         extract_package(include_bytes!("../../../assets/account.wasm").to_vec()).unwrap();
     let validated_account_package = ValidatedPackage::new(account_package).unwrap();
-    track.create_uuid_substate(SubstateId::Package(ACCOUNT_PACKAGE), validated_account_package);
+    track.create_uuid_substate(
+        SubstateId::Package(ACCOUNT_PACKAGE),
+        validated_account_package,
+    );
 
     // Radix token resource address
     let mut metadata = HashMap::new();
@@ -63,7 +69,10 @@ fn create_genesis(mut track: Track) -> TrackReceipt {
     let minted_xrd = xrd_resource_manager
         .mint_fungible(XRD_MAX_SUPPLY.into(), RADIX_TOKEN.clone())
         .unwrap();
-    track.create_uuid_substate(SubstateId::ResourceManager(RADIX_TOKEN), xrd_resource_manager);
+    track.create_uuid_substate(
+        SubstateId::ResourceManager(RADIX_TOKEN),
+        xrd_resource_manager,
+    );
 
     let mut ecdsa_resource_auth = HashMap::new();
     ecdsa_resource_auth.insert(Withdraw, (rule!(allow_all), LOCKED));

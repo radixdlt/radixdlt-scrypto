@@ -437,15 +437,16 @@ pub enum RENodeRefMut<'f, 's> {
 }
 
 impl<'f, 's> RENodeRefMut<'f, 's> {
-    pub fn read_scrypto_value(&mut self, substate_id: &SubstateId) -> Result<ScryptoValue, RuntimeError> {
+    pub fn read_scrypto_value(
+        &mut self,
+        substate_id: &SubstateId,
+    ) -> Result<ScryptoValue, RuntimeError> {
         match substate_id {
-            SubstateId::ComponentInfo(..) => {
-                Ok(ScryptoValue::from_typed(&self.component().info()))
+            SubstateId::ComponentInfo(..) => Ok(ScryptoValue::from_typed(&self.component().info())),
+            SubstateId::ComponentState(..) => {
+                Ok(ScryptoValue::from_slice(self.component_state().state())
+                    .expect("Expected to decode"))
             }
-            SubstateId::ComponentState(..) => Ok(ScryptoValue::from_slice(
-                self.component_state().state(),
-            )
-                .expect("Expected to decode")),
             SubstateId::NonFungible(.., id) => Ok(self.non_fungible_get(id)),
             SubstateId::KeyValueStoreEntry(.., key) => Ok(self.kv_store_get(key)),
             SubstateId::NonFungibleSpace(..)
@@ -889,7 +890,10 @@ where
                     }
                     TypeName::Blueprint(package_address, blueprint_name) => {
                         let output = {
-                            let package = self.track.read_substate(SubstateId::Package(package_address)).package();
+                            let package = self
+                                .track
+                                .read_substate(SubstateId::Package(package_address))
+                                .package();
                             let wasm_metering_params = self.fee_table.wasm_metering_params();
                             let instrumented_code = self
                                 .wasm_instrumenter
@@ -920,7 +924,10 @@ where
                                 })?
                         };
 
-                        let package = self.track.read_substate(SubstateId::Package(package_address)).package();
+                        let package = self
+                            .track
+                            .read_substate(SubstateId::Package(package_address))
+                            .package();
                         let blueprint_abi = package
                             .blueprint_abi(&blueprint_name)
                             .expect("Blueprint should exist");
@@ -981,7 +988,10 @@ where
                         is_global,
                     ) => {
                         let output = {
-                            let package = self.track.read_substate(SubstateId::Package(package_address)).package();
+                            let package = self
+                                .track
+                                .read_substate(SubstateId::Package(package_address))
+                                .package();
                             let wasm_metering_params = self.fee_table.wasm_metering_params();
                             let instrumented_code = self
                                 .wasm_instrumenter
@@ -1009,7 +1019,10 @@ where
                                 })?
                         };
 
-                        let package = self.track.read_substate(SubstateId::Package(package_address)).package();
+                        let package = self
+                            .track
+                            .read_substate(SubstateId::Package(package_address))
+                            .package();
                         let blueprint_abi = package
                             .blueprint_abi(&blueprint_name)
                             .expect("Blueprint should exist");
@@ -1308,7 +1321,10 @@ where
                         TrackError::StateTrackError(..) => panic!("Unexpected"),
                     })?;
                 locked_values.insert(SubstateId::Package(package_address.clone()));
-                let package = self.track.read_substate(SubstateId::Package(package_address.clone())).package();
+                let package = self
+                    .track
+                    .read_substate(SubstateId::Package(package_address.clone()))
+                    .package();
                 let abi = package.blueprint_abi(blueprint_name).ok_or(
                     RuntimeError::BlueprintNotFound(
                         package_address.clone(),
@@ -1450,7 +1466,11 @@ where
                     RENode::Bucket(bucket) => {
                         let resource_address = bucket.resource_address();
                         self.track
-                            .acquire_lock(SubstateId::ResourceManager(resource_address), true, false)
+                            .acquire_lock(
+                                SubstateId::ResourceManager(resource_address),
+                                true,
+                                false,
+                            )
                             .expect("Should not fail.");
                         locked_values.insert(SubstateId::ResourceManager(resource_address.clone()));
                         let resource_manager = self
@@ -1523,7 +1543,11 @@ where
                 if let Some(auth_zone) = &self.auth_zone {
                     for resource_address in &input.resource_addresses {
                         self.track
-                            .acquire_lock(SubstateId::ResourceManager(resource_address.clone()), false, false)
+                            .acquire_lock(
+                                SubstateId::ResourceManager(resource_address.clone()),
+                                false,
+                                false,
+                            )
                             .map_err(|e| match e {
                                 TrackError::NotFound => {
                                     RuntimeError::ResourceManagerNotFound(resource_address.clone())
@@ -1635,7 +1659,11 @@ where
 
                 for resource_address in &input.resource_addresses {
                     self.track
-                        .acquire_lock(SubstateId::ResourceManager(resource_address.clone()), false, false)
+                        .acquire_lock(
+                            SubstateId::ResourceManager(resource_address.clone()),
+                            false,
+                            false,
+                        )
                         .map_err(|e| match e {
                             TrackError::NotFound => {
                                 RuntimeError::ResourceManagerNotFound(resource_address.clone())
@@ -1754,7 +1782,10 @@ where
                         .acquire_lock(SubstateId::Package(package_address), false, false)
                         .expect("Should never fail");
                     locked_values.insert(SubstateId::Package(package_address.clone()));
-                    let package = self.track.read_substate(SubstateId::Package(package_address)).package();
+                    let package = self
+                        .track
+                        .read_substate(SubstateId::Package(package_address))
+                        .package();
                     let abi = package
                         .blueprint_abi(&blueprint_name)
                         .expect("Blueprint not found for existing component");
@@ -2445,7 +2476,10 @@ where
             )
             .map_err(RuntimeError::CostingError)?;
 
-        substate_id.verify_can_write()?;
+        // TODO: integrate with visible flag
+        if substate_id.is_native() {
+            return Err(RuntimeError::InvalidDataWrite);
+        }
 
         // If write, take values from current frame
         let (taken_nodes, missing_nodes) = {
