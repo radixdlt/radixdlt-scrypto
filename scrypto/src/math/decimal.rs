@@ -97,10 +97,10 @@ macro_rules! decimals {
                         self.round(0, RoundingMode::TowardsPositiveInfinity)
                     }
 
-                    pub fn round(&self, decimal_places: u8, mode: RoundingMode) -> Self {
-                        assert!(decimal_places <= Self::SCALE.try_into().unwrap());
+                    pub fn round(&self, decimal_places: u32, mode: RoundingMode) -> Self {
+                        assert!(decimal_places <= Self::SCALE);
 
-                        let divisor:$wrapped = <$wrapped>::from(10i8).pow(Self::SCALE - decimal_places as u32);
+                        let divisor:$wrapped = <$wrapped>::from(10i8).pow(Self::SCALE - decimal_places);
                         match mode {
                             RoundingMode::TowardsPositiveInfinity => {
                                 if self.0 % divisor == Zero::zero() {
