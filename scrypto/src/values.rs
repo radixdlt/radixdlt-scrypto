@@ -642,7 +642,10 @@ impl ScryptoValueFormatter {
             ScryptoType::I512 => format!("I512(\"{}\")", I512::try_from(data).unwrap()),
             ScryptoType::Decimal => format!("Decimal(\"{}\")", Decimal::try_from(data).unwrap()),
             ScryptoType::PreciseDecimal => {
-                format!("PreciseDecimal(\"{}\")", PreciseDecimal::try_from(data).unwrap())
+                format!(
+                    "PreciseDecimal(\"{}\")",
+                    PreciseDecimal::try_from(data).unwrap()
+                )
             }
             ScryptoType::PackageAddress => {
                 format!(

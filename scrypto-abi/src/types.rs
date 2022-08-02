@@ -134,7 +134,7 @@ const MAPPING: [(ScryptoType, u8, &str); 33] = [
     (ScryptoType::I384, 0xc5, "I384"),                   // 197
     (ScryptoType::I512, 0xc6, "I512"),                   // 198
     (ScryptoType::Decimal, 0xc7, "Decimal"),             // 199
-    (ScryptoType::PreciseDecimal, 0xc8, "PreciseDecimal"),     // 200
+    (ScryptoType::PreciseDecimal, 0xc8, "PreciseDecimal"), // 200
 ];
 
 impl ScryptoType {
