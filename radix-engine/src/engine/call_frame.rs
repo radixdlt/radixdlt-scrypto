@@ -105,14 +105,14 @@ fn verify_stored_value_update(
     Ok(())
 }
 
-pub fn insert_non_root_nodes<'s>(track: &mut Track<'s>, values: HashMap<RENodeId, RENode>) {
+pub fn insert_non_root_nodes<'s>(track: &mut Track<'s>, values: HashMap<RENodeId, HeapRENode>) {
     for (id, node) in values {
         match node {
-            RENode::Vault(vault) => {
+            HeapRENode::Vault(vault) => {
                 let addr = SubstateId::Vault(id.into());
                 track.create_uuid_substate(addr, vault);
             }
-            RENode::Component(component, component_state) => {
+            HeapRENode::Component(component, component_state) => {
                 let component_address = id.into();
                 track.create_uuid_substate(
                     SubstateId::ComponentInfo(component_address, false),
@@ -123,7 +123,7 @@ pub fn insert_non_root_nodes<'s>(track: &mut Track<'s>, values: HashMap<RENodeId
                     component_state,
                 );
             }
-            RENode::KeyValueStore(store) => {
+            HeapRENode::KeyValueStore(store) => {
                 let id = id.into();
                 let substate_id = SubstateId::KeyValueStoreSpace(id);
                 for (k, v) in store.store {
@@ -251,7 +251,7 @@ impl NativeRENodeRef {
         match self {
             NativeRENodeRef::Stack(root, _frame_id, _root_id, maybe_child) => {
                 match root.get_node_mut(maybe_child.as_ref()) {
-                    RENode::Bucket(bucket) => bucket,
+                    HeapRENode::Bucket(bucket) => bucket,
                     _ => panic!("Expecting to be a bucket"),
                 }
             }
@@ -263,7 +263,7 @@ impl NativeRENodeRef {
         match self {
             NativeRENodeRef::Stack(ref mut root, _frame_id, _root_id, maybe_child) => {
                 match root.get_node_mut(maybe_child.as_ref()) {
-                    RENode::Proof(proof) => proof,
+                    HeapRENode::Proof(proof) => proof,
                     _ => panic!("Expecting to be a proof"),
                 }
             }
@@ -275,7 +275,7 @@ impl NativeRENodeRef {
         match self {
             NativeRENodeRef::Stack(ref mut root, _frame_id, _root_id, maybe_child) => {
                 match root.get_node_mut(maybe_child.as_ref()) {
-                    RENode::Worktop(worktop) => worktop,
+                    HeapRENode::Worktop(worktop) => worktop,
                     _ => panic!("Expecting to be a worktop"),
                 }
             }
@@ -814,7 +814,7 @@ where
             .drain()
             .map(|(_id, value)| value)
             .collect();
-        RENode::drop_nodes(values).map_err(|e| RuntimeError::DropFailure(e))
+        HeapRENode::drop_nodes(values).map_err(|e| RuntimeError::DropFailure(e))
     }
 
     fn process_call_data(validated: &ScryptoValue) -> Result<(), RuntimeError> {
@@ -1296,7 +1296,7 @@ where
         for (id, mut value) in taken_values {
             trace!(self, Level::Debug, "Sending value: {:?}", value);
             match &mut value.root_mut() {
-                RENode::Proof(proof) => proof.change_to_restricted(),
+                HeapRENode::Proof(proof) => proof.change_to_restricted(),
                 _ => {}
             }
             next_owned_values.insert(id, value);
@@ -1441,7 +1441,7 @@ where
         for (id, mut value) in taken_values {
             trace!(self, Level::Debug, "Sending value: {:?}", value);
             match &mut value.root_mut() {
-                RENode::Proof(proof) => proof.change_to_restricted(),
+                HeapRENode::Proof(proof) => proof.change_to_restricted(),
                 _ => {}
             }
             next_owned_values.insert(id, value);
@@ -1459,7 +1459,7 @@ where
                     .ok_or(RuntimeError::RENodeNotFound(*node_id))?;
 
                 let method_auths = match &value.root() {
-                    RENode::Bucket(bucket) => {
+                    HeapRENode::Bucket(bucket) => {
                         let resource_address = bucket.resource_address();
                         self.track
                             .acquire_lock(
@@ -1485,7 +1485,7 @@ where
                         );
                         vec![method_auth.clone()]
                     }
-                    RENode::Proof(_) => vec![],
+                    HeapRENode::Proof(_) => vec![],
                     _ => return Err(RuntimeError::MethodDoesNotExist(fn_ident.clone())),
                 };
 
@@ -2313,7 +2313,6 @@ where
 
     fn node_globalize(&mut self, node_id: &RENodeId) -> Result<(), RuntimeError> {
         trace!(self, Level::Debug, "Globalizing value: {:?}", node_id);
-
         self.cost_unit_counter
             .consume(
                 self.fee_table
@@ -2324,15 +2323,19 @@ where
             )
             .map_err(RuntimeError::CostingError)?;
 
-        let mut values = HashSet::new();
-        values.insert(node_id.clone());
-        let (taken_values, missing) = self.take_available_values(values, false)?;
-        assert!(missing.is_empty());
-        assert!(taken_values.len() == 1);
-        let value = taken_values.into_values().nth(0).unwrap();
+        if !node_id.can_globalize() {
+            return Err(RuntimeError::NotAllowedToGlobalizeType(*node_id));
+        }
 
-        let (substates, maybe_non_fungibles) = match value.root {
-            RENode::Component(component, component_state) => {
+        let mut nodes_to_take = HashSet::new();
+        nodes_to_take.insert(node_id.clone());
+        let (taken_nodes, missing_nodes) = self.take_available_values(nodes_to_take, false)?;
+        assert!(missing_nodes.is_empty());
+        assert!(taken_nodes.len() == 1);
+        let root_node = taken_nodes.into_values().nth(0).unwrap();
+
+        let (substates, maybe_non_fungibles) = match root_node.root {
+            HeapRENode::Component(component, component_state) => {
                 let mut substates = HashMap::new();
                 let component_address = node_id.clone().into();
                 substates.insert(
@@ -2345,7 +2348,7 @@ where
                 );
                 (substates, None)
             }
-            RENode::Package(package) => {
+            HeapRENode::Package(package) => {
                 let mut substates = HashMap::new();
                 let package_address = node_id.clone().into();
                 substates.insert(
@@ -2354,7 +2357,7 @@ where
                 );
                 (substates, None)
             }
-            RENode::Resource(resource_manager, non_fungibles) => {
+            HeapRENode::Resource(resource_manager, non_fungibles) => {
                 let mut substates = HashMap::new();
                 let resource_address: ResourceAddress = node_id.clone().into();
                 substates.insert(
@@ -2372,7 +2375,7 @@ where
         }
 
         let mut to_store_values = HashMap::new();
-        for (id, value) in value.non_root_nodes.into_iter() {
+        for (id, value) in root_node.non_root_nodes.into_iter() {
             to_store_values.insert(id, value);
         }
         insert_non_root_nodes(self.track, to_store_values);
@@ -2536,7 +2539,7 @@ where
                 self.owned_heap_nodes
                     .get(&RENodeId::Proof(*proof_id))
                     .map(|p| match p.root() {
-                        RENode::Proof(proof) => proof.clone(),
+                        HeapRENode::Proof(proof) => proof.clone(),
                         _ => panic!("Expected proof"),
                     })
                     .ok_or(RuntimeError::ProofNotFound(proof_id.clone()))

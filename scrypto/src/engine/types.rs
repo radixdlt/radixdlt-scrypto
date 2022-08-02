@@ -35,6 +35,23 @@ pub enum RENodeId {
     System,
 }
 
+impl RENodeId {
+    /// Specifies whether an RENode may globalize as the root node or not
+    pub fn can_globalize(&self) -> bool {
+        match self {
+            RENodeId::Bucket(..) => false,
+            RENodeId::Proof(..) => false,
+            RENodeId::KeyValueStore(..) => false,
+            RENodeId::Worktop => false,
+            RENodeId::Component(..) => true,
+            RENodeId::Vault(..) => false,
+            RENodeId::Resource(..) => true,
+            RENodeId::Package(..) => true,
+            RENodeId::System => true,
+        }
+    }
+}
+
 impl Into<(Hash, u32)> for RENodeId {
     fn into(self) -> KeyValueStoreId {
         match self {

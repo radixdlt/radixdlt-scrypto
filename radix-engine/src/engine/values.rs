@@ -242,7 +242,7 @@ impl Into<Vault> for Substate {
 }
 
 #[derive(Debug)]
-pub enum RENode {
+pub enum HeapRENode {
     Bucket(Bucket),
     Proof(Proof),
     Vault(Vault),
@@ -254,166 +254,166 @@ pub enum RENode {
     System(System),
 }
 
-impl RENode {
+impl HeapRENode {
     pub fn system(&self) -> &System {
         match self {
-            RENode::System(system) => system,
+            HeapRENode::System(system) => system,
             _ => panic!("Expected to be system"),
         }
     }
 
     pub fn resource_manager(&self) -> &ResourceManager {
         match self {
-            RENode::Resource(resource_manager, ..) => resource_manager,
+            HeapRENode::Resource(resource_manager, ..) => resource_manager,
             _ => panic!("Expected to be a resource manager"),
         }
     }
 
     pub fn resource_manager_mut(&mut self) -> &mut ResourceManager {
         match self {
-            RENode::Resource(resource_manager, ..) => resource_manager,
+            HeapRENode::Resource(resource_manager, ..) => resource_manager,
             _ => panic!("Expected to be a resource manager"),
         }
     }
 
     pub fn non_fungibles(&self) -> &HashMap<NonFungibleId, NonFungible> {
         match self {
-            RENode::Resource(_, non_fungibles) => non_fungibles.as_ref().unwrap(),
+            HeapRENode::Resource(_, non_fungibles) => non_fungibles.as_ref().unwrap(),
             _ => panic!("Expected to be non fungibles"),
         }
     }
 
     pub fn non_fungibles_mut(&mut self) -> &mut HashMap<NonFungibleId, NonFungible> {
         match self {
-            RENode::Resource(_, non_fungibles) => non_fungibles.as_mut().unwrap(),
+            HeapRENode::Resource(_, non_fungibles) => non_fungibles.as_mut().unwrap(),
             _ => panic!("Expected to be non fungibles"),
         }
     }
 
     pub fn package(&self) -> &ValidatedPackage {
         match self {
-            RENode::Package(package) => package,
+            HeapRENode::Package(package) => package,
             _ => panic!("Expected to be a package"),
         }
     }
 
     pub fn component(&self) -> &Component {
         match self {
-            RENode::Component(component, ..) => component,
+            HeapRENode::Component(component, ..) => component,
             _ => panic!("Expected to be a store"),
         }
     }
 
     pub fn component_mut(&mut self) -> &mut Component {
         match self {
-            RENode::Component(component, ..) => component,
+            HeapRENode::Component(component, ..) => component,
             _ => panic!("Expected to be a store"),
         }
     }
 
     pub fn component_state(&self) -> &ComponentState {
         match self {
-            RENode::Component(_, component_state) => component_state,
+            HeapRENode::Component(_, component_state) => component_state,
             _ => panic!("Expected to be a store"),
         }
     }
 
     pub fn component_state_mut(&mut self) -> &mut ComponentState {
         match self {
-            RENode::Component(_, component_state) => component_state,
+            HeapRENode::Component(_, component_state) => component_state,
             _ => panic!("Expected to be a store"),
         }
     }
 
     pub fn kv_store(&self) -> &PreCommittedKeyValueStore {
         match self {
-            RENode::KeyValueStore(store) => store,
+            HeapRENode::KeyValueStore(store) => store,
             _ => panic!("Expected to be a store"),
         }
     }
 
     pub fn kv_store_mut(&mut self) -> &mut PreCommittedKeyValueStore {
         match self {
-            RENode::KeyValueStore(store) => store,
+            HeapRENode::KeyValueStore(store) => store,
             _ => panic!("Expected to be a store"),
         }
     }
 
     pub fn vault(&self) -> &Vault {
         match self {
-            RENode::Vault(vault) => vault,
+            HeapRENode::Vault(vault) => vault,
             _ => panic!("Expected to be a vault"),
         }
     }
 
     pub fn vault_mut(&mut self) -> &mut Vault {
         match self {
-            RENode::Vault(vault) => vault,
+            HeapRENode::Vault(vault) => vault,
             _ => panic!("Expected to be a vault"),
         }
     }
 
     pub fn verify_can_move(&self) -> Result<(), RuntimeError> {
         match self {
-            RENode::Bucket(bucket) => {
+            HeapRENode::Bucket(bucket) => {
                 if bucket.is_locked() {
                     Err(RuntimeError::CantMoveLockedBucket)
                 } else {
                     Ok(())
                 }
             }
-            RENode::Proof(proof) => {
+            HeapRENode::Proof(proof) => {
                 if proof.is_restricted() {
                     Err(RuntimeError::CantMoveRestrictedProof)
                 } else {
                     Ok(())
                 }
             }
-            RENode::KeyValueStore(..) => Ok(()),
-            RENode::Component(..) => Ok(()),
-            RENode::Vault(..) => Ok(()),
-            RENode::Resource(..) => Ok(()),
-            RENode::Package(..) => Ok(()),
-            RENode::Worktop(..) => Ok(()),
-            RENode::System(..) => Ok(()),
+            HeapRENode::KeyValueStore(..) => Ok(()),
+            HeapRENode::Component(..) => Ok(()),
+            HeapRENode::Vault(..) => Ok(()),
+            HeapRENode::Resource(..) => Ok(()),
+            HeapRENode::Package(..) => Ok(()),
+            HeapRENode::Worktop(..) => Ok(()),
+            HeapRENode::System(..) => Ok(()),
         }
     }
 
     pub fn verify_can_persist(&self) -> Result<(), RuntimeError> {
         match self {
-            RENode::KeyValueStore { .. } => Ok(()),
-            RENode::Component { .. } => Ok(()),
-            RENode::Vault(..) => Ok(()),
-            RENode::Resource(..) => Err(RuntimeError::ValueNotAllowed),
-            RENode::Package(..) => Err(RuntimeError::ValueNotAllowed),
-            RENode::Bucket(..) => Err(RuntimeError::ValueNotAllowed),
-            RENode::Proof(..) => Err(RuntimeError::ValueNotAllowed),
-            RENode::Worktop(..) => Err(RuntimeError::ValueNotAllowed),
-            RENode::System(..) => Err(RuntimeError::ValueNotAllowed),
+            HeapRENode::KeyValueStore { .. } => Ok(()),
+            HeapRENode::Component { .. } => Ok(()),
+            HeapRENode::Vault(..) => Ok(()),
+            HeapRENode::Resource(..) => Err(RuntimeError::ValueNotAllowed),
+            HeapRENode::Package(..) => Err(RuntimeError::ValueNotAllowed),
+            HeapRENode::Bucket(..) => Err(RuntimeError::ValueNotAllowed),
+            HeapRENode::Proof(..) => Err(RuntimeError::ValueNotAllowed),
+            HeapRENode::Worktop(..) => Err(RuntimeError::ValueNotAllowed),
+            HeapRENode::System(..) => Err(RuntimeError::ValueNotAllowed),
         }
     }
 
     pub fn try_drop(self) -> Result<(), DropFailure> {
         match self {
-            RENode::Package(..) => Err(DropFailure::Package),
-            RENode::Vault(..) => Err(DropFailure::Vault),
-            RENode::KeyValueStore(..) => Err(DropFailure::KeyValueStore),
-            RENode::Component(..) => Err(DropFailure::Component),
-            RENode::Bucket(..) => Err(DropFailure::Bucket),
-            RENode::Resource(..) => Err(DropFailure::Resource),
-            RENode::System(..) => Err(DropFailure::System),
-            RENode::Proof(proof) => {
+            HeapRENode::Package(..) => Err(DropFailure::Package),
+            HeapRENode::Vault(..) => Err(DropFailure::Vault),
+            HeapRENode::KeyValueStore(..) => Err(DropFailure::KeyValueStore),
+            HeapRENode::Component(..) => Err(DropFailure::Component),
+            HeapRENode::Bucket(..) => Err(DropFailure::Bucket),
+            HeapRENode::Resource(..) => Err(DropFailure::Resource),
+            HeapRENode::System(..) => Err(DropFailure::System),
+            HeapRENode::Proof(proof) => {
                 proof.drop();
                 Ok(())
             }
-            RENode::Worktop(worktop) => worktop.drop(),
+            HeapRENode::Worktop(worktop) => worktop.drop(),
         }
     }
 
     pub fn drop_nodes(nodes: Vec<HeapRootRENode>) -> Result<(), DropFailure> {
         let mut worktops = Vec::new();
         for node in nodes {
-            if let RENode::Worktop(worktop) = node.root {
+            if let HeapRENode::Worktop(worktop) = node.root {
                 worktops.push(worktop);
             } else {
                 node.try_drop()?;
@@ -429,28 +429,28 @@ impl RENode {
 
 #[derive(Debug)]
 pub struct HeapRootRENode {
-    pub root: RENode,
-    pub non_root_nodes: HashMap<RENodeId, RENode>,
+    pub root: HeapRENode,
+    pub non_root_nodes: HashMap<RENodeId, HeapRENode>,
 }
 
 impl HeapRootRENode {
-    pub fn root(&self) -> &RENode {
+    pub fn root(&self) -> &HeapRENode {
         &self.root
     }
 
-    pub fn root_mut(&mut self) -> &mut RENode {
+    pub fn root_mut(&mut self) -> &mut HeapRENode {
         &mut self.root
     }
 
-    pub fn non_root(&self, id: &RENodeId) -> &RENode {
+    pub fn non_root(&self, id: &RENodeId) -> &HeapRENode {
         self.non_root_nodes.get(id).unwrap()
     }
 
-    pub fn non_root_mut(&mut self, id: &RENodeId) -> &mut RENode {
+    pub fn non_root_mut(&mut self, id: &RENodeId) -> &mut HeapRENode {
         self.non_root_nodes.get_mut(id).unwrap()
     }
 
-    pub fn get_node(&self, id: Option<&RENodeId>) -> &RENode {
+    pub fn get_node(&self, id: Option<&RENodeId>) -> &HeapRENode {
         if let Some(node_id) = id {
             self.non_root_nodes.get(node_id).unwrap()
         } else {
@@ -458,7 +458,7 @@ impl HeapRootRENode {
         }
     }
 
-    pub fn get_node_mut(&mut self, id: Option<&RENodeId>) -> &mut RENode {
+    pub fn get_node_mut(&mut self, id: Option<&RENodeId>) -> &mut HeapRENode {
         if let Some(node_id) = id {
             self.non_root_nodes.get_mut(node_id).unwrap()
         } else {
@@ -466,13 +466,13 @@ impl HeapRootRENode {
         }
     }
 
-    pub fn insert_non_root_nodes(&mut self, nodes: HashMap<RENodeId, RENode>) {
+    pub fn insert_non_root_nodes(&mut self, nodes: HashMap<RENodeId, HeapRENode>) {
         for (id, node) in nodes {
             self.non_root_nodes.insert(id, node);
         }
     }
 
-    pub fn to_nodes(self, root_id: RENodeId) -> HashMap<RENodeId, RENode> {
+    pub fn to_nodes(self, root_id: RENodeId) -> HashMap<RENodeId, HeapRENode> {
         let mut nodes = self.non_root_nodes;
         nodes.insert(root_id, self.root);
         nodes
@@ -486,7 +486,7 @@ impl HeapRootRENode {
 impl Into<Bucket> for HeapRootRENode {
     fn into(self) -> Bucket {
         match self.root {
-            RENode::Bucket(bucket) => bucket,
+            HeapRENode::Bucket(bucket) => bucket,
             _ => panic!("Expected to be a bucket"),
         }
     }
@@ -495,7 +495,7 @@ impl Into<Bucket> for HeapRootRENode {
 impl Into<Proof> for HeapRootRENode {
     fn into(self) -> Proof {
         match self.root {
-            RENode::Proof(proof) => proof,
+            HeapRENode::Proof(proof) => proof,
             _ => panic!("Expected to be a proof"),
         }
     }
@@ -524,7 +524,7 @@ impl REComplexValue {
         }
         match self {
             REComplexValue::Component(component, component_state) => HeapRootRENode {
-                root: RENode::Component(component, component_state),
+                root: HeapRENode::Component(component, component_state),
                 non_root_nodes,
             },
         }
@@ -552,15 +552,15 @@ impl Into<HeapRootRENode> for REPrimitiveNode {
     fn into(self) -> HeapRootRENode {
         let root = match self {
             REPrimitiveNode::Resource(resource_manager, maybe_non_fungibles) => {
-                RENode::Resource(resource_manager, maybe_non_fungibles)
+                HeapRENode::Resource(resource_manager, maybe_non_fungibles)
             }
-            REPrimitiveNode::Package(package) => RENode::Package(package),
-            REPrimitiveNode::Bucket(bucket) => RENode::Bucket(bucket),
-            REPrimitiveNode::Proof(proof) => RENode::Proof(proof),
-            REPrimitiveNode::KeyValue(store) => RENode::KeyValueStore(store),
-            REPrimitiveNode::Vault(vault) => RENode::Vault(vault),
+            REPrimitiveNode::Package(package) => HeapRENode::Package(package),
+            REPrimitiveNode::Bucket(bucket) => HeapRENode::Bucket(bucket),
+            REPrimitiveNode::Proof(proof) => HeapRENode::Proof(proof),
+            REPrimitiveNode::KeyValue(store) => HeapRENode::KeyValueStore(store),
+            REPrimitiveNode::Vault(vault) => HeapRENode::Vault(vault),
 
-            REPrimitiveNode::Worktop(worktop) => RENode::Worktop(worktop),
+            REPrimitiveNode::Worktop(worktop) => HeapRENode::Worktop(worktop),
         };
         HeapRootRENode {
             root,
