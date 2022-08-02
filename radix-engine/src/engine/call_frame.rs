@@ -1097,7 +1097,7 @@ where
         // Moved values must have their references removed
         for (id, value) in &taken {
             self.node_refs.remove(id);
-            for (id, ..) in &value.non_root_nodes {
+            for (id, ..) in &value.child_nodes {
                 self.node_refs.remove(id);
             }
         }
@@ -2277,19 +2277,31 @@ where
             }
         };
 
-        let re_value = match value_by_complexity {
-            RENodeByComplexity::Primitive(primitive) => primitive.into(),
+        let heap_root_node = match value_by_complexity {
+            RENodeByComplexity::Primitive(primitive) => {
+                HeapRootRENode {
+                    root: primitive.into(),
+                    child_nodes: HashMap::new(),
+                }
+            },
             RENodeByComplexity::Complex(complex) => {
                 let children = complex.get_children()?;
-                let (child_values, mut missing) = self.take_available_values(children, true)?;
+                let (taken_root_nodes, mut missing) = self.take_available_values(children, true)?;
                 let first_missing_value = missing.drain().nth(0);
                 if let Some(missing_value) = first_missing_value {
                     return Err(RuntimeError::RENodeNotFound(missing_value));
                 }
-                complex.into_re_node(child_values)
+                let mut child_nodes = HashMap::new();
+                for (id, taken_root_node) in taken_root_nodes {
+                    child_nodes.extend(taken_root_node.to_nodes(id));
+                }
+                HeapRootRENode {
+                    root: complex.into(),
+                    child_nodes
+                }
             }
         };
-        self.owned_heap_nodes.insert(id, re_value);
+        self.owned_heap_nodes.insert(id, heap_root_node);
 
         match id {
             RENodeId::KeyValueStore(..) | RENodeId::Resource(..) => {
@@ -2375,7 +2387,7 @@ where
         }
 
         let mut to_store_values = HashMap::new();
-        for (id, value) in root_node.non_root_nodes.into_iter() {
+        for (id, value) in root_node.child_nodes.into_iter() {
             to_store_values.insert(id, value);
         }
         insert_non_root_nodes(self.track, to_store_values);

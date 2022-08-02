@@ -430,7 +430,7 @@ impl HeapRENode {
 #[derive(Debug)]
 pub struct HeapRootRENode {
     pub root: HeapRENode,
-    pub non_root_nodes: HashMap<RENodeId, HeapRENode>,
+    pub child_nodes: HashMap<RENodeId, HeapRENode>,
 }
 
 impl HeapRootRENode {
@@ -443,16 +443,16 @@ impl HeapRootRENode {
     }
 
     pub fn non_root(&self, id: &RENodeId) -> &HeapRENode {
-        self.non_root_nodes.get(id).unwrap()
+        self.child_nodes.get(id).unwrap()
     }
 
     pub fn non_root_mut(&mut self, id: &RENodeId) -> &mut HeapRENode {
-        self.non_root_nodes.get_mut(id).unwrap()
+        self.child_nodes.get_mut(id).unwrap()
     }
 
     pub fn get_node(&self, id: Option<&RENodeId>) -> &HeapRENode {
         if let Some(node_id) = id {
-            self.non_root_nodes.get(node_id).unwrap()
+            self.child_nodes.get(node_id).unwrap()
         } else {
             &self.root
         }
@@ -460,7 +460,7 @@ impl HeapRootRENode {
 
     pub fn get_node_mut(&mut self, id: Option<&RENodeId>) -> &mut HeapRENode {
         if let Some(node_id) = id {
-            self.non_root_nodes.get_mut(node_id).unwrap()
+            self.child_nodes.get_mut(node_id).unwrap()
         } else {
             &mut self.root
         }
@@ -468,12 +468,12 @@ impl HeapRootRENode {
 
     pub fn insert_non_root_nodes(&mut self, nodes: HashMap<RENodeId, HeapRENode>) {
         for (id, node) in nodes {
-            self.non_root_nodes.insert(id, node);
+            self.child_nodes.insert(id, node);
         }
     }
 
     pub fn to_nodes(self, root_id: RENodeId) -> HashMap<RENodeId, HeapRENode> {
-        let mut nodes = self.non_root_nodes;
+        let mut nodes = self.child_nodes;
         nodes.insert(root_id, self.root);
         nodes
     }
@@ -506,6 +506,16 @@ pub enum REComplexValue {
     Component(Component, ComponentState),
 }
 
+impl Into<HeapRENode> for REComplexValue {
+    fn into(self) -> HeapRENode {
+        match self {
+            REComplexValue::Component(component, component_state) => {
+                HeapRENode::Component(component, component_state)
+            }
+        }
+    }
+}
+
 impl REComplexValue {
     pub fn get_children(&self) -> Result<HashSet<RENodeId>, RuntimeError> {
         match self {
@@ -525,7 +535,7 @@ impl REComplexValue {
         match self {
             REComplexValue::Component(component, component_state) => HeapRootRENode {
                 root: HeapRENode::Component(component, component_state),
-                non_root_nodes,
+                child_nodes: non_root_nodes,
             },
         }
     }
@@ -548,9 +558,9 @@ pub enum RENodeByComplexity {
     Complex(REComplexValue),
 }
 
-impl Into<HeapRootRENode> for REPrimitiveNode {
-    fn into(self) -> HeapRootRENode {
-        let root = match self {
+impl Into<HeapRENode> for REPrimitiveNode {
+    fn into(self) -> HeapRENode {
+        match self {
             REPrimitiveNode::Resource(resource_manager, maybe_non_fungibles) => {
                 HeapRENode::Resource(resource_manager, maybe_non_fungibles)
             }
@@ -561,10 +571,6 @@ impl Into<HeapRootRENode> for REPrimitiveNode {
             REPrimitiveNode::Vault(vault) => HeapRENode::Vault(vault),
 
             REPrimitiveNode::Worktop(worktop) => HeapRENode::Worktop(worktop),
-        };
-        HeapRootRENode {
-            root,
-            non_root_nodes: HashMap::new(),
         }
     }
 }
