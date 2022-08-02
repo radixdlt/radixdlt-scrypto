@@ -20,6 +20,7 @@ fn test_invalid_access_rule_methods() {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(
             package_address,
             "AbiComponent",
@@ -30,16 +31,12 @@ fn test_invalid_access_rule_methods() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    let error = receipt.result.expect_err("Should be an error.");
-    if !matches!(
-        error,
-        RuntimeError::ComponentError(ComponentError::BlueprintFunctionDoesNotExist(..))
-    ) {
-        panic!(
-            "Should be an function does not exist but error was {}",
-            error
-        );
-    }
+    receipt.expect_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ComponentError(ComponentError::BlueprintFunctionDoesNotExist(..))
+        )
+    })
 }
 
 enum ExpectedResult {
@@ -56,6 +53,7 @@ fn test_arg(method_name: &str, arg: Vec<u8>, expected_result: ExpectedResult) {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(package_address, "AbiComponent2", method_name, arg)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -66,10 +64,10 @@ fn test_arg(method_name: &str, arg: Vec<u8>, expected_result: ExpectedResult) {
             receipt.expect_success();
         }
         ExpectedResult::InvalidInput => {
-            receipt.expect_err(|e| matches!(e, RuntimeError::InvalidFnInput { .. }));
+            receipt.expect_failure(|e| matches!(e, RuntimeError::InvalidFnInput { .. }));
         }
         ExpectedResult::InvalidOutput => {
-            receipt.expect_err(|e| matches!(e, RuntimeError::InvalidFnOutput { .. }));
+            receipt.expect_failure(|e| matches!(e, RuntimeError::InvalidFnOutput { .. }));
         }
     }
 }

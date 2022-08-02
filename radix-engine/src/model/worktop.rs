@@ -225,22 +225,22 @@ impl Worktop {
         I: WasmInstance,
         C: CostUnitCounter,
     >(
-        value_id: ValueId,
+        node_id: RENodeId,
         method_name: &str,
         arg: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, WorktopError> {
-        let mut value_ref = system_api
-            .borrow_value_mut(&value_id)
+        let mut node_ref = system_api
+            .borrow_node_mut(&node_id)
             .map_err(WorktopError::CostingError)?;
-        let worktop = value_ref.worktop();
+        let worktop = node_ref.worktop();
 
         let rtn = match method_name {
             "put" => {
                 let input: WorktopPutInput =
                     scrypto_decode(&arg.raw).map_err(|e| WorktopError::InvalidRequestData(e))?;
                 let bucket = system_api
-                    .drop_value(&ValueId::Bucket(input.bucket.0))
+                    .drop_node(&RENodeId::Bucket(input.bucket.0))
                     .map_err(WorktopError::CostingError)?
                     .into();
                 worktop
@@ -258,17 +258,17 @@ impl Worktop {
                     container
                 } else {
                     let resource_type = {
-                        let value = system_api
-                            .borrow_value(&ValueId::Resource(input.resource_address))
+                        let node_ref = system_api
+                            .borrow_node(&RENodeId::Resource(input.resource_address))
                             .map_err(WorktopError::CostingError)?;
-                        let resource_manager = value.resource_manager();
+                        let resource_manager = node_ref.resource_manager();
                         resource_manager.resource_type()
                     };
 
                     ResourceContainer::new_empty(input.resource_address, resource_type)
                 };
                 let bucket_id = system_api
-                    .create_value(Bucket::new(resource_container))
+                    .create_node(Bucket::new(resource_container))
                     .unwrap()
                     .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
@@ -285,10 +285,10 @@ impl Worktop {
                     container
                 } else {
                     let resource_type = {
-                        let value = system_api
-                            .borrow_value(&ValueId::Resource(input.resource_address))
+                        let node_ref = system_api
+                            .borrow_node(&RENodeId::Resource(input.resource_address))
                             .map_err(WorktopError::CostingError)?;
-                        let resource_manager = value.resource_manager();
+                        let resource_manager = node_ref.resource_manager();
                         resource_manager.resource_type()
                     };
 
@@ -296,7 +296,7 @@ impl Worktop {
                 };
 
                 let bucket_id = system_api
-                    .create_value(Bucket::new(resource_container))
+                    .create_node(Bucket::new(resource_container))
                     .unwrap()
                     .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
@@ -313,10 +313,10 @@ impl Worktop {
                     container
                 } else {
                     let resource_type = {
-                        let value = system_api
-                            .borrow_value(&ValueId::Resource(input.resource_address))
+                        let node_ref = system_api
+                            .borrow_node(&RENodeId::Resource(input.resource_address))
                             .map_err(WorktopError::CostingError)?;
-                        let resource_manager = value.resource_manager();
+                        let resource_manager = node_ref.resource_manager();
                         resource_manager.resource_type()
                     };
 
@@ -324,7 +324,7 @@ impl Worktop {
                 };
 
                 let bucket_id = system_api
-                    .create_value(Bucket::new(resource_container))
+                    .create_node(Bucket::new(resource_container))
                     .unwrap()
                     .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
@@ -373,7 +373,7 @@ impl Worktop {
                         .map_err(WorktopError::ResourceContainerError)?;
                     if !container.is_empty() {
                         let bucket_id = system_api
-                            .create_value(Bucket::new(container))
+                            .create_node(Bucket::new(container))
                             .unwrap()
                             .into();
                         buckets.push(scrypto::resource::Bucket(bucket_id));
@@ -385,7 +385,7 @@ impl Worktop {
         }?;
 
         system_api
-            .return_value_mut(value_ref)
+            .return_node_mut(node_ref)
             .map_err(WorktopError::CostingError)?;
         Ok(rtn)
     }

@@ -24,6 +24,7 @@ fn test_max_call_depth_success() {
     // * 16: AuthZone::clear
     // ============================
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(package_address, "Caller", "recursive", to_struct!(14u32))
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -41,10 +42,11 @@ fn test_max_call_depth_failure() {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(package_address, "Caller", "recursive", to_struct!(15u32))
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_err(|e| matches!(e, RuntimeError::MaxCallDepthLimitReached));
+    receipt.expect_failure(|e| matches!(e, RuntimeError::MaxCallDepthLimitReached));
 }

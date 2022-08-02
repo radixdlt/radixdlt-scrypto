@@ -40,6 +40,7 @@ impl Run {
             compiled_manifest,
             &self.signing_keys,
             &None,
+            false,
             self.trace,
             true,
             out,

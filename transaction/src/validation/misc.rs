@@ -5,14 +5,6 @@ pub trait IntentHashManager {
     fn allows(&self, hash: &Hash) -> bool;
 }
 
-pub trait EpochManager {
-    fn current_epoch(&self) -> u64;
-}
-
-pub struct TestEpochManager {
-    current_epoch: u64,
-}
-
 pub enum HashStatus {
     Commited,
     Cancelled,
@@ -20,21 +12,6 @@ pub enum HashStatus {
 
 pub struct TestIntentHashManager {
     hash_status_map: HashMap<Hash, HashStatus>,
-}
-
-impl TestEpochManager {
-    pub fn new(current_epoch: u64) -> Self {
-        Self { current_epoch }
-    }
-    pub fn update_epoch(&mut self, new_epoch: u64) {
-        self.current_epoch = new_epoch;
-    }
-}
-
-impl EpochManager for TestEpochManager {
-    fn current_epoch(&self) -> u64 {
-        self.current_epoch
-    }
 }
 
 impl TestIntentHashManager {

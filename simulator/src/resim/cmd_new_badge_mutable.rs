@@ -65,12 +65,14 @@ impl NewBadgeMutable {
         };
 
         let manifest = ManifestBuilder::new(Network::LocalSimulator)
+            .lock_fee(10.into(), SYSTEM_COMPONENT)
             .new_badge_mutable(metadata, self.minter_resource_address)
             .build();
         handle_manifest(
             manifest,
             &self.signing_keys,
             &self.manifest,
+            false,
             self.trace,
             true,
             out,

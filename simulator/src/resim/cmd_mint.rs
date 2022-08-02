@@ -35,6 +35,7 @@ impl Mint {
         let default_account = get_default_account()?;
 
         let manifest = ManifestBuilder::new(Network::LocalSimulator)
+            .lock_fee(10.into(), SYSTEM_COMPONENT)
             .create_proof_from_account(self.minter_resource_address, default_account)
             .mint(self.amount, self.resource_address)
             .call_method_with_all_resources(default_account, "deposit_batch")
@@ -43,6 +44,7 @@ impl Mint {
             manifest,
             &self.signing_keys,
             &self.manifest,
+            false,
             self.trace,
             true,
             out,

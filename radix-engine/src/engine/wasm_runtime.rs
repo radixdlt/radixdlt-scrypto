@@ -1,4 +1,3 @@
-use crate::engine::call_frame::SubstateAddress;
 use sbor::rust::marker::PhantomData;
 use sbor::rust::vec::Vec;
 use sbor::*;
@@ -11,9 +10,9 @@ use scrypto::resource::AccessRule;
 use scrypto::values::ScryptoValue;
 
 use crate::engine::SystemApi;
-use crate::engine::{PreCommittedKeyValueStore, RuntimeError};
+use crate::engine::{PreCommittedKeyValueStore, RuntimeError, SubstateId};
 use crate::fee::*;
-use crate::model::Component;
+use crate::model::{Component, ComponentState};
 use crate::wasm::*;
 
 /// A glue between system api (call frame and track abstraction) and WASM.
@@ -81,36 +80,57 @@ where
             self.this.package_address().clone(),
             blueprint_name,
             Vec::new(),
-            state,
         );
+        let component_state = ComponentState::new(state);
 
-        let id = self.system_api.create_value(component)?;
+        let id = self.system_api.create_node((component, component_state))?;
         Ok(id.into())
     }
 
     fn handle_create_kv_store(&mut self) -> Result<KeyValueStoreId, RuntimeError> {
         let value_id = self
             .system_api
-            .create_value(PreCommittedKeyValueStore::new())?;
+            .create_node(PreCommittedKeyValueStore::new())?;
         match value_id {
-            ValueId::KeyValueStore(kv_store_id) => Ok(kv_store_id),
+            RENodeId::KeyValueStore(kv_store_id) => Ok(kv_store_id),
             _ => panic!("Expected to be a kv store"),
         }
+    }
+
+    // TODO: This logic should move into KeyValueEntry decoding
+    fn verify_stored_key(value: &ScryptoValue) -> Result<(), RuntimeError> {
+        if !value.bucket_ids.is_empty() {
+            return Err(RuntimeError::BucketNotAllowed);
+        }
+        if !value.proof_ids.is_empty() {
+            return Err(RuntimeError::ProofNotAllowed);
+        }
+        if !value.vault_ids.is_empty() {
+            return Err(RuntimeError::VaultNotAllowed);
+        }
+        if !value.kv_store_ids.is_empty() {
+            return Err(RuntimeError::KeyValueStoreNotAllowed);
+        }
+        Ok(())
     }
 
     fn handle_read_data(&mut self, address: DataAddress) -> Result<ScryptoValue, RuntimeError> {
         let address = match address {
             DataAddress::KeyValueEntry(kv_store_id, key_bytes) => {
-                let scrypto_key =
+                let key_data =
                     ScryptoValue::from_slice(&key_bytes).map_err(RuntimeError::DecodeError)?;
-                SubstateAddress::KeyValueEntry(kv_store_id, scrypto_key)
+                Self::verify_stored_key(&key_data)?;
+                SubstateId::KeyValueStoreEntry(kv_store_id, key_bytes)
             }
-            DataAddress::Component(component_address, offset) => {
-                SubstateAddress::Component(component_address, offset)
+            DataAddress::ComponentInfo(component_address, is_global) => {
+                SubstateId::ComponentInfo(component_address, is_global)
+            }
+            DataAddress::ComponentState(component_address) => {
+                SubstateId::ComponentState(component_address)
             }
         };
 
-        self.system_api.read_value_data(address)
+        self.system_api.read_substate(address)
     }
 
     fn handle_write_data(
@@ -120,16 +140,20 @@ where
     ) -> Result<ScryptoValue, RuntimeError> {
         let address = match address {
             DataAddress::KeyValueEntry(kv_store_id, key_bytes) => {
-                let scrypto_key =
+                let key_data =
                     ScryptoValue::from_slice(&key_bytes).map_err(RuntimeError::DecodeError)?;
-                SubstateAddress::KeyValueEntry(kv_store_id, scrypto_key)
+                Self::verify_stored_key(&key_data)?;
+                SubstateId::KeyValueStoreEntry(kv_store_id, key_bytes)
             }
-            DataAddress::Component(component_address, offset) => {
-                SubstateAddress::Component(component_address, offset)
+            DataAddress::ComponentInfo(component_address, is_global) => {
+                SubstateId::ComponentInfo(component_address, is_global)
+            }
+            DataAddress::ComponentState(component_address) => {
+                SubstateId::ComponentState(component_address)
             }
         };
         let scrypto_value = ScryptoValue::from_slice(&value).map_err(RuntimeError::DecodeError)?;
-        self.system_api.write_value_data(address, scrypto_value)?;
+        self.system_api.write_substate(address, scrypto_value)?;
         Ok(ScryptoValue::unit())
     }
 
@@ -213,10 +237,8 @@ pub struct NopWasmRuntime {
 }
 
 impl NopWasmRuntime {
-    pub fn new(cost_unit_limit: u32) -> Self {
-        Self {
-            cost_unit_counter: SystemLoanCostUnitCounter::new(cost_unit_limit, cost_unit_limit),
-        }
+    pub fn new(cost_unit_counter: SystemLoanCostUnitCounter) -> Self {
+        Self { cost_unit_counter }
     }
 }
 

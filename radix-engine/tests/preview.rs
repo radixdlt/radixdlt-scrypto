@@ -3,13 +3,15 @@ pub mod test_runner;
 
 use crate::test_runner::TestRunner;
 use radix_engine::ledger::InMemorySubstateStore;
-use radix_engine::transaction::TransactionExecutorConfig;
+use radix_engine::transaction::ExecutionParameters;
 use scrypto::core::Network;
+use scrypto::prelude::SYSTEM_COMPONENT;
 use transaction::builder::ManifestBuilder;
 use transaction::builder::TransactionBuilder;
 use transaction::model::*;
 use transaction::signing::EcdsaPrivateKey;
-use transaction::validation::{TestEpochManager, TestIntentHashManager, TransactionValidator};
+use transaction::validation::ValidationParameters;
+use transaction::validation::{TestIntentHashManager, TransactionValidator};
 
 #[test]
 fn test_transaction_preview_cost_estimate() {
@@ -24,15 +26,13 @@ fn test_transaction_preview_cost_estimate() {
     let preview_receipt = preview_result.unwrap().receipt;
     preview_receipt.expect_success();
 
-    let receipt = test_runner.execute_transaction(
-        &validated_transaction,
-        TransactionExecutorConfig::new(false),
-    );
+    let receipt =
+        test_runner.execute_transaction(&validated_transaction, &ExecutionParameters::default());
     receipt.expect_success();
 
     assert_eq!(
-        preview_receipt.transaction_fee.cost_units_consumed,
-        receipt.transaction_fee.cost_units_consumed
+        preview_receipt.fee_summary.cost_unit_consumed,
+        receipt.fee_summary.cost_unit_consumed
     );
 }
 
@@ -51,9 +51,12 @@ fn prepare_test_tx_and_preview_intent(
             nonce: test_runner.next_transaction_nonce(),
             notary_public_key: notary_priv_key.public_key(),
             notary_as_signatory: false,
+            cost_unit_limit: 10_000_000,
+            tip_percentage: 0,
         })
         .manifest(
             ManifestBuilder::new(Network::LocalSimulator)
+                .lock_fee(10.into(), SYSTEM_COMPONENT)
                 .clear_auth_zone()
                 .build(),
         )
@@ -64,7 +67,12 @@ fn prepare_test_tx_and_preview_intent(
     let validated_transaction = TransactionValidator::validate(
         notarized_transaction.clone(),
         &TestIntentHashManager::new(),
-        &TestEpochManager::new(0),
+        &ValidationParameters {
+            network: Network::LocalSimulator,
+            current_epoch: 1,
+            max_cost_unit_limit: 10_000_000,
+            min_tip_percentage: 0,
+        },
     )
     .unwrap();
 

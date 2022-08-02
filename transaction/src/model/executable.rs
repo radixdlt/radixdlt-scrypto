@@ -90,6 +90,12 @@ pub trait ExecutableTransaction {
     /// Returns the transaction payload size.
     fn transaction_payload_size(&self) -> u32;
 
+    /// Returns the limit of cost units consumable
+    fn cost_unit_limit(&self) -> u32;
+
+    /// Returns the tip percentage
+    fn tip_percentage(&self) -> u32;
+
     /// Returns the instructions to execute.
     fn instructions(&self) -> &[ExecutableInstruction];
 

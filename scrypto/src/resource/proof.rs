@@ -7,7 +7,7 @@ use sbor::*;
 
 use crate::abi::*;
 use crate::core::SNodeRef;
-use crate::engine::types::ValueId;
+use crate::engine::types::RENodeId;
 use crate::engine::{api::*, call_engine, types::ProofId};
 use crate::math::*;
 use crate::misc::*;
@@ -105,7 +105,7 @@ impl Proof {
     }
 
     sfunctions! {
-        SNodeRef::Consumed(ValueId::Proof(self.0)) => {
+        SNodeRef::Consumed(RENodeId::Proof(self.0)) => {
             pub fn drop(self) -> () {
                 ConsumingProofDropInput {}
             }
@@ -138,12 +138,8 @@ impl ValidatedProof {
         }
     }
 
-    sfunctions! {
-        SNodeRef::Consumed(ValueId::Proof(self.proof_id())) => {
-            pub fn drop(self) -> () {
-                ConsumingProofDropInput {}
-            }
-        }
+    pub fn drop(self) {
+        self.0.drop()
     }
 
     /// Whether this proof includes an ownership proof of any of the given resource.

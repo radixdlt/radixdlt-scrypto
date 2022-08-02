@@ -12,32 +12,23 @@ use scrypto::values::*;
 use transaction::model::*;
 
 use crate::engine::RuntimeError;
+use crate::fee::FeeSummary;
 use crate::state_manager::StateDiff;
 
 #[derive(Debug)]
-pub struct TransactionFeeSummary {
-    /// Whether system fee loan is fully repaid.
-    /// Clients should use this flag to decide whether to include the transaction into a block.
-    pub system_loan_fully_repaid: bool,
-    /// The specified max cost units can be consumed.
-    pub max_cost_units: u32,
-    /// The total number of cost units consumed.
-    pub cost_units_consumed: u32,
-    /// The cost unit price in XRD.
-    pub cost_units_price: Decimal,
-    /// The total amount of XRD burned.
-    pub burned: Decimal,
-    /// The total amount of XRD tipped to validators.
-    pub tipped: Decimal,
+pub enum TransactionStatus {
+    Rejected,
+    Succeeded(Vec<Vec<u8>>),
+    Failed(RuntimeError),
 }
 
 /// Represents a transaction receipt.
 pub struct TransactionReceipt {
+    pub status: TransactionStatus,
+    pub fee_summary: FeeSummary,
     pub transaction_network: Network,
-    pub transaction_fee: TransactionFeeSummary,
     pub execution_time: Option<u128>,
     pub instructions: Vec<ExecutableInstruction>,
-    pub result: Result<Vec<Vec<u8>>, RuntimeError>,
     pub application_logs: Vec<(Level, String)>,
     pub new_package_addresses: Vec<PackageAddress>,
     pub new_component_addresses: Vec<ComponentAddress>,
@@ -47,22 +38,29 @@ pub struct TransactionReceipt {
 
 impl TransactionReceipt {
     pub fn expect_success(&self) -> &Vec<Vec<u8>> {
-        match &self.result {
-            Ok(output) => output,
-            Err(err) => panic!("Expected success but was:\n{:?}", err),
+        match &self.status {
+            TransactionStatus::Succeeded(output) => output,
+            TransactionStatus::Failed(err) => panic!("Expected success but was:\n{:?}", err),
+            TransactionStatus::Rejected => panic!("Expected success but was rejection"),
         }
     }
 
-    pub fn expect_err<F>(&self, f: F)
+    pub fn expect_failure<F>(&self, f: F)
     where
         F: FnOnce(&RuntimeError) -> bool,
     {
-        if let Err(e) = &self.result {
+        if let TransactionStatus::Failed(e) = &self.status {
             if !f(e) {
-                panic!("Expected error but was different error:\n{:?}", self);
+                panic!("Expected failure but was different error:\n{:?}", self);
             }
         } else {
-            panic!("Expected error but was successful:\n{:?}", self);
+            panic!("Expected failure but was:\n{:?}", self);
+        }
+    }
+
+    pub fn expect_rejection(&self) {
+        if !matches!(self.status, TransactionStatus::Rejected) {
+            panic!("Expected rejection but was:\n{:?}", self);
         }
     }
 }
@@ -85,9 +83,10 @@ impl fmt::Debug for TransactionReceipt {
             f,
             "{} {}",
             "Transaction Status:".bold().green(),
-            match &self.result {
-                Ok(_) => "SUCCESS".blue(),
-                Err(e) => e.to_string().red(),
+            match &self.status {
+                TransactionStatus::Succeeded(_) => "SUCCESS".blue(),
+                TransactionStatus::Failed(e) => format!("FAILURE: {}", e).red(),
+                TransactionStatus::Rejected => "REJECTION".red(),
             }
         )?;
 
@@ -95,17 +94,17 @@ impl fmt::Debug for TransactionReceipt {
             f,
             "\n{} {} XRD burned, {} XRD tipped to validators",
             "Transaction Fee:".bold().green(),
-            self.transaction_fee.burned,
-            self.transaction_fee.tipped,
+            self.fee_summary.burned,
+            self.fee_summary.tipped,
         )?;
 
         write!(
             f,
-            "\n{} {} max, {} consumed, {} XRD per cost unit",
+            "\n{} {} limit, {} consumed, {} XRD per cost unit",
             "Cost Units:".bold().green(),
-            self.transaction_fee.max_cost_units,
-            self.transaction_fee.cost_units_consumed,
-            self.transaction_fee.cost_units_price,
+            self.fee_summary.cost_unit_limit,
+            self.fee_summary.cost_unit_consumed,
+            self.fee_summary.cost_unit_price,
         )?;
 
         write!(
@@ -152,7 +151,7 @@ impl fmt::Debug for TransactionReceipt {
             )?;
         }
 
-        if let Ok(outputs) = &self.result {
+        if let TransactionStatus::Succeeded(outputs) = &self.status {
             write!(f, "\n{}", "Instruction Outputs:".bold().green())?;
             for (i, output) in outputs.iter().enumerate() {
                 write!(

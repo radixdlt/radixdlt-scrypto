@@ -5,7 +5,7 @@ use crate::test_runner::TestRunner;
 use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::InMemorySubstateStore;
 use scrypto::core::Network;
-use scrypto::engine::types::ValueId;
+use scrypto::engine::types::RENodeId;
 use scrypto::prelude::*;
 use scrypto::to_struct;
 use transaction::builder::ManifestBuilder;
@@ -19,6 +19,7 @@ fn non_existent_vault_in_component_creation_should_fail() {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(
             package_address,
             "NonExistentVault",
@@ -29,7 +30,7 @@ fn non_existent_vault_in_component_creation_should_fail() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_err(|e| matches!(e, RuntimeError::ValueNotFound(ValueId::Vault(_))));
+    receipt.expect_failure(|e| matches!(e, RuntimeError::RENodeNotFound(RENodeId::Vault(_))));
 }
 
 #[test]
@@ -39,6 +40,7 @@ fn non_existent_vault_in_committed_component_should_fail() {
     let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("vault");
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(package_address, "NonExistentVault", "new", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -46,12 +48,13 @@ fn non_existent_vault_in_committed_component_should_fail() {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_method(component_address, "create_non_existent_vault", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_err(|e| matches!(e, RuntimeError::ValueNotFound(ValueId::Vault(_))));
+    receipt.expect_failure(|e| matches!(e, RuntimeError::RENodeNotFound(RENodeId::Vault(_))));
 }
 
 #[test]
@@ -63,6 +66,7 @@ fn non_existent_vault_in_key_value_store_creation_should_fail() {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(
             package_address,
             "NonExistentVault",
@@ -73,7 +77,7 @@ fn non_existent_vault_in_key_value_store_creation_should_fail() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_err(|e| matches!(e, RuntimeError::ValueNotFound(ValueId::Vault(_))));
+    receipt.expect_failure(|e| matches!(e, RuntimeError::RENodeNotFound(RENodeId::Vault(_))));
 }
 
 #[test]
@@ -83,6 +87,7 @@ fn non_existent_vault_in_committed_key_value_store_should_fail() {
     let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("vault");
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(package_address, "NonExistentVault", "new", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -90,6 +95,7 @@ fn non_existent_vault_in_committed_key_value_store_should_fail() {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_method(
             component_address,
             "create_non_existent_vault_in_key_value_store",
@@ -99,7 +105,7 @@ fn non_existent_vault_in_committed_key_value_store_should_fail() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_err(|e| matches!(e, RuntimeError::ValueNotFound(ValueId::Vault(_))));
+    receipt.expect_failure(|e| matches!(e, RuntimeError::RENodeNotFound(RENodeId::Vault(_))));
 }
 
 #[test]
@@ -111,6 +117,7 @@ fn create_mutable_vault_into_map() {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(
             package_address,
             "VaultTest",
@@ -133,6 +140,7 @@ fn invalid_double_ownership_of_vault() {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(
             package_address,
             "VaultTest",
@@ -143,7 +151,7 @@ fn invalid_double_ownership_of_vault() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_err(|e| matches!(e, RuntimeError::ValueNotFound(ValueId::Vault(_))));
+    receipt.expect_failure(|e| matches!(e, RuntimeError::RENodeNotFound(RENodeId::Vault(_))));
 }
 
 #[test]
@@ -155,6 +163,7 @@ fn create_mutable_vault_into_map_and_referencing_before_storing() {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(
             package_address,
             "VaultTest",
@@ -175,6 +184,7 @@ fn cannot_overwrite_vault_in_map() {
     let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("vault");
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(
             package_address,
             "VaultTest",
@@ -187,16 +197,13 @@ fn cannot_overwrite_vault_in_map() {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_method(component_address, "overwrite_vault_in_map", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    let runtime_error = receipt.result.expect_err("Should be runtime error");
-    match runtime_error {
-        RuntimeError::StoredValueRemoved(ValueId::Vault(_)) => {}
-        _ => panic!("Should be vault not found error but was {}", runtime_error),
-    }
+    receipt.expect_failure(|e| matches!(e, RuntimeError::StoredNodeRemoved(RENodeId::Vault(_))));
 }
 
 #[test]
@@ -208,6 +215,7 @@ fn create_mutable_vault_into_vector() {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(
             package_address,
             "VaultTest",
@@ -228,6 +236,7 @@ fn cannot_remove_vaults() {
     let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("vault");
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(
             package_address,
             "VaultTest",
@@ -240,16 +249,13 @@ fn cannot_remove_vaults() {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_method(component_address, "clear_vector", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    let runtime_error = receipt.result.expect_err("Should be runtime error");
-    match runtime_error {
-        RuntimeError::StoredValueRemoved(ValueId::Vault(_)) => {}
-        _ => panic!("Should be vault not found error but was {}", runtime_error),
-    }
+    receipt.expect_failure(|e| matches!(e, RuntimeError::StoredNodeRemoved(RENodeId::Vault(_))));
 }
 
 #[test]
@@ -259,6 +265,7 @@ fn can_push_vault_into_vector() {
     let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("vault");
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(
             package_address,
             "VaultTest",
@@ -271,6 +278,7 @@ fn can_push_vault_into_vector() {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_method(component_address, "push_vault_into_vector", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -288,6 +296,7 @@ fn create_mutable_vault_with_take() {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(
             package_address,
             "VaultTest",
@@ -310,6 +319,7 @@ fn create_mutable_vault_with_take_non_fungible() {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(
             package_address,
             "VaultTest",
@@ -332,6 +342,7 @@ fn create_mutable_vault_with_get_nonfungible_ids() {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(
             package_address,
             "VaultTest",
@@ -354,6 +365,7 @@ fn create_mutable_vault_with_get_amount() {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(
             package_address,
             "VaultTest",
@@ -376,6 +388,7 @@ fn create_mutable_vault_with_get_resource_manager() {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(
             package_address,
             "VaultTest",

@@ -34,9 +34,9 @@ impl BorrowedSubstate {
 /// such as logs and events.
 pub struct Track<'s> {
     application_logs: Vec<(Level, String)>,
-    new_addresses: Vec<Address>,
+    new_substates: Vec<SubstateId>,
     state_track: AppStateTrack<'s>,
-    borrowed_substates: HashMap<Address, BorrowedSubstate>,
+    borrowed_substates: HashMap<SubstateId, BorrowedSubstate>,
 }
 
 #[derive(Debug)]
@@ -47,7 +47,7 @@ pub enum TrackError {
 }
 
 pub struct TrackReceipt {
-    pub new_addresses: Vec<Address>,
+    pub new_addresses: Vec<SubstateId>,
     pub application_logs: Vec<(Level, String)>,
     pub state_updates: StateDiff,
 }
@@ -59,7 +59,7 @@ impl<'s> Track<'s> {
 
         Self {
             application_logs: Vec::new(),
-            new_addresses: Vec::new(),
+            new_substates: Vec::new(),
             state_track,
             borrowed_substates: HashMap::new(),
         }
@@ -71,10 +71,10 @@ impl<'s> Track<'s> {
     }
 
     /// Creates a row with the given key/value
-    pub fn create_uuid_value<A: Into<Address>, V: Into<Substate>>(&mut self, addr: A, value: V) {
-        let address = addr.into();
-        self.new_addresses.push(address.clone());
-        self.state_track.put_substate(address, value.into());
+    pub fn create_uuid_substate<A: Into<SubstateId>, V: Into<Substate>>(&mut self, s: A, value: V) {
+        let substate_id = s.into();
+        self.new_substates.push(substate_id.clone());
+        self.state_track.put_substate(substate_id, value.into());
     }
 
     // TODO: to read/write a value owned by track requires three coordinated steps:
@@ -87,15 +87,15 @@ impl<'s> Track<'s> {
     //
     // Also enables us to store state associated with the lock, like the `write_through` flag.
 
-    pub fn acquire_lock<A: Into<Address>>(
+    pub fn acquire_lock<A: Into<SubstateId>>(
         &mut self,
-        addr: A,
+        s: A,
         mutable: bool,
         write_through: bool,
     ) -> Result<(), TrackError> {
-        let address = addr.into();
+        let substate_id = s.into();
 
-        if let Some(current) = self.borrowed_substates.get_mut(&address) {
+        if let Some(current) = self.borrowed_substates.get_mut(&substate_id) {
             if mutable {
                 return Err(TrackError::Reentrancy);
             } else {
@@ -112,26 +112,33 @@ impl<'s> Track<'s> {
         if write_through {
             let value = self
                 .state_track
-                .get_substate_from_base(&address)
+                .get_substate_from_base(&substate_id)
                 .map_err(TrackError::StateTrackError)?
                 .ok_or(TrackError::NotFound)?;
-            self.borrowed_substates
-                .insert(address.clone(), BorrowedSubstate::loaded(value, mutable));
+            self.borrowed_substates.insert(
+                substate_id.clone(),
+                BorrowedSubstate::loaded(value, mutable),
+            );
             Ok(())
         } else {
-            if let Some(substate) = self.state_track.get_substate(&address) {
-                let value = match address {
-                    Address::GlobalComponent(_)
-                    | Address::LocalComponent(..)
-                    | Address::ResourceManager(_)
-                    | Address::Vault(..)
-                    | Address::Package(..)
-                    | Address::System => substate,
-                    _ => panic!("Attempting to borrow unsupported value {:?}", address),
+            if let Some(substate) = self.state_track.get_substate(&substate_id) {
+                let substate = match substate_id {
+                    SubstateId::ComponentInfo(..)
+                    | SubstateId::ResourceManager(..)
+                    | SubstateId::Vault(..)
+                    | SubstateId::Package(..)
+                    | SubstateId::ComponentState(..)
+                    | SubstateId::System => substate,
+                    _ => panic!(
+                        "Attempting to borrow unsupported substate {:?}",
+                        substate_id
+                    ),
                 };
 
-                self.borrowed_substates
-                    .insert(address.clone(), BorrowedSubstate::loaded(value, mutable));
+                self.borrowed_substates.insert(
+                    substate_id.clone(),
+                    BorrowedSubstate::loaded(substate, mutable),
+                );
                 Ok(())
             } else {
                 Err(TrackError::NotFound)
@@ -139,26 +146,26 @@ impl<'s> Track<'s> {
         }
     }
 
-    pub fn release_lock<A: Into<Address>>(&mut self, addr: A, write_through: bool) {
-        let address = addr.into();
+    pub fn release_lock<A: Into<SubstateId>>(&mut self, s: A, write_through: bool) {
+        let substate_id = s.into();
         let borrowed = self
             .borrowed_substates
-            .remove(&address)
+            .remove(&substate_id)
             .expect("Value was never borrowed");
 
         if write_through {
             match borrowed {
                 BorrowedSubstate::Taken => panic!("Value was never returned"),
                 BorrowedSubstate::LoadedMut(value) => {
-                    self.state_track.put_substate_to_base(address, value);
+                    self.state_track.put_substate_to_base(substate_id, value);
                 }
                 BorrowedSubstate::Loaded(value, mut count) => {
                     count = count - 1;
                     if count == 0 {
-                        self.state_track.put_substate_to_base(address, value);
+                        self.state_track.put_substate_to_base(substate_id, value);
                     } else {
                         self.borrowed_substates
-                            .insert(address, BorrowedSubstate::Loaded(value, count));
+                            .insert(substate_id, BorrowedSubstate::Loaded(value, count));
                     }
                 }
             }
@@ -166,53 +173,55 @@ impl<'s> Track<'s> {
             match borrowed {
                 BorrowedSubstate::Taken => panic!("Value was never returned"),
                 BorrowedSubstate::LoadedMut(value) => {
-                    self.state_track.put_substate(address, value);
+                    self.state_track.put_substate(substate_id, value);
                 }
                 BorrowedSubstate::Loaded(value, mut count) => {
                     count = count - 1;
                     if count == 0 {
-                        self.state_track.put_substate(address, value);
+                        self.state_track.put_substate(substate_id, value);
                     } else {
                         self.borrowed_substates
-                            .insert(address, BorrowedSubstate::Loaded(value, count));
+                            .insert(substate_id, BorrowedSubstate::Loaded(value, count));
                     }
                 }
             }
         }
     }
 
-    pub fn read_value<A: Into<Address>>(&self, addr: A) -> &Substate {
-        let address: Address = addr.into();
+    pub fn read_substate<A: Into<SubstateId>>(&self, s: A) -> &Substate {
+        let substate_id: SubstateId = s.into();
         match self
             .borrowed_substates
-            .get(&address)
-            .expect(&format!("{:?} was never locked", address))
+            .get(&substate_id)
+            .expect(&format!("{:?} was never locked", substate_id))
         {
-            BorrowedSubstate::LoadedMut(value) => value,
-            BorrowedSubstate::Loaded(value, ..) => value,
-            BorrowedSubstate::Taken => panic!("Value was already taken"),
+            BorrowedSubstate::LoadedMut(substate) => substate,
+            BorrowedSubstate::Loaded(substate, ..) => substate,
+            BorrowedSubstate::Taken => panic!("Substate was already taken"),
         }
     }
 
-    pub fn take_value<A: Into<Address>>(&mut self, addr: A) -> Substate {
-        let address: Address = addr.into();
+    pub fn take_substate<A: Into<SubstateId>>(&mut self, s: A) -> Substate {
+        let substate_id: SubstateId = s.into();
         match self
             .borrowed_substates
-            .insert(address.clone(), BorrowedSubstate::Taken)
-            .expect(&format!("{:?} was never locked", address))
+            .insert(substate_id.clone(), BorrowedSubstate::Taken)
+            .expect(&format!("{:?} was never locked", substate_id))
         {
             BorrowedSubstate::LoadedMut(value) => value,
-            BorrowedSubstate::Loaded(..) => panic!("Cannot take value on immutable: {:?}", address),
-            BorrowedSubstate::Taken => panic!("Value was already taken"),
+            BorrowedSubstate::Loaded(..) => {
+                panic!("Cannot take value on immutable: {:?}", substate_id)
+            }
+            BorrowedSubstate::Taken => panic!("Substate was already taken"),
         }
     }
 
-    pub fn write_value<A: Into<Address>, V: Into<Substate>>(&mut self, addr: A, value: V) {
-        let address: Address = addr.into();
+    pub fn write_substate<A: Into<SubstateId>, V: Into<Substate>>(&mut self, addr: A, value: V) {
+        let substate_id: SubstateId = addr.into();
 
         let cur_value = self
             .borrowed_substates
-            .get(&address)
+            .get(&substate_id)
             .expect("value was never locked");
         match cur_value {
             BorrowedSubstate::Loaded(..) => panic!("Cannot write to immutable"),
@@ -220,54 +229,33 @@ impl<'s> Track<'s> {
         }
 
         self.borrowed_substates
-            .insert(address, BorrowedSubstate::LoadedMut(value.into()));
-    }
-
-    // TODO: Replace with more generic write_value once Component is split into more substates
-    pub fn write_component_value(&mut self, address: Address, value: Vec<u8>) {
-        match address {
-            Address::GlobalComponent(..) | Address::LocalComponent(..) => {}
-            _ => panic!("Unexpected address"),
-        }
-
-        let borrowed = self
-            .borrowed_substates
-            .get_mut(&address)
-            .expect("Value was never locked");
-        match borrowed {
-            BorrowedSubstate::Taken => panic!("Value was taken"),
-            BorrowedSubstate::Loaded(..) => panic!("Cannot write to immutable"),
-            BorrowedSubstate::LoadedMut(component_val) => {
-                component_val.component_mut().set_state(value);
-            }
-        }
+            .insert(substate_id, BorrowedSubstate::LoadedMut(value.into()));
     }
 
     /// Returns the value of a key value pair
-    pub fn read_key_value(&mut self, parent_address: Address, key: Vec<u8>) -> Substate {
+    pub fn read_key_value(&mut self, parent_address: SubstateId, key: Vec<u8>) -> Substate {
         // TODO: consider using a single address as function input
-        let address = match parent_address {
-            Address::NonFungibleSpace(resource_address) => {
-                Address::NonFungible(resource_address, key)
+        let substate_id = match parent_address {
+            SubstateId::NonFungibleSpace(resource_address) => {
+                SubstateId::NonFungible(resource_address, NonFungibleId(key))
             }
-            Address::KeyValueStoreSpace(kv_store_id) => {
-                Address::KeyValueStoreEntry(kv_store_id, key)
+            SubstateId::KeyValueStoreSpace(kv_store_id) => {
+                SubstateId::KeyValueStoreEntry(kv_store_id, key)
             }
             _ => panic!("Unsupported key value"),
         };
 
         match parent_address {
-            Address::NonFungibleSpace(_) => self
+            SubstateId::NonFungibleSpace(_) => self
                 .state_track
-                .get_substate(&address)
+                .get_substate(&substate_id)
                 .unwrap_or(Substate::NonFungible(NonFungibleWrapper(None))),
-            Address::KeyValueStoreSpace(..) => {
-                self.state_track
-                    .get_substate(&address)
-                    .unwrap_or(Substate::KeyValueStoreEntry(KeyValueStoreEntryWrapper(
-                        None,
-                    )))
-            }
+            SubstateId::KeyValueStoreSpace(..) => self
+                .state_track
+                .get_substate(&substate_id)
+                .unwrap_or(Substate::KeyValueStoreEntry(KeyValueStoreEntryWrapper(
+                    None,
+                ))),
             _ => panic!("Invalid keyed value address {:?}", parent_address),
         }
     }
@@ -275,31 +263,39 @@ impl<'s> Track<'s> {
     /// Sets a key value
     pub fn set_key_value<V: Into<Substate>>(
         &mut self,
-        parent_address: Address,
+        parent_substate_id: SubstateId,
         key: Vec<u8>,
         value: V,
     ) {
         // TODO: consider using a single address as function input
-        let address = match parent_address {
-            Address::NonFungibleSpace(resource_address) => {
-                Address::NonFungible(resource_address, key.clone())
+        let substate_id = match parent_substate_id {
+            SubstateId::NonFungibleSpace(resource_address) => {
+                SubstateId::NonFungible(resource_address, NonFungibleId(key.clone()))
             }
-            Address::KeyValueStoreSpace(kv_store_id) => {
-                Address::KeyValueStoreEntry(kv_store_id, key.clone())
+            SubstateId::KeyValueStoreSpace(kv_store_id) => {
+                SubstateId::KeyValueStoreEntry(kv_store_id, key.clone())
             }
             _ => panic!("Unsupported key value"),
         };
 
-        self.state_track.put_substate(address, value.into());
+        self.state_track.put_substate(substate_id, value.into());
     }
 
-    pub fn to_receipt(mut self, commit_app_state_updates: bool) -> TrackReceipt {
-        if commit_app_state_updates {
-            self.state_track.flush();
-        }
+    pub fn commit(&mut self) {
+        self.state_track.commit();
+    }
 
+    pub fn rollback(&mut self) {
+        self.state_track.rollback();
+
+        // self.application_logs.clear();
+        self.new_substates.clear();
+        self.borrowed_substates.clear();
+    }
+
+    pub fn to_receipt(self) -> TrackReceipt {
         TrackReceipt {
-            new_addresses: self.new_addresses,
+            new_addresses: self.new_substates,
             application_logs: self.application_logs,
             state_updates: self.state_track.into_base().generate_diff(),
         }

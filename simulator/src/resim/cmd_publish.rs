@@ -1,6 +1,7 @@
 use clap::Parser;
 use colored::*;
 use scrypto::core::Network;
+use scrypto::prelude::SYSTEM_COMPONENT;
 use std::ffi::OsStr;
 use std::fs;
 use std::path::PathBuf;
@@ -35,10 +36,19 @@ impl Publish {
         .map_err(Error::IOError)?;
 
         let manifest = ManifestBuilder::new(Network::LocalSimulator)
+            .lock_fee(10.into(), SYSTEM_COMPONENT)
             .publish_package(extract_package(code).map_err(Error::PackageError)?)
             .build();
 
-        let receipt = handle_manifest(manifest, &None, &self.manifest, self.trace, false, out)?;
+        let receipt = handle_manifest(
+            manifest,
+            &None,
+            &self.manifest,
+            false,
+            self.trace,
+            false,
+            out,
+        )?;
         if let Some(receipt) = receipt {
             writeln!(
                 out,

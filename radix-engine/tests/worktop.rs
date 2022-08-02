@@ -18,10 +18,11 @@ fn test_worktop_resource_leak() {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .lock_fee(10.into(), SYSTEM_COMPONENT)
         .withdraw_from_account(RADIX_TOKEN, account)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
-    receipt.expect_err(|e| matches!(e, RuntimeError::DropFailure(DropFailure::Worktop)));
+    receipt.expect_failure(|e| matches!(e, RuntimeError::DropFailure(DropFailure::Worktop)));
 }

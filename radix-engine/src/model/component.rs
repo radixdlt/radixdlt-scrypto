@@ -23,13 +23,31 @@ pub enum ComponentError {
     CostingError(CostUnitCounterError),
 }
 
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
+pub struct ComponentState {
+    state: Vec<u8>,
+}
+
+impl ComponentState {
+    pub fn new(state: Vec<u8>) -> Self {
+        ComponentState { state }
+    }
+
+    pub fn state(&self) -> &[u8] {
+        &self.state
+    }
+
+    pub fn set_state(&mut self, new_state: Vec<u8>) {
+        self.state = new_state;
+    }
+}
+
 /// A component is an instance of blueprint.
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct Component {
     package_address: PackageAddress,
     blueprint_name: String,
     access_rules: Vec<AccessRules>,
-    state: Vec<u8>,
 }
 
 impl Component {
@@ -37,22 +55,21 @@ impl Component {
         package_address: PackageAddress,
         blueprint_name: String,
         access_rules: Vec<AccessRules>,
-        state: Vec<u8>,
     ) -> Self {
         Self {
             package_address,
             blueprint_name,
             access_rules,
-            state,
         }
     }
 
     pub fn method_authorization(
         &self,
+        component_state: &ComponentState,
         schema: &Type,
         method_name: &str,
     ) -> Vec<MethodAuthorization> {
-        let data = ScryptoValue::from_slice(&self.state).unwrap();
+        let data = ScryptoValue::from_slice(&component_state.state).unwrap();
 
         let mut authorizations = Vec::new();
         for auth in &self.access_rules {
@@ -80,14 +97,6 @@ impl Component {
         &self.blueprint_name
     }
 
-    pub fn state(&self) -> &[u8] {
-        &self.state
-    }
-
-    pub fn set_state(&mut self, new_state: Vec<u8>) {
-        self.state = new_state;
-    }
-
     pub fn main<
         'p,
         's,
@@ -96,7 +105,7 @@ impl Component {
         I: WasmInstance,
         C: CostUnitCounter,
     >(
-        value_id: ValueId,
+        node_id: RENodeId,
         fn_ident: &str,
         arg: ScryptoValue,
         system_api: &mut Y,
@@ -109,15 +118,15 @@ impl Component {
                 // Abi checks
                 {
                     let component_ref = system_api
-                        .borrow_value(&value_id)
+                        .borrow_node(&node_id)
                         .map_err(ComponentError::CostingError)?;
                     let component = component_ref.component();
                     let component_name = component.blueprint_name().to_owned();
-                    let package_id = ValueId::Package(component.package_address.clone());
+                    let package_id = RENodeId::Package(component.package_address.clone());
                     drop(component);
                     drop(component_ref);
                     let package_ref = system_api
-                        .borrow_value(&package_id)
+                        .borrow_node(&package_id)
                         .map_err(ComponentError::CostingError)?;
                     let package = package_ref.package();
                     let blueprint_abi = package.blueprint_abi(&component_name).unwrap();
@@ -131,12 +140,12 @@ impl Component {
                 }
 
                 let mut ref_mut = system_api
-                    .borrow_value_mut(&value_id)
+                    .borrow_node_mut(&node_id)
                     .map_err(ComponentError::CostingError)?;
                 let component = ref_mut.component();
                 component.access_rules.push(input.access_rules);
                 system_api
-                    .return_value_mut(ref_mut)
+                    .return_node_mut(ref_mut)
                     .map_err(ComponentError::CostingError)?;
 
                 Ok(ScryptoValue::from_typed(&()))
@@ -146,7 +155,7 @@ impl Component {
                     scrypto_decode(&arg.raw).map_err(|e| ComponentError::InvalidRequestData(e))?;
 
                 system_api
-                    .globalize_value(&value_id)
+                    .globalize_node(&node_id)
                     .map_err(ComponentError::CostingError)?;
                 Ok(ScryptoValue::from_typed(&()))
             }
@@ -164,7 +173,7 @@ impl Component {
         I: WasmInstance,
         C: CostUnitCounter,
     >(
-        value_id: ValueId,
+        node_id: RENodeId,
         fn_ident: &str,
         arg: ScryptoValue,
         system_api: &mut Y,
@@ -175,7 +184,7 @@ impl Component {
                     scrypto_decode(&arg.raw).map_err(|e| ComponentError::InvalidRequestData(e))?;
 
                 system_api
-                    .globalize_value(&value_id)
+                    .globalize_node(&node_id)
                     .map_err(ComponentError::CostingError)?;
                 Ok(ScryptoValue::from_typed(&()))
             }

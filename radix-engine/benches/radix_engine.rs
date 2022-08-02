@@ -1,7 +1,7 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use radix_engine::ledger::*;
+use radix_engine::transaction::ExecutionParameters;
 use radix_engine::transaction::TransactionExecutor;
-use radix_engine::transaction::TransactionExecutorConfig;
 use radix_engine::wasm::DefaultWasmEngine;
 use radix_engine::wasm::WasmInstrumenter;
 use scrypto::core::Network;
@@ -20,7 +20,6 @@ fn bench_transfer(c: &mut Criterion) {
         &mut substate_store,
         &mut wasm_engine,
         &mut wasm_instrumenter,
-        TransactionExecutorConfig::new(false),
     );
 
     // Create a key pair
@@ -29,6 +28,7 @@ fn bench_transfer(c: &mut Criterion) {
 
     // Create two accounts
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_method(SYSTEM_COMPONENT, "free_xrd", to_struct!())
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.new_account_with_resource(
@@ -38,14 +38,21 @@ fn bench_transfer(c: &mut Criterion) {
         })
         .build();
     let account1 = executor
-        .execute_and_commit(&TestTransaction::new(manifest.clone(), 1, vec![public_key]))
+        .execute_and_commit(
+            &TestTransaction::new(manifest.clone(), 1, vec![public_key]),
+            &ExecutionParameters::default(),
+        )
         .new_component_addresses[0];
     let account2 = executor
-        .execute_and_commit(&TestTransaction::new(manifest, 2, vec![public_key]))
+        .execute_and_commit(
+            &TestTransaction::new(manifest, 2, vec![public_key]),
+            &ExecutionParameters::default(),
+        )
         .new_component_addresses[0];
 
     // Create a transfer manifest
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .lock_fee(10.into(), account1)
         .withdraw_from_account_by_amount(1.into(), RADIX_TOKEN, account1)
         .call_method_with_all_resources(account2, "deposit_batch")
         .build();
@@ -54,12 +61,11 @@ fn bench_transfer(c: &mut Criterion) {
     let mut nonce = 3;
     c.bench_function("Transfer", |b| {
         b.iter(|| {
-            let receipt = executor.execute_and_commit(&TestTransaction::new(
-                manifest.clone(),
-                nonce,
-                vec![public_key],
-            ));
-            receipt.result.expect("It should work");
+            let receipt = executor.execute_and_commit(
+                &TestTransaction::new(manifest.clone(), nonce, vec![public_key]),
+                &ExecutionParameters::default(),
+            );
+            receipt.expect_success();
             nonce += 1;
         })
     });

@@ -55,8 +55,8 @@ pub enum SystemApiCostingEntry<'a> {
 
 pub struct FeeTable {
     tx_decoding_per_byte: u32,
-    tx_verification_per_byte: u32,
-    tx_signature_validation_per_sig: u32,
+    tx_manifest_verification_per_byte: u32,
+    tx_signature_verification_per_sig: u32,
     fixed_low: u32,
     fixed_medium: u32,
     fixed_high: u32,
@@ -68,8 +68,8 @@ impl FeeTable {
     pub fn new() -> Self {
         Self {
             tx_decoding_per_byte: 4,
-            tx_verification_per_byte: 1,
-            tx_signature_validation_per_sig: 3750,
+            tx_manifest_verification_per_byte: 1,
+            tx_signature_verification_per_sig: 3750,
             wasm_instantiation_per_byte: 500,
             fixed_low: 1000,
             fixed_medium: 5_000,
@@ -82,12 +82,12 @@ impl FeeTable {
         self.tx_decoding_per_byte
     }
 
-    pub fn tx_verification_per_byte(&self) -> u32 {
-        self.tx_verification_per_byte
+    pub fn tx_manifest_verification_per_byte(&self) -> u32 {
+        self.tx_manifest_verification_per_byte
     }
 
-    pub fn tx_signature_validation_per_sig(&self) -> u32 {
-        self.tx_signature_validation_per_sig
+    pub fn tx_signature_verification_per_sig(&self) -> u32 {
+        self.tx_signature_verification_per_sig
     }
 
     pub fn wasm_instantiation_per_byte(&self) -> u32 {
@@ -145,16 +145,15 @@ impl FeeTable {
             },
             // TODO: I suspect there is a bug with invoking consumed within call frame. Add tests to verify
             SNodeRef::Consumed(value_id) => match value_id {
-                ValueId::Bucket(_) => self.fixed_medium,
-                ValueId::Proof(_) => self.fixed_medium,
-                ValueId::Worktop => self.fixed_medium,
-                ValueId::KeyValueStore(_) => self.fixed_medium,
-                ValueId::Component(_) => self.fixed_medium,
-                ValueId::Vault(_) => self.fixed_medium,
-                ValueId::Resource(_) => self.fixed_medium,
-                ValueId::Package(_) => self.fixed_high,
-                ValueId::System => self.fixed_high,
-                ValueId::NonFungibles(..) => self.fixed_high,
+                RENodeId::Bucket(_) => self.fixed_medium,
+                RENodeId::Proof(_) => self.fixed_medium,
+                RENodeId::Worktop => self.fixed_medium,
+                RENodeId::KeyValueStore(_) => self.fixed_medium,
+                RENodeId::Component(_) => self.fixed_medium,
+                RENodeId::Vault(_) => self.fixed_medium,
+                RENodeId::Resource(_) => self.fixed_medium,
+                RENodeId::Package(_) => self.fixed_high,
+                RENodeId::System => self.fixed_high,
             },
             SNodeRef::BucketRef(_) => match fn_ident {
                 "take" => self.fixed_medium,
@@ -183,7 +182,7 @@ impl FeeTable {
                 "create_proof" => self.fixed_high, // TODO: fungibility
                 "create_proof_by_amount" => self.fixed_high,
                 "create_proof_by_ids" => self.fixed_high,
-                "pay_fee" => self.fixed_medium,
+                "lock_fee" => self.fixed_medium,
                 _ => self.fixed_high,
             },
             SNodeRef::TransactionProcessor => match fn_ident {

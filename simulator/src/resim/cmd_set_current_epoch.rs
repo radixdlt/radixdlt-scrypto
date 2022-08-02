@@ -1,4 +1,5 @@
 use clap::Parser;
+use radix_engine::constants::*;
 use radix_engine::engine::Track;
 use radix_engine::engine::{CallFrame, SystemApi};
 use radix_engine::fee::{FeeTable, SystemLoanCostUnitCounter};
@@ -35,6 +36,7 @@ impl SetCurrentEpoch {
             tx_hash,
             vec![],
             true,
+            DEFAULT_MAX_CALL_DEPTH,
             &mut id_allocator,
             &mut track,
             &mut wasm_engine,
@@ -54,8 +56,9 @@ impl SetCurrentEpoch {
             .map_err(Error::TransactionExecutionError)?;
 
         // Commit
-        let track_receipt = track.to_receipt(true);
-        track_receipt.state_updates.commit(&mut substate_store);
+        track.commit();
+        let receipt = track.to_receipt();
+        receipt.state_updates.commit(&mut substate_store);
 
         Ok(())
     }

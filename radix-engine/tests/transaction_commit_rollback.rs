@@ -18,6 +18,7 @@ fn test_state_track_success() {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .lock_fee(10.into(), account)
         .withdraw_from_account(RADIX_TOKEN, account)
         .call_method_with_all_resources(other_account, "deposit_batch")
         .build();
@@ -25,10 +26,8 @@ fn test_state_track_success() {
 
     // Assert
     receipt.expect_success();
-    assert!(
-        !receipt.state_updates.down_substates.is_empty()
-            && !receipt.state_updates.up_substates.is_empty()
-    )
+    assert_eq!(10, receipt.state_updates.down_substates.len());
+    assert_eq!(10, receipt.state_updates.up_substates.len());
 }
 
 #[test]
@@ -41,6 +40,7 @@ fn test_state_track_failure() {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .lock_fee(10.into(), account)
         .withdraw_from_account(RADIX_TOKEN, account)
         .call_method_with_all_resources(other_account, "deposit_batch")
         .assert_worktop_contains_by_amount(Decimal::from(5), RADIX_TOKEN)
@@ -48,9 +48,7 @@ fn test_state_track_failure() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
-    receipt.expect_err(|e| matches!(e, RuntimeError::WorktopError(_)));
-    assert!(
-        receipt.state_updates.down_substates.is_empty()
-            && receipt.state_updates.up_substates.is_empty()
-    )
+    receipt.expect_failure(|e| matches!(e, RuntimeError::WorktopError(_)));
+    assert_eq!(1, receipt.state_updates.down_substates.len()); // only the vault is down
+    assert_eq!(1, receipt.state_updates.up_substates.len());
 }

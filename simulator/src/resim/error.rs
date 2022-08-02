@@ -34,6 +34,8 @@ pub enum Error {
 
     TransactionExecutionError(RuntimeError),
 
+    TransactionRejected,
+
     AbiExportError(RuntimeError),
 
     LedgerDumpError(DisplayError),
