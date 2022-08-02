@@ -50,48 +50,6 @@ impl SubstateId {
         }
     }
 
-    pub fn read_scrypto_value(
-        &self,
-        mut value_ref: RENodeRefMut,
-    ) -> Result<ScryptoValue, RuntimeError> {
-        match self {
-            SubstateId::ComponentInfo(..) => {
-                Ok(ScryptoValue::from_typed(&value_ref.component().info()))
-            }
-            SubstateId::ComponentState(..) => Ok(ScryptoValue::from_slice(
-                value_ref.component_state().state(),
-            )
-            .expect("Expected to decode")),
-            SubstateId::NonFungible(.., id) => Ok(value_ref.non_fungible_get(id)),
-            SubstateId::KeyValueStoreEntry(.., key) => Ok(value_ref.kv_store_get(key)),
-            SubstateId::NonFungibleSpace(..)
-            | SubstateId::Vault(..)
-            | SubstateId::KeyValueStoreSpace(..)
-            | SubstateId::Package(..)
-            | SubstateId::ResourceManager(..)
-            | SubstateId::System => {
-                panic!("Should never have received permissions to read this native type.");
-            }
-        }
-    }
-
-    pub fn replace_value_with_default(&self, mut value_ref: RENodeRefMut) {
-        match self {
-            SubstateId::ComponentInfo(..)
-            | SubstateId::ComponentState(..)
-            | SubstateId::NonFungibleSpace(..)
-            | SubstateId::KeyValueStoreSpace(..)
-            | SubstateId::KeyValueStoreEntry(..)
-            | SubstateId::Vault(..)
-            | SubstateId::Package(..)
-            | SubstateId::ResourceManager(..)
-            | SubstateId::System => {
-                panic!("Should not get here");
-            }
-            SubstateId::NonFungible(.., id) => value_ref.non_fungible_remove(&id),
-        }
-    }
-
     pub fn verify_can_write(&self) -> Result<(), RuntimeError> {
         match self {
             SubstateId::KeyValueStoreEntry(..) => Ok(()),
@@ -119,44 +77,6 @@ impl SubstateId {
             SubstateId::Package(..) => false,
             SubstateId::ResourceManager(..) => false,
             SubstateId::System => false,
-        }
-    }
-
-    pub fn write_value(
-        self,
-        mut value_ref: RENodeRefMut,
-        value: ScryptoValue,
-        values: HashMap<RENodeId, HeapRootRENode>,
-    ) {
-        match self {
-            SubstateId::ComponentInfo(..) => {
-                panic!("Should not get here");
-            }
-            SubstateId::ComponentState(..) => {
-                value_ref.component_state_set(value, values);
-            }
-            SubstateId::KeyValueStoreSpace(..) => {
-                panic!("Should not get here");
-            }
-            SubstateId::KeyValueStoreEntry(.., key) => {
-                value_ref.kv_store_put(key, value, values);
-            }
-            SubstateId::NonFungibleSpace(..) => {
-                panic!("Should not get here");
-            }
-            SubstateId::NonFungible(.., id) => value_ref.non_fungible_put(id, value),
-            SubstateId::Vault(..) => {
-                panic!("Should not get here");
-            }
-            SubstateId::Package(..) => {
-                panic!("Should not get here");
-            }
-            SubstateId::ResourceManager(..) => {
-                panic!("Should not get here");
-            }
-            SubstateId::System => {
-                panic!("Should not get here");
-            }
         }
     }
 }

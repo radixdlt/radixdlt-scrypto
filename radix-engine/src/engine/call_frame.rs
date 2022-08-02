@@ -436,6 +436,83 @@ pub enum RENodeRefMut<'f, 's> {
 }
 
 impl<'f, 's> RENodeRefMut<'f, 's> {
+    pub fn read_scrypto_value(&mut self, substate_id: &SubstateId) -> Result<ScryptoValue, RuntimeError> {
+        match substate_id {
+            SubstateId::ComponentInfo(..) => {
+                Ok(ScryptoValue::from_typed(&self.component().info()))
+            }
+            SubstateId::ComponentState(..) => Ok(ScryptoValue::from_slice(
+                self.component_state().state(),
+            )
+                .expect("Expected to decode")),
+            SubstateId::NonFungible(.., id) => Ok(self.non_fungible_get(id)),
+            SubstateId::KeyValueStoreEntry(.., key) => Ok(self.kv_store_get(key)),
+            SubstateId::NonFungibleSpace(..)
+            | SubstateId::Vault(..)
+            | SubstateId::KeyValueStoreSpace(..)
+            | SubstateId::Package(..)
+            | SubstateId::ResourceManager(..)
+            | SubstateId::System => {
+                panic!("Should never have received permissions to read this native type.");
+            }
+        }
+    }
+
+    pub fn replace_value_with_default(&mut self, substate_id: &SubstateId) {
+        match substate_id {
+            SubstateId::ComponentInfo(..)
+            | SubstateId::ComponentState(..)
+            | SubstateId::NonFungibleSpace(..)
+            | SubstateId::KeyValueStoreSpace(..)
+            | SubstateId::KeyValueStoreEntry(..)
+            | SubstateId::Vault(..)
+            | SubstateId::Package(..)
+            | SubstateId::ResourceManager(..)
+            | SubstateId::System => {
+                panic!("Should not get here");
+            }
+            SubstateId::NonFungible(.., id) => self.non_fungible_remove(&id),
+        }
+    }
+
+    pub fn write_value(
+        &mut self,
+        substate_id: SubstateId,
+        value: ScryptoValue,
+        child_nodes: HashMap<RENodeId, HeapRootRENode>,
+    ) {
+        match substate_id {
+            SubstateId::ComponentInfo(..) => {
+                panic!("Should not get here");
+            }
+            SubstateId::ComponentState(..) => {
+                self.component_state_set(value, child_nodes);
+            }
+            SubstateId::KeyValueStoreSpace(..) => {
+                panic!("Should not get here");
+            }
+            SubstateId::KeyValueStoreEntry(.., key) => {
+                self.kv_store_put(key, value, child_nodes);
+            }
+            SubstateId::NonFungibleSpace(..) => {
+                panic!("Should not get here");
+            }
+            SubstateId::NonFungible(.., id) => self.non_fungible_put(id, value),
+            SubstateId::Vault(..) => {
+                panic!("Should not get here");
+            }
+            SubstateId::Package(..) => {
+                panic!("Should not get here");
+            }
+            SubstateId::ResourceManager(..) => {
+                panic!("Should not get here");
+            }
+            SubstateId::System => {
+                panic!("Should not get here");
+            }
+        }
+    }
+
     pub fn kv_store_put(
         &mut self,
         key: Vec<u8>,
@@ -1019,12 +1096,12 @@ where
 
         // Read current value
         let current_value = {
-            let value_ref = location.to_ref_mut(
+            let mut node_ref = location.to_ref_mut(
                 &mut self.owned_heap_nodes,
                 &mut self.parent_heap_nodes,
                 &mut self.track,
             );
-            substate_id.read_scrypto_value(value_ref)?
+            node_ref.read_scrypto_value(&substate_id)?
         };
 
         // TODO: Remove, currently a hack to allow for global component info retrieval
@@ -2170,12 +2247,12 @@ where
         }
 
         // Write values
-        let value_ref = location.to_ref_mut(
+        let mut node_ref = location.to_ref_mut(
             &mut self.owned_heap_nodes,
             &mut self.parent_heap_nodes,
             &mut self.track,
         );
-        substate_id.replace_value_with_default(value_ref);
+        node_ref.replace_value_with_default(&substate_id);
 
         Ok(current_value)
     }
@@ -2250,12 +2327,12 @@ where
         // TODO: verify against some schema
 
         // Write values
-        let node_ref = location.to_ref_mut(
+        let mut node_ref = location.to_ref_mut(
             &mut self.owned_heap_nodes,
             &mut self.parent_heap_nodes,
             &mut self.track,
         );
-        substate_id.write_value(node_ref, value, taken_nodes);
+        node_ref.write_value(substate_id, value, taken_nodes);
 
         Ok(())
     }
