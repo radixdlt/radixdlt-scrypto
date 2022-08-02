@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 
 use radix_engine::engine::Substate;
-use radix_engine::engine::SubstateId;
 use radix_engine::ledger::*;
 use rocksdb::{DBWithThreadMode, Direction, IteratorMode, SingleThreaded, DB};
 use sbor::Decode;

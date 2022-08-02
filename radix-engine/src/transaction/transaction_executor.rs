@@ -2,6 +2,7 @@ use sbor::rust::marker::PhantomData;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use scrypto::buffer::*;
+use scrypto::engine::types::SubstateId;
 use scrypto::math::Decimal;
 use scrypto::prelude::TypeName;
 use scrypto::values::ScryptoValue;

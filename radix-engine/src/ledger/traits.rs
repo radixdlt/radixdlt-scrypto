@@ -5,8 +5,6 @@ use sbor::*;
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
 
-use crate::engine::SubstateId;
-
 pub trait QueryableSubstateStore {
     fn get_kv_store_entries(
         &self,

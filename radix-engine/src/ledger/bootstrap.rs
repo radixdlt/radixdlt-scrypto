@@ -10,7 +10,6 @@ use scrypto::resource::ResourceMethodAuthKey::Withdraw;
 use scrypto::resource::LOCKED;
 use scrypto::rule;
 
-use crate::engine::SubstateId;
 use crate::engine::Track;
 use crate::engine::TrackReceipt;
 use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};

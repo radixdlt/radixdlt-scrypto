@@ -18,7 +18,7 @@ use scrypto::resource::ResourceManagerGetMetadataInput;
 use scrypto::resource::ResourceMethodAuthKey::{self, *};
 use scrypto::values::ScryptoValue;
 
-use crate::engine::{SubstateId, SystemApi};
+use crate::engine::{SystemApi};
 use crate::fee::CostUnitCounter;
 use crate::fee::CostUnitCounterError;
 use crate::model::resource_manager::ResourceMethodRule::{Protected, Public};

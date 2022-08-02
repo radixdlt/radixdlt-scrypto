@@ -9,7 +9,7 @@ use scrypto::resource::AccessRule;
 use scrypto::values::ScryptoValue;
 
 use crate::engine::SystemApi;
-use crate::engine::{PreCommittedKeyValueStore, RuntimeError, SubstateId};
+use crate::engine::{PreCommittedKeyValueStore, RuntimeError};
 use crate::fee::*;
 use crate::model::{Component, ComponentState};
 use crate::wasm::*;
