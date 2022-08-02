@@ -502,47 +502,8 @@ impl Into<Proof> for HeapRootRENode {
 }
 
 #[derive(Debug)]
-pub enum REComplexValue {
-    Component(Component, ComponentState),
-}
-
-impl Into<HeapRENode> for REComplexValue {
-    fn into(self) -> HeapRENode {
-        match self {
-            REComplexValue::Component(component, component_state) => {
-                HeapRENode::Component(component, component_state)
-            }
-        }
-    }
-}
-
-impl REComplexValue {
-    pub fn get_children(&self) -> Result<HashSet<RENodeId>, RuntimeError> {
-        match self {
-            REComplexValue::Component(_, component_state) => {
-                let value = ScryptoValue::from_slice(component_state.state())
-                    .map_err(RuntimeError::DecodeError)?;
-                Ok(value.node_ids())
-            }
-        }
-    }
-
-    pub fn into_re_node(self, child_nodes: HashMap<RENodeId, HeapRootRENode>) -> HeapRootRENode {
-        let mut non_root_nodes = HashMap::new();
-        for (id, val) in child_nodes {
-            non_root_nodes.extend(val.to_nodes(id));
-        }
-        match self {
-            REComplexValue::Component(component, component_state) => HeapRootRENode {
-                root: HeapRENode::Component(component, component_state),
-                child_nodes: non_root_nodes,
-            },
-        }
-    }
-}
-
-#[derive(Debug)]
 pub enum REPrimitiveNode {
+    Component(Component, ComponentState),
     Package(ValidatedPackage),
     Bucket(Bucket),
     Proof(Proof),
@@ -552,15 +513,31 @@ pub enum REPrimitiveNode {
     Worktop(Worktop),
 }
 
-#[derive(Debug)]
-pub enum RENodeByComplexity {
-    Primitive(REPrimitiveNode),
-    Complex(REComplexValue),
+impl REPrimitiveNode {
+    pub fn get_children(&self) -> Result<HashSet<RENodeId>, RuntimeError> {
+        match self {
+            REPrimitiveNode::Component(_, component_state) => {
+                let value = ScryptoValue::from_slice(component_state.state())
+                    .map_err(RuntimeError::DecodeError)?;
+                Ok(value.node_ids())
+            }
+            REPrimitiveNode::Resource(..) => Ok(HashSet::new()),
+            REPrimitiveNode::Package(..) => Ok(HashSet::new()),
+            REPrimitiveNode::Bucket(..) => Ok(HashSet::new()),
+            REPrimitiveNode::Proof(..) => Ok(HashSet::new()),
+            REPrimitiveNode::KeyValue(..) => Ok(HashSet::new()),
+            REPrimitiveNode::Vault(..) => Ok(HashSet::new()),
+            REPrimitiveNode::Worktop(..) => Ok(HashSet::new()),
+        }
+    }
 }
 
 impl Into<HeapRENode> for REPrimitiveNode {
     fn into(self) -> HeapRENode {
         match self {
+            REPrimitiveNode::Component(component, component_state) => {
+                HeapRENode::Component(component, component_state)
+            }
             REPrimitiveNode::Resource(resource_manager, maybe_non_fungibles) => {
                 HeapRENode::Resource(resource_manager, maybe_non_fungibles)
             }
@@ -575,50 +552,50 @@ impl Into<HeapRENode> for REPrimitiveNode {
     }
 }
 
-impl Into<RENodeByComplexity> for (ResourceManager, Option<HashMap<NonFungibleId, NonFungible>>) {
-    fn into(self) -> RENodeByComplexity {
-        RENodeByComplexity::Primitive(REPrimitiveNode::Resource(self.0, self.1))
+impl Into<REPrimitiveNode> for (ResourceManager, Option<HashMap<NonFungibleId, NonFungible>>) {
+    fn into(self) -> REPrimitiveNode {
+        REPrimitiveNode::Resource(self.0, self.1)
     }
 }
 
-impl Into<RENodeByComplexity> for Bucket {
-    fn into(self) -> RENodeByComplexity {
-        RENodeByComplexity::Primitive(REPrimitiveNode::Bucket(self))
+impl Into<REPrimitiveNode> for Bucket {
+    fn into(self) -> REPrimitiveNode {
+        REPrimitiveNode::Bucket(self)
     }
 }
 
-impl Into<RENodeByComplexity> for Proof {
-    fn into(self) -> RENodeByComplexity {
-        RENodeByComplexity::Primitive(REPrimitiveNode::Proof(self))
+impl Into<REPrimitiveNode> for Proof {
+    fn into(self) -> REPrimitiveNode {
+        REPrimitiveNode::Proof(self)
     }
 }
 
-impl Into<RENodeByComplexity> for Vault {
-    fn into(self) -> RENodeByComplexity {
-        RENodeByComplexity::Primitive(REPrimitiveNode::Vault(self))
+impl Into<REPrimitiveNode> for Vault {
+    fn into(self) -> REPrimitiveNode {
+        REPrimitiveNode::Vault(self)
     }
 }
 
-impl Into<RENodeByComplexity> for Worktop {
-    fn into(self) -> RENodeByComplexity {
-        RENodeByComplexity::Primitive(REPrimitiveNode::Worktop(self))
+impl Into<REPrimitiveNode> for Worktop {
+    fn into(self) -> REPrimitiveNode {
+        REPrimitiveNode::Worktop(self)
     }
 }
 
-impl Into<RENodeByComplexity> for PreCommittedKeyValueStore {
-    fn into(self) -> RENodeByComplexity {
-        RENodeByComplexity::Primitive(REPrimitiveNode::KeyValue(self))
+impl Into<REPrimitiveNode> for PreCommittedKeyValueStore {
+    fn into(self) -> REPrimitiveNode {
+        REPrimitiveNode::KeyValue(self)
     }
 }
 
-impl Into<RENodeByComplexity> for ValidatedPackage {
-    fn into(self) -> RENodeByComplexity {
-        RENodeByComplexity::Primitive(REPrimitiveNode::Package(self))
+impl Into<REPrimitiveNode> for ValidatedPackage {
+    fn into(self) -> REPrimitiveNode {
+        REPrimitiveNode::Package(self)
     }
 }
 
-impl Into<RENodeByComplexity> for (Component, ComponentState) {
-    fn into(self) -> RENodeByComplexity {
-        RENodeByComplexity::Complex(REComplexValue::Component(self.0, self.1))
+impl Into<REPrimitiveNode> for (Component, ComponentState) {
+    fn into(self) -> REPrimitiveNode {
+        REPrimitiveNode::Component(self.0, self.1)
     }
 }

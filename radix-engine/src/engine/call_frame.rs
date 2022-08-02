@@ -2231,7 +2231,7 @@ where
         Ok(self.owned_heap_nodes.remove(&node_id).unwrap())
     }
 
-    fn create_node<V: Into<RENodeByComplexity>>(&mut self, v: V) -> Result<RENodeId, RuntimeError> {
+    fn create_node<V: Into<REPrimitiveNode>>(&mut self, v: V) -> Result<RENodeId, RuntimeError> {
         trace!(self, Level::Debug, "Creating value");
 
         self.cost_unit_counter
@@ -2244,63 +2244,54 @@ where
             )
             .map_err(RuntimeError::CostingError)?;
 
-        let value_by_complexity = v.into();
-        let id = match value_by_complexity {
-            RENodeByComplexity::Primitive(REPrimitiveNode::Bucket(..)) => {
+        let re_node = v.into();
+        let id = match re_node {
+            REPrimitiveNode::Bucket(..) => {
                 let bucket_id = self.new_bucket_id();
                 RENodeId::Bucket(bucket_id)
             }
-            RENodeByComplexity::Primitive(REPrimitiveNode::Proof(..)) => {
+            REPrimitiveNode::Proof(..) => {
                 let proof_id = self.new_proof_id();
                 RENodeId::Proof(proof_id)
             }
-            RENodeByComplexity::Primitive(REPrimitiveNode::Worktop(..)) => RENodeId::Worktop,
-            RENodeByComplexity::Primitive(REPrimitiveNode::Vault(..)) => {
+            REPrimitiveNode::Worktop(..) => RENodeId::Worktop,
+            REPrimitiveNode::Vault(..) => {
                 let vault_id = self.new_vault_id();
                 RENodeId::Vault(vault_id)
             }
-            RENodeByComplexity::Primitive(REPrimitiveNode::KeyValue(..)) => {
+            REPrimitiveNode::KeyValue(..) => {
                 let kv_store_id = self.new_kv_store_id();
                 RENodeId::KeyValueStore(kv_store_id)
             }
-            RENodeByComplexity::Primitive(REPrimitiveNode::Package(..)) => {
+            REPrimitiveNode::Package(..) => {
                 let package_address = self.new_package_address();
                 RENodeId::Package(package_address)
             }
-            RENodeByComplexity::Primitive(REPrimitiveNode::Resource(..)) => {
+            REPrimitiveNode::Resource(..) => {
                 let resource_address = self.new_resource_address();
                 RENodeId::Resource(resource_address)
             }
-            RENodeByComplexity::Complex(REComplexValue::Component(ref component, ..)) => {
+            REPrimitiveNode::Component(ref component, ..) => {
                 let component_address = self.new_component_address(component);
                 RENodeId::Component(component_address)
             }
         };
 
-        let heap_root_node = match value_by_complexity {
-            RENodeByComplexity::Primitive(primitive) => {
-                HeapRootRENode {
-                    root: primitive.into(),
-                    child_nodes: HashMap::new(),
-                }
-            },
-            RENodeByComplexity::Complex(complex) => {
-                let children = complex.get_children()?;
-                let (taken_root_nodes, mut missing) = self.take_available_values(children, true)?;
-                let first_missing_value = missing.drain().nth(0);
-                if let Some(missing_value) = first_missing_value {
-                    return Err(RuntimeError::RENodeNotFound(missing_value));
-                }
-                let mut child_nodes = HashMap::new();
-                for (id, taken_root_node) in taken_root_nodes {
-                    child_nodes.extend(taken_root_node.to_nodes(id));
-                }
-                HeapRootRENode {
-                    root: complex.into(),
-                    child_nodes
-                }
-            }
+        let children = re_node.get_children()?;
+        let (taken_root_nodes, mut missing) = self.take_available_values(children, true)?;
+        let first_missing_value = missing.drain().nth(0);
+        if let Some(missing_value) = first_missing_value {
+            return Err(RuntimeError::RENodeNotFound(missing_value));
+        }
+        let mut child_nodes = HashMap::new();
+        for (id, taken_root_node) in taken_root_nodes {
+            child_nodes.extend(taken_root_node.to_nodes(id));
+        }
+        let heap_root_node = HeapRootRENode {
+            root: re_node.into(),
+            child_nodes,
         };
+
         self.owned_heap_nodes.insert(id, heap_root_node);
 
         match id {
