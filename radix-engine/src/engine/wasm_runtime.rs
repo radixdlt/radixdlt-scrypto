@@ -121,6 +121,11 @@ where
         Ok(())
     }
 
+    fn handle_node_globalize(&mut self, node_id: RENodeId) -> Result<ScryptoValue, RuntimeError> {
+        self.system_api.node_globalize(&node_id)?;
+        Ok(ScryptoValue::unit())
+    }
+
     fn handle_substate_read(
         &mut self,
         substate_id: SubstateId,
@@ -134,7 +139,7 @@ where
             _ => {}
         }
 
-        self.system_api.read_substate(substate_id)
+        self.system_api.substate_read(substate_id)
     }
 
     fn handle_substate_write(
@@ -151,7 +156,7 @@ where
             _ => {}
         }
         let scrypto_value = ScryptoValue::from_slice(&value).map_err(RuntimeError::DecodeError)?;
-        self.system_api.write_substate(substate_id, scrypto_value)?;
+        self.system_api.substate_write(substate_id, scrypto_value)?;
         Ok(ScryptoValue::unit())
     }
 
@@ -207,6 +212,7 @@ impl<
             RadixEngineInput::InvokeMethod(receiver, fn_ident, input_bytes) => {
                 self.handle_invoke_method(receiver, fn_ident, input_bytes)
             }
+            RadixEngineInput::RENodeGlobalize(node_id) => self.handle_node_globalize(node_id),
             RadixEngineInput::CreateComponent(package_address, blueprint_name, state) => self
                 .handle_create_local_component(package_address, blueprint_name, state)
                 .map(encode),

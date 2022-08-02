@@ -34,6 +34,7 @@ pub enum RadixEngineInput {
     InvokeMethod(Receiver, String, Vec<u8>),
     CreateComponent(PackageAddress, String, Vec<u8>),
     CreateKeyValueStore(),
+    RENodeGlobalize(RENodeId),
     SubstateRead(SubstateId),
     SubstateWrite(SubstateId, Vec<u8>),
     GetActor(),

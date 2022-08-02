@@ -5,7 +5,6 @@ use sbor::*;
 use scrypto::buffer::scrypto_decode;
 use scrypto::component::*;
 use scrypto::engine::types::*;
-use scrypto::prelude::ComponentGlobalizeInput;
 use scrypto::resource::AccessRules;
 use scrypto::values::*;
 
@@ -148,44 +147,6 @@ impl Component {
                     .return_node_mut(ref_mut)
                     .map_err(ComponentError::CostingError)?;
 
-                Ok(ScryptoValue::from_typed(&()))
-            }
-            "globalize" => {
-                let _: ComponentGlobalizeInput =
-                    scrypto_decode(&arg.raw).map_err(|e| ComponentError::InvalidRequestData(e))?;
-
-                system_api
-                    .globalize_node(&node_id)
-                    .map_err(ComponentError::CostingError)?;
-                Ok(ScryptoValue::from_typed(&()))
-            }
-            _ => Err(ComponentError::MethodNotFound),
-        }?;
-
-        Ok(rtn)
-    }
-
-    pub fn main_consume<
-        'p,
-        's,
-        Y: SystemApi<'p, 's, W, I, C>,
-        W: WasmEngine<I>,
-        I: WasmInstance,
-        C: CostUnitCounter,
-    >(
-        node_id: RENodeId,
-        fn_ident: &str,
-        arg: ScryptoValue,
-        system_api: &mut Y,
-    ) -> Result<ScryptoValue, ComponentError> {
-        let rtn = match fn_ident {
-            "globalize" => {
-                let _: ComponentGlobalizeInput =
-                    scrypto_decode(&arg.raw).map_err(|e| ComponentError::InvalidRequestData(e))?;
-
-                system_api
-                    .globalize_node(&node_id)
-                    .map_err(ComponentError::CostingError)?;
                 Ok(ScryptoValue::from_typed(&()))
             }
             _ => Err(ComponentError::MethodNotFound),

@@ -950,10 +950,6 @@ where
                         }
                         RENodeId::Proof(..) => Proof::main_consume(node_id, fn_ident, input, self)
                             .map_err(RuntimeError::ProofError),
-                        RENodeId::Component(..) => {
-                            Component::main_consume(node_id, fn_ident, input, self)
-                                .map_err(RuntimeError::ComponentError)
-                        }
                         _ => panic!("Unexpected"),
                     },
                     ExecutionState::AuthZone(mut auth_zone) => auth_zone
@@ -1490,23 +1486,6 @@ where
                         vec![method_auth.clone()]
                     }
                     RENode::Proof(_) => vec![],
-                    RENode::Component(component, ..) => {
-                        let package_address = component.package_address();
-                        self.track
-                            .acquire_lock(SubstateId::Package(package_address), false, false)
-                            .expect("Should not fail.");
-                        locked_values.insert(SubstateId::Package(package_address.clone()));
-                        value_refs.insert(
-                            RENodeId::Package(package_address),
-                            RENodeInfo {
-                                location: RENodePointer::Track(SubstateId::Package(
-                                    package_address,
-                                )),
-                                visible: true,
-                            },
-                        );
-                        vec![]
-                    }
                     _ => return Err(RuntimeError::MethodDoesNotExist(fn_ident.clone())),
                 };
 
@@ -2332,20 +2311,22 @@ where
         Ok(id)
     }
 
-    fn globalize_node(&mut self, node_id: &RENodeId) -> Result<(), CostUnitCounterError> {
+    fn node_globalize(&mut self, node_id: &RENodeId) -> Result<(), RuntimeError> {
         trace!(self, Level::Debug, "Globalizing value: {:?}", node_id);
 
-        self.cost_unit_counter.consume(
-            self.fee_table
-                .system_api_cost(SystemApiCostingEntry::Globalize {
-                    size: 0, // TODO: get size of the value
-                }),
-            "globalize",
-        )?;
+        self.cost_unit_counter
+            .consume(
+                self.fee_table
+                    .system_api_cost(SystemApiCostingEntry::Globalize {
+                        size: 0, // TODO: get size of the value
+                    }),
+                "globalize",
+            )
+            .map_err(RuntimeError::CostingError)?;
 
         let mut values = HashSet::new();
         values.insert(node_id.clone());
-        let (taken_values, missing) = self.take_available_values(values, false).unwrap();
+        let (taken_values, missing) = self.take_available_values(values, false)?;
         assert!(missing.is_empty());
         assert!(taken_values.len() == 1);
         let value = taken_values.into_values().nth(0).unwrap();
@@ -2411,27 +2392,7 @@ where
         Ok(())
     }
 
-    fn take_substate(&mut self, substate_id: SubstateId) -> Result<ScryptoValue, RuntimeError> {
-        trace!(self, Level::Debug, "Removing value data: {:?}", substate_id);
-
-        let (location, current_value) = self.read_value_internal(&substate_id)?;
-        let cur_children = current_value.node_ids();
-        if !cur_children.is_empty() {
-            return Err(RuntimeError::ValueNotAllowed);
-        }
-
-        // Write values
-        let mut node_ref = location.to_ref_mut(
-            &mut self.owned_heap_nodes,
-            &mut self.parent_heap_nodes,
-            &mut self.track,
-        );
-        node_ref.replace_value_with_default(&substate_id);
-
-        Ok(current_value)
-    }
-
-    fn read_substate(&mut self, substate_id: SubstateId) -> Result<ScryptoValue, RuntimeError> {
+    fn substate_read(&mut self, substate_id: SubstateId) -> Result<ScryptoValue, RuntimeError> {
         trace!(self, Level::Debug, "Reading value data: {:?}", substate_id);
 
         self.cost_unit_counter
@@ -2459,7 +2420,27 @@ where
         Ok(current_value)
     }
 
-    fn write_substate(
+    fn substate_take(&mut self, substate_id: SubstateId) -> Result<ScryptoValue, RuntimeError> {
+        trace!(self, Level::Debug, "Removing value data: {:?}", substate_id);
+
+        let (location, current_value) = self.read_value_internal(&substate_id)?;
+        let cur_children = current_value.node_ids();
+        if !cur_children.is_empty() {
+            return Err(RuntimeError::ValueNotAllowed);
+        }
+
+        // Write values
+        let mut node_ref = location.to_ref_mut(
+            &mut self.owned_heap_nodes,
+            &mut self.parent_heap_nodes,
+            &mut self.track,
+        );
+        node_ref.replace_value_with_default(&substate_id);
+
+        Ok(current_value)
+    }
+
+    fn substate_write(
         &mut self,
         substate_id: SubstateId,
         value: ScryptoValue,

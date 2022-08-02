@@ -19,9 +19,6 @@ pub struct ComponentAddAccessCheckInput {
     pub access_rules: AccessRules,
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct ComponentGlobalizeInput {}
-
 /// Represents the state of a component.
 pub trait ComponentState<C: LocalComponent>: Encode + Decode {
     /// Instantiates a component from this data structure.
@@ -73,11 +70,7 @@ impl Component {
     }
 
     pub fn globalize(self) -> ComponentAddress {
-        let input = RadixEngineInput::InvokeMethod(
-            Receiver::Consumed(RENodeId::Component(self.0)),
-            "globalize".to_string(),
-            scrypto_encode(&ComponentGlobalizeInput {}),
-        );
+        let input = RadixEngineInput::RENodeGlobalize(RENodeId::Component(self.0));
         let _: () = call_engine(input);
         self.0.clone()
     }

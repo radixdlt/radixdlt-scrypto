@@ -294,7 +294,7 @@ impl Bucket {
                 if matches!(resource_manager.resource_type(), ResourceType::NonFungible) {
                     for id in bucket.total_ids().unwrap() {
                         let address = SubstateId::NonFungible(resource_address, id);
-                        system_api.take_substate(address).expect("Should not fail.");
+                        system_api.substate_take(address).expect("Should not fail.");
                     }
                 }
                 system_api
