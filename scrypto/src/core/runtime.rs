@@ -2,6 +2,7 @@ use sbor::rust::borrow::ToOwned;
 use sbor::rust::vec::Vec;
 use sbor::*;
 
+use crate::borrow_component;
 use crate::buffer::scrypto_encode;
 use crate::bytes_vec_to_struct;
 use crate::component::*;
@@ -37,12 +38,7 @@ impl Runtime {
         match Self::actor() {
             ScryptoActor::Blueprint(package_address, _) => package_address,
             ScryptoActor::Component(component_address, _) => {
-                let input = RadixEngineInput::InvokeMethod(
-                    Receiver::ComponentMetaRef(component_address),
-                    "package_address".to_string(),
-                    scrypto_encode(&ComponentPackageAddressInput {}),
-                );
-                call_engine(input)
+                borrow_component!(component_address).package_address()
             }
         }
     }

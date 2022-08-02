@@ -111,24 +111,6 @@ impl Component {
         system_api: &mut Y,
     ) -> Result<ScryptoValue, ComponentError> {
         let rtn = match fn_ident {
-            "package_address" => {
-                let _input: ComponentPackageAddressInput =
-                    scrypto_decode(&arg.raw).map_err(|e| ComponentError::InvalidRequestData(e))?;
-                let node = system_api
-                    .borrow_node(&node_id)
-                    .map_err(ComponentError::CostingError)?;
-                let component = node.component();
-                Ok(ScryptoValue::from_typed(&component.package_address()))
-            }
-            "blueprint_name" => {
-                let _input: ComponentBlueprintNameInput =
-                    scrypto_decode(&arg.raw).map_err(|e| ComponentError::InvalidRequestData(e))?;
-                let node = system_api
-                    .borrow_node(&node_id)
-                    .map_err(ComponentError::CostingError)?;
-                let component = node.component();
-                Ok(ScryptoValue::from_typed(&component.blueprint_name()))
-            }
             "add_access_check" => {
                 let input: ComponentAddAccessCheckInput =
                     scrypto_decode(&arg.raw).map_err(|e| ComponentError::InvalidRequestData(e))?;

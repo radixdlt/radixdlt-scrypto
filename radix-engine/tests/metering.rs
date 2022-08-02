@@ -173,11 +173,11 @@ fn test_total_cost_unit_consumed() {
         create                        :    10000
         emit_log                      :     1050
         invoke_function               :     2945
-        invoke_method                 :     4310
+        invoke_method                 :     5335
         read                          :     5000
         return                        :     1000
         run_function                  :    10000
-        run_method                    :    25000
+        run_method                    :    35000
         run_wasm                      :    94921
         tx_decoding                   :        4
         tx_manifest_verification      :        1
@@ -193,11 +193,11 @@ fn test_total_cost_unit_consumed() {
             + 10000
             + 1050
             + 2945
-            + 4310
+            + 5335
             + 5000
             + 1000
             + 10000
-            + 25000
+            + 35000
             + 94921
             + 5000,
         receipt.fee_summary.cost_unit_consumed

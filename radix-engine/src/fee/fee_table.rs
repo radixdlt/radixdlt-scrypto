@@ -155,8 +155,6 @@ impl FeeTable {
                 0 // Costing is through instrumentation
             }
             Receiver::ComponentMetaRef(_) => match fn_ident {
-                "package_address" => self.fixed_low,
-                "blueprint_name" => self.fixed_low,
                 "add_access_check" => self.fixed_medium,
                 _ => self.fixed_high,
             },
