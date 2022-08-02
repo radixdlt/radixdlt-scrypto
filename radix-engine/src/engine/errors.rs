@@ -121,7 +121,10 @@ pub enum RuntimeError {
     /// Can't move restricted proof.
     CantMoveRestrictedProof,
 
-    NotAllowedToGlobalizeType(RENodeId),
+    RENodeGlobalizeTypeNotAllowed(RENodeId),
+    RENodeCreateInvalidPermission,
+    RENodeCreateNodeNotFound(RENodeId),
+
     NotSupported,
 
     CostingError(CostUnitCounterError),

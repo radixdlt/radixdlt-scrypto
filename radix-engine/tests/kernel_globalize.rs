@@ -15,7 +15,7 @@ fn should_not_be_able_to_globalize_key_value_store() {
     // Arrange
     let mut store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.extract_and_publish_package("globalize");
+    let package_address = test_runner.extract_and_publish_package("kernel");
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
@@ -33,7 +33,7 @@ fn should_not_be_able_to_globalize_key_value_store() {
     receipt.expect_failure(|e| {
         matches!(
             e,
-            RuntimeError::NotAllowedToGlobalizeType(RENodeId::KeyValueStore(..))
+            RuntimeError::RENodeGlobalizeTypeNotAllowed(RENodeId::KeyValueStore(..))
         )
     });
 }
@@ -43,7 +43,7 @@ fn should_not_be_able_to_globalize_bucket() {
     // Arrange
     let mut store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.extract_and_publish_package("globalize");
+    let package_address = test_runner.extract_and_publish_package("kernel");
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
@@ -61,7 +61,7 @@ fn should_not_be_able_to_globalize_bucket() {
     receipt.expect_failure(|e| {
         matches!(
             e,
-            RuntimeError::NotAllowedToGlobalizeType(RENodeId::Bucket(..))
+            RuntimeError::RENodeGlobalizeTypeNotAllowed(RENodeId::Bucket(..))
         )
     });
 }
@@ -71,7 +71,7 @@ fn should_not_be_able_to_globalize_proof() {
     // Arrange
     let mut store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.extract_and_publish_package("globalize");
+    let package_address = test_runner.extract_and_publish_package("kernel");
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
@@ -89,7 +89,7 @@ fn should_not_be_able_to_globalize_proof() {
     receipt.expect_failure(|e| {
         matches!(
             e,
-            RuntimeError::NotAllowedToGlobalizeType(RENodeId::Proof(..))
+            RuntimeError::RENodeGlobalizeTypeNotAllowed(RENodeId::Proof(..))
         )
     });
 }
@@ -99,7 +99,7 @@ fn should_not_be_able_to_globalize_vault() {
     // Arrange
     let mut store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.extract_and_publish_package("globalize");
+    let package_address = test_runner.extract_and_publish_package("kernel");
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
@@ -117,7 +117,7 @@ fn should_not_be_able_to_globalize_vault() {
     receipt.expect_failure(|e| {
         matches!(
             e,
-            RuntimeError::NotAllowedToGlobalizeType(RENodeId::Vault(..))
+            RuntimeError::RENodeGlobalizeTypeNotAllowed(RENodeId::Vault(..))
         )
     });
 }

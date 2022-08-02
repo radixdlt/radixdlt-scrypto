@@ -80,19 +80,28 @@ where
         self.system_api.invoke_method(receiver, fn_ident, call_data)
     }
 
-    fn handle_create_local_component(
+    fn handle_create_component(
         &mut self,
-        package_address: PackageAddress, // FIXME only allow creation of local component from the owning package?
+        package_address: PackageAddress,
         blueprint_name: String,
         state: Vec<u8>,
     ) -> Result<ComponentAddress, RuntimeError> {
+        // TODO: Move these two checks into CallFrame/System
+        if !blueprint_name.eq(self.actor.get_blueprint()) {
+            return Err(RuntimeError::RENodeCreateInvalidPermission);
+        }
+        if !package_address.eq(self.actor.get_package()) {
+            return Err(RuntimeError::RENodeCreateInvalidPermission);
+        }
+
+        // TODO: Check state against component schema
+
         // Create component
         let component = Component::new(package_address, blueprint_name, Vec::new());
         let component_state = ComponentState::new(state);
+        let node = HeapRENode::Component(component, component_state);
 
-        let id = self
-            .system_api
-            .node_create(HeapRENode::Component(component, component_state))?;
+        let id = self.system_api.node_create(node)?;
         Ok(id.into())
     }
 
@@ -216,7 +225,7 @@ impl<
             }
             RadixEngineInput::RENodeGlobalize(node_id) => self.handle_node_globalize(node_id),
             RadixEngineInput::CreateComponent(package_address, blueprint_name, state) => self
-                .handle_create_local_component(package_address, blueprint_name, state)
+                .handle_create_component(package_address, blueprint_name, state)
                 .map(encode),
             RadixEngineInput::CreateKeyValueStore() => self.handle_create_kv_store().map(encode),
             RadixEngineInput::GetActor() => self.handle_get_actor().map(encode),

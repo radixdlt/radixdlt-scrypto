@@ -1003,7 +1003,12 @@ where
                                 .to_string();
                             let mut runtime: Box<dyn WasmRuntime> =
                                 Box::new(RadixEngineWasmRuntime::new(
-                                    ScryptoActor::Component(component_address, is_global),
+                                    ScryptoActor::Component(
+                                        component_address,
+                                        is_global,
+                                        package_address.clone(),
+                                        blueprint_name.clone(),
+                                    ),
                                     self,
                                 ));
                             instance
@@ -1182,65 +1187,66 @@ where
         Ok((location.clone(), current_value))
     }
 
-    /// Creates a new package ID.
-    pub fn new_package_address(&mut self) -> PackageAddress {
-        // Security Alert: ensure ID allocating will practically never fail
-        let package_address = self
-            .id_allocator
-            .new_package_address(self.transaction_hash)
-            .unwrap();
-        package_address
-    }
-
-    /// Creates a new component address.
-    pub fn new_component_address(&mut self, component: &Component) -> ComponentAddress {
-        let component_address = self
-            .id_allocator
-            .new_component_address(
-                self.transaction_hash,
-                &component.package_address(),
-                component.blueprint_name(),
-            )
-            .unwrap();
-        component_address
-    }
-
-    /// Creates a new resource address.
-    pub fn new_resource_address(&mut self) -> ResourceAddress {
-        let resource_address = self
-            .id_allocator
-            .new_resource_address(self.transaction_hash)
-            .unwrap();
-        resource_address
-    }
-
     /// Creates a new UUID.
-    pub fn new_uuid(&mut self) -> u128 {
+    fn new_uuid(&mut self) -> u128 {
         self.id_allocator.new_uuid(self.transaction_hash).unwrap()
     }
 
-    /// Creates a new bucket ID.
-    pub fn new_bucket_id(&mut self) -> BucketId {
-        self.id_allocator.new_bucket_id().unwrap()
-    }
-
-    /// Creates a new vault ID.
-    pub fn new_vault_id(&mut self) -> VaultId {
-        self.id_allocator
-            .new_vault_id(self.transaction_hash)
-            .unwrap()
-    }
-
-    /// Creates a new reference id.
-    pub fn new_proof_id(&mut self) -> ProofId {
-        self.id_allocator.new_proof_id().unwrap()
-    }
-
-    /// Creates a new map id.
-    pub fn new_kv_store_id(&mut self) -> KeyValueStoreId {
-        self.id_allocator
-            .new_kv_store_id(self.transaction_hash)
-            .unwrap()
+    fn new_node_id(&mut self, re_node: &HeapRENode) -> RENodeId {
+        match re_node {
+            HeapRENode::Bucket(..) => {
+                let bucket_id = self.id_allocator.new_bucket_id().unwrap();
+                RENodeId::Bucket(bucket_id)
+            }
+            HeapRENode::Proof(..) => {
+                let proof_id = self.id_allocator.new_proof_id().unwrap();
+                RENodeId::Proof(proof_id)
+            }
+            HeapRENode::Worktop(..) => RENodeId::Worktop,
+            HeapRENode::Vault(..) => {
+                let vault_id = self
+                    .id_allocator
+                    .new_vault_id(self.transaction_hash)
+                    .unwrap();
+                RENodeId::Vault(vault_id)
+            }
+            HeapRENode::KeyValueStore(..) => {
+                let kv_store_id = self
+                    .id_allocator
+                    .new_kv_store_id(self.transaction_hash)
+                    .unwrap();
+                RENodeId::KeyValueStore(kv_store_id)
+            }
+            HeapRENode::Package(..) => {
+                // Security Alert: ensure ID allocating will practically never fail
+                let package_address = self
+                    .id_allocator
+                    .new_package_address(self.transaction_hash)
+                    .unwrap();
+                RENodeId::Package(package_address)
+            }
+            HeapRENode::Resource(..) => {
+                let resource_address = self
+                    .id_allocator
+                    .new_resource_address(self.transaction_hash)
+                    .unwrap();
+                RENodeId::Resource(resource_address)
+            }
+            HeapRENode::Component(ref component, ..) => {
+                let component_address = self
+                    .id_allocator
+                    .new_component_address(
+                        self.transaction_hash,
+                        &component.package_address(),
+                        component.blueprint_name(),
+                    )
+                    .unwrap();
+                RENodeId::Component(component_address)
+            }
+            HeapRENode::System(..) => {
+                panic!("Should not get here.");
+            }
+        }
     }
 }
 
@@ -2244,46 +2250,14 @@ where
             )
             .map_err(RuntimeError::CostingError)?;
 
-        let id = match re_node {
-            HeapRENode::Bucket(..) => {
-                let bucket_id = self.new_bucket_id();
-                RENodeId::Bucket(bucket_id)
-            }
-            HeapRENode::Proof(..) => {
-                let proof_id = self.new_proof_id();
-                RENodeId::Proof(proof_id)
-            }
-            HeapRENode::Worktop(..) => RENodeId::Worktop,
-            HeapRENode::Vault(..) => {
-                let vault_id = self.new_vault_id();
-                RENodeId::Vault(vault_id)
-            }
-            HeapRENode::KeyValueStore(..) => {
-                let kv_store_id = self.new_kv_store_id();
-                RENodeId::KeyValueStore(kv_store_id)
-            }
-            HeapRENode::Package(..) => {
-                let package_address = self.new_package_address();
-                RENodeId::Package(package_address)
-            }
-            HeapRENode::Resource(..) => {
-                let resource_address = self.new_resource_address();
-                RENodeId::Resource(resource_address)
-            }
-            HeapRENode::Component(ref component, ..) => {
-                let component_address = self.new_component_address(component);
-                RENodeId::Component(component_address)
-            }
-            HeapRENode::System(..) => {
-                panic!("Should not get here.");
-            }
-        };
+        let node_id = self.new_node_id(&re_node);
 
+        // Take any required child nodes
         let children = re_node.get_child_nodes()?;
         let (taken_root_nodes, mut missing) = self.take_available_values(children, true)?;
-        let first_missing_value = missing.drain().nth(0);
-        if let Some(missing_value) = first_missing_value {
-            return Err(RuntimeError::RENodeNotFound(missing_value));
+        let first_missing_node = missing.drain().nth(0);
+        if let Some(missing_node) = first_missing_node {
+            return Err(RuntimeError::RENodeCreateNodeNotFound(missing_node));
         }
         let mut child_nodes = HashMap::new();
         for (id, taken_root_node) in taken_root_nodes {
@@ -2294,16 +2268,16 @@ where
             child_nodes,
         };
 
-        self.owned_heap_nodes.insert(id, heap_root_node);
+        self.owned_heap_nodes.insert(node_id, heap_root_node);
 
-        match id {
+        match node_id {
             RENodeId::KeyValueStore(..) | RENodeId::Resource(..) => {
                 self.node_refs.insert(
-                    id.clone(),
+                    node_id.clone(),
                     RENodeInfo {
                         location: RENodePointer::Stack {
                             frame_id: None,
-                            root: id.clone(),
+                            root: node_id.clone(),
                             id: None,
                         },
                         visible: true,
@@ -2313,7 +2287,7 @@ where
             _ => {}
         }
 
-        Ok(id)
+        Ok(node_id)
     }
 
     fn node_globalize(&mut self, node_id: &RENodeId) -> Result<(), RuntimeError> {
@@ -2329,7 +2303,7 @@ where
             .map_err(RuntimeError::CostingError)?;
 
         if !node_id.can_globalize() {
-            return Err(RuntimeError::NotAllowedToGlobalizeType(*node_id));
+            return Err(RuntimeError::RENodeGlobalizeTypeNotAllowed(*node_id));
         }
 
         let mut nodes_to_take = HashSet::new();

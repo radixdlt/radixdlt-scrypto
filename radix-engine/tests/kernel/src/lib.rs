@@ -45,3 +45,34 @@ blueprint! {
         }
     }
 }
+
+blueprint! {
+    struct NodeCreate {}
+
+    impl NodeCreate {
+        pub fn create_node_with_invalid_blueprint() {
+            let input = RadixEngineInput::CreateComponent(
+                Runtime::package_address(),
+                "invalid_blueprint".to_owned(),
+                scrypto_encode(&NodeCreate {}),
+            );
+            let address: ComponentAddress = call_engine(input);
+
+            let input = RadixEngineInput::RENodeGlobalize(RENodeId::Component(address));
+            let _: () = call_engine(input);
+        }
+
+        pub fn create_node_with_invalid_package() {
+            let package_address = PackageAddress([0u8; 27]);
+            let input = RadixEngineInput::CreateComponent(
+                package_address,
+                "NodeCreate".to_owned(),
+                scrypto_encode(&NodeCreate {}),
+            );
+            let address: ComponentAddress = call_engine(input);
+
+            let input = RadixEngineInput::RENodeGlobalize(RENodeId::Component(address));
+            let _: () = call_engine(input);
+        }
+    }
+}
