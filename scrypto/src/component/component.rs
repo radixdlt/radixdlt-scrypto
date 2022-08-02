@@ -15,12 +15,6 @@ use crate::misc::*;
 use crate::resource::AccessRules;
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct ComponentPackageAddressInput {}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct ComponentBlueprintNameInput {}
-
-#[derive(Debug, TypeId, Encode, Decode)]
 pub struct ComponentAddAccessCheckInput {
     pub access_rules: AccessRules,
 }

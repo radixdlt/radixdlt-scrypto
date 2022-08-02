@@ -104,7 +104,7 @@ where
         }
     }
 
-    // TODO: actor logic should move into KeyValueEntry decoding
+    // TODO: This logic should move into KeyValueEntry decoding
     fn verify_stored_key(value: &ScryptoValue) -> Result<(), RuntimeError> {
         if !value.bucket_ids.is_empty() {
             return Err(RuntimeError::BucketNotAllowed);
