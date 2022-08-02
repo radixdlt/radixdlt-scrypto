@@ -3,7 +3,7 @@ use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
-use scrypto::component::ComponentAddAccessCheckInput;
+use scrypto::component::*;
 use scrypto::engine::types::*;
 use scrypto::prelude::ComponentGlobalizeInput;
 use scrypto::resource::AccessRules;
