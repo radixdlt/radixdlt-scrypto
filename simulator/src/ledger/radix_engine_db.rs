@@ -104,7 +104,6 @@ impl QueryableSubstateStore for RadixEngineDB {
             kv_store_id.clone(),
             scrypto_encode(&unit),
         ));
-        let id = &id[..id.len() - 11];
 
         let mut iter = self
             .db
