@@ -100,6 +100,9 @@ pub enum SubstateId {
     Vault(VaultId),
     ComponentState(ComponentAddress),
     System,
+    Bucket(BucketId),
+    Proof(ProofId),
+    Worktop,
 }
 
 impl Into<ComponentAddress> for SubstateId {

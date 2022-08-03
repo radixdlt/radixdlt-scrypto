@@ -454,7 +454,10 @@ impl<'f, 's> RENodeRefMut<'f, 's> {
             | SubstateId::KeyValueStoreSpace(..)
             | SubstateId::Package(..)
             | SubstateId::ResourceManager(..)
-            | SubstateId::System => {
+            | SubstateId::System
+            | SubstateId::Bucket(..)
+            | SubstateId::Proof(..)
+            | SubstateId::Worktop => {
                 panic!("Should never have received permissions to read this native type.");
             }
         }
@@ -470,7 +473,10 @@ impl<'f, 's> RENodeRefMut<'f, 's> {
             | SubstateId::Vault(..)
             | SubstateId::Package(..)
             | SubstateId::ResourceManager(..)
-            | SubstateId::System => {
+            | SubstateId::System
+            | SubstateId::Bucket(..)
+            | SubstateId::Proof(..)
+            | SubstateId::Worktop => {
                 panic!("Should not get here");
             }
             SubstateId::NonFungible(.., id) => self.non_fungible_remove(&id),
@@ -512,6 +518,15 @@ impl<'f, 's> RENodeRefMut<'f, 's> {
             SubstateId::System => {
                 panic!("Should not get here");
             }
+            SubstateId::Bucket(..) => {
+                panic!("Should not get here");
+            },
+            SubstateId::Proof(..) => {
+                panic!("Should not get here");
+            },
+            SubstateId::Worktop => {
+                panic!("Should not get here");
+            },
         }
     }
 
@@ -2197,6 +2212,9 @@ where
                             SystemApiCostingEntry::ReturnGlobal { size: 0 }
                         }
                         SubstateId::System => SystemApiCostingEntry::ReturnGlobal { size: 0 },
+                        SubstateId::Bucket(..) => SystemApiCostingEntry::ReturnGlobal { size: 0 },
+                        SubstateId::Proof(..) => SystemApiCostingEntry::ReturnGlobal { size: 0 },
+                        SubstateId::Worktop => SystemApiCostingEntry::ReturnGlobal { size: 0 },
                     },
                 }
             }),

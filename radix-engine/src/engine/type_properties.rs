@@ -40,6 +40,9 @@ impl SubstateProperties {
             SubstateId::Package(package_address) => RENodeId::Package(*package_address),
             SubstateId::ResourceManager(resource_address) => RENodeId::Resource(*resource_address),
             SubstateId::System => RENodeId::System,
+            SubstateId::Bucket(bucket_id) => RENodeId::Bucket(*bucket_id),
+            SubstateId::Proof(proof_id) => RENodeId::Proof(*proof_id),
+            SubstateId::Worktop => RENodeId::Worktop,
         }
     }
 
@@ -55,6 +58,9 @@ impl SubstateProperties {
             SubstateId::Package(..) => true,
             SubstateId::ResourceManager(..) => true,
             SubstateId::System => true,
+            SubstateId::Bucket(..) => true,
+            SubstateId::Proof(..) => true,
+            SubstateId::Worktop => true,
         }
     }
 
@@ -70,6 +76,9 @@ impl SubstateProperties {
             SubstateId::Package(..) => false,
             SubstateId::ResourceManager(..) => false,
             SubstateId::System => false,
+            SubstateId::Bucket(..) => false,
+            SubstateId::Proof(..) => false,
+            SubstateId::Worktop => false, // TODO: Fix
         }
     }
 }
