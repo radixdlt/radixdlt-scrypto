@@ -843,33 +843,8 @@ where
         fn_ident: &str,
         input: ScryptoValue,
     ) -> Result<(ScryptoValue, HashMap<RENodeId, HeapRootRENode>), RuntimeError> {
-        trace!(
-            self,
-            Level::Debug,
-            "Run started! Depth: {}, Remaining cost units: {}",
-            self.depth,
-            self.cost_unit_counter.balance()
-        );
+        trace!(self, Level::Debug, "Run started! Depth: {}", self.depth);
 
-        match &execution_entity {
-            ExecutionEntity::Function(type_name) => {
-                self.cost_unit_counter
-                    .consume(
-                        self.fee_table
-                            .run_function_cost(&type_name, fn_ident, &input),
-                        "run_function",
-                    )
-                    .map_err(RuntimeError::CostingError)?;
-            }
-            ExecutionEntity::Method(receiver, _) => {
-                self.cost_unit_counter
-                    .consume(
-                        self.fee_table.run_method_cost(&receiver, fn_ident, &input),
-                        "run_method",
-                    )
-                    .map_err(RuntimeError::CostingError)?;
-            }
-        }
 
         let output = {
             let rtn = match execution_entity {
@@ -1064,12 +1039,7 @@ where
         }
         self.drop_owned_values()?;
 
-        trace!(
-            self,
-            Level::Debug,
-            "Run finished! Remaining cost units: {}",
-            self.cost_unit_counter().balance()
-        );
+        trace!(self, Level::Debug, "Run finished!");
 
         Ok((output, taken_values))
     }
@@ -1284,7 +1254,14 @@ where
                 "invoke_function",
             )
             .map_err(RuntimeError::CostingError)?;
-
+                    self.cost_unit_counter
+                        .consume(
+                            self.fee_table
+                                .run_function_cost(&type_name, fn_ident.as_str(), &input),
+                            "run_function",
+                        )
+                        .map_err(RuntimeError::CostingError)?;
+                 
         // Prevent vaults/kvstores from being moved
         Self::process_call_data(&input)?;
 
@@ -1426,6 +1403,13 @@ where
                 "invoke_method",
             )
             .map_err(RuntimeError::CostingError)?;
+    
+            self.cost_unit_counter
+            .consume(
+                self.fee_table.run_method_cost(&receiver, fn_ident.as_str(), &input),
+                "run_method",
+            )
+            .map_err(RuntimeError::CostingError)?; 
 
         // TODO: find a better way to handle this
         let is_lock_fee = matches!(receiver, Receiver::VaultRef(..)) && &fn_ident == "lock_fee";
