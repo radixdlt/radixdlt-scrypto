@@ -2,7 +2,7 @@ use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use sbor::*;
 
-use crate::engine::types::{BucketId, KeyValueStoreId, PackageAddress, ProofId, RENodeId, VaultId};
+use crate::engine::types::{BucketId, PackageAddress, ProofId, RENodeId, VaultId};
 use crate::prelude::{ComponentAddress, ResourceAddress};
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -27,9 +27,9 @@ pub enum Receiver {
     AuthZoneRef,
 }
 
-#[derive(Debug, Clone, Eq, Hash, PartialEq, TypeId, Encode, Decode)]
-pub enum DataAddress {
-    KeyValueEntry(KeyValueStoreId, Vec<u8>),
-    ComponentInfo(ComponentAddress, bool),
-    ComponentState(ComponentAddress),
+// TODO: Remove and replace with real HeapRENodes
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub enum ScryptoRENode {
+    Component(PackageAddress, String, Vec<u8>),
+    KeyValueStore,
 }

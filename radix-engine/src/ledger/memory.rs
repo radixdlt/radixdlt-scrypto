@@ -1,6 +1,6 @@
 use sbor::rust::collections::HashMap;
+use scrypto::engine::types::SubstateId;
 
-use crate::engine::SubstateId;
 use crate::ledger::*;
 use crate::ledger::{OutputValue, WriteableSubstateStore};
 

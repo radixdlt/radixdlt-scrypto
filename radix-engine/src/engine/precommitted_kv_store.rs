@@ -3,13 +3,13 @@ use sbor::rust::vec::Vec;
 use scrypto::values::ScryptoValue;
 
 #[derive(Debug)]
-pub struct PreCommittedKeyValueStore {
+pub struct HeapKeyValueStore {
     pub store: HashMap<Vec<u8>, ScryptoValue>,
 }
 
-impl PreCommittedKeyValueStore {
+impl HeapKeyValueStore {
     pub fn new() -> Self {
-        PreCommittedKeyValueStore {
+        HeapKeyValueStore {
             store: HashMap::new(),
         }
     }

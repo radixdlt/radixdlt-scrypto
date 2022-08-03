@@ -15,7 +15,7 @@ use scrypto::resource::{
 };
 use scrypto::values::ScryptoValue;
 
-use crate::engine::{LockFeeError, SystemApi};
+use crate::engine::{HeapRENode, LockFeeError, SystemApi};
 use crate::fee::CostUnitCounter;
 use crate::fee::CostUnitCounterError;
 use crate::model::VaultError::MethodNotFound;
@@ -190,7 +190,7 @@ impl Vault {
                 let input: VaultPutInput =
                     scrypto_decode(&arg.raw).map_err(|e| VaultError::InvalidRequestData(e))?;
                 let bucket = system_api
-                    .drop_node(&RENodeId::Bucket(input.bucket.0))
+                    .node_drop(&RENodeId::Bucket(input.bucket.0))
                     .map_err(VaultError::CostingError)?
                     .into();
                 vault
@@ -203,7 +203,7 @@ impl Vault {
                     scrypto_decode(&arg.raw).map_err(|e| VaultError::InvalidRequestData(e))?;
                 let container = vault.take(input.amount)?;
                 let bucket_id = system_api
-                    .create_node(Bucket::new(container))
+                    .node_create(HeapRENode::Bucket(Bucket::new(container)))
                     .unwrap()
                     .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
@@ -243,7 +243,7 @@ impl Vault {
                     scrypto_decode(&arg.raw).map_err(|e| VaultError::InvalidRequestData(e))?;
                 let container = vault.take_non_fungibles(&input.non_fungible_ids)?;
                 let bucket_id = system_api
-                    .create_node(Bucket::new(container))
+                    .node_create(HeapRENode::Bucket(Bucket::new(container)))
                     .unwrap()
                     .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
@@ -276,7 +276,10 @@ impl Vault {
                 let proof = vault
                     .create_proof(ResourceContainerId::Vault(vault_id))
                     .map_err(VaultError::ProofError)?;
-                let proof_id = system_api.create_node(proof).unwrap().into();
+                let proof_id = system_api
+                    .node_create(HeapRENode::Proof(proof))
+                    .unwrap()
+                    .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Proof(
                     proof_id,
                 )))
@@ -287,7 +290,10 @@ impl Vault {
                 let proof = vault
                     .create_proof_by_amount(input.amount, ResourceContainerId::Vault(vault_id))
                     .map_err(VaultError::ProofError)?;
-                let proof_id = system_api.create_node(proof).unwrap().into();
+                let proof_id = system_api
+                    .node_create(HeapRENode::Proof(proof))
+                    .unwrap()
+                    .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Proof(
                     proof_id,
                 )))
@@ -298,7 +304,10 @@ impl Vault {
                 let proof = vault
                     .create_proof_by_ids(&input.ids, ResourceContainerId::Vault(vault_id))
                     .map_err(VaultError::ProofError)?;
-                let proof_id = system_api.create_node(proof).unwrap().into();
+                let proof_id = system_api
+                    .node_create(HeapRENode::Proof(proof))
+                    .unwrap()
+                    .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Proof(
                     proof_id,
                 )))

@@ -2,7 +2,9 @@ use crate::buffer::*;
 use crate::component::package::Package;
 use crate::component::*;
 use crate::core::{Runtime, TypeName};
+use crate::engine::types::RENodeId;
 use crate::engine::{api::*, call_engine};
+use crate::prelude::ScryptoRENode;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::*;
 use sbor::rust::string::ToString;
@@ -59,14 +61,14 @@ impl ComponentSystem {
         blueprint_name: &str,
         state: T,
     ) -> Component {
-        let input = RadixEngineInput::CreateComponent(
+        let input = RadixEngineInput::RENodeCreate(ScryptoRENode::Component(
             Runtime::package_address(),
             blueprint_name.to_owned(),
             scrypto_encode(&state),
-        );
-        let component_address: ComponentAddress = call_engine(input);
+        ));
+        let node_id: RENodeId = call_engine(input);
 
-        Component(component_address)
+        Component(node_id.into())
     }
 }
 

@@ -3,6 +3,7 @@
 
 pub use crate::component::ComponentAddress;
 pub use crate::component::PackageAddress;
+pub use crate::constants::*;
 pub use crate::core::Level;
 pub use crate::crypto::EcdsaPublicKey;
 pub use crate::crypto::EcdsaSignature;
@@ -13,6 +14,7 @@ pub use crate::resource::NonFungibleAddress;
 pub use crate::resource::NonFungibleId;
 pub use crate::resource::ResourceAddress;
 pub use crate::resource::ResourceType;
+pub use crate::sbor::rust::vec::Vec;
 pub use crate::sbor::*;
 
 pub type KeyValueStoreId = (Hash, u32);
@@ -80,4 +82,42 @@ impl Into<ResourceAddress> for RENodeId {
     }
 }
 
-pub use crate::constants::*;
+/// TODO: separate space addresses?
+///
+/// FIXME: RESIM listing is broken ATM.
+/// By using scrypto codec, we lose sorting capability of the address space.
+/// Can also be resolved by A) using prefix search instead of range search or B) use special codec as before
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum SubstateId {
+    // TODO: Remove this bool which represents globalization
+    ComponentInfo(ComponentAddress, bool),
+    Package(PackageAddress),
+    ResourceManager(ResourceAddress),
+    NonFungibleSpace(ResourceAddress),
+    NonFungible(ResourceAddress, NonFungibleId),
+    KeyValueStoreSpace(KeyValueStoreId),
+    KeyValueStoreEntry(KeyValueStoreId, Vec<u8>),
+    Vault(VaultId),
+    ComponentState(ComponentAddress),
+    System,
+}
+
+impl Into<ComponentAddress> for SubstateId {
+    fn into(self) -> ComponentAddress {
+        match self {
+            SubstateId::ComponentInfo(component_address, ..)
+            | SubstateId::ComponentState(component_address) => component_address,
+            _ => panic!("Address is not a component address"),
+        }
+    }
+}
+
+impl Into<ResourceAddress> for SubstateId {
+    fn into(self) -> ResourceAddress {
+        if let SubstateId::ResourceManager(resource_address) = self {
+            return resource_address;
+        } else {
+            panic!("Address is not a resource address");
+        }
+    }
+}

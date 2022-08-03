@@ -2,14 +2,14 @@ use sbor::rust::marker::PhantomData;
 use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
-use scrypto::core::{DataAddress, Receiver, ScryptoActor, TypeName};
+use scrypto::core::{Receiver, ScryptoActor, ScryptoRENode, TypeName};
 use scrypto::engine::api::RadixEngineInput;
 use scrypto::engine::types::*;
 use scrypto::resource::AccessRule;
 use scrypto::values::ScryptoValue;
 
-use crate::engine::SystemApi;
-use crate::engine::{PreCommittedKeyValueStore, RuntimeError, SubstateId};
+use crate::engine::{HeapKeyValueStore, RuntimeError};
+use crate::engine::{HeapRENode, SystemApi};
 use crate::fee::*;
 use crate::model::{Component, ComponentState};
 use crate::wasm::*;
@@ -80,28 +80,32 @@ where
         self.system_api.invoke_method(receiver, fn_ident, call_data)
     }
 
-    fn handle_create_local_component(
+    fn handle_node_create(
         &mut self,
-        package_address: PackageAddress, // FIXME only allow creation of local component from the owning package?
-        blueprint_name: String,
-        state: Vec<u8>,
-    ) -> Result<ComponentAddress, RuntimeError> {
-        // Create component
-        let component = Component::new(package_address, blueprint_name, Vec::new());
-        let component_state = ComponentState::new(state);
+        scrypto_node: ScryptoRENode,
+    ) -> Result<ScryptoValue, RuntimeError> {
+        let node = match scrypto_node {
+            ScryptoRENode::Component(package_address, blueprint_name, state) => {
+                // TODO: Move these two checks into CallFrame/System
+                if !blueprint_name.eq(self.actor.get_blueprint()) {
+                    return Err(RuntimeError::RENodeCreateInvalidPermission);
+                }
+                if !package_address.eq(self.actor.get_package()) {
+                    return Err(RuntimeError::RENodeCreateInvalidPermission);
+                }
 
-        let id = self.system_api.create_node((component, component_state))?;
-        Ok(id.into())
-    }
+                // TODO: Check state against blueprint schema
 
-    fn handle_create_kv_store(&mut self) -> Result<KeyValueStoreId, RuntimeError> {
-        let node_id = self
-            .system_api
-            .create_node(PreCommittedKeyValueStore::new())?;
-        match node_id {
-            RENodeId::KeyValueStore(kv_store_id) => Ok(kv_store_id),
-            _ => panic!("Expected to be a kv store"),
-        }
+                // Create component
+                let component = Component::new(package_address, blueprint_name, Vec::new());
+                let component_state = ComponentState::new(state);
+                HeapRENode::Component(component, component_state)
+            }
+            ScryptoRENode::KeyValueStore => HeapRENode::KeyValueStore(HeapKeyValueStore::new()),
+        };
+
+        let id = self.system_api.node_create(node)?;
+        Ok(ScryptoValue::from_typed(&id))
     }
 
     // TODO: This logic should move into KeyValueEntry decoding
@@ -121,46 +125,42 @@ where
         Ok(())
     }
 
-    fn handle_read_data(&mut self, address: DataAddress) -> Result<ScryptoValue, RuntimeError> {
-        let address = match address {
-            DataAddress::KeyValueEntry(kv_store_id, key_bytes) => {
-                let key_data =
-                    ScryptoValue::from_slice(&key_bytes).map_err(RuntimeError::DecodeError)?;
-                Self::verify_stored_key(&key_data)?;
-                SubstateId::KeyValueStoreEntry(kv_store_id, key_bytes)
-            }
-            DataAddress::ComponentInfo(component_address, is_global) => {
-                SubstateId::ComponentInfo(component_address, is_global)
-            }
-            DataAddress::ComponentState(component_address) => {
-                SubstateId::ComponentState(component_address)
-            }
-        };
-
-        self.system_api.read_substate(address)
+    fn handle_node_globalize(&mut self, node_id: RENodeId) -> Result<ScryptoValue, RuntimeError> {
+        self.system_api.node_globalize(&node_id)?;
+        Ok(ScryptoValue::unit())
     }
 
-    fn handle_write_data(
+    fn handle_substate_read(
         &mut self,
-        address: DataAddress,
-        value: Vec<u8>,
+        substate_id: SubstateId,
     ) -> Result<ScryptoValue, RuntimeError> {
-        let address = match address {
-            DataAddress::KeyValueEntry(kv_store_id, key_bytes) => {
+        match &substate_id {
+            SubstateId::KeyValueStoreEntry(_kv_store_id, key_bytes) => {
                 let key_data =
                     ScryptoValue::from_slice(&key_bytes).map_err(RuntimeError::DecodeError)?;
                 Self::verify_stored_key(&key_data)?;
-                SubstateId::KeyValueStoreEntry(kv_store_id, key_bytes)
             }
-            DataAddress::ComponentInfo(component_address, is_global) => {
-                SubstateId::ComponentInfo(component_address, is_global)
+            _ => {}
+        }
+
+        self.system_api.substate_read(substate_id)
+    }
+
+    fn handle_substate_write(
+        &mut self,
+        substate_id: SubstateId,
+        value: Vec<u8>,
+    ) -> Result<ScryptoValue, RuntimeError> {
+        match &substate_id {
+            SubstateId::KeyValueStoreEntry(_kv_store_id, key_bytes) => {
+                let key_data =
+                    ScryptoValue::from_slice(&key_bytes).map_err(RuntimeError::DecodeError)?;
+                Self::verify_stored_key(&key_data)?;
             }
-            DataAddress::ComponentState(component_address) => {
-                SubstateId::ComponentState(component_address)
-            }
-        };
+            _ => {}
+        }
         let scrypto_value = ScryptoValue::from_slice(&value).map_err(RuntimeError::DecodeError)?;
-        self.system_api.write_substate(address, scrypto_value)?;
+        self.system_api.substate_write(substate_id, scrypto_value)?;
         Ok(ScryptoValue::unit())
     }
 
@@ -216,13 +216,13 @@ impl<
             RadixEngineInput::InvokeMethod(receiver, fn_ident, input_bytes) => {
                 self.handle_invoke_method(receiver, fn_ident, input_bytes)
             }
-            RadixEngineInput::CreateComponent(package_address, blueprint_name, state) => self
-                .handle_create_local_component(package_address, blueprint_name, state)
-                .map(encode),
-            RadixEngineInput::CreateKeyValueStore() => self.handle_create_kv_store().map(encode),
+            RadixEngineInput::RENodeGlobalize(node_id) => self.handle_node_globalize(node_id),
+            RadixEngineInput::RENodeCreate(node) => self.handle_node_create(node),
+            RadixEngineInput::SubstateRead(substate_id) => self.handle_substate_read(substate_id),
+            RadixEngineInput::SubstateWrite(substate_id, value) => {
+                self.handle_substate_write(substate_id, value)
+            }
             RadixEngineInput::GetActor() => self.handle_get_actor().map(encode),
-            RadixEngineInput::ReadData(address) => self.handle_read_data(address),
-            RadixEngineInput::WriteData(address, value) => self.handle_write_data(address, value),
             RadixEngineInput::GenerateUuid() => self.handle_generate_uuid().map(encode),
             RadixEngineInput::EmitLog(level, message) => {
                 self.handle_emit_log(level, message).map(encode)

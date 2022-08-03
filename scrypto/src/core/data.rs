@@ -1,7 +1,8 @@
 use crate::buffer::*;
-use crate::core::DataAddress;
-use crate::engine::api::RadixEngineInput::WriteData;
+use crate::engine::api::RadixEngineInput;
+use crate::engine::api::RadixEngineInput::SubstateWrite;
 use crate::engine::call_engine;
+use crate::engine::types::SubstateId;
 use sbor::rust::fmt;
 use sbor::rust::marker::PhantomData;
 use sbor::rust::ops::{Deref, DerefMut};
@@ -32,7 +33,7 @@ impl<V: Encode> Deref for DataRef<V> {
 }
 
 pub struct DataRefMut<V: Encode> {
-    address: DataAddress,
+    substate_id: SubstateId,
     value: V,
 }
 
@@ -43,15 +44,15 @@ impl<V: fmt::Display + Encode> fmt::Display for DataRefMut<V> {
 }
 
 impl<V: Encode> DataRefMut<V> {
-    pub fn new(address: DataAddress, value: V) -> DataRefMut<V> {
-        DataRefMut { address, value }
+    pub fn new(substate_id: SubstateId, value: V) -> DataRefMut<V> {
+        DataRefMut { substate_id, value }
     }
 }
 
 impl<V: Encode> Drop for DataRefMut<V> {
     fn drop(&mut self) {
         let bytes = scrypto_encode(&self.value);
-        let input = WriteData(self.address.clone(), bytes);
+        let input = SubstateWrite(self.substate_id.clone(), bytes);
         let _: () = call_engine(input);
     }
 }
@@ -71,29 +72,29 @@ impl<V: Encode> DerefMut for DataRefMut<V> {
 }
 
 pub struct DataPointer<V: 'static + Encode + Decode> {
-    address: DataAddress,
+    substate_id: SubstateId,
     phantom_data: PhantomData<V>,
 }
 
 impl<V: 'static + Encode + Decode> DataPointer<V> {
-    pub fn new(address: DataAddress) -> Self {
+    pub fn new(substate_id: SubstateId) -> Self {
         Self {
-            address,
+            substate_id,
             phantom_data: PhantomData,
         }
     }
 
     pub fn get_mut(&mut self) -> DataRefMut<V> {
-        let input = ::scrypto::engine::api::RadixEngineInput::ReadData(self.address.clone());
+        let input = RadixEngineInput::SubstateRead(self.substate_id.clone());
         let value: V = call_engine(input);
         DataRefMut {
-            address: self.address.clone(),
+            substate_id: self.substate_id.clone(),
             value,
         }
     }
 
     pub fn get(&self) -> DataRef<V> {
-        let input = ::scrypto::engine::api::RadixEngineInput::ReadData(self.address.clone());
+        let input = RadixEngineInput::SubstateRead(self.substate_id.clone());
         let value: V = call_engine(input);
         DataRef { value }
     }

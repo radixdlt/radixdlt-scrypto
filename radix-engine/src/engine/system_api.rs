@@ -37,8 +37,6 @@ where
         input: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError>;
 
-    fn globalize_node(&mut self, node_id: &RENodeId) -> Result<(), CostUnitCounterError>;
-
     fn borrow_node(
         &mut self,
         node_id: &RENodeId,
@@ -51,16 +49,22 @@ where
 
     fn return_node_mut(&mut self, val_ref: NativeRENodeRef) -> Result<(), CostUnitCounterError>;
 
-    fn drop_node(&mut self, node_id: &RENodeId) -> Result<HeapRootRENode, CostUnitCounterError>;
-    fn create_node<V: Into<RENodeByComplexity>>(&mut self, v: V) -> Result<RENodeId, RuntimeError>;
+    /// Removes an RENode and all of it's children from the Heap
+    fn node_drop(&mut self, node_id: &RENodeId) -> Result<HeapRootRENode, CostUnitCounterError>;
 
-    fn read_substate(&mut self, substate_id: SubstateId) -> Result<ScryptoValue, RuntimeError>;
-    fn write_substate(
+    /// Creates a new RENode and places it in the Heap
+    fn node_create(&mut self, re_node: HeapRENode) -> Result<RENodeId, RuntimeError>;
+
+    /// Moves an RENode from Heap to Store
+    fn node_globalize(&mut self, node_id: &RENodeId) -> Result<(), RuntimeError>;
+
+    fn substate_read(&mut self, substate_id: SubstateId) -> Result<ScryptoValue, RuntimeError>;
+    fn substate_write(
         &mut self,
         substate_id: SubstateId,
         value: ScryptoValue,
     ) -> Result<(), RuntimeError>;
-    fn take_substate(&mut self, substate_id: SubstateId) -> Result<ScryptoValue, RuntimeError>;
+    fn substate_take(&mut self, substate_id: SubstateId) -> Result<ScryptoValue, RuntimeError>;
 
     fn transaction_hash(&mut self) -> Result<Hash, CostUnitCounterError>;
 

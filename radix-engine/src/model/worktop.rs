@@ -9,7 +9,7 @@ use scrypto::buffer::scrypto_decode;
 use scrypto::engine::types::*;
 use scrypto::values::ScryptoValue;
 
-use crate::engine::{DropFailure, SystemApi};
+use crate::engine::{DropFailure, HeapRENode, SystemApi};
 use crate::fee::{CostUnitCounter, CostUnitCounterError};
 use crate::model::WorktopError::InvalidMethod;
 use crate::model::{Bucket, ResourceContainer, ResourceContainerError};
@@ -240,7 +240,7 @@ impl Worktop {
                 let input: WorktopPutInput =
                     scrypto_decode(&arg.raw).map_err(|e| WorktopError::InvalidRequestData(e))?;
                 let bucket = system_api
-                    .drop_node(&RENodeId::Bucket(input.bucket.0))
+                    .node_drop(&RENodeId::Bucket(input.bucket.0))
                     .map_err(WorktopError::CostingError)?
                     .into();
                 worktop
@@ -268,7 +268,7 @@ impl Worktop {
                     ResourceContainer::new_empty(input.resource_address, resource_type)
                 };
                 let bucket_id = system_api
-                    .create_node(Bucket::new(resource_container))
+                    .node_create(HeapRENode::Bucket(Bucket::new(resource_container)))
                     .unwrap()
                     .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
@@ -296,7 +296,7 @@ impl Worktop {
                 };
 
                 let bucket_id = system_api
-                    .create_node(Bucket::new(resource_container))
+                    .node_create(HeapRENode::Bucket(Bucket::new(resource_container)))
                     .unwrap()
                     .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
@@ -324,7 +324,7 @@ impl Worktop {
                 };
 
                 let bucket_id = system_api
-                    .create_node(Bucket::new(resource_container))
+                    .node_create(HeapRENode::Bucket(Bucket::new(resource_container)))
                     .unwrap()
                     .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
@@ -373,7 +373,7 @@ impl Worktop {
                         .map_err(WorktopError::ResourceContainerError)?;
                     if !container.is_empty() {
                         let bucket_id = system_api
-                            .create_node(Bucket::new(container))
+                            .node_create(HeapRENode::Bucket(Bucket::new(container)))
                             .unwrap()
                             .into();
                         buckets.push(scrypto::resource::Bucket(bucket_id));

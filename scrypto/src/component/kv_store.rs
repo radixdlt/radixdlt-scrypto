@@ -6,12 +6,13 @@ use sbor::rust::string::String;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto::core::DataAddress;
+use scrypto::core::ScryptoRENode;
 
 use crate::abi::*;
 use crate::buffer::*;
 use crate::core::{DataRef, DataRefMut};
 use crate::crypto::*;
+use crate::engine::types::{RENodeId, SubstateId};
 use crate::engine::{api::*, call_engine, types::KeyValueStoreId};
 use crate::misc::*;
 
@@ -25,11 +26,11 @@ pub struct KeyValueStore<K: Encode + Decode, V: 'static + Encode + Decode + Type
 impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> KeyValueStore<K, V> {
     /// Creates a new key value store.
     pub fn new() -> Self {
-        let input = RadixEngineInput::CreateKeyValueStore();
-        let output: KeyValueStoreId = call_engine(input);
+        let input = RadixEngineInput::RENodeCreate(ScryptoRENode::KeyValueStore);
+        let output: RENodeId = call_engine(input);
 
         Self {
-            id: output,
+            id: output.into(),
             key: PhantomData,
             value: PhantomData,
         }
@@ -37,23 +38,23 @@ impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> KeyValueStore<K,
 
     /// Returns the value that is associated with the given key.
     pub fn get(&self, key: &K) -> Option<DataRef<V>> {
-        let address = DataAddress::KeyValueEntry(self.id, scrypto_encode(key));
-        let input = ::scrypto::engine::api::RadixEngineInput::ReadData(address.clone());
+        let substate_id = SubstateId::KeyValueStoreEntry(self.id, scrypto_encode(key));
+        let input = RadixEngineInput::SubstateRead(substate_id.clone());
         let value: Option<V> = call_engine(input);
         value.map(|value| DataRef::new(value))
     }
 
     pub fn get_mut(&mut self, key: &K) -> Option<DataRefMut<V>> {
-        let address = DataAddress::KeyValueEntry(self.id, scrypto_encode(key));
-        let input = ::scrypto::engine::api::RadixEngineInput::ReadData(address.clone());
+        let substate_id = SubstateId::KeyValueStoreEntry(self.id, scrypto_encode(key));
+        let input = RadixEngineInput::SubstateRead(substate_id.clone());
         let value: Option<V> = call_engine(input);
-        value.map(|value| DataRefMut::new(address, value))
+        value.map(|value| DataRefMut::new(substate_id, value))
     }
 
     /// Inserts a new key-value pair into this map.
     pub fn insert(&self, key: K, value: V) {
-        let address = DataAddress::KeyValueEntry(self.id, scrypto_encode(&key));
-        let input = RadixEngineInput::WriteData(address, scrypto_encode(&value));
+        let substate_id = SubstateId::KeyValueStoreEntry(self.id, scrypto_encode(&key));
+        let input = RadixEngineInput::SubstateWrite(substate_id, scrypto_encode(&value));
         call_engine(input)
     }
 }
