@@ -8,7 +8,7 @@ mod type_properties;
 mod values;
 mod wasm_runtime;
 
-pub use call_frame::{CallFrame, NativeRENodeRef, RENodeRefMut};
+pub use call_frame::{CallFrame, NativeSubstateRef, RENodeRefMut};
 pub use errors::*;
 pub use precommitted_kv_store::*;
 pub use system_api::SystemApi;

@@ -30,7 +30,7 @@ pub enum RENodeId {
     Worktop,
     Component(ComponentAddress),
     Vault(VaultId),
-    Resource(ResourceAddress),
+    ResourceManager(ResourceAddress),
     Package(PackageAddress),
     System,
 }
@@ -76,7 +76,7 @@ impl Into<PackageAddress> for RENodeId {
 impl Into<ResourceAddress> for RENodeId {
     fn into(self) -> ResourceAddress {
         match self {
-            RENodeId::Resource(resource_address) => resource_address,
+            RENodeId::ResourceManager(resource_address) => resource_address,
             _ => panic!("Not a resource address"),
         }
     }
