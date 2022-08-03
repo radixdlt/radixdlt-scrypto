@@ -1114,7 +1114,7 @@ where
         &mut self,
         substate_id: &SubstateId,
     ) -> Result<(RENodePointer, ScryptoValue), RuntimeError> {
-        let node_id = substate_id.get_node_id();
+        let node_id = SubstateProperties::get_node_id(substate_id);
 
         // Get location
         // Note this must be run AFTER values are taken, otherwise there would be inconsistent readable_values state
@@ -2307,7 +2307,7 @@ where
             )
             .map_err(RuntimeError::CostingError)?;
 
-        if !node_id.can_globalize() {
+        if !RENodeProperties::can_globalize(node_id) {
             return Err(RuntimeError::RENodeGlobalizeTypeNotAllowed(*node_id));
         }
 
@@ -2445,7 +2445,7 @@ where
             .map_err(RuntimeError::CostingError)?;
 
         // TODO: integrate with visible flag
-        if substate_id.is_native() {
+        if SubstateProperties::is_native(&substate_id) {
             return Err(RuntimeError::InvalidDataWrite);
         }
 
@@ -2453,7 +2453,7 @@ where
         let (taken_nodes, missing_nodes) = {
             let node_ids = value.node_ids();
             if !node_ids.is_empty() {
-                if !substate_id.can_own_nodes() {
+                if !SubstateProperties::can_own_nodes(&substate_id) {
                     return Err(RuntimeError::ValueNotAllowed);
                 }
 

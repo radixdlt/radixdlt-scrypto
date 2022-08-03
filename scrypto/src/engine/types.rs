@@ -35,23 +35,6 @@ pub enum RENodeId {
     System,
 }
 
-impl RENodeId {
-    /// Specifies whether an RENode may globalize as the root node or not
-    pub fn can_globalize(&self) -> bool {
-        match self {
-            RENodeId::Bucket(..) => false,
-            RENodeId::Proof(..) => false,
-            RENodeId::KeyValueStore(..) => false,
-            RENodeId::Worktop => false,
-            RENodeId::Component(..) => true,
-            RENodeId::Vault(..) => false,
-            RENodeId::Resource(..) => true,
-            RENodeId::Package(..) => true,
-            RENodeId::System => true,
-        }
-    }
-}
-
 impl Into<(Hash, u32)> for RENodeId {
     fn into(self) -> KeyValueStoreId {
         match self {
@@ -117,59 +100,6 @@ pub enum SubstateId {
     Vault(VaultId),
     ComponentState(ComponentAddress),
     System,
-}
-
-impl SubstateId {
-    pub fn get_node_id(&self) -> RENodeId {
-        match self {
-            SubstateId::ComponentInfo(component_address, ..) => {
-                RENodeId::Component(*component_address)
-            }
-            SubstateId::ComponentState(component_address) => {
-                RENodeId::Component(*component_address)
-            }
-            SubstateId::NonFungibleSpace(resource_address) => RENodeId::Resource(*resource_address),
-            SubstateId::NonFungible(resource_address, ..) => RENodeId::Resource(*resource_address),
-            SubstateId::KeyValueStoreSpace(kv_store_id) => RENodeId::KeyValueStore(*kv_store_id),
-            SubstateId::KeyValueStoreEntry(kv_store_id, ..) => {
-                RENodeId::KeyValueStore(*kv_store_id)
-            }
-            SubstateId::Vault(vault_id) => RENodeId::Vault(*vault_id),
-            SubstateId::Package(package_address) => RENodeId::Package(*package_address),
-            SubstateId::ResourceManager(resource_address) => RENodeId::Resource(*resource_address),
-            SubstateId::System => RENodeId::System,
-        }
-    }
-
-    pub fn is_native(&self) -> bool {
-        match self {
-            SubstateId::KeyValueStoreEntry(..) => false,
-            SubstateId::ComponentState(..) => false,
-            SubstateId::NonFungible(..) => false,
-            SubstateId::ComponentInfo(..) => true,
-            SubstateId::NonFungibleSpace(..) => true,
-            SubstateId::KeyValueStoreSpace(..) => true,
-            SubstateId::Vault(..) => true,
-            SubstateId::Package(..) => true,
-            SubstateId::ResourceManager(..) => true,
-            SubstateId::System => true,
-        }
-    }
-
-    pub fn can_own_nodes(&self) -> bool {
-        match self {
-            SubstateId::KeyValueStoreEntry(..) => true,
-            SubstateId::ComponentState(..) => true,
-            SubstateId::ComponentInfo(..) => false,
-            SubstateId::NonFungible(..) => false,
-            SubstateId::NonFungibleSpace(..) => false,
-            SubstateId::KeyValueStoreSpace(..) => false,
-            SubstateId::Vault(..) => false,
-            SubstateId::Package(..) => false,
-            SubstateId::ResourceManager(..) => false,
-            SubstateId::System => false,
-        }
-    }
 }
 
 impl Into<ComponentAddress> for SubstateId {
