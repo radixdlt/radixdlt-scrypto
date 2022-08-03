@@ -104,11 +104,14 @@ impl Component {
         I: WasmInstance,
         C: CostUnitCounter,
     >(
-        node_id: RENodeId,
+        component_address: ComponentAddress,
         fn_ident: &str,
         arg: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, ComponentError> {
+        let substate_id = SubstateId::ComponentInfo(component_address);
+        let node_id = RENodeId::Component(component_address);
+
         let rtn = match fn_ident {
             "add_access_check" => {
                 let input: ComponentAddAccessCheckInput =
@@ -139,12 +142,12 @@ impl Component {
                 }
 
                 let mut ref_mut = system_api
-                    .borrow_node_mut(&node_id)
+                    .substate_borrow_mut(&substate_id)
                     .map_err(ComponentError::CostingError)?;
                 let component = ref_mut.component();
                 component.access_rules.push(input.access_rules);
                 system_api
-                    .return_node_mut(ref_mut)
+                    .substate_return_mut(ref_mut)
                     .map_err(ComponentError::CostingError)?;
 
                 Ok(ScryptoValue::from_typed(&()))

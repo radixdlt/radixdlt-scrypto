@@ -12,9 +12,28 @@ impl RENodeProperties {
             RENodeId::Worktop => false,
             RENodeId::Component(..) => true,
             RENodeId::Vault(..) => false,
-            RENodeId::Resource(..) => true,
+            RENodeId::ResourceManager(..) => true,
             RENodeId::Package(..) => true,
             RENodeId::System => true,
+        }
+    }
+
+    pub fn get_substate_ids(node_id: &RENodeId) -> Vec<SubstateId> {
+        match node_id {
+            RENodeId::Bucket(..) => panic!("Unexpected"),
+            RENodeId::Proof(..) => panic!("Unexpected"),
+            RENodeId::KeyValueStore(..) => panic!("Unexpected"),
+            RENodeId::Worktop => panic!("Unexpected"),
+            RENodeId::Component(component_address) => vec![
+                SubstateId::ComponentInfo(*component_address),
+                SubstateId::ComponentState(*component_address),
+            ],
+            RENodeId::Vault(vault_id) => vec![
+                SubstateId::Vault(*vault_id)
+            ],
+            RENodeId::ResourceManager(..) => panic!("Unexpected"),
+            RENodeId::Package(..) => panic!("Unexpected"),
+            RENodeId::System => panic!("Unexpected"),
         }
     }
 }
@@ -30,16 +49,19 @@ impl SubstateProperties {
             SubstateId::ComponentState(component_address) => {
                 RENodeId::Component(*component_address)
             }
-            SubstateId::NonFungibleSpace(resource_address) => RENodeId::Resource(*resource_address),
-            SubstateId::NonFungible(resource_address, ..) => RENodeId::Resource(*resource_address),
+            SubstateId::NonFungibleSpace(resource_address) => RENodeId::ResourceManager(*resource_address),
+            SubstateId::NonFungible(resource_address, ..) => RENodeId::ResourceManager(*resource_address),
             SubstateId::KeyValueStoreSpace(kv_store_id) => RENodeId::KeyValueStore(*kv_store_id),
             SubstateId::KeyValueStoreEntry(kv_store_id, ..) => {
                 RENodeId::KeyValueStore(*kv_store_id)
             }
             SubstateId::Vault(vault_id) => RENodeId::Vault(*vault_id),
             SubstateId::Package(package_address) => RENodeId::Package(*package_address),
-            SubstateId::ResourceManager(resource_address) => RENodeId::Resource(*resource_address),
+            SubstateId::ResourceManager(resource_address) => RENodeId::ResourceManager(*resource_address),
             SubstateId::System => RENodeId::System,
+            SubstateId::Bucket(bucket_id) => RENodeId::Bucket(*bucket_id),
+            SubstateId::Proof(proof_id) => RENodeId::Proof(*proof_id),
+            SubstateId::Worktop => RENodeId::Worktop,
         }
     }
 
@@ -55,6 +77,9 @@ impl SubstateProperties {
             SubstateId::Package(..) => true,
             SubstateId::ResourceManager(..) => true,
             SubstateId::System => true,
+            SubstateId::Bucket(..) => true,
+            SubstateId::Proof(..) => true,
+            SubstateId::Worktop => true,
         }
     }
 
@@ -70,6 +95,9 @@ impl SubstateProperties {
             SubstateId::Package(..) => false,
             SubstateId::ResourceManager(..) => false,
             SubstateId::System => false,
+            SubstateId::Bucket(..) => false,
+            SubstateId::Proof(..) => false,
+            SubstateId::Worktop => false, // TODO: Fix
         }
     }
 }

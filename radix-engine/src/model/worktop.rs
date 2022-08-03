@@ -225,13 +225,12 @@ impl Worktop {
         I: WasmInstance,
         C: CostUnitCounter,
     >(
-        node_id: RENodeId,
         method_name: &str,
         arg: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, WorktopError> {
         let mut node_ref = system_api
-            .borrow_node_mut(&node_id)
+            .substate_borrow_mut(&SubstateId::Worktop)
             .map_err(WorktopError::CostingError)?;
         let worktop = node_ref.worktop();
 
@@ -259,7 +258,7 @@ impl Worktop {
                 } else {
                     let resource_type = {
                         let node_ref = system_api
-                            .borrow_node(&RENodeId::Resource(input.resource_address))
+                            .borrow_node(&RENodeId::ResourceManager(input.resource_address))
                             .map_err(WorktopError::CostingError)?;
                         let resource_manager = node_ref.resource_manager();
                         resource_manager.resource_type()
@@ -286,7 +285,7 @@ impl Worktop {
                 } else {
                     let resource_type = {
                         let node_ref = system_api
-                            .borrow_node(&RENodeId::Resource(input.resource_address))
+                            .borrow_node(&RENodeId::ResourceManager(input.resource_address))
                             .map_err(WorktopError::CostingError)?;
                         let resource_manager = node_ref.resource_manager();
                         resource_manager.resource_type()
@@ -314,7 +313,7 @@ impl Worktop {
                 } else {
                     let resource_type = {
                         let node_ref = system_api
-                            .borrow_node(&RENodeId::Resource(input.resource_address))
+                            .borrow_node(&RENodeId::ResourceManager(input.resource_address))
                             .map_err(WorktopError::CostingError)?;
                         let resource_manager = node_ref.resource_manager();
                         resource_manager.resource_type()
@@ -385,7 +384,7 @@ impl Worktop {
         }?;
 
         system_api
-            .return_node_mut(node_ref)
+            .substate_return_mut(node_ref)
             .map_err(WorktopError::CostingError)?;
         Ok(rtn)
     }

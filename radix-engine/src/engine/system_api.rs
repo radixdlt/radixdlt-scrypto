@@ -42,12 +42,12 @@ where
         node_id: &RENodeId,
     ) -> Result<RENodeRef<'_, 's>, CostUnitCounterError>;
 
-    fn borrow_node_mut(
+    fn substate_borrow_mut(
         &mut self,
-        node_id: &RENodeId,
-    ) -> Result<NativeRENodeRef, CostUnitCounterError>;
+        substate_id: &SubstateId,
+    ) -> Result<NativeSubstateRef, CostUnitCounterError>;
 
-    fn return_node_mut(&mut self, val_ref: NativeRENodeRef) -> Result<(), CostUnitCounterError>;
+    fn substate_return_mut(&mut self, val_ref: NativeSubstateRef) -> Result<(), CostUnitCounterError>;
 
     /// Removes an RENode and all of it's children from the Heap
     fn node_drop(&mut self, node_id: &RENodeId) -> Result<HeapRootRENode, CostUnitCounterError>;

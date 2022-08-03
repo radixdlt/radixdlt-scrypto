@@ -181,7 +181,7 @@ impl FeeTable {
                 RENodeId::KeyValueStore(_) => self.fixed_medium,
                 RENodeId::Component(_) => self.fixed_medium,
                 RENodeId::Vault(_) => self.fixed_medium,
-                RENodeId::Resource(_) => self.fixed_medium,
+                RENodeId::ResourceManager(_) => self.fixed_medium,
                 RENodeId::Package(_) => self.fixed_high,
                 RENodeId::System => self.fixed_high,
             },
