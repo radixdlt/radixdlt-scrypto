@@ -94,7 +94,7 @@ fn create_genesis(mut track: Track) -> TrackReceipt {
     let system_component_state =
         ComponentState::new(scrypto_encode(&SystemComponentState { xrd: XRD_VAULT }));
     track.create_uuid_substate(
-        SubstateId::ComponentInfo(SYSTEM_COMPONENT, true),
+        SubstateId::ComponentInfo(SYSTEM_COMPONENT),
         system_component,
     );
     track.create_uuid_substate(

@@ -44,7 +44,7 @@ impl Component {
 
     /// Returns the package ID of this component.
     pub fn package_address(&self) -> PackageAddress {
-        let substate_id = SubstateId::ComponentInfo(self.0, true);
+        let substate_id = SubstateId::ComponentInfo(self.0);
         let input = RadixEngineInput::SubstateRead(substate_id);
         let output: (PackageAddress, String) = call_engine(input);
         output.0
@@ -52,7 +52,7 @@ impl Component {
 
     /// Returns the blueprint name of this component.
     pub fn blueprint_name(&self) -> String {
-        let substate_id = SubstateId::ComponentInfo(self.0, true);
+        let substate_id = SubstateId::ComponentInfo(self.0);
         let input = RadixEngineInput::SubstateRead(substate_id);
         let output: (PackageAddress, String) = call_engine(input);
         output.1
