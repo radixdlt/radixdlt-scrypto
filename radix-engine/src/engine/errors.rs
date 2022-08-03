@@ -125,6 +125,8 @@ pub enum RuntimeError {
     RENodeCreateInvalidPermission,
     RENodeCreateNodeNotFound(RENodeId),
 
+    InvokeMethodInvalidReferencePass(RENodeId),
+
     NotSupported,
 
     CostingError(CostUnitCounterError),
