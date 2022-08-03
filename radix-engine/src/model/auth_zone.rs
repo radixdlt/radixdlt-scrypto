@@ -125,7 +125,7 @@ impl AuthZone {
                 let input: AuthZonePushInput =
                     scrypto_decode(&arg.raw).map_err(|e| AuthZoneError::InvalidRequestData(e))?;
                 let mut proof: Proof = system_api
-                    .drop_node(&RENodeId::Proof(input.proof.0))
+                    .node_drop(&RENodeId::Proof(input.proof.0))
                     .map_err(AuthZoneError::CostingError)?
                     .into();
                 proof.change_to_unrestricted();

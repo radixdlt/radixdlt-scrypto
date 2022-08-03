@@ -190,7 +190,7 @@ impl Vault {
                 let input: VaultPutInput =
                     scrypto_decode(&arg.raw).map_err(|e| VaultError::InvalidRequestData(e))?;
                 let bucket = system_api
-                    .drop_node(&RENodeId::Bucket(input.bucket.0))
+                    .node_drop(&RENodeId::Bucket(input.bucket.0))
                     .map_err(VaultError::CostingError)?
                     .into();
                 vault

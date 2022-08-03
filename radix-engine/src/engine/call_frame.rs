@@ -2229,10 +2229,12 @@ where
         Ok(())
     }
 
-    fn drop_node(&mut self, node_id: &RENodeId) -> Result<HeapRootRENode, CostUnitCounterError> {
+    fn node_drop(&mut self, node_id: &RENodeId) -> Result<HeapRootRENode, CostUnitCounterError> {
         trace!(self, Level::Debug, "Dropping value: {:?}", node_id);
 
         // TODO: costing
+
+        // TODO: Add authorization
 
         Ok(self.owned_heap_nodes.remove(&node_id).unwrap())
     }
@@ -2250,7 +2252,7 @@ where
             )
             .map_err(RuntimeError::CostingError)?;
 
-        let node_id = self.new_node_id(&re_node);
+        // TODO: Add authorization
 
         // Take any required child nodes
         let children = re_node.get_child_nodes()?;
@@ -2263,13 +2265,16 @@ where
         for (id, taken_root_node) in taken_root_nodes {
             child_nodes.extend(taken_root_node.to_nodes(id));
         }
+
+        // Insert node into heap
+        let node_id = self.new_node_id(&re_node);
         let heap_root_node = HeapRootRENode {
             root: re_node,
             child_nodes,
         };
-
         self.owned_heap_nodes.insert(node_id, heap_root_node);
 
+        // TODO: Clean the following up
         match node_id {
             RENodeId::KeyValueStore(..) | RENodeId::Resource(..) => {
                 self.node_refs.insert(

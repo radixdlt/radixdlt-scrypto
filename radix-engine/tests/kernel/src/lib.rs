@@ -51,11 +51,11 @@ blueprint! {
 
     impl NodeCreate {
         pub fn create_node_with_invalid_blueprint() {
-            let input = RadixEngineInput::CreateComponent(
+            let input = RadixEngineInput::RENodeCreate(ScryptoRENode::Component(
                 Runtime::package_address(),
                 "invalid_blueprint".to_owned(),
                 scrypto_encode(&NodeCreate {}),
-            );
+            ));
             let address: ComponentAddress = call_engine(input);
 
             let input = RadixEngineInput::RENodeGlobalize(RENodeId::Component(address));
@@ -64,11 +64,11 @@ blueprint! {
 
         pub fn create_node_with_invalid_package() {
             let package_address = PackageAddress([0u8; 27]);
-            let input = RadixEngineInput::CreateComponent(
+            let input = RadixEngineInput::RENodeCreate(ScryptoRENode::Component(
                 package_address,
                 "NodeCreate".to_owned(),
                 scrypto_encode(&NodeCreate {}),
-            );
+            ));
             let address: ComponentAddress = call_engine(input);
 
             let input = RadixEngineInput::RENodeGlobalize(RENodeId::Component(address));

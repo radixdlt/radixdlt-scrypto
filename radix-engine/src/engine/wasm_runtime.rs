@@ -2,7 +2,7 @@ use sbor::rust::marker::PhantomData;
 use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
-use scrypto::core::{Receiver, ScryptoActor, TypeName};
+use scrypto::core::{Receiver, ScryptoActor, ScryptoRENode, TypeName};
 use scrypto::engine::api::RadixEngineInput;
 use scrypto::engine::types::*;
 use scrypto::resource::AccessRule;
@@ -80,39 +80,32 @@ where
         self.system_api.invoke_method(receiver, fn_ident, call_data)
     }
 
-    fn handle_create_component(
+    fn handle_node_create(
         &mut self,
-        package_address: PackageAddress,
-        blueprint_name: String,
-        state: Vec<u8>,
-    ) -> Result<ComponentAddress, RuntimeError> {
-        // TODO: Move these two checks into CallFrame/System
-        if !blueprint_name.eq(self.actor.get_blueprint()) {
-            return Err(RuntimeError::RENodeCreateInvalidPermission);
-        }
-        if !package_address.eq(self.actor.get_package()) {
-            return Err(RuntimeError::RENodeCreateInvalidPermission);
-        }
+        scrypto_node: ScryptoRENode,
+    ) -> Result<ScryptoValue, RuntimeError> {
+        let node = match scrypto_node {
+            ScryptoRENode::Component(package_address, blueprint_name, state) => {
+                // TODO: Move these two checks into CallFrame/System
+                if !blueprint_name.eq(self.actor.get_blueprint()) {
+                    return Err(RuntimeError::RENodeCreateInvalidPermission);
+                }
+                if !package_address.eq(self.actor.get_package()) {
+                    return Err(RuntimeError::RENodeCreateInvalidPermission);
+                }
 
-        // TODO: Check state against component schema
+                // TODO: Check state against blueprint schema
 
-        // Create component
-        let component = Component::new(package_address, blueprint_name, Vec::new());
-        let component_state = ComponentState::new(state);
-        let node = HeapRENode::Component(component, component_state);
+                // Create component
+                let component = Component::new(package_address, blueprint_name, Vec::new());
+                let component_state = ComponentState::new(state);
+                HeapRENode::Component(component, component_state)
+            }
+            ScryptoRENode::KeyValueStore => HeapRENode::KeyValueStore(HeapKeyValueStore::new()),
+        };
 
         let id = self.system_api.node_create(node)?;
-        Ok(id.into())
-    }
-
-    fn handle_create_kv_store(&mut self) -> Result<KeyValueStoreId, RuntimeError> {
-        let node_id = self
-            .system_api
-            .node_create(HeapRENode::KeyValueStore(HeapKeyValueStore::new()))?;
-        match node_id {
-            RENodeId::KeyValueStore(kv_store_id) => Ok(kv_store_id),
-            _ => panic!("Expected to be a kv store"),
-        }
+        Ok(ScryptoValue::from_typed(&id))
     }
 
     // TODO: This logic should move into KeyValueEntry decoding
@@ -224,15 +217,12 @@ impl<
                 self.handle_invoke_method(receiver, fn_ident, input_bytes)
             }
             RadixEngineInput::RENodeGlobalize(node_id) => self.handle_node_globalize(node_id),
-            RadixEngineInput::CreateComponent(package_address, blueprint_name, state) => self
-                .handle_create_component(package_address, blueprint_name, state)
-                .map(encode),
-            RadixEngineInput::CreateKeyValueStore() => self.handle_create_kv_store().map(encode),
-            RadixEngineInput::GetActor() => self.handle_get_actor().map(encode),
+            RadixEngineInput::RENodeCreate(node) => self.handle_node_create(node),
             RadixEngineInput::SubstateRead(substate_id) => self.handle_substate_read(substate_id),
             RadixEngineInput::SubstateWrite(substate_id, value) => {
                 self.handle_substate_write(substate_id, value)
             }
+            RadixEngineInput::GetActor() => self.handle_get_actor().map(encode),
             RadixEngineInput::GenerateUuid() => self.handle_generate_uuid().map(encode),
             RadixEngineInput::EmitLog(level, message) => {
                 self.handle_emit_log(level, message).map(encode)

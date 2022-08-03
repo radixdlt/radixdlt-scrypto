@@ -403,7 +403,7 @@ impl Proof {
         system_api: &mut Y,
     ) -> Result<ScryptoValue, ProofError> {
         let proof: Proof = system_api
-            .drop_node(&node_id)
+            .node_drop(&node_id)
             .map_err(ProofError::CostingError)?
             .into();
         match method_name {

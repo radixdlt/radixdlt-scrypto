@@ -240,7 +240,7 @@ impl Worktop {
                 let input: WorktopPutInput =
                     scrypto_decode(&arg.raw).map_err(|e| WorktopError::InvalidRequestData(e))?;
                 let bucket = system_api
-                    .drop_node(&RENodeId::Bucket(input.bucket.0))
+                    .node_drop(&RENodeId::Bucket(input.bucket.0))
                     .map_err(WorktopError::CostingError)?
                     .into();
                 worktop

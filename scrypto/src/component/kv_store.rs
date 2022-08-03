@@ -6,12 +6,13 @@ use sbor::rust::string::String;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 use sbor::*;
+use scrypto::core::ScryptoRENode;
 
 use crate::abi::*;
 use crate::buffer::*;
 use crate::core::{DataRef, DataRefMut};
 use crate::crypto::*;
-use crate::engine::types::SubstateId;
+use crate::engine::types::{RENodeId, SubstateId};
 use crate::engine::{api::*, call_engine, types::KeyValueStoreId};
 use crate::misc::*;
 
@@ -25,11 +26,11 @@ pub struct KeyValueStore<K: Encode + Decode, V: 'static + Encode + Decode + Type
 impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> KeyValueStore<K, V> {
     /// Creates a new key value store.
     pub fn new() -> Self {
-        let input = RadixEngineInput::CreateKeyValueStore();
-        let output: KeyValueStoreId = call_engine(input);
+        let input = RadixEngineInput::RENodeCreate(ScryptoRENode::KeyValueStore);
+        let output: RENodeId = call_engine(input);
 
         Self {
-            id: output,
+            id: output.into(),
             key: PhantomData,
             value: PhantomData,
         }

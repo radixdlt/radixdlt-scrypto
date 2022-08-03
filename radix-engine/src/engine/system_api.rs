@@ -49,7 +49,8 @@ where
 
     fn return_node_mut(&mut self, val_ref: NativeRENodeRef) -> Result<(), CostUnitCounterError>;
 
-    fn drop_node(&mut self, node_id: &RENodeId) -> Result<HeapRootRENode, CostUnitCounterError>;
+    /// Removes an RENode and all of it's children from the Heap
+    fn node_drop(&mut self, node_id: &RENodeId) -> Result<HeapRootRENode, CostUnitCounterError>;
 
     /// Creates a new RENode and places it in the Heap
     fn node_create(&mut self, re_node: HeapRENode) -> Result<RENodeId, RuntimeError>;

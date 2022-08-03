@@ -30,7 +30,7 @@ fn non_existent_vault_in_component_creation_should_fail() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| matches!(e, RuntimeError::RENodeNotFound(RENodeId::Vault(_))));
+    receipt.expect_failure(|e| matches!(e, RuntimeError::RENodeCreateNodeNotFound(RENodeId::Vault(_))));
 }
 
 #[test]
@@ -151,7 +151,7 @@ fn invalid_double_ownership_of_vault() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| matches!(e, RuntimeError::RENodeNotFound(RENodeId::Vault(_))));
+    receipt.expect_failure(|e| matches!(e, RuntimeError::RENodeCreateNodeNotFound(RENodeId::Vault(_))));
 }
 
 #[test]

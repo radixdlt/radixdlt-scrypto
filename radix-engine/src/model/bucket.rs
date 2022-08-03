@@ -221,7 +221,7 @@ impl Bucket {
                 let input: BucketPutInput =
                     scrypto_decode(&arg.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
                 let other_bucket = system_api
-                    .drop_node(&RENodeId::Bucket(input.bucket.0))
+                    .node_drop(&RENodeId::Bucket(input.bucket.0))
                     .map_err(BucketError::CostingError)?
                     .into();
                 bucket0
@@ -282,7 +282,7 @@ impl Bucket {
                     scrypto_decode(&arg.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
 
                 let bucket: Bucket = system_api
-                    .drop_node(&node_id)
+                    .node_drop(&node_id)
                     .map_err(BucketError::CostingError)?
                     .into();
 
