@@ -6,10 +6,7 @@ use scrypto::crypto::*;
 use scrypto::engine::types::*;
 
 pub trait QueryableSubstateStore {
-    fn get_kv_store_entries(
-        &self,
-        kv_store_id: &KeyValueStoreId,
-    ) -> HashMap<Vec<u8>, Substate>;
+    fn get_kv_store_entries(&self, kv_store_id: &KeyValueStoreId) -> HashMap<Vec<u8>, Substate>;
 }
 
 #[derive(Debug, Clone, Hash, TypeId, Encode, Decode, PartialEq, Eq)]
