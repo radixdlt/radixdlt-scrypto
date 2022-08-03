@@ -1,6 +1,5 @@
 #![allow(unused_must_use)]
 use colored::*;
-use radix_engine::engine::SubstateId;
 use radix_engine::ledger::*;
 use radix_engine::model::*;
 use sbor::rust::collections::HashSet;

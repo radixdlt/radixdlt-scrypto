@@ -6,6 +6,7 @@ blueprint! {
     impl BucketProof {
         pub fn create_clone_drop_bucket_proof(bucket: Bucket, amount: Decimal) -> Bucket {
             let proof = bucket.create_proof();
+            let proof = proof.validate_proof(bucket.resource_address()).unwrap();
             let clone = proof.clone();
 
             assert_eq!(bucket.amount(), amount);

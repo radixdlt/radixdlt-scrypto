@@ -184,7 +184,7 @@ impl HardAuthRule {
     }
 }
 
-/// Snode which verifies authorization of a method call
+/// Authorization of a method call
 #[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
 pub enum MethodAuthorization {
     Protected(HardAuthRule),

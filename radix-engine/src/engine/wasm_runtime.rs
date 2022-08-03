@@ -2,15 +2,14 @@ use sbor::rust::marker::PhantomData;
 use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
-use scrypto::core::ScryptoActorInfo;
-use scrypto::core::{DataAddress, SNodeRef};
+use scrypto::core::{Receiver, ScryptoActor, ScryptoRENode, TypeName};
 use scrypto::engine::api::RadixEngineInput;
 use scrypto::engine::types::*;
 use scrypto::resource::AccessRule;
 use scrypto::values::ScryptoValue;
 
-use crate::engine::SystemApi;
-use crate::engine::{PreCommittedKeyValueStore, RuntimeError, SubstateId};
+use crate::engine::{HeapKeyValueStore, RuntimeError};
+use crate::engine::{HeapRENode, SystemApi};
 use crate::fee::*;
 use crate::model::{Component, ComponentState};
 use crate::wasm::*;
@@ -26,7 +25,7 @@ where
     I: WasmInstance,
     C: CostUnitCounter,
 {
-    this: ScryptoActorInfo,
+    actor: ScryptoActor,
     system_api: &'y mut Y,
     phantom1: PhantomData<W>,
     phantom2: PhantomData<I>,
@@ -42,9 +41,9 @@ where
     I: WasmInstance,
     C: CostUnitCounter,
 {
-    pub fn new(this: ScryptoActorInfo, system_api: &'y mut Y) -> Self {
+    pub fn new(actor: ScryptoActor, system_api: &'y mut Y) -> Self {
         RadixEngineWasmRuntime {
-            this,
+            actor,
             system_api,
             phantom1: PhantomData,
             phantom2: PhantomData,
@@ -60,41 +59,53 @@ where
 
     // FIXME: limit access to the API
 
-    fn handle_invoke_snode(
+    fn handle_invoke_function(
         &mut self,
-        snode_ref: SNodeRef,
+        type_name: TypeName,
         fn_ident: String,
         input: Vec<u8>,
     ) -> Result<ScryptoValue, RuntimeError> {
         let call_data = ScryptoValue::from_slice(&input).map_err(RuntimeError::DecodeError)?;
-        self.system_api.invoke_snode(snode_ref, fn_ident, call_data)
+        self.system_api
+            .invoke_function(type_name, fn_ident, call_data)
     }
 
-    fn handle_create_local_component(
+    fn handle_invoke_method(
         &mut self,
-        blueprint_name: String,
-        state: Vec<u8>,
-    ) -> Result<ComponentAddress, RuntimeError> {
-        // Create component
-        let component = Component::new(
-            self.this.package_address().clone(),
-            blueprint_name,
-            Vec::new(),
-        );
-        let component_state = ComponentState::new(state);
-
-        let id = self.system_api.create_node((component, component_state))?;
-        Ok(id.into())
+        receiver: Receiver,
+        fn_ident: String,
+        input: Vec<u8>,
+    ) -> Result<ScryptoValue, RuntimeError> {
+        let call_data = ScryptoValue::from_slice(&input).map_err(RuntimeError::DecodeError)?;
+        self.system_api.invoke_method(receiver, fn_ident, call_data)
     }
 
-    fn handle_create_kv_store(&mut self) -> Result<KeyValueStoreId, RuntimeError> {
-        let value_id = self
-            .system_api
-            .create_node(PreCommittedKeyValueStore::new())?;
-        match value_id {
-            RENodeId::KeyValueStore(kv_store_id) => Ok(kv_store_id),
-            _ => panic!("Expected to be a kv store"),
-        }
+    fn handle_node_create(
+        &mut self,
+        scrypto_node: ScryptoRENode,
+    ) -> Result<ScryptoValue, RuntimeError> {
+        let node = match scrypto_node {
+            ScryptoRENode::Component(package_address, blueprint_name, state) => {
+                // TODO: Move these two checks into CallFrame/System
+                if !blueprint_name.eq(self.actor.get_blueprint()) {
+                    return Err(RuntimeError::RENodeCreateInvalidPermission);
+                }
+                if !package_address.eq(self.actor.get_package()) {
+                    return Err(RuntimeError::RENodeCreateInvalidPermission);
+                }
+
+                // TODO: Check state against blueprint schema
+
+                // Create component
+                let component = Component::new(package_address, blueprint_name, Vec::new());
+                let component_state = ComponentState::new(state);
+                HeapRENode::Component(component, component_state)
+            }
+            ScryptoRENode::KeyValueStore => HeapRENode::KeyValueStore(HeapKeyValueStore::new()),
+        };
+
+        let id = self.system_api.node_create(node)?;
+        Ok(ScryptoValue::from_typed(&id))
     }
 
     // TODO: This logic should move into KeyValueEntry decoding
@@ -114,51 +125,47 @@ where
         Ok(())
     }
 
-    fn handle_read_data(&mut self, address: DataAddress) -> Result<ScryptoValue, RuntimeError> {
-        let address = match address {
-            DataAddress::KeyValueEntry(kv_store_id, key_bytes) => {
-                let key_data =
-                    ScryptoValue::from_slice(&key_bytes).map_err(RuntimeError::DecodeError)?;
-                Self::verify_stored_key(&key_data)?;
-                SubstateId::KeyValueStoreEntry(kv_store_id, key_bytes)
-            }
-            DataAddress::ComponentInfo(component_address, is_global) => {
-                SubstateId::ComponentInfo(component_address, is_global)
-            }
-            DataAddress::ComponentState(component_address) => {
-                SubstateId::ComponentState(component_address)
-            }
-        };
-
-        self.system_api.read_substate(address)
-    }
-
-    fn handle_write_data(
-        &mut self,
-        address: DataAddress,
-        value: Vec<u8>,
-    ) -> Result<ScryptoValue, RuntimeError> {
-        let address = match address {
-            DataAddress::KeyValueEntry(kv_store_id, key_bytes) => {
-                let key_data =
-                    ScryptoValue::from_slice(&key_bytes).map_err(RuntimeError::DecodeError)?;
-                Self::verify_stored_key(&key_data)?;
-                SubstateId::KeyValueStoreEntry(kv_store_id, key_bytes)
-            }
-            DataAddress::ComponentInfo(component_address, is_global) => {
-                SubstateId::ComponentInfo(component_address, is_global)
-            }
-            DataAddress::ComponentState(component_address) => {
-                SubstateId::ComponentState(component_address)
-            }
-        };
-        let scrypto_value = ScryptoValue::from_slice(&value).map_err(RuntimeError::DecodeError)?;
-        self.system_api.write_substate(address, scrypto_value)?;
+    fn handle_node_globalize(&mut self, node_id: RENodeId) -> Result<ScryptoValue, RuntimeError> {
+        self.system_api.node_globalize(&node_id)?;
         Ok(ScryptoValue::unit())
     }
 
-    fn handle_get_actor(&mut self) -> Result<ScryptoActorInfo, RuntimeError> {
-        return Ok(self.this.clone());
+    fn handle_substate_read(
+        &mut self,
+        substate_id: SubstateId,
+    ) -> Result<ScryptoValue, RuntimeError> {
+        match &substate_id {
+            SubstateId::KeyValueStoreEntry(_kv_store_id, key_bytes) => {
+                let key_data =
+                    ScryptoValue::from_slice(&key_bytes).map_err(RuntimeError::DecodeError)?;
+                Self::verify_stored_key(&key_data)?;
+            }
+            _ => {}
+        }
+
+        self.system_api.substate_read(substate_id)
+    }
+
+    fn handle_substate_write(
+        &mut self,
+        substate_id: SubstateId,
+        value: Vec<u8>,
+    ) -> Result<ScryptoValue, RuntimeError> {
+        match &substate_id {
+            SubstateId::KeyValueStoreEntry(_kv_store_id, key_bytes) => {
+                let key_data =
+                    ScryptoValue::from_slice(&key_bytes).map_err(RuntimeError::DecodeError)?;
+                Self::verify_stored_key(&key_data)?;
+            }
+            _ => {}
+        }
+        let scrypto_value = ScryptoValue::from_slice(&value).map_err(RuntimeError::DecodeError)?;
+        self.system_api.substate_write(substate_id, scrypto_value)?;
+        Ok(ScryptoValue::unit())
+    }
+
+    fn handle_get_actor(&mut self) -> Result<ScryptoActor, RuntimeError> {
+        return Ok(self.actor.clone());
     }
 
     fn handle_generate_uuid(&mut self) -> Result<u128, RuntimeError> {
@@ -203,16 +210,19 @@ impl<
         let input: RadixEngineInput =
             scrypto_decode(&input.raw).map_err(|_| InvokeError::InvalidRadixEngineInput)?;
         match input {
-            RadixEngineInput::InvokeSNode(snode_ref, fn_ident, input_bytes) => {
-                self.handle_invoke_snode(snode_ref, fn_ident, input_bytes)
+            RadixEngineInput::InvokeFunction(type_name, fn_ident, input_bytes) => {
+                self.handle_invoke_function(type_name, fn_ident, input_bytes)
             }
-            RadixEngineInput::CreateComponent(blueprint_name, state) => self
-                .handle_create_local_component(blueprint_name, state)
-                .map(encode),
-            RadixEngineInput::CreateKeyValueStore() => self.handle_create_kv_store().map(encode),
+            RadixEngineInput::InvokeMethod(receiver, fn_ident, input_bytes) => {
+                self.handle_invoke_method(receiver, fn_ident, input_bytes)
+            }
+            RadixEngineInput::RENodeGlobalize(node_id) => self.handle_node_globalize(node_id),
+            RadixEngineInput::RENodeCreate(node) => self.handle_node_create(node),
+            RadixEngineInput::SubstateRead(substate_id) => self.handle_substate_read(substate_id),
+            RadixEngineInput::SubstateWrite(substate_id, value) => {
+                self.handle_substate_write(substate_id, value)
+            }
             RadixEngineInput::GetActor() => self.handle_get_actor().map(encode),
-            RadixEngineInput::ReadData(address) => self.handle_read_data(address),
-            RadixEngineInput::WriteData(address, value) => self.handle_write_data(address, value),
             RadixEngineInput::GenerateUuid() => self.handle_generate_uuid().map(encode),
             RadixEngineInput::EmitLog(level, message) => {
                 self.handle_emit_log(level, message).map(encode)
@@ -226,7 +236,7 @@ impl<
 
     fn consume_cost_units(&mut self, n: u32) -> Result<(), InvokeError> {
         self.cost_unit_counter()
-            .consume(n, "wasm")
+            .consume(n, "run_wasm")
             .map_err(InvokeError::CostingError)
     }
 }
@@ -249,7 +259,7 @@ impl WasmRuntime for NopWasmRuntime {
 
     fn consume_cost_units(&mut self, n: u32) -> Result<(), InvokeError> {
         self.cost_unit_counter
-            .consume(n, "wasm")
+            .consume(n, "run_wasm")
             .map_err(InvokeError::CostingError)
     }
 }

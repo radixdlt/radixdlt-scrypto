@@ -6,60 +6,60 @@ use crate::component::*;
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub enum ScryptoActor {
     Blueprint(PackageAddress, String),
-    Component(ComponentAddress),
+    Component(ComponentAddress, bool, PackageAddress, String),
 }
 
-/// Represents the running entity.
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct ScryptoActorInfo {
-    package_address: PackageAddress,
-    blueprint_name: String,
-    component_address: Option<(ComponentAddress, bool)>,
-}
-
-impl ScryptoActorInfo {
+impl ScryptoActor {
     pub fn blueprint(package_address: PackageAddress, blueprint_name: String) -> Self {
-        Self {
-            package_address,
-            blueprint_name,
-            component_address: None,
-        }
+        Self::Blueprint(package_address, blueprint_name)
     }
 
     pub fn component(
-        package_address: PackageAddress,
-        blueprint_name: String,
         component_address: ComponentAddress,
         is_global: bool,
+        package_address: PackageAddress,
+        blueprint_name: String,
     ) -> Self {
-        Self {
+        Self::Component(
+            component_address,
+            is_global,
             package_address,
             blueprint_name,
-            component_address: Some((component_address, is_global)),
+        )
+    }
+
+    pub fn get_package(&self) -> &PackageAddress {
+        match self {
+            ScryptoActor::Blueprint(package, _blueprint) => package,
+            ScryptoActor::Component(_address, _global, package, _blueprint) => package,
         }
     }
 
-    pub fn component_address(&self) -> Option<(ComponentAddress, bool)> {
-        self.component_address
-    }
-
-    pub fn actor(&self) -> ScryptoActor {
-        if let Some((addr, ..)) = self.component_address {
-            ScryptoActor::Component(addr)
-        } else {
-            ScryptoActor::Blueprint(self.package_address.clone(), self.blueprint_name.clone())
+    pub fn get_blueprint(&self) -> &String {
+        match self {
+            ScryptoActor::Blueprint(_package, blueprint) => blueprint,
+            ScryptoActor::Component(_address, _global, _package, blueprint) => blueprint,
         }
     }
 
-    pub fn package_address(&self) -> &PackageAddress {
-        &self.package_address
+    pub fn as_blueprint(&self) -> (PackageAddress, String) {
+        match self {
+            Self::Blueprint(package_address, blueprint_name) => {
+                (*package_address, blueprint_name.clone())
+            }
+            _ => panic!("Not a blueprint"),
+        }
     }
 
-    pub fn blueprint_name(&self) -> &str {
-        &self.blueprint_name
-    }
-
-    pub fn to_package_address(self) -> PackageAddress {
-        self.package_address
+    pub fn as_component(&self) -> (ComponentAddress, bool, PackageAddress, String) {
+        match self {
+            Self::Component(component_address, is_global, package_address, blueprint) => (
+                *component_address,
+                *is_global,
+                *package_address,
+                blueprint.clone(),
+            ),
+            _ => panic!("Not a component"),
+        }
     }
 }

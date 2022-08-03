@@ -18,7 +18,7 @@ use scrypto::resource::ResourceManagerGetMetadataInput;
 use scrypto::resource::ResourceMethodAuthKey::{self, *};
 use scrypto::values::ScryptoValue;
 
-use crate::engine::{SubstateId, SystemApi};
+use crate::engine::{HeapRENode, RuntimeError, SystemApi};
 use crate::fee::CostUnitCounter;
 use crate::fee::CostUnitCounterError;
 use crate::model::resource_manager::ResourceMethodRule::{Protected, Public};
@@ -339,7 +339,7 @@ impl ResourceManager {
         let mut ids = BTreeSet::new();
         for (id, data) in entries {
             let value = system_api
-                .read_substate(SubstateId::NonFungible(self_address, id.clone()))
+                .substate_read(SubstateId::NonFungible(self_address, id.clone()))
                 .expect("Should never fail");
             let wrapper: NonFungibleWrapper = scrypto_decode(&value.raw).unwrap();
             if wrapper.0.is_some() {
@@ -350,7 +350,7 @@ impl ResourceManager {
 
             let non_fungible = NonFungible::new(data.0, data.1);
             system_api
-                .write_substate(
+                .substate_write(
                     SubstateId::NonFungible(self_address, id.clone()),
                     ScryptoValue::from_typed(&NonFungibleWrapper(Some(non_fungible))),
                 )
@@ -418,7 +418,7 @@ impl ResourceManager {
                         }
                     }
                     system_api
-                        .create_node((resource_manager, Some(non_fungibles)))
+                        .node_create(HeapRENode::Resource(resource_manager, Some(non_fungibles)))
                         .expect("Should never fail")
                 } else {
                     if let Some(mint_params) = &input.mint_params {
@@ -435,7 +435,7 @@ impl ResourceManager {
                         }
                     }
                     system_api
-                        .create_node((resource_manager, None))
+                        .node_create(HeapRENode::Resource(resource_manager, None))
                         .expect("Should never fail")
                 };
                 let resource_address = resource_node_id.clone().into();
@@ -453,7 +453,7 @@ impl ResourceManager {
                         ),
                     };
                     let bucket_id = system_api
-                        .create_node(Bucket::new(container))
+                        .node_create(HeapRENode::Bucket(Bucket::new(container)))
                         .unwrap()
                         .into();
                     Some(scrypto::resource::Bucket(bucket_id))
@@ -462,8 +462,13 @@ impl ResourceManager {
                 };
 
                 system_api
-                    .globalize_node(&resource_node_id)
-                    .map_err(ResourceManagerError::CostingError)?;
+                    .node_globalize(&resource_node_id)
+                    .map_err(|e| match e {
+                        RuntimeError::CostingError(cost_unit_error) => {
+                            ResourceManagerError::CostingError(cost_unit_error)
+                        }
+                        _ => panic!("Unexpected error {}", e),
+                    })?;
 
                 Ok(ScryptoValue::from_typed(&(resource_address, bucket_id)))
             }
@@ -517,7 +522,7 @@ impl ResourceManager {
                     resource_manager.resource_type(),
                 );
                 let vault_id = system_api
-                    .create_node(Vault::new(container))
+                    .node_create(HeapRENode::Vault(Vault::new(container)))
                     .unwrap()
                     .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Vault(
@@ -532,7 +537,7 @@ impl ResourceManager {
                     resource_manager.resource_type(),
                 );
                 let bucket_id = system_api
-                    .create_node(Bucket::new(container))
+                    .node_create(HeapRENode::Bucket(Bucket::new(container)))
                     .unwrap()
                     .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
@@ -545,7 +550,7 @@ impl ResourceManager {
                 let container =
                     resource_manager.mint(input.mint_params, resource_address, system_api)?;
                 let bucket_id = system_api
-                    .create_node(Bucket::new(container))
+                    .node_create(HeapRENode::Bucket(Bucket::new(container)))
                     .unwrap()
                     .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
@@ -579,7 +584,7 @@ impl ResourceManager {
 
                 // Read current value
                 let value = system_api
-                    .read_substate(SubstateId::NonFungible(
+                    .substate_read(SubstateId::NonFungible(
                         resource_address.clone(),
                         input.id.clone(),
                     ))
@@ -590,7 +595,7 @@ impl ResourceManager {
                 if let Some(mut non_fungible) = wrapper.0 {
                     non_fungible.set_mutable_data(input.data);
                     system_api
-                        .write_substate(
+                        .substate_write(
                             SubstateId::NonFungible(resource_address.clone(), input.id.clone()),
                             ScryptoValue::from_typed(&NonFungibleWrapper(Some(non_fungible))),
                         )
@@ -610,7 +615,7 @@ impl ResourceManager {
                     .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
 
                 let value = system_api
-                    .read_substate(SubstateId::NonFungible(resource_address.clone(), input.id))
+                    .substate_read(SubstateId::NonFungible(resource_address.clone(), input.id))
                     .expect("Should never fail");
                 let wrapper: NonFungibleWrapper = scrypto_decode(&value.raw).unwrap();
                 Ok(ScryptoValue::from_typed(&wrapper.0.is_some()))
@@ -621,7 +626,7 @@ impl ResourceManager {
                 let non_fungible_address =
                     NonFungibleAddress::new(resource_address.clone(), input.id.clone());
                 let value = system_api
-                    .read_substate(SubstateId::NonFungible(resource_address.clone(), input.id))
+                    .substate_read(SubstateId::NonFungible(resource_address.clone(), input.id))
                     .expect("Should never fail");
                 let wrapper: NonFungibleWrapper = scrypto_decode(&value.raw).unwrap();
                 let non_fungible = wrapper.0.ok_or(ResourceManagerError::NonFungibleNotFound(

@@ -6,7 +6,7 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::abi::*;
-use crate::core::SNodeRef;
+use crate::core::Receiver;
 use crate::engine::types::RENodeId;
 use crate::engine::{api::*, call_engine, types::ProofId};
 use crate::math::*;
@@ -35,7 +35,7 @@ pub struct Proof(pub ProofId);
 
 impl Clone for Proof {
     sfunctions! {
-        SNodeRef::ProofRef(self.0) => {
+        Receiver::ProofRef(self.0) => {
             fn clone(&self) -> Self {
                 ProofCloneInput {}
             }
@@ -44,8 +44,88 @@ impl Clone for Proof {
 }
 
 impl Proof {
+    /// Validates a `Proof`'s resource address creating a `ValidatedProof` if the validation succeeds.
+    ///
+    /// This method takes ownership of the proof and validates that its resource address matches that expected by the
+    /// caller. If the validation is successful, then a `ValidatedProof` is returned, otherwise, a `ValidateProofError`
+    /// is returned.
+    ///
+    /// # Example:
+    ///
+    /// ```ignore
+    /// let proof: Proof = bucket.create_proof();
+    /// match proof.validate_proof(admin_badge) {
+    ///     Ok(validated_proof) => {
+    ///         info!(
+    ///             "Validation successful. Proof has a resource address of {} and amount of {}",
+    ///             validated_proof.resource_address(),
+    ///             validated_proof.amount(),
+    ///         );
+    ///     },
+    ///     Err(error) => {
+    ///         info!("Error validating proof: {:?}", error);
+    ///     },
+    /// }
+    /// ```
+    pub fn validate_proof(
+        self,
+        expected_resource_address: ResourceAddress,
+    ) -> Result<ValidatedProof, ValidateProofError> {
+        if self.resource_address() == expected_resource_address {
+            Ok(ValidatedProof(self))
+        } else {
+            Err(ValidateProofError::ProofResourceAddressValidationError(
+                self,
+            ))
+        }
+    }
+
+    /// Skips the validation process of the proof producing a validated proof **WITHOUT** performing any validation.
+    ///
+    /// # WARNING:
+    ///
+    /// This method skips the validation of the resource address of the proof. Therefore, the data, or `NonFungibleId`
+    /// of of the returned `ValidatedProof` should **NOT** be trusted as the proof could potentially belong to any
+    /// resource address. If you call this method, you should perform your own validation.
+    pub fn unsafe_skip_proof_validation(self) -> ValidatedProof {
+        ValidatedProof(self)
+    }
+
+    /// Converts a `ValidatedProof` into a `Proof`.
+    pub fn from_validated_proof(validated_proof: ValidatedProof) -> Self {
+        validated_proof.into()
+    }
+
     sfunctions! {
-        SNodeRef::ProofRef(self.0) => {
+        Receiver::ProofRef(self.0) => {
+            fn resource_address(&self) -> ResourceAddress {
+                ProofGetResourceAddressInput {}
+            }
+        }
+    }
+
+    sfunctions! {
+        Receiver::Consumed(RENodeId::Proof(self.0)) => {
+            pub fn drop(self) -> () {
+                ConsumingProofDropInput {}
+            }
+        }
+    }
+}
+
+/// Represents a proof of owning some resource that has had its resource address validated.
+#[derive(Debug, PartialEq, Eq, Hash)]
+pub struct ValidatedProof(pub(crate) Proof);
+
+impl Clone for ValidatedProof {
+    fn clone(&self) -> Self {
+        ValidatedProof(self.0.clone())
+    }
+}
+
+impl ValidatedProof {
+    sfunctions! {
+        Receiver::ProofRef(self.proof_id()) => {
             pub fn amount(&self) -> Decimal {
                 ProofGetAmountInput {}
             }
@@ -58,12 +138,8 @@ impl Proof {
         }
     }
 
-    sfunctions! {
-        SNodeRef::Consumed(RENodeId::Proof(self.0)) => {
-            pub fn drop(self) -> () {
-                ConsumingProofDropInput {}
-            }
-        }
+    pub fn drop(self) {
+        self.0.drop()
     }
 
     /// Whether this proof includes an ownership proof of any of the given resource.
@@ -115,6 +191,16 @@ impl Proof {
     pub fn is_empty(&self) -> bool {
         self.amount() == 0.into()
     }
+
+    fn proof_id(&self) -> ProofId {
+        self.0 .0
+    }
+}
+
+impl Into<Proof> for ValidatedProof {
+    fn into(self) -> Proof {
+        self.0
+    }
 }
 
 //========
@@ -132,6 +218,22 @@ impl std::error::Error for ParseProofError {}
 
 #[cfg(not(feature = "alloc"))]
 impl fmt::Display for ParseProofError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+/// Represents an error when validating proof.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ValidateProofError {
+    ProofResourceAddressValidationError(Proof),
+}
+
+#[cfg(not(feature = "alloc"))]
+impl std::error::Error for ValidateProofError {}
+
+#[cfg(not(feature = "alloc"))]
+impl fmt::Display for ValidateProofError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
     }
@@ -157,5 +259,15 @@ impl Proof {
         self.0.to_le_bytes().to_vec()
     }
 }
+
+impl ValidatedProof {
+    pub fn to_vec(&self) -> Vec<u8> {
+        self.0.to_vec()
+    }
+}
+
+// Note: Only `Proof` is a Scrypto type, `ValidatedProof` is not. This is because `ValidatedProof`s doesn't need to
+// implement the sbor::Encode and sbor::Decode traits as they are not meant to be used as arguments and returns to and
+// from methods. They are meant ot be used inside methods.
 
 scrypto_type!(Proof, ScryptoType::Proof, Vec::new());
