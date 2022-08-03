@@ -76,6 +76,8 @@ pub enum Instruction {
         proof: Value,
     },
 
+    DropAllProofs,
+
     CallFunction {
         package_address: Value,
         blueprint_name: Value,

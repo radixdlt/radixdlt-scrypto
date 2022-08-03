@@ -227,6 +227,12 @@ pub fn decompile(
                         .unwrap_or(format!("{}u32", proof_id)),
                 ));
             }
+            Instruction::DropAllProofs => {
+                id_validator
+                    .drop_all_proofs()
+                    .map_err(DecompileError::IdValidationError)?;
+                buf.push_str("DROP_ALL_PROOFS;\n");
+            }
             Instruction::CallFunction {
                 package_address,
                 blueprint_name,
@@ -298,7 +304,7 @@ pub fn decompile(
                 method,
             } => {
                 id_validator
-                    .move_all_resources()
+                    .move_all_buckets()
                     .map_err(DecompileError::IdValidationError)?;
                 buf.push_str(&format!(
                     "CALL_METHOD_WITH_ALL_RESOURCES ComponentAddress(\"{}\") \"{}\";\n",

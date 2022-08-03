@@ -90,7 +90,7 @@ impl Into<ResourceAddress> for RENodeId {
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum SubstateId {
     // TODO: Remove this bool which represents globalization
-    ComponentInfo(ComponentAddress, bool),
+    ComponentInfo(ComponentAddress),
     Package(PackageAddress),
     ResourceManager(ResourceAddress),
     NonFungibleSpace(ResourceAddress),
@@ -105,7 +105,7 @@ pub enum SubstateId {
 impl Into<ComponentAddress> for SubstateId {
     fn into(self) -> ComponentAddress {
         match self {
-            SubstateId::ComponentInfo(component_address, ..)
+            SubstateId::ComponentInfo(component_address)
             | SubstateId::ComponentState(component_address) => component_address,
             _ => panic!("Address is not a component address"),
         }

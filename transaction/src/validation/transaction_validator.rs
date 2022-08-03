@@ -234,6 +234,12 @@ impl TransactionValidator {
                         .map_err(TransactionValidationError::IdValidationError)?;
                     instructions.push(ExecutableInstruction::DropProof { proof_id });
                 }
+                Instruction::DropAllProofs => {
+                    id_validator
+                        .drop_all_proofs()
+                        .map_err(TransactionValidationError::IdValidationError)?;
+                    instructions.push(ExecutableInstruction::DropAllProofs);
+                }
                 Instruction::CallFunction {
                     package_address,
                     blueprint_name,
@@ -269,7 +275,7 @@ impl TransactionValidator {
                     method,
                 } => {
                     id_validator
-                        .move_all_resources()
+                        .move_all_buckets()
                         .map_err(TransactionValidationError::IdValidationError)?;
                     instructions.push(ExecutableInstruction::CallMethodWithAllResources {
                         component_address,

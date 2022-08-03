@@ -6,7 +6,7 @@ use crate::component::*;
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub enum ScryptoActor {
     Blueprint(PackageAddress, String),
-    Component(ComponentAddress, bool, PackageAddress, String),
+    Component(ComponentAddress, PackageAddress, String),
 }
 
 impl ScryptoActor {
@@ -16,13 +16,11 @@ impl ScryptoActor {
 
     pub fn component(
         component_address: ComponentAddress,
-        is_global: bool,
         package_address: PackageAddress,
         blueprint_name: String,
     ) -> Self {
         Self::Component(
             component_address,
-            is_global,
             package_address,
             blueprint_name,
         )
@@ -31,14 +29,14 @@ impl ScryptoActor {
     pub fn get_package(&self) -> &PackageAddress {
         match self {
             ScryptoActor::Blueprint(package, _blueprint) => package,
-            ScryptoActor::Component(_address, _global, package, _blueprint) => package,
+            ScryptoActor::Component(_address, package, _blueprint) => package,
         }
     }
 
     pub fn get_blueprint(&self) -> &String {
         match self {
             ScryptoActor::Blueprint(_package, blueprint) => blueprint,
-            ScryptoActor::Component(_address, _global, _package, blueprint) => blueprint,
+            ScryptoActor::Component(_address, _package, blueprint) => blueprint,
         }
     }
 
@@ -51,11 +49,10 @@ impl ScryptoActor {
         }
     }
 
-    pub fn as_component(&self) -> (ComponentAddress, bool, PackageAddress, String) {
+    pub fn as_component(&self) -> (ComponentAddress, PackageAddress, String) {
         match self {
-            Self::Component(component_address, is_global, package_address, blueprint) => (
+            Self::Component(component_address, package_address, blueprint) => (
                 *component_address,
-                *is_global,
                 *package_address,
                 blueprint.clone(),
             ),

@@ -116,7 +116,7 @@ pub fn insert_non_root_nodes<'s>(track: &mut Track<'s>, values: HashMap<RENodeId
             HeapRENode::Component(component, component_state) => {
                 let component_address = id.into();
                 track.create_uuid_substate(
-                    SubstateId::ComponentInfo(component_address, false),
+                    SubstateId::ComponentInfo(component_address),
                     component,
                 );
                 track.create_uuid_substate(
@@ -171,7 +171,7 @@ impl RENodePointer {
                     }
                     RENodeId::Vault(vault_id) => SubstateId::Vault(vault_id),
                     RENodeId::Component(component_id) => {
-                        SubstateId::ComponentInfo(component_id, false)
+                        SubstateId::ComponentInfo(component_id)
                     }
                     _ => panic!("Unexpected"),
                 };
@@ -701,7 +701,7 @@ pub enum ExecutionState<'a> {
     Consumed(RENodeId),
     AuthZone(RefMut<'a, AuthZone>),
     RENodeRef(RENodeId),
-    Component(PackageAddress, String, ComponentAddress, bool),
+    Component(PackageAddress, String, ComponentAddress),
 }
 
 impl<'p, 'g, 's, W, I, C> CallFrame<'p, 'g, 's, W, I, C>
@@ -982,7 +982,6 @@ where
                         package_address,
                         blueprint_name,
                         component_address,
-                        is_global,
                     ) => {
                         let output = {
                             let package = self
@@ -1006,7 +1005,6 @@ where
                                 Box::new(RadixEngineWasmRuntime::new(
                                     ScryptoActor::Component(
                                         component_address,
-                                        is_global,
                                         package_address.clone(),
                                         blueprint_name.clone(),
                                     ),
@@ -1142,7 +1140,7 @@ where
                     } else if self
                         .track
                         .acquire_lock(
-                            SubstateId::ComponentInfo(*component_address, true),
+                            SubstateId::ComponentInfo(*component_address),
                             false,
                             false,
                         )
@@ -1150,10 +1148,7 @@ where
                     {
                         return Some((
                             RENodeInfo {
-                                pointer: RENodePointer::Store(SubstateId::ComponentInfo(
-                                    *component_address,
-                                    true,
-                                )),
+                                pointer: RENodePointer::Store(SubstateId::ComponentInfo(*component_address)),
                                 visible: true,
                             },
                             Some(component_address),
@@ -1182,7 +1177,7 @@ where
         // TODO: Remove, currently a hack to allow for global component info retrieval
         if let Some(component_address) = address_borrowed {
             self.track
-                .release_lock(SubstateId::ComponentInfo(*component_address, true), false);
+                .release_lock(SubstateId::ComponentInfo(*component_address), false);
         }
 
         Ok((pointer.clone(), current_value))
@@ -1729,7 +1724,7 @@ where
                 };
 
                 // Lock values and setup next frame
-                let (next_pointer, is_global) = match cur_pointer.clone() {
+                let next_pointer = match cur_pointer.clone() {
                     RENodePointer::Store(substate_id) => {
                         self.track
                             .acquire_lock(substate_id.clone(), true, false)
@@ -1763,28 +1758,19 @@ where
                             })?;
                         locked_values.insert(component_state_address);
 
-                        let is_global =
-                            if let SubstateId::ComponentInfo(_component_address, is_global) =
-                                substate_id
-                            {
-                                is_global
-                            } else {
-                                panic!("Unexpected substate_id");
-                            };
 
-                        (RENodePointer::Store(substate_id), is_global)
+                        RENodePointer::Store(substate_id)
                     }
-                    RENodePointer::Heap { frame_id, root, id } => (
+                    RENodePointer::Heap { frame_id, root, id } =>
                         RENodePointer::Heap {
                             frame_id: frame_id.or(Some(self.depth)),
                             root,
                             id,
-                        },
-                        false,
-                    ),
+                        }
+                    ,
                 };
 
-                let (package_address, blueprint_name, component_address, is_global) = {
+                let (package_address, blueprint_name, component_address) = {
                     let value_ref = cur_pointer.to_ref(
                         &self.owned_heap_nodes,
                         &self.parent_heap_nodes,
@@ -1795,7 +1781,6 @@ where
                         component.package_address(),
                         component.blueprint_name().to_string(),
                         component_address,
-                        is_global,
                     )
                 };
 
@@ -1848,7 +1833,6 @@ where
                         package_address,
                         blueprint_name,
                         component_address,
-                        is_global,
                     ),
                     method_auths,
                 ))
@@ -2376,7 +2360,7 @@ where
                 let mut substates = HashMap::new();
                 let component_address = node_id.clone().into();
                 substates.insert(
-                    SubstateId::ComponentInfo(component_address, true),
+                    SubstateId::ComponentInfo(component_address),
                     Substate::Component(component),
                 );
                 substates.insert(
