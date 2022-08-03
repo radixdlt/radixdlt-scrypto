@@ -126,7 +126,7 @@ where
     }
 
     fn handle_node_globalize(&mut self, node_id: RENodeId) -> Result<ScryptoValue, RuntimeError> {
-        self.system_api.node_globalize(&node_id)?;
+        self.system_api.node_globalize(node_id)?;
         Ok(ScryptoValue::unit())
     }
 

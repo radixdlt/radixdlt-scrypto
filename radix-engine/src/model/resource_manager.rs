@@ -462,7 +462,7 @@ impl ResourceManager {
                 };
 
                 system_api
-                    .node_globalize(&resource_node_id)
+                    .node_globalize(resource_node_id)
                     .map_err(|e| match e {
                         RuntimeError::CostingError(cost_unit_error) => {
                             ResourceManagerError::CostingError(cost_unit_error)

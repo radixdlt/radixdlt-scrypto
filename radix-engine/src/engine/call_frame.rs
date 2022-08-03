@@ -1100,6 +1100,16 @@ where
             return Err(RuntimeError::RENodeNotFound(missing_node));
         }
 
+        // Check we have valid references to pass back
+        for refed_component_address in &output.refed_component_addresses {
+            let node_id = RENodeId::Component(*refed_component_address);
+            if let Some(RENodeInfo { pointer: RENodePointer::Store(..), ..}) = self.node_refs.get(&node_id) {
+                // Only allow passing back global references
+            } else {
+                return Err(RuntimeError::InvokeMethodInvalidReferencePass(node_id));
+            }
+        }
+
         // drop proofs and check resource leak
         if self.auth_zone.is_some() {
             self.invoke_method(
@@ -1473,6 +1483,18 @@ where
             self.owned_heap_nodes.insert(id, value);
         }
 
+        // Accept component references
+        for refed_component_address in &result.refed_component_addresses {
+            let node_id = RENodeId::Component(*refed_component_address);
+            self.node_refs.insert(
+                node_id,
+                RENodeInfo {
+                    pointer: RENodePointer::Store(node_id),
+                    visible: false,
+                }
+            );
+        }
+
         trace!(self, Level::Debug, "Invoking finished!");
         Ok(result)
     }
@@ -1762,13 +1784,13 @@ where
                 } else if let Some(RENodeInfo { pointer, .. }) = self.node_refs.get(&node_id) {
                     pointer.clone()
                 } else {
-                    return Err(RuntimeError::NotSupported);
+                    return Err(RuntimeError::InvokeMethodInvalidReceiver(node_id));
                 };
 
                 // Lock values and setup next frame
                 let next_pointer = match cur_pointer.clone() {
                     RENodePointer::Store(node_id) => {
-                        for substate_id in RENodeProperties::get_substate_ids(&node_id) {
+                        for substate_id in RENodeProperties::get_substate_ids(node_id) {
                             self.track
                                 .acquire_lock(substate_id.clone(), true, false)
                                 .map_err(|e| match e {
@@ -1947,7 +1969,7 @@ where
                     // Lock Vault
                     let next_pointer = match cur_pointer.clone() {
                         RENodePointer::Store(node_id) => {
-                            let substate_ids = RENodeProperties::get_substate_ids(&node_id);
+                            let substate_ids = RENodeProperties::get_substate_ids(node_id);
                             for substate_id in substate_ids {
                                 self.track
                                     .acquire_lock(substate_id.clone(), true, is_lock_fee)
@@ -2123,6 +2145,18 @@ where
             self.owned_heap_nodes.insert(id, value);
         }
 
+        // Accept component references
+        for refed_component_address in &result.refed_component_addresses {
+            let node_id = RENodeId::Component(*refed_component_address);
+            self.node_refs.insert(
+                node_id,
+                RENodeInfo {
+                    pointer: RENodePointer::Store(node_id),
+                    visible: false,
+                }
+            );
+        }
+
         trace!(self, Level::Debug, "Invoking finished!");
         Ok(result)
     }
@@ -2192,39 +2226,58 @@ where
     ) -> Result<NativeSubstateRef, CostUnitCounterError> {
         trace!(self, Level::Debug, "Borrowing substate (mut): {:?}", substate_id);
 
-        /*
         self.cost_unit_counter.consume(
             self.fee_table.system_api_cost({
-                match node_id {
-                    RENodeId::Bucket(_) => SystemApiCostingEntry::BorrowLocal,
-                    RENodeId::Proof(_) => SystemApiCostingEntry::BorrowLocal,
-                    RENodeId::Worktop => SystemApiCostingEntry::BorrowLocal,
-                    RENodeId::Vault(_) => SystemApiCostingEntry::BorrowGlobal {
+                match substate_id {
+                    SubstateId::Bucket(_) => SystemApiCostingEntry::BorrowLocal,
+                    SubstateId::Proof(_) => SystemApiCostingEntry::BorrowLocal,
+                    SubstateId::Worktop => SystemApiCostingEntry::BorrowLocal,
+                    SubstateId::Vault(_) => SystemApiCostingEntry::BorrowGlobal {
                         // TODO: figure out loaded state and size
                         loaded: false,
                         size: 0,
                     },
-                    RENodeId::Component(_) => SystemApiCostingEntry::BorrowGlobal {
+                    SubstateId::ComponentState(..) => SystemApiCostingEntry::BorrowGlobal {
                         // TODO: figure out loaded state and size
                         loaded: false,
                         size: 0,
                     },
-                    RENodeId::KeyValueStore(_) => SystemApiCostingEntry::BorrowGlobal {
+                    SubstateId::ComponentInfo(..) => SystemApiCostingEntry::BorrowGlobal {
                         // TODO: figure out loaded state and size
                         loaded: false,
                         size: 0,
                     },
-                    RENodeId::ResourceManager(_) => SystemApiCostingEntry::BorrowGlobal {
+                    SubstateId::KeyValueStoreSpace(_) => SystemApiCostingEntry::BorrowGlobal {
                         // TODO: figure out loaded state and size
                         loaded: false,
                         size: 0,
                     },
-                    RENodeId::Package(_) => SystemApiCostingEntry::BorrowGlobal {
+                    SubstateId::KeyValueStoreEntry(..) => SystemApiCostingEntry::BorrowGlobal {
                         // TODO: figure out loaded state and size
                         loaded: false,
                         size: 0,
                     },
-                    RENodeId::System => SystemApiCostingEntry::BorrowGlobal {
+                    SubstateId::ResourceManager(..) => SystemApiCostingEntry::BorrowGlobal {
+                        // TODO: figure out loaded state and size
+                        loaded: false,
+                        size: 0,
+                    },
+                    SubstateId::NonFungibleSpace(..) => SystemApiCostingEntry::BorrowGlobal {
+                        // TODO: figure out loaded state and size
+                        loaded: false,
+                        size: 0,
+                    },
+                    SubstateId::NonFungible(..) => SystemApiCostingEntry::BorrowGlobal {
+                        // TODO: figure out loaded state and size
+                        loaded: false,
+                        size: 0,
+                    },
+                    SubstateId::Package(..) => SystemApiCostingEntry::BorrowGlobal {
+                        // TODO: figure out loaded state and size
+                        loaded: false,
+                        size: 0,
+                    },
+                    SubstateId::System => SystemApiCostingEntry::BorrowGlobal {
                         // TODO: figure out loaded state and size
                         loaded: false,
                         size: 0,
@@ -2233,7 +2286,6 @@ where
             }),
             "borrow",
         )?;
-         */
 
         let node_id = SubstateProperties::get_node_id(substate_id);
 
@@ -2368,7 +2420,7 @@ where
         Ok(node_id)
     }
 
-    fn node_globalize(&mut self, node_id: &RENodeId) -> Result<(), RuntimeError> {
+    fn node_globalize(&mut self, node_id: RENodeId) -> Result<(), RuntimeError> {
         trace!(self, Level::Debug, "Globalizing value: {:?}", node_id);
         self.cost_unit_counter
             .consume(
@@ -2381,11 +2433,11 @@ where
             .map_err(RuntimeError::CostingError)?;
 
         if !RENodeProperties::can_globalize(node_id) {
-            return Err(RuntimeError::RENodeGlobalizeTypeNotAllowed(*node_id));
+            return Err(RuntimeError::RENodeGlobalizeTypeNotAllowed(node_id));
         }
 
         let mut nodes_to_take = HashSet::new();
-        nodes_to_take.insert(node_id.clone());
+        nodes_to_take.insert(node_id);
         let (taken_nodes, missing_nodes) = self.take_available_values(nodes_to_take, false)?;
         assert!(missing_nodes.is_empty());
         assert!(taken_nodes.len() == 1);
@@ -2394,7 +2446,7 @@ where
         let (substates, maybe_non_fungibles) = match root_node.root {
             HeapRENode::Component(component, component_state) => {
                 let mut substates = HashMap::new();
-                let component_address = node_id.clone().into();
+                let component_address = node_id.into();
                 substates.insert(
                     SubstateId::ComponentInfo(component_address),
                     Substate::Component(component),
@@ -2407,7 +2459,7 @@ where
             }
             HeapRENode::Package(package) => {
                 let mut substates = HashMap::new();
-                let package_address = node_id.clone().into();
+                let package_address = node_id.into();
                 substates.insert(
                     SubstateId::Package(package_address),
                     Substate::Package(package),
@@ -2416,7 +2468,7 @@ where
             }
             HeapRENode::Resource(resource_manager, non_fungibles) => {
                 let mut substates = HashMap::new();
-                let resource_address: ResourceAddress = node_id.clone().into();
+                let resource_address: ResourceAddress = node_id.into();
                 substates.insert(
                     SubstateId::ResourceManager(resource_address),
                     Substate::Resource(resource_manager),
@@ -2438,7 +2490,7 @@ where
         insert_non_root_nodes(self.track, to_store_values);
 
         if let Some(non_fungibles) = maybe_non_fungibles {
-            let resource_address: ResourceAddress = node_id.clone().into();
+            let resource_address: ResourceAddress = node_id.into();
             let parent_address = SubstateId::NonFungibleSpace(resource_address.clone());
             for (id, non_fungible) in non_fungibles {
                 self.track.set_key_value(
@@ -2448,6 +2500,11 @@ where
                 );
             }
         }
+
+        self.node_refs.insert(node_id, RENodeInfo {
+            pointer: RENodePointer::Store(node_id),
+            visible: false,
+        });
 
         Ok(())
     }

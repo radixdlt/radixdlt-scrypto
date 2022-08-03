@@ -1,10 +1,11 @@
 use scrypto::engine::types::*;
+use sbor::rust::vec;
 
 pub struct RENodeProperties;
 
 impl RENodeProperties {
     /// Specifies whether an RENode may globalize as the root node or not
-    pub fn can_globalize(node_id: &RENodeId) -> bool {
+    pub fn can_globalize(node_id: RENodeId) -> bool {
         match node_id {
             RENodeId::Bucket(..) => false,
             RENodeId::Proof(..) => false,
@@ -18,18 +19,18 @@ impl RENodeProperties {
         }
     }
 
-    pub fn get_substate_ids(node_id: &RENodeId) -> Vec<SubstateId> {
+    pub fn get_substate_ids(node_id: RENodeId) -> Vec<SubstateId> {
         match node_id {
             RENodeId::Bucket(..) => panic!("Unexpected"),
             RENodeId::Proof(..) => panic!("Unexpected"),
             RENodeId::KeyValueStore(..) => panic!("Unexpected"),
             RENodeId::Worktop => panic!("Unexpected"),
             RENodeId::Component(component_address) => vec![
-                SubstateId::ComponentInfo(*component_address),
-                SubstateId::ComponentState(*component_address),
+                SubstateId::ComponentInfo(component_address),
+                SubstateId::ComponentState(component_address),
             ],
             RENodeId::Vault(vault_id) => vec![
-                SubstateId::Vault(*vault_id)
+                SubstateId::Vault(vault_id)
             ],
             RENodeId::ResourceManager(..) => panic!("Unexpected"),
             RENodeId::Package(..) => panic!("Unexpected"),
