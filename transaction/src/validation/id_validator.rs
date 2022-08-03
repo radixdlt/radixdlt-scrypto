@@ -107,8 +107,12 @@ impl IdValidator {
         }
     }
 
-    pub fn move_all_resources(&mut self) -> Result<(), IdValidationError> {
+    pub fn drop_all_proofs(&mut self) -> Result<(), IdValidationError> {
         self.proof_ids.clear();
+        Ok(())
+    }
+
+    pub fn move_all_buckets(&mut self) -> Result<(), IdValidationError> {
         self.bucket_ids.clear();
         Ok(())
     }

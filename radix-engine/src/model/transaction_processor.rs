@@ -357,6 +357,22 @@ impl TransactionProcessor {
                                 )
                             })
                             .unwrap_or(Err(ProofNotFound(*proof_id))),
+                        ExecutableInstruction::DropAllProofs => {
+                            for (_, real_id) in proof_id_mapping.drain() {
+                                system_api
+                                    .invoke_method(
+                                        Receiver::Consumed(RENodeId::Proof(real_id)),
+                                        "drop".to_string(),
+                                        ScryptoValue::from_typed(&ConsumingProofDropInput {}),
+                                    )
+                                    .unwrap();
+                            }
+                            system_api.invoke_method(
+                                Receiver::AuthZoneRef,
+                                "clear".to_string(),
+                                ScryptoValue::from_typed(&AuthZoneClearInput {}),
+                            )
+                        }
                         ExecutableInstruction::CallFunction {
                             package_address,
                             blueprint_name,
@@ -456,26 +472,10 @@ impl TransactionProcessor {
                             method,
                         } => system_api
                             .invoke_method(
-                                Receiver::AuthZoneRef,
-                                "clear".to_string(),
-                                ScryptoValue::from_typed(&AuthZoneClearInput {}),
+                                Receiver::WorktopRef,
+                                "drain".to_string(),
+                                ScryptoValue::from_typed(&WorktopDrainInput {}),
                             )
-                            .and_then(|_| {
-                                for (_, real_id) in proof_id_mapping.drain() {
-                                    system_api
-                                        .invoke_method(
-                                            Receiver::Consumed(RENodeId::Proof(real_id)),
-                                            "drop".to_string(),
-                                            ScryptoValue::from_typed(&ConsumingProofDropInput {}),
-                                        )
-                                        .unwrap();
-                                }
-                                system_api.invoke_method(
-                                    Receiver::WorktopRef,
-                                    "drain".to_string(),
-                                    ScryptoValue::from_typed(&WorktopDrainInput {}),
-                                )
-                            })
                             .and_then(|result| {
                                 let mut buckets = Vec::new();
                                 for (bucket_id, _) in result.bucket_ids {

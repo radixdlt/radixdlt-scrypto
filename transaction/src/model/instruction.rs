@@ -73,6 +73,9 @@ pub enum Instruction {
     /// Drops a proof.
     DropProof { proof_id: ProofId },
 
+    /// Drops all of the proofs in the transaction.
+    DropAllProofs,
+
     /// Calls a blueprint function.
     ///
     /// Buckets and proofs in arguments moves from transaction context to the callee.
