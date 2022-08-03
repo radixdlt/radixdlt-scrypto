@@ -24,21 +24,51 @@ impl RadixEngineDB {
     }
 
     pub fn list_packages(&self) -> Vec<PackageAddress> {
-        let start = &scrypto_encode(&PackageAddress([0; 27]));
-        let end = &scrypto_encode(&PackageAddress([255; 27]));
-        self.list_items(start, end)
+        let start = &scrypto_encode(&SubstateId::Package(PackageAddress([0; 27])));
+        let end = &scrypto_encode(&SubstateId::Package(PackageAddress([255; 27])));
+        let substate_ids: Vec<SubstateId> = self.list_items(start, end);
+        substate_ids
+            .into_iter()
+            .map(|id| {
+                if let SubstateId::Package(package_address) = id {
+                    package_address
+                } else {
+                    panic!("Expected a package substate id.")
+                }
+            })
+            .collect()
     }
 
     pub fn list_components(&self) -> Vec<ComponentAddress> {
-        let start = &scrypto_encode(&ComponentAddress([0; 27]));
-        let end = &scrypto_encode(&ComponentAddress([255; 27]));
-        self.list_items(start, end)
+        let start = &scrypto_encode(&SubstateId::ComponentState(ComponentAddress([0; 27])));
+        let end = &scrypto_encode(&SubstateId::ComponentState(ComponentAddress([255; 27])));
+        let substate_ids: Vec<SubstateId> = self.list_items(start, end);
+        substate_ids
+            .into_iter()
+            .map(|id| {
+                if let SubstateId::ComponentState(component_address) = id {
+                    component_address
+                } else {
+                    panic!("Expected a component substate id.")
+                }
+            })
+            .collect()
     }
 
     pub fn list_resource_managers(&self) -> Vec<ResourceAddress> {
-        let start = &scrypto_encode(&ResourceAddress([0; 27]));
-        let end = &scrypto_encode(&ResourceAddress([255; 27]));
-        self.list_items(start, end)
+        let start = &scrypto_encode(&SubstateId::ResourceManager(ResourceAddress([0; 27])));
+        let end = &scrypto_encode(&SubstateId::ResourceManager(ResourceAddress([255; 27])));
+        let substate_ids: Vec<SubstateId> = self.list_items(start, end);
+        substate_ids
+            .into_iter()
+            .map(|id| {
+                if let SubstateId::ResourceManager(resource_address) = id {
+                    resource_address
+                } else {
+                    panic!("Expected a resource substate id.")
+                }
+            })
+            .collect()
     }
 
     fn list_items<T: Decode>(&self, start: &[u8], inclusive_end: &[u8]) -> Vec<T> {
@@ -70,26 +100,31 @@ impl RadixEngineDB {
 impl QueryableSubstateStore for RadixEngineDB {
     fn get_kv_store_entries(
         &self,
-        component_address: ComponentAddress,
         kv_store_id: &KeyValueStoreId,
     ) -> HashMap<Vec<u8>, Substate> {
-        let mut id = scrypto_encode(&component_address);
-        id.extend(scrypto_encode(kv_store_id));
-        let key_size = id.len();
+        let unit = scrypto_encode(&());
+        let id = scrypto_encode(&SubstateId::KeyValueStoreEntry(
+            kv_store_id.clone(),
+            scrypto_encode(&unit),
+        ));
+        let id = &id[..id.len() - 11];
 
         let mut iter = self
             .db
             .iterator(IteratorMode::From(&id, Direction::Forward));
-        iter.next(); // Key Value Store
         let mut items = HashMap::new();
         while let Some((key, value)) = iter.next() {
-            if !key.starts_with(&id) {
-                break;
-            }
-
-            let local_key = key.split_at(key_size).1.to_vec();
             let substate: OutputValue = scrypto_decode(&value.to_vec()).unwrap();
-            items.insert(local_key, substate.substate);
+            let substate_id: SubstateId = scrypto_decode(&key).unwrap();
+            if let SubstateId::KeyValueStoreEntry(id, key) = substate_id {
+                if id == *kv_store_id {
+                    items.insert(key, substate.substate)
+                } else {
+                    break;
+                }
+            } else {
+                break;
+            };
         }
         items
     }
