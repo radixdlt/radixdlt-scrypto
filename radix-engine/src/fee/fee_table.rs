@@ -158,21 +158,6 @@ impl FeeTable {
                 "add_access_check" => self.fixed_medium,
                 _ => self.fixed_high,
             },
-            Receiver::ResourceManagerRef(_) => match fn_ident {
-                "update_auth" => self.fixed_medium,
-                "lock_auth" => self.fixed_medium,
-                "create_vault" => self.fixed_medium,
-                "create_bucket" => self.fixed_medium,
-                "mint" => self.fixed_high,
-                "metadata" => self.fixed_low,
-                "resource_type" => self.fixed_low,
-                "total_supply" => self.fixed_low, // TODO: revisit this after substate refactoring
-                "update_metadata" => self.fixed_medium,
-                "update_non_fungible_data" => self.fixed_medium,
-                "non_fungible_exists" => self.fixed_low,
-                "non_fungible_data" => self.fixed_medium,
-                _ => self.fixed_high,
-            },
             // TODO: I suspect there is a bug with invoking consumed within call frame. Add tests to verify
             Receiver::Consumed(node_id) => match node_id {
                 RENodeId::Bucket(_) => self.fixed_medium,
@@ -205,6 +190,23 @@ impl FeeTable {
                             "non_fungible_ids" => self.fixed_low,
                             "resource_address" => self.fixed_low,
                             "clone" => self.fixed_high,
+                            _ => self.fixed_high,
+                        }
+                    }
+                    RENodeId::ResourceManager(..) => {
+                        match fn_ident {
+                            "update_auth" => self.fixed_medium,
+                            "lock_auth" => self.fixed_medium,
+                            "create_vault" => self.fixed_medium,
+                            "create_bucket" => self.fixed_medium,
+                            "mint" => self.fixed_high,
+                            "metadata" => self.fixed_low,
+                            "resource_type" => self.fixed_low,
+                            "total_supply" => self.fixed_low, // TODO: revisit this after substate refactoring
+                            "update_metadata" => self.fixed_medium,
+                            "update_non_fungible_data" => self.fixed_medium,
+                            "non_fungible_exists" => self.fixed_low,
+                            "non_fungible_data" => self.fixed_medium,
                             _ => self.fixed_high,
                         }
                     }

@@ -3,7 +3,7 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::engine::types::{PackageAddress, RENodeId, VaultId};
-use crate::prelude::{ComponentAddress, ResourceAddress};
+use crate::prelude::{ComponentAddress};
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub enum TypeName {
@@ -18,7 +18,6 @@ pub enum Receiver {
     Consumed(RENodeId),
     Component(ComponentAddress),
     ComponentMetaRef(ComponentAddress),
-    ResourceManagerRef(ResourceAddress),
     VaultRef(VaultId),
     NativeRENodeRef(RENodeId),
     SystemRef,

@@ -12,6 +12,7 @@ use crate::buffer::scrypto_encode;
 use crate::core::Receiver;
 use crate::crypto::*;
 use crate::engine::{api::*, call_engine, types::VaultId};
+use crate::engine::types::RENodeId;
 use crate::math::*;
 use crate::misc::*;
 use crate::resource::*;
@@ -67,7 +68,7 @@ impl Vault {
     /// Creates an empty vault to permanently hold resource of the given definition.
     pub fn new(resource_address: ResourceAddress) -> Self {
         let input = RadixEngineInput::InvokeMethod(
-            Receiver::ResourceManagerRef(resource_address),
+            Receiver::NativeRENodeRef(RENodeId::ResourceManager(resource_address)),
             "create_vault".to_string(),
             scrypto_encode(&ResourceManagerCreateVaultInput {}),
         );

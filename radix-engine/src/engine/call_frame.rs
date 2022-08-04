@@ -1645,48 +1645,64 @@ where
                     Err(RuntimeError::AuthZoneDoesNotExist)
                 }
             }
-            Receiver::ResourceManagerRef(resource_address) => {
-                let node_id = RENodeId::ResourceManager(*resource_address);
-                let substate_id: SubstateId = SubstateId::ResourceManager(*resource_address);
-                self.track
-                    .acquire_lock(substate_id.clone(), true, false)
-                    .map_err(|e| match e {
-                        TrackError::NotFound => {
-                            RuntimeError::ResourceManagerNotFound(resource_address.clone())
-                        }
-                        TrackError::Reentrancy => {
-                            panic!("Resource call has caused reentrancy")
-                        }
-                        TrackError::StateTrackError(..) => panic!("Unexpected"),
-                    })?;
-                locked_values.insert(substate_id.clone());
-                let resource_manager = self.track.read_substate(substate_id).resource_manager();
-                let method_auth = resource_manager.get_auth(&fn_ident, &input).clone();
-                next_frame_node_refs.insert(node_id.clone(), RENodePointer::Store(node_id.clone()));
-
-                Ok((
-                    REActor::Native,
-                    ExecutionState::RENodeRef(node_id),
-                    vec![method_auth],
-                ))
-            }
             Receiver::NativeRENodeRef(node_id) => {
-                match node_id {
-                    RENodeId::Bucket(..) | RENodeId::Proof(..) => {}
+                let native_substate_id = match node_id {
+                    RENodeId::Bucket(bucket_id) => SubstateId::Bucket(*bucket_id),
+                    RENodeId::Proof(proof_id) => SubstateId::Proof(*proof_id),
+                    RENodeId::ResourceManager(resource_address) => SubstateId::ResourceManager(*resource_address),
                     _ => return Err(RuntimeError::MethodDoesNotExist(fn_ident.clone())),
-                }
-                if !self.owned_heap_nodes.contains_key(&node_id) {
-                    return Err(RuntimeError::RENodeNotFound(*node_id));
-                }
-                next_frame_node_refs.insert(
-                    node_id.clone(),
+                };
+
+                let next_node_pointer = if self.owned_heap_nodes.contains_key(&node_id) {
                     RENodePointer::Heap {
                         frame_id: Some(self.depth),
                         root: node_id.clone(),
                         id: None,
-                    },
+                    }
+                } else if let Some(pointer) = self.node_refs.get(&node_id) {
+                    pointer.clone()
+                } else {
+                    match node_id {
+                        RENodeId::ResourceManager(..) => {
+                            // Let Resource Manager be globally accessible for now
+                            RENodePointer::Store(*node_id)
+                        }
+                        _ => return Err(RuntimeError::InvokeMethodInvalidReceiver(*node_id))
+                    }
+                };
+                next_frame_node_refs.insert(
+                    node_id.clone(),
+                    next_node_pointer.clone(),
                 );
-                Ok((REActor::Native, ExecutionState::RENodeRef(*node_id), vec![]))
+
+                // Lock Substate
+                match next_node_pointer {
+                    RENodePointer::Store(..) => {
+                        self.track
+                            .acquire_lock(native_substate_id.clone(), true, false)
+                            .map_err(|e| match e {
+                                TrackError::StateTrackError(..) | TrackError::NotFound => {
+                                    panic!("Unexpected")
+                                }
+                                TrackError::Reentrancy => RuntimeError::Reentrancy(native_substate_id.clone())
+                            })?;
+                        locked_values.insert(native_substate_id.clone());
+                    }
+                    RENodePointer::Heap {..} => {}
+                }
+
+                // Load method authorization
+                let method_auth = match node_id {
+                    RENodeId::ResourceManager(..) => {
+                        let resource_manager = self.track.read_substate(native_substate_id).resource_manager();
+                        let method_auth = resource_manager.get_auth(&fn_ident, &input).clone();
+                        vec![method_auth]
+                    }
+                    _ => vec![]
+                };
+
+
+                Ok((REActor::Native, ExecutionState::RENodeRef(*node_id), method_auth))
             }
             Receiver::WorktopRef => {
                 let node_id = RENodeId::Worktop;
