@@ -18,7 +18,7 @@ use crate::model::*;
 use crate::transaction::*;
 use crate::wasm::*;
 
-pub struct ExecutionParameters {
+pub struct ExecutionConfig {
     pub cost_unit_price: Decimal,
     pub max_call_depth: usize,
     pub system_loan: u32,
@@ -26,7 +26,7 @@ pub struct ExecutionParameters {
     pub trace: bool,
 }
 
-impl Default for ExecutionParameters {
+impl Default for ExecutionConfig {
     fn default() -> Self {
         Self {
             cost_unit_price: DEFAULT_COST_UNIT_PRICE.parse().unwrap(),
@@ -73,7 +73,7 @@ where
     pub fn execute_and_commit<T: ExecutableTransaction>(
         &mut self,
         transaction: &T,
-        params: &ExecutionParameters,
+        params: &ExecutionConfig,
     ) -> TransactionReceipt {
         let receipt = self.execute(transaction, params);
         receipt.state_updates.commit(self.substate_store);
@@ -83,7 +83,7 @@ where
     pub fn execute<T: ExecutableTransaction>(
         &mut self,
         transaction: &T,
-        params: &ExecutionParameters,
+        params: &ExecutionConfig,
     ) -> TransactionReceipt {
         let fee_reserve = SystemLoanFeeReserve::new(
             transaction.cost_unit_limit(),
@@ -98,7 +98,7 @@ where
     pub fn execute_with_fee_reserve<T: ExecutableTransaction, C: FeeReserve>(
         &mut self,
         transaction: &T,
-        params: &ExecutionParameters,
+        params: &ExecutionConfig,
         mut fee_reserve: C,
     ) -> TransactionReceipt {
         #[cfg(not(feature = "alloc"))]

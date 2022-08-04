@@ -288,7 +288,7 @@ impl WasmModule {
             }
         }
 
-        // TODO: do we need to enforce limit on the number of locals and parameters?
+        // TODO: do we need to enforce limit on the number of locals and config?
 
         Ok(self)
     }

@@ -32,7 +32,7 @@ impl WasmValidator {
     ) -> Result<(), PrepareError> {
         // Not all "valid" wasm modules are instrumentable, with the instrumentation library
         // we are using. To deal with this, we attempt to instrument the input module with
-        // some mocked parameters and reject it if fails to do so.
+        // some mocked config and reject it if fails to do so.
         let mocked_wasm_metering_params =
             WasmMeteringParams::new(InstructionCostRules::constant(1, 100), 500);
 
