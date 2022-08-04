@@ -149,10 +149,6 @@ impl FeeTable {
             Receiver::Component(_) => {
                 0 // Costing is through instrumentation
             }
-            Receiver::ComponentMetaRef(_) => match fn_ident {
-                "add_access_check" => self.fixed_medium,
-                _ => self.fixed_high,
-            },
             // TODO: I suspect there is a bug with invoking consumed within call frame. Add tests to verify
             Receiver::Consumed(node_id) => match node_id {
                 RENodeId::Bucket(_) => self.fixed_medium,
@@ -215,6 +211,10 @@ impl FeeTable {
                         "assert_contains_amount" => self.fixed_low,
                         "assert_contains_non_fungibles" => self.fixed_low,
                         "drain" => self.fixed_medium,
+                        _ => self.fixed_high,
+                    },
+                    RENodeId::Component(..) => match fn_ident {
+                        "add_access_check" => self.fixed_medium,
                         _ => self.fixed_high,
                     },
                     _ => self.fixed_high, // TODO: Clean this up

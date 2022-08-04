@@ -60,7 +60,7 @@ impl Component {
 
     pub fn add_access_check(&mut self, access_rules: AccessRules) -> &mut Self {
         let input = RadixEngineInput::InvokeMethod(
-            Receiver::ComponentMetaRef(self.0),
+            Receiver::NativeRENodeRef(RENodeId::Component(self.0)),
             "add_access_check".to_string(),
             scrypto_encode(&ComponentAddAccessCheckInput { access_rules }),
         );

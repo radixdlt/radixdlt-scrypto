@@ -1598,34 +1598,6 @@ where
                     method_auths,
                 ))
             }
-            Receiver::AuthZoneRef => {
-                if let Some(auth_zone) = &self.auth_zone {
-                    for resource_address in &input.resource_addresses {
-                        self.track
-                            .acquire_lock(
-                                SubstateId::ResourceManager(resource_address.clone()),
-                                false,
-                                false,
-                            )
-                            .map_err(|e| match e {
-                                TrackError::NotFound => {
-                                    RuntimeError::ResourceManagerNotFound(resource_address.clone())
-                                }
-                                TrackError::Reentrancy => {
-                                    panic!("Package reentrancy error should never occur.")
-                                }
-                                TrackError::StateTrackError(..) => panic!("Unexpected"),
-                            })?;
-                        locked_values.insert(SubstateId::ResourceManager(resource_address.clone()));
-                        let node_id = RENodeId::ResourceManager(resource_address.clone());
-                        next_frame_node_refs.insert(node_id, RENodePointer::Store(node_id));
-                    }
-                    let borrowed = auth_zone.borrow_mut();
-                    Ok((REActor::Native, ExecutionState::AuthZone(borrowed), vec![]))
-                } else {
-                    Err(RuntimeError::AuthZoneDoesNotExist)
-                }
-            }
             Receiver::NativeRENodeRef(node_id) => {
                 let native_substate_id = match node_id {
                     RENodeId::Bucket(bucket_id) => SubstateId::Bucket(*bucket_id),
@@ -1635,10 +1607,11 @@ where
                     }
                     RENodeId::System => SubstateId::System,
                     RENodeId::Worktop => SubstateId::Worktop,
+                    RENodeId::Component(component_address) => SubstateId::ComponentInfo(*component_address),
                     _ => return Err(RuntimeError::MethodDoesNotExist(fn_ident.clone())),
                 };
 
-                let next_node_pointer = if self.owned_heap_nodes.contains_key(&node_id) {
+                let node_pointer = if self.owned_heap_nodes.contains_key(&node_id) {
                     RENodePointer::Heap {
                         frame_id: self.depth,
                         root: node_id.clone(),
@@ -1656,10 +1629,10 @@ where
                         _ => return Err(RuntimeError::InvokeMethodInvalidReceiver(*node_id)),
                     }
                 };
-                next_frame_node_refs.insert(node_id.clone(), next_node_pointer.clone());
+                next_frame_node_refs.insert(node_id.clone(), node_pointer.clone());
 
                 // Lock Substate
-                match next_node_pointer {
+                match node_pointer {
                     RENodePointer::Store(..) => {
                         self.track
                             .acquire_lock(native_substate_id.clone(), true, false)
@@ -1676,6 +1649,31 @@ where
                         locked_values.insert(native_substate_id.clone());
                     }
                     RENodePointer::Heap { .. } => {}
+                }
+
+                // Lock Additional Substates
+                match node_id {
+                    RENodeId::Component(..) => {
+                        let node_ref = node_pointer.to_ref(
+                            self.depth,
+                            &mut self.owned_heap_nodes,
+                            &mut self.parent_heap_nodes,
+                            &mut self.track,
+                        );
+                        let package_address = node_ref.component_info().package_address();
+                        let package_substate_id = SubstateId::Package(package_address);
+                        let package_node_id = RENodeId::Package(package_address);
+                        self.track
+                            .acquire_lock(package_substate_id.clone(), false, false)
+                            .map_err(|e| match e {
+                                TrackError::NotFound => panic!("Should exist"),
+                                TrackError::Reentrancy => RuntimeError::PackageReentrancy,
+                                TrackError::StateTrackError(..) => panic!("Unexpected"),
+                            })?;
+                        locked_values.insert(package_substate_id.clone());
+                        next_frame_node_refs.insert(package_node_id, RENodePointer::Store(package_node_id));
+                    }
+                    _ => {}
                 }
 
                 // Lock Resource Managers in request
@@ -1721,6 +1719,12 @@ where
                             _ => vec![],
                         }
                     }
+                    RENodeId::Component(..) => {
+                        match node_pointer {
+                            RENodePointer::Store(..) => vec![MethodAuthorization::DenyAll],
+                            RENodePointer::Heap {..} => vec![],
+                        }
+                    }
                     _ => vec![],
                 };
 
@@ -1728,6 +1732,117 @@ where
                     REActor::Native,
                     ExecutionState::RENodeRef(*node_id),
                     method_auth,
+                ))
+            }
+            Receiver::AuthZoneRef => {
+                if let Some(auth_zone) = &self.auth_zone {
+                    for resource_address in &input.resource_addresses {
+                        self.track
+                            .acquire_lock(
+                                SubstateId::ResourceManager(resource_address.clone()),
+                                false,
+                                false,
+                            )
+                            .map_err(|e| match e {
+                                TrackError::NotFound => {
+                                    RuntimeError::ResourceManagerNotFound(resource_address.clone())
+                                }
+                                TrackError::Reentrancy => {
+                                    panic!("Package reentrancy error should never occur.")
+                                }
+                                TrackError::StateTrackError(..) => panic!("Unexpected"),
+                            })?;
+                        locked_values.insert(SubstateId::ResourceManager(resource_address.clone()));
+                        let node_id = RENodeId::ResourceManager(resource_address.clone());
+                        next_frame_node_refs.insert(node_id, RENodePointer::Store(node_id));
+                    }
+                    let borrowed = auth_zone.borrow_mut();
+                    Ok((REActor::Native, ExecutionState::AuthZone(borrowed), vec![]))
+                } else {
+                    Err(RuntimeError::AuthZoneDoesNotExist)
+                }
+            }
+            Receiver::VaultRef(vault_id) => {
+                // Find value
+                let node_id = RENodeId::Vault(*vault_id);
+                let node_pointer = if self.owned_heap_nodes.contains_key(&node_id) {
+                    RENodePointer::Heap {
+                        frame_id: self.depth,
+                        root: node_id,
+                        id: Option::None,
+                    }
+                } else {
+                    let maybe_pointer = self.node_refs.get(&node_id);
+                    maybe_pointer
+                        .cloned()
+                        .ok_or(RuntimeError::RENodeNotFound(RENodeId::Vault(*vault_id)))?
+                };
+                if is_lock_fee && !matches!(node_pointer, RENodePointer::Store { .. }) {
+                    return Err(RuntimeError::LockFeeError(LockFeeError::RENodeNotInTrack));
+                }
+
+                // Lock Vault
+                match node_pointer {
+                    RENodePointer::Store(RENodeId::Vault(vault_id)) => {
+                        let substate_id = SubstateId::Vault(vault_id);
+                        self.track
+                            .acquire_lock(substate_id.clone(), true, is_lock_fee)
+                            .map_err(|e| match e {
+                                TrackError::NotFound | TrackError::Reentrancy => {
+                                    panic!("Illegal state")
+                                }
+                                TrackError::StateTrackError(e) => {
+                                    RuntimeError::LockFeeError(match e {
+                                        StateTrackError::RENodeAlreadyTouched => {
+                                            LockFeeError::RENodeAlreadyTouched
+                                        }
+                                    })
+                                }
+                            })?;
+                        locked_values.insert(substate_id);
+                    }
+                    _ => {}
+                };
+
+                // Lock Resource
+                let resource_address = {
+                    let value_ref = node_pointer.to_ref(
+                        self.depth,
+                        &mut self.owned_heap_nodes,
+                        &mut self.parent_heap_nodes,
+                        &mut self.track,
+                    );
+                    value_ref.vault().resource_address()
+                };
+                self.track
+                    .acquire_lock(SubstateId::ResourceManager(resource_address), true, false)
+                    .expect("Should never fail.");
+                locked_values.insert(SubstateId::ResourceManager(resource_address));
+
+                // Retrieve Method Authorization
+                let method_auth = {
+                    let resource_address = {
+                        let value_ref = node_pointer.to_ref(
+                            self.depth,
+                            &mut self.owned_heap_nodes,
+                            &mut self.parent_heap_nodes,
+                            &mut self.track,
+                        );
+                        value_ref.vault().resource_address()
+                    };
+                    let resource_manager = self
+                        .track
+                        .read_substate(SubstateId::ResourceManager(resource_address))
+                        .resource_manager();
+                    resource_manager.get_vault_auth(&fn_ident).clone()
+                };
+
+                next_frame_node_refs.insert(node_id.clone(), node_pointer);
+
+                Ok((
+                    REActor::Native,
+                    ExecutionState::RENodeRef(node_id),
+                    vec![method_auth],
                 ))
             }
             Receiver::Component(component_address) => {
@@ -1855,143 +1970,6 @@ where
                     REActor::Scrypto(scrypto_actor),
                     execution_state,
                     method_auths,
-                ))
-            }
-            Receiver::ComponentMetaRef(component_address) => {
-                let component_address = *component_address;
-
-                // Find value
-                let node_id = RENodeId::Component(component_address);
-                let node_pointer = if self.owned_heap_nodes.contains_key(&node_id) {
-                    RENodePointer::Heap {
-                        frame_id: self.depth,
-                        root: node_id.clone(),
-                        id: None,
-                    }
-                } else {
-                    return Err(RuntimeError::NotSupported);
-                };
-
-                // Setup next frame
-                match node_pointer {
-                    RENodePointer::Heap {
-                        frame_id: _,
-                        root,
-                        id,
-                    } => {
-                        let owned_ref = self.owned_heap_nodes.get_mut(&root).unwrap();
-
-                        // Lock package
-                        let package_address = owned_ref.root().component().package_address();
-                        self.track
-                            .acquire_lock(SubstateId::Package(package_address), false, false)
-                            .map_err(|e| match e {
-                                TrackError::NotFound => panic!("Should exist"),
-                                TrackError::Reentrancy => RuntimeError::PackageReentrancy,
-                                TrackError::StateTrackError(..) => panic!("Unexpected"),
-                            })?;
-                        locked_values.insert(SubstateId::Package(package_address));
-                        next_frame_node_refs.insert(
-                            RENodeId::Package(package_address),
-                            RENodePointer::Store(RENodeId::Package(package_address)),
-                        );
-
-                        next_frame_node_refs.insert(
-                            node_id,
-                            RENodePointer::Heap {
-                                frame_id: self.depth,
-                                root: root.clone(),
-                                id: id.clone(),
-                            },
-                        );
-                    }
-                    _ => panic!("Unexpected"),
-                }
-
-                Ok((REActor::Native, ExecutionState::RENodeRef(node_id), vec![]))
-            }
-
-            Receiver::VaultRef(vault_id) => {
-                // Find value
-                let node_id = RENodeId::Vault(*vault_id);
-                let node_pointer = if self.owned_heap_nodes.contains_key(&node_id) {
-                    RENodePointer::Heap {
-                        frame_id: self.depth,
-                        root: node_id,
-                        id: Option::None,
-                    }
-                } else {
-                    let maybe_pointer = self.node_refs.get(&node_id);
-                    maybe_pointer
-                        .cloned()
-                        .ok_or(RuntimeError::RENodeNotFound(RENodeId::Vault(*vault_id)))?
-                };
-                if is_lock_fee && !matches!(node_pointer, RENodePointer::Store { .. }) {
-                    return Err(RuntimeError::LockFeeError(LockFeeError::RENodeNotInTrack));
-                }
-
-                // Lock Vault
-                match node_pointer {
-                    RENodePointer::Store(RENodeId::Vault(vault_id)) => {
-                        let substate_id = SubstateId::Vault(vault_id);
-                        self.track
-                            .acquire_lock(substate_id.clone(), true, is_lock_fee)
-                            .map_err(|e| match e {
-                                TrackError::NotFound | TrackError::Reentrancy => {
-                                    panic!("Illegal state")
-                                }
-                                TrackError::StateTrackError(e) => {
-                                    RuntimeError::LockFeeError(match e {
-                                        StateTrackError::RENodeAlreadyTouched => {
-                                            LockFeeError::RENodeAlreadyTouched
-                                        }
-                                    })
-                                }
-                            })?;
-                        locked_values.insert(substate_id);
-                    }
-                    _ => {}
-                };
-
-                // Lock Resource
-                let resource_address = {
-                    let value_ref = node_pointer.to_ref(
-                        self.depth,
-                        &mut self.owned_heap_nodes,
-                        &mut self.parent_heap_nodes,
-                        &mut self.track,
-                    );
-                    value_ref.vault().resource_address()
-                };
-                self.track
-                    .acquire_lock(SubstateId::ResourceManager(resource_address), true, false)
-                    .expect("Should never fail.");
-                locked_values.insert(SubstateId::ResourceManager(resource_address));
-
-                // Retrieve Method Authorization
-                let method_auth = {
-                    let resource_address = {
-                        let value_ref = node_pointer.to_ref(
-                            self.depth,
-                            &mut self.owned_heap_nodes,
-                            &mut self.parent_heap_nodes,
-                            &mut self.track,
-                        );
-                        value_ref.vault().resource_address()
-                    };
-                    let resource_manager = self
-                        .track
-                        .read_substate(SubstateId::ResourceManager(resource_address))
-                        .resource_manager();
-                    resource_manager.get_vault_auth(&fn_ident).clone()
-                };
-
-                next_frame_node_refs.insert(node_id.clone(), node_pointer);
-
-                Ok((
-                    REActor::Native,
-                    ExecutionState::RENodeRef(node_id),
-                    vec![method_auth],
                 ))
             }
         }?;

@@ -17,7 +17,6 @@ pub enum TypeName {
 pub enum Receiver {
     Consumed(RENodeId),
     Component(ComponentAddress),
-    ComponentMetaRef(ComponentAddress),
     VaultRef(VaultId),
     NativeRENodeRef(RENodeId),
     AuthZoneRef,

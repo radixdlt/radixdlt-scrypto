@@ -119,19 +119,20 @@ impl Component {
 
                 // Abi checks
                 {
-                    let component_ref = system_api
-                        .borrow_node(&node_id)
-                        .map_err(ComponentError::CostingError)?;
-                    let component = component_ref.component_info();
-                    let component_name = component.blueprint_name().to_owned();
-                    let package_id = RENodeId::Package(component.package_address.clone());
-                    drop(component);
-                    drop(component_ref);
+                    let (package_id, blueprint_name) = {
+                        let component_ref = system_api
+                            .borrow_node(&node_id)
+                            .map_err(ComponentError::CostingError)?;
+                        let component = component_ref.component_info();
+                        let blueprint_name = component.blueprint_name().to_owned();
+                        (RENodeId::Package(component.package_address.clone()), blueprint_name)
+                    };
+
                     let package_ref = system_api
                         .borrow_node(&package_id)
                         .map_err(ComponentError::CostingError)?;
                     let package = package_ref.package();
-                    let blueprint_abi = package.blueprint_abi(&component_name).unwrap();
+                    let blueprint_abi = package.blueprint_abi(&blueprint_name).unwrap();
                     for (func_name, _) in input.access_rules.iter() {
                         if !blueprint_abi.contains_fn(func_name.as_str()) {
                             return Err(ComponentError::BlueprintFunctionDoesNotExist(
