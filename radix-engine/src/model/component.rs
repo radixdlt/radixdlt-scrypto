@@ -122,7 +122,7 @@ impl Component {
                     let component_ref = system_api
                         .borrow_node(&node_id)
                         .map_err(ComponentError::CostingError)?;
-                    let component = component_ref.component();
+                    let component = component_ref.component_info();
                     let component_name = component.blueprint_name().to_owned();
                     let package_id = RENodeId::Package(component.package_address.clone());
                     drop(component);
