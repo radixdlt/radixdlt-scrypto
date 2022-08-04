@@ -1671,6 +1671,27 @@ where
                     RENodePointer::Heap {..} => {}
                 }
 
+                // Lock Resource Managers in request
+                // TODO: Remove when references cleaned up
+                for resource_address in &input.resource_addresses {
+                    let resource_substate_id = SubstateId::ResourceManager(resource_address.clone());
+                    let node_id = RENodeId::ResourceManager(resource_address.clone());
+                    self.track
+                        .acquire_lock(
+                            resource_substate_id.clone(),
+                            false,
+                            false,
+                        )
+                        .map_err(|e| match e {
+                            TrackError::NotFound => RuntimeError::RENodeNotFound(node_id),
+                            TrackError::Reentrancy => RuntimeError::Reentrancy(resource_substate_id),
+                            TrackError::StateTrackError(..) => panic!("Unexpected"),
+                        })?;
+
+                    locked_values.insert(SubstateId::ResourceManager(resource_address.clone()));
+                    next_frame_node_refs.insert(node_id, RENodePointer::Store(node_id));
+                }
+
                 // Load method authorization
                 let method_auth = match node_id {
                     RENodeId::ResourceManager(..) => {
