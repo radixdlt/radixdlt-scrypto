@@ -8,6 +8,7 @@ use crate::component::*;
 use crate::core::*;
 use crate::crypto::*;
 use crate::engine::{api::*, call_engine};
+use crate::engine::types::RENodeId;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct SystemGetCurrentEpochInput {}
@@ -80,7 +81,7 @@ impl Runtime {
     /// Returns the transaction hash.
     pub fn transaction_hash() -> Hash {
         let input = RadixEngineInput::InvokeMethod(
-            Receiver::SystemRef,
+            Receiver::NativeRENodeRef(RENodeId::System),
             "transaction_hash".to_string(),
             scrypto_encode(&SystemGetTransactionHashInput {}),
         );
@@ -90,7 +91,7 @@ impl Runtime {
     /// Returns the current epoch number.
     pub fn current_epoch() -> u64 {
         let input = RadixEngineInput::InvokeMethod(
-            Receiver::SystemRef,
+            Receiver::NativeRENodeRef(RENodeId::System),
             "get_epoch".to_string(),
             scrypto_encode(&SystemGetCurrentEpochInput {}),
         );

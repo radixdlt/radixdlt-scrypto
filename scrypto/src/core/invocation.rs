@@ -20,7 +20,6 @@ pub enum Receiver {
     ComponentMetaRef(ComponentAddress),
     VaultRef(VaultId),
     NativeRENodeRef(RENodeId),
-    SystemRef,
     WorktopRef,
     AuthZoneRef,
 }

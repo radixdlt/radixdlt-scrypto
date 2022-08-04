@@ -1593,30 +1593,6 @@ where
                     method_auths,
                 ))
             }
-            Receiver::SystemRef => {
-                self.track
-                    .acquire_lock(SubstateId::System, true, false)
-                    .expect("System access should never fail");
-                locked_values.insert(SubstateId::System);
-                let node_id = RENodeId::System;
-                next_frame_node_refs.insert(node_id, RENodePointer::Store(node_id));
-                let fn_str: &str = &fn_ident;
-                let access_rules = match fn_str {
-                    "set_epoch" => {
-                        vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(
-                            HardProofRule::Require(HardResourceOrNonFungible::Resource(
-                                SYSTEM_TOKEN,
-                            )),
-                        ))]
-                    }
-                    _ => vec![],
-                };
-                Ok((
-                    REActor::Native,
-                    ExecutionState::RENodeRef(RENodeId::System),
-                    access_rules,
-                ))
-            }
             Receiver::AuthZoneRef => {
                 if let Some(auth_zone) = &self.auth_zone {
                     for resource_address in &input.resource_addresses {
@@ -1650,6 +1626,7 @@ where
                     RENodeId::Bucket(bucket_id) => SubstateId::Bucket(*bucket_id),
                     RENodeId::Proof(proof_id) => SubstateId::Proof(*proof_id),
                     RENodeId::ResourceManager(resource_address) => SubstateId::ResourceManager(*resource_address),
+                    RENodeId::System => SubstateId::System,
                     _ => return Err(RuntimeError::MethodDoesNotExist(fn_ident.clone())),
                 };
 
@@ -1663,8 +1640,9 @@ where
                     pointer.clone()
                 } else {
                     match node_id {
-                        RENodeId::ResourceManager(..) => {
-                            // Let Resource Manager be globally accessible for now
+                        // Let these be globally accessible for now
+                        // TODO: Remove when references cleaned up
+                        RENodeId::ResourceManager(..) | RENodeId::System => {
                             RENodePointer::Store(*node_id)
                         }
                         _ => return Err(RuntimeError::InvokeMethodInvalidReceiver(*node_id))
@@ -1681,9 +1659,11 @@ where
                         self.track
                             .acquire_lock(native_substate_id.clone(), true, false)
                             .map_err(|e| match e {
-                                TrackError::StateTrackError(..) | TrackError::NotFound => {
+                                TrackError::StateTrackError(..) => {
                                     panic!("Unexpected")
                                 }
+                                // TODO: Remove when references cleaned up
+                                TrackError::NotFound => RuntimeError::RENodeNotFound(*node_id),
                                 TrackError::Reentrancy => RuntimeError::Reentrancy(native_substate_id.clone())
                             })?;
                         locked_values.insert(native_substate_id.clone());
@@ -1698,9 +1678,21 @@ where
                         let method_auth = resource_manager.get_auth(&fn_ident, &input).clone();
                         vec![method_auth]
                     }
+                    RENodeId::System => {
+                        let fn_str: &str = &fn_ident;
+                        match fn_str {
+                            "set_epoch" => {
+                                vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(
+                                    HardProofRule::Require(HardResourceOrNonFungible::Resource(
+                                        SYSTEM_TOKEN,
+                                    )),
+                                ))]
+                            }
+                            _ => vec![],
+                        }
+                    }
                     _ => vec![]
                 };
-
 
                 Ok((REActor::Native, ExecutionState::RENodeRef(*node_id), method_auth))
             }

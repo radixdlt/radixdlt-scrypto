@@ -137,11 +137,6 @@ impl FeeTable {
         _input: &ScryptoValue,
     ) -> u32 {
         match receiver {
-            Receiver::SystemRef => match fn_ident {
-                "current_epoch" => self.fixed_low,
-                "transaction_hash" => self.fixed_low,
-                _ => self.fixed_high,
-            },
             Receiver::AuthZoneRef => match fn_ident {
                 "pop" => self.fixed_low,
                 "push" => self.fixed_low,
@@ -172,6 +167,13 @@ impl FeeTable {
             },
             Receiver::NativeRENodeRef(node_id) => {
                 match node_id {
+                    RENodeId::System => {
+                        match fn_ident {
+                            "current_epoch" => self.fixed_low,
+                            "transaction_hash" => self.fixed_low,
+                            _ => self.fixed_high,
+                        }
+                    },
                     RENodeId::Bucket(..) => {
                         match fn_ident {
                             "take" => self.fixed_medium,
