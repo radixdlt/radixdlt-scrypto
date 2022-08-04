@@ -167,34 +167,28 @@ impl FeeTable {
             },
             Receiver::NativeRENodeRef(node_id) => {
                 match node_id {
-                    RENodeId::System => {
-                        match fn_ident {
-                            "current_epoch" => self.fixed_low,
-                            "transaction_hash" => self.fixed_low,
-                            _ => self.fixed_high,
-                        }
+                    RENodeId::System => match fn_ident {
+                        "current_epoch" => self.fixed_low,
+                        "transaction_hash" => self.fixed_low,
+                        _ => self.fixed_high,
                     },
-                    RENodeId::Bucket(..) => {
-                        match fn_ident {
-                            "take" => self.fixed_medium,
-                            "take_non_fungibles" => self.fixed_medium,
-                            "non_fungible_ids" => self.fixed_medium,
-                            "put" => self.fixed_medium,
-                            "amount" => self.fixed_low,
-                            "resource_address" => self.fixed_low,
-                            "create_proof" => self.fixed_low,
-                            _ => self.fixed_high,
-                        }
-                    }
-                    RENodeId::Proof(..) => {
-                        match fn_ident {
-                            "amount" => self.fixed_low,
-                            "non_fungible_ids" => self.fixed_low,
-                            "resource_address" => self.fixed_low,
-                            "clone" => self.fixed_high,
-                            _ => self.fixed_high,
-                        }
-                    }
+                    RENodeId::Bucket(..) => match fn_ident {
+                        "take" => self.fixed_medium,
+                        "take_non_fungibles" => self.fixed_medium,
+                        "non_fungible_ids" => self.fixed_medium,
+                        "put" => self.fixed_medium,
+                        "amount" => self.fixed_low,
+                        "resource_address" => self.fixed_low,
+                        "create_proof" => self.fixed_low,
+                        _ => self.fixed_high,
+                    },
+                    RENodeId::Proof(..) => match fn_ident {
+                        "amount" => self.fixed_low,
+                        "non_fungible_ids" => self.fixed_low,
+                        "resource_address" => self.fixed_low,
+                        "clone" => self.fixed_high,
+                        _ => self.fixed_high,
+                    },
                     RENodeId::ResourceManager(..) => {
                         match fn_ident {
                             "update_auth" => self.fixed_medium,
@@ -212,9 +206,20 @@ impl FeeTable {
                             _ => self.fixed_high,
                         }
                     }
-                    _ => self.fixed_high // TODO: Clean this up
+                    RENodeId::Worktop => match fn_ident {
+                        "put" => self.fixed_medium,
+                        "take_amount" => self.fixed_medium,
+                        "take_all" => self.fixed_medium,
+                        "take_non_fungibles" => self.fixed_medium,
+                        "assert_contains" => self.fixed_low,
+                        "assert_contains_amount" => self.fixed_low,
+                        "assert_contains_non_fungibles" => self.fixed_low,
+                        "drain" => self.fixed_medium,
+                        _ => self.fixed_high,
+                    },
+                    _ => self.fixed_high, // TODO: Clean this up
                 }
-            },
+            }
             Receiver::VaultRef(_) => match fn_ident {
                 "put" => self.fixed_medium,
                 "take" => self.fixed_medium, // TODO: revisit this if vault is not loaded in full
@@ -226,17 +231,6 @@ impl FeeTable {
                 "create_proof_by_amount" => self.fixed_high,
                 "create_proof_by_ids" => self.fixed_high,
                 "lock_fee" => self.fixed_medium,
-                _ => self.fixed_high,
-            },
-            Receiver::WorktopRef => match fn_ident {
-                "put" => self.fixed_medium,
-                "take_amount" => self.fixed_medium,
-                "take_all" => self.fixed_medium,
-                "take_non_fungibles" => self.fixed_medium,
-                "assert_contains" => self.fixed_low,
-                "assert_contains_amount" => self.fixed_low,
-                "assert_contains_non_fungibles" => self.fixed_low,
-                "drain" => self.fixed_medium,
                 _ => self.fixed_high,
             },
         }
