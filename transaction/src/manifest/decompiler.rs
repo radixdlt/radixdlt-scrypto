@@ -63,7 +63,7 @@ pub fn decompile(
                 let name = format!("bucket{}", buckets.len() + 1);
                 buckets.insert(bucket_id, name.clone());
                 buf.push_str(&format!(
-                    "TAKE_FROM_WORKTOP_BY_IDS TreeSet<NonFungibleId>({}) ResourceAddress(\"{}\") Bucket(\"{}\");\n",
+                    "TAKE_FROM_WORKTOP_BY_IDS Set<NonFungibleId>({}) ResourceAddress(\"{}\") Bucket(\"{}\");\n",
                     ids.iter()
                     .map(|k| format!("NonFungibleId(\"{}\")", k))
                     .collect::<Vec<String>>()
@@ -108,7 +108,7 @@ pub fn decompile(
                 resource_address,
             } => {
                 buf.push_str(&format!(
-                    "ASSERT_WORKTOP_CONTAINS_BY_IDS TreeSet<NonFungibleId>({}) ResourceAddress(\"{}\");\n",
+                    "ASSERT_WORKTOP_CONTAINS_BY_IDS Set<NonFungibleId>({}) ResourceAddress(\"{}\");\n",
                     ids.iter()
                         .map(|k| format!("NonFungibleId(\"{}\")", k))
                         .collect::<Vec<String>>()
@@ -178,7 +178,7 @@ pub fn decompile(
                 let name = format!("proof{}", proofs.len() + 1);
                 proofs.insert(proof_id, name.clone());
                 buf.push_str(&format!(
-                    "CREATE_PROOF_FROM_AUTH_ZONE_BY_IDS TreeSet<NonFungibleId>({}) ResourceAddress(\"{}\") Proof(\"{}\");\n",ids.iter()
+                    "CREATE_PROOF_FROM_AUTH_ZONE_BY_IDS Set<NonFungibleId>({}) ResourceAddress(\"{}\") Proof(\"{}\");\n",ids.iter()
                     .map(|k| format!("NonFungibleId(\"{}\")", k))
                     .collect::<Vec<String>>()
                     .join(", "),

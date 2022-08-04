@@ -5,8 +5,6 @@ use crate::rust::rc::Rc;
 use crate::rust::string::String;
 use crate::rust::vec::Vec;
 
-// TODO: fine-tune the codes
-
 // primitive types
 pub const TYPE_UNIT: u8 = 0x00;
 pub const TYPE_BOOL: u8 = 0x01;
@@ -25,24 +23,24 @@ pub const TYPE_STRING: u8 = 0x0c;
 // struct and enum
 pub const TYPE_STRUCT: u8 = 0x10;
 pub const TYPE_ENUM: u8 = 0x11;
-pub const TYPE_OPTION: u8 = 0x20; // enum Option<T> { Some(T), None }   TODO: update codes
-pub const TYPE_RESULT: u8 = 0x24; // enum Result<T, E> { Ok(T), Err(E) }
+pub const TYPE_OPTION: u8 = 0x12; // enum Option<T> { Some(T), None }   TODO: update codes
+pub const TYPE_RESULT: u8 = 0x13; // enum Result<T, E> { Ok(T), Err(E) }
 
 // composite types
-pub const TYPE_ARRAY: u8 = 0x22; // [T; N]
-pub const TYPE_TUPLE: u8 = 0x23; // (A, B, C)
+pub const TYPE_ARRAY: u8 = 0x20; // [T; N]
+pub const TYPE_TUPLE: u8 = 0x21; // (A, B, C)
 
 // collections
 pub const TYPE_LIST: u8 = 0x30;
-pub const TYPE_SET: u8 = 0x33;
-pub const TYPE_MAP: u8 = 0x34;
+pub const TYPE_SET: u8 = 0x31;
+pub const TYPE_MAP: u8 = 0x32;
 
 // custom types start from 0x80 and values are encoded as `len + data`
 pub const TYPE_CUSTOM_START: u8 = 0x80;
 
 // enum variant index
-pub const OPTION_VARIANT_SOME: u8 = 0x01; // TODO: update codes
-pub const OPTION_VARIANT_NONE: u8 = 0x00;
+pub const OPTION_VARIANT_SOME: u8 = 0x00;
+pub const OPTION_VARIANT_NONE: u8 = 0x01;
 pub const RESULT_VARIANT_OK: u8 = 0x00;
 pub const RESULT_VARIANT_ERR: u8 = 0x01;
 

@@ -588,7 +588,7 @@ mod tests {
             }
         );
         parse_value_error!(
-            r#"Vec<String, String>("abc", "def")"#,
+            r#"List<String, String>("abc", "def")"#,
             ParserError::InvalidNumberOfTypes {
                 actual: 2,
                 expected: 1

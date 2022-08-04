@@ -1002,7 +1002,7 @@ mod tests {
             GeneratorError::InvalidDecimal("invalid_decimal".into())
         );
         generate_value_error!(
-            r#"HashMap<String, String>("abc")"#,
+            r#"Map<String, String>("abc")"#,
             GeneratorError::OddNumberOfElements(1)
         );
     }
@@ -1039,7 +1039,7 @@ mod tests {
             }
         );
         generate_instruction_ok!(
-            r#"CALL_FUNCTION  PackageAddress("package_sim1q8gl2qqsusgzmz92es68wy2fr7zjc523xj57eanm597qrz3dx7")  "Airdrop"  "new"  500u32  HashMap<String, U8>("key", 1u8);"#,
+            r#"CALL_FUNCTION  PackageAddress("package_sim1q8gl2qqsusgzmz92es68wy2fr7zjc523xj57eanm597qrz3dx7")  "Airdrop"  "new"  500u32  Map<String, U8>("key", 1u8);"#,
             Instruction::CallFunction {
                 package_address: PackageAddress::from_str(
                     "package_sim1q8gl2qqsusgzmz92es68wy2fr7zjc523xj57eanm597qrz3dx7".into()

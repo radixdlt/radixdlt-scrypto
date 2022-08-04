@@ -152,12 +152,12 @@ fn encode_any_internal(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
                 enc.write_type(TYPE_OPTION);
             }
             match value.borrow() {
-                None => {
-                    enc.write_u8(0);
-                }
                 Some(x) => {
-                    enc.write_u8(1);
+                    enc.write_u8(OPTION_VARIANT_SOME);
                     encode_any_internal(None, x, enc);
+                }
+                None => {
+                    enc.write_u8(OPTION_VARIANT_NONE);
                 }
             }
         }
@@ -167,11 +167,11 @@ fn encode_any_internal(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
             }
             match value.borrow() {
                 Ok(x) => {
-                    enc.write_u8(0);
+                    enc.write_u8(RESULT_VARIANT_OK);
                     encode_any_internal(None, x, enc);
                 }
                 Err(x) => {
-                    enc.write_u8(1);
+                    enc.write_u8(RESULT_VARIANT_ERR);
                     encode_any_internal(None, x, enc);
                 }
             }
@@ -341,11 +341,11 @@ fn decode_next(ty_ctx: Option<u8>, dec: &mut Decoder) -> Result<Value, DecodeErr
             let index = dec.read_u8()?;
             // optional value
             match index {
-                0 => Ok(Value::Option {
-                    value: Box::new(None),
-                }),
-                1 => Ok(Value::Option {
+                OPTION_VARIANT_SOME => Ok(Value::Option {
                     value: Box::new(Some(decode_next(None, dec)?)),
+                }),
+                OPTION_VARIANT_NONE => Ok(Value::Option {
+                    value: Box::new(None),
                 }),
                 _ => Err(DecodeError::InvalidIndex(index)),
             }
@@ -355,10 +355,10 @@ fn decode_next(ty_ctx: Option<u8>, dec: &mut Decoder) -> Result<Value, DecodeErr
             let index = dec.read_u8()?;
             // result value
             match index {
-                0 => Ok(Value::Result {
+                RESULT_VARIANT_OK => Ok(Value::Result {
                     value: Box::new(Ok(decode_next(None, dec)?)),
                 }),
-                1 => Ok(Value::Result {
+                RESULT_VARIANT_ERR => Ok(Value::Result {
                     value: Box::new(Err(decode_next(None, dec)?)),
                 }),
                 _ => Err(DecodeError::InvalidIndex(index)),
@@ -590,6 +590,7 @@ mod tests {
         l: u128,
         m: String,
         n: Option<u32>,
+        o: Result<u32, u32>,
         p: [u32; 3],
         q: (u32, u32),
         r: TestStruct,
@@ -612,7 +613,7 @@ mod tests {
         let mut map1 = BTreeMap::new();
         map1.insert(1, 2);
         let mut map2 = HashMap::new();
-        map2.insert(1, 2);
+        map2.insert(3, 4);
 
         let data = TestData {
             a: (),
@@ -629,6 +630,7 @@ mod tests {
             l: 10,
             m: String::from("abc"),
             n: Some(1),
+            o: Ok(2),
             p: [1, 2, 3],
             q: (1, 2),
             r: TestStruct { x: 1 },
@@ -665,6 +667,9 @@ mod tests {
                     Value::Option {
                         value: Box::new(Some(Value::U32 { value: 1 }))
                     },
+                    Value::Result {
+                        value: Box::new(Ok(Value::U32 { value: 2 }))
+                    },
                     Value::Array {
                         element_type_id: TYPE_U32,
                         elements: vec![
@@ -699,10 +704,19 @@ mod tests {
                         element_type_id: TYPE_U32,
                         elements: vec![Value::U32 { value: 1 }]
                     },
+                    Value::Set {
+                        element_type_id: TYPE_U32,
+                        elements: vec![Value::U32 { value: 2 }]
+                    },
                     Value::Map {
                         key_type_id: TYPE_U32,
                         value_type_id: TYPE_U32,
                         elements: vec![Value::U32 { value: 1 }, Value::U32 { value: 2 }]
+                    },
+                    Value::Map {
+                        key_type_id: TYPE_U32,
+                        value_type_id: TYPE_U32,
+                        elements: vec![Value::U32 { value: 3 }, Value::U32 { value: 4 }]
                     }
                 ]
             },
