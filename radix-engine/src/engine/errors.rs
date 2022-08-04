@@ -1,3 +1,4 @@
+use crate::engine::REActor;
 use sbor::rust::boxed::Box;
 use sbor::rust::fmt;
 use sbor::rust::string::String;
@@ -58,9 +59,9 @@ pub enum RuntimeError {
     /// Resource manager does not exist.
     ResourceManagerNotFound(ResourceAddress),
 
-    SubstateReadNotReadable(SubstateId),
+    SubstateReadNotReadable(REActor, SubstateId),
+    SubstateWriteNotWriteable(REActor, SubstateId),
     SubstateReadSubstateNotFound(SubstateId),
-    InvalidDataWrite,
     RENodeNotFound(RENodeId),
 
     MovingInvalidType,

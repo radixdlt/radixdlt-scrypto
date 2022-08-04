@@ -59,7 +59,7 @@ pub struct CallFrame<
     fee_table: &'g FeeTable,
 
     id_allocator: &'g mut IdAllocator,
-    actor: Actor,
+    actor: REActor,
 
     /// All ref values accessible by this call frame. The value may be located in one of the following:
     /// 1. borrowed values
@@ -750,11 +750,6 @@ impl<'f, 's> RENodeRefMut<'f, 's> {
     }
 }
 
-pub enum Actor {
-    Native,
-    Scrypto(ScryptoActor),
-}
-
 pub enum ExecutionEntity<'a> {
     Function(TypeName),
     Method(Receiver, ExecutionState<'a>),
@@ -821,7 +816,7 @@ where
             verbose,
             id_allocator,
             track,
-            Actor::Native,
+            REActor::Native,
             wasm_engine,
             wasm_instrumenter,
             cost_unit_counter,
@@ -843,7 +838,7 @@ where
         trace: bool,
         id_allocator: &'g mut IdAllocator,
         track: &'g mut Track<'s>,
-        actor: Actor,
+        actor: REActor,
         wasm_engine: &'g mut W,
         wasm_instrumenter: &'g mut WasmInstrumenter,
         cost_unit_counter: &'g mut C,
@@ -1202,10 +1197,6 @@ where
             .cloned()
             .ok_or_else(|| RuntimeError::SubstateReadSubstateNotFound(substate_id.clone()))?;
 
-        if !self.substate_is_readable(substate_id) {
-            return Err(RuntimeError::SubstateReadNotReadable(substate_id.clone()));
-        }
-
         if matches!(substate_id, SubstateId::ComponentInfo(..))
             && matches!(node_pointer, RENodePointer::Store(..))
         {
@@ -1293,23 +1284,6 @@ where
             HeapRENode::System(..) => {
                 panic!("Should not get here.");
             }
-        }
-    }
-
-    fn substate_is_readable(&self, substate_id: &SubstateId) -> bool {
-        match &self.actor {
-            Actor::Native => true,
-            Actor::Scrypto(ScryptoActor::Blueprint(..)) => match substate_id {
-                SubstateId::KeyValueStoreEntry(..) => true,
-                SubstateId::ComponentInfo(..) => true,
-                _ => false,
-            },
-            Actor::Scrypto(ScryptoActor::Component(component_address, ..)) => match substate_id {
-                SubstateId::KeyValueStoreEntry(..) => true,
-                SubstateId::ComponentInfo(..) => true,
-                SubstateId::ComponentState(addr) => addr.eq(component_address),
-                _ => false,
-            },
         }
     }
 }
@@ -1407,13 +1381,13 @@ where
                     });
                 }
 
-                Actor::Scrypto(ScryptoActor::blueprint(
+                REActor::Scrypto(ScryptoActor::blueprint(
                     *package_address,
                     blueprint_name.clone(),
                 ))
             }
             TypeName::Package | TypeName::ResourceManager | TypeName::TransactionProcessor => {
-                Actor::Native
+                REActor::Native
             }
         };
 
@@ -1613,7 +1587,7 @@ where
                 next_owned_values.insert(*node_id, value);
 
                 Ok((
-                    Actor::Native,
+                    REActor::Native,
                     ExecutionState::Consumed(*node_id),
                     method_auths,
                 ))
@@ -1637,7 +1611,7 @@ where
                     _ => vec![],
                 };
                 Ok((
-                    Actor::Native,
+                    REActor::Native,
                     ExecutionState::RENodeRef(RENodeId::System),
                     access_rules,
                 ))
@@ -1665,7 +1639,7 @@ where
                         next_frame_node_refs.insert(node_id, RENodePointer::Store(node_id));
                     }
                     let borrowed = auth_zone.borrow_mut();
-                    Ok((Actor::Native, ExecutionState::AuthZone(borrowed), vec![]))
+                    Ok((REActor::Native, ExecutionState::AuthZone(borrowed), vec![]))
                 } else {
                     Err(RuntimeError::AuthZoneDoesNotExist)
                 }
@@ -1690,7 +1664,7 @@ where
                 next_frame_node_refs.insert(node_id.clone(), RENodePointer::Store(node_id.clone()));
 
                 Ok((
-                    Actor::Native,
+                    REActor::Native,
                     ExecutionState::RENodeRef(node_id),
                     vec![method_auth],
                 ))
@@ -1709,7 +1683,7 @@ where
                     },
                 );
 
-                Ok((Actor::Native, ExecutionState::RENodeRef(node_id), vec![]))
+                Ok((REActor::Native, ExecutionState::RENodeRef(node_id), vec![]))
             }
             Receiver::ProofRef(proof_id) => {
                 let node_id = RENodeId::Proof(*proof_id);
@@ -1724,7 +1698,7 @@ where
                         id: None,
                     },
                 );
-                Ok((Actor::Native, ExecutionState::RENodeRef(node_id), vec![]))
+                Ok((REActor::Native, ExecutionState::RENodeRef(node_id), vec![]))
             }
             Receiver::WorktopRef => {
                 let node_id = RENodeId::Worktop;
@@ -1762,7 +1736,7 @@ where
                     next_frame_node_refs.insert(node_id, RENodePointer::Store(node_id));
                 }
 
-                Ok((Actor::Native, ExecutionState::RENodeRef(node_id), vec![]))
+                Ok((REActor::Native, ExecutionState::RENodeRef(node_id), vec![]))
             }
             Receiver::Component(component_address) => {
                 let component_address = component_address.clone();
@@ -1888,7 +1862,11 @@ where
                     scrypto_actor.blueprint_name().clone(),
                     component_address,
                 );
-                Ok((Actor::Scrypto(scrypto_actor), execution_state, method_auths))
+                Ok((
+                    REActor::Scrypto(scrypto_actor),
+                    execution_state,
+                    method_auths,
+                ))
             }
             Receiver::ComponentMetaRef(component_address) => {
                 let component_address = *component_address;
@@ -1941,7 +1919,7 @@ where
                     _ => panic!("Unexpected"),
                 }
 
-                Ok((Actor::Native, ExecutionState::RENodeRef(node_id), vec![]))
+                Ok((REActor::Native, ExecutionState::RENodeRef(node_id), vec![]))
             }
 
             Receiver::VaultRef(vault_id) => {
@@ -2031,7 +2009,7 @@ where
                 next_frame_node_refs.insert(node_id.clone(), next_pointer);
 
                 Ok((
-                    Actor::Native,
+                    REActor::Native,
                     ExecutionState::RENodeRef(node_id),
                     vec![method_auth],
                 ))
@@ -2284,7 +2262,7 @@ where
             .get(&node_id)
             .expect(&format!("Node should exist {:?}", node_id));
 
-        if !self.substate_is_readable(substate_id) {
+        if !self.actor.is_substate_readable(substate_id) {
             panic!("Trying to read value which is not visible.")
         }
 
@@ -2524,6 +2502,13 @@ where
             )
             .map_err(RuntimeError::CostingError)?;
 
+        if !self.actor.is_substate_readable(&substate_id) {
+            return Err(RuntimeError::SubstateReadNotReadable(
+                self.actor.clone(),
+                substate_id.clone(),
+            ));
+        }
+
         let (parent_pointer, current_value) = self.read_value_internal(&substate_id)?;
         let cur_children = current_value.node_ids();
         for child_id in cur_children {
@@ -2535,6 +2520,13 @@ where
 
     fn substate_take(&mut self, substate_id: SubstateId) -> Result<ScryptoValue, RuntimeError> {
         trace!(self, Level::Debug, "Removing value data: {:?}", substate_id);
+
+        if !self.actor.is_substate_writeable(&substate_id) {
+            return Err(RuntimeError::SubstateWriteNotWriteable(
+                self.actor.clone(),
+                substate_id,
+            ));
+        }
 
         let (pointer, current_value) = self.read_value_internal(&substate_id)?;
         let cur_children = current_value.node_ids();
@@ -2570,9 +2562,11 @@ where
             )
             .map_err(RuntimeError::CostingError)?;
 
-        // TODO: integrate with visible flag
-        if SubstateProperties::is_native(&substate_id) {
-            return Err(RuntimeError::InvalidDataWrite);
+        if !self.actor.is_substate_writeable(&substate_id) {
+            return Err(RuntimeError::SubstateWriteNotWriteable(
+                self.actor.clone(),
+                substate_id,
+            ));
         }
 
         // If write, take values from current frame

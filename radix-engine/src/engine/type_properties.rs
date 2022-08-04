@@ -1,4 +1,45 @@
+use scrypto::core::ScryptoActor;
 use scrypto::engine::types::*;
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub enum REActor {
+    Native,
+    Scrypto(ScryptoActor),
+}
+
+impl REActor {
+    pub fn is_substate_readable(&self, substate_id: &SubstateId) -> bool {
+        match &self {
+            REActor::Native => true,
+            REActor::Scrypto(ScryptoActor::Blueprint(..)) => match substate_id {
+                SubstateId::KeyValueStoreEntry(..) => true,
+                SubstateId::ComponentInfo(..) => true,
+                _ => false,
+            },
+            REActor::Scrypto(ScryptoActor::Component(component_address, ..)) => match substate_id {
+                SubstateId::KeyValueStoreEntry(..) => true,
+                SubstateId::ComponentInfo(..) => true,
+                SubstateId::ComponentState(addr) => addr.eq(component_address),
+                _ => false,
+            },
+        }
+    }
+
+    pub fn is_substate_writeable(&self, substate_id: &SubstateId) -> bool {
+        match &self {
+            REActor::Native => true,
+            REActor::Scrypto(ScryptoActor::Blueprint(..)) => match substate_id {
+                SubstateId::KeyValueStoreEntry(..) => true,
+                _ => false,
+            },
+            REActor::Scrypto(ScryptoActor::Component(component_address, ..)) => match substate_id {
+                SubstateId::KeyValueStoreEntry(..) => true,
+                SubstateId::ComponentState(addr) => addr.eq(component_address),
+                _ => false,
+            },
+        }
+    }
+}
 
 pub struct RENodeProperties;
 
@@ -49,24 +90,6 @@ impl SubstateProperties {
             SubstateId::Bucket(bucket_id) => RENodeId::Bucket(*bucket_id),
             SubstateId::Proof(proof_id) => RENodeId::Proof(*proof_id),
             SubstateId::Worktop => RENodeId::Worktop,
-        }
-    }
-
-    pub fn is_native(substate_id: &SubstateId) -> bool {
-        match substate_id {
-            SubstateId::KeyValueStoreEntry(..) => false,
-            SubstateId::ComponentState(..) => false,
-            SubstateId::NonFungible(..) => false,
-            SubstateId::ComponentInfo(..) => true,
-            SubstateId::NonFungibleSpace(..) => true,
-            SubstateId::KeyValueStoreSpace(..) => true,
-            SubstateId::Vault(..) => true,
-            SubstateId::Package(..) => true,
-            SubstateId::ResourceManager(..) => true,
-            SubstateId::System => true,
-            SubstateId::Bucket(..) => true,
-            SubstateId::Proof(..) => true,
-            SubstateId::Worktop => true,
         }
     }
 
