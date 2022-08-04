@@ -1,3 +1,5 @@
+pub use dec;
+pub use pdec;
 /// Encodes arguments according to Scrypto ABI.
 ///
 /// # Example
