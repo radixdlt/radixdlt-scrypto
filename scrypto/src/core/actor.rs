@@ -22,14 +22,14 @@ impl ScryptoActor {
         Self::Component(component_address, package_address, blueprint_name)
     }
 
-    pub fn get_package(&self) -> &PackageAddress {
+    pub fn package_address(&self) -> &PackageAddress {
         match self {
             ScryptoActor::Blueprint(package, _blueprint) => package,
             ScryptoActor::Component(_address, package, _blueprint) => package,
         }
     }
 
-    pub fn get_blueprint(&self) -> &String {
+    pub fn blueprint_name(&self) -> &String {
         match self {
             ScryptoActor::Blueprint(_package, blueprint) => blueprint,
             ScryptoActor::Component(_address, _package, blueprint) => blueprint,

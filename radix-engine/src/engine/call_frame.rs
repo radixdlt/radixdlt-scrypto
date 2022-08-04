@@ -59,6 +59,7 @@ pub struct CallFrame<
     fee_table: &'g FeeTable,
 
     id_allocator: &'g mut IdAllocator,
+    actor: Actor,
 
     /// All ref values accessible by this call frame. The value may be located in one of the following:
     /// 1. borrowed values
@@ -772,6 +773,11 @@ impl<'f, 's> RENodeRefMut<'f, 's> {
     }
 }
 
+pub enum Actor {
+    Native,
+    Scrypto(ScryptoActor),
+}
+
 pub enum ExecutionEntity<'a> {
     Function(TypeName),
     Method(Receiver, ExecutionState<'a>),
@@ -838,6 +844,7 @@ where
             verbose,
             id_allocator,
             track,
+            Actor::Native,
             wasm_engine,
             wasm_instrumenter,
             cost_unit_counter,
@@ -859,6 +866,7 @@ where
         trace: bool,
         id_allocator: &'g mut IdAllocator,
         track: &'g mut Track<'s>,
+        actor: Actor,
         wasm_engine: &'g mut W,
         wasm_instrumenter: &'g mut WasmInstrumenter,
         cost_unit_counter: &'g mut C,
@@ -876,6 +884,7 @@ where
             trace,
             id_allocator,
             track,
+            actor,
             wasm_engine,
             wasm_instrumenter,
             cost_unit_counter,
@@ -1315,6 +1324,27 @@ where
             }
         }
     }
+
+    fn substate_is_readable(&self, substate_id: SubstateId) -> bool {
+        match &self.actor {
+            Actor::Native => true,
+            Actor::Scrypto(ScryptoActor::Blueprint(..)) => {
+                match substate_id {
+                    SubstateId::KeyValueStoreEntry(..) => true,
+                    SubstateId::ComponentInfo(..) => true,
+                    _ => false,
+                }
+            }
+            Actor::Scrypto(ScryptoActor::Component(component_address, ..)) => {
+                match substate_id {
+                    SubstateId::KeyValueStoreEntry(..) => true,
+                    SubstateId::ComponentInfo(..) => true,
+                    SubstateId::ComponentState(addr) => addr.eq(component_address),
+                    _ => false,
+                }
+            }
+        }
+    }
 }
 
 impl<'p, 'g, 's, W, I, C> SystemApi<'p, 's, W, I, C> for CallFrame<'p, 'g, 's, W, I, C>
@@ -1378,7 +1408,7 @@ where
         let mut locked_values = HashSet::<SubstateId>::new();
 
         // No authorization but state load
-        match &type_name {
+        let actor = match &type_name {
             TypeName::Blueprint(package_address, blueprint_name) => {
                 self.track
                     .acquire_lock(SubstateId::Package(package_address.clone()), false, false)
@@ -1409,9 +1439,14 @@ where
                         input: input.dom,
                     });
                 }
+
+                Actor::Scrypto(ScryptoActor::blueprint(
+                    *package_address,
+                    blueprint_name.clone(),
+                ))
             }
-            TypeName::Package | TypeName::ResourceManager | TypeName::TransactionProcessor => {}
-        }
+            TypeName::Package | TypeName::ResourceManager | TypeName::TransactionProcessor => Actor::Native
+        };
 
         // Move this into transaction processor
         let mut next_frame_node_refs = HashMap::new();
@@ -1482,6 +1517,7 @@ where
                 self.trace,
                 self.id_allocator,
                 self.track,
+                actor,
                 self.wasm_engine,
                 self.wasm_instrumenter,
                 self.cost_unit_counter,
@@ -1591,7 +1627,7 @@ where
         let mut next_frame_node_refs = HashMap::new();
 
         // Authorization and state load
-        let (execution_state, method_auths) = match &receiver {
+        let (actor, execution_state, method_auths) = match &receiver {
             Receiver::Consumed(node_id) => {
                 let value = self
                     .owned_heap_nodes
@@ -1630,7 +1666,7 @@ where
 
                 next_owned_values.insert(*node_id, value);
 
-                Ok((ExecutionState::Consumed(*node_id), method_auths))
+                Ok((Actor::Native, ExecutionState::Consumed(*node_id), method_auths))
             }
             Receiver::SystemRef => {
                 self.track
@@ -1656,7 +1692,7 @@ where
                     }
                     _ => vec![],
                 };
-                Ok((ExecutionState::RENodeRef(RENodeId::System), access_rules))
+                Ok((Actor::Native, ExecutionState::RENodeRef(RENodeId::System), access_rules))
             }
             Receiver::AuthZoneRef => {
                 if let Some(auth_zone) = &self.auth_zone {
@@ -1687,7 +1723,7 @@ where
                         );
                     }
                     let borrowed = auth_zone.borrow_mut();
-                    Ok((ExecutionState::AuthZone(borrowed), vec![]))
+                    Ok((Actor::Native, ExecutionState::AuthZone(borrowed), vec![]))
                 } else {
                     Err(RuntimeError::AuthZoneDoesNotExist)
                 }
@@ -1717,7 +1753,7 @@ where
                     },
                 );
 
-                Ok((ExecutionState::RENodeRef(node_id), vec![method_auth]))
+                Ok((Actor::Native, ExecutionState::RENodeRef(node_id), vec![method_auth]))
             }
             Receiver::BucketRef(bucket_id) => {
                 let node_id = RENodeId::Bucket(*bucket_id);
@@ -1736,7 +1772,7 @@ where
                     },
                 );
 
-                Ok((ExecutionState::RENodeRef(node_id), vec![]))
+                Ok((Actor::Native, ExecutionState::RENodeRef(node_id), vec![]))
             }
             Receiver::ProofRef(proof_id) => {
                 let node_id = RENodeId::Proof(*proof_id);
@@ -1754,7 +1790,7 @@ where
                         visibility: RENodeVisibility::AllSubstatesVisible,
                     },
                 );
-                Ok((ExecutionState::RENodeRef(node_id), vec![]))
+                Ok((Actor::Native, ExecutionState::RENodeRef(node_id), vec![]))
             }
             Receiver::WorktopRef => {
                 let node_id = RENodeId::Worktop;
@@ -1801,7 +1837,7 @@ where
                     );
                 }
 
-                Ok((ExecutionState::RENodeRef(node_id), vec![]))
+                Ok((Actor::Native, ExecutionState::RENodeRef(node_id), vec![]))
             }
             Receiver::Component(component_address) => {
                 let component_address = component_address.clone();
@@ -1860,33 +1896,33 @@ where
                     _ => {}
                 }
 
-                let (package_address, blueprint_name) = {
+                let scrypto_actor = {
                     let node_ref = cur_pointer.to_ref(
                         &self.owned_heap_nodes,
                         &self.parent_heap_nodes,
                         &mut self.track,
                     );
                     let component = node_ref.component_info();
-                    let result = (
+                    ScryptoActor::component(
+                        component_address,
                         component.package_address(),
                         component.blueprint_name().to_string(),
-                    );
-
-                    result
+                    )
                 };
 
                 // Retrieve Method Authorization
                 let method_auths = {
+                    let package_substate_id = SubstateId::Package(scrypto_actor.package_address().clone());
                     self.track
-                        .acquire_lock(SubstateId::Package(package_address), false, false)
+                        .acquire_lock(package_substate_id.clone(), false, false)
                         .expect("Should never fail");
-                    locked_values.insert(SubstateId::Package(package_address.clone()));
+                    locked_values.insert(package_substate_id.clone());
                     let package = self
                         .track
-                        .read_substate(SubstateId::Package(package_address))
+                        .read_substate(package_substate_id.clone())
                         .package();
                     let abi = package
-                        .blueprint_abi(&blueprint_name)
+                        .blueprint_abi(scrypto_actor.blueprint_name())
                         .expect("Blueprint not found for existing component");
                     let fn_abi = abi
                         .get_fn_abi(&fn_ident)
@@ -1927,8 +1963,10 @@ where
                     },
                 );
 
+                let execution_state = ExecutionState::Component(scrypto_actor.package_address().clone(), scrypto_actor.blueprint_name().clone(), component_address);
                 Ok((
-                    ExecutionState::Component(package_address, blueprint_name, component_address),
+                    Actor::Scrypto(scrypto_actor),
+                    execution_state,
                     method_auths,
                 ))
             }
@@ -1989,7 +2027,7 @@ where
                     _ => panic!("Unexpected"),
                 }
 
-                Ok((ExecutionState::RENodeRef(node_id), vec![]))
+                Ok((Actor::Native, ExecutionState::RENodeRef(node_id), vec![]))
             }
 
             Receiver::VaultRef(vault_id) => {
@@ -2085,7 +2123,7 @@ where
                     },
                 );
 
-                Ok((ExecutionState::RENodeRef(node_id), vec![method_auth]))
+                Ok((Actor::Native, ExecutionState::RENodeRef(node_id), vec![method_auth]))
             }
         }?;
 
@@ -2159,6 +2197,7 @@ where
                 self.trace,
                 self.id_allocator,
                 self.track,
+                actor,
                 self.wasm_engine,
                 self.wasm_instrumenter,
                 self.cost_unit_counter,
