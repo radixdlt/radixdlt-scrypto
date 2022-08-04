@@ -35,7 +35,7 @@ pub struct Proof(pub ProofId);
 
 impl Clone for Proof {
     sfunctions! {
-        Receiver::ProofRef(self.0) => {
+        Receiver::NativeRENodeRef(RENodeId::Proof(self.0)) => {
             fn clone(&self) -> Self {
                 ProofCloneInput {}
             }
@@ -97,7 +97,7 @@ impl Proof {
     }
 
     sfunctions! {
-        Receiver::ProofRef(self.0) => {
+        Receiver::NativeRENodeRef(RENodeId::Proof(self.0)) => {
             fn resource_address(&self) -> ResourceAddress {
                 ProofGetResourceAddressInput {}
             }
@@ -125,7 +125,7 @@ impl Clone for ValidatedProof {
 
 impl ValidatedProof {
     sfunctions! {
-        Receiver::ProofRef(self.proof_id()) => {
+        Receiver::NativeRENodeRef(RENodeId::Proof(self.proof_id())) => {
             pub fn amount(&self) -> Decimal {
                 ProofGetAmountInput {}
             }

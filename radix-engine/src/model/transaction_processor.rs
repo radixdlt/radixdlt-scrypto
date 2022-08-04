@@ -312,7 +312,7 @@ impl TransactionProcessor {
                             .and_then(|(new_id, real_bucket_id)| {
                                 system_api
                                     .invoke_method(
-                                        Receiver::BucketRef(real_bucket_id),
+                                        Receiver::NativeRENodeRef(RENodeId::Bucket(real_bucket_id)),
                                         "create_proof".to_string(),
                                         ScryptoValue::from_typed(&BucketCreateProofInput {}),
                                     )
@@ -332,7 +332,7 @@ impl TransactionProcessor {
                                     .map(|real_id| {
                                         system_api
                                             .invoke_method(
-                                                Receiver::ProofRef(real_id),
+                                                Receiver::NativeRENodeRef(RENodeId::Proof(real_id)),
                                                 "clone".to_string(),
                                                 ScryptoValue::from_typed(&ProofCloneInput {}),
                                             )

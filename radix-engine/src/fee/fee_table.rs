@@ -185,22 +185,31 @@ impl FeeTable {
                 RENodeId::Package(_) => self.fixed_high,
                 RENodeId::System => self.fixed_high,
             },
-            Receiver::BucketRef(_) => match fn_ident {
-                "take" => self.fixed_medium,
-                "take_non_fungibles" => self.fixed_medium,
-                "non_fungible_ids" => self.fixed_medium,
-                "put" => self.fixed_medium,
-                "amount" => self.fixed_low,
-                "resource_address" => self.fixed_low,
-                "create_proof" => self.fixed_low,
-                _ => self.fixed_high,
-            },
-            Receiver::ProofRef(_) => match fn_ident {
-                "amount" => self.fixed_low,
-                "non_fungible_ids" => self.fixed_low,
-                "resource_address" => self.fixed_low,
-                "clone" => self.fixed_high,
-                _ => self.fixed_high,
+            Receiver::NativeRENodeRef(node_id) => {
+                match node_id {
+                    RENodeId::Bucket(..) => {
+                        match fn_ident {
+                            "take" => self.fixed_medium,
+                            "take_non_fungibles" => self.fixed_medium,
+                            "non_fungible_ids" => self.fixed_medium,
+                            "put" => self.fixed_medium,
+                            "amount" => self.fixed_low,
+                            "resource_address" => self.fixed_low,
+                            "create_proof" => self.fixed_low,
+                            _ => self.fixed_high,
+                        }
+                    }
+                    RENodeId::Proof(..) => {
+                        match fn_ident {
+                            "amount" => self.fixed_low,
+                            "non_fungible_ids" => self.fixed_low,
+                            "resource_address" => self.fixed_low,
+                            "clone" => self.fixed_high,
+                            _ => self.fixed_high,
+                        }
+                    }
+                    _ => self.fixed_high // TODO: Clean this up
+                }
             },
             Receiver::VaultRef(_) => match fn_ident {
                 "put" => self.fixed_medium,

@@ -2,7 +2,7 @@ use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use sbor::*;
 
-use crate::engine::types::{BucketId, PackageAddress, ProofId, RENodeId, VaultId};
+use crate::engine::types::{PackageAddress, RENodeId, VaultId};
 use crate::prelude::{ComponentAddress, ResourceAddress};
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -19,9 +19,8 @@ pub enum Receiver {
     Component(ComponentAddress),
     ComponentMetaRef(ComponentAddress),
     ResourceManagerRef(ResourceAddress),
-    BucketRef(BucketId),
-    ProofRef(ProofId),
     VaultRef(VaultId),
+    NativeRENodeRef(RENodeId),
     SystemRef,
     WorktopRef,
     AuthZoneRef,

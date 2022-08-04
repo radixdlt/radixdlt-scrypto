@@ -1670,10 +1670,13 @@ where
                     vec![method_auth],
                 ))
             }
-            Receiver::BucketRef(bucket_id) => {
-                let node_id = RENodeId::Bucket(*bucket_id);
+            Receiver::NativeRENodeRef(node_id) => {
+                match node_id {
+                    RENodeId::Bucket(..) | RENodeId::Proof(..) => {}
+                    _ => return Err(RuntimeError::MethodDoesNotExist(fn_ident.clone())),
+                }
                 if !self.owned_heap_nodes.contains_key(&node_id) {
-                    return Err(RuntimeError::BucketNotFound(bucket_id.clone()));
+                    return Err(RuntimeError::RENodeNotFound(*node_id));
                 }
                 next_frame_node_refs.insert(
                     node_id.clone(),
@@ -1683,23 +1686,7 @@ where
                         id: None,
                     },
                 );
-
-                Ok((REActor::Native, ExecutionState::RENodeRef(node_id), vec![]))
-            }
-            Receiver::ProofRef(proof_id) => {
-                let node_id = RENodeId::Proof(*proof_id);
-                if !self.owned_heap_nodes.contains_key(&node_id) {
-                    return Err(RuntimeError::ProofNotFound(proof_id.clone()));
-                }
-                next_frame_node_refs.insert(
-                    node_id.clone(),
-                    RENodePointer::Heap {
-                        frame_id: Some(self.depth),
-                        root: node_id.clone(),
-                        id: None,
-                    },
-                );
-                Ok((REActor::Native, ExecutionState::RENodeRef(node_id), vec![]))
+                Ok((REActor::Native, ExecutionState::RENodeRef(*node_id), vec![]))
             }
             Receiver::WorktopRef => {
                 let node_id = RENodeId::Worktop;
