@@ -17,10 +17,10 @@ macro_rules! decimals {
     ($(($dec:ident, $wrapped:ident, $scale:literal, $bits:literal , $dec_macro:ident, $zero:expr, $one:expr)),*) => {
         $(
             paste! {
-                #[ doc ="`$dec` represents a " $bits " bit representation of a fixed-scale decimal number." ]
+                #[ doc ="`" $dec "` represents a " $bits " bit representation of a fixed-scale decimal number." ]
                 ///
                 #[ doc =  "The finite set of values are of the form `m / 10^" $scale "`, where `m` is"]
-                /// an integer such that `-2^($bits - 1) <= m < 2^($bits - 1)`.
+                #[ doc = "an integer such that `-2^(" $bits " - 1) <= m < 2^(" $bits " - 1)`."]
                 ///
                 /// Unless otherwise specified, all operations will panic if underflow/overflow.
                 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -41,28 +41,28 @@ macro_rules! decimals {
                 }
 
                 impl $dec {
-                    /// The min value of `$dec`.
+                    #[ doc = "The min value of `" $dec "`."]
                     pub const MIN: Self = Self(<$wrapped>::MIN);
 
-                    /// The max value of `$dec`.
+                    #[ doc = "The max value of `" $dec "`."]
                     pub const MAX: Self = Self(<$wrapped>::MAX);
 
-                    /// The bit length of number storing `$dec`.
+                    #[ doc = "The bit length of number storing `" $dec "`."]
                     pub const BITS: usize = <$wrapped>::BITS as usize;
 
-                    /// The fixed scale used by `$dec`.
+                    #[ doc = "The fixed scale used by `" $dec "`."]
                     pub const SCALE: u32 = $scale;
 
                     pub const ZERO: Self = Self($zero);
 
                     pub const ONE: Self = Self($one);
 
-                    /// Returns `$dec` of 0.
+                    #[ doc = "Returns `" $dec "` of 0."]
                     pub fn zero() -> Self {
                         Self::ZERO
                     }
 
-                    /// Returns `$dec` of 1.
+                    #[ doc = "Returns `" $dec "` of 1."]
                     pub fn one() -> Self {
                         Self::ONE
                     }
@@ -237,14 +237,14 @@ macro_rules! decimals {
                     }
                 }
 
-                /// Creates a `$dec` from literals.
+                #[ doc = "Creates a `" $dec "` from literals."]
                 ///
                 /// # Example
                 /// ```ignore
                 /// use scrypto::prelude::*;
                 ///
-                /// let a = $dec_macro!(1);
-                /// let b = $dec_macro!("1.1");
+                #[ doc = "let a = " $dec "_macro!(1);"]
+                #[ doc = "let b = " $dec "_macro!("1.1");"]
                 /// ```
                 #[macro_export]
                 macro_rules! $dec_macro {
@@ -266,49 +266,57 @@ macro_rules! decimals {
                     };
                 }
 
-                impl<T: Into<$dec>> Add<T> for $dec {
-                    type Output = $dec;
+                impl<T: TryInto<$dec>> Add<T> for $dec 
+                    where <T as TryInto<$dec>>::Error: fmt::Debug {
+                        type Output = $dec;
 
-                    fn add(self, other: T) -> Self::Output {
-                        let a = self.0;
-                        let b: $wrapped = TryInto::<$dec>::try_into(other).expect("Overflow").0;
-                        let c = a + b;
-                        $dec(c)
+                        fn add(self, other: T) -> Self::Output {
+                            let a = self.0;
+                            let b_dec: $dec = other.try_into().expect("Overflow");
+                            let b: $wrapped = b_dec.0;
+                            let c = a + b;
+                            $dec(c)
+                        }
                     }
-                }
 
-                impl<T: Into<$dec>> Sub<T> for $dec {
-                    type Output = $dec;
+                impl<T: Into<$dec>> Sub<T> for $dec
+                    where <T as TryInto<$dec>>::Error: fmt::Debug {
+                        type Output = $dec;
 
-                    fn sub(self, other: T) -> Self::Output {
-                        let a = self.0;
-                        let b: $wrapped = TryInto::<$dec>::try_into(other).expect("Overflow").0;
-                        let c: $wrapped = a - b;
-                        $dec(c)
+                        fn sub(self, other: T) -> Self::Output {
+                            let a = self.0;
+                            let b_dec: $dec = other.try_into().expect("Overflow");
+                            let b: $wrapped = b_dec.0;
+                            let c: $wrapped = a - b;
+                            $dec(c)
+                        }
                     }
-                }
 
-                impl<T: Into<$dec>> Mul<T> for $dec {
-                    type Output = $dec;
+                impl<T: Into<$dec>> Mul<T> for $dec
+                    where <T as TryInto<$dec>>::Error: fmt::Debug {
+                        type Output = $dec;
 
-                    fn mul(self, other: T) -> Self::Output {
-                        let a = self.0;
-                        let b: $wrapped = TryInto::<$dec>::try_into(other).expect("Overflow").0;
-                        let c: $wrapped = a * b / Self::ONE.0;
-                        $dec(c)
+                        fn mul(self, other: T) -> Self::Output {
+                            let a = self.0;
+                            let b_dec: $dec = other.try_into().expect("Overflow");
+                            let b: $wrapped = b_dec.0;
+                            let c: $wrapped = a * b / Self::ONE.0;
+                            $dec(c)
+                        }
                     }
-                }
 
-                impl<T: Into<$dec>> Div<T> for $dec {
-                    type Output = $dec;
+                impl<T: Into<$dec>> Div<T> for $dec
+                    where <T as TryInto<$dec>>::Error: fmt::Debug {
+                        type Output = $dec;
 
-                    fn div(self, other: T) -> Self::Output {
-                        let a = self.0;
-                        let b: $wrapped = TryInto::<$dec>::try_into(other).expect("Overflow").0;
-                        let c: $wrapped = a * Self::ONE.0 / b;
-                        $dec(c)
+                        fn div(self, other: T) -> Self::Output {
+                            let a = self.0;
+                            let b_dec: $dec = other.try_into().expect("Overflow");
+                            let b: $wrapped = b_dec.0;
+                            let c: $wrapped = a * Self::ONE.0 / b;
+                            $dec(c)
+                        }
                     }
-                }
 
                 impl Neg for $dec {
                     type Output = $dec;
@@ -318,29 +326,37 @@ macro_rules! decimals {
                     }
                 }
 
-                impl<T: Into<$dec>> AddAssign<T> for $dec {
-                    fn add_assign(&mut self, other: T) {
-                        self.0 += TryInto::<$dec>::try_into(other).expect("Overflow").0;
+                impl<T: TryInto<$dec>> AddAssign<T> for $dec 
+                    where <T as TryInto<$dec>>::Error: fmt::Debug {
+                        fn add_assign(&mut self, other: T) {
+                            let other: $dec = other.try_into().expect("Overflow");
+                            self.0 += other.0;
+                        }
                     }
-                }
 
-                impl<T: Into<$dec>> SubAssign<T> for $dec {
-                    fn sub_assign(&mut self, other: T) {
-                        self.0 -= TryInto::<$dec>::try_into(other).expect("Overflow").0;
+                impl<T: TryInto<$dec>> SubAssign<T> for $dec 
+                    where <T as TryInto<$dec>>::Error: fmt::Debug {
+                        fn sub_assign(&mut self, other: T) {
+                            let other: $dec = other.try_into().expect("Overflow");
+                            self.0 -= other.0;
+                        }
                     }
-                }
 
-                impl<T: Into<$dec>> MulAssign<T> for $dec {
-                    fn mul_assign(&mut self, other: T) {
-                        self.0 *= TryInto::<$dec>::try_into(other).expect("Overflow").0;
+                impl<T: TryInto<$dec>> MulAssign<T> for $dec
+                    where <T as TryInto<$dec>>::Error: fmt::Debug {
+                        fn mul_assign(&mut self, other: T) {
+                            let other: $dec = other.try_into().expect("Overflow");
+                            self.0 *= other.0;
+                        }
                     }
-                }
 
-                impl<T: Into<$dec>> DivAssign<T> for $dec {
-                    fn div_assign(&mut self, other: T) {
-                        self.0 /= TryInto::<$dec>::try_into(other).expect("Overflow").0;
+                impl<T: TryInto<$dec>> DivAssign<T> for $dec
+                    where <T as TryInto<$dec>>::Error: fmt::Debug {
+                        fn div_assign(&mut self, other: T) {
+                            let other: $dec = other.try_into().expect("Overflow");
+                            self.0 /= other.0;
+                        }
                     }
-                }
 
                 //========
                 // binary
@@ -484,7 +500,7 @@ macro_rules! decimals {
                 // ParseDecimalError, ParseLongDecimalError
                 //========
 
-                /// Represents an error when parsing $dec from another type.
+                #[ doc ="Represents an error when parsing " $dec " from another type."]
                 #[derive(Debug, Clone, PartialEq, Eq)]
                 pub enum [<Parse $dec Error>] {
                     InvalidDecimal(String),
