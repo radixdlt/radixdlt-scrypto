@@ -23,7 +23,7 @@ pub const TYPE_STRING: u8 = 0x0c;
 // struct and enum
 pub const TYPE_STRUCT: u8 = 0x10;
 pub const TYPE_ENUM: u8 = 0x11;
-pub const TYPE_OPTION: u8 = 0x12; // enum Option<T> { Some(T), None }   TODO: update codes
+pub const TYPE_OPTION: u8 = 0x12; // enum Option<T> { Some(T), None }
 pub const TYPE_RESULT: u8 = 0x13; // enum Result<T, E> { Ok(T), Err(E) }
 
 // composite types
@@ -38,7 +38,7 @@ pub const TYPE_MAP: u8 = 0x32;
 // custom types start from 0x80 and values are encoded as `len + data`
 pub const TYPE_CUSTOM_START: u8 = 0x80;
 
-// enum variant index
+// enum variant indices
 pub const OPTION_VARIANT_SOME: u8 = 0x00;
 pub const OPTION_VARIANT_NONE: u8 = 0x01;
 pub const RESULT_VARIANT_OK: u8 = 0x00;
