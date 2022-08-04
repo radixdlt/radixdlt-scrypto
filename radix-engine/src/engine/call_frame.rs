@@ -759,6 +759,7 @@ pub enum ExecutionState<'a> {
     Consumed(RENodeId),
     AuthZone(RefMut<'a, AuthZone>),
     RENodeRef(RENodeId),
+    // TODO: Can remove this and replace useage with REActor
     Component(PackageAddress, String, ComponentAddress),
 }
 
@@ -2194,6 +2195,7 @@ where
             substate_id
         );
 
+        // Costing
         self.cost_unit_counter.consume(
             self.fee_table.system_api_cost({
                 match substate_id {
@@ -2255,16 +2257,17 @@ where
             "borrow",
         )?;
 
+        // Authorization
+        if !self.actor.is_substate_readable(substate_id) {
+            panic!("Trying to read value which is not visible.")
+        }
+
         let node_id = SubstateProperties::get_node_id(substate_id);
 
         let node_pointer = self
             .node_refs
             .get(&node_id)
             .expect(&format!("Node should exist {:?}", node_id));
-
-        if !self.actor.is_substate_readable(substate_id) {
-            panic!("Trying to read value which is not visible.")
-        }
 
         Ok(node_pointer.borrow_native_ref(
             substate_id.clone(),
@@ -2331,7 +2334,7 @@ where
 
         // TODO: costing
 
-        // TODO: Add authorization
+        // TODO: Authorization
 
         Ok(self.owned_heap_nodes.remove(&node_id).unwrap())
     }
@@ -2339,6 +2342,7 @@ where
     fn node_create(&mut self, re_node: HeapRENode) -> Result<RENodeId, RuntimeError> {
         trace!(self, Level::Debug, "Creating value");
 
+        // Costing
         self.cost_unit_counter
             .consume(
                 self.fee_table
@@ -2349,7 +2353,7 @@ where
             )
             .map_err(RuntimeError::CostingError)?;
 
-        // TODO: Add authorization
+        // TODO: Authorization
 
         // Take any required child nodes
         let children = re_node.get_child_nodes()?;
@@ -2403,6 +2407,8 @@ where
 
     fn node_globalize(&mut self, node_id: RENodeId) -> Result<(), RuntimeError> {
         trace!(self, Level::Debug, "Globalizing value: {:?}", node_id);
+
+        // Costing
         self.cost_unit_counter
             .consume(
                 self.fee_table
@@ -2416,6 +2422,8 @@ where
         if !RENodeProperties::can_globalize(node_id) {
             return Err(RuntimeError::RENodeGlobalizeTypeNotAllowed(node_id));
         }
+
+        // TODO: Authorization
 
         let mut nodes_to_take = HashSet::new();
         nodes_to_take.insert(node_id);
@@ -2493,6 +2501,7 @@ where
     fn substate_read(&mut self, substate_id: SubstateId) -> Result<ScryptoValue, RuntimeError> {
         trace!(self, Level::Debug, "Reading value data: {:?}", substate_id);
 
+        // Costing
         self.cost_unit_counter
             .consume(
                 self.fee_table.system_api_cost(SystemApiCostingEntry::Read {
@@ -2502,6 +2511,7 @@ where
             )
             .map_err(RuntimeError::CostingError)?;
 
+        // Authorization
         if !self.actor.is_substate_readable(&substate_id) {
             return Err(RuntimeError::SubstateReadNotReadable(
                 self.actor.clone(),
@@ -2521,6 +2531,9 @@ where
     fn substate_take(&mut self, substate_id: SubstateId) -> Result<ScryptoValue, RuntimeError> {
         trace!(self, Level::Debug, "Removing value data: {:?}", substate_id);
 
+        // TODO: Costing
+
+        // Authorization
         if !self.actor.is_substate_writeable(&substate_id) {
             return Err(RuntimeError::SubstateWriteNotWriteable(
                 self.actor.clone(),
@@ -2552,6 +2565,7 @@ where
     ) -> Result<(), RuntimeError> {
         trace!(self, Level::Debug, "Writing value data: {:?}", substate_id);
 
+        // Costing
         self.cost_unit_counter
             .consume(
                 self.fee_table
@@ -2562,6 +2576,7 @@ where
             )
             .map_err(RuntimeError::CostingError)?;
 
+        // Authorization
         if !self.actor.is_substate_writeable(&substate_id) {
             return Err(RuntimeError::SubstateWriteNotWriteable(
                 self.actor.clone(),
