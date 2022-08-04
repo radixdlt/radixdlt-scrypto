@@ -194,27 +194,18 @@ macro_rules! decimals {
                 }
 
                 macro_rules! from_int {
-                    ($type:ident) => {
-                        impl From<$type> for $dec {
-                            fn from(val: $type) -> Self {
-                                Self(<$wrapped>::from(val) * Self::ONE.0)
+                    ($($type:ident),*) => {
+                        $(
+                            impl From<$type> for $dec {
+                                fn from(val: $type) -> Self {
+                                    Self(<$wrapped>::from(val) * Self::ONE.0)
+                                }
                             }
-                        }
+                        )*
                     };
                 }
-                from_int!(u8);
-                from_int!(u16);
-                from_int!(u32);
-                from_int!(u64);
-                from_int!(u128);
-                from_int!(usize);
-                from_int!(i8);
-                from_int!(i16);
-                from_int!(i32);
-                from_int!(i64);
-                from_int!(i128);
-                from_int!(isize);
-
+                from_int!{u8, u16, u32, u64, usize, u128, i8, i16, i32, i64, isize, i128}
+                
                 impl From<&str> for $dec {
                     fn from(val: &str) -> Self {
                         Self::from_str(&val).unwrap()
@@ -531,13 +522,38 @@ decimals! {
      // 10^18
      I256([0x00, 0x00, 0x64, 0xA7, 0xB3, 0xB6, 0xE0, 0x0D, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])),
 
-    (PreciseDecimal, I512, 64, 512, ldec,
+    (PreciseDecimal, I512, 64, 512, pdec,
      I512([0; 64]),
      // 10^64
      I512([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x1F, 0x6A, 0xBF, 0x64, 0xED, 0x38, 0x6E, 0xED, 0x97, 0xA7, 0xDA, 0xF4, 0xF9, 0x3F, 0xE9, 0x03, 0x4F, 0x18, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])
      )
 
 }
+
+impl From<Decimal> for PreciseDecimal {
+    fn from(val: Decimal) -> Self {
+        Self(val.0.into())
+    }
+}
+
+pub trait Truncate<T> {
+    type Output;
+    fn truncate(self) -> Self::Output;
+}
+
+macro_rules! truncate_decimal {
+    ($decimal:ident, $dec:ident) => {
+            impl Truncate<$decimal> for $dec {
+                type Output = $decimal;
+
+                fn truncate(self) -> Self::Output {
+                    $decimal(self.0 / I512::from(1).mul(10i8).pow(<$dec>::SCALE - <$decimal>::SCALE))
+                }
+            }
+    };
+}
+
+truncate_decimal! {Decimal, PreciseDecimal}
 
 macro_rules! from_integer {
     ($(($t:ident, $dec:ident, $wrapped:ident)),*) => {
