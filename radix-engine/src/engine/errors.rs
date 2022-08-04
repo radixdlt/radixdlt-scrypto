@@ -58,7 +58,7 @@ pub enum RuntimeError {
     /// Resource manager does not exist.
     ResourceManagerNotFound(ResourceAddress),
 
-    SubstateReadNotVisible(SubstateId),
+    SubstateReadNotReadable(SubstateId),
     SubstateReadSubstateNotFound(SubstateId),
     InvalidDataWrite,
     RENodeNotFound(RENodeId),

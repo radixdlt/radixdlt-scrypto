@@ -139,26 +139,8 @@ pub fn insert_non_root_nodes<'s>(track: &mut Track<'s>, values: HashMap<RENodeId
 }
 
 #[derive(Debug, Clone)]
-pub enum RENodeVisibility {
-    AllSubstatesVisible,
-    SomeSubstatesVisible(HashSet<SubstateId>),
-    NoSubstatesVisible,
-}
-
-#[derive(Debug, Clone)]
 pub struct RENodeInfo {
     pointer: RENodePointer,
-    visibility: RENodeVisibility,
-}
-
-impl RENodeInfo {
-    fn substate_is_visible(&self, substate_id: &SubstateId) -> bool {
-        match &self.visibility {
-            RENodeVisibility::AllSubstatesVisible => true,
-            RENodeVisibility::SomeSubstatesVisible(visible) => visible.contains(substate_id),
-            RENodeVisibility::NoSubstatesVisible => false,
-        }
-    }
 }
 
 #[derive(Debug, Clone)]
@@ -1229,8 +1211,8 @@ where
             .cloned()
             .ok_or_else(|| RuntimeError::SubstateReadSubstateNotFound(substate_id.clone()))?;
 
-        if !node_info.substate_is_visible(substate_id) {
-            return Err(RuntimeError::SubstateReadNotVisible(substate_id.clone()));
+        if !self.substate_is_readable(substate_id) {
+            return Err(RuntimeError::SubstateReadNotReadable(substate_id.clone()));
         }
 
         if matches!(substate_id, SubstateId::ComponentInfo(..))
@@ -1325,7 +1307,7 @@ where
         }
     }
 
-    fn substate_is_readable(&self, substate_id: SubstateId) -> bool {
+    fn substate_is_readable(&self, substate_id: &SubstateId) -> bool {
         match &self.actor {
             Actor::Native => true,
             Actor::Scrypto(ScryptoActor::Blueprint(..)) => {
@@ -1477,7 +1459,6 @@ where
                     node_id,
                     RENodeInfo {
                         pointer: RENodePointer::Store(node_id),
-                        visibility: RENodeVisibility::NoSubstatesVisible,
                     },
                 );
             }
@@ -1492,7 +1473,6 @@ where
                         node_id.clone(),
                         RENodeInfo {
                             pointer: pointer.clone(),
-                            visibility: RENodeVisibility::SomeSubstatesVisible(visible),
                         },
                     );
                 } else {
@@ -1559,7 +1539,6 @@ where
                 node_id,
                 RENodeInfo {
                     pointer: RENodePointer::Store(node_id),
-                    visibility: RENodeVisibility::SomeSubstatesVisible(visible),
                 },
             );
         }
@@ -1655,7 +1634,6 @@ where
                             node_id,
                             RENodeInfo {
                                 pointer: RENodePointer::Store(node_id),
-                                visibility: RENodeVisibility::AllSubstatesVisible,
                             },
                         );
                         vec![method_auth.clone()]
@@ -1678,7 +1656,6 @@ where
                     node_id,
                     RENodeInfo {
                         pointer: RENodePointer::Store(node_id),
-                        visibility: RENodeVisibility::AllSubstatesVisible,
                     },
                 );
                 let fn_str: &str = &fn_ident;
@@ -1718,7 +1695,6 @@ where
                             node_id,
                             RENodeInfo {
                                 pointer: RENodePointer::Store(node_id),
-                                visibility: RENodeVisibility::AllSubstatesVisible,
                             },
                         );
                     }
@@ -1749,7 +1725,6 @@ where
                     node_id.clone(),
                     RENodeInfo {
                         pointer: RENodePointer::Store(node_id.clone()),
-                        visibility: RENodeVisibility::AllSubstatesVisible,
                     },
                 );
 
@@ -1768,7 +1743,6 @@ where
                             root: node_id.clone(),
                             id: None,
                         },
-                        visibility: RENodeVisibility::AllSubstatesVisible,
                     },
                 );
 
@@ -1787,7 +1761,6 @@ where
                             root: node_id.clone(),
                             id: None,
                         },
-                        visibility: RENodeVisibility::AllSubstatesVisible,
                     },
                 );
                 Ok((Actor::Native, ExecutionState::RENodeRef(node_id), vec![]))
@@ -1805,7 +1778,6 @@ where
                             root: node_id.clone(),
                             id: None,
                         },
-                        visibility: RENodeVisibility::AllSubstatesVisible,
                     },
                 );
 
@@ -1832,7 +1804,6 @@ where
                         node_id,
                         RENodeInfo {
                             pointer: RENodePointer::Store(node_id),
-                            visibility: RENodeVisibility::AllSubstatesVisible,
                         },
                     );
                 }
@@ -1959,7 +1930,6 @@ where
                     node_id,
                     RENodeInfo {
                         pointer: next_pointer,
-                        visibility: RENodeVisibility::AllSubstatesVisible,
                     },
                 );
 
@@ -2008,7 +1978,6 @@ where
                             RENodeId::Package(package_address),
                             RENodeInfo {
                                 pointer: RENodePointer::Store(RENodeId::Package(package_address)),
-                                visibility: RENodeVisibility::AllSubstatesVisible,
                             },
                         );
 
@@ -2020,7 +1989,6 @@ where
                                     root: root.clone(),
                                     id: id.clone(),
                                 },
-                                visibility: RENodeVisibility::AllSubstatesVisible,
                             },
                         );
                     }
@@ -2119,7 +2087,6 @@ where
                     node_id.clone(),
                     RENodeInfo {
                         pointer: next_pointer,
-                        visibility: RENodeVisibility::AllSubstatesVisible,
                     },
                 );
 
@@ -2137,7 +2104,6 @@ where
                     node_id.clone(),
                     RENodeInfo {
                         pointer: pointer.clone(),
-                        visibility: RENodeVisibility::SomeSubstatesVisible(visible),
                     },
                 );
             } else {
@@ -2242,7 +2208,6 @@ where
                 node_id,
                 RENodeInfo {
                     pointer: RENodePointer::Store(node_id),
-                    visibility: RENodeVisibility::SomeSubstatesVisible(visible),
                 },
             );
         }
@@ -2386,7 +2351,7 @@ where
             .get(&node_id)
             .expect(&format!("Node should exist {:?}", node_id));
 
-        if !info.substate_is_visible(substate_id) {
+        if !self.substate_is_readable(substate_id) {
             panic!("Trying to read value which is not visible.")
         }
 
@@ -2506,7 +2471,6 @@ where
                             root: node_id.clone(),
                             id: None,
                         },
-                        visibility: RENodeVisibility::AllSubstatesVisible,
                     },
                 );
             }
@@ -2521,7 +2485,6 @@ where
                             root: node_id.clone(),
                             id: None,
                         },
-                        visibility: RENodeVisibility::SomeSubstatesVisible(visible),
                     },
                 );
             }
@@ -2554,7 +2517,7 @@ where
         assert!(taken_nodes.len() == 1);
         let root_node = taken_nodes.into_values().nth(0).unwrap();
 
-        let (substates, maybe_non_fungibles, visibility) = match root_node.root {
+        let (substates, maybe_non_fungibles) = match root_node.root {
             HeapRENode::Component(component, component_state) => {
                 let mut substates = HashMap::new();
                 let component_address = node_id.into();
@@ -2571,7 +2534,6 @@ where
                 (
                     substates,
                     None,
-                    RENodeVisibility::SomeSubstatesVisible(visible_substates),
                 )
             }
             HeapRENode::Package(package) => {
@@ -2581,7 +2543,7 @@ where
                     SubstateId::Package(package_address),
                     Substate::Package(package),
                 );
-                (substates, None, RENodeVisibility::NoSubstatesVisible)
+                (substates, None)
             }
             HeapRENode::Resource(resource_manager, non_fungibles) => {
                 let mut substates = HashMap::new();
@@ -2593,7 +2555,6 @@ where
                 (
                     substates,
                     non_fungibles,
-                    RENodeVisibility::NoSubstatesVisible,
                 )
             }
             _ => panic!("Not expected"),
@@ -2626,7 +2587,6 @@ where
             node_id,
             RENodeInfo {
                 pointer: RENodePointer::Store(node_id),
-                visibility,
             },
         );
 
@@ -2649,17 +2609,8 @@ where
         let cur_children = current_value.node_ids();
         for child_id in cur_children {
             let child_pointer = parent_pointer.child(child_id);
-
-            // Extend current readable space when kv stores are found
-            let visibility = if matches!(child_id, RENodeId::KeyValueStore(..)) {
-                RENodeVisibility::AllSubstatesVisible
-            } else {
-                RENodeVisibility::NoSubstatesVisible
-            };
-
             let child_info = RENodeInfo {
                 pointer: child_pointer,
-                visibility,
             };
             self.node_refs.insert(child_id, child_info);
         }

@@ -29,7 +29,7 @@ fn should_not_be_able_to_read_component_state_after_creation() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| matches!(e, RuntimeError::SubstateReadNotVisible(..)))
+    receipt.expect_failure(|e| matches!(e, RuntimeError::SubstateReadNotReadable(..)))
 }
 
 #[test]
@@ -52,7 +52,7 @@ fn should_not_be_able_to_write_component_state_after_creation() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| matches!(e, RuntimeError::SubstateReadNotVisible(..)))
+    receipt.expect_failure(|e| matches!(e, RuntimeError::SubstateReadNotReadable(..)))
 }
 
 #[test]
