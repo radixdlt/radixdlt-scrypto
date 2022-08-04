@@ -16,8 +16,8 @@ use scrypto::resource::{
 use scrypto::values::ScryptoValue;
 
 use crate::engine::{HeapRENode, LockFeeError, SystemApi};
-use crate::fee::CostUnitCounter;
-use crate::fee::CostUnitCounterError;
+use crate::fee::FeeReserve;
+use crate::fee::FeeReserveError;
 use crate::model::VaultError::MethodNotFound;
 use crate::model::{
     Bucket, Proof, ProofError, ResourceContainer, ResourceContainerError, ResourceContainerId,
@@ -33,7 +33,7 @@ pub enum VaultError {
     ProofError(ProofError),
     CouldNotCreateProof,
     MethodNotFound,
-    CostingError(CostUnitCounterError),
+    CostingError(FeeReserveError),
     LockFeeError(LockFeeError),
 }
 
@@ -172,7 +172,7 @@ impl Vault {
         Y: SystemApi<'p, 's, W, I, C>,
         W: WasmEngine<I>,
         I: WasmInstance,
-        C: CostUnitCounter,
+        C: FeeReserve,
     >(
         vault_id: VaultId,
         method_name: &str,
@@ -226,7 +226,7 @@ impl Vault {
 
                 // Refill fee reserve
                 let changes = system_api
-                    .cost_unit_counter()
+                    .fee_reserve()
                     .repay(vault_id, fee)
                     .map_err(VaultError::CostingError)?;
 

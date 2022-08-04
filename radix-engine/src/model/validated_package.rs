@@ -8,7 +8,7 @@ use scrypto::prelude::{PackageAddress, PackagePublishInput};
 use scrypto::values::ScryptoValue;
 
 use crate::engine::*;
-use crate::fee::{CostUnitCounter, CostUnitCounterError};
+use crate::fee::{FeeReserve, FeeReserveError};
 use crate::wasm::*;
 
 /// A collection of blueprints, compiled and published as a single unit.
@@ -24,7 +24,7 @@ pub enum PackageError {
     InvalidWasm(PrepareError),
     BlueprintNotFound,
     MethodNotFound(String),
-    CostingError(CostUnitCounterError),
+    CostingError(FeeReserveError),
 }
 
 impl ValidatedPackage {
@@ -54,7 +54,7 @@ impl ValidatedPackage {
         Y: SystemApi<'p, 's, W, I, C>,
         W: WasmEngine<I>,
         I: WasmInstance,
-        C: CostUnitCounter,
+        C: FeeReserve,
     {
         match method_name {
             "publish" => {

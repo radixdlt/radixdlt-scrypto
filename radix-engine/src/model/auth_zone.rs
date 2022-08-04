@@ -10,8 +10,8 @@ use scrypto::resource::{
 use scrypto::values::ScryptoValue;
 
 use crate::engine::{HeapRENode, SystemApi};
-use crate::fee::CostUnitCounter;
-use crate::fee::CostUnitCounterError;
+use crate::fee::FeeReserve;
+use crate::fee::FeeReserveError;
 use crate::model::AuthZoneError::InvalidMethod;
 use crate::model::{Proof, ProofError};
 use crate::wasm::*;
@@ -26,7 +26,7 @@ pub enum AuthZoneError {
     CouldNotGetResource,
     NoMethodSpecified,
     InvalidMethod,
-    CostingError(CostUnitCounterError),
+    CostingError(FeeReserveError),
 }
 
 /// A transient resource container.
@@ -101,7 +101,7 @@ impl AuthZone {
         Y: SystemApi<'p, 's, W, I, C>,
         W: WasmEngine<I>,
         I: WasmInstance,
-        C: CostUnitCounter,
+        C: FeeReserve,
     >(
         &mut self,
         method_name: &str,

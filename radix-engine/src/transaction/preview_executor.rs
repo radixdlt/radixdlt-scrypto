@@ -7,8 +7,8 @@ use transaction::validation::TransactionValidator;
 use transaction::validation::ValidationParameters;
 
 use crate::constants::DEFAULT_MAX_COST_UNIT_LIMIT;
-use crate::fee::SystemLoanCostUnitCounter;
-use crate::fee::UnlimitedLoanCostUnitCounter;
+use crate::fee::SystemLoanFeeReserve;
+use crate::fee::UnlimitedLoanFeeReserve;
 use crate::ledger::*;
 use crate::transaction::TransactionReceipt;
 use crate::transaction::*;
@@ -88,16 +88,16 @@ where
         );
 
         let receipt = if preview_intent.flags.unlimited_loan {
-            transaction_executor.execute_with_cost_unit_counter(
+            transaction_executor.execute_with_fee_reserve(
                 &validated_preview_transaction,
                 &execution_params,
-                UnlimitedLoanCostUnitCounter::default(),
+                UnlimitedLoanFeeReserve::default(),
             )
         } else {
-            transaction_executor.execute_with_cost_unit_counter(
+            transaction_executor.execute_with_fee_reserve(
                 &validated_preview_transaction,
                 &execution_params,
-                SystemLoanCostUnitCounter::default(),
+                SystemLoanFeeReserve::default(),
             )
         };
 

@@ -19,8 +19,8 @@ use scrypto::resource::ResourceMethodAuthKey::{self, *};
 use scrypto::values::ScryptoValue;
 
 use crate::engine::{HeapRENode, RuntimeError, SystemApi};
-use crate::fee::CostUnitCounter;
-use crate::fee::CostUnitCounterError;
+use crate::fee::FeeReserve;
+use crate::fee::FeeReserveError;
 use crate::model::resource_manager::ResourceMethodRule::{Protected, Public};
 use crate::model::NonFungibleWrapper;
 use crate::model::ResourceManagerError::InvalidMethod;
@@ -53,7 +53,7 @@ pub enum ResourceManagerError {
     CouldNotCreateBucket,
     CouldNotCreateVault,
     InvalidMethod,
-    CostingError(CostUnitCounterError),
+    CostingError(FeeReserveError),
 }
 
 enum MethodAccessRuleMethod {
@@ -263,7 +263,7 @@ impl ResourceManager {
         Y: SystemApi<'p, 's, W, I, C>,
         W: WasmEngine<I>,
         I: WasmInstance,
-        C: CostUnitCounter,
+        C: FeeReserve,
     >(
         &mut self,
         mint_params: MintParams,
@@ -311,7 +311,7 @@ impl ResourceManager {
         Y: SystemApi<'p, 's, W, I, C>,
         W: WasmEngine<I>,
         I: WasmInstance,
-        C: CostUnitCounter,
+        C: FeeReserve,
     >(
         &mut self,
         entries: HashMap<NonFungibleId, (Vec<u8>, Vec<u8>)>,
@@ -390,7 +390,7 @@ impl ResourceManager {
         Y: SystemApi<'p, 's, W, I, C>,
         W: WasmEngine<I>,
         I: WasmInstance,
-        C: CostUnitCounter,
+        C: FeeReserve,
     >(
         method_name: &str,
         arg: ScryptoValue,
@@ -482,7 +482,7 @@ impl ResourceManager {
         Y: SystemApi<'p, 's, W, I, C>,
         W: WasmEngine<I>,
         I: WasmInstance,
-        C: CostUnitCounter,
+        C: FeeReserve,
     >(
         resource_address: ResourceAddress,
         method_name: &str,

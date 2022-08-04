@@ -23,7 +23,7 @@ where
     Y: SystemApi<'p, 's, W, I, C>,
     W: WasmEngine<I>,
     I: WasmInstance,
-    C: CostUnitCounter,
+    C: FeeReserve,
 {
     actor: ScryptoActor,
     system_api: &'y mut Y,
@@ -39,7 +39,7 @@ where
     Y: SystemApi<'p, 's, W, I, C>,
     W: WasmEngine<I>,
     I: WasmInstance,
-    C: CostUnitCounter,
+    C: FeeReserve,
 {
     pub fn new(actor: ScryptoActor, system_api: &'y mut Y) -> Self {
         RadixEngineWasmRuntime {
@@ -53,8 +53,8 @@ where
         }
     }
 
-    fn cost_unit_counter(&mut self) -> &mut C {
-        self.system_api.cost_unit_counter()
+    fn fee_reserve(&mut self) -> &mut C {
+        self.system_api.fee_reserve()
     }
 
     // FIXME: limit access to the API
@@ -203,7 +203,7 @@ impl<
         Y: SystemApi<'p, 's, W, I, C>,
         W: WasmEngine<I>,
         I: WasmInstance,
-        C: CostUnitCounter,
+        C: FeeReserve,
     > WasmRuntime for RadixEngineWasmRuntime<'y, 'p, 's, Y, W, I, C>
 {
     fn main(&mut self, input: ScryptoValue) -> Result<ScryptoValue, InvokeError> {
@@ -235,7 +235,7 @@ impl<
     }
 
     fn consume_cost_units(&mut self, n: u32) -> Result<(), InvokeError> {
-        self.cost_unit_counter()
+        self.fee_reserve()
             .consume(n, "run_wasm")
             .map_err(InvokeError::CostingError)
     }
@@ -243,12 +243,12 @@ impl<
 
 /// A `Nop` runtime accepts any external function calls by doing nothing and returning void.
 pub struct NopWasmRuntime {
-    cost_unit_counter: SystemLoanCostUnitCounter,
+    fee_reserve: SystemLoanFeeReserve,
 }
 
 impl NopWasmRuntime {
-    pub fn new(cost_unit_counter: SystemLoanCostUnitCounter) -> Self {
-        Self { cost_unit_counter }
+    pub fn new(fee_reserve: SystemLoanFeeReserve) -> Self {
+        Self { fee_reserve }
     }
 }
 
@@ -258,7 +258,7 @@ impl WasmRuntime for NopWasmRuntime {
     }
 
     fn consume_cost_units(&mut self, n: u32) -> Result<(), InvokeError> {
-        self.cost_unit_counter
+        self.fee_reserve
             .consume(n, "run_wasm")
             .map_err(InvokeError::CostingError)
     }
