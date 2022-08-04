@@ -376,6 +376,7 @@ impl Lexer {
             "Array" => Ok(TokenKind::Array),
             "Tuple" => Ok(TokenKind::Tuple),
             "Result" => Ok(TokenKind::Result),
+            "Vec" => Ok(TokenKind::List), // alias
             "List" => Ok(TokenKind::List),
             "Set" => Ok(TokenKind::Set),
             "Map" => Ok(TokenKind::Map),

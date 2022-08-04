@@ -534,7 +534,14 @@ mod tests {
     }
 
     #[test]
-    fn test_containers() {
+    fn test_collections() {
+        parse_value_ok!(
+            r#"Vec<String>("foo", "bar")"#,
+            Value::List(
+                Type::String,
+                vec![Value::String("foo".into()), Value::String("bar".into())]
+            )
+        );
         parse_value_ok!(
             r#"List<String>("foo", "bar")"#,
             Value::List(

@@ -128,7 +128,7 @@ pub enum Type {
     Array,
     Tuple,
 
-    /* Containers */
+    /* Collections */
     List,
     Set,
     Map,
