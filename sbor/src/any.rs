@@ -213,7 +213,7 @@ fn encode_any_internal(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
             elements,
         } => {
             if ty_ctx.is_none() {
-                enc.write_type(TYPE_VEC);
+                enc.write_type(TYPE_LIST);
             }
             enc.write_type(*element_type_id);
             enc.write_len(elements.len());
@@ -428,7 +428,7 @@ fn decode_next(ty_ctx: Option<u8>, dec: &mut Decoder) -> Result<Value, DecodeErr
             }
         }
         // collections
-        TYPE_VEC => {
+        TYPE_LIST => {
             // element type
             let element_type_id = dec.read_type()?;
             // length

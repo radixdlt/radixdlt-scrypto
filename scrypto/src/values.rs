@@ -540,7 +540,7 @@ impl ScryptoValueFormatter {
             TYPE_TUPLE => "Tuple",
             TYPE_RESULT => "Result",
             // collections
-            TYPE_VEC => "Vec",
+            TYPE_LIST => "Vec",
             TYPE_TREE_SET => "TreeSet",
             TYPE_TREE_MAP => "TreeMap",
             TYPE_HASH_SET => "HashSet",

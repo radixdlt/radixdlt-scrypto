@@ -785,7 +785,7 @@ fn generate_type_id(ty: &ast::Type) -> u8 {
         ast::Type::Array => TYPE_ARRAY,
         ast::Type::Tuple => TYPE_TUPLE,
         ast::Type::Result => TYPE_RESULT,
-        ast::Type::Vec => TYPE_VEC,
+        ast::Type::Vec => TYPE_LIST,
         ast::Type::TreeSet => TYPE_TREE_SET,
         ast::Type::TreeMap => TYPE_TREE_MAP,
         ast::Type::HashSet => TYPE_HASH_SET,
@@ -799,7 +799,7 @@ fn generate_type_id(ty: &ast::Type) -> u8 {
         ast::Type::Proof => ScryptoType::Proof.id(),
         ast::Type::NonFungibleId => ScryptoType::NonFungibleId.id(),
         ast::Type::NonFungibleAddress => ScryptoType::NonFungibleAddress.id(),
-        ast::Type::Bytes => TYPE_VEC,
+        ast::Type::Bytes => TYPE_LIST,
     }
 }
 
@@ -963,7 +963,7 @@ mod tests {
             r#"HashMap<HashSet, Vec>(HashSet<U8>(1u8), Vec<U8>(2u8))"#,
             Value::HashMap {
                 key_type_id: TYPE_HASH_SET,
-                value_type_id: TYPE_VEC,
+                value_type_id: TYPE_LIST,
                 elements: vec![
                     Value::HashSet {
                         element_type_id: TYPE_U8,
@@ -980,7 +980,7 @@ mod tests {
             r#"TreeMap<TreeSet, Vec>(TreeSet<U8>(1u8), Vec<U8>(2u8))"#,
             Value::TreeMap {
                 key_type_id: TYPE_TREE_SET,
-                value_type_id: TYPE_VEC,
+                value_type_id: TYPE_LIST,
                 elements: vec![
                     Value::TreeSet {
                         element_type_id: TYPE_U8,

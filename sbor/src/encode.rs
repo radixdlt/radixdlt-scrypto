@@ -193,12 +193,12 @@ impl<T: Encode + TypeId> Encode for Option<T> {
     #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
         match self {
-            None => {
-                encoder.write_u8(OPTION_TYPE_NONE);
-            }
             Some(v) => {
-                encoder.write_u8(OPTION_TYPE_SOME);
+                encoder.write_u8(OPTION_VARIANT_SOME);
                 v.encode(encoder);
+            }
+            None => {
+                encoder.write_u8(OPTION_VARIANT_NONE);
             }
         }
     }
@@ -277,11 +277,11 @@ impl<T: Encode, E: Encode> Encode for Result<T, E> {
     fn encode_value(&self, encoder: &mut Encoder) {
         match self {
             Ok(o) => {
-                encoder.write_u8(RESULT_TYPE_OK);
+                encoder.write_u8(RESULT_VARIANT_OK);
                 o.encode(encoder);
             }
             Err(e) => {
-                encoder.write_u8(RESULT_TYPE_ERR);
+                encoder.write_u8(RESULT_VARIANT_ERR);
                 e.encode(encoder);
             }
         }
