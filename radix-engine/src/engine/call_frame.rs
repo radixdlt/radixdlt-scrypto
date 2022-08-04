@@ -141,7 +141,7 @@ pub fn insert_non_root_nodes<'s>(track: &mut Track<'s>, values: HashMap<RENodeId
 #[derive(Debug, Clone)]
 pub enum RENodePointer {
     Heap {
-        frame_id: Option<usize>,
+        frame_id: usize,
         root: RENodeId,
         id: Option<RENodeId>,
     },
@@ -162,6 +162,7 @@ impl RENodePointer {
 
     fn borrow_native_ref<'p, 's>(
         &self, // TODO: Consider changing this to self
+        self_frame_id: usize,
         substate_id: SubstateId,
         owned_values: &mut HashMap<RENodeId, HeapRootRENode>,
         borrowed_values: &mut Vec<&'p mut HashMap<RENodeId, HeapRootRENode>>,
@@ -169,7 +170,7 @@ impl RENodePointer {
     ) -> NativeSubstateRef {
         match self {
             RENodePointer::Heap { frame_id, root, id } => {
-                let frame = if let Some(frame_id) = frame_id {
+                let frame = if self_frame_id != *frame_id {
                     borrowed_values.get_mut(*frame_id).unwrap()
                 } else {
                     owned_values
@@ -186,13 +187,14 @@ impl RENodePointer {
 
     fn to_ref<'f, 'p, 's>(
         &self,
+        self_frame_id: usize,
         owned_values: &'f HashMap<RENodeId, HeapRootRENode>,
         borrowed_values: &'f Vec<&'p mut HashMap<RENodeId, HeapRootRENode>>,
         track: &'f Track<'s>,
     ) -> RENodeRef<'f, 's> {
         match self {
             RENodePointer::Heap { frame_id, root, id } => {
-                let frame = if let Some(frame_id) = frame_id {
+                let frame = if self_frame_id != *frame_id {
                     borrowed_values.get(*frame_id).unwrap()
                 } else {
                     owned_values
@@ -205,13 +207,14 @@ impl RENodePointer {
 
     fn to_ref_mut<'f, 'p, 's>(
         &self,
+        self_frame_id: usize,
         owned_values: &'f mut HashMap<RENodeId, HeapRootRENode>,
         borrowed_values: &'f mut Vec<&'p mut HashMap<RENodeId, HeapRootRENode>>,
         track: &'f mut Track<'s>,
     ) -> RENodeRefMut<'f, 's> {
         match self {
             RENodePointer::Heap { frame_id, root, id } => {
-                let frame = if let Some(frame_id) = frame_id {
+                let frame = if self_frame_id != *frame_id {
                     borrowed_values.get_mut(*frame_id).unwrap()
                 } else {
                     owned_values
@@ -224,7 +227,7 @@ impl RENodePointer {
 }
 
 pub enum NativeSubstateRef {
-    Stack(HeapRootRENode, Option<usize>, RENodeId, Option<RENodeId>),
+    Stack(HeapRootRENode, usize, RENodeId, Option<RENodeId>),
     Track(SubstateId, Substate),
 }
 
@@ -308,13 +311,14 @@ impl NativeSubstateRef {
 
     pub fn return_to_location<'a, 'p, 's>(
         self,
+        self_frame_id: usize,
         owned_values: &'a mut HashMap<RENodeId, HeapRootRENode>,
         borrowed_values: &'a mut Vec<&'p mut HashMap<RENodeId, HeapRootRENode>>,
         track: &mut Track<'s>,
     ) {
         match self {
             NativeSubstateRef::Stack(owned, frame_id, node_id, ..) => {
-                let frame = if let Some(frame_id) = frame_id {
+                let frame = if self_frame_id != frame_id {
                     borrowed_values.get_mut(frame_id).unwrap()
                 } else {
                     owned_values
@@ -1209,6 +1213,7 @@ where
         // Read current value
         let current_value = {
             let mut node_ref = node_pointer.to_ref_mut(
+                self.depth,
                 &mut self.owned_heap_nodes,
                 &mut self.parent_heap_nodes,
                 &mut self.track,
@@ -1635,7 +1640,7 @@ where
 
                 let next_node_pointer = if self.owned_heap_nodes.contains_key(&node_id) {
                     RENodePointer::Heap {
-                        frame_id: Some(self.depth),
+                        frame_id: self.depth,
                         root: node_id.clone(),
                         id: None,
                     }
@@ -1732,7 +1737,7 @@ where
                 let node_id = RENodeId::Component(component_address);
                 let cur_pointer = if self.owned_heap_nodes.contains_key(&node_id) {
                     RENodePointer::Heap {
-                        frame_id: None,
+                        frame_id: self.depth,
                         root: node_id.clone(),
                         id: None,
                     }
@@ -1763,7 +1768,7 @@ where
                         RENodePointer::Store(node_id)
                     }
                     RENodePointer::Heap { frame_id, root, id } => RENodePointer::Heap {
-                        frame_id: frame_id.or(Some(self.depth)),
+                        frame_id,
                         root,
                         id,
                     },
@@ -1784,6 +1789,7 @@ where
 
                 let scrypto_actor = {
                     let node_ref = cur_pointer.to_ref(
+                        self.depth,
                         &self.owned_heap_nodes,
                         &self.parent_heap_nodes,
                         &mut self.track,
@@ -1823,6 +1829,7 @@ where
 
                     {
                         let value_ref = cur_pointer.to_ref(
+                            self.depth,
                             &self.owned_heap_nodes,
                             &self.parent_heap_nodes,
                             &self.track,
@@ -1862,7 +1869,7 @@ where
                 let node_id = RENodeId::Component(component_address);
                 let cur_pointer = if self.owned_heap_nodes.contains_key(&node_id) {
                     RENodePointer::Heap {
-                        frame_id: None,
+                        frame_id: self.depth,
                         root: node_id.clone(),
                         id: None,
                     }
@@ -1897,7 +1904,7 @@ where
                         next_frame_node_refs.insert(
                             node_id,
                             RENodePointer::Heap {
-                                frame_id: Some(self.depth),
+                                frame_id: self.depth,
                                 root: root.clone(),
                                 id: id.clone(),
                             },
@@ -1914,7 +1921,7 @@ where
                 let node_id = RENodeId::Vault(*vault_id);
                 let cur_pointer = if self.owned_heap_nodes.contains_key(&node_id) {
                     RENodePointer::Heap {
-                        frame_id: None,
+                        frame_id: self.depth,
                         root: node_id.clone(),
                         id: Option::None,
                     }
@@ -1952,7 +1959,7 @@ where
                             RENodePointer::Store(node_id)
                         }
                         RENodePointer::Heap { frame_id, root, id } => RENodePointer::Heap {
-                            frame_id: frame_id.or(Some(self.depth)),
+                            frame_id: frame_id,
                             root,
                             id,
                         },
@@ -1962,6 +1969,7 @@ where
                     // Lock Resource
                     let resource_address = {
                         let value_ref = cur_pointer.to_ref(
+                            self.depth,
                             &mut self.owned_heap_nodes,
                             &mut self.parent_heap_nodes,
                             &mut self.track,
@@ -1980,6 +1988,7 @@ where
                 let method_auth = {
                     let resource_address = {
                         let value_ref = cur_pointer.to_ref(
+                            self.depth,
                             &mut self.owned_heap_nodes,
                             &mut self.parent_heap_nodes,
                             &mut self.track,
@@ -2167,7 +2176,7 @@ where
             .get(node_id)
             .expect(&format!("{:?} is unknown.", node_id));
 
-        Ok(node_pointer.to_ref(&self.owned_heap_nodes, &self.parent_heap_nodes, &self.track))
+        Ok(node_pointer.to_ref(self.depth, &self.owned_heap_nodes, &self.parent_heap_nodes, &self.track))
     }
 
     fn substate_borrow_mut(
@@ -2256,6 +2265,7 @@ where
             .expect(&format!("Node should exist {:?}", node_id));
 
         Ok(node_pointer.borrow_native_ref(
+            self.depth,
             substate_id.clone(),
             &mut self.owned_heap_nodes,
             &mut self.parent_heap_nodes,
@@ -2308,6 +2318,7 @@ where
         )?;
 
         val_ref.return_to_location(
+            self.depth,
             &mut self.owned_heap_nodes,
             &mut self.parent_heap_nodes,
             &mut self.track,
@@ -2367,7 +2378,7 @@ where
                 self.node_refs.insert(
                     node_id.clone(),
                     RENodePointer::Heap {
-                        frame_id: None,
+                        frame_id: self.depth,
                         root: node_id.clone(),
                         id: None,
                     },
@@ -2379,7 +2390,7 @@ where
                 self.node_refs.insert(
                     node_id.clone(),
                     RENodePointer::Heap {
-                        frame_id: None,
+                        frame_id: self.depth,
                         root: node_id.clone(),
                         id: None,
                     },
@@ -2535,6 +2546,7 @@ where
 
         // Write values
         let mut node_ref = pointer.to_ref_mut(
+            self.depth,
             &mut self.owned_heap_nodes,
             &mut self.parent_heap_nodes,
             &mut self.track,
@@ -2594,6 +2606,7 @@ where
 
         // Write values
         let mut node_ref = pointer.to_ref_mut(
+            self.depth,
             &mut self.owned_heap_nodes,
             &mut self.parent_heap_nodes,
             &mut self.track,
