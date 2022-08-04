@@ -115,19 +115,21 @@ pub enum Type {
     U64,
     U128,
     String,
+
+    /* Struct and enum */
     Struct,
     Enum,
     Option,
-    Array,
-    Tuple,
     Result,
 
+    /* [T; N] and (A, B, C) */
+    Array,
+    Tuple,
+
     /* Containers */
-    Vec,
-    TreeSet,
-    TreeMap,
-    HashSet,
-    HashMap,
+    List,
+    Set,
+    Map,
 
     /* Custom types */
     Decimal,
@@ -159,18 +161,18 @@ pub enum Value {
     U64(u64),
     U128(u128),
     String(String),
+
     Struct(Vec<Value>),
     Enum(String, Vec<Value>),
     Option(Box<Option<Value>>),
-    Array(Type, Vec<Value>),
-    Tuple(Vec<Value>),
     Result(Box<Result<Value, Value>>),
 
-    Vec(Type, Vec<Value>),
-    TreeSet(Type, Vec<Value>),
-    TreeMap(Type, Type, Vec<Value>),
-    HashSet(Type, Vec<Value>),
-    HashMap(Type, Type, Vec<Value>),
+    Array(Type, Vec<Value>),
+    Tuple(Vec<Value>),
+
+    List(Type, Vec<Value>),
+    Set(Type, Vec<Value>),
+    Map(Type, Type, Vec<Value>),
 
     Decimal(Box<Value>),
     PackageAddress(Box<Value>),
@@ -207,11 +209,9 @@ impl Value {
             Value::Array(_, _) => Type::Array,
             Value::Tuple(_) => Type::Tuple,
             Value::Result(_) => Type::Result,
-            Value::Vec(_, _) => Type::Vec,
-            Value::TreeSet(_, _) => Type::TreeSet,
-            Value::TreeMap(_, _, _) => Type::TreeMap,
-            Value::HashSet(_, _) => Type::HashSet,
-            Value::HashMap(_, _, _) => Type::HashMap,
+            Value::List(_, _) => Type::List,
+            Value::Set(_, _) => Type::Set,
+            Value::Map(_, _, _) => Type::Map,
             Value::Decimal(_) => Type::Decimal,
             Value::PackageAddress(_) => Type::PackageAddress,
             Value::ComponentAddress(_) => Type::ComponentAddress,
@@ -221,7 +221,7 @@ impl Value {
             Value::Proof(_) => Type::Proof,
             Value::NonFungibleId(_) => Type::NonFungibleId,
             Value::NonFungibleAddress(_) => Type::NonFungibleAddress,
-            Value::Bytes(_) => Type::Vec,
+            Value::Bytes(_) => Type::List,
         }
     }
 }

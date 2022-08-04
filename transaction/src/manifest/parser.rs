@@ -197,11 +197,9 @@ impl Parser {
             TokenKind::Array => self.parse_array(),
             TokenKind::Tuple => self.parse_tuple(),
             TokenKind::Ok | TokenKind::Err => self.parse_result(),
-            TokenKind::Vec => self.parse_vec(),
-            TokenKind::TreeSet => self.parse_tree_set(),
-            TokenKind::TreeMap => self.parse_tree_map(),
-            TokenKind::HashSet => self.parse_hash_set(),
-            TokenKind::HashMap => self.parse_hash_map(),
+            TokenKind::List => self.parse_list(),
+            TokenKind::Set => self.parse_set(),
+            TokenKind::Map => self.parse_map(),
             TokenKind::Decimal
             | TokenKind::PackageAddress
             | TokenKind::ComponentAddress
@@ -271,10 +269,10 @@ impl Parser {
         }
     }
 
-    pub fn parse_vec(&mut self) -> Result<Value, ParserError> {
-        advance_match!(self, TokenKind::Vec);
+    pub fn parse_list(&mut self) -> Result<Value, ParserError> {
+        advance_match!(self, TokenKind::List);
         let generics = self.parse_generics(1)?;
-        Ok(Value::Vec(
+        Ok(Value::List(
             generics[0],
             self.parse_values_any(TokenKind::OpenParenthesis, TokenKind::CloseParenthesis)?,
         ))
@@ -294,40 +292,19 @@ impl Parser {
         Ok(Value::Bytes(bytes?))
     }
 
-    pub fn parse_tree_set(&mut self) -> Result<Value, ParserError> {
-        advance_match!(self, TokenKind::TreeSet);
+    pub fn parse_set(&mut self) -> Result<Value, ParserError> {
+        advance_match!(self, TokenKind::Set);
         let generics = self.parse_generics(1)?;
-        Ok(Value::TreeSet(
+        Ok(Value::Set(
             generics[0],
             self.parse_values_any(TokenKind::OpenParenthesis, TokenKind::CloseParenthesis)?,
         ))
     }
 
-    pub fn parse_tree_map(&mut self) -> Result<Value, ParserError> {
-        advance_match!(self, TokenKind::TreeMap);
+    pub fn parse_map(&mut self) -> Result<Value, ParserError> {
+        advance_match!(self, TokenKind::Map);
         let generics = self.parse_generics(2)?;
-        Ok(Value::TreeMap(
-            generics[0],
-            generics[1],
-            self.parse_values_any(TokenKind::OpenParenthesis, TokenKind::CloseParenthesis)?,
-        ))
-    }
-
-    pub fn parse_hash_set(&mut self) -> Result<Value, ParserError> {
-        advance_match!(self, TokenKind::HashSet);
-
-        let generics = self.parse_generics(1)?;
-        Ok(Value::HashSet(
-            generics[0],
-            self.parse_values_any(TokenKind::OpenParenthesis, TokenKind::CloseParenthesis)?,
-        ))
-    }
-
-    pub fn parse_hash_map(&mut self) -> Result<Value, ParserError> {
-        advance_match!(self, TokenKind::HashMap);
-
-        let generics = self.parse_generics(2)?;
-        Ok(Value::HashMap(
+        Ok(Value::Map(
             generics[0],
             generics[1],
             self.parse_values_any(TokenKind::OpenParenthesis, TokenKind::CloseParenthesis)?,
@@ -430,11 +407,9 @@ impl Parser {
             TokenKind::Array => Ok(Type::Array),
             TokenKind::Tuple => Ok(Type::Tuple),
             TokenKind::Result => Ok(Type::Result),
-            TokenKind::Vec => Ok(Type::Vec),
-            TokenKind::TreeSet => Ok(Type::TreeSet),
-            TokenKind::TreeMap => Ok(Type::TreeMap),
-            TokenKind::HashSet => Ok(Type::HashSet),
-            TokenKind::HashMap => Ok(Type::HashMap),
+            TokenKind::List => Ok(Type::List),
+            TokenKind::Set => Ok(Type::Set),
+            TokenKind::Map => Ok(Type::Map),
             TokenKind::Decimal => Ok(Type::Decimal),
             TokenKind::PackageAddress => Ok(Type::PackageAddress),
             TokenKind::ComponentAddress => Ok(Type::ComponentAddress),
@@ -560,15 +535,15 @@ mod tests {
     #[test]
     fn test_containers() {
         parse_value_ok!(
-            r#"Vec<String>("foo", "bar")"#,
-            Value::Vec(
+            r#"List<String>("foo", "bar")"#,
+            Value::List(
                 Type::String,
                 vec![Value::String("foo".into()), Value::String("bar".into())]
             )
         );
         parse_value_ok!(
-            r#"TreeSet<String>("1st", "2nd", "3rd")"#,
-            Value::TreeSet(
+            r#"Set<String>("1st", "2nd", "3rd")"#,
+            Value::Set(
                 Type::String,
                 vec![
                     Value::String("1st".into()),
@@ -578,32 +553,8 @@ mod tests {
             )
         );
         parse_value_ok!(
-            r#"TreeMap<String, U32>("key1", 8u32, "key2", 100u32)"#,
-            Value::TreeMap(
-                Type::String,
-                Type::U32,
-                vec![
-                    Value::String("key1".into()),
-                    Value::U32(8),
-                    Value::String("key2".into()),
-                    Value::U32(100)
-                ]
-            )
-        );
-        parse_value_ok!(
-            r#"HashSet<String>("1st", "2nd", "3rd")"#,
-            Value::HashSet(
-                Type::String,
-                vec![
-                    Value::String("1st".into()),
-                    Value::String("2nd".into()),
-                    Value::String("3rd".into())
-                ]
-            )
-        );
-        parse_value_ok!(
-            r#"HashMap<String, U32>("key1", 8u32, "key2", 100u32)"#,
-            Value::HashMap(
+            r#"Map<String, U32>("key1", 8u32, "key2", 100u32)"#,
+            Value::Map(
                 Type::String,
                 Type::U32,
                 vec![
@@ -699,7 +650,7 @@ mod tests {
             }
         );
         parse_instruction_ok!(
-            r#"CALL_FUNCTION  PackageAddress("01d1f50010e4102d88aacc347711491f852c515134a9ecf67ba17c")  "Airdrop"  "new"  500u32  HashMap<String, U8>("key", 1u8);"#,
+            r#"CALL_FUNCTION  PackageAddress("01d1f50010e4102d88aacc347711491f852c515134a9ecf67ba17c")  "Airdrop"  "new"  500u32  Map<String, U8>("key", 1u8);"#,
             Instruction::CallFunction {
                 package_address: Value::PackageAddress(
                     Value::String("01d1f50010e4102d88aacc347711491f852c515134a9ecf67ba17c".into())
@@ -709,7 +660,7 @@ mod tests {
                 function: Value::String("new".into()),
                 args: vec![
                     Value::U32(500),
-                    Value::HashMap(
+                    Value::Map(
                         Type::String,
                         Type::U8,
                         vec![Value::String("key".into()), Value::U8(1)]

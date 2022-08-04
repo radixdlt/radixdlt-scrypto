@@ -34,10 +34,8 @@ pub const TYPE_TUPLE: u8 = 0x23; // (A, B, C)
 
 // collections
 pub const TYPE_LIST: u8 = 0x30;
-pub const TYPE_TREE_SET: u8 = 0x31;
-pub const TYPE_TREE_MAP: u8 = 0x32;
-pub const TYPE_HASH_SET: u8 = 0x33;
-pub const TYPE_HASH_MAP: u8 = 0x34;
+pub const TYPE_SET: u8 = 0x33;
+pub const TYPE_MAP: u8 = 0x34;
 
 // custom types start from 0x80 and values are encoded as `len + data`
 pub const TYPE_CUSTOM_START: u8 = 0x80;
@@ -214,27 +212,27 @@ impl<T> TypeId for [T] {
 impl<T> TypeId for BTreeSet<T> {
     #[inline]
     fn type_id() -> u8 {
-        TYPE_TREE_SET
+        TYPE_SET
     }
 }
 
 impl<K, V> TypeId for BTreeMap<K, V> {
     #[inline]
     fn type_id() -> u8 {
-        TYPE_TREE_MAP
+        TYPE_MAP
     }
 }
 
 impl<T> TypeId for HashSet<T> {
     #[inline]
     fn type_id() -> u8 {
-        TYPE_HASH_SET
+        TYPE_SET
     }
 }
 
 impl<K, V> TypeId for HashMap<K, V> {
     #[inline]
     fn type_id() -> u8 {
-        TYPE_HASH_MAP
+        TYPE_MAP
     }
 }
