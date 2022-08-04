@@ -194,17 +194,26 @@ macro_rules! decimals {
                 }
 
                 macro_rules! from_int {
-                    ($($type:ident),*) => {
-                        $(
-                            impl From<$type> for $dec {
-                                fn from(val: $type) -> Self {
-                                    Self(<$wrapped>::from(val) * Self::ONE.0)
-                                }
+                    ($type:ident) => {
+                        impl From<$type> for $dec {
+                            fn from(val: $type) -> Self {
+                                Self(<$wrapped>::from(val) * Self::ONE.0)
                             }
-                        )*
+                        }
                     };
                 }
-                from_int!{u8, u16, u32, u64, usize, u128, i8, i16, i32, i64, isize, i128}
+                from_int!(u8);
+                from_int!(u16);
+                from_int!(u32);
+                from_int!(u64);
+                from_int!(u128);
+                from_int!(usize);
+                from_int!(i8);
+                from_int!(i16);
+                from_int!(i32);
+                from_int!(i64);
+                from_int!(i128);
+                from_int!(isize);
                 
                 impl From<&str> for $dec {
                     fn from(val: &str) -> Self {
@@ -541,19 +550,14 @@ pub trait Truncate<T> {
     fn truncate(self) -> Self::Output;
 }
 
-macro_rules! truncate_decimal {
-    ($decimal:ident, $dec:ident) => {
-            impl Truncate<$decimal> for $dec {
-                type Output = $decimal;
 
-                fn truncate(self) -> Self::Output {
-                    $decimal(self.0 / I512::from(1).mul(10i8).pow(<$dec>::SCALE - <$decimal>::SCALE))
-                }
-            }
-    };
+impl Truncate<Decimal> for PreciseDecimal {
+    type Output = Decimal;
+
+    fn truncate(self) -> Self::Output {
+        Decimal((self.0 / I256::from(10i8).pow(PreciseDecimal::SCALE - PreciseDecimal::SCALE)).try_into().expect("Overflow"))
+    }
 }
-
-truncate_decimal! {Decimal, PreciseDecimal}
 
 macro_rules! from_integer {
     ($(($t:ident, $dec:ident, $wrapped:ident)),*) => {
