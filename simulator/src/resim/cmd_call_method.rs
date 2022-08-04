@@ -19,6 +19,10 @@ pub struct CallMethod {
     /// The call arguments
     arguments: Vec<String>,
 
+    /// The proofs to add to the auth zone
+    #[clap(short, long, multiple = true)]
+    proofs: Option<Vec<String>>,
+
     /// Output a transaction manifest without execution
     #[clap(short, long)]
     manifest: Option<PathBuf>,
@@ -35,8 +39,19 @@ pub struct CallMethod {
 impl CallMethod {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
         let default_account = get_default_account()?;
+        let proofs = self.proofs.clone().unwrap_or_default();
 
-        let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        let mut manifest_builder = &mut ManifestBuilder::new(Network::LocalSimulator);
+        for resource_specifier in proofs {
+            manifest_builder = manifest_builder
+                .create_proof_from_account_by_resource_specifier(
+                    resource_specifier,
+                    default_account,
+                )
+                .map_err(Error::FailedToBuildArgs)?;
+        }
+
+        let manifest = manifest_builder
             .lock_fee(10.into(), SYSTEM_COMPONENT)
             .call_method_with_abi(
                 self.component_address,
