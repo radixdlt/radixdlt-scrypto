@@ -19,11 +19,7 @@ impl ScryptoActor {
         package_address: PackageAddress,
         blueprint_name: String,
     ) -> Self {
-        Self::Component(
-            component_address,
-            package_address,
-            blueprint_name,
-        )
+        Self::Component(component_address, package_address, blueprint_name)
     }
 
     pub fn get_package(&self) -> &PackageAddress {
@@ -51,11 +47,9 @@ impl ScryptoActor {
 
     pub fn as_component(&self) -> (ComponentAddress, PackageAddress, String) {
         match self {
-            Self::Component(component_address, package_address, blueprint) => (
-                *component_address,
-                *package_address,
-                blueprint.clone(),
-            ),
+            Self::Component(component_address, package_address, blueprint) => {
+                (*component_address, *package_address, blueprint.clone())
+            }
             _ => panic!("Not a component"),
         }
     }

@@ -66,7 +66,7 @@ fn cyclic_map_fails_execution() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| matches!(e, RuntimeError::InvalidDataAccess(_)));
+    receipt.expect_failure(|e| matches!(e, RuntimeError::SubstateReadSubstateNotFound(_)));
 }
 
 #[test]
@@ -89,7 +89,7 @@ fn self_cyclic_map_fails_execution() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| matches!(e, RuntimeError::InvalidDataAccess(..)));
+    receipt.expect_failure(|e| matches!(e, RuntimeError::SubstateReadSubstateNotFound(..)));
 }
 
 #[test]

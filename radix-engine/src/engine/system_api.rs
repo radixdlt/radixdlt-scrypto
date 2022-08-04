@@ -59,7 +59,10 @@ where
     ) -> Result<NativeSubstateRef, CostUnitCounterError>;
 
     /// Return a mutable substate
-    fn substate_return_mut(&mut self, val_ref: NativeSubstateRef) -> Result<(), CostUnitCounterError>;
+    fn substate_return_mut(
+        &mut self,
+        val_ref: NativeSubstateRef,
+    ) -> Result<(), CostUnitCounterError>;
 
     // TODO: Convert use substate_borrow interface
     fn substate_read(&mut self, substate_id: SubstateId) -> Result<ScryptoValue, RuntimeError>;

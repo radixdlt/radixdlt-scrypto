@@ -1,5 +1,4 @@
 use scrypto::engine::types::*;
-use sbor::rust::vec;
 
 pub struct RENodeProperties;
 
@@ -18,25 +17,6 @@ impl RENodeProperties {
             RENodeId::System => true,
         }
     }
-
-    pub fn get_substate_ids(node_id: RENodeId) -> Vec<SubstateId> {
-        match node_id {
-            RENodeId::Bucket(..) => panic!("Unexpected"),
-            RENodeId::Proof(..) => panic!("Unexpected"),
-            RENodeId::KeyValueStore(..) => panic!("Unexpected"),
-            RENodeId::Worktop => panic!("Unexpected"),
-            RENodeId::Component(component_address) => vec![
-                SubstateId::ComponentInfo(component_address),
-                SubstateId::ComponentState(component_address),
-            ],
-            RENodeId::Vault(vault_id) => vec![
-                SubstateId::Vault(vault_id)
-            ],
-            RENodeId::ResourceManager(..) => panic!("Unexpected"),
-            RENodeId::Package(..) => panic!("Unexpected"),
-            RENodeId::System => panic!("Unexpected"),
-        }
-    }
 }
 
 pub struct SubstateProperties;
@@ -50,15 +30,21 @@ impl SubstateProperties {
             SubstateId::ComponentState(component_address) => {
                 RENodeId::Component(*component_address)
             }
-            SubstateId::NonFungibleSpace(resource_address) => RENodeId::ResourceManager(*resource_address),
-            SubstateId::NonFungible(resource_address, ..) => RENodeId::ResourceManager(*resource_address),
+            SubstateId::NonFungibleSpace(resource_address) => {
+                RENodeId::ResourceManager(*resource_address)
+            }
+            SubstateId::NonFungible(resource_address, ..) => {
+                RENodeId::ResourceManager(*resource_address)
+            }
             SubstateId::KeyValueStoreSpace(kv_store_id) => RENodeId::KeyValueStore(*kv_store_id),
             SubstateId::KeyValueStoreEntry(kv_store_id, ..) => {
                 RENodeId::KeyValueStore(*kv_store_id)
             }
             SubstateId::Vault(vault_id) => RENodeId::Vault(*vault_id),
             SubstateId::Package(package_address) => RENodeId::Package(*package_address),
-            SubstateId::ResourceManager(resource_address) => RENodeId::ResourceManager(*resource_address),
+            SubstateId::ResourceManager(resource_address) => {
+                RENodeId::ResourceManager(*resource_address)
+            }
             SubstateId::System => RENodeId::System,
             SubstateId::Bucket(bucket_id) => RENodeId::Bucket(*bucket_id),
             SubstateId::Proof(proof_id) => RENodeId::Proof(*proof_id),

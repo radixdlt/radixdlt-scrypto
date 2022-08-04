@@ -614,7 +614,7 @@ impl ScryptoValueFormatter {
             //
             _ => panic!("Illegal state"),
         }
-            .to_string()
+        .to_string()
     }
 
     pub fn format_elements(
