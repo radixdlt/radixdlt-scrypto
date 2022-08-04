@@ -49,7 +49,7 @@ pub enum ProofValidationMode {
     /// Specifies that the `Proof` should be validated against a single `ResourceAddress` and a set of `NonFungibleId`s.
     /// If the `Proof`'s resource address matches that specified, and the `NonFungibleId`s of the proof all belong to
     /// the provided set, then it is valid.
-    ValidateNonFungibleIdBelongsTo(ResourceAddress, BTreeSet<NonFungibleId>),
+    ValidateNonFungibleIdsSubsetOf(ResourceAddress, BTreeSet<NonFungibleId>),
 
     /// Specifies that the `Proof` should be validated for the amount of resources that it contains.
     ValidateAmount(ResourceAddress, Decimal),
@@ -149,7 +149,7 @@ impl Proof {
                 self.validate_non_fungible_id(non_fungible_id)?;
                 Ok(())
             }
-            ProofValidationMode::ValidateNonFungibleIdBelongsTo(
+            ProofValidationMode::ValidateNonFungibleIdsSubsetOf(
                 resource_address,
                 non_fungible_ids,
             ) => {
