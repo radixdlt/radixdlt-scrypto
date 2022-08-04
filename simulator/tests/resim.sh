@@ -20,7 +20,7 @@ minter_badge=`$resim new-badge-fixed 1 --name 'MintBadge' | awk '/Resource:/ {pr
 token_address=`$resim new-token-mutable $minter_badge | awk '/Resource:/ {print $NF}'`
 
 # Test - mint and transfer
-$resim mint 777 $token_address $minter_badge
+$resim mint 777 $token_address --proofs 1,$minter_badge
 $resim transfer 111 $token_address $account2
 
 # Test - publish, call-funciton and call-method
