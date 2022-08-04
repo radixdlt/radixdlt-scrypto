@@ -16,6 +16,7 @@ blueprint! {
 
         pub fn create_clone_drop_vault_proof(&self, amount: Decimal) {
             let proof = self.vault.create_proof();
+            let proof = proof.validate_proof(self.vault.resource_address()).unwrap();
             let clone = proof.clone();
 
             assert_eq!(self.vault.amount(), amount);
@@ -32,6 +33,7 @@ blueprint! {
             proof_amount: Decimal,
         ) {
             let proof = self.vault.create_proof_by_amount(proof_amount);
+            let proof = proof.validate_proof(self.vault.resource_address()).unwrap();
             let clone = proof.clone();
 
             assert_eq!(self.vault.amount(), total_amount);
@@ -48,6 +50,7 @@ blueprint! {
             proof_ids: BTreeSet<NonFungibleId>,
         ) {
             let proof = self.vault.create_proof_by_ids(&proof_ids);
+            let proof = proof.validate_proof(self.vault.resource_address()).unwrap();
             let clone = proof.clone();
 
             assert_eq!(self.vault.non_fungible_ids(), total_ids);
@@ -76,6 +79,7 @@ blueprint! {
             self.vault.authorize(|| {
                 bucket.authorize(|| {
                     let proof = ComponentAuthZone::create_proof(bucket.resource_address());
+                    let proof = proof.validate_proof(self.vault.resource_address()).unwrap();
                     assert_eq!(proof.amount(), self.vault.amount() + bucket.amount());
                     proof.drop();
                 })
@@ -94,6 +98,7 @@ blueprint! {
                         amount,
                         bucket.resource_address(),
                     );
+                    let proof = proof.validate_proof(self.vault.resource_address()).unwrap();
                     assert_eq!(proof.amount(), amount);
                     proof.drop();
                 })
@@ -110,6 +115,7 @@ blueprint! {
                 bucket.authorize(|| {
                     let proof =
                         ComponentAuthZone::create_proof_by_ids(&ids, bucket.resource_address());
+                    let proof = proof.validate_proof(self.vault.resource_address()).unwrap();
                     assert_eq!(proof.non_fungible_ids(), ids);
                     proof.drop();
                 })

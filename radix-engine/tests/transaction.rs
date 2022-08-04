@@ -1,3 +1,7 @@
+#[rustfmt::skip]
+pub mod test_runner;
+
+use crate::test_runner::TestRunner;
 use radix_engine::constants::*;
 use radix_engine::ledger::InMemorySubstateStore;
 use radix_engine::transaction::ExecutionParameters;
@@ -42,6 +46,59 @@ fn test_normal_transaction_flow() {
     );
     let receipt = executor.execute_and_commit(&validated_transaction, &execution_params);
 
+    receipt.expect_success();
+}
+
+#[test]
+fn test_call_method_with_all_resources_doesnt_drop_auth_zone_proofs() {
+    // Arrange
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
+    let (public_key, _, account) = test_runner.new_account();
+
+    // Act
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .lock_fee(dec!("10"), account)
+        .create_proof_from_account(RADIX_TOKEN, account)
+        .create_proof_from_auth_zone(RADIX_TOKEN, |builder, proof_id| {
+            builder.push_to_auth_zone(proof_id)
+        })
+        .call_method_with_all_resources(account, "deposit_batch")
+        .create_proof_from_auth_zone(RADIX_TOKEN, |builder, proof_id| {
+            builder.push_to_auth_zone(proof_id)
+        })
+        .call_method_with_all_resources(account, "deposit_batch")
+        .create_proof_from_auth_zone(RADIX_TOKEN, |builder, proof_id| {
+            builder.push_to_auth_zone(proof_id)
+        })
+        .call_method_with_all_resources(account, "deposit_batch")
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+    println!("{:?}", receipt);
+
+    // Assert
+    receipt.expect_success();
+}
+
+#[test]
+fn test_transaction_can_end_with_proofs_remaining_in_auth_zone() {
+    // Arrange
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
+    let (public_key, _, account) = test_runner.new_account();
+
+    // Act
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .lock_fee(dec!("10"), account)
+        .create_proof_from_account_by_amount(dec!("1"), RADIX_TOKEN, account)
+        .create_proof_from_account_by_amount(dec!("1"), RADIX_TOKEN, account)
+        .create_proof_from_account_by_amount(dec!("1"), RADIX_TOKEN, account)
+        .create_proof_from_account_by_amount(dec!("1"), RADIX_TOKEN, account)
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+    println!("{:?}", receipt);
+
+    // Assert
     receipt.expect_success();
 }
 

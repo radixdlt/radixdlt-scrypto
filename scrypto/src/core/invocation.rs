@@ -2,31 +2,34 @@ use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use sbor::*;
 
-use crate::core::ScryptoActor;
-use crate::engine::types::{BucketId, KeyValueStoreId, ProofId, RENodeId, VaultId};
-use crate::prelude::ComponentAddress;
-use crate::resource::ResourceAddress;
+use crate::engine::types::{BucketId, PackageAddress, ProofId, RENodeId, VaultId};
+use crate::prelude::{ComponentAddress, ResourceAddress};
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub enum SNodeRef {
-    PackageStatic,
-    AuthZoneRef,
-    Scrypto(ScryptoActor),
-    Component(ComponentAddress),
-    ResourceStatic,
-    ResourceRef(ResourceAddress),
-    Consumed(RENodeId),
-    BucketRef(BucketId),
-    ProofRef(ProofId),
-    SystemRef,
-    WorktopRef,
-    VaultRef(VaultId),
+pub enum TypeName {
+    Package,
+    ResourceManager,
     TransactionProcessor,
+    Blueprint(PackageAddress, String),
 }
 
-#[derive(Debug, Clone, Eq, Hash, PartialEq, TypeId, Encode, Decode)]
-pub enum DataAddress {
-    KeyValueEntry(KeyValueStoreId, Vec<u8>),
-    ComponentInfo(ComponentAddress, bool),
-    ComponentState(ComponentAddress),
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub enum Receiver {
+    Consumed(RENodeId),
+    Component(ComponentAddress),
+    ComponentMetaRef(ComponentAddress),
+    ResourceManagerRef(ResourceAddress),
+    BucketRef(BucketId),
+    ProofRef(ProofId),
+    VaultRef(VaultId),
+    SystemRef,
+    WorktopRef,
+    AuthZoneRef,
+}
+
+// TODO: Remove and replace with real HeapRENodes
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub enum ScryptoRENode {
+    Component(PackageAddress, String, Vec<u8>),
+    KeyValueStore,
 }

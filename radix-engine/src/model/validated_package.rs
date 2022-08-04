@@ -62,11 +62,16 @@ impl ValidatedPackage {
                     .map_err(|e| PackageError::InvalidRequestData(e))?;
                 let package =
                     ValidatedPackage::new(input.package).map_err(PackageError::InvalidWasm)?;
-                let value_id = system_api.create_node(package).unwrap(); // FIXME: update all `create_value` calls to handle errors correctly
-                system_api
-                    .globalize_node(&value_id)
-                    .map_err(PackageError::CostingError)?;
-                let package_address: PackageAddress = value_id.into();
+                let node_id = system_api
+                    .node_create(HeapRENode::Package(package))
+                    .unwrap(); // FIXME: update all `create_value` calls to handle errors correctly
+                system_api.node_globalize(&node_id).map_err(|e| match e {
+                    RuntimeError::CostingError(cost_unit_error) => {
+                        PackageError::CostingError(cost_unit_error)
+                    }
+                    _ => panic!("Unexpected error {}", e),
+                })?;
+                let package_address: PackageAddress = node_id.into();
                 Ok(ScryptoValue::from_typed(&package_address))
             }
             _ => Err(PackageError::MethodNotFound(method_name.to_string())),

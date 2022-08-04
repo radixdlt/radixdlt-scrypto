@@ -71,8 +71,7 @@ impl<'s> Track<'s> {
     }
 
     /// Creates a row with the given key/value
-    pub fn create_uuid_substate<A: Into<SubstateId>, V: Into<Substate>>(&mut self, s: A, value: V) {
-        let substate_id = s.into();
+    pub fn create_uuid_substate<V: Into<Substate>>(&mut self, substate_id: SubstateId, value: V) {
         self.new_substates.push(substate_id.clone());
         self.state_track.put_substate(substate_id, value.into());
     }
@@ -87,14 +86,12 @@ impl<'s> Track<'s> {
     //
     // Also enables us to store state associated with the lock, like the `write_through` flag.
 
-    pub fn acquire_lock<A: Into<SubstateId>>(
+    pub fn acquire_lock(
         &mut self,
-        s: A,
+        substate_id: SubstateId,
         mutable: bool,
         write_through: bool,
     ) -> Result<(), TrackError> {
-        let substate_id = s.into();
-
         if let Some(current) = self.borrowed_substates.get_mut(&substate_id) {
             if mutable {
                 return Err(TrackError::Reentrancy);
@@ -146,8 +143,7 @@ impl<'s> Track<'s> {
         }
     }
 
-    pub fn release_lock<A: Into<SubstateId>>(&mut self, s: A, write_through: bool) {
-        let substate_id = s.into();
+    pub fn release_lock(&mut self, substate_id: SubstateId, write_through: bool) {
         let borrowed = self
             .borrowed_substates
             .remove(&substate_id)
@@ -188,8 +184,7 @@ impl<'s> Track<'s> {
         }
     }
 
-    pub fn read_substate<A: Into<SubstateId>>(&self, s: A) -> &Substate {
-        let substate_id: SubstateId = s.into();
+    pub fn read_substate(&self, substate_id: SubstateId) -> &Substate {
         match self
             .borrowed_substates
             .get(&substate_id)
@@ -201,8 +196,7 @@ impl<'s> Track<'s> {
         }
     }
 
-    pub fn take_substate<A: Into<SubstateId>>(&mut self, s: A) -> Substate {
-        let substate_id: SubstateId = s.into();
+    pub fn take_substate(&mut self, substate_id: SubstateId) -> Substate {
         match self
             .borrowed_substates
             .insert(substate_id.clone(), BorrowedSubstate::Taken)
@@ -216,9 +210,7 @@ impl<'s> Track<'s> {
         }
     }
 
-    pub fn write_substate<A: Into<SubstateId>, V: Into<Substate>>(&mut self, addr: A, value: V) {
-        let substate_id: SubstateId = addr.into();
-
+    pub fn write_substate<V: Into<Substate>>(&mut self, substate_id: SubstateId, value: V) {
         let cur_value = self
             .borrowed_substates
             .get(&substate_id)

@@ -1,6 +1,5 @@
 #![allow(unused_must_use)]
 use colored::*;
-use radix_engine::engine::SubstateId;
 use radix_engine::ledger::*;
 use radix_engine::model::*;
 use sbor::rust::collections::HashSet;
@@ -130,7 +129,7 @@ fn dump_kv_store<T: ReadableSubstateStore + QueryableSubstateStore, O: std::io::
 ) -> Result<(Vec<KeyValueStoreId>, Vec<VaultId>), DisplayError> {
     let mut referenced_maps = Vec::new();
     let mut referenced_vaults = Vec::new();
-    let map = substate_store.get_kv_store_entries(component_address, kv_store_id);
+    let map = substate_store.get_kv_store_entries(kv_store_id);
     writeln!(
         output,
         "{}: {:?}{:?}",

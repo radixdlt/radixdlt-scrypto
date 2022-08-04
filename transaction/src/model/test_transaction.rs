@@ -91,6 +91,7 @@ impl TestTransaction {
                 Instruction::DropProof { proof_id } => {
                     ExecutableInstruction::DropProof { proof_id }
                 }
+                Instruction::DropAllProofs => ExecutableInstruction::DropAllProofs,
                 Instruction::CallFunction {
                     package_address,
                     blueprint_name,

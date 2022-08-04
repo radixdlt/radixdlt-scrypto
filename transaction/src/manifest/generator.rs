@@ -285,6 +285,12 @@ pub fn generate_instruction(
                 .map_err(GeneratorError::IdValidationError)?;
             Instruction::DropProof { proof_id }
         }
+        ast::Instruction::DropAllProofs => {
+            id_validator
+                .drop_all_proofs()
+                .map_err(GeneratorError::IdValidationError)?;
+            Instruction::DropAllProofs
+        }
         ast::Instruction::CallFunction {
             package_address,
             blueprint_name,
@@ -334,7 +340,7 @@ pub fn generate_instruction(
             method,
         } => {
             id_validator
-                .move_all_resources()
+                .move_all_buckets()
                 .map_err(GeneratorError::IdValidationError)?;
             Instruction::CallMethodWithAllResources {
                 component_address: generate_component_address(component_address, bech32_decoder)?,
@@ -1189,6 +1195,7 @@ mod tests {
                     .unwrap(),
                     method: "deposit_batch".into(),
                 },
+                Instruction::DropAllProofs,
                 Instruction::PublishPackage {
                     package: encoded_package.clone()
                 },

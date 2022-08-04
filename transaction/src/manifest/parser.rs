@@ -133,6 +133,7 @@ impl Parser {
             TokenKind::DropProof => Instruction::DropProof {
                 proof: self.parse_value()?,
             },
+            TokenKind::DropAllProofs => Instruction::DropAllProofs,
             TokenKind::CallFunction => Instruction::CallFunction {
                 package_address: self.parse_value()?,
                 blueprint_name: self.parse_value()?,
@@ -649,6 +650,7 @@ mod tests {
                 proof: Value::Proof(Value::String("admin_auth".into()).into()),
             }
         );
+        parse_instruction_ok!(r#"DROP_ALL_PROOFS;"#, Instruction::DropAllProofs);
         parse_instruction_ok!(
             r#"CALL_FUNCTION  PackageAddress("01d1f50010e4102d88aacc347711491f852c515134a9ecf67ba17c")  "Airdrop"  "new"  500u32  Map<String, U8>("key", 1u8);"#,
             Instruction::CallFunction {

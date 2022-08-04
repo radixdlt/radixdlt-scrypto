@@ -1,7 +1,7 @@
 use radix_engine::constants::{
     DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN,
 };
-use radix_engine::engine::{RuntimeError, SubstateId};
+use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::*;
 use radix_engine::model::{export_abi, export_abi_by_component, extract_package};
 use radix_engine::state_manager::StagedSubstateStoreManager;
@@ -14,7 +14,7 @@ use sbor::describe::Fields;
 use sbor::Type;
 use scrypto::abi::{BlueprintAbi, Fn};
 use scrypto::core::Network;
-use scrypto::engine::types::{KeyValueStoreId, VaultId};
+use scrypto::engine::types::{KeyValueStoreId, SubstateId, VaultId};
 use scrypto::prelude::*;
 use scrypto::prelude::{HashMap, Package};
 use scrypto::{abi, to_struct};

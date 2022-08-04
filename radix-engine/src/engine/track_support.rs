@@ -5,6 +5,7 @@ use sbor::rust::vec::Vec;
 use scrypto::buffer::scrypto_decode;
 use scrypto::buffer::scrypto_encode;
 use scrypto::crypto::hash;
+use scrypto::engine::types::SubstateId;
 
 use crate::engine::*;
 use crate::ledger::*;
