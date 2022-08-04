@@ -84,7 +84,7 @@ impl Vault {
 
     fn take_internal(&mut self, amount: Decimal) -> Bucket {
         let input = RadixEngineInput::InvokeMethod(
-            Receiver::VaultRef(self.0),
+            Receiver::NativeRENodeRef(RENodeId::Vault(self.0)),
             "take".to_string(),
             scrypto_encode(&VaultTakeInput { amount }),
         );
@@ -93,7 +93,7 @@ impl Vault {
 
     fn lock_fee_internal(&mut self, amount: Decimal) {
         let input = RadixEngineInput::InvokeMethod(
-            Receiver::VaultRef(self.0),
+            Receiver::NativeRENodeRef(RENodeId::Vault(self.0)),
             "lock_fee".to_string(),
             scrypto_encode(&VaultTakeInput { amount }),
         );
@@ -101,7 +101,7 @@ impl Vault {
     }
 
     sfunctions! {
-        Receiver::VaultRef(self.0) => {
+        Receiver::NativeRENodeRef(RENodeId::Vault(self.0)) => {
             pub fn put(&mut self, bucket: Bucket) -> () {
                 VaultPutInput {
                     bucket

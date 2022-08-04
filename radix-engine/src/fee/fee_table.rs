@@ -217,22 +217,22 @@ impl FeeTable {
                         "add_access_check" => self.fixed_medium,
                         _ => self.fixed_high,
                     },
+                    RENodeId::Vault(..) => match fn_ident {
+                        "put" => self.fixed_medium,
+                        "take" => self.fixed_medium, // TODO: revisit this if vault is not loaded in full
+                        "take_non_fungibles" => self.fixed_medium,
+                        "amount" => self.fixed_low,
+                        "resource_address" => self.fixed_low,
+                        "non_fungible_ids" => self.fixed_medium,
+                        "create_proof" => self.fixed_high, // TODO: fungibility
+                        "create_proof_by_amount" => self.fixed_high,
+                        "create_proof_by_ids" => self.fixed_high,
+                        "lock_fee" => self.fixed_medium,
+                        _ => self.fixed_high,
+                    },
                     _ => self.fixed_high, // TODO: Clean this up
                 }
             }
-            Receiver::VaultRef(_) => match fn_ident {
-                "put" => self.fixed_medium,
-                "take" => self.fixed_medium, // TODO: revisit this if vault is not loaded in full
-                "take_non_fungibles" => self.fixed_medium,
-                "amount" => self.fixed_low,
-                "resource_address" => self.fixed_low,
-                "non_fungible_ids" => self.fixed_medium,
-                "create_proof" => self.fixed_high, // TODO: fungibility
-                "create_proof_by_amount" => self.fixed_high,
-                "create_proof_by_ids" => self.fixed_high,
-                "lock_fee" => self.fixed_medium,
-                _ => self.fixed_high,
-            },
         }
     }
 

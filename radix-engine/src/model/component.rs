@@ -125,7 +125,10 @@ impl Component {
                             .map_err(ComponentError::CostingError)?;
                         let component = component_ref.component_info();
                         let blueprint_name = component.blueprint_name().to_owned();
-                        (RENodeId::Package(component.package_address.clone()), blueprint_name)
+                        (
+                            RENodeId::Package(component.package_address.clone()),
+                            blueprint_name,
+                        )
                     };
 
                     let package_ref = system_api
