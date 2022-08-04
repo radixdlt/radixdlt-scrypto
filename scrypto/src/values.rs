@@ -254,7 +254,7 @@ pub struct ScryptoCustomValueChecker {
 pub enum ScryptoCustomValueCheckError {
     UnknownTypeId(u8),
     InvalidDecimal(ParseDecimalError),
-    InvalidLongDecimal(ParseLongDecimalError),
+    InvalidPreciseDecimal(ParsePreciseDecimalError),
     InvalidU8(ParseU8Error),
     InvalidU16(ParseU16Error),
     InvalidU32(ParseU32Error),
@@ -417,7 +417,7 @@ impl CustomValueVisitor for ScryptoCustomValueChecker {
             }
             ScryptoType::PreciseDecimal => {
                 PreciseDecimal::try_from(data)
-                    .map_err(ScryptoCustomValueCheckError::InvalidLongDecimal)?;
+                    .map_err(ScryptoCustomValueCheckError::InvalidPreciseDecimal)?;
             }
             ScryptoType::Bucket => {
                 let bucket =

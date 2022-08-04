@@ -69,17 +69,17 @@ macro_rules! decimals {
 
                     /// Whether this decimal is zero.
                     pub fn is_zero(&self) -> bool {
-                        self.0 == Self::zero()
+                        self.0 == <$wrapped>::zero()
                     }
 
                     /// Whether this decimal is positive.
                     pub fn is_positive(&self) -> bool {
-                        self.0 > Self::zero()
+                        self.0 > <$wrapped>::zero()
                     }
 
                     /// Whether this decimal is negative.
                     pub fn is_negative(&self) -> bool {
-                        self.0 < Self::zero()
+                        self.0 < <$wrapped>::zero()
                     }
 
                     /// Returns the absolute value.
@@ -103,7 +103,7 @@ macro_rules! decimals {
                         let divisor:$wrapped = <$wrapped>::from(10i8).pow(Self::SCALE - decimal_places);
                         match mode {
                             RoundingMode::TowardsPositiveInfinity => {
-                                if self.0 % divisor == Self::zero() {
+                                if self.0 % divisor == <$wrapped>::zero() {
                                     self.clone()
                                 } else if self.is_negative() {
                                     Self(self.0 / divisor * divisor)
@@ -112,7 +112,7 @@ macro_rules! decimals {
                                 }
                             }
                             RoundingMode::TowardsNegativeInfinity => {
-                                if self.0 % divisor == Self::zero() {
+                                if self.0 % divisor == <$wrapped>::zero() {
                                     self.clone()
                                 } else if self.is_negative() {
                                     Self((self.0 / divisor - 1) * divisor)
@@ -121,14 +121,14 @@ macro_rules! decimals {
                                 }
                             }
                             RoundingMode::TowardsZero => {
-                                if self.0 % divisor == Self::zero() {
+                                if self.0 % divisor == <$wrapped>::zero() {
                                     self.clone()
                                 } else {
                                     Self(self.0 / divisor * divisor)
                                 }
                             }
                             RoundingMode::AwayFromZero => {
-                                if self.0 % divisor == Self::zero() {
+                                if self.0 % divisor == <$wrapped>::zero() {
                                     self.clone()
                                 } else if self.is_negative() {
                                     Self((self.0 / divisor - 1) * divisor)
@@ -137,7 +137,7 @@ macro_rules! decimals {
                                 }
                             }
                             RoundingMode::TowardsNearestAndHalfTowardsZero => {
-                                if self.0 % divisor == Self::zero() {
+                                if self.0 % divisor == <$wrapped>::zero() {
                                     self.clone()
                                 } else {
                                     let digit = (self.0 / (divisor / 10i128) % 10i128).abs();
@@ -153,7 +153,7 @@ macro_rules! decimals {
                                 }
                             }
                             RoundingMode::TowardsNearestAndHalfAwayFromZero => {
-                                if self.0 % divisor == Self::zero() {
+                                if self.0 % divisor == <$wrapped>::zero() {
                                     self.clone()
                                 } else {
                                     let digit = (self.0 / (divisor / 10i128) % 10i128).abs();
@@ -369,7 +369,7 @@ macro_rules! decimals {
                         if slice.len() == 16 {
                             match <$wrapped>::try_from(slice) {
                                 Ok(val) => Ok(Self(val)),
-                                Err(err) => Err([<Parse $dec Error>]::Overflow),
+                                Err(_) => Err([<Parse $dec Error>]::Overflow),
                             }
                         } else {
                             Err([<Parse $dec Error>]::InvalidLength(slice.len()))
@@ -497,7 +497,7 @@ macro_rules! decimals {
 
 
                 //========
-                // ParseDecimalError, ParseLongDecimalError
+                // ParseDecimalError, ParsePreciseDecimalError
                 //========
 
                 #[ doc ="Represents an error when parsing " $dec " from another type."]
