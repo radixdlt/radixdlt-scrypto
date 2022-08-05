@@ -785,7 +785,7 @@ macro_rules! seq_from_large {
                 }
 
                 pub fn to_vec(&self) -> Vec<u8> {
-                    self.0.into()
+                    self.0.to_vec()
                 }
             }
         )*

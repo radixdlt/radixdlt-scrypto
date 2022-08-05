@@ -556,7 +556,12 @@ macro_rules! from_integer_all {
 
 from_integer_all!(U8, U16, U32, U64, U128);
 from_integer_all!(I8, I16, I32, I64, I128);
-from_integer! {(U256, PreciseDecimal, I512), (U384, PreciseDecimal, I512), (I256, PreciseDecimal, I512), (I384, PreciseDecimal, I512)}
+from_integer! {
+    (U256, PreciseDecimal, I512),
+    (U384, PreciseDecimal, I512),
+    (I256, PreciseDecimal, I512),
+    (I384, PreciseDecimal, I512)
+}
 
 macro_rules! try_from_integer {
     ($(($t:ident, $dec:ident, $wrapped:ident)),*) => {
