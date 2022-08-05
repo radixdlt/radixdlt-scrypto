@@ -37,7 +37,7 @@ impl<'a> Encoder<'a> {
         Self::new(buf, true)
     }
 
-    pub fn no_type(buf: &'a mut Vec<u8>) -> Self {
+    pub fn no_static_info(buf: &'a mut Vec<u8>) -> Self {
         Self::new(buf, false)
     }
 
@@ -470,9 +470,9 @@ mod tests {
     }
 
     #[test]
-    pub fn test_encoding_no_type() {
+    pub fn test_encoding_no_static_info() {
         let mut bytes = Vec::with_capacity(512);
-        let mut enc = Encoder::no_type(&mut bytes);
+        let mut enc = Encoder::no_static_info(&mut bytes);
         do_encoding(&mut enc);
 
         assert_eq!(

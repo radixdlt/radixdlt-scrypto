@@ -66,7 +66,7 @@ impl<'de> Decoder<'de> {
         Self::new(input, true)
     }
 
-    pub fn no_type(input: &'de [u8]) -> Self {
+    pub fn no_static_info(input: &'de [u8]) -> Self {
         Self::new(input, false)
     }
 
@@ -574,7 +574,7 @@ mod tests {
     }
 
     #[test]
-    pub fn test_decoding_no_type() {
+    pub fn test_decoding_no_static_info() {
         let bytes = vec![
             // unit
             1, // bool
@@ -599,7 +599,7 @@ mod tests {
             2, 0, 0, 0, 1, 2, // set
             2, 0, 0, 0, 1, 2, 3, 4, // map
         ];
-        let mut dec = Decoder::no_type(&bytes);
+        let mut dec = Decoder::no_static_info(&bytes);
         assert_decoding(&mut dec);
     }
 

@@ -39,9 +39,9 @@ pub fn encode_with_static_info<T: Encode + ?Sized>(v: &T) -> Vec<u8> {
 }
 
 /// Encode a `T` into byte array, with no type info.
-pub fn encode_no_type<T: Encode + ?Sized>(v: &T) -> Vec<u8> {
+pub fn encode_no_static_info<T: Encode + ?Sized>(v: &T) -> Vec<u8> {
     let mut buf = Vec::with_capacity(512);
-    let mut enc = Encoder::no_type(&mut buf);
+    let mut enc = Encoder::no_static_info(&mut buf);
     v.encode(&mut enc);
     buf
 }
@@ -55,8 +55,8 @@ pub fn decode_with_static_info<T: Decode>(buf: &[u8]) -> Result<T, DecodeError> 
 }
 
 /// Decode an instance of `T` from a slice, with no type info.
-pub fn decode_no_type<T: Decode>(buf: &[u8]) -> Result<T, DecodeError> {
-    let mut dec = Decoder::no_type(buf);
+pub fn decode_no_static_info<T: Decode>(buf: &[u8]) -> Result<T, DecodeError> {
+    let mut dec = Decoder::no_static_info(buf);
     let v = T::decode(&mut dec)?;
     dec.check_end()?;
     Ok(v)
