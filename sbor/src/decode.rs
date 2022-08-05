@@ -90,6 +90,10 @@ impl<'de> Decoder<'de> {
         self.read_byte()
     }
 
+    pub fn read_variant_index(&mut self) -> Result<u8, DecodeError> {
+        self.read_byte()
+    }
+
     pub fn read_len(&mut self) -> Result<usize, DecodeError> {
         let mut bytes = [0u8; 4];
         bytes.copy_from_slice(self.read_bytes(4)?);
@@ -257,7 +261,7 @@ impl<T: Decode> Decode for Option<T> {
         decoder.check_type(Self::type_id())
     }
     fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
-        let index = decoder.read_byte()?;
+        let index = decoder.read_variant_index()?;
 
         match index {
             OPTION_VARIANT_SOME => Ok(Some(T::decode(decoder)?)),
@@ -368,7 +372,7 @@ impl<T: Decode + TypeId, E: Decode + TypeId> Decode for Result<T, E> {
         decoder.check_type(Self::type_id())
     }
     fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
-        let index = decoder.read_byte()?;
+        let index = decoder.read_variant_index()?;
         match index {
             RESULT_VARIANT_OK => Ok(Ok(T::decode(decoder)?)),
             RESULT_VARIANT_ERR => Ok(Err(E::decode(decoder)?)),

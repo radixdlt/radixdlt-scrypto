@@ -48,6 +48,10 @@ impl<'a> Encoder<'a> {
         }
     }
 
+    pub fn write_variant_index(&mut self, index: u8) {
+        self.write_byte(index);
+    }
+
     pub fn write_len(&mut self, len: usize) {
         self.buf.extend(&(len as u32).to_le_bytes());
     }
@@ -197,11 +201,11 @@ impl<T: Encode + TypeId> Encode for Option<T> {
     fn encode_value(&self, encoder: &mut Encoder) {
         match self {
             Some(v) => {
-                encoder.write_byte(OPTION_VARIANT_SOME);
+                encoder.write_variant_index(OPTION_VARIANT_SOME);
                 v.encode(encoder);
             }
             None => {
-                encoder.write_byte(OPTION_VARIANT_NONE);
+                encoder.write_variant_index(OPTION_VARIANT_NONE);
             }
         }
     }
@@ -280,11 +284,11 @@ impl<T: Encode, E: Encode> Encode for Result<T, E> {
     fn encode_value(&self, encoder: &mut Encoder) {
         match self {
             Ok(o) => {
-                encoder.write_byte(RESULT_VARIANT_OK);
+                encoder.write_variant_index(RESULT_VARIANT_OK);
                 o.encode(encoder);
             }
             Err(e) => {
-                encoder.write_byte(RESULT_VARIANT_ERR);
+                encoder.write_variant_index(RESULT_VARIANT_ERR);
                 e.encode(encoder);
             }
         }
