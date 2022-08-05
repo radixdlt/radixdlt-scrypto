@@ -52,7 +52,7 @@ impl<'a> Encoder<'a> {
         self.buf.extend(&(len as u32).to_le_bytes());
     }
 
-    pub fn write_u8(&mut self, n: u8) {
+    pub fn write_byte(&mut self, n: u8) {
         self.buf.push(n);
     }
 
@@ -81,7 +81,7 @@ impl Encode for bool {
     }
     #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
-        encoder.write_u8(if *self { 1u8 } else { 0u8 })
+        encoder.write_byte(if *self { 1u8 } else { 0u8 })
     }
 }
 
@@ -92,7 +92,7 @@ impl Encode for i8 {
     }
     #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
-        encoder.write_u8(*self as u8);
+        encoder.write_byte(*self as u8);
     }
 }
 
@@ -103,7 +103,7 @@ impl Encode for u8 {
     }
     #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
-        encoder.write_u8(*self);
+        encoder.write_byte(*self);
     }
 }
 
@@ -197,11 +197,11 @@ impl<T: Encode + TypeId> Encode for Option<T> {
     fn encode_value(&self, encoder: &mut Encoder) {
         match self {
             Some(v) => {
-                encoder.write_u8(OPTION_VARIANT_SOME);
+                encoder.write_byte(OPTION_VARIANT_SOME);
                 v.encode(encoder);
             }
             None => {
-                encoder.write_u8(OPTION_VARIANT_NONE);
+                encoder.write_byte(OPTION_VARIANT_NONE);
             }
         }
     }
@@ -280,11 +280,11 @@ impl<T: Encode, E: Encode> Encode for Result<T, E> {
     fn encode_value(&self, encoder: &mut Encoder) {
         match self {
             Ok(o) => {
-                encoder.write_u8(RESULT_VARIANT_OK);
+                encoder.write_byte(RESULT_VARIANT_OK);
                 o.encode(encoder);
             }
             Err(e) => {
-                encoder.write_u8(RESULT_VARIANT_ERR);
+                encoder.write_byte(RESULT_VARIANT_ERR);
                 e.encode(encoder);
             }
         }

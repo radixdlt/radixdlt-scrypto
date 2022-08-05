@@ -153,11 +153,11 @@ fn encode_any_internal(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
             }
             match value.borrow() {
                 Some(x) => {
-                    enc.write_u8(OPTION_VARIANT_SOME);
+                    enc.write_byte(OPTION_VARIANT_SOME);
                     encode_any_internal(None, x, enc);
                 }
                 None => {
-                    enc.write_u8(OPTION_VARIANT_NONE);
+                    enc.write_byte(OPTION_VARIANT_NONE);
                 }
             }
         }
@@ -167,11 +167,11 @@ fn encode_any_internal(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
             }
             match value.borrow() {
                 Ok(x) => {
-                    enc.write_u8(RESULT_VARIANT_OK);
+                    enc.write_byte(RESULT_VARIANT_OK);
                     encode_any_internal(None, x, enc);
                 }
                 Err(x) => {
-                    enc.write_u8(RESULT_VARIANT_ERR);
+                    enc.write_byte(RESULT_VARIANT_ERR);
                     encode_any_internal(None, x, enc);
                 }
             }
@@ -338,7 +338,7 @@ fn decode_next(ty_ctx: Option<u8>, dec: &mut Decoder) -> Result<Value, DecodeErr
         }
         TYPE_OPTION => {
             // index
-            let index = dec.read_u8()?;
+            let index = dec.read_byte()?;
             // optional value
             match index {
                 OPTION_VARIANT_SOME => Ok(Value::Option {
@@ -352,7 +352,7 @@ fn decode_next(ty_ctx: Option<u8>, dec: &mut Decoder) -> Result<Value, DecodeErr
         }
         TYPE_RESULT => {
             // index
-            let index = dec.read_u8()?;
+            let index = dec.read_byte()?;
             // result value
             match index {
                 RESULT_VARIANT_OK => Ok(Value::Result {

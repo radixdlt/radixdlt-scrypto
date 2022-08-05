@@ -87,7 +87,7 @@ impl<'de> Decoder<'de> {
     }
 
     pub fn read_type(&mut self) -> Result<u8, DecodeError> {
-        self.read_u8()
+        self.read_byte()
     }
 
     pub fn read_len(&mut self) -> Result<usize, DecodeError> {
@@ -96,7 +96,7 @@ impl<'de> Decoder<'de> {
         Ok(u32::from_le_bytes(bytes) as usize)
     }
 
-    pub fn read_u8(&mut self) -> Result<u8, DecodeError> {
+    pub fn read_byte(&mut self) -> Result<u8, DecodeError> {
         self.require(1)?;
         let result = self.input[self.offset];
         self.offset += 1;
@@ -162,7 +162,7 @@ impl Decode for bool {
         decoder.check_type(Self::type_id())
     }
     fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
-        let value = decoder.read_u8()?;
+        let value = decoder.read_byte()?;
         match value {
             0 => Ok(false),
             1 => Ok(true),
@@ -177,7 +177,7 @@ impl Decode for i8 {
         decoder.check_type(Self::type_id())
     }
     fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
-        let value = decoder.read_u8()?;
+        let value = decoder.read_byte()?;
         Ok(value as i8)
     }
 }
@@ -188,7 +188,7 @@ impl Decode for u8 {
         decoder.check_type(Self::type_id())
     }
     fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
-        let value = decoder.read_u8()?;
+        let value = decoder.read_byte()?;
         Ok(value)
     }
 }
@@ -257,7 +257,7 @@ impl<T: Decode> Decode for Option<T> {
         decoder.check_type(Self::type_id())
     }
     fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
-        let index = decoder.read_u8()?;
+        let index = decoder.read_byte()?;
 
         match index {
             OPTION_VARIANT_SOME => Ok(Some(T::decode(decoder)?)),
@@ -368,7 +368,7 @@ impl<T: Decode + TypeId, E: Decode + TypeId> Decode for Result<T, E> {
         decoder.check_type(Self::type_id())
     }
     fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
-        let index = decoder.read_u8()?;
+        let index = decoder.read_byte()?;
         match index {
             RESULT_VARIANT_OK => Ok(Ok(T::decode(decoder)?)),
             RESULT_VARIANT_ERR => Ok(Err(E::decode(decoder)?)),
