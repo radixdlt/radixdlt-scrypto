@@ -19,7 +19,7 @@ fn encode_simple_bincode(b: &mut Bencher) {
 
 fn encode_simple_sbor(b: &mut Bencher) {
     let t = data::get_simple_dataset(SIMPLE_REAPT);
-    b.iter(|| sbor::encode_with_type(&t));
+    b.iter(|| sbor::encode_with_static_info(&t));
 }
 
 fn encode_simple_sbor_no_type(b: &mut Bencher) {
@@ -41,8 +41,8 @@ fn decode_simple_bincode(b: &mut Bencher) {
 
 fn decode_simple_sbor(b: &mut Bencher) {
     let t = data::get_simple_dataset(SIMPLE_REAPT);
-    let bytes = sbor::encode_with_type(&t);
-    b.iter(|| sbor::decode_with_type::<data::simple::SimpleStruct>(&bytes));
+    let bytes = sbor::encode_with_static_info(&t);
+    b.iter(|| sbor::decode_with_static_info::<data::simple::SimpleStruct>(&bytes));
 }
 
 fn decode_simple_sbor_no_type(b: &mut Bencher) {

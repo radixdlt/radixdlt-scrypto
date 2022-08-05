@@ -20,7 +20,7 @@ impl WasmMeteringParams {
     /// Wasm fee table is statically applied to the wasm code.
     /// This identifier helps decide whether or not re-instrumentation is required.
     pub fn identifier(&self) -> Hash {
-        let encoded = encode_with_type(self);
+        let encoded = encode_with_static_info(self);
         hash(encoded)
     }
 

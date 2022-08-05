@@ -50,19 +50,19 @@ pub trait Decode: Sized {
 pub struct Decoder<'de> {
     input: &'de [u8],
     offset: usize,
-    with_type: bool,
+    with_static_info: bool,
 }
 
 impl<'de> Decoder<'de> {
-    pub fn new(input: &'de [u8], with_type: bool) -> Self {
+    pub fn new(input: &'de [u8], with_static_info: bool) -> Self {
         Self {
             input,
             offset: 0,
-            with_type,
+            with_static_info,
         }
     }
 
-    pub fn with_type(input: &'de [u8]) -> Self {
+    pub fn with_static_info(input: &'de [u8]) -> Self {
         Self::new(input, true)
     }
 
@@ -111,7 +111,7 @@ impl<'de> Decoder<'de> {
     }
 
     pub fn check_type(&mut self, expected: u8) -> Result<(), DecodeError> {
-        if self.with_type {
+        if self.with_static_info {
             let ty = self.read_type()?;
             if ty != expected {
                 return Err(DecodeError::InvalidType {
@@ -569,7 +569,7 @@ mod tests {
             49, 7, 2, 0, 0, 0, 1, 2, // set
             50, 7, 7, 2, 0, 0, 0, 1, 2, 3, 4, // map
         ];
-        let mut dec = Decoder::with_type(&bytes);
+        let mut dec = Decoder::with_static_info(&bytes);
         assert_decoding(&mut dec);
     }
 
@@ -606,7 +606,7 @@ mod tests {
     #[test]
     pub fn test_decode_box() {
         let bytes = vec![7u8, 5u8];
-        let mut dec = Decoder::with_type(&bytes);
+        let mut dec = Decoder::with_static_info(&bytes);
         let x = <Box<u8>>::decode(&mut dec).unwrap();
         assert_eq!(Box::new(5u8), x);
     }
@@ -614,7 +614,7 @@ mod tests {
     #[test]
     pub fn test_decode_rc() {
         let bytes = vec![7u8, 5u8];
-        let mut dec = Decoder::with_type(&bytes);
+        let mut dec = Decoder::with_static_info(&bytes);
         let x = <Rc<u8>>::decode(&mut dec).unwrap();
         assert_eq!(Rc::new(5u8), x);
     }
@@ -622,7 +622,7 @@ mod tests {
     #[test]
     pub fn test_decode_ref_cell() {
         let bytes = vec![7u8, 5u8];
-        let mut dec = Decoder::with_type(&bytes);
+        let mut dec = Decoder::with_static_info(&bytes);
         let x = <RefCell<u8>>::decode(&mut dec).unwrap();
         assert_eq!(RefCell::new(5u8), x);
     }
@@ -648,10 +648,10 @@ mod tests {
 
         // Encode
         let mut bytes = Vec::with_capacity(512);
-        let mut enc = Encoder::with_type(&mut bytes);
+        let mut enc = Encoder::with_static_info(&mut bytes);
         value1.encode(&mut enc);
 
-        let mut dec = Decoder::with_type(&bytes);
+        let mut dec = Decoder::with_static_info(&bytes);
         let value2 = <[NFA; 2]>::decode(&mut dec).unwrap();
         assert_eq!(value1, value2);
     }

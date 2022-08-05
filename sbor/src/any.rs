@@ -100,14 +100,14 @@ pub enum Value {
 /// Encodes any SBOR value into byte array.
 pub fn encode_any(value: &Value) -> Vec<u8> {
     let mut bytes = Vec::new();
-    let mut enc = ::sbor::Encoder::with_type(&mut bytes);
+    let mut enc = ::sbor::Encoder::with_static_info(&mut bytes);
     encode_any_internal(None, value, &mut enc);
     bytes
 }
 
 /// Encodes any SBOR value with a given buffer
 pub fn encode_any_with_buffer(value: &Value, buffer: &mut Vec<u8>) {
-    let mut enc = ::sbor::Encoder::with_type(buffer);
+    let mut enc = ::sbor::Encoder::with_static_info(buffer);
     encode_any_internal(None, value, &mut enc);
 }
 
@@ -262,7 +262,7 @@ fn encode_basic<T: Encode>(ty_ctx: Option<u8>, t: u8, v: &T, enc: &mut Encoder) 
 
 /// Decode any SBOR data.
 pub fn decode_any(data: &[u8]) -> Result<Value, DecodeError> {
-    let mut decoder = Decoder::with_type(data);
+    let mut decoder = Decoder::with_static_info(data);
     let result = decode_next(None, &mut decoder);
     decoder.check_end()?;
     result
@@ -643,7 +643,7 @@ mod tests {
             y: map1,
             z: map2,
         };
-        let bytes = encode_with_type(&data);
+        let bytes = encode_with_static_info(&data);
         let value = decode_any(&bytes).unwrap();
 
         assert_eq!(
@@ -724,7 +724,7 @@ mod tests {
         );
 
         let mut bytes2 = Vec::new();
-        let mut enc = Encoder::with_type(&mut bytes2);
+        let mut enc = Encoder::with_static_info(&mut bytes2);
         encode_any_internal(None, &value, &mut enc);
         assert_eq!(bytes2, bytes);
     }

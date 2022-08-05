@@ -22,15 +22,18 @@ pub trait Encode {
 /// An `Encoder` abstracts the logic for writing core types into a byte buffer.
 pub struct Encoder<'a> {
     buf: &'a mut Vec<u8>,
-    with_type: bool,
+    with_static_info: bool,
 }
 
 impl<'a> Encoder<'a> {
-    pub fn new(buf: &'a mut Vec<u8>, with_type: bool) -> Self {
-        Self { buf, with_type }
+    pub fn new(buf: &'a mut Vec<u8>, with_static_info: bool) -> Self {
+        Self {
+            buf,
+            with_static_info,
+        }
     }
 
-    pub fn with_type(buf: &'a mut Vec<u8>) -> Self {
+    pub fn with_static_info(buf: &'a mut Vec<u8>) -> Self {
         Self::new(buf, true)
     }
 
@@ -40,7 +43,7 @@ impl<'a> Encoder<'a> {
 
     pub fn write_type(&mut self, ty: u8) {
         // May use compile-time feature flag, instead of runtime check, for performance.
-        if self.with_type {
+        if self.with_static_info {
             self.buf.push(ty);
         }
     }
@@ -434,7 +437,7 @@ mod tests {
     #[test]
     pub fn test_encoding() {
         let mut bytes = Vec::with_capacity(512);
-        let mut enc = Encoder::with_type(&mut bytes);
+        let mut enc = Encoder::with_static_info(&mut bytes);
         do_encoding(&mut enc);
 
         assert_eq!(
@@ -505,7 +508,7 @@ mod tests {
     pub fn test_encode_box() {
         let x = Box::new(5u8);
         let mut bytes = Vec::with_capacity(512);
-        let mut enc = Encoder::with_type(&mut bytes);
+        let mut enc = Encoder::with_static_info(&mut bytes);
         x.encode(&mut enc);
         assert_eq!(bytes, vec![7, 5])
     }
@@ -514,7 +517,7 @@ mod tests {
     pub fn test_encode_rc() {
         let x = crate::rust::rc::Rc::new(5u8);
         let mut bytes = Vec::with_capacity(512);
-        let mut enc = Encoder::with_type(&mut bytes);
+        let mut enc = Encoder::with_static_info(&mut bytes);
         x.encode(&mut enc);
         assert_eq!(bytes, vec![7, 5])
     }
@@ -523,7 +526,7 @@ mod tests {
     pub fn test_encode_ref_cell() {
         let x = crate::rust::cell::RefCell::new(5u8);
         let mut bytes = Vec::with_capacity(512);
-        let mut enc = Encoder::with_type(&mut bytes);
+        let mut enc = Encoder::with_static_info(&mut bytes);
         x.encode(&mut enc);
         assert_eq!(bytes, vec![7, 5])
     }
