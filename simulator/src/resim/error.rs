@@ -49,4 +49,6 @@ pub enum Error {
     InvalidPrivateKey,
 
     AddressError(AddressError),
+
+    FailedToBuildArgs(BuildArgsError),
 }
