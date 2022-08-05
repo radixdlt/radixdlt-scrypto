@@ -237,35 +237,6 @@ macro_rules! decimals {
                     }
                 }
 
-                #[ doc = "Creates a `" $dec "` from literals."]
-                ///
-                /// # Example
-                /// ```ignore
-                /// use scrypto::prelude::*;
-                ///
-                #[ doc = "let a = " $dec_macro "!(1);"]
-                #[ doc = "let b = " $dec_macro "!("1.1");"]
-                /// ```
-                #[macro_export]
-                macro_rules! $dec_macro {
-                    ($x:literal) => {
-                        ::scrypto::math::$dec::from($x)
-                    };
-
-                    ($base:literal, $shift:literal) => {
-                        // Base can be any type that converts into a $dec, and shift must support
-                        // comparison and `-` unary operation, enforced by rustc.
-                        {
-                            let base = ::scrypto::math::$dec::from($base);
-                            if $shift >= 0 {
-                                base * <$dec>::try_from(<$wrapped>::from(10u8).pow(u32::try_from($shift).expect("Shift overflow"))).expect("Shift overflow")
-                            } else {
-                                base / <$dec>::try_from(<$wrapped>::from(10u8).pow(u32::try_from(-$shift).expect("Shift overflow"))).expect("Shift overflow")
-                            }
-                        }
-                    };
-                }
-
                 impl<T: TryInto<$dec>> Add<T> for $dec 
                     where <T as TryInto<$dec>>::Error: fmt::Debug {
                         type Output = $dec;
@@ -638,6 +609,7 @@ pub enum RoundingMode {
 
 #[cfg(test)]
 mod tests {
+    use crate::{dec, pdec};
     use super::*;
     use sbor::rust::vec;
 
