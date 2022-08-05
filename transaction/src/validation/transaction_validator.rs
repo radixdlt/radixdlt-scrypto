@@ -10,7 +10,7 @@ use crate::errors::{SignatureValidationError, *};
 use crate::model::*;
 use crate::validation::*;
 
-pub struct ValidationParameters {
+pub struct ValidationConfig {
     pub network: Network,
     pub current_epoch: u64,
     pub max_cost_unit_limit: u32,
@@ -25,7 +25,7 @@ impl TransactionValidator {
     pub fn validate_from_slice<I: IntentHashManager>(
         transaction: &[u8],
         intent_hash_manager: &I,
-        parameters: &ValidationParameters,
+        config: &ValidationConfig,
     ) -> Result<ValidatedTransaction, TransactionValidationError> {
         if transaction.len() > Self::MAX_PAYLOAD_SIZE {
             return Err(TransactionValidationError::TransactionTooLarge);
@@ -34,19 +34,19 @@ impl TransactionValidator {
         let transaction: NotarizedTransaction = scrypto_decode(transaction)
             .map_err(TransactionValidationError::DeserializationError)?;
 
-        Self::validate(transaction, intent_hash_manager, parameters)
+        Self::validate(transaction, intent_hash_manager, config)
     }
 
     pub fn validate<I: IntentHashManager>(
         transaction: NotarizedTransaction,
         intent_hash_manager: &I,
-        parameters: &ValidationParameters,
+        config: &ValidationConfig,
     ) -> Result<ValidatedTransaction, TransactionValidationError> {
         // verify the intent
         let instructions = Self::validate_intent(
             &transaction.signed_intent.intent,
             intent_hash_manager,
-            parameters,
+            config,
         )?;
 
         // verify signatures
@@ -77,13 +77,13 @@ impl TransactionValidator {
     pub fn validate_preview_intent<I: IntentHashManager>(
         preview_intent: PreviewIntent,
         intent_hash_manager: &I,
-        parameters: &ValidationParameters,
+        config: &ValidationConfig,
     ) -> Result<ValidatedPreviewTransaction, TransactionValidationError> {
         let intent = &preview_intent.intent;
 
         let transaction_hash = preview_intent.hash();
 
-        let instructions = Self::validate_intent(&intent, intent_hash_manager, parameters)?;
+        let instructions = Self::validate_intent(&intent, intent_hash_manager, config)?;
 
         Ok(ValidatedPreviewTransaction {
             preview_intent,
@@ -95,7 +95,7 @@ impl TransactionValidator {
     fn validate_intent<I: IntentHashManager>(
         intent: &TransactionIntent,
         intent_hash_manager: &I,
-        parameters: &ValidationParameters,
+        config: &ValidationConfig,
     ) -> Result<Vec<ExecutableInstruction>, TransactionValidationError> {
         // verify intent hash
         if !intent_hash_manager.allows(&intent.hash()) {
@@ -103,7 +103,7 @@ impl TransactionValidator {
         }
 
         // verify intent header
-        Self::validate_header(&intent, parameters)
+        Self::validate_header(&intent, config)
             .map_err(TransactionValidationError::HeaderValidationError)?;
 
         let mut instructions = vec![];
@@ -293,7 +293,7 @@ impl TransactionValidator {
 
     fn validate_header(
         intent: &TransactionIntent,
-        parameters: &ValidationParameters,
+        config: &ValidationConfig,
     ) -> Result<(), HeaderValidationError> {
         let header = &intent.header;
 
@@ -303,7 +303,7 @@ impl TransactionValidator {
         }
 
         // network
-        if header.network != parameters.network {
+        if header.network != config.network {
             return Err(HeaderValidationError::InvalidNetwork);
         }
 
@@ -314,17 +314,17 @@ impl TransactionValidator {
         if header.end_epoch_exclusive - header.start_epoch_inclusive > MAX_EPOCH_DURATION {
             return Err(HeaderValidationError::EpochRangeTooLarge);
         }
-        if parameters.current_epoch < header.start_epoch_inclusive
-            || parameters.current_epoch >= header.end_epoch_exclusive
+        if config.current_epoch < header.start_epoch_inclusive
+            || config.current_epoch >= header.end_epoch_exclusive
         {
             return Err(HeaderValidationError::OutOfEpochRange);
         }
 
         // cost unit limit and tip
-        if header.cost_unit_limit > parameters.max_cost_unit_limit {
+        if header.cost_unit_limit > config.max_cost_unit_limit {
             return Err(HeaderValidationError::InvalidCostUnitLimit);
         }
-        if header.tip_percentage < parameters.min_tip_percentage {
+        if header.tip_percentage < config.min_tip_percentage {
             return Err(HeaderValidationError::InvalidTipBps);
         }
 
@@ -395,7 +395,7 @@ mod tests {
     macro_rules! assert_invalid_tx {
         ($result: expr, ($version: expr, $start_epoch: expr, $end_epoch: expr, $nonce: expr, $signers: expr, $notary: expr)) => {{
             let mut intent_hash_manager: TestIntentHashManager = TestIntentHashManager::new();
-            let parameters: ValidationParameters = ValidationParameters {
+            let config: ValidationConfig = ValidationConfig {
                 network: Network::LocalSimulator,
                 current_epoch: 1,
                 max_cost_unit_limit: 10_000_000,
@@ -413,7 +413,7 @@ mod tests {
                         $notary
                     ),
                     &mut intent_hash_manager,
-                    &parameters,
+                    &config,
                 )
             );
         }};
@@ -466,7 +466,7 @@ mod tests {
     #[test]
     fn test_valid_preview() {
         let mut intent_hash_manager: TestIntentHashManager = TestIntentHashManager::new();
-        let parameters: ValidationParameters = ValidationParameters {
+        let config: ValidationConfig = ValidationConfig {
             network: Network::LocalSimulator,
             current_epoch: 1,
             max_cost_unit_limit: 10_000_000,
@@ -491,7 +491,7 @@ mod tests {
                 },
             },
             &mut intent_hash_manager,
-            &parameters,
+            &config,
         );
 
         assert!(result.is_ok());

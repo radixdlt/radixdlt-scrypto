@@ -13,8 +13,8 @@ use scrypto::prelude::{
 use scrypto::values::ScryptoValue;
 
 use crate::engine::{HeapRENode, SystemApi};
-use crate::fee::CostUnitCounter;
-use crate::fee::CostUnitCounterError;
+use crate::fee::FeeReserve;
+use crate::fee::FeeReserveError;
 use crate::model::{
     Proof, ProofError, ResourceContainer, ResourceContainerError, ResourceContainerId,
 };
@@ -30,7 +30,7 @@ pub enum BucketError {
     ProofError(ProofError),
     CouldNotCreateProof,
     MethodNotFound(String),
-    CostingError(CostUnitCounterError),
+    CostingError(FeeReserveError),
 }
 
 /// A transient resource container.
@@ -167,7 +167,7 @@ impl Bucket {
         Y: SystemApi<'p, 's, W, I, C>,
         W: WasmEngine<I>,
         I: WasmInstance,
-        C: CostUnitCounter,
+        C: FeeReserve,
     >(
         bucket_id: BucketId,
         method_name: &str,
@@ -269,7 +269,7 @@ impl Bucket {
         Y: SystemApi<'p, 's, W, I, C>,
         W: WasmEngine<I>,
         I: WasmInstance,
-        C: CostUnitCounter,
+        C: FeeReserve,
     >(
         node_id: RENodeId,
         method_name: &str,

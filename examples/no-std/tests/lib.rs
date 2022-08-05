@@ -3,7 +3,7 @@
 
 use radix_engine::ledger::*;
 use radix_engine::model::extract_package;
-use radix_engine::transaction::ExecutionParameters;
+use radix_engine::transaction::ExecutionConfig;
 use radix_engine::transaction::TransactionExecutor;
 use radix_engine::wasm::*;
 use scrypto::core::Network;
@@ -37,7 +37,7 @@ fn test_say_hello() {
     let package_address = executor
         .execute_and_commit(
             &TestTransaction::new(manifest, 1, vec![public_key]),
-            &ExecutionParameters::default(),
+            &ExecutionConfig::default(),
         )
         .new_package_addresses[0];
 
@@ -48,7 +48,7 @@ fn test_say_hello() {
         .build();
     let receipt = executor.execute_and_commit(
         &TestTransaction::new(manifest, 2, vec![]),
-        &ExecutionParameters::default(),
+        &ExecutionConfig::default(),
     );
     receipt.expect_success();
 }

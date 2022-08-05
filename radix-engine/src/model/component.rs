@@ -9,8 +9,8 @@ use scrypto::resource::AccessRules;
 use scrypto::values::*;
 
 use crate::engine::SystemApi;
-use crate::fee::CostUnitCounter;
-use crate::fee::CostUnitCounterError;
+use crate::fee::FeeReserve;
+use crate::fee::FeeReserveError;
 use crate::model::{convert, MethodAuthorization};
 use crate::wasm::{WasmEngine, WasmInstance};
 
@@ -19,7 +19,7 @@ pub enum ComponentError {
     InvalidRequestData(DecodeError),
     BlueprintFunctionDoesNotExist(String),
     MethodNotFound,
-    CostingError(CostUnitCounterError),
+    CostingError(FeeReserveError),
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
@@ -102,7 +102,7 @@ impl Component {
         Y: SystemApi<'p, 's, W, I, C>,
         W: WasmEngine<I>,
         I: WasmInstance,
-        C: CostUnitCounter,
+        C: FeeReserve,
     >(
         node_id: RENodeId,
         fn_ident: &str,

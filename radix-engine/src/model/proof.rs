@@ -14,8 +14,8 @@ use scrypto::resource::ConsumingProofDropInput;
 use scrypto::values::ScryptoValue;
 
 use crate::engine::{HeapRENode, SystemApi};
-use crate::fee::CostUnitCounter;
-use crate::fee::CostUnitCounterError;
+use crate::fee::FeeReserve;
+use crate::fee::FeeReserveError;
 use crate::model::ProofError::UnknownMethod;
 use crate::model::{
     LockedAmountOrIds, ResourceContainer, ResourceContainerError, ResourceContainerId,
@@ -51,7 +51,7 @@ pub enum ProofError {
     CouldNotCreateProof,
     InvalidRequestData(DecodeError),
     UnknownMethod,
-    CostingError(CostUnitCounterError),
+    CostingError(FeeReserveError),
 }
 
 impl Proof {
@@ -339,7 +339,7 @@ impl Proof {
         Y: SystemApi<'p, 's, W, I, C>,
         W: WasmEngine<I>,
         I: WasmInstance,
-        C: CostUnitCounter,
+        C: FeeReserve,
     >(
         node_id: RENodeId,
         method_name: &str,
@@ -395,7 +395,7 @@ impl Proof {
         Y: SystemApi<'p, 's, W, I, C>,
         W: WasmEngine<I>,
         I: WasmInstance,
-        C: CostUnitCounter,
+        C: FeeReserve,
     >(
         node_id: RENodeId,
         method_name: &str,

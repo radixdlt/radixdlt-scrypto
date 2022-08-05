@@ -7,8 +7,8 @@ use scrypto::engine::types::RENodeId;
 use scrypto::values::ScryptoValue;
 
 use crate::engine::SystemApi;
-use crate::fee::CostUnitCounter;
-use crate::fee::CostUnitCounterError;
+use crate::fee::FeeReserve;
+use crate::fee::FeeReserveError;
 use crate::model::SystemError::InvalidMethod;
 use crate::wasm::*;
 
@@ -16,7 +16,7 @@ use crate::wasm::*;
 pub enum SystemError {
     InvalidRequestData(DecodeError),
     InvalidMethod,
-    CostingError(CostUnitCounterError),
+    CostingError(FeeReserveError),
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
@@ -31,7 +31,7 @@ impl System {
         Y: SystemApi<'p, 's, W, I, C>,
         W: WasmEngine<I>,
         I: WasmInstance,
-        C: CostUnitCounter,
+        C: FeeReserve,
     >(
         method_name: &str,
         arg: ScryptoValue,

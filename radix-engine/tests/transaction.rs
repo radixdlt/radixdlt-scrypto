@@ -4,7 +4,7 @@ pub mod test_runner;
 use crate::test_runner::TestRunner;
 use radix_engine::constants::*;
 use radix_engine::ledger::InMemorySubstateStore;
-use radix_engine::transaction::ExecutionParameters;
+use radix_engine::transaction::ExecutionConfig;
 use radix_engine::transaction::TransactionExecutor;
 use radix_engine::wasm::DefaultWasmEngine;
 use radix_engine::wasm::WasmInstrumenter;
@@ -14,7 +14,7 @@ use transaction::builder::ManifestBuilder;
 use transaction::builder::TransactionBuilder;
 use transaction::model::TransactionHeader;
 use transaction::signing::EcdsaPrivateKey;
-use transaction::validation::ValidationParameters;
+use transaction::validation::ValidationConfig;
 use transaction::validation::{TestIntentHashManager, TransactionValidator};
 
 #[test]
@@ -23,13 +23,13 @@ fn test_normal_transaction_flow() {
     let mut wasm_engine = DefaultWasmEngine::new();
     let mut wasm_instrumenter = WasmInstrumenter::new();
     let intent_hash_manager = TestIntentHashManager::new();
-    let validation_params = ValidationParameters {
+    let validation_params = ValidationConfig {
         network: Network::LocalSimulator,
         current_epoch: 1,
         max_cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,
         min_tip_percentage: 0,
     };
-    let execution_params = ExecutionParameters::default();
+    let execution_params = ExecutionConfig::default();
 
     let raw_transaction = create_transaction();
     let validated_transaction = TransactionValidator::validate_from_slice(
