@@ -32,11 +32,11 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
                     impl ::sbor::Decode for #ident {
                         #[inline]
                         fn check_static_type_id(decoder: &mut ::sbor::Decoder) -> Result<(), ::sbor::DecodeError> {
-                            decoder.check_type(::sbor::type_id::TYPE_STRUCT)
+                            decoder.check_static_type_id(::sbor::type_id::TYPE_STRUCT)
                         }
                         fn decode_value(decoder: &mut ::sbor::Decoder) -> Result<Self, ::sbor::DecodeError> {
                             use ::sbor::{self, Decode};
-                            decoder.check_len(#ns_len)?;
+                            decoder.check_static_size(#ns_len)?;
                             Ok(Self {
                                 #(#ns_ids: <#ns_types>::decode(decoder)?,)*
                                 #(#s_ids: <#s_types>::default()),*
@@ -60,11 +60,11 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
                     impl ::sbor::Decode for #ident {
                         #[inline]
                         fn check_static_type_id(decoder: &mut ::sbor::Decoder) -> Result<(), ::sbor::DecodeError> {
-                            decoder.check_type(::sbor::type_id::TYPE_STRUCT)
+                            decoder.check_static_type_id(::sbor::type_id::TYPE_STRUCT)
                         }
                         fn decode_value(decoder: &mut ::sbor::Decoder) -> Result<Self, ::sbor::DecodeError> {
                             use ::sbor::{self, Decode};
-                            decoder.check_len(#ns_len)?;
+                            decoder.check_static_size(#ns_len)?;
                             Ok(Self (
                                 #(#fields,)*
                             ))
@@ -77,10 +77,10 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
                     impl ::sbor::Decode for #ident {
                         #[inline]
                         fn check_static_type_id(decoder: &mut ::sbor::Decoder) -> Result<(), ::sbor::DecodeError> {
-                            decoder.check_type(::sbor::type_id::TYPE_STRUCT)
+                            decoder.check_static_type_id(::sbor::type_id::TYPE_STRUCT)
                         }
                         fn decode_value(decoder: &mut ::sbor::Decoder) -> Result<Self, ::sbor::DecodeError> {
-                            decoder.check_len(0)?;
+                            decoder.check_static_size(0)?;
                             Ok(Self {})
                         }
                     }
@@ -104,7 +104,7 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
                         let s_types = s.iter().map(|f| &f.ty);
                         quote! {
                             #name => {
-                                decoder.check_len(#ns_len)?;
+                                decoder.check_static_size(#ns_len)?;
                                 Ok(Self::#v_id {
                                     #(#ns_ids: <#ns_types>::decode(decoder)?,)*
                                     #(#s_ids: <#s_types>::default(),)*
@@ -125,7 +125,7 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
                         let ns_len = Index::from(unnamed.iter().filter(|f| !is_skipped(f)).count());
                         quote! {
                             #name => {
-                                decoder.check_len(#ns_len)?;
+                                decoder.check_static_size(#ns_len)?;
                                 Ok(Self::#v_id (
                                     #(#fields),*
                                 ))
@@ -135,7 +135,7 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
                     syn::Fields::Unit => {
                         quote! {
                             #name => {
-                                decoder.check_len(0)?;
+                                decoder.check_static_size(0)?;
                                 Ok(Self::#v_id)
                             }
                         }
@@ -147,7 +147,7 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
                 impl ::sbor::Decode for #ident {
                     #[inline]
                     fn check_static_type_id(decoder: &mut ::sbor::Decoder) -> Result<(), ::sbor::DecodeError> {
-                        decoder.check_type(::sbor::type_id::TYPE_ENUM)
+                        decoder.check_static_type_id(::sbor::type_id::TYPE_ENUM)
                     }
                     #[inline]
                     fn decode_value(decoder: &mut ::sbor::Decoder) -> Result<Self, ::sbor::DecodeError> {
@@ -196,11 +196,11 @@ mod tests {
                 impl ::sbor::Decode for Test {
                     #[inline]
                     fn check_static_type_id(decoder: &mut ::sbor::Decoder) -> Result<(), ::sbor::DecodeError> {
-                        decoder.check_type(::sbor::type_id::TYPE_STRUCT)
+                        decoder.check_static_type_id(::sbor::type_id::TYPE_STRUCT)
                     }
                     fn decode_value(decoder: &mut ::sbor::Decoder) -> Result<Self, ::sbor::DecodeError> {
                         use ::sbor::{self, Decode};
-                        decoder.check_len(1)?;
+                        decoder.check_static_size(1)?;
                         Ok(Self {
                             a: <u32>::decode(decoder)?,
                         })
@@ -221,7 +221,7 @@ mod tests {
                 impl ::sbor::Decode for Test {
                     #[inline]
                     fn check_static_type_id(decoder: &mut ::sbor::Decoder) -> Result<(), ::sbor::DecodeError> {
-                        decoder.check_type(::sbor::type_id::TYPE_ENUM)
+                        decoder.check_static_type_id(::sbor::type_id::TYPE_ENUM)
                     }
                     #[inline]
                     fn decode_value(decoder: &mut ::sbor::Decoder) -> Result<Self, ::sbor::DecodeError> {
@@ -229,15 +229,15 @@ mod tests {
                         let name = decoder.read_variant_label()?;
                         match name.as_str() {
                             "A" => {
-                                decoder.check_len(0)?;
+                                decoder.check_static_size(0)?;
                                 Ok(Self::A)
                             },
                             "B" => {
-                                decoder.check_len(1)?;
+                                decoder.check_static_size(1)?;
                                 Ok(Self::B(<u32>::decode(decoder)?))
                             },
                             "C" => {
-                                decoder.check_len(1)?;
+                                decoder.check_static_size(1)?;
                                 Ok(Self::C {
                                     x: <u8>::decode(decoder)?,
                                 })

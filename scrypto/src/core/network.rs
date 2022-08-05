@@ -1,6 +1,5 @@
 use core::str::FromStr;
-use sbor::rust::string::String;
-use sbor::{Decode, Encode, ToString, TypeId};
+use sbor::{Decode, Encode, TypeId};
 
 /// Generates an Enum and defines its `FromStr` implementation.
 macro_rules! network_enum_with_from_str {

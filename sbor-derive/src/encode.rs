@@ -33,7 +33,7 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
                         #[inline]
                         fn encode_value(&self, encoder: &mut ::sbor::Encoder) {
                             use ::sbor::{self, Encode};
-                            encoder.write_len(#ns_len);
+                            encoder.write_static_size(#ns_len);
                             #(self.#ns_ids.encode(encoder);)*
                         }
                     }
@@ -56,7 +56,7 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
                         #[inline]
                         fn encode_value(&self, encoder: &mut ::sbor::Encoder) {
                             use ::sbor::{self, Encode};
-                            encoder.write_len(#ns_len);
+                            encoder.write_static_size(#ns_len);
                             #(self.#ns_indices.encode(encoder);)*
                         }
                     }
@@ -71,7 +71,7 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
                         }
                         #[inline]
                         fn encode_value(&self, encoder: &mut ::sbor::Encoder) {
-                            encoder.write_len(0);
+                            encoder.write_static_size(0);
                         }
                     }
                 }
@@ -92,7 +92,7 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
                         quote! {
                             Self::#v_id {#(#ns_ids,)* ..} => {
                                 encoder.write_variant_label(#name);
-                                encoder.write_len(#ns_len);
+                                encoder.write_static_size(#ns_len);
                                 #(#ns_ids2.encode(encoder);)*
                             }
                         }
@@ -109,7 +109,7 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
                         quote! {
                             Self::#v_id (#(#args),*) => {
                                 encoder.write_variant_label(#name);
-                                encoder.write_len(#ns_len);
+                                encoder.write_static_size(#ns_len);
                                 #(#ns_args.encode(encoder);)*
                             }
                         }
@@ -118,7 +118,7 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
                         quote! {
                             Self::#v_id => {
                                 encoder.write_variant_label(#name);
-                                encoder.write_len(0);
+                                encoder.write_static_size(0);
                             }
                         }
                     }
@@ -195,7 +195,7 @@ mod tests {
                     #[inline]
                     fn encode_value(&self, encoder: &mut ::sbor::Encoder) {
                         use ::sbor::{self, Encode};
-                        encoder.write_len(1);
+                        encoder.write_static_size(1);
                         self.a.encode(encoder);
                     }
                 }
@@ -222,16 +222,16 @@ mod tests {
                         match self {
                             Self::A => {
                                 encoder.write_variant_label("A");
-                                encoder.write_len(0);
+                                encoder.write_static_size(0);
                             }
                             Self::B(a0) => {
                                 encoder.write_variant_label("B");
-                                encoder.write_len(1);
+                                encoder.write_static_size(1);
                                 a0.encode(encoder);
                             }
                             Self::C { x, .. } => {
                                 encoder.write_variant_label("C");
-                                encoder.write_len(1);
+                                encoder.write_static_size(1);
                                 x.encode(encoder);
                             }
                         }

@@ -53,11 +53,18 @@ impl<'a> Encoder<'a> {
     }
 
     pub fn write_variant_label(&mut self, label: &str) {
-        self.write_len(label.len());
+        self.write_dynamic_size(label.len());
         self.write_slice(label.as_bytes());
     }
 
-    pub fn write_len(&mut self, len: usize) {
+    pub fn write_static_size(&mut self, len: usize) {
+        // May use compile-time feature flag, instead of runtime check, for performance.
+        if self.with_static_info {
+            self.buf.extend(&(len as u32).to_le_bytes());
+        }
+    }
+
+    pub fn write_dynamic_size(&mut self, len: usize) {
         self.buf.extend(&(len as u32).to_le_bytes());
     }
 
@@ -169,7 +176,7 @@ impl Encode for str {
     }
     #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
-        encoder.write_len(self.len());
+        encoder.write_dynamic_size(self.len());
         encoder.write_slice(self.as_bytes());
     }
 }
@@ -181,7 +188,7 @@ impl Encode for &str {
     }
     #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
-        encoder.write_len(self.len());
+        encoder.write_dynamic_size(self.len());
         encoder.write_slice(self.as_bytes());
     }
 }
@@ -246,7 +253,7 @@ impl<T: Encode + TypeId, const N: usize> Encode for [T; N] {
     #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
         encoder.write_type_id(T::type_id());
-        encoder.write_len(self.len());
+        encoder.write_static_size(self.len());
         for v in self {
             v.encode_value(encoder);
         }
@@ -262,7 +269,7 @@ macro_rules! encode_tuple {
             }
             #[inline]
             fn encode_value(&self, encoder: &mut Encoder) {
-                encoder.write_len($n);
+                encoder.write_static_size($n);
 
                 $(self.$idx.encode(encoder);)+
             }
@@ -319,7 +326,7 @@ impl<T: Encode + TypeId> Encode for [T] {
     #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
         encoder.write_type_id(T::type_id());
-        encoder.write_len(self.len());
+        encoder.write_dynamic_size(self.len());
         if T::type_id() == TYPE_U8 || T::type_id() == TYPE_I8 {
             let mut buf = Vec::<u8>::with_capacity(self.len());
             unsafe {
@@ -343,7 +350,7 @@ impl<T: Encode + TypeId> Encode for BTreeSet<T> {
     #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
         encoder.write_type_id(T::type_id());
-        encoder.write_len(self.len());
+        encoder.write_dynamic_size(self.len());
         for v in self {
             v.encode_value(encoder);
         }
@@ -359,7 +366,7 @@ impl<K: Encode + TypeId, V: Encode + TypeId> Encode for BTreeMap<K, V> {
     fn encode_value(&self, encoder: &mut Encoder) {
         encoder.write_type_id(K::type_id());
         encoder.write_type_id(V::type_id());
-        encoder.write_len(self.len());
+        encoder.write_dynamic_size(self.len());
         for (k, v) in self {
             k.encode_value(encoder);
             v.encode_value(encoder);
@@ -375,7 +382,7 @@ impl<T: Encode + TypeId + Ord + Hash> Encode for HashSet<T> {
     #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
         encoder.write_type_id(T::type_id());
-        encoder.write_len(self.len());
+        encoder.write_dynamic_size(self.len());
         // Encode elements based on the order defined on the key type to generate deterministic bytes.
         let values: BTreeSet<&T> = self.iter().collect();
         for v in values {
@@ -393,7 +400,7 @@ impl<K: Encode + TypeId + Ord + Hash, V: Encode + TypeId> Encode for HashMap<K, 
     fn encode_value(&self, encoder: &mut Encoder) {
         encoder.write_type_id(K::type_id());
         encoder.write_type_id(V::type_id());
-        encoder.write_len(self.len());
+        encoder.write_dynamic_size(self.len());
         // Encode elements based on the order defined on the key type to generate deterministic bytes.
         let keys: BTreeSet<&K> = self.keys().collect();
         for key in keys {
@@ -503,8 +510,8 @@ mod tests {
                 1, // option
                 0, 1, 0, 0, 0, // result
                 1, 5, 0, 0, 0, 104, 101, 108, 108, 111, // result
-                3, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // array
-                2, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, // tuple
+                1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // array
+                1, 0, 0, 0, 2, 0, 0, 0, // tuple
                 3, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // list
                 2, 0, 0, 0, 1, 2, // set
                 2, 0, 0, 0, 1, 2, 3, 4 // map
