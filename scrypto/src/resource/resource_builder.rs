@@ -64,6 +64,18 @@ impl FungibleResourceBuilder {
         self
     }
 
+    pub fn name<T: AsRef<str>>(&mut self, name: T) -> &mut Self {
+        self.metadata("name", name)
+    }
+
+    pub fn symbol<T: AsRef<str>>(&mut self, symbol: T) -> &mut Self {
+        self.metadata("symbol", symbol)
+    }
+
+    pub fn url<T: AsRef<str>>(&mut self, url: T) -> &mut Self {
+        self.metadata("url", url)
+    }
+
     pub fn mintable(&mut self, method_auth: AccessRule, mutability: Mutability) -> &mut Self {
         self.authorization.insert(Mint, (method_auth, mutability));
         self

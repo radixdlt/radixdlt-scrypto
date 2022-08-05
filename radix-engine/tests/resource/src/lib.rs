@@ -4,6 +4,27 @@ blueprint! {
     struct ResourceTest;
 
     impl ResourceTest {
+        pub fn test_metadata() {
+            let resource_address = ResourceBuilder::new_fungible()
+                .name("a")
+                .symbol("b")
+                .url("c")
+                .no_initial_supply();
+            let resource_manager = borrow_resource_manager!(resource_address);
+            assert_eq!(
+                resource_manager.metadata().get("name"),
+                Some(&"a".to_string())
+            );
+            assert_eq!(
+                resource_manager.metadata().get("symbol"),
+                Some(&"b".to_string())
+            );
+            assert_eq!(
+                resource_manager.metadata().get("url"),
+                Some(&"c".to_string())
+            );
+        }
+
         pub fn create_fungible() -> (Bucket, ResourceAddress) {
             let badge = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_NONE)

@@ -11,6 +11,29 @@ use scrypto::to_struct;
 use transaction::builder::ManifestBuilder;
 
 #[test]
+fn test_metadata() {
+    // Arrange
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
+    let package_address = test_runner.extract_and_publish_package("resource");
+
+    // Act
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .lock_fee(10.into(), SYSTEM_COMPONENT)
+        .call_function(
+            package_address,
+            "ResourceTest",
+            "test_metadata",
+            to_struct!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_success();
+}
+
+#[test]
 fn test_resource_manager() {
     // Arrange
     let mut store = InMemorySubstateStore::with_bootstrap();
