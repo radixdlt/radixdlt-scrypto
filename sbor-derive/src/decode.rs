@@ -153,7 +153,7 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
                     fn decode_value(decoder: &mut ::sbor::Decoder) -> Result<Self, ::sbor::DecodeError> {
                         use ::sbor::{self, Decode};
 
-                        let name = <String>::decode_value(decoder)?;
+                        let name = decoder.read_variant_label()?;
                         match name.as_str() {
                             #(#match_arms,)*
                             _ => Err(::sbor::DecodeError::InvalidEnumVariant(name))
@@ -226,7 +226,7 @@ mod tests {
                     #[inline]
                     fn decode_value(decoder: &mut ::sbor::Decoder) -> Result<Self, ::sbor::DecodeError> {
                         use ::sbor::{self, Decode};
-                        let name = <String>::decode_value(decoder)?;
+                        let name = decoder.read_variant_label()?;
                         match name.as_str() {
                             "A" => {
                                 decoder.check_len(0)?;

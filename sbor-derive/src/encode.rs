@@ -91,7 +91,7 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
                         let ns_len = Index::from(ns.len());
                         quote! {
                             Self::#v_id {#(#ns_ids,)* ..} => {
-                                #name.to_string().encode_value(encoder);
+                                encoder.write_variant_label(#name);
                                 encoder.write_len(#ns_len);
                                 #(#ns_ids2.encode(encoder);)*
                             }
@@ -108,7 +108,7 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
                         let ns_len = Index::from(ns_args.len());
                         quote! {
                             Self::#v_id (#(#args),*) => {
-                                #name.to_string().encode_value(encoder);
+                                encoder.write_variant_label(#name);
                                 encoder.write_len(#ns_len);
                                 #(#ns_args.encode(encoder);)*
                             }
@@ -117,7 +117,7 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
                     syn::Fields::Unit => {
                         quote! {
                             Self::#v_id => {
-                                #name.to_string().encode_value(encoder);
+                                encoder.write_variant_label(#name);
                                 encoder.write_len(0);
                             }
                         }
@@ -221,16 +221,16 @@ mod tests {
                         use ::sbor::{self, Encode};
                         match self {
                             Self::A => {
-                                "A".to_string().encode_value(encoder);
+                                encoder.write_variant_label("A");
                                 encoder.write_len(0);
                             }
                             Self::B(a0) => {
-                                "B".to_string().encode_value(encoder);
+                                encoder.write_variant_label("B");
                                 encoder.write_len(1);
                                 a0.encode(encoder);
                             }
                             Self::C { x, .. } => {
-                                "C".to_string().encode_value(encoder);
+                                encoder.write_variant_label("C");
                                 encoder.write_len(1);
                                 x.encode(encoder);
                             }

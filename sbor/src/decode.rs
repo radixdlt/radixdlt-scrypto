@@ -94,6 +94,12 @@ impl<'de> Decoder<'de> {
         self.read_byte()
     }
 
+    pub fn read_variant_label(&mut self) -> Result<String, DecodeError> {
+        let n = self.read_len()?;
+        let slice = self.read_bytes(n)?;
+        String::from_utf8(slice.to_vec()).map_err(|_| DecodeError::InvalidUtf8)
+    }
+
     pub fn read_len(&mut self) -> Result<usize, DecodeError> {
         let mut bytes = [0u8; 4];
         bytes.copy_from_slice(self.read_bytes(4)?);

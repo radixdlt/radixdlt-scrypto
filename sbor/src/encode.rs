@@ -52,6 +52,11 @@ impl<'a> Encoder<'a> {
         self.write_byte(index);
     }
 
+    pub fn write_variant_label(&mut self, label: &str) {
+        self.write_len(label.len());
+        self.write_slice(label.as_bytes());
+    }
+
     pub fn write_len(&mut self, len: usize) {
         self.buf.extend(&(len as u32).to_le_bytes());
     }
