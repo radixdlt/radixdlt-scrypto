@@ -31,8 +31,8 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
                 quote! {
                     impl ::sbor::Decode for #ident {
                         #[inline]
-                        fn check_static_type_id(decoder: &mut ::sbor::Decoder) -> Result<(), ::sbor::DecodeError> {
-                            decoder.check_static_type_id(::sbor::type_id::TYPE_STRUCT)
+                        fn check_type_id(decoder: &mut ::sbor::Decoder) -> Result<(), ::sbor::DecodeError> {
+                            decoder.check_type_id(::sbor::type_id::TYPE_STRUCT)
                         }
                         fn decode_value(decoder: &mut ::sbor::Decoder) -> Result<Self, ::sbor::DecodeError> {
                             use ::sbor::{self, Decode};
@@ -59,8 +59,8 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
                 quote! {
                     impl ::sbor::Decode for #ident {
                         #[inline]
-                        fn check_static_type_id(decoder: &mut ::sbor::Decoder) -> Result<(), ::sbor::DecodeError> {
-                            decoder.check_static_type_id(::sbor::type_id::TYPE_STRUCT)
+                        fn check_type_id(decoder: &mut ::sbor::Decoder) -> Result<(), ::sbor::DecodeError> {
+                            decoder.check_type_id(::sbor::type_id::TYPE_STRUCT)
                         }
                         fn decode_value(decoder: &mut ::sbor::Decoder) -> Result<Self, ::sbor::DecodeError> {
                             use ::sbor::{self, Decode};
@@ -76,8 +76,8 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
                 quote! {
                     impl ::sbor::Decode for #ident {
                         #[inline]
-                        fn check_static_type_id(decoder: &mut ::sbor::Decoder) -> Result<(), ::sbor::DecodeError> {
-                            decoder.check_static_type_id(::sbor::type_id::TYPE_STRUCT)
+                        fn check_type_id(decoder: &mut ::sbor::Decoder) -> Result<(), ::sbor::DecodeError> {
+                            decoder.check_type_id(::sbor::type_id::TYPE_STRUCT)
                         }
                         fn decode_value(decoder: &mut ::sbor::Decoder) -> Result<Self, ::sbor::DecodeError> {
                             decoder.check_static_size(0)?;
@@ -146,8 +146,8 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
             quote! {
                 impl ::sbor::Decode for #ident {
                     #[inline]
-                    fn check_static_type_id(decoder: &mut ::sbor::Decoder) -> Result<(), ::sbor::DecodeError> {
-                        decoder.check_static_type_id(::sbor::type_id::TYPE_ENUM)
+                    fn check_type_id(decoder: &mut ::sbor::Decoder) -> Result<(), ::sbor::DecodeError> {
+                        decoder.check_type_id(::sbor::type_id::TYPE_ENUM)
                     }
                     #[inline]
                     fn decode_value(decoder: &mut ::sbor::Decoder) -> Result<Self, ::sbor::DecodeError> {
@@ -195,8 +195,8 @@ mod tests {
             quote! {
                 impl ::sbor::Decode for Test {
                     #[inline]
-                    fn check_static_type_id(decoder: &mut ::sbor::Decoder) -> Result<(), ::sbor::DecodeError> {
-                        decoder.check_static_type_id(::sbor::type_id::TYPE_STRUCT)
+                    fn check_type_id(decoder: &mut ::sbor::Decoder) -> Result<(), ::sbor::DecodeError> {
+                        decoder.check_type_id(::sbor::type_id::TYPE_STRUCT)
                     }
                     fn decode_value(decoder: &mut ::sbor::Decoder) -> Result<Self, ::sbor::DecodeError> {
                         use ::sbor::{self, Decode};
@@ -220,8 +220,8 @@ mod tests {
             quote! {
                 impl ::sbor::Decode for Test {
                     #[inline]
-                    fn check_static_type_id(decoder: &mut ::sbor::Decoder) -> Result<(), ::sbor::DecodeError> {
-                        decoder.check_static_type_id(::sbor::type_id::TYPE_ENUM)
+                    fn check_type_id(decoder: &mut ::sbor::Decoder) -> Result<(), ::sbor::DecodeError> {
+                        decoder.check_type_id(::sbor::type_id::TYPE_ENUM)
                     }
                     #[inline]
                     fn decode_value(decoder: &mut ::sbor::Decoder) -> Result<Self, ::sbor::DecodeError> {

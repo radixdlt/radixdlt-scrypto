@@ -14,7 +14,7 @@ macro_rules! scrypto_type {
 
         impl Encode for $t {
             #[inline]
-            fn encode_static_type_id(&self, encoder: &mut Encoder) {
+            fn encode_type_id(&self, encoder: &mut Encoder) {
                 encoder.write_type_id(Self::type_id());
             }
             #[inline]
@@ -26,8 +26,8 @@ macro_rules! scrypto_type {
         }
 
         impl Decode for $t {
-            fn check_static_type_id(decoder: &mut Decoder) -> Result<(), DecodeError> {
-                decoder.check_static_type_id(Self::type_id())
+            fn check_type_id(decoder: &mut Decoder) -> Result<(), DecodeError> {
+                decoder.check_type_id(Self::type_id())
             }
             fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
                 let len = decoder.read_dynamic_size()?;

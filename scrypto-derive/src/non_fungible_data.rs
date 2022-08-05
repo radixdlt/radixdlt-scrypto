@@ -60,11 +60,11 @@ pub fn handle_non_fungible_data(input: TokenStream) -> Result<TokenStream> {
                         fn decode(immutable_data: &[u8], mutable_data: &[u8]) -> Result<Self, ::sbor::DecodeError> {
                             use ::sbor::{type_id::*, *};
                             let mut decoder_nm = Decoder::new(immutable_data, true);
-                            decoder_nm.check_static_type_id(TYPE_STRUCT)?;
+                            decoder_nm.check_type_id(TYPE_STRUCT)?;
                             decoder_nm.check_static_size(#im_n)?;
 
                             let mut decoder_m = Decoder::new(mutable_data, true);
-                            decoder_m.check_static_type_id(TYPE_STRUCT)?;
+                            decoder_m.check_type_id(TYPE_STRUCT)?;
                             decoder_m.check_static_size(#m_n)?;
 
                             let decoded = Self {
@@ -186,10 +186,10 @@ mod tests {
                     fn decode(immutable_data: &[u8], mutable_data: &[u8]) -> Result<Self, ::sbor::DecodeError> {
                         use ::sbor::{type_id::*, *};
                         let mut decoder_nm = Decoder::new(immutable_data, true);
-                        decoder_nm.check_static_type_id(TYPE_STRUCT)?;
+                        decoder_nm.check_type_id(TYPE_STRUCT)?;
                         decoder_nm.check_static_size(1)?;
                         let mut decoder_m = Decoder::new(mutable_data, true);
-                        decoder_m.check_static_type_id(TYPE_STRUCT)?;
+                        decoder_m.check_type_id(TYPE_STRUCT)?;
                         decoder_m.check_static_size(1)?;
                         let decoded = Self {
                             field_1: <u32>::decode(&mut decoder_nm)?,
