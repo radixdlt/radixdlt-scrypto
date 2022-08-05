@@ -6,7 +6,7 @@ use sbor::{DecodeError, Value};
 use scrypto::engine::types::*;
 use transaction::errors::*;
 
-use crate::fee::CostUnitCounterError;
+use crate::fee::FeeReserveError;
 use crate::model::*;
 use crate::wasm::InvokeError;
 
@@ -133,7 +133,7 @@ pub enum RuntimeError {
 
     NotSupported,
 
-    CostingError(CostUnitCounterError),
+    CostingError(FeeReserveError),
 
     MaxCallDepthLimitReached,
 

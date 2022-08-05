@@ -49,7 +49,7 @@ pub const ENV_DISABLE_MANIFEST_OUTPUT: &'static str = "DISABLE_MANIFEST_OUTPUT";
 use clap::{Parser, Subcommand};
 use radix_engine::constants::*;
 use radix_engine::model::*;
-use radix_engine::transaction::ExecutionParameters;
+use radix_engine::transaction::ExecutionConfig;
 use radix_engine::transaction::TransactionExecutor;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::transaction::TransactionStatus;
@@ -176,7 +176,7 @@ pub fn handle_manifest<O: std::io::Write>(
 
             let receipt = executor.execute_and_commit(
                 &transaction,
-                &ExecutionParameters {
+                &ExecutionConfig {
                     cost_unit_price: DEFAULT_COST_UNIT_PRICE.parse().unwrap(),
                     max_call_depth: DEFAULT_MAX_CALL_DEPTH,
                     system_loan: DEFAULT_SYSTEM_LOAN,

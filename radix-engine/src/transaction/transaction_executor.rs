@@ -12,13 +12,13 @@ use transaction::validation::{IdAllocator, IdSpace};
 use crate::constants::{DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN};
 use crate::engine::Track;
 use crate::engine::*;
-use crate::fee::{CostUnitCounter, FeeTable, SystemLoanCostUnitCounter};
+use crate::fee::{FeeReserve, FeeTable, SystemLoanFeeReserve};
 use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
 use crate::model::*;
 use crate::transaction::*;
 use crate::wasm::*;
 
-pub struct ExecutionParameters {
+pub struct ExecutionConfig {
     pub cost_unit_price: Decimal,
     pub max_call_depth: usize,
     pub system_loan: u32,
@@ -26,7 +26,7 @@ pub struct ExecutionParameters {
     pub trace: bool,
 }
 
-impl Default for ExecutionParameters {
+impl Default for ExecutionConfig {
     fn default() -> Self {
         Self {
             cost_unit_price: DEFAULT_COST_UNIT_PRICE.parse().unwrap(),
@@ -73,7 +73,7 @@ where
     pub fn execute_and_commit<T: ExecutableTransaction>(
         &mut self,
         transaction: &T,
-        params: &ExecutionParameters,
+        params: &ExecutionConfig,
     ) -> TransactionReceipt {
         let receipt = self.execute(transaction, params);
         receipt.state_updates.commit(self.substate_store);
@@ -83,23 +83,23 @@ where
     pub fn execute<T: ExecutableTransaction>(
         &mut self,
         transaction: &T,
-        params: &ExecutionParameters,
+        params: &ExecutionConfig,
     ) -> TransactionReceipt {
-        let cost_unit_counter = SystemLoanCostUnitCounter::new(
+        let fee_reserve = SystemLoanFeeReserve::new(
             transaction.cost_unit_limit(),
             transaction.tip_percentage(),
             params.cost_unit_price,
             params.system_loan,
         );
 
-        self.execute_with_cost_unit_counter(transaction, params, cost_unit_counter)
+        self.execute_with_fee_reserve(transaction, params, fee_reserve)
     }
 
-    pub fn execute_with_cost_unit_counter<T: ExecutableTransaction, C: CostUnitCounter>(
+    pub fn execute_with_fee_reserve<T: ExecutableTransaction, C: FeeReserve>(
         &mut self,
         transaction: &T,
-        params: &ExecutionParameters,
-        mut cost_unit_counter: C,
+        params: &ExecutionConfig,
+        mut fee_reserve: C,
     ) -> TransactionReceipt {
         #[cfg(not(feature = "alloc"))]
         let now = std::time::Instant::now();
@@ -124,20 +124,20 @@ where
 
         // 2. Apply pre-execution costing
         let fee_table = FeeTable::new();
-        cost_unit_counter
+        fee_reserve
             .consume(
                 fee_table.tx_decoding_per_byte() * transaction.transaction_payload_size() as u32,
                 "tx_decoding",
             )
             .expect("System loan should cover this");
-        cost_unit_counter
+        fee_reserve
             .consume(
                 fee_table.tx_manifest_verification_per_byte()
                     * transaction.transaction_payload_size() as u32,
                 "tx_manifest_verification",
             )
             .expect("System loan should cover this");
-        cost_unit_counter
+        fee_reserve
             .consume(
                 fee_table.tx_signature_verification_per_sig()
                     * transaction.signer_public_keys().len() as u32,
@@ -156,7 +156,7 @@ where
             &mut track,
             self.wasm_engine,
             self.wasm_instrumenter,
-            &mut cost_unit_counter,
+            &mut fee_reserve,
             &fee_table,
         );
         let result = root_frame
@@ -170,7 +170,7 @@ where
             .map(|o| scrypto_decode::<Vec<Vec<u8>>>(&o.raw).unwrap());
 
         // 4. Settle transaction fee
-        let fee_summary = cost_unit_counter.finalize();
+        let fee_summary = fee_reserve.finalize();
         #[cfg(not(feature = "alloc"))]
         if params.trace {
             println!("{:-^80}", "Cost Analysis");

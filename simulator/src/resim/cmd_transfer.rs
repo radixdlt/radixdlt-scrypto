@@ -17,6 +17,10 @@ pub struct Transfer {
     /// The recipient component address.
     recipient: ComponentAddress,
 
+    /// The proofs to add to the auth zone
+    #[clap(short, long, multiple = true)]
+    proofs: Option<Vec<String>>,
+
     /// Output a transaction manifest without execution
     #[clap(short, long)]
     manifest: Option<PathBuf>,
@@ -32,13 +36,22 @@ pub struct Transfer {
 
 impl Transfer {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
-        let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        let default_account = get_default_account()?;
+        let proofs = self.proofs.clone().unwrap_or_default();
+
+        let mut manifest_builder = &mut ManifestBuilder::new(Network::LocalSimulator);
+        for resource_specifier in proofs {
+            manifest_builder = manifest_builder
+                .create_proof_from_account_by_resource_specifier(
+                    resource_specifier,
+                    default_account,
+                )
+                .map_err(Error::FailedToBuildArgs)?;
+        }
+
+        let manifest = manifest_builder
             .lock_fee(10.into(), SYSTEM_COMPONENT)
-            .withdraw_from_account_by_amount(
-                self.amount,
-                self.resource_address,
-                get_default_account()?,
-            )
+            .withdraw_from_account_by_amount(self.amount, self.resource_address, default_account)
             .call_method_with_all_resources(self.recipient, "deposit_batch")
             .build();
         handle_manifest(

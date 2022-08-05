@@ -67,6 +67,9 @@ pub enum BuildArgsError {
 
     /// Failure when parsing an argument.
     FailedToParse(usize, Type, String),
+
+    /// Failed to interpret this string as a resource specifier
+    InvalidResourceSpecifier(String),
 }
 
 /// Represents an error when building a transaction.

@@ -31,11 +31,11 @@ pub struct CallFrame<
     's, // Substate store lifetime
     W,  // WASM engine type
     I,  // WASM instance type
-    C,  // Cost unit counter type
+    C,  // Fee reserve type
 > where
     W: WasmEngine<I>,
     I: WasmInstance,
-    C: CostUnitCounter,
+    C: FeeReserve,
 {
     /// The transaction hash
     transaction_hash: Hash,
@@ -53,8 +53,8 @@ pub struct CallFrame<
     /// Wasm Instrumenter
     wasm_instrumenter: &'g mut WasmInstrumenter,
 
-    /// Remaining cost unit counter
-    cost_unit_counter: &'g mut C,
+    /// Fee reserve
+    fee_reserve: &'g mut C,
     /// Fee table
     fee_table: &'g FeeTable,
 
@@ -767,7 +767,7 @@ impl<'p, 'g, 's, W, I, C> CallFrame<'p, 'g, 's, W, I, C>
 where
     W: WasmEngine<I>,
     I: WasmInstance,
-    C: CostUnitCounter,
+    C: FeeReserve,
 {
     pub fn new_root(
         verbose: bool,
@@ -779,7 +779,7 @@ where
         track: &'g mut Track<'s>,
         wasm_engine: &'g mut W,
         wasm_instrumenter: &'g mut WasmInstrumenter,
-        cost_unit_counter: &'g mut C,
+        fee_reserve: &'g mut C,
         fee_table: &'g FeeTable,
     ) -> Self {
         // TODO: Cleanup initialization of authzone
@@ -820,7 +820,7 @@ where
             REActor::Native,
             wasm_engine,
             wasm_instrumenter,
-            cost_unit_counter,
+            fee_reserve,
             fee_table,
             Some(RefCell::new(AuthZone::new_with_proofs(
                 initial_auth_zone_proofs,
@@ -842,7 +842,7 @@ where
         actor: REActor,
         wasm_engine: &'g mut W,
         wasm_instrumenter: &'g mut WasmInstrumenter,
-        cost_unit_counter: &'g mut C,
+        fee_reserve: &'g mut C,
         fee_table: &'g FeeTable,
         auth_zone: Option<RefCell<AuthZone>>,
         owned_heap_nodes: HashMap<RENodeId, HeapRootRENode>,
@@ -860,7 +860,7 @@ where
             actor,
             wasm_engine,
             wasm_instrumenter,
-            cost_unit_counter,
+            fee_reserve,
             fee_table,
             owned_heap_nodes,
             node_refs,
@@ -906,33 +906,7 @@ where
         fn_ident: &str,
         input: ScryptoValue,
     ) -> Result<(ScryptoValue, HashMap<RENodeId, HeapRootRENode>), RuntimeError> {
-        trace!(
-            self,
-            Level::Debug,
-            "Run started! Depth: {}, Remaining cost units: {}",
-            self.depth,
-            self.cost_unit_counter.balance()
-        );
-
-        match &execution_entity {
-            ExecutionEntity::Function(type_name) => {
-                self.cost_unit_counter
-                    .consume(
-                        self.fee_table
-                            .run_function_cost(&type_name, fn_ident, &input),
-                        "run_function",
-                    )
-                    .map_err(RuntimeError::CostingError)?;
-            }
-            ExecutionEntity::Method(receiver, _) => {
-                self.cost_unit_counter
-                    .consume(
-                        self.fee_table.run_method_cost(&receiver, fn_ident, &input),
-                        "run_method",
-                    )
-                    .map_err(RuntimeError::CostingError)?;
-            }
-        }
+        trace!(self, Level::Debug, "Run started! Depth: {}", self.depth);
 
         let output = {
             let rtn = match execution_entity {
@@ -1138,12 +1112,7 @@ where
         }
         self.drop_owned_values()?;
 
-        trace!(
-            self,
-            Level::Debug,
-            "Run finished! Remaining cost units: {}",
-            self.cost_unit_counter().balance()
-        );
+        trace!(self, Level::Debug, "Run finished!");
 
         Ok((output, taken_values))
     }
@@ -1293,7 +1262,7 @@ impl<'p, 'g, 's, W, I, C> SystemApi<'p, 's, W, I, C> for CallFrame<'p, 'g, 's, W
 where
     W: WasmEngine<I>,
     I: WasmInstance,
-    C: CostUnitCounter,
+    C: FeeReserve,
 {
     fn invoke_function(
         &mut self,
@@ -1313,7 +1282,7 @@ where
             return Err(RuntimeError::MaxCallDepthLimitReached);
         }
 
-        self.cost_unit_counter
+        self.fee_reserve
             .consume(
                 self.fee_table
                     .system_api_cost(SystemApiCostingEntry::InvokeFunction {
@@ -1321,6 +1290,13 @@ where
                         input: &input,
                     }),
                 "invoke_function",
+            )
+            .map_err(RuntimeError::CostingError)?;
+        self.fee_reserve
+            .consume(
+                self.fee_table
+                    .run_function_cost(&type_name, fn_ident.as_str(), &input),
+                "run_function",
             )
             .map_err(RuntimeError::CostingError)?;
 
@@ -1392,7 +1368,7 @@ where
             }
         };
 
-        // Move this into transaction processor
+        // Move this into higher layer, e.g. transaction processor
         let mut next_frame_node_refs = HashMap::new();
         if self.depth == 0 {
             let mut component_addresses = HashSet::new();
@@ -1452,7 +1428,7 @@ where
                 actor,
                 self.wasm_engine,
                 self.wasm_instrumenter,
-                self.cost_unit_counter,
+                self.fee_reserve,
                 self.fee_table,
                 match type_name {
                     TypeName::TransactionProcessor | TypeName::Blueprint(_, _) => {
@@ -1513,7 +1489,7 @@ where
             return Err(RuntimeError::MaxCallDepthLimitReached);
         }
 
-        self.cost_unit_counter
+        self.fee_reserve
             .consume(
                 self.fee_table
                     .system_api_cost(SystemApiCostingEntry::InvokeMethod {
@@ -1521,6 +1497,14 @@ where
                         input: &input,
                     }),
                 "invoke_method",
+            )
+            .map_err(RuntimeError::CostingError)?;
+
+        self.fee_reserve
+            .consume(
+                self.fee_table
+                    .run_method_cost(&receiver, fn_ident.as_str(), &input),
+                "run_method",
             )
             .map_err(RuntimeError::CostingError)?;
 
@@ -2084,7 +2068,7 @@ where
                 actor,
                 self.wasm_engine,
                 self.wasm_instrumenter,
-                self.cost_unit_counter,
+                self.fee_reserve,
                 self.fee_table,
                 match receiver {
                     Receiver::Component(_) => Some(RefCell::new(AuthZone::new())),
@@ -2130,12 +2114,9 @@ where
         Ok(result)
     }
 
-    fn borrow_node(
-        &mut self,
-        node_id: &RENodeId,
-    ) -> Result<RENodeRef<'_, 's>, CostUnitCounterError> {
+    fn borrow_node(&mut self, node_id: &RENodeId) -> Result<RENodeRef<'_, 's>, FeeReserveError> {
         trace!(self, Level::Debug, "Borrowing value: {:?}", node_id);
-        self.cost_unit_counter.consume(
+        self.fee_reserve.consume(
             self.fee_table.system_api_cost({
                 match node_id {
                     RENodeId::Bucket(_) => SystemApiCostingEntry::BorrowLocal,
@@ -2187,7 +2168,7 @@ where
     fn substate_borrow_mut(
         &mut self,
         substate_id: &SubstateId,
-    ) -> Result<NativeSubstateRef, CostUnitCounterError> {
+    ) -> Result<NativeSubstateRef, FeeReserveError> {
         trace!(
             self,
             Level::Debug,
@@ -2196,7 +2177,7 @@ where
         );
 
         // Costing
-        self.cost_unit_counter.consume(
+        self.fee_reserve.consume(
             self.fee_table.system_api_cost({
                 match substate_id {
                     SubstateId::Bucket(_) => SystemApiCostingEntry::BorrowLocal,
@@ -2277,13 +2258,10 @@ where
         ))
     }
 
-    fn substate_return_mut(
-        &mut self,
-        val_ref: NativeSubstateRef,
-    ) -> Result<(), CostUnitCounterError> {
+    fn substate_return_mut(&mut self, val_ref: NativeSubstateRef) -> Result<(), FeeReserveError> {
         trace!(self, Level::Debug, "Returning value");
 
-        self.cost_unit_counter.consume(
+        self.fee_reserve.consume(
             self.fee_table.system_api_cost({
                 match &val_ref {
                     NativeSubstateRef::Stack(..) => SystemApiCostingEntry::ReturnLocal,
@@ -2329,7 +2307,7 @@ where
         Ok(())
     }
 
-    fn node_drop(&mut self, node_id: &RENodeId) -> Result<HeapRootRENode, CostUnitCounterError> {
+    fn node_drop(&mut self, node_id: &RENodeId) -> Result<HeapRootRENode, FeeReserveError> {
         trace!(self, Level::Debug, "Dropping value: {:?}", node_id);
 
         // TODO: costing
@@ -2343,7 +2321,7 @@ where
         trace!(self, Level::Debug, "Creating value");
 
         // Costing
-        self.cost_unit_counter
+        self.fee_reserve
             .consume(
                 self.fee_table
                     .system_api_cost(SystemApiCostingEntry::Create {
@@ -2409,7 +2387,7 @@ where
         trace!(self, Level::Debug, "Globalizing value: {:?}", node_id);
 
         // Costing
-        self.cost_unit_counter
+        self.fee_reserve
             .consume(
                 self.fee_table
                     .system_api_cost(SystemApiCostingEntry::Globalize {
@@ -2502,7 +2480,7 @@ where
         trace!(self, Level::Debug, "Reading value data: {:?}", substate_id);
 
         // Costing
-        self.cost_unit_counter
+        self.fee_reserve
             .consume(
                 self.fee_table.system_api_cost(SystemApiCostingEntry::Read {
                     size: 0, // TODO: get size of the value
@@ -2566,7 +2544,7 @@ where
         trace!(self, Level::Debug, "Writing value data: {:?}", substate_id);
 
         // Costing
-        self.cost_unit_counter
+        self.fee_reserve
             .consume(
                 self.fee_table
                     .system_api_cost(SystemApiCostingEntry::Write {
@@ -2617,8 +2595,8 @@ where
         Ok(())
     }
 
-    fn transaction_hash(&mut self) -> Result<Hash, CostUnitCounterError> {
-        self.cost_unit_counter.consume(
+    fn transaction_hash(&mut self) -> Result<Hash, FeeReserveError> {
+        self.fee_reserve.consume(
             self.fee_table
                 .system_api_cost(SystemApiCostingEntry::ReadTransactionHash),
             "read_transaction_hash",
@@ -2626,8 +2604,8 @@ where
         Ok(self.transaction_hash)
     }
 
-    fn generate_uuid(&mut self) -> Result<u128, CostUnitCounterError> {
-        self.cost_unit_counter.consume(
+    fn generate_uuid(&mut self) -> Result<u128, FeeReserveError> {
+        self.fee_reserve.consume(
             self.fee_table
                 .system_api_cost(SystemApiCostingEntry::GenerateUuid),
             "generate_uuid",
@@ -2635,8 +2613,8 @@ where
         Ok(self.new_uuid())
     }
 
-    fn emit_log(&mut self, level: Level, message: String) -> Result<(), CostUnitCounterError> {
-        self.cost_unit_counter.consume(
+    fn emit_log(&mut self, level: Level, message: String) -> Result<(), FeeReserveError> {
+        self.fee_reserve.consume(
             self.fee_table
                 .system_api_cost(SystemApiCostingEntry::EmitLog {
                     size: message.len() as u32,
@@ -2679,8 +2657,8 @@ where
         Ok(is_authorized)
     }
 
-    fn cost_unit_counter(&mut self) -> &mut C {
-        self.cost_unit_counter
+    fn fee_reserve(&mut self) -> &mut C {
+        self.fee_reserve
     }
 
     fn fee_table(&self) -> &FeeTable {

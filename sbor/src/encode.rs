@@ -193,12 +193,12 @@ impl<T: Encode + TypeId> Encode for Option<T> {
     #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
         match self {
-            None => {
-                encoder.write_u8(OPTION_TYPE_NONE);
-            }
             Some(v) => {
-                encoder.write_u8(OPTION_TYPE_SOME);
+                encoder.write_u8(OPTION_VARIANT_SOME);
                 v.encode(encoder);
+            }
+            None => {
+                encoder.write_u8(OPTION_VARIANT_NONE);
             }
         }
     }
@@ -277,11 +277,11 @@ impl<T: Encode, E: Encode> Encode for Result<T, E> {
     fn encode_value(&self, encoder: &mut Encoder) {
         match self {
             Ok(o) => {
-                encoder.write_u8(RESULT_TYPE_OK);
+                encoder.write_u8(RESULT_VARIANT_OK);
                 o.encode(encoder);
             }
             Err(e) => {
-                encoder.write_u8(RESULT_TYPE_ERR);
+                encoder.write_u8(RESULT_VARIANT_ERR);
                 e.encode(encoder);
             }
         }
@@ -413,10 +413,12 @@ mod tests {
         "hello".encode(enc);
 
         Some(1u32).encode(enc);
-        [1u32, 2u32, 3u32].encode(enc);
-        (1u32, 2u32).encode(enc);
+        Option::<u32>::None.encode(enc);
         Result::<u32, String>::Ok(1u32).encode(enc);
         Result::<u32, String>::Err("hello".to_owned()).encode(enc);
+
+        [1u32, 2u32, 3u32].encode(enc);
+        (1u32, 2u32).encode(enc);
 
         vec![1u32, 2u32, 3u32].encode(enc);
         let mut set = BTreeSet::<u8>::new();
@@ -450,12 +452,13 @@ mod tests {
                 10, 1, 0, 0, 0, 0, 0, 0, 0, // u64
                 11, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // u128
                 12, 5, 0, 0, 0, 104, 101, 108, 108, 111, // string
-                32, 1, 9, 1, 0, 0, 0, // option
-                34, 9, 3, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // array
-                35, 2, 0, 0, 0, 9, 1, 0, 0, 0, 9, 2, 0, 0, 0, // tuple
-                36, 0, 9, 1, 0, 0, 0, // result
-                36, 1, 12, 5, 0, 0, 0, 104, 101, 108, 108, 111, // result
-                48, 9, 3, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // vec
+                18, 0, 9, 1, 0, 0, 0, // option
+                18, 1, // option
+                19, 0, 9, 1, 0, 0, 0, // result
+                19, 1, 12, 5, 0, 0, 0, 104, 101, 108, 108, 111, // result
+                32, 9, 3, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // array
+                33, 2, 0, 0, 0, 9, 1, 0, 0, 0, 9, 2, 0, 0, 0, // tuple
+                48, 9, 3, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // list
                 49, 7, 2, 0, 0, 0, 1, 2, // set
                 50, 7, 7, 2, 0, 0, 0, 1, 2, 3, 4 // map
             ],
@@ -484,12 +487,13 @@ mod tests {
                 1, 0, 0, 0, 0, 0, 0, 0, // u64
                 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // u128
                 5, 0, 0, 0, 104, 101, 108, 108, 111, // string
-                1, 1, 0, 0, 0, // option
-                3, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // array
-                2, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, // tuple
+                0, 1, 0, 0, 0, // option
+                1, // option
                 0, 1, 0, 0, 0, // result
                 1, 5, 0, 0, 0, 104, 101, 108, 108, 111, // result
-                3, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // vec
+                3, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // array
+                2, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, // tuple
+                3, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // list
                 2, 0, 0, 0, 1, 2, // set
                 2, 0, 0, 0, 1, 2, 3, 4 // map
             ],

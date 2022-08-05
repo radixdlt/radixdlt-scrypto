@@ -154,7 +154,7 @@ impl Type {
             Type::TreeSet {
                 element: type_element,
             } => {
-                if let Value::TreeSet {
+                if let Value::Set {
                     element_type_id: _,
                     elements,
                 } = value
@@ -168,7 +168,7 @@ impl Type {
                 key: type_key,
                 value: type_value,
             } => {
-                if let Value::TreeMap {
+                if let Value::Map {
                     key_type_id: _,
                     value_type_id: _,
                     elements,
@@ -188,7 +188,7 @@ impl Type {
             Type::Vec {
                 element: type_element,
             } => {
-                if let Value::Vec {
+                if let Value::List {
                     element_type_id: _,
                     elements,
                 } = value
@@ -201,7 +201,7 @@ impl Type {
             Type::HashSet {
                 element: type_element,
             } => {
-                if let Value::HashSet {
+                if let Value::Set {
                     element_type_id: _,
                     elements,
                 } = value
@@ -215,7 +215,7 @@ impl Type {
                 key: type_key,
                 value: type_value,
             } => {
-                if let Value::HashMap {
+                if let Value::Map {
                     key_type_id: _,
                     value_type_id: _,
                     elements,
