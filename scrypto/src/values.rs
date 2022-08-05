@@ -512,7 +512,7 @@ impl ScryptoValueFormatter {
                 Err(x) => format!("Err({})", Self::format_value(x, bucket_ids, proof_ids)),
             },
             // collections
-            Value::Vec {
+            Value::List {
                 element_type_id,
                 elements,
             } => {
@@ -533,38 +533,20 @@ impl ScryptoValueFormatter {
                     )
                 }
             }
-            Value::TreeSet {
+            Value::Set {
                 element_type_id,
                 elements,
             } => format!(
-                "TreeSet<{}>({})",
+                "Set<{}>({})",
                 Self::format_type_id(*element_type_id),
                 Self::format_elements(elements, bucket_ids, proof_ids)
             ),
-            Value::HashSet {
-                element_type_id,
-                elements,
-            } => format!(
-                "HashSet<{}>({})",
-                Self::format_type_id(*element_type_id),
-                Self::format_elements(elements, bucket_ids, proof_ids)
-            ),
-            Value::TreeMap {
+            Value::Map {
                 key_type_id,
                 value_type_id,
                 elements,
             } => format!(
-                "TreeMap<{}, {}>({})",
-                Self::format_type_id(*key_type_id),
-                Self::format_type_id(*value_type_id),
-                Self::format_elements(elements, bucket_ids, proof_ids)
-            ),
-            Value::HashMap {
-                key_type_id,
-                value_type_id,
-                elements,
-            } => format!(
-                "HashMap<{}, {}>({})",
+                "Map<{}, {}>({})",
                 Self::format_type_id(*key_type_id),
                 Self::format_type_id(*value_type_id),
                 Self::format_elements(elements, bucket_ids, proof_ids)
@@ -600,15 +582,14 @@ impl ScryptoValueFormatter {
             TYPE_STRUCT => "Struct",
             TYPE_ENUM => "Enum",
             TYPE_OPTION => "Option",
+            TYPE_RESULT => "Result",
+            // composite
             TYPE_ARRAY => "Array",
             TYPE_TUPLE => "Tuple",
-            TYPE_RESULT => "Result",
             // collections
-            TYPE_VEC => "Vec",
-            TYPE_TREE_SET => "TreeSet",
-            TYPE_TREE_MAP => "TreeMap",
-            TYPE_HASH_SET => "HashSet",
-            TYPE_HASH_MAP => "HashMap",
+            TYPE_LIST => "List",
+            TYPE_SET => "Set",
+            TYPE_MAP => "Map",
             //
             _ => panic!("Illegal state"),
         }
