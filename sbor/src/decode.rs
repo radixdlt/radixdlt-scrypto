@@ -37,11 +37,11 @@ pub enum DecodeError {
 /// A data structure that can be decoded from a byte array using SBOR.
 pub trait Decode: Sized {
     fn decode(decoder: &mut Decoder) -> Result<Self, DecodeError> {
-        Self::decode_type(decoder)?;
+        Self::check_static_type_id(decoder)?;
         Self::decode_value(decoder)
     }
 
-    fn decode_type(decoder: &mut Decoder) -> Result<(), DecodeError>;
+    fn check_static_type_id(decoder: &mut Decoder) -> Result<(), DecodeError>;
 
     fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError>;
 }
@@ -148,7 +148,7 @@ impl<'de> Decoder<'de> {
 
 impl Decode for () {
     #[inline]
-    fn decode_type(decoder: &mut Decoder) -> Result<(), DecodeError> {
+    fn check_static_type_id(decoder: &mut Decoder) -> Result<(), DecodeError> {
         decoder.check_type(Self::type_id())
     }
     fn decode_value(_decoder: &mut Decoder) -> Result<Self, DecodeError> {
@@ -158,7 +158,7 @@ impl Decode for () {
 
 impl Decode for bool {
     #[inline]
-    fn decode_type(decoder: &mut Decoder) -> Result<(), DecodeError> {
+    fn check_static_type_id(decoder: &mut Decoder) -> Result<(), DecodeError> {
         decoder.check_type(Self::type_id())
     }
     fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
@@ -173,7 +173,7 @@ impl Decode for bool {
 
 impl Decode for i8 {
     #[inline]
-    fn decode_type(decoder: &mut Decoder) -> Result<(), DecodeError> {
+    fn check_static_type_id(decoder: &mut Decoder) -> Result<(), DecodeError> {
         decoder.check_type(Self::type_id())
     }
     fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
@@ -184,7 +184,7 @@ impl Decode for i8 {
 
 impl Decode for u8 {
     #[inline]
-    fn decode_type(decoder: &mut Decoder) -> Result<(), DecodeError> {
+    fn check_static_type_id(decoder: &mut Decoder) -> Result<(), DecodeError> {
         decoder.check_type(Self::type_id())
     }
     fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
@@ -197,7 +197,7 @@ macro_rules! decode_int {
     ($type:ident, $type_id:ident, $n:expr) => {
         impl Decode for $type {
             #[inline]
-            fn decode_type(decoder: &mut Decoder) -> Result<(), DecodeError> {
+            fn check_static_type_id(decoder: &mut Decoder) -> Result<(), DecodeError> {
                 decoder.check_type(Self::type_id())
             }
             fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
@@ -221,7 +221,7 @@ decode_int!(u128, TYPE_U128, 16);
 
 impl Decode for isize {
     #[inline]
-    fn decode_type(decoder: &mut Decoder) -> Result<(), DecodeError> {
+    fn check_static_type_id(decoder: &mut Decoder) -> Result<(), DecodeError> {
         decoder.check_type(Self::type_id())
     }
     fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
@@ -231,7 +231,7 @@ impl Decode for isize {
 
 impl Decode for usize {
     #[inline]
-    fn decode_type(decoder: &mut Decoder) -> Result<(), DecodeError> {
+    fn check_static_type_id(decoder: &mut Decoder) -> Result<(), DecodeError> {
         decoder.check_type(Self::type_id())
     }
     fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
@@ -241,7 +241,7 @@ impl Decode for usize {
 
 impl Decode for String {
     #[inline]
-    fn decode_type(decoder: &mut Decoder) -> Result<(), DecodeError> {
+    fn check_static_type_id(decoder: &mut Decoder) -> Result<(), DecodeError> {
         decoder.check_type(Self::type_id())
     }
     fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
@@ -253,7 +253,7 @@ impl Decode for String {
 
 impl<T: Decode> Decode for Option<T> {
     #[inline]
-    fn decode_type(decoder: &mut Decoder) -> Result<(), DecodeError> {
+    fn check_static_type_id(decoder: &mut Decoder) -> Result<(), DecodeError> {
         decoder.check_type(Self::type_id())
     }
     fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
@@ -269,7 +269,7 @@ impl<T: Decode> Decode for Option<T> {
 
 impl<T: Decode + TypeId> Decode for Box<T> {
     #[inline]
-    fn decode_type(decoder: &mut Decoder) -> Result<(), DecodeError> {
+    fn check_static_type_id(decoder: &mut Decoder) -> Result<(), DecodeError> {
         decoder.check_type(T::type_id())
     }
     fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
@@ -280,7 +280,7 @@ impl<T: Decode + TypeId> Decode for Box<T> {
 
 impl<T: Decode + TypeId> Decode for Rc<T> {
     #[inline]
-    fn decode_type(decoder: &mut Decoder) -> Result<(), DecodeError> {
+    fn check_static_type_id(decoder: &mut Decoder) -> Result<(), DecodeError> {
         decoder.check_type(T::type_id())
     }
     fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
@@ -291,7 +291,7 @@ impl<T: Decode + TypeId> Decode for Rc<T> {
 
 impl<T: Decode + TypeId> Decode for RefCell<T> {
     #[inline]
-    fn decode_type(decoder: &mut Decoder) -> Result<(), DecodeError> {
+    fn check_static_type_id(decoder: &mut Decoder) -> Result<(), DecodeError> {
         decoder.check_type(T::type_id())
     }
     fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
@@ -302,7 +302,7 @@ impl<T: Decode + TypeId> Decode for RefCell<T> {
 
 impl<T: Decode + TypeId, const N: usize> Decode for [T; N] {
     #[inline]
-    fn decode_type(decoder: &mut Decoder) -> Result<(), DecodeError> {
+    fn check_static_type_id(decoder: &mut Decoder) -> Result<(), DecodeError> {
         decoder.check_type(Self::type_id())
     }
     fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
@@ -336,7 +336,7 @@ macro_rules! decode_tuple {
     ($n:tt $($idx:tt $name:ident)+) => {
         impl<$($name: Decode),+> Decode for ($($name,)+) {
             #[inline]
-            fn decode_type(decoder: &mut Decoder) -> Result<(), DecodeError> {
+            fn check_static_type_id(decoder: &mut Decoder) -> Result<(), DecodeError> {
                 decoder.check_type(Self::type_id())
             }
             fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
@@ -364,7 +364,7 @@ decode_tuple! { 10 0 A 1 B 2 C 3 D 4 E 5 F 6 G 7 H 8 I 9 J }
 
 impl<T: Decode + TypeId, E: Decode + TypeId> Decode for Result<T, E> {
     #[inline]
-    fn decode_type(decoder: &mut Decoder) -> Result<(), DecodeError> {
+    fn check_static_type_id(decoder: &mut Decoder) -> Result<(), DecodeError> {
         decoder.check_type(Self::type_id())
     }
     fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
@@ -379,7 +379,7 @@ impl<T: Decode + TypeId, E: Decode + TypeId> Decode for Result<T, E> {
 
 impl<T: Decode + TypeId> Decode for Vec<T> {
     #[inline]
-    fn decode_type(decoder: &mut Decoder) -> Result<(), DecodeError> {
+    fn check_static_type_id(decoder: &mut Decoder) -> Result<(), DecodeError> {
         decoder.check_type(Self::type_id())
     }
     fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
@@ -406,7 +406,7 @@ impl<T: Decode + TypeId> Decode for Vec<T> {
 
 impl<T: Decode + TypeId + Ord> Decode for BTreeSet<T> {
     #[inline]
-    fn decode_type(decoder: &mut Decoder) -> Result<(), DecodeError> {
+    fn check_static_type_id(decoder: &mut Decoder) -> Result<(), DecodeError> {
         decoder.check_type(Self::type_id())
     }
     fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
@@ -428,7 +428,7 @@ impl<T: Decode + TypeId + Ord> Decode for BTreeSet<T> {
 
 impl<K: Decode + TypeId + Ord, V: Decode + TypeId> Decode for BTreeMap<K, V> {
     #[inline]
-    fn decode_type(decoder: &mut Decoder) -> Result<(), DecodeError> {
+    fn check_static_type_id(decoder: &mut Decoder) -> Result<(), DecodeError> {
         decoder.check_type(Self::type_id())
     }
     fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
@@ -453,7 +453,7 @@ impl<K: Decode + TypeId + Ord, V: Decode + TypeId> Decode for BTreeMap<K, V> {
 
 impl<T: Decode + TypeId + Hash + Eq> Decode for HashSet<T> {
     #[inline]
-    fn decode_type(decoder: &mut Decoder) -> Result<(), DecodeError> {
+    fn check_static_type_id(decoder: &mut Decoder) -> Result<(), DecodeError> {
         decoder.check_type(Self::type_id())
     }
     fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
@@ -475,7 +475,7 @@ impl<T: Decode + TypeId + Hash + Eq> Decode for HashSet<T> {
 
 impl<K: Decode + TypeId + Hash + Eq, V: Decode + TypeId> Decode for HashMap<K, V> {
     #[inline]
-    fn decode_type(decoder: &mut Decoder) -> Result<(), DecodeError> {
+    fn check_static_type_id(decoder: &mut Decoder) -> Result<(), DecodeError> {
         decoder.check_type(Self::type_id())
     }
     fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {

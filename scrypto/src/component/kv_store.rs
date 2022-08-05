@@ -134,7 +134,7 @@ impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> Encode for KeyVa
 }
 
 impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> Decode for KeyValueStore<K, V> {
-    fn decode_type(decoder: &mut Decoder) -> Result<(), DecodeError> {
+    fn check_static_type_id(decoder: &mut Decoder) -> Result<(), DecodeError> {
         decoder.check_type(Self::type_id())
     }
 

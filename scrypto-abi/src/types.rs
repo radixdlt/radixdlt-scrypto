@@ -26,7 +26,7 @@ macro_rules! scrypto_type {
         }
 
         impl Decode for $t {
-            fn decode_type(decoder: &mut Decoder) -> Result<(), DecodeError> {
+            fn check_static_type_id(decoder: &mut Decoder) -> Result<(), DecodeError> {
                 decoder.check_type(Self::type_id())
             }
             fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
