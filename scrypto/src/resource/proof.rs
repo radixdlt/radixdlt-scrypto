@@ -192,7 +192,7 @@ impl Proof {
         if self.non_fungible_ids().get(&non_fungible_id).is_some() {
             Ok(())
         } else {
-            Err(ProofValidationError::InvalidNonFungibleId(non_fungible_id))
+            Err(ProofValidationError::NonFungibleIdNotFound)
         }
     }
 
@@ -207,7 +207,7 @@ impl Proof {
         if contains_all_non_fungible_ids {
             Ok(())
         } else {
-            Err(ProofValidationError::NonFungibleIdsNotSubsetOfList)
+            Err(ProofValidationError::NonFungibleIdNotFound)
         }
     }
 
@@ -358,8 +358,7 @@ pub enum ProofValidationError {
     InvalidResourceAddress(ResourceAddress),
     ResourceAddressDoesNotBelongToList,
     DoesNotContainOneNonFungible,
-    InvalidNonFungibleId(NonFungibleId),
-    NonFungibleIdsNotSubsetOfList,
+    NonFungibleIdNotFound,
     InvalidAmount(Decimal),
 }
 
