@@ -87,10 +87,10 @@ where
         let node = match scrypto_node {
             ScryptoRENode::Component(package_address, blueprint_name, state) => {
                 // TODO: Move these two checks into CallFrame/System
-                if !blueprint_name.eq(self.actor.get_blueprint()) {
+                if !blueprint_name.eq(self.actor.blueprint_name()) {
                     return Err(RuntimeError::RENodeCreateInvalidPermission);
                 }
-                if !package_address.eq(self.actor.get_package()) {
+                if !package_address.eq(self.actor.package_address()) {
                     return Err(RuntimeError::RENodeCreateInvalidPermission);
                 }
 
@@ -126,7 +126,7 @@ where
     }
 
     fn handle_node_globalize(&mut self, node_id: RENodeId) -> Result<ScryptoValue, RuntimeError> {
-        self.system_api.node_globalize(&node_id)?;
+        self.system_api.node_globalize(node_id)?;
         Ok(ScryptoValue::unit())
     }
 

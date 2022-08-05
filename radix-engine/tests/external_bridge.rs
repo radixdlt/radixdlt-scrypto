@@ -64,16 +64,25 @@ fn test_external_bridges() {
             "run_tests_with_external_blueprint",
             to_struct!(),
         )
+        .build();
+    let receipt3 = test_runner.execute_manifest(manifest3, vec![]);
+
+    // ASSERT
+    receipt3.expect_success();
+
+    // ACT
+    let manifest4 = ManifestBuilder::new(Network::LocalSimulator)
+        .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_method(
             caller_component_address,
             "run_tests_with_external_component",
             to_struct!(target_component_address),
         )
         .build();
-    let receipt3 = test_runner.execute_manifest(manifest3, vec![]);
+    let receipt4 = test_runner.execute_manifest(manifest4, vec![]);
 
     // ASSERT
-    receipt3.expect_success();
+    receipt4.expect_success();
 }
 
 fn fill_in_package_name_template(

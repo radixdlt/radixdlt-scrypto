@@ -36,7 +36,7 @@ impl Runtime {
     pub fn package_address() -> PackageAddress {
         match Self::actor() {
             ScryptoActor::Blueprint(package_address, _)
-            | ScryptoActor::Component(_, _, package_address, _) => package_address,
+            | ScryptoActor::Component(_, package_address, _) => package_address,
         }
     }
 

@@ -76,7 +76,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     ) -> Option<radix_engine::model::Component> {
         self.execution_stores
             .get_output_store(0)
-            .get_substate(&SubstateId::ComponentInfo(component_address, true))
+            .get_substate(&SubstateId::ComponentInfo(component_address))
             .map(|output| output.substate.into())
     }
 

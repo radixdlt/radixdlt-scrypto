@@ -462,7 +462,7 @@ impl ResourceManager {
                 };
 
                 system_api
-                    .node_globalize(&resource_node_id)
+                    .node_globalize(resource_node_id)
                     .map_err(|e| match e {
                         RuntimeError::CostingError(cost_unit_error) => {
                             ResourceManagerError::CostingError(cost_unit_error)
@@ -489,9 +489,9 @@ impl ResourceManager {
         arg: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, ResourceManagerError> {
-        let node_id = RENodeId::Resource(resource_address);
+        let substate_id = SubstateId::ResourceManager(resource_address);
         let mut ref_mut = system_api
-            .borrow_node_mut(&node_id)
+            .substate_borrow_mut(&substate_id)
             .map_err(ResourceManagerError::CostingError)?;
         let resource_manager = ref_mut.resource_manager();
 
@@ -641,7 +641,7 @@ impl ResourceManager {
         }?;
 
         system_api
-            .return_node_mut(ref_mut)
+            .substate_return_mut(ref_mut)
             .map_err(ResourceManagerError::CostingError)?;
 
         Ok(rtn)

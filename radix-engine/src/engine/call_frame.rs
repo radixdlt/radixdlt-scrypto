@@ -15,6 +15,7 @@ use scrypto::engine::types::*;
 use scrypto::prelude::{ScryptoActor, TypeName};
 use scrypto::resource::AuthZoneClearInput;
 use scrypto::values::*;
+use transaction::model::ExecutableInstruction;
 use transaction::validation::*;
 
 use crate::engine::*;
@@ -58,11 +59,12 @@ pub struct CallFrame<
     fee_table: &'g FeeTable,
 
     id_allocator: &'g mut IdAllocator,
+    actor: REActor,
 
     /// All ref values accessible by this call frame. The value may be located in one of the following:
     /// 1. borrowed values
     /// 2. track
-    node_refs: HashMap<RENodeId, RENodeInfo>,
+    node_refs: HashMap<RENodeId, RENodePointer>,
 
     /// Owned Values
     owned_heap_nodes: HashMap<RENodeId, HeapRootRENode>,
@@ -114,10 +116,7 @@ pub fn insert_non_root_nodes<'s>(track: &mut Track<'s>, values: HashMap<RENodeId
             }
             HeapRENode::Component(component, component_state) => {
                 let component_address = id.into();
-                track.create_uuid_substate(
-                    SubstateId::ComponentInfo(component_address, false),
-                    component,
-                );
+                track.create_uuid_substate(SubstateId::ComponentInfo(component_address), component);
                 track.create_uuid_substate(
                     SubstateId::ComponentState(component_address),
                     component_state,
@@ -140,19 +139,13 @@ pub fn insert_non_root_nodes<'s>(track: &mut Track<'s>, values: HashMap<RENodeId
 }
 
 #[derive(Debug, Clone)]
-pub struct RENodeInfo {
-    visible: bool,
-    pointer: RENodePointer,
-}
-
-#[derive(Debug, Clone)]
 pub enum RENodePointer {
     Heap {
         frame_id: Option<usize>,
         root: RENodeId,
         id: Option<RENodeId>,
     },
-    Store(SubstateId),
+    Store(RENodeId),
 }
 
 impl RENodePointer {
@@ -163,28 +156,17 @@ impl RENodePointer {
                 root: root.clone(),
                 id: Option::Some(child_id),
             },
-            RENodePointer::Store(..) => {
-                let child_address = match child_id {
-                    RENodeId::KeyValueStore(kv_store_id) => {
-                        SubstateId::KeyValueStoreSpace(kv_store_id)
-                    }
-                    RENodeId::Vault(vault_id) => SubstateId::Vault(vault_id),
-                    RENodeId::Component(component_id) => {
-                        SubstateId::ComponentInfo(component_id, false)
-                    }
-                    _ => panic!("Unexpected"),
-                };
-                RENodePointer::Store(child_address)
-            }
+            RENodePointer::Store(..) => RENodePointer::Store(child_id),
         }
     }
 
     fn borrow_native_ref<'p, 's>(
         &self, // TODO: Consider changing this to self
+        substate_id: SubstateId,
         owned_values: &mut HashMap<RENodeId, HeapRootRENode>,
         borrowed_values: &mut Vec<&'p mut HashMap<RENodeId, HeapRootRENode>>,
         track: &mut Track<'s>,
-    ) -> NativeRENodeRef {
+    ) -> NativeSubstateRef {
         match self {
             RENodePointer::Heap { frame_id, root, id } => {
                 let frame = if let Some(frame_id) = frame_id {
@@ -193,11 +175,11 @@ impl RENodePointer {
                     owned_values
                 };
                 let re_value = frame.remove(root).expect("Should exist");
-                NativeRENodeRef::Stack(re_value, frame_id.clone(), root.clone(), id.clone())
+                NativeSubstateRef::Stack(re_value, frame_id.clone(), root.clone(), id.clone())
             }
-            RENodePointer::Store(substate_id) => {
+            RENodePointer::Store(..) => {
                 let value = track.take_substate(substate_id.clone());
-                NativeRENodeRef::Track(substate_id.clone(), value)
+                NativeSubstateRef::Track(substate_id.clone(), value)
             }
         }
     }
@@ -217,7 +199,7 @@ impl RENodePointer {
                 };
                 RENodeRef::Stack(frame.get(root).unwrap(), id.clone())
             }
-            RENodePointer::Store(substate_id) => RENodeRef::Track(track, substate_id.clone()),
+            RENodePointer::Store(node_id) => RENodeRef::Track(track, node_id.clone()),
         }
     }
 
@@ -236,20 +218,20 @@ impl RENodePointer {
                 };
                 RENodeRefMut::Stack(frame.get_mut(root).unwrap(), id.clone())
             }
-            RENodePointer::Store(substate_id) => RENodeRefMut::Track(track, substate_id.clone()),
+            RENodePointer::Store(node_id) => RENodeRefMut::Track(track, node_id.clone()),
         }
     }
 }
 
-pub enum NativeRENodeRef {
+pub enum NativeSubstateRef {
     Stack(HeapRootRENode, Option<usize>, RENodeId, Option<RENodeId>),
     Track(SubstateId, Substate),
 }
 
-impl NativeRENodeRef {
+impl NativeSubstateRef {
     pub fn bucket(&mut self) -> &mut Bucket {
         match self {
-            NativeRENodeRef::Stack(root, _frame_id, _root_id, maybe_child) => {
+            NativeSubstateRef::Stack(root, _frame_id, _root_id, maybe_child) => {
                 match root.get_node_mut(maybe_child.as_ref()) {
                     HeapRENode::Bucket(bucket) => bucket,
                     _ => panic!("Expecting to be a bucket"),
@@ -261,7 +243,7 @@ impl NativeRENodeRef {
 
     pub fn proof(&mut self) -> &mut Proof {
         match self {
-            NativeRENodeRef::Stack(ref mut root, _frame_id, _root_id, maybe_child) => {
+            NativeSubstateRef::Stack(ref mut root, _frame_id, _root_id, maybe_child) => {
                 match root.get_node_mut(maybe_child.as_ref()) {
                     HeapRENode::Proof(proof) => proof,
                     _ => panic!("Expecting to be a proof"),
@@ -273,7 +255,7 @@ impl NativeRENodeRef {
 
     pub fn worktop(&mut self) -> &mut Worktop {
         match self {
-            NativeRENodeRef::Stack(ref mut root, _frame_id, _root_id, maybe_child) => {
+            NativeSubstateRef::Stack(ref mut root, _frame_id, _root_id, maybe_child) => {
                 match root.get_node_mut(maybe_child.as_ref()) {
                     HeapRENode::Worktop(worktop) => worktop,
                     _ => panic!("Expecting to be a worktop"),
@@ -285,23 +267,23 @@ impl NativeRENodeRef {
 
     pub fn vault(&mut self) -> &mut Vault {
         match self {
-            NativeRENodeRef::Stack(root, _frame_id, _root_id, maybe_child) => {
+            NativeSubstateRef::Stack(root, _frame_id, _root_id, maybe_child) => {
                 root.get_node_mut(maybe_child.as_ref()).vault_mut()
             }
-            NativeRENodeRef::Track(_address, value) => value.vault_mut(),
+            NativeSubstateRef::Track(_address, value) => value.vault_mut(),
         }
     }
 
     pub fn system(&mut self) -> &mut System {
         match self {
-            NativeRENodeRef::Track(_address, value) => value.system_mut(),
+            NativeSubstateRef::Track(_address, value) => value.system_mut(),
             _ => panic!("Expecting to be system"),
         }
     }
 
     pub fn component(&mut self) -> &mut Component {
         match self {
-            NativeRENodeRef::Stack(root, _frame_id, _root_id, maybe_child) => {
+            NativeSubstateRef::Stack(root, _frame_id, _root_id, maybe_child) => {
                 root.get_node_mut(maybe_child.as_ref()).component_mut()
             }
             _ => panic!("Expecting to be a component"),
@@ -310,17 +292,17 @@ impl NativeRENodeRef {
 
     pub fn package(&mut self) -> &ValidatedPackage {
         match self {
-            NativeRENodeRef::Track(_address, value) => value.package(),
+            NativeSubstateRef::Track(_address, value) => value.package(),
             _ => panic!("Expecting to be tracked"),
         }
     }
 
     pub fn resource_manager(&mut self) -> &mut ResourceManager {
         match self {
-            NativeRENodeRef::Stack(value, _frame_id, _root_id, maybe_child) => value
+            NativeSubstateRef::Stack(value, _frame_id, _root_id, maybe_child) => value
                 .get_node_mut(maybe_child.as_ref())
                 .resource_manager_mut(),
-            NativeRENodeRef::Track(_address, value) => value.resource_manager_mut(),
+            NativeSubstateRef::Track(_address, value) => value.resource_manager_mut(),
         }
     }
 
@@ -331,7 +313,7 @@ impl NativeRENodeRef {
         track: &mut Track<'s>,
     ) {
         match self {
-            NativeRENodeRef::Stack(owned, frame_id, node_id, ..) => {
+            NativeSubstateRef::Stack(owned, frame_id, node_id, ..) => {
                 let frame = if let Some(frame_id) = frame_id {
                     borrowed_values.get_mut(frame_id).unwrap()
                 } else {
@@ -339,14 +321,16 @@ impl NativeRENodeRef {
                 };
                 frame.insert(node_id, owned);
             }
-            NativeRENodeRef::Track(substate_id, value) => track.write_substate(substate_id, value),
+            NativeSubstateRef::Track(substate_id, value) => {
+                track.write_substate(substate_id, value)
+            }
         }
     }
 }
 
 pub enum RENodeRef<'f, 's> {
     Stack(&'f HeapRootRENode, Option<RENodeId>),
-    Track(&'f Track<'s>, SubstateId),
+    Track(&'f Track<'s>, RENodeId),
 }
 
 impl<'f, 's> RENodeRef<'f, 's> {
@@ -356,8 +340,12 @@ impl<'f, 's> RENodeRef<'f, 's> {
                 .as_ref()
                 .map_or(value.root(), |v| value.non_root(v))
                 .vault(),
-            RENodeRef::Track(track, substate_id) => {
-                track.read_substate(substate_id.clone()).vault()
+            RENodeRef::Track(track, node_id) => {
+                let substate_id = match node_id {
+                    RENodeId::Vault(vault_id) => SubstateId::Vault(*vault_id),
+                    _ => panic!("Unexpected"),
+                };
+                track.read_substate(substate_id).vault()
             }
         }
     }
@@ -368,8 +356,12 @@ impl<'f, 's> RENodeRef<'f, 's> {
                 .as_ref()
                 .map_or(value.root(), |v| value.non_root(v))
                 .system(),
-            RENodeRef::Track(track, substate_id) => {
-                track.read_substate(substate_id.clone()).system()
+            RENodeRef::Track(track, node_id) => {
+                let substate_id = match node_id {
+                    RENodeId::System => SubstateId::System,
+                    _ => panic!("Unexpected"),
+                };
+                track.read_substate(substate_id).system()
             }
         }
     }
@@ -380,8 +372,14 @@ impl<'f, 's> RENodeRef<'f, 's> {
                 .as_ref()
                 .map_or(value.root(), |v| value.non_root(v))
                 .resource_manager(),
-            RENodeRef::Track(track, substate_id) => {
-                track.read_substate(substate_id.clone()).resource_manager()
+            RENodeRef::Track(track, node_id) => {
+                let substate_id = match node_id {
+                    RENodeId::ResourceManager(resource_address) => {
+                        SubstateId::ResourceManager(*resource_address)
+                    }
+                    _ => panic!("Unexpected"),
+                };
+                track.read_substate(substate_id).resource_manager()
             }
         }
     }
@@ -392,28 +390,32 @@ impl<'f, 's> RENodeRef<'f, 's> {
                 .as_ref()
                 .map_or(value.root(), |v| value.non_root(v))
                 .component_state(),
-            RENodeRef::Track(track, substate_id) => {
-                let component_state_address = match substate_id {
-                    SubstateId::ComponentInfo(substate_id, ..) => {
-                        SubstateId::ComponentState(*substate_id)
+            RENodeRef::Track(track, node_id) => {
+                let substate_id = match node_id {
+                    RENodeId::Component(component_address) => {
+                        SubstateId::ComponentState(*component_address)
                     }
                     _ => panic!("Unexpected"),
                 };
-                track
-                    .read_substate(component_state_address)
-                    .component_state()
+                track.read_substate(substate_id).component_state()
             }
         }
     }
 
-    pub fn component(&self) -> &Component {
+    pub fn component_info(&self) -> &Component {
         match self {
             RENodeRef::Stack(value, id) => id
                 .as_ref()
                 .map_or(value.root(), |v| value.non_root(v))
                 .component(),
-            RENodeRef::Track(track, substate_id) => {
-                track.read_substate(substate_id.clone()).component()
+            RENodeRef::Track(track, node_id) => {
+                let substate_id = match node_id {
+                    RENodeId::Component(component_address) => {
+                        SubstateId::ComponentInfo(*component_address)
+                    }
+                    _ => panic!("Unexpected"),
+                };
+                track.read_substate(substate_id).component()
             }
         }
     }
@@ -424,8 +426,12 @@ impl<'f, 's> RENodeRef<'f, 's> {
                 .as_ref()
                 .map_or(value.root(), |v| value.non_root(v))
                 .package(),
-            RENodeRef::Track(track, substate_id) => {
-                track.read_substate(substate_id.clone()).package()
+            RENodeRef::Track(track, node_id) => {
+                let substate_id = match node_id {
+                    RENodeId::Package(package_address) => SubstateId::Package(*package_address),
+                    _ => panic!("Unexpected"),
+                };
+                track.read_substate(substate_id).package()
             }
         }
     }
@@ -433,7 +439,7 @@ impl<'f, 's> RENodeRef<'f, 's> {
 
 pub enum RENodeRefMut<'f, 's> {
     Stack(&'f mut HeapRootRENode, Option<RENodeId>),
-    Track(&'f mut Track<'s>, SubstateId),
+    Track(&'f mut Track<'s>, RENodeId),
 }
 
 impl<'f, 's> RENodeRefMut<'f, 's> {
@@ -454,7 +460,10 @@ impl<'f, 's> RENodeRefMut<'f, 's> {
             | SubstateId::KeyValueStoreSpace(..)
             | SubstateId::Package(..)
             | SubstateId::ResourceManager(..)
-            | SubstateId::System => {
+            | SubstateId::System
+            | SubstateId::Bucket(..)
+            | SubstateId::Proof(..)
+            | SubstateId::Worktop => {
                 panic!("Should never have received permissions to read this native type.");
             }
         }
@@ -470,7 +479,10 @@ impl<'f, 's> RENodeRefMut<'f, 's> {
             | SubstateId::Vault(..)
             | SubstateId::Package(..)
             | SubstateId::ResourceManager(..)
-            | SubstateId::System => {
+            | SubstateId::System
+            | SubstateId::Bucket(..)
+            | SubstateId::Proof(..)
+            | SubstateId::Worktop => {
                 panic!("Should not get here");
             }
             SubstateId::NonFungible(.., id) => self.non_fungible_remove(&id),
@@ -512,6 +524,15 @@ impl<'f, 's> RENodeRefMut<'f, 's> {
             SubstateId::System => {
                 panic!("Should not get here");
             }
+            SubstateId::Bucket(..) => {
+                panic!("Should not get here");
+            }
+            SubstateId::Proof(..) => {
+                panic!("Should not get here");
+            }
+            SubstateId::Worktop => {
+                panic!("Should not get here");
+            }
         }
     }
 
@@ -531,9 +552,15 @@ impl<'f, 's> RENodeRefMut<'f, 's> {
                     re_value.insert_non_root_nodes(val.to_nodes(id));
                 }
             }
-            RENodeRefMut::Track(track, substate_id) => {
+            RENodeRefMut::Track(track, node_id) => {
+                let parent_substate_id = match node_id {
+                    RENodeId::KeyValueStore(kv_store_id) => {
+                        SubstateId::KeyValueStoreSpace(*kv_store_id)
+                    }
+                    _ => panic!("Unexpeceted"),
+                };
                 track.set_key_value(
-                    substate_id.clone(),
+                    parent_substate_id,
                     key,
                     Substate::KeyValueStoreEntry(KeyValueStoreEntryWrapper(Some(value.raw))),
                 );
@@ -553,8 +580,14 @@ impl<'f, 's> RENodeRefMut<'f, 's> {
                     .map(|v| KeyValueStoreEntryWrapper(Some(v.raw)))
                     .unwrap_or(KeyValueStoreEntryWrapper(None))
             }
-            RENodeRefMut::Track(track, substate_id) => {
-                let substate_value = track.read_key_value(substate_id.clone(), key.to_vec());
+            RENodeRefMut::Track(track, node_id) => {
+                let parent_substate_id = match node_id {
+                    RENodeId::KeyValueStore(kv_store_id) => {
+                        SubstateId::KeyValueStoreSpace(*kv_store_id)
+                    }
+                    _ => panic!("Unexpeceted"),
+                };
+                let substate_value = track.read_key_value(parent_substate_id, key.to_vec());
                 substate_value.into()
             }
         };
@@ -587,10 +620,14 @@ impl<'f, 's> RENodeRefMut<'f, 's> {
                     .map(|v| NonFungibleWrapper(Some(v)))
                     .unwrap_or(NonFungibleWrapper(None))
             }
-            RENodeRefMut::Track(track, substate_id) => {
-                let resource_address: ResourceAddress = substate_id.clone().into();
-                let substate_value = track
-                    .read_key_value(SubstateId::NonFungibleSpace(resource_address), id.to_vec());
+            RENodeRefMut::Track(track, node_id) => {
+                let parent_substate_id = match node_id {
+                    RENodeId::ResourceManager(resource_address) => {
+                        SubstateId::NonFungibleSpace(*resource_address)
+                    }
+                    _ => panic!("Unexpeceted"),
+                };
+                let substate_value = track.read_key_value(parent_substate_id, id.to_vec());
                 substate_value.into()
             }
         };
@@ -603,10 +640,15 @@ impl<'f, 's> RENodeRefMut<'f, 's> {
             RENodeRefMut::Stack(..) => {
                 panic!("Not supported");
             }
-            RENodeRefMut::Track(track, substate_id) => {
-                let resource_address: ResourceAddress = substate_id.clone().into();
+            RENodeRefMut::Track(track, node_id) => {
+                let parent_substate_id = match node_id {
+                    RENodeId::ResourceManager(resource_address) => {
+                        SubstateId::NonFungibleSpace(*resource_address)
+                    }
+                    _ => panic!("Unexpeceted"),
+                };
                 track.set_key_value(
-                    SubstateId::NonFungibleSpace(resource_address),
+                    parent_substate_id,
                     id.to_vec(),
                     Substate::NonFungible(NonFungibleWrapper(None)),
                 );
@@ -627,12 +669,17 @@ impl<'f, 's> RENodeRefMut<'f, 's> {
                     panic!("TODO: invalidate this code path and possibly consolidate `non_fungible_remove` and `non_fungible_put`")
                 }
             }
-            RENodeRefMut::Track(track, substate_id) => {
+            RENodeRefMut::Track(track, node_id) => {
+                let parent_substate_id = match node_id {
+                    RENodeId::ResourceManager(resource_address) => {
+                        SubstateId::NonFungibleSpace(*resource_address)
+                    }
+                    _ => panic!("Unexpeceted"),
+                };
                 let wrapper: NonFungibleWrapper =
                     scrypto_decode(&value.raw).expect("Should not fail.");
-                let resource_address: ResourceAddress = substate_id.clone().into();
                 track.set_key_value(
-                    SubstateId::NonFungibleSpace(resource_address),
+                    parent_substate_id,
                     id.to_vec(),
                     Substate::NonFungible(wrapper),
                 );
@@ -653,12 +700,14 @@ impl<'f, 's> RENodeRefMut<'f, 's> {
                     re_value.insert_non_root_nodes(val.to_nodes(id));
                 }
             }
-            RENodeRefMut::Track(track, substate_id) => {
-                let component_address: ComponentAddress = substate_id.clone().into();
-                track.write_substate(
-                    SubstateId::ComponentState(component_address),
-                    ComponentState::new(value.raw),
-                );
+            RENodeRefMut::Track(track, node_id) => {
+                let substate_id = match node_id {
+                    RENodeId::Component(component_address) => {
+                        SubstateId::ComponentState(*component_address)
+                    }
+                    _ => panic!("Unexpeceted"),
+                };
+                track.write_substate(substate_id, ComponentState::new(value.raw));
                 for (id, val) in to_store {
                     insert_non_root_nodes(track, val.to_nodes(id));
                 }
@@ -669,8 +718,14 @@ impl<'f, 's> RENodeRefMut<'f, 's> {
     pub fn component(&mut self) -> &Component {
         match self {
             RENodeRefMut::Stack(re_value, id) => re_value.get_node_mut(id.as_ref()).component(),
-            RENodeRefMut::Track(track, substate_id) => {
-                let component_val = track.read_substate(substate_id.clone());
+            RENodeRefMut::Track(track, node_id) => {
+                let substate_id = match node_id {
+                    RENodeId::Component(component_address) => {
+                        SubstateId::ComponentInfo(*component_address)
+                    }
+                    _ => panic!("Unexpeceted"),
+                };
+                let component_val = track.read_substate(substate_id);
                 component_val.component()
             }
         }
@@ -681,10 +736,14 @@ impl<'f, 's> RENodeRefMut<'f, 's> {
             RENodeRefMut::Stack(re_value, id) => {
                 re_value.get_node_mut(id.as_ref()).component_state()
             }
-            RENodeRefMut::Track(track, substate_id) => {
-                let component_address: ComponentAddress = substate_id.clone().into();
-                let component_state_address = SubstateId::ComponentState(component_address);
-                let component_val = track.read_substate(component_state_address.clone());
+            RENodeRefMut::Track(track, node_id) => {
+                let substate_id = match node_id {
+                    RENodeId::Component(component_address) => {
+                        SubstateId::ComponentState(*component_address)
+                    }
+                    _ => panic!("Unexpeceted"),
+                };
+                let component_val = track.read_substate(substate_id);
                 component_val.component_state()
             }
         }
@@ -700,7 +759,8 @@ pub enum ExecutionState<'a> {
     Consumed(RENodeId),
     AuthZone(RefMut<'a, AuthZone>),
     RENodeRef(RENodeId),
-    Component(PackageAddress, String, ComponentAddress, bool),
+    // TODO: Can remove this and replace useage with REActor
+    Component(PackageAddress, String, ComponentAddress),
 }
 
 impl<'p, 'g, 's, W, I, C> CallFrame<'p, 'g, 's, W, I, C>
@@ -757,6 +817,7 @@ where
             verbose,
             id_allocator,
             track,
+            REActor::Native,
             wasm_engine,
             wasm_instrumenter,
             fee_reserve,
@@ -778,13 +839,14 @@ where
         trace: bool,
         id_allocator: &'g mut IdAllocator,
         track: &'g mut Track<'s>,
+        actor: REActor,
         wasm_engine: &'g mut W,
         wasm_instrumenter: &'g mut WasmInstrumenter,
         fee_reserve: &'g mut C,
         fee_table: &'g FeeTable,
         auth_zone: Option<RefCell<AuthZone>>,
         owned_heap_nodes: HashMap<RENodeId, HeapRootRENode>,
-        node_refs: HashMap<RENodeId, RENodeInfo>,
+        node_refs: HashMap<RENodeId, RENodePointer>,
         parent_heap_nodes: Vec<&'p mut HashMap<RENodeId, HeapRootRENode>>,
         caller_auth_zone: Option<&'p RefCell<AuthZone>>,
     ) -> Self {
@@ -795,6 +857,7 @@ where
             trace,
             id_allocator,
             track,
+            actor,
             wasm_engine,
             wasm_instrumenter,
             fee_reserve,
@@ -934,15 +997,18 @@ where
                             Bucket::main(bucket_id, fn_ident, input, self)
                                 .map_err(RuntimeError::BucketError)
                         }
-                        RENodeId::Proof(..) => Proof::main(node_id, fn_ident, input, self)
+                        RENodeId::Proof(proof_id) => Proof::main(proof_id, fn_ident, input, self)
                             .map_err(RuntimeError::ProofError),
-                        RENodeId::Worktop => Worktop::main(node_id, fn_ident, input, self)
-                            .map_err(RuntimeError::WorktopError),
+                        RENodeId::Worktop => {
+                            Worktop::main(fn_ident, input, self).map_err(RuntimeError::WorktopError)
+                        }
                         RENodeId::Vault(vault_id) => Vault::main(vault_id, fn_ident, input, self)
                             .map_err(RuntimeError::VaultError),
-                        RENodeId::Component(..) => Component::main(node_id, fn_ident, input, self)
-                            .map_err(RuntimeError::ComponentError),
-                        RENodeId::Resource(resource_address) => {
+                        RENodeId::Component(component_address) => {
+                            Component::main(component_address, fn_ident, input, self)
+                                .map_err(RuntimeError::ComponentError)
+                        }
+                        RENodeId::ResourceManager(resource_address) => {
                             ResourceManager::main(resource_address, fn_ident, input, self)
                                 .map_err(RuntimeError::ResourceManagerError)
                         }
@@ -955,7 +1021,6 @@ where
                         package_address,
                         blueprint_name,
                         component_address,
-                        is_global,
                     ) => {
                         let output = {
                             let package = self
@@ -979,7 +1044,6 @@ where
                                 Box::new(RadixEngineWasmRuntime::new(
                                     ScryptoActor::Component(
                                         component_address,
-                                        is_global,
                                         package_address.clone(),
                                         blueprint_name.clone(),
                                     ),
@@ -1026,6 +1090,16 @@ where
         let first_missing_value = missing.drain().nth(0);
         if let Some(missing_node) = first_missing_value {
             return Err(RuntimeError::RENodeNotFound(missing_node));
+        }
+
+        // Check we have valid references to pass back
+        for refed_component_address in &output.refed_component_addresses {
+            let node_id = RENodeId::Component(*refed_component_address);
+            if let Some(RENodePointer::Store(..)) = self.node_refs.get(&node_id) {
+                // Only allow passing back global references
+            } else {
+                return Err(RuntimeError::InvokeMethodInvalidReferencePass(node_id));
+            }
         }
 
         // drop proofs and check resource leak
@@ -1087,59 +1161,23 @@ where
 
         // Get location
         // Note this must be run AFTER values are taken, otherwise there would be inconsistent readable_values state
-        let (value_info, address_borrowed) = self
+        let node_pointer = self
             .node_refs
             .get(&node_id)
             .cloned()
-            .map(|v| (v, None))
-            .or_else(|| {
-                // Allow global read access to any component info
-                if let SubstateId::ComponentInfo(component_address, ..) = substate_id {
-                    if self.owned_heap_nodes.contains_key(&node_id) {
-                        return Some((
-                            RENodeInfo {
-                                pointer: RENodePointer::Heap {
-                                    frame_id: Option::None,
-                                    root: node_id.clone(),
-                                    id: Option::None,
-                                },
-                                visible: true,
-                            },
-                            None,
-                        ));
-                    } else if self
-                        .track
-                        .acquire_lock(
-                            SubstateId::ComponentInfo(*component_address, true),
-                            false,
-                            false,
-                        )
-                        .is_ok()
-                    {
-                        return Some((
-                            RENodeInfo {
-                                pointer: RENodePointer::Store(SubstateId::ComponentInfo(
-                                    *component_address,
-                                    true,
-                                )),
-                                visible: true,
-                            },
-                            Some(component_address),
-                        ));
-                    }
-                }
+            .ok_or_else(|| RuntimeError::SubstateReadSubstateNotFound(substate_id.clone()))?;
 
-                None
-            })
-            .ok_or_else(|| RuntimeError::InvalidDataAccess(node_id))?;
-        if !value_info.visible {
-            return Err(RuntimeError::InvalidDataAccess(node_id));
+        if matches!(substate_id, SubstateId::ComponentInfo(..))
+            && matches!(node_pointer, RENodePointer::Store(..))
+        {
+            self.track
+                .acquire_lock(substate_id.clone(), false, false)
+                .expect("Should never fail");
         }
-        let pointer = &value_info.pointer;
 
         // Read current value
         let current_value = {
-            let mut node_ref = pointer.to_ref_mut(
+            let mut node_ref = node_pointer.to_ref_mut(
                 &mut self.owned_heap_nodes,
                 &mut self.parent_heap_nodes,
                 &mut self.track,
@@ -1147,13 +1185,14 @@ where
             node_ref.read_scrypto_value(&substate_id)?
         };
 
-        // TODO: Remove, currently a hack to allow for global component info retrieval
-        if let Some(component_address) = address_borrowed {
-            self.track
-                .release_lock(SubstateId::ComponentInfo(*component_address, true), false);
+        // TODO: Remove, integrate with substate borrow mechanism
+        if matches!(substate_id, SubstateId::ComponentInfo(..))
+            && matches!(node_pointer, RENodePointer::Store(..))
+        {
+            self.track.release_lock(substate_id.clone(), false);
         }
 
-        Ok((pointer.clone(), current_value))
+        Ok((node_pointer.clone(), current_value))
     }
 
     /// Creates a new UUID.
@@ -1199,7 +1238,7 @@ where
                     .id_allocator
                     .new_resource_address(self.transaction_hash)
                     .unwrap();
-                RENodeId::Resource(resource_address)
+                RENodeId::ResourceManager(resource_address)
             }
             HeapRENode::Component(ref component, ..) => {
                 let component_address = self
@@ -1287,7 +1326,7 @@ where
         let mut locked_values = HashSet::<SubstateId>::new();
 
         // No authorization but state load
-        match &type_name {
+        let actor = match &type_name {
             TypeName::Blueprint(package_address, blueprint_name) => {
                 self.track
                     .acquire_lock(SubstateId::Package(package_address.clone()), false, false)
@@ -1318,8 +1357,56 @@ where
                         input: input.dom,
                     });
                 }
+
+                REActor::Scrypto(ScryptoActor::blueprint(
+                    *package_address,
+                    blueprint_name.clone(),
+                ))
             }
-            TypeName::Package | TypeName::ResourceManager | TypeName::TransactionProcessor => {}
+            TypeName::Package | TypeName::ResourceManager | TypeName::TransactionProcessor => {
+                REActor::Native
+            }
+        };
+
+        // Move this into higher layer, e.g. transaction processor
+        let mut next_frame_node_refs = HashMap::new();
+        if self.depth == 0 {
+            let mut component_addresses = HashSet::new();
+
+            // Collect component addresses
+            for component_address in &input.refed_component_addresses {
+                component_addresses.insert(*component_address);
+            }
+            let input: TransactionProcessorRunInput = scrypto_decode(&input.raw).unwrap();
+            for instruction in &input.instructions {
+                match instruction {
+                    ExecutableInstruction::CallFunction { arg, .. }
+                    | ExecutableInstruction::CallMethod { arg, .. } => {
+                        let scrypto_value = ScryptoValue::from_slice(&arg).unwrap();
+                        component_addresses.extend(scrypto_value.refed_component_addresses);
+                    }
+                    _ => {}
+                }
+            }
+
+            // Make components visible
+            for component_address in component_addresses {
+                // TODO: Check if component exists
+                let node_id = RENodeId::Component(component_address);
+                next_frame_node_refs.insert(node_id, RENodePointer::Store(node_id));
+            }
+        } else {
+            // Pass argument references
+            for refed_component_address in &input.refed_component_addresses {
+                let node_id = RENodeId::Component(refed_component_address.clone());
+                if let Some(pointer) = self.node_refs.get(&node_id) {
+                    let mut visible = HashSet::new();
+                    visible.insert(SubstateId::ComponentInfo(*refed_component_address));
+                    next_frame_node_refs.insert(node_id.clone(), pointer.clone());
+                } else {
+                    return Err(RuntimeError::InvokeMethodInvalidReferencePass(node_id));
+                }
+            }
         }
 
         // Setup next parent frame
@@ -1330,33 +1417,34 @@ where
         next_borrowed_values.push(&mut self.owned_heap_nodes);
 
         // start a new frame
-        let mut frame = CallFrame::new(
-            self.transaction_hash,
-            self.depth + 1,
-            self.max_depth,
-            self.trace,
-            self.id_allocator,
-            self.track,
-            self.wasm_engine,
-            self.wasm_instrumenter,
-            self.fee_reserve,
-            self.fee_table,
-            match type_name {
-                TypeName::TransactionProcessor | TypeName::Blueprint(_, _) => {
-                    Some(RefCell::new(AuthZone::new()))
-                }
-                _ => None,
-            },
-            next_owned_values,
-            HashMap::new(),
-            next_borrowed_values,
-            self.auth_zone.as_ref(),
-        );
+        let (result, received_values) = {
+            let mut frame = CallFrame::new(
+                self.transaction_hash,
+                self.depth + 1,
+                self.max_depth,
+                self.trace,
+                self.id_allocator,
+                self.track,
+                actor,
+                self.wasm_engine,
+                self.wasm_instrumenter,
+                self.fee_reserve,
+                self.fee_table,
+                match type_name {
+                    TypeName::TransactionProcessor | TypeName::Blueprint(_, _) => {
+                        Some(RefCell::new(AuthZone::new()))
+                    }
+                    _ => None,
+                },
+                next_owned_values,
+                next_frame_node_refs,
+                next_borrowed_values,
+                self.auth_zone.as_ref(),
+            );
 
-        // invoke the main function
-        let (result, received_values) =
-            frame.run(ExecutionEntity::Function(type_name), &fn_ident, input)?;
-        drop(frame);
+            // invoke the main function
+            frame.run(ExecutionEntity::Function(type_name), &fn_ident, input)?
+        };
 
         // Release locked addresses
         for l in locked_values {
@@ -1368,6 +1456,15 @@ where
         for (id, value) in received_values {
             trace!(self, Level::Debug, "Received value: {:?}", value);
             self.owned_heap_nodes.insert(id, value);
+        }
+
+        // Accept component references
+        for refed_component_address in &result.refed_component_addresses {
+            let node_id = RENodeId::Component(*refed_component_address);
+            let mut visible = HashSet::new();
+            visible.insert(SubstateId::ComponentInfo(*refed_component_address));
+            self.node_refs
+                .insert(node_id, RENodePointer::Store(node_id));
         }
 
         trace!(self, Level::Debug, "Invoking finished!");
@@ -1438,10 +1535,10 @@ where
         }
 
         let mut locked_values = HashSet::new();
-        let mut value_refs = HashMap::new();
+        let mut next_frame_node_refs = HashMap::new();
 
         // Authorization and state load
-        let (execution_state, method_auths) = match &receiver {
+        let (actor, execution_state, method_auths) = match &receiver {
             Receiver::Consumed(node_id) => {
                 let value = self
                     .owned_heap_nodes
@@ -1464,15 +1561,8 @@ where
                             .read_substate(SubstateId::ResourceManager(resource_address))
                             .resource_manager();
                         let method_auth = resource_manager.get_consuming_bucket_auth(&fn_ident);
-                        value_refs.insert(
-                            RENodeId::Resource(resource_address),
-                            RENodeInfo {
-                                pointer: RENodePointer::Store(SubstateId::ResourceManager(
-                                    resource_address,
-                                )),
-                                visible: true,
-                            },
-                        );
+                        let node_id = RENodeId::ResourceManager(resource_address);
+                        next_frame_node_refs.insert(node_id, RENodePointer::Store(node_id));
                         vec![method_auth.clone()]
                     }
                     HeapRENode::Proof(_) => vec![],
@@ -1481,20 +1571,19 @@ where
 
                 next_owned_values.insert(*node_id, value);
 
-                Ok((ExecutionState::Consumed(*node_id), method_auths))
+                Ok((
+                    REActor::Native,
+                    ExecutionState::Consumed(*node_id),
+                    method_auths,
+                ))
             }
             Receiver::SystemRef => {
                 self.track
                     .acquire_lock(SubstateId::System, true, false)
                     .expect("System access should never fail");
                 locked_values.insert(SubstateId::System);
-                value_refs.insert(
-                    RENodeId::System,
-                    RENodeInfo {
-                        pointer: RENodePointer::Store(SubstateId::System),
-                        visible: true,
-                    },
-                );
+                let node_id = RENodeId::System;
+                next_frame_node_refs.insert(node_id, RENodePointer::Store(node_id));
                 let fn_str: &str = &fn_ident;
                 let access_rules = match fn_str {
                     "set_epoch" => {
@@ -1506,7 +1595,11 @@ where
                     }
                     _ => vec![],
                 };
-                Ok((ExecutionState::RENodeRef(RENodeId::System), access_rules))
+                Ok((
+                    REActor::Native,
+                    ExecutionState::RENodeRef(RENodeId::System),
+                    access_rules,
+                ))
             }
             Receiver::AuthZoneRef => {
                 if let Some(auth_zone) = &self.auth_zone {
@@ -1527,24 +1620,17 @@ where
                                 TrackError::StateTrackError(..) => panic!("Unexpected"),
                             })?;
                         locked_values.insert(SubstateId::ResourceManager(resource_address.clone()));
-                        value_refs.insert(
-                            RENodeId::Resource(resource_address.clone()),
-                            RENodeInfo {
-                                pointer: RENodePointer::Store(SubstateId::ResourceManager(
-                                    resource_address.clone(),
-                                )),
-                                visible: true,
-                            },
-                        );
+                        let node_id = RENodeId::ResourceManager(resource_address.clone());
+                        next_frame_node_refs.insert(node_id, RENodePointer::Store(node_id));
                     }
                     let borrowed = auth_zone.borrow_mut();
-                    Ok((ExecutionState::AuthZone(borrowed), vec![]))
+                    Ok((REActor::Native, ExecutionState::AuthZone(borrowed), vec![]))
                 } else {
                     Err(RuntimeError::AuthZoneDoesNotExist)
                 }
             }
             Receiver::ResourceManagerRef(resource_address) => {
-                let node_id = RENodeId::Resource(*resource_address);
+                let node_id = RENodeId::ResourceManager(*resource_address);
                 let substate_id: SubstateId = SubstateId::ResourceManager(*resource_address);
                 self.track
                     .acquire_lock(substate_id.clone(), true, false)
@@ -1560,69 +1646,56 @@ where
                 locked_values.insert(substate_id.clone());
                 let resource_manager = self.track.read_substate(substate_id).resource_manager();
                 let method_auth = resource_manager.get_auth(&fn_ident, &input).clone();
-                value_refs.insert(
-                    node_id.clone(),
-                    RENodeInfo {
-                        pointer: RENodePointer::Store(SubstateId::ResourceManager(
-                            *resource_address,
-                        )),
-                        visible: true,
-                    },
-                );
+                next_frame_node_refs.insert(node_id.clone(), RENodePointer::Store(node_id.clone()));
 
-                Ok((ExecutionState::RENodeRef(node_id), vec![method_auth]))
+                Ok((
+                    REActor::Native,
+                    ExecutionState::RENodeRef(node_id),
+                    vec![method_auth],
+                ))
             }
             Receiver::BucketRef(bucket_id) => {
                 let node_id = RENodeId::Bucket(*bucket_id);
                 if !self.owned_heap_nodes.contains_key(&node_id) {
                     return Err(RuntimeError::BucketNotFound(bucket_id.clone()));
                 }
-                value_refs.insert(
+                next_frame_node_refs.insert(
                     node_id.clone(),
-                    RENodeInfo {
-                        pointer: RENodePointer::Heap {
-                            frame_id: Some(self.depth),
-                            root: node_id.clone(),
-                            id: None,
-                        },
-                        visible: true,
+                    RENodePointer::Heap {
+                        frame_id: Some(self.depth),
+                        root: node_id.clone(),
+                        id: None,
                     },
                 );
 
-                Ok((ExecutionState::RENodeRef(node_id), vec![]))
+                Ok((REActor::Native, ExecutionState::RENodeRef(node_id), vec![]))
             }
             Receiver::ProofRef(proof_id) => {
                 let node_id = RENodeId::Proof(*proof_id);
                 if !self.owned_heap_nodes.contains_key(&node_id) {
                     return Err(RuntimeError::ProofNotFound(proof_id.clone()));
                 }
-                value_refs.insert(
+                next_frame_node_refs.insert(
                     node_id.clone(),
-                    RENodeInfo {
-                        pointer: RENodePointer::Heap {
-                            frame_id: Some(self.depth),
-                            root: node_id.clone(),
-                            id: None,
-                        },
-                        visible: true,
+                    RENodePointer::Heap {
+                        frame_id: Some(self.depth),
+                        root: node_id.clone(),
+                        id: None,
                     },
                 );
-                Ok((ExecutionState::RENodeRef(node_id), vec![]))
+                Ok((REActor::Native, ExecutionState::RENodeRef(node_id), vec![]))
             }
             Receiver::WorktopRef => {
                 let node_id = RENodeId::Worktop;
                 if !self.owned_heap_nodes.contains_key(&node_id) {
                     return Err(RuntimeError::RENodeNotFound(node_id));
                 }
-                value_refs.insert(
+                next_frame_node_refs.insert(
                     node_id.clone(),
-                    RENodeInfo {
-                        pointer: RENodePointer::Heap {
-                            frame_id: Some(self.depth),
-                            root: node_id.clone(),
-                            id: None,
-                        },
-                        visible: true,
+                    RENodePointer::Heap {
+                        frame_id: Some(self.depth),
+                        root: node_id.clone(),
+                        id: None,
                     },
                 );
 
@@ -1644,18 +1717,11 @@ where
                         })?;
 
                     locked_values.insert(SubstateId::ResourceManager(resource_address.clone()));
-                    value_refs.insert(
-                        RENodeId::Resource(resource_address.clone()),
-                        RENodeInfo {
-                            pointer: RENodePointer::Store(SubstateId::ResourceManager(
-                                resource_address.clone(),
-                            )),
-                            visible: true,
-                        },
-                    );
+                    let node_id = RENodeId::ResourceManager(resource_address.clone());
+                    next_frame_node_refs.insert(node_id, RENodePointer::Store(node_id));
                 }
 
-                Ok((ExecutionState::RENodeRef(node_id), vec![]))
+                Ok((REActor::Native, ExecutionState::RENodeRef(node_id), vec![]))
             }
             Receiver::Component(component_address) => {
                 let component_address = component_address.clone();
@@ -1668,15 +1734,16 @@ where
                         root: node_id.clone(),
                         id: None,
                     }
-                } else if let Some(RENodeInfo { pointer, .. }) = self.node_refs.get(&node_id) {
+                } else if let Some(pointer) = self.node_refs.get(&node_id) {
                     pointer.clone()
                 } else {
-                    RENodePointer::Store(SubstateId::ComponentInfo(component_address, true))
+                    return Err(RuntimeError::InvokeMethodInvalidReceiver(node_id));
                 };
 
                 // Lock values and setup next frame
-                let (next_pointer, is_global) = match cur_pointer.clone() {
-                    RENodePointer::Store(substate_id) => {
+                let next_pointer = match cur_pointer.clone() {
+                    RENodePointer::Store(node_id) => {
+                        let substate_id = SubstateId::ComponentState(component_address);
                         self.track
                             .acquire_lock(substate_id.clone(), true, false)
                             .map_err(|e| match e {
@@ -1691,72 +1758,56 @@ where
                                 }
                             })?;
                         locked_values.insert(substate_id.clone());
-
-                        let component_address: ComponentAddress = substate_id.clone().into();
-                        let component_state_address = SubstateId::ComponentState(component_address);
-                        self.track
-                            .acquire_lock(component_state_address.clone(), true, false)
-                            .map_err(|e| match e {
-                                TrackError::NotFound => {
-                                    RuntimeError::ComponentNotFound(component_address)
-                                }
-                                TrackError::Reentrancy => {
-                                    RuntimeError::ComponentReentrancy(component_address)
-                                }
-                                TrackError::StateTrackError(..) => {
-                                    panic!("Unexpected")
-                                }
-                            })?;
-                        locked_values.insert(component_state_address);
-
-                        let is_global =
-                            if let SubstateId::ComponentInfo(_component_address, is_global) =
-                                substate_id
-                            {
-                                is_global
-                            } else {
-                                panic!("Unexpected substate_id");
-                            };
-
-                        (RENodePointer::Store(substate_id), is_global)
+                        RENodePointer::Store(node_id)
                     }
-                    RENodePointer::Heap { frame_id, root, id } => (
-                        RENodePointer::Heap {
-                            frame_id: frame_id.or(Some(self.depth)),
-                            root,
-                            id,
-                        },
-                        false,
-                    ),
+                    RENodePointer::Heap { frame_id, root, id } => RENodePointer::Heap {
+                        frame_id: frame_id.or(Some(self.depth)),
+                        root,
+                        id,
+                    },
                 };
 
-                let (package_address, blueprint_name, component_address, is_global) = {
-                    let value_ref = cur_pointer.to_ref(
+                match cur_pointer {
+                    RENodePointer::Store(..) => {
+                        self.track
+                            .acquire_lock(
+                                SubstateId::ComponentInfo(component_address),
+                                false,
+                                false,
+                            )
+                            .expect("Component Info should not be locked for long periods of time");
+                    }
+                    _ => {}
+                }
+
+                let scrypto_actor = {
+                    let node_ref = cur_pointer.to_ref(
                         &self.owned_heap_nodes,
                         &self.parent_heap_nodes,
                         &mut self.track,
                     );
-                    let component = value_ref.component();
-                    (
+                    let component = node_ref.component_info();
+                    ScryptoActor::component(
+                        component_address,
                         component.package_address(),
                         component.blueprint_name().to_string(),
-                        component_address,
-                        is_global,
                     )
                 };
 
                 // Retrieve Method Authorization
                 let method_auths = {
+                    let package_substate_id =
+                        SubstateId::Package(scrypto_actor.package_address().clone());
                     self.track
-                        .acquire_lock(SubstateId::Package(package_address), false, false)
+                        .acquire_lock(package_substate_id.clone(), false, false)
                         .expect("Should never fail");
-                    locked_values.insert(SubstateId::Package(package_address.clone()));
+                    locked_values.insert(package_substate_id.clone());
                     let package = self
                         .track
-                        .read_substate(SubstateId::Package(package_address))
+                        .read_substate(package_substate_id.clone())
                         .package();
                     let abi = package
-                        .blueprint_abi(&blueprint_name)
+                        .blueprint_abi(scrypto_actor.blueprint_name())
                         .expect("Blueprint not found for existing component");
                     let fn_abi = abi
                         .get_fn_abi(&fn_ident)
@@ -1775,27 +1826,30 @@ where
                             &self.track,
                         );
 
-                        let component = value_ref.component();
+                        let component = value_ref.component_info();
                         let component_state = value_ref.component_state();
                         component.method_authorization(component_state, &abi.structure, &fn_ident)
                     }
                 };
 
-                value_refs.insert(
-                    node_id,
-                    RENodeInfo {
-                        pointer: next_pointer,
-                        visible: true,
-                    },
-                );
+                match cur_pointer {
+                    RENodePointer::Store(..) => {
+                        self.track
+                            .release_lock(SubstateId::ComponentInfo(component_address), false);
+                    }
+                    _ => {}
+                }
 
+                next_frame_node_refs.insert(node_id, next_pointer);
+
+                let execution_state = ExecutionState::Component(
+                    scrypto_actor.package_address().clone(),
+                    scrypto_actor.blueprint_name().clone(),
+                    component_address,
+                );
                 Ok((
-                    ExecutionState::Component(
-                        package_address,
-                        blueprint_name,
-                        component_address,
-                        is_global,
-                    ),
+                    REActor::Scrypto(scrypto_actor),
+                    execution_state,
                     method_auths,
                 ))
             }
@@ -1833,30 +1887,24 @@ where
                                 TrackError::StateTrackError(..) => panic!("Unexpected"),
                             })?;
                         locked_values.insert(SubstateId::Package(package_address));
-                        value_refs.insert(
+                        next_frame_node_refs.insert(
                             RENodeId::Package(package_address),
-                            RENodeInfo {
-                                pointer: RENodePointer::Store(SubstateId::Package(package_address)),
-                                visible: true,
-                            },
+                            RENodePointer::Store(RENodeId::Package(package_address)),
                         );
 
-                        value_refs.insert(
+                        next_frame_node_refs.insert(
                             node_id,
-                            RENodeInfo {
-                                pointer: RENodePointer::Heap {
-                                    frame_id: Some(self.depth),
-                                    root: root.clone(),
-                                    id: id.clone(),
-                                },
-                                visible: true,
+                            RENodePointer::Heap {
+                                frame_id: Some(self.depth),
+                                root: root.clone(),
+                                id: id.clone(),
                             },
                         );
                     }
                     _ => panic!("Unexpected"),
                 }
 
-                Ok((ExecutionState::RENodeRef(node_id), vec![]))
+                Ok((REActor::Native, ExecutionState::RENodeRef(node_id), vec![]))
             }
 
             Receiver::VaultRef(vault_id) => {
@@ -1869,9 +1917,8 @@ where
                         id: Option::None,
                     }
                 } else {
-                    let maybe_value_ref = self.node_refs.get(&node_id);
-                    maybe_value_ref
-                        .map(|info| &info.pointer)
+                    let maybe_pointer = self.node_refs.get(&node_id);
+                    maybe_pointer
                         .cloned()
                         .ok_or(RuntimeError::RENodeNotFound(RENodeId::Vault(*vault_id)))?
                 };
@@ -1883,7 +1930,8 @@ where
                 let next_pointer = {
                     // Lock Vault
                     let next_pointer = match cur_pointer.clone() {
-                        RENodePointer::Store(substate_id) => {
+                        RENodePointer::Store(RENodeId::Vault(vault_id)) => {
+                            let substate_id = SubstateId::Vault(vault_id);
                             self.track
                                 .acquire_lock(substate_id.clone(), true, is_lock_fee)
                                 .map_err(|e| match e {
@@ -1898,14 +1946,15 @@ where
                                         })
                                     }
                                 })?;
-                            locked_values.insert(substate_id.clone().into());
-                            RENodePointer::Store(substate_id)
+                            locked_values.insert(substate_id);
+                            RENodePointer::Store(node_id)
                         }
                         RENodePointer::Heap { frame_id, root, id } => RENodePointer::Heap {
                             frame_id: frame_id.or(Some(self.depth)),
                             root,
                             id,
                         },
+                        _ => panic!("Unexpected pointer"),
                     };
 
                     // Lock Resource
@@ -1942,17 +1991,27 @@ where
                     resource_manager.get_vault_auth(&fn_ident).clone()
                 };
 
-                value_refs.insert(
-                    node_id.clone(),
-                    RENodeInfo {
-                        pointer: next_pointer,
-                        visible: true,
-                    },
-                );
+                next_frame_node_refs.insert(node_id.clone(), next_pointer);
 
-                Ok((ExecutionState::RENodeRef(node_id), vec![method_auth]))
+                Ok((
+                    REActor::Native,
+                    ExecutionState::RENodeRef(node_id),
+                    vec![method_auth],
+                ))
             }
         }?;
+
+        // Pass argument references
+        for refed_component_address in &input.refed_component_addresses {
+            let node_id = RENodeId::Component(refed_component_address.clone());
+            if let Some(pointer) = self.node_refs.get(&node_id) {
+                let mut visible = HashSet::new();
+                visible.insert(SubstateId::ComponentInfo(*refed_component_address));
+                next_frame_node_refs.insert(node_id.clone(), pointer.clone());
+            } else {
+                return Err(RuntimeError::InvokeMethodInvalidReferencePass(node_id));
+            }
+        }
 
         // Authorization check
         if !method_auths.is_empty() {
@@ -1964,7 +2023,7 @@ where
             match &execution_state {
                 // Resource auth check includes caller
                 ExecutionState::Component(..)
-                | ExecutionState::RENodeRef(RENodeId::Resource(..), ..)
+                | ExecutionState::RENodeRef(RENodeId::ResourceManager(..), ..)
                 | ExecutionState::RENodeRef(RENodeId::Vault(..), ..)
                 | ExecutionState::Consumed(RENodeId::Bucket(..)) => {
                     if let Some(auth_zone) = self.caller_auth_zone {
@@ -1998,34 +2057,36 @@ where
         next_borrowed_values.push(&mut self.owned_heap_nodes);
 
         // start a new frame
-        let mut frame = CallFrame::new(
-            self.transaction_hash,
-            self.depth + 1,
-            self.max_depth,
-            self.trace,
-            self.id_allocator,
-            self.track,
-            self.wasm_engine,
-            self.wasm_instrumenter,
-            self.fee_reserve,
-            self.fee_table,
-            match receiver {
-                Receiver::Component(_) => Some(RefCell::new(AuthZone::new())),
-                _ => None,
-            },
-            next_owned_values,
-            value_refs,
-            next_borrowed_values,
-            self.auth_zone.as_ref(),
-        );
+        let (result, received_values) = {
+            let mut frame = CallFrame::new(
+                self.transaction_hash,
+                self.depth + 1,
+                self.max_depth,
+                self.trace,
+                self.id_allocator,
+                self.track,
+                actor,
+                self.wasm_engine,
+                self.wasm_instrumenter,
+                self.fee_reserve,
+                self.fee_table,
+                match receiver {
+                    Receiver::Component(_) => Some(RefCell::new(AuthZone::new())),
+                    _ => None,
+                },
+                next_owned_values,
+                next_frame_node_refs,
+                next_borrowed_values,
+                self.auth_zone.as_ref(),
+            );
 
-        // invoke the main function
-        let (result, received_values) = frame.run(
-            ExecutionEntity::Method(receiver, execution_state),
-            &fn_ident,
-            input,
-        )?;
-        drop(frame);
+            // invoke the main function
+            frame.run(
+                ExecutionEntity::Method(receiver, execution_state),
+                &fn_ident,
+                input,
+            )?
+        };
 
         // Release locked addresses
         for l in locked_values {
@@ -2038,6 +2099,15 @@ where
         for (id, value) in received_values {
             trace!(self, Level::Debug, "Received value: {:?}", value);
             self.owned_heap_nodes.insert(id, value);
+        }
+
+        // Accept component references
+        for refed_component_address in &result.refed_component_addresses {
+            let node_id = RENodeId::Component(*refed_component_address);
+            let mut visible = HashSet::new();
+            visible.insert(SubstateId::ComponentInfo(*refed_component_address));
+            self.node_refs
+                .insert(node_id, RENodePointer::Store(node_id));
         }
 
         trace!(self, Level::Debug, "Invoking finished!");
@@ -2067,7 +2137,7 @@ where
                         loaded: false,
                         size: 0,
                     },
-                    RENodeId::Resource(_) => SystemApiCostingEntry::BorrowGlobal {
+                    RENodeId::ResourceManager(_) => SystemApiCostingEntry::BorrowGlobal {
                         // TODO: figure out loaded state and size
                         loaded: false,
                         size: 0,
@@ -2087,54 +2157,78 @@ where
             "borrow",
         )?;
 
-        let info = self
+        let node_pointer = self
             .node_refs
             .get(node_id)
             .expect(&format!("{:?} is unknown.", node_id));
-        if !info.visible {
-            panic!("Trying to read value which is not visible.")
-        }
 
-        Ok(info
-            .pointer
-            .to_ref(&self.owned_heap_nodes, &self.parent_heap_nodes, &self.track))
+        Ok(node_pointer.to_ref(&self.owned_heap_nodes, &self.parent_heap_nodes, &self.track))
     }
 
-    fn borrow_node_mut(&mut self, node_id: &RENodeId) -> Result<NativeRENodeRef, FeeReserveError> {
-        trace!(self, Level::Debug, "Borrowing value (mut): {:?}", node_id);
+    fn substate_borrow_mut(
+        &mut self,
+        substate_id: &SubstateId,
+    ) -> Result<NativeSubstateRef, FeeReserveError> {
+        trace!(
+            self,
+            Level::Debug,
+            "Borrowing substate (mut): {:?}",
+            substate_id
+        );
 
+        // Costing
         self.fee_reserve.consume(
             self.fee_table.system_api_cost({
-                match node_id {
-                    RENodeId::Bucket(_) => SystemApiCostingEntry::BorrowLocal,
-                    RENodeId::Proof(_) => SystemApiCostingEntry::BorrowLocal,
-                    RENodeId::Worktop => SystemApiCostingEntry::BorrowLocal,
-                    RENodeId::Vault(_) => SystemApiCostingEntry::BorrowGlobal {
+                match substate_id {
+                    SubstateId::Bucket(_) => SystemApiCostingEntry::BorrowLocal,
+                    SubstateId::Proof(_) => SystemApiCostingEntry::BorrowLocal,
+                    SubstateId::Worktop => SystemApiCostingEntry::BorrowLocal,
+                    SubstateId::Vault(_) => SystemApiCostingEntry::BorrowGlobal {
                         // TODO: figure out loaded state and size
                         loaded: false,
                         size: 0,
                     },
-                    RENodeId::Component(_) => SystemApiCostingEntry::BorrowGlobal {
+                    SubstateId::ComponentState(..) => SystemApiCostingEntry::BorrowGlobal {
                         // TODO: figure out loaded state and size
                         loaded: false,
                         size: 0,
                     },
-                    RENodeId::KeyValueStore(_) => SystemApiCostingEntry::BorrowGlobal {
+                    SubstateId::ComponentInfo(..) => SystemApiCostingEntry::BorrowGlobal {
                         // TODO: figure out loaded state and size
                         loaded: false,
                         size: 0,
                     },
-                    RENodeId::Resource(_) => SystemApiCostingEntry::BorrowGlobal {
+                    SubstateId::KeyValueStoreSpace(_) => SystemApiCostingEntry::BorrowGlobal {
                         // TODO: figure out loaded state and size
                         loaded: false,
                         size: 0,
                     },
-                    RENodeId::Package(_) => SystemApiCostingEntry::BorrowGlobal {
+                    SubstateId::KeyValueStoreEntry(..) => SystemApiCostingEntry::BorrowGlobal {
                         // TODO: figure out loaded state and size
                         loaded: false,
                         size: 0,
                     },
-                    RENodeId::System => SystemApiCostingEntry::BorrowGlobal {
+                    SubstateId::ResourceManager(..) => SystemApiCostingEntry::BorrowGlobal {
+                        // TODO: figure out loaded state and size
+                        loaded: false,
+                        size: 0,
+                    },
+                    SubstateId::NonFungibleSpace(..) => SystemApiCostingEntry::BorrowGlobal {
+                        // TODO: figure out loaded state and size
+                        loaded: false,
+                        size: 0,
+                    },
+                    SubstateId::NonFungible(..) => SystemApiCostingEntry::BorrowGlobal {
+                        // TODO: figure out loaded state and size
+                        loaded: false,
+                        size: 0,
+                    },
+                    SubstateId::Package(..) => SystemApiCostingEntry::BorrowGlobal {
+                        // TODO: figure out loaded state and size
+                        loaded: false,
+                        size: 0,
+                    },
+                    SubstateId::System => SystemApiCostingEntry::BorrowGlobal {
                         // TODO: figure out loaded state and size
                         loaded: false,
                         size: 0,
@@ -2144,29 +2238,34 @@ where
             "borrow",
         )?;
 
-        let info = self
-            .node_refs
-            .get(node_id)
-            .expect(&format!("Node should exist {:?}", node_id));
-        if !info.visible {
+        // Authorization
+        if !self.actor.is_substate_readable(substate_id) {
             panic!("Trying to read value which is not visible.")
         }
 
-        Ok(info.pointer.borrow_native_ref(
+        let node_id = SubstateProperties::get_node_id(substate_id);
+
+        let node_pointer = self
+            .node_refs
+            .get(&node_id)
+            .expect(&format!("Node should exist {:?}", node_id));
+
+        Ok(node_pointer.borrow_native_ref(
+            substate_id.clone(),
             &mut self.owned_heap_nodes,
             &mut self.parent_heap_nodes,
             &mut self.track,
         ))
     }
 
-    fn return_node_mut(&mut self, val_ref: NativeRENodeRef) -> Result<(), FeeReserveError> {
+    fn substate_return_mut(&mut self, val_ref: NativeSubstateRef) -> Result<(), FeeReserveError> {
         trace!(self, Level::Debug, "Returning value");
 
         self.fee_reserve.consume(
             self.fee_table.system_api_cost({
                 match &val_ref {
-                    NativeRENodeRef::Stack(..) => SystemApiCostingEntry::ReturnLocal,
-                    NativeRENodeRef::Track(substate_id, _) => match substate_id {
+                    NativeSubstateRef::Stack(..) => SystemApiCostingEntry::ReturnLocal,
+                    NativeSubstateRef::Track(substate_id, _) => match substate_id {
                         SubstateId::Vault(_) => SystemApiCostingEntry::ReturnGlobal { size: 0 },
                         SubstateId::KeyValueStoreSpace(_) => {
                             SystemApiCostingEntry::ReturnGlobal { size: 0 }
@@ -2191,6 +2290,9 @@ where
                             SystemApiCostingEntry::ReturnGlobal { size: 0 }
                         }
                         SubstateId::System => SystemApiCostingEntry::ReturnGlobal { size: 0 },
+                        SubstateId::Bucket(..) => SystemApiCostingEntry::ReturnGlobal { size: 0 },
+                        SubstateId::Proof(..) => SystemApiCostingEntry::ReturnGlobal { size: 0 },
+                        SubstateId::Worktop => SystemApiCostingEntry::ReturnGlobal { size: 0 },
                     },
                 }
             }),
@@ -2210,7 +2312,7 @@ where
 
         // TODO: costing
 
-        // TODO: Add authorization
+        // TODO: Authorization
 
         Ok(self.owned_heap_nodes.remove(&node_id).unwrap())
     }
@@ -2218,6 +2320,7 @@ where
     fn node_create(&mut self, re_node: HeapRENode) -> Result<RENodeId, RuntimeError> {
         trace!(self, Level::Debug, "Creating value");
 
+        // Costing
         self.fee_reserve
             .consume(
                 self.fee_table
@@ -2228,7 +2331,7 @@ where
             )
             .map_err(RuntimeError::CostingError)?;
 
-        // TODO: Add authorization
+        // TODO: Authorization
 
         // Take any required child nodes
         let children = re_node.get_child_nodes()?;
@@ -2252,16 +2355,25 @@ where
 
         // TODO: Clean the following up
         match node_id {
-            RENodeId::KeyValueStore(..) | RENodeId::Resource(..) => {
+            RENodeId::KeyValueStore(..) | RENodeId::ResourceManager(..) => {
                 self.node_refs.insert(
                     node_id.clone(),
-                    RENodeInfo {
-                        pointer: RENodePointer::Heap {
-                            frame_id: None,
-                            root: node_id.clone(),
-                            id: None,
-                        },
-                        visible: true,
+                    RENodePointer::Heap {
+                        frame_id: None,
+                        root: node_id.clone(),
+                        id: None,
+                    },
+                );
+            }
+            RENodeId::Component(component_address) => {
+                let mut visible = HashSet::new();
+                visible.insert(SubstateId::ComponentInfo(component_address));
+                self.node_refs.insert(
+                    node_id.clone(),
+                    RENodePointer::Heap {
+                        frame_id: None,
+                        root: node_id.clone(),
+                        id: None,
                     },
                 );
             }
@@ -2271,8 +2383,10 @@ where
         Ok(node_id)
     }
 
-    fn node_globalize(&mut self, node_id: &RENodeId) -> Result<(), RuntimeError> {
+    fn node_globalize(&mut self, node_id: RENodeId) -> Result<(), RuntimeError> {
         trace!(self, Level::Debug, "Globalizing value: {:?}", node_id);
+
+        // Costing
         self.fee_reserve
             .consume(
                 self.fee_table
@@ -2284,11 +2398,13 @@ where
             .map_err(RuntimeError::CostingError)?;
 
         if !RENodeProperties::can_globalize(node_id) {
-            return Err(RuntimeError::RENodeGlobalizeTypeNotAllowed(*node_id));
+            return Err(RuntimeError::RENodeGlobalizeTypeNotAllowed(node_id));
         }
 
+        // TODO: Authorization
+
         let mut nodes_to_take = HashSet::new();
-        nodes_to_take.insert(node_id.clone());
+        nodes_to_take.insert(node_id);
         let (taken_nodes, missing_nodes) = self.take_available_values(nodes_to_take, false)?;
         assert!(missing_nodes.is_empty());
         assert!(taken_nodes.len() == 1);
@@ -2297,20 +2413,22 @@ where
         let (substates, maybe_non_fungibles) = match root_node.root {
             HeapRENode::Component(component, component_state) => {
                 let mut substates = HashMap::new();
-                let component_address = node_id.clone().into();
+                let component_address = node_id.into();
                 substates.insert(
-                    SubstateId::ComponentInfo(component_address, true),
+                    SubstateId::ComponentInfo(component_address),
                     Substate::Component(component),
                 );
                 substates.insert(
                     SubstateId::ComponentState(component_address),
                     Substate::ComponentState(component_state),
                 );
+                let mut visible_substates = HashSet::new();
+                visible_substates.insert(SubstateId::ComponentInfo(component_address));
                 (substates, None)
             }
             HeapRENode::Package(package) => {
                 let mut substates = HashMap::new();
-                let package_address = node_id.clone().into();
+                let package_address = node_id.into();
                 substates.insert(
                     SubstateId::Package(package_address),
                     Substate::Package(package),
@@ -2319,7 +2437,7 @@ where
             }
             HeapRENode::Resource(resource_manager, non_fungibles) => {
                 let mut substates = HashMap::new();
-                let resource_address: ResourceAddress = node_id.clone().into();
+                let resource_address: ResourceAddress = node_id.into();
                 substates.insert(
                     SubstateId::ResourceManager(resource_address),
                     Substate::Resource(resource_manager),
@@ -2341,7 +2459,7 @@ where
         insert_non_root_nodes(self.track, to_store_values);
 
         if let Some(non_fungibles) = maybe_non_fungibles {
-            let resource_address: ResourceAddress = node_id.clone().into();
+            let resource_address: ResourceAddress = node_id.into();
             let parent_address = SubstateId::NonFungibleSpace(resource_address.clone());
             for (id, non_fungible) in non_fungibles {
                 self.track.set_key_value(
@@ -2352,12 +2470,16 @@ where
             }
         }
 
+        self.node_refs
+            .insert(node_id, RENodePointer::Store(node_id));
+
         Ok(())
     }
 
     fn substate_read(&mut self, substate_id: SubstateId) -> Result<ScryptoValue, RuntimeError> {
         trace!(self, Level::Debug, "Reading value data: {:?}", substate_id);
 
+        // Costing
         self.fee_reserve
             .consume(
                 self.fee_table.system_api_cost(SystemApiCostingEntry::Read {
@@ -2367,24 +2489,35 @@ where
             )
             .map_err(RuntimeError::CostingError)?;
 
+        // Authorization
+        if !self.actor.is_substate_readable(&substate_id) {
+            return Err(RuntimeError::SubstateReadNotReadable(
+                self.actor.clone(),
+                substate_id.clone(),
+            ));
+        }
+
         let (parent_pointer, current_value) = self.read_value_internal(&substate_id)?;
         let cur_children = current_value.node_ids();
         for child_id in cur_children {
             let child_pointer = parent_pointer.child(child_id);
-
-            // Extend current readable space when kv stores are found
-            let visible = matches!(child_id, RENodeId::KeyValueStore(..));
-            let child_info = RENodeInfo {
-                pointer: child_pointer,
-                visible,
-            };
-            self.node_refs.insert(child_id, child_info);
+            self.node_refs.insert(child_id, child_pointer);
         }
         Ok(current_value)
     }
 
     fn substate_take(&mut self, substate_id: SubstateId) -> Result<ScryptoValue, RuntimeError> {
         trace!(self, Level::Debug, "Removing value data: {:?}", substate_id);
+
+        // TODO: Costing
+
+        // Authorization
+        if !self.actor.is_substate_writeable(&substate_id) {
+            return Err(RuntimeError::SubstateWriteNotWriteable(
+                self.actor.clone(),
+                substate_id,
+            ));
+        }
 
         let (pointer, current_value) = self.read_value_internal(&substate_id)?;
         let cur_children = current_value.node_ids();
@@ -2410,6 +2543,7 @@ where
     ) -> Result<(), RuntimeError> {
         trace!(self, Level::Debug, "Writing value data: {:?}", substate_id);
 
+        // Costing
         self.fee_reserve
             .consume(
                 self.fee_table
@@ -2420,9 +2554,12 @@ where
             )
             .map_err(RuntimeError::CostingError)?;
 
-        // TODO: integrate with visible flag
-        if SubstateProperties::is_native(&substate_id) {
-            return Err(RuntimeError::InvalidDataWrite);
+        // Authorization
+        if !self.actor.is_substate_writeable(&substate_id) {
+            return Err(RuntimeError::SubstateWriteNotWriteable(
+                self.actor.clone(),
+                substate_id,
+            ));
         }
 
         // If write, take values from current frame
