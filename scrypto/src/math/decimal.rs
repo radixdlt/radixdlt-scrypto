@@ -214,7 +214,7 @@ macro_rules! decimals {
                 from_int!(i64);
                 from_int!(i128);
                 from_int!(isize);
-                
+
                 impl From<&str> for $dec {
                     fn from(val: &str) -> Self {
                         Self::from_str(&val).unwrap()
@@ -237,7 +237,7 @@ macro_rules! decimals {
                     }
                 }
 
-                impl<T: TryInto<$dec>> Add<T> for $dec 
+                impl<T: TryInto<$dec>> Add<T> for $dec
                     where <T as TryInto<$dec>>::Error: fmt::Debug {
                         type Output = $dec;
 
@@ -297,7 +297,7 @@ macro_rules! decimals {
                     }
                 }
 
-                impl<T: TryInto<$dec>> AddAssign<T> for $dec 
+                impl<T: TryInto<$dec>> AddAssign<T> for $dec
                     where <T as TryInto<$dec>>::Error: fmt::Debug {
                         fn add_assign(&mut self, other: T) {
                             let other: $dec = other.try_into().expect("Overflow");
@@ -305,7 +305,7 @@ macro_rules! decimals {
                         }
                     }
 
-                impl<T: TryInto<$dec>> SubAssign<T> for $dec 
+                impl<T: TryInto<$dec>> SubAssign<T> for $dec
                     where <T as TryInto<$dec>>::Error: fmt::Debug {
                         fn sub_assign(&mut self, other: T) {
                             let other: $dec = other.try_into().expect("Overflow");
@@ -521,12 +521,15 @@ pub trait Truncate<T> {
     fn truncate(self) -> Self::Output;
 }
 
-
 impl Truncate<Decimal> for PreciseDecimal {
     type Output = Decimal;
 
     fn truncate(self) -> Self::Output {
-        Decimal((self.0 / I256::from(10i8).pow(PreciseDecimal::SCALE - PreciseDecimal::SCALE)).try_into().expect("Overflow"))
+        Decimal(
+            (self.0 / I256::from(10i8).pow(PreciseDecimal::SCALE - PreciseDecimal::SCALE))
+                .try_into()
+                .expect("Overflow"),
+        )
     }
 }
 
@@ -609,8 +612,8 @@ pub enum RoundingMode {
 
 #[cfg(test)]
 mod tests {
-    use crate::{dec, pdec};
     use super::*;
+    use crate::{dec, pdec};
     use sbor::rust::vec;
 
     #[test]
