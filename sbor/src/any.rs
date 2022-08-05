@@ -130,7 +130,7 @@ fn encode_any_internal(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
         // struct & enum
         Value::Struct { fields } => {
             if ty_ctx.is_none() {
-                enc.write_type(TYPE_STRUCT);
+                enc.write_type_id(TYPE_STRUCT);
             }
             enc.write_len(fields.len());
             for field in fields {
@@ -139,7 +139,7 @@ fn encode_any_internal(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
         }
         Value::Enum { name, fields } => {
             if ty_ctx.is_none() {
-                enc.write_type(TYPE_ENUM);
+                enc.write_type_id(TYPE_ENUM);
             }
             name.encode_value(enc);
             enc.write_len(fields.len());
@@ -149,7 +149,7 @@ fn encode_any_internal(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
         }
         Value::Option { value } => {
             if ty_ctx.is_none() {
-                enc.write_type(TYPE_OPTION);
+                enc.write_type_id(TYPE_OPTION);
             }
             match value.borrow() {
                 Some(x) => {
@@ -163,7 +163,7 @@ fn encode_any_internal(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
         }
         Value::Result { value } => {
             if ty_ctx.is_none() {
-                enc.write_type(TYPE_RESULT);
+                enc.write_type_id(TYPE_RESULT);
             }
             match value.borrow() {
                 Ok(x) => {
@@ -182,9 +182,9 @@ fn encode_any_internal(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
             elements,
         } => {
             if ty_ctx.is_none() {
-                enc.write_type(TYPE_ARRAY);
+                enc.write_type_id(TYPE_ARRAY);
             }
-            enc.write_type(*element_type_id);
+            enc.write_type_id(*element_type_id);
             enc.write_len(elements.len());
             for e in elements {
                 encode_any_internal(Some(*element_type_id), e, enc);
@@ -192,7 +192,7 @@ fn encode_any_internal(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
         }
         Value::Tuple { elements } => {
             if ty_ctx.is_none() {
-                enc.write_type(TYPE_TUPLE);
+                enc.write_type_id(TYPE_TUPLE);
             }
             enc.write_len(elements.len());
             for e in elements {
@@ -205,9 +205,9 @@ fn encode_any_internal(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
             elements,
         } => {
             if ty_ctx.is_none() {
-                enc.write_type(TYPE_LIST);
+                enc.write_type_id(TYPE_LIST);
             }
-            enc.write_type(*element_type_id);
+            enc.write_type_id(*element_type_id);
             enc.write_len(elements.len());
             for e in elements {
                 encode_any_internal(Some(*element_type_id), e, enc);
@@ -218,9 +218,9 @@ fn encode_any_internal(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
             elements,
         } => {
             if ty_ctx.is_none() {
-                enc.write_type(TYPE_SET);
+                enc.write_type_id(TYPE_SET);
             }
-            enc.write_type(*element_type_id);
+            enc.write_type_id(*element_type_id);
             enc.write_len(elements.len());
             for e in elements {
                 encode_any_internal(Some(*element_type_id), e, enc);
@@ -232,10 +232,10 @@ fn encode_any_internal(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
             elements,
         } => {
             if ty_ctx.is_none() {
-                enc.write_type(TYPE_MAP);
+                enc.write_type_id(TYPE_MAP);
             }
-            enc.write_type(*key_type_id);
-            enc.write_type(*value_type_id);
+            enc.write_type_id(*key_type_id);
+            enc.write_type_id(*value_type_id);
             enc.write_len(elements.len() / 2);
             for pair in elements.chunks(2) {
                 encode_any_internal(Some(*key_type_id), &pair[0], enc);
@@ -245,7 +245,7 @@ fn encode_any_internal(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
         // custom
         Value::Custom { type_id, bytes } => {
             if ty_ctx.is_none() {
-                enc.write_type(*type_id);
+                enc.write_type_id(*type_id);
             }
             enc.write_len(bytes.len());
             enc.write_slice(bytes);
@@ -255,7 +255,7 @@ fn encode_any_internal(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
 
 fn encode_basic<T: Encode>(ty_ctx: Option<u8>, t: u8, v: &T, enc: &mut Encoder) {
     if ty_ctx.is_none() {
-        enc.write_type(t);
+        enc.write_type_id(t);
     }
     <T>::encode_value(v, enc);
 }

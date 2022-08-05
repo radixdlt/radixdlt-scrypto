@@ -27,8 +27,8 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
                 quote! {
                     impl ::sbor::Encode for #ident {
                         #[inline]
-                        fn encode_type(&self, encoder: &mut ::sbor::Encoder) {
-                            encoder.write_type(::sbor::type_id::TYPE_STRUCT);
+                        fn encode_type_id(&self, encoder: &mut ::sbor::Encoder) {
+                            encoder.write_type_id(::sbor::type_id::TYPE_STRUCT);
                         }
                         #[inline]
                         fn encode_value(&self, encoder: &mut ::sbor::Encoder) {
@@ -50,8 +50,8 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
                 quote! {
                     impl ::sbor::Encode for #ident {
                         #[inline]
-                        fn encode_type(&self, encoder: &mut ::sbor::Encoder) {
-                            encoder.write_type(::sbor::type_id::TYPE_STRUCT);
+                        fn encode_type_id(&self, encoder: &mut ::sbor::Encoder) {
+                            encoder.write_type_id(::sbor::type_id::TYPE_STRUCT);
                         }
                         #[inline]
                         fn encode_value(&self, encoder: &mut ::sbor::Encoder) {
@@ -66,8 +66,8 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
                 quote! {
                     impl ::sbor::Encode for #ident {
                         #[inline]
-                        fn encode_type(&self, encoder: &mut ::sbor::Encoder) {
-                            encoder.write_type(::sbor::type_id::TYPE_STRUCT);
+                        fn encode_type_id(&self, encoder: &mut ::sbor::Encoder) {
+                            encoder.write_type_id(::sbor::type_id::TYPE_STRUCT);
                         }
                         #[inline]
                         fn encode_value(&self, encoder: &mut ::sbor::Encoder) {
@@ -129,8 +129,8 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
                 quote! {
                     impl ::sbor::Encode for #ident {
                         #[inline]
-                        fn encode_type(&self, encoder: &mut ::sbor::Encoder) {
-                            encoder.write_type(::sbor::type_id::TYPE_ENUM);
+                        fn encode_type_id(&self, encoder: &mut ::sbor::Encoder) {
+                            encoder.write_type_id(::sbor::type_id::TYPE_ENUM);
                         }
                         #[inline]
                         fn encode_value(&self, encoder: &mut ::sbor::Encoder) {
@@ -141,8 +141,8 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
                 quote! {
                     impl ::sbor::Encode for #ident {
                         #[inline]
-                        fn encode_type(&self, encoder: &mut ::sbor::Encoder) {
-                            encoder.write_type(::sbor::type_id::TYPE_ENUM);
+                        fn encode_type_id(&self, encoder: &mut ::sbor::Encoder) {
+                            encoder.write_type_id(::sbor::type_id::TYPE_ENUM);
                         }
                         #[inline]
                         fn encode_value(&self, encoder: &mut ::sbor::Encoder) {
@@ -189,8 +189,8 @@ mod tests {
             quote! {
                 impl ::sbor::Encode for Test {
                     #[inline]
-                    fn encode_type(&self, encoder: &mut ::sbor::Encoder) {
-                        encoder.write_type(::sbor::type_id::TYPE_STRUCT);
+                    fn encode_type_id(&self, encoder: &mut ::sbor::Encoder) {
+                        encoder.write_type_id(::sbor::type_id::TYPE_STRUCT);
                     }
                     #[inline]
                     fn encode_value(&self, encoder: &mut ::sbor::Encoder) {
@@ -213,8 +213,8 @@ mod tests {
             quote! {
                 impl ::sbor::Encode for Test {
                     #[inline]
-                    fn encode_type(&self, encoder: &mut ::sbor::Encoder) {
-                        encoder.write_type(::sbor::type_id::TYPE_ENUM);
+                    fn encode_type_id(&self, encoder: &mut ::sbor::Encoder) {
+                        encoder.write_type_id(::sbor::type_id::TYPE_ENUM);
                     }
                     #[inline]
                     fn encode_value(&self, encoder: &mut ::sbor::Encoder) {

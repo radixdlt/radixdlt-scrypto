@@ -83,7 +83,7 @@ pub fn handle_non_fungible_data(input: TokenStream) -> Result<TokenStream> {
 
                             let mut bytes = Vec::with_capacity(512);
                         let mut encoder = Encoder::new(&mut bytes, true);
-                            encoder.write_type(TYPE_STRUCT);
+                            encoder.write_type_id(TYPE_STRUCT);
                             encoder.write_len(#im_n);
                             #(
                                 self.#im_ids2.encode(&mut encoder);
@@ -98,7 +98,7 @@ pub fn handle_non_fungible_data(input: TokenStream) -> Result<TokenStream> {
 
                             let mut bytes = Vec::with_capacity(512);
                         let mut encoder = Encoder::new(&mut bytes, true);
-                            encoder.write_type(TYPE_STRUCT);
+                            encoder.write_type_id(TYPE_STRUCT);
                             encoder.write_len(#m_n);
                             #(
                                 self.#m_ids2.encode(&mut encoder);
@@ -203,7 +203,7 @@ mod tests {
                         use ::sbor::{type_id::*, *};
                         let mut bytes = Vec::with_capacity(512);
                         let mut encoder = Encoder::new(&mut bytes, true);
-                        encoder.write_type(TYPE_STRUCT);
+                        encoder.write_type_id(TYPE_STRUCT);
                         encoder.write_len(1);
                         self.field_1.encode(&mut encoder);
                         bytes
@@ -213,7 +213,7 @@ mod tests {
                         use ::sbor::rust::vec::Vec;
                         let mut bytes = Vec::with_capacity(512);
                         let mut encoder = Encoder::new(&mut bytes, true);
-                        encoder.write_type(TYPE_STRUCT);
+                        encoder.write_type_id(TYPE_STRUCT);
                         encoder.write_len(1);
                         self.field_2.encode(&mut encoder);
                         bytes

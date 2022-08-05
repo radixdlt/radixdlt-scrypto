@@ -121,8 +121,8 @@ impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> TypeId for KeyVa
 
 impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> Encode for KeyValueStore<K, V> {
     #[inline]
-    fn encode_type(&self, encoder: &mut Encoder) {
-        encoder.write_type(Self::type_id());
+    fn encode_type_id(&self, encoder: &mut Encoder) {
+        encoder.write_type_id(Self::type_id());
     }
 
     #[inline]
