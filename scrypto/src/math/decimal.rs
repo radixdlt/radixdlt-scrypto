@@ -337,7 +337,7 @@ macro_rules! decimals {
                     type Error = [<Parse $dec Error>];
 
                     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-                        if slice.len() == 16 {
+                        if slice.len() == Self::BITS / 8 {
                             match <$wrapped>::try_from(slice) {
                                 Ok(val) => Ok(Self(val)),
                                 Err(_) => Err([<Parse $dec Error>]::Overflow),
