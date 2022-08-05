@@ -51,7 +51,21 @@ $resim generate-key-pair
 $resim run ./target/temp2.rtm --signing-keys 4fc0db017bf9b80743b7151fee3f04bad817f2d8d7e34ae96c022fe7451b0ea3,329a27258d7e9496c42a110571e6ba0d47f2bda8bd610e9777d16853ab145b0c
 
 # Test - nft
-package=`$resim publish ./tests/nft | awk '/Package:/ {print $NF}'`
+package=`$resim publish ./tests/blueprints | awk '/Package:/ {print $NF}'`
 $resim call-function $package Foo nfts
 $resim show $account
 
+# Test - proofs
+proofs_receipt=`$resim call-function $package Proofs new`
+
+component=`echo "$proofs_receipt" | awk '/Component:/ {print $NF}'`
+
+resources=`echo "$proofs_receipt" | awk '/Resource:/ {print $NF}'`
+supervisor_badge=`echo $resources | cut -d " " -f1`
+admin_badge=`echo $resources | cut -d " " -f2`
+superadmin_badge=`echo $resources | cut -d " " -f3`
+token=`echo $resources | cut -d " " -f4`
+
+$resim call-method $component organizational_authenticated_method --proofs 1,$supervisor_badge 1,$admin_badge 1,$superadmin_badge
+$resim transfer 2 $token $account2 --proofs 1,$supervisor_badge 1,$admin_badge 1,$superadmin_badge
+$resim mint 100000 $token --proofs 1,$supervisor_badge 1,$admin_badge 1,$superadmin_badge
