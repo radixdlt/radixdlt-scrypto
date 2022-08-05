@@ -46,7 +46,7 @@ pub enum ProofValidationMode {
     /// Specifies that the `Proof` should be validating for containing a specific `NonFungibleAddress`.
     ValidateContainsNonFungible(NonFungibleAddress),
 
-    /// Specifies that the `Proof` should be validated against a single resource address and a set of `NonFungibleId`s 
+    /// Specifies that the `Proof` should be validated against a single resource address and a set of `NonFungibleId`s
     /// to ensure that the `Proof` contains all of the NonFungibles in the set.
     ValidateContainsNonFungibles(ResourceAddress, BTreeSet<NonFungibleId>),
 
@@ -145,7 +145,10 @@ impl Proof {
                 self.validate_contains_non_fungible_id(non_fungible_address.non_fungible_id())?;
                 Ok(())
             }
-            ProofValidationMode::ValidateContainsNonFungibles(resource_address, non_fungible_ids) => {
+            ProofValidationMode::ValidateContainsNonFungibles(
+                resource_address,
+                non_fungible_ids,
+            ) => {
                 self.validate_resource_address(resource_address)?;
                 self.validate_contains_non_fungible_ids(&non_fungible_ids)?;
                 Ok(())
