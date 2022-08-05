@@ -43,16 +43,15 @@ pub enum ProofValidationMode {
     /// the `Proof`'s resource address belongs to the set, then its valid.
     ValidateResourceAddressBelongsTo(BTreeSet<ResourceAddress>),
 
-    /// Specifies that the `Proof` should be validated against a single `ResourceAddress` and `NonFungibleId` pair.
-    ValidateNonFungibleId(ResourceAddress, NonFungibleId),
+    /// Specifies that the `Proof` should be validating for containing a specific `NonFungibleAddress`.
+    ValidateContainsNonFungible(NonFungibleAddress),
 
-    /// Specifies that the `Proof` should be validated against a single `ResourceAddress` and a set of `NonFungibleId`s.
-    /// If the `Proof`'s resource address matches that specified, and the `NonFungibleId`s of the proof all belong to
-    /// the provided set, then it is valid.
-    ValidateNonFungibleIdsSubsetOf(ResourceAddress, BTreeSet<NonFungibleId>),
+    /// Specifies that the `Proof` should be validated against a single resource address and a set of `NonFungibleId`s 
+    /// to ensure that the `Proof` contains all of the NonFungibles in the set.
+    ValidateContainsNonFungibles(ResourceAddress, BTreeSet<NonFungibleId>),
 
     /// Specifies that the `Proof` should be validated for the amount of resources that it contains.
-    ValidateAmount(ResourceAddress, Decimal),
+    ValidateContainsAmount(ResourceAddress, Decimal),
 }
 
 impl From<ResourceAddress> for ProofValidationMode {
@@ -63,10 +62,7 @@ impl From<ResourceAddress> for ProofValidationMode {
 
 impl From<NonFungibleAddress> for ProofValidationMode {
     fn from(non_fungible_address: NonFungibleAddress) -> Self {
-        Self::ValidateNonFungibleId(
-            non_fungible_address.resource_address(),
-            non_fungible_address.non_fungible_id(),
-        )
+        Self::ValidateContainsNonFungible(non_fungible_address)
     }
 }
 
@@ -144,22 +140,19 @@ impl Proof {
                 self.validate_resource_address_belongs_to(&resource_addresses)?;
                 Ok(())
             }
-            ProofValidationMode::ValidateNonFungibleId(resource_address, non_fungible_id) => {
-                self.validate_resource_address(resource_address)?;
-                self.validate_non_fungible_id(non_fungible_id)?;
+            ProofValidationMode::ValidateContainsNonFungible(non_fungible_address) => {
+                self.validate_resource_address(non_fungible_address.resource_address())?;
+                self.validate_contains_non_fungible_id(non_fungible_address.non_fungible_id())?;
                 Ok(())
             }
-            ProofValidationMode::ValidateNonFungibleIdsSubsetOf(
-                resource_address,
-                non_fungible_ids,
-            ) => {
+            ProofValidationMode::ValidateContainsNonFungibles(resource_address, non_fungible_ids) => {
                 self.validate_resource_address(resource_address)?;
-                self.validate_non_fungible_id_belongs_to(&non_fungible_ids)?;
+                self.validate_contains_non_fungible_ids(&non_fungible_ids)?;
                 Ok(())
             }
-            ProofValidationMode::ValidateAmount(resource_address, amount) => {
+            ProofValidationMode::ValidateContainsAmount(resource_address, amount) => {
                 self.validate_resource_address(resource_address)?;
-                self.validate_amount(amount)?;
+                self.validate_contains_amount(amount)?;
                 Ok(())
             }
         }
@@ -189,23 +182,18 @@ impl Proof {
         }
     }
 
-    fn validate_non_fungible_id(
+    fn validate_contains_non_fungible_id(
         &self,
         non_fungible_id: NonFungibleId,
     ) -> Result<(), ProofValidationError> {
-        let non_fungible_ids = self.non_fungible_ids();
-        if non_fungible_ids.len() != 1 {
-            return Err(ProofValidationError::DoesNotContainOneNonFungible);
-        }
-
-        if non_fungible_ids.get(&non_fungible_id).is_some() {
+        if self.non_fungible_ids().get(&non_fungible_id).is_some() {
             Ok(())
         } else {
             Err(ProofValidationError::InvalidNonFungibleId(non_fungible_id))
         }
     }
 
-    fn validate_non_fungible_id_belongs_to(
+    fn validate_contains_non_fungible_ids(
         &self,
         expected_non_fungible_ids: &BTreeSet<NonFungibleId>,
     ) -> Result<(), ProofValidationError> {
@@ -220,8 +208,8 @@ impl Proof {
         }
     }
 
-    fn validate_amount(&self, amount: Decimal) -> Result<(), ProofValidationError> {
-        if self.amount() == amount {
+    fn validate_contains_amount(&self, amount: Decimal) -> Result<(), ProofValidationError> {
+        if self.amount() >= amount {
             Ok(())
         } else {
             Err(ProofValidationError::InvalidAmount(amount))
