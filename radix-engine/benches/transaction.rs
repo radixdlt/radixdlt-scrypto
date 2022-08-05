@@ -10,7 +10,7 @@ use transaction::validation::verify_ecdsa;
 use transaction::validation::verify_ed25519;
 use transaction::validation::TestIntentHashManager;
 use transaction::validation::TransactionValidator;
-use transaction::validation::ValidationParameters;
+use transaction::validation::ValidationConfig;
 
 fn bench_ecdsa_validation(c: &mut Criterion) {
     let message = "This is a long message".repeat(100);
@@ -75,7 +75,7 @@ fn bench_transaction_validation(c: &mut Criterion) {
     c.bench_function("Transaction validation", |b| {
         b.iter(|| {
             let intent_hash_manager = TestIntentHashManager::new();
-            let parameters: ValidationParameters = ValidationParameters {
+            let config: ValidationConfig = ValidationConfig {
                 network: Network::LocalSimulator,
                 current_epoch: 1,
                 max_cost_unit_limit: 10_000_000,
@@ -85,7 +85,7 @@ fn bench_transaction_validation(c: &mut Criterion) {
             TransactionValidator::validate_from_slice(
                 &transaction_bytes,
                 &intent_hash_manager,
-                &parameters,
+                &config,
             )
             .unwrap();
         })

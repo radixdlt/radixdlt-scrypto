@@ -10,7 +10,7 @@ use scrypto::engine::types::*;
 use scrypto::values::ScryptoValue;
 
 use crate::engine::{DropFailure, HeapRENode, SystemApi};
-use crate::fee::{CostUnitCounter, CostUnitCounterError};
+use crate::fee::{FeeReserve, FeeReserveError};
 use crate::model::WorktopError::InvalidMethod;
 use crate::model::{Bucket, ResourceContainer, ResourceContainerError};
 use crate::wasm::*;
@@ -74,7 +74,7 @@ pub enum WorktopError {
     CouldNotTakeBucket,
     AssertionFailed,
     InvalidMethod,
-    CostingError(CostUnitCounterError),
+    CostingError(FeeReserveError),
 }
 
 impl Worktop {
@@ -223,7 +223,7 @@ impl Worktop {
         Y: SystemApi<'p, 's, W, I, C>,
         W: WasmEngine<I>,
         I: WasmInstance,
-        C: CostUnitCounter,
+        C: FeeReserve,
     >(
         method_name: &str,
         arg: ScryptoValue,

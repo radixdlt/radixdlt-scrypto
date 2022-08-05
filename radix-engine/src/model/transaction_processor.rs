@@ -18,7 +18,7 @@ use transaction::model::*;
 use transaction::validation::*;
 
 use crate::engine::{HeapRENode, RuntimeError, RuntimeError::ProofNotFound, SystemApi};
-use crate::fee::CostUnitCounter;
+use crate::fee::FeeReserve;
 use crate::model::worktop::{
     WorktopAssertContainsAmountInput, WorktopAssertContainsInput,
     WorktopAssertContainsNonFungiblesInput, WorktopDrainInput, WorktopPutInput,
@@ -68,7 +68,7 @@ impl TransactionProcessor {
         Y: SystemApi<'p, 's, W, I, C>,
         W: WasmEngine<I>,
         I: WasmInstance,
-        C: CostUnitCounter,
+        C: FeeReserve,
     >(
         function_name: &str,
         call_data: ScryptoValue,

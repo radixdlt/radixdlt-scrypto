@@ -75,12 +75,10 @@ impl<'a> SborValueRetriever<'a> {
             Value::Struct { fields: vec }
             | Value::Enum { fields: vec, .. }
             | Value::Array { elements: vec, .. }
-            | Value::Vec { elements: vec, .. }
             | Value::Tuple { elements: vec, .. }
-            | Value::TreeSet { elements: vec, .. }
-            | Value::TreeMap { elements: vec, .. }
-            | Value::HashSet { elements: vec, .. }
-            | Value::HashMap { elements: vec, .. } => self.get_from_vector(vec),
+            | Value::List { elements: vec, .. }
+            | Value::Set { elements: vec, .. }
+            | Value::Map { elements: vec, .. } => self.get_from_vector(vec),
             Value::Option { value } => match value.as_ref() {
                 Option::Some(value) => Option::Some(value),
                 Option::None => Option::None,
@@ -108,12 +106,10 @@ impl<'a> SborValueRetriever<'a> {
             Value::Struct { fields: vec }
             | Value::Enum { fields: vec, .. }
             | Value::Array { elements: vec, .. }
-            | Value::Vec { elements: vec, .. }
             | Value::Tuple { elements: vec, .. }
-            | Value::TreeSet { elements: vec, .. }
-            | Value::TreeMap { elements: vec, .. }
-            | Value::HashSet { elements: vec, .. }
-            | Value::HashMap { elements: vec, .. } => self.get_from_vector_mut(vec),
+            | Value::List { elements: vec, .. }
+            | Value::Set { elements: vec, .. }
+            | Value::Map { elements: vec, .. } => self.get_from_vector_mut(vec),
             Value::Option { value } => match value.as_mut() {
                 Option::Some(value) => Option::Some(value),
                 Option::None => Option::None,

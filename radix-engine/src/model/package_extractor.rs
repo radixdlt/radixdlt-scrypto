@@ -9,7 +9,7 @@ use scrypto::prelude::Package;
 use scrypto::values::ScryptoValue;
 
 use crate::engine::NopWasmRuntime;
-use crate::fee::SystemLoanCostUnitCounter;
+use crate::fee::SystemLoanFeeReserve;
 use crate::wasm::*;
 
 #[derive(Debug)]
@@ -34,7 +34,7 @@ fn extract_abi(code: &[u8]) -> Result<HashMap<String, BlueprintAbi>, ExtractAbiE
     let metering_params = WasmMeteringParams::new(InstructionCostRules::tiered(50000), 512);
     let instrumented_code = wasm_instrumenter.instrument(code, &metering_params);
     let mut runtime: Box<dyn WasmRuntime> =
-        Box::new(NopWasmRuntime::new(SystemLoanCostUnitCounter::default()));
+        Box::new(NopWasmRuntime::new(SystemLoanFeeReserve::default()));
     let mut instance = wasm_engine.instantiate(&instrumented_code);
     let mut blueprints = HashMap::new();
     for method_name in function_exports {
