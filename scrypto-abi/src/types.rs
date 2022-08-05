@@ -14,7 +14,7 @@ macro_rules! scrypto_type {
 
         impl Encode for $t {
             #[inline]
-            fn encode_type_id(&self, encoder: &mut Encoder) {
+            fn encode_static_type_id(&self, encoder: &mut Encoder) {
                 encoder.write_type_id(Self::type_id());
             }
             #[inline]
