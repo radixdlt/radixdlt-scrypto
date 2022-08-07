@@ -250,7 +250,7 @@ macro_rules! decimals {
                         }
                     }
 
-                impl<T: Into<$dec>> Sub<T> for $dec
+                impl<T: TryInto<$dec>> Sub<T> for $dec
                     where <T as TryInto<$dec>>::Error: fmt::Debug {
                         type Output = $dec;
 
@@ -263,7 +263,7 @@ macro_rules! decimals {
                         }
                     }
 
-                impl<T: Into<$dec>> Mul<T> for $dec
+                impl<T: TryInto<$dec>> Mul<T> for $dec
                     where <T as TryInto<$dec>>::Error: fmt::Debug {
                         type Output = $dec;
 
@@ -276,7 +276,7 @@ macro_rules! decimals {
                         }
                     }
 
-                impl<T: Into<$dec>> Div<T> for $dec
+                impl<T: TryInto<$dec>> Div<T> for $dec
                     where <T as TryInto<$dec>>::Error: fmt::Debug {
                         type Output = $dec;
 
