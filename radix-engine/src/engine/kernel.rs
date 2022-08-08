@@ -31,7 +31,6 @@ macro_rules! trace {
 }
 
 pub struct Kernel<
-    'p, // Parent lifetime
     'g, // Lifetime of values outliving all frames
     's, // Substate store lifetime
     W,  // WASM engine type
@@ -66,12 +65,12 @@ pub struct Kernel<
     /// ID allocator
     id_allocator: IdAllocator,
     /// Call frames
-    call_frames: Vec<CallFrame<'p>>,
+    call_frames: Vec<CallFrame>,
 
     phantom: PhantomData<I>,
 }
 
-impl<'p, 'g, 's, W, I, C> Kernel<'p, 'g, 's, W, I, C>
+impl<'g, 's, W, I, C> Kernel<'g, 's, W, I, C>
 where
     W: WasmEngine<I>,
     I: WasmInstance,
@@ -110,14 +109,6 @@ where
         kernel
     }
 
-    fn current_frame<'a>(frames: &'a Vec<CallFrame<'p>>) -> &'a CallFrame<'p> {
-        frames.last().expect("Current frame always exists")
-    }
-
-    fn current_frame_mut<'a>(frames: &'a mut Vec<CallFrame<'p>>) -> &'a mut CallFrame<'p> {
-        frames.last_mut().expect("Current frame always exists")
-    }
-
     fn process_call_data(validated: &ScryptoValue) -> Result<(), RuntimeError> {
         if !validated.kv_store_ids.is_empty() {
             return Err(RuntimeError::KeyValueStoreNotAllowed);
@@ -139,7 +130,7 @@ where
     }
 
     pub fn read_value_internal(
-        current_frame: &mut CallFrame<'p>,
+        call_frames: &mut Vec<CallFrame>,
         track: &mut Track<'s>,
         substate_id: &SubstateId,
     ) -> Result<(RENodePointer, ScryptoValue), RuntimeError> {
@@ -147,7 +138,9 @@ where
 
         // Get location
         // Note this must be run AFTER values are taken, otherwise there would be inconsistent readable_values state
-        let node_pointer = current_frame
+        let node_pointer = call_frames
+            .last()
+            .expect("Current frame always exists")
             .node_refs
             .get(&node_id)
             .cloned()
@@ -163,12 +156,7 @@ where
 
         // Read current value
         let current_value = {
-            let mut node_ref = node_pointer.to_ref_mut(
-                current_frame.depth,
-                &mut current_frame.owned_heap_nodes,
-                &mut current_frame.parent_heap_nodes,
-                track,
-            );
+            let mut node_ref = node_pointer.to_ref_mut(call_frames, track);
             node_ref.read_scrypto_value(&substate_id)?
         };
 
@@ -235,7 +223,7 @@ where
     }
 }
 
-impl<'p, 'g, 's, W, I, C> SystemApi<'s, W, I, C> for Kernel<'p, 'g, 's, W, I, C>
+impl<'g, 's, W, I, C> SystemApi<'s, W, I, C> for Kernel<'g, 's, W, I, C>
 where
     W: WasmEngine<I>,
     I: WasmInstance,
@@ -283,7 +271,10 @@ where
 
         // Figure out what buckets and proofs to move from this process
         let values_to_take = input.node_ids();
-        let (taken_values, mut missing) = Self::current_frame_mut(&mut self.call_frames)
+        let (taken_values, mut missing) = self
+            .call_frames
+            .last_mut()
+            .expect("Current frame always exists")
             .take_available_values(values_to_take, false)?;
         let first_missing_value = missing.drain().nth(0);
         if let Some(missing_value) = first_missing_value {
@@ -374,7 +365,10 @@ where
             // Pass argument references
             for refed_component_address in &input.refed_component_addresses {
                 let node_id = RENodeId::Component(refed_component_address.clone());
-                if let Some(pointer) = Self::current_frame(&self.call_frames)
+                if let Some(pointer) = self
+                    .call_frames
+                    .last_mut()
+                    .expect("Current frame always exists")
                     .node_refs
                     .get(&node_id)
                 {
@@ -387,18 +381,14 @@ where
             }
         }
 
-        // Setup next parent frame
-        let mut next_borrowed_values: Vec<&mut HashMap<RENodeId, HeapRootRENode>> = Vec::new();
-        let current_frame = Self::current_frame_mut(&mut self.call_frames);
-        for parent_values in &mut current_frame.parent_heap_nodes {
-            next_borrowed_values.push(parent_values);
-        }
-        next_borrowed_values.push(&mut current_frame.owned_heap_nodes);
-
         // start a new frame
         let (result, received_values) = {
             let mut frame = CallFrame::new(
-                current_frame.depth + 1,
+                self.call_frames
+                    .last()
+                    .expect("Current frame always exists")
+                    .depth
+                    + 1,
                 actor,
                 match type_name {
                     TypeName::TransactionProcessor | TypeName::Blueprint(_, _) => {
@@ -408,8 +398,6 @@ where
                 },
                 next_owned_values,
                 next_frame_node_refs,
-                next_borrowed_values,
-                current_frame.auth_zone.as_ref(),
             );
 
             // invoke the main function
@@ -428,7 +416,11 @@ where
         // move buckets and proofs to this process.
         for (id, value) in received_values {
             trace!(self, Level::Debug, "Received value: {:?}", value);
-            current_frame.owned_heap_nodes.insert(id, value);
+            self.call_frames
+                .last_mut()
+                .expect("Current frame always exists")
+                .owned_heap_nodes
+                .insert(id, value);
         }
 
         // Accept component references
@@ -436,7 +428,9 @@ where
             let node_id = RENodeId::Component(*refed_component_address);
             let mut visible = HashSet::new();
             visible.insert(SubstateId::ComponentInfo(*refed_component_address));
-            current_frame
+            self.call_frames
+                .last_mut()
+                .expect("Current frame always exists")
                 .node_refs
                 .insert(node_id, RENodePointer::Store(node_id));
         }
@@ -459,8 +453,13 @@ where
             &fn_ident
         );
 
-        let current_frame = Self::current_frame_mut(&mut self.call_frames);
-        if current_frame.depth == self.max_depth {
+        if self
+            .call_frames
+            .last()
+            .expect("Current frame always exists")
+            .depth
+            == self.max_depth
+        {
             return Err(RuntimeError::MaxCallDepthLimitReached);
         }
 
@@ -488,8 +487,11 @@ where
 
         // Figure out what buckets and proofs to move from this process
         let values_to_take = input.node_ids();
-        let (taken_values, mut missing) =
-            current_frame.take_available_values(values_to_take, false)?;
+        let (taken_values, mut missing) = self
+            .call_frames
+            .last_mut()
+            .expect("Current frame always exists")
+            .take_available_values(values_to_take, false)?;
         let first_missing_value = missing.drain().nth(0);
         if let Some(missing_value) = first_missing_value {
             return Err(RuntimeError::RENodeNotFound(missing_value));
@@ -508,8 +510,6 @@ where
 
         let mut locked_values = HashSet::new();
         let mut next_frame_node_refs = HashMap::new();
-        // TODO: Remove once heap is implemented
-        let next_caller_auth_zone;
 
         // Authorization and state load
         let (actor, execution_state) = match &receiver {
@@ -520,7 +520,10 @@ where
                     _ => return Err(RuntimeError::MethodDoesNotExist(fn_ident.clone())),
                 };
 
-                let heap_node = current_frame
+                let heap_node = self
+                    .call_frames
+                    .last_mut()
+                    .expect("Current frame always exists")
                     .owned_heap_nodes
                     .remove(node_id)
                     .ok_or(RuntimeError::RENodeNotFound(*node_id))?;
@@ -548,12 +551,10 @@ where
                     &fn_ident,
                     &native_substate_id,
                     heap_node.root(),
+                    &mut self.call_frames,
                     &mut self.track,
-                    current_frame.auth_zone.as_ref(),
-                    current_frame.caller_auth_zone,
                 )?;
                 next_owned_values.insert(*node_id, heap_node);
-                next_caller_auth_zone = current_frame.auth_zone.as_ref();
 
                 Ok((REActor::Native, ExecutionState::Consumed(*node_id)))
             }
@@ -573,13 +574,29 @@ where
                     _ => return Err(RuntimeError::MethodDoesNotExist(fn_ident.clone())),
                 };
 
-                let node_pointer = if current_frame.owned_heap_nodes.contains_key(&node_id) {
+                let node_pointer = if self
+                    .call_frames
+                    .last()
+                    .expect("Current frame always exists")
+                    .owned_heap_nodes
+                    .contains_key(&node_id)
+                {
                     RENodePointer::Heap {
-                        frame_id: current_frame.depth,
+                        frame_id: self
+                            .call_frames
+                            .last()
+                            .expect("Current frame always exists")
+                            .depth,
                         root: node_id.clone(),
                         id: None,
                     }
-                } else if let Some(pointer) = current_frame.node_refs.get(&node_id) {
+                } else if let Some(pointer) = self
+                    .call_frames
+                    .last()
+                    .expect("Current frame always exists")
+                    .node_refs
+                    .get(&node_id)
+                {
                     pointer.clone()
                 } else {
                     match node_id {
@@ -623,12 +640,7 @@ where
                 match node_id {
                     RENodeId::Component(..) => {
                         let package_address = {
-                            let node_ref = node_pointer.to_ref(
-                                current_frame.depth,
-                                &mut current_frame.owned_heap_nodes,
-                                &mut current_frame.parent_heap_nodes,
-                                &mut self.track,
-                            );
+                            let node_ref = node_pointer.to_ref(&self.call_frames, &mut self.track);
                             node_ref.component_info().package_address()
                         };
                         let package_substate_id = SubstateId::Package(package_address);
@@ -646,12 +658,7 @@ where
                     }
                     RENodeId::Vault(..) => {
                         let resource_address = {
-                            let node_ref = node_pointer.to_ref(
-                                current_frame.depth,
-                                &mut current_frame.owned_heap_nodes,
-                                &mut current_frame.parent_heap_nodes,
-                                &mut self.track,
-                            );
+                            let node_ref = node_pointer.to_ref(&self.call_frames, &mut self.track);
                             node_ref.vault().resource_address()
                         };
                         let resource_substate_id = SubstateId::ResourceManager(resource_address);
@@ -693,20 +700,19 @@ where
                     &input,
                     native_substate_id.clone(),
                     node_pointer.clone(),
-                    current_frame.depth,
-                    &mut current_frame.owned_heap_nodes,
-                    &mut current_frame.parent_heap_nodes,
+                    &mut self.call_frames,
                     &mut self.track,
-                    current_frame.auth_zone.as_ref(),
-                    current_frame.caller_auth_zone,
                 )?;
-                next_caller_auth_zone = current_frame.auth_zone.as_ref();
 
                 Ok((REActor::Native, ExecutionState::RENodeRef(*node_id)))
             }
             Receiver::AuthZoneRef => {
-                next_caller_auth_zone = Option::None;
-                if let Some(auth_zone) = &mut current_frame.auth_zone {
+                if let Some(auth_zone) = &mut self
+                    .call_frames
+                    .last_mut()
+                    .expect("Current frame always exists")
+                    .auth_zone
+                {
                     for resource_address in &input.resource_addresses {
                         self.track
                             .acquire_lock(
@@ -738,13 +744,29 @@ where
 
                 // Find value
                 let node_id = RENodeId::Component(component_address);
-                let node_pointer = if current_frame.owned_heap_nodes.contains_key(&node_id) {
+                let node_pointer = if self
+                    .call_frames
+                    .last()
+                    .expect("Current frame always exists")
+                    .owned_heap_nodes
+                    .contains_key(&node_id)
+                {
                     RENodePointer::Heap {
-                        frame_id: current_frame.depth,
+                        frame_id: self
+                            .call_frames
+                            .last()
+                            .expect("Current frame always exists")
+                            .depth,
                         root: node_id.clone(),
                         id: None,
                     }
-                } else if let Some(pointer) = current_frame.node_refs.get(&node_id) {
+                } else if let Some(pointer) = self
+                    .call_frames
+                    .last()
+                    .expect("Current frame always exists")
+                    .node_refs
+                    .get(&node_id)
+                {
                     pointer.clone()
                 } else {
                     return Err(RuntimeError::InvokeMethodInvalidReceiver(node_id));
@@ -786,12 +808,7 @@ where
                 }
 
                 let scrypto_actor = {
-                    let node_ref = node_pointer.to_ref(
-                        current_frame.depth,
-                        &current_frame.owned_heap_nodes,
-                        &current_frame.parent_heap_nodes,
-                        &mut self.track,
-                    );
+                    let node_ref = node_pointer.to_ref(&self.call_frames, &mut self.track);
                     let component = node_ref.component_info();
                     ScryptoActor::component(
                         component_address,
@@ -814,14 +831,9 @@ where
                     &input,
                     SubstateId::ComponentState(component_address),
                     node_pointer.clone(),
-                    current_frame.depth,
-                    &mut current_frame.owned_heap_nodes,
-                    &mut current_frame.parent_heap_nodes,
+                    &mut self.call_frames,
                     &mut self.track,
-                    current_frame.auth_zone.as_ref(),
-                    current_frame.caller_auth_zone,
                 )?;
-                next_caller_auth_zone = current_frame.auth_zone.as_ref();
 
                 match node_pointer {
                     RENodePointer::Store(..) => {
@@ -845,7 +857,13 @@ where
         // Pass argument references
         for refed_component_address in &input.refed_component_addresses {
             let node_id = RENodeId::Component(refed_component_address.clone());
-            if let Some(pointer) = current_frame.node_refs.get(&node_id) {
+            if let Some(pointer) = self
+                .call_frames
+                .last()
+                .expect("Current frame always exists")
+                .node_refs
+                .get(&node_id)
+            {
                 let mut visible = HashSet::new();
                 visible.insert(SubstateId::ComponentInfo(*refed_component_address));
                 next_frame_node_refs.insert(node_id.clone(), pointer.clone());
@@ -854,17 +872,14 @@ where
             }
         }
 
-        // Setup next parent frame
-        let mut next_borrowed_values: Vec<&mut HashMap<RENodeId, HeapRootRENode>> = Vec::new();
-        for parent_values in &mut current_frame.parent_heap_nodes {
-            next_borrowed_values.push(parent_values);
-        }
-        next_borrowed_values.push(&mut current_frame.owned_heap_nodes);
-
         // start a new frame
         let (result, received_values) = {
             let mut frame = CallFrame::new(
-                current_frame.depth + 1,
+                self.call_frames
+                    .last()
+                    .expect("Current frame always exists")
+                    .depth
+                    + 1,
                 actor,
                 match receiver {
                     Receiver::Component(_) => Some(AuthZone::new()),
@@ -872,8 +887,6 @@ where
                 },
                 next_owned_values,
                 next_frame_node_refs,
-                next_borrowed_values,
-                next_caller_auth_zone,
             );
 
             // invoke the main function
@@ -894,7 +907,11 @@ where
         // move buckets and proofs to this process.
         for (id, value) in received_values {
             trace!(self, Level::Debug, "Received value: {:?}", value);
-            current_frame.owned_heap_nodes.insert(id, value);
+            self.call_frames
+                .last_mut()
+                .expect("Current frame always exists")
+                .owned_heap_nodes
+                .insert(id, value);
         }
 
         // Accept component references
@@ -902,7 +919,9 @@ where
             let node_id = RENodeId::Component(*refed_component_address);
             let mut visible = HashSet::new();
             visible.insert(SubstateId::ComponentInfo(*refed_component_address));
-            current_frame
+            self.call_frames
+                .last_mut()
+                .expect("Current frame always exists")
                 .node_refs
                 .insert(node_id, RENodePointer::Store(node_id));
         }
@@ -913,7 +932,6 @@ where
 
     fn borrow_node(&mut self, node_id: &RENodeId) -> Result<RENodeRef<'_, 's>, FeeReserveError> {
         trace!(self, Level::Debug, "Borrowing value: {:?}", node_id);
-        let current_frame = Self::current_frame_mut(&mut self.call_frames);
 
         self.fee_reserve.consume(
             self.fee_table.system_api_cost({
@@ -956,17 +974,15 @@ where
             "borrow",
         )?;
 
-        let node_pointer = current_frame
+        let node_pointer = self
+            .call_frames
+            .last()
+            .expect("Current frame always exists")
             .node_refs
             .get(node_id)
             .expect(&format!("{:?} is unknown.", node_id));
 
-        Ok(node_pointer.to_ref(
-            current_frame.depth,
-            &current_frame.owned_heap_nodes,
-            &current_frame.parent_heap_nodes,
-            &self.track,
-        ))
+        Ok(node_pointer.to_ref(&self.call_frames, &self.track))
     }
 
     fn substate_borrow_mut(
@@ -979,7 +995,6 @@ where
             "Borrowing substate (mut): {:?}",
             substate_id
         );
-        let current_frame = Self::current_frame_mut(&mut self.call_frames);
 
         // Costing
         self.fee_reserve.consume(
@@ -1044,29 +1059,36 @@ where
         )?;
 
         // Authorization
-        if !current_frame.actor.is_substate_readable(substate_id) {
+        if !self
+            .call_frames
+            .last()
+            .expect("Current frame always exists")
+            .actor
+            .is_substate_readable(substate_id)
+        {
             panic!("Trying to read value which is not visible.")
         }
 
         let node_id = SubstateProperties::get_node_id(substate_id);
 
-        let node_pointer = current_frame
+        let node_pointer = self
+            .call_frames
+            .last()
+            .expect("Current frame always exists")
             .node_refs
             .get(&node_id)
+            .cloned()  
             .expect(&format!("Node should exist {:?}", node_id));
 
         Ok(node_pointer.borrow_native_ref(
-            current_frame.depth,
             substate_id.clone(),
-            &mut current_frame.owned_heap_nodes,
-            &mut current_frame.parent_heap_nodes,
+            &mut self.call_frames,
             &mut self.track,
         ))
     }
 
     fn substate_return_mut(&mut self, val_ref: NativeSubstateRef) -> Result<(), FeeReserveError> {
         trace!(self, Level::Debug, "Returning value");
-        let current_frame = Self::current_frame_mut(&mut self.call_frames);
 
         self.fee_reserve.consume(
             self.fee_table.system_api_cost({
@@ -1106,29 +1128,28 @@ where
             "return",
         )?;
 
-        val_ref.return_to_location(
-            current_frame.depth,
-            &mut current_frame.owned_heap_nodes,
-            &mut current_frame.parent_heap_nodes,
-            &mut self.track,
-        );
+        val_ref.return_to_location(&mut self.call_frames, &mut self.track);
         Ok(())
     }
 
     fn node_drop(&mut self, node_id: &RENodeId) -> Result<HeapRootRENode, FeeReserveError> {
         trace!(self, Level::Debug, "Dropping value: {:?}", node_id);
-        let current_frame = Self::current_frame_mut(&mut self.call_frames);
 
         // TODO: costing
 
         // TODO: Authorization
 
-        Ok(current_frame.owned_heap_nodes.remove(&node_id).unwrap())
+        Ok(self
+            .call_frames
+            .last_mut()
+            .expect("Current frame always exists")
+            .owned_heap_nodes
+            .remove(&node_id)
+            .unwrap())
     }
 
     fn node_create(&mut self, re_node: HeapRENode) -> Result<RENodeId, RuntimeError> {
         trace!(self, Level::Debug, "Creating value");
-        let current_frame = Self::current_frame_mut(&mut self.call_frames);
 
         // Costing
         self.fee_reserve
@@ -1145,8 +1166,11 @@ where
 
         // Take any required child nodes
         let children = re_node.get_child_nodes()?;
-        let (taken_root_nodes, mut missing) =
-            current_frame.take_available_values(children, true)?;
+        let (taken_root_nodes, mut missing) = self
+            .call_frames
+            .last_mut()
+            .expect("Current frame always exists")
+            .take_available_values(children, true)?;
         let first_missing_node = missing.drain().nth(0);
         if let Some(missing_node) = first_missing_node {
             return Err(RuntimeError::RENodeCreateNodeNotFound(missing_node));
@@ -1162,17 +1186,23 @@ where
             root: re_node,
             child_nodes,
         };
-        current_frame
+        self.call_frames
+            .last_mut()
+            .expect("Current frame always exists")
             .owned_heap_nodes
             .insert(node_id, heap_root_node);
 
         // TODO: Clean the following up
         match node_id {
             RENodeId::KeyValueStore(..) | RENodeId::ResourceManager(..) => {
-                current_frame.node_refs.insert(
+                let frame = self
+                    .call_frames
+                    .last_mut()
+                    .expect("Current frame always exists");
+                frame.node_refs.insert(
                     node_id.clone(),
                     RENodePointer::Heap {
-                        frame_id: current_frame.depth,
+                        frame_id: frame.depth,
                         root: node_id.clone(),
                         id: None,
                     },
@@ -1181,10 +1211,15 @@ where
             RENodeId::Component(component_address) => {
                 let mut visible = HashSet::new();
                 visible.insert(SubstateId::ComponentInfo(component_address));
-                current_frame.node_refs.insert(
+
+                let frame = self
+                    .call_frames
+                    .last_mut()
+                    .expect("Current frame always exists");
+                frame.node_refs.insert(
                     node_id.clone(),
                     RENodePointer::Heap {
-                        frame_id: current_frame.depth,
+                        frame_id: frame.depth,
                         root: node_id.clone(),
                         id: None,
                     },
@@ -1198,7 +1233,6 @@ where
 
     fn node_globalize(&mut self, node_id: RENodeId) -> Result<(), RuntimeError> {
         trace!(self, Level::Debug, "Globalizing value: {:?}", node_id);
-        let current_frame = Self::current_frame_mut(&mut self.call_frames);
 
         // Costing
         self.fee_reserve
@@ -1219,8 +1253,11 @@ where
 
         let mut nodes_to_take = HashSet::new();
         nodes_to_take.insert(node_id);
-        let (taken_nodes, missing_nodes) =
-            current_frame.take_available_values(nodes_to_take, false)?;
+        let (taken_nodes, missing_nodes) = self
+            .call_frames
+            .last_mut()
+            .expect("Current frame always exists")
+            .take_available_values(nodes_to_take, false)?;
         assert!(missing_nodes.is_empty());
         assert!(taken_nodes.len() == 1);
         let root_node = taken_nodes.into_values().nth(0).unwrap();
@@ -1285,7 +1322,9 @@ where
             }
         }
 
-        current_frame
+        self.call_frames
+            .last_mut()
+            .expect("Current frame always exists")
             .node_refs
             .insert(node_id, RENodePointer::Store(node_id));
 
@@ -1294,7 +1333,6 @@ where
 
     fn substate_read(&mut self, substate_id: SubstateId) -> Result<ScryptoValue, RuntimeError> {
         trace!(self, Level::Debug, "Reading value data: {:?}", substate_id);
-        let current_frame = Self::current_frame_mut(&mut self.call_frames);
 
         // Costing
         self.fee_reserve
@@ -1307,51 +1345,69 @@ where
             .map_err(RuntimeError::CostingError)?;
 
         // Authorization
-        if !current_frame.actor.is_substate_readable(&substate_id) {
+        if !self
+            .call_frames
+            .last()
+            .expect("Current frame always exists")
+            .actor
+            .is_substate_readable(&substate_id)
+        {
             return Err(RuntimeError::SubstateReadNotReadable(
-                current_frame.actor.clone(),
+                self.call_frames
+                    .last()
+                    .expect("Current frame always exists")
+                    .actor
+                    .clone(),
                 substate_id.clone(),
             ));
         }
 
         let (parent_pointer, current_value) =
-            Self::read_value_internal(current_frame, self.track, &substate_id)?;
+            Self::read_value_internal(&mut self.call_frames, self.track, &substate_id)?;
         let cur_children = current_value.node_ids();
         for child_id in cur_children {
             let child_pointer = parent_pointer.child(child_id);
-            current_frame.node_refs.insert(child_id, child_pointer);
+            self.call_frames
+                .last_mut()
+                .expect("Current frame always exists")
+                .node_refs
+                .insert(child_id, child_pointer);
         }
         Ok(current_value)
     }
 
     fn substate_take(&mut self, substate_id: SubstateId) -> Result<ScryptoValue, RuntimeError> {
         trace!(self, Level::Debug, "Removing value data: {:?}", substate_id);
-        let current_frame = Self::current_frame_mut(&mut self.call_frames);
 
         // TODO: Costing
 
         // Authorization
-        if !current_frame.actor.is_substate_writeable(&substate_id) {
+        if !self
+            .call_frames
+            .last()
+            .expect("Current frame always exists")
+            .actor
+            .is_substate_writeable(&substate_id)
+        {
             return Err(RuntimeError::SubstateWriteNotWriteable(
-                current_frame.actor.clone(),
+                self.call_frames
+                    .last()
+                    .expect("Current frame always exists")
+                    .actor
+                    .clone(),
                 substate_id,
             ));
         }
 
         let (pointer, current_value) =
-            Self::read_value_internal(current_frame, self.track, &substate_id)?;
+            Self::read_value_internal(&mut self.call_frames, self.track, &substate_id)?;
         let cur_children = current_value.node_ids();
         if !cur_children.is_empty() {
             return Err(RuntimeError::ValueNotAllowed);
         }
 
         // Write values
-        let mut node_ref = pointer.to_ref_mut(
-            current_frame.depth,
-            &mut current_frame.owned_heap_nodes,
-            &mut current_frame.parent_heap_nodes,
-            &mut self.track,
-        );
+        let mut node_ref = pointer.to_ref_mut(&mut self.call_frames, &mut self.track);
         node_ref.replace_value_with_default(&substate_id);
 
         Ok(current_value)
@@ -1363,7 +1419,6 @@ where
         value: ScryptoValue,
     ) -> Result<(), RuntimeError> {
         trace!(self, Level::Debug, "Writing value data: {:?}", substate_id);
-        let current_frame = Self::current_frame_mut(&mut self.call_frames);
 
         // Costing
         self.fee_reserve
@@ -1377,9 +1432,19 @@ where
             .map_err(RuntimeError::CostingError)?;
 
         // Authorization
-        if !current_frame.actor.is_substate_writeable(&substate_id) {
+        if !self
+            .call_frames
+            .last()
+            .expect("Current frame always exists")
+            .actor
+            .is_substate_writeable(&substate_id)
+        {
             return Err(RuntimeError::SubstateWriteNotWriteable(
-                current_frame.actor.clone(),
+                self.call_frames
+                    .last()
+                    .expect("Current frame always exists")
+                    .actor
+                    .clone(),
                 substate_id,
             ));
         }
@@ -1392,14 +1457,17 @@ where
                     return Err(RuntimeError::ValueNotAllowed);
                 }
 
-                current_frame.take_available_values(node_ids, true)?
+                self.call_frames
+                    .last_mut()
+                    .expect("Current frame always exists")
+                    .take_available_values(node_ids, true)?
             } else {
                 (HashMap::new(), HashSet::new())
             }
         };
 
         let (pointer, current_value) =
-            Self::read_value_internal(current_frame, self.track, &substate_id)?;
+            Self::read_value_internal(&mut self.call_frames, self.track, &substate_id)?;
         let cur_children = current_value.node_ids();
 
         // Fulfill method
@@ -1408,12 +1476,7 @@ where
         // TODO: verify against some schema
 
         // Write values
-        let mut node_ref = pointer.to_ref_mut(
-            current_frame.depth,
-            &mut current_frame.owned_heap_nodes,
-            &mut current_frame.parent_heap_nodes,
-            &mut self.track,
-        );
+        let mut node_ref = pointer.to_ref_mut(&mut self.call_frames, &mut self.track);
         node_ref.write_value(substate_id, value, taken_nodes);
 
         Ok(())
@@ -1457,11 +1520,14 @@ where
         access_rule: scrypto::resource::AccessRule,
         proof_ids: Vec<ProofId>,
     ) -> Result<bool, RuntimeError> {
-        let current_frame = Self::current_frame(&self.call_frames);
+        // TODO: costing
+
         let proofs = proof_ids
             .iter()
             .map(|proof_id| {
-                current_frame
+                self.call_frames
+                    .last()
+                    .expect("Current frame always exists")
                     .owned_heap_nodes
                     .get(&RENodeId::Proof(*proof_id))
                     .map(|p| match p.root() {

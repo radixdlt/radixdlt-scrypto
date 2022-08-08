@@ -33,20 +33,14 @@ impl RENodePointer {
 
     pub fn borrow_native_ref<'p, 's>(
         &self, // TODO: Consider changing this to self
-        self_frame_id: usize,
         substate_id: SubstateId,
-        owned_values: &mut HashMap<RENodeId, HeapRootRENode>,
-        borrowed_values: &mut Vec<&'p mut HashMap<RENodeId, HeapRootRENode>>,
+        call_frames: &mut Vec<CallFrame>,
         track: &mut Track<'s>,
     ) -> NativeSubstateRef {
         match self {
             RENodePointer::Heap { frame_id, root, id } => {
-                let frame = if self_frame_id != *frame_id {
-                    borrowed_values.get_mut(*frame_id).unwrap()
-                } else {
-                    owned_values
-                };
-                let re_value = frame.remove(root).expect("Should exist");
+                let frame = call_frames.get_mut(*frame_id).unwrap();
+                let re_value = frame.owned_heap_nodes.remove(root).expect("Should exist");
                 NativeSubstateRef::Stack(re_value, frame_id.clone(), root.clone(), id.clone())
             }
             RENodePointer::Store(..) => {
@@ -58,19 +52,13 @@ impl RENodePointer {
 
     pub fn to_ref<'f, 'p, 's>(
         &self,
-        self_frame_id: usize,
-        owned_values: &'f HashMap<RENodeId, HeapRootRENode>,
-        borrowed_values: &'f Vec<&'p mut HashMap<RENodeId, HeapRootRENode>>,
+        call_frames: &'f Vec<CallFrame>,
         track: &'f Track<'s>,
     ) -> RENodeRef<'f, 's> {
         match self {
             RENodePointer::Heap { frame_id, root, id } => {
-                let frame = if self_frame_id != *frame_id {
-                    borrowed_values.get(*frame_id).unwrap()
-                } else {
-                    owned_values
-                };
-                RENodeRef::Stack(frame.get(root).unwrap(), id.clone())
+                let frame = call_frames.get(*frame_id).unwrap();
+                RENodeRef::Stack(frame.owned_heap_nodes.get(root).unwrap(), id.clone())
             }
             RENodePointer::Store(node_id) => RENodeRef::Track(track, node_id.clone()),
         }
@@ -78,19 +66,13 @@ impl RENodePointer {
 
     pub fn to_ref_mut<'f, 'p, 's>(
         &self,
-        self_frame_id: usize,
-        owned_values: &'f mut HashMap<RENodeId, HeapRootRENode>,
-        borrowed_values: &'f mut Vec<&'p mut HashMap<RENodeId, HeapRootRENode>>,
+        call_frames: &'f mut Vec<CallFrame>,
         track: &'f mut Track<'s>,
     ) -> RENodeRefMut<'f, 's> {
         match self {
             RENodePointer::Heap { frame_id, root, id } => {
-                let frame = if self_frame_id != *frame_id {
-                    borrowed_values.get_mut(*frame_id).unwrap()
-                } else {
-                    owned_values
-                };
-                RENodeRefMut::Stack(frame.get_mut(root).unwrap(), id.clone())
+                let frame = call_frames.get_mut(*frame_id).unwrap();
+                RENodeRefMut::Stack(frame.owned_heap_nodes.get_mut(root).unwrap(), id.clone())
             }
             RENodePointer::Store(node_id) => RENodeRefMut::Track(track, node_id.clone()),
         }
@@ -182,19 +164,13 @@ impl NativeSubstateRef {
 
     pub fn return_to_location<'a, 'p, 's>(
         self,
-        self_frame_id: usize,
-        owned_values: &'a mut HashMap<RENodeId, HeapRootRENode>,
-        borrowed_values: &'a mut Vec<&'p mut HashMap<RENodeId, HeapRootRENode>>,
+        call_frames: &mut Vec<CallFrame>,
         track: &mut Track<'s>,
     ) {
         match self {
             NativeSubstateRef::Stack(owned, frame_id, node_id, ..) => {
-                let frame = if self_frame_id != frame_id {
-                    borrowed_values.get_mut(frame_id).unwrap()
-                } else {
-                    owned_values
-                };
-                frame.insert(node_id, owned);
+                let frame = call_frames.get_mut(frame_id).unwrap();
+                frame.owned_heap_nodes.insert(node_id, owned);
             }
             NativeSubstateRef::Track(substate_id, value) => {
                 track.write_substate(substate_id, value)

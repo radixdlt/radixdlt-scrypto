@@ -15,9 +15,7 @@ use crate::wasm::*;
 
 /// A call frame is the basic unit that forms a transaction call stack, which keeps track of the
 /// owned objects by this function.
-pub struct CallFrame<
-    'p, // Parent lifetime
-> {
+pub struct CallFrame {
     /// The frame id
     pub depth: usize,
     /// The running actor of this frame
@@ -31,13 +29,9 @@ pub struct CallFrame<
     /// Owned Values
     pub owned_heap_nodes: HashMap<RENodeId, HeapRootRENode>,
     pub auth_zone: Option<AuthZone>,
-
-    /// Borrowed Values from call frames up the stack
-    pub parent_heap_nodes: Vec<&'p mut HashMap<RENodeId, HeapRootRENode>>,
-    pub caller_auth_zone: Option<&'p AuthZone>,
 }
 
-impl<'p> CallFrame<'p> {
+impl CallFrame {
     pub fn new_root<'s, W, I, C, Y>(
         signer_public_keys: Vec<EcdsaPublicKey>,
         is_system: bool,
@@ -83,8 +77,6 @@ impl<'p> CallFrame<'p> {
             Some(AuthZone::new_with_proofs(initial_auth_zone_proofs)),
             HashMap::new(),
             HashMap::new(),
-            Vec::new(),
-            None,
         )
     }
 
@@ -94,8 +86,6 @@ impl<'p> CallFrame<'p> {
         auth_zone: Option<AuthZone>,
         owned_heap_nodes: HashMap<RENodeId, HeapRootRENode>,
         node_refs: HashMap<RENodeId, RENodePointer>,
-        parent_heap_nodes: Vec<&'p mut HashMap<RENodeId, HeapRootRENode>>,
-        caller_auth_zone: Option<&'p AuthZone>,
     ) -> Self {
         Self {
             depth,
@@ -103,8 +93,6 @@ impl<'p> CallFrame<'p> {
             node_refs,
             owned_heap_nodes,
             auth_zone,
-            parent_heap_nodes,
-            caller_auth_zone,
         }
     }
 
@@ -117,9 +105,9 @@ impl<'p> CallFrame<'p> {
         HeapRENode::drop_nodes(values).map_err(|e| RuntimeError::DropFailure(e))
     }
 
-    pub fn run<'s, W, I, C, Y>(
+    pub fn run<'s, 'f, W, I, C, Y>(
         &mut self,
-        execution_entity: ExecutionEntity<'p>,
+        execution_entity: ExecutionEntity<'f>,
         fn_ident: &str,
         input: ScryptoValue,
         system_api: &mut Y,

@@ -1,4 +1,3 @@
-use sbor::rust::collections::*;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 use scrypto::engine::types::*;
@@ -14,9 +13,17 @@ impl AuthModule {
         fn_ident: &str,
         substate_id: &SubstateId,
         method_auths: Vec<MethodAuthorization>,
-        auth_zone: Option<&AuthZone>,
-        caller_auth_zone: Option<&AuthZone>,
+        call_frames: &mut Vec<CallFrame>,
     ) -> Result<(), RuntimeError> {
+        let auth_zone = call_frames
+            .last()
+            .expect("Current frame always exists")
+            .auth_zone
+            .as_ref();
+        let caller_auth_zone = call_frames
+            .get(call_frames.len() - 2)
+            .and_then(|x| x.auth_zone.as_ref());
+
         // Authorization check
         if !method_auths.is_empty() {
             let mut auth_zones = Vec::new();
@@ -56,9 +63,8 @@ impl AuthModule {
         fn_ident: &str,
         substate_id: &SubstateId,
         node: &HeapRENode,
+        call_frames: &mut Vec<CallFrame>,
         track: &mut Track,
-        auth_zone: Option<&AuthZone>,
-        caller_auth_zone: Option<&AuthZone>,
     ) -> Result<(), RuntimeError> {
         let auth = match node {
             HeapRENode::Bucket(bucket) => {
@@ -74,7 +80,7 @@ impl AuthModule {
             _ => return Err(RuntimeError::MethodDoesNotExist(fn_ident.to_string())),
         };
 
-        Self::auth(fn_ident, substate_id, auth, auth_zone, caller_auth_zone)
+        Self::auth(fn_ident, substate_id, auth, call_frames)
     }
 
     pub fn ref_auth(
@@ -82,12 +88,8 @@ impl AuthModule {
         input: &ScryptoValue,
         substate_id: SubstateId,
         node_pointer: RENodePointer,
-        depth: usize,
-        owned_heap_nodes: &mut HashMap<RENodeId, HeapRootRENode>,
-        parent_heap_nodes: &mut Vec<&mut HashMap<RENodeId, HeapRootRENode>>,
+        call_frames: &mut Vec<CallFrame>,
         track: &mut Track,
-        auth_zone: Option<&AuthZone>,
-        caller_auth_zone: Option<&AuthZone>,
     ) -> Result<(), RuntimeError> {
         let auth = match &substate_id {
             SubstateId::ResourceManager(..) => {
@@ -108,8 +110,7 @@ impl AuthModule {
                 RENodePointer::Heap { .. } => vec![],
             },
             SubstateId::ComponentState(..) => {
-                let node_ref =
-                    node_pointer.to_ref(depth, owned_heap_nodes, parent_heap_nodes, track);
+                let node_ref = node_pointer.to_ref(call_frames, track);
                 let component = node_ref.component_info();
                 let package_substate_id = SubstateId::Package(component.package_address().clone());
 
@@ -127,8 +128,7 @@ impl AuthModule {
                 }
 
                 {
-                    let value_ref =
-                        node_pointer.to_ref(depth, owned_heap_nodes, parent_heap_nodes, track);
+                    let value_ref = node_pointer.to_ref(call_frames, track);
 
                     let component = value_ref.component_info();
                     let component_state = value_ref.component_state();
@@ -137,8 +137,7 @@ impl AuthModule {
             }
             SubstateId::Vault(..) => {
                 let resource_address = {
-                    let node_ref =
-                        node_pointer.to_ref(depth, owned_heap_nodes, parent_heap_nodes, track);
+                    let node_ref = node_pointer.to_ref(call_frames, track);
                     node_ref.vault().resource_address()
                 };
                 let resource_manager = track
@@ -149,6 +148,6 @@ impl AuthModule {
             _ => vec![],
         };
 
-        Self::auth(fn_ident, &substate_id, auth, auth_zone, caller_auth_zone)
+        Self::auth(fn_ident, &substate_id, auth, call_frames)
     }
 }
