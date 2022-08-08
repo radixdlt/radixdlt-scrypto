@@ -86,8 +86,4 @@ where
         access_rule: AccessRule,
         proof_ids: Vec<ProofId>,
     ) -> Result<bool, RuntimeError>;
-
-    fn new_uuid(&mut self) -> u128;
-
-    fn new_node_id(&mut self, re_node: &HeapRENode) -> RENodeId;
 }

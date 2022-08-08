@@ -181,6 +181,58 @@ where
 
         Ok((node_pointer.clone(), current_value))
     }
+
+    fn new_uuid(id_allocator: &mut IdAllocator, transaction_hash: Hash) -> u128 {
+        id_allocator.new_uuid(transaction_hash).unwrap()
+    }
+
+    fn new_node_id(
+        id_allocator: &mut IdAllocator,
+        transaction_hash: Hash,
+        re_node: &HeapRENode,
+    ) -> RENodeId {
+        match re_node {
+            HeapRENode::Bucket(..) => {
+                let bucket_id = id_allocator.new_bucket_id().unwrap();
+                RENodeId::Bucket(bucket_id)
+            }
+            HeapRENode::Proof(..) => {
+                let proof_id = id_allocator.new_proof_id().unwrap();
+                RENodeId::Proof(proof_id)
+            }
+            HeapRENode::Worktop(..) => RENodeId::Worktop,
+            HeapRENode::Vault(..) => {
+                let vault_id = id_allocator.new_vault_id(transaction_hash).unwrap();
+                RENodeId::Vault(vault_id)
+            }
+            HeapRENode::KeyValueStore(..) => {
+                let kv_store_id = id_allocator.new_kv_store_id(transaction_hash).unwrap();
+                RENodeId::KeyValueStore(kv_store_id)
+            }
+            HeapRENode::Package(..) => {
+                // Security Alert: ensure ID allocating will practically never fail
+                let package_address = id_allocator.new_package_address(transaction_hash).unwrap();
+                RENodeId::Package(package_address)
+            }
+            HeapRENode::Resource(..) => {
+                let resource_address = id_allocator.new_resource_address(transaction_hash).unwrap();
+                RENodeId::ResourceManager(resource_address)
+            }
+            HeapRENode::Component(ref component, ..) => {
+                let component_address = id_allocator
+                    .new_component_address(
+                        transaction_hash,
+                        &component.package_address(),
+                        component.blueprint_name(),
+                    )
+                    .unwrap();
+                RENodeId::Component(component_address)
+            }
+            HeapRENode::System(..) => {
+                panic!("Should not get here.");
+            }
+        }
+    }
 }
 
 impl<'p, 'g, 's, W, I, C> SystemApi<'s, W, I, C> for Kernel<'p, 'g, 's, W, I, C>
@@ -1105,7 +1157,7 @@ where
         }
 
         // Insert node into heap
-        let node_id = self.new_node_id(&re_node);
+        let node_id = Self::new_node_id(&mut self.id_allocator, self.transaction_hash, &re_node);
         let heap_root_node = HeapRootRENode {
             root: re_node,
             child_nodes,
@@ -1382,7 +1434,10 @@ where
                 .system_api_cost(SystemApiCostingEntry::GenerateUuid),
             "generate_uuid",
         )?;
-        Ok(self.new_uuid())
+        Ok(Self::new_uuid(
+            &mut self.id_allocator,
+            self.transaction_hash,
+        ))
     }
 
     fn emit_log(&mut self, level: Level, message: String) -> Result<(), FeeReserveError> {
@@ -1437,67 +1492,6 @@ where
 
     fn fee_table(&self) -> &FeeTable {
         self.fee_table
-    }
-
-    fn new_uuid(&mut self) -> u128 {
-        self.id_allocator.new_uuid(self.transaction_hash).unwrap()
-    }
-
-    fn new_node_id(&mut self, re_node: &HeapRENode) -> RENodeId {
-        match re_node {
-            HeapRENode::Bucket(..) => {
-                let bucket_id = self.id_allocator.new_bucket_id().unwrap();
-                RENodeId::Bucket(bucket_id)
-            }
-            HeapRENode::Proof(..) => {
-                let proof_id = self.id_allocator.new_proof_id().unwrap();
-                RENodeId::Proof(proof_id)
-            }
-            HeapRENode::Worktop(..) => RENodeId::Worktop,
-            HeapRENode::Vault(..) => {
-                let vault_id = self
-                    .id_allocator
-                    .new_vault_id(self.transaction_hash)
-                    .unwrap();
-                RENodeId::Vault(vault_id)
-            }
-            HeapRENode::KeyValueStore(..) => {
-                let kv_store_id = self
-                    .id_allocator
-                    .new_kv_store_id(self.transaction_hash)
-                    .unwrap();
-                RENodeId::KeyValueStore(kv_store_id)
-            }
-            HeapRENode::Package(..) => {
-                // Security Alert: ensure ID allocating will practically never fail
-                let package_address = self
-                    .id_allocator
-                    .new_package_address(self.transaction_hash)
-                    .unwrap();
-                RENodeId::Package(package_address)
-            }
-            HeapRENode::Resource(..) => {
-                let resource_address = self
-                    .id_allocator
-                    .new_resource_address(self.transaction_hash)
-                    .unwrap();
-                RENodeId::ResourceManager(resource_address)
-            }
-            HeapRENode::Component(ref component, ..) => {
-                let component_address = self
-                    .id_allocator
-                    .new_component_address(
-                        self.transaction_hash,
-                        &component.package_address(),
-                        component.blueprint_name(),
-                    )
-                    .unwrap();
-                RENodeId::Component(component_address)
-            }
-            HeapRENode::System(..) => {
-                panic!("Should not get here.");
-            }
-        }
     }
 
     fn track(&mut self) -> &mut Track<'s> {
