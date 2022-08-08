@@ -12,7 +12,7 @@ pub use crate::{
     external_component, import, include_package, info, pdec, resource_list, rule, trace, warn,
     Decode, Describe, Encode, NonFungibleData, TypeId,
 };
-
+pub use num_traits::{Pow, ToPrimitive, Zero, One, Signed};
 pub use sbor::rust::borrow::ToOwned;
 pub use sbor::rust::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 pub use sbor::rust::str::FromStr;
