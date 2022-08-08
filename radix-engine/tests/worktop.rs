@@ -1,9 +1,9 @@
-use scrypto_unit::*;
 use radix_engine::engine::DropFailure;
 use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::InMemorySubstateStore;
 use scrypto::core::Network;
 use scrypto::prelude::*;
+use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
 #[test]

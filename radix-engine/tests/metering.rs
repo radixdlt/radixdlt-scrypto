@@ -1,9 +1,9 @@
-use scrypto_unit::*;
 use radix_engine::ledger::InMemorySubstateStore;
 use radix_engine::{fee::FeeTable, wasm::InvokeError};
 use scrypto::core::Network;
 use scrypto::prelude::{Package, SYSTEM_COMPONENT};
 use scrypto::to_struct;
+use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
 #[test]

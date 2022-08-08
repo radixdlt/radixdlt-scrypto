@@ -1,8 +1,8 @@
-use scrypto_unit::*;
 use radix_engine::ledger::InMemorySubstateStore;
 use scrypto::address::Bech32Encoder;
 use scrypto::core::Network;
 use scrypto::{prelude::*, to_struct};
+use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
 /// This tests the external_blueprint! and external_component! macros

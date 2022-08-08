@@ -1,5 +1,5 @@
-use scrypto_unit::*;
 use radix_engine::wasm::{InvalidMemory, PrepareError, WasmValidator};
+use scrypto_unit::*;
 
 #[test]
 fn test_large_data() {

@@ -17,6 +17,7 @@ use scrypto::core::Network;
 use scrypto::engine::types::{KeyValueStoreId, SubstateId, VaultId};
 use scrypto::prelude::*;
 use scrypto::prelude::{HashMap, Package};
+use scrypto::values::ScryptoValue;
 use scrypto::{abi, to_struct};
 use transaction::builder::ManifestBuilder;
 use transaction::model::{ExecutableTransaction, TransactionManifest};
@@ -157,17 +158,20 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         let mut receipts = self.execute_batch(vec![(manifest, signer_public_keys)]);
         receipts.pop().unwrap()
     }
-    
+
     pub fn execute_manifest_ignoring_fee(
         &mut self,
         mut manifest: TransactionManifest,
         signer_public_keys: Vec<EcdsaPublicKey>,
     ) -> TransactionReceipt {
-        manifest.instructions.insert(0, transaction::model::Instruction::CallMethod {
-            component_address: SYSTEM_COMPONENT,
-            method_name: "lock_fee".to_string(),
-            arg: to_struct!(dec!("1000")),
-        });
+        manifest.instructions.insert(
+            0,
+            transaction::model::Instruction::CallMethod {
+                component_address: SYSTEM_COMPONENT,
+                method_name: "lock_fee".to_string(),
+                arg: to_struct!(dec!("1000")),
+            },
+        );
         self.execute_manifest(manifest, signer_public_keys)
     }
 

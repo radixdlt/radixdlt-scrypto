@@ -1,10 +1,10 @@
 extern crate core;
 
-use scrypto_unit::*;
 use radix_engine::ledger::InMemorySubstateStore;
 use scrypto::core::Network;
 use scrypto::prelude::*;
 use scrypto::to_struct;
+use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
 enum Action {
