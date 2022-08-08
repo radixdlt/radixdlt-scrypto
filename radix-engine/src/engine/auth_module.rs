@@ -57,22 +57,28 @@ impl AuthModule {
     pub fn consumed_auth(
         fn_ident: &str,
         substate_id: &SubstateId,
-        node: &HeapRENode,
+        node_pointer: RENodePointer,
+        depth: usize,
+        owned_heap_nodes: &mut HashMap<RENodeId, HeapRootRENode>,
+        parent_heap_nodes: &mut Vec<&mut HashMap<RENodeId, HeapRootRENode>>,
         track: &mut Track,
         auth_zone: Option<&AuthZone>,
         caller_auth_zone: Option<&AuthZone>,
     ) -> Result<(), RuntimeError> {
-        let auth = match node {
-            HeapRENode::Bucket(bucket) => {
-                let resource_address = bucket.resource_address();
+        let auth = match substate_id {
+            SubstateId::Bucket(..) => {
+                let resource_address = {
+                    let node_ref =
+                        node_pointer.to_ref(depth, owned_heap_nodes, parent_heap_nodes, track);
+                    node_ref.bucket().resource_address()
+                };
                 let resource_manager = track
                     .read_substate(SubstateId::ResourceManager(resource_address))
                     .resource_manager();
                 let method_auth = resource_manager.get_consuming_bucket_auth(&fn_ident);
-
                 vec![method_auth.clone()]
             }
-            HeapRENode::Proof(_) => vec![],
+            SubstateId::Proof(..) => vec![],
             _ => return Err(RuntimeError::MethodDoesNotExist(fn_ident.to_string())),
         };
 

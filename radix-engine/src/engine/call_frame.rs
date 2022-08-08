@@ -377,6 +377,18 @@ pub enum RENodeRef<'f, 's> {
 }
 
 impl<'f, 's> RENodeRef<'f, 's> {
+    pub fn bucket(&self) -> &Bucket {
+        match self {
+            RENodeRef::Stack(value, id) => id
+                .as_ref()
+                .map_or(value.root(), |v| value.non_root(v))
+                .bucket(),
+            RENodeRef::Track(..) => {
+                panic!("Unexpected")
+            }
+        }
+    }
+
     pub fn vault(&self) -> &Vault {
         match self {
             RENodeRef::Stack(value, id) => id
@@ -1579,21 +1591,35 @@ where
         // Authorization and state load
         let (actor, execution_state) = match &receiver {
             Receiver::Consumed(node_id) => {
-                let native_substate_id = match node_id {
+                let substate_id = match node_id {
                     RENodeId::Bucket(bucket_id) => SubstateId::Bucket(*bucket_id),
                     RENodeId::Proof(proof_id) => SubstateId::Proof(*proof_id),
                     _ => return Err(RuntimeError::MethodDoesNotExist(fn_ident.clone())),
                 };
 
-                let heap_node = self
-                    .owned_heap_nodes
-                    .remove(node_id)
-                    .ok_or(RuntimeError::RENodeNotFound(*node_id))?;
+                // Find node
+                let node_pointer = if self.owned_heap_nodes.contains_key(&node_id) {
+                    RENodePointer::Heap {
+                        frame_id: self.depth,
+                        root: node_id.clone(),
+                        id: None,
+                    }
+                } else {
+                    return Err(RuntimeError::InvokeMethodInvalidReceiver(*node_id));
+                };
 
-                // Lock Additional Substates
-                match heap_node.root() {
-                    HeapRENode::Bucket(bucket) => {
-                        let resource_address = bucket.resource_address();
+                // Lock Parent Substates
+                match node_id {
+                    RENodeId::Bucket(..) => {
+                        let resource_address = {
+                            let node_ref = node_pointer.to_ref(
+                                self.depth,
+                                &mut self.owned_heap_nodes,
+                                &mut self.parent_heap_nodes,
+                                &mut self.track,
+                            );
+                            node_ref.bucket().resource_address()
+                        };
                         let resource_substate_id = SubstateId::ResourceManager(resource_address);
                         let resource_node_id = RENodeId::ResourceManager(resource_address);
                         let resource_node_pointer = RENodePointer::Store(resource_node_id);
@@ -1611,12 +1637,20 @@ where
 
                 AuthModule::consumed_auth(
                     &fn_ident,
-                    &native_substate_id,
-                    heap_node.root(),
+                    &substate_id,
+                    node_pointer,
+                    self.depth,
+                    &mut self.owned_heap_nodes,
+                    &mut self.parent_heap_nodes,
                     &mut self.track,
                     self.auth_zone.as_ref(),
                     self.caller_auth_zone,
                 )?;
+
+                let heap_node = self
+                    .owned_heap_nodes
+                    .remove(node_id)
+                    .expect("Already checked if node exists");
                 next_owned_values.insert(*node_id, heap_node);
                 next_caller_auth_zone = self.auth_zone.as_ref();
 
@@ -1725,7 +1759,7 @@ where
                     _ => panic!("Should not get here."),
                 };
 
-                // Lock Additional Substates
+                // Lock Parent Substates
                 match node_id {
                     RENodeId::Component(..) => {
                         let package_address = {
