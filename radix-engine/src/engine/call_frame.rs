@@ -803,7 +803,11 @@ pub enum ExecutionState<'a> {
     AuthZone(&'a mut AuthZone),
     RENodeRef(RENodeId),
     // TODO: Can remove this and replace useage with REActor
-    Component(PackageAddress, String, ComponentAddress),
+    Component {
+        package_address: PackageAddress,
+        blueprint_name: String,
+        component_address: ComponentAddress,
+    },
 }
 
 impl<'p, 'g, 's, W, I, C> CallFrame<'p, 'g, 's, W, I, C>
@@ -1058,11 +1062,11 @@ where
                         }
                         _ => panic!("Unexpected"),
                     },
-                    ExecutionState::Component(
+                    ExecutionState::Component {
                         package_address,
                         blueprint_name,
                         component_address,
-                    ) => {
+                    } => {
                         let output = {
                             let package = self
                                 .track
@@ -1706,11 +1710,11 @@ where
                                     component.blueprint_name().to_string(),
                                 )
                             };
-                            let execution_state = ExecutionState::Component(
-                                scrypto_actor.package_address().clone(),
-                                scrypto_actor.blueprint_name().clone(),
-                                *component_address,
-                            );
+                            let execution_state = ExecutionState::Component {
+                                package_address: scrypto_actor.package_address().clone(),
+                                blueprint_name: scrypto_actor.blueprint_name().clone(),
+                                component_address: *component_address,
+                            };
                             (REActor::Scrypto(scrypto_actor), execution_state)
                         }
                         _ => panic!("Should not get here."),
