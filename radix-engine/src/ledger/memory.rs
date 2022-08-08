@@ -43,7 +43,10 @@ impl WriteableSubstateStore for InMemorySubstateStore {
 }
 
 impl QueryableSubstateStore for InMemorySubstateStore {
-    fn get_kv_store_entries(&self, kv_store_id: &KeyValueStoreId) -> HashMap<sbor::rust::vec::Vec<u8>, Substate> {
+    fn get_kv_store_entries(
+        &self,
+        kv_store_id: &KeyValueStoreId,
+    ) -> HashMap<sbor::rust::vec::Vec<u8>, Substate> {
         self.substates
             .iter()
             .filter_map(|(key, value)| {
