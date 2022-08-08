@@ -369,7 +369,9 @@ impl ResourceManager {
     fn check_amount(&self, amount: Decimal) -> Result<(), ResourceManagerError> {
         let divisibility = self.resource_type.divisibility();
 
-        if amount.is_negative() || amount.0 % 10i128.pow((18 - divisibility).into()) != 0i128 {
+        if amount.is_negative()
+            || amount.0 % 10i128.pow((18 - divisibility).into()) != I256::from(0)
+        {
             Err(ResourceManagerError::InvalidAmount(amount, divisibility))
         } else {
             Ok(())

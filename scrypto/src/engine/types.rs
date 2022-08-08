@@ -9,6 +9,7 @@ pub use crate::crypto::EcdsaPublicKey;
 pub use crate::crypto::EcdsaSignature;
 pub use crate::crypto::Hash;
 pub use crate::math::Decimal;
+pub use crate::math::I256;
 pub use crate::resource::MintParams;
 pub use crate::resource::NonFungibleAddress;
 pub use crate::resource::NonFungibleId;
