@@ -11,7 +11,56 @@ use crate::model::*;
 pub struct AuthModule;
 
 impl AuthModule {
-    pub fn consumed_auth(fn_ident: &str, node: &HeapRENode, track: &mut Track) -> Result<Vec<MethodAuthorization>, RuntimeError>{
+    fn auth(
+        fn_ident: &str,
+        substate_id: &SubstateId,
+        method_auths: Vec<MethodAuthorization>,
+        auth_zone: Option<&AuthZone>,
+        caller_auth_zone: Option<&AuthZone>
+    ) -> Result<(), RuntimeError> {
+        // Authorization check
+        if !method_auths.is_empty() {
+            let mut auth_zones = Vec::new();
+            if let Some(self_auth_zone) = auth_zone {
+                auth_zones.push(self_auth_zone);
+            }
+
+            match &substate_id {
+                // Resource auth check includes caller
+                SubstateId::ComponentState(..)
+                | SubstateId::ResourceManager(..)
+                | SubstateId::Vault(..)
+                | SubstateId::Bucket(..) => {
+                    if let Some(auth_zone) = caller_auth_zone {
+                        auth_zones.push(auth_zone);
+                    }
+                }
+                // Extern call auth check
+                _ => {}
+            };
+
+            for method_auth in method_auths {
+                method_auth
+                    .check(&auth_zones)
+                    .map_err(|error| RuntimeError::AuthorizationError {
+                        function: fn_ident.to_string(),
+                        authorization: method_auth,
+                        error,
+                    })?;
+            }
+        }
+
+        Ok(())
+    }
+
+    pub fn consumed_auth(
+        fn_ident: &str,
+        substate_id: &SubstateId,
+        node: &HeapRENode,
+        track: &mut Track,
+        auth_zone: Option<&AuthZone>,
+        caller_auth_zone: Option<&AuthZone>,
+    ) -> Result<(), RuntimeError>{
         let auth = match node {
             HeapRENode::Bucket(bucket) => {
                 let resource_address = bucket.resource_address();
@@ -26,7 +75,7 @@ impl AuthModule {
             _ => return Err(RuntimeError::MethodDoesNotExist(fn_ident.to_string())),
         };
 
-        Ok(auth)
+        Self::auth(fn_ident, substate_id, auth, auth_zone, caller_auth_zone)
     }
 
     pub fn ref_auth(
@@ -37,12 +86,14 @@ impl AuthModule {
         depth: usize,
         owned_heap_nodes: &mut HashMap<RENodeId, HeapRootRENode>,
         parent_heap_nodes: &mut Vec<&mut HashMap<RENodeId, HeapRootRENode>>,
-        track: &mut Track
-    ) -> Result<Vec<MethodAuthorization>, RuntimeError> {
-        let auth = match substate_id {
+        track: &mut Track,
+        auth_zone: Option<&AuthZone>,
+        caller_auth_zone: Option<&AuthZone>,
+    ) -> Result<(), RuntimeError> {
+        let auth = match &substate_id {
             SubstateId::ResourceManager(..) => {
                 let resource_manager = track
-                    .read_substate(substate_id)
+                    .read_substate(substate_id.clone())
                     .resource_manager();
                 let method_auth = resource_manager.get_auth(&fn_ident, &input).clone();
                 vec![method_auth]
@@ -119,6 +170,7 @@ impl AuthModule {
             _ => vec![]
         };
 
-        Ok(auth)
+
+        Self::auth(fn_ident, &substate_id, auth, auth_zone, caller_auth_zone)
     }
 }

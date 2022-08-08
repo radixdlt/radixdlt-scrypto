@@ -1,13 +1,9 @@
 use sbor::rust::boxed::Box;
-use sbor::rust::cell::{RefCell, RefMut};
 use sbor::rust::collections::*;
 use sbor::rust::format;
 use sbor::rust::marker::*;
-use sbor::rust::ops::Deref;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
-use sbor::rust::vec;
-use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
 use scrypto::core::Receiver;
@@ -68,11 +64,11 @@ pub struct CallFrame<
 
     /// Owned Values
     owned_heap_nodes: HashMap<RENodeId, HeapRootRENode>,
-    auth_zone: Option<RefCell<AuthZone>>,
+    auth_zone: Option<AuthZone>,
 
     /// Borrowed Values from call frames up the stack
     parent_heap_nodes: Vec<&'p mut HashMap<RENodeId, HeapRootRENode>>,
-    caller_auth_zone: Option<&'p RefCell<AuthZone>>,
+    caller_auth_zone: Option<&'p AuthZone>,
 
     phantom: PhantomData<I>,
 }
@@ -761,7 +757,7 @@ pub enum ExecutionEntity<'a> {
 
 pub enum ExecutionState<'a> {
     Consumed(RENodeId),
-    AuthZone(RefMut<'a, AuthZone>),
+    AuthZone(&'a mut AuthZone),
     RENodeRef(RENodeId),
     // TODO: Can remove this and replace useage with REActor
     Component(PackageAddress, String, ComponentAddress),
@@ -826,9 +822,9 @@ where
             wasm_instrumenter,
             fee_reserve,
             fee_table,
-            Some(RefCell::new(AuthZone::new_with_proofs(
+            Some(AuthZone::new_with_proofs(
                 initial_auth_zone_proofs,
-            ))),
+            )),
             HashMap::new(),
             HashMap::new(),
             Vec::new(),
@@ -848,11 +844,11 @@ where
         wasm_instrumenter: &'g mut WasmInstrumenter,
         fee_reserve: &'g mut C,
         fee_table: &'g FeeTable,
-        auth_zone: Option<RefCell<AuthZone>>,
+        auth_zone: Option<AuthZone>,
         owned_heap_nodes: HashMap<RENodeId, HeapRootRENode>,
         node_refs: HashMap<RENodeId, RENodePointer>,
         parent_heap_nodes: Vec<&'p mut HashMap<RENodeId, HeapRootRENode>>,
-        caller_auth_zone: Option<&'p RefCell<AuthZone>>,
+        caller_auth_zone: Option<&'p AuthZone>,
     ) -> Self {
         Self {
             transaction_hash,
@@ -993,7 +989,7 @@ where
                             .map_err(RuntimeError::ProofError),
                         _ => panic!("Unexpected"),
                     },
-                    ExecutionState::AuthZone(mut auth_zone) => auth_zone
+                    ExecutionState::AuthZone(auth_zone) => auth_zone
                         .main(fn_ident, input, self)
                         .map_err(RuntimeError::AuthZoneError),
                     ExecutionState::RENodeRef(node_id) => match node_id {
@@ -1437,7 +1433,7 @@ where
                 self.fee_table,
                 match type_name {
                     TypeName::TransactionProcessor | TypeName::Blueprint(_, _) => {
-                        Some(RefCell::new(AuthZone::new()))
+                        Some(AuthZone::new())
                     }
                     _ => None,
                 },
@@ -1538,10 +1534,18 @@ where
 
         let mut locked_values = HashSet::new();
         let mut next_frame_node_refs = HashMap::new();
+        // TODO: Remove once heap is implemented
+        let next_caller_auth_zone;
 
         // Authorization and state load
-        let (actor, execution_state, method_auths) = match &receiver {
+        let (actor, execution_state) = match &receiver {
             Receiver::Consumed(node_id) => {
+                let native_substate_id = match node_id {
+                    RENodeId::Bucket(bucket_id) => SubstateId::Bucket(*bucket_id),
+                    RENodeId::Proof(proof_id) => SubstateId::Proof(*proof_id),
+                    _ => return Err(RuntimeError::MethodDoesNotExist(fn_ident.clone())),
+                };
+
                 let heap_node = self
                     .owned_heap_nodes
                     .remove(node_id)
@@ -1566,18 +1570,18 @@ where
                     _ => {}
                 }
 
-                let method_auths = AuthModule::consumed_auth(
+                AuthModule::consumed_auth(
                     &fn_ident,
+                    &native_substate_id,
                     heap_node.root(),
                     &mut self.track,
+                    self.auth_zone.as_ref(),
+                    self.caller_auth_zone,
                 )?;
                 next_owned_values.insert(*node_id, heap_node);
+                next_caller_auth_zone = self.auth_zone.as_ref();
 
-                Ok((
-                    REActor::Native,
-                    ExecutionState::Consumed(*node_id),
-                    method_auths,
-                ))
+                Ok((REActor::Native, ExecutionState::Consumed(*node_id)))
             }
             Receiver::NativeRENodeRef(node_id) => {
                 let native_substate_id = match node_id {
@@ -1709,8 +1713,8 @@ where
                     next_frame_node_refs.insert(node_id, RENodePointer::Store(node_id));
                 }
 
-                // Load method authorization
-                let method_auth = AuthModule::ref_auth(
+                // Check method authorization
+                AuthModule::ref_auth(
                     &fn_ident,
                     &input,
                     native_substate_id.clone(),
@@ -1719,16 +1723,16 @@ where
                     &mut self.owned_heap_nodes,
                     &mut self.parent_heap_nodes,
                     &mut self.track,
+                    self.auth_zone.as_ref(),
+                    self.caller_auth_zone,
                 )?;
+                next_caller_auth_zone = self.auth_zone.as_ref();
 
-                Ok((
-                    REActor::Native,
-                    ExecutionState::RENodeRef(*node_id),
-                    method_auth,
-                ))
+                Ok((REActor::Native, ExecutionState::RENodeRef(*node_id)))
             }
             Receiver::AuthZoneRef => {
-                if let Some(auth_zone) = &self.auth_zone {
+                next_caller_auth_zone = Option::None;
+                if let Some(auth_zone) = &mut self.auth_zone {
                     for resource_address in &input.resource_addresses {
                         self.track
                             .acquire_lock(
@@ -1750,8 +1754,7 @@ where
                         let node_id = RENodeId::ResourceManager(resource_address.clone());
                         next_frame_node_refs.insert(node_id, RENodePointer::Store(node_id));
                     }
-                    let borrowed = auth_zone.borrow_mut();
-                    Ok((REActor::Native, ExecutionState::AuthZone(borrowed), vec![]))
+                    Ok((REActor::Native, ExecutionState::AuthZone(auth_zone)))
                 } else {
                     Err(RuntimeError::AuthZoneDoesNotExist)
                 }
@@ -1831,8 +1834,8 @@ where
                     .expect("Should never fail");
                 locked_values.insert((package_substate_id.clone(), false));
 
-                // Retrieve Method Authorization
-                let method_auths = AuthModule::ref_auth(
+                // Check Method Authorization
+                AuthModule::ref_auth(
                     &fn_ident,
                     &input,
                     SubstateId::ComponentState(component_address),
@@ -1841,7 +1844,10 @@ where
                     &mut self.owned_heap_nodes,
                     &mut self.parent_heap_nodes,
                     &mut self.track,
+                    self.auth_zone.as_ref(),
+                    self.caller_auth_zone,
                 )?;
+                next_caller_auth_zone = self.auth_zone.as_ref();
 
                 match node_pointer {
                     RENodePointer::Store(..) => {
@@ -1858,11 +1864,7 @@ where
                     scrypto_actor.blueprint_name().clone(),
                     component_address,
                 );
-                Ok((
-                    REActor::Scrypto(scrypto_actor),
-                    execution_state,
-                    method_auths,
-                ))
+                Ok((REActor::Scrypto(scrypto_actor), execution_state))
             }
         }?;
 
@@ -1878,41 +1880,6 @@ where
             }
         }
 
-        // Authorization check
-        if !method_auths.is_empty() {
-            let mut auth_zones = Vec::new();
-            if let Some(self_auth_zone) = &self.auth_zone {
-                auth_zones.push(self_auth_zone.borrow());
-            }
-
-            match &execution_state {
-                // Resource auth check includes caller
-                ExecutionState::Component(..)
-                | ExecutionState::RENodeRef(RENodeId::ResourceManager(..), ..)
-                | ExecutionState::RENodeRef(RENodeId::Vault(..), ..)
-                | ExecutionState::Consumed(RENodeId::Bucket(..)) => {
-                    if let Some(auth_zone) = self.caller_auth_zone {
-                        auth_zones.push(auth_zone.borrow());
-                    }
-                }
-                // Extern call auth check
-                _ => {}
-            };
-
-            let mut borrowed = Vec::new();
-            for auth_zone in &auth_zones {
-                borrowed.push(auth_zone.deref());
-            }
-            for method_auth in method_auths {
-                method_auth
-                    .check(&borrowed)
-                    .map_err(|error| RuntimeError::AuthorizationError {
-                        function: fn_ident.clone(),
-                        authorization: method_auth,
-                        error,
-                    })?;
-            }
-        }
 
         // Setup next parent frame
         let mut next_borrowed_values: Vec<&mut HashMap<RENodeId, HeapRootRENode>> = Vec::new();
@@ -1936,13 +1903,13 @@ where
                 self.fee_reserve,
                 self.fee_table,
                 match receiver {
-                    Receiver::Component(_) => Some(RefCell::new(AuthZone::new())),
+                    Receiver::Component(_) => Some(AuthZone::new()),
                     _ => None,
                 },
                 next_owned_values,
                 next_frame_node_refs,
                 next_borrowed_values,
-                self.auth_zone.as_ref(),
+                next_caller_auth_zone,
             );
 
             // invoke the main function
