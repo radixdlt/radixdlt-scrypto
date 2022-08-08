@@ -17,7 +17,6 @@ use scrypto::core::Network;
 use scrypto::engine::types::{KeyValueStoreId, SubstateId, VaultId};
 use scrypto::prelude::*;
 use scrypto::prelude::{HashMap, Package};
-use scrypto::values::ScryptoValue;
 use scrypto::{abi, to_struct};
 use transaction::builder::ManifestBuilder;
 use transaction::model::{ExecutableTransaction, TransactionManifest};
