@@ -7,6 +7,7 @@ use crate::bytes_vec_to_struct;
 use crate::component::*;
 use crate::core::*;
 use crate::crypto::*;
+use crate::engine::types::RENodeId;
 use crate::engine::{api::*, call_engine};
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -80,7 +81,7 @@ impl Runtime {
     /// Returns the transaction hash.
     pub fn transaction_hash() -> Hash {
         let input = RadixEngineInput::InvokeMethod(
-            Receiver::SystemRef,
+            Receiver::NativeRENodeRef(RENodeId::System),
             "transaction_hash".to_string(),
             scrypto_encode(&SystemGetTransactionHashInput {}),
         );
@@ -90,7 +91,7 @@ impl Runtime {
     /// Returns the current epoch number.
     pub fn current_epoch() -> u64 {
         let input = RadixEngineInput::InvokeMethod(
-            Receiver::SystemRef,
+            Receiver::NativeRENodeRef(RENodeId::System),
             "get_epoch".to_string(),
             scrypto_encode(&SystemGetCurrentEpochInput {}),
         );

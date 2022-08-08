@@ -95,7 +95,7 @@ impl TransactionProcessor {
                             .and_then(|new_id| {
                                 system_api
                                     .invoke_method(
-                                        Receiver::WorktopRef,
+                                        Receiver::NativeRENodeRef(RENodeId::Worktop),
                                         "take_all".to_string(),
                                         ScryptoValue::from_typed(&WorktopTakeAllInput {
                                             resource_address: *resource_address,
@@ -116,7 +116,7 @@ impl TransactionProcessor {
                             .and_then(|new_id| {
                                 system_api
                                     .invoke_method(
-                                        Receiver::WorktopRef,
+                                        Receiver::NativeRENodeRef(RENodeId::Worktop),
                                         "take_amount".to_string(),
                                         ScryptoValue::from_typed(&WorktopTakeAmountInput {
                                             amount: *amount,
@@ -138,7 +138,7 @@ impl TransactionProcessor {
                             .and_then(|new_id| {
                                 system_api
                                     .invoke_method(
-                                        Receiver::WorktopRef,
+                                        Receiver::NativeRENodeRef(RENodeId::Worktop),
                                         "take_non_fungibles".to_string(),
                                         ScryptoValue::from_typed(&WorktopTakeNonFungiblesInput {
                                             ids: ids.clone(),
@@ -155,7 +155,7 @@ impl TransactionProcessor {
                             .remove(bucket_id)
                             .map(|real_id| {
                                 system_api.invoke_method(
-                                    Receiver::WorktopRef,
+                                    Receiver::NativeRENodeRef(RENodeId::Worktop),
                                     "put".to_string(),
                                     ScryptoValue::from_typed(&WorktopPutInput {
                                         bucket: scrypto::resource::Bucket(real_id),
@@ -165,7 +165,7 @@ impl TransactionProcessor {
                             .unwrap_or(Err(RuntimeError::BucketNotFound(*bucket_id))),
                         ExecutableInstruction::AssertWorktopContains { resource_address } => {
                             system_api.invoke_method(
-                                Receiver::WorktopRef,
+                                Receiver::NativeRENodeRef(RENodeId::Worktop),
                                 "assert_contains".to_string(),
                                 ScryptoValue::from_typed(&WorktopAssertContainsInput {
                                     resource_address: *resource_address,
@@ -176,7 +176,7 @@ impl TransactionProcessor {
                             amount,
                             resource_address,
                         } => system_api.invoke_method(
-                            Receiver::WorktopRef,
+                            Receiver::NativeRENodeRef(RENodeId::Worktop),
                             "assert_contains_amount".to_string(),
                             ScryptoValue::from_typed(&WorktopAssertContainsAmountInput {
                                 amount: *amount,
@@ -187,7 +187,7 @@ impl TransactionProcessor {
                             ids,
                             resource_address,
                         } => system_api.invoke_method(
-                            Receiver::WorktopRef,
+                            Receiver::NativeRENodeRef(RENodeId::Worktop),
                             "assert_contains_non_fungibles".to_string(),
                             ScryptoValue::from_typed(&WorktopAssertContainsNonFungiblesInput {
                                 ids: ids.clone(),
@@ -312,7 +312,7 @@ impl TransactionProcessor {
                             .and_then(|(new_id, real_bucket_id)| {
                                 system_api
                                     .invoke_method(
-                                        Receiver::BucketRef(real_bucket_id),
+                                        Receiver::NativeRENodeRef(RENodeId::Bucket(real_bucket_id)),
                                         "create_proof".to_string(),
                                         ScryptoValue::from_typed(&BucketCreateProofInput {}),
                                     )
@@ -332,7 +332,7 @@ impl TransactionProcessor {
                                     .map(|real_id| {
                                         system_api
                                             .invoke_method(
-                                                Receiver::ProofRef(real_id),
+                                                Receiver::NativeRENodeRef(RENodeId::Proof(real_id)),
                                                 "clone".to_string(),
                                                 ScryptoValue::from_typed(&ProofCloneInput {}),
                                             )
@@ -411,7 +411,7 @@ impl TransactionProcessor {
                                 for (bucket_id, _) in &result.bucket_ids {
                                     system_api
                                         .invoke_method(
-                                            Receiver::WorktopRef,
+                                            Receiver::NativeRENodeRef(RENodeId::Worktop),
                                             "put".to_string(),
                                             ScryptoValue::from_typed(&WorktopPutInput {
                                                 bucket: scrypto::resource::Bucket(*bucket_id),
@@ -456,7 +456,7 @@ impl TransactionProcessor {
                                 for (bucket_id, _) in &result.bucket_ids {
                                     system_api
                                         .invoke_method(
-                                            Receiver::WorktopRef,
+                                            Receiver::NativeRENodeRef(RENodeId::Worktop),
                                             "put".to_string(),
                                             ScryptoValue::from_typed(&WorktopPutInput {
                                                 bucket: scrypto::resource::Bucket(*bucket_id),
@@ -472,7 +472,7 @@ impl TransactionProcessor {
                             method,
                         } => system_api
                             .invoke_method(
-                                Receiver::WorktopRef,
+                                Receiver::NativeRENodeRef(RENodeId::Worktop),
                                 "drain".to_string(),
                                 ScryptoValue::from_typed(&WorktopDrainInput {}),
                             )

@@ -1,3 +1,4 @@
+mod auth_module;
 mod call_frame;
 mod errors;
 mod precommitted_kv_store;
@@ -8,6 +9,7 @@ mod type_properties;
 mod values;
 mod wasm_runtime;
 
+pub use auth_module::*;
 pub use call_frame::{CallFrame, NativeSubstateRef, RENodeRefMut};
 pub use errors::*;
 pub use precommitted_kv_store::*;

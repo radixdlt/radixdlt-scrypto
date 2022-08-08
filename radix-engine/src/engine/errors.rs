@@ -30,7 +30,6 @@ pub enum RuntimeError {
     MethodDoesNotExist(String),
     InvalidFnInput {
         fn_ident: String,
-        input: Value,
     },
     InvalidFnOutput {
         fn_ident: String,
@@ -48,6 +47,7 @@ pub enum RuntimeError {
     /// Blueprint does not exist.
     BlueprintNotFound(PackageAddress, String),
 
+    Reentrancy(SubstateId),
     ComponentReentrancy(ComponentAddress),
     PackageReentrancy,
 

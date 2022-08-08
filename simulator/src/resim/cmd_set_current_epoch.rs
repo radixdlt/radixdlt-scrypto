@@ -5,6 +5,7 @@ use radix_engine::engine::{CallFrame, SystemApi};
 use radix_engine::fee::{FeeTable, SystemLoanFeeReserve};
 use scrypto::core::{Receiver, SystemSetEpochInput};
 use scrypto::crypto::hash;
+use scrypto::engine::types::RENodeId;
 use scrypto::values::ScryptoValue;
 use transaction::validation::{IdAllocator, IdSpace};
 
@@ -48,7 +49,7 @@ impl SetCurrentEpoch {
         // Invoke the system
         root_frame
             .invoke_method(
-                Receiver::SystemRef,
+                Receiver::NativeRENodeRef(RENodeId::System),
                 "set_epoch".to_string(),
                 ScryptoValue::from_typed(&SystemSetEpochInput { epoch: self.epoch }),
             )
