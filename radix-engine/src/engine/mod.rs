@@ -8,6 +8,7 @@ mod track_support;
 mod type_properties;
 mod values;
 mod wasm_runtime;
+mod kernel;
 
 pub use auth_module::*;
 pub use call_frame::{CallFrame, NativeSubstateRef, RENodeRefMut};
@@ -19,3 +20,4 @@ pub use track_support::*;
 pub use type_properties::*;
 pub use values::*;
 pub use wasm_runtime::*;
+pub use kernel::*;
