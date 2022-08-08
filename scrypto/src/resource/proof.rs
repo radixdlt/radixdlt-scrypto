@@ -33,6 +33,39 @@ pub struct ProofCloneInput {}
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Proof(pub ProofId);
 
+// TODO: Evaluate if we should have a ProofValidationModeBuilder to construct more complex validation modes.
+/// Specifies the validation mode that should be used for validating a `Proof`.
+pub enum ProofValidationMode {
+    /// Specifies that the `Proof` should be validated against a single `ResourceAddress`.
+    ValidateResourceAddress(ResourceAddress),
+
+    /// Specifies that the `Proof` should have its resource address validated against a set of `ResourceAddress`es. If
+    /// the `Proof`'s resource address belongs to the set, then its valid.
+    ValidateResourceAddressBelongsTo(BTreeSet<ResourceAddress>),
+
+    /// Specifies that the `Proof` should be validating for containing a specific `NonFungibleAddress`.
+    ValidateContainsNonFungible(NonFungibleAddress),
+
+    /// Specifies that the `Proof` should be validated against a single resource address and a set of `NonFungibleId`s
+    /// to ensure that the `Proof` contains all of the NonFungibles in the set.
+    ValidateContainsNonFungibles(ResourceAddress, BTreeSet<NonFungibleId>),
+
+    /// Specifies that the `Proof` should be validated for the amount of resources that it contains.
+    ValidateContainsAmount(ResourceAddress, Decimal),
+}
+
+impl From<ResourceAddress> for ProofValidationMode {
+    fn from(resource_address: ResourceAddress) -> Self {
+        Self::ValidateResourceAddress(resource_address)
+    }
+}
+
+impl From<NonFungibleAddress> for ProofValidationMode {
+    fn from(non_fungible_address: NonFungibleAddress) -> Self {
+        Self::ValidateContainsNonFungible(non_fungible_address)
+    }
+}
+
 impl Clone for Proof {
     sfunctions! {
         Receiver::NativeRENodeRef(RENodeId::Proof(self.0)) => {
@@ -54,7 +87,7 @@ impl Proof {
     ///
     /// ```ignore
     /// let proof: Proof = bucket.create_proof();
-    /// match proof.validate_proof(admin_badge) {
+    /// match proof.validate_proof(admin_badge_resource_address) {
     ///     Ok(validated_proof) => {
     ///         info!(
     ///             "Validation successful. Proof has a resource address of {} and amount of {}",
@@ -67,16 +100,17 @@ impl Proof {
     ///     },
     /// }
     /// ```
-    pub fn validate_proof(
+    pub fn validate_proof<T>(
         self,
-        expected_resource_address: ResourceAddress,
-    ) -> Result<ValidatedProof, ValidateProofError> {
-        if self.resource_address() == expected_resource_address {
-            Ok(ValidatedProof(self))
-        } else {
-            Err(ValidateProofError::ProofResourceAddressValidationError(
-                self,
-            ))
+        validation_mode: T,
+    ) -> Result<ValidatedProof, (Self, ProofValidationError)>
+    where
+        T: Into<ProofValidationMode>,
+    {
+        let validation_mode: ProofValidationMode = validation_mode.into();
+        match self.validate(validation_mode) {
+            Ok(()) => Ok(ValidatedProof(self)),
+            Err(error) => Err((self, error)),
         }
     }
 
@@ -96,8 +130,103 @@ impl Proof {
         validated_proof.into()
     }
 
+    fn validate(&self, validation_mode: ProofValidationMode) -> Result<(), ProofValidationError> {
+        match validation_mode {
+            ProofValidationMode::ValidateResourceAddress(resource_address) => {
+                self.validate_resource_address(resource_address)?;
+                Ok(())
+            }
+            ProofValidationMode::ValidateResourceAddressBelongsTo(resource_addresses) => {
+                self.validate_resource_address_belongs_to(&resource_addresses)?;
+                Ok(())
+            }
+            ProofValidationMode::ValidateContainsNonFungible(non_fungible_address) => {
+                self.validate_resource_address(non_fungible_address.resource_address())?;
+                self.validate_contains_non_fungible_id(non_fungible_address.non_fungible_id())?;
+                Ok(())
+            }
+            ProofValidationMode::ValidateContainsNonFungibles(
+                resource_address,
+                non_fungible_ids,
+            ) => {
+                self.validate_resource_address(resource_address)?;
+                self.validate_contains_non_fungible_ids(&non_fungible_ids)?;
+                Ok(())
+            }
+            ProofValidationMode::ValidateContainsAmount(resource_address, amount) => {
+                self.validate_resource_address(resource_address)?;
+                self.validate_contains_amount(amount)?;
+                Ok(())
+            }
+        }
+    }
+
+    fn validate_resource_address(
+        &self,
+        resource_address: ResourceAddress,
+    ) -> Result<(), ProofValidationError> {
+        if self.resource_address() == resource_address {
+            Ok(())
+        } else {
+            Err(ProofValidationError::InvalidResourceAddress(
+                resource_address,
+            ))
+        }
+    }
+
+    fn validate_resource_address_belongs_to(
+        &self,
+        resource_addresses: &BTreeSet<ResourceAddress>,
+    ) -> Result<(), ProofValidationError> {
+        if resource_addresses.contains(&self.resource_address()) {
+            Ok(())
+        } else {
+            Err(ProofValidationError::ResourceAddressDoesNotBelongToList)
+        }
+    }
+
+    fn validate_contains_non_fungible_id(
+        &self,
+        non_fungible_id: NonFungibleId,
+    ) -> Result<(), ProofValidationError> {
+        if self.non_fungible_ids().get(&non_fungible_id).is_some() {
+            Ok(())
+        } else {
+            Err(ProofValidationError::NonFungibleIdNotFound)
+        }
+    }
+
+    fn validate_contains_non_fungible_ids(
+        &self,
+        expected_non_fungible_ids: &BTreeSet<NonFungibleId>,
+    ) -> Result<(), ProofValidationError> {
+        let actual_non_fungible_ids = self.non_fungible_ids();
+        let contains_all_non_fungible_ids = expected_non_fungible_ids
+            .iter()
+            .all(|non_fungible_id| actual_non_fungible_ids.get(non_fungible_id).is_some());
+        if contains_all_non_fungible_ids {
+            Ok(())
+        } else {
+            Err(ProofValidationError::NonFungibleIdNotFound)
+        }
+    }
+
+    fn validate_contains_amount(&self, amount: Decimal) -> Result<(), ProofValidationError> {
+        if self.amount() >= amount {
+            Ok(())
+        } else {
+            Err(ProofValidationError::InvalidAmount(amount))
+        }
+    }
+
     sfunctions! {
         Receiver::NativeRENodeRef(RENodeId::Proof(self.0)) => {
+            fn amount(&self) -> Decimal {
+                ProofGetAmountInput {}
+            }
+            fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId> {
+                ProofGetNonFungibleIdsInput {}
+            }
             fn resource_address(&self) -> ResourceAddress {
                 ProofGetResourceAddressInput {}
             }
@@ -225,15 +354,19 @@ impl fmt::Display for ParseProofError {
 
 /// Represents an error when validating proof.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ValidateProofError {
-    ProofResourceAddressValidationError(Proof),
+pub enum ProofValidationError {
+    InvalidResourceAddress(ResourceAddress),
+    ResourceAddressDoesNotBelongToList,
+    DoesNotContainOneNonFungible,
+    NonFungibleIdNotFound,
+    InvalidAmount(Decimal),
 }
 
 #[cfg(not(feature = "alloc"))]
-impl std::error::Error for ValidateProofError {}
+impl std::error::Error for ProofValidationError {}
 
 #[cfg(not(feature = "alloc"))]
-impl fmt::Display for ValidateProofError {
+impl fmt::Display for ProofValidationError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
     }
