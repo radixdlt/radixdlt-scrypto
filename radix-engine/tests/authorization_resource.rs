@@ -1,10 +1,6 @@
 extern crate core;
 
-#[rustfmt::skip]
-pub mod test_runner;
-
-use crate::test_runner::is_auth_error;
-use crate::test_runner::TestRunner;
+use scrypto_unit::*;
 use radix_engine::ledger::InMemorySubstateStore;
 use scrypto::core::Network;
 use scrypto::prelude::*;

@@ -1,0 +1,16 @@
+[package]
+name = "scrypto-unit"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+radix-engine = { path = "../radix-engine" }
+transaction = { path = "../transaction", default-features = false }
+scrypto = { path = "../scrypto", default-features = false }
+sbor = { path = "../sbor", default-features = false }
+wabt = { version = "0.10.0" }
+
+[features]
+default = ["std"]
+std = ["scrypto/std", "scrypto/serde", "sbor/std"]
+alloc = ["scrypto/alloc", "scrypto/serde", "sbor/alloc"]
