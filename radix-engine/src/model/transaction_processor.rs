@@ -434,7 +434,7 @@ impl TransactionProcessor {
                             )
                             .and_then(|call_data| {
                                 system_api.invoke_method(
-                                    Receiver::Component(*component_address),
+                                    Receiver::Scrypto(RENodeId::Component(*component_address)),
                                     method_name.to_string(),
                                     call_data,
                                 )
@@ -486,7 +486,7 @@ impl TransactionProcessor {
                                 }
                                 let encoded = to_struct!(buckets);
                                 system_api.invoke_method(
-                                    Receiver::Component(*component_address),
+                                    Receiver::Scrypto(RENodeId::Component(*component_address)),
                                     method.to_string(),
                                     ScryptoValue::from_slice(&encoded).unwrap(),
                                 )

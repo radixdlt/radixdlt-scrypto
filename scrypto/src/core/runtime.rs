@@ -71,7 +71,7 @@ impl Runtime {
         args: Vec<Vec<u8>>,
     ) -> T {
         let input = RadixEngineInput::InvokeMethod(
-            Receiver::Component(component_address),
+            Receiver::Scrypto(RENodeId::Component(component_address)),
             method.as_ref().to_string(),
             bytes_vec_to_struct!(args),
         );

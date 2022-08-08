@@ -1757,35 +1757,36 @@ where
                     Err(RuntimeError::AuthZoneDoesNotExist)
                 }
             }
-            Receiver::Component(component_address) => {
-                let component_address = component_address.clone();
+            Receiver::Scrypto(node_id) => {
+                let (substate_id, component_address) = match node_id {
+                    RENodeId::Component(component_address) => (SubstateId::ComponentState(*component_address), *component_address),
+                    _ => return Err(RuntimeError::MethodDoesNotExist(fn_ident.clone()))
+                };
 
                 // Find value
-                let node_id = RENodeId::Component(component_address);
-                let node_pointer = if self.owned_heap_nodes.contains_key(&node_id) {
+                let node_pointer = if self.owned_heap_nodes.contains_key(node_id) {
                     RENodePointer::Heap {
                         frame_id: self.depth,
                         root: node_id.clone(),
                         id: None,
                     }
-                } else if let Some(pointer) = self.node_refs.get(&node_id) {
+                } else if let Some(pointer) = self.node_refs.get(node_id) {
                     pointer.clone()
                 } else {
-                    return Err(RuntimeError::InvokeMethodInvalidReceiver(node_id));
+                    return Err(RuntimeError::InvokeMethodInvalidReceiver(*node_id));
                 };
 
                 // Lock values and setup next frame
                 match node_pointer {
                     RENodePointer::Store(..) => {
-                        let substate_id = SubstateId::ComponentState(component_address);
                         self.track
                             .acquire_lock(substate_id.clone(), true, false)
                             .map_err(|e| match e {
                                 TrackError::NotFound => {
-                                    RuntimeError::ComponentNotFound(component_address)
+                                    RuntimeError::RENodeNotFound(*node_id)
                                 }
                                 TrackError::Reentrancy => {
-                                    RuntimeError::ComponentReentrancy(component_address)
+                                    RuntimeError::Reentrancy(substate_id.clone())
                                 }
                                 TrackError::StateTrackError(..) => {
                                     panic!("Unexpected")
@@ -1849,7 +1850,7 @@ where
                     &fn_ident,
                     &input,
                     &actor,
-                    SubstateId::ComponentState(component_address),
+                    substate_id.clone(),
                     node_pointer.clone(),
                     self.depth,
                     &mut self.owned_heap_nodes,
@@ -1864,7 +1865,7 @@ where
                 }
 
                 next_caller_auth_zone = self.auth_zone.as_ref();
-                next_frame_node_refs.insert(node_id, node_pointer);
+                next_frame_node_refs.insert(*node_id, node_pointer);
 
                 Ok((actor, execution_state))
             }
@@ -1904,7 +1905,7 @@ where
                 self.fee_reserve,
                 self.fee_table,
                 match receiver {
-                    Receiver::Component(_) => Some(AuthZone::new()),
+                    Receiver::Scrypto(_) => Some(AuthZone::new()),
                     _ => None,
                 },
                 next_owned_values,

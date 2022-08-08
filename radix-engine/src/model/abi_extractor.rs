@@ -33,7 +33,7 @@ pub fn export_abi_by_component<S: ReadableSubstateStore>(
     let component_value: Substate = substate_store
         .get_substate(&SubstateId::ComponentInfo(component_address))
         .map(|s| s.substate)
-        .ok_or(RuntimeError::ComponentNotFound(component_address))?;
+        .ok_or(RuntimeError::RENodeNotFound(RENodeId::Component(component_address)))?;
     let component = component_value.component();
     export_abi(
         substate_store,

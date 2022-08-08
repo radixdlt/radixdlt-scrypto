@@ -5,6 +5,7 @@ use crate::test_runner::TestRunner;
 use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::InMemorySubstateStore;
 use scrypto::core::Network;
+use scrypto::engine::types::{RENodeId, SubstateId};
 use scrypto::prelude::*;
 use scrypto::to_struct;
 use transaction::builder::ManifestBuilder;
@@ -110,7 +111,7 @@ fn reentrancy_should_not_be_possible() {
 
     // Assert
     receipt.expect_failure(|e| {
-        if let RuntimeError::ComponentReentrancy(address) = e {
+        if let RuntimeError::Reentrancy(SubstateId::ComponentState(address)) = e {
             address.eq(&component_address)
         } else {
             false
@@ -138,7 +139,7 @@ fn missing_component_address_should_cause_error() {
 
     // Assert
     receipt.expect_failure(|e| {
-        if let RuntimeError::ComponentNotFound(address) = e {
+        if let RuntimeError::RENodeNotFound(RENodeId::Component(address)) = e {
             address.eq(&component_address)
         } else {
             false

@@ -146,7 +146,7 @@ impl FeeTable {
                 "clear" => self.fixed_high,
                 _ => self.fixed_high,
             },
-            Receiver::Component(_) => {
+            Receiver::Scrypto(_) => {
                 0 // Costing is through instrumentation
             }
             // TODO: I suspect there is a bug with invoking consumed within call frame. Add tests to verify
