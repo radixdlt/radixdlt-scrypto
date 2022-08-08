@@ -1796,15 +1796,20 @@ where
                     _ => {}
                 };
 
+                // Acquire locks for modules
+                // TODO: Refactor when locking model finalized
+                let mut temporary_locks = Vec::new();
                 match node_pointer {
                     RENodePointer::Store(..) => {
+                        let temporary_substate_id = SubstateId::ComponentInfo(component_address);
                         self.track
                             .acquire_lock(
-                                SubstateId::ComponentInfo(component_address),
+                                temporary_substate_id.clone(),
                                 false,
                                 false,
                             )
                             .expect("Component Info should not be locked for long periods of time");
+                        temporary_locks.push(temporary_substate_id);
                     }
                     _ => {}
                 }
@@ -1853,16 +1858,12 @@ where
                     self.auth_zone.as_ref(),
                     self.caller_auth_zone,
                 )?;
-                next_caller_auth_zone = self.auth_zone.as_ref();
 
-                match node_pointer {
-                    RENodePointer::Store(..) => {
-                        self.track
-                            .release_lock(SubstateId::ComponentInfo(component_address), false);
-                    }
-                    _ => {}
+                for temporary_lock in temporary_locks {
+                    self.track.release_lock(temporary_lock, false);
                 }
 
+                next_caller_auth_zone = self.auth_zone.as_ref();
                 next_frame_node_refs.insert(node_id, node_pointer);
 
                 Ok((actor, execution_state))
