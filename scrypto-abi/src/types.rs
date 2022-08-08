@@ -118,22 +118,22 @@ const MAPPING: [(ScryptoType, u8, &str); 33] = [
     (ScryptoType::NonFungibleId, 0xb4, "NonFungibleId"),   // 180
     (ScryptoType::NonFungibleAddress, 0xb5, "NonFungibleAddress"), // 181
     (ScryptoType::ResourceAddress, 0xb6, "ResourceAddress"), // 182
-    (ScryptoType::U8, 0xc0, "U8"),                        // 192
-    (ScryptoType::U16, 0xc1, "U16"),                      // 193
-    (ScryptoType::U32, 0xc2, "U32"),                      // 194
-    (ScryptoType::U64, 0xc3, "U64"),                      // 195
-    (ScryptoType::U128, 0xc4, "U128"),                    // 196
-    (ScryptoType::U256, 0xc5, "U256"),                    // 197
-    (ScryptoType::U384, 0xc6, "U384"),                    // 198
-    (ScryptoType::U512, 0xc7, "U512"),                    // 199
-    (ScryptoType::I8, 0xc8, "I8"),                        // 200
-    (ScryptoType::I16, 0xc9, "I16"),                      // 201
-    (ScryptoType::I32, 0xca, "I32"),                      // 202
-    (ScryptoType::I64, 0xcb, "I64"),                      // 203
-    (ScryptoType::I128, 0xcc, "I128"),                    // 204
-    (ScryptoType::I256, 0xcd, "I256"),                    // 205
-    (ScryptoType::I384, 0xce, "I384"),                    // 206
-    (ScryptoType::I512, 0xcf, "I512"),                    // 207
+    (ScryptoType::U8, 0xc0, "U8"),                         // 192
+    (ScryptoType::U16, 0xc1, "U16"),                       // 193
+    (ScryptoType::U32, 0xc2, "U32"),                       // 194
+    (ScryptoType::U64, 0xc3, "U64"),                       // 195
+    (ScryptoType::U128, 0xc4, "U128"),                     // 196
+    (ScryptoType::U256, 0xc5, "U256"),                     // 197
+    (ScryptoType::U384, 0xc6, "U384"),                     // 198
+    (ScryptoType::U512, 0xc7, "U512"),                     // 199
+    (ScryptoType::I8, 0xc8, "I8"),                         // 200
+    (ScryptoType::I16, 0xc9, "I16"),                       // 201
+    (ScryptoType::I32, 0xca, "I32"),                       // 202
+    (ScryptoType::I64, 0xcb, "I64"),                       // 203
+    (ScryptoType::I128, 0xcc, "I128"),                     // 204
+    (ScryptoType::I256, 0xcd, "I256"),                     // 205
+    (ScryptoType::I384, 0xce, "I384"),                     // 206
+    (ScryptoType::I512, 0xcf, "I512"),                     // 207
 ];
 
 impl ScryptoType {
