@@ -1360,7 +1360,6 @@ where
                 if !fn_abi.input.matches(&input.dom) {
                     return Err(RuntimeError::InvalidFnInput {
                         fn_ident,
-                        input: input.dom,
                     });
                 }
 
@@ -1723,7 +1722,7 @@ where
                     &mut self.owned_heap_nodes,
                     &mut self.parent_heap_nodes,
                     &mut self.track,
-                );
+                )?;
 
                 Ok((
                     REActor::Native,
@@ -1827,44 +1826,25 @@ where
                     )
                 };
 
+                // Lock additional substates
+                let package_substate_id =
+                    SubstateId::Package(scrypto_actor.package_address().clone());
+                self.track
+                    .acquire_lock(package_substate_id.clone(), false, false)
+                    .expect("Should never fail");
+                locked_values.insert((package_substate_id.clone(), false));
+
                 // Retrieve Method Authorization
-                let method_auths = {
-                    let package_substate_id =
-                        SubstateId::Package(scrypto_actor.package_address().clone());
-                    self.track
-                        .acquire_lock(package_substate_id.clone(), false, false)
-                        .expect("Should never fail");
-                    locked_values.insert((package_substate_id.clone(), false));
-                    let package = self
-                        .track
-                        .read_substate(package_substate_id.clone())
-                        .package();
-                    let abi = package
-                        .blueprint_abi(scrypto_actor.blueprint_name())
-                        .expect("Blueprint not found for existing component");
-                    let fn_abi = abi
-                        .get_fn_abi(&fn_ident)
-                        .ok_or(RuntimeError::MethodDoesNotExist(fn_ident.clone()))?;
-                    if !fn_abi.input.matches(&input.dom) {
-                        return Err(RuntimeError::InvalidFnInput {
-                            fn_ident,
-                            input: input.dom,
-                        });
-                    }
-
-                    {
-                        let value_ref = node_pointer.to_ref(
-                            self.depth,
-                            &self.owned_heap_nodes,
-                            &self.parent_heap_nodes,
-                            &self.track,
-                        );
-
-                        let component = value_ref.component_info();
-                        let component_state = value_ref.component_state();
-                        component.method_authorization(component_state, &abi.structure, &fn_ident)
-                    }
-                };
+                let method_auths = AuthModule::auth(
+                    &fn_ident,
+                    &input,
+                    SubstateId::ComponentState(component_address),
+                    node_pointer.clone(),
+                    self.depth,
+                    &mut self.owned_heap_nodes,
+                    &mut self.parent_heap_nodes,
+                    &mut self.track,
+                )?;
 
                 match node_pointer {
                     RENodePointer::Store(..) => {

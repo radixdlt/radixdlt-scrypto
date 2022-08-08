@@ -30,7 +30,6 @@ pub enum RuntimeError {
     MethodDoesNotExist(String),
     InvalidFnInput {
         fn_ident: String,
-        input: Value,
     },
     InvalidFnOutput {
         fn_ident: String,
