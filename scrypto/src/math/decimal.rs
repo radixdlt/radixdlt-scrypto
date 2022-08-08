@@ -378,7 +378,11 @@ macro_rules! decimals {
 
                         // read integral
                         while p < chars.len() && chars[p] != '.' {
-                            value = value * <$wrapped>::from(10u8) + TryInto::<$wrapped>::try_into([<read_digit $dec:lower>](chars[p]).unwrap()).unwrap() * sign;
+                            let digit = [<read_digit $dec:lower>](chars[p]);
+                            match digit {
+                                        Ok(dig) => {value = value * <$wrapped>::from(10u8) + <$wrapped>::from(dig) * sign}
+                                        Err(e) => return Err(e),
+                            }
                             p += 1;
                         }
 
@@ -391,7 +395,11 @@ macro_rules! decimals {
                         // read fraction
                         for _ in 0..Self::SCALE {
                             if p < chars.len() {
-                                value = value * <$wrapped>::from(10u8) + TryInto::<$wrapped>::try_into([<read_digit $dec:lower>](chars[p]).unwrap()).unwrap() * sign;
+                                let digit = [<read_digit $dec:lower>](chars[p]);
+                                match digit {
+                                    Ok(dig) => {value = value * <$wrapped>::from(10u8) + <$wrapped>::from(dig) * sign}
+                                    Err(e) => return Err(e)
+                                }
                                 p += 1;
                             } else {
                                 value *= 10;
@@ -1118,5 +1126,17 @@ mod tests {
         Decimal::decode_type(&mut decoder).unwrap();
         let val = Decimal::decode_value(&mut decoder).unwrap();
         assert_eq!(val, dec!("1.23456789"));
+    }
+
+    #[test]
+    fn test_from_str() {
+        let dec = Decimal::from_str("5.0").unwrap();
+        assert_eq!(dec.to_string(), "5");
+    }
+
+    #[test]
+    fn test_from_str_failure() {
+        let dec = Decimal::from_str("non_decimal_value");
+        assert_eq!(dec, Err(ParseDecimalError::InvalidChar('n')));
     }
 }
