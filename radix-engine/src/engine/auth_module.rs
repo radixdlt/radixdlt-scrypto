@@ -4,7 +4,6 @@ use sbor::rust::vec::Vec;
 use scrypto::engine::types::*;
 use scrypto::values::*;
 
-use crate::engine::call_frame::RENodePointer;
 use crate::engine::*;
 use crate::model::*;
 

@@ -5,13 +5,12 @@ use scrypto::engine::types::*;
 use scrypto::prelude::TypeName;
 use scrypto::resource::AccessRule;
 use scrypto::values::*;
+use transaction::validation::IdAllocator;
 
 use crate::engine::values::*;
 use crate::engine::*;
 use crate::fee::*;
 use crate::wasm::*;
-
-use super::call_frame::RENodeRef;
 
 pub trait SystemApi<'p, 's, W, I, C>
 where
@@ -19,6 +18,15 @@ where
     I: WasmInstance,
     C: FeeReserve,
 {
+    // TODO: can we not expose track?
+    fn track(&mut self) -> &mut Track<'s>;
+
+    fn id_allocator(&mut self) -> &mut IdAllocator;
+
+    fn wasm_engine(&mut self) -> &mut W;
+
+    fn wasm_instrumenter(&mut self) -> &mut WasmInstrumenter;
+
     fn fee_reserve(&mut self) -> &mut C;
 
     fn fee_table(&self) -> &FeeTable;
@@ -78,4 +86,8 @@ where
         access_rule: AccessRule,
         proof_ids: Vec<ProofId>,
     ) -> Result<bool, RuntimeError>;
+
+    fn new_uuid(&mut self) -> u128;
+
+    fn new_node_id(&mut self, re_node: &HeapRENode) -> RENodeId;
 }
