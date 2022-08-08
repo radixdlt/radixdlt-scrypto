@@ -111,7 +111,12 @@ impl AuthModule {
                 RENodePointer::Heap { .. } => vec![],
             },
             SubstateId::ComponentState(..) => {
-                if let REActor::Scrypto(ScryptoActor::Component(_component_address, package_address, blueprint_name)) = actor {
+                if let REActor::Scrypto(ScryptoActor::Component(
+                    _component_address,
+                    package_address,
+                    blueprint_name,
+                )) = actor
+                {
                     let package_substate_id = SubstateId::Package(*package_address);
                     let package = track.read_substate(package_substate_id.clone()).package();
                     let abi = package
