@@ -185,7 +185,7 @@ impl RENodePointer {
         }
     }
 
-    fn to_ref<'f, 'p, 's>(
+    pub fn to_ref<'f, 'p, 's>(
         &self,
         self_frame_id: usize,
         owned_values: &'f HashMap<RENodeId, HeapRootRENode>,
@@ -1543,12 +1543,12 @@ where
         // Authorization and state load
         let (actor, execution_state, method_auths) = match &receiver {
             Receiver::Consumed(node_id) => {
-                let value = self
+                let heap_node = self
                     .owned_heap_nodes
                     .remove(node_id)
                     .ok_or(RuntimeError::RENodeNotFound(*node_id))?;
 
-                let method_auths = match &value.root() {
+                let method_auths = match &heap_node.root() {
                     HeapRENode::Bucket(bucket) => {
                         let resource_address = bucket.resource_address();
                         self.track
@@ -1560,20 +1560,22 @@ where
                             .expect("Should not fail.");
                         locked_values
                             .insert((SubstateId::ResourceManager(resource_address.clone()), false));
+                        let node_id = RENodeId::ResourceManager(resource_address);
+                        next_frame_node_refs.insert(node_id, RENodePointer::Store(node_id));
+                        
                         let resource_manager = self
                             .track
                             .read_substate(SubstateId::ResourceManager(resource_address))
                             .resource_manager();
                         let method_auth = resource_manager.get_consuming_bucket_auth(&fn_ident);
-                        let node_id = RENodeId::ResourceManager(resource_address);
-                        next_frame_node_refs.insert(node_id, RENodePointer::Store(node_id));
+
                         vec![method_auth.clone()]
                     }
                     HeapRENode::Proof(_) => vec![],
                     _ => return Err(RuntimeError::MethodDoesNotExist(fn_ident.clone())),
                 };
 
-                next_owned_values.insert(*node_id, value);
+                next_owned_values.insert(*node_id, heap_node);
 
                 Ok((
                     REActor::Native,
@@ -1712,50 +1714,16 @@ where
                 }
 
                 // Load method authorization
-                let method_auth = match node_id {
-                    RENodeId::ResourceManager(..) => {
-                        let resource_manager = self
-                            .track
-                            .read_substate(native_substate_id)
-                            .resource_manager();
-                        let method_auth = resource_manager.get_auth(&fn_ident, &input).clone();
-                        vec![method_auth]
-                    }
-                    RENodeId::System => {
-                        let fn_str: &str = &fn_ident;
-                        match fn_str {
-                            "set_epoch" => {
-                                vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(
-                                    HardProofRule::Require(HardResourceOrNonFungible::Resource(
-                                        SYSTEM_TOKEN,
-                                    )),
-                                ))]
-                            }
-                            _ => vec![],
-                        }
-                    }
-                    RENodeId::Component(..) => match node_pointer {
-                        RENodePointer::Store(..) => vec![MethodAuthorization::DenyAll],
-                        RENodePointer::Heap { .. } => vec![],
-                    },
-                    RENodeId::Vault(..) => {
-                        let resource_address = {
-                            let node_ref = node_pointer.to_ref(
-                                self.depth,
-                                &mut self.owned_heap_nodes,
-                                &mut self.parent_heap_nodes,
-                                &mut self.track,
-                            );
-                            node_ref.vault().resource_address()
-                        };
-                        let resource_manager = self
-                            .track
-                            .read_substate(SubstateId::ResourceManager(resource_address))
-                            .resource_manager();
-                        vec![resource_manager.get_vault_auth(&fn_ident).clone()]
-                    }
-                    _ => vec![],
-                };
+                let method_auth = AuthModule::auth(
+                    &fn_ident,
+                    &input,
+                    native_substate_id.clone(),
+                    node_pointer.clone(),
+                    self.depth,
+                    &mut self.owned_heap_nodes,
+                    &mut self.parent_heap_nodes,
+                    &mut self.track,
+                );
 
                 Ok((
                     REActor::Native,
