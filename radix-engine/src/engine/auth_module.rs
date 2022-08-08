@@ -11,7 +11,25 @@ use crate::model::*;
 pub struct AuthModule;
 
 impl AuthModule {
-    pub fn auth(
+    pub fn consumed_auth(fn_ident: &str, node: &HeapRENode, track: &mut Track) -> Result<Vec<MethodAuthorization>, RuntimeError>{
+        let auth = match node {
+            HeapRENode::Bucket(bucket) => {
+                let resource_address = bucket.resource_address();
+                let resource_manager = track
+                    .read_substate(SubstateId::ResourceManager(resource_address))
+                    .resource_manager();
+                let method_auth = resource_manager.get_consuming_bucket_auth(&fn_ident);
+
+                vec![method_auth.clone()]
+            }
+            HeapRENode::Proof(_) => vec![],
+            _ => return Err(RuntimeError::MethodDoesNotExist(fn_ident.to_string())),
+        };
+
+        Ok(auth)
+    }
+
+    pub fn ref_auth(
         fn_ident: &str,
         input: &ScryptoValue,
         substate_id: SubstateId,

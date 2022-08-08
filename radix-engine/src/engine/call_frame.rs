@@ -1547,7 +1547,8 @@ where
                     .remove(node_id)
                     .ok_or(RuntimeError::RENodeNotFound(*node_id))?;
 
-                let method_auths = match &heap_node.root() {
+                // Lock Additional Substates
+                match heap_node.root() {
                     HeapRENode::Bucket(bucket) => {
                         let resource_address = bucket.resource_address();
                         self.track
@@ -1561,19 +1562,15 @@ where
                             .insert((SubstateId::ResourceManager(resource_address.clone()), false));
                         let node_id = RENodeId::ResourceManager(resource_address);
                         next_frame_node_refs.insert(node_id, RENodePointer::Store(node_id));
-                        
-                        let resource_manager = self
-                            .track
-                            .read_substate(SubstateId::ResourceManager(resource_address))
-                            .resource_manager();
-                        let method_auth = resource_manager.get_consuming_bucket_auth(&fn_ident);
-
-                        vec![method_auth.clone()]
                     }
-                    HeapRENode::Proof(_) => vec![],
-                    _ => return Err(RuntimeError::MethodDoesNotExist(fn_ident.clone())),
-                };
+                    _ => {}
+                }
 
+                let method_auths = AuthModule::consumed_auth(
+                    &fn_ident,
+                    heap_node.root(),
+                    &mut self.track,
+                )?;
                 next_owned_values.insert(*node_id, heap_node);
 
                 Ok((
@@ -1713,7 +1710,7 @@ where
                 }
 
                 // Load method authorization
-                let method_auth = AuthModule::auth(
+                let method_auth = AuthModule::ref_auth(
                     &fn_ident,
                     &input,
                     native_substate_id.clone(),
@@ -1835,7 +1832,7 @@ where
                 locked_values.insert((package_substate_id.clone(), false));
 
                 // Retrieve Method Authorization
-                let method_auths = AuthModule::auth(
+                let method_auths = AuthModule::ref_auth(
                     &fn_ident,
                     &input,
                     SubstateId::ComponentState(component_address),
