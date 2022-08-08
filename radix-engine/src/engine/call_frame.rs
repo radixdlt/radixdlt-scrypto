@@ -1,6 +1,5 @@
 use sbor::rust::boxed::Box;
 use sbor::rust::collections::*;
-use sbor::rust::marker::*;
 use sbor::rust::string::ToString;
 use scrypto::core::Receiver;
 use scrypto::engine::types::*;
@@ -18,18 +17,7 @@ use crate::wasm::*;
 /// owned objects by this function.
 pub struct CallFrame<
     'p, // Parent lifetime
-    's, // Substate store lifetime
-    'y, // System API
-    W,  // WASM engine type
-    I,  // WASM instance type
-    C,  // Fee reserve type
-    Y,  // System API
-> where
-    W: WasmEngine<I>,
-    I: WasmInstance,
-    C: FeeReserve,
-    Y: SystemApi<'p, 's, W, I, C>,
-{
+> {
     /// The frame id
     pub depth: usize,
     /// The running actor of this frame
@@ -47,31 +35,20 @@ pub struct CallFrame<
     /// Borrowed Values from call frames up the stack
     pub parent_heap_nodes: Vec<&'p mut HashMap<RENodeId, HeapRootRENode>>,
     pub caller_auth_zone: Option<&'p AuthZone>,
-
-    /// System API
-    system_api: &'y mut Y,
-
-    phantom1: PhantomData<W>,
-    phantom2: PhantomData<I>,
-    phantom3: PhantomData<C>,
-    phantom4: PhantomData<&'s ()>,
 }
 
-impl<'p, 's, 'y, W, I, C, Y> CallFrame<'p, 's, 'y, W, I, C, Y>
-where
-    W: WasmEngine<I>,
-    I: WasmInstance,
-    C: FeeReserve,
-    Y: SystemApi<'p, 's, W, I, C>,
-{
-    pub fn new_root(
-        verbose: bool,
-        transaction_hash: Hash,
+impl<'p> CallFrame<'p> {
+    pub fn new_root<'s, W, I, C, Y>(
         signer_public_keys: Vec<EcdsaPublicKey>,
         is_system: bool,
-        max_depth: usize,
-        system_api: &'y mut Y,
-    ) -> Self {
+        system_api: &mut Y,
+    ) -> Self
+    where
+        W: WasmEngine<I>,
+        I: WasmInstance,
+        C: FeeReserve,
+        Y: SystemApi<'s, W, I, C>,
+    {
         // TODO: Cleanup initialization of authzone
         let signer_non_fungible_ids: BTreeSet<NonFungibleId> = signer_public_keys
             .clone()
@@ -108,7 +85,6 @@ where
             HashMap::new(),
             Vec::new(),
             None,
-            system_api,
         )
     }
 
@@ -120,7 +96,6 @@ where
         node_refs: HashMap<RENodeId, RENodePointer>,
         parent_heap_nodes: Vec<&'p mut HashMap<RENodeId, HeapRootRENode>>,
         caller_auth_zone: Option<&'p AuthZone>,
-        system_api: &'y mut Y,
     ) -> Self {
         Self {
             depth,
@@ -130,11 +105,6 @@ where
             auth_zone,
             parent_heap_nodes,
             caller_auth_zone,
-            system_api,
-            phantom1: PhantomData,
-            phantom2: PhantomData,
-            phantom3: PhantomData,
-            phantom4: PhantomData,
         }
     }
 
@@ -147,48 +117,51 @@ where
         HeapRENode::drop_nodes(values).map_err(|e| RuntimeError::DropFailure(e))
     }
 
-    pub fn run(
+    pub fn run<'s, W, I, C, Y>(
         &mut self,
         execution_entity: ExecutionEntity<'p>,
         fn_ident: &str,
         input: ScryptoValue,
-    ) -> Result<(ScryptoValue, HashMap<RENodeId, HeapRootRENode>), RuntimeError> {
+        system_api: &mut Y,
+    ) -> Result<(ScryptoValue, HashMap<RENodeId, HeapRootRENode>), RuntimeError>
+    where
+        W: WasmEngine<I>,
+        I: WasmInstance,
+        C: FeeReserve,
+        Y: SystemApi<'s, W, I, C>,
+    {
         let output = {
             let rtn = match execution_entity {
                 ExecutionEntity::Function(type_name) => match type_name {
                     TypeName::TransactionProcessor => TransactionProcessor::static_main(
-                        fn_ident,
-                        input,
-                        self.system_api,
+                        fn_ident, input, system_api,
                     )
                     .map_err(|e| match e {
                         TransactionProcessorError::InvalidRequestData(_) => panic!("Illegal state"),
                         TransactionProcessorError::InvalidMethod => panic!("Illegal state"),
                         TransactionProcessorError::RuntimeError(e) => e,
                     }),
-                    TypeName::Package => {
-                        ValidatedPackage::static_main(fn_ident, input, self.system_api)
-                            .map_err(RuntimeError::PackageError)
-                    }
+                    TypeName::Package => ValidatedPackage::static_main(fn_ident, input, system_api)
+                        .map_err(RuntimeError::PackageError),
                     TypeName::ResourceManager => {
-                        ResourceManager::static_main(fn_ident, input, self.system_api)
+                        ResourceManager::static_main(fn_ident, input, system_api)
                             .map_err(RuntimeError::ResourceManagerError)
                     }
                     TypeName::Blueprint(package_address, blueprint_name) => {
                         let output = {
-                            let package = self
-                                .system_api
+                            let package = system_api
                                 .track()
                                 .read_substate(SubstateId::Package(package_address))
-                                .package();
+                                .package()
+                                .clone(); // TODO: remove copy
                             let wasm_metering_params =
-                                self.system_api.fee_table().wasm_metering_params();
-                            let instrumented_code = self
-                                .system_api
+                                system_api.fee_table().wasm_metering_params();
+                            let instrumented_code = system_api
                                 .wasm_instrumenter()
-                                .instrument(package.code(), &wasm_metering_params);
+                                .instrument(package.code(), &wasm_metering_params)
+                                .to_vec(); // TODO: remove copy
                             let mut instance =
-                                self.system_api.wasm_engine().instantiate(instrumented_code);
+                                system_api.wasm_engine().instantiate(&instrumented_code);
                             let blueprint_abi = package
                                 .blueprint_abi(&blueprint_name)
                                 .expect("Blueprint should exist");
@@ -203,7 +176,7 @@ where
                                         package_address,
                                         blueprint_name.clone(),
                                     ),
-                                    self.system_api,
+                                    system_api,
                                 ));
                             instance
                                 .invoke_export(&export_name, &input, &mut runtime)
@@ -214,8 +187,7 @@ where
                                 })?
                         };
 
-                        let package = self
-                            .system_api
+                        let package = system_api
                             .track()
                             .read_substate(SubstateId::Package(package_address))
                             .package();
@@ -236,45 +208,42 @@ where
                 ExecutionEntity::Method(_, state) => match state {
                     ExecutionState::Consumed(node_id) => match node_id {
                         RENodeId::Bucket(..) => {
-                            Bucket::consuming_main(node_id, fn_ident, input, self.system_api)
+                            Bucket::consuming_main(node_id, fn_ident, input, system_api)
                                 .map_err(RuntimeError::BucketError)
                         }
                         RENodeId::Proof(..) => {
-                            Proof::main_consume(node_id, fn_ident, input, self.system_api)
+                            Proof::main_consume(node_id, fn_ident, input, system_api)
                                 .map_err(RuntimeError::ProofError)
                         }
                         _ => panic!("Unexpected"),
                     },
                     ExecutionState::AuthZone(auth_zone) => auth_zone
-                        .main(fn_ident, input, self.system_api)
+                        .main(fn_ident, input, system_api)
                         .map_err(RuntimeError::AuthZoneError),
                     ExecutionState::RENodeRef(node_id) => match node_id {
                         RENodeId::Bucket(bucket_id) => {
-                            Bucket::main(bucket_id, fn_ident, input, self.system_api)
+                            Bucket::main(bucket_id, fn_ident, input, system_api)
                                 .map_err(RuntimeError::BucketError)
                         }
                         RENodeId::Proof(proof_id) => {
-                            Proof::main(proof_id, fn_ident, input, self.system_api)
+                            Proof::main(proof_id, fn_ident, input, system_api)
                                 .map_err(RuntimeError::ProofError)
                         }
-                        RENodeId::Worktop => Worktop::main(fn_ident, input, self.system_api)
+                        RENodeId::Worktop => Worktop::main(fn_ident, input, system_api)
                             .map_err(RuntimeError::WorktopError),
                         RENodeId::Vault(vault_id) => {
-                            Vault::main(vault_id, fn_ident, input, self.system_api)
+                            Vault::main(vault_id, fn_ident, input, system_api)
                                 .map_err(RuntimeError::VaultError)
                         }
                         RENodeId::Component(component_address) => {
-                            Component::main(component_address, fn_ident, input, self.system_api)
+                            Component::main(component_address, fn_ident, input, system_api)
                                 .map_err(RuntimeError::ComponentError)
                         }
-                        RENodeId::ResourceManager(resource_address) => ResourceManager::main(
-                            resource_address,
-                            fn_ident,
-                            input,
-                            self.system_api,
-                        )
-                        .map_err(RuntimeError::ResourceManagerError),
-                        RENodeId::System => System::main(fn_ident, input, self.system_api)
+                        RENodeId::ResourceManager(resource_address) => {
+                            ResourceManager::main(resource_address, fn_ident, input, system_api)
+                                .map_err(RuntimeError::ResourceManagerError)
+                        }
+                        RENodeId::System => System::main(fn_ident, input, system_api)
                             .map_err(RuntimeError::SystemError),
                         _ => panic!("Unexpected"),
                     },
@@ -284,19 +253,19 @@ where
                         component_address,
                     ) => {
                         let output = {
-                            let package = self
-                                .system_api
+                            let package = system_api
                                 .track()
                                 .read_substate(SubstateId::Package(package_address))
-                                .package();
+                                .package()
+                                .clone(); // TODO: remove copy
                             let wasm_metering_params =
-                                self.system_api.fee_table().wasm_metering_params();
-                            let instrumented_code = self
-                                .system_api
+                                system_api.fee_table().wasm_metering_params();
+                            let instrumented_code = system_api
                                 .wasm_instrumenter()
-                                .instrument(package.code(), &wasm_metering_params);
+                                .instrument(package.code(), &wasm_metering_params)
+                                .to_vec(); // TODO: remove copy
                             let mut instance =
-                                self.system_api.wasm_engine().instantiate(instrumented_code);
+                                system_api.wasm_engine().instantiate(&instrumented_code);
                             let blueprint_abi = package
                                 .blueprint_abi(&blueprint_name)
                                 .expect("Blueprint should exist");
@@ -312,7 +281,7 @@ where
                                         package_address.clone(),
                                         blueprint_name.clone(),
                                     ),
-                                    self.system_api,
+                                    system_api,
                                 ));
                             instance
                                 .invoke_export(&export_name, &input, &mut runtime)
@@ -323,8 +292,7 @@ where
                                 })?
                         };
 
-                        let package = self
-                            .system_api
+                        let package = system_api
                             .track()
                             .read_substate(SubstateId::Package(package_address))
                             .package();
@@ -367,7 +335,7 @@ where
 
         // drop proofs and check resource leak
         if self.auth_zone.is_some() {
-            self.system_api.invoke_method(
+            system_api.invoke_method(
                 Receiver::AuthZoneRef,
                 "clear".to_string(),
                 ScryptoValue::from_typed(&AuthZoneClearInput {}),
@@ -412,51 +380,5 @@ where
         }
 
         Ok((taken, missing))
-    }
-
-    pub fn read_value_internal(
-        &mut self,
-        substate_id: &SubstateId,
-    ) -> Result<(RENodePointer, ScryptoValue), RuntimeError> {
-        let node_id = SubstateProperties::get_node_id(substate_id);
-
-        // Get location
-        // Note this must be run AFTER values are taken, otherwise there would be inconsistent readable_values state
-        let node_pointer = self
-            .node_refs
-            .get(&node_id)
-            .cloned()
-            .ok_or_else(|| RuntimeError::SubstateReadSubstateNotFound(substate_id.clone()))?;
-
-        if matches!(substate_id, SubstateId::ComponentInfo(..))
-            && matches!(node_pointer, RENodePointer::Store(..))
-        {
-            self.system_api
-                .track()
-                .acquire_lock(substate_id.clone(), false, false)
-                .expect("Should never fail");
-        }
-
-        // Read current value
-        let current_value = {
-            let mut node_ref = node_pointer.to_ref_mut(
-                self.depth,
-                &mut self.owned_heap_nodes,
-                &mut self.parent_heap_nodes,
-                self.system_api.track(),
-            );
-            node_ref.read_scrypto_value(&substate_id)?
-        };
-
-        // TODO: Remove, integrate with substate borrow mechanism
-        if matches!(substate_id, SubstateId::ComponentInfo(..))
-            && matches!(node_pointer, RENodePointer::Store(..))
-        {
-            self.system_api
-                .track()
-                .release_lock(substate_id.clone(), false);
-        }
-
-        Ok((node_pointer.clone(), current_value))
     }
 }

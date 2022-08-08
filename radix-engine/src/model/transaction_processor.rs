@@ -63,9 +63,8 @@ impl TransactionProcessor {
     }
 
     pub fn static_main<
-        'p,
         's,
-        Y: SystemApi<'p, 's, W, I, C>,
+        Y: SystemApi<'s, W, I, C>,
         W: WasmEngine<I>,
         I: WasmInstance,
         C: FeeReserve,

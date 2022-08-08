@@ -12,7 +12,7 @@ use crate::engine::*;
 use crate::fee::*;
 use crate::wasm::*;
 
-pub trait SystemApi<'p, 's, W, I, C>
+pub trait SystemApi<'s, W, I, C>
 where
     W: WasmEngine<I>,
     I: WasmInstance,

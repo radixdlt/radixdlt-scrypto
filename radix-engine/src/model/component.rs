@@ -96,14 +96,7 @@ impl Component {
         &self.blueprint_name
     }
 
-    pub fn main<
-        'p,
-        's,
-        Y: SystemApi<'p, 's, W, I, C>,
-        W: WasmEngine<I>,
-        I: WasmInstance,
-        C: FeeReserve,
-    >(
+    pub fn main<'s, Y: SystemApi<'s, W, I, C>, W: WasmEngine<I>, I: WasmInstance, C: FeeReserve>(
         component_address: ComponentAddress,
         fn_ident: &str,
         arg: ScryptoValue,

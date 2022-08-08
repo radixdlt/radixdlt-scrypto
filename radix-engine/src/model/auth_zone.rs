@@ -95,14 +95,7 @@ impl AuthZone {
             .map_err(AuthZoneError::ProofError)
     }
 
-    pub fn main<
-        'p,
-        's,
-        Y: SystemApi<'p, 's, W, I, C>,
-        W: WasmEngine<I>,
-        I: WasmInstance,
-        C: FeeReserve,
-    >(
+    pub fn main<'s, Y: SystemApi<'s, W, I, C>, W: WasmEngine<I>, I: WasmInstance, C: FeeReserve>(
         &mut self,
         method_name: &str,
         arg: ScryptoValue,

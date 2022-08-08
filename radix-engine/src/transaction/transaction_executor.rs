@@ -144,27 +144,29 @@ where
             .expect("System loan should cover this");
 
         // 3. Start a kernel instance and invoke
-        let mut kernel = Kernel::new(
-            transaction_hash,
-            signer_public_keys,
-            params.is_system,
-            params.max_call_depth,
-            params.trace,
-            &mut track,
-            self.wasm_engine,
-            self.wasm_instrumenter,
-            &mut fee_reserve,
-            &fee_table,
-        );
-        let result = kernel
-            .invoke_function(
-                TypeName::TransactionProcessor,
-                "run".to_string(),
-                ScryptoValue::from_typed(&TransactionProcessorRunInput {
-                    instructions: instructions.clone(),
-                }),
-            )
-            .map(|o| scrypto_decode::<Vec<Vec<u8>>>(&o.raw).unwrap());
+        let result = {
+            let mut kernel = Kernel::new(
+                transaction_hash,
+                signer_public_keys,
+                params.is_system,
+                params.max_call_depth,
+                params.trace,
+                &mut track,
+                self.wasm_engine,
+                self.wasm_instrumenter,
+                &mut fee_reserve,
+                &fee_table,
+            );
+            kernel
+                .invoke_function(
+                    TypeName::TransactionProcessor,
+                    "run".to_string(),
+                    ScryptoValue::from_typed(&TransactionProcessorRunInput {
+                        instructions: instructions.clone(),
+                    }),
+                )
+                .map(|o| scrypto_decode::<Vec<Vec<u8>>>(&o.raw).unwrap())
+        };
 
         // 4. Settle transaction fee
         let fee_summary = fee_reserve.finalize();
