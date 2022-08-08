@@ -1071,4 +1071,52 @@ mod tests {
         assert_eq!(sum1, dec!("6"));
         assert_eq!(sum2, dec!("6"));
     }
+
+    #[test]
+    fn test_encode_decimal_type() {
+        let dec = dec!("1.23456789");
+        let mut bytes = Vec::with_capacity(512);
+        let mut enc = Encoder::with_type(&mut bytes);
+        dec.encode_type(&mut enc);
+        assert_eq!(bytes, vec![Decimal::type_id()]);
+    }
+
+    #[test]
+    fn test_encode_decimal_value() {
+        let dec = dec!("0");
+        let mut bytes = Vec::with_capacity(512);
+        let mut enc = Encoder::with_type(&mut bytes);
+        dec.encode_type(&mut enc);
+        dec.encode_value(&mut enc);
+        assert_eq!(bytes, 
+            { let mut a = [0; 37];
+                a[0] = Decimal::type_id();
+                a[1] = 32;
+                a
+            });
+    }
+
+    #[test]
+    fn test_decode_decimal_type() {
+        let dec = dec!("1.23456789");
+        let mut bytes = Vec::with_capacity(512);
+        let mut enc = Encoder::with_type(&mut bytes);
+        dec.encode_type(&mut enc);
+        let mut decoder = Decoder::new(&bytes, true);
+        let typ = decoder.read_type().unwrap();
+        assert_eq!(typ, Decimal::type_id());
+    }
+
+    #[test]
+    fn test_decode_decimal_value() {
+        let dec = dec!("1.23456789");
+        let mut bytes = Vec::with_capacity(512);
+        let mut enc = Encoder::with_type(&mut bytes);
+        dec.encode_type(&mut enc);
+        dec.encode_value(&mut enc);
+        let mut decoder = Decoder::new(&bytes, true);
+        Decimal::decode_type(&mut decoder).unwrap();
+        let val = Decimal::decode_value(&mut decoder).unwrap();
+        assert_eq!(val, dec!("1.23456789"));
+    }
 }
