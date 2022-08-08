@@ -1088,12 +1088,12 @@ mod tests {
         let mut enc = Encoder::with_type(&mut bytes);
         dec.encode_type(&mut enc);
         dec.encode_value(&mut enc);
-        assert_eq!(bytes, 
-            { let mut a = [0; 37];
-                a[0] = Decimal::type_id();
-                a[1] = 32;
-                a
-            });
+        assert_eq!(bytes, {
+            let mut a = [0; 37];
+            a[0] = Decimal::type_id();
+            a[1] = 32;
+            a
+        });
     }
 
     #[test]
