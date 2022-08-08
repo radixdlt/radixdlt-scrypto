@@ -1595,6 +1595,7 @@ where
                     _ => return Err(RuntimeError::MethodDoesNotExist(fn_ident.clone())),
                 };
 
+                // Find value
                 let node_pointer = if self.owned_heap_nodes.contains_key(&node_id) {
                     RENodePointer::Heap {
                         frame_id: self.depth,
@@ -1713,6 +1714,7 @@ where
                 AuthModule::ref_auth(
                     &fn_ident,
                     &input,
+                    &REActor::Native,
                     native_substate_id.clone(),
                     node_pointer.clone(),
                     self.depth,
@@ -1821,6 +1823,11 @@ where
                         component.blueprint_name().to_string(),
                     )
                 };
+                let execution_state = ExecutionState::Component(
+                    scrypto_actor.package_address().clone(),
+                    scrypto_actor.blueprint_name().clone(),
+                    component_address,
+                );
 
                 // Lock additional substates
                 let package_substate_id =
@@ -1830,10 +1837,13 @@ where
                     .expect("Should never fail");
                 locked_values.insert((package_substate_id.clone(), false));
 
+                let actor = REActor::Scrypto(scrypto_actor);
+
                 // Check Method Authorization
                 AuthModule::ref_auth(
                     &fn_ident,
                     &input,
+                    &actor,
                     SubstateId::ComponentState(component_address),
                     node_pointer.clone(),
                     self.depth,
@@ -1855,12 +1865,7 @@ where
 
                 next_frame_node_refs.insert(node_id, node_pointer);
 
-                let execution_state = ExecutionState::Component(
-                    scrypto_actor.package_address().clone(),
-                    scrypto_actor.blueprint_name().clone(),
-                    component_address,
-                );
-                Ok((REActor::Scrypto(scrypto_actor), execution_state))
+                Ok((actor, execution_state))
             }
         }?;
 

@@ -1,6 +1,7 @@
 use sbor::rust::collections::*;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
+use scrypto::core::ScryptoActor;
 use scrypto::engine::types::*;
 use scrypto::values::*;
 
@@ -81,6 +82,7 @@ impl AuthModule {
     pub fn ref_auth(
         fn_ident: &str,
         input: &ScryptoValue,
+        actor: &REActor,
         substate_id: SubstateId,
         node_pointer: RENodePointer,
         depth: usize,
@@ -109,31 +111,31 @@ impl AuthModule {
                 RENodePointer::Heap { .. } => vec![],
             },
             SubstateId::ComponentState(..) => {
-                let node_ref =
-                    node_pointer.to_ref(depth, owned_heap_nodes, parent_heap_nodes, track);
-                let component = node_ref.component_info();
-                let package_substate_id = SubstateId::Package(component.package_address().clone());
+                if let REActor::Scrypto(ScryptoActor::Component(_component_address, package_address, blueprint_name)) = actor {
+                    let package_substate_id = SubstateId::Package(*package_address);
+                    let package = track.read_substate(package_substate_id.clone()).package();
+                    let abi = package
+                        .blueprint_abi(blueprint_name)
+                        .expect("Blueprint not found for existing component");
+                    let fn_abi = abi
+                        .get_fn_abi(&fn_ident)
+                        .ok_or(RuntimeError::MethodDoesNotExist(fn_ident.to_string()))?;
+                    if !fn_abi.input.matches(&input.dom) {
+                        return Err(RuntimeError::InvalidFnInput {
+                            fn_ident: fn_ident.to_string(),
+                        });
+                    }
 
-                let package = track.read_substate(package_substate_id.clone()).package();
-                let abi = package
-                    .blueprint_abi(component.blueprint_name())
-                    .expect("Blueprint not found for existing component");
-                let fn_abi = abi
-                    .get_fn_abi(&fn_ident)
-                    .ok_or(RuntimeError::MethodDoesNotExist(fn_ident.to_string()))?;
-                if !fn_abi.input.matches(&input.dom) {
-                    return Err(RuntimeError::InvalidFnInput {
-                        fn_ident: fn_ident.to_string(),
-                    });
-                }
+                    {
+                        let value_ref =
+                            node_pointer.to_ref(depth, owned_heap_nodes, parent_heap_nodes, track);
 
-                {
-                    let value_ref =
-                        node_pointer.to_ref(depth, owned_heap_nodes, parent_heap_nodes, track);
-
-                    let component = value_ref.component_info();
-                    let component_state = value_ref.component_state();
-                    component.method_authorization(component_state, &abi.structure, &fn_ident)
+                        let component = value_ref.component_info();
+                        let component_state = value_ref.component_state();
+                        component.method_authorization(component_state, &abi.structure, &fn_ident)
+                    }
+                } else {
+                    vec![]
                 }
             }
             SubstateId::Vault(..) => {
