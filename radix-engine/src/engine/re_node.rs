@@ -20,7 +20,7 @@ pub enum RENodePointer {
 }
 
 impl RENodePointer {
-    fn child(&self, child_id: RENodeId) -> RENodePointer {
+    pub fn child(&self, child_id: RENodeId) -> RENodePointer {
         match self {
             RENodePointer::Heap { frame_id, root, .. } => RENodePointer::Heap {
                 frame_id: frame_id.clone(),
@@ -31,7 +31,7 @@ impl RENodePointer {
         }
     }
 
-    fn borrow_native_ref<'p, 's>(
+    pub fn borrow_native_ref<'p, 's>(
         &self, // TODO: Consider changing this to self
         self_frame_id: usize,
         substate_id: SubstateId,

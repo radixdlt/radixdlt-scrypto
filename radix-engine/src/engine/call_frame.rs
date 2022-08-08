@@ -31,22 +31,22 @@ pub struct CallFrame<
     Y: SystemApi<'p, 's, W, I, C>,
 {
     /// The frame id
-    depth: usize,
+    pub depth: usize,
     /// The running actor of this frame
-    actor: REActor,
+    pub actor: REActor,
 
     /// All ref values accessible by this call frame. The value may be located in one of the following:
     /// 1. borrowed values
     /// 2. track
-    node_refs: HashMap<RENodeId, RENodePointer>,
+    pub node_refs: HashMap<RENodeId, RENodePointer>, // TODO: reduce fields visibility
 
     /// Owned Values
-    owned_heap_nodes: HashMap<RENodeId, HeapRootRENode>,
-    auth_zone: Option<AuthZone>,
+    pub owned_heap_nodes: HashMap<RENodeId, HeapRootRENode>,
+    pub auth_zone: Option<AuthZone>,
 
     /// Borrowed Values from call frames up the stack
-    parent_heap_nodes: Vec<&'p mut HashMap<RENodeId, HeapRootRENode>>,
-    caller_auth_zone: Option<&'p AuthZone>,
+    pub parent_heap_nodes: Vec<&'p mut HashMap<RENodeId, HeapRootRENode>>,
+    pub caller_auth_zone: Option<&'p AuthZone>,
 
     /// System API
     system_api: &'y mut Y,
@@ -138,33 +138,13 @@ where
         }
     }
 
-    fn drop_owned_values(&mut self) -> Result<(), RuntimeError> {
+    pub fn drop_owned_values(&mut self) -> Result<(), RuntimeError> {
         let values = self
             .owned_heap_nodes
             .drain()
             .map(|(_id, value)| value)
             .collect();
         HeapRENode::drop_nodes(values).map_err(|e| RuntimeError::DropFailure(e))
-    }
-
-    fn process_call_data(validated: &ScryptoValue) -> Result<(), RuntimeError> {
-        if !validated.kv_store_ids.is_empty() {
-            return Err(RuntimeError::KeyValueStoreNotAllowed);
-        }
-        if !validated.vault_ids.is_empty() {
-            return Err(RuntimeError::VaultNotAllowed);
-        }
-        Ok(())
-    }
-
-    fn process_return_data(&mut self, validated: &ScryptoValue) -> Result<(), RuntimeError> {
-        if !validated.kv_store_ids.is_empty() {
-            return Err(RuntimeError::KeyValueStoreNotAllowed);
-        }
-
-        // TODO: Should we disallow vaults to be moved?
-
-        Ok(())
     }
 
     pub fn run(
@@ -367,9 +347,6 @@ where
             rtn
         };
 
-        // Prevent vaults/kvstores from being returned
-        self.process_return_data(&output)?;
-
         // Take values to return
         let values_to_take = output.node_ids();
         let (taken_values, mut missing) = self.take_available_values(values_to_take, false)?;
@@ -401,7 +378,7 @@ where
         Ok((output, taken_values))
     }
 
-    fn take_available_values(
+    pub fn take_available_values(
         &mut self,
         node_ids: HashSet<RENodeId>,
         persist_only: bool,
@@ -437,7 +414,7 @@ where
         Ok((taken, missing))
     }
 
-    fn read_value_internal(
+    pub fn read_value_internal(
         &mut self,
         substate_id: &SubstateId,
     ) -> Result<(RENodePointer, ScryptoValue), RuntimeError> {
