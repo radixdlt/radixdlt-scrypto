@@ -7,7 +7,6 @@ use scrypto::math::Decimal;
 use scrypto::prelude::TypeName;
 use scrypto::values::ScryptoValue;
 use transaction::model::*;
-use transaction::validation::{IdAllocator, IdSpace};
 
 use crate::constants::{DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN};
 use crate::engine::Track;
@@ -120,7 +119,6 @@ where
 
         // 1. Start state track
         let mut track = Track::new(self.substate_store);
-        let mut id_allocator = IdAllocator::new(IdSpace::Application);
 
         // 2. Apply pre-execution costing
         let fee_table = FeeTable::new();
@@ -145,21 +143,20 @@ where
             )
             .expect("System loan should cover this");
 
-        // 3. Start a call frame and run the transaction
-        let mut root_frame = CallFrame::new_root(
-            params.trace,
+        // 3. Start a kernel instance and invoke
+        let mut kernel = Kernel::new(
             transaction_hash,
             signer_public_keys,
             params.is_system,
             params.max_call_depth,
-            &mut id_allocator,
+            params.trace,
             &mut track,
             self.wasm_engine,
             self.wasm_instrumenter,
             &mut fee_reserve,
             &fee_table,
         );
-        let result = root_frame
+        let result = kernel
             .invoke_function(
                 TypeName::TransactionProcessor,
                 "run".to_string(),
