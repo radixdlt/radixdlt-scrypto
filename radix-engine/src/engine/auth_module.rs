@@ -4,8 +4,8 @@ use sbor::rust::vec::Vec;
 use scrypto::engine::types::*;
 use scrypto::values::*;
 
-use crate::engine::*;
 use crate::engine::call_frame::RENodePointer;
+use crate::engine::*;
 use crate::model::*;
 
 pub struct AuthModule;
@@ -16,7 +16,7 @@ impl AuthModule {
         substate_id: &SubstateId,
         method_auths: Vec<MethodAuthorization>,
         auth_zone: Option<&AuthZone>,
-        caller_auth_zone: Option<&AuthZone>
+        caller_auth_zone: Option<&AuthZone>,
     ) -> Result<(), RuntimeError> {
         // Authorization check
         if !method_auths.is_empty() {
@@ -40,13 +40,13 @@ impl AuthModule {
             };
 
             for method_auth in method_auths {
-                method_auth
-                    .check(&auth_zones)
-                    .map_err(|error| RuntimeError::AuthorizationError {
+                method_auth.check(&auth_zones).map_err(|error| {
+                    RuntimeError::AuthorizationError {
                         function: fn_ident.to_string(),
                         authorization: method_auth,
                         error,
-                    })?;
+                    }
+                })?;
             }
         }
 
@@ -60,7 +60,7 @@ impl AuthModule {
         track: &mut Track,
         auth_zone: Option<&AuthZone>,
         caller_auth_zone: Option<&AuthZone>,
-    ) -> Result<(), RuntimeError>{
+    ) -> Result<(), RuntimeError> {
         let auth = match node {
             HeapRENode::Bucket(bucket) => {
                 let resource_address = bucket.resource_address();
@@ -92,41 +92,29 @@ impl AuthModule {
     ) -> Result<(), RuntimeError> {
         let auth = match &substate_id {
             SubstateId::ResourceManager(..) => {
-                let resource_manager = track
-                    .read_substate(substate_id.clone())
-                    .resource_manager();
+                let resource_manager = track.read_substate(substate_id.clone()).resource_manager();
                 let method_auth = resource_manager.get_auth(&fn_ident, &input).clone();
                 vec![method_auth]
             }
-            SubstateId::System => {
-                match fn_ident {
-                    "set_epoch" => {
-                        vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(
-                            HardProofRule::Require(HardResourceOrNonFungible::Resource(
-                                SYSTEM_TOKEN,
-                            )),
-                        ))]
-                    }
-                    _ => vec![],
+            SubstateId::System => match fn_ident {
+                "set_epoch" => {
+                    vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(
+                        HardProofRule::Require(HardResourceOrNonFungible::Resource(SYSTEM_TOKEN)),
+                    ))]
                 }
-            }
+                _ => vec![],
+            },
             SubstateId::ComponentInfo(..) => match node_pointer {
                 RENodePointer::Store(..) => vec![MethodAuthorization::DenyAll],
                 RENodePointer::Heap { .. } => vec![],
-            }
+            },
             SubstateId::ComponentState(..) => {
-                let node_ref = node_pointer.to_ref(
-                    depth,
-                    owned_heap_nodes,
-                    parent_heap_nodes,
-                    track,
-                );
+                let node_ref =
+                    node_pointer.to_ref(depth, owned_heap_nodes, parent_heap_nodes, track);
                 let component = node_ref.component_info();
                 let package_substate_id = SubstateId::Package(component.package_address().clone());
 
-                let package = track
-                    .read_substate(package_substate_id.clone())
-                    .package();
+                let package = track.read_substate(package_substate_id.clone()).package();
                 let abi = package
                     .blueprint_abi(component.blueprint_name())
                     .expect("Blueprint not found for existing component");
@@ -140,12 +128,8 @@ impl AuthModule {
                 }
 
                 {
-                    let value_ref = node_pointer.to_ref(
-                        depth,
-                        owned_heap_nodes,
-                        parent_heap_nodes,
-                        track,
-                    );
+                    let value_ref =
+                        node_pointer.to_ref(depth, owned_heap_nodes, parent_heap_nodes, track);
 
                     let component = value_ref.component_info();
                     let component_state = value_ref.component_state();
@@ -154,12 +138,8 @@ impl AuthModule {
             }
             SubstateId::Vault(..) => {
                 let resource_address = {
-                    let node_ref = node_pointer.to_ref(
-                        depth,
-                        owned_heap_nodes,
-                        parent_heap_nodes,
-                        track,
-                    );
+                    let node_ref =
+                        node_pointer.to_ref(depth, owned_heap_nodes, parent_heap_nodes, track);
                     node_ref.vault().resource_address()
                 };
                 let resource_manager = track
@@ -167,9 +147,8 @@ impl AuthModule {
                     .resource_manager();
                 vec![resource_manager.get_vault_auth(&fn_ident).clone()]
             }
-            _ => vec![]
+            _ => vec![],
         };
-
 
         Self::auth(fn_ident, &substate_id, auth, auth_zone, caller_auth_zone)
     }

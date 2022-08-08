@@ -822,9 +822,7 @@ where
             wasm_instrumenter,
             fee_reserve,
             fee_table,
-            Some(AuthZone::new_with_proofs(
-                initial_auth_zone_proofs,
-            )),
+            Some(AuthZone::new_with_proofs(initial_auth_zone_proofs)),
             HashMap::new(),
             HashMap::new(),
             Vec::new(),
@@ -1354,9 +1352,7 @@ where
                     .get_fn_abi(&fn_ident)
                     .ok_or(RuntimeError::MethodDoesNotExist(fn_ident.clone()))?;
                 if !fn_abi.input.matches(&input.dom) {
-                    return Err(RuntimeError::InvalidFnInput {
-                        fn_ident,
-                    });
+                    return Err(RuntimeError::InvalidFnInput { fn_ident });
                 }
 
                 REActor::Scrypto(ScryptoActor::blueprint(
@@ -1627,9 +1623,9 @@ where
                         self.track
                             .acquire_lock(native_substate_id.clone(), true, is_lock_fee)
                             .map_err(|e| match e {
-                                TrackError::StateTrackError(StateTrackError::RENodeAlreadyTouched) => {
-                                    RuntimeError::LockFeeError(LockFeeError::RENodeAlreadyTouched)
-                                }
+                                TrackError::StateTrackError(
+                                    StateTrackError::RENodeAlreadyTouched,
+                                ) => RuntimeError::LockFeeError(LockFeeError::RENodeAlreadyTouched),
                                 // TODO: Remove when references cleaned up
                                 TrackError::NotFound => RuntimeError::RENodeNotFound(*node_id),
                                 TrackError::Reentrancy => {
@@ -1879,7 +1875,6 @@ where
                 return Err(RuntimeError::InvokeMethodInvalidReferencePass(node_id));
             }
         }
-
 
         // Setup next parent frame
         let mut next_borrowed_values: Vec<&mut HashMap<RENodeId, HeapRootRENode>> = Vec::new();
