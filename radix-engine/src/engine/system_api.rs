@@ -7,7 +7,7 @@ use scrypto::resource::AccessRule;
 use scrypto::values::*;
 use transaction::validation::IdAllocator;
 
-use crate::engine::values::*;
+use crate::engine::node::*;
 use crate::engine::*;
 use crate::fee::*;
 use crate::wasm::*;
