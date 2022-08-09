@@ -2,7 +2,7 @@ use sbor::rust::collections::BTreeSet;
 use sbor::rust::string::ToString;
 use sbor::*;
 
-use crate::core::{Function, Receiver};
+use crate::core::{FnIdentifier, Receiver};
 use crate::engine::{api::*, call_engine};
 use crate::math::Decimal;
 use crate::resource::*;
@@ -75,7 +75,7 @@ impl ComponentAuthZone {
         let proof: Proof = proof.into();
         let input = RadixEngineInput::InvokeMethod(
             Receiver::AuthZoneRef,
-            Function::Native("push".to_string()),
+            FnIdentifier::Native("push".to_string()),
             scrypto::buffer::scrypto_encode(&(AuthZonePushInput { proof })),
         );
         call_engine(input)

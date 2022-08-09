@@ -1,7 +1,7 @@
 use sbor::rust::collections::*;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
-use scrypto::core::{Function, Receiver};
+use scrypto::core::{FnIdentifier, Receiver};
 use scrypto::engine::types::*;
 use scrypto::values::*;
 
@@ -13,7 +13,7 @@ pub struct AuthModule;
 
 impl AuthModule {
     fn auth(
-        function: &Function,
+        function: &FnIdentifier,
         method_auths: Vec<MethodAuthorization>,
         auth_zone: Option<&AuthZone>,
         caller_auth_zone: Option<&AuthZone>,
@@ -47,7 +47,7 @@ impl AuthModule {
     }
 
     pub fn receiver_auth(
-        function: &Function,
+        function: &FnIdentifier,
         receiver: Receiver,
         input: &ScryptoValue,
         node_pointer: RENodePointer,
@@ -73,7 +73,7 @@ impl AuthModule {
             }
             Receiver::Consumed(RENodeId::Proof(..)) => vec![],
             Receiver::Ref(RENodeId::ResourceManager(resource_address)) => match function {
-                Function::Native(fn_ident) => {
+                FnIdentifier::Native(fn_ident) => {
                     let substate_id = SubstateId::ResourceManager(resource_address);
                     let resource_manager =
                         track.read_substate(substate_id.clone()).resource_manager();
@@ -83,7 +83,7 @@ impl AuthModule {
                 _ => vec![],
             },
             Receiver::Ref(RENodeId::System) => match function {
-                Function::Native(fn_ident) => match fn_ident.as_str() {
+                FnIdentifier::Native(fn_ident) => match fn_ident.as_str() {
                     "set_epoch" => {
                         vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(
                             HardProofRule::Require(HardResourceOrNonFungible::Resource(
@@ -97,11 +97,11 @@ impl AuthModule {
             },
             Receiver::Ref(RENodeId::Component(..)) => {
                 match function {
-                    Function::Native(..) => match node_pointer {
+                    FnIdentifier::Native(..) => match node_pointer {
                         RENodePointer::Store(..) => vec![MethodAuthorization::DenyAll],
                         RENodePointer::Heap { .. } => vec![],
                     },
-                    Function::Scrypto {
+                    FnIdentifier::Scrypto {
                         package_address,
                         blueprint_name,
                         method_name,
@@ -143,7 +143,7 @@ impl AuthModule {
                 }
             }
             Receiver::Ref(RENodeId::Vault(..)) => match function {
-                Function::Native(fn_ident) => {
+                FnIdentifier::Native(fn_ident) => {
                     let resource_address = {
                         let node_ref =
                             node_pointer.to_ref(depth, owned_heap_nodes, parent_heap_nodes, track);
@@ -154,7 +154,7 @@ impl AuthModule {
                         .resource_manager();
                     vec![resource_manager.get_vault_auth(fn_ident).clone()]
                 }
-                Function::Scrypto { .. } => vec![],
+                FnIdentifier::Scrypto { .. } => vec![],
             },
             _ => vec![],
         };

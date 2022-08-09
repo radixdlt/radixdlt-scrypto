@@ -2,7 +2,7 @@ use sbor::rust::marker::PhantomData;
 use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
-use scrypto::core::{Function, Receiver, ScryptoActor, ScryptoRENode, TypeName};
+use scrypto::core::{FnIdentifier, Receiver, ScryptoActor, ScryptoRENode, TypeName};
 use scrypto::engine::api::RadixEngineInput;
 use scrypto::engine::types::*;
 use scrypto::resource::AccessRule;
@@ -73,7 +73,7 @@ where
     fn handle_invoke_method(
         &mut self,
         receiver: Receiver,
-        function: Function,
+        function: FnIdentifier,
         input: Vec<u8>,
     ) -> Result<ScryptoValue, RuntimeError> {
         let call_data = ScryptoValue::from_slice(&input).map_err(RuntimeError::DecodeError)?;

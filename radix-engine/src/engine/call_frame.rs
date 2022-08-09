@@ -6,7 +6,7 @@ use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
-use scrypto::core::{Function, Receiver};
+use scrypto::core::{FnIdentifier, Receiver};
 use scrypto::engine::types::*;
 use scrypto::prelude::{ScryptoActor, TypeName};
 use scrypto::resource::AuthZoneClearInput;
@@ -876,7 +876,11 @@ where
             verbose,
             id_allocator,
             track,
-            REActor::Native,
+            REActor {
+                // Temporary
+                fn_identifier: FnIdentifier::Native("run".to_string()),
+                receiver: None,
+            },
             wasm_engine,
             wasm_instrumenter,
             fee_reserve,
@@ -1163,7 +1167,7 @@ where
         if self.auth_zone.is_some() {
             self.invoke_method(
                 Receiver::AuthZoneRef,
-                Function::Native("clear".to_string()),
+                FnIdentifier::Native("clear".to_string()),
                 ScryptoValue::from_typed(&AuthZoneClearInput {}),
             )?;
         }
@@ -1405,7 +1409,7 @@ where
                 )?;
                 let fn_abi = abi
                     .get_fn_abi(&fn_ident)
-                    .ok_or(RuntimeError::MethodDoesNotExist(Function::Scrypto {
+                    .ok_or(RuntimeError::MethodDoesNotExist(FnIdentifier::Scrypto {
                         package_address: *package_address,
                         blueprint_name: blueprint_name.clone(),
                         method_name: fn_ident.clone(),
@@ -1414,13 +1418,20 @@ where
                     return Err(RuntimeError::InvalidFnInput { fn_ident });
                 }
 
-                REActor::Scrypto(ScryptoActor::blueprint(
-                    *package_address,
-                    blueprint_name.clone(),
-                ))
+                REActor {
+                    fn_identifier: FnIdentifier::Scrypto {
+                        package_address: *package_address,
+                        blueprint_name: blueprint_name.clone(),
+                        method_name: fn_ident.clone(),
+                    },
+                    receiver: None,
+                }
             }
             TypeName::Package | TypeName::ResourceManager | TypeName::TransactionProcessor => {
-                REActor::Native
+                REActor {
+                    fn_identifier: FnIdentifier::Native(fn_ident.clone()),
+                    receiver: None,
+                }
             }
         };
 
@@ -1534,7 +1545,7 @@ where
     fn invoke_method(
         &mut self,
         receiver: Receiver,
-        function: Function,
+        fn_identifier: FnIdentifier,
         input: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError> {
         trace!(
@@ -1542,7 +1553,7 @@ where
             Level::Debug,
             "Invoking method: {:?} {:?}",
             receiver,
-            function
+            fn_identifier
         );
 
         if self.depth == self.max_depth {
@@ -1562,7 +1573,8 @@ where
 
         self.fee_reserve
             .consume(
-                self.fee_table.run_method_cost(&receiver, &function, &input),
+                self.fee_table
+                    .run_method_cost(&receiver, &fn_identifier, &input),
                 "run_method",
             )
             .map_err(RuntimeError::CostingError)?;
@@ -1596,7 +1608,7 @@ where
         let next_caller_auth_zone;
 
         // Authorization and state load
-        let (actor, execution_state) = match &receiver {
+        let execution_state = match &receiver {
             Receiver::Ref(node_id) | Receiver::Consumed(node_id) => {
                 // Find node
                 let node_pointer = if self.owned_heap_nodes.contains_key(&node_id) {
@@ -1619,9 +1631,10 @@ where
                 };
 
                 // Lock Primary Substate
-                let substate_id = RENodeProperties::to_primary_substate_id(&function, *node_id)?;
-                let is_lock_fee =
-                    matches!(node_id, RENodeId::Vault(..)) && function.fn_ident() == "lock_fee";
+                let substate_id =
+                    RENodeProperties::to_primary_substate_id(&fn_identifier, *node_id)?;
+                let is_lock_fee = matches!(node_id, RENodeId::Vault(..))
+                    && fn_identifier.fn_ident() == "lock_fee";
                 if is_lock_fee && matches!(node_pointer, RENodePointer::Heap { .. }) {
                     return Err(RuntimeError::LockFeeError(LockFeeError::RENodeNotInTrack));
                 }
@@ -1637,8 +1650,8 @@ where
                 let mut temporary_locks = Vec::new();
 
                 // Load actor
-                let actor = match &function {
-                    Function::Scrypto {
+                let execution_state = match &fn_identifier {
+                    FnIdentifier::Scrypto {
                         package_address,
                         blueprint_name,
                         ..
@@ -1665,10 +1678,10 @@ where
 
                                 // Don't support traits yet
                                 if !package_address.eq(&component.package_address()) {
-                                    return Err(RuntimeError::MethodDoesNotExist(function));
+                                    return Err(RuntimeError::MethodDoesNotExist(fn_identifier));
                                 }
                                 if !blueprint_name.eq(component.blueprint_name()) {
-                                    return Err(RuntimeError::MethodDoesNotExist(function));
+                                    return Err(RuntimeError::MethodDoesNotExist(fn_identifier));
                                 }
 
                                 ScryptoActor::component(
@@ -1677,22 +1690,17 @@ where
                                     component.blueprint_name().to_string(),
                                 )
                             };
-                            let execution_state = ExecutionState::Component {
+                            ExecutionState::Component {
                                 package_address: scrypto_actor.package_address().clone(),
                                 blueprint_name: scrypto_actor.blueprint_name().clone(),
                                 component_address: *component_address,
-                            };
-                            (REActor::Scrypto(scrypto_actor), execution_state)
+                            }
                         }
                         _ => panic!("Should not get here."),
                     },
-                    Function::Native(..) => match &receiver {
-                        Receiver::Ref(node_id) => {
-                            (REActor::Native, ExecutionState::RENodeRef(*node_id))
-                        }
-                        Receiver::Consumed(node_id) => {
-                            (REActor::Native, ExecutionState::Consumed(*node_id))
-                        }
+                    FnIdentifier::Native(..) => match &receiver {
+                        Receiver::Ref(node_id) => ExecutionState::RENodeRef(*node_id),
+                        Receiver::Consumed(node_id) => ExecutionState::Consumed(*node_id),
                         _ => panic!("Unexpected"),
                     },
                 };
@@ -1774,7 +1782,7 @@ where
 
                 // Lock Resource Managers in request
                 // TODO: Remove when references cleaned up
-                if let Function::Native(..) = &function {
+                if let FnIdentifier::Native(..) = &fn_identifier {
                     for resource_address in &input.resource_addresses {
                         let resource_substate_id =
                             SubstateId::ResourceManager(resource_address.clone());
@@ -1793,7 +1801,7 @@ where
 
                 // Check method authorization
                 AuthModule::receiver_auth(
-                    &function,
+                    &fn_identifier,
                     receiver.clone(),
                     &input,
                     node_pointer.clone(),
@@ -1825,7 +1833,7 @@ where
 
                 next_frame_node_refs.insert(node_id.clone(), node_pointer.clone());
 
-                Ok(actor)
+                Ok(execution_state)
             }
             Receiver::AuthZoneRef => {
                 next_caller_auth_zone = Option::None;
@@ -1844,7 +1852,7 @@ where
                         locked_pointers.push((resource_node_pointer, resource_substate_id, false));
                         next_frame_node_refs.insert(resource_node_id, resource_node_pointer);
                     }
-                    Ok((REActor::Native, ExecutionState::AuthZone(auth_zone)))
+                    Ok(ExecutionState::AuthZone(auth_zone))
                 } else {
                     Err(RuntimeError::AuthZoneDoesNotExist)
                 }
@@ -1879,13 +1887,16 @@ where
                 self.trace,
                 self.id_allocator,
                 self.track,
-                actor,
+                REActor {
+                    fn_identifier: fn_identifier.clone(),
+                    receiver: Some(receiver.clone()),
+                },
                 self.wasm_engine,
                 self.wasm_instrumenter,
                 self.fee_reserve,
                 self.fee_table,
-                match function {
-                    Function::Scrypto { .. } => Some(AuthZone::new()),
+                match fn_identifier {
+                    FnIdentifier::Scrypto { .. } => Some(AuthZone::new()),
                     _ => None,
                 },
                 next_owned_values,
@@ -1897,7 +1908,7 @@ where
             // invoke the main function
             frame.run(
                 ExecutionEntity::Method(receiver, execution_state),
-                function.fn_ident(),
+                fn_identifier.fn_ident(),
                 input,
             )?
         };

@@ -1,41 +1,51 @@
 use crate::engine::RuntimeError;
-use scrypto::core::{Function, ScryptoActor};
+use scrypto::core::{FnIdentifier, Receiver};
 use scrypto::engine::types::*;
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub enum REActor {
-    Native,
-    Scrypto(ScryptoActor),
+pub struct REActor {
+    pub fn_identifier: FnIdentifier,
+    pub receiver: Option<Receiver>,
 }
 
 impl REActor {
     pub fn is_substate_readable(&self, substate_id: &SubstateId) -> bool {
-        match &self {
-            REActor::Native => true,
-            REActor::Scrypto(ScryptoActor::Blueprint(..)) => match substate_id {
-                SubstateId::KeyValueStoreEntry(..) => true,
-                SubstateId::ComponentInfo(..) => true,
-                _ => false,
-            },
-            REActor::Scrypto(ScryptoActor::Component(component_address, ..)) => match substate_id {
-                SubstateId::KeyValueStoreEntry(..) => true,
-                SubstateId::ComponentInfo(..) => true,
-                SubstateId::ComponentState(addr) => addr.eq(component_address),
+        match &self.fn_identifier {
+            FnIdentifier::Native(..) => true,
+            FnIdentifier::Scrypto { .. } => match self.receiver {
+                None => match substate_id {
+                    SubstateId::KeyValueStoreEntry(..) => true,
+                    SubstateId::ComponentInfo(..) => true,
+                    _ => false,
+                },
+                Some(Receiver::Ref(RENodeId::Component(ref component_address))) => {
+                    match substate_id {
+                        SubstateId::KeyValueStoreEntry(..) => true,
+                        SubstateId::ComponentInfo(..) => true,
+                        SubstateId::ComponentState(addr) => addr.eq(component_address),
+                        _ => false,
+                    }
+                }
                 _ => false,
             },
         }
     }
 
     pub fn is_substate_writeable(&self, substate_id: &SubstateId) -> bool {
-        match &self {
-            REActor::Native => true,
-            REActor::Scrypto(ScryptoActor::Blueprint(..)) => match substate_id {
-                SubstateId::KeyValueStoreEntry(..) => true,
-                _ => false,
-            },
-            REActor::Scrypto(ScryptoActor::Component(component_address, ..)) => match substate_id {
-                SubstateId::KeyValueStoreEntry(..) => true,
-                SubstateId::ComponentState(addr) => addr.eq(component_address),
+        match &self.fn_identifier {
+            FnIdentifier::Native(..) => true,
+            FnIdentifier::Scrypto { .. } => match self.receiver {
+                None => match substate_id {
+                    SubstateId::KeyValueStoreEntry(..) => true,
+                    _ => false,
+                },
+                Some(Receiver::Ref(RENodeId::Component(ref component_address))) => {
+                    match substate_id {
+                        SubstateId::KeyValueStoreEntry(..) => true,
+                        SubstateId::ComponentState(addr) => addr.eq(component_address),
+                        _ => false,
+                    }
+                }
                 _ => false,
             },
         }
@@ -61,11 +71,11 @@ impl RENodeProperties {
     }
 
     pub fn to_primary_substate_id(
-        function: &Function,
+        function: &FnIdentifier,
         node_id: RENodeId,
     ) -> Result<SubstateId, RuntimeError> {
         let substate_id = match function {
-            Function::Native(..) => match node_id {
+            FnIdentifier::Native(..) => match node_id {
                 RENodeId::Bucket(bucket_id) => SubstateId::Bucket(bucket_id),
                 RENodeId::Proof(proof_id) => SubstateId::Proof(proof_id),
                 RENodeId::ResourceManager(resource_address) => {
@@ -79,7 +89,7 @@ impl RENodeProperties {
                 RENodeId::Vault(vault_id) => SubstateId::Vault(vault_id),
                 _ => return Err(RuntimeError::MethodDoesNotExist(function.clone())),
             },
-            Function::Scrypto { .. } => match node_id {
+            FnIdentifier::Scrypto { .. } => match node_id {
                 RENodeId::Component(component_address) => {
                     SubstateId::ComponentState(component_address)
                 }

@@ -1,4 +1,4 @@
-use scrypto::core::Function;
+use scrypto::core::FnIdentifier;
 use scrypto::engine::types::*;
 use scrypto::prelude::TypeName;
 use scrypto::{core::Receiver, values::ScryptoValue};
@@ -134,7 +134,7 @@ impl FeeTable {
     pub fn run_method_cost(
         &self,
         receiver: &Receiver,
-        function: &Function,
+        function: &FnIdentifier,
         _input: &ScryptoValue,
     ) -> u32 {
         match receiver {
