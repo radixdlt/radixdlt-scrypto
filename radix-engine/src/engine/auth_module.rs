@@ -46,38 +46,7 @@ impl AuthModule {
         Ok(())
     }
 
-    pub fn consumed_auth(
-        function: &Function,
-        substate_id: &SubstateId,
-        node_pointer: RENodePointer,
-        depth: usize,
-        owned_heap_nodes: &mut HashMap<RENodeId, HeapRootRENode>,
-        parent_heap_nodes: &mut Vec<&mut HashMap<RENodeId, HeapRootRENode>>,
-        track: &mut Track,
-        auth_zone: Option<&AuthZone>,
-        caller_auth_zone: Option<&AuthZone>,
-    ) -> Result<(), RuntimeError> {
-        let auth = match substate_id {
-            SubstateId::Bucket(..) => {
-                let resource_address = {
-                    let node_ref =
-                        node_pointer.to_ref(depth, owned_heap_nodes, parent_heap_nodes, track);
-                    node_ref.bucket().resource_address()
-                };
-                let resource_manager = track
-                    .read_substate(SubstateId::ResourceManager(resource_address))
-                    .resource_manager();
-                let method_auth = resource_manager.get_consuming_bucket_auth(function.fn_ident());
-                vec![method_auth.clone()]
-            }
-            SubstateId::Proof(..) => vec![],
-            _ => return Err(RuntimeError::MethodDoesNotExist(function.clone())),
-        };
-
-        Self::auth(function, auth, auth_zone, caller_auth_zone)
-    }
-
-    pub fn ref_auth(
+    pub fn receiver_auth(
         function: &Function,
         receiver: Receiver,
         input: &ScryptoValue,
@@ -91,6 +60,19 @@ impl AuthModule {
         caller_auth_zone: Option<&AuthZone>,
     ) -> Result<(), RuntimeError> {
         let auth = match receiver {
+            Receiver::Consumed(RENodeId::Bucket(..)) => {
+                let resource_address = {
+                    let node_ref =
+                        node_pointer.to_ref(depth, owned_heap_nodes, parent_heap_nodes, track);
+                    node_ref.bucket().resource_address()
+                };
+                let resource_manager = track
+                    .read_substate(SubstateId::ResourceManager(resource_address))
+                    .resource_manager();
+                let method_auth = resource_manager.get_consuming_bucket_auth(function.fn_ident());
+                vec![method_auth.clone()]
+            }
+            Receiver::Consumed(RENodeId::Proof(..)) => vec![],
             Receiver::Ref(RENodeId::ResourceManager(resource_address)) => {
                 match function {
                     Function::Native(fn_ident) => {
@@ -139,7 +121,7 @@ impl AuthModule {
                                 .expect("Blueprint not found for existing component");
                             let fn_abi = abi
                                 .get_fn_abi(function.fn_ident())
-                                .ok_or(RuntimeError::MethodDoesNotExist(function.clone()))?;
+                                .ok_or(RuntimeError::MethodDoesNotExist(function.clone()))?; // TODO: Move this check into kernel
                             if !fn_abi.input.matches(&input.dom) {
                                 return Err(RuntimeError::InvalidFnInput {
                                     fn_ident: function.fn_ident().to_string(),

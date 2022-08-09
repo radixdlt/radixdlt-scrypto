@@ -1591,7 +1591,7 @@ where
         // Authorization and state load
         let (actor, execution_state) = match &receiver {
             Receiver::Consumed(node_id) => {
-                let substate_id = match node_id {
+                let _substate_id = match node_id {
                     RENodeId::Bucket(bucket_id) => SubstateId::Bucket(*bucket_id),
                     RENodeId::Proof(proof_id) => SubstateId::Proof(*proof_id),
                     _ => return Err(RuntimeError::MethodDoesNotExist(function.clone())),
@@ -1635,10 +1635,12 @@ where
                     _ => {}
                 }
 
-                AuthModule::consumed_auth(
+                AuthModule::receiver_auth(
                     &function,
-                    &substate_id,
-                    node_pointer,
+                    receiver.clone(),
+                    &input,
+                    &REActor::Native,
+                    node_pointer.clone(),
                     self.depth,
                     &mut self.owned_heap_nodes,
                     &mut self.parent_heap_nodes,
@@ -1836,7 +1838,7 @@ where
                 }
 
                 // Check method authorization
-                AuthModule::ref_auth(
+                AuthModule::receiver_auth(
                     &function,
                     receiver.clone(),
                     &input,
