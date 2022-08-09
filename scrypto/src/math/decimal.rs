@@ -1142,15 +1142,24 @@ mod tests {
 
     #[test]
     fn test_format_precise_decimal() {
-        assert_eq!(PreciseDecimal(1i128.into()).to_string(), "0.0000000000000000000000000000000000000000000000000000000000000001");
+        assert_eq!(
+            PreciseDecimal(1i128.into()).to_string(),
+            "0.0000000000000000000000000000000000000000000000000000000000000001"
+        );
         assert_eq!(
             PreciseDecimal(123456789123456789i128.into()).to_string(),
             "0.0000000000000000000000000000000000000000000000123456789123456789"
         );
         assert_eq!(PreciseDecimal(I512::from(10).pow(64)).to_string(), "1");
-        assert_eq!(PreciseDecimal(I512::from(10).pow(64).mul(123)).to_string(), "123");
         assert_eq!(
-            PreciseDecimal(I512::from("1234567890000000000000000000000000000000000000000000000000000000000000000")).to_string(),
+            PreciseDecimal(I512::from(10).pow(64).mul(123)).to_string(),
+            "123"
+        );
+        assert_eq!(
+            PreciseDecimal(I512::from(
+                "1234567890000000000000000000000000000000000000000000000000000000000000000"
+            ))
+            .to_string(),
             "123456789"
         );
         assert_eq!(
@@ -1238,7 +1247,8 @@ mod tests {
     #[test]
     #[should_panic(expected = "Overflow")]
     fn test_mul_overflow_by_small_precise_decimal() {
-        let _ = PreciseDecimal::MAX * pdec!("1.0000000000000000000000000000000000000000000000000000000000000001");
+        let _ = PreciseDecimal::MAX
+            * pdec!("1.0000000000000000000000000000000000000000000000000000000000000001");
     }
 
     #[test]
@@ -1250,7 +1260,8 @@ mod tests {
     #[test]
     #[should_panic(expected = "Overflow")]
     fn test_mul_neg_overflow_precise_decimal() {
-        let _ = (-PreciseDecimal::MAX) * pdec!("-1.0000000000000000000000000000000000000000000000000000000000000001");
+        let _ = (-PreciseDecimal::MAX)
+            * pdec!("-1.0000000000000000000000000000000000000000000000000000000000000001");
     }
 
     #[test]
@@ -1287,7 +1298,10 @@ mod tests {
     fn test_div_precise_decimal() {
         let a = PreciseDecimal::from(5u32);
         let b = PreciseDecimal::from(7u32);
-        assert_eq!((a / b).to_string(), "0.7142857142857142857142857142857142857142857142857142857142857142");
+        assert_eq!(
+            (a / b).to_string(),
+            "0.7142857142857142857142857142857142857142857142857142857142857142"
+        );
         assert_eq!((b / a).to_string(), "1.4");
     }
 
@@ -1343,7 +1357,10 @@ mod tests {
     #[test]
     fn test_2_powi_3724_precise_decimal() {
         let a = pdec!("1.000234891009084238");
-        assert_eq!((a.powi(3724)).to_string(), "2.3979912322546748642222795591580998788798125484487121999786797414");
+        assert_eq!(
+            (a.powi(3724)).to_string(),
+            "2.3979912322546748642222795591580998788798125484487121999786797414"
+        );
     }
 
     #[test]
@@ -1456,10 +1473,10 @@ mod tests {
         assert_eq!((pdec!(11235, -2)).to_string(), "112.35");
         assert_eq!((pdec!(11235, 2)).to_string(), "1123500");
 
-//        assert_eq!(
-//            pdec!("1120000000000000000000000000000000000000000000000000000000000000001", -64).to_string(),
-//            "112.0000000000000000000000000000000000000000000000000000000000000001"
-//        );
+        //        assert_eq!(
+        //            pdec!("1120000000000000000000000000000000000000000000000000000000000000001", -64).to_string(),
+        //            "112.0000000000000000000000000000000000000000000000000000000000000001"
+        //        );
     }
 
     #[test]
@@ -1574,10 +1591,18 @@ mod tests {
         assert_eq!(num.round(2, mode).to_string(), "-2.56");
         assert_eq!(num.round(17, mode).to_string(), "-2.55555555555555556");
         assert_eq!(num.round(18, mode).to_string(), "-2.555555555555555556");
-        assert_eq!(num.round(40, mode).to_string(), "-2.5555555555555555555555555555555555555556");
-        assert_eq!(num.round(50, mode).to_string(), "-2.55555555555555555555555555555555555555555555555556");
-        assert_eq!(num.round(63, mode).to_string(), "-2.555555555555555555555555555555555555555555555555555555555555556");
-
+        assert_eq!(
+            num.round(40, mode).to_string(),
+            "-2.5555555555555555555555555555555555555556"
+        );
+        assert_eq!(
+            num.round(50, mode).to_string(),
+            "-2.55555555555555555555555555555555555555555555555556"
+        );
+        assert_eq!(
+            num.round(63, mode).to_string(),
+            "-2.555555555555555555555555555555555555555555555555555555555555556"
+        );
     }
 
     #[test]
