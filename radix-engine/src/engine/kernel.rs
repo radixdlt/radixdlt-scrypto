@@ -4,6 +4,7 @@ use sbor::rust::collections::*;
 use sbor::rust::format;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
+use sbor::rust::vec;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
 use scrypto::core::Receiver;
