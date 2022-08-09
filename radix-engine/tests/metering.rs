@@ -2,7 +2,7 @@
 pub mod test_runner;
 
 use radix_engine::ledger::InMemorySubstateStore;
-use radix_engine::{fee::FeeTable, wasm::InvokeError};
+use radix_engine::wasm::InvokeError;
 use scrypto::core::Network;
 use scrypto::prelude::{Package, SYSTEM_COMPONENT};
 use scrypto::to_struct;
@@ -160,12 +160,13 @@ fn test_total_cost_unit_consumed() {
         code,
         blueprints: abi_single_fn_any_input_void_output("Test", "f"),
     };
+    let (public_key, _, _) = test_runner.new_account();
     let package_address = test_runner.publish_package(package);
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(package_address, "Test", "f", to_struct!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
     /*
@@ -179,18 +180,13 @@ fn test_total_cost_unit_consumed() {
         run_function                  :    10000
         run_method                    :    35000
         run_wasm                      :    99849
-        tx_decoding                   :        4
-        tx_manifest_verification      :        1
-        tx_signature_verification     :        0
+        tx_decoding                   :     2032
+        tx_manifest_verification      :      508
+        tx_signature_verification     :     3750
         write                         :     5000
     */
-    let ft = FeeTable::new();
     assert_eq!(
-        ft.tx_decoding_per_byte() * 1
-            + ft.tx_manifest_verification_per_byte() * 1
-            + ft.tx_signature_verification_per_sig() * 0
-            + 1000
-            + 10000
+        1000 + 10000
             + 1050
             + 3025
             + 5495
@@ -199,6 +195,9 @@ fn test_total_cost_unit_consumed() {
             + 10000
             + 35000
             + 99849
+            + 2032
+            + 508
+            + 3750
             + 5000,
         receipt.fee_summary.cost_unit_consumed
     );
