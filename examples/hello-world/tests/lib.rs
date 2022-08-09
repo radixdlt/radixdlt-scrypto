@@ -34,7 +34,7 @@ fn test_hello() {
     let package_address = executor
         .execute_and_commit(
             &TestTransaction::new(manifest, 1, vec![public_key]),
-            &ExecutionConfig::default(),
+            &ExecutionConfig::debug(),
         )
         .new_package_addresses[0];
 
@@ -52,7 +52,7 @@ fn test_hello() {
     let account = executor
         .execute_and_commit(
             &TestTransaction::new(manifest, 2, vec![public_key]),
-            &ExecutionConfig::default(),
+            &ExecutionConfig::debug(),
         )
         .new_component_addresses[0];
 
@@ -63,7 +63,7 @@ fn test_hello() {
         .build();
     let receipt = executor.execute_and_commit(
         &TestTransaction::new(manifest, 3, vec![public_key]),
-        &ExecutionConfig::default(),
+        &ExecutionConfig::debug(),
     );
     println!("{:?}\n", receipt);
     receipt.expect_success();
@@ -77,7 +77,7 @@ fn test_hello() {
         .build();
     let receipt = executor.execute_and_commit(
         &TestTransaction::new(manifest, 4, vec![public_key]),
-        &ExecutionConfig::default(),
+        &ExecutionConfig::debug(),
     );
     println!("{:?}\n", receipt);
     receipt.expect_success();

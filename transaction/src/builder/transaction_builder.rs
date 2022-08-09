@@ -37,10 +37,7 @@ impl TransactionBuilder {
         self
     }
 
-    pub fn signer_signatures(
-        mut self,
-        signatures: Vec<(EcdsaPublicKey, EcdsaSignature)>,
-    ) -> Self {
+    pub fn signer_signatures(mut self, signatures: Vec<(EcdsaPublicKey, EcdsaSignature)>) -> Self {
         self.intent_signatures.extend(signatures);
         self
     }
@@ -52,11 +49,8 @@ impl TransactionBuilder {
         self
     }
 
-    pub fn notary_signature(
-        mut self,
-        signature: EcdsaSignature,
-    ) -> Self {
-        self.notary_signature =  Some(signature);
+    pub fn notary_signature(mut self, signature: EcdsaSignature) -> Self {
+        self.notary_signature = Some(signature);
         self
     }
 
