@@ -71,7 +71,7 @@ impl Runtime {
         args: Vec<Vec<u8>>,
     ) -> T {
         let input = RadixEngineInput::InvokeMethod(
-            Receiver::Scrypto(RENodeId::Component(component_address)),
+            Receiver::Ref(RENodeId::Component(component_address)),
             Function::Scrypto(method.as_ref().to_string()),
             bytes_vec_to_struct!(args),
         );
@@ -81,7 +81,7 @@ impl Runtime {
     /// Returns the transaction hash.
     pub fn transaction_hash() -> Hash {
         let input = RadixEngineInput::InvokeMethod(
-            Receiver::NativeRENodeRef(RENodeId::System),
+            Receiver::Ref(RENodeId::System),
             Function::Native("transaction_hash".to_string()),
             scrypto_encode(&SystemGetTransactionHashInput {}),
         );
@@ -91,7 +91,7 @@ impl Runtime {
     /// Returns the current epoch number.
     pub fn current_epoch() -> u64 {
         let input = RadixEngineInput::InvokeMethod(
-            Receiver::NativeRENodeRef(RENodeId::System),
+            Receiver::Ref(RENodeId::System),
             Function::Native("get_epoch".to_string()),
             scrypto_encode(&SystemGetCurrentEpochInput {}),
         );

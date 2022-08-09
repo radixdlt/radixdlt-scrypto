@@ -15,8 +15,7 @@ pub enum TypeName {
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub enum Receiver {
     Consumed(RENodeId),
-    NativeRENodeRef(RENodeId),
-    Scrypto(RENodeId),
+    Ref(RENodeId),
     AuthZoneRef,
 }
 

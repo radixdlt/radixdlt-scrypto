@@ -1656,29 +1656,32 @@ where
 
                 Ok((REActor::Native, ExecutionState::Consumed(*node_id)))
             }
-            Receiver::NativeRENodeRef(node_id) | Receiver::Scrypto(node_id) => {
-                let substate_id = match &receiver {
-                    Receiver::NativeRENodeRef(node_id) => match node_id {
-                        RENodeId::Bucket(bucket_id) => SubstateId::Bucket(*bucket_id),
-                        RENodeId::Proof(proof_id) => SubstateId::Proof(*proof_id),
-                        RENodeId::ResourceManager(resource_address) => {
-                            SubstateId::ResourceManager(*resource_address)
+            Receiver::Ref(node_id) => {
+                let substate_id = match &function {
+                    Function::Native(..) => {
+                        match node_id {
+                            RENodeId::Bucket(bucket_id) => SubstateId::Bucket(*bucket_id),
+                            RENodeId::Proof(proof_id) => SubstateId::Proof(*proof_id),
+                            RENodeId::ResourceManager(resource_address) => {
+                                SubstateId::ResourceManager(*resource_address)
+                            }
+                            RENodeId::System => SubstateId::System,
+                            RENodeId::Worktop => SubstateId::Worktop,
+                            RENodeId::Component(component_address) => {
+                                SubstateId::ComponentInfo(*component_address)
+                            }
+                            RENodeId::Vault(vault_id) => SubstateId::Vault(*vault_id),
+                            _ => return Err(RuntimeError::MethodDoesNotExist(function.clone())),
                         }
-                        RENodeId::System => SubstateId::System,
-                        RENodeId::Worktop => SubstateId::Worktop,
-                        RENodeId::Component(component_address) => {
-                            SubstateId::ComponentInfo(*component_address)
+                    }
+                    Function::Scrypto(..) => {
+                        match node_id {
+                            RENodeId::Component(component_address) => {
+                                SubstateId::ComponentState(*component_address)
+                            }
+                            _ => return Err(RuntimeError::MethodDoesNotExist(function.clone())),
                         }
-                        RENodeId::Vault(vault_id) => SubstateId::Vault(*vault_id),
-                        _ => return Err(RuntimeError::MethodDoesNotExist(function.clone())),
-                    },
-                    Receiver::Scrypto(node_id) => match node_id {
-                        RENodeId::Component(component_address) => {
-                            SubstateId::ComponentState(*component_address)
-                        }
-                        _ => return Err(RuntimeError::MethodDoesNotExist(function.clone())),
-                    },
-                    _ => panic!("Should not get here."),
+                    }
                 };
 
                 // Find value
@@ -1717,46 +1720,47 @@ where
                 // TODO: Refactor when locking model finalized
                 let mut temporary_locks = Vec::new();
 
-                let actor = match &receiver {
-                    Receiver::Scrypto(node_id) => match node_id {
-                        RENodeId::Component(component_address) => {
-                            let temporary_substate_id =
-                                SubstateId::ComponentInfo(*component_address);
-                            node_pointer.acquire_lock(
-                                temporary_substate_id.clone(),
-                                false,
-                                false,
-                                &mut self.track,
-                            )?;
-                            temporary_locks.push((node_pointer, temporary_substate_id, false));
-
-                            let scrypto_actor = {
-                                let node_ref = node_pointer.to_ref(
-                                    self.depth,
-                                    &self.owned_heap_nodes,
-                                    &self.parent_heap_nodes,
+                let actor = match &function {
+                    Function::Scrypto(..) => {
+                        match node_id {
+                            RENodeId::Component(component_address) => {
+                                let temporary_substate_id =
+                                    SubstateId::ComponentInfo(*component_address);
+                                node_pointer.acquire_lock(
+                                    temporary_substate_id.clone(),
+                                    false,
+                                    false,
                                     &mut self.track,
-                                );
-                                let component = node_ref.component_info();
-                                ScryptoActor::component(
-                                    *component_address,
-                                    component.package_address(),
-                                    component.blueprint_name().to_string(),
-                                )
-                            };
-                            let execution_state = ExecutionState::Component {
-                                package_address: scrypto_actor.package_address().clone(),
-                                blueprint_name: scrypto_actor.blueprint_name().clone(),
-                                component_address: *component_address,
-                            };
-                            (REActor::Scrypto(scrypto_actor), execution_state)
+                                )?;
+                                temporary_locks.push((node_pointer, temporary_substate_id, false));
+
+                                let scrypto_actor = {
+                                    let node_ref = node_pointer.to_ref(
+                                        self.depth,
+                                        &self.owned_heap_nodes,
+                                        &self.parent_heap_nodes,
+                                        &mut self.track,
+                                    );
+                                    let component = node_ref.component_info();
+                                    ScryptoActor::component(
+                                        *component_address,
+                                        component.package_address(),
+                                        component.blueprint_name().to_string(),
+                                    )
+                                };
+                                let execution_state = ExecutionState::Component {
+                                    package_address: scrypto_actor.package_address().clone(),
+                                    blueprint_name: scrypto_actor.blueprint_name().clone(),
+                                    component_address: *component_address,
+                                };
+                                (REActor::Scrypto(scrypto_actor), execution_state)
+                            }
+                            _ => panic!("Should not get here."),
                         }
-                        _ => panic!("Should not get here."),
-                    },
-                    Receiver::NativeRENodeRef(..) => {
+                    }
+                    Function::Native(..) => {
                         (REActor::Native, ExecutionState::RENodeRef(*node_id))
                     }
-                    _ => panic!("Should not get here."),
                 };
 
                 // Lock Parent Substates
@@ -1814,7 +1818,7 @@ where
 
                 // Lock Resource Managers in request
                 // TODO: Remove when references cleaned up
-                if let Receiver::NativeRENodeRef(..) = &receiver {
+                if let Function::Native(..) = &function {
                     for resource_address in &input.resource_addresses {
                         let resource_substate_id =
                             SubstateId::ResourceManager(resource_address.clone());
@@ -1912,8 +1916,8 @@ where
                 self.wasm_instrumenter,
                 self.fee_reserve,
                 self.fee_table,
-                match receiver {
-                    Receiver::Scrypto(_) => Some(AuthZone::new()),
+                match function {
+                    Function::Scrypto(..) => Some(AuthZone::new()),
                     _ => None,
                 },
                 next_owned_values,

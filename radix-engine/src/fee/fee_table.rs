@@ -147,9 +147,6 @@ impl FeeTable {
                 "clear" => self.fixed_high,
                 _ => self.fixed_high,
             },
-            Receiver::Scrypto(_) => {
-                0 // Costing is through instrumentation
-            }
             // TODO: I suspect there is a bug with invoking consumed within call frame. Add tests to verify
             Receiver::Consumed(node_id) => match node_id {
                 RENodeId::Bucket(_) => self.fixed_medium,
@@ -162,7 +159,7 @@ impl FeeTable {
                 RENodeId::Package(_) => self.fixed_high,
                 RENodeId::System => self.fixed_high,
             },
-            Receiver::NativeRENodeRef(node_id) => {
+            Receiver::Ref(node_id) => {
                 match node_id {
                     RENodeId::System => match function.fn_ident() {
                         "current_epoch" => self.fixed_low,

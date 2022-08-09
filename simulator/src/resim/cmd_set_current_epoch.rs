@@ -49,7 +49,7 @@ impl SetCurrentEpoch {
         // Invoke the system
         root_frame
             .invoke_method(
-                Receiver::NativeRENodeRef(RENodeId::System),
+                Receiver::Ref(RENodeId::System),
                 Function::Native("set_epoch".to_string()),
                 ScryptoValue::from_typed(&SystemSetEpochInput { epoch: self.epoch }),
             )

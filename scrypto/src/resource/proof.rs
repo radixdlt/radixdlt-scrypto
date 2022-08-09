@@ -68,7 +68,7 @@ impl From<NonFungibleAddress> for ProofValidationMode {
 
 impl Clone for Proof {
     sfunctions! {
-        Receiver::NativeRENodeRef(RENodeId::Proof(self.0)) => {
+        Receiver::Ref(RENodeId::Proof(self.0)) => {
             fn clone(&self) -> Self {
                 ProofCloneInput {}
             }
@@ -220,7 +220,7 @@ impl Proof {
     }
 
     sfunctions! {
-        Receiver::NativeRENodeRef(RENodeId::Proof(self.0)) => {
+        Receiver::Ref(RENodeId::Proof(self.0)) => {
             fn amount(&self) -> Decimal {
                 ProofGetAmountInput {}
             }
@@ -254,7 +254,7 @@ impl Clone for ValidatedProof {
 
 impl ValidatedProof {
     sfunctions! {
-        Receiver::NativeRENodeRef(RENodeId::Proof(self.proof_id())) => {
+        Receiver::Ref(RENodeId::Proof(self.proof_id())) => {
             pub fn amount(&self) -> Decimal {
                 ProofGetAmountInput {}
             }

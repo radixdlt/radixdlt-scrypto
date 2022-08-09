@@ -68,7 +68,7 @@ impl Vault {
     /// Creates an empty vault to permanently hold resource of the given definition.
     pub fn new(resource_address: ResourceAddress) -> Self {
         let input = RadixEngineInput::InvokeMethod(
-            Receiver::NativeRENodeRef(RENodeId::ResourceManager(resource_address)),
+            Receiver::Ref(RENodeId::ResourceManager(resource_address)),
             Function::Native("create_vault".to_string()),
             scrypto_encode(&ResourceManagerCreateVaultInput {}),
         );
@@ -84,7 +84,7 @@ impl Vault {
 
     fn take_internal(&mut self, amount: Decimal) -> Bucket {
         let input = RadixEngineInput::InvokeMethod(
-            Receiver::NativeRENodeRef(RENodeId::Vault(self.0)),
+            Receiver::Ref(RENodeId::Vault(self.0)),
             Function::Native("take".to_string()),
             scrypto_encode(&VaultTakeInput { amount }),
         );
@@ -93,7 +93,7 @@ impl Vault {
 
     fn lock_fee_internal(&mut self, amount: Decimal) {
         let input = RadixEngineInput::InvokeMethod(
-            Receiver::NativeRENodeRef(RENodeId::Vault(self.0)),
+            Receiver::Ref(RENodeId::Vault(self.0)),
             Function::Native("lock_fee".to_string()),
             scrypto_encode(&VaultTakeInput { amount }),
         );
@@ -101,7 +101,7 @@ impl Vault {
     }
 
     sfunctions! {
-        Receiver::NativeRENodeRef(RENodeId::Vault(self.0)) => {
+        Receiver::Ref(RENodeId::Vault(self.0)) => {
             pub fn put(&mut self, bucket: Bucket) -> () {
                 VaultPutInput {
                     bucket
