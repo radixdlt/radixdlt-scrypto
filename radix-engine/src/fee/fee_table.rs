@@ -81,7 +81,10 @@ impl FeeTable {
             fixed_low: 1_000,
             fixed_medium: 5_000,
             fixed_high: 10_000,
-            wasm_metering_params: WasmMeteringParams::new(InstructionCostRules::tiered(5_000), 512),
+            wasm_metering_params: WasmMeteringParams::new(
+                InstructionCostRules::tiered(1, 5, 10, 5_000),
+                512,
+            ),
         }
     }
 
