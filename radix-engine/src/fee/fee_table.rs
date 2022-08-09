@@ -1,7 +1,7 @@
+use scrypto::core::Function;
 use scrypto::engine::types::*;
 use scrypto::prelude::TypeName;
 use scrypto::{core::Receiver, values::ScryptoValue};
-use scrypto::core::Function;
 
 use crate::wasm::{InstructionCostRules, WasmMeteringParams};
 

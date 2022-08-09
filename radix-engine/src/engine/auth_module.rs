@@ -73,49 +73,45 @@ impl AuthModule {
                 vec![method_auth.clone()]
             }
             Receiver::Consumed(RENodeId::Proof(..)) => vec![],
-            Receiver::Ref(RENodeId::ResourceManager(resource_address)) => {
-                match function {
-                    Function::Native(fn_ident) => {
-                        let substate_id = SubstateId::ResourceManager(resource_address);
-                        let resource_manager = track.read_substate(substate_id.clone()).resource_manager();
-                        let method_auth = resource_manager.get_auth(fn_ident, &input).clone();
-                        vec![method_auth]
-                    }
-                    _ => vec![]
+            Receiver::Ref(RENodeId::ResourceManager(resource_address)) => match function {
+                Function::Native(fn_ident) => {
+                    let substate_id = SubstateId::ResourceManager(resource_address);
+                    let resource_manager =
+                        track.read_substate(substate_id.clone()).resource_manager();
+                    let method_auth = resource_manager.get_auth(fn_ident, &input).clone();
+                    vec![method_auth]
                 }
-            }
-            Receiver::Ref(RENodeId::System) => {
-                match function {
-                    Function::Native(fn_ident) => {
-                        match fn_ident.as_str() {
-                            "set_epoch" => {
-                                vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(
-                                    HardProofRule::Require(HardResourceOrNonFungible::Resource(SYSTEM_TOKEN)),
-                                ))]
-                            }
-                            _ => vec![]
-                        }
+                _ => vec![],
+            },
+            Receiver::Ref(RENodeId::System) => match function {
+                Function::Native(fn_ident) => match fn_ident.as_str() {
+                    "set_epoch" => {
+                        vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(
+                            HardProofRule::Require(HardResourceOrNonFungible::Resource(
+                                SYSTEM_TOKEN,
+                            )),
+                        ))]
                     }
-                    _ => vec![]
-                }
-            }
+                    _ => vec![],
+                },
+                _ => vec![],
+            },
             Receiver::Ref(RENodeId::Component(..)) => {
                 match function {
-                    Function::Native(..) => {
-                        match node_pointer {
-                            RENodePointer::Store(..) => vec![MethodAuthorization::DenyAll],
-                            RENodePointer::Heap { .. } => vec![],
-                        }
-                    }
+                    Function::Native(..) => match node_pointer {
+                        RENodePointer::Store(..) => vec![MethodAuthorization::DenyAll],
+                        RENodePointer::Heap { .. } => vec![],
+                    },
                     Function::Scrypto(fn_ident) => {
                         if let REActor::Scrypto(ScryptoActor::Component(
-                                                    _component_address,
-                                                    package_address,
-                                                    blueprint_name,
-                                                )) = actor
+                            _component_address,
+                            package_address,
+                            blueprint_name,
+                        )) = actor
                         {
                             let package_substate_id = SubstateId::Package(*package_address);
-                            let package = track.read_substate(package_substate_id.clone()).package();
+                            let package =
+                                track.read_substate(package_substate_id.clone()).package();
                             let abi = package
                                 .blueprint_abi(blueprint_name)
                                 .expect("Blueprint not found for existing component");
@@ -129,12 +125,20 @@ impl AuthModule {
                             }
 
                             {
-                                let value_ref =
-                                    node_pointer.to_ref(depth, owned_heap_nodes, parent_heap_nodes, track);
+                                let value_ref = node_pointer.to_ref(
+                                    depth,
+                                    owned_heap_nodes,
+                                    parent_heap_nodes,
+                                    track,
+                                );
 
                                 let component = value_ref.component_info();
                                 let component_state = value_ref.component_state();
-                                component.method_authorization(component_state, &abi.structure, fn_ident)
+                                component.method_authorization(
+                                    component_state,
+                                    &abi.structure,
+                                    fn_ident,
+                                )
                             }
                         } else {
                             vec![]
@@ -142,23 +146,21 @@ impl AuthModule {
                     }
                 }
             }
-            Receiver::Ref(RENodeId::Vault(..)) => {
-                match function {
-                    Function::Native(fn_ident) => {
-                        let resource_address = {
-                            let node_ref =
-                                node_pointer.to_ref(depth, owned_heap_nodes, parent_heap_nodes, track);
-                            node_ref.vault().resource_address()
-                        };
-                        let resource_manager = track
-                            .read_substate(SubstateId::ResourceManager(resource_address))
-                            .resource_manager();
-                        vec![resource_manager.get_vault_auth(fn_ident).clone()]
-                    }
-                    Function::Scrypto(..) => vec![]
+            Receiver::Ref(RENodeId::Vault(..)) => match function {
+                Function::Native(fn_ident) => {
+                    let resource_address = {
+                        let node_ref =
+                            node_pointer.to_ref(depth, owned_heap_nodes, parent_heap_nodes, track);
+                        node_ref.vault().resource_address()
+                    };
+                    let resource_manager = track
+                        .read_substate(SubstateId::ResourceManager(resource_address))
+                        .resource_manager();
+                    vec![resource_manager.get_vault_auth(fn_ident).clone()]
                 }
-            }
-            _ => vec![]
+                Function::Scrypto(..) => vec![],
+            },
+            _ => vec![],
         };
 
         Self::auth(function, auth, auth_zone, caller_auth_zone)

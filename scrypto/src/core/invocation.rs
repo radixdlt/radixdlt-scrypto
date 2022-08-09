@@ -28,8 +28,7 @@ pub enum Function {
 impl Function {
     pub fn fn_ident(&self) -> &str {
         match self {
-            Function::Scrypto(fn_ident)
-            | Function::Native(fn_ident) => &fn_ident
+            Function::Scrypto(fn_ident) | Function::Native(fn_ident) => &fn_ident,
         }
     }
 }

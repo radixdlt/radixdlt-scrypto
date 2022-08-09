@@ -1,4 +1,5 @@
-use scrypto::core::ScryptoActor;
+use crate::engine::RuntimeError;
+use scrypto::core::{Function, ScryptoActor};
 use scrypto::engine::types::*;
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -57,6 +58,36 @@ impl RENodeProperties {
             RENodeId::Package(..) => true,
             RENodeId::System => true,
         }
+    }
+
+    pub fn to_primary_substate_id(
+        function: &Function,
+        node_id: RENodeId,
+    ) -> Result<SubstateId, RuntimeError> {
+        let substate_id = match function {
+            Function::Native(..) => match node_id {
+                RENodeId::Bucket(bucket_id) => SubstateId::Bucket(bucket_id),
+                RENodeId::Proof(proof_id) => SubstateId::Proof(proof_id),
+                RENodeId::ResourceManager(resource_address) => {
+                    SubstateId::ResourceManager(resource_address)
+                }
+                RENodeId::System => SubstateId::System,
+                RENodeId::Worktop => SubstateId::Worktop,
+                RENodeId::Component(component_address) => {
+                    SubstateId::ComponentInfo(component_address)
+                }
+                RENodeId::Vault(vault_id) => SubstateId::Vault(vault_id),
+                _ => return Err(RuntimeError::MethodDoesNotExist(function.clone())),
+            },
+            Function::Scrypto(..) => match node_id {
+                RENodeId::Component(component_address) => {
+                    SubstateId::ComponentState(component_address)
+                }
+                _ => return Err(RuntimeError::MethodDoesNotExist(function.clone())),
+            },
+        };
+
+        Ok(substate_id)
     }
 }
 
