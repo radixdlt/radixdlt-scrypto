@@ -165,35 +165,20 @@ fn test_basic_transfer() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key1]);
 
     // Assert
-    /*
-        borrow                        :    18000
-        create                        :    30000
-        invoke_function               :     2795
-        invoke_method                 :    14415
-        read                          :    35000
-        return                        :    18000
-        run_function                  :    10000
-        run_method                    :    66000
-        run_wasm                      :   289471
-        tx_decoding                   :     2668
-        tx_manifest_verification      :      667
-        tx_signature_verification     :     3750
-        write                         :    30000
-    */
     assert_eq!(
-        18000
-            + 30000
-            + 2795
-            + 14415
-            + 35000
-            + 18000
-            + 10000
-            + 66000
-            + 289471
-            + 2668
-            + 667
-            + 3750
-            + 30000,
+        1800 /* borrow */
+            + 3000 /* create */
+            + 1895 /* invoke_function */
+            + 2715 /* invoke_method */
+            + 3500 /* read */
+            + 1800 /* return */
+            + 1000 /* run_function */
+            + 6600 /* run_method */
+            + 289471 /* run_wasm */
+            + 2668 /* tx_decoding */
+            + 667 /* tx_manifest_verification */
+            + 3750 /* tx_signature_verification */
+            + 3000, /* write */
         receipt.fee_summary.cost_unit_consumed
     );
 }

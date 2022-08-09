@@ -78,11 +78,11 @@ impl FeeTable {
             tx_manifest_verification_per_byte: 1,
             tx_signature_verification_per_sig: 3750,
             wasm_instantiation_per_byte: 500,
-            fixed_low: 1_000,
-            fixed_medium: 5_000,
-            fixed_high: 10_000,
+            fixed_low: 100,
+            fixed_medium: 500,
+            fixed_high: 1000,
             wasm_metering_params: WasmMeteringParams::new(
-                InstructionCostRules::tiered(1, 5, 10, 5_000),
+                InstructionCostRules::tiered(1, 5, 10, 5000),
                 512,
             ),
         }
