@@ -249,6 +249,7 @@ pub enum HeapRENode {
     KeyValueStore(HeapKeyValueStore),
     Component(Component, ComponentState),
     Worktop(Worktop),
+    AuthZone(AuthZone),
     Package(ValidatedPackage),
     Resource(ResourceManager, Option<HashMap<NonFungibleId, NonFungible>>),
     System(System),
@@ -275,6 +276,7 @@ impl HeapRENode {
             }
             HeapRENode::Vault(..) => Ok(HashSet::new()),
             HeapRENode::Worktop(..) => Ok(HashSet::new()),
+            HeapRENode::AuthZone(..) => Ok(HashSet::new()),
             HeapRENode::System(..) => Ok(HashSet::new()),
         }
     }
@@ -398,7 +400,8 @@ impl HeapRENode {
             HeapRENode::Vault(..) => Ok(()),
             HeapRENode::Resource(..) => Ok(()),
             HeapRENode::Package(..) => Ok(()),
-            HeapRENode::Worktop(..) => Ok(()),
+            HeapRENode::Worktop(..) => Err(RuntimeError::CantMoveWorktop),
+            HeapRENode::AuthZone(..) => Err(RuntimeError::CantMoveAuthZone),
             HeapRENode::System(..) => Ok(()),
         }
     }
@@ -413,6 +416,7 @@ impl HeapRENode {
             HeapRENode::Bucket(..) => Err(RuntimeError::ValueNotAllowed),
             HeapRENode::Proof(..) => Err(RuntimeError::ValueNotAllowed),
             HeapRENode::Worktop(..) => Err(RuntimeError::ValueNotAllowed),
+            HeapRENode::AuthZone(..) => Err(RuntimeError::ValueNotAllowed),
             HeapRENode::System(..) => Err(RuntimeError::ValueNotAllowed),
         }
     }
@@ -431,6 +435,10 @@ impl HeapRENode {
                 Ok(())
             }
             HeapRENode::Worktop(worktop) => worktop.drop(),
+            HeapRENode::AuthZone(mut auth_zone) => {
+                auth_zone.clear();
+                Ok(())
+            }
         }
     }
 

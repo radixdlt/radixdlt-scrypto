@@ -154,6 +154,7 @@ impl FeeTable {
                 RENodeId::Bucket(_) => self.fixed_medium,
                 RENodeId::Proof(_) => self.fixed_medium,
                 RENodeId::Worktop => self.fixed_medium,
+                RENodeId::AuthZone => self.fixed_medium,
                 RENodeId::KeyValueStore(_) => self.fixed_medium,
                 RENodeId::Component(_) => self.fixed_medium,
                 RENodeId::Vault(_) => self.fixed_medium,

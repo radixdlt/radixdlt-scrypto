@@ -7,9 +7,8 @@ use sbor::rust::string::ToString;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
 use scrypto::core::Receiver;
+use scrypto::core::{ScryptoActor, TypeName};
 use scrypto::engine::types::*;
-use scrypto::prelude::{ScryptoActor, TypeName};
-use scrypto::resource::AuthZoneClearInput;
 use scrypto::values::*;
 use transaction::model::ExecutableInstruction;
 use transaction::validation::*;
@@ -43,8 +42,6 @@ pub struct Kernel<
 {
     /// The transaction hash
     transaction_hash: Hash,
-    /// Whether running in sudo mode
-    is_system: bool,
     /// The max call depth
     max_depth: usize,
     /// Whether to show trace messages
@@ -90,7 +87,6 @@ where
     ) -> Self {
         let mut kernel = Self {
             transaction_hash,
-            is_system,
             max_depth,
             trace,
             track,
@@ -189,6 +185,7 @@ where
                 RENodeId::Proof(proof_id)
             }
             HeapRENode::Worktop(..) => RENodeId::Worktop,
+            HeapRENode::AuthZone(..) => RENodeId::AuthZone,
             HeapRENode::Vault(..) => {
                 let vault_id = id_allocator.new_vault_id(transaction_hash).unwrap();
                 RENodeId::Vault(vault_id)
@@ -707,11 +704,12 @@ where
                 Ok((REActor::Native, ExecutionState::RENodeRef(*node_id)))
             }
             Receiver::AuthZoneRef => {
-                if let Some(auth_zone) = &mut self
+                if self
                     .call_frames
-                    .last_mut()
+                    .last()
                     .expect("Current frame always exists")
                     .auth_zone
+                    .is_some()
                 {
                     for resource_address in &input.resource_addresses {
                         self.track
@@ -734,7 +732,10 @@ where
                         let node_id = RENodeId::ResourceManager(resource_address.clone());
                         next_frame_node_refs.insert(node_id, RENodePointer::Store(node_id));
                     }
-                    Ok((REActor::Native, ExecutionState::AuthZone(auth_zone)))
+                    Ok((
+                        REActor::Native,
+                        ExecutionState::RENodeRef(RENodeId::AuthZone),
+                    ))
                 } else {
                     Err(RuntimeError::AuthZoneDoesNotExist)
                 }
@@ -939,6 +940,7 @@ where
                     RENodeId::Bucket(_) => SystemApiCostingEntry::BorrowLocal,
                     RENodeId::Proof(_) => SystemApiCostingEntry::BorrowLocal,
                     RENodeId::Worktop => SystemApiCostingEntry::BorrowLocal,
+                    RENodeId::AuthZone => SystemApiCostingEntry::BorrowLocal,
                     RENodeId::Vault(_) => SystemApiCostingEntry::BorrowGlobal {
                         // TODO: figure out loaded state and size
                         loaded: false,
@@ -1003,6 +1005,7 @@ where
                     SubstateId::Bucket(_) => SystemApiCostingEntry::BorrowLocal,
                     SubstateId::Proof(_) => SystemApiCostingEntry::BorrowLocal,
                     SubstateId::Worktop => SystemApiCostingEntry::BorrowLocal,
+                    SubstateId::AuthZone => SystemApiCostingEntry::BorrowLocal,
                     SubstateId::Vault(_) => SystemApiCostingEntry::BorrowGlobal {
                         // TODO: figure out loaded state and size
                         loaded: false,
@@ -1077,7 +1080,7 @@ where
             .expect("Current frame always exists")
             .node_refs
             .get(&node_id)
-            .cloned()  
+            .cloned()
             .expect(&format!("Node should exist {:?}", node_id));
 
         Ok(node_pointer.borrow_native_ref(
@@ -1122,6 +1125,7 @@ where
                         SubstateId::Bucket(..) => SystemApiCostingEntry::ReturnGlobal { size: 0 },
                         SubstateId::Proof(..) => SystemApiCostingEntry::ReturnGlobal { size: 0 },
                         SubstateId::Worktop => SystemApiCostingEntry::ReturnGlobal { size: 0 },
+                        SubstateId::AuthZone => SystemApiCostingEntry::ReturnGlobal { size: 0 },
                     },
                 }
             }),
@@ -1541,13 +1545,7 @@ where
 
         let method_authorization = convert(&Type::Unit, &Value::Unit, &access_rule);
         let is_authorized = method_authorization.check(&[&simulated_auth_zone]).is_ok();
-        simulated_auth_zone
-            .main(
-                "clear",
-                ScryptoValue::from_typed(&AuthZoneClearInput {}),
-                self,
-            )
-            .map_err(RuntimeError::AuthZoneError)?;
+        simulated_auth_zone.clear();
 
         Ok(is_authorized)
     }

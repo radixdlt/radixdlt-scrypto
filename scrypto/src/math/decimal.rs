@@ -626,7 +626,7 @@ pub enum RoundingMode {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{dec, pdec};
+    use crate::dec;
     use sbor::rust::vec;
 
     #[test]

@@ -105,9 +105,9 @@ impl CallFrame {
         HeapRENode::drop_nodes(values).map_err(|e| RuntimeError::DropFailure(e))
     }
 
-    pub fn run<'s, 'f, W, I, C, Y>(
+    pub fn run<'s, W, I, C, Y>(
         &mut self,
-        execution_entity: ExecutionEntity<'f>,
+        execution_entity: ExecutionEntity,
         fn_ident: &str,
         input: ScryptoValue,
         system_api: &mut Y,
@@ -205,9 +205,6 @@ impl CallFrame {
                         }
                         _ => panic!("Unexpected"),
                     },
-                    ExecutionState::AuthZone(auth_zone) => auth_zone
-                        .main(fn_ident, input, system_api)
-                        .map_err(RuntimeError::AuthZoneError),
                     ExecutionState::RENodeRef(node_id) => match node_id {
                         RENodeId::Bucket(bucket_id) => {
                             Bucket::main(bucket_id, fn_ident, input, system_api)
@@ -219,6 +216,8 @@ impl CallFrame {
                         }
                         RENodeId::Worktop => Worktop::main(fn_ident, input, system_api)
                             .map_err(RuntimeError::WorktopError),
+                        RENodeId::AuthZone => AuthZone::main(fn_ident, input, system_api)
+                            .map_err(RuntimeError::AuthZoneError),
                         RENodeId::Vault(vault_id) => {
                             Vault::main(vault_id, fn_ident, input, system_api)
                                 .map_err(RuntimeError::VaultError)
