@@ -1617,7 +1617,8 @@ where
                 next_frame_node_refs.insert(node_id.clone(), node_pointer.clone());
 
                 // Lock Substate
-                let is_lock_fee = matches!(node_id, RENodeId::Vault(..)) && &fn_ident == "lock_fee";
+                let is_lock_fee = matches!(node_id, RENodeId::Vault(..))
+                    && (&fn_ident == "lock_fee" || &fn_ident == "lock_contingent_fee");
                 match node_pointer {
                     RENodePointer::Store(..) => {
                         self.track

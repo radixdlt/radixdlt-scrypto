@@ -29,6 +29,7 @@ pub trait FeeReserve {
         &mut self,
         vault_id: VaultId,
         fee: ResourceContainer,
+        contingent: bool,
     ) -> Result<ResourceContainer, FeeReserveError>;
 
     fn finalize(self) -> FeeSummary;
@@ -48,7 +49,7 @@ pub struct SystemLoanFeeReserve {
     /// The tip percentage
     tip_percentage: u32,
     /// Payments made during the execution of a transaction.
-    payments: Vec<(VaultId, ResourceContainer)>,
+    payments: Vec<(VaultId, ResourceContainer, bool)>,
     /// The balance cost units
     balance: u32,
     /// The number of cost units owed to the system
@@ -113,6 +114,7 @@ impl FeeReserve for SystemLoanFeeReserve {
         &mut self,
         vault_id: VaultId,
         mut fee: ResourceContainer,
+        contingent: bool,
     ) -> Result<ResourceContainer, FeeReserveError> {
         let effective_cost_unit_price =
             self.cost_unit_price + self.cost_unit_price * self.tip_percentage / 100;
@@ -126,14 +128,16 @@ impl FeeReserve for SystemLoanFeeReserve {
         )
         .map_err(|_| FeeReserveError::Overflow)?;
 
-        if n >= self.owed {
-            self.balance = self
-                .balance
-                .checked_add(n - self.owed)
-                .ok_or(FeeReserveError::Overflow)?;
-            self.owed = 0;
-        } else {
-            self.owed -= n;
+        if !contingent {
+            if n >= self.owed {
+                self.balance = self
+                    .balance
+                    .checked_add(n - self.owed)
+                    .ok_or(FeeReserveError::Overflow)?;
+                self.owed = 0;
+            } else {
+                self.owed -= n;
+            }
         }
 
         let actual_amount = effective_cost_unit_price * n;
@@ -141,6 +145,7 @@ impl FeeReserve for SystemLoanFeeReserve {
             vault_id,
             fee.take_by_amount(actual_amount)
                 .expect("Check manual accounting"),
+            contingent,
         ));
 
         Ok(fee)
@@ -238,6 +243,7 @@ impl FeeReserve for UnlimitedLoanFeeReserve {
         &mut self,
         _vault_id: VaultId,
         fee: ResourceContainer,
+        _contingent: bool,
     ) -> Result<ResourceContainer, FeeReserveError> {
         Ok(fee) // No-op
     }
@@ -298,7 +304,7 @@ mod tests {
     fn test_consume_and_repay() {
         let mut fee_reserve = SystemLoanFeeReserve::new(100, 0, 1.into(), 5);
         fee_reserve.consume(2, "test").unwrap();
-        fee_reserve.repay(TEST_VAULT_ID, xrd(3)).unwrap();
+        fee_reserve.repay(TEST_VAULT_ID, xrd(3), false).unwrap();
         assert_eq!(3, fee_reserve.balance());
         assert_eq!(2, fee_reserve.consumed());
         assert_eq!(2, fee_reserve.owed());
@@ -318,18 +324,18 @@ mod tests {
         let mut fee_reserve = SystemLoanFeeReserve::new(100, 0, 1.into(), 0);
         assert_eq!(
             Ok(xrd(0)),
-            fee_reserve.repay(TEST_VAULT_ID, xrd(u32::max_value()))
+            fee_reserve.repay(TEST_VAULT_ID, xrd(u32::max_value()), false)
         );
         assert_eq!(
             Err(FeeReserveError::Overflow),
-            fee_reserve.repay(TEST_VAULT_ID, xrd(1))
+            fee_reserve.repay(TEST_VAULT_ID, xrd(1), false)
         );
     }
 
     #[test]
     fn test_repay() {
         let mut fee_reserve = SystemLoanFeeReserve::new(100, 0, 1.into(), 500);
-        fee_reserve.repay(TEST_VAULT_ID, xrd(100)).unwrap();
+        fee_reserve.repay(TEST_VAULT_ID, xrd(100), false).unwrap();
         assert_eq!(500, fee_reserve.balance());
         assert_eq!(400, fee_reserve.owed());
     }
@@ -337,11 +343,11 @@ mod tests {
     #[test]
     fn test_xrd_cost_unit_conversion() {
         let mut fee_reserve = SystemLoanFeeReserve::new(100, 0, 5.into(), 500);
-        fee_reserve.repay(TEST_VAULT_ID, xrd(100)).unwrap();
+        fee_reserve.repay(TEST_VAULT_ID, xrd(100), false).unwrap();
         assert_eq!(500, fee_reserve.balance());
         assert_eq!(500 - 100 / 5, fee_reserve.owed());
         assert_eq!(
-            vec![(TEST_VAULT_ID, xrd(100))],
+            vec![(TEST_VAULT_ID, xrd(100), false)],
             fee_reserve.finalize().payments
         )
     }
