@@ -3,6 +3,7 @@ use sbor::rust::boxed::Box;
 use sbor::rust::fmt;
 use sbor::rust::string::String;
 use sbor::{DecodeError, Value};
+use scrypto::core::Function;
 use scrypto::engine::types::*;
 use transaction::errors::*;
 
@@ -27,7 +28,7 @@ pub enum RuntimeError {
     IdAllocationError(IdAllocationError),
 
     /// Invalid request code.
-    MethodDoesNotExist(String),
+    MethodDoesNotExist(Function),
     InvalidFnInput {
         fn_ident: String,
     },
@@ -108,7 +109,7 @@ pub enum RuntimeError {
 
     /// System Authorization Failure
     AuthorizationError {
-        function: String,
+        function: Function,
         authorization: MethodAuthorization,
         error: MethodAuthorizationError,
     },

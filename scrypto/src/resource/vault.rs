@@ -9,7 +9,7 @@ use sbor::*;
 
 use crate::abi::*;
 use crate::buffer::scrypto_encode;
-use crate::core::Receiver;
+use crate::core::{Function, Receiver};
 use crate::crypto::*;
 use crate::engine::types::RENodeId;
 use crate::engine::{api::*, call_engine, types::VaultId};
@@ -69,7 +69,7 @@ impl Vault {
     pub fn new(resource_address: ResourceAddress) -> Self {
         let input = RadixEngineInput::InvokeMethod(
             Receiver::NativeRENodeRef(RENodeId::ResourceManager(resource_address)),
-            "create_vault".to_string(),
+            Function::Native("create_vault".to_string()),
             scrypto_encode(&ResourceManagerCreateVaultInput {}),
         );
         call_engine(input)
@@ -85,7 +85,7 @@ impl Vault {
     fn take_internal(&mut self, amount: Decimal) -> Bucket {
         let input = RadixEngineInput::InvokeMethod(
             Receiver::NativeRENodeRef(RENodeId::Vault(self.0)),
-            "take".to_string(),
+            Function::Native("take".to_string()),
             scrypto_encode(&VaultTakeInput { amount }),
         );
         call_engine(input)
@@ -94,7 +94,7 @@ impl Vault {
     fn lock_fee_internal(&mut self, amount: Decimal) {
         let input = RadixEngineInput::InvokeMethod(
             Receiver::NativeRENodeRef(RENodeId::Vault(self.0)),
-            "lock_fee".to_string(),
+            Function::Native("lock_fee".to_string()),
             scrypto_encode(&VaultTakeInput { amount }),
         );
         call_engine(input)

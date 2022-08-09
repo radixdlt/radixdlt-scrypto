@@ -1,6 +1,7 @@
 use scrypto::engine::types::*;
 use scrypto::prelude::TypeName;
 use scrypto::{core::Receiver, values::ScryptoValue};
+use scrypto::core::Function;
 
 use crate::wasm::{InstructionCostRules, WasmMeteringParams};
 
@@ -133,11 +134,11 @@ impl FeeTable {
     pub fn run_method_cost(
         &self,
         receiver: &Receiver,
-        fn_ident: &str,
+        function: &Function,
         _input: &ScryptoValue,
     ) -> u32 {
         match receiver {
-            Receiver::AuthZoneRef => match fn_ident {
+            Receiver::AuthZoneRef => match function.fn_ident() {
                 "pop" => self.fixed_low,
                 "push" => self.fixed_low,
                 "create_proof" => self.fixed_high, // TODO: charge differently based on auth zone size and fungibility
@@ -163,12 +164,12 @@ impl FeeTable {
             },
             Receiver::NativeRENodeRef(node_id) => {
                 match node_id {
-                    RENodeId::System => match fn_ident {
+                    RENodeId::System => match function.fn_ident() {
                         "current_epoch" => self.fixed_low,
                         "transaction_hash" => self.fixed_low,
                         _ => self.fixed_high,
                     },
-                    RENodeId::Bucket(..) => match fn_ident {
+                    RENodeId::Bucket(..) => match function.fn_ident() {
                         "take" => self.fixed_medium,
                         "take_non_fungibles" => self.fixed_medium,
                         "non_fungible_ids" => self.fixed_medium,
@@ -178,7 +179,7 @@ impl FeeTable {
                         "create_proof" => self.fixed_low,
                         _ => self.fixed_high,
                     },
-                    RENodeId::Proof(..) => match fn_ident {
+                    RENodeId::Proof(..) => match function.fn_ident() {
                         "amount" => self.fixed_low,
                         "non_fungible_ids" => self.fixed_low,
                         "resource_address" => self.fixed_low,
@@ -186,7 +187,7 @@ impl FeeTable {
                         _ => self.fixed_high,
                     },
                     RENodeId::ResourceManager(..) => {
-                        match fn_ident {
+                        match function.fn_ident() {
                             "update_auth" => self.fixed_medium,
                             "lock_auth" => self.fixed_medium,
                             "create_vault" => self.fixed_medium,
@@ -202,7 +203,7 @@ impl FeeTable {
                             _ => self.fixed_high,
                         }
                     }
-                    RENodeId::Worktop => match fn_ident {
+                    RENodeId::Worktop => match function.fn_ident() {
                         "put" => self.fixed_medium,
                         "take_amount" => self.fixed_medium,
                         "take_all" => self.fixed_medium,
@@ -213,11 +214,11 @@ impl FeeTable {
                         "drain" => self.fixed_medium,
                         _ => self.fixed_high,
                     },
-                    RENodeId::Component(..) => match fn_ident {
+                    RENodeId::Component(..) => match function.fn_ident() {
                         "add_access_check" => self.fixed_medium,
                         _ => self.fixed_high,
                     },
-                    RENodeId::Vault(..) => match fn_ident {
+                    RENodeId::Vault(..) => match function.fn_ident() {
                         "put" => self.fixed_medium,
                         "take" => self.fixed_medium, // TODO: revisit this if vault is not loaded in full
                         "take_non_fungibles" => self.fixed_medium,

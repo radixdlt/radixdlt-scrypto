@@ -72,7 +72,7 @@ impl Runtime {
     ) -> T {
         let input = RadixEngineInput::InvokeMethod(
             Receiver::Scrypto(RENodeId::Component(component_address)),
-            method.as_ref().to_string(),
+            Function::Scrypto(method.as_ref().to_string()),
             bytes_vec_to_struct!(args),
         );
         call_engine(input)
@@ -82,7 +82,7 @@ impl Runtime {
     pub fn transaction_hash() -> Hash {
         let input = RadixEngineInput::InvokeMethod(
             Receiver::NativeRENodeRef(RENodeId::System),
-            "transaction_hash".to_string(),
+            Function::Native("transaction_hash".to_string()),
             scrypto_encode(&SystemGetTransactionHashInput {}),
         );
         call_engine(input)
@@ -92,7 +92,7 @@ impl Runtime {
     pub fn current_epoch() -> u64 {
         let input = RadixEngineInput::InvokeMethod(
             Receiver::NativeRENodeRef(RENodeId::System),
-            "get_epoch".to_string(),
+            Function::Native("get_epoch".to_string()),
             scrypto_encode(&SystemGetCurrentEpochInput {}),
         );
         call_engine(input)

@@ -2,7 +2,7 @@ use sbor::rust::marker::PhantomData;
 use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
-use scrypto::core::{Receiver, ScryptoActor, ScryptoRENode, TypeName};
+use scrypto::core::{Function, Receiver, ScryptoActor, ScryptoRENode, TypeName};
 use scrypto::engine::api::RadixEngineInput;
 use scrypto::engine::types::*;
 use scrypto::resource::AccessRule;
@@ -73,11 +73,11 @@ where
     fn handle_invoke_method(
         &mut self,
         receiver: Receiver,
-        fn_ident: String,
+        function: Function,
         input: Vec<u8>,
     ) -> Result<ScryptoValue, RuntimeError> {
         let call_data = ScryptoValue::from_slice(&input).map_err(RuntimeError::DecodeError)?;
-        self.system_api.invoke_method(receiver, fn_ident, call_data)
+        self.system_api.invoke_method(receiver, function, call_data)
     }
 
     fn handle_node_create(
@@ -213,8 +213,8 @@ impl<
             RadixEngineInput::InvokeFunction(type_name, fn_ident, input_bytes) => {
                 self.handle_invoke_function(type_name, fn_ident, input_bytes)
             }
-            RadixEngineInput::InvokeMethod(receiver, fn_ident, input_bytes) => {
-                self.handle_invoke_method(receiver, fn_ident, input_bytes)
+            RadixEngineInput::InvokeMethod(receiver, function, input_bytes) => {
+                self.handle_invoke_method(receiver, function, input_bytes)
             }
             RadixEngineInput::RENodeGlobalize(node_id) => self.handle_node_globalize(node_id),
             RadixEngineInput::RENodeCreate(node) => self.handle_node_create(node),

@@ -6,7 +6,7 @@ use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
-use scrypto::core::Receiver;
+use scrypto::core::{Function, Receiver};
 use scrypto::engine::types::*;
 use scrypto::prelude::{ScryptoActor, TypeName};
 use scrypto::resource::AuthZoneClearInput;
@@ -1163,7 +1163,7 @@ where
         if self.auth_zone.is_some() {
             self.invoke_method(
                 Receiver::AuthZoneRef,
-                "clear".to_string(),
+                Function::Native("clear".to_string()),
                 ScryptoValue::from_typed(&AuthZoneClearInput {}),
             )?;
         }
@@ -1405,7 +1405,7 @@ where
                 )?;
                 let fn_abi = abi
                     .get_fn_abi(&fn_ident)
-                    .ok_or(RuntimeError::MethodDoesNotExist(fn_ident.clone()))?;
+                    .ok_or(RuntimeError::MethodDoesNotExist(Function::Scrypto(fn_ident.clone())))?;
                 if !fn_abi.input.matches(&input.dom) {
                     return Err(RuntimeError::InvalidFnInput { fn_ident });
                 }
@@ -1526,7 +1526,7 @@ where
     fn invoke_method(
         &mut self,
         receiver: Receiver,
-        fn_ident: String,
+        function: Function,
         input: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError> {
         trace!(
@@ -1534,7 +1534,7 @@ where
             Level::Debug,
             "Invoking method: {:?} {:?}",
             receiver,
-            &fn_ident
+            function
         );
 
         if self.depth == self.max_depth {
@@ -1555,7 +1555,7 @@ where
         self.fee_reserve
             .consume(
                 self.fee_table
-                    .run_method_cost(&receiver, fn_ident.as_str(), &input),
+                    .run_method_cost(&receiver, &function, &input),
                 "run_method",
             )
             .map_err(RuntimeError::CostingError)?;
@@ -1594,7 +1594,7 @@ where
                 let substate_id = match node_id {
                     RENodeId::Bucket(bucket_id) => SubstateId::Bucket(*bucket_id),
                     RENodeId::Proof(proof_id) => SubstateId::Proof(*proof_id),
-                    _ => return Err(RuntimeError::MethodDoesNotExist(fn_ident.clone())),
+                    _ => return Err(RuntimeError::MethodDoesNotExist(function.clone())),
                 };
 
                 // Find node
@@ -1636,7 +1636,7 @@ where
                 }
 
                 AuthModule::consumed_auth(
-                    &fn_ident,
+                    &function,
                     &substate_id,
                     node_pointer,
                     self.depth,
@@ -1670,13 +1670,13 @@ where
                             SubstateId::ComponentInfo(*component_address)
                         }
                         RENodeId::Vault(vault_id) => SubstateId::Vault(*vault_id),
-                        _ => return Err(RuntimeError::MethodDoesNotExist(fn_ident.clone())),
+                        _ => return Err(RuntimeError::MethodDoesNotExist(function.clone())),
                     },
                     Receiver::Scrypto(node_id) => match node_id {
                         RENodeId::Component(component_address) => {
                             SubstateId::ComponentState(*component_address)
                         }
-                        _ => return Err(RuntimeError::MethodDoesNotExist(fn_ident.clone())),
+                        _ => return Err(RuntimeError::MethodDoesNotExist(function.clone())),
                     },
                     _ => panic!("Should not get here."),
                 };
@@ -1702,7 +1702,7 @@ where
                 };
 
                 // Lock Substate
-                let is_lock_fee = matches!(node_id, RENodeId::Vault(..)) && &fn_ident == "lock_fee";
+                let is_lock_fee = matches!(node_id, RENodeId::Vault(..)) && function.fn_ident() == "lock_fee";
                 if is_lock_fee && matches!(node_pointer, RENodePointer::Heap { .. }) {
                     return Err(RuntimeError::LockFeeError(LockFeeError::RENodeNotInTrack));
                 }
@@ -1833,7 +1833,7 @@ where
 
                 // Check method authorization
                 AuthModule::ref_auth(
-                    &fn_ident,
+                    &function,
                     &input,
                     &actor.0,
                     substate_id.clone(),
@@ -1925,7 +1925,7 @@ where
             // invoke the main function
             frame.run(
                 ExecutionEntity::Method(receiver, execution_state),
-                &fn_ident,
+                function.fn_ident(),
                 input,
             )?
         };

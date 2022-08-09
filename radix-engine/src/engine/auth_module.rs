@@ -1,7 +1,7 @@
 use sbor::rust::collections::*;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
-use scrypto::core::ScryptoActor;
+use scrypto::core::{Function, ScryptoActor};
 use scrypto::engine::types::*;
 use scrypto::values::*;
 
@@ -13,7 +13,7 @@ pub struct AuthModule;
 
 impl AuthModule {
     fn auth(
-        fn_ident: &str,
+        function: &Function,
         substate_id: &SubstateId,
         method_auths: Vec<MethodAuthorization>,
         auth_zone: Option<&AuthZone>,
@@ -43,7 +43,7 @@ impl AuthModule {
             for method_auth in method_auths {
                 method_auth.check(&auth_zones).map_err(|error| {
                     RuntimeError::AuthorizationError {
-                        function: fn_ident.to_string(),
+                        function: function.clone(),
                         authorization: method_auth,
                         error,
                     }
@@ -55,7 +55,7 @@ impl AuthModule {
     }
 
     pub fn consumed_auth(
-        fn_ident: &str,
+        function: &Function,
         substate_id: &SubstateId,
         node_pointer: RENodePointer,
         depth: usize,
@@ -75,18 +75,18 @@ impl AuthModule {
                 let resource_manager = track
                     .read_substate(SubstateId::ResourceManager(resource_address))
                     .resource_manager();
-                let method_auth = resource_manager.get_consuming_bucket_auth(&fn_ident);
+                let method_auth = resource_manager.get_consuming_bucket_auth(function.fn_ident());
                 vec![method_auth.clone()]
             }
             SubstateId::Proof(..) => vec![],
-            _ => return Err(RuntimeError::MethodDoesNotExist(fn_ident.to_string())),
+            _ => return Err(RuntimeError::MethodDoesNotExist(function.clone())),
         };
 
-        Self::auth(fn_ident, substate_id, auth, auth_zone, caller_auth_zone)
+        Self::auth(function, substate_id, auth, auth_zone, caller_auth_zone)
     }
 
     pub fn ref_auth(
-        fn_ident: &str,
+        function: &Function,
         input: &ScryptoValue,
         actor: &REActor,
         substate_id: SubstateId,
@@ -101,10 +101,10 @@ impl AuthModule {
         let auth = match &substate_id {
             SubstateId::ResourceManager(..) => {
                 let resource_manager = track.read_substate(substate_id.clone()).resource_manager();
-                let method_auth = resource_manager.get_auth(&fn_ident, &input).clone();
+                let method_auth = resource_manager.get_auth(function.fn_ident(), &input).clone();
                 vec![method_auth]
             }
-            SubstateId::System => match fn_ident {
+            SubstateId::System => match function.fn_ident() {
                 "set_epoch" => {
                     vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(
                         HardProofRule::Require(HardResourceOrNonFungible::Resource(SYSTEM_TOKEN)),
@@ -129,11 +129,11 @@ impl AuthModule {
                         .blueprint_abi(blueprint_name)
                         .expect("Blueprint not found for existing component");
                     let fn_abi = abi
-                        .get_fn_abi(&fn_ident)
-                        .ok_or(RuntimeError::MethodDoesNotExist(fn_ident.to_string()))?;
+                        .get_fn_abi(function.fn_ident())
+                        .ok_or(RuntimeError::MethodDoesNotExist(function.clone()))?;
                     if !fn_abi.input.matches(&input.dom) {
                         return Err(RuntimeError::InvalidFnInput {
-                            fn_ident: fn_ident.to_string(),
+                            fn_ident: function.fn_ident().to_string(),
                         });
                     }
 
@@ -143,7 +143,7 @@ impl AuthModule {
 
                         let component = value_ref.component_info();
                         let component_state = value_ref.component_state();
-                        component.method_authorization(component_state, &abi.structure, &fn_ident)
+                        component.method_authorization(component_state, &abi.structure, function.fn_ident())
                     }
                 } else {
                     vec![]
@@ -158,11 +158,11 @@ impl AuthModule {
                 let resource_manager = track
                     .read_substate(SubstateId::ResourceManager(resource_address))
                     .resource_manager();
-                vec![resource_manager.get_vault_auth(&fn_ident).clone()]
+                vec![resource_manager.get_vault_auth(function.fn_ident()).clone()]
             }
             _ => vec![],
         };
 
-        Self::auth(fn_ident, &substate_id, auth, auth_zone, caller_auth_zone)
+        Self::auth(function, &substate_id, auth, auth_zone, caller_auth_zone)
     }
 }

@@ -1,6 +1,6 @@
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
-use scrypto::core::Receiver;
+use scrypto::core::{Function, Receiver};
 use scrypto::engine::types::*;
 use scrypto::prelude::TypeName;
 use scrypto::resource::AccessRule;
@@ -33,7 +33,7 @@ where
     fn invoke_method(
         &mut self,
         receiver: Receiver,
-        fn_ident: String,
+        function: Function,
         input: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError>;
 
