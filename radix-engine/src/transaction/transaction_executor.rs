@@ -218,7 +218,7 @@ where
                 .put(locked.take_by_amount(amount).unwrap())
                 .unwrap();
 
-            // refund extra
+            // Refund overpayment
             let substate_id = SubstateId::Vault(vault_id);
             track.acquire_lock(substate_id.clone(), true, true).unwrap();
             let mut substate = track.take_substate(substate_id.clone());
@@ -226,6 +226,7 @@ where
             track.write_substate(substate_id.clone(), substate);
             track.release_lock(substate_id, true);
         }
+        // TODO: update XRD supply or disable it
         // TODO: pay tips to the lead validator
 
         // 5. Produce the final transaction receipt
