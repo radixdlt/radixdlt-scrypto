@@ -22,7 +22,7 @@ pub struct FeeSummary {
     /// The total amount of XRD tipped to validators.
     pub tipped: Decimal,
     /// The fee payments
-    pub payments: Vec<(VaultId, ResourceContainer)>,
+    pub payments: Vec<(VaultId, ResourceContainer, bool)>,
     /// The cost breakdown
     pub cost_breakdown: BTreeMap<String, u32>,
 }
