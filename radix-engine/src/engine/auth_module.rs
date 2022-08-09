@@ -11,41 +11,21 @@ pub struct AuthModule;
 impl AuthModule {
     fn auth(
         fn_ident: &str,
-        substate_id: &SubstateId,
         method_auths: Vec<MethodAuthorization>,
         call_frames: &mut Vec<CallFrame>,
     ) -> Result<(), RuntimeError> {
-        let auth_zone = Some(
+        let mut auth_zones = vec![
             &call_frames
                 .last()
                 .expect("Current frame always exists")
                 .auth_zone,
-        );
-        let caller_auth_zone = call_frames
-            .get(call_frames.len() - 2)
-            .and_then(|x| Some(&x.auth_zone));
+        ];
+        if let Some(frame) = call_frames.get(call_frames.len() - 2) {
+            auth_zones.push(&frame.auth_zone);
+        }
 
         // Authorization check
         if !method_auths.is_empty() {
-            let mut auth_zones = Vec::new();
-            if let Some(self_auth_zone) = auth_zone {
-                auth_zones.push(self_auth_zone);
-            }
-
-            match &substate_id {
-                // Resource auth check includes caller
-                SubstateId::ComponentState(..)
-                | SubstateId::ResourceManager(..)
-                | SubstateId::Vault(..)
-                | SubstateId::Bucket(..) => {
-                    if let Some(auth_zone) = caller_auth_zone {
-                        auth_zones.push(auth_zone);
-                    }
-                }
-                // Extern call auth check
-                _ => {}
-            };
-
             for method_auth in method_auths {
                 method_auth.check(&auth_zones).map_err(|error| {
                     RuntimeError::AuthorizationError {
@@ -62,7 +42,6 @@ impl AuthModule {
 
     pub fn consumed_auth(
         fn_ident: &str,
-        substate_id: &SubstateId,
         node: &HeapRENode,
         call_frames: &mut Vec<CallFrame>,
         track: &mut Track,
@@ -81,7 +60,7 @@ impl AuthModule {
             _ => return Err(RuntimeError::MethodDoesNotExist(fn_ident.to_string())),
         };
 
-        Self::auth(fn_ident, substate_id, auth, call_frames)
+        Self::auth(fn_ident, auth, call_frames)
     }
 
     pub fn ref_auth(
@@ -149,6 +128,6 @@ impl AuthModule {
             _ => vec![],
         };
 
-        Self::auth(fn_ident, &substate_id, auth, call_frames)
+        Self::auth(fn_ident, auth, call_frames)
     }
 }

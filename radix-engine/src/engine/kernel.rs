@@ -545,12 +545,6 @@ where
         // Authorization and state load
         let (actor, execution_state) = match &receiver {
             Receiver::Consumed(node_id) => {
-                let native_substate_id = match node_id {
-                    RENodeId::Bucket(bucket_id) => SubstateId::Bucket(*bucket_id),
-                    RENodeId::Proof(proof_id) => SubstateId::Proof(*proof_id),
-                    _ => return Err(RuntimeError::MethodDoesNotExist(fn_ident.clone())),
-                };
-
                 let heap_node = self
                     .call_frames
                     .last_mut()
@@ -580,7 +574,6 @@ where
 
                 AuthModule::consumed_auth(
                     &fn_ident,
-                    &native_substate_id,
                     heap_node.root(),
                     &mut self.call_frames,
                     &mut self.track,
