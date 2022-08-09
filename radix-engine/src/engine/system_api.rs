@@ -10,6 +10,7 @@ use transaction::validation::IdAllocator;
 use crate::engine::node::*;
 use crate::engine::*;
 use crate::fee::*;
+use crate::model::AuthZone;
 use crate::wasm::*;
 
 pub trait SystemApi<'s, W, I, C>
@@ -30,6 +31,9 @@ where
     fn fee_reserve(&mut self) -> &mut C;
 
     fn fee_table(&self) -> &FeeTable;
+
+    // TODO: possible to consider authzone as a RENode?
+    fn auth_zone(&mut self, frame_id: usize) -> &mut AuthZone;
 
     fn invoke_function(
         &mut self,

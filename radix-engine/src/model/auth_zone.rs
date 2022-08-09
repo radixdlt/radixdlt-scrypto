@@ -96,19 +96,16 @@ impl AuthZone {
     }
 
     pub fn main<'s, Y: SystemApi<'s, W, I, C>, W: WasmEngine<I>, I: WasmInstance, C: FeeReserve>(
+        frame_id: usize,
         method_name: &str,
         arg: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, AuthZoneError> {
-        let mut node_ref = system_api
-            .substate_borrow_mut(&SubstateId::AuthZone)
-            .map_err(AuthZoneError::CostingError)?;
-        let auth_zone = node_ref.auth_zone();
-
         match method_name {
             "pop" => {
                 let _: AuthZonePopInput =
                     scrypto_decode(&arg.raw).map_err(|e| AuthZoneError::InvalidRequestData(e))?;
+                let auth_zone = system_api.auth_zone(frame_id);
                 let proof = auth_zone.pop()?;
                 let proof_id = system_api
                     .node_create(HeapRENode::Proof(proof))
@@ -127,6 +124,7 @@ impl AuthZone {
                     .into();
                 proof.change_to_unrestricted();
 
+                let auth_zone = system_api.auth_zone(frame_id);
                 auth_zone.push(proof);
                 Ok(ScryptoValue::from_typed(&()))
             }
@@ -140,6 +138,7 @@ impl AuthZone {
                     let resource_manager = value.resource_manager();
                     resource_manager.resource_type()
                 };
+                let auth_zone = system_api.auth_zone(frame_id);
                 let proof = auth_zone.create_proof(input.resource_address, resource_type)?;
                 let proof_id = system_api
                     .node_create(HeapRENode::Proof(proof))
@@ -159,6 +158,7 @@ impl AuthZone {
                     let resource_manager = value.resource_manager();
                     resource_manager.resource_type()
                 };
+                let auth_zone = system_api.auth_zone(frame_id);
                 let proof = auth_zone.create_proof_by_amount(
                     input.amount,
                     input.resource_address,
@@ -182,6 +182,7 @@ impl AuthZone {
                     let resource_manager = value.resource_manager();
                     resource_manager.resource_type()
                 };
+                let auth_zone = system_api.auth_zone(frame_id);
                 let proof = auth_zone.create_proof_by_ids(
                     &input.ids,
                     input.resource_address,
@@ -198,6 +199,7 @@ impl AuthZone {
             "clear" => {
                 let _: AuthZoneClearInput =
                     scrypto_decode(&arg.raw).map_err(|e| AuthZoneError::InvalidRequestData(e))?;
+                let auth_zone = system_api.auth_zone(frame_id);
                 auth_zone.clear();
                 Ok(ScryptoValue::from_typed(&()))
             }

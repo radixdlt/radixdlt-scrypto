@@ -13,4 +13,5 @@ pub enum ExecutionState {
     RENodeRef(RENodeId),
     // TODO: Can remove this and replace useage with REActor
     Component(PackageAddress, String, ComponentAddress),
+    AuthZone(usize),
 }

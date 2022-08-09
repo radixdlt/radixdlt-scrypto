@@ -23,8 +23,7 @@ macro_rules! trace {
     ( $self: expr, $level: expr, $msg: expr $( , $arg:expr )* ) => {
         #[cfg(not(feature = "alloc"))]
         if $self.trace {
-            // TODO: add ident
-            println!("[{:5}] {}", $level, sbor::rust::format!($msg, $( $arg ),*));
+            println!("{}[{:5}] {}", "  ".repeat($self.call_frames.len() - 1) , $level, sbor::rust::format!($msg, $( $arg ),*));
         }
     };
 }
@@ -185,7 +184,6 @@ where
                 RENodeId::Proof(proof_id)
             }
             HeapRENode::Worktop(..) => RENodeId::Worktop,
-            HeapRENode::AuthZone(..) => RENodeId::AuthZone,
             HeapRENode::Vault(..) => {
                 let vault_id = id_allocator.new_vault_id(transaction_hash).unwrap();
                 RENodeId::Vault(vault_id)
@@ -333,7 +331,7 @@ where
 
         // Move this into higher layer, e.g. transaction processor
         let mut next_frame_node_refs = HashMap::new();
-        if self.call_frames.len() == 0 {
+        if self.call_frames.len() == 1 {
             let mut component_addresses = HashSet::new();
 
             // Collect component addresses
@@ -378,31 +376,67 @@ where
             }
         }
 
-        // start a new frame
-        let (result, received_values) = {
-            let mut frame = CallFrame::new(
+        // start a new frame and run
+        let output = {
+            let frame = CallFrame::new_child(
                 self.call_frames
                     .last()
                     .expect("Current frame always exists")
                     .depth
                     + 1,
                 actor,
-                match type_name {
-                    TypeName::TransactionProcessor | TypeName::Blueprint(_, _) => {
-                        Some(AuthZone::new())
-                    }
-                    _ => None,
-                },
                 next_owned_values,
                 next_frame_node_refs,
+                self,
             );
-
-            // invoke the main function
-            frame.run(ExecutionEntity::Function(type_name), &fn_ident, input, self)?
+            self.call_frames.push(frame);
+            CallFrame::run(ExecutionEntity::Function(type_name), &fn_ident, input, self)?
         };
 
         // Process return data
-        Self::process_return_data(&result)?;
+        Self::process_return_data(&output)?;
+
+        // Take values to return
+        let values_to_take = output.node_ids();
+        let (received_values, mut missing) = self
+            .call_frames
+            .last_mut()
+            .expect("Current frame always exists")
+            .take_available_values(values_to_take, false)?;
+        let first_missing_value = missing.drain().nth(0);
+        if let Some(missing_node) = first_missing_value {
+            return Err(RuntimeError::RENodeNotFound(missing_node));
+        }
+
+        // Check we have valid references to pass back
+        for refed_component_address in &output.refed_component_addresses {
+            let node_id = RENodeId::Component(*refed_component_address);
+            if let Some(RENodePointer::Store(..)) = self
+                .call_frames
+                .last_mut()
+                .expect("Current frame always exists")
+                .node_refs
+                .get(&node_id)
+            {
+                // Only allow passing back global references
+            } else {
+                return Err(RuntimeError::InvokeMethodInvalidReferencePass(node_id));
+            }
+        }
+
+        // drop proofs and check resource leak
+        self.call_frames
+            .last_mut()
+            .expect("Current frame always exists")
+            .auth_zone
+            .clear();
+        self.call_frames
+            .last_mut()
+            .expect("Current frame always exists")
+            .drop_owned_values()?;
+
+        // Remove the last after clean-up
+        self.call_frames.pop();
 
         // Release locked addresses
         for l in locked_values {
@@ -421,7 +455,7 @@ where
         }
 
         // Accept component references
-        for refed_component_address in &result.refed_component_addresses {
+        for refed_component_address in &output.refed_component_addresses {
             let node_id = RENodeId::Component(*refed_component_address);
             let mut visible = HashSet::new();
             visible.insert(SubstateId::ComponentInfo(*refed_component_address));
@@ -433,7 +467,7 @@ where
         }
 
         trace!(self, Level::Debug, "Invoking finished!");
-        Ok(result)
+        Ok(output)
     }
 
     fn invoke_method(
@@ -704,41 +738,31 @@ where
                 Ok((REActor::Native, ExecutionState::RENodeRef(*node_id)))
             }
             Receiver::AuthZoneRef => {
-                if self
-                    .call_frames
-                    .last()
-                    .expect("Current frame always exists")
-                    .auth_zone
-                    .is_some()
-                {
-                    for resource_address in &input.resource_addresses {
-                        self.track
-                            .acquire_lock(
-                                SubstateId::ResourceManager(resource_address.clone()),
-                                false,
-                                false,
-                            )
-                            .map_err(|e| match e {
-                                TrackError::NotFound => {
-                                    RuntimeError::ResourceManagerNotFound(resource_address.clone())
-                                }
-                                TrackError::Reentrancy => {
-                                    panic!("Package reentrancy error should never occur.")
-                                }
-                                TrackError::StateTrackError(..) => panic!("Unexpected"),
-                            })?;
-                        locked_values
-                            .insert((SubstateId::ResourceManager(resource_address.clone()), false));
-                        let node_id = RENodeId::ResourceManager(resource_address.clone());
-                        next_frame_node_refs.insert(node_id, RENodePointer::Store(node_id));
-                    }
-                    Ok((
-                        REActor::Native,
-                        ExecutionState::RENodeRef(RENodeId::AuthZone),
-                    ))
-                } else {
-                    Err(RuntimeError::AuthZoneDoesNotExist)
+                for resource_address in &input.resource_addresses {
+                    self.track
+                        .acquire_lock(
+                            SubstateId::ResourceManager(resource_address.clone()),
+                            false,
+                            false,
+                        )
+                        .map_err(|e| match e {
+                            TrackError::NotFound => {
+                                RuntimeError::ResourceManagerNotFound(resource_address.clone())
+                            }
+                            TrackError::Reentrancy => {
+                                panic!("Package reentrancy error should never occur.")
+                            }
+                            TrackError::StateTrackError(..) => panic!("Unexpected"),
+                        })?;
+                    locked_values
+                        .insert((SubstateId::ResourceManager(resource_address.clone()), false));
+                    let node_id = RENodeId::ResourceManager(resource_address.clone());
+                    next_frame_node_refs.insert(node_id, RENodePointer::Store(node_id));
                 }
+                Ok((
+                    REActor::Native,
+                    ExecutionState::AuthZone(self.call_frames.len() - 1),
+                ))
             }
             Receiver::Component(component_address) => {
                 let component_address = component_address.clone();
@@ -874,30 +898,71 @@ where
         }
 
         // start a new frame
-        let (result, received_values) = {
-            let mut frame = CallFrame::new(
+        let output = {
+            let frame = CallFrame::new_child(
                 self.call_frames
                     .last()
                     .expect("Current frame always exists")
                     .depth
                     + 1,
                 actor,
-                match receiver {
-                    Receiver::Component(_) => Some(AuthZone::new()),
-                    _ => None,
-                },
                 next_owned_values,
                 next_frame_node_refs,
+                self,
             );
-
-            // invoke the main function
-            frame.run(
+            self.call_frames.push(frame);
+            CallFrame::run(
                 ExecutionEntity::Method(receiver, execution_state),
                 &fn_ident,
                 input,
                 self,
             )?
         };
+
+        // Process return data
+        Self::process_return_data(&output)?;
+
+        // Take values to return
+        let values_to_take = output.node_ids();
+        let (received_values, mut missing) = self
+            .call_frames
+            .last_mut()
+            .expect("Current frame always exists")
+            .take_available_values(values_to_take, false)?;
+        let first_missing_value = missing.drain().nth(0);
+        if let Some(missing_node) = first_missing_value {
+            return Err(RuntimeError::RENodeNotFound(missing_node));
+        }
+
+        // Check we have valid references to pass back
+        for refed_component_address in &output.refed_component_addresses {
+            let node_id = RENodeId::Component(*refed_component_address);
+            if let Some(RENodePointer::Store(..)) = self
+                .call_frames
+                .last_mut()
+                .expect("Current frame always exists")
+                .node_refs
+                .get(&node_id)
+            {
+                // Only allow passing back global references
+            } else {
+                return Err(RuntimeError::InvokeMethodInvalidReferencePass(node_id));
+            }
+        }
+
+        // drop proofs and check resource leak
+        self.call_frames
+            .last_mut()
+            .expect("Current frame always exists")
+            .auth_zone
+            .clear();
+        self.call_frames
+            .last_mut()
+            .expect("Current frame always exists")
+            .drop_owned_values()?;
+
+        // Remove the last after clean-up
+        self.call_frames.pop();
 
         // Release locked addresses
         for (substate_id, write_through) in locked_values {
@@ -916,7 +981,7 @@ where
         }
 
         // Accept component references
-        for refed_component_address in &result.refed_component_addresses {
+        for refed_component_address in &output.refed_component_addresses {
             let node_id = RENodeId::Component(*refed_component_address);
             let mut visible = HashSet::new();
             visible.insert(SubstateId::ComponentInfo(*refed_component_address));
@@ -928,7 +993,7 @@ where
         }
 
         trace!(self, Level::Debug, "Invoking finished!");
-        Ok(result)
+        Ok(output)
     }
 
     fn borrow_node(&mut self, node_id: &RENodeId) -> Result<RENodeRef<'_, 's>, FeeReserveError> {
@@ -940,7 +1005,6 @@ where
                     RENodeId::Bucket(_) => SystemApiCostingEntry::BorrowLocal,
                     RENodeId::Proof(_) => SystemApiCostingEntry::BorrowLocal,
                     RENodeId::Worktop => SystemApiCostingEntry::BorrowLocal,
-                    RENodeId::AuthZone => SystemApiCostingEntry::BorrowLocal,
                     RENodeId::Vault(_) => SystemApiCostingEntry::BorrowGlobal {
                         // TODO: figure out loaded state and size
                         loaded: false,
@@ -1005,7 +1069,6 @@ where
                     SubstateId::Bucket(_) => SystemApiCostingEntry::BorrowLocal,
                     SubstateId::Proof(_) => SystemApiCostingEntry::BorrowLocal,
                     SubstateId::Worktop => SystemApiCostingEntry::BorrowLocal,
-                    SubstateId::AuthZone => SystemApiCostingEntry::BorrowLocal,
                     SubstateId::Vault(_) => SystemApiCostingEntry::BorrowGlobal {
                         // TODO: figure out loaded state and size
                         loaded: false,
@@ -1125,7 +1188,6 @@ where
                         SubstateId::Bucket(..) => SystemApiCostingEntry::ReturnGlobal { size: 0 },
                         SubstateId::Proof(..) => SystemApiCostingEntry::ReturnGlobal { size: 0 },
                         SubstateId::Worktop => SystemApiCostingEntry::ReturnGlobal { size: 0 },
-                        SubstateId::AuthZone => SystemApiCostingEntry::ReturnGlobal { size: 0 },
                     },
                 }
             }),
@@ -1572,5 +1634,9 @@ where
 
     fn wasm_instrumenter(&mut self) -> &mut WasmInstrumenter {
         self.wasm_instrumenter
+    }
+
+    fn auth_zone(&mut self, frame_id: usize) -> &mut AuthZone {
+        &mut self.call_frames.get_mut(frame_id).unwrap().auth_zone
     }
 }

@@ -1,10 +1,8 @@
 use sbor::rust::boxed::Box;
 use sbor::rust::collections::*;
 use sbor::rust::string::ToString;
-use scrypto::core::Receiver;
 use scrypto::engine::types::*;
 use scrypto::prelude::{ScryptoActor, TypeName};
-use scrypto::resource::AuthZoneClearInput;
 use scrypto::values::*;
 use transaction::validation::*;
 
@@ -12,6 +10,8 @@ use crate::engine::*;
 use crate::fee::*;
 use crate::model::*;
 use crate::wasm::*;
+
+// TODO: reduce fields visibility
 
 /// A call frame is the basic unit that forms a transaction call stack, which keeps track of the
 /// owned objects by this function.
@@ -24,11 +24,12 @@ pub struct CallFrame {
     /// All ref values accessible by this call frame. The value may be located in one of the following:
     /// 1. borrowed values
     /// 2. track
-    pub node_refs: HashMap<RENodeId, RENodePointer>, // TODO: reduce fields visibility
+    pub node_refs: HashMap<RENodeId, RENodePointer>,
 
     /// Owned Values
     pub owned_heap_nodes: HashMap<RENodeId, HeapRootRENode>,
-    pub auth_zone: Option<AuthZone>,
+
+    pub auth_zone: AuthZone,
 }
 
 impl CallFrame {
@@ -71,22 +72,32 @@ impl CallFrame {
             initial_auth_zone_proofs.push(system_proof);
         }
 
-        Self::new(
-            0,
-            REActor::Native,
-            Some(AuthZone::new_with_proofs(initial_auth_zone_proofs)),
-            HashMap::new(),
-            HashMap::new(),
-        )
+        let auth_zone = AuthZone::new_with_proofs(initial_auth_zone_proofs);
+
+        Self {
+            depth: 0,
+            actor: REActor::Native,
+            node_refs: HashMap::new(),
+            owned_heap_nodes: HashMap::new(),
+            auth_zone,
+        }
     }
 
-    pub fn new(
+    pub fn new_child<'s, W, I, C, Y>(
         depth: usize,
         actor: REActor,
-        auth_zone: Option<AuthZone>,
         owned_heap_nodes: HashMap<RENodeId, HeapRootRENode>,
         node_refs: HashMap<RENodeId, RENodePointer>,
-    ) -> Self {
+        _system_api: &mut Y,
+    ) -> Self
+    where
+        W: WasmEngine<I>,
+        I: WasmInstance,
+        C: FeeReserve,
+        Y: SystemApi<'s, W, I, C>,
+    {
+        let auth_zone = AuthZone::new();
+
         Self {
             depth,
             actor,
@@ -106,12 +117,11 @@ impl CallFrame {
     }
 
     pub fn run<'s, W, I, C, Y>(
-        &mut self,
         execution_entity: ExecutionEntity,
         fn_ident: &str,
         input: ScryptoValue,
         system_api: &mut Y,
-    ) -> Result<(ScryptoValue, HashMap<RENodeId, HeapRootRENode>), RuntimeError>
+    ) -> Result<ScryptoValue, RuntimeError>
     where
         W: WasmEngine<I>,
         I: WasmInstance,
@@ -216,8 +226,6 @@ impl CallFrame {
                         }
                         RENodeId::Worktop => Worktop::main(fn_ident, input, system_api)
                             .map_err(RuntimeError::WorktopError),
-                        RENodeId::AuthZone => AuthZone::main(fn_ident, input, system_api)
-                            .map_err(RuntimeError::AuthZoneError),
                         RENodeId::Vault(vault_id) => {
                             Vault::main(vault_id, fn_ident, input, system_api)
                                 .map_err(RuntimeError::VaultError)
@@ -296,41 +304,17 @@ impl CallFrame {
                             Ok(output)
                         }
                     }
+                    ExecutionState::AuthZone(frame_id) => {
+                        AuthZone::main(frame_id, fn_ident, input, system_api)
+                            .map_err(RuntimeError::AuthZoneError)
+                    }
                 },
             }?;
 
             rtn
         };
 
-        // Take values to return
-        let values_to_take = output.node_ids();
-        let (taken_values, mut missing) = self.take_available_values(values_to_take, false)?;
-        let first_missing_value = missing.drain().nth(0);
-        if let Some(missing_node) = first_missing_value {
-            return Err(RuntimeError::RENodeNotFound(missing_node));
-        }
-
-        // Check we have valid references to pass back
-        for refed_component_address in &output.refed_component_addresses {
-            let node_id = RENodeId::Component(*refed_component_address);
-            if let Some(RENodePointer::Store(..)) = self.node_refs.get(&node_id) {
-                // Only allow passing back global references
-            } else {
-                return Err(RuntimeError::InvokeMethodInvalidReferencePass(node_id));
-            }
-        }
-
-        // drop proofs and check resource leak
-        if self.auth_zone.is_some() {
-            system_api.invoke_method(
-                Receiver::AuthZoneRef,
-                "clear".to_string(),
-                ScryptoValue::from_typed(&AuthZoneClearInput {}),
-            )?;
-        }
-        self.drop_owned_values()?;
-
-        Ok((output, taken_values))
+        Ok(output)
     }
 
     pub fn take_available_values(

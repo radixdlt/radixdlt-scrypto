@@ -29,7 +29,8 @@ fn test_normal_transaction_flow() {
         max_cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,
         min_tip_percentage: 0,
     };
-    let execution_params = ExecutionConfig::default();
+    let mut execution_params = ExecutionConfig::default();
+    execution_params.trace = true;
 
     let raw_transaction = create_transaction();
     let validated_transaction = TransactionValidator::validate_from_slice(

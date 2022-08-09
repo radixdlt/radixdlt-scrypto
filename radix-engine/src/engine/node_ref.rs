@@ -121,18 +121,6 @@ impl NativeSubstateRef {
         }
     }
 
-    pub fn auth_zone(&mut self) -> &mut AuthZone {
-        match self {
-            NativeSubstateRef::Stack(ref mut root, _frame_id, _root_id, maybe_child) => {
-                match root.get_node_mut(maybe_child.as_ref()) {
-                    HeapRENode::AuthZone(auth_zone) => auth_zone,
-                    _ => panic!("Expecting to be a AuthZone"),
-                }
-            }
-            _ => panic!("Expecting to be a AuthZone"),
-        }
-    }
-
     pub fn vault(&mut self) -> &mut Vault {
         match self {
             NativeSubstateRef::Stack(root, _frame_id, _root_id, maybe_child) => {
@@ -326,8 +314,7 @@ impl<'f, 's> RENodeRefMut<'f, 's> {
             | SubstateId::System
             | SubstateId::Bucket(..)
             | SubstateId::Proof(..)
-            | SubstateId::Worktop
-            | SubstateId::AuthZone => {
+            | SubstateId::Worktop => {
                 panic!("Should never have received permissions to read this native type.");
             }
         }
@@ -346,8 +333,7 @@ impl<'f, 's> RENodeRefMut<'f, 's> {
             | SubstateId::System
             | SubstateId::Bucket(..)
             | SubstateId::Proof(..)
-            | SubstateId::Worktop
-            | SubstateId::AuthZone => {
+            | SubstateId::Worktop => {
                 panic!("Should not get here");
             }
             SubstateId::NonFungible(.., id) => self.non_fungible_remove(&id),
@@ -396,9 +382,6 @@ impl<'f, 's> RENodeRefMut<'f, 's> {
                 panic!("Should not get here");
             }
             SubstateId::Worktop => {
-                panic!("Should not get here");
-            }
-            SubstateId::AuthZone => {
                 panic!("Should not get here");
             }
         }

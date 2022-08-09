@@ -29,7 +29,6 @@ pub enum RENodeId {
     Proof(ProofId),
     KeyValueStore(KeyValueStoreId),
     Worktop,
-    AuthZone,
     Component(ComponentAddress),
     Vault(VaultId),
     ResourceManager(ResourceAddress),
@@ -105,7 +104,6 @@ pub enum SubstateId {
     Bucket(BucketId),
     Proof(ProofId),
     Worktop,
-    AuthZone,
 }
 
 impl Into<ComponentAddress> for SubstateId {

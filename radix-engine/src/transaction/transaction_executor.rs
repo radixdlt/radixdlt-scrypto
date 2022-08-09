@@ -157,15 +157,20 @@ where
                 &mut fee_reserve,
                 &fee_table,
             );
-            kernel
-                .invoke_function(
-                    TypeName::TransactionProcessor,
-                    "run".to_string(),
-                    ScryptoValue::from_typed(&TransactionProcessorRunInput {
-                        instructions: instructions.clone(),
-                    }),
-                )
-                .map(|o| scrypto_decode::<Vec<Vec<u8>>>(&o.raw).unwrap())
+            let result = kernel.invoke_function(
+                TypeName::TransactionProcessor,
+                "run".to_string(),
+                ScryptoValue::from_typed(&TransactionProcessorRunInput {
+                    instructions: instructions.clone(),
+                }),
+            );
+            #[cfg(not(feature = "alloc"))]
+            if params.trace {
+                println!("{:-^80}", "Engine Result");
+                println!("{:?}", result);
+            }
+
+            result.map(|o| scrypto_decode::<Vec<Vec<u8>>>(&o.raw).unwrap())
         };
 
         // 4. Settle transaction fee

@@ -10,7 +10,6 @@ impl RENodeProperties {
             RENodeId::Proof(..) => false,
             RENodeId::KeyValueStore(..) => false,
             RENodeId::Worktop => false,
-            RENodeId::AuthZone => false,
             RENodeId::Component(..) => true,
             RENodeId::Vault(..) => false,
             RENodeId::ResourceManager(..) => true,
@@ -50,7 +49,6 @@ impl SubstateProperties {
             SubstateId::Bucket(bucket_id) => RENodeId::Bucket(*bucket_id),
             SubstateId::Proof(proof_id) => RENodeId::Proof(*proof_id),
             SubstateId::Worktop => RENodeId::Worktop,
-            SubstateId::AuthZone => RENodeId::AuthZone,
         }
     }
 
@@ -68,8 +66,7 @@ impl SubstateProperties {
             SubstateId::System => false,
             SubstateId::Bucket(..) => false,
             SubstateId::Proof(..) => false,
-            SubstateId::Worktop => false,  // TODO: Fix
-            SubstateId::AuthZone => false, // TODO: Fix
+            SubstateId::Worktop => false, // TODO: Fix
         }
     }
 }

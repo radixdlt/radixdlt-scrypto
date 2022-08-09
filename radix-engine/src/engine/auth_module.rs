@@ -15,14 +15,15 @@ impl AuthModule {
         method_auths: Vec<MethodAuthorization>,
         call_frames: &mut Vec<CallFrame>,
     ) -> Result<(), RuntimeError> {
-        let auth_zone = call_frames
-            .last()
-            .expect("Current frame always exists")
-            .auth_zone
-            .as_ref();
+        let auth_zone = Some(
+            &call_frames
+                .last()
+                .expect("Current frame always exists")
+                .auth_zone,
+        );
         let caller_auth_zone = call_frames
             .get(call_frames.len() - 2)
-            .and_then(|x| x.auth_zone.as_ref());
+            .and_then(|x| Some(&x.auth_zone));
 
         // Authorization check
         if !method_auths.is_empty() {
