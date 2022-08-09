@@ -1,14 +1,10 @@
 extern crate core;
 
-#[rustfmt::skip]
-pub mod test_runner;
-
-use crate::test_runner::is_auth_error;
-use crate::test_runner::TestRunner;
 use radix_engine::ledger::{InMemorySubstateStore, ReadableSubstateStore, WriteableSubstateStore};
 use scrypto::core::Network;
 use scrypto::prelude::*;
 use scrypto::to_struct;
+use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
 fn test_auth_rule<'s, S: ReadableSubstateStore + WriteableSubstateStore>(

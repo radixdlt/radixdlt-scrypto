@@ -1,6 +1,3 @@
-#[rustfmt::skip]
-pub mod test_runner;
-
 use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::InMemorySubstateStore;
 use radix_engine::model::PackageError;
@@ -10,7 +7,7 @@ use scrypto::abi::*;
 use scrypto::core::Network;
 use scrypto::prelude::*;
 use scrypto::to_struct;
-use test_runner::{wat2wasm, TestRunner};
+use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
 #[test]

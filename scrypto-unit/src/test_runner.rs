@@ -158,6 +158,22 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         receipts.pop().unwrap()
     }
 
+    pub fn execute_manifest_ignoring_fee(
+        &mut self,
+        mut manifest: TransactionManifest,
+        signer_public_keys: Vec<EcdsaPublicKey>,
+    ) -> TransactionReceipt {
+        manifest.instructions.insert(
+            0,
+            transaction::model::Instruction::CallMethod {
+                component_address: SYSTEM_COMPONENT,
+                method_name: "lock_fee".to_string(),
+                arg: to_struct!(dec!("1000")),
+            },
+        );
+        self.execute_manifest(manifest, signer_public_keys)
+    }
+
     pub fn execute_transaction<T: ExecutableTransaction>(
         &mut self,
         transaction: &T,
@@ -455,10 +471,10 @@ macro_rules! assert_invoke_error {
 
 pub fn wat2wasm(wat: &str) -> Vec<u8> {
     wabt::wat2wasm(
-        wat.replace("${memcpy}", include_str!("wasm/snippets/memcpy.wat"))
-            .replace("${memmove}", include_str!("wasm/snippets/memmove.wat"))
-            .replace("${memset}", include_str!("wasm/snippets/memset.wat"))
-            .replace("${buffer}", include_str!("wasm/snippets/buffer.wat")),
+        wat.replace("${memcpy}", include_str!("snippets/memcpy.wat"))
+            .replace("${memmove}", include_str!("snippets/memmove.wat"))
+            .replace("${memset}", include_str!("snippets/memset.wat"))
+            .replace("${buffer}", include_str!("snippets/buffer.wat")),
     )
     .expect("Failed to compiled WAT into WASM")
 }

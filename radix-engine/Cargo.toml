@@ -30,6 +30,7 @@ wasmer-compiler-singlepass = { version = "2.2.1", optional = true }
 [dev-dependencies]
 wabt = { version = "0.10.0" }
 criterion = { version = "0.3", features = ["html_reports"] }
+scrypto-unit = { path = "../scrypto-unit" }
 
 [[bench]]
 name = "radix_engine"
