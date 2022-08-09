@@ -7,6 +7,7 @@ use crate::bytes_vec_to_struct;
 use crate::component::*;
 use crate::core::*;
 use crate::crypto::*;
+use crate::engine::types::RENodeId;
 use crate::engine::{api::*, call_engine};
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -27,17 +28,17 @@ pub struct Runtime {}
 impl Runtime {
     /// Returns the running entity, a component if within a call-method context or a
     /// blueprint if within a call-function context.
-    pub fn actor() -> ScryptoActorInfo {
+    pub fn actor() -> ScryptoActor {
         let input = RadixEngineInput::GetActor();
-        let output: ScryptoActorInfo = call_engine(input);
+        let output: ScryptoActor = call_engine(input);
         output
     }
 
-    /// Returns the package ID.
     pub fn package_address() -> PackageAddress {
-        let input = RadixEngineInput::GetActor();
-        let output: ScryptoActorInfo = call_engine(input);
-        output.to_package_address()
+        match Self::actor() {
+            ScryptoActor::Blueprint(package_address, _)
+            | ScryptoActor::Component(_, package_address, _) => package_address,
+        }
     }
 
     /// Generates a UUID.
@@ -55,11 +56,8 @@ impl Runtime {
         function: S,
         args: Vec<Vec<u8>>,
     ) -> T {
-        let input = RadixEngineInput::InvokeSNode(
-            SNodeRef::Scrypto(ScryptoActor::Blueprint(
-                package_address,
-                blueprint_name.as_ref().to_owned(),
-            )),
+        let input = RadixEngineInput::InvokeFunction(
+            TypeName::Blueprint(package_address, blueprint_name.as_ref().to_owned()),
             function.as_ref().to_string(),
             bytes_vec_to_struct!(args),
         );
@@ -72,8 +70,8 @@ impl Runtime {
         method: S,
         args: Vec<Vec<u8>>,
     ) -> T {
-        let input = RadixEngineInput::InvokeSNode(
-            SNodeRef::Scrypto(ScryptoActor::Component(component_address)),
+        let input = RadixEngineInput::InvokeMethod(
+            Receiver::Component(component_address),
             method.as_ref().to_string(),
             bytes_vec_to_struct!(args),
         );
@@ -82,8 +80,8 @@ impl Runtime {
 
     /// Returns the transaction hash.
     pub fn transaction_hash() -> Hash {
-        let input = RadixEngineInput::InvokeSNode(
-            SNodeRef::SystemRef,
+        let input = RadixEngineInput::InvokeMethod(
+            Receiver::NativeRENodeRef(RENodeId::System),
             "transaction_hash".to_string(),
             scrypto_encode(&SystemGetTransactionHashInput {}),
         );
@@ -92,8 +90,8 @@ impl Runtime {
 
     /// Returns the current epoch number.
     pub fn current_epoch() -> u64 {
-        let input = RadixEngineInput::InvokeSNode(
-            SNodeRef::SystemRef,
+        let input = RadixEngineInput::InvokeMethod(
+            Receiver::NativeRENodeRef(RENodeId::System),
             "get_epoch".to_string(),
             scrypto_encode(&SystemGetCurrentEpochInput {}),
         );

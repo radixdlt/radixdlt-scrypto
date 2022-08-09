@@ -1,12 +1,12 @@
 use radix_engine::constants::{
     DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN,
 };
-use radix_engine::engine::{RuntimeError, SubstateId};
+use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::*;
 use radix_engine::model::{export_abi, export_abi_by_component, extract_package};
 use radix_engine::state_manager::StagedSubstateStoreManager;
 use radix_engine::transaction::{
-    ExecutionParameters, PreviewError, PreviewExecutor, PreviewResult, TransactionExecutor,
+    ExecutionConfig, PreviewError, PreviewExecutor, PreviewResult, TransactionExecutor,
     TransactionReceipt,
 };
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter};
@@ -14,7 +14,7 @@ use sbor::describe::Fields;
 use sbor::Type;
 use scrypto::abi::{BlueprintAbi, Fn};
 use scrypto::core::Network;
-use scrypto::engine::types::{KeyValueStoreId, VaultId};
+use scrypto::engine::types::{KeyValueStoreId, SubstateId, VaultId};
 use scrypto::prelude::*;
 use scrypto::prelude::{HashMap, Package};
 use scrypto::{abi, to_struct};
@@ -76,7 +76,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     ) -> Option<radix_engine::model::Component> {
         self.execution_stores
             .get_output_store(0)
-            .get_substate(&SubstateId::ComponentInfo(component_address, true))
+            .get_substate(&SubstateId::ComponentInfo(component_address))
             .map(|output| output.substate.into())
     }
 
@@ -161,7 +161,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     pub fn execute_transaction<T: ExecutableTransaction>(
         &mut self,
         transaction: &T,
-        params: &ExecutionParameters,
+        params: &ExecutionConfig,
     ) -> TransactionReceipt {
         let node_id = self.create_child_node(0);
         let substate_store = &mut self.execution_stores.get_output_store(node_id);
@@ -222,7 +222,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             )
             .execute_and_commit(
                 &transaction,
-                &ExecutionParameters {
+                &ExecutionConfig {
                     cost_unit_price: DEFAULT_COST_UNIT_PRICE.parse().unwrap(),
                     max_call_depth: DEFAULT_MAX_CALL_DEPTH,
                     system_loan: DEFAULT_SYSTEM_LOAN,

@@ -75,7 +75,7 @@ fn soft_to_hard_resource_list(
             }
 
             match sbor_path.unwrap().get_from_value(dom) {
-                Some(Value::Vec {
+                Some(Value::List {
                     element_type_id,
                     elements,
                 }) => match ScryptoType::from_id(*element_type_id).unwrap() {

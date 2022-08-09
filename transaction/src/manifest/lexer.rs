@@ -38,18 +38,25 @@ pub enum TokenKind {
     U64,
     U128,
     String,
+
     Struct,
     Enum,
     Option,
-    Box,
+    Result,
+
+    /* Variant */
+    Some,
+    None,
+    Ok,
+    Err,
+
     Array,
     Tuple,
-    Result,
-    Vec,
-    TreeSet,
-    TreeMap,
-    HashSet,
-    HashMap,
+
+    List,
+    Set,
+    Map,
+
     Decimal,
     PackageAddress,
     ComponentAddress,
@@ -59,12 +66,6 @@ pub enum TokenKind {
     Proof,
     NonFungibleId,
     NonFungibleAddress,
-
-    /* Sub-types */
-    Some,
-    None,
-    Ok,
-    Err,
 
     /* Punctuations */
     OpenParenthesis,
@@ -94,6 +95,7 @@ pub enum TokenKind {
     CreateProofFromBucket,
     CloneProof,
     DropProof,
+    DropAllProofs,
     CallFunction,
     CallMethod,
     CallMethodWithAllResources,
@@ -371,15 +373,13 @@ impl Lexer {
             "Struct" => Ok(TokenKind::Struct),
             "Enum" => Ok(TokenKind::Enum),
             "Option" => Ok(TokenKind::Option),
-            "Box" => Ok(TokenKind::Box),
             "Array" => Ok(TokenKind::Array),
             "Tuple" => Ok(TokenKind::Tuple),
             "Result" => Ok(TokenKind::Result),
-            "Vec" => Ok(TokenKind::Vec),
-            "TreeSet" => Ok(TokenKind::TreeSet),
-            "TreeMap" => Ok(TokenKind::TreeMap),
-            "HashSet" => Ok(TokenKind::HashSet),
-            "HashMap" => Ok(TokenKind::HashMap),
+            "Vec" => Ok(TokenKind::List), // alias
+            "List" => Ok(TokenKind::List),
+            "Set" => Ok(TokenKind::Set),
+            "Map" => Ok(TokenKind::Map),
             "Decimal" => Ok(TokenKind::Decimal),
             "PackageAddress" => Ok(TokenKind::PackageAddress),
             "ComponentAddress" => Ok(TokenKind::ComponentAddress),
@@ -415,6 +415,7 @@ impl Lexer {
             "CREATE_PROOF_FROM_BUCKET" => Ok(TokenKind::CreateProofFromBucket),
             "CLONE_PROOF" => Ok(TokenKind::CloneProof),
             "DROP_PROOF" => Ok(TokenKind::DropProof),
+            "DROP_ALL_PROOFS" => Ok(TokenKind::DropAllProofs),
             "CALL_FUNCTION" => Ok(TokenKind::CallFunction),
             "CALL_METHOD" => Ok(TokenKind::CallMethod),
             "CALL_METHOD_WITH_ALL_RESOURCES" => Ok(TokenKind::CallMethodWithAllResources),
@@ -571,10 +572,10 @@ mod tests {
     #[test]
     fn test_mixed() {
         lex_ok!(
-            r#"CALL_FUNCTION HashMap<String, Array>("test", Array<String>("abc"));"#,
+            r#"CALL_FUNCTION Map<String, Array>("test", Array<String>("abc"));"#,
             vec![
                 TokenKind::CallFunction,
-                TokenKind::HashMap,
+                TokenKind::Map,
                 TokenKind::LessThan,
                 TokenKind::String,
                 TokenKind::Comma,

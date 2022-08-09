@@ -9,7 +9,7 @@ use crate::address::{AddressError, BECH32_DECODER, BECH32_ENCODER};
 use crate::buffer::scrypto_encode;
 use crate::component::*;
 use crate::core::*;
-use crate::engine::types::RENodeId;
+use crate::engine::types::{RENodeId, SubstateId};
 use crate::engine::{api::*, call_engine};
 use crate::misc::*;
 use crate::resource::AccessRules;
@@ -18,9 +18,6 @@ use crate::resource::AccessRules;
 pub struct ComponentAddAccessCheckInput {
     pub access_rules: AccessRules,
 }
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct ComponentGlobalizeInput {}
 
 /// Represents the state of a component.
 pub trait ComponentState<C: LocalComponent>: Encode + Decode {
@@ -47,23 +44,23 @@ impl Component {
 
     /// Returns the package ID of this component.
     pub fn package_address(&self) -> PackageAddress {
-        let address = DataAddress::ComponentInfo(self.0, true);
-        let input = RadixEngineInput::ReadData(address);
+        let substate_id = SubstateId::ComponentInfo(self.0);
+        let input = RadixEngineInput::SubstateRead(substate_id);
         let output: (PackageAddress, String) = call_engine(input);
         output.0
     }
 
     /// Returns the blueprint name of this component.
     pub fn blueprint_name(&self) -> String {
-        let address = DataAddress::ComponentInfo(self.0, true);
-        let input = RadixEngineInput::ReadData(address);
+        let substate_id = SubstateId::ComponentInfo(self.0);
+        let input = RadixEngineInput::SubstateRead(substate_id);
         let output: (PackageAddress, String) = call_engine(input);
         output.1
     }
 
     pub fn add_access_check(&mut self, access_rules: AccessRules) -> &mut Self {
-        let input = RadixEngineInput::InvokeSNode(
-            SNodeRef::Component(self.0),
+        let input = RadixEngineInput::InvokeMethod(
+            Receiver::NativeRENodeRef(RENodeId::Component(self.0)),
             "add_access_check".to_string(),
             scrypto_encode(&ComponentAddAccessCheckInput { access_rules }),
         );
@@ -73,11 +70,7 @@ impl Component {
     }
 
     pub fn globalize(self) -> ComponentAddress {
-        let input = RadixEngineInput::InvokeSNode(
-            SNodeRef::Consumed(RENodeId::Component(self.0)),
-            "globalize".to_string(),
-            scrypto_encode(&ComponentGlobalizeInput {}),
-        );
+        let input = RadixEngineInput::RENodeGlobalize(RENodeId::Component(self.0));
         let _: () = call_engine(input);
         self.0.clone()
     }

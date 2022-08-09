@@ -3,8 +3,8 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::buffer::scrypto_encode;
 use scrypto::crypto::hash;
+use scrypto::engine::types::SubstateId;
 
-use crate::engine::SubstateId;
 use crate::ledger::*;
 use crate::state_manager::CommitReceipt;
 

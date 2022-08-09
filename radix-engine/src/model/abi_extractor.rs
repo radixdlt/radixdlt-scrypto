@@ -31,7 +31,7 @@ pub fn export_abi_by_component<S: ReadableSubstateStore>(
     component_address: ComponentAddress,
 ) -> Result<abi::BlueprintAbi, RuntimeError> {
     let component_value: Substate = substate_store
-        .get_substate(&SubstateId::ComponentInfo(component_address, true))
+        .get_substate(&SubstateId::ComponentInfo(component_address))
         .map(|s| s.substate)
         .ok_or(RuntimeError::ComponentNotFound(component_address))?;
     let component = component_value.component();

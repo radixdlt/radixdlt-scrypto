@@ -1,4 +1,4 @@
-use scrypto::engine::{api::*, call_engine};
+use scrypto::engine::{api::*, call_engine, types::*};
 use scrypto::prelude::*;
 
 blueprint! {
@@ -10,8 +10,8 @@ blueprint! {
         }
 
         pub fn set_epoch(epoch: u64) {
-            let input = RadixEngineInput::InvokeSNode(
-                SNodeRef::SystemRef,
+            let input = RadixEngineInput::InvokeMethod(
+                Receiver::NativeRENodeRef(RENodeId::System),
                 "set_epoch".to_string(),
                 scrypto_encode(&SystemSetEpochInput { epoch }),
             );

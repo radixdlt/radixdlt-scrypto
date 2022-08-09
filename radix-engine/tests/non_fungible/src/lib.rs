@@ -202,7 +202,8 @@ blueprint! {
 
             // read singleton proof
             let proof = vault.create_proof();
-            let _: Sandwich = proof.non_fungible().data();
+            let validated_proof = proof.validate_proof(vault.resource_address()).unwrap();
+            let _: Sandwich = validated_proof.non_fungible().data();
 
             // clean up
             vault.put(bucket);

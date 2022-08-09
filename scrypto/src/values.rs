@@ -34,7 +34,8 @@ pub struct ScryptoValue {
     pub proof_ids: HashMap<ProofId, SborPath>,
     pub vault_ids: HashSet<VaultId>,
     pub kv_store_ids: HashSet<KeyValueStoreId>,
-    pub component_addresses: HashSet<ComponentAddress>,
+    pub owned_component_addresses: HashSet<ComponentAddress>,
+    pub refed_component_addresses: HashSet<ComponentAddress>,
     pub resource_addresses: HashSet<ResourceAddress>,
 }
 
@@ -73,12 +74,9 @@ impl ScryptoValue {
                 .collect(),
             vault_ids: checker.vaults.iter().map(|e| e.0).collect(),
             kv_store_ids: checker.kv_stores,
-            component_addresses: checker.components.iter().map(|e| e.0).collect(),
-            resource_addresses: checker
-                .resource_addresses
-                .iter()
-                .map(|e| e.clone())
-                .collect(),
+            owned_component_addresses: checker.components.iter().map(|e| e.0).collect(),
+            refed_component_addresses: checker.ref_components,
+            resource_addresses: checker.resource_addresses,
         })
     }
 
@@ -94,7 +92,8 @@ impl ScryptoValue {
             proof_ids: HashMap::new(),
             vault_ids: HashSet::new(),
             kv_store_ids: HashSet::new(),
-            component_addresses: HashSet::new(),
+            owned_component_addresses: HashSet::new(),
+            refed_component_addresses: HashSet::new(),
             resource_addresses: HashSet::new(),
         })
     }
@@ -107,7 +106,7 @@ impl ScryptoValue {
         for kv_store_id in &self.kv_store_ids {
             node_ids.insert(RENodeId::KeyValueStore(*kv_store_id));
         }
-        for component_address in &self.component_addresses {
+        for component_address in &self.owned_component_addresses {
             node_ids.insert(RENodeId::Component(*component_address));
         }
         for (bucket_id, _) in &self.bucket_ids {
@@ -127,7 +126,7 @@ impl ScryptoValue {
         for kv_store_id in &self.kv_store_ids {
             node_ids.insert(RENodeId::KeyValueStore(*kv_store_id));
         }
-        for component_address in &self.component_addresses {
+        for component_address in &self.owned_component_addresses {
             node_ids.insert(RENodeId::Component(*component_address));
         }
         node_ids
@@ -187,7 +186,7 @@ impl ScryptoValue {
         self.bucket_ids.len()
             + self.proof_ids.len()
             + self.vault_ids.len()
-            + self.component_addresses.len()
+            + self.owned_component_addresses.len()
     }
 
     pub fn to_string(&self) -> String {
@@ -246,6 +245,7 @@ pub struct ScryptoCustomValueChecker {
     pub vaults: HashSet<Vault>,
     pub kv_stores: HashSet<KeyValueStoreId>,
     pub components: HashSet<Component>,
+    pub ref_components: HashSet<ComponentAddress>,
     pub resource_addresses: HashSet<ResourceAddress>,
 }
 
@@ -254,6 +254,23 @@ pub struct ScryptoCustomValueChecker {
 pub enum ScryptoCustomValueCheckError {
     UnknownTypeId(u8),
     InvalidDecimal(ParseDecimalError),
+    InvalidPreciseDecimal(ParsePreciseDecimalError),
+    InvalidU8(ParseU8Error),
+    InvalidU16(ParseU16Error),
+    InvalidU32(ParseU32Error),
+    InvalidU64(ParseU64Error),
+    InvalidU128(ParseU128Error),
+    InvalidU256(ParseU256Error),
+    InvalidU384(ParseU384Error),
+    InvalidU512(ParseU512Error),
+    InvalidI8(ParseI8Error),
+    InvalidI16(ParseI16Error),
+    InvalidI32(ParseI32Error),
+    InvalidI64(ParseI64Error),
+    InvalidI128(ParseI128Error),
+    InvalidI256(ParseI256Error),
+    InvalidI384(ParseI384Error),
+    InvalidI512(ParseI512Error),
     InvalidPackageAddress(AddressError),
     InvalidComponentAddress(AddressError),
     InvalidResourceAddress(AddressError),
@@ -279,6 +296,7 @@ impl ScryptoCustomValueChecker {
             vaults: HashSet::new(),
             kv_stores: HashSet::new(),
             components: HashSet::new(),
+            ref_components: HashSet::new(),
             resource_addresses: HashSet::new(),
         }
     }
@@ -299,8 +317,9 @@ impl CustomValueVisitor for ScryptoCustomValueChecker {
                     .map_err(ScryptoCustomValueCheckError::InvalidPackageAddress)?;
             }
             ScryptoType::ComponentAddress => {
-                ComponentAddress::try_from(data)
+                let component_address = ComponentAddress::try_from(data)
                     .map_err(ScryptoCustomValueCheckError::InvalidComponentAddress)?;
+                self.ref_components.insert(component_address);
             }
             ScryptoType::Component => {
                 let component = Component::try_from(data)
@@ -345,8 +364,60 @@ impl CustomValueVisitor for ScryptoCustomValueChecker {
                 Ed25519Signature::try_from(data)
                     .map_err(ScryptoCustomValueCheckError::InvalidEd25519Signature)?;
             }
+            ScryptoType::U8 => {
+                U8::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidU8)?;
+            }
+            ScryptoType::U16 => {
+                U16::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidU16)?;
+            }
+            ScryptoType::U32 => {
+                U32::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidU32)?;
+            }
+            ScryptoType::U64 => {
+                U64::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidU64)?;
+            }
+            ScryptoType::U128 => {
+                U128::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidU128)?;
+            }
+            ScryptoType::U256 => {
+                U256::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidU256)?;
+            }
+            ScryptoType::U384 => {
+                U384::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidU384)?;
+            }
+            ScryptoType::U512 => {
+                U512::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidU512)?;
+            }
+            ScryptoType::I8 => {
+                I8::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidI8)?;
+            }
+            ScryptoType::I16 => {
+                I16::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidI16)?;
+            }
+            ScryptoType::I32 => {
+                I32::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidI32)?;
+            }
+            ScryptoType::I64 => {
+                I64::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidI64)?;
+            }
+            ScryptoType::I128 => {
+                I128::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidI128)?;
+            }
+            ScryptoType::I256 => {
+                I256::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidI256)?;
+            }
+            ScryptoType::I384 => {
+                I384::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidI384)?;
+            }
+            ScryptoType::I512 => {
+                I512::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidI512)?;
+            }
             ScryptoType::Decimal => {
                 Decimal::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidDecimal)?;
+            }
+            ScryptoType::PreciseDecimal => {
+                PreciseDecimal::try_from(data)
+                    .map_err(ScryptoCustomValueCheckError::InvalidPreciseDecimal)?;
             }
             ScryptoType::Bucket => {
                 let bucket =
@@ -448,7 +519,7 @@ impl ScryptoValueFormatter {
                 Err(x) => format!("Err({})", Self::format_value(x, bucket_ids, proof_ids)),
             },
             // collections
-            Value::Vec {
+            Value::List {
                 element_type_id,
                 elements,
             } => {
@@ -469,38 +540,20 @@ impl ScryptoValueFormatter {
                     )
                 }
             }
-            Value::TreeSet {
+            Value::Set {
                 element_type_id,
                 elements,
             } => format!(
-                "TreeSet<{}>({})",
+                "Set<{}>({})",
                 Self::format_type_id(*element_type_id),
                 Self::format_elements(elements, bucket_ids, proof_ids)
             ),
-            Value::HashSet {
-                element_type_id,
-                elements,
-            } => format!(
-                "HashSet<{}>({})",
-                Self::format_type_id(*element_type_id),
-                Self::format_elements(elements, bucket_ids, proof_ids)
-            ),
-            Value::TreeMap {
+            Value::Map {
                 key_type_id,
                 value_type_id,
                 elements,
             } => format!(
-                "TreeMap<{}, {}>({})",
-                Self::format_type_id(*key_type_id),
-                Self::format_type_id(*value_type_id),
-                Self::format_elements(elements, bucket_ids, proof_ids)
-            ),
-            Value::HashMap {
-                key_type_id,
-                value_type_id,
-                elements,
-            } => format!(
-                "HashMap<{}, {}>({})",
+                "Map<{}, {}>({})",
                 Self::format_type_id(*key_type_id),
                 Self::format_type_id(*value_type_id),
                 Self::format_elements(elements, bucket_ids, proof_ids)
@@ -536,15 +589,14 @@ impl ScryptoValueFormatter {
             TYPE_STRUCT => "Struct",
             TYPE_ENUM => "Enum",
             TYPE_OPTION => "Option",
+            TYPE_RESULT => "Result",
+            // composite
             TYPE_ARRAY => "Array",
             TYPE_TUPLE => "Tuple",
-            TYPE_RESULT => "Result",
             // collections
-            TYPE_VEC => "Vec",
-            TYPE_TREE_SET => "TreeSet",
-            TYPE_TREE_MAP => "TreeMap",
-            TYPE_HASH_SET => "HashSet",
-            TYPE_HASH_MAP => "HashMap",
+            TYPE_LIST => "List",
+            TYPE_SET => "Set",
+            TYPE_MAP => "Map",
             //
             _ => panic!("Illegal state"),
         }
@@ -572,7 +624,29 @@ impl ScryptoValueFormatter {
         proof_ids: &HashMap<ProofId, String>,
     ) -> String {
         match ScryptoType::from_id(type_id).unwrap() {
+            ScryptoType::U8 => format!("U8(\"{}\")", U8::try_from(data).unwrap()),
+            ScryptoType::U16 => format!("U16(\"{}\")", U16::try_from(data).unwrap()),
+            ScryptoType::U32 => format!("U32(\"{}\")", U32::try_from(data).unwrap()),
+            ScryptoType::U64 => format!("U64(\"{}\")", U64::try_from(data).unwrap()),
+            ScryptoType::U128 => format!("U128(\"{}\")", U128::try_from(data).unwrap()),
+            ScryptoType::U256 => format!("U256(\"{}\")", U256::try_from(data).unwrap()),
+            ScryptoType::U384 => format!("U384(\"{}\")", U384::try_from(data).unwrap()),
+            ScryptoType::U512 => format!("U512(\"{}\")", U512::try_from(data).unwrap()),
+            ScryptoType::I8 => format!("I8(\"{}\")", I8::try_from(data).unwrap()),
+            ScryptoType::I16 => format!("I16(\"{}\")", I16::try_from(data).unwrap()),
+            ScryptoType::I32 => format!("I32(\"{}\")", I32::try_from(data).unwrap()),
+            ScryptoType::I64 => format!("I64(\"{}\")", I64::try_from(data).unwrap()),
+            ScryptoType::I128 => format!("I128(\"{}\")", I128::try_from(data).unwrap()),
+            ScryptoType::I256 => format!("I256(\"{}\")", I256::try_from(data).unwrap()),
+            ScryptoType::I384 => format!("I384(\"{}\")", I384::try_from(data).unwrap()),
+            ScryptoType::I512 => format!("I512(\"{}\")", I512::try_from(data).unwrap()),
             ScryptoType::Decimal => format!("Decimal(\"{}\")", Decimal::try_from(data).unwrap()),
+            ScryptoType::PreciseDecimal => {
+                format!(
+                    "PreciseDecimal(\"{}\")",
+                    PreciseDecimal::try_from(data).unwrap()
+                )
+            }
             ScryptoType::PackageAddress => {
                 format!(
                     "PackageAddress(\"{}\")",

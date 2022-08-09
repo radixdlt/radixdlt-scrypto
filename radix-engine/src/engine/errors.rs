@@ -1,3 +1,4 @@
+use crate::engine::REActor;
 use sbor::rust::boxed::Box;
 use sbor::rust::fmt;
 use sbor::rust::string::String;
@@ -5,7 +6,7 @@ use sbor::{DecodeError, Value};
 use scrypto::engine::types::*;
 use transaction::errors::*;
 
-use crate::fee::CostUnitCounterError;
+use crate::fee::FeeReserveError;
 use crate::model::*;
 use crate::wasm::InvokeError;
 
@@ -29,7 +30,6 @@ pub enum RuntimeError {
     MethodDoesNotExist(String),
     InvalidFnInput {
         fn_ident: String,
-        input: Value,
     },
     InvalidFnOutput {
         fn_ident: String,
@@ -47,6 +47,7 @@ pub enum RuntimeError {
     /// Blueprint does not exist.
     BlueprintNotFound(PackageAddress, String),
 
+    Reentrancy(SubstateId),
     ComponentReentrancy(ComponentAddress),
     PackageReentrancy,
 
@@ -58,8 +59,9 @@ pub enum RuntimeError {
     /// Resource manager does not exist.
     ResourceManagerNotFound(ResourceAddress),
 
-    InvalidDataAccess(RENodeId),
-    InvalidDataWrite,
+    SubstateReadNotReadable(REActor, SubstateId),
+    SubstateWriteNotWriteable(REActor, SubstateId),
+    SubstateReadSubstateNotFound(SubstateId),
     RENodeNotFound(RENodeId),
 
     MovingInvalidType,
@@ -121,9 +123,17 @@ pub enum RuntimeError {
     /// Can't move restricted proof.
     CantMoveRestrictedProof,
 
+    RENodeGlobalizeTypeNotAllowed(RENodeId),
+    RENodeCreateInvalidPermission,
+    RENodeCreateNodeNotFound(RENodeId),
+
+    InvokeMethodInvalidReceiver(RENodeId),
+    InvokeMethodInvalidReferencePass(RENodeId),
+    InvokeMethodInvalidReferenceReturn(RENodeId),
+
     NotSupported,
 
-    CostingError(CostUnitCounterError),
+    CostingError(FeeReserveError),
 
     MaxCallDepthLimitReached,
 

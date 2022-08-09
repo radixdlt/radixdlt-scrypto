@@ -2,9 +2,10 @@ use clap::Parser;
 use radix_engine::constants::*;
 use radix_engine::engine::Track;
 use radix_engine::engine::{CallFrame, SystemApi};
-use radix_engine::fee::{FeeTable, SystemLoanCostUnitCounter};
-use scrypto::core::{SNodeRef, SystemSetEpochInput};
+use radix_engine::fee::{FeeTable, SystemLoanFeeReserve};
+use scrypto::core::{Receiver, SystemSetEpochInput};
 use scrypto::crypto::hash;
+use scrypto::engine::types::RENodeId;
 use scrypto::values::ScryptoValue;
 use transaction::validation::{IdAllocator, IdSpace};
 
@@ -27,7 +28,7 @@ impl SetCurrentEpoch {
         let mut wasm_instrumenter = WasmInstrumenter::new();
         let mut id_allocator = IdAllocator::new(IdSpace::Application);
         let mut track = Track::new(&substate_store);
-        let mut cost_unit_counter = SystemLoanCostUnitCounter::default();
+        let mut fee_reserve = SystemLoanFeeReserve::default();
         let fee_table = FeeTable::new();
 
         // Create root call frame.
@@ -41,14 +42,14 @@ impl SetCurrentEpoch {
             &mut track,
             &mut wasm_engine,
             &mut wasm_instrumenter,
-            &mut cost_unit_counter,
+            &mut fee_reserve,
             &fee_table,
         );
 
         // Invoke the system
         root_frame
-            .invoke_snode(
-                SNodeRef::SystemRef,
+            .invoke_method(
+                Receiver::NativeRENodeRef(RENodeId::System),
                 "set_epoch".to_string(),
                 ScryptoValue::from_typed(&SystemSetEpochInput { epoch: self.epoch }),
             )

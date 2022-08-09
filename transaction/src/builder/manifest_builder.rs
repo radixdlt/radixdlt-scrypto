@@ -97,12 +97,15 @@ impl ManifestBuilder {
             Instruction::DropProof { proof_id } => {
                 self.id_validator.drop_proof(proof_id).unwrap();
             }
+            Instruction::DropAllProofs => {
+                self.id_validator.drop_all_proofs().unwrap();
+            }
             Instruction::CallFunction { arg, .. } | Instruction::CallMethod { arg, .. } => {
                 let scrypt_value = ScryptoValue::from_slice(&arg).unwrap();
                 self.id_validator.move_resources(&scrypt_value).unwrap();
             }
             Instruction::CallMethodWithAllResources { .. } => {
-                self.id_validator.move_all_resources().unwrap();
+                self.id_validator.move_all_buckets().unwrap();
             }
             Instruction::PublishPackage { .. } => {}
         }
@@ -286,6 +289,11 @@ impl ManifestBuilder {
     /// Drops a proof.
     pub fn drop_proof(&mut self, proof_id: ProofId) -> &mut Self {
         self.add_instruction(Instruction::DropProof { proof_id }).0
+    }
+
+    /// Drops all proofs.
+    pub fn drop_all_proofs(&mut self) -> &mut Self {
+        self.add_instruction(Instruction::DropAllProofs).0
     }
 
     /// Calls a function where the arguments should be an array of encoded Scrypto value.
@@ -720,6 +728,25 @@ impl ManifestBuilder {
             arg: to_struct!(ids.clone(), resource_address),
         })
         .0
+    }
+
+    /// Creates resource proof from an account.
+    pub fn create_proof_from_account_by_resource_specifier(
+        &mut self,
+        resource_specifier: String,
+        account: ComponentAddress,
+    ) -> Result<&mut Self, BuildArgsError> {
+        let resource_specifier = parse_resource_specifier(&resource_specifier, &self.decoder)
+            .map_err(|_| BuildArgsError::InvalidResourceSpecifier(resource_specifier))?;
+        let builder = match resource_specifier {
+            ResourceSpecifier::Amount(amount, resource_address) => {
+                self.create_proof_from_account_by_amount(amount, resource_address, account)
+            }
+            ResourceSpecifier::Ids(non_fungible_ids, resource_address) => {
+                self.create_proof_from_account_by_ids(&non_fungible_ids, resource_address, account)
+            }
+        };
+        Ok(builder)
     }
 
     //===============================

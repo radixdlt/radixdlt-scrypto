@@ -285,6 +285,12 @@ pub fn generate_instruction(
                 .map_err(GeneratorError::IdValidationError)?;
             Instruction::DropProof { proof_id }
         }
+        ast::Instruction::DropAllProofs => {
+            id_validator
+                .drop_all_proofs()
+                .map_err(GeneratorError::IdValidationError)?;
+            Instruction::DropAllProofs
+        }
         ast::Instruction::CallFunction {
             package_address,
             blueprint_name,
@@ -334,7 +340,7 @@ pub fn generate_instruction(
             method,
         } => {
             id_validator
-                .move_all_resources()
+                .move_all_buckets()
                 .map_err(GeneratorError::IdValidationError)?;
             Instruction::CallMethodWithAllResources {
                 component_address: generate_component_address(component_address, bech32_decoder)?,
@@ -381,7 +387,7 @@ fn generate_string(value: &ast::Value) -> Result<String, GeneratorError> {
 fn generate_bytes(value: &ast::Value) -> Result<Vec<u8>, GeneratorError> {
     match value {
         ast::Value::Bytes(bytes) => Ok(bytes.clone()),
-        ast::Value::Vec(ty, values) => {
+        ast::Value::List(ty, values) => {
             if ty == &ast::Type::U8 {
                 let mut result = Vec::new();
                 for v in values {
@@ -405,7 +411,7 @@ fn generate_bytes(value: &ast::Value) -> Result<Vec<u8>, GeneratorError> {
                 })
             }
         }
-        v @ _ => invalid_type!(v, ast::Type::Vec, ast::Type::Bytes),
+        v @ _ => invalid_type!(v, ast::Type::List, ast::Type::Bytes),
     }
 }
 
@@ -568,7 +574,7 @@ fn generate_non_fungible_ids(
     value: &ast::Value,
 ) -> Result<BTreeSet<NonFungibleId>, GeneratorError> {
     match value {
-        ast::Value::TreeSet(kind, values) => {
+        ast::Value::Set(kind, values) => {
             if kind != &ast::Type::NonFungibleId {
                 return Err(GeneratorError::InvalidType {
                     expected_type: ast::Type::String,
@@ -578,7 +584,7 @@ fn generate_non_fungible_ids(
 
             values.iter().map(|v| generate_non_fungible_id(v)).collect()
         }
-        v @ _ => invalid_type!(v, ast::Type::TreeSet),
+        v @ _ => invalid_type!(v, ast::Type::Set),
     }
 }
 
@@ -641,24 +647,15 @@ fn generate_value(
                 value: Err(generate_value(inner, None, resolver, bech32_decoder)?).into(),
             }),
         },
-        ast::Value::Vec(element_type, elements) => Ok(Value::Vec {
+        ast::Value::List(element_type, elements) => Ok(Value::List {
             element_type_id: generate_type_id(element_type),
             elements: generate_singletons(elements, Some(*element_type), resolver, bech32_decoder)?,
         }),
-        ast::Value::TreeSet(element_type, elements) => Ok(Value::TreeSet {
+        ast::Value::Set(element_type, elements) => Ok(Value::Set {
             element_type_id: generate_type_id(element_type),
             elements: generate_singletons(elements, Some(*element_type), resolver, bech32_decoder)?,
         }),
-        ast::Value::TreeMap(key_type, value_type, elements) => Ok(Value::TreeMap {
-            key_type_id: generate_type_id(key_type),
-            value_type_id: generate_type_id(value_type),
-            elements: generate_pairs(elements, *key_type, *value_type, resolver, bech32_decoder)?,
-        }),
-        ast::Value::HashSet(element_type, elements) => Ok(Value::HashSet {
-            element_type_id: generate_type_id(element_type),
-            elements: generate_singletons(elements, Some(*element_type), resolver, bech32_decoder)?,
-        }),
-        ast::Value::HashMap(key_type, value_type, elements) => Ok(Value::HashMap {
+        ast::Value::Map(key_type, value_type, elements) => Ok(Value::Map {
             key_type_id: generate_type_id(key_type),
             value_type_id: generate_type_id(value_type),
             elements: generate_pairs(elements, *key_type, *value_type, resolver, bech32_decoder)?,
@@ -713,7 +710,7 @@ fn generate_value(
                 for b in bytes {
                     elements.push(Value::U8 { value: *b });
                 }
-                Ok(Value::Vec {
+                Ok(Value::List {
                     element_type_id: TYPE_U8,
                     elements,
                 })
@@ -785,11 +782,9 @@ fn generate_type_id(ty: &ast::Type) -> u8 {
         ast::Type::Array => TYPE_ARRAY,
         ast::Type::Tuple => TYPE_TUPLE,
         ast::Type::Result => TYPE_RESULT,
-        ast::Type::Vec => TYPE_VEC,
-        ast::Type::TreeSet => TYPE_TREE_SET,
-        ast::Type::TreeMap => TYPE_TREE_MAP,
-        ast::Type::HashSet => TYPE_HASH_SET,
-        ast::Type::HashMap => TYPE_HASH_MAP,
+        ast::Type::List => TYPE_LIST,
+        ast::Type::Set => TYPE_SET,
+        ast::Type::Map => TYPE_MAP,
         ast::Type::Decimal => ScryptoType::Decimal.id(),
         ast::Type::PackageAddress => ScryptoType::PackageAddress.id(),
         ast::Type::ComponentAddress => ScryptoType::ComponentAddress.id(),
@@ -799,7 +794,7 @@ fn generate_type_id(ty: &ast::Type) -> u8 {
         ast::Type::Proof => ScryptoType::Proof.id(),
         ast::Type::NonFungibleId => ScryptoType::NonFungibleId.id(),
         ast::Type::NonFungibleAddress => ScryptoType::NonFungibleAddress.id(),
-        ast::Type::Bytes => TYPE_VEC,
+        ast::Type::Bytes => TYPE_LIST,
     }
 }
 
@@ -960,16 +955,16 @@ mod tests {
             }
         );
         generate_value_ok!(
-            r#"HashMap<HashSet, Vec>(HashSet<U8>(1u8), Vec<U8>(2u8))"#,
-            Value::HashMap {
-                key_type_id: TYPE_HASH_SET,
-                value_type_id: TYPE_VEC,
+            r#"Map<Set, List>(Set<U8>(1u8), List<U8>(2u8))"#,
+            Value::Map {
+                key_type_id: TYPE_SET,
+                value_type_id: TYPE_LIST,
                 elements: vec![
-                    Value::HashSet {
+                    Value::Set {
                         element_type_id: TYPE_U8,
                         elements: vec![Value::U8 { value: 1 }]
                     },
-                    Value::Vec {
+                    Value::List {
                         element_type_id: TYPE_U8,
                         elements: vec![Value::U8 { value: 2 }]
                     },
@@ -977,16 +972,16 @@ mod tests {
             }
         );
         generate_value_ok!(
-            r#"TreeMap<TreeSet, Vec>(TreeSet<U8>(1u8), Vec<U8>(2u8))"#,
-            Value::TreeMap {
-                key_type_id: TYPE_TREE_SET,
-                value_type_id: TYPE_VEC,
+            r#"Map<Set, List>(Set<U8>(1u8), List<U8>(2u8))"#,
+            Value::Map {
+                key_type_id: TYPE_SET,
+                value_type_id: TYPE_LIST,
                 elements: vec![
-                    Value::TreeSet {
+                    Value::Set {
                         element_type_id: TYPE_U8,
                         elements: vec![Value::U8 { value: 1 }]
                     },
-                    Value::Vec {
+                    Value::List {
                         element_type_id: TYPE_U8,
                         elements: vec![Value::U8 { value: 2 }]
                     }
@@ -1013,7 +1008,7 @@ mod tests {
             GeneratorError::InvalidDecimal("invalid_decimal".into())
         );
         generate_value_error!(
-            r#"HashMap<String, String>("abc")"#,
+            r#"Map<String, String>("abc")"#,
             GeneratorError::OddNumberOfElements(1)
         );
     }
@@ -1050,7 +1045,7 @@ mod tests {
             }
         );
         generate_instruction_ok!(
-            r#"CALL_FUNCTION  PackageAddress("package_sim1q8gl2qqsusgzmz92es68wy2fr7zjc523xj57eanm597qrz3dx7")  "Airdrop"  "new"  500u32  HashMap<String, U8>("key", 1u8);"#,
+            r#"CALL_FUNCTION  PackageAddress("package_sim1q8gl2qqsusgzmz92es68wy2fr7zjc523xj57eanm597qrz3dx7")  "Airdrop"  "new"  500u32  Map<String, U8>("key", 1u8);"#,
             Instruction::CallFunction {
                 package_address: PackageAddress::from_str(
                     "package_sim1q8gl2qqsusgzmz92es68wy2fr7zjc523xj57eanm597qrz3dx7".into()
@@ -1200,6 +1195,7 @@ mod tests {
                     .unwrap(),
                     method: "deposit_batch".into(),
                 },
+                Instruction::DropAllProofs,
                 Instruction::PublishPackage {
                     package: encoded_package.clone()
                 },

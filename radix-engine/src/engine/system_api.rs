@@ -1,7 +1,8 @@
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
-use scrypto::core::SNodeRef;
+use scrypto::core::Receiver;
 use scrypto::engine::types::*;
+use scrypto::prelude::TypeName;
 use scrypto::resource::AccessRule;
 use scrypto::values::*;
 
@@ -16,49 +17,61 @@ pub trait SystemApi<'p, 's, W, I, C>
 where
     W: WasmEngine<I>,
     I: WasmInstance,
-    C: CostUnitCounter,
+    C: FeeReserve,
 {
-    fn cost_unit_counter(&mut self) -> &mut C;
+    fn fee_reserve(&mut self) -> &mut C;
 
     fn fee_table(&self) -> &FeeTable;
 
-    fn invoke_snode(
+    fn invoke_function(
         &mut self,
-        snode_ref: SNodeRef,
+        type_name: TypeName,
         fn_ident: String,
         input: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError>;
 
-    fn globalize_node(&mut self, value_id: &RENodeId) -> Result<(), CostUnitCounterError>;
-
-    fn borrow_node(
+    fn invoke_method(
         &mut self,
-        value_id: &RENodeId,
-    ) -> Result<RENodeRef<'_, 's>, CostUnitCounterError>;
+        receiver: Receiver,
+        fn_ident: String,
+        input: ScryptoValue,
+    ) -> Result<ScryptoValue, RuntimeError>;
 
-    fn borrow_node_mut(
+    // TODO: Convert to substate_borrow
+    fn borrow_node(&mut self, node_id: &RENodeId) -> Result<RENodeRef<'_, 's>, FeeReserveError>;
+
+    /// Removes an RENode and all of it's children from the Heap
+    fn node_drop(&mut self, node_id: &RENodeId) -> Result<HeapRootRENode, FeeReserveError>;
+
+    /// Creates a new RENode and places it in the Heap
+    fn node_create(&mut self, re_node: HeapRENode) -> Result<RENodeId, RuntimeError>;
+
+    /// Moves an RENode from Heap to Store
+    fn node_globalize(&mut self, node_id: RENodeId) -> Result<(), RuntimeError>;
+
+    /// Borrow a mutable substate
+    fn substate_borrow_mut(
         &mut self,
-        value_id: &RENodeId,
-    ) -> Result<NativeRENodeRef, CostUnitCounterError>;
+        substate_id: &SubstateId,
+    ) -> Result<NativeSubstateRef, FeeReserveError>;
 
-    fn return_node_mut(&mut self, val_ref: NativeRENodeRef) -> Result<(), CostUnitCounterError>;
+    /// Return a mutable substate
+    fn substate_return_mut(&mut self, val_ref: NativeSubstateRef) -> Result<(), FeeReserveError>;
 
-    fn drop_node(&mut self, value_id: &RENodeId) -> Result<HeapRootRENode, CostUnitCounterError>;
-    fn create_node<V: Into<RENodeByComplexity>>(&mut self, v: V) -> Result<RENodeId, RuntimeError>;
-
-    fn read_substate(&mut self, substate_id: SubstateId) -> Result<ScryptoValue, RuntimeError>;
-    fn write_substate(
+    // TODO: Convert use substate_borrow interface
+    fn substate_read(&mut self, substate_id: SubstateId) -> Result<ScryptoValue, RuntimeError>;
+    fn substate_write(
         &mut self,
         substate_id: SubstateId,
         value: ScryptoValue,
     ) -> Result<(), RuntimeError>;
-    fn take_substate(&mut self, substate_id: SubstateId) -> Result<ScryptoValue, RuntimeError>;
+    fn substate_take(&mut self, substate_id: SubstateId) -> Result<ScryptoValue, RuntimeError>;
 
-    fn transaction_hash(&mut self) -> Result<Hash, CostUnitCounterError>;
+    fn transaction_hash(&mut self) -> Result<Hash, FeeReserveError>;
 
-    fn generate_uuid(&mut self) -> Result<u128, CostUnitCounterError>;
+    fn generate_uuid(&mut self) -> Result<u128, FeeReserveError>;
 
-    fn emit_log(&mut self, level: Level, message: String) -> Result<(), CostUnitCounterError>;
+    fn emit_log(&mut self, level: Level, message: String) -> Result<(), FeeReserveError>;
 
     fn check_access_rule(
         &mut self,

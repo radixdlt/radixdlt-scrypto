@@ -3,15 +3,14 @@ use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
-use scrypto::component::ComponentAddAccessCheckInput;
+use scrypto::component::*;
 use scrypto::engine::types::*;
-use scrypto::prelude::ComponentGlobalizeInput;
 use scrypto::resource::AccessRules;
 use scrypto::values::*;
 
 use crate::engine::SystemApi;
-use crate::fee::CostUnitCounter;
-use crate::fee::CostUnitCounterError;
+use crate::fee::FeeReserve;
+use crate::fee::FeeReserveError;
 use crate::model::{convert, MethodAuthorization};
 use crate::wasm::{WasmEngine, WasmInstance};
 
@@ -20,7 +19,7 @@ pub enum ComponentError {
     InvalidRequestData(DecodeError),
     BlueprintFunctionDoesNotExist(String),
     MethodNotFound,
-    CostingError(CostUnitCounterError),
+    CostingError(FeeReserveError),
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
@@ -103,13 +102,16 @@ impl Component {
         Y: SystemApi<'p, 's, W, I, C>,
         W: WasmEngine<I>,
         I: WasmInstance,
-        C: CostUnitCounter,
+        C: FeeReserve,
     >(
-        node_id: RENodeId,
+        component_address: ComponentAddress,
         fn_ident: &str,
         arg: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, ComponentError> {
+        let substate_id = SubstateId::ComponentInfo(component_address);
+        let node_id = RENodeId::Component(component_address);
+
         let rtn = match fn_ident {
             "add_access_check" => {
                 let input: ComponentAddAccessCheckInput =
@@ -117,19 +119,23 @@ impl Component {
 
                 // Abi checks
                 {
-                    let component_ref = system_api
-                        .borrow_node(&node_id)
-                        .map_err(ComponentError::CostingError)?;
-                    let component = component_ref.component();
-                    let component_name = component.blueprint_name().to_owned();
-                    let package_id = RENodeId::Package(component.package_address.clone());
-                    drop(component);
-                    drop(component_ref);
+                    let (package_id, blueprint_name) = {
+                        let component_ref = system_api
+                            .borrow_node(&node_id)
+                            .map_err(ComponentError::CostingError)?;
+                        let component = component_ref.component_info();
+                        let blueprint_name = component.blueprint_name().to_owned();
+                        (
+                            RENodeId::Package(component.package_address.clone()),
+                            blueprint_name,
+                        )
+                    };
+
                     let package_ref = system_api
                         .borrow_node(&package_id)
                         .map_err(ComponentError::CostingError)?;
                     let package = package_ref.package();
-                    let blueprint_abi = package.blueprint_abi(&component_name).unwrap();
+                    let blueprint_abi = package.blueprint_abi(&blueprint_name).unwrap();
                     for (func_name, _) in input.access_rules.iter() {
                         if !blueprint_abi.contains_fn(func_name.as_str()) {
                             return Err(ComponentError::BlueprintFunctionDoesNotExist(
@@ -140,52 +146,14 @@ impl Component {
                 }
 
                 let mut ref_mut = system_api
-                    .borrow_node_mut(&node_id)
+                    .substate_borrow_mut(&substate_id)
                     .map_err(ComponentError::CostingError)?;
                 let component = ref_mut.component();
                 component.access_rules.push(input.access_rules);
                 system_api
-                    .return_node_mut(ref_mut)
+                    .substate_return_mut(ref_mut)
                     .map_err(ComponentError::CostingError)?;
 
-                Ok(ScryptoValue::from_typed(&()))
-            }
-            "globalize" => {
-                let _: ComponentGlobalizeInput =
-                    scrypto_decode(&arg.raw).map_err(|e| ComponentError::InvalidRequestData(e))?;
-
-                system_api
-                    .globalize_node(&node_id)
-                    .map_err(ComponentError::CostingError)?;
-                Ok(ScryptoValue::from_typed(&()))
-            }
-            _ => Err(ComponentError::MethodNotFound),
-        }?;
-
-        Ok(rtn)
-    }
-
-    pub fn main_consume<
-        'p,
-        's,
-        Y: SystemApi<'p, 's, W, I, C>,
-        W: WasmEngine<I>,
-        I: WasmInstance,
-        C: CostUnitCounter,
-    >(
-        node_id: RENodeId,
-        fn_ident: &str,
-        arg: ScryptoValue,
-        system_api: &mut Y,
-    ) -> Result<ScryptoValue, ComponentError> {
-        let rtn = match fn_ident {
-            "globalize" => {
-                let _: ComponentGlobalizeInput =
-                    scrypto_decode(&arg.raw).map_err(|e| ComponentError::InvalidRequestData(e))?;
-
-                system_api
-                    .globalize_node(&node_id)
-                    .map_err(ComponentError::CostingError)?;
                 Ok(ScryptoValue::from_typed(&()))
             }
             _ => Err(ComponentError::MethodNotFound),

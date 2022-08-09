@@ -9,8 +9,9 @@ use sbor::*;
 
 use crate::abi::*;
 use crate::buffer::scrypto_encode;
-use crate::core::SNodeRef;
+use crate::core::Receiver;
 use crate::crypto::*;
+use crate::engine::types::RENodeId;
 use crate::engine::{api::*, call_engine, types::VaultId};
 use crate::math::*;
 use crate::misc::*;
@@ -66,8 +67,8 @@ pub struct Vault(pub VaultId);
 impl Vault {
     /// Creates an empty vault to permanently hold resource of the given definition.
     pub fn new(resource_address: ResourceAddress) -> Self {
-        let input = RadixEngineInput::InvokeSNode(
-            SNodeRef::ResourceRef(resource_address),
+        let input = RadixEngineInput::InvokeMethod(
+            Receiver::NativeRENodeRef(RENodeId::ResourceManager(resource_address)),
             "create_vault".to_string(),
             scrypto_encode(&ResourceManagerCreateVaultInput {}),
         );
@@ -82,8 +83,8 @@ impl Vault {
     }
 
     fn take_internal(&mut self, amount: Decimal) -> Bucket {
-        let input = RadixEngineInput::InvokeSNode(
-            SNodeRef::VaultRef(self.0),
+        let input = RadixEngineInput::InvokeMethod(
+            Receiver::NativeRENodeRef(RENodeId::Vault(self.0)),
             "take".to_string(),
             scrypto_encode(&VaultTakeInput { amount }),
         );
@@ -91,8 +92,8 @@ impl Vault {
     }
 
     fn lock_fee_internal(&mut self, amount: Decimal) {
-        let input = RadixEngineInput::InvokeSNode(
-            SNodeRef::VaultRef(self.0),
+        let input = RadixEngineInput::InvokeMethod(
+            Receiver::NativeRENodeRef(RENodeId::Vault(self.0)),
             "lock_fee".to_string(),
             scrypto_encode(&VaultTakeInput { amount }),
         );
@@ -100,8 +101,8 @@ impl Vault {
     }
 
     fn lock_contingent_fee_internal(&mut self, amount: Decimal) {
-        let input = RadixEngineInput::InvokeSNode(
-            SNodeRef::VaultRef(self.0),
+        let input = RadixEngineInput::InvokeMethod(
+            Receiver::NativeRENodeRef(RENodeId::Vault(self.0)),
             "lock_contingent_fee".to_string(),
             scrypto_encode(&VaultTakeInput { amount }),
         );
@@ -109,7 +110,7 @@ impl Vault {
     }
 
     sfunctions! {
-        SNodeRef::VaultRef(self.0) => {
+        Receiver::NativeRENodeRef(RENodeId::Vault(self.0)) => {
             pub fn put(&mut self, bucket: Bucket) -> () {
                 VaultPutInput {
                     bucket

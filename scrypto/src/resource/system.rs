@@ -3,7 +3,7 @@ use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 
 use crate::buffer::scrypto_encode;
-use crate::core::SNodeRef;
+use crate::core::TypeName;
 use crate::engine::{api::*, call_engine};
 use crate::resource::*;
 
@@ -38,7 +38,7 @@ impl ResourceSystem {
             .or_insert(ResourceManager(resource_address))
     }
 
-    /// Creates a new resource with the given parameters.
+    /// Creates a new resource with the given config.
     ///
     /// A bucket is returned iif an initial supply is provided.
     pub fn new_resource(
@@ -48,8 +48,8 @@ impl ResourceSystem {
         access_rules: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
         mint_params: Option<MintParams>,
     ) -> (ResourceAddress, Option<Bucket>) {
-        let input = RadixEngineInput::InvokeSNode(
-            SNodeRef::ResourceStatic,
+        let input = RadixEngineInput::InvokeFunction(
+            TypeName::ResourceManager,
             "create".to_string(),
             scrypto_encode(&ResourceManagerCreateInput {
                 resource_type,

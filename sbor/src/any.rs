@@ -61,10 +61,13 @@ pub enum Value {
         name: String,
         fields: Vec<Value>,
     },
-
     Option {
         value: Box<Option<Value>>,
     },
+    Result {
+        value: Box<Result<Value, Value>>,
+    },
+
     Array {
         element_type_id: u8,
         elements: Vec<Value>,
@@ -72,32 +75,21 @@ pub enum Value {
     Tuple {
         elements: Vec<Value>,
     },
-    Result {
-        value: Box<Result<Value, Value>>,
+
+    List {
+        element_type_id: u8,
+        elements: Vec<Value>,
+    },
+    Set {
+        element_type_id: u8,
+        elements: Vec<Value>,
+    },
+    Map {
+        key_type_id: u8,
+        value_type_id: u8,
+        elements: Vec<Value>,
     },
 
-    Vec {
-        element_type_id: u8,
-        elements: Vec<Value>,
-    },
-    TreeSet {
-        element_type_id: u8,
-        elements: Vec<Value>,
-    },
-    TreeMap {
-        key_type_id: u8,
-        value_type_id: u8,
-        elements: Vec<Value>,
-    },
-    HashSet {
-        element_type_id: u8,
-        elements: Vec<Value>,
-    },
-    HashMap {
-        key_type_id: u8,
-        value_type_id: u8,
-        elements: Vec<Value>,
-    },
     Custom {
         type_id: u8,
         #[cfg_attr(feature = "serde", serde(with = "hex::serde"))]
@@ -155,21 +147,36 @@ fn encode_any_internal(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
                 encode_any_internal(None, field, enc);
             }
         }
-        // composite types
         Value::Option { value } => {
             if ty_ctx.is_none() {
                 enc.write_type(TYPE_OPTION);
             }
             match value.borrow() {
-                None => {
-                    enc.write_u8(0);
-                }
                 Some(x) => {
-                    enc.write_u8(1);
+                    enc.write_u8(OPTION_VARIANT_SOME);
+                    encode_any_internal(None, x, enc);
+                }
+                None => {
+                    enc.write_u8(OPTION_VARIANT_NONE);
+                }
+            }
+        }
+        Value::Result { value } => {
+            if ty_ctx.is_none() {
+                enc.write_type(TYPE_RESULT);
+            }
+            match value.borrow() {
+                Ok(x) => {
+                    enc.write_u8(RESULT_VARIANT_OK);
+                    encode_any_internal(None, x, enc);
+                }
+                Err(x) => {
+                    enc.write_u8(RESULT_VARIANT_ERR);
                     encode_any_internal(None, x, enc);
                 }
             }
         }
+        // composite types
         Value::Array {
             element_type_id,
             elements,
@@ -192,28 +199,13 @@ fn encode_any_internal(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
                 encode_any_internal(None, e, enc);
             }
         }
-        Value::Result { value } => {
-            if ty_ctx.is_none() {
-                enc.write_type(TYPE_RESULT);
-            }
-            match value.borrow() {
-                Ok(x) => {
-                    enc.write_u8(0);
-                    encode_any_internal(None, x, enc);
-                }
-                Err(x) => {
-                    enc.write_u8(1);
-                    encode_any_internal(None, x, enc);
-                }
-            }
-        }
         // collections
-        Value::Vec {
+        Value::List {
             element_type_id,
             elements,
         } => {
             if ty_ctx.is_none() {
-                enc.write_type(TYPE_VEC);
+                enc.write_type(TYPE_LIST);
             }
             enc.write_type(*element_type_id);
             enc.write_len(elements.len());
@@ -221,12 +213,12 @@ fn encode_any_internal(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
                 encode_any_internal(Some(*element_type_id), e, enc);
             }
         }
-        Value::TreeSet {
+        Value::Set {
             element_type_id,
             elements,
         } => {
             if ty_ctx.is_none() {
-                enc.write_type(TYPE_TREE_SET);
+                enc.write_type(TYPE_SET);
             }
             enc.write_type(*element_type_id);
             enc.write_len(elements.len());
@@ -234,42 +226,13 @@ fn encode_any_internal(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
                 encode_any_internal(Some(*element_type_id), e, enc);
             }
         }
-        Value::HashSet {
-            element_type_id,
-            elements,
-        } => {
-            if ty_ctx.is_none() {
-                enc.write_type(TYPE_HASH_SET);
-            }
-            enc.write_type(*element_type_id);
-            enc.write_len(elements.len());
-            for e in elements {
-                encode_any_internal(Some(*element_type_id), e, enc);
-            }
-        }
-        Value::TreeMap {
+        Value::Map {
             key_type_id,
             value_type_id,
             elements,
         } => {
             if ty_ctx.is_none() {
-                enc.write_type(TYPE_TREE_MAP);
-            }
-            enc.write_type(*key_type_id);
-            enc.write_type(*value_type_id);
-            enc.write_len(elements.len() / 2);
-            for pair in elements.chunks(2) {
-                encode_any_internal(Some(*key_type_id), &pair[0], enc);
-                encode_any_internal(Some(*value_type_id), &pair[1], enc);
-            }
-        }
-        Value::HashMap {
-            key_type_id,
-            value_type_id,
-            elements,
-        } => {
-            if ty_ctx.is_none() {
-                enc.write_type(TYPE_HASH_MAP);
+                enc.write_type(TYPE_MAP);
             }
             enc.write_type(*key_type_id);
             enc.write_type(*value_type_id);
@@ -373,21 +336,35 @@ fn decode_next(ty_ctx: Option<u8>, dec: &mut Decoder) -> Result<Value, DecodeErr
             }
             Ok(Value::Enum { name, fields })
         }
-        // composite types
         TYPE_OPTION => {
             // index
             let index = dec.read_u8()?;
             // optional value
             match index {
-                0 => Ok(Value::Option {
-                    value: Box::new(None),
-                }),
-                1 => Ok(Value::Option {
+                OPTION_VARIANT_SOME => Ok(Value::Option {
                     value: Box::new(Some(decode_next(None, dec)?)),
+                }),
+                OPTION_VARIANT_NONE => Ok(Value::Option {
+                    value: Box::new(None),
                 }),
                 _ => Err(DecodeError::InvalidIndex(index)),
             }
         }
+        TYPE_RESULT => {
+            // index
+            let index = dec.read_u8()?;
+            // result value
+            match index {
+                RESULT_VARIANT_OK => Ok(Value::Result {
+                    value: Box::new(Ok(decode_next(None, dec)?)),
+                }),
+                RESULT_VARIANT_ERR => Ok(Value::Result {
+                    value: Box::new(Err(decode_next(None, dec)?)),
+                }),
+                _ => Err(DecodeError::InvalidIndex(index)),
+            }
+        }
+        // composite types
         TYPE_ARRAY => {
             // element type
             let element_type_id = dec.read_type()?;
@@ -413,22 +390,8 @@ fn decode_next(ty_ctx: Option<u8>, dec: &mut Decoder) -> Result<Value, DecodeErr
             }
             Ok(Value::Tuple { elements })
         }
-        TYPE_RESULT => {
-            // index
-            let index = dec.read_u8()?;
-            // result value
-            match index {
-                0 => Ok(Value::Result {
-                    value: Box::new(Ok(decode_next(None, dec)?)),
-                }),
-                1 => Ok(Value::Result {
-                    value: Box::new(Err(decode_next(None, dec)?)),
-                }),
-                _ => Err(DecodeError::InvalidIndex(index)),
-            }
-        }
         // collections
-        TYPE_VEC => {
+        TYPE_LIST => {
             // element type
             let element_type_id = dec.read_type()?;
             // length
@@ -438,12 +401,12 @@ fn decode_next(ty_ctx: Option<u8>, dec: &mut Decoder) -> Result<Value, DecodeErr
             for _ in 0..len {
                 elements.push(decode_next(Some(element_type_id), dec)?);
             }
-            Ok(Value::Vec {
+            Ok(Value::List {
                 element_type_id,
                 elements,
             })
         }
-        TYPE_TREE_SET | TYPE_HASH_SET => {
+        TYPE_SET => {
             // element type
             let element_type_id = dec.read_type()?;
             // length
@@ -453,19 +416,12 @@ fn decode_next(ty_ctx: Option<u8>, dec: &mut Decoder) -> Result<Value, DecodeErr
             for _ in 0..len {
                 elements.push(decode_next(Some(element_type_id), dec)?);
             }
-            if ty == TYPE_TREE_SET {
-                Ok(Value::TreeSet {
-                    element_type_id,
-                    elements,
-                })
-            } else {
-                Ok(Value::HashSet {
-                    element_type_id,
-                    elements,
-                })
-            }
+            Ok(Value::Set {
+                element_type_id,
+                elements,
+            })
         }
-        TYPE_TREE_MAP | TYPE_HASH_MAP => {
+        TYPE_MAP => {
             // key type
             let key_type_id = dec.read_type()?;
             // value type
@@ -478,19 +434,11 @@ fn decode_next(ty_ctx: Option<u8>, dec: &mut Decoder) -> Result<Value, DecodeErr
                 elements.push(decode_next(Some(key_type_id), dec)?);
                 elements.push(decode_next(Some(value_type_id), dec)?);
             }
-            if ty == TYPE_TREE_MAP {
-                Ok(Value::TreeMap {
-                    key_type_id,
-                    value_type_id,
-                    elements,
-                })
-            } else {
-                Ok(Value::HashMap {
-                    key_type_id,
-                    value_type_id,
-                    elements,
-                })
-            }
+            Ok(Value::Map {
+                key_type_id,
+                value_type_id,
+                elements,
+            })
         }
         _ => {
             if ty >= TYPE_CUSTOM_START {
@@ -542,15 +490,22 @@ where
                 path.pop();
             }
         }
-        // composite types
         Value::Option { value } => match value.borrow() {
-            None => {}
             Some(x) => {
                 path.push(0);
                 traverse_any(path, x, visitor)?;
                 path.pop();
             }
+            None => {}
         },
+        Value::Result { value } => match value.borrow() {
+            Ok(x) | Err(x) => {
+                path.push(0);
+                traverse_any(path, x, visitor)?;
+                path.pop();
+            }
+        },
+        // composite types
         Value::Array { elements, .. } => {
             for (i, e) in elements.iter().enumerate() {
                 path.push(i);
@@ -565,19 +520,10 @@ where
                 path.pop();
             }
         }
-        Value::Result { value } => match value.borrow() {
-            Ok(x) | Err(x) => {
-                path.push(0);
-                traverse_any(path, x, visitor)?;
-                path.pop();
-            }
-        },
         // collections
-        Value::Vec { elements, .. }
-        | Value::TreeSet { elements, .. }
-        | Value::HashSet { elements, .. }
-        | Value::TreeMap { elements, .. }
-        | Value::HashMap { elements, .. } => {
+        Value::List { elements, .. }
+        | Value::Set { elements, .. }
+        | Value::Map { elements, .. } => {
             for (i, e) in elements.iter().enumerate() {
                 path.push(i);
                 traverse_any(path, e, visitor)?;
@@ -644,6 +590,7 @@ mod tests {
         l: u128,
         m: String,
         n: Option<u32>,
+        o: Result<u32, u32>,
         p: [u32; 3],
         q: (u32, u32),
         r: TestStruct,
@@ -666,7 +613,7 @@ mod tests {
         let mut map1 = BTreeMap::new();
         map1.insert(1, 2);
         let mut map2 = HashMap::new();
-        map2.insert(1, 2);
+        map2.insert(3, 4);
 
         let data = TestData {
             a: (),
@@ -683,6 +630,7 @@ mod tests {
             l: 10,
             m: String::from("abc"),
             n: Some(1),
+            o: Ok(2),
             p: [1, 2, 3],
             q: (1, 2),
             r: TestStruct { x: 1 },
@@ -719,6 +667,9 @@ mod tests {
                     Value::Option {
                         value: Box::new(Some(Value::U32 { value: 1 }))
                     },
+                    Value::Result {
+                        value: Box::new(Ok(Value::U32 { value: 2 }))
+                    },
                     Value::Array {
                         element_type_id: TYPE_U32,
                         elements: vec![
@@ -745,27 +696,27 @@ mod tests {
                         name: "C".to_string(),
                         fields: vec![]
                     },
-                    Value::Vec {
+                    Value::List {
                         element_type_id: TYPE_U32,
                         elements: vec![Value::U32 { value: 1 }, Value::U32 { value: 2 },]
                     },
-                    Value::TreeSet {
+                    Value::Set {
                         element_type_id: TYPE_U32,
                         elements: vec![Value::U32 { value: 1 }]
                     },
-                    Value::HashSet {
+                    Value::Set {
                         element_type_id: TYPE_U32,
                         elements: vec![Value::U32 { value: 2 }]
                     },
-                    Value::TreeMap {
+                    Value::Map {
                         key_type_id: TYPE_U32,
                         value_type_id: TYPE_U32,
                         elements: vec![Value::U32 { value: 1 }, Value::U32 { value: 2 }]
                     },
-                    Value::HashMap {
+                    Value::Map {
                         key_type_id: TYPE_U32,
                         value_type_id: TYPE_U32,
-                        elements: vec![Value::U32 { value: 1 }, Value::U32 { value: 2 }]
+                        elements: vec![Value::U32 { value: 3 }, Value::U32 { value: 4 }]
                     }
                 ]
             },

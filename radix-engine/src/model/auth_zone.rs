@@ -9,9 +9,9 @@ use scrypto::resource::{
 };
 use scrypto::values::ScryptoValue;
 
-use crate::engine::SystemApi;
-use crate::fee::CostUnitCounter;
-use crate::fee::CostUnitCounterError;
+use crate::engine::{HeapRENode, SystemApi};
+use crate::fee::FeeReserve;
+use crate::fee::FeeReserveError;
 use crate::model::AuthZoneError::InvalidMethod;
 use crate::model::{Proof, ProofError};
 use crate::wasm::*;
@@ -26,7 +26,7 @@ pub enum AuthZoneError {
     CouldNotGetResource,
     NoMethodSpecified,
     InvalidMethod,
-    CostingError(CostUnitCounterError),
+    CostingError(FeeReserveError),
 }
 
 /// A transient resource container.
@@ -101,7 +101,7 @@ impl AuthZone {
         Y: SystemApi<'p, 's, W, I, C>,
         W: WasmEngine<I>,
         I: WasmInstance,
-        C: CostUnitCounter,
+        C: FeeReserve,
     >(
         &mut self,
         method_name: &str,
@@ -113,7 +113,10 @@ impl AuthZone {
                 let _: AuthZonePopInput =
                     scrypto_decode(&arg.raw).map_err(|e| AuthZoneError::InvalidRequestData(e))?;
                 let proof = self.pop()?;
-                let proof_id = system_api.create_node(proof).unwrap().into();
+                let proof_id = system_api
+                    .node_create(HeapRENode::Proof(proof))
+                    .unwrap()
+                    .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Proof(
                     proof_id,
                 )))
@@ -122,11 +125,9 @@ impl AuthZone {
                 let input: AuthZonePushInput =
                     scrypto_decode(&arg.raw).map_err(|e| AuthZoneError::InvalidRequestData(e))?;
                 let mut proof: Proof = system_api
-                    .drop_node(&RENodeId::Proof(input.proof.0))
+                    .node_drop(&RENodeId::Proof(input.proof.0))
                     .map_err(AuthZoneError::CostingError)?
                     .into();
-                // FIXME: this is a hack for now until we can get snode_state into process
-                // FIXME: and be able to determine which snode the proof is going into
                 proof.change_to_unrestricted();
 
                 self.push(proof);
@@ -137,13 +138,16 @@ impl AuthZone {
                     scrypto_decode(&arg.raw).map_err(|e| AuthZoneError::InvalidRequestData(e))?;
                 let resource_type = {
                     let value = system_api
-                        .borrow_node(&RENodeId::Resource(input.resource_address))
+                        .borrow_node(&RENodeId::ResourceManager(input.resource_address))
                         .map_err(AuthZoneError::CostingError)?;
                     let resource_manager = value.resource_manager();
                     resource_manager.resource_type()
                 };
                 let proof = self.create_proof(input.resource_address, resource_type)?;
-                let proof_id = system_api.create_node(proof).unwrap().into();
+                let proof_id = system_api
+                    .node_create(HeapRENode::Proof(proof))
+                    .unwrap()
+                    .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Proof(
                     proof_id,
                 )))
@@ -153,7 +157,7 @@ impl AuthZone {
                     scrypto_decode(&arg.raw).map_err(|e| AuthZoneError::InvalidRequestData(e))?;
                 let resource_type = {
                     let value = system_api
-                        .borrow_node(&RENodeId::Resource(input.resource_address))
+                        .borrow_node(&RENodeId::ResourceManager(input.resource_address))
                         .map_err(AuthZoneError::CostingError)?;
                     let resource_manager = value.resource_manager();
                     resource_manager.resource_type()
@@ -163,7 +167,10 @@ impl AuthZone {
                     input.resource_address,
                     resource_type,
                 )?;
-                let proof_id = system_api.create_node(proof).unwrap().into();
+                let proof_id = system_api
+                    .node_create(HeapRENode::Proof(proof))
+                    .unwrap()
+                    .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Proof(
                     proof_id,
                 )))
@@ -173,14 +180,17 @@ impl AuthZone {
                     scrypto_decode(&arg.raw).map_err(|e| AuthZoneError::InvalidRequestData(e))?;
                 let resource_type = {
                     let value = system_api
-                        .borrow_node(&RENodeId::Resource(input.resource_address))
+                        .borrow_node(&RENodeId::ResourceManager(input.resource_address))
                         .map_err(AuthZoneError::CostingError)?;
                     let resource_manager = value.resource_manager();
                     resource_manager.resource_type()
                 };
                 let proof =
                     self.create_proof_by_ids(&input.ids, input.resource_address, resource_type)?;
-                let proof_id = system_api.create_node(proof).unwrap().into();
+                let proof_id = system_api
+                    .node_create(HeapRENode::Proof(proof))
+                    .unwrap()
+                    .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Proof(
                     proof_id,
                 )))

@@ -12,9 +12,9 @@ use scrypto::prelude::{
 };
 use scrypto::values::ScryptoValue;
 
-use crate::engine::{SubstateId, SystemApi};
-use crate::fee::CostUnitCounter;
-use crate::fee::CostUnitCounterError;
+use crate::engine::{HeapRENode, SystemApi};
+use crate::fee::FeeReserve;
+use crate::fee::FeeReserveError;
 use crate::model::{
     Proof, ProofError, ResourceContainer, ResourceContainerError, ResourceContainerId,
 };
@@ -30,7 +30,7 @@ pub enum BucketError {
     ProofError(ProofError),
     CouldNotCreateProof,
     MethodNotFound(String),
-    CostingError(CostUnitCounterError),
+    CostingError(FeeReserveError),
 }
 
 /// A transient resource container.
@@ -167,16 +167,16 @@ impl Bucket {
         Y: SystemApi<'p, 's, W, I, C>,
         W: WasmEngine<I>,
         I: WasmInstance,
-        C: CostUnitCounter,
+        C: FeeReserve,
     >(
         bucket_id: BucketId,
         method_name: &str,
         arg: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, BucketError> {
-        let node_id = RENodeId::Bucket(bucket_id);
+        let substate_id = SubstateId::Bucket(bucket_id);
         let mut node_ref = system_api
-            .borrow_node_mut(&node_id)
+            .substate_borrow_mut(&substate_id)
             .map_err(BucketError::CostingError)?;
         let bucket0 = node_ref.bucket();
 
@@ -188,7 +188,7 @@ impl Bucket {
                     .take(input.amount)
                     .map_err(BucketError::ResourceContainerError)?;
                 let bucket_id = system_api
-                    .create_node(Bucket::new(container))
+                    .node_create(HeapRENode::Bucket(Bucket::new(container)))
                     .unwrap()
                     .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
@@ -202,7 +202,7 @@ impl Bucket {
                     .take_non_fungibles(&input.ids)
                     .map_err(BucketError::ResourceContainerError)?;
                 let bucket_id = system_api
-                    .create_node(Bucket::new(container))
+                    .node_create(HeapRENode::Bucket(Bucket::new(container)))
                     .unwrap()
                     .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
@@ -221,7 +221,7 @@ impl Bucket {
                 let input: BucketPutInput =
                     scrypto_decode(&arg.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
                 let other_bucket = system_api
-                    .drop_node(&RENodeId::Bucket(input.bucket.0))
+                    .node_drop(&RENodeId::Bucket(input.bucket.0))
                     .map_err(BucketError::CostingError)?
                     .into();
                 bucket0
@@ -245,7 +245,10 @@ impl Bucket {
                 let proof = bucket0
                     .create_proof(bucket_id)
                     .map_err(BucketError::ProofError)?;
-                let proof_id = system_api.create_node(proof).unwrap().into();
+                let proof_id = system_api
+                    .node_create(HeapRENode::Proof(proof))
+                    .unwrap()
+                    .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Proof(
                     proof_id,
                 )))
@@ -254,7 +257,7 @@ impl Bucket {
         }?;
 
         system_api
-            .return_node_mut(node_ref)
+            .substate_return_mut(node_ref)
             .map_err(BucketError::CostingError)?;
 
         Ok(rtn)
@@ -266,7 +269,7 @@ impl Bucket {
         Y: SystemApi<'p, 's, W, I, C>,
         W: WasmEngine<I>,
         I: WasmInstance,
-        C: CostUnitCounter,
+        C: FeeReserve,
     >(
         node_id: RENodeId,
         method_name: &str,
@@ -279,26 +282,26 @@ impl Bucket {
                     scrypto_decode(&arg.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
 
                 let bucket: Bucket = system_api
-                    .drop_node(&node_id)
+                    .node_drop(&node_id)
                     .map_err(BucketError::CostingError)?
                     .into();
 
                 // Notify resource manager, TODO: Should not need to notify manually
                 let resource_address = bucket.resource_address();
-                let resource_id = RENodeId::Resource(resource_address);
+                let resource_substate_id = SubstateId::ResourceManager(resource_address);
                 let mut value = system_api
-                    .borrow_node_mut(&resource_id)
+                    .substate_borrow_mut(&resource_substate_id)
                     .map_err(BucketError::CostingError)?;
                 let resource_manager = value.resource_manager();
                 resource_manager.burn(bucket.total_amount());
                 if matches!(resource_manager.resource_type(), ResourceType::NonFungible) {
                     for id in bucket.total_ids().unwrap() {
                         let address = SubstateId::NonFungible(resource_address, id);
-                        system_api.take_substate(address).expect("Should not fail.");
+                        system_api.substate_take(address).expect("Should not fail.");
                     }
                 }
                 system_api
-                    .return_node_mut(value)
+                    .substate_return_mut(value)
                     .map_err(BucketError::CostingError)?;
 
                 Ok(ScryptoValue::from_typed(&()))
