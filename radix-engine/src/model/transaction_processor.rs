@@ -433,11 +433,24 @@ impl TransactionProcessor {
                                 ScryptoValue::from_slice(arg).expect("Should be valid arg"),
                             )
                             .and_then(|call_data| {
-                                system_api.invoke_method(
-                                    Receiver::Ref(RENodeId::Component(*component_address)),
-                                    Function::Scrypto(method_name.to_string()),
-                                    call_data,
-                                )
+                                // TODO: Move this into preprocessor step
+                                system_api
+                                    .substate_read(SubstateId::ComponentInfo(*component_address))
+                                    .and_then(|s| {
+                                        let (package_address, blueprint_name): (
+                                            PackageAddress,
+                                            String,
+                                        ) = scrypto_decode(&s.raw).expect("Should not fail.");
+                                        system_api.invoke_method(
+                                            Receiver::Ref(RENodeId::Component(*component_address)),
+                                            Function::Scrypto {
+                                                method_name: method_name.to_string(),
+                                                package_address,
+                                                blueprint_name,
+                                            },
+                                            call_data,
+                                        )
+                                    })
                             })
                             .and_then(|result| {
                                 // Auto move into auth_zone
@@ -485,11 +498,24 @@ impl TransactionProcessor {
                                     buckets.push(scrypto::resource::Bucket(real_id));
                                 }
                                 let encoded = to_struct!(buckets);
-                                system_api.invoke_method(
-                                    Receiver::Ref(RENodeId::Component(*component_address)),
-                                    Function::Scrypto(method.to_string()),
-                                    ScryptoValue::from_slice(&encoded).unwrap(),
-                                )
+                                // TODO: Move this into preprocessor step
+                                system_api
+                                    .substate_read(SubstateId::ComponentInfo(*component_address))
+                                    .and_then(|s| {
+                                        let (package_address, blueprint_name): (
+                                            PackageAddress,
+                                            String,
+                                        ) = scrypto_decode(&s.raw).expect("Should not fail.");
+                                        system_api.invoke_method(
+                                            Receiver::Ref(RENodeId::Component(*component_address)),
+                                            Function::Scrypto {
+                                                package_address,
+                                                blueprint_name,
+                                                method_name: method.to_string(),
+                                            },
+                                            ScryptoValue::from_slice(&encoded).unwrap(),
+                                        )
+                                    })
                             }),
                         ExecutableInstruction::PublishPackage { package } => {
                             scrypto_decode::<Package>(package)

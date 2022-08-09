@@ -79,7 +79,7 @@ impl RENodeProperties {
                 RENodeId::Vault(vault_id) => SubstateId::Vault(vault_id),
                 _ => return Err(RuntimeError::MethodDoesNotExist(function.clone())),
             },
-            Function::Scrypto(..) => match node_id {
+            Function::Scrypto { .. } => match node_id {
                 RENodeId::Component(component_address) => {
                     SubstateId::ComponentState(component_address)
                 }

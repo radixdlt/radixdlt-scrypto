@@ -130,7 +130,7 @@ impl WasmerModule {
             let ptr = env.runtime_ptr.lock().unwrap();
             let runtime: &mut Box<dyn WasmRuntime> = unsafe { &mut *(*ptr as *mut _) };
             runtime
-                .consume_cost_units(cost_unit as u32)
+                .cmdim88onsume_cost_units(cost_unit as u32)
                 .map_err(|e| RuntimeError::user(Box::new(e)))
         }
 

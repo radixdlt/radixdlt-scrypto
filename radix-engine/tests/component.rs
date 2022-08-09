@@ -5,7 +5,7 @@ use crate::test_runner::TestRunner;
 use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::InMemorySubstateStore;
 use scrypto::core::Network;
-use scrypto::engine::types::{RENodeId, SubstateId};
+use scrypto::engine::types::SubstateId;
 use scrypto::prelude::*;
 use scrypto::to_struct;
 use transaction::builder::ManifestBuilder;
@@ -120,7 +120,7 @@ fn reentrancy_should_not_be_possible() {
 }
 
 #[test]
-fn missing_component_address_should_cause_error() {
+fn missing_component_address_in_manifest_should_cause_rejection() {
     // Arrange
     let mut store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
@@ -138,11 +138,5 @@ fn missing_component_address_should_cause_error() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| {
-        if let RuntimeError::RENodeNotFound(RENodeId::Component(address)) = e {
-            address.eq(&component_address)
-        } else {
-            false
-        }
-    });
+    receipt.expect_rejection();
 }

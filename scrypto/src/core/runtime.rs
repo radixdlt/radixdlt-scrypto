@@ -7,7 +7,7 @@ use crate::bytes_vec_to_struct;
 use crate::component::*;
 use crate::core::*;
 use crate::crypto::*;
-use crate::engine::types::RENodeId;
+use crate::engine::types::{RENodeId, SubstateId};
 use crate::engine::{api::*, call_engine};
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -70,9 +70,16 @@ impl Runtime {
         method: S,
         args: Vec<Vec<u8>>,
     ) -> T {
+        let input = RadixEngineInput::SubstateRead(SubstateId::ComponentInfo(component_address));
+        let (package_address, blueprint_name): (PackageAddress, String) = call_engine(input);
+
         let input = RadixEngineInput::InvokeMethod(
             Receiver::Ref(RENodeId::Component(component_address)),
-            Function::Scrypto(method.as_ref().to_string()),
+            Function::Scrypto {
+                package_address,
+                blueprint_name,
+                method_name: method.as_ref().to_string(),
+            },
             bytes_vec_to_struct!(args),
         );
         call_engine(input)

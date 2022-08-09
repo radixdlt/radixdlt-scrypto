@@ -21,14 +21,18 @@ pub enum Receiver {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub enum Function {
-    Scrypto(String),
+    Scrypto {
+        package_address: PackageAddress,
+        blueprint_name: String,
+        method_name: String,
+    },
     Native(String),
 }
 
 impl Function {
     pub fn fn_ident(&self) -> &str {
         match self {
-            Function::Scrypto(fn_ident) | Function::Native(fn_ident) => &fn_ident,
+            Function::Scrypto { method_name, .. } | Function::Native(method_name) => &method_name,
         }
     }
 }

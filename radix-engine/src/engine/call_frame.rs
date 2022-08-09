@@ -1405,9 +1405,11 @@ where
                 )?;
                 let fn_abi = abi
                     .get_fn_abi(&fn_ident)
-                    .ok_or(RuntimeError::MethodDoesNotExist(Function::Scrypto(
-                        fn_ident.clone(),
-                    )))?;
+                    .ok_or(RuntimeError::MethodDoesNotExist(Function::Scrypto {
+                        package_address: *package_address,
+                        blueprint_name: blueprint_name.clone(),
+                        method_name: fn_ident.clone(),
+                    }))?;
                 if !fn_abi.input.matches(&input.dom) {
                     return Err(RuntimeError::InvalidFnInput { fn_ident });
                 }
@@ -1445,9 +1447,13 @@ where
 
             // Make components visible
             for component_address in component_addresses {
-                // TODO: Check if component exists
                 let node_id = RENodeId::Component(component_address);
-                next_frame_node_refs.insert(node_id, RENodePointer::Store(node_id));
+                let substate_id = SubstateId::ComponentInfo(component_address);
+                let node_pointer = RENodePointer::Store(node_id);
+                // Check if component exists
+                node_pointer.acquire_lock(substate_id.clone(), false, false, &mut self.track)?;
+                node_pointer.release_lock(substate_id, false, &mut self.track);
+                next_frame_node_refs.insert(node_id, node_pointer);
             }
         } else {
             // Pass argument references
@@ -1632,7 +1638,11 @@ where
 
                 // Load actor
                 let actor = match &function {
-                    Function::Scrypto(..) => match node_id {
+                    Function::Scrypto {
+                        package_address,
+                        blueprint_name,
+                        ..
+                    } => match node_id {
                         RENodeId::Component(component_address) => {
                             let temporary_substate_id =
                                 SubstateId::ComponentInfo(*component_address);
@@ -1652,6 +1662,15 @@ where
                                     &mut self.track,
                                 );
                                 let component = node_ref.component_info();
+
+                                // Don't support traits yet
+                                if !package_address.eq(&component.package_address()) {
+                                    return Err(RuntimeError::MethodDoesNotExist(function));
+                                }
+                                if !blueprint_name.eq(component.blueprint_name()) {
+                                    return Err(RuntimeError::MethodDoesNotExist(function));
+                                }
+
                                 ScryptoActor::component(
                                     *component_address,
                                     component.package_address(),
@@ -1777,7 +1796,6 @@ where
                     &function,
                     receiver.clone(),
                     &input,
-                    &actor.0,
                     node_pointer.clone(),
                     self.depth,
                     &mut self.owned_heap_nodes,
@@ -1867,7 +1885,7 @@ where
                 self.fee_reserve,
                 self.fee_table,
                 match function {
-                    Function::Scrypto(..) => Some(AuthZone::new()),
+                    Function::Scrypto { .. } => Some(AuthZone::new()),
                     _ => None,
                 },
                 next_owned_values,
