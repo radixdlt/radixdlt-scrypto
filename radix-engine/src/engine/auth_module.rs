@@ -1,7 +1,7 @@
 use sbor::rust::collections::*;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
-use scrypto::core::{Function, ScryptoActor};
+use scrypto::core::{Function, Receiver, ScryptoActor};
 use scrypto::engine::types::*;
 use scrypto::values::*;
 
@@ -14,7 +14,6 @@ pub struct AuthModule;
 impl AuthModule {
     fn auth(
         function: &Function,
-        substate_id: &SubstateId,
         method_auths: Vec<MethodAuthorization>,
         auth_zone: Option<&AuthZone>,
         caller_auth_zone: Option<&AuthZone>,
@@ -26,19 +25,12 @@ impl AuthModule {
                 auth_zones.push(self_auth_zone);
             }
 
-            match &substate_id {
-                // Resource auth check includes caller
-                SubstateId::ComponentState(..)
-                | SubstateId::ResourceManager(..)
-                | SubstateId::Vault(..)
-                | SubstateId::Bucket(..) => {
-                    if let Some(auth_zone) = caller_auth_zone {
-                        auth_zones.push(auth_zone);
-                    }
-                }
-                // Extern call auth check
-                _ => {}
-            };
+            // FIXME: This is wrong as it allows extern component
+            // FIXME: calls to use caller's auth zone
+            // FIXME: Need to add a test for this
+            if let Some(auth_zone) = caller_auth_zone {
+                auth_zones.push(auth_zone);
+            }
 
             for method_auth in method_auths {
                 method_auth.check(&auth_zones).map_err(|error| {
@@ -82,14 +74,14 @@ impl AuthModule {
             _ => return Err(RuntimeError::MethodDoesNotExist(function.clone())),
         };
 
-        Self::auth(function, substate_id, auth, auth_zone, caller_auth_zone)
+        Self::auth(function, auth, auth_zone, caller_auth_zone)
     }
 
     pub fn ref_auth(
         function: &Function,
+        receiver: Receiver,
         input: &ScryptoValue,
         actor: &REActor,
-        substate_id: SubstateId,
         node_pointer: RENodePointer,
         depth: usize,
         owned_heap_nodes: &mut HashMap<RENodeId, HeapRootRENode>,
@@ -98,71 +90,95 @@ impl AuthModule {
         auth_zone: Option<&AuthZone>,
         caller_auth_zone: Option<&AuthZone>,
     ) -> Result<(), RuntimeError> {
-        let auth = match &substate_id {
-            SubstateId::ResourceManager(..) => {
-                let resource_manager = track.read_substate(substate_id.clone()).resource_manager();
-                let method_auth = resource_manager.get_auth(function.fn_ident(), &input).clone();
-                vec![method_auth]
-            }
-            SubstateId::System => match function.fn_ident() {
-                "set_epoch" => {
-                    vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(
-                        HardProofRule::Require(HardResourceOrNonFungible::Resource(SYSTEM_TOKEN)),
-                    ))]
-                }
-                _ => vec![],
-            },
-            SubstateId::ComponentInfo(..) => match node_pointer {
-                RENodePointer::Store(..) => vec![MethodAuthorization::DenyAll],
-                RENodePointer::Heap { .. } => vec![],
-            },
-            SubstateId::ComponentState(..) => {
-                if let REActor::Scrypto(ScryptoActor::Component(
-                    _component_address,
-                    package_address,
-                    blueprint_name,
-                )) = actor
-                {
-                    let package_substate_id = SubstateId::Package(*package_address);
-                    let package = track.read_substate(package_substate_id.clone()).package();
-                    let abi = package
-                        .blueprint_abi(blueprint_name)
-                        .expect("Blueprint not found for existing component");
-                    let fn_abi = abi
-                        .get_fn_abi(function.fn_ident())
-                        .ok_or(RuntimeError::MethodDoesNotExist(function.clone()))?;
-                    if !fn_abi.input.matches(&input.dom) {
-                        return Err(RuntimeError::InvalidFnInput {
-                            fn_ident: function.fn_ident().to_string(),
-                        });
+        let auth = match receiver {
+            Receiver::Ref(RENodeId::ResourceManager(resource_address)) => {
+                match function {
+                    Function::Native(fn_ident) => {
+                        let substate_id = SubstateId::ResourceManager(resource_address);
+                        let resource_manager = track.read_substate(substate_id.clone()).resource_manager();
+                        let method_auth = resource_manager.get_auth(fn_ident, &input).clone();
+                        vec![method_auth]
                     }
-
-                    {
-                        let value_ref =
-                            node_pointer.to_ref(depth, owned_heap_nodes, parent_heap_nodes, track);
-
-                        let component = value_ref.component_info();
-                        let component_state = value_ref.component_state();
-                        component.method_authorization(component_state, &abi.structure, function.fn_ident())
-                    }
-                } else {
-                    vec![]
+                    _ => vec![]
                 }
             }
-            SubstateId::Vault(..) => {
-                let resource_address = {
-                    let node_ref =
-                        node_pointer.to_ref(depth, owned_heap_nodes, parent_heap_nodes, track);
-                    node_ref.vault().resource_address()
-                };
-                let resource_manager = track
-                    .read_substate(SubstateId::ResourceManager(resource_address))
-                    .resource_manager();
-                vec![resource_manager.get_vault_auth(function.fn_ident()).clone()]
+            Receiver::Ref(RENodeId::System) => {
+                match function {
+                    Function::Native(fn_ident) => {
+                        match fn_ident.as_str() {
+                            "set_epoch" => {
+                                vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(
+                                    HardProofRule::Require(HardResourceOrNonFungible::Resource(SYSTEM_TOKEN)),
+                                ))]
+                            }
+                            _ => vec![]
+                        }
+                    }
+                    _ => vec![]
+                }
             }
-            _ => vec![],
+            Receiver::Ref(RENodeId::Component(..)) => {
+                match function {
+                    Function::Native(..) => {
+                        match node_pointer {
+                            RENodePointer::Store(..) => vec![MethodAuthorization::DenyAll],
+                            RENodePointer::Heap { .. } => vec![],
+                        }
+                    }
+                    Function::Scrypto(fn_ident) => {
+                        if let REActor::Scrypto(ScryptoActor::Component(
+                                                    _component_address,
+                                                    package_address,
+                                                    blueprint_name,
+                                                )) = actor
+                        {
+                            let package_substate_id = SubstateId::Package(*package_address);
+                            let package = track.read_substate(package_substate_id.clone()).package();
+                            let abi = package
+                                .blueprint_abi(blueprint_name)
+                                .expect("Blueprint not found for existing component");
+                            let fn_abi = abi
+                                .get_fn_abi(function.fn_ident())
+                                .ok_or(RuntimeError::MethodDoesNotExist(function.clone()))?;
+                            if !fn_abi.input.matches(&input.dom) {
+                                return Err(RuntimeError::InvalidFnInput {
+                                    fn_ident: function.fn_ident().to_string(),
+                                });
+                            }
+
+                            {
+                                let value_ref =
+                                    node_pointer.to_ref(depth, owned_heap_nodes, parent_heap_nodes, track);
+
+                                let component = value_ref.component_info();
+                                let component_state = value_ref.component_state();
+                                component.method_authorization(component_state, &abi.structure, fn_ident)
+                            }
+                        } else {
+                            vec![]
+                        }
+                    }
+                }
+            }
+            Receiver::Ref(RENodeId::Vault(..)) => {
+                match function {
+                    Function::Native(fn_ident) => {
+                        let resource_address = {
+                            let node_ref =
+                                node_pointer.to_ref(depth, owned_heap_nodes, parent_heap_nodes, track);
+                            node_ref.vault().resource_address()
+                        };
+                        let resource_manager = track
+                            .read_substate(SubstateId::ResourceManager(resource_address))
+                            .resource_manager();
+                        vec![resource_manager.get_vault_auth(fn_ident).clone()]
+                    }
+                    Function::Scrypto(..) => vec![]
+                }
+            }
+            _ => vec![]
         };
 
-        Self::auth(function, &substate_id, auth, auth_zone, caller_auth_zone)
+        Self::auth(function, auth, auth_zone, caller_auth_zone)
     }
 }

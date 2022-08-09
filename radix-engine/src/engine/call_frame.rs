@@ -1838,9 +1838,9 @@ where
                 // Check method authorization
                 AuthModule::ref_auth(
                     &function,
+                    receiver.clone(),
                     &input,
                     &actor.0,
-                    substate_id.clone(),
                     node_pointer.clone(),
                     self.depth,
                     &mut self.owned_heap_nodes,
