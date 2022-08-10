@@ -957,220 +957,159 @@ where
         trace!(self, Level::Debug, "Run started! Depth: {}", self.depth);
 
         let output = {
-            let rtn = match self.actor.receiver {
-                None => match self.actor.fn_identifier.clone() {
-                    FnIdentifier::Native(native_fn) => match native_fn {
-                        NativeFnIdentifier::TransactionProcessor(transaction_processor_fn) => {
-                            TransactionProcessor::static_main(transaction_processor_fn, input, self)
-                                .map_err(|e| match e {
-                                    TransactionProcessorError::InvalidRequestData(_) => {
-                                        panic!("Illegal state")
-                                    }
-                                    TransactionProcessorError::InvalidMethod => {
-                                        panic!("Illegal state")
-                                    }
-                                    TransactionProcessorError::RuntimeError(e) => e,
-                                })
-                        }
-                        NativeFnIdentifier::Package(package_fn) => {
-                            ValidatedPackage::static_main(package_fn, input, self)
-                                .map_err(RuntimeError::PackageError)
-                        }
-                        NativeFnIdentifier::ResourceManager(resource_manager_fn) => {
-                            ResourceManager::static_main(resource_manager_fn, input, self)
-                                .map_err(RuntimeError::ResourceManagerError)
-                        }
-                        _ => Err(RuntimeError::MethodDoesNotExist(
-                            self.actor.fn_identifier.clone(),
+            let rtn = match self.actor.clone() {
+                REActor {
+                    receiver: None,
+                    fn_identifier:
+                        FnIdentifier::Native(NativeFnIdentifier::TransactionProcessor(
+                            transaction_processor_fn,
                         )),
-                    },
-                    FnIdentifier::Scrypto {
-                        package_address,
-                        blueprint_name,
-                        ident,
-                    } => {
-                        let output = {
-                            let package = self
-                                .track
-                                .read_substate(SubstateId::Package(package_address))
-                                .package();
-                            let wasm_metering_params = self.fee_table.wasm_metering_params();
-                            let instrumented_code = self
-                                .wasm_instrumenter
-                                .instrument(package.code(), &wasm_metering_params);
-                            let mut instance = self.wasm_engine.instantiate(instrumented_code);
-                            let blueprint_abi = package
-                                .blueprint_abi(&blueprint_name)
-                                .expect("Blueprint should exist");
-                            let export_name = &blueprint_abi
-                                .get_fn_abi(&ident)
-                                .unwrap()
-                                .export_name
-                                .to_string();
-                            let mut runtime: Box<dyn WasmRuntime> =
-                                Box::new(RadixEngineWasmRuntime::new(
-                                    ScryptoActor::blueprint(
-                                        package_address,
-                                        blueprint_name.clone(),
-                                    ),
-                                    self,
-                                ));
-                            instance
-                                .invoke_export(&export_name, &input, &mut runtime)
-                                .map_err(|e| match e {
-                                    // Flatten error code for more readable transaction receipt
-                                    InvokeError::RuntimeError(e) => e,
-                                    e @ _ => RuntimeError::InvokeError(e.into()),
-                                })?
-                        };
-
+                } => TransactionProcessor::static_main(transaction_processor_fn, input, self)
+                    .map_err(|e| match e {
+                        TransactionProcessorError::InvalidRequestData(_) => {
+                            panic!("Illegal state")
+                        }
+                        TransactionProcessorError::InvalidMethod => {
+                            panic!("Illegal state")
+                        }
+                        TransactionProcessorError::RuntimeError(e) => e,
+                    }),
+                REActor {
+                    receiver: None,
+                    fn_identifier: FnIdentifier::Native(NativeFnIdentifier::Package(package_fn)),
+                } => ValidatedPackage::static_main(package_fn, input, self)
+                    .map_err(RuntimeError::PackageError),
+                REActor {
+                    receiver: None,
+                    fn_identifier:
+                        FnIdentifier::Native(NativeFnIdentifier::ResourceManager(resource_manager_fn)),
+                } => ResourceManager::static_main(resource_manager_fn, input, self)
+                    .map_err(RuntimeError::ResourceManagerError),
+                REActor {
+                    receiver: Some(Receiver::Consumed(node_id)),
+                    fn_identifier: FnIdentifier::Native(NativeFnIdentifier::Bucket(bucket_fn)),
+                } => Bucket::consuming_main(node_id, bucket_fn, input, self)
+                    .map_err(RuntimeError::BucketError),
+                REActor {
+                    receiver: Some(Receiver::Consumed(node_id)),
+                    fn_identifier: FnIdentifier::Native(NativeFnIdentifier::Proof(proof_fn)),
+                } => Proof::main_consume(node_id, proof_fn, input, self)
+                    .map_err(RuntimeError::ProofError),
+                REActor {
+                    receiver: Some(Receiver::AuthZoneRef),
+                    fn_identifier: FnIdentifier::Native(NativeFnIdentifier::AuthZone(auth_zone_fn)),
+                } => maybe_authzone
+                    .unwrap()
+                    .main(auth_zone_fn, input, self)
+                    .map_err(RuntimeError::AuthZoneError),
+                REActor {
+                    receiver: Some(Receiver::Ref(RENodeId::Bucket(bucket_id))),
+                    fn_identifier: FnIdentifier::Native(NativeFnIdentifier::Bucket(bucket_fn)),
+                } => Bucket::main(bucket_id, bucket_fn, input, self)
+                    .map_err(RuntimeError::BucketError),
+                REActor {
+                    receiver: Some(Receiver::Ref(RENodeId::Proof(proof_id))),
+                    fn_identifier: FnIdentifier::Native(NativeFnIdentifier::Proof(proof_fn)),
+                } => Proof::main(proof_id, proof_fn, input, self).map_err(RuntimeError::ProofError),
+                REActor {
+                    receiver: Some(Receiver::Ref(RENodeId::Worktop)),
+                    fn_identifier: FnIdentifier::Native(NativeFnIdentifier::Worktop(worktop_fn)),
+                } => Worktop::main(worktop_fn, input, self).map_err(RuntimeError::WorktopError),
+                REActor {
+                    receiver: Some(Receiver::Ref(RENodeId::Vault(vault_id))),
+                    fn_identifier: FnIdentifier::Native(NativeFnIdentifier::Vault(vault_fn)),
+                } => Vault::main(vault_id, vault_fn, input, self).map_err(RuntimeError::VaultError),
+                REActor {
+                    receiver: Some(Receiver::Ref(RENodeId::Component(component_address))),
+                    fn_identifier: FnIdentifier::Native(NativeFnIdentifier::Component(component_fn)),
+                } => Component::main(component_address, component_fn, input, self)
+                    .map_err(RuntimeError::ComponentError),
+                REActor {
+                    receiver: Some(Receiver::Ref(RENodeId::ResourceManager(resource_address))),
+                    fn_identifier:
+                        FnIdentifier::Native(NativeFnIdentifier::ResourceManager(resource_manager_fn)),
+                } => ResourceManager::main(resource_address, resource_manager_fn, input, self)
+                    .map_err(RuntimeError::ResourceManagerError),
+                REActor {
+                    receiver: Some(Receiver::Ref(RENodeId::System)),
+                    fn_identifier: FnIdentifier::Native(NativeFnIdentifier::System(system_fn)),
+                } => System::main(system_fn, input, self).map_err(RuntimeError::SystemError),
+                REActor {
+                    receiver,
+                    fn_identifier:
+                        FnIdentifier::Scrypto {
+                            package_address,
+                            blueprint_name,
+                            ident,
+                        },
+                } => {
+                    let output = {
                         let package = self
                             .track
                             .read_substate(SubstateId::Package(package_address))
                             .package();
+                        let wasm_metering_params = self.fee_table.wasm_metering_params();
+                        let instrumented_code = self
+                            .wasm_instrumenter
+                            .instrument(package.code(), &wasm_metering_params);
+                        let mut instance = self.wasm_engine.instantiate(instrumented_code);
                         let blueprint_abi = package
                             .blueprint_abi(&blueprint_name)
                             .expect("Blueprint should exist");
-                        let fn_abi = blueprint_abi.get_fn_abi(&ident).unwrap();
-                        if !fn_abi.output.matches(&output.dom) {
-                            Err(RuntimeError::InvalidFnOutput {
-                                fn_identifier: self.actor.fn_identifier.clone(),
-                                output: output.dom,
-                            })
-                        } else {
-                            Ok(output)
-                        }
-                    }
-                },
-                Some(receiver) => {
-                    match (receiver, self.actor.fn_identifier.clone()) {
-                        (
-                            Receiver::Consumed(node_id),
-                            FnIdentifier::Native(NativeFnIdentifier::Bucket(bucket_fn)),
-                        ) => Bucket::consuming_main(node_id, bucket_fn, input, self)
-                            .map_err(RuntimeError::BucketError),
-                        (
-                            Receiver::Consumed(node_id),
-                            FnIdentifier::Native(NativeFnIdentifier::Proof(proof_fn)),
-                        ) => Proof::main_consume(node_id, proof_fn, input, self)
-                            .map_err(RuntimeError::ProofError),
-                        (
-                            Receiver::AuthZoneRef,
-                            FnIdentifier::Native(NativeFnIdentifier::AuthZone(auth_zone_fn)),
-                        ) => maybe_authzone
+                        let export_name = &blueprint_abi
+                            .get_fn_abi(&ident)
                             .unwrap()
-                            .main(auth_zone_fn, input, self)
-                            .map_err(RuntimeError::AuthZoneError),
-                        (Receiver::Ref(node_id), FnIdentifier::Native(native_fn)) => {
-                            match (node_id, native_fn) {
-                                (
-                                    RENodeId::Bucket(bucket_id),
-                                    NativeFnIdentifier::Bucket(bucket_fn),
-                                ) => Bucket::main(bucket_id, bucket_fn, input, self)
-                                    .map_err(RuntimeError::BucketError),
-                                (
-                                    RENodeId::Proof(proof_id),
-                                    NativeFnIdentifier::Proof(proof_fn),
-                                ) => Proof::main(proof_id, proof_fn, input, self)
-                                    .map_err(RuntimeError::ProofError),
-                                (RENodeId::Worktop, NativeFnIdentifier::Worktop(worktop_fn)) => {
-                                    Worktop::main(worktop_fn, input, self)
-                                        .map_err(RuntimeError::WorktopError)
-                                }
-                                (
-                                    RENodeId::Vault(vault_id),
-                                    NativeFnIdentifier::Vault(vault_fn),
-                                ) => Vault::main(vault_id, vault_fn, input, self)
-                                    .map_err(RuntimeError::VaultError),
-                                (
-                                    RENodeId::Component(component_address),
-                                    NativeFnIdentifier::Component(component_fn),
-                                ) => Component::main(component_address, component_fn, input, self)
-                                    .map_err(RuntimeError::ComponentError),
-                                (
-                                    RENodeId::ResourceManager(resource_address),
-                                    NativeFnIdentifier::ResourceManager(resource_manager_fn),
-                                ) => ResourceManager::main(
-                                    resource_address,
-                                    resource_manager_fn,
-                                    input,
-                                    self,
+                            .export_name
+                            .to_string();
+                        let scrypto_actor = match receiver {
+                            Some(Receiver::Ref(RENodeId::Component(component_address))) => {
+                                ScryptoActor::Component(
+                                    component_address,
+                                    package_address.clone(),
+                                    blueprint_name.clone(),
                                 )
-                                .map_err(RuntimeError::ResourceManagerError),
-                                (RENodeId::System, NativeFnIdentifier::System(system_fn)) => {
-                                    System::main(system_fn, input, self)
-                                        .map_err(RuntimeError::SystemError)
-                                }
-                                _ => Err(RuntimeError::MethodDoesNotExist(
+                            }
+                            None => {
+                                ScryptoActor::blueprint(package_address, blueprint_name.clone())
+                            }
+                            _ => {
+                                return Err(RuntimeError::MethodDoesNotExist(
                                     self.actor.fn_identifier.clone(),
-                                )),
+                                ))
                             }
-                        }
-                        (
-                            Receiver::Ref(RENodeId::Component(component_address)),
-                            FnIdentifier::Scrypto {
-                                ident,
-                                package_address,
-                                blueprint_name,
-                            },
-                        ) => {
-                            let output = {
-                                let package = self
-                                    .track
-                                    .read_substate(SubstateId::Package(package_address))
-                                    .package();
-                                let wasm_metering_params = self.fee_table.wasm_metering_params();
-                                let instrumented_code = self
-                                    .wasm_instrumenter
-                                    .instrument(package.code(), &wasm_metering_params);
-                                let mut instance = self.wasm_engine.instantiate(instrumented_code);
-                                let blueprint_abi = package
-                                    .blueprint_abi(&blueprint_name)
-                                    .expect("Blueprint should exist");
-                                let export_name = &blueprint_abi
-                                    .get_fn_abi(&ident)
-                                    .unwrap()
-                                    .export_name
-                                    .to_string();
-                                let mut runtime: Box<dyn WasmRuntime> =
-                                    Box::new(RadixEngineWasmRuntime::new(
-                                        ScryptoActor::Component(
-                                            component_address,
-                                            package_address.clone(),
-                                            blueprint_name.clone(),
-                                        ),
-                                        self,
-                                    ));
-                                instance
-                                    .invoke_export(&export_name, &input, &mut runtime)
-                                    .map_err(|e| match e {
-                                        // Flatten error code for more readable transaction receipt
-                                        InvokeError::RuntimeError(e) => e,
-                                        e @ _ => RuntimeError::InvokeError(e.into()),
-                                    })?
-                            };
+                        };
+                        let mut runtime: Box<dyn WasmRuntime> =
+                            Box::new(RadixEngineWasmRuntime::new(scrypto_actor, self));
+                        instance
+                            .invoke_export(&export_name, &input, &mut runtime)
+                            .map_err(|e| match e {
+                                // Flatten error code for more readable transaction receipt
+                                InvokeError::RuntimeError(e) => e,
+                                e @ _ => RuntimeError::InvokeError(e.into()),
+                            })?
+                    };
 
-                            let package = self
-                                .track
-                                .read_substate(SubstateId::Package(package_address))
-                                .package();
-                            let blueprint_abi = package
-                                .blueprint_abi(&blueprint_name)
-                                .expect("Blueprint should exist");
-                            let fn_abi = blueprint_abi.get_fn_abi(&ident).unwrap();
-                            if !fn_abi.output.matches(&output.dom) {
-                                Err(RuntimeError::InvalidFnOutput {
-                                    fn_identifier: self.actor.fn_identifier.clone(),
-                                    output: output.dom,
-                                })
-                            } else {
-                                Ok(output)
-                            }
-                        }
-                        _ => Err(RuntimeError::MethodDoesNotExist(
-                            self.actor.fn_identifier.clone(),
-                        )),
+                    let package = self
+                        .track
+                        .read_substate(SubstateId::Package(package_address))
+                        .package();
+                    let blueprint_abi = package
+                        .blueprint_abi(&blueprint_name)
+                        .expect("Blueprint should exist");
+                    let fn_abi = blueprint_abi.get_fn_abi(&ident).unwrap();
+                    if !fn_abi.output.matches(&output.dom) {
+                        Err(RuntimeError::InvalidFnOutput {
+                            fn_identifier: self.actor.fn_identifier.clone(),
+                            output: output.dom,
+                        })
+                    } else {
+                        Ok(output)
                     }
+                }
+                _ => {
+                    return Err(RuntimeError::MethodDoesNotExist(
+                        self.actor.fn_identifier.clone(),
+                    ))
                 }
             }?;
 
