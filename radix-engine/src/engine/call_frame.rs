@@ -959,81 +959,9 @@ where
         let output = {
             let rtn = match self.actor.clone() {
                 REActor {
-                    receiver: None,
-                    fn_identifier:
-                        FnIdentifier::Native(NativeFnIdentifier::TransactionProcessor(
-                            transaction_processor_fn,
-                        )),
-                } => TransactionProcessor::static_main(transaction_processor_fn, input, self)
-                    .map_err(|e| match e {
-                        TransactionProcessorError::InvalidRequestData(_) => {
-                            panic!("Illegal state")
-                        }
-                        TransactionProcessorError::InvalidMethod => {
-                            panic!("Illegal state")
-                        }
-                        TransactionProcessorError::RuntimeError(e) => e,
-                    }),
-                REActor {
-                    receiver: None,
-                    fn_identifier: FnIdentifier::Native(NativeFnIdentifier::Package(package_fn)),
-                } => ValidatedPackage::static_main(package_fn, input, self)
-                    .map_err(RuntimeError::PackageError),
-                REActor {
-                    receiver: None,
-                    fn_identifier:
-                        FnIdentifier::Native(NativeFnIdentifier::ResourceManager(resource_manager_fn)),
-                } => ResourceManager::static_main(resource_manager_fn, input, self)
-                    .map_err(RuntimeError::ResourceManagerError),
-                REActor {
-                    receiver: Some(Receiver::Consumed(node_id)),
-                    fn_identifier: FnIdentifier::Native(NativeFnIdentifier::Bucket(bucket_fn)),
-                } => Bucket::consuming_main(node_id, bucket_fn, input, self)
-                    .map_err(RuntimeError::BucketError),
-                REActor {
-                    receiver: Some(Receiver::Consumed(node_id)),
-                    fn_identifier: FnIdentifier::Native(NativeFnIdentifier::Proof(proof_fn)),
-                } => Proof::main_consume(node_id, proof_fn, input, self)
-                    .map_err(RuntimeError::ProofError),
-                REActor {
-                    receiver: Some(Receiver::AuthZoneRef),
-                    fn_identifier: FnIdentifier::Native(NativeFnIdentifier::AuthZone(auth_zone_fn)),
-                } => maybe_authzone
-                    .unwrap()
-                    .main(auth_zone_fn, input, self)
-                    .map_err(RuntimeError::AuthZoneError),
-                REActor {
-                    receiver: Some(Receiver::Ref(RENodeId::Bucket(bucket_id))),
-                    fn_identifier: FnIdentifier::Native(NativeFnIdentifier::Bucket(bucket_fn)),
-                } => Bucket::main(bucket_id, bucket_fn, input, self)
-                    .map_err(RuntimeError::BucketError),
-                REActor {
-                    receiver: Some(Receiver::Ref(RENodeId::Proof(proof_id))),
-                    fn_identifier: FnIdentifier::Native(NativeFnIdentifier::Proof(proof_fn)),
-                } => Proof::main(proof_id, proof_fn, input, self).map_err(RuntimeError::ProofError),
-                REActor {
-                    receiver: Some(Receiver::Ref(RENodeId::Worktop)),
-                    fn_identifier: FnIdentifier::Native(NativeFnIdentifier::Worktop(worktop_fn)),
-                } => Worktop::main(worktop_fn, input, self).map_err(RuntimeError::WorktopError),
-                REActor {
-                    receiver: Some(Receiver::Ref(RENodeId::Vault(vault_id))),
-                    fn_identifier: FnIdentifier::Native(NativeFnIdentifier::Vault(vault_fn)),
-                } => Vault::main(vault_id, vault_fn, input, self).map_err(RuntimeError::VaultError),
-                REActor {
-                    receiver: Some(Receiver::Ref(RENodeId::Component(component_address))),
-                    fn_identifier: FnIdentifier::Native(NativeFnIdentifier::Component(component_fn)),
-                } => Component::main(component_address, component_fn, input, self)
-                    .map_err(RuntimeError::ComponentError),
-                REActor {
-                    receiver: Some(Receiver::Ref(RENodeId::ResourceManager(resource_address))),
-                    fn_identifier:
-                        FnIdentifier::Native(NativeFnIdentifier::ResourceManager(resource_manager_fn)),
-                } => ResourceManager::main(resource_address, resource_manager_fn, input, self)
-                    .map_err(RuntimeError::ResourceManagerError),
-                REActor {
-                    receiver: Some(Receiver::Ref(RENodeId::System)),
-                    fn_identifier: FnIdentifier::Native(NativeFnIdentifier::System(system_fn)),
-                } => System::main(system_fn, input, self).map_err(RuntimeError::SystemError),
+                    receiver,
+                    fn_identifier: FnIdentifier::Native(native_fn),
+                } => NativeInterpreter::run(receiver, native_fn, maybe_authzone, input, self),
                 REActor {
                     receiver,
                     fn_identifier:
@@ -1105,11 +1033,6 @@ where
                     } else {
                         Ok(output)
                     }
-                }
-                _ => {
-                    return Err(RuntimeError::MethodDoesNotExist(
-                        self.actor.fn_identifier.clone(),
-                    ))
                 }
             }?;
 
