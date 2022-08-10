@@ -1,7 +1,3 @@
-#[rustfmt::skip]
-pub mod test_runner;
-
-use crate::test_runner::TestRunner;
 use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::InMemorySubstateStore;
 use radix_engine::ledger::WriteableSubstateStore;
@@ -12,6 +8,7 @@ use scrypto::core::Network;
 use scrypto::prelude::*;
 use scrypto::to_struct;
 use scrypto::values::ScryptoValue;
+use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::model::*;
 
@@ -261,4 +258,70 @@ fn test_fee_accounting_rejection() {
     receipt.expect_rejection();
     let account1_new_balance = query_account_balance(&mut test_runner, account1, RADIX_TOKEN);
     assert_eq!(account1_new_balance, account1_balance);
+}
+
+#[test]
+fn test_contingent_fee_accounting_success() {
+    // Arrange
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
+    let (public_key1, _, account1) = test_runner.new_account();
+    let (public_key2, _, account2) = test_runner.new_account();
+    let account1_balance = query_account_balance(&mut test_runner, account1, RADIX_TOKEN);
+    let account2_balance = query_account_balance(&mut test_runner, account2, RADIX_TOKEN);
+
+    // Act
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .lock_fee(dec!("10"), account1)
+        .lock_contingent_fee(dec!("0.001"), account2)
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key1, public_key2]);
+
+    // Assert
+    receipt.expect_success();
+    let account1_new_balance = query_account_balance(&mut test_runner, account1, RADIX_TOKEN);
+    let account2_new_balance = query_account_balance(&mut test_runner, account2, RADIX_TOKEN);
+    let summary = receipt.fee_summary;
+    let effective_price =
+        summary.cost_unit_price + summary.cost_unit_price * summary.tip_percentage / 100;
+    let contingent_fee =
+        (dec!("0.001") / effective_price).round(0, RoundingMode::TowardsZero) * effective_price;
+    assert_eq!(
+        account1_new_balance,
+        account1_balance - effective_price * summary.cost_unit_consumed + contingent_fee
+    );
+    assert_eq!(account2_new_balance, account2_balance - contingent_fee);
+}
+
+#[test]
+fn test_contingent_fee_accounting_failure() {
+    // Arrange
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
+    let (public_key1, _, account1) = test_runner.new_account();
+    let (public_key2, _, account2) = test_runner.new_account();
+    let account1_balance = query_account_balance(&mut test_runner, account1, RADIX_TOKEN);
+    let account2_balance = query_account_balance(&mut test_runner, account2, RADIX_TOKEN);
+
+    // Act
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .lock_fee(dec!("10"), account1)
+        .lock_contingent_fee(dec!("0.001"), account2)
+        .assert_worktop_contains_by_amount(1.into(), RADIX_TOKEN)
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key1, public_key2]);
+
+    // Assert
+    receipt
+        .expect_failure(|e| matches!(e, RuntimeError::WorktopError(WorktopError::AssertionFailed)));
+    let account1_new_balance = query_account_balance(&mut test_runner, account1, RADIX_TOKEN);
+    let account2_new_balance = query_account_balance(&mut test_runner, account2, RADIX_TOKEN);
+    let summary = receipt.fee_summary;
+    let effective_price =
+        summary.cost_unit_price + summary.cost_unit_price * summary.tip_percentage / 100;
+    assert_eq!(
+        account1_new_balance,
+        account1_balance - effective_price * summary.cost_unit_consumed
+    );
+    assert_eq!(account2_new_balance, account2_balance);
 }

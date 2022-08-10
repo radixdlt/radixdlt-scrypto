@@ -1,7 +1,3 @@
-#[rustfmt::skip]
-pub mod test_runner;
-
-use crate::test_runner::TestRunner;
 use radix_engine::constants::*;
 use radix_engine::ledger::InMemorySubstateStore;
 use radix_engine::transaction::ExecutionConfig;
@@ -10,6 +6,7 @@ use radix_engine::wasm::DefaultWasmEngine;
 use radix_engine::wasm::WasmInstrumenter;
 use scrypto::core::Network;
 use scrypto::prelude::*;
+use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::builder::TransactionBuilder;
 use transaction::model::TransactionHeader;
@@ -29,7 +26,7 @@ fn test_normal_transaction_flow() {
         max_cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,
         min_tip_percentage: 0,
     };
-    let execution_params = ExecutionConfig::default();
+    let execution_params = ExecutionConfig::debug();
 
     let raw_transaction = create_transaction();
     let validated_transaction = TransactionValidator::validate_from_slice(

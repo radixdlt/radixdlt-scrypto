@@ -136,6 +136,7 @@ impl ResourceManager {
     ) -> Result<Self, ResourceManagerError> {
         let mut vault_method_table: HashMap<String, ResourceMethodRule> = HashMap::new();
         vault_method_table.insert("lock_fee".to_string(), Protected(Withdraw));
+        vault_method_table.insert("lock_contingent_fee".to_string(), Protected(Withdraw));
         vault_method_table.insert("take".to_string(), Protected(Withdraw));
         vault_method_table.insert("put".to_string(), Protected(Deposit));
         for pub_method in [
@@ -257,14 +258,7 @@ impl ResourceManager {
         self.total_supply
     }
 
-    pub fn mint<
-        'p,
-        's,
-        Y: SystemApi<'p, 's, W, I, C>,
-        W: WasmEngine<I>,
-        I: WasmInstance,
-        C: FeeReserve,
-    >(
+    pub fn mint<'s, Y: SystemApi<'s, W, I, C>, W: WasmEngine<I>, I: WasmInstance, C: FeeReserve>(
         &mut self,
         mint_params: MintParams,
         self_address: ResourceAddress,
@@ -306,9 +300,8 @@ impl ResourceManager {
     }
 
     pub fn mint_non_fungibles<
-        'p,
         's,
-        Y: SystemApi<'p, 's, W, I, C>,
+        Y: SystemApi<'s, W, I, C>,
         W: WasmEngine<I>,
         I: WasmInstance,
         C: FeeReserve,
@@ -387,9 +380,8 @@ impl ResourceManager {
     }
 
     pub fn static_main<
-        'p,
         's,
-        Y: SystemApi<'p, 's, W, I, C>,
+        Y: SystemApi<'s, W, I, C>,
         W: WasmEngine<I>,
         I: WasmInstance,
         C: FeeReserve,
@@ -478,14 +470,7 @@ impl ResourceManager {
         }
     }
 
-    pub fn main<
-        'p,
-        's,
-        Y: SystemApi<'p, 's, W, I, C>,
-        W: WasmEngine<I>,
-        I: WasmInstance,
-        C: FeeReserve,
-    >(
+    pub fn main<'s, Y: SystemApi<'s, W, I, C>, W: WasmEngine<I>, I: WasmInstance, C: FeeReserve>(
         resource_address: ResourceAddress,
         method_name: &str,
         arg: ScryptoValue,
