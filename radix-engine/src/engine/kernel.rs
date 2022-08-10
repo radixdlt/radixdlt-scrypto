@@ -127,7 +127,7 @@ where
         Ok(())
     }
 
-    pub fn read_value_internal(
+    fn read_value_internal(
         call_frames: &mut Vec<CallFrame>,
         track: &mut Track<'s>,
         substate_id: &SubstateId,
@@ -220,7 +220,7 @@ where
         }
     }
 
-    pub fn run(
+    fn run(
         &mut self,
         execution_entity: ExecutionEntity,
         fn_ident: &str,
@@ -409,10 +409,7 @@ where
 
         // Take values to return
         let values_to_take = output.node_ids();
-        let (received_values, mut missing) = self
-            .call_frames
-            .last_mut()
-            .expect("Current frame always exists")
+        let (received_values, mut missing) = Self::current_frame_mut(&mut self.call_frames)
             .take_available_values(values_to_take, false)?;
         let first_missing_value = missing.drain().nth(0);
         if let Some(missing_node) = first_missing_value {
@@ -422,10 +419,7 @@ where
         // Check we have valid references to pass back
         for refed_component_address in &output.refed_component_addresses {
             let node_id = RENodeId::Component(*refed_component_address);
-            if let Some(RENodePointer::Store(..)) = self
-                .call_frames
-                .last_mut()
-                .expect("Current frame always exists")
+            if let Some(RENodePointer::Store(..)) = Self::current_frame_mut(&mut self.call_frames)
                 .node_refs
                 .get(&node_id)
             {
@@ -436,17 +430,20 @@ where
         }
 
         // drop proofs and check resource leak
-        self.call_frames
-            .last_mut()
-            .expect("Current frame always exists")
+        Self::current_frame_mut(&mut self.call_frames)
             .auth_zone
             .clear();
-        self.call_frames
-            .last_mut()
-            .expect("Current frame always exists")
-            .drop_owned_values()?;
+        Self::current_frame_mut(&mut self.call_frames).drop_owned_values()?;
 
         Ok((output, received_values))
+    }
+
+    fn current_frame_mut(call_frames: &mut Vec<CallFrame>) -> &mut CallFrame {
+        call_frames.last_mut().expect("Current frame always exists")
+    }
+
+    fn current_frame(call_frames: &Vec<CallFrame>) -> &CallFrame {
+        call_frames.last().expect("Current frame always exists")
     }
 }
 
@@ -498,10 +495,7 @@ where
 
         // Figure out what buckets and proofs to move from this process
         let values_to_take = input.node_ids();
-        let (taken_values, mut missing) = self
-            .call_frames
-            .last_mut()
-            .expect("Current frame always exists")
+        let (taken_values, mut missing) = Self::current_frame_mut(&mut self.call_frames)
             .take_available_values(values_to_take, false)?;
         let first_missing_value = missing.drain().nth(0);
         if let Some(missing_value) = first_missing_value {
@@ -592,10 +586,7 @@ where
             // Pass argument references
             for refed_component_address in &input.refed_component_addresses {
                 let node_id = RENodeId::Component(refed_component_address.clone());
-                if let Some(pointer) = self
-                    .call_frames
-                    .last_mut()
-                    .expect("Current frame always exists")
+                if let Some(pointer) = Self::current_frame_mut(&mut self.call_frames)
                     .node_refs
                     .get(&node_id)
                 {
@@ -611,11 +602,7 @@ where
         // start a new frame and run
         let (output, received_values) = {
             let frame = CallFrame::new_child(
-                self.call_frames
-                    .last()
-                    .expect("Current frame always exists")
-                    .depth
-                    + 1,
+                Self::current_frame(&self.call_frames).depth + 1,
                 actor,
                 next_owned_values,
                 next_frame_node_refs,
@@ -637,9 +624,7 @@ where
         // move buckets and proofs to this process.
         for (id, value) in received_values {
             trace!(self, Level::Debug, "Received value: {:?}", value);
-            self.call_frames
-                .last_mut()
-                .expect("Current frame always exists")
+            Self::current_frame_mut(&mut self.call_frames)
                 .owned_heap_nodes
                 .insert(id, value);
         }
@@ -649,9 +634,7 @@ where
             let node_id = RENodeId::Component(*refed_component_address);
             let mut visible = HashSet::new();
             visible.insert(SubstateId::ComponentInfo(*refed_component_address));
-            self.call_frames
-                .last_mut()
-                .expect("Current frame always exists")
+            Self::current_frame_mut(&mut self.call_frames)
                 .node_refs
                 .insert(node_id, RENodePointer::Store(node_id));
         }
@@ -674,13 +657,7 @@ where
             &fn_ident
         );
 
-        if self
-            .call_frames
-            .last()
-            .expect("Current frame always exists")
-            .depth
-            == self.max_depth
-        {
+        if Self::current_frame(&self.call_frames).depth == self.max_depth {
             return Err(RuntimeError::MaxCallDepthLimitReached);
         }
 
@@ -708,10 +685,7 @@ where
 
         // Figure out what buckets and proofs to move from this process
         let values_to_take = input.node_ids();
-        let (taken_values, mut missing) = self
-            .call_frames
-            .last_mut()
-            .expect("Current frame always exists")
+        let (taken_values, mut missing) = Self::current_frame_mut(&mut self.call_frames)
             .take_available_values(values_to_take, false)?;
         let first_missing_value = missing.drain().nth(0);
         if let Some(missing_value) = first_missing_value {
@@ -735,10 +709,7 @@ where
         // Authorization and state load
         let (actor, execution_state) = match &receiver {
             Receiver::Consumed(node_id) => {
-                let heap_node = self
-                    .call_frames
-                    .last_mut()
-                    .expect("Current frame always exists")
+                let heap_node = Self::current_frame_mut(&mut self.call_frames)
                     .owned_heap_nodes
                     .remove(node_id)
                     .ok_or(RuntimeError::RENodeNotFound(*node_id))?;
@@ -788,26 +759,16 @@ where
                     _ => return Err(RuntimeError::MethodDoesNotExist(fn_ident.clone())),
                 };
 
-                let node_pointer = if self
-                    .call_frames
-                    .last()
-                    .expect("Current frame always exists")
+                let node_pointer = if Self::current_frame(&self.call_frames)
                     .owned_heap_nodes
                     .contains_key(&node_id)
                 {
                     RENodePointer::Heap {
-                        frame_id: self
-                            .call_frames
-                            .last()
-                            .expect("Current frame always exists")
-                            .depth,
+                        frame_id: Self::current_frame(&self.call_frames).depth,
                         root: node_id.clone(),
                         id: None,
                     }
-                } else if let Some(pointer) = self
-                    .call_frames
-                    .last()
-                    .expect("Current frame always exists")
+                } else if let Some(pointer) = Self::current_frame(&self.call_frames)
                     .node_refs
                     .get(&node_id)
                 {
@@ -953,26 +914,16 @@ where
 
                 // Find value
                 let node_id = RENodeId::Component(component_address);
-                let node_pointer = if self
-                    .call_frames
-                    .last()
-                    .expect("Current frame always exists")
+                let node_pointer = if Self::current_frame(&self.call_frames)
                     .owned_heap_nodes
                     .contains_key(&node_id)
                 {
                     RENodePointer::Heap {
-                        frame_id: self
-                            .call_frames
-                            .last()
-                            .expect("Current frame always exists")
-                            .depth,
+                        frame_id: Self::current_frame(&self.call_frames).depth,
                         root: node_id.clone(),
                         id: None,
                     }
-                } else if let Some(pointer) = self
-                    .call_frames
-                    .last()
-                    .expect("Current frame always exists")
+                } else if let Some(pointer) = Self::current_frame(&self.call_frames)
                     .node_refs
                     .get(&node_id)
                 {
@@ -1066,10 +1017,7 @@ where
         // Pass argument references
         for refed_component_address in &input.refed_component_addresses {
             let node_id = RENodeId::Component(refed_component_address.clone());
-            if let Some(pointer) = self
-                .call_frames
-                .last()
-                .expect("Current frame always exists")
+            if let Some(pointer) = Self::current_frame(&self.call_frames)
                 .node_refs
                 .get(&node_id)
             {
@@ -1084,11 +1032,7 @@ where
         // start a new frame
         let (output, received_values) = {
             let frame = CallFrame::new_child(
-                self.call_frames
-                    .last()
-                    .expect("Current frame always exists")
-                    .depth
-                    + 1,
+                Self::current_frame(&self.call_frames).depth + 1,
                 actor,
                 next_owned_values,
                 next_frame_node_refs,
@@ -1114,9 +1058,7 @@ where
         // move buckets and proofs to this process.
         for (id, value) in received_values {
             trace!(self, Level::Debug, "Received value: {:?}", value);
-            self.call_frames
-                .last_mut()
-                .expect("Current frame always exists")
+            Self::current_frame_mut(&mut self.call_frames)
                 .owned_heap_nodes
                 .insert(id, value);
         }
@@ -1126,9 +1068,7 @@ where
             let node_id = RENodeId::Component(*refed_component_address);
             let mut visible = HashSet::new();
             visible.insert(SubstateId::ComponentInfo(*refed_component_address));
-            self.call_frames
-                .last_mut()
-                .expect("Current frame always exists")
+            Self::current_frame_mut(&mut self.call_frames)
                 .node_refs
                 .insert(node_id, RENodePointer::Store(node_id));
         }
@@ -1181,10 +1121,7 @@ where
             "borrow",
         )?;
 
-        let node_pointer = self
-            .call_frames
-            .last()
-            .expect("Current frame always exists")
+        let node_pointer = Self::current_frame(&self.call_frames)
             .node_refs
             .get(node_id)
             .expect(&format!("{:?} is unknown.", node_id));
@@ -1266,10 +1203,7 @@ where
         )?;
 
         // Authorization
-        if !self
-            .call_frames
-            .last()
-            .expect("Current frame always exists")
+        if !Self::current_frame(&self.call_frames)
             .actor
             .is_substate_readable(substate_id)
         {
@@ -1278,10 +1212,7 @@ where
 
         let node_id = SubstateProperties::get_node_id(substate_id);
 
-        let node_pointer = self
-            .call_frames
-            .last()
-            .expect("Current frame always exists")
+        let node_pointer = Self::current_frame(&self.call_frames)
             .node_refs
             .get(&node_id)
             .cloned()
@@ -1346,10 +1277,7 @@ where
 
         // TODO: Authorization
 
-        Ok(self
-            .call_frames
-            .last_mut()
-            .expect("Current frame always exists")
+        Ok(Self::current_frame_mut(&mut self.call_frames)
             .owned_heap_nodes
             .remove(&node_id)
             .unwrap())
@@ -1373,11 +1301,8 @@ where
 
         // Take any required child nodes
         let children = re_node.get_child_nodes()?;
-        let (taken_root_nodes, mut missing) = self
-            .call_frames
-            .last_mut()
-            .expect("Current frame always exists")
-            .take_available_values(children, true)?;
+        let (taken_root_nodes, mut missing) =
+            Self::current_frame_mut(&mut self.call_frames).take_available_values(children, true)?;
         let first_missing_node = missing.drain().nth(0);
         if let Some(missing_node) = first_missing_node {
             return Err(RuntimeError::RENodeCreateNodeNotFound(missing_node));
@@ -1393,9 +1318,7 @@ where
             root: re_node,
             child_nodes,
         };
-        self.call_frames
-            .last_mut()
-            .expect("Current frame always exists")
+        Self::current_frame_mut(&mut self.call_frames)
             .owned_heap_nodes
             .insert(node_id, heap_root_node);
 
@@ -1460,10 +1383,7 @@ where
 
         let mut nodes_to_take = HashSet::new();
         nodes_to_take.insert(node_id);
-        let (taken_nodes, missing_nodes) = self
-            .call_frames
-            .last_mut()
-            .expect("Current frame always exists")
+        let (taken_nodes, missing_nodes) = Self::current_frame_mut(&mut self.call_frames)
             .take_available_values(nodes_to_take, false)?;
         assert!(missing_nodes.is_empty());
         assert!(taken_nodes.len() == 1);
@@ -1529,9 +1449,7 @@ where
             }
         }
 
-        self.call_frames
-            .last_mut()
-            .expect("Current frame always exists")
+        Self::current_frame_mut(&mut self.call_frames)
             .node_refs
             .insert(node_id, RENodePointer::Store(node_id));
 
@@ -1552,19 +1470,12 @@ where
             .map_err(RuntimeError::CostingError)?;
 
         // Authorization
-        if !self
-            .call_frames
-            .last()
-            .expect("Current frame always exists")
+        if !Self::current_frame(&self.call_frames)
             .actor
             .is_substate_readable(&substate_id)
         {
             return Err(RuntimeError::SubstateReadNotReadable(
-                self.call_frames
-                    .last()
-                    .expect("Current frame always exists")
-                    .actor
-                    .clone(),
+                Self::current_frame(&self.call_frames).actor.clone(),
                 substate_id.clone(),
             ));
         }
@@ -1574,9 +1485,7 @@ where
         let cur_children = current_value.node_ids();
         for child_id in cur_children {
             let child_pointer = parent_pointer.child(child_id);
-            self.call_frames
-                .last_mut()
-                .expect("Current frame always exists")
+            Self::current_frame_mut(&mut self.call_frames)
                 .node_refs
                 .insert(child_id, child_pointer);
         }
@@ -1589,19 +1498,12 @@ where
         // TODO: Costing
 
         // Authorization
-        if !self
-            .call_frames
-            .last()
-            .expect("Current frame always exists")
+        if !Self::current_frame(&self.call_frames)
             .actor
             .is_substate_writeable(&substate_id)
         {
             return Err(RuntimeError::SubstateWriteNotWriteable(
-                self.call_frames
-                    .last()
-                    .expect("Current frame always exists")
-                    .actor
-                    .clone(),
+                Self::current_frame(&self.call_frames).actor.clone(),
                 substate_id,
             ));
         }
@@ -1639,19 +1541,12 @@ where
             .map_err(RuntimeError::CostingError)?;
 
         // Authorization
-        if !self
-            .call_frames
-            .last()
-            .expect("Current frame always exists")
+        if !Self::current_frame(&self.call_frames)
             .actor
             .is_substate_writeable(&substate_id)
         {
             return Err(RuntimeError::SubstateWriteNotWriteable(
-                self.call_frames
-                    .last()
-                    .expect("Current frame always exists")
-                    .actor
-                    .clone(),
+                Self::current_frame(&self.call_frames).actor.clone(),
                 substate_id,
             ));
         }
@@ -1664,9 +1559,7 @@ where
                     return Err(RuntimeError::ValueNotAllowed);
                 }
 
-                self.call_frames
-                    .last_mut()
-                    .expect("Current frame always exists")
+                Self::current_frame_mut(&mut self.call_frames)
                     .take_available_values(node_ids, true)?
             } else {
                 (HashMap::new(), HashSet::new())
@@ -1732,9 +1625,7 @@ where
         let proofs = proof_ids
             .iter()
             .map(|proof_id| {
-                self.call_frames
-                    .last()
-                    .expect("Current frame always exists")
+                Self::current_frame(&self.call_frames)
                     .owned_heap_nodes
                     .get(&RENodeId::Proof(*proof_id))
                     .map(|p| match p.root() {
