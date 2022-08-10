@@ -137,6 +137,9 @@ where
         // 2. Apply pre-execution costing
         let fee_table = FeeTable::new();
         fee_reserve
+            .consume(fee_table.tx_base_fee(), "base_fee")
+            .expect("System loan should cover this");
+        fee_reserve
             .consume(
                 fee_table.tx_decoding_per_byte() * transaction.transaction_payload_size() as u32,
                 "decode_transaction",
