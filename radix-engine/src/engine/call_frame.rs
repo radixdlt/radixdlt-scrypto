@@ -808,23 +808,6 @@ impl<'f, 's> RENodeRefMut<'f, 's> {
     }
 }
 
-pub enum ExecutionEntity<'a> {
-    Function(FnIdentifier),
-    Method(Receiver, FnIdentifier, ExecutionState<'a>),
-}
-
-pub enum ExecutionState<'a> {
-    Consumed(RENodeId),
-    AuthZone(&'a mut AuthZone),
-    RENodeRef(RENodeId),
-    // TODO: Can remove this and replace useage with REActor
-    Component {
-        package_address: PackageAddress,
-        blueprint_name: String,
-        component_address: ComponentAddress,
-    },
-}
-
 impl<'p, 'g, 's, W, I, C> CallFrame<'p, 'g, 's, W, I, C>
 where
     W: WasmEngine<I>,
@@ -968,14 +951,14 @@ where
 
     pub fn run(
         &mut self,
-        execution_entity: ExecutionEntity<'p>,
+        maybe_authzone: Option<&mut AuthZone>, // TODO: Remove
         input: ScryptoValue,
     ) -> Result<(ScryptoValue, HashMap<RENodeId, HeapRootRENode>), RuntimeError> {
         trace!(self, Level::Debug, "Run started! Depth: {}", self.depth);
 
         let output = {
-            let rtn = match execution_entity {
-                ExecutionEntity::Function(fn_identifier) => match fn_identifier.clone() {
+            let rtn = match self.actor.receiver {
+                None => match self.actor.fn_identifier.clone() {
                     FnIdentifier::Native(native_fn) => match native_fn {
                         NativeFnIdentifier::TransactionProcessor(transaction_processor_fn) => {
                             TransactionProcessor::static_main(transaction_processor_fn, input, self)
@@ -997,7 +980,9 @@ where
                             ResourceManager::static_main(resource_manager_fn, input, self)
                                 .map_err(RuntimeError::ResourceManagerError)
                         }
-                        _ => Err(RuntimeError::MethodDoesNotExist(fn_identifier)),
+                        _ => Err(RuntimeError::MethodDoesNotExist(
+                            self.actor.fn_identifier.clone(),
+                        )),
                     },
                     FnIdentifier::Scrypto {
                         package_address,
@@ -1049,7 +1034,7 @@ where
                         let fn_abi = blueprint_abi.get_fn_abi(&ident).unwrap();
                         if !fn_abi.output.matches(&output.dom) {
                             Err(RuntimeError::InvalidFnOutput {
-                                fn_identifier: fn_identifier.clone(),
+                                fn_identifier: self.actor.fn_identifier.clone(),
                                 output: output.dom,
                             })
                         } else {
@@ -1057,25 +1042,26 @@ where
                         }
                     }
                 },
-                ExecutionEntity::Method(_, fn_identifier, state) => {
-                    match (state, fn_identifier.clone()) {
+                Some(receiver) => {
+                    match (receiver, self.actor.fn_identifier.clone()) {
                         (
-                            ExecutionState::Consumed(node_id),
+                            Receiver::Consumed(node_id),
                             FnIdentifier::Native(NativeFnIdentifier::Bucket(bucket_fn)),
                         ) => Bucket::consuming_main(node_id, bucket_fn, input, self)
                             .map_err(RuntimeError::BucketError),
                         (
-                            ExecutionState::Consumed(node_id),
+                            Receiver::Consumed(node_id),
                             FnIdentifier::Native(NativeFnIdentifier::Proof(proof_fn)),
                         ) => Proof::main_consume(node_id, proof_fn, input, self)
                             .map_err(RuntimeError::ProofError),
                         (
-                            ExecutionState::AuthZone(auth_zone),
+                            Receiver::AuthZoneRef,
                             FnIdentifier::Native(NativeFnIdentifier::AuthZone(auth_zone_fn)),
-                        ) => auth_zone
+                        ) => maybe_authzone
+                            .unwrap()
                             .main(auth_zone_fn, input, self)
                             .map_err(RuntimeError::AuthZoneError),
-                        (ExecutionState::RENodeRef(node_id), FnIdentifier::Native(native_fn)) => {
+                        (Receiver::Ref(node_id), FnIdentifier::Native(native_fn)) => {
                             match (node_id, native_fn) {
                                 (
                                     RENodeId::Bucket(bucket_id),
@@ -1115,16 +1101,18 @@ where
                                     System::main(system_fn, input, self)
                                         .map_err(RuntimeError::SystemError)
                                 }
-                                _ => Err(RuntimeError::MethodDoesNotExist(fn_identifier)),
+                                _ => Err(RuntimeError::MethodDoesNotExist(
+                                    self.actor.fn_identifier.clone(),
+                                )),
                             }
                         }
                         (
-                            ExecutionState::Component {
+                            Receiver::Ref(RENodeId::Component(component_address)),
+                            FnIdentifier::Scrypto {
+                                ident,
                                 package_address,
                                 blueprint_name,
-                                component_address,
                             },
-                            FnIdentifier::Scrypto { ident, .. },
                         ) => {
                             let output = {
                                 let package = self
@@ -1172,14 +1160,16 @@ where
                             let fn_abi = blueprint_abi.get_fn_abi(&ident).unwrap();
                             if !fn_abi.output.matches(&output.dom) {
                                 Err(RuntimeError::InvalidFnOutput {
-                                    fn_identifier: fn_identifier.clone(),
+                                    fn_identifier: self.actor.fn_identifier.clone(),
                                     output: output.dom,
                                 })
                             } else {
                                 Ok(output)
                             }
                         }
-                        _ => Err(RuntimeError::MethodDoesNotExist(fn_identifier)),
+                        _ => Err(RuntimeError::MethodDoesNotExist(
+                            self.actor.fn_identifier.clone(),
+                        )),
                     }
                 }
             }?;
@@ -1540,7 +1530,7 @@ where
             );
 
             // invoke the main function
-            frame.run(ExecutionEntity::Function(fn_identifier), input)?
+            frame.run(None, input)?
         };
 
         // Release locked addresses
@@ -1634,7 +1624,7 @@ where
         let next_caller_auth_zone;
 
         // Authorization and state load
-        let execution_state = match &receiver {
+        let maybe_authzone = match &receiver {
             Receiver::Ref(node_id) | Receiver::Consumed(node_id) => {
                 // Find node
                 let node_pointer = if self.owned_heap_nodes.contains_key(&node_id) {
@@ -1678,7 +1668,7 @@ where
                 let mut temporary_locks = Vec::new();
 
                 // Load actor
-                let execution_state = match &fn_identifier {
+                match &fn_identifier {
                     FnIdentifier::Scrypto {
                         package_address,
                         blueprint_name,
@@ -1695,45 +1685,29 @@ where
                             )?;
                             temporary_locks.push((node_pointer, temporary_substate_id, false));
 
-                            let scrypto_actor = {
-                                let node_ref = node_pointer.to_ref(
-                                    self.depth,
-                                    &self.owned_heap_nodes,
-                                    &self.parent_heap_nodes,
-                                    &mut self.track,
-                                );
-                                let component = node_ref.component_info();
+                            let node_ref = node_pointer.to_ref(
+                                self.depth,
+                                &self.owned_heap_nodes,
+                                &self.parent_heap_nodes,
+                                &mut self.track,
+                            );
+                            let component = node_ref.component_info();
 
-                                // Don't support traits yet
-                                if !package_address.eq(&component.package_address()) {
-                                    return Err(RuntimeError::MethodDoesNotExist(fn_identifier));
-                                }
-                                if !blueprint_name.eq(component.blueprint_name()) {
-                                    return Err(RuntimeError::MethodDoesNotExist(fn_identifier));
-                                }
-
-                                ScryptoActor::component(
-                                    *component_address,
-                                    component.package_address(),
-                                    component.blueprint_name().to_string(),
-                                )
-                            };
-                            ExecutionState::Component {
-                                package_address: scrypto_actor.package_address().clone(),
-                                blueprint_name: scrypto_actor.blueprint_name().clone(),
-                                component_address: *component_address,
+                            // Don't support traits yet
+                            if !package_address.eq(&component.package_address()) {
+                                return Err(RuntimeError::MethodDoesNotExist(fn_identifier));
+                            }
+                            if !blueprint_name.eq(component.blueprint_name()) {
+                                return Err(RuntimeError::MethodDoesNotExist(fn_identifier));
                             }
                         }
                         _ => panic!("Should not get here."),
                     },
-                    FnIdentifier::Native(..) => match &receiver {
-                        Receiver::Ref(node_id) => ExecutionState::RENodeRef(*node_id),
-                        Receiver::Consumed(node_id) => ExecutionState::Consumed(*node_id),
-                        _ => panic!("Unexpected"),
-                    },
+                    _ => {}
                 };
 
                 // Lock Parent Substates
+                // TODO: Check Component ABI here rather than in auth
                 match node_id {
                     RENodeId::Component(..) => {
                         let package_address = {
@@ -1861,7 +1835,7 @@ where
 
                 next_frame_node_refs.insert(node_id.clone(), node_pointer.clone());
 
-                Ok(execution_state)
+                Ok(None)
             }
             Receiver::AuthZoneRef => {
                 next_caller_auth_zone = Option::None;
@@ -1880,7 +1854,7 @@ where
                         locked_pointers.push((resource_node_pointer, resource_substate_id, false));
                         next_frame_node_refs.insert(resource_node_id, resource_node_pointer);
                     }
-                    Ok(ExecutionState::AuthZone(auth_zone))
+                    Ok(Some(auth_zone))
                 } else {
                     Err(RuntimeError::AuthZoneDoesNotExist)
                 }
@@ -1934,10 +1908,7 @@ where
             );
 
             // invoke the main function
-            frame.run(
-                ExecutionEntity::Method(receiver, fn_identifier, execution_state),
-                input,
-            )?
+            frame.run(maybe_authzone, input)?
         };
 
         // Release locked addresses
