@@ -1,4 +1,5 @@
 use sbor::rust::str::FromStr;
+use scrypto::math::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Span {
@@ -12,16 +13,37 @@ pub struct Span {
 pub enum TokenKind {
     /* Literals */
     BoolLiteral(bool),
+
     I8Literal(i8),
     I16Literal(i16),
     I32Literal(i32),
     I64Literal(i64),
     I128Literal(i128),
+
     U8Literal(u8),
     U16Literal(u16),
     U32Literal(u32),
     U64Literal(u64),
     U128Literal(u128),
+
+    SafeU8Literal(U8),
+    SafeU16Literal(U16),
+    SafeU32Literal(U32),
+    SafeU64Literal(U64),
+    SafeU128Literal(U128),
+    SafeU256Literal(U256),
+    SafeU384Literal(U384),
+    SafeU512Literal(U512),
+
+    SafeI8Literal(I8),
+    SafeI16Literal(I16),
+    SafeI32Literal(I32),
+    SafeI64Literal(I64),
+    SafeI128Literal(I128),
+    SafeI256Literal(I256),
+    SafeI384Literal(I384),
+    SafeI512Literal(I512),
+
     StringLiteral(String),
 
     /* Types */
@@ -37,6 +59,22 @@ pub enum TokenKind {
     U32,
     U64,
     U128,
+    SafeU8,
+    SafeU16,
+    SafeU32,
+    SafeU64,
+    SafeU128,
+    SafeU256,
+    SafeU384,
+    SafeU512,
+    SafeI8,
+    SafeI16,
+    SafeI32,
+    SafeI64,
+    SafeI128,
+    SafeI256,
+    SafeI384,
+    SafeI512,
     String,
 
     Struct,
@@ -58,6 +96,7 @@ pub enum TokenKind {
     Map,
 
     Decimal,
+    PreciseDecimal,
     PackageAddress,
     ComponentAddress,
     ResourceAddress,
@@ -271,6 +310,85 @@ impl Lexer {
                 '8' => Self::parse_int(&s, "u8", TokenKind::U8Literal),
                 _ => Err(self.unexpected_char()),
             },
+            's' => match self.advance()? {
+                'i' => match self.advance()? {
+                    '1' => match self.advance()? {
+                        '2' => match self.advance()? {
+                            '8' => Self::parse_int(&s, "I128", TokenKind::SafeI128Literal),
+                            _ => Err(self.unexpected_char()),
+                        },
+                        '6' => Self::parse_int(&s, "I16", TokenKind::SafeI16Literal),
+                        _ => Err(self.unexpected_char()),
+                    },
+                    '2' => match self.advance()? {
+                        '5' => match self.advance()? {
+                            '6' => Self::parse_int(&s, "I256", TokenKind::SafeI256Literal),
+                            _ => Err(self.unexpected_char()),
+                        },
+                        _ => Err(self.unexpected_char()),
+                    },
+                    '3' => match self.advance()? {
+                        '2' => Self::parse_int(&s, "I32", TokenKind::SafeI32Literal),
+                        '8' => match self.advance()? {
+                            '4' => Self::parse_int(&s, "I384", TokenKind::SafeI384Literal),
+                            _ => Err(self.unexpected_char()),
+                        },
+                        _ => Err(self.unexpected_char()),
+                    },
+                    '5' => match self.advance()? {
+                        '1' => match self.advance()? {
+                            '2' => Self::parse_int(&s, "I512", TokenKind::SafeI512Literal),
+                            _ => Err(self.unexpected_char()),
+                        },
+                        _ => Err(self.unexpected_char()),
+                    },
+                    '6' => match self.advance()? {
+                        '4' => Self::parse_int(&s, "I64", TokenKind::SafeI64Literal),
+                        _ => Err(self.unexpected_char()),
+                    },
+                    '8' => Self::parse_int(&s, "I8", TokenKind::SafeI8Literal),
+                    _ => Err(self.unexpected_char()),
+                },
+                'u' => match self.advance()? {
+                    '1' => match self.advance()? {
+                        '2' => match self.advance()? {
+                            '8' => Self::parse_int(&s, "U128", TokenKind::SafeU128Literal),
+                            _ => Err(self.unexpected_char()),
+                        },
+                        '6' => Self::parse_int(&s, "U16", TokenKind::SafeU16Literal),
+                        _ => Err(self.unexpected_char()),
+                    },
+                    '2' => match self.advance()? {
+                        '5' => match self.advance()? {
+                            '6' => Self::parse_int(&s, "U256", TokenKind::SafeU256Literal),
+                            _ => Err(self.unexpected_char()),
+                        },
+                        _ => Err(self.unexpected_char()),
+                    },
+                    '3' => match self.advance()? {
+                        '2' => Self::parse_int(&s, "U32", TokenKind::SafeU32Literal),
+                        '8' => match self.advance()? {
+                            '4' => Self::parse_int(&s, "U384", TokenKind::SafeU384Literal),
+                            _ => Err(self.unexpected_char()),
+                        },
+                        _ => Err(self.unexpected_char()),
+                    },
+                    '5' => match self.advance()? {
+                        '1' => match self.advance()? {
+                            '2' => Self::parse_int(&s, "U512", TokenKind::SafeU512Literal),
+                            _ => Err(self.unexpected_char()),
+                        },
+                        _ => Err(self.unexpected_char()),
+                    },
+                    '6' => match self.advance()? {
+                        '4' => Self::parse_int(&s, "U64", TokenKind::SafeU64Literal),
+                        _ => Err(self.unexpected_char()),
+                    },
+                    '8' => Self::parse_int(&s, "U8", TokenKind::SafeU8Literal),
+                    _ => Err(self.unexpected_char()),
+                },
+                _ => Err(self.unexpected_char()),
+            },
             _ => Err(self.unexpected_char()),
         }
         .map(|kind| self.new_token(kind, start))
@@ -369,6 +487,22 @@ impl Lexer {
             "U32" => Ok(TokenKind::U32),
             "U64" => Ok(TokenKind::U64),
             "U128" => Ok(TokenKind::U128),
+            "SafeU8" => Ok(TokenKind::SafeU8),
+            "SafeU16" => Ok(TokenKind::SafeU16),
+            "SafeU32" => Ok(TokenKind::SafeU32),
+            "SafeU64" => Ok(TokenKind::SafeU64),
+            "SafeU128" => Ok(TokenKind::SafeU128),
+            "SafeU256" => Ok(TokenKind::SafeU256),
+            "SafeU384" => Ok(TokenKind::SafeU384),
+            "SafeU512" => Ok(TokenKind::SafeU512),
+            "SafeI8" => Ok(TokenKind::SafeI8),
+            "SafeI16" => Ok(TokenKind::SafeI16),
+            "SafeI32" => Ok(TokenKind::SafeI32),
+            "SafeI64" => Ok(TokenKind::SafeI64),
+            "SafeI128" => Ok(TokenKind::SafeI128),
+            "SafeI256" => Ok(TokenKind::SafeI256),
+            "SafeI384" => Ok(TokenKind::SafeI384),
+            "SafeI512" => Ok(TokenKind::SafeI512),
             "String" => Ok(TokenKind::String),
             "Struct" => Ok(TokenKind::Struct),
             "Enum" => Ok(TokenKind::Enum),
@@ -381,6 +515,7 @@ impl Lexer {
             "Set" => Ok(TokenKind::Set),
             "Map" => Ok(TokenKind::Map),
             "Decimal" => Ok(TokenKind::Decimal),
+            "PreciseDecimal" => Ok(TokenKind::PreciseDecimal),
             "PackageAddress" => Ok(TokenKind::PackageAddress),
             "ComponentAddress" => Ok(TokenKind::ComponentAddress),
             "ResourceAddress" => Ok(TokenKind::ResourceAddress),
@@ -593,6 +728,63 @@ mod tests {
                 TokenKind::CloseParenthesis,
                 TokenKind::CloseParenthesis,
                 TokenKind::Semicolon,
+            ]
+        );
+    }
+
+    #[test]
+    fn test_safe_math_types() {
+        lex_ok!(
+            "1su8 2su16 3su32 4su64 5su128 6su256 7su384 8su512",
+            vec![
+                TokenKind::SafeU8Literal(1u8.into()),
+                TokenKind::SafeU16Literal(2u8.into()),
+                TokenKind::SafeU32Literal(3u8.into()),
+                TokenKind::SafeU64Literal(4u8.into()),
+                TokenKind::SafeU128Literal(5u8.into()),
+                TokenKind::SafeU256Literal(6u8.into()),
+                TokenKind::SafeU384Literal(7u8.into()),
+                TokenKind::SafeU512Literal(8u8.into())
+            ]
+        );
+        lex_ok!(
+            "1si8 2si16 3si32 4si64 5si128 6si256 7si384 8si512",
+            vec![
+                TokenKind::SafeI8Literal(1i8.into()),
+                TokenKind::SafeI16Literal(2i8.into()),
+                TokenKind::SafeI32Literal(3i8.into()),
+                TokenKind::SafeI64Literal(4i8.into()),
+                TokenKind::SafeI128Literal(5i8.into()),
+                TokenKind::SafeI256Literal(6i8.into()),
+                TokenKind::SafeI384Literal(7i8.into()),
+                TokenKind::SafeI512Literal(8i8.into())
+            ]
+        );
+        lex_ok!(
+            "List<SafeU8>(12su8, 19su8)",
+            vec![
+                TokenKind::List,
+                TokenKind::LessThan,
+                TokenKind::SafeU8,
+                TokenKind::GreaterThan,
+                TokenKind::OpenParenthesis,
+                TokenKind::SafeU8Literal(12u8.into()),
+                TokenKind::Comma,
+                TokenKind::SafeU8Literal(19u8.into()),
+                TokenKind::CloseParenthesis
+            ]
+        );
+    }
+
+    #[test]
+    fn test_precise_decimal() {
+        lex_ok!(
+            "PreciseDecimal(\"12\")",
+            vec![
+                TokenKind::PreciseDecimal,
+                TokenKind::OpenParenthesis,
+                TokenKind::StringLiteral("12".into()),
+                TokenKind::CloseParenthesis,
             ]
         );
     }

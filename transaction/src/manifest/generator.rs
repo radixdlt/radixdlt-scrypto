@@ -6,6 +6,7 @@ use sbor::type_id::*;
 use scrypto::abi::*;
 use scrypto::address::Bech32Decoder;
 use scrypto::engine::types::*;
+use scrypto::prelude::*;
 use scrypto::values::*;
 use scrypto::vec_to_struct;
 
@@ -28,6 +29,7 @@ pub enum GeneratorError {
     InvalidComponentAddress(String),
     InvalidResourceAddress(String),
     InvalidDecimal(String),
+    InvalidPreciseDecimal(String),
     InvalidHash(String),
     InvalidKeyValueStoreId(String),
     InvalidVaultId(String),
@@ -427,6 +429,17 @@ fn generate_decimal(value: &ast::Value) -> Result<Decimal, GeneratorError> {
     }
 }
 
+fn generate_precise_decimal(value: &ast::Value) -> Result<PreciseDecimal, GeneratorError> {
+    match value {
+        ast::Value::PreciseDecimal(inner) => match &**inner {
+            ast::Value::String(s) => PreciseDecimal::from_str(s)
+                .map_err(|_| GeneratorError::InvalidPreciseDecimal(s.into())),
+            v @ _ => invalid_type!(v, ast::Type::String),
+        },
+        v @ _ => invalid_type!(v, ast::Type::Decimal),
+    }
+}
+
 fn generate_package_address(
     value: &ast::Value,
     bech32_decoder: &Bech32Decoder,
@@ -616,6 +629,70 @@ fn generate_value(
         ast::Value::U32(value) => Ok(Value::U32 { value: *value }),
         ast::Value::U64(value) => Ok(Value::U64 { value: *value }),
         ast::Value::U128(value) => Ok(Value::U128 { value: *value }),
+        ast::Value::SafeU8(value) => Ok(Value::Custom {
+            type_id: ScryptoType::U8.id(),
+            bytes: value.to_vec(),
+        }),
+        ast::Value::SafeU16(value) => Ok(Value::Custom {
+            type_id: ScryptoType::U16.id(),
+            bytes: value.to_vec(),
+        }),
+        ast::Value::SafeU32(value) => Ok(Value::Custom {
+            type_id: ScryptoType::U32.id(),
+            bytes: value.to_vec(),
+        }),
+        ast::Value::SafeU64(value) => Ok(Value::Custom {
+            type_id: ScryptoType::U64.id(),
+            bytes: value.to_vec(),
+        }),
+        ast::Value::SafeU128(value) => Ok(Value::Custom {
+            type_id: ScryptoType::U128.id(),
+            bytes: value.to_vec(),
+        }),
+        ast::Value::SafeU256(value) => Ok(Value::Custom {
+            type_id: ScryptoType::U256.id(),
+            bytes: value.to_vec(),
+        }),
+        ast::Value::SafeU384(value) => Ok(Value::Custom {
+            type_id: ScryptoType::U384.id(),
+            bytes: value.to_vec(),
+        }),
+        ast::Value::SafeU512(value) => Ok(Value::Custom {
+            type_id: ScryptoType::U512.id(),
+            bytes: value.to_vec(),
+        }),
+        ast::Value::SafeI8(value) => Ok(Value::Custom {
+            type_id: ScryptoType::I8.id(),
+            bytes: value.to_vec(),
+        }),
+        ast::Value::SafeI16(value) => Ok(Value::Custom {
+            type_id: ScryptoType::I16.id(),
+            bytes: value.to_vec(),
+        }),
+        ast::Value::SafeI32(value) => Ok(Value::Custom {
+            type_id: ScryptoType::I32.id(),
+            bytes: value.to_vec(),
+        }),
+        ast::Value::SafeI64(value) => Ok(Value::Custom {
+            type_id: ScryptoType::I64.id(),
+            bytes: value.to_vec(),
+        }),
+        ast::Value::SafeI128(value) => Ok(Value::Custom {
+            type_id: ScryptoType::I128.id(),
+            bytes: value.to_vec(),
+        }),
+        ast::Value::SafeI256(value) => Ok(Value::Custom {
+            type_id: ScryptoType::I256.id(),
+            bytes: value.to_vec(),
+        }),
+        ast::Value::SafeI384(value) => Ok(Value::Custom {
+            type_id: ScryptoType::I384.id(),
+            bytes: value.to_vec(),
+        }),
+        ast::Value::SafeI512(value) => Ok(Value::Custom {
+            type_id: ScryptoType::I512.id(),
+            bytes: value.to_vec(),
+        }),
         ast::Value::String(value) => Ok(Value::String {
             value: value.clone(),
         }),
@@ -662,6 +739,10 @@ fn generate_value(
         }),
         ast::Value::Decimal(_) => generate_decimal(value).map(|v| Value::Custom {
             type_id: ScryptoType::Decimal.id(),
+            bytes: v.to_vec(),
+        }),
+        ast::Value::PreciseDecimal(_) => generate_precise_decimal(value).map(|v| Value::Custom {
+            type_id: ScryptoType::PreciseDecimal.id(),
             bytes: v.to_vec(),
         }),
         ast::Value::PackageAddress(_) => {
@@ -775,6 +856,22 @@ fn generate_type_id(ty: &ast::Type) -> u8 {
         ast::Type::U32 => TYPE_U32,
         ast::Type::U64 => TYPE_U64,
         ast::Type::U128 => TYPE_U128,
+        ast::Type::SafeU8 => ScryptoType::U8.id(),
+        ast::Type::SafeU16 => ScryptoType::U16.id(),
+        ast::Type::SafeU32 => ScryptoType::U32.id(),
+        ast::Type::SafeU64 => ScryptoType::U64.id(),
+        ast::Type::SafeU128 => ScryptoType::U128.id(),
+        ast::Type::SafeU256 => ScryptoType::U256.id(),
+        ast::Type::SafeU384 => ScryptoType::U384.id(),
+        ast::Type::SafeU512 => ScryptoType::U512.id(),
+        ast::Type::SafeI8 => ScryptoType::I8.id(),
+        ast::Type::SafeI16 => ScryptoType::I16.id(),
+        ast::Type::SafeI32 => ScryptoType::I32.id(),
+        ast::Type::SafeI64 => ScryptoType::I64.id(),
+        ast::Type::SafeI128 => ScryptoType::I128.id(),
+        ast::Type::SafeI256 => ScryptoType::I256.id(),
+        ast::Type::SafeI384 => ScryptoType::I384.id(),
+        ast::Type::SafeI512 => ScryptoType::I512.id(),
         ast::Type::String => TYPE_STRING,
         ast::Type::Struct => TYPE_STRUCT,
         ast::Type::Enum => TYPE_ENUM,
@@ -786,6 +883,7 @@ fn generate_type_id(ty: &ast::Type) -> u8 {
         ast::Type::Set => TYPE_SET,
         ast::Type::Map => TYPE_MAP,
         ast::Type::Decimal => ScryptoType::Decimal.id(),
+        ast::Type::PreciseDecimal => ScryptoType::PreciseDecimal.id(),
         ast::Type::PackageAddress => ScryptoType::PackageAddress.id(),
         ast::Type::ComponentAddress => ScryptoType::ComponentAddress.id(),
         ast::Type::ResourceAddress => ScryptoType::ResourceAddress.id(),
@@ -806,7 +904,7 @@ mod tests {
     use scrypto::address::Bech32Decoder;
     use scrypto::buffer::scrypto_encode;
     use scrypto::core::Network;
-    use scrypto::prelude::Package;
+    use scrypto::prelude::{One, Package};
     use scrypto::to_struct;
 
     #[macro_export]
@@ -1045,7 +1143,7 @@ mod tests {
             }
         );
         generate_instruction_ok!(
-            r#"CALL_FUNCTION  PackageAddress("package_sim1q8gl2qqsusgzmz92es68wy2fr7zjc523xj57eanm597qrz3dx7")  "Airdrop"  "new"  500u32  Map<String, U8>("key", 1u8);"#,
+            r#"CALL_FUNCTION  PackageAddress("package_sim1q8gl2qqsusgzmz92es68wy2fr7zjc523xj57eanm597qrz3dx7")  "Airdrop"  "new"  500u32  Map<String, U8>("key", 1u8)  1su128  PreciseDecimal("120")  1si128;"#,
             Instruction::CallFunction {
                 package_address: PackageAddress::from_str(
                     "package_sim1q8gl2qqsusgzmz92es68wy2fr7zjc523xj57eanm597qrz3dx7".into()
@@ -1053,7 +1151,13 @@ mod tests {
                 .unwrap(),
                 blueprint_name: "Airdrop".into(),
                 method_name: "new".to_string(),
-                arg: to_struct!(500u32, HashMap::from([("key", 1u8),]))
+                arg: to_struct!(
+                    500u32,
+                    HashMap::from([("key", 1u8),]),
+                    U128::one(),
+                    pdec!("120"),
+                    I128::one()
+                )
             }
         );
         generate_instruction_ok!(
@@ -1198,6 +1302,43 @@ mod tests {
                 Instruction::DropAllProofs,
                 Instruction::PublishPackage {
                     package: encoded_package.clone()
+                },
+                Instruction::CallMethod {
+                    component_address: ComponentAddress::from_str(
+                        "component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum".into()
+                    )
+                    .unwrap(),
+                    method_name: "complicated_method".to_string(),
+                    arg: to_struct!(
+                        Decimal::from(1u32),
+                        PreciseDecimal::from(2u32),
+                        1u8,
+                        2u16,
+                        3u32,
+                        4u64,
+                        5u128,
+                        1i8,
+                        2i16,
+                        3i32,
+                        4i64,
+                        5i128,
+                        U8::from(1u8),
+                        U16::from(2u8),
+                        U32::from(3u8),
+                        U64::from(4u8),
+                        U128::from(5u8),
+                        U256::from(6u8),
+                        U384::from(7u8),
+                        U512::from(8u8),
+                        I8::from(1i8),
+                        I16::from(2i8),
+                        I32::from(3i8),
+                        I64::from(4i8),
+                        I128::from(5i8),
+                        I256::from(6i8),
+                        I384::from(7i8),
+                        I512::from(8i8)
+                    )
                 },
             ]
         );

@@ -192,6 +192,22 @@ impl Parser {
             TokenKind::I64Literal(value) => advance_ok!(self, Value::I64(value)),
             TokenKind::I128Literal(value) => advance_ok!(self, Value::I128(value)),
             TokenKind::StringLiteral(value) => advance_ok!(self, Value::String(value)),
+            TokenKind::SafeU8Literal(value) => advance_ok!(self, Value::SafeU8(value)),
+            TokenKind::SafeU16Literal(value) => advance_ok!(self, Value::SafeU16(value)),
+            TokenKind::SafeU32Literal(value) => advance_ok!(self, Value::SafeU32(value)),
+            TokenKind::SafeU64Literal(value) => advance_ok!(self, Value::SafeU64(value)),
+            TokenKind::SafeU128Literal(value) => advance_ok!(self, Value::SafeU128(value)),
+            TokenKind::SafeU256Literal(value) => advance_ok!(self, Value::SafeU256(value)),
+            TokenKind::SafeU384Literal(value) => advance_ok!(self, Value::SafeU384(value)),
+            TokenKind::SafeU512Literal(value) => advance_ok!(self, Value::SafeU512(value)),
+            TokenKind::SafeI8Literal(value) => advance_ok!(self, Value::SafeI8(value)),
+            TokenKind::SafeI16Literal(value) => advance_ok!(self, Value::SafeI16(value)),
+            TokenKind::SafeI32Literal(value) => advance_ok!(self, Value::SafeI32(value)),
+            TokenKind::SafeI64Literal(value) => advance_ok!(self, Value::SafeI64(value)),
+            TokenKind::SafeI128Literal(value) => advance_ok!(self, Value::SafeI128(value)),
+            TokenKind::SafeI256Literal(value) => advance_ok!(self, Value::SafeI256(value)),
+            TokenKind::SafeI384Literal(value) => advance_ok!(self, Value::SafeI384(value)),
+            TokenKind::SafeI512Literal(value) => advance_ok!(self, Value::SafeI512(value)),
             TokenKind::Struct => self.parse_struct(),
             TokenKind::Enum => self.parse_enum(),
             TokenKind::Some | TokenKind::None => self.parse_option(),
@@ -202,6 +218,7 @@ impl Parser {
             TokenKind::Set => self.parse_set(),
             TokenKind::Map => self.parse_map(),
             TokenKind::Decimal
+            | TokenKind::PreciseDecimal
             | TokenKind::PackageAddress
             | TokenKind::ComponentAddress
             | TokenKind::ResourceAddress
@@ -316,6 +333,7 @@ impl Parser {
         let token = self.advance()?;
         match token.kind {
             TokenKind::Decimal => Ok(Value::Decimal(self.parse_values_one()?.into())),
+            TokenKind::PreciseDecimal => Ok(Value::PreciseDecimal(self.parse_values_one()?.into())),
             TokenKind::PackageAddress => Ok(Value::PackageAddress(self.parse_values_one()?.into())),
             TokenKind::ComponentAddress => {
                 Ok(Value::ComponentAddress(self.parse_values_one()?.into()))

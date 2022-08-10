@@ -1,3 +1,5 @@
+use scrypto::math::*;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Instruction {
     TakeFromWorktop {
@@ -118,6 +120,24 @@ pub enum Type {
     U128,
     String,
 
+    /* Safe math types */
+    SafeI8,
+    SafeI16,
+    SafeI32,
+    SafeI64,
+    SafeI128,
+    SafeI256,
+    SafeI384,
+    SafeI512,
+    SafeU8,
+    SafeU16,
+    SafeU32,
+    SafeU64,
+    SafeU128,
+    SafeU256,
+    SafeU384,
+    SafeU512,
+
     /* Struct and enum */
     Struct,
     Enum,
@@ -135,6 +155,7 @@ pub enum Type {
 
     /* Custom types */
     Decimal,
+    PreciseDecimal,
     PackageAddress,
     ComponentAddress,
     ResourceAddress,
@@ -162,6 +183,22 @@ pub enum Value {
     U32(u32),
     U64(u64),
     U128(u128),
+    SafeI8(I8),
+    SafeI16(I16),
+    SafeI32(I32),
+    SafeI64(I64),
+    SafeI128(I128),
+    SafeI256(I256),
+    SafeI384(I384),
+    SafeI512(I512),
+    SafeU8(U8),
+    SafeU16(U16),
+    SafeU32(U32),
+    SafeU64(U64),
+    SafeU128(U128),
+    SafeU256(U256),
+    SafeU384(U384),
+    SafeU512(U512),
     String(String),
 
     Struct(Vec<Value>),
@@ -177,6 +214,7 @@ pub enum Value {
     Map(Type, Type, Vec<Value>),
 
     Decimal(Box<Value>),
+    PreciseDecimal(Box<Value>),
     PackageAddress(Box<Value>),
     ComponentAddress(Box<Value>),
     ResourceAddress(Box<Value>),
@@ -204,6 +242,22 @@ impl Value {
             Value::U32(_) => Type::U32,
             Value::U64(_) => Type::U64,
             Value::U128(_) => Type::U128,
+            Value::SafeI8(_) => Type::SafeI8,
+            Value::SafeI16(_) => Type::SafeI16,
+            Value::SafeI32(_) => Type::SafeI32,
+            Value::SafeI64(_) => Type::SafeI64,
+            Value::SafeI128(_) => Type::SafeI128,
+            Value::SafeI256(_) => Type::SafeI256,
+            Value::SafeI384(_) => Type::SafeI384,
+            Value::SafeI512(_) => Type::SafeI512,
+            Value::SafeU8(_) => Type::SafeU8,
+            Value::SafeU16(_) => Type::SafeU16,
+            Value::SafeU32(_) => Type::SafeU32,
+            Value::SafeU64(_) => Type::SafeU64,
+            Value::SafeU128(_) => Type::SafeU128,
+            Value::SafeU256(_) => Type::SafeU256,
+            Value::SafeU384(_) => Type::SafeU384,
+            Value::SafeU512(_) => Type::SafeU512,
             Value::String(_) => Type::String,
             Value::Struct(_) => Type::Struct,
             Value::Enum(_, _) => Type::Enum,
@@ -215,6 +269,7 @@ impl Value {
             Value::Set(_, _) => Type::Set,
             Value::Map(_, _, _) => Type::Map,
             Value::Decimal(_) => Type::Decimal,
+            Value::PreciseDecimal(_) => Type::PreciseDecimal,
             Value::PackageAddress(_) => Type::PackageAddress,
             Value::ComponentAddress(_) => Type::ComponentAddress,
             Value::ResourceAddress(_) => Type::ResourceAddress,

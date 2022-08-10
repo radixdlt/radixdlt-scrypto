@@ -14,6 +14,7 @@ use scrypto::buffer::*;
 use scrypto::core::Network;
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
+use scrypto::math::*;
 use scrypto::prelude::Package;
 use scrypto::resource::{require, LOCKED};
 use scrypto::resource::{AccessRule, AccessRuleNode, Burn, Mint, Withdraw};
@@ -827,6 +828,108 @@ impl ManifestBuilder {
             ScryptoType::Decimal => {
                 let value = arg
                     .parse::<Decimal>()
+                    .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
+                Ok(scrypto_encode(&value))
+            }
+            ScryptoType::PreciseDecimal => {
+                let value = arg
+                    .parse::<PreciseDecimal>()
+                    .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
+                Ok(scrypto_encode(&value))
+            }
+            ScryptoType::I8 => {
+                let value = arg
+                    .parse::<I8>()
+                    .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
+                Ok(scrypto_encode(&value))
+            }
+            ScryptoType::I16 => {
+                let value = arg
+                    .parse::<I16>()
+                    .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
+                Ok(scrypto_encode(&value))
+            }
+            ScryptoType::I32 => {
+                let value = arg
+                    .parse::<I32>()
+                    .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
+                Ok(scrypto_encode(&value))
+            }
+            ScryptoType::I64 => {
+                let value = arg
+                    .parse::<I64>()
+                    .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
+                Ok(scrypto_encode(&value))
+            }
+            ScryptoType::I128 => {
+                let value = arg
+                    .parse::<I128>()
+                    .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
+                Ok(scrypto_encode(&value))
+            }
+            ScryptoType::I256 => {
+                let value = arg
+                    .parse::<I256>()
+                    .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
+                Ok(scrypto_encode(&value))
+            }
+            ScryptoType::I384 => {
+                let value = arg
+                    .parse::<I384>()
+                    .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
+                Ok(scrypto_encode(&value))
+            }
+            ScryptoType::I512 => {
+                let value = arg
+                    .parse::<I512>()
+                    .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
+                Ok(scrypto_encode(&value))
+            }
+            ScryptoType::U8 => {
+                let value = arg
+                    .parse::<U8>()
+                    .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
+                Ok(scrypto_encode(&value))
+            }
+            ScryptoType::U16 => {
+                let value = arg
+                    .parse::<U16>()
+                    .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
+                Ok(scrypto_encode(&value))
+            }
+            ScryptoType::U32 => {
+                let value = arg
+                    .parse::<U32>()
+                    .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
+                Ok(scrypto_encode(&value))
+            }
+            ScryptoType::U64 => {
+                let value = arg
+                    .parse::<U64>()
+                    .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
+                Ok(scrypto_encode(&value))
+            }
+            ScryptoType::U128 => {
+                let value = arg
+                    .parse::<U128>()
+                    .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
+                Ok(scrypto_encode(&value))
+            }
+            ScryptoType::U256 => {
+                let value = arg
+                    .parse::<U256>()
+                    .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
+                Ok(scrypto_encode(&value))
+            }
+            ScryptoType::U384 => {
+                let value = arg
+                    .parse::<U384>()
+                    .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
+                Ok(scrypto_encode(&value))
+            }
+            ScryptoType::U512 => {
+                let value = arg
+                    .parse::<U512>()
                     .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
                 Ok(scrypto_encode(&value))
             }
