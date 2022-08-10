@@ -246,6 +246,13 @@ where
                             .track
                             .read_substate(SubstateId::Package(package_address))
                             .package();
+                        self.fee_reserve
+                            .consume(
+                                self.fee_table.wasm_instantiation_per_byte()
+                                    * package.code().len() as u32,
+                                "instantiate_wasm",
+                            )
+                            .map_err(RuntimeError::CostingError)?;
                         let wasm_metering_params = self.fee_table.wasm_metering_params();
                         let instrumented_code = self
                             .wasm_instrumenter
