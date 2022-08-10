@@ -73,7 +73,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     pub fn inspect_component(
         &mut self,
         component_address: ComponentAddress,
-    ) -> Option<radix_engine::model::Component> {
+    ) -> Option<radix_engine::model::ComponentInfo> {
         self.execution_stores
             .get_output_store(0)
             .get_substate(&SubstateId::ComponentInfo(component_address))

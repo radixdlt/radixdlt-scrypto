@@ -36,10 +36,10 @@ pub fn export_abi_by_component<S: ReadableSubstateStore>(
         .ok_or(RuntimeError::RENodeNotFound(RENodeId::Component(
             component_address,
         )))?;
-    let component = component_value.component();
+    let component_info = component_value.component_info();
     export_abi(
         substate_store,
-        component.package_address(),
-        component.blueprint_name(),
+        component_info.package_address(),
+        component_info.blueprint_name(),
     )
 }

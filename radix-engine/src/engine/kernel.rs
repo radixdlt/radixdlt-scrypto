@@ -1203,7 +1203,7 @@ where
                 let component_address = node_id.into();
                 substates.insert(
                     SubstateId::ComponentInfo(component_address),
-                    Substate::Component(component),
+                    Substate::ComponentInfo(component),
                 );
                 substates.insert(
                     SubstateId::ComponentState(component_address),

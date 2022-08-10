@@ -84,7 +84,7 @@ impl NativeInterpreter {
             (
                 Some(Receiver::Ref(RENodeId::Component(component_address))),
                 NativeFnIdentifier::Component(component_fn),
-            ) => Component::main(component_address, component_fn, input, system_api)
+            ) => ComponentInfo::main(component_address, component_fn, input, system_api)
                 .map_err(RuntimeError::ComponentError),
             (
                 Some(Receiver::Ref(RENodeId::ResourceManager(resource_address))),
