@@ -4,6 +4,7 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
 use scrypto::component::*;
+use scrypto::core::ComponentFnIdentifier;
 use scrypto::engine::types::*;
 use scrypto::resource::AccessRules;
 use scrypto::values::*;
@@ -18,7 +19,6 @@ use crate::wasm::{WasmEngine, WasmInstance};
 pub enum ComponentError {
     InvalidRequestData(DecodeError),
     BlueprintFunctionDoesNotExist(String),
-    MethodNotFound,
     CostingError(FeeReserveError),
 }
 
@@ -43,13 +43,13 @@ impl ComponentState {
 
 /// A component is an instance of blueprint.
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
-pub struct Component {
+pub struct ComponentInfo {
     package_address: PackageAddress,
     blueprint_name: String,
     access_rules: Vec<AccessRules>,
 }
 
-impl Component {
+impl ComponentInfo {
     pub fn new(
         package_address: PackageAddress,
         blueprint_name: String,
@@ -98,15 +98,15 @@ impl Component {
 
     pub fn main<'s, Y: SystemApi<'s, W, I, C>, W: WasmEngine<I>, I: WasmInstance, C: FeeReserve>(
         component_address: ComponentAddress,
-        fn_ident: &str,
+        component_fn: ComponentFnIdentifier,
         arg: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, ComponentError> {
         let substate_id = SubstateId::ComponentInfo(component_address);
         let node_id = RENodeId::Component(component_address);
 
-        let rtn = match fn_ident {
-            "add_access_check" => {
+        let rtn = match component_fn {
+            ComponentFnIdentifier::AddAccessCheck => {
                 let input: ComponentAddAccessCheckInput =
                     scrypto_decode(&arg.raw).map_err(|e| ComponentError::InvalidRequestData(e))?;
 
@@ -141,15 +141,14 @@ impl Component {
                 let mut ref_mut = system_api
                     .substate_borrow_mut(&substate_id)
                     .map_err(ComponentError::CostingError)?;
-                let component = ref_mut.component();
-                component.access_rules.push(input.access_rules);
+                let component_info = ref_mut.component_info();
+                component_info.access_rules.push(input.access_rules);
                 system_api
                     .substate_return_mut(ref_mut)
                     .map_err(ComponentError::CostingError)?;
 
                 Ok(ScryptoValue::from_typed(&()))
             }
-            _ => Err(ComponentError::MethodNotFound),
         }?;
 
         Ok(rtn)

@@ -1,6 +1,7 @@
 use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::InMemorySubstateStore;
 use scrypto::core::Network;
+use scrypto::engine::types::SubstateId;
 use scrypto::prelude::*;
 use scrypto::to_struct;
 use scrypto_unit::*;
@@ -93,7 +94,7 @@ fn reentrancy_should_not_be_possible() {
 
     // Assert
     receipt.expect_failure(|e| {
-        if let RuntimeError::ComponentReentrancy(address) = e {
+        if let RuntimeError::Reentrancy(SubstateId::ComponentState(address)) = e {
             address.eq(&component_address)
         } else {
             false
@@ -102,7 +103,7 @@ fn reentrancy_should_not_be_possible() {
 }
 
 #[test]
-fn missing_component_address_should_cause_error() {
+fn missing_component_address_in_manifest_should_cause_rejection() {
     // Arrange
     let mut store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
@@ -120,11 +121,5 @@ fn missing_component_address_should_cause_error() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| {
-        if let RuntimeError::ComponentNotFound(address) = e {
-            address.eq(&component_address)
-        } else {
-            false
-        }
-    });
+    receipt.expect_rejection();
 }

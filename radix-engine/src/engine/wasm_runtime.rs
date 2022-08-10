@@ -2,7 +2,7 @@ use sbor::rust::marker::PhantomData;
 use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
-use scrypto::core::{Receiver, ScryptoActor, ScryptoRENode, TypeName};
+use scrypto::core::{FnIdentifier, Receiver, ScryptoActor, ScryptoRENode};
 use scrypto::engine::api::RadixEngineInput;
 use scrypto::engine::types::*;
 use scrypto::resource::AccessRule;
@@ -11,7 +11,7 @@ use scrypto::values::ScryptoValue;
 use crate::engine::{HeapKeyValueStore, RuntimeError};
 use crate::engine::{HeapRENode, SystemApi};
 use crate::fee::*;
-use crate::model::{Component, ComponentState};
+use crate::model::{ComponentInfo, ComponentState};
 use crate::wasm::*;
 
 /// A glue between system api (call frame and track abstraction) and WASM.
@@ -59,23 +59,22 @@ where
 
     fn handle_invoke_function(
         &mut self,
-        type_name: TypeName,
-        fn_ident: String,
+        fn_identifier: FnIdentifier,
         input: Vec<u8>,
     ) -> Result<ScryptoValue, RuntimeError> {
         let call_data = ScryptoValue::from_slice(&input).map_err(RuntimeError::DecodeError)?;
-        self.system_api
-            .invoke_function(type_name, fn_ident, call_data)
+        self.system_api.invoke_function(fn_identifier, call_data)
     }
 
     fn handle_invoke_method(
         &mut self,
         receiver: Receiver,
-        fn_ident: String,
+        fn_identifier: FnIdentifier,
         input: Vec<u8>,
     ) -> Result<ScryptoValue, RuntimeError> {
         let call_data = ScryptoValue::from_slice(&input).map_err(RuntimeError::DecodeError)?;
-        self.system_api.invoke_method(receiver, fn_ident, call_data)
+        self.system_api
+            .invoke_method(receiver, fn_identifier, call_data)
     }
 
     fn handle_node_create(
@@ -95,9 +94,10 @@ where
                 // TODO: Check state against blueprint schema
 
                 // Create component
-                let component = Component::new(package_address, blueprint_name, Vec::new());
+                let component_info =
+                    ComponentInfo::new(package_address, blueprint_name, Vec::new());
                 let component_state = ComponentState::new(state);
-                HeapRENode::Component(component, component_state)
+                HeapRENode::Component(component_info, component_state)
             }
             ScryptoRENode::KeyValueStore => HeapRENode::KeyValueStore(HeapKeyValueStore::new()),
         };
@@ -201,11 +201,11 @@ impl<'y, 's, Y: SystemApi<'s, W, I, C>, W: WasmEngine<I>, I: WasmInstance, C: Fe
         let input: RadixEngineInput =
             scrypto_decode(&input.raw).map_err(|_| InvokeError::InvalidRadixEngineInput)?;
         match input {
-            RadixEngineInput::InvokeFunction(type_name, fn_ident, input_bytes) => {
-                self.handle_invoke_function(type_name, fn_ident, input_bytes)
+            RadixEngineInput::InvokeFunction(fn_identifier, input_bytes) => {
+                self.handle_invoke_function(fn_identifier, input_bytes)
             }
-            RadixEngineInput::InvokeMethod(receiver, fn_ident, input_bytes) => {
-                self.handle_invoke_method(receiver, fn_ident, input_bytes)
+            RadixEngineInput::InvokeMethod(receiver, fn_identifier, input_bytes) => {
+                self.handle_invoke_method(receiver, fn_identifier, input_bytes)
             }
             RadixEngineInput::RENodeGlobalize(node_id) => self.handle_node_globalize(node_id),
             RadixEngineInput::RENodeCreate(node) => self.handle_node_create(node),

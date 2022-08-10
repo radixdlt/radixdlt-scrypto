@@ -1,7 +1,8 @@
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
 use scrypto::core::{
-    SystemGetCurrentEpochInput, SystemGetTransactionHashInput, SystemSetEpochInput,
+    SystemFnIdentifier, SystemGetCurrentEpochInput, SystemGetTransactionHashInput,
+    SystemSetEpochInput,
 };
 use scrypto::engine::types::{RENodeId, SubstateId};
 use scrypto::values::ScryptoValue;
@@ -9,13 +10,11 @@ use scrypto::values::ScryptoValue;
 use crate::engine::SystemApi;
 use crate::fee::FeeReserve;
 use crate::fee::FeeReserveError;
-use crate::model::SystemError::InvalidMethod;
 use crate::wasm::*;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum SystemError {
     InvalidRequestData(DecodeError),
-    InvalidMethod,
     CostingError(FeeReserveError),
 }
 
@@ -26,12 +25,12 @@ pub struct System {
 
 impl System {
     pub fn main<'s, Y: SystemApi<'s, W, I, C>, W: WasmEngine<I>, I: WasmInstance, C: FeeReserve>(
-        method_name: &str,
+        system_fn: SystemFnIdentifier,
         arg: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, SystemError> {
-        match method_name {
-            "get_epoch" => {
+        match system_fn {
+            SystemFnIdentifier::GetCurrentEpoch => {
                 let _: SystemGetCurrentEpochInput =
                     scrypto_decode(&arg.raw).map_err(|e| SystemError::InvalidRequestData(e))?;
                 let node_ref = system_api
@@ -39,7 +38,7 @@ impl System {
                     .map_err(SystemError::CostingError)?;
                 Ok(ScryptoValue::from_typed(&node_ref.system().epoch))
             }
-            "set_epoch" => {
+            SystemFnIdentifier::SetEpoch => {
                 let SystemSetEpochInput { epoch } =
                     scrypto_decode(&arg.raw).map_err(|e| SystemError::InvalidRequestData(e))?;
                 let mut system_node_ref = system_api
@@ -51,7 +50,7 @@ impl System {
                     .map_err(SystemError::CostingError)?;
                 Ok(ScryptoValue::from_typed(&()))
             }
-            "transaction_hash" => {
+            SystemFnIdentifier::GetTransactionHash => {
                 let _: SystemGetTransactionHashInput =
                     scrypto_decode(&arg.raw).map_err(|e| SystemError::InvalidRequestData(e))?;
                 Ok(ScryptoValue::from_typed(
@@ -60,7 +59,6 @@ impl System {
                         .map_err(SystemError::CostingError)?,
                 ))
             }
-            _ => Err(InvalidMethod),
         }
     }
 }

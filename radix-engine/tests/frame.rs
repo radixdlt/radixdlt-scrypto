@@ -17,12 +17,11 @@ fn test_max_call_depth_success() {
     // Stack layout:
     // * 0: Executor
     // * 1: Transaction Executor
-    // * 2-15: Caller::call x 14
-    // * 16: AuthZone::clear
+    // * 2-16: Caller::call x 15
     // ============================
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .lock_fee(10.into(), SYSTEM_COMPONENT)
-        .call_function(package_address, "Caller", "recursive", to_struct!(14u32))
+        .call_function(package_address, "Caller", "recursive", to_struct!(15u32))
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -40,7 +39,7 @@ fn test_max_call_depth_failure() {
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .lock_fee(10.into(), SYSTEM_COMPONENT)
-        .call_function(package_address, "Caller", "recursive", to_struct!(15u32))
+        .call_function(package_address, "Caller", "recursive", to_struct!(16u32))
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 

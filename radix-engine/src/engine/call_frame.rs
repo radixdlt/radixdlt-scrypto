@@ -1,5 +1,8 @@
 use sbor::rust::collections::*;
 use scrypto::engine::types::*;
+use scrypto::prelude::FnIdentifier;
+use scrypto::prelude::NativeFnIdentifier;
+use scrypto::prelude::TransactionProcessorFnIdentifier;
 use transaction::validation::*;
 
 use crate::engine::*;
@@ -84,7 +87,13 @@ impl CallFrame {
 
         Self {
             depth: 0,
-            actor: REActor::Native,
+            actor: REActor {
+                // Temporary
+                fn_identifier: FnIdentifier::Native(NativeFnIdentifier::TransactionProcessor(
+                    TransactionProcessorFnIdentifier::Run,
+                )),
+                receiver: None,
+            },
             node_refs: HashMap::new(),
             owned_heap_nodes: HashMap::new(),
             auth_zone,

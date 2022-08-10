@@ -4,6 +4,7 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::abi::BlueprintAbi;
 use scrypto::buffer::scrypto_decode;
+use scrypto::core::PackageFnIdentifier;
 use scrypto::prelude::{PackageAddress, PackagePublishInput};
 use scrypto::values::ScryptoValue;
 
@@ -46,7 +47,7 @@ impl ValidatedPackage {
     }
 
     pub fn static_main<'s, Y, W, I, C>(
-        method_name: &str,
+        package_fn: PackageFnIdentifier,
         call_data: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, PackageError>
@@ -56,8 +57,8 @@ impl ValidatedPackage {
         I: WasmInstance,
         C: FeeReserve,
     {
-        match method_name {
-            "publish" => {
+        match package_fn {
+            PackageFnIdentifier::Publish => {
                 let input: PackagePublishInput = scrypto_decode(&call_data.raw)
                     .map_err(|e| PackageError::InvalidRequestData(e))?;
                 let package =
@@ -74,7 +75,6 @@ impl ValidatedPackage {
                 let package_address: PackageAddress = node_id.into();
                 Ok(ScryptoValue::from_typed(&package_address))
             }
-            _ => Err(PackageError::MethodNotFound(method_name.to_string())),
         }
     }
 }

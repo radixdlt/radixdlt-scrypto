@@ -1,13 +1,12 @@
 use crate::buffer::*;
 use crate::component::package::Package;
 use crate::component::*;
-use crate::core::{Runtime, TypeName};
+use crate::core::{FnIdentifier, NativeFnIdentifier, PackageFnIdentifier, Runtime};
 use crate::engine::types::RENodeId;
 use crate::engine::{api::*, call_engine};
 use crate::prelude::ScryptoRENode;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::*;
-use sbor::rust::string::ToString;
 
 /// Represents the Radix Engine component subsystem.
 ///
@@ -48,8 +47,7 @@ impl ComponentSystem {
     /// Publishes a package.
     pub fn publish_package(&mut self, package: Package) -> PackageAddress {
         let input = RadixEngineInput::InvokeFunction(
-            TypeName::Package,
-            "publish".to_string(),
+            FnIdentifier::Native(NativeFnIdentifier::Package(PackageFnIdentifier::Publish)),
             scrypto_encode(&PackagePublishInput { package }),
         );
         call_engine(input)
