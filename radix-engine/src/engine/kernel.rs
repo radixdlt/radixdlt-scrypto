@@ -248,7 +248,7 @@ where
                                 .read_substate(SubstateId::Package(package_address))
                                 .package()
                                 .clone(); // TODO: remove copy
-                            let wasm_metering_params = self.fee_table().wasm_metering_params();
+                            let wasm_metering_params = self.fee_table.wasm_metering_params();
                             let instrumented_code = self
                                 .wasm_instrumenter
                                 .instrument(package.code(), &wasm_metering_params)
@@ -343,7 +343,7 @@ where
                                 .read_substate(SubstateId::Package(package_address))
                                 .package()
                                 .clone(); // TODO: remove copy
-                            let wasm_metering_params = self.fee_table().wasm_metering_params();
+                            let wasm_metering_params = self.fee_table.wasm_metering_params();
                             let instrumented_code = self
                                 .wasm_instrumenter
                                 .instrument(package.code(), &wasm_metering_params)
@@ -1753,10 +1753,6 @@ where
 
     fn fee_reserve(&mut self) -> &mut C {
         self.fee_reserve
-    }
-
-    fn fee_table(&self) -> &FeeTable {
-        self.fee_table
     }
 
     fn auth_zone(&mut self, frame_id: usize) -> &mut AuthZone {

@@ -20,9 +20,7 @@ where
 {
     fn fee_reserve(&mut self) -> &mut C;
 
-    fn fee_table(&self) -> &FeeTable;
-
-    // TODO: possible to consider authzone as a RENode?
+    // TODO: possible to consider AuthZone as a RENode?
     fn auth_zone(&mut self, frame_id: usize) -> &mut AuthZone;
 
     fn invoke_function(
