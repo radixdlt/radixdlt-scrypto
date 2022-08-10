@@ -191,6 +191,34 @@ macro_rules! decimals {
                             return $dec(&base * $dec(&base * &base / &one).powi(div(sub(exp, 1), 2)).0 / &one);
                         }
                     }
+                    
+                    /// The square root of a Decimal. Uses a standard Babylonian method.
+                    fn sqrt(&self) -> Option<Self> { 
+                        if self.is_negative() {
+                            return None;
+                        }
+                        if self.is_zero() {
+                            return Some(Self::ZERO);
+                        }
+                        // Start with an arbitrary number as the first guess
+                        let mut result = *self / Self::from(2u8);
+                        // Too small to represent, so we start with self
+                        // Future iterations could actually avoid using a decimal altogether and use a buffered
+                        // vector, only combining back into a decimal on return
+                        if result.is_zero() {
+                            result = *self;
+                        }
+                        let mut last = result + Self::ONE;
+                        // Keep going while the difference is larger than the tolerance
+                        let mut circuit_breaker = 0;
+                        while last != result {
+                            circuit_breaker += 1;
+                            assert!(circuit_breaker < 1000, "geo mean circuit breaker");
+                            last = result;
+                            result = (result + *self / result) / Self::from(2u8);
+                        }
+                        Some(result)
+                    }
                 }
 
                 macro_rules! from_int {
@@ -1138,5 +1166,15 @@ mod tests {
     fn test_from_str_failure() {
         let dec = Decimal::from_str("non_decimal_value");
         assert_eq!(dec, Err(ParseDecimalError::InvalidChar('n')));
+    }
+
+    #[test]
+    fn test_sqrt(){
+        let sqrt_of_42 = dec!("42").sqrt();
+        let sqrt_of_0 = dec!("0").sqrt();
+        let sqrt_of_negative = dec!("-1").sqrt();
+        assert_eq!(sqrt_of_42.unwrap(), dec!("6.48074069840786023"));
+        assert_eq!(sqrt_of_0.unwrap(), dec!("0"));
+        assert_eq!(sqrt_of_negative, None);
     }
 }
