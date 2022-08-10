@@ -1,12 +1,9 @@
-#[rustfmt::skip]
-pub mod test_runner;
-
 use radix_engine::ledger::InMemorySubstateStore;
 use radix_engine::wasm::InvokeError;
 use scrypto::core::Network;
 use scrypto::prelude::{Package, RADIX_TOKEN, SYSTEM_COMPONENT};
 use scrypto::to_struct;
-use test_runner::{abi_single_fn_any_input_void_output, wat2wasm, TestRunner};
+use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
 #[test]
@@ -174,7 +171,7 @@ fn test_basic_transfer() {
             + 1800 /* return */
             + 1000 /* run_function */
             + 6600 /* run_method */
-            + 289471 /* run_wasm */
+            + 291392 /* run_wasm */
             + 2668 /* tx_decoding */
             + 667 /* tx_manifest_verification */
             + 3750 /* tx_signature_verification */
