@@ -11,7 +11,7 @@ use scrypto::values::ScryptoValue;
 use crate::engine::{HeapKeyValueStore, RuntimeError};
 use crate::engine::{HeapRENode, SystemApi};
 use crate::fee::*;
-use crate::model::{Component, ComponentState};
+use crate::model::{ComponentInfo, ComponentState};
 use crate::wasm::*;
 
 /// A glue between system api (call frame and track abstraction) and WASM.
@@ -94,9 +94,10 @@ where
                 // TODO: Check state against blueprint schema
 
                 // Create component
-                let component = Component::new(package_address, blueprint_name, Vec::new());
+                let component_info =
+                    ComponentInfo::new(package_address, blueprint_name, Vec::new());
                 let component_state = ComponentState::new(state);
-                HeapRENode::Component(component, component_state)
+                HeapRENode::Component(component_info, component_state)
             }
             ScryptoRENode::KeyValueStore => HeapRENode::KeyValueStore(HeapKeyValueStore::new()),
         };

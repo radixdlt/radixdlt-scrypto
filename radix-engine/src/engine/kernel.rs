@@ -246,6 +246,13 @@ where
                             .track
                             .read_substate(SubstateId::Package(package_address))
                             .package();
+                        self.fee_reserve
+                            .consume(
+                                self.fee_table.wasm_instantiation_per_byte()
+                                    * package.code().len() as u32,
+                                "instantiate_wasm",
+                            )
+                            .map_err(RuntimeError::CostingError)?;
                         let wasm_metering_params = self.fee_table.wasm_metering_params();
                         let instrumented_code = self
                             .wasm_instrumenter
@@ -899,42 +906,54 @@ where
         self.fee_reserve.consume(
             self.fee_table.system_api_cost({
                 match node_id {
-                    RENodeId::Bucket(_) => SystemApiCostingEntry::BorrowLocal,
-                    RENodeId::Proof(_) => SystemApiCostingEntry::BorrowLocal,
-                    RENodeId::Worktop => SystemApiCostingEntry::BorrowLocal,
-                    RENodeId::Vault(_) => SystemApiCostingEntry::BorrowGlobal {
+                    RENodeId::Bucket(_) => SystemApiCostingEntry::BorrowSubstate {
+                        // TODO: figure out loaded state and size
+                        loaded: true,
+                        size: 0,
+                    },
+                    RENodeId::Proof(_) => SystemApiCostingEntry::BorrowSubstate {
+                        // TODO: figure out loaded state and size
+                        loaded: true,
+                        size: 0,
+                    },
+                    RENodeId::Worktop => SystemApiCostingEntry::BorrowSubstate {
+                        // TODO: figure out loaded state and size
+                        loaded: true,
+                        size: 0,
+                    },
+                    RENodeId::Vault(_) => SystemApiCostingEntry::BorrowSubstate {
                         // TODO: figure out loaded state and size
                         loaded: false,
                         size: 0,
                     },
-                    RENodeId::Component(_) => SystemApiCostingEntry::BorrowGlobal {
+                    RENodeId::Component(_) => SystemApiCostingEntry::BorrowSubstate {
                         // TODO: figure out loaded state and size
                         loaded: false,
                         size: 0,
                     },
-                    RENodeId::KeyValueStore(_) => SystemApiCostingEntry::BorrowGlobal {
+                    RENodeId::KeyValueStore(_) => SystemApiCostingEntry::BorrowSubstate {
                         // TODO: figure out loaded state and size
                         loaded: false,
                         size: 0,
                     },
-                    RENodeId::ResourceManager(_) => SystemApiCostingEntry::BorrowGlobal {
+                    RENodeId::ResourceManager(_) => SystemApiCostingEntry::BorrowSubstate {
                         // TODO: figure out loaded state and size
                         loaded: false,
                         size: 0,
                     },
-                    RENodeId::Package(_) => SystemApiCostingEntry::BorrowGlobal {
+                    RENodeId::Package(_) => SystemApiCostingEntry::BorrowSubstate {
                         // TODO: figure out loaded state and size
                         loaded: false,
                         size: 0,
                     },
-                    RENodeId::System => SystemApiCostingEntry::BorrowGlobal {
+                    RENodeId::System => SystemApiCostingEntry::BorrowSubstate {
                         // TODO: figure out loaded state and size
                         loaded: false,
                         size: 0,
                     },
                 }
             }),
-            "borrow",
+            "borrow_substate",
         )?;
 
         let node_pointer = Self::current_frame(&self.call_frames)
@@ -960,62 +979,74 @@ where
         self.fee_reserve.consume(
             self.fee_table.system_api_cost({
                 match substate_id {
-                    SubstateId::Bucket(_) => SystemApiCostingEntry::BorrowLocal,
-                    SubstateId::Proof(_) => SystemApiCostingEntry::BorrowLocal,
-                    SubstateId::Worktop => SystemApiCostingEntry::BorrowLocal,
-                    SubstateId::Vault(_) => SystemApiCostingEntry::BorrowGlobal {
+                    SubstateId::Bucket(_) => SystemApiCostingEntry::BorrowSubstate {
+                        // TODO: figure out loaded state and size
+                        loaded: true,
+                        size: 0,
+                    },
+                    SubstateId::Proof(_) => SystemApiCostingEntry::BorrowSubstate {
+                        // TODO: figure out loaded state and size
+                        loaded: true,
+                        size: 0,
+                    },
+                    SubstateId::Worktop => SystemApiCostingEntry::BorrowSubstate {
+                        // TODO: figure out loaded state and size
+                        loaded: true,
+                        size: 0,
+                    },
+                    SubstateId::Vault(_) => SystemApiCostingEntry::BorrowSubstate {
                         // TODO: figure out loaded state and size
                         loaded: false,
                         size: 0,
                     },
-                    SubstateId::ComponentState(..) => SystemApiCostingEntry::BorrowGlobal {
+                    SubstateId::ComponentState(..) => SystemApiCostingEntry::BorrowSubstate {
                         // TODO: figure out loaded state and size
                         loaded: false,
                         size: 0,
                     },
-                    SubstateId::ComponentInfo(..) => SystemApiCostingEntry::BorrowGlobal {
+                    SubstateId::ComponentInfo(..) => SystemApiCostingEntry::BorrowSubstate {
                         // TODO: figure out loaded state and size
                         loaded: false,
                         size: 0,
                     },
-                    SubstateId::KeyValueStoreSpace(_) => SystemApiCostingEntry::BorrowGlobal {
+                    SubstateId::KeyValueStoreSpace(_) => SystemApiCostingEntry::BorrowSubstate {
                         // TODO: figure out loaded state and size
                         loaded: false,
                         size: 0,
                     },
-                    SubstateId::KeyValueStoreEntry(..) => SystemApiCostingEntry::BorrowGlobal {
+                    SubstateId::KeyValueStoreEntry(..) => SystemApiCostingEntry::BorrowSubstate {
                         // TODO: figure out loaded state and size
                         loaded: false,
                         size: 0,
                     },
-                    SubstateId::ResourceManager(..) => SystemApiCostingEntry::BorrowGlobal {
+                    SubstateId::ResourceManager(..) => SystemApiCostingEntry::BorrowSubstate {
                         // TODO: figure out loaded state and size
                         loaded: false,
                         size: 0,
                     },
-                    SubstateId::NonFungibleSpace(..) => SystemApiCostingEntry::BorrowGlobal {
+                    SubstateId::NonFungibleSpace(..) => SystemApiCostingEntry::BorrowSubstate {
                         // TODO: figure out loaded state and size
                         loaded: false,
                         size: 0,
                     },
-                    SubstateId::NonFungible(..) => SystemApiCostingEntry::BorrowGlobal {
+                    SubstateId::NonFungible(..) => SystemApiCostingEntry::BorrowSubstate {
                         // TODO: figure out loaded state and size
                         loaded: false,
                         size: 0,
                     },
-                    SubstateId::Package(..) => SystemApiCostingEntry::BorrowGlobal {
+                    SubstateId::Package(..) => SystemApiCostingEntry::BorrowSubstate {
                         // TODO: figure out loaded state and size
                         loaded: false,
                         size: 0,
                     },
-                    SubstateId::System => SystemApiCostingEntry::BorrowGlobal {
+                    SubstateId::System => SystemApiCostingEntry::BorrowSubstate {
                         // TODO: figure out loaded state and size
                         loaded: false,
                         size: 0,
                     },
                 }
             }),
-            "borrow",
+            "borrow_substate",
         )?;
 
         // Authorization
@@ -1023,7 +1054,7 @@ where
             .actor
             .is_substate_readable(substate_id)
         {
-            panic!("Trying to read value which is not visible.")
+            panic!("Trying to read substate which is not visible.")
         }
 
         let node_id = SubstateProperties::get_node_id(substate_id);
@@ -1047,39 +1078,41 @@ where
         self.fee_reserve.consume(
             self.fee_table.system_api_cost({
                 match &val_ref {
-                    NativeSubstateRef::Stack(..) => SystemApiCostingEntry::ReturnLocal,
+                    NativeSubstateRef::Stack(..) => {
+                        SystemApiCostingEntry::ReturnSubstate { size: 0 }
+                    }
                     NativeSubstateRef::Track(substate_id, _) => match substate_id {
-                        SubstateId::Vault(_) => SystemApiCostingEntry::ReturnGlobal { size: 0 },
+                        SubstateId::Vault(_) => SystemApiCostingEntry::ReturnSubstate { size: 0 },
                         SubstateId::KeyValueStoreSpace(_) => {
-                            SystemApiCostingEntry::ReturnGlobal { size: 0 }
+                            SystemApiCostingEntry::ReturnSubstate { size: 0 }
                         }
                         SubstateId::KeyValueStoreEntry(_, _) => {
-                            SystemApiCostingEntry::ReturnGlobal { size: 0 }
+                            SystemApiCostingEntry::ReturnSubstate { size: 0 }
                         }
                         SubstateId::ResourceManager(_) => {
-                            SystemApiCostingEntry::ReturnGlobal { size: 0 }
+                            SystemApiCostingEntry::ReturnSubstate { size: 0 }
                         }
-                        SubstateId::Package(_) => SystemApiCostingEntry::ReturnGlobal { size: 0 },
+                        SubstateId::Package(_) => SystemApiCostingEntry::ReturnSubstate { size: 0 },
                         SubstateId::NonFungibleSpace(_) => {
-                            SystemApiCostingEntry::ReturnGlobal { size: 0 }
+                            SystemApiCostingEntry::ReturnSubstate { size: 0 }
                         }
                         SubstateId::NonFungible(_, _) => {
-                            SystemApiCostingEntry::ReturnGlobal { size: 0 }
+                            SystemApiCostingEntry::ReturnSubstate { size: 0 }
                         }
                         SubstateId::ComponentInfo(..) => {
-                            SystemApiCostingEntry::ReturnGlobal { size: 0 }
+                            SystemApiCostingEntry::ReturnSubstate { size: 0 }
                         }
                         SubstateId::ComponentState(_) => {
-                            SystemApiCostingEntry::ReturnGlobal { size: 0 }
+                            SystemApiCostingEntry::ReturnSubstate { size: 0 }
                         }
-                        SubstateId::System => SystemApiCostingEntry::ReturnGlobal { size: 0 },
-                        SubstateId::Bucket(..) => SystemApiCostingEntry::ReturnGlobal { size: 0 },
-                        SubstateId::Proof(..) => SystemApiCostingEntry::ReturnGlobal { size: 0 },
-                        SubstateId::Worktop => SystemApiCostingEntry::ReturnGlobal { size: 0 },
+                        SubstateId::System => SystemApiCostingEntry::ReturnSubstate { size: 0 },
+                        SubstateId::Bucket(..) => SystemApiCostingEntry::ReturnSubstate { size: 0 },
+                        SubstateId::Proof(..) => SystemApiCostingEntry::ReturnSubstate { size: 0 },
+                        SubstateId::Worktop => SystemApiCostingEntry::ReturnSubstate { size: 0 },
                     },
                 }
             }),
-            "return",
+            "return_substate",
         )?;
 
         val_ref.return_to_location(&mut self.call_frames, &mut self.track);
@@ -1089,7 +1122,11 @@ where
     fn node_drop(&mut self, node_id: &RENodeId) -> Result<HeapRootRENode, FeeReserveError> {
         trace!(self, Level::Debug, "Dropping value: {:?}", node_id);
 
-        // TODO: costing
+        self.fee_reserve.consume(
+            self.fee_table
+                .system_api_cost(SystemApiCostingEntry::DropNode { size: 0 }),
+            "drop_node",
+        )?;
 
         // TODO: Authorization
 
@@ -1106,10 +1143,10 @@ where
         self.fee_reserve
             .consume(
                 self.fee_table
-                    .system_api_cost(SystemApiCostingEntry::Create {
+                    .system_api_cost(SystemApiCostingEntry::CreateNode {
                         size: 0, // TODO: get size of the value
                     }),
-                "create",
+                "create_node",
             )
             .map_err(RuntimeError::CostingError)?;
 
@@ -1184,10 +1221,10 @@ where
         self.fee_reserve
             .consume(
                 self.fee_table
-                    .system_api_cost(SystemApiCostingEntry::Globalize {
+                    .system_api_cost(SystemApiCostingEntry::GlobalizeNode {
                         size: 0, // TODO: get size of the value
                     }),
-                "globalize",
+                "globalize_node",
             )
             .map_err(RuntimeError::CostingError)?;
 
@@ -1211,7 +1248,7 @@ where
                 let component_address = node_id.into();
                 substates.insert(
                     SubstateId::ComponentInfo(component_address),
-                    Substate::Component(component),
+                    Substate::ComponentInfo(component),
                 );
                 substates.insert(
                     SubstateId::ComponentState(component_address),
@@ -1273,15 +1310,21 @@ where
     }
 
     fn substate_read(&mut self, substate_id: SubstateId) -> Result<ScryptoValue, RuntimeError> {
-        trace!(self, Level::Debug, "Reading value data: {:?}", substate_id);
+        trace!(
+            self,
+            Level::Debug,
+            "Reading substate data: {:?}",
+            substate_id
+        );
 
         // Costing
         self.fee_reserve
             .consume(
-                self.fee_table.system_api_cost(SystemApiCostingEntry::Read {
-                    size: 0, // TODO: get size of the value
-                }),
-                "read",
+                self.fee_table
+                    .system_api_cost(SystemApiCostingEntry::ReadSubstate {
+                        size: 0, // TODO: get size of the value
+                    }),
+                "read_substate",
             )
             .map_err(RuntimeError::CostingError)?;
 
@@ -1309,9 +1352,18 @@ where
     }
 
     fn substate_take(&mut self, substate_id: SubstateId) -> Result<ScryptoValue, RuntimeError> {
-        trace!(self, Level::Debug, "Removing value data: {:?}", substate_id);
+        trace!(self, Level::Debug, "Taking substate: {:?}", substate_id);
 
-        // TODO: Costing
+        // Costing
+        self.fee_reserve
+            .consume(
+                self.fee_table
+                    .system_api_cost(SystemApiCostingEntry::TakeSubstate {
+                        size: 0, // TODO: get size of the value
+                    }),
+                "read_substate",
+            )
+            .map_err(RuntimeError::CostingError)?;
 
         // Authorization
         if !Self::current_frame(&self.call_frames)
@@ -1343,16 +1395,21 @@ where
         substate_id: SubstateId,
         value: ScryptoValue,
     ) -> Result<(), RuntimeError> {
-        trace!(self, Level::Debug, "Writing value data: {:?}", substate_id);
+        trace!(
+            self,
+            Level::Debug,
+            "Writing substate data: {:?}",
+            substate_id
+        );
 
         // Costing
         self.fee_reserve
             .consume(
                 self.fee_table
-                    .system_api_cost(SystemApiCostingEntry::Write {
+                    .system_api_cost(SystemApiCostingEntry::WriteSubstate {
                         size: 0, // TODO: get size of the value
                     }),
-                "write",
+                "write_substate",
             )
             .map_err(RuntimeError::CostingError)?;
 
@@ -1436,7 +1493,16 @@ where
         access_rule: scrypto::resource::AccessRule,
         proof_ids: Vec<ProofId>,
     ) -> Result<bool, RuntimeError> {
-        // TODO: costing
+        // Costing
+        self.fee_reserve
+            .consume(
+                self.fee_table
+                    .system_api_cost(SystemApiCostingEntry::CheckAccessRule {
+                        size: proof_ids.len() as u32,
+                    }),
+                "check_access_rule",
+            )
+            .map_err(RuntimeError::CostingError)?;
 
         let proofs = proof_ids
             .iter()

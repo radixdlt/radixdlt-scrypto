@@ -180,10 +180,10 @@ impl NativeSubstateRef {
         }
     }
 
-    pub fn component(&mut self) -> &mut Component {
+    pub fn component_info(&mut self) -> &mut ComponentInfo {
         match self {
             NativeSubstateRef::Stack(root, _frame_id, _root_id, maybe_child) => {
-                root.get_node_mut(maybe_child.as_ref()).component_mut()
+                root.get_node_mut(maybe_child.as_ref()).component_info_mut()
             }
             _ => panic!("Expecting to be a component"),
         }
@@ -308,12 +308,12 @@ impl<'f, 's> RENodeRef<'f, 's> {
         }
     }
 
-    pub fn component_info(&self) -> &Component {
+    pub fn component_info(&self) -> &ComponentInfo {
         match self {
             RENodeRef::Stack(value, id) => id
                 .as_ref()
                 .map_or(value.root(), |v| value.non_root(v))
-                .component(),
+                .component_info(),
             RENodeRef::Track(track, node_id) => {
                 let substate_id = match node_id {
                     RENodeId::Component(component_address) => {
@@ -321,7 +321,7 @@ impl<'f, 's> RENodeRef<'f, 's> {
                     }
                     _ => panic!("Unexpected"),
                 };
-                track.read_substate(substate_id).component()
+                track.read_substate(substate_id).component_info()
             }
         }
     }
@@ -354,7 +354,9 @@ impl<'f, 's> RENodeRefMut<'f, 's> {
         substate_id: &SubstateId,
     ) -> Result<ScryptoValue, RuntimeError> {
         match substate_id {
-            SubstateId::ComponentInfo(..) => Ok(ScryptoValue::from_typed(&self.component().info())),
+            SubstateId::ComponentInfo(..) => {
+                Ok(ScryptoValue::from_typed(&self.component_info().info()))
+            }
             SubstateId::ComponentState(..) => {
                 Ok(ScryptoValue::from_slice(self.component_state().state())
                     .expect("Expected to decode"))
@@ -621,9 +623,11 @@ impl<'f, 's> RENodeRefMut<'f, 's> {
         }
     }
 
-    pub fn component(&mut self) -> &Component {
+    pub fn component_info(&mut self) -> &ComponentInfo {
         match self {
-            RENodeRefMut::Stack(re_value, id) => re_value.get_node_mut(id.as_ref()).component(),
+            RENodeRefMut::Stack(re_value, id) => {
+                re_value.get_node_mut(id.as_ref()).component_info()
+            }
             RENodeRefMut::Track(track, node_id) => {
                 let substate_id = match node_id {
                     RENodeId::Component(component_address) => {
@@ -632,7 +636,7 @@ impl<'f, 's> RENodeRefMut<'f, 's> {
                     _ => panic!("Unexpeceted"),
                 };
                 let component_val = track.read_substate(substate_id);
-                component_val.component()
+                component_val.component_info()
             }
         }
     }

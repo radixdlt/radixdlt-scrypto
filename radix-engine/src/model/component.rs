@@ -43,13 +43,13 @@ impl ComponentState {
 
 /// A component is an instance of blueprint.
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
-pub struct Component {
+pub struct ComponentInfo {
     package_address: PackageAddress,
     blueprint_name: String,
     access_rules: Vec<AccessRules>,
 }
 
-impl Component {
+impl ComponentInfo {
     pub fn new(
         package_address: PackageAddress,
         blueprint_name: String,
@@ -141,8 +141,8 @@ impl Component {
                 let mut ref_mut = system_api
                     .substate_borrow_mut(&substate_id)
                     .map_err(ComponentError::CostingError)?;
-                let component = ref_mut.component();
-                component.access_rules.push(input.access_rules);
+                let component_info = ref_mut.component_info();
+                component_info.access_rules.push(input.access_rules);
                 system_api
                     .substate_return_mut(ref_mut)
                     .map_err(ComponentError::CostingError)?;

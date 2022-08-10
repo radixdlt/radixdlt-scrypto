@@ -10,7 +10,7 @@ use crate::model::*;
 pub enum Substate {
     System(System),
     Resource(ResourceManager),
-    Component(Component),
+    ComponentInfo(ComponentInfo),
     ComponentState(ComponentState),
     Package(ValidatedPackage),
     Vault(Vault),
@@ -75,8 +75,8 @@ impl Substate {
         }
     }
 
-    pub fn component(&self) -> &Component {
-        if let Substate::Component(component) = self {
+    pub fn component_info(&self) -> &ComponentInfo {
+        if let Substate::ComponentInfo(component) = self {
             component
         } else {
             match self {
@@ -90,8 +90,8 @@ impl Substate {
         }
     }
 
-    pub fn component_mut(&mut self) -> &mut Component {
-        if let Substate::Component(component) = self {
+    pub fn component_mut(&mut self) -> &mut ComponentInfo {
+        if let Substate::ComponentInfo(component) = self {
             component
         } else {
             panic!("Not a component");
@@ -135,9 +135,9 @@ impl Into<Substate> for ValidatedPackage {
     }
 }
 
-impl Into<Substate> for Component {
+impl Into<Substate> for ComponentInfo {
     fn into(self) -> Substate {
-        Substate::Component(self)
+        Substate::ComponentInfo(self)
     }
 }
 
@@ -171,12 +171,12 @@ impl Into<Substate> for KeyValueStoreEntryWrapper {
     }
 }
 
-impl Into<Component> for Substate {
-    fn into(self) -> Component {
-        if let Substate::Component(component) = self {
+impl Into<ComponentInfo> for Substate {
+    fn into(self) -> ComponentInfo {
+        if let Substate::ComponentInfo(component) = self {
             component
         } else {
-            panic!("Not a component");
+            panic!("Not a component info");
         }
     }
 }
@@ -247,7 +247,7 @@ pub enum HeapRENode {
     Proof(Proof),
     Vault(Vault),
     KeyValueStore(HeapKeyValueStore),
-    Component(Component, ComponentState),
+    Component(ComponentInfo, ComponentState),
     Worktop(Worktop),
     Package(ValidatedPackage),
     Resource(ResourceManager, Option<HashMap<NonFungibleId, NonFungible>>),
@@ -328,16 +328,16 @@ impl HeapRENode {
         }
     }
 
-    pub fn component(&self) -> &Component {
+    pub fn component_info(&self) -> &ComponentInfo {
         match self {
-            HeapRENode::Component(component, ..) => component,
+            HeapRENode::Component(component_info, ..) => component_info,
             _ => panic!("Expected to be a store"),
         }
     }
 
-    pub fn component_mut(&mut self) -> &mut Component {
+    pub fn component_info_mut(&mut self) -> &mut ComponentInfo {
         match self {
-            HeapRENode::Component(component, ..) => component,
+            HeapRENode::Component(component_info, ..) => component_info,
             _ => panic!("Expected to be a store"),
         }
     }

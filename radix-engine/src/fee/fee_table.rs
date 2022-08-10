@@ -9,62 +9,63 @@ use scrypto::{core::Receiver, values::ScryptoValue};
 use crate::wasm::{InstructionCostRules, WasmMeteringParams};
 
 pub enum SystemApiCostingEntry<'a> {
+    /*
+     * Invocation
+     */
     /// Invokes a function, native or wasm.
     InvokeFunction {
         fn_identifier: FnIdentifier,
         input: &'a ScryptoValue,
     },
-
     /// Invokes a method, native or wasm.
     InvokeMethod {
         receiver: Receiver,
         input: &'a ScryptoValue,
     },
 
-    /// Globalizes a RE value.
-    Globalize { size: u32 },
+    /*
+     * RENode
+     */
+    /// Creates a RENode.
+    CreateNode { size: u32 },
+    /// Drops a RENode
+    DropNode { size: u32 },
+    /// Globalizes a RENode.
+    GlobalizeNode { size: u32 },
 
-    /// Borrows a globalized value.
-    BorrowGlobal { loaded: bool, size: u32 },
+    /*
+     * Substate
+     */
+    /// Borrows a substate
+    BorrowSubstate { loaded: bool, size: u32 },
+    /// Returns a substate.
+    ReturnSubstate { size: u32 },
+    /// Reads the data of a Substate
+    TakeSubstate { size: u32 },
+    /// Reads the data of a Substate
+    ReadSubstate { size: u32 },
+    /// Updates the data of a Substate
+    WriteSubstate { size: u32 },
 
-    /// Borrows a local value.
-    BorrowLocal,
-
-    /// Returns a borrowed value.
-    ReturnGlobal { size: u32 },
-
-    /// Returns a borrowed value.
-    ReturnLocal,
-
-    /// Creates a RE value.
-    Create { size: u32 },
-
-    /// Reads the data of a RE value.
-    Read { size: u32 },
-
-    /// Updates the data of a RE Value.
-    Write { size: u32 },
-
+    /*
+     * Misc
+     */
     /// Reads the current epoch.
     ReadEpoch,
-
     /// Read the transaction hash.
     ReadTransactionHash,
-
     /// Read the transaction network.
     ReadTransactionNetwork,
-
     /// Generates a UUID.
     GenerateUuid,
-
     /// Emits a log.
     EmitLog { size: u32 },
-
     /// Checks if an access rule can be satisfied by the given proofs.
-    CheckAccessRule,
+    CheckAccessRule { size: u32 },
 }
 
 pub struct FeeTable {
+    tx_base_fee: u32,
     tx_decoding_per_byte: u32,
     tx_manifest_verification_per_byte: u32,
     tx_signature_verification_per_sig: u32,
@@ -78,10 +79,11 @@ pub struct FeeTable {
 impl FeeTable {
     pub fn new() -> Self {
         Self {
-            tx_decoding_per_byte: 4,
+            tx_base_fee: 10_000,
+            tx_decoding_per_byte: 3, // TODO: linear costing is suitable for PUBLISH_PACKAGE manifest; need to bill "blobs" separately
             tx_manifest_verification_per_byte: 1,
             tx_signature_verification_per_sig: 3750,
-            wasm_instantiation_per_byte: 500,
+            wasm_instantiation_per_byte: 1, // TODO: this is currently costing too much!!!
             fixed_low: 100,
             fixed_medium: 500,
             fixed_high: 1000,
@@ -90,6 +92,10 @@ impl FeeTable {
                 512,
             ),
         }
+    }
+
+    pub fn tx_base_fee(&self) -> u32 {
+        self.tx_base_fee
     }
 
     pub fn tx_decoding_per_byte(&self) -> u32 {
@@ -225,26 +231,29 @@ impl FeeTable {
             SystemApiCostingEntry::InvokeMethod { input, .. } => {
                 self.fixed_low + (5 * input.raw.len() + 10 * input.value_count()) as u32
             }
-            SystemApiCostingEntry::Globalize { size } => self.fixed_high + 200 * size,
-            SystemApiCostingEntry::BorrowGlobal { loaded, size } => {
+
+            SystemApiCostingEntry::CreateNode { .. } => self.fixed_medium,
+            SystemApiCostingEntry::DropNode { .. } => self.fixed_medium,
+            SystemApiCostingEntry::GlobalizeNode { size } => self.fixed_high + 200 * size,
+
+            SystemApiCostingEntry::BorrowSubstate { loaded, size } => {
                 if loaded {
                     self.fixed_high
                 } else {
                     self.fixed_low + 100 * size
                 }
             }
-            SystemApiCostingEntry::BorrowLocal => self.fixed_medium,
-            SystemApiCostingEntry::ReturnGlobal { size } => self.fixed_low + 100 * size,
-            SystemApiCostingEntry::ReturnLocal => self.fixed_medium,
-            SystemApiCostingEntry::Create { .. } => self.fixed_high,
-            SystemApiCostingEntry::Read { .. } => self.fixed_medium,
-            SystemApiCostingEntry::Write { .. } => self.fixed_medium,
+            SystemApiCostingEntry::ReturnSubstate { size } => self.fixed_low + 100 * size,
+            SystemApiCostingEntry::TakeSubstate { .. } => self.fixed_medium,
+            SystemApiCostingEntry::ReadSubstate { .. } => self.fixed_medium,
+            SystemApiCostingEntry::WriteSubstate { .. } => self.fixed_medium,
+
             SystemApiCostingEntry::ReadEpoch => self.fixed_low,
             SystemApiCostingEntry::ReadTransactionHash => self.fixed_low,
             SystemApiCostingEntry::ReadTransactionNetwork => self.fixed_low,
             SystemApiCostingEntry::GenerateUuid => self.fixed_low,
             SystemApiCostingEntry::EmitLog { size } => self.fixed_low + 10 * size,
-            SystemApiCostingEntry::CheckAccessRule => self.fixed_medium,
+            SystemApiCostingEntry::CheckAccessRule { .. } => self.fixed_medium,
         }
     }
 }
