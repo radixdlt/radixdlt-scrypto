@@ -9,57 +9,59 @@ use scrypto::{core::Receiver, values::ScryptoValue};
 use crate::wasm::{InstructionCostRules, WasmMeteringParams};
 
 pub enum SystemApiCostingEntry<'a> {
+    /*
+     * Invocation
+     */
     /// Invokes a function, native or wasm.
     InvokeFunction {
         fn_identifier: FnIdentifier,
         input: &'a ScryptoValue,
     },
-
     /// Invokes a method, native or wasm.
     InvokeMethod {
         receiver: Receiver,
         input: &'a ScryptoValue,
     },
 
-    /// Globalizes a RE value.
-    Globalize { size: u32 },
+    /*
+     * RENode
+     */
+    /// Creates a RENode.
+    CreateNode { size: u32 },
+    /// Drops a heap RENode
+    DropHeapNode { size: u32 },
+    /// Drops a store RENode
+    DropStoreNode { size: u32 },
+    /// Globalizes a RENode.
+    GlobalizeNode { size: u32 },
 
-    /// Borrows a globalized value.
-    BorrowGlobal { loaded: bool, size: u32 },
-
-    /// Borrows a local value.
-    BorrowLocal,
-
-    /// Returns a borrowed value.
-    ReturnGlobal { size: u32 },
-
-    /// Returns a borrowed value.
-    ReturnLocal,
-
-    /// Creates a RE value.
-    Create { size: u32 },
-
-    /// Reads the data of a RE value.
+    /*
+     * Substate
+     */
+    /// Borrows a substate from heap
+    BorrowFromHeap,
+    /// Borrows a substate from store
+    BorrowFromStore { loaded: bool, size: u32 },
+    /// Returns a substate.
+    Return { size: u32 },
+    /// Reads the data of a Substate
     Read { size: u32 },
-
-    /// Updates the data of a RE Value.
+    /// Updates the data of a Substate
     Write { size: u32 },
 
+    /*
+     * Misc
+     */
     /// Reads the current epoch.
     ReadEpoch,
-
     /// Read the transaction hash.
     ReadTransactionHash,
-
     /// Read the transaction network.
     ReadTransactionNetwork,
-
     /// Generates a UUID.
     GenerateUuid,
-
     /// Emits a log.
     EmitLog { size: u32 },
-
     /// Checks if an access rule can be satisfied by the given proofs.
     CheckAccessRule,
 }
@@ -225,20 +227,24 @@ impl FeeTable {
             SystemApiCostingEntry::InvokeMethod { input, .. } => {
                 self.fixed_low + (5 * input.raw.len() + 10 * input.value_count()) as u32
             }
-            SystemApiCostingEntry::Globalize { size } => self.fixed_high + 200 * size,
-            SystemApiCostingEntry::BorrowGlobal { loaded, size } => {
+
+            SystemApiCostingEntry::CreateNode { .. } => self.fixed_medium,
+            SystemApiCostingEntry::GlobalizeNode { size } => self.fixed_high + 200 * size,
+            SystemApiCostingEntry::DropHeapNode { .. } => self.fixed_low,
+            SystemApiCostingEntry::DropStoreNode { .. } => self.fixed_high,
+
+            SystemApiCostingEntry::BorrowFromHeap => self.fixed_medium,
+            SystemApiCostingEntry::BorrowFromStore { loaded, size } => {
                 if loaded {
                     self.fixed_high
                 } else {
                     self.fixed_low + 100 * size
                 }
             }
-            SystemApiCostingEntry::BorrowLocal => self.fixed_medium,
-            SystemApiCostingEntry::ReturnGlobal { size } => self.fixed_low + 100 * size,
-            SystemApiCostingEntry::ReturnLocal => self.fixed_medium,
-            SystemApiCostingEntry::Create { .. } => self.fixed_high,
+            SystemApiCostingEntry::Return { size } => self.fixed_low + 100 * size,
             SystemApiCostingEntry::Read { .. } => self.fixed_medium,
             SystemApiCostingEntry::Write { .. } => self.fixed_medium,
+
             SystemApiCostingEntry::ReadEpoch => self.fixed_low,
             SystemApiCostingEntry::ReadTransactionHash => self.fixed_low,
             SystemApiCostingEntry::ReadTransactionNetwork => self.fixed_low,

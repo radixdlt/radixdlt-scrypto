@@ -899,35 +899,35 @@ where
         self.fee_reserve.consume(
             self.fee_table.system_api_cost({
                 match node_id {
-                    RENodeId::Bucket(_) => SystemApiCostingEntry::BorrowLocal,
-                    RENodeId::Proof(_) => SystemApiCostingEntry::BorrowLocal,
-                    RENodeId::Worktop => SystemApiCostingEntry::BorrowLocal,
-                    RENodeId::Vault(_) => SystemApiCostingEntry::BorrowGlobal {
+                    RENodeId::Bucket(_) => SystemApiCostingEntry::BorrowFromHeap,
+                    RENodeId::Proof(_) => SystemApiCostingEntry::BorrowFromHeap,
+                    RENodeId::Worktop => SystemApiCostingEntry::BorrowFromHeap,
+                    RENodeId::Vault(_) => SystemApiCostingEntry::BorrowFromStore {
                         // TODO: figure out loaded state and size
                         loaded: false,
                         size: 0,
                     },
-                    RENodeId::Component(_) => SystemApiCostingEntry::BorrowGlobal {
+                    RENodeId::Component(_) => SystemApiCostingEntry::BorrowFromStore {
                         // TODO: figure out loaded state and size
                         loaded: false,
                         size: 0,
                     },
-                    RENodeId::KeyValueStore(_) => SystemApiCostingEntry::BorrowGlobal {
+                    RENodeId::KeyValueStore(_) => SystemApiCostingEntry::BorrowFromStore {
                         // TODO: figure out loaded state and size
                         loaded: false,
                         size: 0,
                     },
-                    RENodeId::ResourceManager(_) => SystemApiCostingEntry::BorrowGlobal {
+                    RENodeId::ResourceManager(_) => SystemApiCostingEntry::BorrowFromStore {
                         // TODO: figure out loaded state and size
                         loaded: false,
                         size: 0,
                     },
-                    RENodeId::Package(_) => SystemApiCostingEntry::BorrowGlobal {
+                    RENodeId::Package(_) => SystemApiCostingEntry::BorrowFromStore {
                         // TODO: figure out loaded state and size
                         loaded: false,
                         size: 0,
                     },
-                    RENodeId::System => SystemApiCostingEntry::BorrowGlobal {
+                    RENodeId::System => SystemApiCostingEntry::BorrowFromStore {
                         // TODO: figure out loaded state and size
                         loaded: false,
                         size: 0,
@@ -960,55 +960,55 @@ where
         self.fee_reserve.consume(
             self.fee_table.system_api_cost({
                 match substate_id {
-                    SubstateId::Bucket(_) => SystemApiCostingEntry::BorrowLocal,
-                    SubstateId::Proof(_) => SystemApiCostingEntry::BorrowLocal,
-                    SubstateId::Worktop => SystemApiCostingEntry::BorrowLocal,
-                    SubstateId::Vault(_) => SystemApiCostingEntry::BorrowGlobal {
+                    SubstateId::Bucket(_) => SystemApiCostingEntry::BorrowFromHeap,
+                    SubstateId::Proof(_) => SystemApiCostingEntry::BorrowFromHeap,
+                    SubstateId::Worktop => SystemApiCostingEntry::BorrowFromHeap,
+                    SubstateId::Vault(_) => SystemApiCostingEntry::BorrowFromStore {
                         // TODO: figure out loaded state and size
                         loaded: false,
                         size: 0,
                     },
-                    SubstateId::ComponentState(..) => SystemApiCostingEntry::BorrowGlobal {
+                    SubstateId::ComponentState(..) => SystemApiCostingEntry::BorrowFromStore {
                         // TODO: figure out loaded state and size
                         loaded: false,
                         size: 0,
                     },
-                    SubstateId::ComponentInfo(..) => SystemApiCostingEntry::BorrowGlobal {
+                    SubstateId::ComponentInfo(..) => SystemApiCostingEntry::BorrowFromStore {
                         // TODO: figure out loaded state and size
                         loaded: false,
                         size: 0,
                     },
-                    SubstateId::KeyValueStoreSpace(_) => SystemApiCostingEntry::BorrowGlobal {
+                    SubstateId::KeyValueStoreSpace(_) => SystemApiCostingEntry::BorrowFromStore {
                         // TODO: figure out loaded state and size
                         loaded: false,
                         size: 0,
                     },
-                    SubstateId::KeyValueStoreEntry(..) => SystemApiCostingEntry::BorrowGlobal {
+                    SubstateId::KeyValueStoreEntry(..) => SystemApiCostingEntry::BorrowFromStore {
                         // TODO: figure out loaded state and size
                         loaded: false,
                         size: 0,
                     },
-                    SubstateId::ResourceManager(..) => SystemApiCostingEntry::BorrowGlobal {
+                    SubstateId::ResourceManager(..) => SystemApiCostingEntry::BorrowFromStore {
                         // TODO: figure out loaded state and size
                         loaded: false,
                         size: 0,
                     },
-                    SubstateId::NonFungibleSpace(..) => SystemApiCostingEntry::BorrowGlobal {
+                    SubstateId::NonFungibleSpace(..) => SystemApiCostingEntry::BorrowFromStore {
                         // TODO: figure out loaded state and size
                         loaded: false,
                         size: 0,
                     },
-                    SubstateId::NonFungible(..) => SystemApiCostingEntry::BorrowGlobal {
+                    SubstateId::NonFungible(..) => SystemApiCostingEntry::BorrowFromStore {
                         // TODO: figure out loaded state and size
                         loaded: false,
                         size: 0,
                     },
-                    SubstateId::Package(..) => SystemApiCostingEntry::BorrowGlobal {
+                    SubstateId::Package(..) => SystemApiCostingEntry::BorrowFromStore {
                         // TODO: figure out loaded state and size
                         loaded: false,
                         size: 0,
                     },
-                    SubstateId::System => SystemApiCostingEntry::BorrowGlobal {
+                    SubstateId::System => SystemApiCostingEntry::BorrowFromStore {
                         // TODO: figure out loaded state and size
                         loaded: false,
                         size: 0,
@@ -1047,35 +1047,27 @@ where
         self.fee_reserve.consume(
             self.fee_table.system_api_cost({
                 match &val_ref {
-                    NativeSubstateRef::Stack(..) => SystemApiCostingEntry::ReturnLocal,
+                    NativeSubstateRef::Stack(..) => SystemApiCostingEntry::Return { size: 0 },
                     NativeSubstateRef::Track(substate_id, _) => match substate_id {
-                        SubstateId::Vault(_) => SystemApiCostingEntry::ReturnGlobal { size: 0 },
+                        SubstateId::Vault(_) => SystemApiCostingEntry::Return { size: 0 },
                         SubstateId::KeyValueStoreSpace(_) => {
-                            SystemApiCostingEntry::ReturnGlobal { size: 0 }
+                            SystemApiCostingEntry::Return { size: 0 }
                         }
                         SubstateId::KeyValueStoreEntry(_, _) => {
-                            SystemApiCostingEntry::ReturnGlobal { size: 0 }
+                            SystemApiCostingEntry::Return { size: 0 }
                         }
-                        SubstateId::ResourceManager(_) => {
-                            SystemApiCostingEntry::ReturnGlobal { size: 0 }
-                        }
-                        SubstateId::Package(_) => SystemApiCostingEntry::ReturnGlobal { size: 0 },
+                        SubstateId::ResourceManager(_) => SystemApiCostingEntry::Return { size: 0 },
+                        SubstateId::Package(_) => SystemApiCostingEntry::Return { size: 0 },
                         SubstateId::NonFungibleSpace(_) => {
-                            SystemApiCostingEntry::ReturnGlobal { size: 0 }
+                            SystemApiCostingEntry::Return { size: 0 }
                         }
-                        SubstateId::NonFungible(_, _) => {
-                            SystemApiCostingEntry::ReturnGlobal { size: 0 }
-                        }
-                        SubstateId::ComponentInfo(..) => {
-                            SystemApiCostingEntry::ReturnGlobal { size: 0 }
-                        }
-                        SubstateId::ComponentState(_) => {
-                            SystemApiCostingEntry::ReturnGlobal { size: 0 }
-                        }
-                        SubstateId::System => SystemApiCostingEntry::ReturnGlobal { size: 0 },
-                        SubstateId::Bucket(..) => SystemApiCostingEntry::ReturnGlobal { size: 0 },
-                        SubstateId::Proof(..) => SystemApiCostingEntry::ReturnGlobal { size: 0 },
-                        SubstateId::Worktop => SystemApiCostingEntry::ReturnGlobal { size: 0 },
+                        SubstateId::NonFungible(_, _) => SystemApiCostingEntry::Return { size: 0 },
+                        SubstateId::ComponentInfo(..) => SystemApiCostingEntry::Return { size: 0 },
+                        SubstateId::ComponentState(_) => SystemApiCostingEntry::Return { size: 0 },
+                        SubstateId::System => SystemApiCostingEntry::Return { size: 0 },
+                        SubstateId::Bucket(..) => SystemApiCostingEntry::Return { size: 0 },
+                        SubstateId::Proof(..) => SystemApiCostingEntry::Return { size: 0 },
+                        SubstateId::Worktop => SystemApiCostingEntry::Return { size: 0 },
                     },
                 }
             }),
@@ -1106,7 +1098,7 @@ where
         self.fee_reserve
             .consume(
                 self.fee_table
-                    .system_api_cost(SystemApiCostingEntry::Create {
+                    .system_api_cost(SystemApiCostingEntry::CreateNode {
                         size: 0, // TODO: get size of the value
                     }),
                 "create",
@@ -1184,7 +1176,7 @@ where
         self.fee_reserve
             .consume(
                 self.fee_table
-                    .system_api_cost(SystemApiCostingEntry::Globalize {
+                    .system_api_cost(SystemApiCostingEntry::GlobalizeNode {
                         size: 0, // TODO: get size of the value
                     }),
                 "globalize",
