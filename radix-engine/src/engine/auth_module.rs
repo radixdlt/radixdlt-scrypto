@@ -12,7 +12,7 @@ impl AuthModule {
     fn auth(
         fn_ident: &str,
         method_auths: Vec<MethodAuthorization>,
-        call_frames: &mut Vec<CallFrame>,
+        call_frames: &mut Vec<CallFrame>, // TODO remove this once heap is implemented
     ) -> Result<(), RuntimeError> {
         let mut auth_zones = vec![
             &call_frames
