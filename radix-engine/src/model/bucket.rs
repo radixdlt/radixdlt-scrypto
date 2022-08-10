@@ -131,7 +131,7 @@ impl Bucket {
         self.borrow_container().resource_type()
     }
 
-    fn total_amount(&self) -> Decimal {
+    pub fn total_amount(&self) -> Decimal {
         self.borrow_container().total_amount()
     }
 

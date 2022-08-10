@@ -13,6 +13,7 @@ use transaction::model::*;
 
 use crate::engine::RuntimeError;
 use crate::fee::FeeSummary;
+use crate::model::ResourceChange;
 use crate::state_manager::StateDiff;
 
 #[derive(Debug)]
@@ -46,6 +47,7 @@ pub struct TransactionReceipt {
     pub new_component_addresses: Vec<ComponentAddress>,
     pub new_resource_addresses: Vec<ResourceAddress>,
     pub state_updates: StateDiff,
+    pub resource_changes: Vec<ResourceChange>,
 }
 
 impl TransactionReceipt {

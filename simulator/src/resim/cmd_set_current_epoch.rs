@@ -31,6 +31,7 @@ impl SetCurrentEpoch {
         let mut track = Track::new(&substate_store);
         let mut fee_reserve = SystemLoanFeeReserve::default();
         let fee_table = FeeTable::new();
+        let mut execution_trace = ExecutionTrace::new();
 
         let mut kernel = Kernel::new(
             tx_hash,
@@ -43,6 +44,7 @@ impl SetCurrentEpoch {
             &mut wasm_instrumenter,
             &mut fee_reserve,
             &fee_table,
+            &mut execution_trace,
         );
 
         // Invoke the system
