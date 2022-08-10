@@ -28,26 +28,24 @@ pub enum SystemApiCostingEntry<'a> {
      */
     /// Creates a RENode.
     CreateNode { size: u32 },
-    /// Drops a heap RENode
-    DropHeapNode { size: u32 },
-    /// Drops a store RENode
-    DropStoreNode { size: u32 },
+    /// Drops a RENode
+    DropNode { size: u32 },
     /// Globalizes a RENode.
     GlobalizeNode { size: u32 },
 
     /*
      * Substate
      */
-    /// Borrows a substate from heap
-    BorrowFromHeap,
-    /// Borrows a substate from store
-    BorrowFromStore { loaded: bool, size: u32 },
+    /// Borrows a substate
+    BorrowSubstate { loaded: bool, size: u32 },
     /// Returns a substate.
-    Return { size: u32 },
+    ReturnSubstate { size: u32 },
     /// Reads the data of a Substate
-    Read { size: u32 },
+    TakeSubstate { size: u32 },
+    /// Reads the data of a Substate
+    ReadSubstate { size: u32 },
     /// Updates the data of a Substate
-    Write { size: u32 },
+    WriteSubstate { size: u32 },
 
     /*
      * Misc
@@ -63,7 +61,7 @@ pub enum SystemApiCostingEntry<'a> {
     /// Emits a log.
     EmitLog { size: u32 },
     /// Checks if an access rule can be satisfied by the given proofs.
-    CheckAccessRule,
+    CheckAccessRule { size: u32 },
 }
 
 pub struct FeeTable {
@@ -229,28 +227,27 @@ impl FeeTable {
             }
 
             SystemApiCostingEntry::CreateNode { .. } => self.fixed_medium,
+            SystemApiCostingEntry::DropNode { .. } => self.fixed_medium,
             SystemApiCostingEntry::GlobalizeNode { size } => self.fixed_high + 200 * size,
-            SystemApiCostingEntry::DropHeapNode { .. } => self.fixed_low,
-            SystemApiCostingEntry::DropStoreNode { .. } => self.fixed_high,
 
-            SystemApiCostingEntry::BorrowFromHeap => self.fixed_medium,
-            SystemApiCostingEntry::BorrowFromStore { loaded, size } => {
+            SystemApiCostingEntry::BorrowSubstate { loaded, size } => {
                 if loaded {
                     self.fixed_high
                 } else {
                     self.fixed_low + 100 * size
                 }
             }
-            SystemApiCostingEntry::Return { size } => self.fixed_low + 100 * size,
-            SystemApiCostingEntry::Read { .. } => self.fixed_medium,
-            SystemApiCostingEntry::Write { .. } => self.fixed_medium,
+            SystemApiCostingEntry::ReturnSubstate { size } => self.fixed_low + 100 * size,
+            SystemApiCostingEntry::TakeSubstate { .. } => self.fixed_medium,
+            SystemApiCostingEntry::ReadSubstate { .. } => self.fixed_medium,
+            SystemApiCostingEntry::WriteSubstate { .. } => self.fixed_medium,
 
             SystemApiCostingEntry::ReadEpoch => self.fixed_low,
             SystemApiCostingEntry::ReadTransactionHash => self.fixed_low,
             SystemApiCostingEntry::ReadTransactionNetwork => self.fixed_low,
             SystemApiCostingEntry::GenerateUuid => self.fixed_low,
             SystemApiCostingEntry::EmitLog { size } => self.fixed_low + 10 * size,
-            SystemApiCostingEntry::CheckAccessRule => self.fixed_medium,
+            SystemApiCostingEntry::CheckAccessRule { .. } => self.fixed_medium,
         }
     }
 }
