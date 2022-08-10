@@ -648,9 +648,11 @@ where
                 let substate_id =
                     RENodeProperties::to_primary_substate_id(&fn_identifier, *node_id)?;
                 let is_lock_fee = matches!(node_id, RENodeId::Vault(..))
-                    && fn_identifier.eq(&FnIdentifier::Native(NativeFnIdentifier::Vault(
+                    && (fn_identifier.eq(&FnIdentifier::Native(NativeFnIdentifier::Vault(
                         VaultFnIdentifier::LockFee,
-                    )));
+                    ))) || fn_identifier.eq(&FnIdentifier::Native(NativeFnIdentifier::Vault(
+                        VaultFnIdentifier::LockContingentFee,
+                    ))));
                 if is_lock_fee && matches!(node_pointer, RENodePointer::Heap { .. }) {
                     return Err(RuntimeError::LockFeeError(LockFeeError::RENodeNotInTrack));
                 }

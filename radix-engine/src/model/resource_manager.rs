@@ -138,6 +138,7 @@ impl ResourceManager {
     ) -> Result<Self, ResourceManagerError> {
         let mut vault_method_table: HashMap<VaultFnIdentifier, ResourceMethodRule> = HashMap::new();
         vault_method_table.insert(VaultFnIdentifier::LockFee, Protected(Withdraw));
+        vault_method_table.insert(VaultFnIdentifier::LockContingentFee, Protected(Withdraw));
         vault_method_table.insert(VaultFnIdentifier::Take, Protected(Withdraw));
         vault_method_table.insert(VaultFnIdentifier::Put, Protected(Deposit));
         vault_method_table.insert(VaultFnIdentifier::GetAmount, Public);
