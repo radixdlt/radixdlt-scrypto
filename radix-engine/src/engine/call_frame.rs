@@ -59,12 +59,24 @@ impl CallFrame {
         }
 
         if is_system {
-            let id = [NonFungibleId::from_u32(0)].into_iter().collect();
-            let mut system_bucket =
-                Bucket::new(ResourceContainer::new_non_fungible(SYSTEM_TOKEN, id));
-            let system_proof = system_bucket
-                .create_proof(system_api.id_allocator().new_bucket_id().unwrap())
-                .unwrap();
+            let non_fungible_ids = [NonFungibleId::from_u32(0)].into_iter().collect();
+            let bucket_id = match system_api
+                .node_create(HeapRENode::Bucket(Bucket::new(
+                    ResourceContainer::new_non_fungible(SYSTEM_TOKEN, non_fungible_ids),
+                )))
+                .unwrap()
+            {
+                RENodeId::Bucket(bucket_id) => bucket_id,
+                _ => panic!("Unexpected RENodeID returned"),
+            };
+            let substate_id = SubstateId::Bucket(bucket_id);
+            let mut node_ref = system_api
+                .substate_borrow_mut(&substate_id)
+                .expect("TODO check this unwrap");
+            let bucket = node_ref.bucket();
+            let system_proof = bucket
+                .create_proof(bucket_id)
+                .expect("TODO check this unwrap");
             initial_auth_zone_proofs.push(system_proof);
         }
 

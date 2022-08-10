@@ -1759,10 +1759,6 @@ where
         self.fee_table
     }
 
-    fn id_allocator(&mut self) -> &mut IdAllocator {
-        &mut self.id_allocator
-    }
-
     fn wasm_engine(&mut self) -> &mut W {
         self.wasm_engine
     }

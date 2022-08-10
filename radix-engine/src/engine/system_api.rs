@@ -5,7 +5,6 @@ use scrypto::engine::types::*;
 use scrypto::prelude::TypeName;
 use scrypto::resource::AccessRule;
 use scrypto::values::*;
-use transaction::validation::IdAllocator;
 
 use crate::engine::node::*;
 use crate::engine::*;
@@ -19,8 +18,6 @@ where
     I: WasmInstance,
     C: FeeReserve,
 {
-    fn id_allocator(&mut self) -> &mut IdAllocator;
-
     fn wasm_engine(&mut self) -> &mut W;
 
     fn wasm_instrumenter(&mut self) -> &mut WasmInstrumenter;
