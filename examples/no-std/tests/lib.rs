@@ -37,7 +37,7 @@ fn test_say_hello() {
     let package_address = executor
         .execute_and_commit(
             &TestTransaction::new(manifest, 1, vec![public_key]),
-            &ExecutionConfig::default(),
+            &ExecutionConfig::debug(),
         )
         .new_package_addresses[0];
 
@@ -48,7 +48,7 @@ fn test_say_hello() {
         .build();
     let receipt = executor.execute_and_commit(
         &TestTransaction::new(manifest, 2, vec![]),
-        &ExecutionConfig::default(),
+        &ExecutionConfig::debug(),
     );
     receipt.expect_success();
 }

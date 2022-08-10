@@ -40,6 +40,18 @@ impl Default for ExecutionConfig {
     }
 }
 
+impl ExecutionConfig {
+    pub fn debug() -> Self {
+        Self {
+            cost_unit_price: DEFAULT_COST_UNIT_PRICE.parse().unwrap(),
+            max_call_depth: DEFAULT_MAX_CALL_DEPTH,
+            system_loan: DEFAULT_SYSTEM_LOAN,
+            is_system: false,
+            trace: true,
+        }
+    }
+}
+
 /// An executor that runs transactions.
 pub struct TransactionExecutor<'s, 'w, S, W, I>
 where

@@ -1,15 +1,14 @@
 use sbor::rust::vec::Vec;
-use sbor::*;
 use scrypto::core::Network;
 use scrypto::crypto::*;
 
+use crate::builder::TransactionBuilder;
 use crate::model::*;
 
 /// Represents a test transaction, for testing/simulation purpose only.
 pub struct TestTransaction {
-    pub manifest: TransactionManifest,
-    pub instructions: Vec<ExecutableInstruction>,
-    pub nonce: u64,
+    pub transaction: NotarizedTransaction,
+    pub executable_instructions: Vec<ExecutableInstruction>,
     pub signer_public_keys: Vec<EcdsaPublicKey>,
 }
 
@@ -19,7 +18,33 @@ impl TestTransaction {
         nonce: u64,
         signer_public_keys: Vec<EcdsaPublicKey>,
     ) -> Self {
-        let instructions = manifest
+        let transaction = TransactionBuilder::new()
+            .header(TransactionHeader {
+                version: TRANSACTION_VERSION_V1,
+                network: Network::LocalSimulator,
+                start_epoch_inclusive: 0,
+                end_epoch_exclusive: 100,
+                nonce,
+                notary_public_key: EcdsaPublicKey([0u8; 33]),
+                notary_as_signatory: false,
+                cost_unit_limit: 10_000_000,
+                tip_percentage: 5,
+            })
+            .manifest(manifest)
+            .signer_signatures(
+                signer_public_keys
+                    .iter()
+                    .cloned()
+                    .map(|pk| (pk, EcdsaSignature([0u8; 64])))
+                    .collect(),
+            )
+            .notary_signature(EcdsaSignature([0u8; 64]))
+            .build();
+
+        let executable_instructions = transaction
+            .signed_intent
+            .intent
+            .manifest
             .instructions
             .iter()
             .map(|i| match i.clone() {
@@ -126,9 +151,8 @@ impl TestTransaction {
             .collect();
 
         Self {
-            manifest,
-            instructions,
-            nonce,
+            transaction,
+            executable_instructions,
             signer_public_keys,
         }
     }
@@ -136,30 +160,30 @@ impl TestTransaction {
 
 impl ExecutableTransaction for TestTransaction {
     fn transaction_hash(&self) -> Hash {
-        hash(self.nonce.to_string())
+        self.transaction.hash()
     }
 
     fn transaction_network(&self) -> Network {
-        Network::LocalSimulator
+        self.transaction.signed_intent.intent.header.network.clone()
     }
 
     fn transaction_payload_size(&self) -> u32 {
-        1
+        self.transaction.to_bytes().len() as u32
+    }
+
+    fn cost_unit_limit(&self) -> u32 {
+        self.transaction.signed_intent.intent.header.cost_unit_limit
+    }
+
+    fn tip_percentage(&self) -> u32 {
+        self.transaction.signed_intent.intent.header.tip_percentage
     }
 
     fn instructions(&self) -> &[ExecutableInstruction] {
-        &self.instructions
+        &self.executable_instructions
     }
 
     fn signer_public_keys(&self) -> &[EcdsaPublicKey] {
         &self.signer_public_keys
-    }
-
-    fn cost_unit_limit(&self) -> u32 {
-        10_000_000
-    }
-
-    fn tip_percentage(&self) -> u32 {
-        1
     }
 }

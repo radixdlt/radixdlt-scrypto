@@ -11,6 +11,20 @@ use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
 #[test]
+fn test_publish_package_from_scrypto() {
+    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
+    let package = test_runner.extract_and_publish_package("package");
+
+    let manifest1 = ManifestBuilder::new(Network::LocalSimulator)
+        .lock_fee(10.into(), SYSTEM_COMPONENT)
+        .call_function(package, "PackageTest", "publish", to_struct!())
+        .build();
+    let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
+    receipt1.expect_success();
+}
+
+#[test]
 fn missing_memory_should_cause_error() {
     // Arrange
     let mut store = InMemorySubstateStore::with_bootstrap();
