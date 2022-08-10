@@ -20,6 +20,49 @@ pub enum RENodePointer {
 }
 
 impl RENodePointer {
+    fn node_id(&self) -> RENodeId {
+        match self {
+            RENodePointer::Heap { root, id, .. } => id.unwrap_or(*root),
+            RENodePointer::Store(node_id) => *node_id,
+        }
+    }
+
+    pub fn acquire_lock<'s>(
+        &self,
+        substate_id: SubstateId,
+        mutable: bool,
+        write_through: bool,
+        track: &mut Track<'s>,
+    ) -> Result<(), RuntimeError> {
+        match self {
+            RENodePointer::Store(..) => {
+                track
+                    .acquire_lock(substate_id.clone(), mutable, write_through)
+                    .map_err(|e| match e {
+                        TrackError::StateTrackError(StateTrackError::RENodeAlreadyTouched) => {
+                            RuntimeError::LockFeeError(LockFeeError::RENodeAlreadyTouched)
+                        }
+                        // TODO: Remove when references cleaned up
+                        TrackError::NotFound => RuntimeError::RENodeNotFound(self.node_id()),
+                        TrackError::Reentrancy => RuntimeError::Reentrancy(substate_id.clone()),
+                    })
+            }
+            RENodePointer::Heap { .. } => Ok(()),
+        }
+    }
+
+    pub fn release_lock<'s>(
+        &self,
+        substate_id: SubstateId,
+        write_through: bool,
+        track: &mut Track<'s>,
+    ) {
+        match self {
+            RENodePointer::Store(..) => track.release_lock(substate_id, write_through),
+            RENodePointer::Heap { .. } => {}
+        }
+    }
+
     pub fn child(&self, child_id: RENodeId) -> RENodePointer {
         match self {
             RENodePointer::Heap { frame_id, root, .. } => RENodePointer::Heap {
@@ -185,6 +228,18 @@ pub enum RENodeRef<'f, 's> {
 }
 
 impl<'f, 's> RENodeRef<'f, 's> {
+    pub fn bucket(&self) -> &Bucket {
+        match self {
+            RENodeRef::Stack(value, id) => id
+                .as_ref()
+                .map_or(value.root(), |v| value.non_root(v))
+                .bucket(),
+            RENodeRef::Track(..) => {
+                panic!("Unexpected")
+            }
+        }
+    }
+
     pub fn vault(&self) -> &Vault {
         match self {
             RENodeRef::Stack(value, id) => id

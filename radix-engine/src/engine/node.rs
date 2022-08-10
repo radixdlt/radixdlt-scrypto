@@ -321,6 +321,13 @@ impl HeapRENode {
         }
     }
 
+    pub fn bucket(&self) -> &Bucket {
+        match self {
+            HeapRENode::Bucket(bucket) => bucket,
+            _ => panic!("Expected to be a bucket"),
+        }
+    }
+
     pub fn component(&self) -> &Component {
         match self {
             HeapRENode::Component(component, ..) => component,

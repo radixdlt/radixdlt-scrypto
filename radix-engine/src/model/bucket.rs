@@ -6,7 +6,7 @@ use sbor::*;
 use scrypto::buffer::scrypto_decode;
 use scrypto::engine::types::*;
 use scrypto::prelude::{
-    BucketCreateProofInput, BucketGetAmountInput, BucketGetNonFungibleIdsInput,
+    BucketCreateProofInput, BucketFnIdentifier, BucketGetAmountInput, BucketGetNonFungibleIdsInput,
     BucketGetResourceAddressInput, BucketPutInput, BucketTakeInput, BucketTakeNonFungiblesInput,
     ConsumingBucketBurnInput,
 };
@@ -29,7 +29,7 @@ pub enum BucketError {
     ResourceContainerError(ResourceContainerError),
     ProofError(ProofError),
     CouldNotCreateProof,
-    MethodNotFound(String),
+    MethodNotFound(BucketFnIdentifier),
     CostingError(FeeReserveError),
 }
 
@@ -163,7 +163,7 @@ impl Bucket {
 
     pub fn main<'s, Y: SystemApi<'s, W, I, C>, W: WasmEngine<I>, I: WasmInstance, C: FeeReserve>(
         bucket_id: BucketId,
-        method_name: &str,
+        bucket_fn: BucketFnIdentifier,
         arg: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, BucketError> {
@@ -173,8 +173,8 @@ impl Bucket {
             .map_err(BucketError::CostingError)?;
         let bucket0 = node_ref.bucket();
 
-        let rtn = match method_name {
-            "take" => {
+        let rtn = match bucket_fn {
+            BucketFnIdentifier::Take => {
                 let input: BucketTakeInput =
                     scrypto_decode(&arg.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
                 let container = bucket0
@@ -188,7 +188,7 @@ impl Bucket {
                     bucket_id,
                 )))
             }
-            "take_non_fungibles" => {
+            BucketFnIdentifier::TakeNonFungibles => {
                 let input: BucketTakeNonFungiblesInput =
                     scrypto_decode(&arg.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
                 let container = bucket0
@@ -202,7 +202,7 @@ impl Bucket {
                     bucket_id,
                 )))
             }
-            "non_fungible_ids" => {
+            BucketFnIdentifier::GetNonFungibleIds => {
                 let _: BucketGetNonFungibleIdsInput =
                     scrypto_decode(&arg.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
                 let ids = bucket0
@@ -210,7 +210,7 @@ impl Bucket {
                     .map_err(BucketError::ResourceContainerError)?;
                 Ok(ScryptoValue::from_typed(&ids))
             }
-            "put" => {
+            BucketFnIdentifier::Put => {
                 let input: BucketPutInput =
                     scrypto_decode(&arg.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
                 let other_bucket = system_api
@@ -222,17 +222,17 @@ impl Bucket {
                     .map_err(BucketError::ResourceContainerError)?;
                 Ok(ScryptoValue::from_typed(&()))
             }
-            "amount" => {
+            BucketFnIdentifier::GetAmount => {
                 let _: BucketGetAmountInput =
                     scrypto_decode(&arg.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
                 Ok(ScryptoValue::from_typed(&bucket0.total_amount()))
             }
-            "resource_address" => {
+            BucketFnIdentifier::GetResourceAddress => {
                 let _: BucketGetResourceAddressInput =
                     scrypto_decode(&arg.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
                 Ok(ScryptoValue::from_typed(&bucket0.resource_address()))
             }
-            "create_proof" => {
+            BucketFnIdentifier::CreateProof => {
                 let _: BucketCreateProofInput =
                     scrypto_decode(&arg.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
                 let proof = bucket0
@@ -246,7 +246,7 @@ impl Bucket {
                     proof_id,
                 )))
             }
-            _ => Err(BucketError::MethodNotFound(method_name.to_string())),
+            _ => Err(BucketError::MethodNotFound(bucket_fn)),
         }?;
 
         system_api
@@ -264,12 +264,12 @@ impl Bucket {
         C: FeeReserve,
     >(
         node_id: RENodeId,
-        method_name: &str,
+        bucket_fn: BucketFnIdentifier,
         arg: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, BucketError> {
-        match method_name {
-            "burn" => {
+        match bucket_fn {
+            BucketFnIdentifier::Burn => {
                 let _: ConsumingBucketBurnInput =
                     scrypto_decode(&arg.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
 
@@ -298,7 +298,7 @@ impl Bucket {
 
                 Ok(ScryptoValue::from_typed(&()))
             }
-            _ => Err(BucketError::MethodNotFound(method_name.to_string())),
+            _ => Err(BucketError::MethodNotFound(bucket_fn)),
         }
     }
 }

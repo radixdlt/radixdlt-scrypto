@@ -1,5 +1,9 @@
-use scrypto::engine::types::*;
-use scrypto::prelude::TypeName;
+use scrypto::core::{
+    AuthZoneFnIdentifier, BucketFnIdentifier, ComponentFnIdentifier, FnIdentifier,
+    NativeFnIdentifier, PackageFnIdentifier, ProofFnIdentifier, SystemFnIdentifier,
+    TransactionProcessorFnIdentifier, VaultFnIdentifier, WorktopFnIdentifier,
+};
+use scrypto::prelude::ResourceManagerFnIdentifier;
 use scrypto::{core::Receiver, values::ScryptoValue};
 
 use crate::wasm::{InstructionCostRules, WasmMeteringParams};
@@ -7,7 +11,7 @@ use crate::wasm::{InstructionCostRules, WasmMeteringParams};
 pub enum SystemApiCostingEntry<'a> {
     /// Invokes a function, native or wasm.
     InvokeFunction {
-        type_name: TypeName,
+        fn_identifier: FnIdentifier,
         input: &'a ScryptoValue,
     },
 
@@ -108,133 +112,106 @@ impl FeeTable {
         self.wasm_metering_params.clone()
     }
 
-    pub fn run_function_cost(
-        &self,
-        type_name: &TypeName,
-        fn_ident: &str,
-        input: &ScryptoValue,
-    ) -> u32 {
-        match type_name {
-            TypeName::Package => match fn_ident {
-                "publish" => self.fixed_low + input.raw.len() as u32 * 2,
-                _ => self.fixed_high,
-            },
-            TypeName::ResourceManager => match fn_ident {
-                "create" => self.fixed_high, // TODO: more investigation about fungibility
-                _ => self.fixed_high,
-            },
-            TypeName::TransactionProcessor => match fn_ident {
-                "run" => self.fixed_high, // TODO: per manifest instruction
-                _ => self.fixed_high,
-            },
-            TypeName::Blueprint(_, _) => {
-                0 // Costing is through instrumentation
-            }
-        }
-    }
-
     pub fn run_method_cost(
         &self,
-        receiver: &Receiver,
-        fn_ident: &str,
-        _input: &ScryptoValue,
+        receiver: Option<Receiver>,
+        fn_identifier: &FnIdentifier,
+        input: &ScryptoValue,
     ) -> u32 {
-        match receiver {
-            Receiver::AuthZoneRef => match fn_ident {
-                "pop" => self.fixed_low,
-                "push" => self.fixed_low,
-                "create_proof" => self.fixed_high, // TODO: charge differently based on auth zone size and fungibility
-                "create_proof_by_amount" => self.fixed_high,
-                "create_proof_by_ids" => self.fixed_high,
-                "clear" => self.fixed_high,
-                _ => self.fixed_high,
-            },
-            Receiver::Component(_) => {
-                0 // Costing is through instrumentation
-            }
-            // TODO: I suspect there is a bug with invoking consumed within call frame. Add tests to verify
-            Receiver::Consumed(node_id) => match node_id {
-                RENodeId::Bucket(_) => self.fixed_medium,
-                RENodeId::Proof(_) => self.fixed_medium,
-                RENodeId::Worktop => self.fixed_medium,
-                RENodeId::KeyValueStore(_) => self.fixed_medium,
-                RENodeId::Component(_) => self.fixed_medium,
-                RENodeId::Vault(_) => self.fixed_medium,
-                RENodeId::ResourceManager(_) => self.fixed_medium,
-                RENodeId::Package(_) => self.fixed_high,
-                RENodeId::System => self.fixed_high,
-            },
-            Receiver::NativeRENodeRef(node_id) => {
-                match node_id {
-                    RENodeId::System => match fn_ident {
-                        "current_epoch" => self.fixed_low,
-                        "transaction_hash" => self.fixed_low,
-                        _ => self.fixed_high,
-                    },
-                    RENodeId::Bucket(..) => match fn_ident {
-                        "take" => self.fixed_medium,
-                        "take_non_fungibles" => self.fixed_medium,
-                        "non_fungible_ids" => self.fixed_medium,
-                        "put" => self.fixed_medium,
-                        "amount" => self.fixed_low,
-                        "resource_address" => self.fixed_low,
-                        "create_proof" => self.fixed_low,
-                        _ => self.fixed_high,
-                    },
-                    RENodeId::Proof(..) => match fn_ident {
-                        "amount" => self.fixed_low,
-                        "non_fungible_ids" => self.fixed_low,
-                        "resource_address" => self.fixed_low,
-                        "clone" => self.fixed_high,
-                        _ => self.fixed_high,
-                    },
-                    RENodeId::ResourceManager(..) => {
-                        match fn_ident {
-                            "update_auth" => self.fixed_medium,
-                            "lock_auth" => self.fixed_medium,
-                            "create_vault" => self.fixed_medium,
-                            "create_bucket" => self.fixed_medium,
-                            "mint" => self.fixed_high,
-                            "metadata" => self.fixed_low,
-                            "resource_type" => self.fixed_low,
-                            "total_supply" => self.fixed_low, // TODO: revisit this after substate refactoring
-                            "update_metadata" => self.fixed_medium,
-                            "update_non_fungible_data" => self.fixed_medium,
-                            "non_fungible_exists" => self.fixed_low,
-                            "non_fungible_data" => self.fixed_medium,
-                            _ => self.fixed_high,
+        match fn_identifier {
+            FnIdentifier::Native(native_identifier) => {
+                match native_identifier {
+                    NativeFnIdentifier::TransactionProcessor(transaction_processor_fn) => {
+                        match transaction_processor_fn {
+                            TransactionProcessorFnIdentifier::Run => self.fixed_high,
                         }
                     }
-                    RENodeId::Worktop => match fn_ident {
-                        "put" => self.fixed_medium,
-                        "take_amount" => self.fixed_medium,
-                        "take_all" => self.fixed_medium,
-                        "take_non_fungibles" => self.fixed_medium,
-                        "assert_contains" => self.fixed_low,
-                        "assert_contains_amount" => self.fixed_low,
-                        "assert_contains_non_fungibles" => self.fixed_low,
-                        "drain" => self.fixed_medium,
-                        _ => self.fixed_high,
+                    NativeFnIdentifier::Package(package_fn) => match package_fn {
+                        PackageFnIdentifier::Publish => self.fixed_low + input.raw.len() as u32 * 2,
                     },
-                    RENodeId::Component(..) => match fn_ident {
-                        "add_access_check" => self.fixed_medium,
-                        _ => self.fixed_high,
+                    NativeFnIdentifier::AuthZone(auth_zone_ident) => {
+                        match auth_zone_ident {
+                            AuthZoneFnIdentifier::Pop => self.fixed_low,
+                            AuthZoneFnIdentifier::Push => self.fixed_low,
+                            AuthZoneFnIdentifier::CreateProof => self.fixed_high, // TODO: charge differently based on auth zone size and fungibility
+                            AuthZoneFnIdentifier::CreateProofByAmount => self.fixed_high,
+                            AuthZoneFnIdentifier::CreateProofByIds => self.fixed_high,
+                            AuthZoneFnIdentifier::Clear => self.fixed_high,
+                        }
+                    }
+                    NativeFnIdentifier::System(system_ident) => match system_ident {
+                        SystemFnIdentifier::GetCurrentEpoch => self.fixed_low,
+                        SystemFnIdentifier::GetTransactionHash => self.fixed_low,
+                        SystemFnIdentifier::SetEpoch => self.fixed_low,
                     },
-                    RENodeId::Vault(..) => match fn_ident {
-                        "put" => self.fixed_medium,
-                        "take" => self.fixed_medium, // TODO: revisit this if vault is not loaded in full
-                        "take_non_fungibles" => self.fixed_medium,
-                        "amount" => self.fixed_low,
-                        "resource_address" => self.fixed_low,
-                        "non_fungible_ids" => self.fixed_medium,
-                        "create_proof" => self.fixed_high, // TODO: fungibility
-                        "create_proof_by_amount" => self.fixed_high,
-                        "create_proof_by_ids" => self.fixed_high,
-                        "lock_fee" => self.fixed_medium,
-                        "lock_contingent_fee" => self.fixed_medium,
-                        _ => self.fixed_high,
+                    NativeFnIdentifier::Bucket(bucket_ident) => match bucket_ident {
+                        BucketFnIdentifier::Take => self.fixed_medium,
+                        BucketFnIdentifier::TakeNonFungibles => self.fixed_medium,
+                        BucketFnIdentifier::GetNonFungibleIds => self.fixed_medium,
+                        BucketFnIdentifier::Put => self.fixed_medium,
+                        BucketFnIdentifier::GetAmount => self.fixed_low,
+                        BucketFnIdentifier::GetResourceAddress => self.fixed_low,
+                        BucketFnIdentifier::CreateProof => self.fixed_low,
+                        BucketFnIdentifier::Burn => self.fixed_medium,
                     },
-                    _ => self.fixed_high, // TODO: Clean this up
+                    NativeFnIdentifier::Proof(proof_ident) => match proof_ident {
+                        ProofFnIdentifier::GetAmount => self.fixed_low,
+                        ProofFnIdentifier::GetNonFungibleIds => self.fixed_low,
+                        ProofFnIdentifier::GetResourceAddress => self.fixed_low,
+                        ProofFnIdentifier::Clone => self.fixed_low,
+                        ProofFnIdentifier::Drop => self.fixed_medium,
+                    },
+                    NativeFnIdentifier::ResourceManager(resource_manager_ident) => {
+                        match resource_manager_ident {
+                            ResourceManagerFnIdentifier::Create => self.fixed_high, // TODO: more investigation about fungibility
+                            ResourceManagerFnIdentifier::UpdateAuth => self.fixed_medium,
+                            ResourceManagerFnIdentifier::LockAuth => self.fixed_medium,
+                            ResourceManagerFnIdentifier::CreateVault => self.fixed_medium,
+                            ResourceManagerFnIdentifier::CreateBucket => self.fixed_medium,
+                            ResourceManagerFnIdentifier::Mint => self.fixed_high,
+                            ResourceManagerFnIdentifier::GetMetadata => self.fixed_low,
+                            ResourceManagerFnIdentifier::GetResourceType => self.fixed_low,
+                            ResourceManagerFnIdentifier::GetTotalSupply => self.fixed_low,
+                            ResourceManagerFnIdentifier::UpdateMetadata => self.fixed_medium,
+                            ResourceManagerFnIdentifier::UpdateNonFungibleData => self.fixed_medium,
+                            ResourceManagerFnIdentifier::NonFungibleExists => self.fixed_low,
+                            ResourceManagerFnIdentifier::GetNonFungible => self.fixed_medium,
+                        }
+                    }
+                    NativeFnIdentifier::Worktop(worktop_ident) => match worktop_ident {
+                        WorktopFnIdentifier::Put => self.fixed_medium,
+                        WorktopFnIdentifier::TakeAmount => self.fixed_medium,
+                        WorktopFnIdentifier::TakeAll => self.fixed_medium,
+                        WorktopFnIdentifier::TakeNonFungibles => self.fixed_medium,
+                        WorktopFnIdentifier::AssertContains => self.fixed_low,
+                        WorktopFnIdentifier::AssertContainsAmount => self.fixed_low,
+                        WorktopFnIdentifier::AssertContainsNonFungibles => self.fixed_low,
+                        WorktopFnIdentifier::Drain => self.fixed_low,
+                    },
+                    NativeFnIdentifier::Component(component_ident) => match component_ident {
+                        ComponentFnIdentifier::AddAccessCheck => self.fixed_medium,
+                    },
+                    NativeFnIdentifier::Vault(vault_ident) => {
+                        match vault_ident {
+                            VaultFnIdentifier::Put => self.fixed_medium,
+                            VaultFnIdentifier::Take => self.fixed_medium, // TODO: revisit this if vault is not loaded in full
+                            VaultFnIdentifier::TakeNonFungibles => self.fixed_medium,
+                            VaultFnIdentifier::GetAmount => self.fixed_low,
+                            VaultFnIdentifier::GetResourceAddress => self.fixed_low,
+                            VaultFnIdentifier::GetNonFungibleIds => self.fixed_medium,
+                            VaultFnIdentifier::CreateProof => self.fixed_high,
+                            VaultFnIdentifier::CreateProofByAmount => self.fixed_high,
+                            VaultFnIdentifier::CreateProofByIds => self.fixed_high,
+                            VaultFnIdentifier::LockFee => self.fixed_medium,
+                            VaultFnIdentifier::LockContingentFee => self.fixed_medium,
+                        }
+                    }
+                }
+            }
+            FnIdentifier::Scrypto { .. } => {
+                match receiver {
+                    Some(..) => self.fixed_high,
+                    None => 0, // Costing is through instrumentation // TODO: Josh question, why only through instrumentation?
                 }
             }
         }

@@ -3,6 +3,7 @@ use sbor::rust::boxed::Box;
 use sbor::rust::fmt;
 use sbor::rust::string::String;
 use sbor::{DecodeError, Value};
+use scrypto::core::FnIdentifier;
 use scrypto::engine::types::*;
 use transaction::errors::*;
 
@@ -27,12 +28,12 @@ pub enum RuntimeError {
     IdAllocationError(IdAllocationError),
 
     /// Invalid request code.
-    MethodDoesNotExist(String),
+    MethodDoesNotExist(FnIdentifier),
     InvalidFnInput {
-        fn_ident: String,
+        fn_identifier: FnIdentifier,
     },
     InvalidFnOutput {
-        fn_ident: String,
+        fn_identifier: FnIdentifier,
         output: Value,
     },
 
@@ -48,11 +49,7 @@ pub enum RuntimeError {
     BlueprintNotFound(PackageAddress, String),
 
     Reentrancy(SubstateId),
-    ComponentReentrancy(ComponentAddress),
     PackageReentrancy,
-
-    /// Component does not exist.
-    ComponentNotFound(ComponentAddress),
 
     ComponentDecodeError(DecodeError),
 
@@ -112,7 +109,7 @@ pub enum RuntimeError {
 
     /// System Authorization Failure
     AuthorizationError {
-        function: String,
+        function: FnIdentifier,
         authorization: MethodAuthorization,
         error: MethodAuthorizationError,
     },

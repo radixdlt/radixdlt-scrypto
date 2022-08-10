@@ -167,11 +167,11 @@ fn test_basic_transfer() {
             + 3000 /* create */
             + 1895 /* invoke_function */
             + 2215 /* invoke_method */
-            + 3500 /* read */
+            + 5000 /* read */
             + 1800 /* return */
             + 1000 /* run_function */
-            + 2600 /* run_method */
-            + 291392 /* run_wasm */
+            + 5200 /* run_method */
+            + 300928 /* run_wasm */
             + 2668 /* tx_decoding */
             + 667 /* tx_manifest_verification */
             + 3750 /* tx_signature_verification */
