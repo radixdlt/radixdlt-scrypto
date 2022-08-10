@@ -223,7 +223,7 @@ where
         execution_entity: ExecutionEntity,
         fn_ident: &str,
         input: ScryptoValue,
-    ) -> Result<ScryptoValue, RuntimeError> {
+    ) -> Result<(ScryptoValue, HashMap<RENodeId, HeapRootRENode>), RuntimeError> {
         let output = {
             let rtn = match execution_entity {
                 ExecutionEntity::Function(type_name) => match type_name {
@@ -402,7 +402,49 @@ where
             rtn
         };
 
-        Ok(output)
+        // Process return data
+        Self::process_return_data(&output)?;
+
+        // Take values to return
+        let values_to_take = output.node_ids();
+        let (received_values, mut missing) = self
+            .call_frames
+            .last_mut()
+            .expect("Current frame always exists")
+            .take_available_values(values_to_take, false)?;
+        let first_missing_value = missing.drain().nth(0);
+        if let Some(missing_node) = first_missing_value {
+            return Err(RuntimeError::RENodeNotFound(missing_node));
+        }
+
+        // Check we have valid references to pass back
+        for refed_component_address in &output.refed_component_addresses {
+            let node_id = RENodeId::Component(*refed_component_address);
+            if let Some(RENodePointer::Store(..)) = self
+                .call_frames
+                .last_mut()
+                .expect("Current frame always exists")
+                .node_refs
+                .get(&node_id)
+            {
+                // Only allow passing back global references
+            } else {
+                return Err(RuntimeError::InvokeMethodInvalidReferencePass(node_id));
+            }
+        }
+
+        // drop proofs and check resource leak
+        self.call_frames
+            .last_mut()
+            .expect("Current frame always exists")
+            .auth_zone
+            .clear();
+        self.call_frames
+            .last_mut()
+            .expect("Current frame always exists")
+            .drop_owned_values()?;
+
+        Ok((output, received_values))
     }
 }
 
@@ -565,7 +607,7 @@ where
         }
 
         // start a new frame and run
-        let output = {
+        let (output, received_values) = {
             let frame = CallFrame::new_child(
                 self.call_frames
                     .last()
@@ -580,48 +622,6 @@ where
             self.call_frames.push(frame);
             self.run(ExecutionEntity::Function(type_name), &fn_ident, input)?
         };
-
-        // Process return data
-        Self::process_return_data(&output)?;
-
-        // Take values to return
-        let values_to_take = output.node_ids();
-        let (received_values, mut missing) = self
-            .call_frames
-            .last_mut()
-            .expect("Current frame always exists")
-            .take_available_values(values_to_take, false)?;
-        let first_missing_value = missing.drain().nth(0);
-        if let Some(missing_node) = first_missing_value {
-            return Err(RuntimeError::RENodeNotFound(missing_node));
-        }
-
-        // Check we have valid references to pass back
-        for refed_component_address in &output.refed_component_addresses {
-            let node_id = RENodeId::Component(*refed_component_address);
-            if let Some(RENodePointer::Store(..)) = self
-                .call_frames
-                .last_mut()
-                .expect("Current frame always exists")
-                .node_refs
-                .get(&node_id)
-            {
-                // Only allow passing back global references
-            } else {
-                return Err(RuntimeError::InvokeMethodInvalidReferencePass(node_id));
-            }
-        }
-
-        // drop proofs and check resource leak
-        self.call_frames
-            .last_mut()
-            .expect("Current frame always exists")
-            .auth_zone
-            .clear();
-        self.call_frames
-            .last_mut()
-            .expect("Current frame always exists")
-            .drop_owned_values()?;
 
         // Remove the last after clean-up
         self.call_frames.pop();
@@ -1080,7 +1080,7 @@ where
         }
 
         // start a new frame
-        let output = {
+        let (output, received_values) = {
             let frame = CallFrame::new_child(
                 self.call_frames
                     .last()
@@ -1099,48 +1099,6 @@ where
                 input,
             )?
         };
-
-        // Process return data
-        Self::process_return_data(&output)?;
-
-        // Take values to return
-        let values_to_take = output.node_ids();
-        let (received_values, mut missing) = self
-            .call_frames
-            .last_mut()
-            .expect("Current frame always exists")
-            .take_available_values(values_to_take, false)?;
-        let first_missing_value = missing.drain().nth(0);
-        if let Some(missing_node) = first_missing_value {
-            return Err(RuntimeError::RENodeNotFound(missing_node));
-        }
-
-        // Check we have valid references to pass back
-        for refed_component_address in &output.refed_component_addresses {
-            let node_id = RENodeId::Component(*refed_component_address);
-            if let Some(RENodePointer::Store(..)) = self
-                .call_frames
-                .last_mut()
-                .expect("Current frame always exists")
-                .node_refs
-                .get(&node_id)
-            {
-                // Only allow passing back global references
-            } else {
-                return Err(RuntimeError::InvokeMethodInvalidReferencePass(node_id));
-            }
-        }
-
-        // drop proofs and check resource leak
-        self.call_frames
-            .last_mut()
-            .expect("Current frame always exists")
-            .auth_zone
-            .clear();
-        self.call_frames
-            .last_mut()
-            .expect("Current frame always exists")
-            .drop_owned_values()?;
 
         // Remove the last after clean-up
         self.call_frames.pop();
