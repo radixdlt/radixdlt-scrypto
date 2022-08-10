@@ -28,7 +28,7 @@ macro_rules! trace {
     ( $self: expr, $level: expr, $msg: expr $( , $arg:expr )* ) => {
         #[cfg(not(feature = "alloc"))]
         if $self.trace {
-            println!("{}[{:5}] {}", "  ".repeat($self.call_frames.len() - 1) , $level, sbor::rust::format!($msg, $( $arg ),*));
+            println!("{}[{:5}] {}", "  ".repeat(Self::current_frame(&$self.call_frames).depth) , $level, sbor::rust::format!($msg, $( $arg ),*));
         }
     };
 }
@@ -378,7 +378,7 @@ where
             &fn_identifier
         );
 
-        if self.call_frames.len() - 1 == self.max_depth {
+        if Self::current_frame(&self.call_frames).depth == self.max_depth {
             return Err(RuntimeError::MaxCallDepthLimitReached);
         }
 
@@ -464,7 +464,7 @@ where
 
         // Move this into higher layer, e.g. transaction processor
         let mut next_frame_node_refs = HashMap::new();
-        if self.call_frames.len() - 1 == 0 {
+        if Self::current_frame(&self.call_frames).depth == 0 {
             let mut component_addresses = HashSet::new();
 
             // Collect component addresses
@@ -827,7 +827,7 @@ where
                     locked_pointers.push((resource_node_pointer, resource_substate_id, false));
                     next_frame_node_refs.insert(resource_node_id, resource_node_pointer);
                 }
-                Some(self.call_frames.len() - 1)
+                Some(Self::current_frame(&self.call_frames).depth)
             }
         };
 
