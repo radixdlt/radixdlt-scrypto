@@ -203,7 +203,7 @@ impl Vault {
                     bucket_id,
                 )))
             }
-            "lock_fee" => {
+            "lock_fee" | "lock_contingent_fee" => {
                 let input: VaultLockFeeInput =
                     scrypto_decode(&arg.raw).map_err(|e| VaultError::InvalidRequestData(e))?;
 
@@ -220,7 +220,7 @@ impl Vault {
                 // Refill fee reserve
                 let changes = system_api
                     .fee_reserve()
-                    .repay(vault_id, fee)
+                    .repay(vault_id, fee, method_name == "lock_contingent_fee")
                     .map_err(VaultError::CostingError)?;
 
                 // Return changes

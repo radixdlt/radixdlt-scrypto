@@ -5,6 +5,8 @@ use scrypto::buffer::*;
 use scrypto::engine::types::SubstateId;
 use scrypto::math::Decimal;
 use scrypto::prelude::TypeName;
+use scrypto::prelude::RADIX_TOKEN;
+use scrypto::resource::ResourceType;
 use scrypto::values::ScryptoValue;
 use transaction::model::*;
 
@@ -33,6 +35,18 @@ impl Default for ExecutionConfig {
             system_loan: DEFAULT_SYSTEM_LOAN,
             is_system: false,
             trace: false,
+        }
+    }
+}
+
+impl ExecutionConfig {
+    pub fn debug() -> Self {
+        Self {
+            cost_unit_price: DEFAULT_COST_UNIT_PRICE.parse().unwrap(),
+            max_call_depth: DEFAULT_MAX_CALL_DEPTH,
+            system_loan: DEFAULT_SYSTEM_LOAN,
+            is_system: false,
+            trace: true,
         }
     }
 }
@@ -192,30 +206,43 @@ where
             TransactionStatus::Rejected
         };
 
-        if matches!(status, TransactionStatus::Succeeded(..)) {
+        if status.is_success() {
             track.commit();
         } else {
             track.rollback();
         }
 
-        let mut remaining = fee_summary.burned + fee_summary.tipped;
-        for (vault_id, mut locked) in fee_summary.payments.iter().cloned().rev() {
-            if locked.liquid_amount() > remaining {
-                locked.take_by_amount(remaining).unwrap();
-
-                let substate_id = SubstateId::Vault(vault_id);
-                track.acquire_lock(substate_id.clone(), true, true).unwrap();
-                let mut substate = track.take_substate(substate_id.clone());
-                substate.vault_mut().put(Bucket::new(locked)).unwrap();
-                track.write_substate(substate_id.clone(), substate);
-                track.release_lock(substate_id, true);
-
-                remaining = 0.into();
+        let mut required = fee_summary.burned + fee_summary.tipped;
+        let mut collector =
+            ResourceContainer::new_empty(RADIX_TOKEN, ResourceType::Fungible { divisibility: 18 });
+        for (vault_id, mut locked, contingent) in fee_summary.payments.iter().cloned().rev() {
+            let amount = if contingent {
+                if status.is_success() {
+                    Decimal::min(locked.liquid_amount(), required)
+                } else {
+                    Decimal::zero()
+                }
             } else {
-                remaining = remaining - locked.liquid_amount();
-            }
-        }
+                Decimal::min(locked.liquid_amount(), required)
+            };
 
+            // Deduct fee required
+            required = required - amount;
+
+            // Collect fees into collector
+            collector
+                .put(locked.take_by_amount(amount).unwrap())
+                .unwrap();
+
+            // Refund overpayment
+            let substate_id = SubstateId::Vault(vault_id);
+            track.acquire_lock(substate_id.clone(), true, true).unwrap();
+            let mut substate = track.take_substate(substate_id.clone());
+            substate.vault_mut().put(Bucket::new(locked)).unwrap();
+            track.write_substate(substate_id.clone(), substate);
+            track.release_lock(substate_id, true);
+        }
+        // TODO: update XRD supply or disable it
         // TODO: pay tips to the lead validator
 
         // 5. Produce the final transaction receipt

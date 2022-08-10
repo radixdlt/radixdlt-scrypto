@@ -22,6 +22,18 @@ pub enum TransactionStatus {
     Failed(RuntimeError),
 }
 
+impl TransactionStatus {
+    pub fn is_success(&self) -> bool {
+        matches!(self, Self::Succeeded(..))
+    }
+    pub fn is_failure(&self) -> bool {
+        matches!(self, Self::Failed(..))
+    }
+    pub fn is_rejection(&self) -> bool {
+        matches!(self, Self::Rejected)
+    }
+}
+
 /// Represents a transaction receipt.
 pub struct TransactionReceipt {
     pub status: TransactionStatus,

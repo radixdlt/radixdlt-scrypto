@@ -1,8 +1,5 @@
-#[rustfmt::skip]
-pub mod test_runner;
-
 use radix_engine::wasm::{InvalidMemory, PrepareError, WasmValidator};
-use test_runner::{abi_single_fn_any_input_void_output, wat2wasm};
+use scrypto_unit::*;
 
 #[test]
 fn test_large_data() {

@@ -23,11 +23,16 @@ impl InstructionCostRules {
         }
     }
 
-    pub fn tiered(grow_memory_cost: u32) -> Self {
+    pub fn tiered(
+        tier_1_cost: u32,
+        tier_2_cost: u32,
+        tier_3_cost: u32,
+        grow_memory_cost: u32,
+    ) -> Self {
         Self {
-            tier_1_cost: 1,
-            tier_2_cost: 5,
-            tier_3_cost: 10,
+            tier_1_cost,
+            tier_2_cost,
+            tier_3_cost,
             grow_memory_cost,
         }
     }
@@ -257,7 +262,7 @@ mod tests {
             "#,
         )
         .unwrap();
-        let rules = InstructionCostRules::tiered(55);
+        let rules = InstructionCostRules::tiered(1, 5, 10, 55);
         let transformed = WasmModule::init(&code)
             .unwrap()
             .inject_instruction_metering(&rules)

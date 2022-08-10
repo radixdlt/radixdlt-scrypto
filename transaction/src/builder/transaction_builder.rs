@@ -37,10 +37,20 @@ impl TransactionBuilder {
         self
     }
 
+    pub fn signer_signatures(mut self, signatures: Vec<(EcdsaPublicKey, EcdsaSignature)>) -> Self {
+        self.intent_signatures.extend(signatures);
+        self
+    }
+
     pub fn notarize<S: Signer>(mut self, signer: &S) -> Self {
         let signed_intent = self.signed_transaction_intent();
         let signed_intent_payload = scrypto_encode(&signed_intent);
         self.notary_signature = Some(signer.sign(&signed_intent_payload));
+        self
+    }
+
+    pub fn notary_signature(mut self, signature: EcdsaSignature) -> Self {
+        self.notary_signature = Some(signature);
         self
     }
 
