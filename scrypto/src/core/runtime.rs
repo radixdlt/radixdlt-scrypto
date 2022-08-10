@@ -57,8 +57,11 @@ impl Runtime {
         args: Vec<Vec<u8>>,
     ) -> T {
         let input = RadixEngineInput::InvokeFunction(
-            TypeName::Blueprint(package_address, blueprint_name.as_ref().to_owned()),
-            function.as_ref().to_string(),
+            FnIdentifier::Scrypto {
+                package_address,
+                blueprint_name: blueprint_name.as_ref().to_owned(),
+                ident: function.as_ref().to_string(),
+            },
             bytes_vec_to_struct!(args),
         );
         call_engine(input)
@@ -78,7 +81,7 @@ impl Runtime {
             FnIdentifier::Scrypto {
                 package_address,
                 blueprint_name,
-                method_name: method.as_ref().to_string(),
+                ident: method.as_ref().to_string(),
             },
             bytes_vec_to_struct!(args),
         );
@@ -89,7 +92,9 @@ impl Runtime {
     pub fn transaction_hash() -> Hash {
         let input = RadixEngineInput::InvokeMethod(
             Receiver::Ref(RENodeId::System),
-            FnIdentifier::Native("transaction_hash".to_string()),
+            FnIdentifier::Native(NativeFnIdentifier::System(
+                SystemFnIdentifier::GetTransactionHash,
+            )),
             scrypto_encode(&SystemGetTransactionHashInput {}),
         );
         call_engine(input)
@@ -99,7 +104,9 @@ impl Runtime {
     pub fn current_epoch() -> u64 {
         let input = RadixEngineInput::InvokeMethod(
             Receiver::Ref(RENodeId::System),
-            FnIdentifier::Native("get_epoch".to_string()),
+            FnIdentifier::Native(NativeFnIdentifier::System(
+                SystemFnIdentifier::GetCurrentEpoch,
+            )),
             scrypto_encode(&SystemGetCurrentEpochInput {}),
         );
         call_engine(input)

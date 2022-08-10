@@ -6,6 +6,7 @@ use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use sbor::DecodeError;
 use scrypto::buffer::scrypto_decode;
+use scrypto::core::ProofFnIdentifier;
 use scrypto::engine::types::*;
 use scrypto::prelude::{
     ProofCloneInput, ProofGetAmountInput, ProofGetNonFungibleIdsInput, ProofGetResourceAddressInput,
@@ -342,7 +343,7 @@ impl Proof {
         C: FeeReserve,
     >(
         proof_id: ProofId,
-        method_name: &str,
+        proof_fn: ProofFnIdentifier,
         arg: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, ProofError> {
@@ -352,24 +353,24 @@ impl Proof {
             .map_err(ProofError::CostingError)?;
         let proof = node_ref.proof();
 
-        let rtn = match method_name {
-            "amount" => {
+        let rtn = match proof_fn {
+            ProofFnIdentifier::GetAmount => {
                 let _: ProofGetAmountInput =
                     scrypto_decode(&arg.raw).map_err(|e| ProofError::InvalidRequestData(e))?;
                 Ok(ScryptoValue::from_typed(&proof.total_amount()))
             }
-            "non_fungible_ids" => {
+            ProofFnIdentifier::GetNonFungibleIds => {
                 let _: ProofGetNonFungibleIdsInput =
                     scrypto_decode(&arg.raw).map_err(|e| ProofError::InvalidRequestData(e))?;
                 let ids = proof.total_ids()?;
                 Ok(ScryptoValue::from_typed(&ids))
             }
-            "resource_address" => {
+            ProofFnIdentifier::GetResourceAddress => {
                 let _: ProofGetResourceAddressInput =
                     scrypto_decode(&arg.raw).map_err(|e| ProofError::InvalidRequestData(e))?;
                 Ok(ScryptoValue::from_typed(&proof.resource_address()))
             }
-            "clone" => {
+            ProofFnIdentifier::Clone => {
                 let _: ProofCloneInput =
                     scrypto_decode(&arg.raw).map_err(|e| ProofError::InvalidRequestData(e))?;
                 let cloned_proof = proof.clone();
@@ -381,7 +382,7 @@ impl Proof {
                     proof_id,
                 )))
             }
-            _ => Err(UnknownMethod),
+            _ => return Err(ProofError::UnknownMethod),
         }?;
 
         system_api
@@ -399,7 +400,7 @@ impl Proof {
         C: FeeReserve,
     >(
         node_id: RENodeId,
-        method_name: &str,
+        proof_fn: ProofFnIdentifier,
         arg: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, ProofError> {
@@ -407,8 +408,8 @@ impl Proof {
             .node_drop(&node_id)
             .map_err(ProofError::CostingError)?
             .into();
-        match method_name {
-            "drop" => {
+        match proof_fn {
+            ProofFnIdentifier::Drop => {
                 let _: ConsumingProofDropInput =
                     scrypto_decode(&arg.raw).map_err(|e| ProofError::InvalidRequestData(e))?;
                 proof.drop();

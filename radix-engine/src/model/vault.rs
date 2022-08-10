@@ -6,7 +6,7 @@ use sbor::*;
 use scrypto::buffer::scrypto_decode;
 use scrypto::engine::types::*;
 use scrypto::prelude::{
-    VaultCreateProofByIdsInput, VaultCreateProofInput, VaultGetAmountInput,
+    VaultCreateProofByIdsInput, VaultCreateProofInput, VaultFnIdentifier, VaultGetAmountInput,
     VaultGetNonFungibleIdsInput, VaultPutInput, VaultTakeInput,
 };
 use scrypto::resource::{
@@ -18,7 +18,6 @@ use scrypto::values::ScryptoValue;
 use crate::engine::{HeapRENode, LockFeeError, SystemApi};
 use crate::fee::FeeReserve;
 use crate::fee::FeeReserveError;
-use crate::model::VaultError::MethodNotFound;
 use crate::model::{
     Bucket, Proof, ProofError, ResourceContainer, ResourceContainerError, ResourceContainerId,
 };
@@ -32,7 +31,6 @@ pub enum VaultError {
     CouldNotTakeBucket,
     ProofError(ProofError),
     CouldNotCreateProof,
-    MethodNotFound,
     CostingError(FeeReserveError),
     LockFeeError(LockFeeError),
 }
@@ -175,7 +173,7 @@ impl Vault {
         C: FeeReserve,
     >(
         vault_id: VaultId,
-        method_name: &str,
+        vault_fn: VaultFnIdentifier,
         arg: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, VaultError> {
@@ -185,8 +183,8 @@ impl Vault {
             .map_err(VaultError::CostingError)?;
         let vault = ref_mut.vault();
 
-        let rtn = match method_name {
-            "put" => {
+        let rtn = match vault_fn {
+            VaultFnIdentifier::Put => {
                 let input: VaultPutInput =
                     scrypto_decode(&arg.raw).map_err(|e| VaultError::InvalidRequestData(e))?;
                 let bucket = system_api
@@ -198,7 +196,7 @@ impl Vault {
                     .map_err(VaultError::ResourceContainerError)?;
                 Ok(ScryptoValue::from_typed(&()))
             }
-            "take" => {
+            VaultFnIdentifier::Take => {
                 let input: VaultTakeInput =
                     scrypto_decode(&arg.raw).map_err(|e| VaultError::InvalidRequestData(e))?;
                 let container = vault.take(input.amount)?;
@@ -210,7 +208,7 @@ impl Vault {
                     bucket_id,
                 )))
             }
-            "lock_fee" => {
+            VaultFnIdentifier::LockFee => {
                 let input: VaultLockFeeInput =
                     scrypto_decode(&arg.raw).map_err(|e| VaultError::InvalidRequestData(e))?;
 
@@ -238,7 +236,7 @@ impl Vault {
 
                 Ok(ScryptoValue::from_typed(&()))
             }
-            "take_non_fungibles" => {
+            VaultFnIdentifier::TakeNonFungibles => {
                 let input: VaultTakeNonFungiblesInput =
                     scrypto_decode(&arg.raw).map_err(|e| VaultError::InvalidRequestData(e))?;
                 let container = vault.take_non_fungibles(&input.non_fungible_ids)?;
@@ -250,19 +248,19 @@ impl Vault {
                     bucket_id,
                 )))
             }
-            "amount" => {
+            VaultFnIdentifier::GetAmount => {
                 let _: VaultGetAmountInput =
                     scrypto_decode(&arg.raw).map_err(|e| VaultError::InvalidRequestData(e))?;
                 let amount = vault.total_amount();
                 Ok(ScryptoValue::from_typed(&amount))
             }
-            "resource_address" => {
+            VaultFnIdentifier::GetResourceAddress => {
                 let _: VaultGetResourceAddressInput =
                     scrypto_decode(&arg.raw).map_err(|e| VaultError::InvalidRequestData(e))?;
                 let resource_address = vault.resource_address();
                 Ok(ScryptoValue::from_typed(&resource_address))
             }
-            "non_fungible_ids" => {
+            VaultFnIdentifier::GetNonFungibleIds => {
                 let _: VaultGetNonFungibleIdsInput =
                     scrypto_decode(&arg.raw).map_err(|e| VaultError::InvalidRequestData(e))?;
                 let ids = vault
@@ -270,7 +268,7 @@ impl Vault {
                     .map_err(VaultError::ResourceContainerError)?;
                 Ok(ScryptoValue::from_typed(&ids))
             }
-            "create_proof" => {
+            VaultFnIdentifier::CreateProof => {
                 let _: VaultCreateProofInput =
                     scrypto_decode(&arg.raw).map_err(|e| VaultError::InvalidRequestData(e))?;
                 let proof = vault
@@ -284,7 +282,7 @@ impl Vault {
                     proof_id,
                 )))
             }
-            "create_proof_by_amount" => {
+            VaultFnIdentifier::CreateProofByAmount => {
                 let input: VaultCreateProofByAmountInput =
                     scrypto_decode(&arg.raw).map_err(|e| VaultError::InvalidRequestData(e))?;
                 let proof = vault
@@ -298,7 +296,7 @@ impl Vault {
                     proof_id,
                 )))
             }
-            "create_proof_by_ids" => {
+            VaultFnIdentifier::CreateProofByIds => {
                 let input: VaultCreateProofByIdsInput =
                     scrypto_decode(&arg.raw).map_err(|e| VaultError::InvalidRequestData(e))?;
                 let proof = vault
@@ -312,7 +310,6 @@ impl Vault {
                     proof_id,
                 )))
             }
-            _ => Err(MethodNotFound),
         }?;
 
         system_api

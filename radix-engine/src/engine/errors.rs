@@ -30,10 +30,10 @@ pub enum RuntimeError {
     /// Invalid request code.
     MethodDoesNotExist(FnIdentifier),
     InvalidFnInput {
-        fn_ident: String,
+        fn_identifier: FnIdentifier,
     },
     InvalidFnOutput {
-        fn_ident: String,
+        fn_identifier: FnIdentifier,
         output: Value,
     },
 

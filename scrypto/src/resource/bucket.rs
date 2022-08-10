@@ -1,19 +1,20 @@
 use sbor::rust::collections::BTreeSet;
 #[cfg(not(feature = "alloc"))]
 use sbor::rust::fmt;
-use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::abi::*;
 use crate::buffer::scrypto_encode;
-use crate::core::{FnIdentifier, Receiver};
+use crate::core::{
+    BucketFnIdentifier, FnIdentifier, NativeFnIdentifier, Receiver, ResourceManagerFnIdentifier,
+};
 use crate::engine::types::RENodeId;
 use crate::engine::{api::*, call_engine, types::BucketId};
 use crate::math::*;
 use crate::misc::*;
-use crate::resource::*;
 use crate::native_functions;
+use crate::resource::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct ConsumingBucketBurnInput {}
@@ -54,15 +55,18 @@ impl Bucket {
     pub fn new(resource_address: ResourceAddress) -> Self {
         let input = RadixEngineInput::InvokeMethod(
             Receiver::Ref(RENodeId::ResourceManager(resource_address)),
-            FnIdentifier::Native("create_bucket".to_string()),
+            FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
+                ResourceManagerFnIdentifier::CreateBucket,
+            )),
             scrypto_encode(&ResourceManagerCreateBucketInput {}),
         );
         call_engine(input)
     }
 
     native_functions! {
-        Receiver::Consumed(RENodeId::Bucket(self.0)) => {
+        Receiver::Consumed(RENodeId::Bucket(self.0)), NativeFnIdentifier::Bucket => {
            pub fn burn(self) -> () {
+                BucketFnIdentifier::Burn,
                 ConsumingBucketBurnInput {}
             }
         }
@@ -71,37 +75,43 @@ impl Bucket {
     fn take_internal(&mut self, amount: Decimal) -> Self {
         let input = RadixEngineInput::InvokeMethod(
             Receiver::Ref(RENodeId::Bucket(self.0)),
-            FnIdentifier::Native("take".to_string()),
+            FnIdentifier::Native(NativeFnIdentifier::Bucket(BucketFnIdentifier::Take)),
             scrypto_encode(&BucketTakeInput { amount }),
         );
         call_engine(input)
     }
 
     native_functions! {
-        Receiver::Ref(RENodeId::Bucket(self.0)) => {
+        Receiver::Ref(RENodeId::Bucket(self.0)), NativeFnIdentifier::Bucket => {
             pub fn take_non_fungibles(&mut self, non_fungible_ids: &BTreeSet<NonFungibleId>) -> Self {
+                BucketFnIdentifier::TakeNonFungibles,
                 BucketTakeNonFungiblesInput {
                     ids: non_fungible_ids.clone()
                 }
             }
             pub fn put(&mut self, other: Self) -> () {
+                BucketFnIdentifier::Put,
                 BucketPutInput {
                     bucket: other
                 }
             }
             pub fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId> {
+                BucketFnIdentifier::GetNonFungibleIds,
                 BucketGetNonFungibleIdsInput {
                 }
             }
             pub fn amount(&self) -> Decimal {
+                BucketFnIdentifier::GetAmount,
                 BucketGetAmountInput {
                 }
             }
             pub fn resource_address(&self) -> ResourceAddress {
+                BucketFnIdentifier::GetResourceAddress,
                 BucketGetResourceAddressInput {
                 }
             }
             pub fn create_proof(&self) -> scrypto::resource::Proof {
+                BucketFnIdentifier::CreateProof,
                 BucketCreateProofInput {
                 }
             }

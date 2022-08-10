@@ -1,10 +1,10 @@
 use sbor::rust::marker::PhantomData;
-use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use scrypto::buffer::*;
+use scrypto::core::{NativeFnIdentifier, TransactionProcessorFnIdentifier};
 use scrypto::engine::types::SubstateId;
 use scrypto::math::Decimal;
-use scrypto::prelude::TypeName;
+use scrypto::prelude::FnIdentifier;
 use scrypto::values::ScryptoValue;
 use transaction::model::*;
 use transaction::validation::{IdAllocator, IdSpace};
@@ -161,8 +161,9 @@ where
         );
         let result = root_frame
             .invoke_function(
-                TypeName::TransactionProcessor,
-                "run".to_string(),
+                FnIdentifier::Native(NativeFnIdentifier::TransactionProcessor(
+                    TransactionProcessorFnIdentifier::Run,
+                )),
                 ScryptoValue::from_typed(&TransactionProcessorRunInput {
                     instructions: instructions.clone(),
                 }),

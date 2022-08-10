@@ -1,12 +1,12 @@
 use sbor::rust::collections::BTreeSet;
-use sbor::rust::string::ToString;
 use sbor::*;
+use scrypto::core::NativeFnIdentifier;
 
-use crate::core::{FnIdentifier, Receiver};
+use crate::core::{AuthZoneFnIdentifier, FnIdentifier, Receiver};
 use crate::engine::{api::*, call_engine};
 use crate::math::Decimal;
-use crate::resource::*;
 use crate::native_functions;
+use crate::resource::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct AuthZonePopInput {}
@@ -45,24 +45,28 @@ pub struct ComponentAuthZone {}
 
 impl ComponentAuthZone {
     native_functions! {
-        Receiver::AuthZoneRef => {
+        Receiver::AuthZoneRef, NativeFnIdentifier::AuthZone => {
             pub fn pop() -> Proof {
+                AuthZoneFnIdentifier::Pop,
                 AuthZonePopInput {}
             }
 
             pub fn create_proof(resource_address: ResourceAddress) -> Proof {
+                AuthZoneFnIdentifier::CreateProof,
                 AuthZoneCreateProofInput {
                     resource_address
                 }
             }
 
             pub fn create_proof_by_amount(amount: Decimal, resource_address: ResourceAddress) -> Proof {
+                AuthZoneFnIdentifier::CreateProofByAmount,
                 AuthZoneCreateProofByAmountInput {
                     amount, resource_address
                 }
             }
 
             pub fn create_proof_by_ids(ids: &BTreeSet<NonFungibleId>, resource_address: ResourceAddress) -> Proof {
+                AuthZoneFnIdentifier::CreateProofByIds,
                 AuthZoneCreateProofByIdsInput {
                     ids: ids.clone(),
                     resource_address
@@ -75,7 +79,7 @@ impl ComponentAuthZone {
         let proof: Proof = proof.into();
         let input = RadixEngineInput::InvokeMethod(
             Receiver::AuthZoneRef,
-            FnIdentifier::Native("push".to_string()),
+            FnIdentifier::Native(NativeFnIdentifier::AuthZone(AuthZoneFnIdentifier::Push)),
             scrypto::buffer::scrypto_encode(&(AuthZonePushInput { proof })),
         );
         call_engine(input)

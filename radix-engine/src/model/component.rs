@@ -4,6 +4,7 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
 use scrypto::component::*;
+use scrypto::core::ComponentFnIdentifier;
 use scrypto::engine::types::*;
 use scrypto::resource::AccessRules;
 use scrypto::values::*;
@@ -18,7 +19,6 @@ use crate::wasm::{WasmEngine, WasmInstance};
 pub enum ComponentError {
     InvalidRequestData(DecodeError),
     BlueprintFunctionDoesNotExist(String),
-    MethodNotFound,
     CostingError(FeeReserveError),
 }
 
@@ -105,15 +105,15 @@ impl Component {
         C: FeeReserve,
     >(
         component_address: ComponentAddress,
-        fn_ident: &str,
+        component_fn: ComponentFnIdentifier,
         arg: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, ComponentError> {
         let substate_id = SubstateId::ComponentInfo(component_address);
         let node_id = RENodeId::Component(component_address);
 
-        let rtn = match fn_ident {
-            "add_access_check" => {
+        let rtn = match component_fn {
+            ComponentFnIdentifier::AddAccessCheck => {
                 let input: ComponentAddAccessCheckInput =
                     scrypto_decode(&arg.raw).map_err(|e| ComponentError::InvalidRequestData(e))?;
 
@@ -156,7 +156,6 @@ impl Component {
 
                 Ok(ScryptoValue::from_typed(&()))
             }
-            _ => Err(ComponentError::MethodNotFound),
         }?;
 
         Ok(rtn)

@@ -4,39 +4,153 @@ use sbor::*;
 
 use crate::engine::types::{PackageAddress, RENodeId};
 
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub enum TypeName {
-    Package,
-    ResourceManager,
-    TransactionProcessor,
-    Blueprint(PackageAddress, String),
-}
-
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Copy, TypeId, Encode, Decode)]
 pub enum Receiver {
     Consumed(RENodeId),
     Ref(RENodeId),
     AuthZoneRef,
 }
 
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash, TypeId, Encode, Decode)]
 pub enum FnIdentifier {
     Scrypto {
         package_address: PackageAddress,
         blueprint_name: String,
-        method_name: String,
+        ident: String,
     },
-    Native(String),
+    Native(NativeFnIdentifier),
 }
 
-impl FnIdentifier {
-    pub fn fn_ident(&self) -> &str {
-        match self {
-            FnIdentifier::Scrypto { method_name, .. } | FnIdentifier::Native(method_name) => {
-                &method_name
-            }
-        }
-    }
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe, PartialOrd, Ord,
+)]
+pub enum NativeFnIdentifier {
+    Component(ComponentFnIdentifier),
+    System(SystemFnIdentifier),
+    AuthZone(AuthZoneFnIdentifier),
+    ResourceManager(ResourceManagerFnIdentifier),
+    Bucket(BucketFnIdentifier),
+    Vault(VaultFnIdentifier),
+    Proof(ProofFnIdentifier),
+    Worktop(WorktopFnIdentifier),
+    Package(PackageFnIdentifier),
+    TransactionProcessor(TransactionProcessorFnIdentifier),
+}
+
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe, PartialOrd, Ord,
+)]
+pub enum ComponentFnIdentifier {
+    AddAccessCheck,
+}
+
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe, PartialOrd, Ord,
+)]
+pub enum SystemFnIdentifier {
+    GetTransactionHash,
+    GetCurrentEpoch,
+    SetEpoch,
+}
+
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe, PartialOrd, Ord,
+)]
+pub enum AuthZoneFnIdentifier {
+    Pop,
+    Push,
+    CreateProof,
+    CreateProofByAmount,
+    CreateProofByIds,
+    Clear,
+}
+
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe, PartialOrd, Ord,
+)]
+pub enum ResourceManagerFnIdentifier {
+    Create,
+    UpdateAuth,
+    LockAuth,
+    Mint,
+    UpdateNonFungibleData,
+    GetNonFungible,
+    GetMetadata,
+    GetResourceType,
+    GetTotalSupply,
+    UpdateMetadata,
+    NonFungibleExists,
+    CreateBucket,
+    CreateVault,
+}
+
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe, PartialOrd, Ord,
+)]
+pub enum BucketFnIdentifier {
+    Burn,
+    Take,
+    TakeNonFungibles,
+    Put,
+    GetNonFungibleIds,
+    GetAmount,
+    GetResourceAddress,
+    CreateProof,
+}
+
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe, PartialOrd, Ord,
+)]
+pub enum VaultFnIdentifier {
+    Take,
+    LockFee,
+    Put,
+    TakeNonFungibles,
+    GetAmount,
+    GetResourceAddress,
+    GetNonFungibleIds,
+    CreateProof,
+    CreateProofByAmount,
+    CreateProofByIds,
+}
+
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe, PartialOrd, Ord,
+)]
+pub enum ProofFnIdentifier {
+    Clone,
+    GetAmount,
+    GetNonFungibleIds,
+    GetResourceAddress,
+    Drop,
+}
+
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe, PartialOrd, Ord,
+)]
+pub enum WorktopFnIdentifier {
+    TakeAll,
+    TakeAmount,
+    TakeNonFungibles,
+    Put,
+    AssertContains,
+    AssertContainsAmount,
+    AssertContainsNonFungibles,
+    Drain,
+}
+
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe, PartialOrd, Ord,
+)]
+pub enum PackageFnIdentifier {
+    Publish,
+}
+
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe, PartialOrd, Ord,
+)]
+pub enum TransactionProcessorFnIdentifier {
+    Run,
 }
 
 // TODO: Remove and replace with real HeapRENodes
