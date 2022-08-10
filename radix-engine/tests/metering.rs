@@ -166,11 +166,11 @@ fn test_basic_transfer() {
         1800 /* borrow */
             + 3000 /* create */
             + 1895 /* invoke_function */
-            + 2715 /* invoke_method */
+            + 2215 /* invoke_method */
             + 3500 /* read */
             + 1800 /* return */
             + 1000 /* run_function */
-            + 6600 /* run_method */
+            + 2600 /* run_method */
             + 291392 /* run_wasm */
             + 2668 /* tx_decoding */
             + 667 /* tx_manifest_verification */

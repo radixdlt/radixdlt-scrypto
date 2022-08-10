@@ -258,14 +258,7 @@ impl ResourceManager {
         self.total_supply
     }
 
-    pub fn mint<
-        'p,
-        's,
-        Y: SystemApi<'p, 's, W, I, C>,
-        W: WasmEngine<I>,
-        I: WasmInstance,
-        C: FeeReserve,
-    >(
+    pub fn mint<'s, Y: SystemApi<'s, W, I, C>, W: WasmEngine<I>, I: WasmInstance, C: FeeReserve>(
         &mut self,
         mint_params: MintParams,
         self_address: ResourceAddress,
@@ -307,9 +300,8 @@ impl ResourceManager {
     }
 
     pub fn mint_non_fungibles<
-        'p,
         's,
-        Y: SystemApi<'p, 's, W, I, C>,
+        Y: SystemApi<'s, W, I, C>,
         W: WasmEngine<I>,
         I: WasmInstance,
         C: FeeReserve,
@@ -388,9 +380,8 @@ impl ResourceManager {
     }
 
     pub fn static_main<
-        'p,
         's,
-        Y: SystemApi<'p, 's, W, I, C>,
+        Y: SystemApi<'s, W, I, C>,
         W: WasmEngine<I>,
         I: WasmInstance,
         C: FeeReserve,
@@ -479,14 +470,7 @@ impl ResourceManager {
         }
     }
 
-    pub fn main<
-        'p,
-        's,
-        Y: SystemApi<'p, 's, W, I, C>,
-        W: WasmEngine<I>,
-        I: WasmInstance,
-        C: FeeReserve,
-    >(
+    pub fn main<'s, Y: SystemApi<'s, W, I, C>, W: WasmEngine<I>, I: WasmInstance, C: FeeReserve>(
         resource_address: ResourceAddress,
         method_name: &str,
         arg: ScryptoValue,

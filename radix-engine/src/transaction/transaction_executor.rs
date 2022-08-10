@@ -9,7 +9,6 @@ use scrypto::prelude::RADIX_TOKEN;
 use scrypto::resource::ResourceType;
 use scrypto::values::ScryptoValue;
 use transaction::model::*;
-use transaction::validation::{IdAllocator, IdSpace};
 
 use crate::constants::{DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN};
 use crate::engine::Track;
@@ -134,7 +133,6 @@ where
 
         // 1. Start state track
         let mut track = Track::new(self.substate_store);
-        let mut id_allocator = IdAllocator::new(IdSpace::Application);
 
         // 2. Apply pre-execution costing
         let fee_table = FeeTable::new();
@@ -159,29 +157,35 @@ where
             )
             .expect("System loan should cover this");
 
-        // 3. Start a call frame and run the transaction
-        let mut root_frame = CallFrame::new_root(
-            params.trace,
-            transaction_hash,
-            signer_public_keys,
-            params.is_system,
-            params.max_call_depth,
-            &mut id_allocator,
-            &mut track,
-            self.wasm_engine,
-            self.wasm_instrumenter,
-            &mut fee_reserve,
-            &fee_table,
-        );
-        let result = root_frame
-            .invoke_function(
+        // 3. Start a kernel instance and invoke
+        let result = {
+            let mut kernel = Kernel::new(
+                transaction_hash,
+                signer_public_keys,
+                params.is_system,
+                params.max_call_depth,
+                params.trace,
+                &mut track,
+                self.wasm_engine,
+                self.wasm_instrumenter,
+                &mut fee_reserve,
+                &fee_table,
+            );
+            let result = kernel.invoke_function(
                 TypeName::TransactionProcessor,
                 "run".to_string(),
                 ScryptoValue::from_typed(&TransactionProcessorRunInput {
                     instructions: instructions.clone(),
                 }),
-            )
-            .map(|o| scrypto_decode::<Vec<Vec<u8>>>(&o.raw).unwrap());
+            );
+            #[cfg(not(feature = "alloc"))]
+            if params.trace {
+                println!("{:-^80}", "Engine Result");
+                println!("{:?}", result);
+            }
+
+            result.map(|o| scrypto_decode::<Vec<Vec<u8>>>(&o.raw).unwrap())
+        };
 
         // 4. Settle transaction fee
         let fee_summary = fee_reserve.finalize();

@@ -166,14 +166,7 @@ impl Vault {
         self.container.borrow_mut()
     }
 
-    pub fn main<
-        'p,
-        's,
-        Y: SystemApi<'p, 's, W, I, C>,
-        W: WasmEngine<I>,
-        I: WasmInstance,
-        C: FeeReserve,
-    >(
+    pub fn main<'s, Y: SystemApi<'s, W, I, C>, W: WasmEngine<I>, I: WasmInstance, C: FeeReserve>(
         vault_id: VaultId,
         method_name: &str,
         arg: ScryptoValue,
