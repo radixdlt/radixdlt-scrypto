@@ -8,7 +8,7 @@ use crate::engine::types::{PackageAddress, RENodeId};
 pub enum Receiver {
     Consumed(RENodeId),
     Ref(RENodeId),
-    AuthZoneRef,
+    CurrentAuthZone,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, TypeId, Encode, Decode)]
@@ -104,6 +104,7 @@ pub enum BucketFnIdentifier {
 pub enum VaultFnIdentifier {
     Take,
     LockFee,
+    LockContingentFee,
     Put,
     TakeNonFungibles,
     GetAmount,

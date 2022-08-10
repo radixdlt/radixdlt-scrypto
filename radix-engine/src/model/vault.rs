@@ -164,14 +164,7 @@ impl Vault {
         self.container.borrow_mut()
     }
 
-    pub fn main<
-        'p,
-        's,
-        Y: SystemApi<'p, 's, W, I, C>,
-        W: WasmEngine<I>,
-        I: WasmInstance,
-        C: FeeReserve,
-    >(
+    pub fn main<'s, Y: SystemApi<'s, W, I, C>, W: WasmEngine<I>, I: WasmInstance, C: FeeReserve>(
         vault_id: VaultId,
         vault_fn: VaultFnIdentifier,
         arg: ScryptoValue,
@@ -208,7 +201,7 @@ impl Vault {
                     bucket_id,
                 )))
             }
-            VaultFnIdentifier::LockFee => {
+            VaultFnIdentifier::LockFee | VaultFnIdentifier::LockContingentFee => {
                 let input: VaultLockFeeInput =
                     scrypto_decode(&arg.raw).map_err(|e| VaultError::InvalidRequestData(e))?;
 
@@ -225,7 +218,11 @@ impl Vault {
                 // Refill fee reserve
                 let changes = system_api
                     .fee_reserve()
-                    .repay(vault_id, fee)
+                    .repay(
+                        vault_id,
+                        fee,
+                        matches!(vault_fn, VaultFnIdentifier::LockContingentFee),
+                    )
                     .map_err(VaultError::CostingError)?;
 
                 // Return changes

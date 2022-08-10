@@ -27,7 +27,7 @@ impl NewPackage {
             .clone()
             .unwrap_or(PathBuf::from(&self.package_name));
         let simulator_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        let (sbor, scrypto, transaction, radix_engine) = if self.local {
+        let (sbor, scrypto, transaction, radix_engine, scrypto_unit) = if self.local {
             let scrypto_dir = simulator_dir
                 .parent()
                 .unwrap()
@@ -38,13 +38,14 @@ impl NewPackage {
                 format!("{{ path = \"{}/scrypto\" }}", scrypto_dir),
                 format!("{{ path = \"{}/transaction\" }}", scrypto_dir),
                 format!("{{ path = \"{}/radix-engine\" }}", scrypto_dir),
+                format!("{{ path = \"{}/scrypto-unit\" }}", scrypto_dir),
             )
         } else {
             let s = format!(
                 "{{ git = \"https://github.com/radixdlt/radixdlt-scrypto\", tag = \"v{}\" }}",
                 env!("CARGO_PKG_VERSION")
             );
-            (s.clone(), s.clone(), s.clone(), s)
+            (s.clone(), s.clone(), s.clone(), s.clone(), s)
         };
 
         if path.exists() {
@@ -60,7 +61,8 @@ impl NewPackage {
                     .replace("${sbor}", &sbor)
                     .replace("${scrypto}", &scrypto)
                     .replace("${transaction}", &transaction)
-                    .replace("${radix-engine}", &radix_engine),
+                    .replace("${radix-engine}", &radix_engine)
+                    .replace("${scrypto-unit}", &scrypto_unit),
             )
             .map_err(Error::IOError)?;
 

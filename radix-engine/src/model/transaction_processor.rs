@@ -65,9 +65,8 @@ impl TransactionProcessor {
     }
 
     pub fn static_main<
-        'p,
         's,
-        Y: SystemApi<'p, 's, W, I, C>,
+        Y: SystemApi<'s, W, I, C>,
         W: WasmEngine<I>,
         I: WasmInstance,
         C: FeeReserve,
@@ -217,7 +216,7 @@ impl TransactionProcessor {
                             .and_then(|new_id| {
                                 system_api
                                     .invoke_method(
-                                        Receiver::AuthZoneRef,
+                                        Receiver::CurrentAuthZone,
                                         FnIdentifier::Native(NativeFnIdentifier::AuthZone(
                                             AuthZoneFnIdentifier::Pop,
                                         )),
@@ -232,7 +231,7 @@ impl TransactionProcessor {
                         ExecutableInstruction::ClearAuthZone => {
                             proof_id_mapping.clear();
                             system_api.invoke_method(
-                                Receiver::AuthZoneRef,
+                                Receiver::CurrentAuthZone,
                                 FnIdentifier::Native(NativeFnIdentifier::AuthZone(
                                     AuthZoneFnIdentifier::Clear,
                                 )),
@@ -244,7 +243,7 @@ impl TransactionProcessor {
                             .ok_or(RuntimeError::ProofNotFound(*proof_id))
                             .and_then(|real_id| {
                                 system_api.invoke_method(
-                                    Receiver::AuthZoneRef,
+                                    Receiver::CurrentAuthZone,
                                     FnIdentifier::Native(NativeFnIdentifier::AuthZone(
                                         AuthZoneFnIdentifier::Push,
                                     )),
@@ -260,7 +259,7 @@ impl TransactionProcessor {
                                 .and_then(|new_id| {
                                     system_api
                                         .invoke_method(
-                                            Receiver::AuthZoneRef,
+                                            Receiver::CurrentAuthZone,
                                             FnIdentifier::Native(NativeFnIdentifier::AuthZone(
                                                 AuthZoneFnIdentifier::CreateProof,
                                             )),
@@ -286,7 +285,7 @@ impl TransactionProcessor {
                             .and_then(|new_id| {
                                 system_api
                                     .invoke_method(
-                                        Receiver::AuthZoneRef,
+                                        Receiver::CurrentAuthZone,
                                         FnIdentifier::Native(NativeFnIdentifier::AuthZone(
                                             AuthZoneFnIdentifier::CreateProofByAmount,
                                         )),
@@ -312,7 +311,7 @@ impl TransactionProcessor {
                             .and_then(|new_id| {
                                 system_api
                                     .invoke_method(
-                                        Receiver::AuthZoneRef,
+                                        Receiver::CurrentAuthZone,
                                         FnIdentifier::Native(NativeFnIdentifier::AuthZone(
                                             AuthZoneFnIdentifier::CreateProofByIds,
                                         )),
@@ -404,7 +403,7 @@ impl TransactionProcessor {
                                     .unwrap();
                             }
                             system_api.invoke_method(
-                                Receiver::AuthZoneRef,
+                                Receiver::CurrentAuthZone,
                                 FnIdentifier::Native(NativeFnIdentifier::AuthZone(
                                     AuthZoneFnIdentifier::Clear,
                                 )),
@@ -437,7 +436,7 @@ impl TransactionProcessor {
                                 for (proof_id, _) in &result.proof_ids {
                                     system_api
                                         .invoke_method(
-                                            Receiver::AuthZoneRef,
+                                            Receiver::CurrentAuthZone,
                                             FnIdentifier::Native(NativeFnIdentifier::AuthZone(
                                                 AuthZoneFnIdentifier::Push,
                                             )),
@@ -499,7 +498,7 @@ impl TransactionProcessor {
                                 for (proof_id, _) in &result.proof_ids {
                                     system_api
                                         .invoke_method(
-                                            Receiver::AuthZoneRef,
+                                            Receiver::CurrentAuthZone,
                                             FnIdentifier::Native(NativeFnIdentifier::AuthZone(
                                                 AuthZoneFnIdentifier::Push,
                                             )),

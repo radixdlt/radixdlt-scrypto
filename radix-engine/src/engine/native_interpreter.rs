@@ -10,15 +10,15 @@ use crate::wasm::*;
 pub struct NativeInterpreter;
 
 impl NativeInterpreter {
-    pub fn run<'p, 's, Y, W, I, C>(
+    pub fn run<'s, Y, W, I, C>(
         receiver: Option<Receiver>,
+        auth_zone_frame_id: Option<usize>,
         fn_identifier: NativeFnIdentifier,
-        maybe_authzone: Option<&mut AuthZone>,
         input: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, RuntimeError>
     where
-        Y: SystemApi<'p, 's, W, I, C>,
+        Y: SystemApi<'s, W, I, C>,
         W: WasmEngine<I>,
         I: WasmInstance,
         C: FeeReserve,
@@ -52,11 +52,14 @@ impl NativeInterpreter {
                 Proof::main_consume(node_id, proof_fn, input, system_api)
                     .map_err(RuntimeError::ProofError)
             }
-            (Some(Receiver::AuthZoneRef), NativeFnIdentifier::AuthZone(auth_zone_fn)) => {
-                maybe_authzone
-                    .unwrap()
-                    .main(auth_zone_fn, input, system_api)
-                    .map_err(RuntimeError::AuthZoneError)
+            (Some(Receiver::CurrentAuthZone), NativeFnIdentifier::AuthZone(auth_zone_fn)) => {
+                AuthZone::main(
+                    auth_zone_frame_id.expect("AuthZone receiver frame id not specified"),
+                    auth_zone_fn,
+                    input,
+                    system_api,
+                )
+                .map_err(RuntimeError::AuthZoneError)
             }
             (
                 Some(Receiver::Ref(RENodeId::Bucket(bucket_id))),

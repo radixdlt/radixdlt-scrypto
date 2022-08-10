@@ -5,14 +5,13 @@ use scrypto::engine::types::*;
 use scrypto::resource::AccessRule;
 use scrypto::values::*;
 
-use crate::engine::values::*;
+use crate::engine::node::*;
 use crate::engine::*;
 use crate::fee::*;
+use crate::model::AuthZone;
 use crate::wasm::*;
 
-use super::call_frame::RENodeRef;
-
-pub trait SystemApi<'p, 's, W, I, C>
+pub trait SystemApi<'s, W, I, C>
 where
     W: WasmEngine<I>,
     I: WasmInstance,
@@ -20,7 +19,8 @@ where
 {
     fn fee_reserve(&mut self) -> &mut C;
 
-    fn fee_table(&self) -> &FeeTable;
+    // TODO: possible to consider AuthZone as a RENode?
+    fn auth_zone(&mut self, frame_id: usize) -> &mut AuthZone;
 
     fn invoke_function(
         &mut self,

@@ -4,5 +4,4 @@ pub mod chess;
 pub mod component;
 pub mod cross_component;
 pub mod external_blueprint_target;
-pub mod package;
 pub mod reentrant_component;

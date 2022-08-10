@@ -1,6 +1,4 @@
-#[rustfmt::skip]
-pub mod test_runner;
-use crate::test_runner::TestRunner;
+use scrypto_unit::*;
 
 use scrypto::core::Network;
 use transaction::builder::ManifestBuilder;

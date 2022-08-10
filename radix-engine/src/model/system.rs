@@ -24,14 +24,7 @@ pub struct System {
 }
 
 impl System {
-    pub fn main<
-        'p,
-        's,
-        Y: SystemApi<'p, 's, W, I, C>,
-        W: WasmEngine<I>,
-        I: WasmInstance,
-        C: FeeReserve,
-    >(
+    pub fn main<'s, Y: SystemApi<'s, W, I, C>, W: WasmEngine<I>, I: WasmInstance, C: FeeReserve>(
         system_fn: SystemFnIdentifier,
         arg: ScryptoValue,
         system_api: &mut Y,

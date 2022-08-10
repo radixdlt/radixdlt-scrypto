@@ -45,7 +45,7 @@ pub struct ComponentAuthZone {}
 
 impl ComponentAuthZone {
     native_functions! {
-        Receiver::AuthZoneRef, NativeFnIdentifier::AuthZone => {
+        Receiver::CurrentAuthZone, NativeFnIdentifier::AuthZone => {
             pub fn pop() -> Proof {
                 AuthZoneFnIdentifier::Pop,
                 AuthZonePopInput {}
@@ -78,7 +78,7 @@ impl ComponentAuthZone {
     pub fn push<P: Into<Proof>>(proof: P) {
         let proof: Proof = proof.into();
         let input = RadixEngineInput::InvokeMethod(
-            Receiver::AuthZoneRef,
+            Receiver::CurrentAuthZone,
             FnIdentifier::Native(NativeFnIdentifier::AuthZone(AuthZoneFnIdentifier::Push)),
             scrypto::buffer::scrypto_encode(&(AuthZonePushInput { proof })),
         );

@@ -405,7 +405,7 @@ impl HeapRENode {
             HeapRENode::Vault(..) => Ok(()),
             HeapRENode::Resource(..) => Ok(()),
             HeapRENode::Package(..) => Ok(()),
-            HeapRENode::Worktop(..) => Ok(()),
+            HeapRENode::Worktop(..) => Err(RuntimeError::CantMoveWorktop),
             HeapRENode::System(..) => Ok(()),
         }
     }

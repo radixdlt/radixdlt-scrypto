@@ -334,14 +334,7 @@ impl Proof {
         self.restricted
     }
 
-    pub fn main<
-        'p,
-        's,
-        Y: SystemApi<'p, 's, W, I, C>,
-        W: WasmEngine<I>,
-        I: WasmInstance,
-        C: FeeReserve,
-    >(
+    pub fn main<'s, Y: SystemApi<'s, W, I, C>, W: WasmEngine<I>, I: WasmInstance, C: FeeReserve>(
         proof_id: ProofId,
         proof_fn: ProofFnIdentifier,
         arg: ScryptoValue,
@@ -392,9 +385,8 @@ impl Proof {
     }
 
     pub fn main_consume<
-        'p,
         's,
-        Y: SystemApi<'p, 's, W, I, C>,
+        Y: SystemApi<'s, W, I, C>,
         W: WasmEngine<I>,
         I: WasmInstance,
         C: FeeReserve,

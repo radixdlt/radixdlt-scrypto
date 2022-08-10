@@ -1,7 +1,7 @@
 use clap::Parser;
 use radix_engine::constants::*;
 use radix_engine::engine::Track;
-use radix_engine::engine::{CallFrame, SystemApi};
+use radix_engine::engine::{Kernel, SystemApi};
 use radix_engine::fee::{FeeTable, SystemLoanFeeReserve};
 use scrypto::core::{
     FnIdentifier, NativeFnIdentifier, Receiver, SystemFnIdentifier, SystemSetEpochInput,
@@ -9,7 +9,6 @@ use scrypto::core::{
 use scrypto::crypto::hash;
 use scrypto::engine::types::RENodeId;
 use scrypto::values::ScryptoValue;
-use transaction::validation::{IdAllocator, IdSpace};
 
 use crate::resim::*;
 
@@ -28,19 +27,16 @@ impl SetCurrentEpoch {
         let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?);
         let mut wasm_engine = DefaultWasmEngine::new();
         let mut wasm_instrumenter = WasmInstrumenter::new();
-        let mut id_allocator = IdAllocator::new(IdSpace::Application);
         let mut track = Track::new(&substate_store);
         let mut fee_reserve = SystemLoanFeeReserve::default();
         let fee_table = FeeTable::new();
 
-        // Create root call frame.
-        let mut root_frame = CallFrame::new_root(
-            false,
+        let mut kernel = Kernel::new(
             tx_hash,
             vec![],
             true,
             DEFAULT_MAX_CALL_DEPTH,
-            &mut id_allocator,
+            false,
             &mut track,
             &mut wasm_engine,
             &mut wasm_instrumenter,
@@ -49,7 +45,7 @@ impl SetCurrentEpoch {
         );
 
         // Invoke the system
-        root_frame
+        kernel
             .invoke_method(
                 Receiver::Ref(RENodeId::System),
                 FnIdentifier::Native(NativeFnIdentifier::System(SystemFnIdentifier::SetEpoch)),

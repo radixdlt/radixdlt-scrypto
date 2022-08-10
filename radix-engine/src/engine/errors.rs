@@ -119,6 +119,8 @@ pub enum RuntimeError {
 
     /// Can't move restricted proof.
     CantMoveRestrictedProof,
+    CantMoveWorktop,
+    CantMoveAuthZone,
 
     RENodeGlobalizeTypeNotAllowed(RENodeId),
     RENodeCreateInvalidPermission,

@@ -1,11 +1,9 @@
-use sbor::rust::collections::*;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 use scrypto::core::{FnIdentifier, NativeFnIdentifier, Receiver, SystemFnIdentifier};
 use scrypto::engine::types::*;
-use scrypto::values::*;
+use scrypto::values::ScryptoValue;
 
-use crate::engine::call_frame::RENodePointer;
 use crate::engine::*;
 use crate::model::*;
 
@@ -15,23 +13,23 @@ impl AuthModule {
     fn auth(
         function: &FnIdentifier,
         method_auths: Vec<MethodAuthorization>,
-        auth_zone: Option<&AuthZone>,
-        caller_auth_zone: Option<&AuthZone>,
+        call_frames: &mut Vec<CallFrame>, // TODO remove this once heap is implemented
     ) -> Result<(), RuntimeError> {
+        let mut auth_zones = vec![
+            &call_frames
+                .last()
+                .expect("Current frame always exists")
+                .auth_zone,
+        ];
+        // FIXME: This is wrong as it allows extern component
+        // FIXME: calls to use caller's auth zone
+        // FIXME: Need to add a test for this
+        if let Some(frame) = call_frames.get(call_frames.len() - 2) {
+            auth_zones.push(&frame.auth_zone);
+        }
+
         // Authorization check
         if !method_auths.is_empty() {
-            let mut auth_zones = Vec::new();
-            if let Some(self_auth_zone) = auth_zone {
-                auth_zones.push(self_auth_zone);
-            }
-
-            // FIXME: This is wrong as it allows extern component
-            // FIXME: calls to use caller's auth zone
-            // FIXME: Need to add a test for this
-            if let Some(auth_zone) = caller_auth_zone {
-                auth_zones.push(auth_zone);
-            }
-
             for method_auth in method_auths {
                 method_auth.check(&auth_zones).map_err(|error| {
                     RuntimeError::AuthorizationError {
@@ -51,12 +49,8 @@ impl AuthModule {
         receiver: Receiver,
         input: &ScryptoValue,
         node_pointer: RENodePointer,
-        depth: usize,
-        owned_heap_nodes: &mut HashMap<RENodeId, HeapRootRENode>,
-        parent_heap_nodes: &mut Vec<&mut HashMap<RENodeId, HeapRootRENode>>,
+        call_frames: &mut Vec<CallFrame>,
         track: &mut Track,
-        auth_zone: Option<&AuthZone>,
-        caller_auth_zone: Option<&AuthZone>,
     ) -> Result<(), RuntimeError> {
         let auth = match (receiver, function) {
             (
@@ -64,8 +58,7 @@ impl AuthModule {
                 FnIdentifier::Native(NativeFnIdentifier::Bucket(bucket_fn)),
             ) => {
                 let resource_address = {
-                    let node_ref =
-                        node_pointer.to_ref(depth, owned_heap_nodes, parent_heap_nodes, track);
+                    let node_ref = node_pointer.to_ref(call_frames, track);
                     node_ref.bucket().resource_address()
                 };
                 let resource_manager = track
@@ -123,8 +116,7 @@ impl AuthModule {
                 }
 
                 {
-                    let value_ref =
-                        node_pointer.to_ref(depth, owned_heap_nodes, parent_heap_nodes, track);
+                    let value_ref = node_pointer.to_ref(call_frames, track);
 
                     let component = value_ref.component_info();
                     let component_state = value_ref.component_state();
@@ -136,8 +128,7 @@ impl AuthModule {
                 FnIdentifier::Native(NativeFnIdentifier::Vault(vault_fn)),
             ) => {
                 let resource_address = {
-                    let node_ref =
-                        node_pointer.to_ref(depth, owned_heap_nodes, parent_heap_nodes, track);
+                    let node_ref = node_pointer.to_ref(call_frames, track);
                     node_ref.vault().resource_address()
                 };
                 let resource_manager = track
@@ -148,6 +139,6 @@ impl AuthModule {
             _ => vec![],
         };
 
-        Self::auth(function, auth, auth_zone, caller_auth_zone)
+        Self::auth(function, auth, call_frames)
     }
 }
