@@ -166,7 +166,7 @@ fn test_basic_transfer() {
         10000 /* base_fee */
         + 3300 /* borrow_substate */
         + 1500 /* create_node */
-        + 2668 /* decode_transaction */
+        + 2001 /* decode_transaction */
         + 1000 /* drop_node */
         + 627435 /* instantiate_wasm */
         + 1895 /* invoke_function */

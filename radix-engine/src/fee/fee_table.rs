@@ -80,7 +80,7 @@ impl FeeTable {
     pub fn new() -> Self {
         Self {
             tx_base_fee: 10_000,
-            tx_decoding_per_byte: 4, // TODO: linear costing is suitable for PUBLISH_PACKAGE manifest; need to bill "blobs" separately
+            tx_decoding_per_byte: 3, // TODO: linear costing is suitable for PUBLISH_PACKAGE manifest; need to bill "blobs" separately
             tx_manifest_verification_per_byte: 1,
             tx_signature_verification_per_sig: 3750,
             wasm_instantiation_per_byte: 1, // TODO: this is currently costing too much!!!

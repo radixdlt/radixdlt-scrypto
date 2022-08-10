@@ -1054,7 +1054,7 @@ where
             .actor
             .is_substate_readable(substate_id)
         {
-            panic!("Trying to read value which is not visible.")
+            panic!("Trying to read substate which is not visible.")
         }
 
         let node_id = SubstateProperties::get_node_id(substate_id);
@@ -1310,7 +1310,12 @@ where
     }
 
     fn substate_read(&mut self, substate_id: SubstateId) -> Result<ScryptoValue, RuntimeError> {
-        trace!(self, Level::Debug, "Reading value data: {:?}", substate_id);
+        trace!(
+            self,
+            Level::Debug,
+            "Reading substate data: {:?}",
+            substate_id
+        );
 
         // Costing
         self.fee_reserve
@@ -1347,7 +1352,7 @@ where
     }
 
     fn substate_take(&mut self, substate_id: SubstateId) -> Result<ScryptoValue, RuntimeError> {
-        trace!(self, Level::Debug, "Removing value data: {:?}", substate_id);
+        trace!(self, Level::Debug, "Taking substate: {:?}", substate_id);
 
         // Costing
         self.fee_reserve
@@ -1390,7 +1395,12 @@ where
         substate_id: SubstateId,
         value: ScryptoValue,
     ) -> Result<(), RuntimeError> {
-        trace!(self, Level::Debug, "Writing value data: {:?}", substate_id);
+        trace!(
+            self,
+            Level::Debug,
+            "Writing substate data: {:?}",
+            substate_id
+        );
 
         // Costing
         self.fee_reserve
