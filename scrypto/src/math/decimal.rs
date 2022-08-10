@@ -193,7 +193,7 @@ macro_rules! decimals {
                     }
                     
                     /// The square root of a Decimal. Uses a standard Babylonian method.
-                    fn sqrt(&self) -> Option<Self> { 
+                    pub fn sqrt(&self) -> Option<Self> { 
                         if self.is_negative() {
                             return None;
                         }
