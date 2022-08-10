@@ -244,7 +244,7 @@ where
                     TypeName::Blueprint(package_address, blueprint_name) => {
                         let output = {
                             let package = self
-                                .track()
+                                .track
                                 .read_substate(SubstateId::Package(package_address))
                                 .package()
                                 .clone(); // TODO: remove copy
@@ -280,7 +280,7 @@ where
                         };
 
                         let package = self
-                            .track()
+                            .track
                             .read_substate(SubstateId::Package(package_address))
                             .package();
                         let blueprint_abi = package
@@ -339,7 +339,7 @@ where
                     ) => {
                         let output = {
                             let package = self
-                                .track()
+                                .track
                                 .read_substate(SubstateId::Package(package_address))
                                 .package()
                                 .clone(); // TODO: remove copy
@@ -376,7 +376,7 @@ where
                         };
 
                         let package = self
-                            .track()
+                            .track
                             .read_substate(SubstateId::Package(package_address))
                             .package();
                         let blueprint_abi = package
@@ -1757,10 +1757,6 @@ where
 
     fn fee_table(&self) -> &FeeTable {
         self.fee_table
-    }
-
-    fn track(&mut self) -> &mut Track<'s> {
-        self.track
     }
 
     fn id_allocator(&mut self) -> &mut IdAllocator {

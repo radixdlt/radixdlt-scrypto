@@ -19,9 +19,6 @@ where
     I: WasmInstance,
     C: FeeReserve,
 {
-    // TODO: can we not expose track?
-    fn track(&mut self) -> &mut Track<'s>;
-
     fn id_allocator(&mut self) -> &mut IdAllocator;
 
     fn wasm_engine(&mut self) -> &mut W;
