@@ -16,7 +16,7 @@ use crate::engine::{api::*, call_engine, types::VaultId};
 use crate::math::*;
 use crate::misc::*;
 use crate::resource::*;
-use crate::sfunctions;
+use crate::native_functions;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct VaultPutInput {
@@ -100,7 +100,7 @@ impl Vault {
         call_engine(input)
     }
 
-    sfunctions! {
+    native_functions! {
         Receiver::Ref(RENodeId::Vault(self.0)) => {
             pub fn put(&mut self, bucket: Bucket) -> () {
                 VaultPutInput {

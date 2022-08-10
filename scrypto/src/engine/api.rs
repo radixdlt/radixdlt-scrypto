@@ -13,7 +13,7 @@ extern "C" {
 }
 
 #[macro_export]
-macro_rules! sfunctions {
+macro_rules! native_functions {
     ($receiver:expr => { $($vis:vis $fn:ident $method_name:ident $s:tt -> $rtn:ty { $arg:expr })* } ) => {
         $(
             $vis $fn $method_name $s -> $rtn {

@@ -13,7 +13,7 @@ use crate::engine::{api::*, call_engine, types::BucketId};
 use crate::math::*;
 use crate::misc::*;
 use crate::resource::*;
-use crate::sfunctions;
+use crate::native_functions;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct ConsumingBucketBurnInput {}
@@ -60,7 +60,7 @@ impl Bucket {
         call_engine(input)
     }
 
-    sfunctions! {
+    native_functions! {
         Receiver::Consumed(RENodeId::Bucket(self.0)) => {
            pub fn burn(self) -> () {
                 ConsumingBucketBurnInput {}
@@ -77,7 +77,7 @@ impl Bucket {
         call_engine(input)
     }
 
-    sfunctions! {
+    native_functions! {
         Receiver::Ref(RENodeId::Bucket(self.0)) => {
             pub fn take_non_fungibles(&mut self, non_fungible_ids: &BTreeSet<NonFungibleId>) -> Self {
                 BucketTakeNonFungiblesInput {

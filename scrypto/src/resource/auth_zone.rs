@@ -6,7 +6,7 @@ use crate::core::{FnIdentifier, Receiver};
 use crate::engine::{api::*, call_engine};
 use crate::math::Decimal;
 use crate::resource::*;
-use crate::sfunctions;
+use crate::native_functions;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct AuthZonePopInput {}
@@ -44,7 +44,7 @@ pub struct AuthZoneClearInput {}
 pub struct ComponentAuthZone {}
 
 impl ComponentAuthZone {
-    sfunctions! {
+    native_functions! {
         Receiver::AuthZoneRef => {
             pub fn pop() -> Proof {
                 AuthZonePopInput {}

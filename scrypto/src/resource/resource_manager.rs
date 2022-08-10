@@ -15,7 +15,7 @@ use crate::engine::{api::*, call_engine};
 use crate::math::*;
 use crate::misc::*;
 use crate::resource::*;
-use crate::sfunctions;
+use crate::native_functions;
 
 #[derive(
     Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe, PartialOrd, Ord,
@@ -271,7 +271,7 @@ impl ResourceManager {
         call_engine(input)
     }
 
-    sfunctions! {
+    native_functions! {
         Receiver::Ref(RENodeId::ResourceManager(self.0)) => {
             pub fn metadata(&self) -> HashMap<String, String> {
                 ResourceManagerGetMetadataInput {}
