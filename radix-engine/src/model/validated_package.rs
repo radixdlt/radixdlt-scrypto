@@ -8,7 +8,7 @@ use scrypto::prelude::{PackageAddress, PackagePublishInput};
 use scrypto::values::ScryptoValue;
 
 use crate::engine::*;
-use crate::fee::{CostUnitCounter, CostUnitCounterError};
+use crate::fee::{FeeReserve, FeeReserveError};
 use crate::wasm::*;
 
 /// A collection of blueprints, compiled and published as a single unit.
@@ -24,7 +24,7 @@ pub enum PackageError {
     InvalidWasm(PrepareError),
     BlueprintNotFound,
     MethodNotFound(String),
-    CostingError(CostUnitCounterError),
+    CostingError(FeeReserveError),
 }
 
 impl ValidatedPackage {
@@ -45,16 +45,16 @@ impl ValidatedPackage {
         self.blueprint_abis.get(blueprint_name)
     }
 
-    pub fn static_main<'p, 's, Y, W, I, C>(
+    pub fn static_main<'s, Y, W, I, C>(
         method_name: &str,
         call_data: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, PackageError>
     where
-        Y: SystemApi<'p, 's, W, I, C>,
+        Y: SystemApi<'s, W, I, C>,
         W: WasmEngine<I>,
         I: WasmInstance,
-        C: CostUnitCounter,
+        C: FeeReserve,
     {
         match method_name {
             "publish" => {
@@ -65,7 +65,7 @@ impl ValidatedPackage {
                 let node_id = system_api
                     .node_create(HeapRENode::Package(package))
                     .unwrap(); // FIXME: update all `create_value` calls to handle errors correctly
-                system_api.node_globalize(&node_id).map_err(|e| match e {
+                system_api.node_globalize(node_id).map_err(|e| match e {
                     RuntimeError::CostingError(cost_unit_error) => {
                         PackageError::CostingError(cost_unit_error)
                     }

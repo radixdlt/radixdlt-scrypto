@@ -13,8 +13,8 @@ use scrypto::prelude::{
 use scrypto::values::ScryptoValue;
 
 use crate::engine::{HeapRENode, SystemApi};
-use crate::fee::CostUnitCounter;
-use crate::fee::CostUnitCounterError;
+use crate::fee::FeeReserve;
+use crate::fee::FeeReserveError;
 use crate::model::{
     Proof, ProofError, ResourceContainer, ResourceContainerError, ResourceContainerId,
 };
@@ -30,7 +30,7 @@ pub enum BucketError {
     ProofError(ProofError),
     CouldNotCreateProof,
     MethodNotFound(String),
-    CostingError(CostUnitCounterError),
+    CostingError(FeeReserveError),
 }
 
 /// A transient resource container.
@@ -161,22 +161,15 @@ impl Bucket {
         self.container.borrow_mut()
     }
 
-    pub fn main<
-        'p,
-        's,
-        Y: SystemApi<'p, 's, W, I, C>,
-        W: WasmEngine<I>,
-        I: WasmInstance,
-        C: CostUnitCounter,
-    >(
+    pub fn main<'s, Y: SystemApi<'s, W, I, C>, W: WasmEngine<I>, I: WasmInstance, C: FeeReserve>(
         bucket_id: BucketId,
         method_name: &str,
         arg: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, BucketError> {
-        let node_id = RENodeId::Bucket(bucket_id);
+        let substate_id = SubstateId::Bucket(bucket_id);
         let mut node_ref = system_api
-            .borrow_node_mut(&node_id)
+            .substate_borrow_mut(&substate_id)
             .map_err(BucketError::CostingError)?;
         let bucket0 = node_ref.bucket();
 
@@ -257,19 +250,18 @@ impl Bucket {
         }?;
 
         system_api
-            .return_node_mut(node_ref)
+            .substate_return_mut(node_ref)
             .map_err(BucketError::CostingError)?;
 
         Ok(rtn)
     }
 
     pub fn consuming_main<
-        'p,
         's,
-        Y: SystemApi<'p, 's, W, I, C>,
+        Y: SystemApi<'s, W, I, C>,
         W: WasmEngine<I>,
         I: WasmInstance,
-        C: CostUnitCounter,
+        C: FeeReserve,
     >(
         node_id: RENodeId,
         method_name: &str,
@@ -288,9 +280,9 @@ impl Bucket {
 
                 // Notify resource manager, TODO: Should not need to notify manually
                 let resource_address = bucket.resource_address();
-                let resource_id = RENodeId::Resource(resource_address);
+                let resource_substate_id = SubstateId::ResourceManager(resource_address);
                 let mut value = system_api
-                    .borrow_node_mut(&resource_id)
+                    .substate_borrow_mut(&resource_substate_id)
                     .map_err(BucketError::CostingError)?;
                 let resource_manager = value.resource_manager();
                 resource_manager.burn(bucket.total_amount());
@@ -301,7 +293,7 @@ impl Bucket {
                     }
                 }
                 system_api
-                    .return_node_mut(value)
+                    .substate_return_mut(value)
                     .map_err(BucketError::CostingError)?;
 
                 Ok(ScryptoValue::from_typed(&()))

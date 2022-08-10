@@ -18,28 +18,27 @@ use crate::wasm::*;
 ///
 /// Execution is free from a costing perspective, as we assume
 /// the system api will bill properly.
-pub struct RadixEngineWasmRuntime<'y, 'p, 's, Y, W, I, C>
+pub struct RadixEngineWasmRuntime<'y, 's, Y, W, I, C>
 where
-    Y: SystemApi<'p, 's, W, I, C>,
+    Y: SystemApi<'s, W, I, C>,
     W: WasmEngine<I>,
     I: WasmInstance,
-    C: CostUnitCounter,
+    C: FeeReserve,
 {
     actor: ScryptoActor,
     system_api: &'y mut Y,
     phantom1: PhantomData<W>,
     phantom2: PhantomData<I>,
     phantom3: PhantomData<C>,
-    phantom4: PhantomData<&'p ()>,
-    phantom5: PhantomData<&'s ()>,
+    phantom4: PhantomData<&'s ()>,
 }
 
-impl<'y, 'p, 's, Y, W, I, C> RadixEngineWasmRuntime<'y, 'p, 's, Y, W, I, C>
+impl<'y, 's, Y, W, I, C> RadixEngineWasmRuntime<'y, 's, Y, W, I, C>
 where
-    Y: SystemApi<'p, 's, W, I, C>,
+    Y: SystemApi<'s, W, I, C>,
     W: WasmEngine<I>,
     I: WasmInstance,
-    C: CostUnitCounter,
+    C: FeeReserve,
 {
     pub fn new(actor: ScryptoActor, system_api: &'y mut Y) -> Self {
         RadixEngineWasmRuntime {
@@ -49,12 +48,11 @@ where
             phantom2: PhantomData,
             phantom3: PhantomData,
             phantom4: PhantomData,
-            phantom5: PhantomData,
         }
     }
 
-    fn cost_unit_counter(&mut self) -> &mut C {
-        self.system_api.cost_unit_counter()
+    fn fee_reserve(&mut self) -> &mut C {
+        self.system_api.fee_reserve()
     }
 
     // FIXME: limit access to the API
@@ -87,10 +85,10 @@ where
         let node = match scrypto_node {
             ScryptoRENode::Component(package_address, blueprint_name, state) => {
                 // TODO: Move these two checks into CallFrame/System
-                if !blueprint_name.eq(self.actor.get_blueprint()) {
+                if !blueprint_name.eq(self.actor.blueprint_name()) {
                     return Err(RuntimeError::RENodeCreateInvalidPermission);
                 }
-                if !package_address.eq(self.actor.get_package()) {
+                if !package_address.eq(self.actor.package_address()) {
                     return Err(RuntimeError::RENodeCreateInvalidPermission);
                 }
 
@@ -126,7 +124,7 @@ where
     }
 
     fn handle_node_globalize(&mut self, node_id: RENodeId) -> Result<ScryptoValue, RuntimeError> {
-        self.system_api.node_globalize(&node_id)?;
+        self.system_api.node_globalize(node_id)?;
         Ok(ScryptoValue::unit())
     }
 
@@ -196,15 +194,8 @@ fn encode<T: Encode>(output: T) -> ScryptoValue {
     ScryptoValue::from_typed(&output)
 }
 
-impl<
-        'y,
-        'p,
-        's,
-        Y: SystemApi<'p, 's, W, I, C>,
-        W: WasmEngine<I>,
-        I: WasmInstance,
-        C: CostUnitCounter,
-    > WasmRuntime for RadixEngineWasmRuntime<'y, 'p, 's, Y, W, I, C>
+impl<'y, 's, Y: SystemApi<'s, W, I, C>, W: WasmEngine<I>, I: WasmInstance, C: FeeReserve>
+    WasmRuntime for RadixEngineWasmRuntime<'y, 's, Y, W, I, C>
 {
     fn main(&mut self, input: ScryptoValue) -> Result<ScryptoValue, InvokeError> {
         let input: RadixEngineInput =
@@ -235,7 +226,7 @@ impl<
     }
 
     fn consume_cost_units(&mut self, n: u32) -> Result<(), InvokeError> {
-        self.cost_unit_counter()
+        self.fee_reserve()
             .consume(n, "run_wasm")
             .map_err(InvokeError::CostingError)
     }
@@ -243,12 +234,12 @@ impl<
 
 /// A `Nop` runtime accepts any external function calls by doing nothing and returning void.
 pub struct NopWasmRuntime {
-    cost_unit_counter: SystemLoanCostUnitCounter,
+    fee_reserve: SystemLoanFeeReserve,
 }
 
 impl NopWasmRuntime {
-    pub fn new(cost_unit_counter: SystemLoanCostUnitCounter) -> Self {
-        Self { cost_unit_counter }
+    pub fn new(fee_reserve: SystemLoanFeeReserve) -> Self {
+        Self { fee_reserve }
     }
 }
 
@@ -258,7 +249,7 @@ impl WasmRuntime for NopWasmRuntime {
     }
 
     fn consume_cost_units(&mut self, n: u32) -> Result<(), InvokeError> {
-        self.cost_unit_counter
+        self.fee_reserve
             .consume(n, "run_wasm")
             .map_err(InvokeError::CostingError)
     }

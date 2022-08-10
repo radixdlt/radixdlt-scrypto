@@ -1,12 +1,9 @@
-#[rustfmt::skip]
-pub mod test_runner;
-
-use crate::test_runner::TestRunner;
 use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::InMemorySubstateStore;
 use scrypto::core::Network;
 use scrypto::prelude::*;
 use scrypto::to_struct;
+use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
 #[test]
@@ -29,7 +26,7 @@ fn should_not_be_able_to_read_component_state_after_creation() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| matches!(e, RuntimeError::InvalidDataAccess(..)))
+    receipt.expect_failure(|e| matches!(e, RuntimeError::SubstateReadNotReadable(..)))
 }
 
 #[test]
@@ -52,7 +49,7 @@ fn should_not_be_able_to_write_component_state_after_creation() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| matches!(e, RuntimeError::InvalidDataAccess(..)))
+    receipt.expect_failure(|e| matches!(e, RuntimeError::SubstateWriteNotWriteable(..)))
 }
 
 #[test]
@@ -98,5 +95,5 @@ fn should_not_be_able_to_write_component_info() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| matches!(e, RuntimeError::InvalidDataWrite));
+    receipt.expect_failure(|e| matches!(e, RuntimeError::SubstateWriteNotWriteable(..)));
 }

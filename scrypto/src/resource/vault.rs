@@ -11,6 +11,7 @@ use crate::abi::*;
 use crate::buffer::scrypto_encode;
 use crate::core::Receiver;
 use crate::crypto::*;
+use crate::engine::types::RENodeId;
 use crate::engine::{api::*, call_engine, types::VaultId};
 use crate::math::*;
 use crate::misc::*;
@@ -67,7 +68,7 @@ impl Vault {
     /// Creates an empty vault to permanently hold resource of the given definition.
     pub fn new(resource_address: ResourceAddress) -> Self {
         let input = RadixEngineInput::InvokeMethod(
-            Receiver::ResourceManagerRef(resource_address),
+            Receiver::NativeRENodeRef(RENodeId::ResourceManager(resource_address)),
             "create_vault".to_string(),
             scrypto_encode(&ResourceManagerCreateVaultInput {}),
         );
@@ -83,7 +84,7 @@ impl Vault {
 
     fn take_internal(&mut self, amount: Decimal) -> Bucket {
         let input = RadixEngineInput::InvokeMethod(
-            Receiver::VaultRef(self.0),
+            Receiver::NativeRENodeRef(RENodeId::Vault(self.0)),
             "take".to_string(),
             scrypto_encode(&VaultTakeInput { amount }),
         );
@@ -92,15 +93,24 @@ impl Vault {
 
     fn lock_fee_internal(&mut self, amount: Decimal) {
         let input = RadixEngineInput::InvokeMethod(
-            Receiver::VaultRef(self.0),
+            Receiver::NativeRENodeRef(RENodeId::Vault(self.0)),
             "lock_fee".to_string(),
             scrypto_encode(&VaultTakeInput { amount }),
         );
         call_engine(input)
     }
 
+    fn lock_contingent_fee_internal(&mut self, amount: Decimal) {
+        let input = RadixEngineInput::InvokeMethod(
+            Receiver::NativeRENodeRef(RENodeId::Vault(self.0)),
+            "lock_contingent_fee".to_string(),
+            scrypto_encode(&VaultTakeInput { amount }),
+        );
+        call_engine(input)
+    }
+
     sfunctions! {
-        Receiver::VaultRef(self.0) => {
+        Receiver::NativeRENodeRef(RENodeId::Vault(self.0)) => {
             pub fn put(&mut self, bucket: Bucket) -> () {
                 VaultPutInput {
                     bucket
@@ -144,6 +154,14 @@ impl Vault {
     /// Unused fee will be refunded to the vaults from the most recently locked to the least.
     pub fn lock_fee<A: Into<Decimal>>(&mut self, amount: A) {
         self.lock_fee_internal(amount.into())
+    }
+
+    /// Locks the given amount of resource as contingent fee.
+    ///
+    /// The locked amount will be used as transaction only if the transaction succeeds;
+    /// Unused amount will be refunded the original vault.
+    pub fn lock_contingent_fee<A: Into<Decimal>>(&mut self, amount: A) {
+        self.lock_contingent_fee_internal(amount.into())
     }
 
     /// Takes some amount of resource from this vault into a bucket.

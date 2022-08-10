@@ -78,10 +78,13 @@ impl FeeTable {
             tx_manifest_verification_per_byte: 1,
             tx_signature_verification_per_sig: 3750,
             wasm_instantiation_per_byte: 500,
-            fixed_low: 1000,
-            fixed_medium: 5_000,
-            fixed_high: 10_000,
-            wasm_metering_params: WasmMeteringParams::new(InstructionCostRules::tiered(50000), 512),
+            fixed_low: 100,
+            fixed_medium: 500,
+            fixed_high: 1000,
+            wasm_metering_params: WasmMeteringParams::new(
+                InstructionCostRules::tiered(1, 5, 10, 5000),
+                512,
+            ),
         }
     }
 
@@ -137,11 +140,6 @@ impl FeeTable {
         _input: &ScryptoValue,
     ) -> u32 {
         match receiver {
-            Receiver::SystemRef => match fn_ident {
-                "current_epoch" => self.fixed_low,
-                "transaction_hash" => self.fixed_low,
-                _ => self.fixed_high,
-            },
             Receiver::AuthZoneRef => match fn_ident {
                 "pop" => self.fixed_low,
                 "push" => self.fixed_low,
@@ -154,25 +152,6 @@ impl FeeTable {
             Receiver::Component(_) => {
                 0 // Costing is through instrumentation
             }
-            Receiver::ComponentMetaRef(_) => match fn_ident {
-                "add_access_check" => self.fixed_medium,
-                _ => self.fixed_high,
-            },
-            Receiver::ResourceManagerRef(_) => match fn_ident {
-                "update_auth" => self.fixed_medium,
-                "lock_auth" => self.fixed_medium,
-                "create_vault" => self.fixed_medium,
-                "create_bucket" => self.fixed_medium,
-                "mint" => self.fixed_high,
-                "metadata" => self.fixed_low,
-                "resource_type" => self.fixed_low,
-                "total_supply" => self.fixed_low, // TODO: revisit this after substate refactoring
-                "update_metadata" => self.fixed_medium,
-                "update_non_fungible_data" => self.fixed_medium,
-                "non_fungible_exists" => self.fixed_low,
-                "non_fungible_data" => self.fixed_medium,
-                _ => self.fixed_high,
-            },
             // TODO: I suspect there is a bug with invoking consumed within call frame. Add tests to verify
             Receiver::Consumed(node_id) => match node_id {
                 RENodeId::Bucket(_) => self.fixed_medium,
@@ -181,51 +160,83 @@ impl FeeTable {
                 RENodeId::KeyValueStore(_) => self.fixed_medium,
                 RENodeId::Component(_) => self.fixed_medium,
                 RENodeId::Vault(_) => self.fixed_medium,
-                RENodeId::Resource(_) => self.fixed_medium,
+                RENodeId::ResourceManager(_) => self.fixed_medium,
                 RENodeId::Package(_) => self.fixed_high,
                 RENodeId::System => self.fixed_high,
             },
-            Receiver::BucketRef(_) => match fn_ident {
-                "take" => self.fixed_medium,
-                "take_non_fungibles" => self.fixed_medium,
-                "non_fungible_ids" => self.fixed_medium,
-                "put" => self.fixed_medium,
-                "amount" => self.fixed_low,
-                "resource_address" => self.fixed_low,
-                "create_proof" => self.fixed_low,
-                _ => self.fixed_high,
-            },
-            Receiver::ProofRef(_) => match fn_ident {
-                "amount" => self.fixed_low,
-                "non_fungible_ids" => self.fixed_low,
-                "resource_address" => self.fixed_low,
-                "clone" => self.fixed_high,
-                _ => self.fixed_high,
-            },
-            Receiver::VaultRef(_) => match fn_ident {
-                "put" => self.fixed_medium,
-                "take" => self.fixed_medium, // TODO: revisit this if vault is not loaded in full
-                "take_non_fungibles" => self.fixed_medium,
-                "amount" => self.fixed_low,
-                "resource_address" => self.fixed_low,
-                "non_fungible_ids" => self.fixed_medium,
-                "create_proof" => self.fixed_high, // TODO: fungibility
-                "create_proof_by_amount" => self.fixed_high,
-                "create_proof_by_ids" => self.fixed_high,
-                "lock_fee" => self.fixed_medium,
-                _ => self.fixed_high,
-            },
-            Receiver::WorktopRef => match fn_ident {
-                "put" => self.fixed_medium,
-                "take_amount" => self.fixed_medium,
-                "take_all" => self.fixed_medium,
-                "take_non_fungibles" => self.fixed_medium,
-                "assert_contains" => self.fixed_low,
-                "assert_contains_amount" => self.fixed_low,
-                "assert_contains_non_fungibles" => self.fixed_low,
-                "drain" => self.fixed_medium,
-                _ => self.fixed_high,
-            },
+            Receiver::NativeRENodeRef(node_id) => {
+                match node_id {
+                    RENodeId::System => match fn_ident {
+                        "current_epoch" => self.fixed_low,
+                        "transaction_hash" => self.fixed_low,
+                        _ => self.fixed_high,
+                    },
+                    RENodeId::Bucket(..) => match fn_ident {
+                        "take" => self.fixed_medium,
+                        "take_non_fungibles" => self.fixed_medium,
+                        "non_fungible_ids" => self.fixed_medium,
+                        "put" => self.fixed_medium,
+                        "amount" => self.fixed_low,
+                        "resource_address" => self.fixed_low,
+                        "create_proof" => self.fixed_low,
+                        _ => self.fixed_high,
+                    },
+                    RENodeId::Proof(..) => match fn_ident {
+                        "amount" => self.fixed_low,
+                        "non_fungible_ids" => self.fixed_low,
+                        "resource_address" => self.fixed_low,
+                        "clone" => self.fixed_high,
+                        _ => self.fixed_high,
+                    },
+                    RENodeId::ResourceManager(..) => {
+                        match fn_ident {
+                            "update_auth" => self.fixed_medium,
+                            "lock_auth" => self.fixed_medium,
+                            "create_vault" => self.fixed_medium,
+                            "create_bucket" => self.fixed_medium,
+                            "mint" => self.fixed_high,
+                            "metadata" => self.fixed_low,
+                            "resource_type" => self.fixed_low,
+                            "total_supply" => self.fixed_low, // TODO: revisit this after substate refactoring
+                            "update_metadata" => self.fixed_medium,
+                            "update_non_fungible_data" => self.fixed_medium,
+                            "non_fungible_exists" => self.fixed_low,
+                            "non_fungible_data" => self.fixed_medium,
+                            _ => self.fixed_high,
+                        }
+                    }
+                    RENodeId::Worktop => match fn_ident {
+                        "put" => self.fixed_medium,
+                        "take_amount" => self.fixed_medium,
+                        "take_all" => self.fixed_medium,
+                        "take_non_fungibles" => self.fixed_medium,
+                        "assert_contains" => self.fixed_low,
+                        "assert_contains_amount" => self.fixed_low,
+                        "assert_contains_non_fungibles" => self.fixed_low,
+                        "drain" => self.fixed_medium,
+                        _ => self.fixed_high,
+                    },
+                    RENodeId::Component(..) => match fn_ident {
+                        "add_access_check" => self.fixed_medium,
+                        _ => self.fixed_high,
+                    },
+                    RENodeId::Vault(..) => match fn_ident {
+                        "put" => self.fixed_medium,
+                        "take" => self.fixed_medium, // TODO: revisit this if vault is not loaded in full
+                        "take_non_fungibles" => self.fixed_medium,
+                        "amount" => self.fixed_low,
+                        "resource_address" => self.fixed_low,
+                        "non_fungible_ids" => self.fixed_medium,
+                        "create_proof" => self.fixed_high, // TODO: fungibility
+                        "create_proof_by_amount" => self.fixed_high,
+                        "create_proof_by_ids" => self.fixed_high,
+                        "lock_fee" => self.fixed_medium,
+                        "lock_contingent_fee" => self.fixed_medium,
+                        _ => self.fixed_high,
+                    },
+                    _ => self.fixed_high, // TODO: Clean this up
+                }
+            }
         }
     }
 

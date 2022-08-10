@@ -38,7 +38,7 @@ impl ResourceSystem {
             .or_insert(ResourceManager(resource_address))
     }
 
-    /// Creates a new resource with the given parameters.
+    /// Creates a new resource with the given config.
     ///
     /// A bucket is returned iif an initial supply is provided.
     pub fn new_resource(

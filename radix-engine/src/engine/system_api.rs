@@ -6,22 +6,22 @@ use scrypto::prelude::TypeName;
 use scrypto::resource::AccessRule;
 use scrypto::values::*;
 
-use crate::engine::values::*;
+use crate::engine::node::*;
 use crate::engine::*;
 use crate::fee::*;
+use crate::model::AuthZone;
 use crate::wasm::*;
 
-use super::call_frame::RENodeRef;
-
-pub trait SystemApi<'p, 's, W, I, C>
+pub trait SystemApi<'s, W, I, C>
 where
     W: WasmEngine<I>,
     I: WasmInstance,
-    C: CostUnitCounter,
+    C: FeeReserve,
 {
-    fn cost_unit_counter(&mut self) -> &mut C;
+    fn fee_reserve(&mut self) -> &mut C;
 
-    fn fee_table(&self) -> &FeeTable;
+    // TODO: possible to consider AuthZone as a RENode?
+    fn auth_zone(&mut self, frame_id: usize) -> &mut AuthZone;
 
     fn invoke_function(
         &mut self,
@@ -37,27 +37,28 @@ where
         input: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError>;
 
-    fn borrow_node(
-        &mut self,
-        node_id: &RENodeId,
-    ) -> Result<RENodeRef<'_, 's>, CostUnitCounterError>;
-
-    fn borrow_node_mut(
-        &mut self,
-        node_id: &RENodeId,
-    ) -> Result<NativeRENodeRef, CostUnitCounterError>;
-
-    fn return_node_mut(&mut self, val_ref: NativeRENodeRef) -> Result<(), CostUnitCounterError>;
+    // TODO: Convert to substate_borrow
+    fn borrow_node(&mut self, node_id: &RENodeId) -> Result<RENodeRef<'_, 's>, FeeReserveError>;
 
     /// Removes an RENode and all of it's children from the Heap
-    fn node_drop(&mut self, node_id: &RENodeId) -> Result<HeapRootRENode, CostUnitCounterError>;
+    fn node_drop(&mut self, node_id: &RENodeId) -> Result<HeapRootRENode, FeeReserveError>;
 
     /// Creates a new RENode and places it in the Heap
     fn node_create(&mut self, re_node: HeapRENode) -> Result<RENodeId, RuntimeError>;
 
     /// Moves an RENode from Heap to Store
-    fn node_globalize(&mut self, node_id: &RENodeId) -> Result<(), RuntimeError>;
+    fn node_globalize(&mut self, node_id: RENodeId) -> Result<(), RuntimeError>;
 
+    /// Borrow a mutable substate
+    fn substate_borrow_mut(
+        &mut self,
+        substate_id: &SubstateId,
+    ) -> Result<NativeSubstateRef, FeeReserveError>;
+
+    /// Return a mutable substate
+    fn substate_return_mut(&mut self, val_ref: NativeSubstateRef) -> Result<(), FeeReserveError>;
+
+    // TODO: Convert use substate_borrow interface
     fn substate_read(&mut self, substate_id: SubstateId) -> Result<ScryptoValue, RuntimeError>;
     fn substate_write(
         &mut self,
@@ -66,11 +67,11 @@ where
     ) -> Result<(), RuntimeError>;
     fn substate_take(&mut self, substate_id: SubstateId) -> Result<ScryptoValue, RuntimeError>;
 
-    fn transaction_hash(&mut self) -> Result<Hash, CostUnitCounterError>;
+    fn transaction_hash(&mut self) -> Result<Hash, FeeReserveError>;
 
-    fn generate_uuid(&mut self) -> Result<u128, CostUnitCounterError>;
+    fn generate_uuid(&mut self) -> Result<u128, FeeReserveError>;
 
-    fn emit_log(&mut self, level: Level, message: String) -> Result<(), CostUnitCounterError>;
+    fn emit_log(&mut self, level: Level, message: String) -> Result<(), FeeReserveError>;
 
     fn check_access_rule(
         &mut self,

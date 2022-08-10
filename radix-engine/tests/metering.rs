@@ -1,12 +1,9 @@
-#[rustfmt::skip]
-pub mod test_runner;
-
 use radix_engine::ledger::InMemorySubstateStore;
-use radix_engine::{fee::FeeTable, wasm::InvokeError};
+use radix_engine::wasm::InvokeError;
 use scrypto::core::Network;
-use scrypto::prelude::{Package, SYSTEM_COMPONENT};
+use scrypto::prelude::{Package, RADIX_TOKEN, SYSTEM_COMPONENT};
 use scrypto::to_struct;
-use test_runner::{abi_single_fn_any_input_void_output, wat2wasm, TestRunner};
+use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
 #[test]
@@ -149,57 +146,36 @@ fn test_grow_memory_out_of_cost_unit() {
 }
 
 #[test]
-fn test_total_cost_unit_consumed() {
+fn test_basic_transfer() {
     // Arrange
     let mut store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
+    let (public_key1, _, account1) = test_runner.new_account();
+    let (_, _, account2) = test_runner.new_account();
 
     // Act
-    let code = wat2wasm(&include_str!("wasm/syscall.wat"));
-    let package = Package {
-        code,
-        blueprints: abi_single_fn_any_input_void_output("Test", "f"),
-    };
-    let package_address = test_runner.publish_package(package);
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
-        .lock_fee(10.into(), SYSTEM_COMPONENT)
-        .call_function(package_address, "Test", "f", to_struct!())
+        .lock_fee(10.into(), account1)
+        .withdraw_from_account_by_amount(100.into(), RADIX_TOKEN, account1)
+        .call_method_with_all_resources(account2, "deposit_batch")
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key1]);
 
     // Assert
-    /*
-        borrow                        :     1000
-        create                        :    10000
-        emit_log                      :     1050
-        invoke_function               :     2945
-        invoke_method                 :     5335
-        read                          :     5000
-        return                        :     1000
-        run_function                  :    10000
-        run_method                    :    35000
-        run_wasm                      :    92275
-        tx_decoding                   :        4
-        tx_manifest_verification      :        1
-        tx_signature_verification     :        0
-        write                         :     5000
-    */
-    let ft = FeeTable::new();
     assert_eq!(
-        ft.tx_decoding_per_byte() * 1
-            + ft.tx_manifest_verification_per_byte() * 1
-            + ft.tx_signature_verification_per_sig() * 0
-            + 1000
-            + 10000
-            + 1050
-            + 2945
-            + 5335
-            + 5000
-            + 1000
-            + 10000
-            + 35000
-            + 92275
-            + 5000,
+        1800 /* borrow */
+            + 3000 /* create */
+            + 1895 /* invoke_function */
+            + 2215 /* invoke_method */
+            + 3500 /* read */
+            + 1800 /* return */
+            + 1000 /* run_function */
+            + 2600 /* run_method */
+            + 260435 /* run_wasm */
+            + 2668 /* tx_decoding */
+            + 667 /* tx_manifest_verification */
+            + 3750 /* tx_signature_verification */
+            + 3000, /* write */
         receipt.fee_summary.cost_unit_consumed
     );
 }

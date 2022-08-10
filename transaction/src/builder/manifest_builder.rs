@@ -624,11 +624,20 @@ impl ManifestBuilder {
         .0
     }
 
-    /// Withdraws resource from an account.
+    /// Locks a fee from the XRD vault of an account.
     pub fn lock_fee(&mut self, amount: Decimal, account: ComponentAddress) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
             component_address: account,
             method_name: "lock_fee".to_string(),
+            arg: to_struct!(amount),
+        })
+        .0
+    }
+
+    pub fn lock_contingent_fee(&mut self, amount: Decimal, account: ComponentAddress) -> &mut Self {
+        self.add_instruction(Instruction::CallMethod {
+            component_address: account,
+            method_name: "lock_contingent_fee".to_string(),
             arg: to_struct!(amount),
         })
         .0
@@ -720,6 +729,25 @@ impl ManifestBuilder {
             arg: to_struct!(ids.clone(), resource_address),
         })
         .0
+    }
+
+    /// Creates resource proof from an account.
+    pub fn create_proof_from_account_by_resource_specifier(
+        &mut self,
+        resource_specifier: String,
+        account: ComponentAddress,
+    ) -> Result<&mut Self, BuildArgsError> {
+        let resource_specifier = parse_resource_specifier(&resource_specifier, &self.decoder)
+            .map_err(|_| BuildArgsError::InvalidResourceSpecifier(resource_specifier))?;
+        let builder = match resource_specifier {
+            ResourceSpecifier::Amount(amount, resource_address) => {
+                self.create_proof_from_account_by_amount(amount, resource_address, account)
+            }
+            ResourceSpecifier::Ids(non_fungible_ids, resource_address) => {
+                self.create_proof_from_account_by_ids(&non_fungible_ids, resource_address, account)
+            }
+        };
+        Ok(builder)
     }
 
     //===============================

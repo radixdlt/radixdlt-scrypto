@@ -1,14 +1,10 @@
 extern crate core;
 
-#[rustfmt::skip]
-pub mod test_runner;
-
-use crate::test_runner::is_auth_error;
-use crate::test_runner::TestRunner;
 use radix_engine::ledger::{InMemorySubstateStore, ReadableSubstateStore, WriteableSubstateStore};
 use scrypto::core::Network;
 use scrypto::prelude::*;
 use scrypto::to_struct;
+use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
 fn test_auth_rule<'s, S: ReadableSubstateStore + WriteableSubstateStore>(
@@ -257,7 +253,7 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_right_amount_of_proof() {
     // Arrange
     let mut store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let xrd_auth = rule!(require_amount(Decimal(1), RADIX_TOKEN));
+    let xrd_auth = rule!(require_amount(Decimal(I256::from(1)), RADIX_TOKEN));
     let account = test_runner.new_account_with_auth_rule(&xrd_auth);
     let (_, _, other_account) = test_runner.new_account();
 

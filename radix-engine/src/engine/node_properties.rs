@@ -4,7 +4,7 @@ pub struct RENodeProperties;
 
 impl RENodeProperties {
     /// Specifies whether an RENode may globalize as the root node or not
-    pub fn can_globalize(node_id: &RENodeId) -> bool {
+    pub fn can_globalize(node_id: RENodeId) -> bool {
         match node_id {
             RENodeId::Bucket(..) => false,
             RENodeId::Proof(..) => false,
@@ -12,7 +12,7 @@ impl RENodeProperties {
             RENodeId::Worktop => false,
             RENodeId::Component(..) => true,
             RENodeId::Vault(..) => false,
-            RENodeId::Resource(..) => true,
+            RENodeId::ResourceManager(..) => true,
             RENodeId::Package(..) => true,
             RENodeId::System => true,
         }
@@ -30,31 +30,25 @@ impl SubstateProperties {
             SubstateId::ComponentState(component_address) => {
                 RENodeId::Component(*component_address)
             }
-            SubstateId::NonFungibleSpace(resource_address) => RENodeId::Resource(*resource_address),
-            SubstateId::NonFungible(resource_address, ..) => RENodeId::Resource(*resource_address),
+            SubstateId::NonFungibleSpace(resource_address) => {
+                RENodeId::ResourceManager(*resource_address)
+            }
+            SubstateId::NonFungible(resource_address, ..) => {
+                RENodeId::ResourceManager(*resource_address)
+            }
             SubstateId::KeyValueStoreSpace(kv_store_id) => RENodeId::KeyValueStore(*kv_store_id),
             SubstateId::KeyValueStoreEntry(kv_store_id, ..) => {
                 RENodeId::KeyValueStore(*kv_store_id)
             }
             SubstateId::Vault(vault_id) => RENodeId::Vault(*vault_id),
             SubstateId::Package(package_address) => RENodeId::Package(*package_address),
-            SubstateId::ResourceManager(resource_address) => RENodeId::Resource(*resource_address),
+            SubstateId::ResourceManager(resource_address) => {
+                RENodeId::ResourceManager(*resource_address)
+            }
             SubstateId::System => RENodeId::System,
-        }
-    }
-
-    pub fn is_native(substate_id: &SubstateId) -> bool {
-        match substate_id {
-            SubstateId::KeyValueStoreEntry(..) => false,
-            SubstateId::ComponentState(..) => false,
-            SubstateId::NonFungible(..) => false,
-            SubstateId::ComponentInfo(..) => true,
-            SubstateId::NonFungibleSpace(..) => true,
-            SubstateId::KeyValueStoreSpace(..) => true,
-            SubstateId::Vault(..) => true,
-            SubstateId::Package(..) => true,
-            SubstateId::ResourceManager(..) => true,
-            SubstateId::System => true,
+            SubstateId::Bucket(bucket_id) => RENodeId::Bucket(*bucket_id),
+            SubstateId::Proof(proof_id) => RENodeId::Proof(*proof_id),
+            SubstateId::Worktop => RENodeId::Worktop,
         }
     }
 
@@ -70,6 +64,9 @@ impl SubstateProperties {
             SubstateId::Package(..) => false,
             SubstateId::ResourceManager(..) => false,
             SubstateId::System => false,
+            SubstateId::Bucket(..) => false,
+            SubstateId::Proof(..) => false,
+            SubstateId::Worktop => false, // TODO: Fix
         }
     }
 }

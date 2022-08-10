@@ -53,7 +53,7 @@ impl Bucket {
     /// Creates a new bucket to hold resources of the given definition.
     pub fn new(resource_address: ResourceAddress) -> Self {
         let input = RadixEngineInput::InvokeMethod(
-            Receiver::ResourceManagerRef(resource_address),
+            Receiver::NativeRENodeRef(RENodeId::ResourceManager(resource_address)),
             "create_bucket".to_string(),
             scrypto_encode(&ResourceManagerCreateBucketInput {}),
         );
@@ -70,7 +70,7 @@ impl Bucket {
 
     fn take_internal(&mut self, amount: Decimal) -> Self {
         let input = RadixEngineInput::InvokeMethod(
-            Receiver::BucketRef(self.0),
+            Receiver::NativeRENodeRef(RENodeId::Bucket(self.0)),
             "take".to_string(),
             scrypto_encode(&BucketTakeInput { amount }),
         );
@@ -78,7 +78,7 @@ impl Bucket {
     }
 
     sfunctions! {
-        Receiver::BucketRef(self.0) => {
+        Receiver::NativeRENodeRef(RENodeId::Bucket(self.0)) => {
             pub fn take_non_fungibles(&mut self, non_fungible_ids: &BTreeSet<NonFungibleId>) -> Self {
                 BucketTakeNonFungiblesInput {
                     ids: non_fungible_ids.clone()

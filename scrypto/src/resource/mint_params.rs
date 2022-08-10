@@ -5,7 +5,7 @@ use sbor::*;
 use crate::math::*;
 use crate::resource::*;
 
-/// Represents the minting parameters
+/// Represents the minting config
 #[derive(Debug, Clone, TypeId, Encode, Decode, Describe)]
 pub enum MintParams {
     /// To mint fungible resource, represented by an amount

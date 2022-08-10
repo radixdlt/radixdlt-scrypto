@@ -16,8 +16,8 @@ use scrypto::resource::{
 use scrypto::values::ScryptoValue;
 
 use crate::engine::{HeapRENode, LockFeeError, SystemApi};
-use crate::fee::CostUnitCounter;
-use crate::fee::CostUnitCounterError;
+use crate::fee::FeeReserve;
+use crate::fee::FeeReserveError;
 use crate::model::VaultError::MethodNotFound;
 use crate::model::{
     Bucket, Proof, ProofError, ResourceContainer, ResourceContainerError, ResourceContainerId,
@@ -33,7 +33,7 @@ pub enum VaultError {
     ProofError(ProofError),
     CouldNotCreateProof,
     MethodNotFound,
-    CostingError(CostUnitCounterError),
+    CostingError(FeeReserveError),
     LockFeeError(LockFeeError),
 }
 
@@ -166,22 +166,15 @@ impl Vault {
         self.container.borrow_mut()
     }
 
-    pub fn main<
-        'p,
-        's,
-        Y: SystemApi<'p, 's, W, I, C>,
-        W: WasmEngine<I>,
-        I: WasmInstance,
-        C: CostUnitCounter,
-    >(
+    pub fn main<'s, Y: SystemApi<'s, W, I, C>, W: WasmEngine<I>, I: WasmInstance, C: FeeReserve>(
         vault_id: VaultId,
         method_name: &str,
         arg: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, VaultError> {
-        let node_id = RENodeId::Vault(vault_id.clone());
+        let substate_id = SubstateId::Vault(vault_id.clone());
         let mut ref_mut = system_api
-            .borrow_node_mut(&node_id)
+            .substate_borrow_mut(&substate_id)
             .map_err(VaultError::CostingError)?;
         let vault = ref_mut.vault();
 
@@ -210,7 +203,7 @@ impl Vault {
                     bucket_id,
                 )))
             }
-            "lock_fee" => {
+            "lock_fee" | "lock_contingent_fee" => {
                 let input: VaultLockFeeInput =
                     scrypto_decode(&arg.raw).map_err(|e| VaultError::InvalidRequestData(e))?;
 
@@ -226,8 +219,8 @@ impl Vault {
 
                 // Refill fee reserve
                 let changes = system_api
-                    .cost_unit_counter()
-                    .repay(vault_id, fee)
+                    .fee_reserve()
+                    .repay(vault_id, fee, method_name == "lock_contingent_fee")
                     .map_err(VaultError::CostingError)?;
 
                 // Return changes
@@ -316,7 +309,7 @@ impl Vault {
         }?;
 
         system_api
-            .return_node_mut(ref_mut)
+            .substate_return_mut(ref_mut)
             .map_err(VaultError::CostingError)?;
 
         Ok(rtn)

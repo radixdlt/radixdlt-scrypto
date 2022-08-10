@@ -1,13 +1,10 @@
-#[rustfmt::skip]
-pub mod test_runner;
-
-use crate::test_runner::TestRunner;
 use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::InMemorySubstateStore;
 use scrypto::core::Network;
 use scrypto::engine::types::RENodeId;
 use scrypto::prelude::*;
 use scrypto::to_struct;
+use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
 #[test]
@@ -66,7 +63,7 @@ fn cyclic_map_fails_execution() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| matches!(e, RuntimeError::InvalidDataAccess(_)));
+    receipt.expect_failure(|e| matches!(e, RuntimeError::SubstateReadSubstateNotFound(_)));
 }
 
 #[test]
@@ -89,7 +86,7 @@ fn self_cyclic_map_fails_execution() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| matches!(e, RuntimeError::InvalidDataAccess(..)));
+    receipt.expect_failure(|e| matches!(e, RuntimeError::SubstateReadSubstateNotFound(..)));
 }
 
 #[test]
@@ -285,7 +282,12 @@ fn cannot_directly_reference_inserted_vault() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| matches!(e, RuntimeError::RENodeNotFound(RENodeId::Vault(_))));
+    receipt.expect_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::InvokeMethodInvalidReceiver(RENodeId::Vault(_))
+        )
+    });
 }
 
 #[test]
@@ -308,7 +310,12 @@ fn cannot_directly_reference_vault_after_container_moved() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| matches!(e, RuntimeError::RENodeNotFound(RENodeId::Vault(_))));
+    receipt.expect_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::InvokeMethodInvalidReceiver(RENodeId::Vault(_))
+        )
+    });
 }
 
 #[test]
@@ -331,7 +338,12 @@ fn cannot_directly_reference_vault_after_container_stored() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| matches!(e, RuntimeError::RENodeNotFound(RENodeId::Vault(_))));
+    receipt.expect_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::InvokeMethodInvalidReceiver(RENodeId::Vault(_))
+        )
+    });
 }
 
 #[test]

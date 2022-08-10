@@ -1,16 +1,13 @@
-#[rustfmt::skip]
-pub mod test_runner;
-
-use crate::test_runner::TestRunner;
 use radix_engine::ledger::InMemorySubstateStore;
-use radix_engine::transaction::ExecutionParameters;
+use radix_engine::transaction::ExecutionConfig;
 use scrypto::core::Network;
 use scrypto::prelude::SYSTEM_COMPONENT;
+use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::builder::TransactionBuilder;
 use transaction::model::*;
 use transaction::signing::EcdsaPrivateKey;
-use transaction::validation::ValidationParameters;
+use transaction::validation::ValidationConfig;
 use transaction::validation::{TestIntentHashManager, TransactionValidator};
 
 #[test]
@@ -27,7 +24,7 @@ fn test_transaction_preview_cost_estimate() {
     preview_receipt.expect_success();
 
     let receipt =
-        test_runner.execute_transaction(&validated_transaction, &ExecutionParameters::default());
+        test_runner.execute_transaction(&validated_transaction, &ExecutionConfig::default());
     receipt.expect_success();
 
     assert_eq!(
@@ -67,7 +64,7 @@ fn prepare_test_tx_and_preview_intent(
     let validated_transaction = TransactionValidator::validate(
         notarized_transaction.clone(),
         &TestIntentHashManager::new(),
-        &ValidationParameters {
+        &ValidationConfig {
             network: Network::LocalSimulator,
             current_epoch: 1,
             max_cost_unit_limit: 10_000_000,

@@ -14,3 +14,6 @@ flamegraph.svg
 
 # Emacs
 *~
+
+#Rusty-tags
+*.vi

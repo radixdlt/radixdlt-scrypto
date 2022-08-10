@@ -10,7 +10,7 @@ use scrypto::engine::types::*;
 use scrypto::values::ScryptoValue;
 
 use crate::engine::{DropFailure, HeapRENode, SystemApi};
-use crate::fee::{CostUnitCounter, CostUnitCounterError};
+use crate::fee::{FeeReserve, FeeReserveError};
 use crate::model::WorktopError::InvalidMethod;
 use crate::model::{Bucket, ResourceContainer, ResourceContainerError};
 use crate::wasm::*;
@@ -74,7 +74,7 @@ pub enum WorktopError {
     CouldNotTakeBucket,
     AssertionFailed,
     InvalidMethod,
-    CostingError(CostUnitCounterError),
+    CostingError(FeeReserveError),
 }
 
 impl Worktop {
@@ -217,21 +217,13 @@ impl Worktop {
             .insert(resource_address, Rc::new(RefCell::new(container)));
     }
 
-    pub fn main<
-        'p,
-        's,
-        Y: SystemApi<'p, 's, W, I, C>,
-        W: WasmEngine<I>,
-        I: WasmInstance,
-        C: CostUnitCounter,
-    >(
-        node_id: RENodeId,
+    pub fn main<'s, Y: SystemApi<'s, W, I, C>, W: WasmEngine<I>, I: WasmInstance, C: FeeReserve>(
         method_name: &str,
         arg: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, WorktopError> {
         let mut node_ref = system_api
-            .borrow_node_mut(&node_id)
+            .substate_borrow_mut(&SubstateId::Worktop)
             .map_err(WorktopError::CostingError)?;
         let worktop = node_ref.worktop();
 
@@ -259,7 +251,7 @@ impl Worktop {
                 } else {
                     let resource_type = {
                         let node_ref = system_api
-                            .borrow_node(&RENodeId::Resource(input.resource_address))
+                            .borrow_node(&RENodeId::ResourceManager(input.resource_address))
                             .map_err(WorktopError::CostingError)?;
                         let resource_manager = node_ref.resource_manager();
                         resource_manager.resource_type()
@@ -286,7 +278,7 @@ impl Worktop {
                 } else {
                     let resource_type = {
                         let node_ref = system_api
-                            .borrow_node(&RENodeId::Resource(input.resource_address))
+                            .borrow_node(&RENodeId::ResourceManager(input.resource_address))
                             .map_err(WorktopError::CostingError)?;
                         let resource_manager = node_ref.resource_manager();
                         resource_manager.resource_type()
@@ -314,7 +306,7 @@ impl Worktop {
                 } else {
                     let resource_type = {
                         let node_ref = system_api
-                            .borrow_node(&RENodeId::Resource(input.resource_address))
+                            .borrow_node(&RENodeId::ResourceManager(input.resource_address))
                             .map_err(WorktopError::CostingError)?;
                         let resource_manager = node_ref.resource_manager();
                         resource_manager.resource_type()
@@ -385,7 +377,7 @@ impl Worktop {
         }?;
 
         system_api
-            .return_node_mut(node_ref)
+            .substate_return_mut(node_ref)
             .map_err(WorktopError::CostingError)?;
         Ok(rtn)
     }

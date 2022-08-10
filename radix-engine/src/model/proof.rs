@@ -14,8 +14,8 @@ use scrypto::resource::ConsumingProofDropInput;
 use scrypto::values::ScryptoValue;
 
 use crate::engine::{HeapRENode, SystemApi};
-use crate::fee::CostUnitCounter;
-use crate::fee::CostUnitCounterError;
+use crate::fee::FeeReserve;
+use crate::fee::FeeReserveError;
 use crate::model::ProofError::UnknownMethod;
 use crate::model::{
     LockedAmountOrIds, ResourceContainer, ResourceContainerError, ResourceContainerId,
@@ -51,7 +51,7 @@ pub enum ProofError {
     CouldNotCreateProof,
     InvalidRequestData(DecodeError),
     UnknownMethod,
-    CostingError(CostUnitCounterError),
+    CostingError(FeeReserveError),
 }
 
 impl Proof {
@@ -333,21 +333,15 @@ impl Proof {
         self.restricted
     }
 
-    pub fn main<
-        'p,
-        's,
-        Y: SystemApi<'p, 's, W, I, C>,
-        W: WasmEngine<I>,
-        I: WasmInstance,
-        C: CostUnitCounter,
-    >(
-        node_id: RENodeId,
+    pub fn main<'s, Y: SystemApi<'s, W, I, C>, W: WasmEngine<I>, I: WasmInstance, C: FeeReserve>(
+        proof_id: ProofId,
         method_name: &str,
         arg: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, ProofError> {
+        let substate_id = SubstateId::Proof(proof_id);
         let mut node_ref = system_api
-            .borrow_node_mut(&node_id)
+            .substate_borrow_mut(&substate_id)
             .map_err(ProofError::CostingError)?;
         let proof = node_ref.proof();
 
@@ -384,18 +378,17 @@ impl Proof {
         }?;
 
         system_api
-            .return_node_mut(node_ref)
+            .substate_return_mut(node_ref)
             .map_err(ProofError::CostingError)?;
         Ok(rtn)
     }
 
     pub fn main_consume<
-        'p,
         's,
-        Y: SystemApi<'p, 's, W, I, C>,
+        Y: SystemApi<'s, W, I, C>,
         W: WasmEngine<I>,
         I: WasmInstance,
-        C: CostUnitCounter,
+        C: FeeReserve,
     >(
         node_id: RENodeId,
         method_name: &str,

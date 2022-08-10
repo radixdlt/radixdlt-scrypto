@@ -6,7 +6,7 @@ use wasmi::HostError;
 // TODO: this is the only place which introduces circular dependency.
 // From WASM's perspective, they are host errors. We need a better solution to handle this.
 use crate::engine::RuntimeError;
-use crate::fee::CostUnitCounterError;
+use crate::fee::FeeReserveError;
 
 /// Represents an error when validating a WASM file.
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -102,7 +102,7 @@ pub enum InvokeError {
 
     InvalidReturnData,
 
-    CostingError(CostUnitCounterError),
+    CostingError(FeeReserveError),
 }
 
 impl fmt::Display for InvokeError {

@@ -19,8 +19,8 @@ use scrypto::resource::ResourceMethodAuthKey::{self, *};
 use scrypto::values::ScryptoValue;
 
 use crate::engine::{HeapRENode, RuntimeError, SystemApi};
-use crate::fee::CostUnitCounter;
-use crate::fee::CostUnitCounterError;
+use crate::fee::FeeReserve;
+use crate::fee::FeeReserveError;
 use crate::model::resource_manager::ResourceMethodRule::{Protected, Public};
 use crate::model::NonFungibleWrapper;
 use crate::model::ResourceManagerError::InvalidMethod;
@@ -53,7 +53,7 @@ pub enum ResourceManagerError {
     CouldNotCreateBucket,
     CouldNotCreateVault,
     InvalidMethod,
-    CostingError(CostUnitCounterError),
+    CostingError(FeeReserveError),
 }
 
 enum MethodAccessRuleMethod {
@@ -136,6 +136,7 @@ impl ResourceManager {
     ) -> Result<Self, ResourceManagerError> {
         let mut vault_method_table: HashMap<String, ResourceMethodRule> = HashMap::new();
         vault_method_table.insert("lock_fee".to_string(), Protected(Withdraw));
+        vault_method_table.insert("lock_contingent_fee".to_string(), Protected(Withdraw));
         vault_method_table.insert("take".to_string(), Protected(Withdraw));
         vault_method_table.insert("put".to_string(), Protected(Deposit));
         for pub_method in [
@@ -257,14 +258,7 @@ impl ResourceManager {
         self.total_supply
     }
 
-    pub fn mint<
-        'p,
-        's,
-        Y: SystemApi<'p, 's, W, I, C>,
-        W: WasmEngine<I>,
-        I: WasmInstance,
-        C: CostUnitCounter,
-    >(
+    pub fn mint<'s, Y: SystemApi<'s, W, I, C>, W: WasmEngine<I>, I: WasmInstance, C: FeeReserve>(
         &mut self,
         mint_params: MintParams,
         self_address: ResourceAddress,
@@ -306,12 +300,11 @@ impl ResourceManager {
     }
 
     pub fn mint_non_fungibles<
-        'p,
         's,
-        Y: SystemApi<'p, 's, W, I, C>,
+        Y: SystemApi<'s, W, I, C>,
         W: WasmEngine<I>,
         I: WasmInstance,
-        C: CostUnitCounter,
+        C: FeeReserve,
     >(
         &mut self,
         entries: HashMap<NonFungibleId, (Vec<u8>, Vec<u8>)>,
@@ -377,7 +370,9 @@ impl ResourceManager {
     fn check_amount(&self, amount: Decimal) -> Result<(), ResourceManagerError> {
         let divisibility = self.resource_type.divisibility();
 
-        if amount.is_negative() || amount.0 % 10i128.pow((18 - divisibility).into()) != 0i128 {
+        if amount.is_negative()
+            || amount.0 % 10i128.pow((18 - divisibility).into()) != I256::from(0)
+        {
             Err(ResourceManagerError::InvalidAmount(amount, divisibility))
         } else {
             Ok(())
@@ -385,12 +380,11 @@ impl ResourceManager {
     }
 
     pub fn static_main<
-        'p,
         's,
-        Y: SystemApi<'p, 's, W, I, C>,
+        Y: SystemApi<'s, W, I, C>,
         W: WasmEngine<I>,
         I: WasmInstance,
-        C: CostUnitCounter,
+        C: FeeReserve,
     >(
         method_name: &str,
         arg: ScryptoValue,
@@ -462,7 +456,7 @@ impl ResourceManager {
                 };
 
                 system_api
-                    .node_globalize(&resource_node_id)
+                    .node_globalize(resource_node_id)
                     .map_err(|e| match e {
                         RuntimeError::CostingError(cost_unit_error) => {
                             ResourceManagerError::CostingError(cost_unit_error)
@@ -476,22 +470,15 @@ impl ResourceManager {
         }
     }
 
-    pub fn main<
-        'p,
-        's,
-        Y: SystemApi<'p, 's, W, I, C>,
-        W: WasmEngine<I>,
-        I: WasmInstance,
-        C: CostUnitCounter,
-    >(
+    pub fn main<'s, Y: SystemApi<'s, W, I, C>, W: WasmEngine<I>, I: WasmInstance, C: FeeReserve>(
         resource_address: ResourceAddress,
         method_name: &str,
         arg: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, ResourceManagerError> {
-        let node_id = RENodeId::Resource(resource_address);
+        let substate_id = SubstateId::ResourceManager(resource_address);
         let mut ref_mut = system_api
-            .borrow_node_mut(&node_id)
+            .substate_borrow_mut(&substate_id)
             .map_err(ResourceManagerError::CostingError)?;
         let resource_manager = ref_mut.resource_manager();
 
@@ -641,7 +628,7 @@ impl ResourceManager {
         }?;
 
         system_api
-            .return_node_mut(ref_mut)
+            .substate_return_mut(ref_mut)
             .map_err(ResourceManagerError::CostingError)?;
 
         Ok(rtn)

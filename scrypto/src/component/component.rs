@@ -44,7 +44,7 @@ impl Component {
 
     /// Returns the package ID of this component.
     pub fn package_address(&self) -> PackageAddress {
-        let substate_id = SubstateId::ComponentInfo(self.0, true);
+        let substate_id = SubstateId::ComponentInfo(self.0);
         let input = RadixEngineInput::SubstateRead(substate_id);
         let output: (PackageAddress, String) = call_engine(input);
         output.0
@@ -52,7 +52,7 @@ impl Component {
 
     /// Returns the blueprint name of this component.
     pub fn blueprint_name(&self) -> String {
-        let substate_id = SubstateId::ComponentInfo(self.0, true);
+        let substate_id = SubstateId::ComponentInfo(self.0);
         let input = RadixEngineInput::SubstateRead(substate_id);
         let output: (PackageAddress, String) = call_engine(input);
         output.1
@@ -60,7 +60,7 @@ impl Component {
 
     pub fn add_access_check(&mut self, access_rules: AccessRules) -> &mut Self {
         let input = RadixEngineInput::InvokeMethod(
-            Receiver::ComponentMetaRef(self.0),
+            Receiver::NativeRENodeRef(RENodeId::Component(self.0)),
             "add_access_check".to_string(),
             scrypto_encode(&ComponentAddAccessCheckInput { access_rules }),
         );

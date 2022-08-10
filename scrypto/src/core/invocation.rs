@@ -1,8 +1,8 @@
 use sbor::rust::vec::Vec;
 use sbor::*;
 
-use crate::engine::types::{BucketId, PackageAddress, ProofId, RENodeId, VaultId};
-use crate::prelude::{ComponentAddress, ResourceAddress};
+use crate::engine::types::{PackageAddress, RENodeId};
+use crate::prelude::ComponentAddress;
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub enum TypeName {
@@ -15,14 +15,8 @@ pub enum TypeName {
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub enum Receiver {
     Consumed(RENodeId),
+    NativeRENodeRef(RENodeId),
     Component(ComponentAddress),
-    ComponentMetaRef(ComponentAddress),
-    ResourceManagerRef(ResourceAddress),
-    BucketRef(BucketId),
-    ProofRef(ProofId),
-    VaultRef(VaultId),
-    SystemRef,
-    WorktopRef,
     AuthZoneRef,
 }
 
