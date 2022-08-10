@@ -1,5 +1,6 @@
 use core::marker::PhantomData;
 
+use sbor::rust::boxed::Box;
 use sbor::rust::collections::*;
 use sbor::rust::format;
 use sbor::rust::string::String;
@@ -45,6 +46,7 @@ pub struct Kernel<
     /// The max call depth
     max_depth: usize,
     /// Whether to show trace messages
+    #[allow(dead_code)] // for no_std
     trace: bool,
 
     /// State track
