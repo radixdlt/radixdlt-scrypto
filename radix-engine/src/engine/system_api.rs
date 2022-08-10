@@ -18,10 +18,6 @@ where
     I: WasmInstance,
     C: FeeReserve,
 {
-    fn wasm_engine(&mut self) -> &mut W;
-
-    fn wasm_instrumenter(&mut self) -> &mut WasmInstrumenter;
-
     fn fee_reserve(&mut self) -> &mut C;
 
     fn fee_table(&self) -> &FeeTable;

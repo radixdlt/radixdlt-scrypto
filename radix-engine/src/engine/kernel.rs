@@ -250,10 +250,10 @@ where
                                 .clone(); // TODO: remove copy
                             let wasm_metering_params = self.fee_table().wasm_metering_params();
                             let instrumented_code = self
-                                .wasm_instrumenter()
+                                .wasm_instrumenter
                                 .instrument(package.code(), &wasm_metering_params)
                                 .to_vec(); // TODO: remove copy
-                            let mut instance = self.wasm_engine().instantiate(&instrumented_code);
+                            let mut instance = self.wasm_engine.instantiate(&instrumented_code);
                             let blueprint_abi = package
                                 .blueprint_abi(&blueprint_name)
                                 .expect("Blueprint should exist");
@@ -345,10 +345,10 @@ where
                                 .clone(); // TODO: remove copy
                             let wasm_metering_params = self.fee_table().wasm_metering_params();
                             let instrumented_code = self
-                                .wasm_instrumenter()
+                                .wasm_instrumenter
                                 .instrument(package.code(), &wasm_metering_params)
                                 .to_vec(); // TODO: remove copy
-                            let mut instance = self.wasm_engine().instantiate(&instrumented_code);
+                            let mut instance = self.wasm_engine.instantiate(&instrumented_code);
                             let blueprint_abi = package
                                 .blueprint_abi(&blueprint_name)
                                 .expect("Blueprint should exist");
@@ -1757,14 +1757,6 @@ where
 
     fn fee_table(&self) -> &FeeTable {
         self.fee_table
-    }
-
-    fn wasm_engine(&mut self) -> &mut W {
-        self.wasm_engine
-    }
-
-    fn wasm_instrumenter(&mut self) -> &mut WasmInstrumenter {
-        self.wasm_instrumenter
     }
 
     fn auth_zone(&mut self, frame_id: usize) -> &mut AuthZone {
