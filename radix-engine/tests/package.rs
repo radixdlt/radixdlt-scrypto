@@ -1,5 +1,5 @@
 use radix_engine::engine::RuntimeError;
-use radix_engine::ledger::InMemorySubstateStore;
+use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::model::PackageError;
 use radix_engine::wasm::*;
 use sbor::Type;
@@ -12,7 +12,7 @@ use transaction::builder::ManifestBuilder;
 
 #[test]
 fn test_publish_package_from_scrypto() {
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let package = test_runner.extract_and_publish_package("package");
 
@@ -27,7 +27,7 @@ fn test_publish_package_from_scrypto() {
 #[test]
 fn missing_memory_should_cause_error() {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
 
     // Act
@@ -64,7 +64,7 @@ fn missing_memory_should_cause_error() {
 #[test]
 fn large_return_len_should_cause_memory_access_error() {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let package = test_runner.extract_and_publish_package("package");
 
@@ -88,7 +88,7 @@ fn large_return_len_should_cause_memory_access_error() {
 #[test]
 fn overflow_return_len_should_cause_memory_access_error() {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let package = test_runner.extract_and_publish_package("package");
 
@@ -112,7 +112,7 @@ fn overflow_return_len_should_cause_memory_access_error() {
 #[test]
 fn zero_return_len_should_cause_data_validation_error() {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let package = test_runner.extract_and_publish_package("package");
 
@@ -131,7 +131,7 @@ fn zero_return_len_should_cause_data_validation_error() {
 #[test]
 fn test_basic_package() {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
 
     // Act
@@ -153,7 +153,7 @@ fn test_basic_package() {
 #[test]
 fn test_basic_package_missing_export() {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let mut blueprints = HashMap::new();
     blueprints.insert(

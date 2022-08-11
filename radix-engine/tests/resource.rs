@@ -1,5 +1,5 @@
 use radix_engine::engine::RuntimeError;
-use radix_engine::ledger::InMemorySubstateStore;
+use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::model::ResourceManagerError;
 use scrypto::core::Network;
 use scrypto::prelude::*;
@@ -10,7 +10,7 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn test_resource_manager() {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account();
     let package_address = test_runner.extract_and_publish_package("resource");
@@ -43,7 +43,7 @@ fn test_resource_manager() {
 #[test]
 fn mint_with_bad_granularity_should_fail() {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account();
     let package_address = test_runner.extract_and_publish_package("resource");
@@ -78,7 +78,7 @@ fn mint_with_bad_granularity_should_fail() {
 #[test]
 fn mint_too_much_should_fail() {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account();
     let package_address = test_runner.extract_and_publish_package("resource");

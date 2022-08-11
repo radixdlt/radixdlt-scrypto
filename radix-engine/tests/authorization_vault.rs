@@ -1,4 +1,4 @@
-use radix_engine::ledger::InMemorySubstateStore;
+use radix_engine::ledger::TypedInMemorySubstateStore;
 use scrypto::core::Network;
 use scrypto::prelude::*;
 use scrypto_unit::*;
@@ -7,7 +7,7 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn cannot_withdraw_restricted_transfer_from_my_account_with_no_auth() {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account();
     let (_, _, other_account) = test_runner.new_account();
@@ -28,7 +28,7 @@ fn cannot_withdraw_restricted_transfer_from_my_account_with_no_auth() {
 #[test]
 fn can_withdraw_restricted_transfer_from_my_account_with_auth() {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account();
     let (_, _, other_account) = test_runner.new_account();

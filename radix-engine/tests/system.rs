@@ -1,5 +1,5 @@
 use radix_engine::engine::RuntimeError;
-use radix_engine::ledger::InMemorySubstateStore;
+use radix_engine::ledger::TypedInMemorySubstateStore;
 use scrypto::core::Network;
 use scrypto::prelude::*;
 use scrypto::to_struct;
@@ -9,7 +9,7 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn test_get_epoch() {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("system");
 
@@ -29,7 +29,7 @@ fn test_get_epoch() {
 #[test]
 fn test_set_epoch_without_system_auth_fails() {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("system");
 

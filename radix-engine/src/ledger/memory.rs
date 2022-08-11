@@ -5,13 +5,13 @@ use crate::engine::Substate;
 use crate::ledger::*;
 use crate::ledger::{OutputValue, WriteableSubstateStore};
 
-/// A substate store that stores all substates in host memory.
+/// A substate store that stores all typed substates in host memory.
 #[derive(Debug, PartialEq, Eq)]
-pub struct InMemorySubstateStore {
+pub struct TypedInMemorySubstateStore {
     substates: HashMap<SubstateId, OutputValue>,
 }
 
-impl InMemorySubstateStore {
+impl TypedInMemorySubstateStore {
     pub fn new() -> Self {
         Self {
             substates: HashMap::new(),
@@ -24,25 +24,25 @@ impl InMemorySubstateStore {
     }
 }
 
-impl Default for InMemorySubstateStore {
+impl Default for TypedInMemorySubstateStore {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl ReadableSubstateStore for InMemorySubstateStore {
+impl ReadableSubstateStore for TypedInMemorySubstateStore {
     fn get_substate(&self, substate_id: &SubstateId) -> Option<OutputValue> {
         self.substates.get(substate_id).cloned()
     }
 }
 
-impl WriteableSubstateStore for InMemorySubstateStore {
+impl WriteableSubstateStore for TypedInMemorySubstateStore {
     fn put_substate(&mut self, substate_id: SubstateId, substate: OutputValue) {
         self.substates.insert(substate_id, substate);
     }
 }
 
-impl QueryableSubstateStore for InMemorySubstateStore {
+impl QueryableSubstateStore for TypedInMemorySubstateStore {
     fn get_kv_store_entries(
         &self,
         kv_store_id: &KeyValueStoreId,

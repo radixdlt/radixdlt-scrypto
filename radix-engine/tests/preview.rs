@@ -1,4 +1,4 @@
-use radix_engine::ledger::InMemorySubstateStore;
+use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::transaction::ExecutionConfig;
 use scrypto::core::Network;
 use scrypto::prelude::SYSTEM_COMPONENT;
@@ -13,7 +13,7 @@ use transaction::validation::{TestIntentHashManager, TransactionValidator};
 #[test]
 fn test_transaction_preview_cost_estimate() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
+    let mut substate_store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut substate_store);
     let (validated_transaction, preview_intent) = prepare_test_tx_and_preview_intent(&test_runner);
 
@@ -34,7 +34,7 @@ fn test_transaction_preview_cost_estimate() {
 }
 
 fn prepare_test_tx_and_preview_intent(
-    test_runner: &TestRunner<InMemorySubstateStore>,
+    test_runner: &TestRunner<TypedInMemorySubstateStore>,
 ) -> (ValidatedTransaction, PreviewIntent) {
     let notary_priv_key = EcdsaPrivateKey::from_u64(2).unwrap();
     let tx_signer_priv_key = EcdsaPrivateKey::from_u64(3).unwrap();

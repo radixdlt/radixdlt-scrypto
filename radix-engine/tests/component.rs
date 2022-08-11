@@ -1,5 +1,5 @@
 use radix_engine::engine::RuntimeError;
-use radix_engine::ledger::InMemorySubstateStore;
+use radix_engine::ledger::TypedInMemorySubstateStore;
 use scrypto::core::Network;
 use scrypto::engine::types::SubstateId;
 use scrypto::prelude::*;
@@ -9,7 +9,7 @@ use transaction::builder::ManifestBuilder;
 
 #[test]
 fn test_component() {
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account();
     let package = test_runner.extract_and_publish_package("component");
@@ -45,7 +45,7 @@ fn test_component() {
 #[test]
 fn invalid_blueprint_name_should_cause_error() {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("component");
 
@@ -74,7 +74,7 @@ fn invalid_blueprint_name_should_cause_error() {
 #[test]
 fn reentrancy_should_not_be_possible() {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("component");
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
@@ -105,7 +105,7 @@ fn reentrancy_should_not_be_possible() {
 #[test]
 fn missing_component_address_in_manifest_should_cause_rejection() {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let _ = test_runner.extract_and_publish_package("component");
     let component_address = ComponentAddress::from_str(
