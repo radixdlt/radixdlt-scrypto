@@ -3,6 +3,7 @@ use radix_engine::constants::*;
 use radix_engine::engine::Track;
 use radix_engine::engine::{Kernel, SystemApi};
 use radix_engine::fee::{FeeTable, SystemLoanFeeReserve};
+use radix_engine_stores::RadixEngineDB;
 use scrypto::core::{
     FnIdentifier, NativeFnIdentifier, Receiver, SystemFnIdentifier, SystemSetEpochInput,
 };

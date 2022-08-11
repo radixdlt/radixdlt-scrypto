@@ -1,4 +1,4 @@
-use radix_engine::ledger::InMemorySubstateStore;
+use radix_engine::ledger::TypedInMemorySubstateStore;
 use scrypto::core::Network;
 use scrypto::prelude::*;
 use scrypto::to_struct;
@@ -8,7 +8,7 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn cannot_make_cross_component_call_without_authorization() {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let (_, _, account) = test_runner.new_account();
     let auth = test_runner.create_non_fungible_resource(account);
@@ -62,7 +62,7 @@ fn cannot_make_cross_component_call_without_authorization() {
 #[test]
 fn can_make_cross_component_call_with_authorization() {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account();
     let auth = test_runner.create_non_fungible_resource(account.clone());

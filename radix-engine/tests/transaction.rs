@@ -1,5 +1,5 @@
 use radix_engine::constants::*;
-use radix_engine::ledger::InMemorySubstateStore;
+use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::transaction::ExecutionConfig;
 use radix_engine::transaction::TransactionExecutor;
 use radix_engine::wasm::DefaultWasmEngine;
@@ -16,7 +16,7 @@ use transaction::validation::{TestIntentHashManager, TransactionValidator};
 
 #[test]
 fn test_normal_transaction_flow() {
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
+    let mut substate_store = TypedInMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = DefaultWasmEngine::new();
     let mut wasm_instrumenter = WasmInstrumenter::new();
     let intent_hash_manager = TestIntentHashManager::new();
@@ -49,7 +49,7 @@ fn test_normal_transaction_flow() {
 #[test]
 fn test_call_method_with_all_resources_doesnt_drop_auth_zone_proofs() {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account();
 
@@ -80,7 +80,7 @@ fn test_call_method_with_all_resources_doesnt_drop_auth_zone_proofs() {
 #[test]
 fn test_transaction_can_end_with_proofs_remaining_in_auth_zone() {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account();
 

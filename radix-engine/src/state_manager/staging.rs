@@ -152,13 +152,13 @@ impl<'t, 's, S: ReadableSubstateStore + WriteableSubstateStore> WriteableSubstat
 
 #[cfg(test)]
 mod tests {
-    use crate::ledger::InMemorySubstateStore;
+    use crate::ledger::TypedInMemorySubstateStore;
     use crate::state_manager::StagedSubstateStoreManager;
 
     #[test]
     fn test_complicated_merge() {
         // Arrange
-        let mut store = InMemorySubstateStore::with_bootstrap();
+        let mut store = TypedInMemorySubstateStore::with_bootstrap();
         let mut stores = StagedSubstateStoreManager::new(&mut store);
         let child_node1 = stores.new_child_node(0);
         let child_node2 = stores.new_child_node(child_node1);

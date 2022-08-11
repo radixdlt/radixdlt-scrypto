@@ -1,5 +1,5 @@
 use radix_engine::engine::RuntimeError;
-use radix_engine::ledger::InMemorySubstateStore;
+use radix_engine::ledger::TypedInMemorySubstateStore;
 use scrypto::core::Network;
 use scrypto::engine::types::RENodeId;
 use scrypto::prelude::*;
@@ -10,7 +10,7 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn should_not_be_able_to_globalize_key_value_store() {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("kernel");
 
@@ -38,7 +38,7 @@ fn should_not_be_able_to_globalize_key_value_store() {
 #[test]
 fn should_not_be_able_to_globalize_bucket() {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("kernel");
 
@@ -66,7 +66,7 @@ fn should_not_be_able_to_globalize_bucket() {
 #[test]
 fn should_not_be_able_to_globalize_proof() {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("kernel");
 
@@ -94,7 +94,7 @@ fn should_not_be_able_to_globalize_proof() {
 #[test]
 fn should_not_be_able_to_globalize_vault() {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("kernel");
 

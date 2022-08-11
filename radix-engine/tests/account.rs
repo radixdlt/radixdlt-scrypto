@@ -1,4 +1,4 @@
-use radix_engine::ledger::InMemorySubstateStore;
+use radix_engine::ledger::TypedInMemorySubstateStore;
 use scrypto::core::Network;
 use scrypto::prelude::*;
 use scrypto::to_struct;
@@ -10,7 +10,7 @@ use transaction::model::*;
 #[test]
 fn can_withdraw_from_my_account() {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account();
     let (_, _, other_account) = test_runner.new_account();
@@ -30,7 +30,7 @@ fn can_withdraw_from_my_account() {
 #[test]
 fn can_withdraw_non_fungible_from_my_account() {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account();
     let (_, _, other_account) = test_runner.new_account();
@@ -51,7 +51,7 @@ fn can_withdraw_non_fungible_from_my_account() {
 #[test]
 fn cannot_withdraw_from_other_account() {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account();
     let (_, _, other_account) = test_runner.new_account();
@@ -71,7 +71,7 @@ fn cannot_withdraw_from_other_account() {
 #[test]
 fn account_to_bucket_to_account() {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account();
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
@@ -98,7 +98,7 @@ fn account_to_bucket_to_account() {
 #[test]
 fn test_account_balance() {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account1) = test_runner.new_account();
     let (_, _, account2) = test_runner.new_account();
