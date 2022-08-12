@@ -30,6 +30,8 @@ macro_rules! types {
              self.0: $wrap:ty,
              self.zero(): $tt:ident($zero:expr),
              $ttt:ident::default(): $default:expr,
+             format_var: $f:ident,
+             format_expr: $fmt:expr,
          }
      ),*) => {
         paste!{
@@ -62,38 +64,38 @@ macro_rules! types {
             }
 
             impl fmt::Debug for $t {
-                fn fmt(&$self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-                    BigInt::from(*$self).fmt(f)
+                fn fmt(&$self, $f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                    $fmt
                 }
             }
 
             impl fmt::Display for $t {
-                fn fmt(&$self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-                    BigInt::from(*$self).fmt(f)
+                fn fmt(&$self, $f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                    $fmt
                 }
             }
 
             impl fmt::Binary for $t {
-                fn fmt(&$self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-                    BigInt::from(*$self).fmt(f)
+                fn fmt(&$self, $f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                    $fmt
                 }
             }
 
             impl fmt::Octal for $t {
-                fn fmt(&$self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-                    BigInt::from(*$self).fmt(f)
+                fn fmt(&$self, $f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                    $fmt
                 }
             }
 
             impl fmt::LowerHex for $t {
-                fn fmt(&$self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-                    BigInt::from(*$self).fmt(f)
+                fn fmt(&$self, $f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                    $fmt
                 }
             }
 
             impl fmt::UpperHex for $t {
-                fn fmt(&$self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-                    BigInt::from(*$self).fmt(f)
+                fn fmt(&$self, $f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                    $fmt
                 }
             }
 
@@ -164,96 +166,196 @@ types! {
         self.0: i8,
         self.zero(): I8(0),
         I8::default(): I8(0),
+        format_var: f,
+        format_expr: (*self).to_i8().unwrap().fmt(f),
     },
     {
         type: I16,
         self.0: i16,
         self.zero(): I16(0),
         I16::default(): I16(0),
+        format_var: f,
+        format_expr: (*self).to_i16().unwrap().fmt(f),
     },
     {
         type: I32,
         self.0: i32,
         self.zero(): I32(0),
         I32::default(): I32(0),
+        format_var: f,
+        format_expr: (*self).to_i32().unwrap().fmt(f),
     },
     {
         type: I64,
         self.0: i64,
         self.zero(): I64(0),
         I64::default(): I64(0),
+        format_var: f,
+        format_expr: (*self).to_i64().unwrap().fmt(f),
     },
     {
         type: I128,
         self.0: i128,
         self.zero(): I128(0),
         I128::default(): I128(0),
+        format_var: f,
+        format_expr: (*self).to_i128().unwrap().fmt(f),
     },
     {
         type: I256,
         self.0: [u8; 32],
         self.zero(): I256([0u8; 32]),
         I256::default(): I256([0u8; 32]),
+        format_var: f,
+        format_expr: {
+            let mut minus = "";
+            let mut a = *self;
+            if (*self).is_negative() {
+                minus = "-";
+                a = -a;
+            }
+            let mask: I256 = Self::MIN >> 128i128;  
+            let lower = a & mask;
+            let upper = a & !mask;
+            write!(f, "{}{}{}", minus, upper, lower)
+        },
     },
     {
         type: I384,
         self.0: [u8; 48],
         self.zero(): I384([0u8; 48]),
         I384::default(): I384([0u8; 48]),
+        format_var: f,
+        format_expr: {
+            let mut minus = "";
+            let mut a = *self;
+            if (*self).is_negative() {
+                minus = "-";
+                a = -a;
+            }
+            let mut mask: I384 = Self::from(2).pow(128).sub(1);  
+            let val0 = a & mask;
+            mask <<= 128;
+            let val1 = a & mask;
+            mask <<= 128;
+            let val2 = a & mask;
+            write!(f, "{}{}{}{}", minus, val2, val1, val0)
+        },
     },
     {
         type: I512,
         self.0: [u8; 64],
         self.zero(): I512([0u8; 64]),
         I512::default(): I512([0u8; 64]),
+        format_var: f,
+        format_expr: {
+            let mut minus = "";
+            let mut a = *self;
+            if (*self).is_negative() {
+                minus = "-";
+                a = -a;
+            }
+            let mut mask: I512 = Self::from(2).pow(128).sub(1);  
+            let val0 = a & mask;
+            mask <<= 128;
+            let val1 = a & mask;
+            mask <<= 128;
+            let val2 = a & mask;
+            mask <<= 128;
+            let val3 = a & mask;
+            write!(f, "{}{}{}{}{}", minus, val3, val2, val1, val0)
+        },
     },
     {
         type: U8,
         self.0: u8,
         self.zero(): U8(0),
         U8::default(): U8(0),
+        format_var: f,
+        format_expr: (*self).to_u8().unwrap().fmt(f),
     },
     {
         type: U16,
         self.0: u16,
         self.zero(): U16(0),
         U16::default(): U16(0),
+        format_var: f,
+        format_expr: (*self).to_u16().unwrap().fmt(f),
     },
     {
         type: U32,
         self.0: u32,
         self.zero(): U32(0),
         U32::default(): U32(0),
+        format_var: f,
+        format_expr: (*self).to_u32().unwrap().fmt(f),
     },
     {
         type: U64,
         self.0: u64,
         self.zero(): U64(0),
         U64::default(): U64(0),
+        format_var: f,
+        format_expr: (*self).to_u64().unwrap().fmt(f),
     },
     {
         type: U128,
         self.0: u128,
         self.zero(): U128(0),
         U128::default(): U128(0),
+        format_var: f,
+        format_expr: (*self).to_u128().unwrap().fmt(f),
     },
     {
         type: U256,
         self.0: [u8; 32],
         self.zero(): U256([0u8; 32]),
         U256::default(): U256([0u8; 32]),
+        format_var: f,
+        format_expr: {
+            let a = *self;
+            let mut mask: U256 = Self::from(2u8).pow(128).sub(1u8);  
+            let val0 = a & mask;
+            mask <<= 128;
+            let val1 = a & mask;
+            write!(f, "{}{}", val1, val0)
+        },
     },
     {
         type: U384,
         self.0: [u8; 48],
         self.zero(): U384([0u8; 48]),
         U384::default(): U384([0u8; 48]),
+        format_var: f,
+        format_expr: {
+            let a = *self;
+            let mut mask: U384 = Self::from(2u8).pow(128).sub(1u8);  
+            let val0 = a & mask;
+            mask <<= 128;
+            let val1 = a & mask;
+            mask <<= 128;
+            let val2 = a & mask;
+            write!(f, "{}{}{}", val2, val1, val0)
+        },
     },
     {
         type: U512,
         self.0: [u8; 64],
         self.zero(): U512([0u8; 64]),
         U512::default(): U512([0u8; 64]),
+        format_var: f,
+        format_expr: {
+            let a = *self;
+            let mut mask: U512 = Self::from(2u8).pow(128).sub(1u8);  
+            let val0 = a & mask;
+            mask <<= 128;
+            let val1 = a & mask;
+            mask <<= 128;
+            let val2 = a & mask;
+            mask <<= 128;
+            let val3 = a & mask;
+            write!(f, "{}{}{}{}", val3, val2, val1, val0)
+        },
     }
 }
 
