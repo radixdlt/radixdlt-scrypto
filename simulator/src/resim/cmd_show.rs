@@ -1,5 +1,5 @@
 use clap::Parser;
-use radix_engine_stores::RadixEngineDB;
+use radix_engine_stores::rocks_db::RadixEngineDB;
 use scrypto::address::Bech32Decoder;
 use scrypto::core::Network;
 use scrypto::engine::types::*;

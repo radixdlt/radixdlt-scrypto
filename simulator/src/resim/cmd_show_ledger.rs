@@ -1,6 +1,6 @@
 use clap::Parser;
 use colored::*;
-use radix_engine_stores::RadixEngineDB;
+use radix_engine_stores::rocks_db::RadixEngineDB;
 use scrypto::address::Bech32Encoder;
 
 use crate::resim::*;

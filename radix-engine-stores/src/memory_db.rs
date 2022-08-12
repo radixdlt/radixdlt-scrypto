@@ -1,5 +1,6 @@
 use sbor::rust::collections::HashMap;
-use radix_engine::ledger::{bootstrap, OutputValue, ReadableSubstateStore, WriteableSubstateStore};
+use radix_engine::engine::Substate;
+use radix_engine::ledger::{bootstrap, OutputValue, QueryableSubstateStore, ReadableSubstateStore, WriteableSubstateStore};
 use scrypto::engine::types::{SubstateId};
 
 use scrypto::buffer::*;
@@ -39,5 +40,29 @@ impl ReadableSubstateStore for SerializedInMemorySubstateStore {
 impl WriteableSubstateStore for SerializedInMemorySubstateStore {
     fn put_substate(&mut self, substate_id: SubstateId, substate: OutputValue) {
         self.substates.insert(scrypto_encode(&substate_id), scrypto_encode(&substate));
+    }
+}
+
+impl QueryableSubstateStore for SerializedInMemorySubstateStore {
+    fn get_kv_store_entries(
+        &self,
+        kv_store_id: &KeyValueStoreId,
+    ) -> HashMap<Vec<u8>, Substate> {
+        self.substates
+            .iter()
+            .filter_map(|(key, value)| {
+                let substate_id: SubstateId = scrypto_decode(key).unwrap();
+                if let SubstateId::KeyValueStoreEntry(id, key) = substate_id {
+                    let output_value: OutputValue = scrypto_decode(value).unwrap();
+                    if id == *kv_store_id {
+                        Some((key.clone(), output_value.substate))
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
+            })
+            .collect()
     }
 }
