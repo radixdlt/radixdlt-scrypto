@@ -17,6 +17,8 @@ use sbor::*;
 pub mod basic;
 pub mod bits;
 pub mod convert;
+pub mod display;
+
 #[cfg(test)]
 mod test;
 pub use convert::*;
@@ -62,12 +64,6 @@ macro_rules! types {
             }
 
             impl fmt::Debug for $t {
-                fn fmt(&$self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-                    BigInt::from(*$self).fmt(f)
-                }
-            }
-
-            impl fmt::Display for $t {
                 fn fmt(&$self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
                     BigInt::from(*$self).fmt(f)
                 }
