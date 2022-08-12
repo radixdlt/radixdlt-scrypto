@@ -75,30 +75,6 @@ macro_rules! types {
                 }
             }
 
-            impl fmt::Binary for $t {
-                fn fmt(&$self, $f: &mut fmt::Formatter<'_>) -> fmt::Result {
-                    $fmt
-                }
-            }
-
-            impl fmt::Octal for $t {
-                fn fmt(&$self, $f: &mut fmt::Formatter<'_>) -> fmt::Result {
-                    $fmt
-                }
-            }
-
-            impl fmt::LowerHex for $t {
-                fn fmt(&$self, $f: &mut fmt::Formatter<'_>) -> fmt::Result {
-                    $fmt
-                }
-            }
-
-            impl fmt::UpperHex for $t {
-                fn fmt(&$self, $f: &mut fmt::Formatter<'_>) -> fmt::Result {
-                    $fmt
-                }
-            }
-
             impl Zero for $t {
                 fn zero() -> Self {
                     Self($zero)
@@ -214,10 +190,12 @@ types! {
                 minus = "-";
                 a = -a;
             }
-            let mask: I256 = Self::MIN >> 128i128;  
-            let lower = a & mask;
-            let upper = a & !mask;
-            write!(f, "{}{}{}", minus, upper, lower)
+            let divisor = I256::from(10).pow(38);
+            let lower: i128 = (a % divisor).try_into().unwrap();
+            a /= divisor;
+            let upper: i128 = (a % divisor).try_into().unwrap();
+            a /= divisor;
+            write!(f, "{}{}{}{}", minus, a, upper, lower)
         },
     },
     {
@@ -233,13 +211,14 @@ types! {
                 minus = "-";
                 a = -a;
             }
-            let mut mask: I384 = Self::from(2).pow(128).sub(1);  
-            let val0 = a & mask;
-            mask <<= 128;
-            let val1 = a & mask;
-            mask <<= 128;
-            let val2 = a & mask;
-            write!(f, "{}{}{}{}", minus, val2, val1, val0)
+            let divisor = I256::from(10).pow(38);
+            let val0: i128 = (a % divisor).try_into().unwrap();
+            a /= divisor;
+            let val1: i128 = (a % divisor).try_into().unwrap();
+            a /= divisor;
+            let val2: i128 = (a % divisor).try_into().unwrap();
+            a /= divisor;
+            write!(f, "{}{}{}{}{}", minus, a, val2, val1, val0)
         },
     },
     {
@@ -255,15 +234,16 @@ types! {
                 minus = "-";
                 a = -a;
             }
-            let mut mask: I512 = Self::from(2).pow(128).sub(1);  
-            let val0 = a & mask;
-            mask <<= 128;
-            let val1 = a & mask;
-            mask <<= 128;
-            let val2 = a & mask;
-            mask <<= 128;
-            let val3 = a & mask;
-            write!(f, "{}{}{}{}{}", minus, val3, val2, val1, val0)
+            let divisor = I256::from(10).pow(38);
+            let val0: i128 = (a % divisor).try_into().unwrap();
+            a /= divisor;
+            let val1: i128 = (a % divisor).try_into().unwrap();
+            a /= divisor;
+            let val2: i128 = (a % divisor).try_into().unwrap();
+            a /= divisor;
+            let val3: i128 = (a % divisor).try_into().unwrap();
+            a /= divisor;
+            write!(f, "{}{}{}{}{}{}", minus, a, val3, val2, val1, val0)
         },
     },
     {
