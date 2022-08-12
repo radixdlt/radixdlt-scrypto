@@ -1078,8 +1078,11 @@ mod tests {
                 arg: to_struct!(
                     NonFungibleId(scrypto_encode(&scrypto::dec!("2"))),
                     NonFungibleId(scrypto_encode(&String::from("Scrypto"))),
-                    NonFungibleAddress::new(RADIX_TOKEN, NonFungibleId(scrypto_encode(&String::from("Scrypto")))),
-                    // TODO: In the future, we should neither be able to create a `NonFungibleId` of a bucket or pass 
+                    NonFungibleAddress::new(
+                        RADIX_TOKEN,
+                        NonFungibleId(scrypto_encode(&String::from("Scrypto")))
+                    ),
+                    // TODO: In the future, we should neither be able to create a `NonFungibleId` of a bucket or pass
                     // that through the manifest.
                     NonFungibleId(scrypto_encode(&scrypto::resource::Bucket(512)))
                 )
