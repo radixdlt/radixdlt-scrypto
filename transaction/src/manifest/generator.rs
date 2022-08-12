@@ -1068,6 +1068,24 @@ mod tests {
             }
         );
         generate_instruction_ok!(
+            r#"CALL_METHOD  ComponentAddress("component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum")  "refill"  NonFungibleId("a1200000000000c84e676dc11b000000000000000000000000000000000000000000000000")  NonFungibleId("0c070000005363727970746f")  NonFungibleAddress("030000000000000000000000000000000000000000000000000000040c070000005363727970746f")  NonFungibleId("b10400000000020000");"#,
+            Instruction::CallMethod {
+                component_address: ComponentAddress::from_str(
+                    "component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum".into()
+                )
+                .unwrap(),
+                method_name: "refill".to_string(),
+                arg: to_struct!(
+                    NonFungibleId(scrypto_encode(&scrypto::dec!("2"))),
+                    NonFungibleId(scrypto_encode(&String::from("Scrypto"))),
+                    NonFungibleAddress::new(RADIX_TOKEN, NonFungibleId(scrypto_encode(&String::from("Scrypto")))),
+                    // TODO: In the future, we should neither be able to create a `NonFungibleId` of a bucket or pass 
+                    // that through the manifest.
+                    NonFungibleId(scrypto_encode(&scrypto::resource::Bucket(512)))
+                )
+            }
+        );
+        generate_instruction_ok!(
             r#"CALL_METHOD_WITH_ALL_RESOURCES  ComponentAddress("account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qgsy064") "deposit_batch";"#,
             Instruction::CallMethodWithAllResources {
                 component_address: ComponentAddress::from_str(

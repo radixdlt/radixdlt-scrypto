@@ -66,7 +66,7 @@ impl TryFrom<&[u8]> for NonFungibleId {
     type Error = ParseNonFungibleIdError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-        let value = ScryptoValue::from_slice_no_custom_values(slice)
+        let value = ScryptoValue::from_slice(slice)
             .map_err(|_| ParseNonFungibleIdError::InvalidValue)?;
         Ok(Self(value.raw))
     }
