@@ -1,5 +1,5 @@
 use core::ops::*;
-use num_traits::{Pow, ToPrimitive, Zero};
+use num_traits::{Pow, Zero};
 use sbor::rust::convert::{TryFrom, TryInto};
 use sbor::rust::fmt;
 use sbor::rust::iter;
@@ -11,6 +11,7 @@ use sbor::*;
 
 use crate::abi::*;
 use crate::math::*;
+use crate::math::integer::convert::conv_primitive::ToPrimitive;
 use paste::paste;
 
 macro_rules! decimals {

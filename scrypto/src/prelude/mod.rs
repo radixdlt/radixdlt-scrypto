@@ -13,9 +13,10 @@ pub use crate::{
     Decode, Describe, Encode, NonFungibleData, TypeId,
 };
 pub use num_traits::{
-    cast::FromPrimitive, cast::ToPrimitive, identities::One, identities::Zero, pow::Pow,
+    identities::One, identities::Zero, pow::Pow,
     sign::Signed,
 };
+pub use crate::math::convert::conv_primitive::{FromPrimitive, ToPrimitive};
 pub use sbor::rust::borrow::ToOwned;
 pub use sbor::rust::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 pub use sbor::rust::str::FromStr;
