@@ -184,18 +184,7 @@ types! {
         I256::default(): I256([0u8; 32]),
         format_var: f,
         format_expr: {
-            let mut minus = "";
-            let mut a = *self;
-            if (*self).is_negative() {
-                minus = "-";
-                a = -a;
-            }
-            let divisor = I256::from(10).pow(38);
-            let lower: i128 = (a % divisor).try_into().unwrap();
-            a /= divisor;
-            let upper: i128 = (a % divisor).try_into().unwrap();
-            a /= divisor;
-            write!(f, "{}{}{}{}", minus, a, upper, lower)
+            fmt(*self, f, self.0.len() * 8)
         },
     },
     {
@@ -205,20 +194,7 @@ types! {
         I384::default(): I384([0u8; 48]),
         format_var: f,
         format_expr: {
-            let mut minus = "";
-            let mut a = *self;
-            if (*self).is_negative() {
-                minus = "-";
-                a = -a;
-            }
-            let divisor = I256::from(10).pow(38);
-            let val0: i128 = (a % divisor).try_into().unwrap();
-            a /= divisor;
-            let val1: i128 = (a % divisor).try_into().unwrap();
-            a /= divisor;
-            let val2: i128 = (a % divisor).try_into().unwrap();
-            a /= divisor;
-            write!(f, "{}{}{}{}{}", minus, a, val2, val1, val0)
+            fmt(*self, f, self.0.len() * 8)
         },
     },
     {
@@ -228,22 +204,7 @@ types! {
         I512::default(): I512([0u8; 64]),
         format_var: f,
         format_expr: {
-            let mut minus = "";
-            let mut a = *self;
-            if (*self).is_negative() {
-                minus = "-";
-                a = -a;
-            }
-            let divisor = I256::from(10).pow(38);
-            let val0: i128 = (a % divisor).try_into().unwrap();
-            a /= divisor;
-            let val1: i128 = (a % divisor).try_into().unwrap();
-            a /= divisor;
-            let val2: i128 = (a % divisor).try_into().unwrap();
-            a /= divisor;
-            let val3: i128 = (a % divisor).try_into().unwrap();
-            a /= divisor;
-            write!(f, "{}{}{}{}{}{}", minus, a, val3, val2, val1, val0)
+            fmt(*self, f, self.0.len() * 8)
         },
     },
     {
@@ -293,12 +254,7 @@ types! {
         U256::default(): U256([0u8; 32]),
         format_var: f,
         format_expr: {
-            let a = *self;
-            let mut mask: U256 = Self::from(2u8).pow(128).sub(1u8);  
-            let val0 = a & mask;
-            mask <<= 128;
-            let val1 = a & mask;
-            write!(f, "{}{}", val1, val0)
+            fmt(*self, f, self.0.len() * 8)
         },
     },
     {
@@ -308,14 +264,7 @@ types! {
         U384::default(): U384([0u8; 48]),
         format_var: f,
         format_expr: {
-            let a = *self;
-            let mut mask: U384 = Self::from(2u8).pow(128).sub(1u8);  
-            let val0 = a & mask;
-            mask <<= 128;
-            let val1 = a & mask;
-            mask <<= 128;
-            let val2 = a & mask;
-            write!(f, "{}{}{}", val2, val1, val0)
+            fmt(*self, f, self.0.len() * 8)
         },
     },
     {
@@ -325,18 +274,59 @@ types! {
         U512::default(): U512([0u8; 64]),
         format_var: f,
         format_expr: {
-            let a = *self;
-            let mut mask: U512 = Self::from(2u8).pow(128).sub(1u8);  
-            let val0 = a & mask;
-            mask <<= 128;
-            let val1 = a & mask;
-            mask <<= 128;
-            let val2 = a & mask;
-            mask <<= 128;
-            let val3 = a & mask;
-            write!(f, "{}{}{}{}", val3, val2, val1, val0)
+            fmt(*self, f, self.0.len() * 8)
         },
     }
+}
+
+fn fmt<
+    T: fmt::Display
+        + Copy
+        + From<u32>
+        + Pow<u32, Output = T>
+        + Zero
+        + TryInto<i128>
+        + Add<Output = T>
+        + Div<Output = T>
+        + Rem<Output = T>
+        + Sub<Output = T>
+        + Eq
+        + Ord,
+>(
+    to_fmt: T,
+    f: &mut fmt::Formatter<'_>,
+    bits: usize,
+) -> fmt::Result
+where
+    <T as TryInto<i128>>::Error: fmt::Debug,
+{
+    let mut minus = "";
+    let mut a = to_fmt;
+    if a < T::zero() {
+        minus = "-";
+        a = T::zero() - a;
+    }
+    let num;
+    let divisor = T::from(10u32).pow(38u32);
+    if a == T::from(0) {
+        num = String::from("0");
+    } else {
+        num = (0..bits / 128 + 1).fold(String::from(""), |acc, _| {
+            let num_part: i128 = (a % divisor).try_into().unwrap();
+            a = a / divisor;
+            if a == T::zero() {
+                if num_part == 0 {
+                    acc
+                } else {
+                    num_part.to_string() + &acc
+                }
+            } else {
+                let padding:String = vec!["0"; 38 - num_part.to_string().len()].into_iter().collect();
+                padding + &num_part.to_string() + &acc
+            }
+        });
+    }
+    write!(f, "{}{}", minus, num)
 }
 
 #[macro_export]
