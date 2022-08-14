@@ -6,7 +6,6 @@ use sbor::rust::convert::{From, TryFrom};
 use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
 
-pub mod conv_primitive;
 /// Trait for short hand notation for try_from().unwrap()
 /// As opposed to `try_from(x).unwrap()` this will panic if the conversion fails.
 pub trait TFrom<T> {
