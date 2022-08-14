@@ -582,31 +582,31 @@ op_impl! {
 
 }
 
-trait CheckedAdd<T>: Sized {
+pub trait CheckedAdd<T>: Sized {
     fn checked_add(self, other: T) -> Option<Self>;
 }
 
-trait CheckedSub<T>: Sized {
+pub trait CheckedSub<T>: Sized {
     fn checked_sub(self, other: T) -> Option<Self>;
 }
 
-trait CheckedMul<T>: Sized {
+pub trait CheckedMul<T>: Sized {
     fn checked_mul(self, other: T) -> Option<Self>;
 }
 
-trait CheckedDiv<T>: Sized {
+pub trait CheckedDiv<T>: Sized {
     fn checked_div(self, other: T) -> Option<Self>;
 }
 
-trait CheckedRem<T>: Sized {
+pub trait CheckedRem<T>: Sized {
     fn checked_rem(self, other: T) -> Option<Self>;
 }
 
-trait CheckedNeg<T>: Sized {
-    fn checked_neg(self, other: T) -> Option<Self>;
+pub trait CheckedNeg: Sized {
+    fn checked_neg(self) -> Option<Self>;
 }
 
-trait CheckedPow<T>: Sized {
+pub trait CheckedPow<T>: Sized {
     fn checked_pow(self, other: T) -> Option<Self>;
 }
 
@@ -804,6 +804,12 @@ macro_rules! checked_int_impl_signed {
                     }
                 }
                 forward_ref_unop! { impl Neg, neg for $t }
+
+                impl CheckedNeg for $t {
+                    fn checked_neg(self) -> Option<Self> {
+                        Self::zero().checked_sub(self)
+                    }
+                }
 
                 impl $t {
 

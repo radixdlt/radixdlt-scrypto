@@ -1,5 +1,6 @@
-mod decimal;
-mod integer;
+pub mod decimal;
+pub mod precise_decimal;
+pub mod integer;
 
 pub use decimal::*;
 pub use integer::basic::*;
