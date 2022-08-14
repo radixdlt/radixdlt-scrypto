@@ -1,6 +1,6 @@
 use super::*;
-use num_bigint::{BigInt, ParseBigIntError, Sign};
-use num_traits::{Signed, ToPrimitive};
+use num_bigint::{BigInt, Sign};
+use num_traits::{FromPrimitive, One, Signed, ToPrimitive, Zero};
 use paste::paste;
 use sbor::rust::convert::{From, TryFrom};
 use sbor::rust::str::FromStr;
@@ -18,7 +18,7 @@ macro_rules! impl_from_primitive {
     ($($t:ident),*) => {
         paste! {
             $(
-                impl conv_primitive::FromPrimitive for $t {
+                impl FromPrimitive for $t {
                     fn from_i64(n: i64) -> Option<Self> {
                        Self::try_from(n).ok()
                     }
@@ -33,7 +33,7 @@ macro_rules! impl_from_primitive {
                     }
                 }
 
-                impl conv_primitive::ToPrimitive for $t {
+                impl ToPrimitive for $t {
                     fn to_i64(&self) -> Option<i64> {
                         i64::try_from(*self).ok()
                     }
@@ -62,6 +62,7 @@ macro_rules! error {
                     NegativeToUnsigned,
                     Overflow,
                     InvalidLength,
+                    InvalidChar(char),
                 }
 
                 #[cfg(not(feature = "alloc"))]
@@ -399,94 +400,6 @@ try_from_large_into_builtin! {u16, (I256, I384, I512, U256, U384, U512)}
 try_from_large_into_builtin! {u32, (I256, I384, I512, U256, U384, U512)}
 try_from_large_into_builtin! {u64, (I256, I384, I512, U256, U384, U512)}
 try_from_large_into_builtin! {u128, (I256, I384, I512, U256, U384, U512)}
-
-// macro_rules! try_from{
-//     ($t:ident, ($($o:ident),*)) => {
-//         $(
-//             paste! {
-//                 impl TryFrom<$o> for $t {
-//                     type Error = [<Parse $t Error>];
-//                     fn try_from(val: $o) -> Result<$t, [<Parse $t Error>]> {
-//                         BigInt::from(val).try_into().map_err(|_| [<Parse $t Error>]::Overflow)
-//                     }
-//                 }
-//                 impl TFrom<$o> for $t {
-//                     type Output = $t;
-//                     fn tfrom(val: $o) -> Self::Output {
-//                         Self::Output::try_from(val).unwrap()
-//                     }
-//                 }
-//             }
-//         )*
-//     };
-// }
-//
-// macro_rules! try_from_large_all {
-//     ($($t:ident),*) => {
-//         $(
-//             try_from! { $t, (I256, I384, I512) }
-//             try_from! { $t, (U256, U384, U512) }
-//         )*
-//     };
-// }
-//
-// try_from_large_all! { U8, U16, U32, U64, U128, I8, I16, I32, I64, I128 }
-//
-// try_from! {u8, (U16, U32, U64, U128, U256, U384, U512, I8, I16, I32, I64, I128, I256, I384, I512)}
-// try_from! {u16, (U32, U64, U128, U256, U384, U512, I8, I16, I32, I64, I128, I256, I384, I512)}
-// try_from! {u32, (U64, U128, U256, U384, U512, I8, I16, I32, I64, I128, I256, I384, I512)}
-// try_from! {u64, (U128, U256, U384, U512, I8, I16, I32, I64, I128, I256, I384, I512)}
-// try_from! {usize, (U128, U256, U384, U512, I8, I16, I32, I64, I128, I256, I384, I512)}
-// try_from! {u128, (U256, U384, U512, I8, I16, I32, I64, I128, I256, I384, I512)}
-// try_from! {i8, (U8, U16, U32, U64, U128, U256, U384, U512, I16, I32, I64, I128, I256, I384, I512)}
-// try_from! {i16, ( U16, U32, U64, U128, U256, U384, U512, I32, I64, I128, I256, I384, I512)}
-// try_from! {i32, (U32, U64, U128, U256, U384, U512, I64, I128, I256, I384, I512)}
-// try_from! {i64, (U64, U128, U256, U384, U512, I128, I256, I384, I512)}
-// try_from! {isize, (U64, U128, U256, U384, U512, I128, I256, I384, I512)}
-// try_from! {i128, (U128, U256, U384, U512, I256, I384, I512)}
-//
-// try_from! {U8, (I8, I16, I32, I64, I128)}
-// try_from! {U8, (U16, U32, U64, U128)}
-// try_from! {U8, (i8, i16, i32, i64, isize, i128, u16, u32, u64, usize, u128)}
-// try_from! {U16, (I8, I16, I32, I64, I128)}
-// try_from! {U16, (U32, U64, U128)}
-// try_from! {U16, (i8, i16, i32, i64, isize, i128, u32, u64, usize, u128)}
-// try_from! {U32, (I8, I16, I32, I64, I128)}
-// try_from! {U32, (U64, U128)}
-// try_from! {U32, (i8, i16, i32, i64, isize, i128, u64, usize, u128)}
-// try_from! {U64, (I8, I16, I32, I64, I128)}
-// try_from! {U64, (U128)}
-// try_from! {U64, (i8, i16, i32, i64, isize, i128, u128)}
-// try_from! {U128, (I8, I16, I32, I64, I128)}
-// try_from! {U128, (i8, i16, i32, i64, isize, i128)}
-// try_from! {U256, (I8, I16, I32, I64, I128, I256, I384, I512)}
-// try_from! {U256, (U384, U512)}
-// try_from! {U256, (i8, i16, i32, i64, isize, i128)}
-// try_from! {U384, (I8, I16, I32, I64, I128, I256, I384, I512)}
-// try_from! {U384, (U512)}
-// try_from! {U384, (i8, i16, i32, i64, isize, i128)}
-// try_from! {U512, (I8, I16, I32, I64, I128, I256, I384, I512)}
-// try_from! {U512, (i8, i16, i32, i64, isize, i128)}
-//
-// try_from! {I8, (I16, I32, I64, I128)}
-// try_from! {I8, (U8, U16, U32, U64, U128)}
-// try_from! {I8, (u8, u16, u32, u64, usize, u128, i16, i32, i64, isize, i128)}
-// try_from! {I16, (I32, I64, I128)}
-// try_from! {I16, (U16, U32, U64, U128)}
-// try_from! {I16, (i32, i64, isize, i128, u16, u32, u64, usize, u128)}
-// try_from! {I32, (I64, I128)}
-// try_from! {I32, (U32, U64, U128)}
-// try_from! {I32, (i64, isize, i128, u32, u64, usize, u128)}
-// try_from! {I64, (I128)}
-// try_from! {I64, (U64, U128)}
-// try_from! {I64, (i128, u64, usize, u128)}
-// try_from! {I128, (U128)}
-// try_from! {I128, (u128)}
-// try_from! {I256, (I384, I512)}
-// try_from! {I256, (U256, U384, U512)}
-// try_from! {I384, (I512)}
-// try_from! {I384, (U384, U512)}
-// try_from! {I512, (U512)}
 
 macro_rules! impl_others_to_large_unsigned {
     ($($t:ty),*) => {
@@ -986,7 +899,7 @@ from_builtin_into_small! { U32, (u8, u16, u32) }
 from_builtin_into_small! { U64, (u8, u16, u32, u64) }
 from_builtin_into_small! { U128, (u8, u16, u32, u64, u128) }
 
-macro_rules! from_builtin_into_large {
+macro_rules! from_builtin_signed_into_large {
     ($t:ident, ($($o:ident),*)) => {
         $(
             paste! {
@@ -994,9 +907,9 @@ macro_rules! from_builtin_into_large {
                     fn from(val: $o) -> Self {
                         let mut sign = <$t>::one();
                         let mut other = val;
-                        if val < <$o>::zero() {
+                        if other < 0 {
                                 sign = <$t>::zero() - <$t>::one();
-                                other = <$o>::zero() - other;
+                                other = 0 - other;
                         }
                         let mut other_vec = other.to_le_bytes().to_vec();
                         other_vec.resize((<$t>::BITS / 8) as usize, 0);
@@ -1014,12 +927,38 @@ macro_rules! from_builtin_into_large {
         )*
     };
 }
-from_builtin_into_large! { I256, (i8, i16, i32, i64, isize, i128, u8, u16, u32, u64, usize, u128) }
-from_builtin_into_large! { I384, (i8, i16, i32, i64, isize, i128, u8, u16, u32, u64, usize, u128) }
-from_builtin_into_large! { I512, (i8, i16, i32, i64, isize, i128, u8, u16, u32, u64, usize, u128) }
-from_builtin_into_large! { U256, (u8, u16, u32, u64, usize, u128) }
-from_builtin_into_large! { U384, (u8, u16, u32, u64, usize, u128) }
-from_builtin_into_large! { U512, (u8, u16, u32, u64, usize, u128) }
+from_builtin_signed_into_large! { I256, (i8, i16, i32, i64, isize, i128) }
+from_builtin_signed_into_large! { I384, (i8, i16, i32, i64, isize, i128) }
+from_builtin_signed_into_large! { I512, (i8, i16, i32, i64, isize, i128) }
+
+macro_rules! from_builtin_unsigned_into_large {
+    ($t:ident, ($($o:ident),*)) => {
+        $(
+            paste! {
+                impl From<$o> for $t {
+                    fn from(val: $o) -> Self {
+                        let mut val_vec = val.to_le_bytes().to_vec();
+                        val_vec.resize((<$t>::BITS / 8) as usize, 0);
+                        Self(val_vec.try_into().unwrap())
+                    }
+                }
+
+                impl TFrom<$o> for $t {
+                    type Output = $t;
+                    fn tfrom(val: $o) -> Self::Output {
+                        Self::Output::try_from(val).unwrap()
+                    }
+                }
+            }
+        )*
+    };
+}
+from_builtin_unsigned_into_large! { I256, (u8, u16, u32, u64, usize, u128) }
+from_builtin_unsigned_into_large! { I384, (u8, u16, u32, u64, usize, u128) }
+from_builtin_unsigned_into_large! { I512, (u8, u16, u32, u64, usize, u128) }
+from_builtin_unsigned_into_large! { U256, (u8, u16, u32, u64, usize, u128) }
+from_builtin_unsigned_into_large! { U384, (u8, u16, u32, u64, usize, u128) }
+from_builtin_unsigned_into_large! { U512, (u8, u16, u32, u64, usize, u128) }
 
 macro_rules! try_from_small_into_builtin{
     ($t:ident, ($($o:ident),*)) => {
@@ -1052,45 +991,87 @@ try_from_small_into_builtin! { u64, (U8, U16, U32, U64) }
 try_from_small_into_builtin! { u128, (U8, U16, U32, U64, U128) }
 
 macro_rules! from_string {
-    ($($t:ident),*) => {
-        $(
-            impl FromStr for $t {
-                type Err = ParseBigIntError;
-                fn from_str(val: &str) -> Result<Self, Self::Err> {
-                    match val.parse::<BigInt>() {
-                        Ok(big_int) => Ok($t::try_from(big_int).unwrap()),
-                        Err(e) => Err(e)
+        ($($t:ident),*) => {
+            $(
+                paste! {
+                impl FromStr for $t {
+                    type Err = [<Parse $t Error>];
+                    fn from_str(val: &str) -> Result<Self, Self::Err> {
+                        let mut sign = <$t>::try_from(1u8).unwrap();
+                        let mut value = <$t>::try_from(0u8).unwrap();
+
+                        let chars: Vec<char> = val.chars().collect();
+                        let mut p = 0;
+
+                        // read sign
+                        if chars[p] == '-' {
+                            if <$t>::MIN == <$t>::zero() {
+                                return Err([<Parse $t Error>]::NegativeToUnsigned);
+                            }
+                            sign = <$t>::try_from(-1i8).unwrap();
+                            p += 1;
+                        }
+
+                        // read integral
+                        while p < chars.len() {
+                            let digit = [<read_digit $t:lower>](chars[p]);
+                            match digit {
+                                        Ok(dig) => {
+                                            let ten = <$t>::try_from(10i8).unwrap();
+                                            let dig = <$t>::try_from(dig).unwrap();
+                                            if((<$t>::MAX -
+                                                    {if sign > <$t>::zero() {dig * sign} else {<$t>::zero()}}
+                                            ) / ten) < value {
+                                                return Err([<Parse $t Error>]::Overflow);
+                                            } else {
+                                                 value = value * ten + dig * sign;
+                                            }
+                                        }
+                                        Err(_) => return Err([<Parse $t Error>]::Overflow),
+                            }
+                            p += 1;
+                        }
+                        Ok(value)
+                    }
+                }
+
+                fn [<read_digit $t:lower>](c: char) -> Result<U8, [<Parse $t Error>]> {
+                    let n = U8::from(c as u8);
+                    if n >= U8(48u8) && n <= U8(48u8 + 9u8) {
+                        Ok(n - 48u8)
+                    } else {
+                        Err([<Parse $t Error>]::InvalidChar(c))
+                    }
+                }
+
+                impl TFrom<&str> for $t {
+                    type Output = $t;
+                    fn tfrom(val: &str) -> Self::Output {
+                        Self::Output::try_from(val).unwrap()
+                    }
+                }
+
+                impl From<&str> for $t {
+                    fn from(val: &str) -> Self {
+                        Self::from_str(&val).unwrap()
+                    }
+                }
+
+                impl From<String> for $t {
+                    fn from(val: String) -> Self {
+                        Self::from_str(&val).unwrap()
+                    }
+                }
+
+                impl TFrom<String> for $t {
+                    type Output = $t;
+                    fn tfrom(val: String) -> Self::Output {
+                        Self::Output::try_from(val).unwrap()
                     }
                 }
             }
-
-            impl TFrom<&str> for $t {
-                type Output = $t;
-                fn tfrom(val: &str) -> Self::Output {
-                    Self::Output::try_from(val).unwrap()
-                }
-            }
-
-            impl From<&str> for $t {
-                fn from(val: &str) -> Self {
-                    Self::from_str(&val).unwrap()
-                }
-            }
-
-            impl From<String> for $t {
-                fn from(val: String) -> Self {
-                    Self::from_str(&val).unwrap()
-                }
-            }
-
-            impl TFrom<String> for $t {
-                type Output = $t;
-                fn tfrom(val: String) -> Self::Output {
-                    Self::Output::try_from(val).unwrap()
-                }
-            }
-        )*
-    };
+            )*
+        };
 }
 
 from_string! { I8, I16, I32, I64, I128, I256, I384, I512 }

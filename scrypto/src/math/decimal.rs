@@ -1,5 +1,5 @@
 use core::ops::*;
-use num_traits::{Pow, Zero};
+use num_traits::{Pow, ToPrimitive, Zero};
 use sbor::rust::convert::{TryFrom, TryInto};
 use sbor::rust::fmt;
 use sbor::rust::iter;
@@ -10,16 +10,8 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::abi::*;
-use crate::math::integer::convert::conv_primitive::ToPrimitive;
 use crate::math::*;
 use paste::paste;
-
-macro_rules! trace {
-    ($($arg:expr),*) => {{
-        #[cfg(feature = "trace")]
-        println!($($arg),*);
-    }};
-}
 
 macro_rules! decimals {
     ($(($dec:ident, $wrapped:ident, $scale:literal, $bits:literal , $dec_macro:ident, $zero:expr, $one:expr)),*) => {
@@ -424,7 +416,7 @@ macro_rules! decimals {
 
                 impl fmt::Display for $dec {
                     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-                        let mut a: $wrapped = self.0;
+                        let mut a = self.0;
                         let mut buf = String::new();
 
                         let mut trailing_zeros = true;
@@ -804,7 +796,7 @@ mod tests {
     #[test]
     fn test_0_powi_1_decimal() {
         let a = dec!("0");
-        assert_eq!((a.powi(1)), Decimal::from(0));
+        assert_eq!((a.powi(1)).to_string(), "0");
     }
 
     #[test]

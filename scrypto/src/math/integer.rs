@@ -1,14 +1,13 @@
 //! Definitions of safe integers and uints.
 
 use crate::abi::*;
-use convert::conv_primitive::ToPrimitive;
 use core::cmp::{Ord, Ordering, PartialEq, PartialOrd};
 use core::ops::{Add, AddAssign, BitAnd, BitAndAssign, BitOr, BitOrAssign};
 use core::ops::{BitXor, BitXorAssign, Div, DivAssign};
 use core::ops::{Mul, MulAssign, Neg, Not, Rem, RemAssign};
 use core::ops::{Shl, ShlAssign, Shr, ShrAssign, Sub, SubAssign};
 use num_bigint::{BigInt, Sign};
-use num_traits::{One, Pow, Signed, Zero};
+use num_traits::{One, Pow, Signed, ToPrimitive, Zero};
 use paste::paste;
 use sbor::rust::convert::{From, TryFrom};
 use sbor::rust::fmt;
@@ -377,7 +376,6 @@ macro_rules! forward_ref_binop {
         }
     };
 }
-
 #[macro_export]
 macro_rules! forward_ref_op_assign {
     (impl $imp:ident, $method:ident for $t:ty, $u:ty) => {
@@ -390,7 +388,7 @@ macro_rules! forward_ref_op_assign {
     };
 }
 
-macro_rules! checked_impl {
+macro_rules! op_impl {
         ($(($t:ty, $o:ty, $out:ty)),*) => {
             paste! {
                 $(
@@ -488,7 +486,7 @@ macro_rules! checked_impl {
             }
         };
     }
-checked_impl! {
+op_impl! {
 //(self, other, output)
 (u8, U8, U8), (u8, U16, U16), (u8, U32, U32), (u8, U64, U64), (u8, U128, U128),
 (u8, U256, U256), (u8, U384, U384), (u8, U512, U512),
@@ -583,6 +581,131 @@ checked_impl! {
 
 }
 
+trait CheckedAdd<T>: Sized {
+    fn checked_add(self, other: T) -> Option<Self>;
+}
+
+trait CheckedSub<T>: Sized {
+    fn checked_sub(self, other: T) -> Option<Self>;
+}
+
+trait CheckedMul<T>: Sized {
+    fn checked_mul(self, other: T) -> Option<Self>;
+}
+
+trait CheckedDiv<T>: Sized {
+    fn checked_div(self, other: T) -> Option<Self>;
+}
+
+trait CheckedRem<T>: Sized {
+    fn checked_rem(self, other: T) -> Option<Self>;
+}
+
+trait CheckedNeg<T>: Sized {
+    fn checked_neg(self, other: T) -> Option<Self>;
+}
+
+trait CheckedPow<T>: Sized {
+    fn checked_pow(self, other: T) -> Option<Self>;
+}
+
+macro_rules! checked_impl {
+    ($(($t:ident, $o:ident)),*) => {
+        paste!{
+            $(
+                impl CheckedAdd<$o> for $t {
+                    #[inline]
+                    fn checked_add(self, other: $o) -> Option<$t> {
+                        let v: Result<$t, [<Parse $t Error>]> = BigInt::from(self).add(&BigInt::from(other)).try_into();
+                        v.ok()
+                    }
+                }
+
+                impl CheckedSub<$o> for $t {
+                    #[inline]
+                    fn checked_sub(self, other: $o) -> Option<$t> {
+                        let v: Result<$t, [<Parse $t Error>]> = BigInt::from(self).sub(&BigInt::from(other)).try_into();
+                        v.ok()
+                    }
+                }
+
+                impl CheckedMul<$o> for $t {
+                    #[inline]
+                    fn checked_mul(self, other: $o) -> Option<$t> {
+                        let v: Result<$t, [<Parse $t Error>]> = BigInt::from(self).mul(&BigInt::from(other)).try_into();
+                        v.ok()
+                    }
+                }
+
+                impl CheckedDiv<$o> for $t {
+                    #[inline]
+                    fn checked_div(self, other: $o) -> Option<$t> {
+                        let v: Result<$t, [<Parse $t Error>]> = BigInt::from(self).div(&BigInt::from(other)).try_into();
+                        v.ok()
+                    }
+                }
+
+                impl CheckedRem<$o> for $t {
+                    #[inline]
+                    fn checked_rem(self, other: $o) -> Option<$t> {
+                        let v: Result<$t, [<Parse $t Error>]> = BigInt::from(self).rem(&BigInt::from(other)).try_into();
+                        v.ok()
+                    }
+                }
+                )*
+        }
+    }
+}
+checked_impl! {
+    (I8, i8), (I8, i16), (I8, i32), (I8, i64), (I8, i128),
+    (I8, I8), (I8, I16), (I8, I32), (I8, I64), (I8, I128), (I8, I256), (I8, I384), (I8, I512),
+
+    (I16, i8), (I16, i16), (I16, i32), (I16, i64), (I16, i128),
+    (I16, I8), (I16, I16), (I16, I32), (I16, I64), (I16, I128), (I16, I256), (I16, I384), (I16, I512),
+
+    (I32, i8), (I32, i16), (I32, i32), (I32, i64), (I32, i128),
+    (I32, I8), (I32, I16), (I32, I32), (I32, I64), (I32, I128), (I32, I256), (I32, I384), (I32, I512),
+
+    (I64, i8), (I64, i16), (I64, i32), (I64, i64), (I64, i128),
+    (I64, I8), (I64, I16), (I64, I32), (I64, I64), (I64, I128), (I64, I256), (I64, I384), (I64, I512),
+
+    (I128, i8), (I128, i16), (I128, i32), (I128, i64), (I128, i128),
+    (I128, I8), (I128, I16), (I128, I32), (I128, I64), (I128, I128), (I128, I256), (I128, I384), (I128, I512),
+
+    (I256, i8), (I256, i16), (I256, i32), (I256, i64), (I256, i128),
+    (I256, I8), (I256, I16), (I256, I32), (I256, I64), (I256, I128), (I256, I256), (I256, I384), (I256, I512),
+
+    (I384, i8), (I384, i16), (I384, i32), (I384, i64), (I384, i128),
+    (I384, I8), (I384, I16), (I384, I32), (I384, I64), (I384, I128), (I384, I256), (I384, I384), (I384, I512),
+
+    (I512, i8), (I512, i16), (I512, i32), (I512, i64), (I512, i128),
+    (I512, I8), (I512, I16), (I512, I32), (I512, I64), (I512, I128), (I512, I256), (I512, I384), (I512, I512),
+
+    (U8, u8), (U8, u16), (U8, u32), (U8, u64), (U8, u128),
+    (U8, U8), (U8, U16), (U8, U32), (U8, U64), (U8, U128), (U8, U256), (U8, U384), (U8, U512),
+
+    (U16, u8), (U16, u16), (U16, u32), (U16, u64), (U16, u128),
+    (U16, U8), (U16, U16), (U16, U32), (U16, U64), (U16, U128), (U16, U256), (U16, U384), (U16, U512),
+
+    (U32, u8), (U32, u16), (U32, u32), (U32, u64), (U32, u128),
+    (U32, U8), (U32, U16), (U32, U32), (U32, U64), (U32, U128), (U32, U256), (U32, U384), (U32, U512),
+
+    (U64, u8), (U64, u16), (U64, u32), (U64, u64), (U64, u128),
+    (U64, U8), (U64, U16), (U64, U32), (U64, U64), (U64, U128), (U64, U256), (U64, U384), (U64, U512),
+
+    (U128, u8), (U128, u16), (U128, u32), (U128, u64), (U128, u128),
+    (U128, U8), (U128, U16), (U128, U32), (U128, U64), (U128, U128), (U128, U256), (U128, U384), (U128, U512),
+
+    (U256, u8), (U256, u16), (U256, u32), (U256, u64), (U256, u128),
+    (U256, U8), (U256, U16), (U256, U32), (U256, U64), (U256, U128), (U256, U256), (U256, U384), (U256, U512),
+
+    (U384, u8), (U384, u16), (U384, u32), (U384, u64), (U384, u128),
+    (U384, U8), (U384, U16), (U384, U32), (U384, U64), (U384, U128), (U384, U256), (U384, U384), (U384, U512),
+
+    (U512, u8), (U512, u16), (U512, u32), (U512, u64), (U512, u128),
+    (U512, U8), (U512, U16), (U512, U32), (U512, U64), (U512, U128), (U512, U256), (U512, U384), (U512, U512)
+}
+
 macro_rules! pow_impl {
         ($($t:ty),*) => {
             paste! {
@@ -604,9 +727,25 @@ macro_rules! pow_impl {
                                 return self;
                             }
                             if exp % 2 == 0 {
-                                return (&self * &self).pow(exp / 2);
+                                return (self * self).pow(exp / 2);
                             } else {
-                                return &self * (&self * &self).pow((exp - 1) / 2);
+                                return self * (self * self).pow((exp - 1) / 2);
+                            }
+                        }
+                    }
+                    impl CheckedPow<u32> for $t
+                    {
+                        fn checked_pow(self, exp: u32) -> Option<$t> {
+                            if exp == 0 {
+                                return Some(Self::one());
+                            }
+                            if exp == 1 {
+                                return Some(self);
+                            }
+                            if exp % 2 == 0 {
+                                return self.checked_mul(self).and_then(|x| x.checked_pow(exp / 2));
+                            } else {
+                                return self.checked_mul(self).and_then(|x| x.checked_pow((exp - 1) / 2)).and_then(|x| x.checked_mul(self));
                             }
                         }
                     }

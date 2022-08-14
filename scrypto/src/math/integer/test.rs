@@ -1,5 +1,5 @@
 use super::*;
-use crate::math::integer::convert::conv_primitive::FromPrimitive;
+use num_traits::FromPrimitive;
 use sbor::rust::str::FromStr;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
