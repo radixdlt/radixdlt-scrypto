@@ -8,9 +8,9 @@ use sbor::rust::string::String;
 
 /// Trait for short hand notation for try_from().unwrap()
 /// As opposed to `try_from(x).unwrap()` this will panic if the conversion fails.
-pub trait TFrom<T> {
+pub trait By<T> {
     type Output;
-    fn tfrom(val: T) -> Self::Output;
+    fn by(val: T) -> Self::Output;
 }
 
 macro_rules! impl_from_primitive {
@@ -106,9 +106,9 @@ macro_rules! try_from_large_into_large{
                     }
                 }
 
-                impl TFrom<$o> for $t {
+                impl By<$o> for $t {
                     type Output = $t;
-                    fn tfrom(val: $o) -> Self::Output {
+                    fn by(val: $o) -> Self::Output {
                         Self::Output::try_from(val).unwrap()
                     }
                 }
@@ -146,9 +146,9 @@ macro_rules! try_from_small_into_large{
                     }
                 }
 
-                impl TFrom<$o> for $t {
+                impl By<$o> for $t {
                     type Output = $t;
-                    fn tfrom(val: $o) -> Self::Output {
+                    fn by(val: $o) -> Self::Output {
                         Self::Output::try_from(val).unwrap()
                     }
                 }
@@ -188,9 +188,9 @@ macro_rules! try_from_large_into_small{
                     }
                 }
 
-                impl TFrom<$o> for $t {
+                impl By<$o> for $t {
                     type Output = $t;
-                    fn tfrom(val: $o) -> Self::Output {
+                    fn by(val: $o) -> Self::Output {
                         Self::Output::try_from(val).unwrap()
                     }
                 }
@@ -223,9 +223,9 @@ macro_rules! try_from_small_into_small{
                         }
                     }
                 }
-                impl TFrom<$o> for $t {
+                impl By<$o> for $t {
                     type Output = $t;
-                    fn tfrom(val: $o) -> Self::Output {
+                    fn by(val: $o) -> Self::Output {
                         Self::Output::try_from(val).unwrap()
                     }
                 }
@@ -258,9 +258,9 @@ macro_rules! try_from_builtin_into_small{
                         }
                     }
                 }
-                impl TFrom<$o> for $t {
+                impl By<$o> for $t {
                     type Output = $t;
-                    fn tfrom(val: $o) -> Self::Output {
+                    fn by(val: $o) -> Self::Output {
                         Self::Output::try_from(val).unwrap()
                     }
                 }
@@ -302,9 +302,9 @@ macro_rules! try_from_builtin_into_large{
                     }
                 }
 
-                impl TFrom<$o> for $t {
+                impl By<$o> for $t {
                     type Output = $t;
-                    fn tfrom(val: $o) -> Self::Output {
+                    fn by(val: $o) -> Self::Output {
                         Self::Output::try_from(val).unwrap()
                     }
                 }
@@ -331,9 +331,9 @@ macro_rules! try_from_small_into_builtin{
                         }
                     }
                 }
-                impl TFrom<$o> for $t {
+                impl By<$o> for $t {
                     type Output = $t;
-                    fn tfrom(val: $o) -> Self::Output {
+                    fn by(val: $o) -> Self::Output {
                         Self::Output::try_from(val).unwrap()
                     }
                 }
@@ -379,9 +379,9 @@ macro_rules! try_from_large_into_builtin{
                     }
                 }
 
-                impl TFrom<$o> for $t {
+                impl By<$o> for $t {
                     type Output = $t;
-                    fn tfrom(val: $o) -> Self::Output {
+                    fn by(val: $o) -> Self::Output {
                         Self::Output::try_from(val).unwrap()
                     }
                 }
@@ -421,9 +421,9 @@ macro_rules! impl_others_to_large_unsigned {
                     }
                 }
 
-                impl TFrom<BigInt> for $t {
+                impl By<BigInt> for $t {
                     type Output = $t;
-                    fn tfrom(val: BigInt) -> Self::Output {
+                    fn by(val: BigInt) -> Self::Output {
                         Self::Output::try_from(val).unwrap()
                     }
                 }
@@ -441,9 +441,9 @@ macro_rules! impl_others_to_large_unsigned {
                     }
                 }
 
-                impl TFrom<&[u8]> for $t {
+                impl By<&[u8]> for $t {
                     type Output = $t;
-                    fn tfrom(val: &[u8]) -> Self::Output {
+                    fn by(val: &[u8]) -> Self::Output {
                         Self::Output::try_from(val).unwrap()
                     }
                 }
@@ -462,9 +462,9 @@ macro_rules! impl_others_to_large_unsigned {
                     }
                 }
 
-                impl TFrom<Vec<u8>> for $t {
+                impl By<Vec<u8>> for $t {
                     type Output = $t;
-                    fn tfrom(val: Vec<u8>) -> Self::Output {
+                    fn by(val: Vec<u8>) -> Self::Output {
                         Self::Output::try_from(val).unwrap()
                     }
                 }
@@ -498,9 +498,9 @@ macro_rules! impl_others_to_large_signed {
                     }
                 }
 
-                impl TFrom<BigInt> for $t {
+                impl By<BigInt> for $t {
                     type Output = $t;
-                    fn tfrom(val: BigInt) -> Self::Output {
+                    fn by(val: BigInt) -> Self::Output {
                         Self::Output::try_from(val).unwrap()
                     }
                 }
@@ -523,9 +523,9 @@ macro_rules! impl_others_to_large_signed {
                     }
                 }
 
-                impl TFrom<&[u8]> for $t {
+                impl By<&[u8]> for $t {
                     type Output = $t;
-                    fn tfrom(val: &[u8]) -> Self::Output {
+                    fn by(val: &[u8]) -> Self::Output {
                         Self::Output::try_from(val).unwrap()
                     }
                 }
@@ -549,9 +549,9 @@ macro_rules! impl_others_to_large_signed {
                     }
                 }
 
-                impl TFrom<Vec<u8>> for $t {
+                impl By<Vec<u8>> for $t {
                     type Output = $t;
-                    fn tfrom(val: Vec<u8>) -> Self::Output {
+                    fn by(val: Vec<u8>) -> Self::Output {
                         Self::Output::try_from(val).unwrap()
                     }
                 }
@@ -575,9 +575,9 @@ macro_rules! impl_others_to_small_unsigned {
                     }
                 }
 
-                impl TFrom<BigInt> for $t {
+                impl By<BigInt> for $t {
                     type Output = $t;
-                    fn tfrom(val: BigInt) -> Self::Output {
+                    fn by(val: BigInt) -> Self::Output {
                         Self::Output::try_from(val).unwrap()
                     }
                 }
@@ -597,9 +597,9 @@ macro_rules! impl_others_to_small_unsigned {
                     }
                 }
 
-                impl TFrom<&[u8]> for $t {
+                impl By<&[u8]> for $t {
                     type Output = $t;
-                    fn tfrom(val: &[u8]) -> Self::Output {
+                    fn by(val: &[u8]) -> Self::Output {
                         Self::Output::try_from(val).unwrap()
                     }
                 }
@@ -619,9 +619,9 @@ macro_rules! impl_others_to_small_unsigned {
                     }
                 }
 
-                impl TFrom<Vec<u8>> for $t {
+                impl By<Vec<u8>> for $t {
                     type Output = $t;
-                    fn tfrom(val: Vec<u8>) -> Self::Output {
+                    fn by(val: Vec<u8>) -> Self::Output {
                         Self::Output::try_from(val).unwrap()
                     }
                 }
@@ -644,9 +644,9 @@ macro_rules! impl_others_to_small_signed {
                     }
                 }
 
-                impl TFrom<BigInt> for $t {
+                impl By<BigInt> for $t {
                     type Output = $t;
-                    fn tfrom(val: BigInt) -> Self::Output {
+                    fn by(val: BigInt) -> Self::Output {
                         Self::Output::try_from(val).unwrap()
                     }
                 }
@@ -670,9 +670,9 @@ macro_rules! impl_others_to_small_signed {
                     }
                 }
 
-                impl TFrom<&[u8]> for $t {
+                impl By<&[u8]> for $t {
                     type Output = $t;
-                    fn tfrom(val: &[u8]) -> Self::Output {
+                    fn by(val: &[u8]) -> Self::Output {
                         Self::Output::try_from(val).unwrap()
                     }
                 }
@@ -696,9 +696,9 @@ macro_rules! impl_others_to_small_signed {
                     }
                 }
 
-                impl TFrom<Vec<u8>> for $t {
+                impl By<Vec<u8>> for $t {
                     type Output = $t;
-                    fn tfrom(val: Vec<u8>) -> Self::Output {
+                    fn by(val: Vec<u8>) -> Self::Output {
                         Self::Output::try_from(val).unwrap()
                     }
                 }
@@ -720,9 +720,9 @@ macro_rules! from_array_large {
                     }
                 }
 
-                impl TFrom<[u8; (<$t>::BITS / 8) as usize]> for $t {
+                impl By<[u8; (<$t>::BITS / 8) as usize]> for $t {
                     type Output = $t;
-                    fn tfrom(val: [u8; (<$t>::BITS / 8) as usize]) -> Self::Output {
+                    fn by(val: [u8; (<$t>::BITS / 8) as usize]) -> Self::Output {
                         Self::Output::try_from(val).unwrap()
                     }
                 }
@@ -749,9 +749,9 @@ macro_rules! from_array_small {
                     }
                 }
 
-                impl TFrom<[u8; (<$t>::BITS / 8) as usize]> for $t {
+                impl By<[u8; (<$t>::BITS / 8) as usize]> for $t {
                     type Output = $t;
-                    fn tfrom(val: [u8; (<$t>::BITS / 8) as usize]) -> Self::Output {
+                    fn by(val: [u8; (<$t>::BITS / 8) as usize]) -> Self::Output {
                         Self::Output::try_from(val).unwrap()
                     }
                 }
@@ -787,9 +787,9 @@ macro_rules! from_large_into_large {
                     }
                 }
 
-                impl TFrom<$o> for $t {
+                impl By<$o> for $t {
                     type Output = $t;
-                    fn tfrom(val: $o) -> Self::Output {
+                    fn by(val: $o) -> Self::Output {
                         Self::Output::try_from(val).unwrap()
                     }
                 }
@@ -820,9 +820,9 @@ macro_rules! from_small_into_large{
                     }
                 }
 
-                impl TFrom<$o> for $t {
+                impl By<$o> for $t {
                     type Output = $t;
-                    fn tfrom(val: $o) -> Self::Output {
+                    fn by(val: $o) -> Self::Output {
                         Self::Output::try_from(val).unwrap()
                     }
                 }
@@ -848,9 +848,9 @@ macro_rules! from_small_into_small{
                     }
                 }
 
-                impl TFrom<$o> for $t {
+                impl By<$o> for $t {
                     type Output = $t;
-                    fn tfrom(val: $o) -> Self::Output {
+                    fn by(val: $o) -> Self::Output {
                         Self::Output::try_from(val).unwrap()
                     }
                 }
@@ -877,9 +877,9 @@ macro_rules! from_builtin_into_small{
                         Self(val.into())
                     }
                 }
-                impl TFrom<$o> for $t {
+                impl By<$o> for $t {
                     type Output = $t;
-                    fn tfrom(val: $o) -> Self::Output {
+                    fn by(val: $o) -> Self::Output {
                         Self::Output::try_from(val).unwrap()
                     }
                 }
@@ -916,9 +916,9 @@ macro_rules! from_builtin_signed_into_large {
                     }
                 }
 
-                impl TFrom<$o> for $t {
+                impl By<$o> for $t {
                     type Output = $t;
-                    fn tfrom(val: $o) -> Self::Output {
+                    fn by(val: $o) -> Self::Output {
                         Self::Output::try_from(val).unwrap()
                     }
                 }
@@ -942,9 +942,9 @@ macro_rules! from_builtin_unsigned_into_large {
                     }
                 }
 
-                impl TFrom<$o> for $t {
+                impl By<$o> for $t {
                     type Output = $t;
-                    fn tfrom(val: $o) -> Self::Output {
+                    fn by(val: $o) -> Self::Output {
                         Self::Output::try_from(val).unwrap()
                     }
                 }
@@ -968,9 +968,9 @@ macro_rules! try_from_small_into_builtin{
                         val.0.into()
                     }
                 }
-                impl TFrom<$o> for $t {
+                impl By<$o> for $t {
                     type Output = $t;
-                    fn tfrom(val: $o) -> Self::Output {
+                    fn by(val: $o) -> Self::Output {
                         Self::Output::try_from(val).unwrap()
                     }
                 }
@@ -1043,9 +1043,9 @@ macro_rules! from_string {
                     }
                 }
 
-                impl TFrom<&str> for $t {
+                impl By<&str> for $t {
                     type Output = $t;
-                    fn tfrom(val: &str) -> Self::Output {
+                    fn by(val: &str) -> Self::Output {
                         Self::Output::try_from(val).unwrap()
                     }
                 }
@@ -1062,9 +1062,9 @@ macro_rules! from_string {
                     }
                 }
 
-                impl TFrom<String> for $t {
+                impl By<String> for $t {
                     type Output = $t;
-                    fn tfrom(val: String) -> Self::Output {
+                    fn by(val: String) -> Self::Output {
                         Self::Output::try_from(val).unwrap()
                     }
                 }
