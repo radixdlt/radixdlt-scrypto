@@ -281,54 +281,53 @@ types! {
 }
 
 fn fmt<
-    T: fmt::Display
-        + Copy
-        + From<u32>
-        + Pow<u32, Output = T>
-        + Zero
-        + TryInto<i128>
-        + Add<Output = T>
-        + Div<Output = T>
-        + Rem<Output = T>
-        + Sub<Output = T>
-        + Eq
-        + Ord,
+T: fmt::Display
++ Copy
++ From<u32>
++ Pow<u32, Output = T>
++ Zero
++ TryInto<i128>
++ Add<Output = T>
++ Div<Output = T>
++ Rem<Output = T>
++ Sub<Output = T>
++ Eq
++ Ord,
 >(
     to_fmt: T,
     f: &mut fmt::Formatter<'_>,
     bits: usize,
-) -> fmt::Result
+    ) -> fmt::Result
 where
-    <T as TryInto<i128>>::Error: fmt::Debug,
+<T as TryInto<i128>>::Error: fmt::Debug,
 {
-//    let mut minus = "";
-//    let mut a = to_fmt;
-//    if a < T::zero() {
-//        minus = "-";
-//        a = T::zero() - a;
-//    }
-//    let num;
-//    let divisor = T::from(10u32).pow(38u32);
-//    if a == T::from(0) {
-//        num = String::from("0");
-//    } else {
-//        num = (0..bits / 128 + 1).fold(String::from(""), |acc, _| {
-//            let num_part: i128 = (a % divisor).try_into().unwrap();
-//            a = a / divisor;
-//            if a == T::zero() {
-//                if num_part == 0 {
-//                    acc
-//                } else {
-//                    num_part.to_string() + &acc
-//                }
-//            } else {
-//                let padding:String = vec!["0"; 38 - num_part.to_string().len()].into_iter().collect();
-//                padding + &num_part.to_string() + &acc
-//            }
-//        });
-//    }
-//    write!(f, "{}{}", minus, num)
-    write!(f, "hello world")
+    let mut minus = "";
+    let mut a = to_fmt;
+    if a < T::zero() {
+        minus = "-";
+        a = T::zero() - a;
+    }
+    let num;
+    let divisor = T::from(10u32).pow(38u32);
+    if a == T::from(0) {
+        num = String::from("0");
+    } else {
+        num = (0..bits / 128 + 1).fold(String::from(""), |acc, _| {
+            let num_part: i128 = (a % divisor).try_into().unwrap();
+            a = a / divisor;
+            if a == T::zero() {
+                if num_part == 0 {
+                    acc
+                } else {
+                    num_part.to_string() + &acc
+                }
+            } else {
+                let padding:String = vec!["0"; 38 - num_part.to_string().len()].into_iter().collect();
+                padding + &num_part.to_string() + &acc
+            }
+        });
+    }
+    write!(f, "{}{}", minus, num)
 }
 
 #[macro_export]
