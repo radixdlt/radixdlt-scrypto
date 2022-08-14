@@ -21,10 +21,3 @@ fn test_to_primitive() {
     a = a.pow(10);
     assert_eq!(a.to_i128().unwrap(), 1024i128);
 }
-
-#[test]
-fn test_info_primitive() {
-    let c: U32 = U32(5);
-    info!("Safe integer: {}", c);
-    assert_eq!(format!("{}", c), "5");
-}
