@@ -1,6 +1,7 @@
 {
     "rust-analyzer.linkedProjects": [
         "radix-engine/Cargo.toml",
+        "radix-engine-stores/Cargo.toml",
         "sbor/Cargo.toml",
         "sbor-derive/Cargo.toml",
         "sbor-tests/Cargo.toml",
