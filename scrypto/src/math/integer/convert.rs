@@ -198,16 +198,16 @@ macro_rules! try_from_large_into_small{
         )*
     };
 }
-try_from_large_into_small!{I8, i8, (I256, I384, I512, U256, U384, U512)}
-try_from_large_into_small!{I16, i16, (I256, I384, I512, U256, U384, U512)}
-try_from_large_into_small!{I32, i32, (I256, I384, I512, U256, U384, U512)}
-try_from_large_into_small!{I64, i64, (I256, I384, I512, U256, U384, U512)}
-try_from_large_into_small!{I128, i128, (I256, I384, I512, U256, U384, U512)}
-try_from_large_into_small!{U8, u8, (I256, I384, I512, U256, U384, U512)}
-try_from_large_into_small!{U16, u16, (I256, I384, I512, U256, U384, U512)}
-try_from_large_into_small!{U32, u32, (I256, I384, I512, U256, U384, U512)}
-try_from_large_into_small!{U64, u64, (I256, I384, I512, U256, U384, U512)}
-try_from_large_into_small!{U128, u128, (I256, I384, I512, U256, U384, U512)}
+try_from_large_into_small! {I8, i8, (I256, I384, I512, U256, U384, U512)}
+try_from_large_into_small! {I16, i16, (I256, I384, I512, U256, U384, U512)}
+try_from_large_into_small! {I32, i32, (I256, I384, I512, U256, U384, U512)}
+try_from_large_into_small! {I64, i64, (I256, I384, I512, U256, U384, U512)}
+try_from_large_into_small! {I128, i128, (I256, I384, I512, U256, U384, U512)}
+try_from_large_into_small! {U8, u8, (I256, I384, I512, U256, U384, U512)}
+try_from_large_into_small! {U16, u16, (I256, I384, I512, U256, U384, U512)}
+try_from_large_into_small! {U32, u32, (I256, I384, I512, U256, U384, U512)}
+try_from_large_into_small! {U64, u64, (I256, I384, I512, U256, U384, U512)}
+try_from_large_into_small! {U128, u128, (I256, I384, I512, U256, U384, U512)}
 
 macro_rules! try_from_small_into_small{
     ($t:ident, $wrapped:ident, ($($o:ident),*)) => {
@@ -389,16 +389,16 @@ macro_rules! try_from_large_into_builtin{
         )*
     };
 }
-try_from_large_into_builtin!{i8, (I256, I384, I512, U256, U384, U512)}
-try_from_large_into_builtin!{i16, (I256, I384, I512, U256, U384, U512)}
-try_from_large_into_builtin!{i32, (I256, I384, I512, U256, U384, U512)}
-try_from_large_into_builtin!{i64, (I256, I384, I512, U256, U384, U512)}
-try_from_large_into_builtin!{i128, (I256, I384, I512, U256, U384, U512)}
-try_from_large_into_builtin!{u8, (I256, I384, I512, U256, U384, U512)}
-try_from_large_into_builtin!{u16, (I256, I384, I512, U256, U384, U512)}
-try_from_large_into_builtin!{u32, (I256, I384, I512, U256, U384, U512)}
-try_from_large_into_builtin!{u64, (I256, I384, I512, U256, U384, U512)}
-try_from_large_into_builtin!{u128, (I256, I384, I512, U256, U384, U512)}
+try_from_large_into_builtin! {i8, (I256, I384, I512, U256, U384, U512)}
+try_from_large_into_builtin! {i16, (I256, I384, I512, U256, U384, U512)}
+try_from_large_into_builtin! {i32, (I256, I384, I512, U256, U384, U512)}
+try_from_large_into_builtin! {i64, (I256, I384, I512, U256, U384, U512)}
+try_from_large_into_builtin! {i128, (I256, I384, I512, U256, U384, U512)}
+try_from_large_into_builtin! {u8, (I256, I384, I512, U256, U384, U512)}
+try_from_large_into_builtin! {u16, (I256, I384, I512, U256, U384, U512)}
+try_from_large_into_builtin! {u32, (I256, I384, I512, U256, U384, U512)}
+try_from_large_into_builtin! {u64, (I256, I384, I512, U256, U384, U512)}
+try_from_large_into_builtin! {u128, (I256, I384, I512, U256, U384, U512)}
 
 // macro_rules! try_from{
 //     ($t:ident, ($($o:ident),*)) => {
@@ -420,7 +420,7 @@ try_from_large_into_builtin!{u128, (I256, I384, I512, U256, U384, U512)}
 //         )*
 //     };
 // }
-// 
+//
 // macro_rules! try_from_large_all {
 //     ($($t:ident),*) => {
 //         $(
@@ -429,9 +429,9 @@ try_from_large_into_builtin!{u128, (I256, I384, I512, U256, U384, U512)}
 //         )*
 //     };
 // }
-// 
+//
 // try_from_large_all! { U8, U16, U32, U64, U128, I8, I16, I32, I64, I128 }
-// 
+//
 // try_from! {u8, (U16, U32, U64, U128, U256, U384, U512, I8, I16, I32, I64, I128, I256, I384, I512)}
 // try_from! {u16, (U32, U64, U128, U256, U384, U512, I8, I16, I32, I64, I128, I256, I384, I512)}
 // try_from! {u32, (U64, U128, U256, U384, U512, I8, I16, I32, I64, I128, I256, I384, I512)}
@@ -444,7 +444,7 @@ try_from_large_into_builtin!{u128, (I256, I384, I512, U256, U384, U512)}
 // try_from! {i64, (U64, U128, U256, U384, U512, I128, I256, I384, I512)}
 // try_from! {isize, (U64, U128, U256, U384, U512, I128, I256, I384, I512)}
 // try_from! {i128, (U128, U256, U384, U512, I256, I384, I512)}
-// 
+//
 // try_from! {U8, (I8, I16, I32, I64, I128)}
 // try_from! {U8, (U16, U32, U64, U128)}
 // try_from! {U8, (i8, i16, i32, i64, isize, i128, u16, u32, u64, usize, u128)}
@@ -467,7 +467,7 @@ try_from_large_into_builtin!{u128, (I256, I384, I512, U256, U384, U512)}
 // try_from! {U384, (i8, i16, i32, i64, isize, i128)}
 // try_from! {U512, (I8, I16, I32, I64, I128, I256, I384, I512)}
 // try_from! {U512, (i8, i16, i32, i64, isize, i128)}
-// 
+//
 // try_from! {I8, (I16, I32, I64, I128)}
 // try_from! {I8, (U8, U16, U32, U64, U128)}
 // try_from! {I8, (u8, u16, u32, u64, usize, u128, i16, i32, i64, isize, i128)}
@@ -925,7 +925,6 @@ from_small_into_large! { I512, (I8, I16, I32, I64, I128, U8, U16, U32, U64, U128
 from_small_into_large! { U256, (U8, U16, U32, U64, U128) }
 from_small_into_large! { U384, (U8, U16, U32, U64, U128) }
 from_small_into_large! { U512, (U8, U16, U32, U64, U128) }
-
 
 macro_rules! from_small_into_small{
     ($t:ident, ($($o:ident),*)) => {

@@ -10,8 +10,8 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::abi::*;
-use crate::math::*;
 use crate::math::integer::convert::conv_primitive::ToPrimitive;
+use crate::math::*;
 use paste::paste;
 
 macro_rules! trace {

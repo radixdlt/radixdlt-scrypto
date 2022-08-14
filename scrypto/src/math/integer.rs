@@ -1,13 +1,13 @@
 //! Definitions of safe integers and uints.
 
 use crate::abi::*;
+use convert::conv_primitive::ToPrimitive;
 use core::cmp::{Ord, Ordering, PartialEq, PartialOrd};
 use core::ops::{Add, AddAssign, BitAnd, BitAndAssign, BitOr, BitOrAssign};
 use core::ops::{BitXor, BitXorAssign, Div, DivAssign};
 use core::ops::{Mul, MulAssign, Neg, Not, Rem, RemAssign};
 use core::ops::{Shl, ShlAssign, Shr, ShrAssign, Sub, SubAssign};
 use num_bigint::{BigInt, Sign};
-use convert::conv_primitive::ToPrimitive;
 use num_traits::{One, Pow, Signed, Zero};
 use paste::paste;
 use sbor::rust::convert::{From, TryFrom};
@@ -281,25 +281,25 @@ types! {
 }
 
 fn fmt<
-T: fmt::Display
-+ Copy
-+ From<u32>
-+ Pow<u32, Output = T>
-+ Zero
-+ TryInto<i128>
-+ Add<Output = T>
-+ Div<Output = T>
-+ Rem<Output = T>
-+ Sub<Output = T>
-+ Eq
-+ Ord,
+    T: fmt::Display
+        + Copy
+        + From<u32>
+        + Pow<u32, Output = T>
+        + Zero
+        + TryInto<i128>
+        + Add<Output = T>
+        + Div<Output = T>
+        + Rem<Output = T>
+        + Sub<Output = T>
+        + Eq
+        + Ord,
 >(
     to_fmt: T,
     f: &mut fmt::Formatter<'_>,
     bits: usize,
-    ) -> fmt::Result
+) -> fmt::Result
 where
-<T as TryInto<i128>>::Error: fmt::Debug,
+    <T as TryInto<i128>>::Error: fmt::Debug,
 {
     let mut minus = "";
     let mut a = to_fmt;
@@ -322,7 +322,9 @@ where
                     num_part.to_string() + &acc
                 }
             } else {
-                let padding:String = vec!["0"; 38 - num_part.to_string().len()].into_iter().collect();
+                let padding: String = vec!["0"; 38 - num_part.to_string().len()]
+                    .into_iter()
+                    .collect();
                 padding + &num_part.to_string() + &acc
             }
         });

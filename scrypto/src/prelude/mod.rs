@@ -3,6 +3,7 @@ pub use crate::component::*;
 pub use crate::constants::*;
 pub use crate::core::*;
 pub use crate::crypto::*;
+pub use crate::math::convert::conv_primitive::{FromPrimitive, ToPrimitive};
 pub use crate::math::*;
 pub use crate::misc::*;
 pub use crate::resource::*;
@@ -12,11 +13,7 @@ pub use crate::{
     external_component, import, include_package, info, pdec, resource_list, rule, trace, warn,
     Decode, Describe, Encode, NonFungibleData, TypeId,
 };
-pub use num_traits::{
-    identities::One, identities::Zero, pow::Pow,
-    sign::Signed,
-};
-pub use crate::math::convert::conv_primitive::{FromPrimitive, ToPrimitive};
+pub use num_traits::{identities::One, identities::Zero, pow::Pow, sign::Signed};
 pub use sbor::rust::borrow::ToOwned;
 pub use sbor::rust::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 pub use sbor::rust::str::FromStr;

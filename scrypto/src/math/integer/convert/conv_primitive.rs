@@ -101,7 +101,6 @@ pub trait ToPrimitive {
     fn to_u128(&self) -> Option<u128> {
         self.to_u64().map(From::from)
     }
-
 }
 
 macro_rules! impl_to_primitive_int_to_int {
