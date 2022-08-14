@@ -54,22 +54,24 @@ macro_rules! call_data_bytes_args {
 #[macro_export]
 macro_rules! dec {
     ($x:literal) => {
-        crate::Decimal::from($x)
+        scrypto::prelude::Decimal::from($x)
     };
 
     ($base:literal, $shift:literal) => {
         // Base can be any type that converts into a Decimal, and shift must support
         // comparison and `-` unary operation, enforced by rustc.
         {
-            let base = crate::Decimal::from($base);
+            let base = scrypto::prelude::Decimal::from($base);
             if $shift >= 0 {
-                base * crate::Decimal::try_from(
-                    crate::I256::from(10u8).pow(u32::try_from($shift).expect("Shift overflow")),
+                base * scrypto::prelude::Decimal::try_from(
+                    scrypto::prelude::I256::from(10u8)
+                        .pow(u32::try_from($shift).expect("Shift overflow")),
                 )
                 .expect("Shift overflow")
             } else {
-                base / crate::Decimal::try_from(
-                    crate::I256::from(10u8).pow(u32::try_from(-$shift).expect("Shift overflow")),
+                base / scrypto::prelude::Decimal::try_from(
+                    scrypto::prelude::I256::from(10u8)
+                        .pow(u32::try_from(-$shift).expect("Shift overflow")),
                 )
                 .expect("Shift overflow")
             }
@@ -107,22 +109,24 @@ macro_rules! i {
 #[macro_export]
 macro_rules! pdec {
     ($x:literal) => {
-        crate::PreciseDecimal::from($x)
+        scrypto::prelude::PreciseDecimal::from($x)
     };
 
     ($base:literal, $shift:literal) => {
         // Base can be any type that converts into a PreciseDecimal, and shift must support
         // comparison and `-` unary operation, enforced by rustc.
         {
-            let base = crate::PreciseDecimal::from($base);
+            let base = scrypto::prelude::PreciseDecimal::from($base);
             if $shift >= 0 {
-                base * crate::PreciseDecimal::try_from(
-                    crate::I512::from(10u8).pow(u32::try_from($shift).expect("Shift overflow")),
+                base * scrypto::prelude::PreciseDecimal::try_from(
+                    scrypto::prelude::I512::from(10u8)
+                        .pow(u32::try_from($shift).expect("Shift overflow")),
                 )
                 .expect("Shift overflow")
             } else {
-                base / crate::PreciseDecimal::try_from(
-                    crate::I512::from(10u8).pow(u32::try_from(-$shift).expect("Shift overflow")),
+                base / scrypto::prelude::PreciseDecimal::try_from(
+                    scrypto::prelude::I512::from(10u8)
+                        .pow(u32::try_from(-$shift).expect("Shift overflow")),
                 )
                 .expect("Shift overflow")
             }
