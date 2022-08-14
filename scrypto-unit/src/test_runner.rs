@@ -1,7 +1,9 @@
 use radix_engine::constants::{
     DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN,
 };
-use radix_engine::engine::RuntimeError;
+use radix_engine::engine::{Kernel, SystemApi};
+use radix_engine::engine::{RuntimeError, Track};
+use radix_engine::fee::{FeeReserve, FeeTable, SystemLoanFeeReserve};
 use radix_engine::ledger::*;
 use radix_engine::model::{export_abi, export_abi_by_component, extract_package};
 use radix_engine::state_manager::StagedSubstateStoreManager;
@@ -9,14 +11,15 @@ use radix_engine::transaction::{
     ExecutionConfig, PreviewError, PreviewExecutor, PreviewResult, TransactionExecutor,
     TransactionReceipt,
 };
-use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter};
+use radix_engine::wasm::{DefaultWasmEngine, DefaultWasmInstance, WasmInstrumenter};
 use sbor::describe::Fields;
 use sbor::Type;
 use scrypto::abi::{BlueprintAbi, Fn};
 use scrypto::core::Network;
-use scrypto::engine::types::{KeyValueStoreId, SubstateId, VaultId};
+use scrypto::engine::types::{KeyValueStoreId, RENodeId, SubstateId, VaultId};
 use scrypto::prelude::*;
 use scrypto::prelude::{HashMap, Package};
+use scrypto::values::ScryptoValue;
 use scrypto::{abi, to_struct};
 use transaction::builder::ManifestBuilder;
 use transaction::model::{ExecutableTransaction, TransactionManifest};
@@ -437,6 +440,71 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             .build();
         let receipt = self.execute_manifest(manifest, vec![signer_public_key]);
         receipt.new_component_addresses[0]
+    }
+
+    pub fn set_current_epoch(&mut self, epoch: u64) {
+        self.system_kernel_call(|kernel| {
+            kernel
+                .invoke_method(
+                    Receiver::Ref(RENodeId::System),
+                    FnIdentifier::Native(NativeFnIdentifier::System(SystemFnIdentifier::SetEpoch)),
+                    ScryptoValue::from_typed(&SystemSetEpochInput { epoch }),
+                )
+                .unwrap()
+        });
+    }
+
+    pub fn get_current_epoch(&mut self) -> u64 {
+        let current_epoch: ScryptoValue = self.system_kernel_call(|kernel| {
+            kernel
+                .invoke_method(
+                    Receiver::Ref(RENodeId::System),
+                    FnIdentifier::Native(NativeFnIdentifier::System(SystemFnIdentifier::SetEpoch)),
+                    ScryptoValue::from_typed(&SystemGetCurrentEpochInput {}),
+                )
+                .unwrap()
+        });
+        scrypto_decode(&current_epoch.raw).unwrap()
+    }
+
+    /// Performs a kernel call through a kernel with `is_system = true`.
+    fn system_kernel_call<F>(&mut self, fun: F) -> ScryptoValue
+    where
+        F: FnOnce(
+            &mut Kernel<DefaultWasmEngine, DefaultWasmInstance, SystemLoanFeeReserve>,
+        ) -> ScryptoValue,
+    {
+        let tx_hash = hash(self.next_transaction_nonce.to_string());
+        let mut substate_store = self.execution_stores.get_output_store(0);
+        let mut wasm_engine = DefaultWasmEngine::new();
+        let mut wasm_instrumenter = WasmInstrumenter::new();
+        let mut track = Track::new(&substate_store);
+        let mut fee_reserve = SystemLoanFeeReserve::default();
+        let fee_table = FeeTable::new();
+
+        let mut kernel = Kernel::new(
+            tx_hash,
+            vec![],
+            true,
+            DEFAULT_MAX_CALL_DEPTH,
+            false,
+            &mut track,
+            &mut wasm_engine,
+            &mut wasm_instrumenter,
+            &mut fee_reserve,
+            &fee_table,
+        );
+
+        // Invoke the system
+        let output: ScryptoValue = fun(&mut kernel);
+
+        // Commit
+        self.next_transaction_nonce += 1;
+        track.commit();
+        let receipt = track.to_receipt();
+        receipt.state_updates.commit(&mut substate_store);
+
+        output
     }
 }
 

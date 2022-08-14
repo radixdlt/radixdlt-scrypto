@@ -8,6 +8,7 @@
         "scrypto-abi/Cargo.toml",
         "scrypto-derive/Cargo.toml",
         "scrypto-tests/Cargo.toml",
+        "scrypto-unit/Cargo.toml",
         "simulator/Cargo.toml",
         "transaction/Cargo.toml",
     ],
