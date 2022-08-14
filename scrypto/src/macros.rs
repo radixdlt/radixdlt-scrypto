@@ -80,7 +80,7 @@ macro_rules! dec {
 }
 
 /// Creates a safe integer from literals.
-/// You must specify the type of the 
+/// You must specify the type of the
 /// integer you want to create.
 ///
 /// # Example

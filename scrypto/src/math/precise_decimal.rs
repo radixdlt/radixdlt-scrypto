@@ -50,7 +50,13 @@ impl PreciseDecimal {
 
     pub const ZERO: Self = Self(I512([0; 64]));
 
-    pub const ONE: Self = Self(I512([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x1F, 0x6A, 0xBF, 0x64, 0xED, 0x38, 0x6E, 0xED, 0x97, 0xA7, 0xDA, 0xF4, 0xF9, 0x3F, 0xE9, 0x03, 0x4F, 0x18, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]));
+    pub const ONE: Self = Self(I512([
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x1F, 0x6A, 0xBF, 0x64, 0xED, 0x38,
+        0x6E, 0xED, 0x97, 0xA7, 0xDA, 0xF4, 0xF9, 0x3F, 0xE9, 0x03, 0x4F, 0x18, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00,
+    ]));
 
     /// Returns `PreciseDecimal` of 0.
     pub fn zero() -> Self {
@@ -95,7 +101,7 @@ impl PreciseDecimal {
     pub fn round(&self, decimal_places: u32, mode: RoundingMode) -> Self {
         assert!(decimal_places <= Self::SCALE);
 
-        let divisor:I512 = I512::from(10i8).pow(Self::SCALE - decimal_places);
+        let divisor: I512 = I512::from(10i8).pow(Self::SCALE - decimal_places);
         match mode {
             RoundingMode::TowardsPositiveInfinity => {
                 if self.0 % divisor == I512::zero() {
@@ -183,7 +189,13 @@ impl PreciseDecimal {
         if exp % 2 == 0 {
             return PreciseDecimal(&base * &base / &one).powi(div(exp, 2));
         } else {
-            return PreciseDecimal(&base * PreciseDecimal(&base * &base / &one).powi(div(sub(exp, 1), 2)).0 / &one);
+            return PreciseDecimal(
+                &base
+                    * PreciseDecimal(&base * &base / &one)
+                        .powi(div(sub(exp, 1), 2))
+                        .0
+                    / &one,
+            );
         }
     }
 }
@@ -233,7 +245,9 @@ impl From<bool> for PreciseDecimal {
 }
 
 impl<T: TryInto<PreciseDecimal>> Add<T> for PreciseDecimal
-where <T as TryInto<PreciseDecimal>>::Error: fmt::Debug {
+where
+    <T as TryInto<PreciseDecimal>>::Error: fmt::Debug,
+{
     type Output = PreciseDecimal;
 
     fn add(self, other: T) -> Self::Output {
@@ -246,7 +260,9 @@ where <T as TryInto<PreciseDecimal>>::Error: fmt::Debug {
 }
 
 impl<T: TryInto<PreciseDecimal>> Sub<T> for PreciseDecimal
-where <T as TryInto<PreciseDecimal>>::Error: fmt::Debug {
+where
+    <T as TryInto<PreciseDecimal>>::Error: fmt::Debug,
+{
     type Output = PreciseDecimal;
 
     fn sub(self, other: T) -> Self::Output {
@@ -259,7 +275,9 @@ where <T as TryInto<PreciseDecimal>>::Error: fmt::Debug {
 }
 
 impl<T: TryInto<PreciseDecimal>> Mul<T> for PreciseDecimal
-where <T as TryInto<PreciseDecimal>>::Error: fmt::Debug {
+where
+    <T as TryInto<PreciseDecimal>>::Error: fmt::Debug,
+{
     type Output = PreciseDecimal;
 
     fn mul(self, other: T) -> Self::Output {
@@ -272,7 +290,9 @@ where <T as TryInto<PreciseDecimal>>::Error: fmt::Debug {
 }
 
 impl<T: TryInto<PreciseDecimal>> Div<T> for PreciseDecimal
-where <T as TryInto<PreciseDecimal>>::Error: fmt::Debug {
+where
+    <T as TryInto<PreciseDecimal>>::Error: fmt::Debug,
+{
     type Output = PreciseDecimal;
 
     fn div(self, other: T) -> Self::Output {
@@ -293,7 +313,9 @@ impl Neg for PreciseDecimal {
 }
 
 impl<T: TryInto<PreciseDecimal>> AddAssign<T> for PreciseDecimal
-where <T as TryInto<PreciseDecimal>>::Error: fmt::Debug {
+where
+    <T as TryInto<PreciseDecimal>>::Error: fmt::Debug,
+{
     fn add_assign(&mut self, other: T) {
         let other: PreciseDecimal = other.try_into().expect("Overflow");
         self.0 += other.0;
@@ -301,7 +323,9 @@ where <T as TryInto<PreciseDecimal>>::Error: fmt::Debug {
 }
 
 impl<T: TryInto<PreciseDecimal>> SubAssign<T> for PreciseDecimal
-where <T as TryInto<PreciseDecimal>>::Error: fmt::Debug {
+where
+    <T as TryInto<PreciseDecimal>>::Error: fmt::Debug,
+{
     fn sub_assign(&mut self, other: T) {
         let other: PreciseDecimal = other.try_into().expect("Overflow");
         self.0 -= other.0;
@@ -309,7 +333,9 @@ where <T as TryInto<PreciseDecimal>>::Error: fmt::Debug {
 }
 
 impl<T: TryInto<PreciseDecimal>> MulAssign<T> for PreciseDecimal
-where <T as TryInto<PreciseDecimal>>::Error: fmt::Debug {
+where
+    <T as TryInto<PreciseDecimal>>::Error: fmt::Debug,
+{
     fn mul_assign(&mut self, other: T) {
         let other: PreciseDecimal = other.try_into().expect("Overflow");
         self.0 *= other.0;
@@ -317,7 +343,9 @@ where <T as TryInto<PreciseDecimal>>::Error: fmt::Debug {
 }
 
 impl<T: TryInto<PreciseDecimal>> DivAssign<T> for PreciseDecimal
-where <T as TryInto<PreciseDecimal>>::Error: fmt::Debug {
+where
+    <T as TryInto<PreciseDecimal>>::Error: fmt::Debug,
+{
     fn div_assign(&mut self, other: T) {
         let other: PreciseDecimal = other.try_into().expect("Overflow");
         self.0 /= other.0;
@@ -375,7 +403,7 @@ impl FromStr for PreciseDecimal {
         while p < chars.len() && chars[p] != '.' {
             let digit = read_digitprecesedecimal(chars[p]);
             match digit {
-                Ok(dig) => {value = value * I512::from(10u8) + I512::from(dig) * sign}
+                Ok(dig) => value = value * I512::from(10u8) + I512::from(dig) * sign,
                 Err(e) => return Err(e),
             }
             p += 1;
@@ -392,8 +420,8 @@ impl FromStr for PreciseDecimal {
             if p < chars.len() {
                 let digit = read_digitprecesedecimal(chars[p]);
                 match digit {
-                    Ok(dig) => {value = value * I512::from(10u8) + I512::from(dig) * sign}
-                    Err(e) => return Err(e)
+                    Ok(dig) => value = value * I512::from(10u8) + I512::from(dig) * sign,
+                    Err(e) => return Err(e),
                 }
                 p += 1;
             } else {
@@ -452,7 +480,7 @@ impl fmt::Debug for PreciseDecimal {
         write!(f, "{}", self.to_string())
     }
 }
-fn read_digitprecesedecimal(c:char)->Result<U8,ParsePreciseDecimalError> {
+fn read_digitprecesedecimal(c: char) -> Result<U8, ParsePreciseDecimalError> {
     let n = U8::from(c as u8);
     if n >= U8(48u8) && n <= U8(48u8 + 9u8) {
         Ok(n - 48u8)
@@ -461,14 +489,13 @@ fn read_digitprecesedecimal(c:char)->Result<U8,ParsePreciseDecimalError> {
     }
 }
 
-fn read_dotprecesedecimal(c:char)->Result<(),ParsePreciseDecimalError> {
+fn read_dotprecesedecimal(c: char) -> Result<(), ParsePreciseDecimalError> {
     if c == '.' {
         Ok(())
     } else {
         Err(ParsePreciseDecimalError::InvalidChar(c))
     }
 }
-
 
 //========
 // ParseDecimalError, ParsePreciseDecimalError
@@ -511,9 +538,9 @@ impl Truncate<Decimal> for PreciseDecimal {
     fn truncate(self) -> Self::Output {
         Decimal(
             (self.0 / I256::from(10i8).pow(PreciseDecimal::SCALE - PreciseDecimal::SCALE))
-            .try_into()
-            .expect("Overflow"),
-            )
+                .try_into()
+                .expect("Overflow"),
+        )
     }
 }
 
@@ -528,7 +555,6 @@ macro_rules! from_integer {
         )*
     };
 }
-
 
 from_integer!(U8, U16, U32, U64, U128);
 from_integer!(I8, I16, I32, I64, I128);
@@ -570,7 +596,7 @@ pub enum RoundingMode {
 mod tests {
     use super::*;
     use crate::math::precise_decimal::RoundingMode;
-    use crate::{pdec};
+    use crate::pdec;
     use sbor::rust::vec;
 
     #[test]
@@ -590,7 +616,7 @@ mod tests {
         );
         assert_eq!(
             PreciseDecimal(I512::from(
-                    "1234567890000000000000000000000000000000000000000000000000000000000000000"
+                "1234567890000000000000000000000000000000000000000000000000000000000000000"
             ))
             .to_string(),
             "123456789"
@@ -611,19 +637,19 @@ mod tests {
         assert_eq!(
             PreciseDecimal::from_str("0.000000000000000001").unwrap(),
             PreciseDecimal(I512::from(10).pow(46)),
-            );
+        );
         assert_eq!(
             PreciseDecimal::from_str("0.123456789123456789").unwrap(),
             PreciseDecimal(I512::from(123456789123456789i128).mul(I512::from(10i8).pow(46))),
-            );
+        );
         assert_eq!(
             PreciseDecimal::from_str("1").unwrap(),
             PreciseDecimal(I512::from(10).pow(64)),
-            );
+        );
         assert_eq!(
             PreciseDecimal::from_str("123456789123456789").unwrap(),
             PreciseDecimal(I512::from(123456789123456789i128).mul(I512::from(10).pow(64))),
-            );
+        );
         assert_eq!(
             PreciseDecimal::from_str(
                 "670390396497129854978701249910292306373968291029619668886178072186088201503677348840093714.9083451713845015929093243025426876941405973284973216824503042047"

@@ -51,7 +51,11 @@ impl Decimal {
 
     pub const ZERO: Self = Self(I256([0; 32]));
 
-    pub const ONE: Self = Self(I256([0x00, 0x00, 0x64, 0xA7, 0xB3, 0xB6, 0xE0, 0x0D, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]));
+    pub const ONE: Self = Self(I256([
+        0x00, 0x00, 0x64, 0xA7, 0xB3, 0xB6, 0xE0, 0x0D, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00,
+    ]));
 
     /// Returns `Decimal` of 0.
     pub fn zero() -> Self {
@@ -96,7 +100,7 @@ impl Decimal {
     pub fn round(&self, decimal_places: u32, mode: RoundingMode) -> Self {
         assert!(decimal_places <= Self::SCALE);
 
-        let divisor:I256 = I256::from(10i8).pow(Self::SCALE - decimal_places);
+        let divisor: I256 = I256::from(10i8).pow(Self::SCALE - decimal_places);
         match mode {
             RoundingMode::TowardsPositiveInfinity => {
                 if self.0 % divisor == I256::zero() {
@@ -184,7 +188,9 @@ impl Decimal {
         if exp % 2 == 0 {
             return Decimal(&base * &base / &one).powi(div(exp, 2));
         } else {
-            return Decimal(&base * Decimal(&base * &base / &one).powi(div(sub(exp, 1), 2)).0 / &one);
+            return Decimal(
+                &base * Decimal(&base * &base / &one).powi(div(sub(exp, 1), 2)).0 / &one,
+            );
         }
     }
 }
@@ -234,7 +240,9 @@ impl From<bool> for Decimal {
 }
 
 impl<T: TryInto<Decimal>> Add<T> for Decimal
-where <T as TryInto<Decimal>>::Error: fmt::Debug {
+where
+    <T as TryInto<Decimal>>::Error: fmt::Debug,
+{
     type Output = Decimal;
 
     fn add(self, other: T) -> Self::Output {
@@ -247,7 +255,9 @@ where <T as TryInto<Decimal>>::Error: fmt::Debug {
 }
 
 impl<T: TryInto<Decimal>> Sub<T> for Decimal
-where <T as TryInto<Decimal>>::Error: fmt::Debug {
+where
+    <T as TryInto<Decimal>>::Error: fmt::Debug,
+{
     type Output = Decimal;
 
     fn sub(self, other: T) -> Self::Output {
@@ -260,7 +270,9 @@ where <T as TryInto<Decimal>>::Error: fmt::Debug {
 }
 
 impl<T: TryInto<Decimal>> Mul<T> for Decimal
-where <T as TryInto<Decimal>>::Error: fmt::Debug {
+where
+    <T as TryInto<Decimal>>::Error: fmt::Debug,
+{
     type Output = Decimal;
 
     fn mul(self, other: T) -> Self::Output {
@@ -273,7 +285,9 @@ where <T as TryInto<Decimal>>::Error: fmt::Debug {
 }
 
 impl<T: TryInto<Decimal>> Div<T> for Decimal
-where <T as TryInto<Decimal>>::Error: fmt::Debug {
+where
+    <T as TryInto<Decimal>>::Error: fmt::Debug,
+{
     type Output = Decimal;
 
     fn div(self, other: T) -> Self::Output {
@@ -294,7 +308,9 @@ impl Neg for Decimal {
 }
 
 impl<T: TryInto<Decimal>> AddAssign<T> for Decimal
-where <T as TryInto<Decimal>>::Error: fmt::Debug {
+where
+    <T as TryInto<Decimal>>::Error: fmt::Debug,
+{
     fn add_assign(&mut self, other: T) {
         let other: Decimal = other.try_into().expect("Overflow");
         self.0 += other.0;
@@ -302,7 +318,9 @@ where <T as TryInto<Decimal>>::Error: fmt::Debug {
 }
 
 impl<T: TryInto<Decimal>> SubAssign<T> for Decimal
-where <T as TryInto<Decimal>>::Error: fmt::Debug {
+where
+    <T as TryInto<Decimal>>::Error: fmt::Debug,
+{
     fn sub_assign(&mut self, other: T) {
         let other: Decimal = other.try_into().expect("Overflow");
         self.0 -= other.0;
@@ -310,7 +328,9 @@ where <T as TryInto<Decimal>>::Error: fmt::Debug {
 }
 
 impl<T: TryInto<Decimal>> MulAssign<T> for Decimal
-where <T as TryInto<Decimal>>::Error: fmt::Debug {
+where
+    <T as TryInto<Decimal>>::Error: fmt::Debug,
+{
     fn mul_assign(&mut self, other: T) {
         let other: Decimal = other.try_into().expect("Overflow");
         self.0 *= other.0;
@@ -318,7 +338,9 @@ where <T as TryInto<Decimal>>::Error: fmt::Debug {
 }
 
 impl<T: TryInto<Decimal>> DivAssign<T> for Decimal
-where <T as TryInto<Decimal>>::Error: fmt::Debug {
+where
+    <T as TryInto<Decimal>>::Error: fmt::Debug,
+{
     fn div_assign(&mut self, other: T) {
         let other: Decimal = other.try_into().expect("Overflow");
         self.0 /= other.0;
@@ -376,7 +398,7 @@ impl FromStr for Decimal {
         while p < chars.len() && chars[p] != '.' {
             let digit = read_digitdecimal(chars[p]);
             match digit {
-                Ok(dig) => {value = value * I256::from(10u8) + I256::from(dig) * sign}
+                Ok(dig) => value = value * I256::from(10u8) + I256::from(dig) * sign,
                 Err(e) => return Err(e),
             }
             p += 1;
@@ -385,7 +407,7 @@ impl FromStr for Decimal {
         // read radix point
         if p < chars.len() {
             read_dotdecimal(chars[p])?;
-                            p += 1;
+            p += 1;
         }
 
         // read fraction
@@ -393,8 +415,8 @@ impl FromStr for Decimal {
             if p < chars.len() {
                 let digit = read_digitdecimal(chars[p]);
                 match digit {
-                    Ok(dig) => {value = value * I256::from(10u8) + I256::from(dig) * sign}
-                    Err(e) => return Err(e)
+                    Ok(dig) => value = value * I256::from(10u8) + I256::from(dig) * sign,
+                    Err(e) => return Err(e),
                 }
                 p += 1;
             } else {
@@ -453,7 +475,7 @@ impl fmt::Debug for Decimal {
         write!(f, "{}", self.to_string())
     }
 }
-fn read_digitdecimal(c:char) -> Result<U8, ParseDecimalError> {
+fn read_digitdecimal(c: char) -> Result<U8, ParseDecimalError> {
     let n = U8::from(c as u8);
     if n >= U8(48u8) && n <= U8(48u8 + 9u8) {
         Ok(n - 48u8)
@@ -462,14 +484,13 @@ fn read_digitdecimal(c:char) -> Result<U8, ParseDecimalError> {
     }
 }
 
-fn read_dotdecimal(c:char) -> Result<(), ParseDecimalError> {
+fn read_dotdecimal(c: char) -> Result<(), ParseDecimalError> {
     if c == '.' {
         Ok(())
     } else {
         Err(ParseDecimalError::InvalidChar(c))
     }
 }
-
 
 //========
 // ParseDecimalError, ParsePreciseDecimalError
@@ -526,7 +547,6 @@ macro_rules! try_from_integer {
     };
 }
 
-
 try_from_integer!(U256, U384, U512, I256, I384, I512);
 
 /// Defines how rounding should be done.
@@ -549,7 +569,7 @@ pub enum RoundingMode {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{dec};
+    use crate::dec;
     use sbor::rust::vec;
 
     #[test]
@@ -1062,5 +1082,4 @@ mod tests {
         let dec = Decimal::from_str("non_decimal_value");
         assert_eq!(dec, Err(ParseDecimalError::InvalidChar('n')));
     }
-
 }
