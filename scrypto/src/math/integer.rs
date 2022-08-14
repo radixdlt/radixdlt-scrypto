@@ -839,9 +839,9 @@ macro_rules! checked_int_impl_signed {
                     /// ```
                     #[doc = "use scrypto::prelude::*;"]
                     ///
-                    #[doc = "assert_eq!(" $t "::tfrom(10i8).signum(), " $t "::tfrom(1i8));"]
-                    #[doc = "assert_eq!(" $t "::tfrom(0i8).signum(), " $t "::tfrom(0i8));"]
-                    #[doc = "assert_eq!(" $t "::tfrom(-10i8).signum(), " $t "::tfrom(-1i8));"]
+                    #[doc = "assert_eq!(" $t "::by(10i8).signum(), " $t "::by(1i8));"]
+                    #[doc = "assert_eq!(" $t "::by(0i8).signum(), " $t "::by(0i8));"]
+                    #[doc = "assert_eq!(" $t "::by(-10i8).signum(), " $t "::by(-1i8));"]
                     /// ```
                     #[inline]
                     #[must_use = "this returns the result of the operation, \
@@ -860,8 +860,8 @@ macro_rules! checked_int_impl_signed {
                     /// ```
                     #[doc = "use scrypto::prelude::*;"]
                     ///
-                    #[doc = "assert!(" $t "::tfrom(10i8).is_positive());"]
-                    #[doc = "assert!(!" $t "::tfrom(-10i8).is_positive());"]
+                    #[doc = "assert!(" $t "::by(10i8).is_positive());"]
+                    #[doc = "assert!(!" $t "::by(-10i8).is_positive());"]
                     /// ```
                     #[must_use]
                     #[inline]
@@ -880,8 +880,8 @@ macro_rules! checked_int_impl_signed {
                     /// ```
                     #[doc = "use scrypto::prelude::*;"]
                     ///
-                    #[doc = "assert!(" $t "::tfrom(-10i8).is_negative());"]
-                    #[doc = "assert!(!" $t "::tfrom(10i8).is_negative());"]
+                    #[doc = "assert!(" $t "::by(-10i8).is_negative());"]
+                    #[doc = "assert!(!" $t "::by(10i8).is_negative());"]
                     /// ```
                     #[must_use]
                     #[inline]
