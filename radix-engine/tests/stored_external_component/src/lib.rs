@@ -8,11 +8,13 @@ blueprint! {
     impl ExternalComponent {
         pub fn create() -> ComponentAddress {
             let external_component = Self {
-                external_component: Option::None
-            }.instantiate().globalize();
+                external_component: Option::None,
+            }
+            .instantiate()
+            .globalize();
 
             Self {
-                external_component: Option::Some(external_component)
+                external_component: Option::Some(external_component),
             }
             .instantiate()
             .globalize()

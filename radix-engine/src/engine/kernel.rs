@@ -1373,6 +1373,15 @@ where
 
         let (parent_pointer, current_value) =
             Self::read_value_internal(&mut self.call_frames, self.track, &substate_id)?;
+
+        // TODO: Clean the following referencing up
+        for component_address in &current_value.refed_component_addresses {
+            let node_id = RENodeId::Component(*component_address);
+            Self::current_frame_mut(&mut self.call_frames)
+                .node_refs
+                .insert(node_id, RENodePointer::Store(node_id));
+        }
+
         let cur_children = current_value.node_ids();
         for child_id in cur_children {
             let child_pointer = parent_pointer.child(child_id);
