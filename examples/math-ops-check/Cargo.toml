@@ -1,0 +1,24 @@
+[package]
+name = "tutorial"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+sbor = {path = "../../sbor"}
+scrypto = {path = "../../scrypto"}
+
+[dev-dependencies]
+transaction ={path = "../../transaction"}
+radix-engine ={path = "../../radix-engine"}
+scrypto-unit ={path = "../../scrypto-unit"}
+
+[profile.release]
+opt-level = 's'        # Optimize for size.
+lto = true             # Enable Link Time Optimization.
+codegen-units = 1      # Reduce number of codegen units to increase optimizations.
+panic = 'abort'        # Abort on panic.
+strip = "debuginfo"    # Strip debug info.
+overflow-checks = true # Panic in the case of an overflow.
+
+[lib]
+crate-type = ["cdylib", "lib"]
