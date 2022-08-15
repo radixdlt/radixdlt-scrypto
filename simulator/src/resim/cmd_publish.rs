@@ -1,12 +1,16 @@
 use clap::Parser;
 use colored::*;
+use radix_engine::engine::Substate;
+use radix_engine::ledger::{OutputValue, ReadableSubstateStore, WriteableSubstateStore};
 use scrypto::core::Network;
+use scrypto::engine::types::SubstateId;
 use scrypto::prelude::SYSTEM_COMPONENT;
 use std::ffi::OsStr;
 use std::fs;
 use std::path::PathBuf;
 use transaction::builder::ManifestBuilder;
 
+use crate::resim::Error::{InvalidPackageError, PackageAddressDoesNotExist};
 use crate::resim::*;
 use crate::utils::*;
 
@@ -15,6 +19,10 @@ use crate::utils::*;
 pub struct Publish {
     /// the path to a Scrypto package or a .wasm file
     path: PathBuf,
+
+    /// The package ID, for overwriting
+    #[clap(long)]
+    package_address: Option<PackageAddress>,
 
     /// Output a transaction manifest without execution
     #[clap(short, long)]
@@ -35,28 +43,54 @@ impl Publish {
         })
         .map_err(Error::IOError)?;
 
-        let manifest = ManifestBuilder::new(Network::LocalSimulator)
-            .lock_fee(100.into(), SYSTEM_COMPONENT)
-            .publish_package(extract_package(code).map_err(Error::PackageError)?)
-            .build();
+        let package = extract_package(code).map_err(Error::PackageError)?;
 
-        let receipt = handle_manifest(
-            manifest,
-            &None,
-            &self.manifest,
-            false,
-            self.trace,
-            false,
-            out,
-        )?;
-        if let Some(receipt) = receipt {
-            writeln!(
+        if let Some(package_address) = self.package_address.clone() {
+            let substate_id = SubstateId::Package(package_address);
+
+            let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?);
+
+            let next_version = substate_store
+                .get_substate(&substate_id)
+                .map(|OutputValue { version, .. }| version + 1)
+                .ok_or(PackageAddressDoesNotExist)?;
+
+            let validated_package =
+                ValidatedPackage::new(package).map_err(|_| InvalidPackageError)?;
+            let output_value = OutputValue {
+                substate: Substate::Package(validated_package),
+                version: next_version,
+            };
+
+            // Overwrite package
+            // TODO: implement real package overwrite
+            substate_store.put_substate(SubstateId::Package(package_address), output_value);
+            writeln!(out, "Package updated!").map_err(Error::IOError)?;
+        } else {
+            let manifest = ManifestBuilder::new(Network::LocalSimulator)
+                .lock_fee(100.into(), SYSTEM_COMPONENT)
+                .publish_package(package)
+                .build();
+
+            let receipt = handle_manifest(
+                manifest,
+                &None,
+                &self.manifest,
+                false,
+                self.trace,
+                false,
                 out,
-                "Success! New Package: {}",
-                receipt.new_package_addresses[0].to_string().green()
-            )
-            .map_err(Error::IOError)?;
+            )?;
+            if let Some(receipt) = receipt {
+                writeln!(
+                    out,
+                    "Success! New Package: {}",
+                    receipt.new_package_addresses[0].to_string().green()
+                )
+                .map_err(Error::IOError)?;
+            }
         }
+
         Ok(())
     }
 }
