@@ -36,14 +36,14 @@ fn test_loop_out_of_cost_unit() {
     let mut test_runner = TestRunner::new(true, &mut store);
 
     // Act
-    let code = wat2wasm(&include_str!("wasm/loop.wat").replace("${n}", "2000000"));
+    let code = wat2wasm(&include_str!("wasm/loop.wat").replace("${n}", "7000000"));
     let package = Package {
         code,
         blueprints: abi_single_fn_any_input_void_output("Test", "f"),
     };
     let package_address = test_runner.publish_package(package);
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
-        .lock_fee(10.into(), SYSTEM_COMPONENT)
+        .lock_fee(45.into(), SYSTEM_COMPONENT)
         .call_function(package_address, "Test", "f", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
