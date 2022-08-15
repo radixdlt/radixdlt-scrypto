@@ -7,5 +7,4 @@ use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
 #[test]
-fn test_hello() {
-}
+fn test_hello() {}
