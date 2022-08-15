@@ -90,6 +90,7 @@ where
         fee_reserve: &'g mut C,
         fee_table: &'g FeeTable,
     ) -> Self {
+        let frame = CallFrame::new_root(transaction_signers);
         let mut kernel = Self {
             transaction_hash,
             max_depth,
@@ -100,13 +101,34 @@ where
             fee_reserve,
             fee_table,
             id_allocator: IdAllocator::new(IdSpace::Application),
-            call_frames: vec![],
+            call_frames: vec![frame],
             phantom: PhantomData,
         };
 
-        let frame = CallFrame::new_root(transaction_signers, is_system, &mut kernel);
-        kernel.call_frames.push(frame);
-
+        if is_system {
+            let non_fungible_ids = [NonFungibleId::from_u32(0)].into_iter().collect();
+            let bucket_id = match kernel
+                .node_create(HeapRENode::Bucket(Bucket::new(
+                    ResourceContainer::new_non_fungible(SYSTEM_TOKEN, non_fungible_ids),
+                )))
+                .unwrap()
+            {
+                RENodeId::Bucket(bucket_id) => bucket_id,
+                _ => panic!("Unexpected RENodeID returned"),
+            };
+            let substate_id = SubstateId::Bucket(bucket_id);
+            let mut node_ref = kernel
+                .substate_borrow_mut(&substate_id)
+                .expect("TODO check this unwrap");
+            let bucket = node_ref.bucket();
+            let system_proof = bucket
+                .create_proof(bucket_id)
+                .expect("TODO check this unwrap");
+            Self::current_frame_mut(&mut kernel.call_frames)
+                .auth_zone
+                .proofs
+                .push(system_proof);
+        }
         kernel
     }
 
@@ -1059,11 +1081,21 @@ where
 
         let node_id = SubstateProperties::get_node_id(substate_id);
 
-        let node_pointer = Self::current_frame(&self.call_frames)
-            .node_refs
-            .get(&node_id)
-            .cloned()
-            .expect(&format!("Node should exist {:?}", node_id));
+        // TODO: Clean this up
+        let frame = Self::current_frame(&self.call_frames);
+        let node_pointer = if frame.owned_heap_nodes.contains_key(&node_id) {
+            RENodePointer::Heap {
+                frame_id: frame.depth,
+                root: node_id.clone(),
+                id: None,
+            }
+        } else {
+            Self::current_frame(&self.call_frames)
+                .node_refs
+                .get(&node_id)
+                .cloned()
+                .expect(&format!("Node should exist {:?}", node_id))
+        };
 
         Ok(node_pointer.borrow_native_ref(
             substate_id.clone(),
