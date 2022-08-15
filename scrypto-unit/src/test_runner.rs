@@ -3,7 +3,7 @@ use radix_engine::constants::{
 };
 use radix_engine::engine::{Kernel, SystemApi};
 use radix_engine::engine::{RuntimeError, Track};
-use radix_engine::fee::{FeeReserve, FeeTable, SystemLoanFeeReserve};
+use radix_engine::fee::{FeeTable, SystemLoanFeeReserve};
 use radix_engine::ledger::*;
 use radix_engine::model::{export_abi, export_abi_by_component, extract_package};
 use radix_engine::state_manager::StagedSubstateStoreManager;
@@ -443,7 +443,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     }
 
     pub fn set_current_epoch(&mut self, epoch: u64) {
-        self.system_kernel_call(|kernel| {
+        self.kernel_call(true, |kernel| {
             kernel
                 .invoke_method(
                     Receiver::Ref(RENodeId::System),
@@ -455,11 +455,13 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     }
 
     pub fn get_current_epoch(&mut self) -> u64 {
-        let current_epoch: ScryptoValue = self.system_kernel_call(|kernel| {
+        let current_epoch: ScryptoValue = self.kernel_call(false, |kernel| {
             kernel
                 .invoke_method(
                     Receiver::Ref(RENodeId::System),
-                    FnIdentifier::Native(NativeFnIdentifier::System(SystemFnIdentifier::SetEpoch)),
+                    FnIdentifier::Native(NativeFnIdentifier::System(
+                        SystemFnIdentifier::GetCurrentEpoch,
+                    )),
                     ScryptoValue::from_typed(&SystemGetCurrentEpochInput {}),
                 )
                 .unwrap()
@@ -468,7 +470,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     }
 
     /// Performs a kernel call through a kernel with `is_system = true`.
-    fn system_kernel_call<F>(&mut self, fun: F) -> ScryptoValue
+    fn kernel_call<F>(&mut self, is_system: bool, fun: F) -> ScryptoValue
     where
         F: FnOnce(
             &mut Kernel<DefaultWasmEngine, DefaultWasmInstance, SystemLoanFeeReserve>,
@@ -476,8 +478,6 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     {
         let tx_hash = hash(self.next_transaction_nonce.to_string());
         let mut substate_store = self.execution_stores.get_output_store(0);
-        let mut wasm_engine = DefaultWasmEngine::new();
-        let mut wasm_instrumenter = WasmInstrumenter::new();
         let mut track = Track::new(&substate_store);
         let mut fee_reserve = SystemLoanFeeReserve::default();
         let fee_table = FeeTable::new();
@@ -485,12 +485,12 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         let mut kernel = Kernel::new(
             tx_hash,
             vec![],
-            true,
+            is_system,
             DEFAULT_MAX_CALL_DEPTH,
             false,
             &mut track,
-            &mut wasm_engine,
-            &mut wasm_instrumenter,
+            &mut self.wasm_engine,
+            &mut self.wasm_instrumenter,
             &mut fee_reserve,
             &fee_table,
         );
@@ -569,4 +569,39 @@ pub fn abi_single_fn_any_input_void_output(
         },
     );
     blueprint_abis
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn setting_single_epoch_succeeds() {
+        // Arrange
+        let mut store = TypedInMemorySubstateStore::with_bootstrap();
+        let mut test_runner = TestRunner::new(true, &mut store);
+        let epoch = 12u64;
+
+        // Act
+        test_runner.set_current_epoch(epoch);
+
+        // Assert
+        assert_eq!(test_runner.get_current_epoch(), epoch);
+    }
+
+    #[test]
+    fn setting_multiple_epochs_succeed() {
+        // Arrange
+        let mut store = TypedInMemorySubstateStore::with_bootstrap();
+        let mut test_runner = TestRunner::new(true, &mut store);
+        let epochs = vec![0u64, 100u64, 12u64, 19u64, 128u64, 4u64];
+
+        for epoch in epochs.into_iter() {
+            // Act
+            test_runner.set_current_epoch(epoch);
+
+            // Assert
+            assert_eq!(test_runner.get_current_epoch(), epoch);
+        }
+    }
 }
