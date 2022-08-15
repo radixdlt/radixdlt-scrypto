@@ -36,7 +36,7 @@ impl Publish {
         .map_err(Error::IOError)?;
 
         let manifest = ManifestBuilder::new(Network::LocalSimulator)
-            .lock_fee(10.into(), SYSTEM_COMPONENT)
+            .lock_fee(100.into(), SYSTEM_COMPONENT)
             .publish_package(extract_package(code).map_err(Error::PackageError)?)
             .build();
 

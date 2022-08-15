@@ -50,7 +50,7 @@ impl Transfer {
         }
 
         let manifest = manifest_builder
-            .lock_fee(10.into(), SYSTEM_COMPONENT)
+            .lock_fee(100.into(), SYSTEM_COMPONENT)
             .withdraw_from_account_by_amount(self.amount, self.resource_address, default_account)
             .call_method_with_all_resources(self.recipient, "deposit_batch")
             .build();
