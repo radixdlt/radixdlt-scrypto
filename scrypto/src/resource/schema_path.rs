@@ -9,7 +9,7 @@ use sbor::*;
 
 use crate::resource::schema_path::SchemaSubPath::{Field, Index};
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode, Ord, PartialOrd)]
 enum SchemaSubPath {
     Index(usize),
     Field(String),
@@ -29,7 +29,7 @@ impl FromStr for SchemaSubPath {
 }
 
 /// Describes a value located in some sbor given a schema for that sbor
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode, Ord, PartialOrd)]
 pub struct SchemaPath(Vec<SchemaSubPath>);
 
 impl SchemaPath {

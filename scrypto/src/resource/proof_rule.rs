@@ -13,7 +13,7 @@ use crate::engine::types::ProofId;
 use crate::resource::AccessRuleNode::{AllOf, AnyOf};
 use crate::resource::*;
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode, Ord, PartialOrd)]
 pub enum SoftDecimal {
     Static(Decimal),
     Dynamic(SchemaPath),
@@ -38,7 +38,7 @@ impl From<&str> for SoftDecimal {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode, Ord, PartialOrd)]
 pub enum SoftCount {
     Static(u8),
     Dynamic(SchemaPath),
@@ -63,7 +63,7 @@ impl From<&str> for SoftCount {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode, Ord, PartialOrd)]
 pub enum SoftResource {
     Static(ResourceAddress),
     Dynamic(SchemaPath),
@@ -88,7 +88,7 @@ impl From<&str> for SoftResource {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode, Ord, PartialOrd)]
 pub enum SoftResourceOrNonFungible {
     StaticNonFungible(NonFungibleAddress),
     StaticResource(ResourceAddress),
@@ -120,7 +120,7 @@ impl From<&str> for SoftResourceOrNonFungible {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode, Ord, PartialOrd)]
 pub enum SoftResourceOrNonFungibleList {
     Static(Vec<SoftResourceOrNonFungible>),
     Dynamic(SchemaPath),
@@ -149,7 +149,7 @@ where
 }
 
 /// Resource Proof Rules
-#[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe, Ord, PartialOrd)]
 pub enum ProofRule {
     Require(SoftResourceOrNonFungible),
     AmountOf(SoftDecimal, SoftResource),
@@ -181,7 +181,7 @@ macro_rules! resource_list {
   });
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode, Ord, PartialOrd)]
 pub enum AccessRuleNode {
     ProofRule(ProofRule),
     AnyOf(Vec<AccessRuleNode>),
@@ -361,7 +361,7 @@ macro_rules! access_rule_node {
     }};
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode, Ord, PartialOrd)]
 pub enum AccessRule {
     AllowAll,
     DenyAll,
