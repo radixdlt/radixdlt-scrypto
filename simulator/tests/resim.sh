@@ -71,4 +71,4 @@ $resim transfer 2 $token $account2 --proofs 1,$supervisor_badge 1,$admin_badge 1
 $resim mint 100000 $token --proofs 1,$supervisor_badge 1,$admin_badge 1,$superadmin_badge
 
 # Test - publishing a large package
-resim publish ./tests/large_package.wasm
+$resim publish ./tests/large_package.wasm
