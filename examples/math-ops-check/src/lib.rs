@@ -1,8 +1,7 @@
 use scrypto::prelude::*;
 
 blueprint! {
-    struct Hello {
-    }
+    struct Hello {}
 
     impl Hello {
         pub fn a(b: String) {
@@ -27,4 +26,3 @@ blueprint! {
         }
     }
 }
-
