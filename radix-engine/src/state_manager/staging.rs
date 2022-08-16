@@ -104,6 +104,10 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> StagedSubstateStoreM
             self.parent.put_substate(substate_id, output);
         }
 
+        for substate_id in node.new_roots {
+            self.parent.set_root(substate_id);
+        }
+
         if !remove_children {
             self.set_root_parent(id);
         }

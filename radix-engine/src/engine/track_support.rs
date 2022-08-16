@@ -16,7 +16,6 @@ use crate::state_manager::VirtualSubstateId;
 pub struct BaseStateTrack<'s> {
     /// The parent state track
     substate_store: &'s dyn ReadableSubstateStore,
-    new_globalized_substates: IndexSet<SubstateId>,
     /// Substates either created during the transaction or loaded from substate store
     ///
     /// TODO: can we use Substate instead of `Vec<u8>`?
@@ -24,6 +23,7 @@ pub struct BaseStateTrack<'s> {
     /// the separation between app state track and base stack track.
     ///
     substates: IndexMap<SubstateId, Option<Vec<u8>>>,
+    new_root_substates: IndexSet<SubstateId>,
 }
 
 
@@ -31,7 +31,7 @@ impl<'s> BaseStateTrack<'s> {
     pub fn new(substate_store: &'s dyn ReadableSubstateStore) -> Self {
         Self {
             substate_store,
-            new_globalized_substates: IndexSet::new(),
+            new_root_substates: IndexSet::new(),
             substates: IndexMap::new(),
         }
     }
@@ -49,6 +49,10 @@ impl<'s> BaseStateTrack<'s> {
 
     pub fn generate_diff(&self) -> StateDiff {
         let mut diff = StateDiff::new();
+
+        for substate_id in &self.new_root_substates {
+            diff.new_roots.push(substate_id.clone());
+        }
 
         for (substate_id, substate) in &self.substates {
             if let Some(substate) = substate {
@@ -132,7 +136,7 @@ pub struct AppStateTrack<'s> {
     base_state_track: BaseStateTrack<'s>,
     /// Substates either created during the transaction or loaded from the base state track
     substates: IndexMap<SubstateId, Option<Vec<u8>>>,
-    new_globalized_substates: IndexSet<SubstateId>,
+    new_root_substates: IndexSet<SubstateId>,
 }
 
 impl<'s> AppStateTrack<'s> {
@@ -140,8 +144,24 @@ impl<'s> AppStateTrack<'s> {
         Self {
             base_state_track,
             substates: IndexMap::new(),
-            new_globalized_substates: IndexSet::new(),
+            new_root_substates: IndexSet::new(),
         }
+    }
+
+    pub fn is_root(&mut self, substate_id: &SubstateId) -> bool {
+        if self.new_root_substates.contains(substate_id) {
+            return true;
+        }
+
+        if self.base_state_track.new_root_substates.contains(substate_id) {
+            return true;
+        }
+
+        self.base_state_track.substate_store.is_root(substate_id)
+    }
+
+    pub fn set_substate_root(&mut self, substate_id: SubstateId) {
+        self.new_root_substates.insert(substate_id);
     }
 
     /// Returns a copy of the substate associated with the given address, if exists
@@ -190,9 +210,6 @@ impl<'s> AppStateTrack<'s> {
             .map(|x| scrypto_decode(x).unwrap()))
     }
 
-    pub fn set_substate_global(&mut self, substate_id: SubstateId) {
-        self.new_globalized_substates.insert(substate_id);
-    }
 
     /// Creates a new substate and updates an existing one
     pub fn put_substate(&mut self, substate_id: SubstateId, substate: Substate) {
@@ -215,14 +232,14 @@ impl<'s> AppStateTrack<'s> {
             .substates
             .extend(self.substates.drain(RangeFull));
         self.base_state_track
-            .new_globalized_substates
-            .extend(self.new_globalized_substates.drain(RangeFull));
+            .new_root_substates
+            .extend(self.new_root_substates.drain(RangeFull));
     }
 
     /// Rollback all state changes
     pub fn rollback(&mut self) {
         self.substates.clear();
-        self.new_globalized_substates.clear();
+        self.new_root_substates.clear();
     }
 
     /// Unwraps into the base state track

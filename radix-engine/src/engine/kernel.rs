@@ -516,8 +516,12 @@ where
             for component_address in component_addresses {
                 let node_id = RENodeId::Component(component_address);
                 let substate_id = SubstateId::ComponentInfo(component_address);
+
+                // Check if component exists as root
+                if !self.track.is_root(&substate_id) {
+                    return Err(RuntimeError::RENodeNotFound(node_id));
+                }
                 let node_pointer = RENodePointer::Store(node_id);
-                // Check if component exists
                 node_pointer.acquire_lock(substate_id.clone(), false, false, &mut self.track)?;
                 node_pointer.release_lock(substate_id, false, &mut self.track);
                 next_frame_node_refs.insert(node_id, node_pointer);
