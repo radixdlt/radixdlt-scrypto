@@ -1,7 +1,7 @@
 use clap::Parser;
 use radix_engine::constants::*;
 use radix_engine::engine::Track;
-use radix_engine::engine::{Kernel, SystemApi};
+use radix_engine::engine::{Kernel, SystemApi, ExecutionTrace};
 use radix_engine::fee::{FeeTable, SystemLoanFeeReserve};
 use radix_engine_stores::rocks_db::RadixEngineDB;
 use scrypto::core::{
