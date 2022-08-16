@@ -1313,7 +1313,7 @@ where
 
         for (substate_id, substate) in substates {
             self.track
-                .create_uuid_substate(substate_id.clone(), substate);
+                .create_uuid_substate(substate_id.clone(), substate, true);
         }
 
         let mut to_store_values = HashMap::new();

@@ -1,6 +1,6 @@
 use core::ops::RangeFull;
 
-use indexmap::IndexMap;
+use indexmap::{IndexMap, IndexSet};
 use sbor::rust::vec::Vec;
 use scrypto::buffer::scrypto_decode;
 use scrypto::buffer::scrypto_encode;
@@ -16,6 +16,7 @@ use crate::state_manager::VirtualSubstateId;
 pub struct BaseStateTrack<'s> {
     /// The parent state track
     substate_store: &'s dyn ReadableSubstateStore,
+    new_globalized_substates: IndexSet<SubstateId>,
     /// Substates either created during the transaction or loaded from substate store
     ///
     /// TODO: can we use Substate instead of `Vec<u8>`?
@@ -25,18 +26,12 @@ pub struct BaseStateTrack<'s> {
     substates: IndexMap<SubstateId, Option<Vec<u8>>>,
 }
 
-/// Keeps track of state changes that may be rolled back according to transaction status
-pub struct AppStateTrack<'s> {
-    /// The parent state track
-    base_state_track: BaseStateTrack<'s>,
-    /// Substates either created during the transaction or loaded from the base state track
-    substates: IndexMap<SubstateId, Option<Vec<u8>>>,
-}
 
 impl<'s> BaseStateTrack<'s> {
     pub fn new(substate_store: &'s dyn ReadableSubstateStore) -> Self {
         Self {
             substate_store,
+            new_globalized_substates: IndexSet::new(),
             substates: IndexMap::new(),
         }
     }
@@ -131,11 +126,21 @@ pub enum StateTrackError {
     RENodeAlreadyTouched,
 }
 
+/// Keeps track of state changes that may be rolled back according to transaction status
+pub struct AppStateTrack<'s> {
+    /// The parent state track
+    base_state_track: BaseStateTrack<'s>,
+    /// Substates either created during the transaction or loaded from the base state track
+    substates: IndexMap<SubstateId, Option<Vec<u8>>>,
+    new_globalized_substates: IndexSet<SubstateId>,
+}
+
 impl<'s> AppStateTrack<'s> {
     pub fn new(base_state_track: BaseStateTrack<'s>) -> Self {
         Self {
             base_state_track,
             substates: IndexMap::new(),
+            new_globalized_substates: IndexSet::new(),
         }
     }
 
@@ -185,6 +190,10 @@ impl<'s> AppStateTrack<'s> {
             .map(|x| scrypto_decode(x).unwrap()))
     }
 
+    pub fn set_substate_global(&mut self, substate_id: SubstateId) {
+        self.new_globalized_substates.insert(substate_id);
+    }
+
     /// Creates a new substate and updates an existing one
     pub fn put_substate(&mut self, substate_id: SubstateId, substate: Substate) {
         self.substates
@@ -205,11 +214,15 @@ impl<'s> AppStateTrack<'s> {
         self.base_state_track
             .substates
             .extend(self.substates.drain(RangeFull));
+        self.base_state_track
+            .new_globalized_substates
+            .extend(self.new_globalized_substates.drain(RangeFull));
     }
 
     /// Rollback all state changes
     pub fn rollback(&mut self) {
         self.substates.clear();
+        self.new_globalized_substates.clear();
     }
 
     /// Unwraps into the base state track
