@@ -1,5 +1,5 @@
 use radix_engine::engine::RuntimeError;
-use radix_engine::ledger::InMemorySubstateStore;
+use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::ledger::WriteableSubstateStore;
 use radix_engine::model::KeyValueStoreEntryWrapper;
 use radix_engine::model::WorktopError;
@@ -17,7 +17,7 @@ where
     F: FnOnce(ComponentAddress) -> TransactionManifest,
 {
     // Basic setup
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account();
 
@@ -176,7 +176,7 @@ where
 #[test]
 fn test_fee_accounting_success() {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account1) = test_runner.new_account();
     let (_, _, account2) = test_runner.new_account();
@@ -209,7 +209,7 @@ fn test_fee_accounting_success() {
 #[test]
 fn test_fee_accounting_failure() {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account1) = test_runner.new_account();
     let (_, _, account2) = test_runner.new_account();
@@ -243,7 +243,7 @@ fn test_fee_accounting_failure() {
 #[test]
 fn test_fee_accounting_rejection() {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account1) = test_runner.new_account();
     let account1_balance = query_account_balance(&mut test_runner, account1, RADIX_TOKEN);
@@ -263,7 +263,7 @@ fn test_fee_accounting_rejection() {
 #[test]
 fn test_contingent_fee_accounting_success() {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key1, _, account1) = test_runner.new_account();
     let (public_key2, _, account2) = test_runner.new_account();
@@ -296,7 +296,7 @@ fn test_contingent_fee_accounting_success() {
 #[test]
 fn test_contingent_fee_accounting_failure() {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key1, _, account1) = test_runner.new_account();
     let (public_key2, _, account2) = test_runner.new_account();

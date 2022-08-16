@@ -1,5 +1,5 @@
 use radix_engine::engine::{DropFailure, RuntimeError};
-use radix_engine::ledger::InMemorySubstateStore;
+use radix_engine::ledger::TypedInMemorySubstateStore;
 use scrypto::core::Network;
 use scrypto::prelude::*;
 use scrypto::to_struct;
@@ -9,7 +9,7 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn dangling_component_should_fail() {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("leaks");
 
@@ -27,7 +27,7 @@ fn dangling_component_should_fail() {
 #[test]
 fn dangling_bucket_should_fail() {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("leaks");
 
@@ -45,7 +45,7 @@ fn dangling_bucket_should_fail() {
 #[test]
 fn dangling_vault_should_fail() {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("leaks");
 
@@ -63,7 +63,7 @@ fn dangling_vault_should_fail() {
 #[test]
 fn dangling_worktop_should_fail() {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("leaks");
 
@@ -81,7 +81,7 @@ fn dangling_worktop_should_fail() {
 #[test]
 fn dangling_kv_store_should_fail() {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("leaks");
 
@@ -99,7 +99,7 @@ fn dangling_kv_store_should_fail() {
 #[test]
 fn dangling_bucket_with_proof_should_fail() {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("leaks");
 

@@ -1,4 +1,4 @@
-use radix_engine::ledger::InMemorySubstateStore;
+use radix_engine::ledger::TypedInMemorySubstateStore;
 use scrypto::core::Network;
 use scrypto::prelude::*;
 use scrypto::to_struct;
@@ -8,7 +8,7 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn create_non_fungible_mutable() {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account();
     let package = test_runner.extract_and_publish_package("non_fungible");
@@ -33,7 +33,7 @@ fn create_non_fungible_mutable() {
 #[test]
 fn can_burn_non_fungible() {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account();
     let package = test_runner.extract_and_publish_package("non_fungible");
@@ -76,7 +76,7 @@ fn can_burn_non_fungible() {
 
 #[test]
 fn test_non_fungible() {
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account();
     let package_address = test_runner.extract_and_publish_package("non_fungible");
@@ -133,7 +133,7 @@ fn test_non_fungible() {
 
 #[test]
 fn test_singleton_non_fungible() {
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account();
     let package_address = test_runner.extract_and_publish_package("non_fungible");

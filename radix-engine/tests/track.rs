@@ -1,4 +1,4 @@
-use radix_engine::ledger::InMemorySubstateStore;
+use radix_engine::ledger::TypedInMemorySubstateStore;
 use scrypto::core::Network;
 use scrypto::prelude::*;
 use scrypto_unit::*;
@@ -17,7 +17,7 @@ fn self_transfer_txn(account: ComponentAddress, amount: Decimal) -> TransactionM
 fn batched_executions_should_result_in_the_same_result() {
     // Arrange
     // These runners should mirror each other
-    let mut store0 = InMemorySubstateStore::with_bootstrap();
+    let mut store0 = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner0 = TestRunner::new(true, &mut store0);
     let (public_key, _, account) = test_runner0.new_account();
     let mut manifests = Vec::new();
@@ -26,16 +26,16 @@ fn batched_executions_should_result_in_the_same_result() {
         manifests.push((manifest, vec![public_key]));
     }
 
-    let mut store1 = InMemorySubstateStore::with_bootstrap();
+    let mut store1 = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner1 = TestRunner::new(true, &mut store1);
     let _ = test_runner1.new_account();
-    let mut store2 = InMemorySubstateStore::with_bootstrap();
+    let mut store2 = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner2 = TestRunner::new(true, &mut store2);
     let _ = test_runner2.new_account();
-    let mut store3 = InMemorySubstateStore::with_bootstrap();
+    let mut store3 = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner3 = TestRunner::new(true, &mut store3);
     let _ = test_runner3.new_account();
-    let mut store4 = InMemorySubstateStore::with_bootstrap();
+    let mut store4 = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner4 = TestRunner::new(true, &mut store4);
     let _ = test_runner4.new_account();
 

@@ -70,5 +70,8 @@ $resim call-method $component organizational_authenticated_method --proofs 1,$su
 $resim transfer 2 $token $account2 --proofs 1,$supervisor_badge 1,$admin_badge 1,$superadmin_badge
 $resim mint 100000 $token --proofs 1,$supervisor_badge 1,$admin_badge 1,$superadmin_badge
 
+# Test - publishing a large package
+$resim publish ./tests/large_package.wasm
+
 # Test - math types and numbers
 $resim call-function $package "Numbers" test_input 1 2

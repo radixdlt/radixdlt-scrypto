@@ -1,4 +1,4 @@
-use radix_engine::ledger::InMemorySubstateStore;
+use radix_engine::ledger::TypedInMemorySubstateStore;
 use scrypto::address::Bech32Encoder;
 use scrypto::core::Network;
 use scrypto::{prelude::*, to_struct};
@@ -9,7 +9,7 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn test_external_bridges() {
     // ARRANGE
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
 
     // Part 1 - Upload the target and caller packages

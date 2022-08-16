@@ -1,4 +1,4 @@
-use radix_engine::ledger::InMemorySubstateStore;
+use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::wasm::InvokeError;
 use scrypto::core::Network;
 use scrypto::prelude::{Package, RADIX_TOKEN, SYSTEM_COMPONENT};
@@ -9,7 +9,7 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn test_loop() {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
 
     // Act
@@ -32,18 +32,18 @@ fn test_loop() {
 #[test]
 fn test_loop_out_of_cost_unit() {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
 
     // Act
-    let code = wat2wasm(&include_str!("wasm/loop.wat").replace("${n}", "2000000"));
+    let code = wat2wasm(&include_str!("wasm/loop.wat").replace("${n}", "7000000"));
     let package = Package {
         code,
         blueprints: abi_single_fn_any_input_void_output("Test", "f"),
     };
     let package_address = test_runner.publish_package(package);
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
-        .lock_fee(10.into(), SYSTEM_COMPONENT)
+        .lock_fee(45.into(), SYSTEM_COMPONENT)
         .call_function(package_address, "Test", "f", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -55,7 +55,7 @@ fn test_loop_out_of_cost_unit() {
 #[test]
 fn test_recursion() {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
 
     // Act
@@ -79,7 +79,7 @@ fn test_recursion() {
 #[test]
 fn test_recursion_stack_overflow() {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
 
     // Act
@@ -102,7 +102,7 @@ fn test_recursion_stack_overflow() {
 #[test]
 fn test_grow_memory() {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
 
     // Act
@@ -125,7 +125,7 @@ fn test_grow_memory() {
 #[test]
 fn test_grow_memory_out_of_cost_unit() {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
 
     // Act
@@ -148,7 +148,7 @@ fn test_grow_memory_out_of_cost_unit() {
 #[test]
 fn test_basic_transfer() {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key1, _, account1) = test_runner.new_account();
     let (_, _, account2) = test_runner.new_account();

@@ -27,7 +27,7 @@ impl TestTransaction {
                 nonce,
                 notary_public_key: EcdsaPublicKey([0u8; 33]),
                 notary_as_signatory: false,
-                cost_unit_limit: 10_000_000,
+                cost_unit_limit: u32::MAX, // TODO: Temporary fix to be able to publish large packages
                 tip_percentage: 5,
             })
             .manifest(manifest)
