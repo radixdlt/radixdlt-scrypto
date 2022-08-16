@@ -39,6 +39,7 @@ impl ExecutionTrace {
                     },
                 )
             })
+            .filter(|el| !el.amount.is_zero())
             .collect();
         ExecutionTraceReceipt { resource_changes }
     }
