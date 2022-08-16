@@ -5,6 +5,41 @@ use scrypto::to_struct;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
+
+#[test]
+fn should_not_be_able_call_owned_components_directly() {
+    // Arrange
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
+    let package_address = test_runner.extract_and_publish_package("local_component");
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .lock_fee(10.into(), SYSTEM_COMPONENT)
+        .call_function(
+            package_address,
+            "StoredSecret",
+            "new_global",
+            to_struct!(34567u32),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    receipt.expect_success();
+    let component_address = receipt.new_component_addresses[1];
+
+    // Act
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .lock_fee(10.into(), SYSTEM_COMPONENT)
+        .call_method(
+            component_address,
+            "get_secret",
+            to_struct!(),
+        )
+        .build();
+
+    // Assert
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    receipt.expect_rejection();
+}
+
 #[test]
 fn should_be_able_to_call_read_method_on_a_stored_component_in_owned_component() {
     // Arrange
