@@ -6,6 +6,29 @@ use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
 #[test]
+fn stored_component_addresses_in_non_globalized_component_are_invokable() {
+    // Arrange
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
+    let (public_key, _, _) = test_runner.new_account();
+    let package = test_runner.extract_and_publish_package("stored_external_component");
+
+    // Act
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .lock_fee(10.into(), SYSTEM_COMPONENT)
+        .call_function(
+            package,
+            "ExternalComponent",
+            "create_and_call",
+            to_struct!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    receipt.expect_success();
+}
+
+#[test]
 fn stored_component_addresses_are_invokable() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();

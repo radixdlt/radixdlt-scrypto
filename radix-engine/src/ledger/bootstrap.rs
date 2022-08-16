@@ -39,6 +39,7 @@ fn create_genesis(mut track: Track) -> TrackReceipt {
     track.create_uuid_substate(
         SubstateId::Package(SYSTEM_PACKAGE),
         validated_system_package,
+        true,
     );
 
     let account_package =
@@ -47,6 +48,7 @@ fn create_genesis(mut track: Track) -> TrackReceipt {
     track.create_uuid_substate(
         SubstateId::Package(ACCOUNT_PACKAGE),
         validated_account_package,
+        true,
     );
 
     // Radix token resource address
@@ -71,6 +73,7 @@ fn create_genesis(mut track: Track) -> TrackReceipt {
     track.create_uuid_substate(
         SubstateId::ResourceManager(RADIX_TOKEN),
         xrd_resource_manager,
+        true,
     );
 
     let mut ecdsa_resource_auth = HashMap::new();
@@ -81,14 +84,18 @@ fn create_genesis(mut track: Track) -> TrackReceipt {
         ecdsa_resource_auth,
     )
     .unwrap();
-    track.create_uuid_substate(SubstateId::ResourceManager(ECDSA_TOKEN), ecdsa_token);
+    track.create_uuid_substate(SubstateId::ResourceManager(ECDSA_TOKEN), ecdsa_token, true);
 
     let system_token =
         ResourceManager::new(ResourceType::NonFungible, HashMap::new(), HashMap::new()).unwrap();
-    track.create_uuid_substate(SubstateId::ResourceManager(SYSTEM_TOKEN), system_token);
+    track.create_uuid_substate(
+        SubstateId::ResourceManager(SYSTEM_TOKEN),
+        system_token,
+        true,
+    );
 
     let system_vault = Vault::new(minted_xrd);
-    track.create_uuid_substate(SubstateId::Vault(XRD_VAULT_ID), system_vault);
+    track.create_uuid_substate(SubstateId::Vault(XRD_VAULT_ID), system_vault, false);
 
     let system_component_info =
         ComponentInfo::new(SYSTEM_PACKAGE, SYSTEM_COMPONENT_NAME.to_owned(), vec![]);
@@ -97,12 +104,14 @@ fn create_genesis(mut track: Track) -> TrackReceipt {
     track.create_uuid_substate(
         SubstateId::ComponentInfo(SYSTEM_COMPONENT),
         system_component_info,
+        true,
     );
     track.create_uuid_substate(
         SubstateId::ComponentState(SYSTEM_COMPONENT),
         system_component_state,
+        true,
     );
-    track.create_uuid_substate(SubstateId::System, System { epoch: 0 });
+    track.create_uuid_substate(SubstateId::System, System { epoch: 0 }, true);
 
     track.commit();
     track.to_receipt()

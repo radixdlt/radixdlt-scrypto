@@ -516,8 +516,12 @@ where
             for component_address in component_addresses {
                 let node_id = RENodeId::Component(component_address);
                 let substate_id = SubstateId::ComponentInfo(component_address);
+
+                // Check if component exists as root
+                if !self.track.is_root(&substate_id) {
+                    return Err(RuntimeError::RENodeNotFound(node_id));
+                }
                 let node_pointer = RENodePointer::Store(node_id);
-                // Check if component exists
                 node_pointer.acquire_lock(substate_id.clone(), false, false, &mut self.track)?;
                 node_pointer.release_lock(substate_id, false, &mut self.track);
                 next_frame_node_refs.insert(node_id, node_pointer);
@@ -1313,7 +1317,7 @@ where
 
         for (substate_id, substate) in substates {
             self.track
-                .create_uuid_substate(substate_id.clone(), substate);
+                .create_uuid_substate(substate_id.clone(), substate, true);
         }
 
         let mut to_store_values = HashMap::new();
@@ -1465,7 +1469,17 @@ where
             ));
         }
 
-        // If write, take values from current frame
+        // TODO: Do this in a better way once references cleaned up
+        for component_address in &value.refed_component_addresses {
+            if !self
+                .track
+                .is_root(&SubstateId::ComponentInfo(*component_address))
+            {
+                return Err(RuntimeError::ValueNotAllowed);
+            }
+        }
+
+        // Take values from current frame
         let (taken_nodes, missing_nodes) = {
             let node_ids = value.node_ids();
             if !node_ids.is_empty() {
