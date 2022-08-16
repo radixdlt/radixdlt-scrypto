@@ -5,7 +5,6 @@ use scrypto::to_struct;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
-
 #[test]
 fn should_not_be_able_call_owned_components_directly() {
     // Arrange
@@ -28,11 +27,7 @@ fn should_not_be_able_call_owned_components_directly() {
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .lock_fee(10.into(), SYSTEM_COMPONENT)
-        .call_method(
-            component_address,
-            "get_secret",
-            to_struct!(),
-        )
+        .call_method(component_address, "get_secret", to_struct!())
         .build();
 
     // Assert

@@ -135,10 +135,9 @@ impl<'t, 's, S: ReadableSubstateStore + WriteableSubstateStore> StagedSubstateSt
         self.get_substate_recurse(substate_id, node.parent_id)
     }
 
-
     fn is_root_recurse(&self, substate_id: &SubstateId, id: u64) -> bool {
         if id == 0 {
-            return self.stores.parent.is_root(substate_id)
+            return self.stores.parent.is_root(substate_id);
         }
 
         let node = self.stores.nodes.get(&id).unwrap();

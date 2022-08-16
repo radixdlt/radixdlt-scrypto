@@ -1469,7 +1469,17 @@ where
             ));
         }
 
-        // If write, take values from current frame
+        // TODO: Do this in a better way once references cleaned up
+        for component_address in &value.refed_component_addresses {
+            if !self
+                .track
+                .is_root(&SubstateId::ComponentInfo(*component_address))
+            {
+                return Err(RuntimeError::ValueNotAllowed);
+            }
+        }
+
+        // Take values from current frame
         let (taken_nodes, missing_nodes) = {
             let node_ids = value.node_ids();
             if !node_ids.is_empty() {

@@ -88,7 +88,11 @@ fn create_genesis(mut track: Track) -> TrackReceipt {
 
     let system_token =
         ResourceManager::new(ResourceType::NonFungible, HashMap::new(), HashMap::new()).unwrap();
-    track.create_uuid_substate(SubstateId::ResourceManager(SYSTEM_TOKEN), system_token, true);
+    track.create_uuid_substate(
+        SubstateId::ResourceManager(SYSTEM_TOKEN),
+        system_token,
+        true,
+    );
 
     let system_vault = Vault::new(minted_xrd);
     track.create_uuid_substate(SubstateId::Vault(XRD_VAULT_ID), system_vault, false);

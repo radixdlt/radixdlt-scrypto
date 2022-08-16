@@ -26,7 +26,6 @@ pub struct BaseStateTrack<'s> {
     new_root_substates: IndexSet<SubstateId>,
 }
 
-
 impl<'s> BaseStateTrack<'s> {
     pub fn new(substate_store: &'s dyn ReadableSubstateStore) -> Self {
         Self {
@@ -153,7 +152,11 @@ impl<'s> AppStateTrack<'s> {
             return true;
         }
 
-        if self.base_state_track.new_root_substates.contains(substate_id) {
+        if self
+            .base_state_track
+            .new_root_substates
+            .contains(substate_id)
+        {
             return true;
         }
 
@@ -209,7 +212,6 @@ impl<'s> AppStateTrack<'s> {
             .as_ref()
             .map(|x| scrypto_decode(x).unwrap()))
     }
-
 
     /// Creates a new substate and updates an existing one
     pub fn put_substate(&mut self, substate_id: SubstateId, substate: Substate) {

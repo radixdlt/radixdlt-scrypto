@@ -689,11 +689,15 @@ pub fn insert_non_root_nodes<'s>(track: &mut Track<'s>, values: HashMap<RENodeId
             }
             HeapRENode::Component(component, component_state) => {
                 let component_address = id.into();
-                track.create_uuid_substate(SubstateId::ComponentInfo(component_address), component, false);
+                track.create_uuid_substate(
+                    SubstateId::ComponentInfo(component_address),
+                    component,
+                    false,
+                );
                 track.create_uuid_substate(
                     SubstateId::ComponentState(component_address),
                     component_state,
-                    false
+                    false,
                 );
             }
             HeapRENode::KeyValueStore(store) => {
