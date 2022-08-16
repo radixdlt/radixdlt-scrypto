@@ -15,15 +15,20 @@ blueprint! {
 
             let resource_address = bucket.resource_address();
 
-            let source_component =
-                ExecutionTraceTest { vault: Vault::with_bucket(bucket) }
-                    .instantiate().globalize();
+            let source_component = ExecutionTraceTest {
+                vault: Vault::with_bucket(bucket),
+            }
+            .instantiate()
+            .globalize();
 
-            let target_component =
-                ExecutionTraceTest { vault: Vault::new(resource_address) }
-                    .instantiate().globalize();
+            let target_component = ExecutionTraceTest {
+                vault: Vault::new(resource_address),
+            }
+            .instantiate()
+            .globalize();
 
-            let transfer_bucket: Bucket = Runtime::call_method(source_component, "take", args!(amount));
+            let transfer_bucket: Bucket =
+                Runtime::call_method(source_component, "take", args!(amount));
             let _: () = Runtime::call_method(target_component, "put", args!(transfer_bucket));
 
             (resource_address, source_component, target_component)
