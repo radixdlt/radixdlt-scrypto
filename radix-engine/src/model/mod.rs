@@ -3,7 +3,6 @@ mod auth_converter;
 mod auth_zone;
 mod bucket;
 mod component;
-mod execution_trace;
 mod method_authorization;
 mod non_fungible;
 mod package_extractor;
@@ -21,7 +20,6 @@ pub use auth_converter::convert;
 pub use auth_zone::{AuthZone, AuthZoneError};
 pub use bucket::{Bucket, BucketError};
 pub use component::{ComponentError, ComponentInfo, ComponentState};
-pub use execution_trace::*;
 pub use method_authorization::{
     HardAuthRule, HardProofRule, HardResourceOrNonFungible, MethodAuthorization,
     MethodAuthorizationError,

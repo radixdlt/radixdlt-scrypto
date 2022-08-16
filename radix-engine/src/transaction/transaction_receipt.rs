@@ -11,9 +11,8 @@ use scrypto::engine::types::*;
 use scrypto::values::*;
 use transaction::model::*;
 
-use crate::engine::RuntimeError;
+use crate::engine::{ResourceChange, RuntimeError};
 use crate::fee::FeeSummary;
-use crate::model::ResourceChange;
 use crate::state_manager::StateDiff;
 
 #[derive(Debug)]

@@ -8,10 +8,33 @@ use scrypto::values::*;
 use crate::engine::*;
 use crate::model::*;
 
-pub struct ExecutionTraceModule;
+#[derive(Debug, Clone, PartialEq)]
+pub struct ResourceChange {
+    pub resource_address: ResourceAddress,
+    pub component_address: ComponentAddress,
+    pub vault_id: VaultId,
+    pub amount: Decimal,
+}
 
-impl ExecutionTraceModule {
+#[derive(Debug, Clone, PartialEq)]
+pub struct ExecutionTraceReceipt {
+    pub resource_changes: Vec<ResourceChange>,
+}
+
+#[derive(Debug)]
+pub struct ExecutionTrace {
+    pub resource_changes: HashMap<ComponentAddress, HashMap<VaultId, (ResourceAddress, Decimal)>>,
+}
+
+impl ExecutionTrace {
+    pub fn new() -> ExecutionTrace {
+        Self {
+            resource_changes: HashMap::new(),
+        }
+    }
+
     pub fn trace_invoke_method(
+        &mut self,
         call_frames: &Vec<CallFrame>,
         track: &Track,
         actor: &REActor,
@@ -20,7 +43,6 @@ impl ExecutionTraceModule {
         node_pointer: RENodePointer,
         input: &ScryptoValue,
         next_owned_values: &HashMap<RENodeId, HeapRootRENode>,
-        execution_trace: &mut ExecutionTrace,
     ) -> Result<(), RuntimeError> {
         if let RENodeId::Vault(vault_id) = node_id {
             /* TODO: Warning: depends on call frame's actor being the vault's parent component!
@@ -39,12 +61,11 @@ impl ExecutionTraceModule {
                             RuntimeError::VaultError(VaultError::InvalidRequestData(e))
                         })?;
 
-                        ExecutionTraceModule::handle_vault_put(
+                        self.handle_vault_put(
                             component_address,
                             vault_id,
                             decoded_input,
                             next_owned_values,
-                            execution_trace,
                         )?;
                     }
                     FnIdentifier::Native(NativeFnIdentifier::Vault(VaultFnIdentifier::Take)) => {
@@ -56,12 +77,11 @@ impl ExecutionTraceModule {
 
                         let resource_address = vault_node_ref.vault().resource_address();
 
-                        ExecutionTraceModule::handle_vault_take(
+                        self.handle_vault_take(
                             &resource_address,
                             component_address,
                             vault_id,
                             decoded_input,
-                            execution_trace,
                         )?;
                     }
                     _ => {} // no-op
@@ -73,11 +93,11 @@ impl ExecutionTraceModule {
     }
 
     fn handle_vault_put(
+        &mut self,
         component_address: &ComponentAddress,
         vault_id: &VaultId,
         input: VaultPutInput,
         next_owned_values: &HashMap<RENodeId, HeapRootRENode>,
-        execution_trace: &mut ExecutionTrace,
     ) -> Result<(), RuntimeError> {
         let bucket_id = input.bucket.0;
         let bucket_node_id = RENodeId::Bucket(bucket_id);
@@ -88,12 +108,11 @@ impl ExecutionTraceModule {
 
         if let HeapRENode::Bucket(bucket) = &bucket_node.root {
             if let ResourceType::Fungible { divisibility: _ } = bucket.resource_type() {
-                ExecutionTraceModule::record_resource_change(
+                self.record_resource_change(
                     &bucket.resource_address(),
                     component_address,
                     vault_id,
                     bucket.total_amount(),
-                    execution_trace,
                 )
             } else {
                 /* TODO: Also handle non-fungible resource changes */
@@ -105,29 +124,23 @@ impl ExecutionTraceModule {
     }
 
     fn handle_vault_take(
+        &mut self,
         resource_address: &ResourceAddress,
         component_address: &ComponentAddress,
         vault_id: &VaultId,
         input: VaultTakeInput,
-        execution_trace: &mut ExecutionTrace,
     ) -> Result<(), RuntimeError> {
-        ExecutionTraceModule::record_resource_change(
-            resource_address,
-            component_address,
-            vault_id,
-            -input.amount,
-            execution_trace,
-        )
+        self.record_resource_change(resource_address, component_address, vault_id, -input.amount)
     }
 
     fn record_resource_change(
+        &mut self,
         resource_address: &ResourceAddress,
         component_address: &ComponentAddress,
         vault_id: &VaultId,
         amount: Decimal,
-        execution_trace: &mut ExecutionTrace,
     ) -> Result<(), RuntimeError> {
-        let component_changes = execution_trace
+        let component_changes = self
             .resource_changes
             .entry(component_address.clone())
             .or_insert(HashMap::new());
@@ -139,5 +152,24 @@ impl ExecutionTraceModule {
         vault_change.1 += amount;
 
         Ok(())
+    }
+
+    pub fn to_receipt(self) -> ExecutionTraceReceipt {
+        let resource_changes: Vec<ResourceChange> = self
+            .resource_changes
+            .into_iter()
+            .flat_map(|(component_address, v)| {
+                v.into_iter().map(
+                    move |(vault_id, (resource_address, amount))| ResourceChange {
+                        resource_address,
+                        component_address,
+                        vault_id,
+                        amount,
+                    },
+                )
+            })
+            .filter(|el| !el.amount.is_zero())
+            .collect();
+        ExecutionTraceReceipt { resource_changes }
     }
 }

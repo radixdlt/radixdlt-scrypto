@@ -1,5 +1,5 @@
+use radix_engine::engine::ResourceChange;
 use radix_engine::ledger::TypedInMemorySubstateStore;
-use radix_engine::model::ResourceChange;
 use scrypto::core::Network;
 use scrypto::prelude::*;
 use scrypto::to_struct;

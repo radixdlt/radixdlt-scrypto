@@ -1,5 +1,4 @@
 use radix_engine::ledger::TypedInMemorySubstateStore;
-use radix_engine::transaction::TransactionStatus;
 use scrypto::core::Network;
 use scrypto::prelude::*;
 use scrypto::to_struct;

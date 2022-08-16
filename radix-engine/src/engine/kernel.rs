@@ -815,7 +815,7 @@ where
                     }
                 }
 
-                ExecutionTraceModule::trace_invoke_method(
+                self.execution_trace.trace_invoke_method(
                     &self.call_frames,
                     &self.track,
                     &current_frame.actor,
@@ -824,7 +824,6 @@ where
                     node_pointer,
                     &input,
                     &next_owned_values,
-                    &mut self.execution_trace,
                 )?;
 
                 // Check method authorization
