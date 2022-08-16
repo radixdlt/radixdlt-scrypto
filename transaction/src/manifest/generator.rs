@@ -6,6 +6,7 @@ use sbor::type_id::*;
 use scrypto::abi::*;
 use scrypto::address::Bech32Decoder;
 use scrypto::engine::types::*;
+use scrypto::prelude::*;
 use scrypto::values::*;
 use scrypto::vec_to_struct;
 
@@ -28,6 +29,7 @@ pub enum GeneratorError {
     InvalidComponentAddress(String),
     InvalidResourceAddress(String),
     InvalidDecimal(String),
+    InvalidPreciseDecimal(String),
     InvalidHash(String),
     InvalidKeyValueStoreId(String),
     InvalidVaultId(String),
@@ -427,6 +429,17 @@ fn generate_decimal(value: &ast::Value) -> Result<Decimal, GeneratorError> {
     }
 }
 
+fn generate_precise_decimal(value: &ast::Value) -> Result<PreciseDecimal, GeneratorError> {
+    match value {
+        ast::Value::PreciseDecimal(inner) => match &**inner {
+            ast::Value::String(s) => PreciseDecimal::from_str(s)
+                .map_err(|_| GeneratorError::InvalidPreciseDecimal(s.into())),
+            v @ _ => invalid_type!(v, ast::Type::String),
+        },
+        v @ _ => invalid_type!(v, ast::Type::Decimal),
+    }
+}
+
 fn generate_package_address(
     value: &ast::Value,
     bech32_decoder: &Bech32Decoder,
@@ -664,6 +677,10 @@ fn generate_value(
             type_id: ScryptoType::Decimal.id(),
             bytes: v.to_vec(),
         }),
+        ast::Value::PreciseDecimal(_) => generate_precise_decimal(value).map(|v| Value::Custom {
+            type_id: ScryptoType::PreciseDecimal.id(),
+            bytes: v.to_vec(),
+        }),
         ast::Value::PackageAddress(_) => {
             generate_package_address(value, bech32_decoder).map(|v| Value::Custom {
                 type_id: ScryptoType::PackageAddress.id(),
@@ -786,6 +803,7 @@ fn generate_type_id(ty: &ast::Type) -> u8 {
         ast::Type::Set => TYPE_SET,
         ast::Type::Map => TYPE_MAP,
         ast::Type::Decimal => ScryptoType::Decimal.id(),
+        ast::Type::PreciseDecimal => ScryptoType::PreciseDecimal.id(),
         ast::Type::PackageAddress => ScryptoType::PackageAddress.id(),
         ast::Type::ComponentAddress => ScryptoType::ComponentAddress.id(),
         ast::Type::ResourceAddress => ScryptoType::ResourceAddress.id(),
@@ -1045,7 +1063,7 @@ mod tests {
             }
         );
         generate_instruction_ok!(
-            r#"CALL_FUNCTION  PackageAddress("package_sim1q8gl2qqsusgzmz92es68wy2fr7zjc523xj57eanm597qrz3dx7")  "Airdrop"  "new"  500u32  Map<String, U8>("key", 1u8);"#,
+            r#"CALL_FUNCTION  PackageAddress("package_sim1q8gl2qqsusgzmz92es68wy2fr7zjc523xj57eanm597qrz3dx7")  "Airdrop"  "new"  500u32  Map<String, U8>("key", 1u8)  PreciseDecimal("120");"#,
             Instruction::CallFunction {
                 package_address: PackageAddress::from_str(
                     "package_sim1q8gl2qqsusgzmz92es68wy2fr7zjc523xj57eanm597qrz3dx7".into()
@@ -1053,7 +1071,7 @@ mod tests {
                 .unwrap(),
                 blueprint_name: "Airdrop".into(),
                 method_name: "new".to_string(),
-                arg: to_struct!(500u32, HashMap::from([("key", 1u8),]))
+                arg: to_struct!(500u32, HashMap::from([("key", 1u8),]), pdec!("120"))
             }
         );
         generate_instruction_ok!(
@@ -1198,6 +1216,14 @@ mod tests {
                 Instruction::DropAllProofs,
                 Instruction::PublishPackage {
                     package: encoded_package.clone()
+                },
+                Instruction::CallMethod {
+                    component_address: ComponentAddress::from_str(
+                        "component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum".into()
+                    )
+                    .unwrap(),
+                    method_name: "complicated_method".to_string(),
+                    arg: to_struct!(Decimal::from(1u32), PreciseDecimal::from(2u32))
                 },
             ]
         );

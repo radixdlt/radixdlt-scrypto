@@ -12,16 +12,19 @@ pub struct Span {
 pub enum TokenKind {
     /* Literals */
     BoolLiteral(bool),
+
     I8Literal(i8),
     I16Literal(i16),
     I32Literal(i32),
     I64Literal(i64),
     I128Literal(i128),
+
     U8Literal(u8),
     U16Literal(u16),
     U32Literal(u32),
     U64Literal(u64),
     U128Literal(u128),
+
     StringLiteral(String),
 
     /* Types */
@@ -58,6 +61,7 @@ pub enum TokenKind {
     Map,
 
     Decimal,
+    PreciseDecimal,
     PackageAddress,
     ComponentAddress,
     ResourceAddress,
@@ -381,6 +385,7 @@ impl Lexer {
             "Set" => Ok(TokenKind::Set),
             "Map" => Ok(TokenKind::Map),
             "Decimal" => Ok(TokenKind::Decimal),
+            "PreciseDecimal" => Ok(TokenKind::PreciseDecimal),
             "PackageAddress" => Ok(TokenKind::PackageAddress),
             "ComponentAddress" => Ok(TokenKind::ComponentAddress),
             "ResourceAddress" => Ok(TokenKind::ResourceAddress),
@@ -593,6 +598,48 @@ mod tests {
                 TokenKind::CloseParenthesis,
                 TokenKind::CloseParenthesis,
                 TokenKind::Semicolon,
+            ]
+        );
+    }
+
+    #[test]
+    fn test_precise_decimal() {
+        lex_ok!(
+            "PreciseDecimal(\"12\")",
+            vec![
+                TokenKind::PreciseDecimal,
+                TokenKind::OpenParenthesis,
+                TokenKind::StringLiteral("12".into()),
+                TokenKind::CloseParenthesis,
+            ]
+        );
+    }
+
+    #[test]
+    fn test_precise_decimal_colletion() {
+        lex_ok!(
+            "List<PreciseDecimal>(PreciseDecimal(\"12\"), PreciseDecimal(\"212\"), PreciseDecimal(\"1984\"))",
+            vec![
+                TokenKind::List,
+                TokenKind::LessThan,
+                TokenKind::PreciseDecimal,
+                TokenKind::GreaterThan,
+                TokenKind::OpenParenthesis,
+                TokenKind::PreciseDecimal,
+                TokenKind::OpenParenthesis,
+                TokenKind::StringLiteral("12".into()),
+                TokenKind::CloseParenthesis,
+                TokenKind::Comma,
+                TokenKind::PreciseDecimal,
+                TokenKind::OpenParenthesis,
+                TokenKind::StringLiteral("212".into()),
+                TokenKind::CloseParenthesis,
+                TokenKind::Comma,
+                TokenKind::PreciseDecimal,
+                TokenKind::OpenParenthesis,
+                TokenKind::StringLiteral("1984".into()),
+                TokenKind::CloseParenthesis,
+                TokenKind::CloseParenthesis,
             ]
         );
     }

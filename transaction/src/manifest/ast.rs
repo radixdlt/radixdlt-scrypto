@@ -135,6 +135,7 @@ pub enum Type {
 
     /* Custom types */
     Decimal,
+    PreciseDecimal,
     PackageAddress,
     ComponentAddress,
     ResourceAddress,
@@ -177,6 +178,7 @@ pub enum Value {
     Map(Type, Type, Vec<Value>),
 
     Decimal(Box<Value>),
+    PreciseDecimal(Box<Value>),
     PackageAddress(Box<Value>),
     ComponentAddress(Box<Value>),
     ResourceAddress(Box<Value>),
@@ -215,6 +217,7 @@ impl Value {
             Value::Set(_, _) => Type::Set,
             Value::Map(_, _, _) => Type::Map,
             Value::Decimal(_) => Type::Decimal,
+            Value::PreciseDecimal(_) => Type::PreciseDecimal,
             Value::PackageAddress(_) => Type::PackageAddress,
             Value::ComponentAddress(_) => Type::ComponentAddress,
             Value::ResourceAddress(_) => Type::ResourceAddress,
