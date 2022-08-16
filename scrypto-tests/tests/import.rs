@@ -273,7 +273,7 @@ blueprint! {
 #[test]
 #[should_panic] // asserts it compiles
 fn test_import_from_abi() {
-    let instance = Simple::from(ComponentAddress::from_str("").unwrap());
+    let instance = Simple::from(ComponentAddress([0; 27]));
 
     let arg1 = Floor { x: 5, y: 12 };
     let arg2 = (1u8, 2u16);

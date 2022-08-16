@@ -326,7 +326,7 @@ fn create_custom_accounts() {
 }
 
 fn bridge_to_existing_account() {
-    let existing_account = CustomAccount::from(ComponentAddress::from_str("account_sim1qdencrktc8r4f2ek5qh98uvfn7ugyjlpsw6ayusqyx6syqd3ly").unwrap());
+    let existing_account = CustomAccount::from(component_address);
     let balance = existing_account.read_balance();
     // ...
 }
@@ -400,7 +400,7 @@ external_component! {
 }
 
 fn bridge_to_existing_account() {
-    let existing_account = AccountInterface::from(ComponentAddress::from_str("account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qgsy064").unwrap());
+    let existing_account = AccountInterface::from(component_address);
     let balance = existing_account.read_balance();
     // ...
 }

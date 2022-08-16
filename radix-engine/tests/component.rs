@@ -1,5 +1,6 @@
 use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::TypedInMemorySubstateStore;
+use scrypto::address::Bech32Decoder;
 use scrypto::core::Network;
 use scrypto::engine::types::SubstateId;
 use scrypto::prelude::*;
@@ -108,10 +109,11 @@ fn missing_component_address_in_manifest_should_cause_rejection() {
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let _ = test_runner.extract_and_publish_package("component");
-    let component_address = ComponentAddress::from_str(
-        "component_sim1qgqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqph4dhmhs42ee03",
-    )
-    .unwrap();
+    let component_address = Bech32Decoder::new_from_network(&Network::LocalSimulator)
+        .validate_and_decode_component_address(
+            "component_sim1qgqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqph4dhmhs42ee03",
+        )
+        .unwrap();
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
