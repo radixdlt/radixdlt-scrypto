@@ -26,6 +26,10 @@ pub enum Error {
 
     CargoError(CargoExecutionError),
 
+    PackageAddressDoesNotExist,
+
+    InvalidPackageError,
+
     PackageError(ExtractAbiError),
 
     TransactionConstructionError(BuildCallWithAbiError),

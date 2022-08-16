@@ -52,7 +52,7 @@ impl CallMethod {
         }
 
         let manifest = manifest_builder
-            .lock_fee(10.into(), SYSTEM_COMPONENT)
+            .lock_fee(100.into(), SYSTEM_COMPONENT)
             .call_method_with_abi(
                 self.component_address,
                 &self.method_name,
