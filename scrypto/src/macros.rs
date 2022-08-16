@@ -294,7 +294,7 @@ You can also use this to make calls to the component itself.
 If you just wish to make calls to an instantiated component, see the [external_component]! macro.
 
 # Examples
-```
+```norun
 use scrypto::prelude::*;
 use sbor::{TypeId, Encode, Decode, Describe};
 
@@ -381,7 +381,7 @@ macro_rules! external_blueprint {
 Generates a bridge/stub to make cross-component calls.
 
 # Examples
-```
+```norun
 use scrypto::prelude::*;
 use sbor::{TypeId, Encode, Decode, Describe};
 
