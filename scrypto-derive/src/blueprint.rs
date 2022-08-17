@@ -437,7 +437,7 @@ fn generate_stubs(
                             pub fn #ident(&self #(, #input_args: #input_types)*) -> #output {
                                 self.component.call(#name, ::scrypto::args!(
                                     #(
-                                        scrypto_encode(&#input_args)
+                                       #input_args
                                     ),*
                                 ))
                             }

@@ -172,7 +172,7 @@ impl WasmInstance for WasmerInstance {
             *guard = runtime as *mut _ as usize;
         }
 
-        let pointer = send_value(&self.instance, arg)?;
+        let pointer = send_value(&self.instance, args)?;
         let result = self
             .instance
             .exports
