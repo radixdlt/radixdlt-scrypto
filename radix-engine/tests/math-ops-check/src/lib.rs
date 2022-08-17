@@ -4,7 +4,11 @@ blueprint! {
     struct Hello {}
 
     impl Hello {
-        pub fn a(b: String) {
+        pub fn native_and_safe_integer_interop(a: U32) -> U32 {
+            a
+        }
+
+        pub fn integer_basic_ops(b: String) {
             info!("b: {}", b);
             let c = b.len();
             info!("c: {}", c);

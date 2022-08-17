@@ -1,16 +1,16 @@
 [package]
-name = "tutorial"
+name = "math-ops-check"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-sbor = {path = "../../sbor"}
-scrypto = {path = "../../scrypto"}
+sbor = {path = "../../../sbor"}
+scrypto = {path = "../../../scrypto"}
 
 [dev-dependencies]
-transaction ={path = "../../transaction"}
-radix-engine ={path = "../../radix-engine"}
-scrypto-unit ={path = "../../scrypto-unit"}
+transaction ={path = "../../../transaction"}
+radix-engine ={path = "../../../radix-engine"}
+scrypto-unit ={path = "../../../scrypto-unit"}
 
 [profile.release]
 opt-level = 's'        # Optimize for size.

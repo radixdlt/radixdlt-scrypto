@@ -277,7 +277,7 @@ types! {
 }
 
 macro_rules! sbor_codec {
-    ($t:ident, $t_id:expr) => {
+    ($t:ident, $t_id:expr, $t_model:ident) => {
         impl TypeId for $t {
             #[inline]
             fn type_id() -> u8 {
@@ -308,18 +308,24 @@ macro_rules! sbor_codec {
                 Ok(Self::from_le_bytes(bytes))
             }
         }
+
+        impl Describe for $t {
+            fn describe() -> Type {
+                Type::$t_model
+            }
+        }
     };
 }
-sbor_codec!(I8, TYPE_I8);
-sbor_codec!(I16, TYPE_I16);
-sbor_codec!(I32, TYPE_I32);
-sbor_codec!(I64, TYPE_I64);
-sbor_codec!(I128, TYPE_I128);
-sbor_codec!(U8, TYPE_U8);
-sbor_codec!(U16, TYPE_U16);
-sbor_codec!(U32, TYPE_U32);
-sbor_codec!(U64, TYPE_U64);
-sbor_codec!(U128, TYPE_U128);
+sbor_codec!(I8, TYPE_I8, I8);
+sbor_codec!(I16, TYPE_I16, I16);
+sbor_codec!(I32, TYPE_I32, I32);
+sbor_codec!(I64, TYPE_I64, I64);
+sbor_codec!(I128, TYPE_I128, I128);
+sbor_codec!(U8, TYPE_U8, U8);
+sbor_codec!(U16, TYPE_U16, U16);
+sbor_codec!(U32, TYPE_U32, U32);
+sbor_codec!(U64, TYPE_U64, U64);
+sbor_codec!(U128, TYPE_U128, U128);
 
 fn fmt<
     T: fmt::Display
