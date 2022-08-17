@@ -311,6 +311,19 @@ impl ValidatedProof {
             .collect()
     }
 
+    /// Returns a singleton non-fungible id
+    ///
+    /// # Panics
+    /// Panics if this is not a singleton bucket
+    pub fn non_fungible_id(&self) -> NonFungibleId {
+        let non_fungible_ids = self.non_fungible_ids();
+        if non_fungible_ids.len() != 1 {
+            panic!("Expecting singleton NFT vault");
+        }
+        self.non_fungible_ids().into_iter().next().unwrap()
+    }
+
+
     /// Returns a singleton non-fungible.
     ///
     /// # Panics

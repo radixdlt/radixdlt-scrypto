@@ -364,6 +364,32 @@ fn create_mutable_vault_with_get_nonfungible_ids() {
 }
 
 #[test]
+fn create_mutable_vault_with_get_nonfungible_id() {
+    // Arrange
+    let mut ledger = InMemorySubstateStore::with_bootstrap();
+    let mut executor = TransactionExecutor::new(&mut ledger, true);
+    let package = executor
+        .publish_package(&compile_package!(format!("./tests/{}", "vault")))
+        .unwrap();
+
+    // Act
+    let transaction = TransactionBuilder::new()
+        .call_function(
+            package,
+            "VaultTest",
+            "new_vault_with_get_non_fungible_id",
+            vec![],
+        )
+        .build(executor.get_nonce([]))
+        .sign([]);
+    let receipt = executor.validate_and_execute(&transaction).unwrap();
+
+    // Assert
+    receipt.result.expect("Should be okay");
+}
+
+
+#[test]
 fn create_mutable_vault_with_get_amount() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();

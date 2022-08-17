@@ -171,6 +171,20 @@ blueprint! {
             (bucket, non_fungible_bucket)
         }
 
+        pub fn get_non_fungible_id_bucket() -> (Bucket, Bucket) {
+            let mut bucket = Self::create_non_fungible_fixed();
+            let non_fungible_bucket = bucket.take(1);
+            assert_eq!(
+                non_fungible_bucket.non_fungible_id(),
+                NonFungibleId::from_u32(1)
+            );
+            assert_eq!(
+                bucket.non_fungible_id(),
+                NonFungibleId::from_u32(2)
+            );
+            (bucket, non_fungible_bucket)
+        }
+
         pub fn get_non_fungible_ids_vault() -> Bucket {
             let mut vault = Vault::with_bucket(Self::create_non_fungible_fixed());
             let non_fungible_bucket = vault.take(1);
@@ -181,6 +195,23 @@ blueprint! {
             assert_eq!(
                 vault.non_fungible_ids(),
                 BTreeSet::from([NonFungibleId::from_u32(2), NonFungibleId::from_u32(3)])
+            );
+
+            NonFungibleTest { vault }.instantiate().globalize();
+
+            non_fungible_bucket
+        }
+
+        pub fn get_non_fungible_id_vault() -> Bucket {
+            let mut vault = Vault::with_bucket(Self::create_non_fungible_fixed());
+            let non_fungible_bucket = vault.take(1);
+            assert_eq!(
+                non_fungible_bucket.non_fungible_id(),
+                NonFungibleId::from_u32(1)
+            );
+            assert_eq!(
+                vault.non_fungible_id(),
+                NonFungibleId::from_u32(2)
             );
 
             NonFungibleTest { vault }.instantiate().globalize();
