@@ -1037,6 +1037,84 @@ checked_int_impl_unsigned_small! { U8, U16, U32, U64, U128 }
 mod tests {
     use super::*;
 
+    fn encode_integers(enc: &mut Encoder) {
+        I8::by(1i8).encode(enc);
+        I16::by(1i8).encode(enc);
+        I32::by(1i8).encode(enc);
+        I64::by(1i8).encode(enc);
+        I128::by(1i8).encode(enc);
+        I256::by(1i8).encode(enc);
+        I384::by(1i8).encode(enc);
+        I512::by(1i8).encode(enc);
+        U8::by(1u8).encode(enc);
+        U16::by(1u8).encode(enc);
+        U32::by(1u8).encode(enc);
+        U64::by(1u8).encode(enc);
+        U128::by(1u8).encode(enc);
+        U256::by(1u8).encode(enc);
+        U384::by(1u8).encode(enc);
+        U512::by(1u8).encode(enc);
+    }
+
     #[test]
-    fn test_integer_encoding_and_decoding() {}
+    fn test_integer_encoding() {
+        let mut bytes = Vec::with_capacity(512);
+        let mut enc = Encoder::with_static_info(&mut bytes);
+        encode_integers(&mut enc);
+
+        assert_eq!(
+            vec![
+                2, 1, // i8
+                3, 1, 0, // i16
+                4, 1, 0, 0, 0, // i32
+                5, 1, 0, 0, 0, 0, 0, 0, 0, // i64
+                6, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // i128
+                64, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, // i256
+                65, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // i384
+                66, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // i512
+                7, 1, // u8
+                8, 1, 0, // u16
+                9, 1, 0, 0, 0, // u32
+                10, 1, 0, 0, 0, 0, 0, 0, 0, // u64
+                11, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // u128
+                67, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, // u256
+                68, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // u384
+                69, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // u512
+            ],
+            bytes
+        );
+    }
+
+    #[test]
+    fn test_integer_decoding() {
+        let mut bytes = Vec::with_capacity(512);
+        let mut enc = Encoder::with_static_info(&mut bytes);
+        encode_integers(&mut enc);
+
+        let mut dec = Decoder::with_static_info(&bytes);
+        assert_eq!(I8::by(1i8), <I8>::decode(&mut dec).unwrap());
+        assert_eq!(I16::by(1i8), <I16>::decode(&mut dec).unwrap());
+        assert_eq!(I32::by(1i8), <I32>::decode(&mut dec).unwrap());
+        assert_eq!(I64::by(1i8), <I64>::decode(&mut dec).unwrap());
+        assert_eq!(I128::by(1i8), <I128>::decode(&mut dec).unwrap());
+        assert_eq!(I256::by(1i8), <I256>::decode(&mut dec).unwrap());
+        assert_eq!(I384::by(1i8), <I384>::decode(&mut dec).unwrap());
+        assert_eq!(I512::by(1i8), <I512>::decode(&mut dec).unwrap());
+        assert_eq!(U8::by(1u8), <U8>::decode(&mut dec).unwrap());
+        assert_eq!(U16::by(1u8), <U16>::decode(&mut dec).unwrap());
+        assert_eq!(U32::by(1u8), <U32>::decode(&mut dec).unwrap());
+        assert_eq!(U64::by(1u8), <U64>::decode(&mut dec).unwrap());
+        assert_eq!(U128::by(1u8), <U128>::decode(&mut dec).unwrap());
+        assert_eq!(U256::by(1u8), <U256>::decode(&mut dec).unwrap());
+        assert_eq!(U384::by(1u8), <U384>::decode(&mut dec).unwrap());
+        assert_eq!(U512::by(1u8), <U512>::decode(&mut dec).unwrap());
+    }
 }
