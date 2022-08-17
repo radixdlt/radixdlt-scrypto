@@ -20,6 +20,12 @@ pub const TYPE_U64: u8 = 0x0a;
 pub const TYPE_U128: u8 = 0x0b;
 pub const TYPE_STRING: u8 = 0x0c;
 
+// extended primitive types
+pub const TYPE_I256: u8 = 0x40;
+pub const TYPE_I512: u8 = 0x41;
+pub const TYPE_U256: u8 = 0x42;
+pub const TYPE_U512: u8 = 0x43;
+
 // struct and enum
 pub const TYPE_STRUCT: u8 = 0x10;
 pub const TYPE_ENUM: u8 = 0x11;

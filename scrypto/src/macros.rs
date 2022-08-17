@@ -64,13 +64,13 @@ macro_rules! dec {
             let base = scrypto::prelude::Decimal::from($base);
             if $shift >= 0 {
                 base * scrypto::prelude::Decimal::try_from(
-                    scrypto::prelude::I256::from(10u8)
+                    scrypto::math::I256::from(10u8)
                         .pow(u32::try_from($shift).expect("Shift overflow")),
                 )
                 .expect("Shift overflow")
             } else {
                 base / scrypto::prelude::Decimal::try_from(
-                    scrypto::prelude::I256::from(10u8)
+                    scrypto::math::I256::from(10u8)
                         .pow(u32::try_from(-$shift).expect("Shift overflow")),
                 )
                 .expect("Shift overflow")
@@ -119,13 +119,13 @@ macro_rules! pdec {
             let base = scrypto::math::PreciseDecimal::from($base);
             if $shift >= 0 {
                 base * scrypto::math::PreciseDecimal::try_from(
-                    scrypto::prelude::I512::from(10u8)
+                    scrypto::math::I512::from(10u8)
                         .pow(u32::try_from($shift).expect("Shift overflow")),
                 )
                 .expect("Shift overflow")
             } else {
                 base / scrypto::math::PreciseDecimal::try_from(
-                    scrypto::prelude::I512::from(10u8)
+                    scrypto::math::I512::from(10u8)
                         .pow(u32::try_from(-$shift).expect("Shift overflow")),
                 )
                 .expect("Shift overflow")

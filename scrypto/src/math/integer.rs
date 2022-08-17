@@ -1,6 +1,5 @@
 //! Definitions of safe integers and uints.
 
-use crate::abi::*;
 use core::cmp::{Ord, Ordering, PartialEq, PartialOrd};
 use core::ops::{Add, AddAssign, BitAnd, BitAndAssign, BitOr, BitOrAssign};
 use core::ops::{BitXor, BitXorAssign, Div, DivAssign};
@@ -18,8 +17,6 @@ use sbor::*;
 pub mod basic;
 pub mod bits;
 pub mod convert;
-#[cfg(test)]
-mod test;
 pub use convert::*;
 
 macro_rules! types {
@@ -129,7 +126,33 @@ macro_rules! types {
                 }
             }
 
-            scrypto_type!($t, ScryptoType::$t, Vec::new());
+            impl TypeId for $t {
+                #[inline]
+                fn type_id() -> u8 {
+                    todo!()
+                }
+            }
+
+            impl Encode for $t {
+                #[inline]
+                fn encode_type_id(encoder: &mut Encoder) {
+                    todo!()
+                }
+                #[inline]
+                fn encode_value(&self, encoder: &mut Encoder) {
+                    todo!()
+                }
+            }
+
+            impl Decode for $t {
+                #[inline]
+                fn check_type_id(decoder: &mut Decoder) -> Result<(), DecodeError> {
+                    todo!()
+                }
+                fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
+                    todo!()
+                }
+            }
 
             )*
         }
