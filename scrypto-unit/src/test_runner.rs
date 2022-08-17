@@ -1,7 +1,7 @@
 use radix_engine::constants::{
     DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN,
 };
-use radix_engine::engine::{Kernel, SystemApi};
+use radix_engine::engine::{ExecutionTrace, Kernel, SystemApi};
 use radix_engine::engine::{RuntimeError, Track};
 use radix_engine::fee::{FeeTable, SystemLoanFeeReserve};
 use radix_engine::ledger::*;
@@ -481,6 +481,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         let mut track = Track::new(&substate_store);
         let mut fee_reserve = SystemLoanFeeReserve::default();
         let fee_table = FeeTable::new();
+        let mut execution_trace = ExecutionTrace::new();
 
         let mut kernel = Kernel::new(
             tx_hash,
@@ -493,6 +494,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             &mut self.wasm_instrumenter,
             &mut fee_reserve,
             &fee_table,
+            &mut execution_trace,
         );
 
         // Invoke the system

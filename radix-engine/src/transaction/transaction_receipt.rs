@@ -11,7 +11,7 @@ use scrypto::engine::types::*;
 use scrypto::values::*;
 use transaction::model::*;
 
-use crate::engine::RuntimeError;
+use crate::engine::{ResourceChange, RuntimeError};
 use crate::fee::FeeSummary;
 use crate::state_manager::StateDiff;
 
@@ -46,6 +46,7 @@ pub struct TransactionReceipt {
     pub new_component_addresses: Vec<ComponentAddress>,
     pub new_resource_addresses: Vec<ResourceAddress>,
     pub state_updates: StateDiff,
+    pub resource_changes: Vec<ResourceChange>,
 }
 
 impl TransactionReceipt {

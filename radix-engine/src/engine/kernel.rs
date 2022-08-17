@@ -66,6 +66,9 @@ pub struct Kernel<
 
     /// ID allocator
     id_allocator: IdAllocator,
+
+    execution_trace: &'g mut ExecutionTrace,
+
     /// Call frames
     call_frames: Vec<CallFrame>,
 
@@ -89,6 +92,7 @@ where
         wasm_instrumenter: &'g mut WasmInstrumenter,
         fee_reserve: &'g mut C,
         fee_table: &'g FeeTable,
+        execution_trace: &'g mut ExecutionTrace,
     ) -> Self {
         let frame = CallFrame::new_root(transaction_signers);
         let mut kernel = Self {
@@ -101,6 +105,7 @@ where
             fee_reserve,
             fee_table,
             id_allocator: IdAllocator::new(IdSpace::Application),
+            execution_trace,
             call_frames: vec![frame],
             phantom: PhantomData,
         };
@@ -739,8 +744,7 @@ where
                 match node_id {
                     RENodeId::Component(..) => {
                         let package_address = {
-                            let node_ref =
-                                node_pointer.to_ref(&mut self.call_frames, &mut self.track);
+                            let node_ref = node_pointer.to_ref(&self.call_frames, &self.track);
                             node_ref.component_info().package_address()
                         };
                         let package_substate_id = SubstateId::Package(package_address);
@@ -761,8 +765,7 @@ where
                     }
                     RENodeId::Bucket(..) => {
                         let resource_address = {
-                            let node_ref =
-                                node_pointer.to_ref(&mut self.call_frames, &mut self.track);
+                            let node_ref = node_pointer.to_ref(&self.call_frames, &self.track);
                             node_ref.bucket().resource_address()
                         };
                         let resource_substate_id = SubstateId::ResourceManager(resource_address);
@@ -779,8 +782,7 @@ where
                     }
                     RENodeId::Vault(..) => {
                         let resource_address = {
-                            let node_ref =
-                                node_pointer.to_ref(&mut self.call_frames, &mut self.track);
+                            let node_ref = node_pointer.to_ref(&self.call_frames, &self.track);
                             node_ref.vault().resource_address()
                         };
                         let resource_substate_id = SubstateId::ResourceManager(resource_address);
@@ -816,6 +818,17 @@ where
                         next_frame_node_refs.insert(resource_node_id, resource_node_pointer);
                     }
                 }
+
+                self.execution_trace.trace_invoke_method(
+                    &self.call_frames,
+                    &self.track,
+                    &current_frame.actor,
+                    &fn_identifier,
+                    node_id,
+                    node_pointer,
+                    &input,
+                    &next_owned_values,
+                )?;
 
                 // Check method authorization
                 AuthModule::receiver_auth(

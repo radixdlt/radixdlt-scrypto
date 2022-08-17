@@ -131,8 +131,9 @@ where
             println!("{:-^80}", "Engine Execution Log");
         }
 
-        // 1. Start state track
+        // 1. Start state track and execution trace
         let mut track = Track::new(self.substate_store);
+        let mut execution_trace = ExecutionTrace::new();
 
         // 2. Apply pre-execution costing
         let fee_table = FeeTable::new();
@@ -173,6 +174,7 @@ where
                 self.wasm_instrumenter,
                 &mut fee_reserve,
                 &fee_table,
+                &mut execution_trace,
             );
             let result = kernel.invoke_function(
                 FnIdentifier::Native(NativeFnIdentifier::TransactionProcessor(
@@ -268,6 +270,8 @@ where
             }
         }
 
+        let execution_trace_receipt = execution_trace.to_receipt();
+
         #[cfg(feature = "alloc")]
         let execution_time = None;
         #[cfg(not(feature = "alloc"))]
@@ -284,6 +288,7 @@ where
             new_resource_addresses,
             execution_time,
             state_updates: track_receipt.state_updates,
+            resource_changes: execution_trace_receipt.resource_changes,
         };
         #[cfg(not(feature = "alloc"))]
         if params.trace {
