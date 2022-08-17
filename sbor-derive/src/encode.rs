@@ -27,13 +27,13 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
                 quote! {
                     impl ::sbor::Encode for #ident {
                         #[inline]
-                        fn encode_type(&self, encoder: &mut ::sbor::Encoder) {
-                            encoder.write_type(::sbor::type_id::TYPE_STRUCT);
+                        fn encode_type_id(encoder: &mut ::sbor::Encoder) {
+                            encoder.write_type_id(::sbor::type_id::TYPE_STRUCT);
                         }
                         #[inline]
                         fn encode_value(&self, encoder: &mut ::sbor::Encoder) {
                             use ::sbor::{self, Encode};
-                            encoder.write_len(#ns_len);
+                            encoder.write_static_size(#ns_len);
                             #(self.#ns_ids.encode(encoder);)*
                         }
                     }
@@ -50,13 +50,13 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
                 quote! {
                     impl ::sbor::Encode for #ident {
                         #[inline]
-                        fn encode_type(&self, encoder: &mut ::sbor::Encoder) {
-                            encoder.write_type(::sbor::type_id::TYPE_STRUCT);
+                        fn encode_type_id(encoder: &mut ::sbor::Encoder) {
+                            encoder.write_type_id(::sbor::type_id::TYPE_STRUCT);
                         }
                         #[inline]
                         fn encode_value(&self, encoder: &mut ::sbor::Encoder) {
                             use ::sbor::{self, Encode};
-                            encoder.write_len(#ns_len);
+                            encoder.write_static_size(#ns_len);
                             #(self.#ns_indices.encode(encoder);)*
                         }
                     }
@@ -66,12 +66,12 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
                 quote! {
                     impl ::sbor::Encode for #ident {
                         #[inline]
-                        fn encode_type(&self, encoder: &mut ::sbor::Encoder) {
-                            encoder.write_type(::sbor::type_id::TYPE_STRUCT);
+                        fn encode_type_id(encoder: &mut ::sbor::Encoder) {
+                            encoder.write_type_id(::sbor::type_id::TYPE_STRUCT);
                         }
                         #[inline]
                         fn encode_value(&self, encoder: &mut ::sbor::Encoder) {
-                            encoder.write_len(0);
+                            encoder.write_static_size(0);
                         }
                     }
                 }
@@ -91,8 +91,8 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
                         let ns_len = Index::from(ns.len());
                         quote! {
                             Self::#v_id {#(#ns_ids,)* ..} => {
-                                #name.to_string().encode_value(encoder);
-                                encoder.write_len(#ns_len);
+                                encoder.write_variant_label(#name);
+                                encoder.write_static_size(#ns_len);
                                 #(#ns_ids2.encode(encoder);)*
                             }
                         }
@@ -108,8 +108,8 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
                         let ns_len = Index::from(ns_args.len());
                         quote! {
                             Self::#v_id (#(#args),*) => {
-                                #name.to_string().encode_value(encoder);
-                                encoder.write_len(#ns_len);
+                                encoder.write_variant_label(#name);
+                                encoder.write_static_size(#ns_len);
                                 #(#ns_args.encode(encoder);)*
                             }
                         }
@@ -117,8 +117,8 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
                     syn::Fields::Unit => {
                         quote! {
                             Self::#v_id => {
-                                #name.to_string().encode_value(encoder);
-                                encoder.write_len(0);
+                                encoder.write_variant_label(#name);
+                                encoder.write_static_size(0);
                             }
                         }
                     }
@@ -129,8 +129,8 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
                 quote! {
                     impl ::sbor::Encode for #ident {
                         #[inline]
-                        fn encode_type(&self, encoder: &mut ::sbor::Encoder) {
-                            encoder.write_type(::sbor::type_id::TYPE_ENUM);
+                        fn encode_type_id(encoder: &mut ::sbor::Encoder) {
+                            encoder.write_type_id(::sbor::type_id::TYPE_ENUM);
                         }
                         #[inline]
                         fn encode_value(&self, encoder: &mut ::sbor::Encoder) {
@@ -141,8 +141,8 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
                 quote! {
                     impl ::sbor::Encode for #ident {
                         #[inline]
-                        fn encode_type(&self, encoder: &mut ::sbor::Encoder) {
-                            encoder.write_type(::sbor::type_id::TYPE_ENUM);
+                        fn encode_type_id(encoder: &mut ::sbor::Encoder) {
+                            encoder.write_type_id(::sbor::type_id::TYPE_ENUM);
                         }
                         #[inline]
                         fn encode_value(&self, encoder: &mut ::sbor::Encoder) {
@@ -189,13 +189,13 @@ mod tests {
             quote! {
                 impl ::sbor::Encode for Test {
                     #[inline]
-                    fn encode_type(&self, encoder: &mut ::sbor::Encoder) {
-                        encoder.write_type(::sbor::type_id::TYPE_STRUCT);
+                    fn encode_type_id(encoder: &mut ::sbor::Encoder) {
+                        encoder.write_type_id(::sbor::type_id::TYPE_STRUCT);
                     }
                     #[inline]
                     fn encode_value(&self, encoder: &mut ::sbor::Encoder) {
                         use ::sbor::{self, Encode};
-                        encoder.write_len(1);
+                        encoder.write_static_size(1);
                         self.a.encode(encoder);
                     }
                 }
@@ -213,25 +213,25 @@ mod tests {
             quote! {
                 impl ::sbor::Encode for Test {
                     #[inline]
-                    fn encode_type(&self, encoder: &mut ::sbor::Encoder) {
-                        encoder.write_type(::sbor::type_id::TYPE_ENUM);
+                    fn encode_type_id(encoder: &mut ::sbor::Encoder) {
+                        encoder.write_type_id(::sbor::type_id::TYPE_ENUM);
                     }
                     #[inline]
                     fn encode_value(&self, encoder: &mut ::sbor::Encoder) {
                         use ::sbor::{self, Encode};
                         match self {
                             Self::A => {
-                                "A".to_string().encode_value(encoder);
-                                encoder.write_len(0);
+                                encoder.write_variant_label("A");
+                                encoder.write_static_size(0);
                             }
                             Self::B(a0) => {
-                                "B".to_string().encode_value(encoder);
-                                encoder.write_len(1);
+                                encoder.write_variant_label("B");
+                                encoder.write_static_size(1);
                                 a0.encode(encoder);
                             }
                             Self::C { x, .. } => {
-                                "C".to_string().encode_value(encoder);
-                                encoder.write_len(1);
+                                encoder.write_variant_label("C");
+                                encoder.write_static_size(1);
                                 x.encode(encoder);
                             }
                         }

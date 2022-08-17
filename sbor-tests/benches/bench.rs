@@ -19,12 +19,12 @@ fn encode_simple_bincode(b: &mut Bencher) {
 
 fn encode_simple_sbor(b: &mut Bencher) {
     let t = data::get_simple_dataset(SIMPLE_REAPT);
-    b.iter(|| sbor::encode_with_type(&t));
+    b.iter(|| sbor::encode_with_static_info(&t));
 }
 
-fn encode_simple_sbor_no_type(b: &mut Bencher) {
+fn encode_simple_sbor_no_static_info(b: &mut Bencher) {
     let t = data::get_simple_dataset(SIMPLE_REAPT);
-    b.iter(|| sbor::encode_no_type(&t));
+    b.iter(|| sbor::encode_no_static_info(&t));
 }
 
 fn decode_simple_json(b: &mut Bencher) {
@@ -41,14 +41,14 @@ fn decode_simple_bincode(b: &mut Bencher) {
 
 fn decode_simple_sbor(b: &mut Bencher) {
     let t = data::get_simple_dataset(SIMPLE_REAPT);
-    let bytes = sbor::encode_with_type(&t);
-    b.iter(|| sbor::decode_with_type::<data::simple::SimpleStruct>(&bytes));
+    let bytes = sbor::encode_with_static_info(&t);
+    b.iter(|| sbor::decode_with_static_info::<data::simple::SimpleStruct>(&bytes));
 }
 
-fn decode_simple_sbor_no_type(b: &mut Bencher) {
+fn decode_simple_sbor_no_static_info(b: &mut Bencher) {
     let t = data::get_simple_dataset(SIMPLE_REAPT);
-    let bytes = sbor::encode_no_type(&t);
-    b.iter(|| sbor::decode_no_type::<data::simple::SimpleStruct>(&bytes));
+    let bytes = sbor::encode_no_static_info(&t);
+    b.iter(|| sbor::decode_no_static_info::<data::simple::SimpleStruct>(&bytes));
 }
 
 benchmark_group!(
@@ -56,13 +56,13 @@ benchmark_group!(
     encode_simple_json,
     encode_simple_bincode,
     encode_simple_sbor,
-    encode_simple_sbor_no_type
+    encode_simple_sbor_no_static_info
 );
 benchmark_group!(
     decode_simple,
     decode_simple_json,
     decode_simple_bincode,
     decode_simple_sbor,
-    decode_simple_sbor_no_type
+    decode_simple_sbor_no_static_info
 );
 benchmark_main!(encode_simple, decode_simple);

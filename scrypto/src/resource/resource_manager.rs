@@ -2,7 +2,6 @@ use sbor::rust::collections::HashMap;
 use sbor::rust::fmt;
 use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
-use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::engine::types::RENodeId;

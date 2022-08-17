@@ -1076,10 +1076,9 @@ mod tests {
 
     #[test]
     fn test_encode_decimal_type_precise_decimal() {
-        let pdec = pdec!("1.23456789");
         let mut bytes = Vec::with_capacity(512);
-        let mut enc = Encoder::with_type(&mut bytes);
-        pdec.encode_type(&mut enc);
+        let mut enc = Encoder::with_static_info(&mut bytes);
+        PreciseDecimal::encode_type_id(&mut enc);
         assert_eq!(bytes, vec![PreciseDecimal::type_id()]);
     }
 
@@ -1087,8 +1086,8 @@ mod tests {
     fn test_encode_decimal_value_precise_decimal() {
         let pdec = pdec!("0");
         let mut bytes = Vec::with_capacity(512);
-        let mut enc = Encoder::with_type(&mut bytes);
-        pdec.encode_type(&mut enc);
+        let mut enc = Encoder::with_static_info(&mut bytes);
+        PreciseDecimal::encode_type_id(&mut enc);
         pdec.encode_value(&mut enc);
         assert_eq!(bytes, {
             let mut a = [0; 69];
@@ -1100,10 +1099,9 @@ mod tests {
 
     #[test]
     fn test_decode_decimal_type_precise_decimal() {
-        let pdec = pdec!("1.23456789");
         let mut bytes = Vec::with_capacity(512);
-        let mut enc = Encoder::with_type(&mut bytes);
-        pdec.encode_type(&mut enc);
+        let mut enc = Encoder::with_static_info(&mut bytes);
+        PreciseDecimal::encode_type_id(&mut enc);
         let mut decoder = Decoder::new(&bytes, true);
         let typ = decoder.read_type().unwrap();
         assert_eq!(typ, PreciseDecimal::type_id());
@@ -1113,11 +1111,11 @@ mod tests {
     fn test_decode_decimal_value_precise_decimal() {
         let pdec = pdec!("1.23456789");
         let mut bytes = Vec::with_capacity(512);
-        let mut enc = Encoder::with_type(&mut bytes);
-        pdec.encode_type(&mut enc);
+        let mut enc = Encoder::with_static_info(&mut bytes);
+        PreciseDecimal::encode_type_id(&mut enc);
         pdec.encode_value(&mut enc);
         let mut decoder = Decoder::new(&bytes, true);
-        PreciseDecimal::decode_type(&mut decoder).unwrap();
+        PreciseDecimal::check_type_id(&mut decoder).unwrap();
         let val = PreciseDecimal::decode_value(&mut decoder).unwrap();
         assert_eq!(val, pdec!("1.23456789"));
     }

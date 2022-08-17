@@ -1,6 +1,5 @@
 use sbor::rust::collections::*;
 use sbor::rust::string::String;
-use sbor::rust::string::ToString;
 use sbor::rust::vec::*;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;

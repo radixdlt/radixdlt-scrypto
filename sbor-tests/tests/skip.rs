@@ -4,8 +4,6 @@
 pub mod utils;
 
 use crate::utils::assert_json_eq;
-use sbor::rust::string::String;
-use sbor::rust::string::ToString;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 use sbor::*;
@@ -43,7 +41,7 @@ fn test_struct_with_skip() {
     let c = TestStructUnit;
 
     let mut bytes = Vec::with_capacity(512);
-    let mut encoder = Encoder::with_type(&mut bytes);
+    let mut encoder = Encoder::with_static_info(&mut bytes);
     a.encode(&mut encoder);
     b.encode(&mut encoder);
     c.encode(&mut encoder);
@@ -65,7 +63,7 @@ fn test_struct_with_skip() {
         bytes
     );
 
-    let mut decoder = Decoder::with_type(&bytes);
+    let mut decoder = Decoder::with_static_info(&bytes);
     let a = TestStructNamed::decode(&mut decoder).unwrap();
     let b = TestStructUnnamed::decode(&mut decoder).unwrap();
     let c = TestStructUnit::decode(&mut decoder).unwrap();
@@ -126,7 +124,7 @@ fn test_enum_with_skip() {
     let c = TestEnum::C;
 
     let mut bytes = Vec::with_capacity(512);
-    let mut encoder = Encoder::with_type(&mut bytes);
+    let mut encoder = Encoder::with_static_info(&mut bytes);
     a.encode(&mut encoder);
     b.encode(&mut encoder);
     c.encode(&mut encoder);
@@ -154,7 +152,7 @@ fn test_enum_with_skip() {
         bytes
     );
 
-    let mut decoder = Decoder::with_type(&bytes);
+    let mut decoder = Decoder::with_static_info(&bytes);
     let a = TestEnum::decode(&mut decoder).unwrap();
     let b = TestEnum::decode(&mut decoder).unwrap();
     let c = TestEnum::decode(&mut decoder).unwrap();

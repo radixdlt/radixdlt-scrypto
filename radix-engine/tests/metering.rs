@@ -168,14 +168,14 @@ fn test_basic_transfer() {
         + 1500 /* create_node */
         + 2001 /* decode_transaction */
         + 1000 /* drop_node */
-        + 627444 /* instantiate_wasm */
+        + 605289 /* instantiate_wasm */
         + 1895 /* invoke_function */
         + 2215 /* invoke_method */
         + 5000 /* read_substate */
         + 600 /* return_substate */
         + 1000 /* run_function */
         + 5200 /* run_method */
-        + 300928 /* run_wasm */
+        + 262304 /* run_wasm */
         + 667 /* verify_manifest */
         + 3750 /* verify_signatures */
         + 3000, /* write_substate */

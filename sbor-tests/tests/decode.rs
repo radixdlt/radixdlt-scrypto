@@ -1,6 +1,5 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use sbor::rust::string::String;
 use sbor::rust::vec;
 use sbor::Decode;
 use sbor::DecodeError;
@@ -44,7 +43,7 @@ fn test_decode_struct() {
         0, 0, 0, 0,  // number of fields
     ];
 
-    let mut decoder = Decoder::with_type(&bytes);
+    let mut decoder = Decoder::with_static_info(&bytes);
     let a = TestStructNamed::decode(&mut decoder).unwrap();
     let b = TestStructUnnamed::decode(&mut decoder).unwrap();
     let c = TestStructUnit::decode(&mut decoder).unwrap();
@@ -77,7 +76,7 @@ fn test_decode_enum() {
         0, 0, 0, 0,  // number of fields
     ];
 
-    let mut decoder = Decoder::with_type(&bytes);
+    let mut decoder = Decoder::with_static_info(&bytes);
     let a = TestEnum::decode(&mut decoder).unwrap();
     let b = TestEnum::decode(&mut decoder).unwrap();
     let c = TestEnum::decode(&mut decoder).unwrap();
@@ -99,7 +98,7 @@ fn test_decode_empty_enum() {
         9, 3, 0, 0, 0,  // field value
     ];
 
-    let mut decoder = Decoder::with_type(&bytes);
+    let mut decoder = Decoder::with_static_info(&bytes);
     let result = EmptyEnum::decode(&mut decoder);
 
     assert!(matches!(result, Err(DecodeError::InvalidEnumVariant(_))));

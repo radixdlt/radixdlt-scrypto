@@ -1025,10 +1025,9 @@ mod tests {
 
     #[test]
     fn test_encode_decimal_type_decimal() {
-        let dec = dec!("1.23456789");
         let mut bytes = Vec::with_capacity(512);
-        let mut enc = Encoder::with_type(&mut bytes);
-        dec.encode_type(&mut enc);
+        let mut enc = Encoder::with_static_info(&mut bytes);
+        Decimal::encode_type_id(&mut enc);
         assert_eq!(bytes, vec![Decimal::type_id()]);
     }
 
@@ -1036,8 +1035,8 @@ mod tests {
     fn test_encode_decimal_value_decimal() {
         let dec = dec!("0");
         let mut bytes = Vec::with_capacity(512);
-        let mut enc = Encoder::with_type(&mut bytes);
-        dec.encode_type(&mut enc);
+        let mut enc = Encoder::with_static_info(&mut bytes);
+        Decimal::encode_type_id(&mut enc);
         dec.encode_value(&mut enc);
         assert_eq!(bytes, {
             let mut a = [0; 37];
@@ -1049,10 +1048,9 @@ mod tests {
 
     #[test]
     fn test_decode_decimal_type_decimal() {
-        let dec = dec!("1.23456789");
         let mut bytes = Vec::with_capacity(512);
-        let mut enc = Encoder::with_type(&mut bytes);
-        dec.encode_type(&mut enc);
+        let mut enc = Encoder::with_static_info(&mut bytes);
+        Decimal::encode_type_id(&mut enc);
         let mut decoder = Decoder::new(&bytes, true);
         let typ = decoder.read_type().unwrap();
         assert_eq!(typ, Decimal::type_id());
@@ -1062,11 +1060,11 @@ mod tests {
     fn test_decode_decimal_value_decimal() {
         let dec = dec!("1.23456789");
         let mut bytes = Vec::with_capacity(512);
-        let mut enc = Encoder::with_type(&mut bytes);
-        dec.encode_type(&mut enc);
+        let mut enc = Encoder::with_static_info(&mut bytes);
+        Decimal::encode_type_id(&mut enc);
         dec.encode_value(&mut enc);
         let mut decoder = Decoder::new(&bytes, true);
-        Decimal::decode_type(&mut decoder).unwrap();
+        Decimal::check_type_id(&mut decoder).unwrap();
         let val = Decimal::decode_value(&mut decoder).unwrap();
         assert_eq!(val, dec!("1.23456789"));
     }

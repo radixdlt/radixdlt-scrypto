@@ -27,7 +27,7 @@ fn test_encode_as_json() {
         c: (2, vec![3, 4]),
         d: "5".to_string(),
     };
-    let bytes = sbor::encode_with_type(&sample);
+    let bytes = sbor::encode_with_static_info(&sample);
     let any = sbor::decode_any(&bytes).unwrap();
 
     assert_json_eq(
