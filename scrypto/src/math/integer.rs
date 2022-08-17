@@ -1,6 +1,5 @@
 //! Definitions of safe integers and uints.
 
-use crate::abi::*;
 use core::cmp::{Ord, Ordering, PartialEq, PartialOrd};
 use core::ops::{Add, AddAssign, BitAnd, BitAndAssign, BitOr, BitOrAssign};
 use core::ops::{BitXor, BitXorAssign, Div, DivAssign};
@@ -13,13 +12,12 @@ use sbor::rust::convert::{From, TryFrom};
 use sbor::rust::fmt;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
+use sbor::type_id::*;
 use sbor::*;
 
 pub mod basic;
 pub mod bits;
 pub mod convert;
-#[cfg(test)]
-mod test;
 pub use convert::*;
 
 macro_rules! types {
@@ -128,8 +126,6 @@ macro_rules! types {
                     stringify!($t)
                 }
             }
-
-            scrypto_type!($t, ScryptoType::$t, Vec::new());
 
             )*
         }
@@ -279,6 +275,57 @@ types! {
         },
     }
 }
+
+macro_rules! sbor_codec {
+    ($t:ident, $t_id:expr, $t_model:ident) => {
+        impl TypeId for $t {
+            #[inline]
+            fn type_id() -> u8 {
+                $t_id
+            }
+        }
+
+        impl Encode for $t {
+            #[inline]
+            fn encode_type_id(encoder: &mut Encoder) {
+                encoder.write_type_id(Self::type_id());
+            }
+            #[inline]
+            fn encode_value(&self, encoder: &mut Encoder) {
+                encoder.write_slice(&self.to_le_bytes());
+            }
+        }
+
+        impl Decode for $t {
+            #[inline]
+            fn check_type_id(decoder: &mut Decoder) -> Result<(), DecodeError> {
+                decoder.check_type_id(Self::type_id())
+            }
+            fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
+                let slice = decoder.read_bytes((Self::BITS / 8) as usize)?;
+                let mut bytes = [0u8; (Self::BITS / 8) as usize];
+                bytes.copy_from_slice(&slice[..]);
+                Ok(Self::from_le_bytes(bytes))
+            }
+        }
+
+        impl Describe for $t {
+            fn describe() -> Type {
+                Type::$t_model
+            }
+        }
+    };
+}
+sbor_codec!(I8, TYPE_I8, I8);
+sbor_codec!(I16, TYPE_I16, I16);
+sbor_codec!(I32, TYPE_I32, I32);
+sbor_codec!(I64, TYPE_I64, I64);
+sbor_codec!(I128, TYPE_I128, I128);
+sbor_codec!(U8, TYPE_U8, U8);
+sbor_codec!(U16, TYPE_U16, U16);
+sbor_codec!(U32, TYPE_U32, U32);
+sbor_codec!(U64, TYPE_U64, U64);
+sbor_codec!(U128, TYPE_U128, U128);
 
 fn fmt<
     T: fmt::Display
@@ -988,3 +1035,63 @@ macro_rules! checked_int_impl_unsigned_small {
 
 checked_int_impl_unsigned_large! { U256, U384, U512 }
 checked_int_impl_unsigned_small! { U8, U16, U32, U64, U128 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn encode_integers(enc: &mut Encoder) {
+        I8::by(1i8).encode(enc);
+        I16::by(1i8).encode(enc);
+        I32::by(1i8).encode(enc);
+        I64::by(1i8).encode(enc);
+        I128::by(1i8).encode(enc);
+        U8::by(1u8).encode(enc);
+        U16::by(1u8).encode(enc);
+        U32::by(1u8).encode(enc);
+        U64::by(1u8).encode(enc);
+        U128::by(1u8).encode(enc);
+    }
+
+    #[test]
+    fn test_integer_encoding() {
+        let mut bytes = Vec::with_capacity(512);
+        let mut enc = Encoder::with_static_info(&mut bytes);
+        encode_integers(&mut enc);
+
+        assert_eq!(
+            vec![
+                2, 1, // i8
+                3, 1, 0, // i16
+                4, 1, 0, 0, 0, // i32
+                5, 1, 0, 0, 0, 0, 0, 0, 0, // i64
+                6, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // i128
+                7, 1, // u8
+                8, 1, 0, // u16
+                9, 1, 0, 0, 0, // u32
+                10, 1, 0, 0, 0, 0, 0, 0, 0, // u64
+                11, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // u128
+            ],
+            bytes
+        );
+    }
+
+    #[test]
+    fn test_integer_decoding() {
+        let mut bytes = Vec::with_capacity(512);
+        let mut enc = Encoder::with_static_info(&mut bytes);
+        encode_integers(&mut enc);
+
+        let mut dec = Decoder::with_static_info(&bytes);
+        assert_eq!(I8::by(1i8), <I8>::decode(&mut dec).unwrap());
+        assert_eq!(I16::by(1i8), <I16>::decode(&mut dec).unwrap());
+        assert_eq!(I32::by(1i8), <I32>::decode(&mut dec).unwrap());
+        assert_eq!(I64::by(1i8), <I64>::decode(&mut dec).unwrap());
+        assert_eq!(I128::by(1i8), <I128>::decode(&mut dec).unwrap());
+        assert_eq!(U8::by(1u8), <U8>::decode(&mut dec).unwrap());
+        assert_eq!(U16::by(1u8), <U16>::decode(&mut dec).unwrap());
+        assert_eq!(U32::by(1u8), <U32>::decode(&mut dec).unwrap());
+        assert_eq!(U64::by(1u8), <U64>::decode(&mut dec).unwrap());
+        assert_eq!(U128::by(1u8), <U128>::decode(&mut dec).unwrap());
+    }
+}

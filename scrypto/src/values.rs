@@ -255,22 +255,6 @@ pub enum ScryptoCustomValueCheckError {
     UnknownTypeId(u8),
     InvalidDecimal(ParseDecimalError),
     InvalidPreciseDecimal(ParsePreciseDecimalError),
-    InvalidU8(ParseU8Error),
-    InvalidU16(ParseU16Error),
-    InvalidU32(ParseU32Error),
-    InvalidU64(ParseU64Error),
-    InvalidU128(ParseU128Error),
-    InvalidU256(ParseU256Error),
-    InvalidU384(ParseU384Error),
-    InvalidU512(ParseU512Error),
-    InvalidI8(ParseI8Error),
-    InvalidI16(ParseI16Error),
-    InvalidI32(ParseI32Error),
-    InvalidI64(ParseI64Error),
-    InvalidI128(ParseI128Error),
-    InvalidI256(ParseI256Error),
-    InvalidI384(ParseI384Error),
-    InvalidI512(ParseI512Error),
     InvalidPackageAddress(AddressError),
     InvalidComponentAddress(AddressError),
     InvalidResourceAddress(AddressError),
@@ -363,54 +347,6 @@ impl CustomValueVisitor for ScryptoCustomValueChecker {
             ScryptoType::Ed25519Signature => {
                 Ed25519Signature::try_from(data)
                     .map_err(ScryptoCustomValueCheckError::InvalidEd25519Signature)?;
-            }
-            ScryptoType::U8 => {
-                U8::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidU8)?;
-            }
-            ScryptoType::U16 => {
-                U16::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidU16)?;
-            }
-            ScryptoType::U32 => {
-                U32::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidU32)?;
-            }
-            ScryptoType::U64 => {
-                U64::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidU64)?;
-            }
-            ScryptoType::U128 => {
-                U128::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidU128)?;
-            }
-            ScryptoType::U256 => {
-                U256::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidU256)?;
-            }
-            ScryptoType::U384 => {
-                U384::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidU384)?;
-            }
-            ScryptoType::U512 => {
-                U512::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidU512)?;
-            }
-            ScryptoType::I8 => {
-                I8::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidI8)?;
-            }
-            ScryptoType::I16 => {
-                I16::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidI16)?;
-            }
-            ScryptoType::I32 => {
-                I32::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidI32)?;
-            }
-            ScryptoType::I64 => {
-                I64::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidI64)?;
-            }
-            ScryptoType::I128 => {
-                I128::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidI128)?;
-            }
-            ScryptoType::I256 => {
-                I256::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidI256)?;
-            }
-            ScryptoType::I384 => {
-                I384::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidI384)?;
-            }
-            ScryptoType::I512 => {
-                I512::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidI512)?;
             }
             ScryptoType::Decimal => {
                 Decimal::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidDecimal)?;
@@ -624,22 +560,6 @@ impl ScryptoValueFormatter {
         proof_ids: &HashMap<ProofId, String>,
     ) -> String {
         match ScryptoType::from_id(type_id).unwrap() {
-            ScryptoType::U8 => format!("{}u8", U8::try_from(data).unwrap()),
-            ScryptoType::U16 => format!("{}u16", U16::try_from(data).unwrap()),
-            ScryptoType::U32 => format!("{}u32", U32::try_from(data).unwrap()),
-            ScryptoType::U64 => format!("{}u64", U64::try_from(data).unwrap()),
-            ScryptoType::U128 => format!("{}u128", U128::try_from(data).unwrap()),
-            ScryptoType::U256 => format!("{}u256", U256::try_from(data).unwrap()),
-            ScryptoType::U384 => format!("{}u384", U384::try_from(data).unwrap()),
-            ScryptoType::U512 => format!("{}u512", U512::try_from(data).unwrap()),
-            ScryptoType::I8 => format!("{}i8", I8::try_from(data).unwrap()),
-            ScryptoType::I16 => format!("{}i16", I16::try_from(data).unwrap()),
-            ScryptoType::I32 => format!("{}i32", I32::try_from(data).unwrap()),
-            ScryptoType::I64 => format!("{}i64", I64::try_from(data).unwrap()),
-            ScryptoType::I128 => format!("{}i128", I128::try_from(data).unwrap()),
-            ScryptoType::I256 => format!("{}i256", I256::try_from(data).unwrap()),
-            ScryptoType::I384 => format!("{}i384", I384::try_from(data).unwrap()),
-            ScryptoType::I512 => format!("{}i512", I512::try_from(data).unwrap()),
             ScryptoType::Decimal => format!("Decimal(\"{}\")", Decimal::try_from(data).unwrap()),
             ScryptoType::PreciseDecimal => {
                 format!(
