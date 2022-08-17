@@ -64,12 +64,12 @@ pub enum ExecutableInstruction {
         package_address: PackageAddress,
         blueprint_name: String,
         method_name: String,
-        arg: Vec<u8>,
+        args: Vec<u8>,
     },
     CallMethod {
         component_address: ComponentAddress,
         method_name: String,
-        arg: Vec<u8>,
+        args: Vec<u8>,
     },
     CallMethodWithAllResources {
         component_address: ComponentAddress,

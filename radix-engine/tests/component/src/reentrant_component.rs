@@ -13,7 +13,7 @@ blueprint! {
         pub fn call_self(&mut self) {
             if let ScryptoActor::Component(addr, ..) = Runtime::actor() {
                 let self_component = borrow_component!(addr);
-                self_component.call("func", vec![])
+                self_component.call("func", args!())
             }
         }
     }

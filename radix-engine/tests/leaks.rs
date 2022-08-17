@@ -2,7 +2,6 @@ use radix_engine::engine::{DropFailure, RuntimeError};
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use scrypto::core::Network;
 use scrypto::prelude::*;
-use scrypto::to_struct;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -16,7 +15,7 @@ fn dangling_component_should_fail() {
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .lock_fee(10.into(), SYSTEM_COMPONENT)
-        .call_function(package_address, "Leaks", "dangling_component", to_struct!())
+        .call_function(package_address, "Leaks", "dangling_component", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -34,7 +33,7 @@ fn dangling_bucket_should_fail() {
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .lock_fee(10.into(), SYSTEM_COMPONENT)
-        .call_function(package_address, "Leaks", "dangling_bucket", to_struct!())
+        .call_function(package_address, "Leaks", "dangling_bucket", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -52,7 +51,7 @@ fn dangling_vault_should_fail() {
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .lock_fee(10.into(), SYSTEM_COMPONENT)
-        .call_function(package_address, "Leaks", "dangling_vault", to_struct!())
+        .call_function(package_address, "Leaks", "dangling_vault", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -70,7 +69,7 @@ fn dangling_worktop_should_fail() {
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .lock_fee(10.into(), SYSTEM_COMPONENT)
-        .call_function(package_address, "Leaks", "get_bucket", to_struct!())
+        .call_function(package_address, "Leaks", "get_bucket", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -88,7 +87,7 @@ fn dangling_kv_store_should_fail() {
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .lock_fee(10.into(), SYSTEM_COMPONENT)
-        .call_function(package_address, "Leaks", "dangling_kv_store", to_struct!())
+        .call_function(package_address, "Leaks", "dangling_kv_store", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -110,7 +109,7 @@ fn dangling_bucket_with_proof_should_fail() {
             package_address,
             "Leaks",
             "dangling_bucket_with_proof",
-            to_struct!(),
+            args!(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);

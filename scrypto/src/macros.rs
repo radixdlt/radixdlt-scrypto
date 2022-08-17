@@ -1,47 +1,3 @@
-/// Encodes arguments according to Scrypto ABI.
-///
-/// # Example
-/// ```ignore
-/// use scrypto::prelude::*;
-///
-/// args!(5, "hello")
-/// ```
-#[macro_export]
-macro_rules! args {
-    () => {
-        ::sbor::rust::vec::Vec::new()
-    };
-    ($($args: expr),+) => {
-        {
-            let mut args = ::sbor::rust::vec::Vec::new();
-            $(args.push(scrypto::buffer::scrypto_encode(&$args));)+
-            args
-        }
-    };
-}
-
-#[macro_export]
-macro_rules! call_data_any_args {
-    ($name:expr, $args: expr) => {{
-        let variant = ::sbor::Value::Enum {
-            name: $name,
-            fields: $args,
-        };
-        ::sbor::encode_any(&variant)
-    }};
-}
-
-#[macro_export]
-macro_rules! call_data_bytes_args {
-    ($name:expr, $args: expr) => {{
-        let mut fields = Vec::new();
-        for arg in $args {
-            fields.push(::sbor::decode_any(&arg).unwrap());
-        }
-        ::scrypto::call_data_any_args!($name, fields)
-    }};
-}
-
 /// Creates a `Decimal` from literals.
 ///
 /// # Example
@@ -135,7 +91,7 @@ macro_rules! pdec {
 }
 
 #[macro_export]
-macro_rules! to_struct {
+macro_rules! args {
     ($($args: expr),*) => {{
         let mut fields = Vec::new();
         $(
@@ -150,7 +106,7 @@ macro_rules! to_struct {
 }
 
 #[macro_export]
-macro_rules! vec_to_struct {
+macro_rules! args_from_value_vec {
     ($args: expr) => {{
         let input_struct = ::sbor::Value::Struct { fields: $args };
         ::sbor::encode_any(&input_struct)
@@ -158,7 +114,7 @@ macro_rules! vec_to_struct {
 }
 
 #[macro_export]
-macro_rules! bytes_vec_to_struct {
+macro_rules! args_from_bytes_vec {
     ($args: expr) => {{
         let mut fields = Vec::new();
         for arg in $args {

@@ -2,7 +2,6 @@ use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use scrypto::core::Network;
 use scrypto::prelude::*;
-use scrypto::to_struct;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -16,7 +15,7 @@ fn test_get_epoch() {
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .lock_fee(10.into(), SYSTEM_COMPONENT)
-        .call_function(package_address, "SystemTest", "get_epoch", to_struct![])
+        .call_function(package_address, "SystemTest", "get_epoch", args![])
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -37,13 +36,8 @@ fn test_set_epoch_without_system_auth_fails() {
     let epoch = 9876u64;
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .lock_fee(10.into(), SYSTEM_COMPONENT)
-        .call_function(
-            package_address,
-            "SystemTest",
-            "set_epoch",
-            to_struct!(epoch),
-        )
-        .call_function(package_address, "SystemTest", "get_epoch", to_struct!())
+        .call_function(package_address, "SystemTest", "set_epoch", args!(epoch))
+        .call_function(package_address, "SystemTest", "get_epoch", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 

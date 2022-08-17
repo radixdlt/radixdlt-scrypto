@@ -6,7 +6,6 @@ use radix_engine::wasm::DefaultWasmEngine;
 use radix_engine::wasm::WasmInstrumenter;
 use scrypto::core::Network;
 use scrypto::prelude::*;
-use scrypto::to_struct;
 use transaction::builder::ManifestBuilder;
 use transaction::model::TestTransaction;
 use transaction::signing::EcdsaPrivateKey;
@@ -29,7 +28,7 @@ fn bench_transfer(c: &mut Criterion) {
     // Create two accounts
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .lock_fee(10.into(), SYSTEM_COMPONENT)
-        .call_method(SYSTEM_COMPONENT, "free_xrd", to_struct!())
+        .call_method(SYSTEM_COMPONENT, "free_xrd", args!())
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.new_account_with_resource(
                 &rule!(require(NonFungibleAddress::from_public_key(&public_key))),

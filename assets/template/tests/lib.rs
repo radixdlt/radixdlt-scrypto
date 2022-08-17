@@ -2,7 +2,6 @@ use radix_engine::ledger::*;
 use radix_engine::model::extract_package;
 use scrypto::core::Network;
 use scrypto::prelude::*;
-use scrypto::to_struct;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -20,7 +19,7 @@ fn test_hello() {
 
     // Test the `instantiate_hello` function.
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
-        .call_function(package_address, "Hello", "instantiate_hello", to_struct!())
+        .call_function(package_address, "Hello", "instantiate_hello", args!())
         .build();
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![public_key]);
     println!("{:?}\n", receipt);
@@ -29,7 +28,7 @@ fn test_hello() {
 
     // Test the `free_token` method.
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
-        .call_method(component, "free_token", to_struct!())
+        .call_method(component, "free_token", args!())
         .call_method_with_all_resources(account_component, "deposit_batch")
         .build();
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![public_key]);

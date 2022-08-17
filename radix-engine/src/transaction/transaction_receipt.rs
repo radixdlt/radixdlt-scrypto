@@ -140,23 +140,23 @@ impl fmt::Debug for TransactionReceipt {
                         package_address,
                         blueprint_name,
                         method_name,
-                        arg,
+                        args,
                     } => format!(
-                        "CallFunction {{ package_address: {}, blueprint_name: {:?}, method_name: {:?}, arg: {:?} }}",
+                        "CallFunction {{ package_address: {}, blueprint_name: {:?}, method_name: {:?}, args: {:?} }}",
                         bech32_encoder.encode_package_address(&package_address).unwrap(),
                         blueprint_name,
                         method_name,
-                        ScryptoValue::from_slice(&arg).expect("Invalid call data")
+                        ScryptoValue::from_slice(&args).expect("Invalid call data")
                     ),
                     ExecutableInstruction::CallMethod {
                         component_address,
                         method_name,
-                        arg,
+                        args,
                     } => format!(
                         "CallMethod {{ component_address: {}, method_name: {:?}, call_data: {:?} }}",
                         bech32_encoder.encode_component_address(&component_address).unwrap(),
                         method_name,
-                        ScryptoValue::from_slice(&arg).expect("Invalid call data")
+                        ScryptoValue::from_slice(&args).expect("Invalid call data")
                     ),
                     ExecutableInstruction::PublishPackage { .. } => "PublishPackage {..}".to_owned(),
                     i @ _ => format!("{:?}", i),

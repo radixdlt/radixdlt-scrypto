@@ -8,7 +8,6 @@ use radix_engine::transaction::TransactionExecutor;
 use radix_engine::wasm::*;
 use scrypto::core::Network;
 use scrypto::prelude::*;
-use scrypto::to_struct;
 use transaction::builder::ManifestBuilder;
 use transaction::model::TestTransaction;
 use transaction::signing::EcdsaPrivateKey;
@@ -44,7 +43,7 @@ fn test_say_hello() {
     // Test the `say_hello` function.
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .lock_fee(10.into(), SYSTEM_COMPONENT)
-        .call_function(package_address, "NoStd", "say_hello", to_struct!())
+        .call_function(package_address, "NoStd", "say_hello", args!())
         .build();
     let receipt = executor.execute_and_commit(
         &TestTransaction::new(manifest, 2, vec![]),

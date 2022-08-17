@@ -99,7 +99,7 @@ impl ComponentInfo {
     pub fn main<'s, Y: SystemApi<'s, W, I, C>, W: WasmEngine<I>, I: WasmInstance, C: FeeReserve>(
         component_address: ComponentAddress,
         component_fn: ComponentFnIdentifier,
-        arg: ScryptoValue,
+        args: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, ComponentError> {
         let substate_id = SubstateId::ComponentInfo(component_address);
@@ -108,7 +108,7 @@ impl ComponentInfo {
         let rtn = match component_fn {
             ComponentFnIdentifier::AddAccessCheck => {
                 let input: ComponentAddAccessCheckInput =
-                    scrypto_decode(&arg.raw).map_err(|e| ComponentError::InvalidRequestData(e))?;
+                    scrypto_decode(&args.raw).map_err(|e| ComponentError::InvalidRequestData(e))?;
 
                 // Abi checks
                 {

@@ -1,7 +1,6 @@
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use scrypto::core::Network;
 use scrypto::prelude::*;
-use scrypto::to_struct;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -21,7 +20,7 @@ fn test_trace_resource_transfers() {
             package_address,
             "ExecutionTraceTest",
             "transfer_resource_between_two_components",
-            to_struct!(transfer_amount),
+            args!(transfer_amount),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);

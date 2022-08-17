@@ -1,8 +1,8 @@
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::wasm::InvokeError;
+use scrypto::args;
 use scrypto::core::Network;
 use scrypto::prelude::{Package, RADIX_TOKEN, SYSTEM_COMPONENT};
-use scrypto::to_struct;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -21,7 +21,7 @@ fn test_loop() {
     let package_address = test_runner.publish_package(package);
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .lock_fee(10.into(), SYSTEM_COMPONENT)
-        .call_function(package_address, "Test", "f", to_struct!())
+        .call_function(package_address, "Test", "f", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -44,7 +44,7 @@ fn test_loop_out_of_cost_unit() {
     let package_address = test_runner.publish_package(package);
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .lock_fee(45.into(), SYSTEM_COMPONENT)
-        .call_function(package_address, "Test", "f", to_struct!())
+        .call_function(package_address, "Test", "f", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -68,7 +68,7 @@ fn test_recursion() {
     let package_address = test_runner.publish_package(package);
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .lock_fee(10.into(), SYSTEM_COMPONENT)
-        .call_function(package_address, "Test", "f", to_struct!())
+        .call_function(package_address, "Test", "f", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -91,7 +91,7 @@ fn test_recursion_stack_overflow() {
     let package_address = test_runner.publish_package(package);
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .lock_fee(10.into(), SYSTEM_COMPONENT)
-        .call_function(package_address, "Test", "f", to_struct!())
+        .call_function(package_address, "Test", "f", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -114,7 +114,7 @@ fn test_grow_memory() {
     let package_address = test_runner.publish_package(package);
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .lock_fee(10.into(), SYSTEM_COMPONENT)
-        .call_function(package_address, "Test", "f", to_struct!())
+        .call_function(package_address, "Test", "f", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -137,7 +137,7 @@ fn test_grow_memory_out_of_cost_unit() {
     let package_address = test_runner.publish_package(package);
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .lock_fee(10.into(), SYSTEM_COMPONENT)
-        .call_function(package_address, "Test", "f", to_struct!())
+        .call_function(package_address, "Test", "f", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -168,7 +168,7 @@ fn test_basic_transfer() {
         + 1500 /* create_node */
         + 2001 /* decode_transaction */
         + 1000 /* drop_node */
-        + 605289 /* instantiate_wasm */
+        + 603822 /* instantiate_wasm */
         + 1895 /* invoke_function */
         + 2215 /* invoke_method */
         + 5000 /* read_substate */

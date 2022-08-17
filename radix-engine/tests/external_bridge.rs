@@ -1,7 +1,7 @@
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use scrypto::address::Bech32Encoder;
 use scrypto::core::Network;
-use scrypto::{prelude::*, to_struct};
+use scrypto::{args, prelude::*};
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -30,7 +30,7 @@ fn test_external_bridges() {
             target_package_address,
             "ExternalBlueprintTarget",
             "create",
-            to_struct!(),
+            args!(),
         )
         .build();
     let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
@@ -45,7 +45,7 @@ fn test_external_bridges() {
             caller_package_address,
             "ExternalBlueprintCaller",
             "create",
-            to_struct!(),
+            args!(),
         )
         .build();
     let receipt2 = test_runner.execute_manifest(manifest2, vec![]);
@@ -59,7 +59,7 @@ fn test_external_bridges() {
         .call_method(
             caller_component_address,
             "run_tests_with_external_blueprint",
-            to_struct!(),
+            args!(),
         )
         .build();
     let receipt3 = test_runner.execute_manifest(manifest3, vec![]);
@@ -73,7 +73,7 @@ fn test_external_bridges() {
         .call_method(
             caller_component_address,
             "run_tests_with_external_component",
-            to_struct!(target_component_address),
+            args!(target_component_address),
         )
         .build();
     let receipt4 = test_runner.execute_manifest(manifest4, vec![]);

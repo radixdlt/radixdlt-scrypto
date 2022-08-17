@@ -5,10 +5,10 @@ use sbor::rust::str::FromStr;
 use sbor::type_id::*;
 use scrypto::abi::*;
 use scrypto::address::Bech32Decoder;
+use scrypto::args_from_value_vec;
 use scrypto::engine::types::*;
 use scrypto::prelude::*;
 use scrypto::values::*;
-use scrypto::vec_to_struct;
 
 use crate::errors::*;
 use crate::manifest::ast;
@@ -313,7 +313,7 @@ pub fn generate_instruction(
                 package_address: generate_package_address(package_address, bech32_decoder)?,
                 blueprint_name: generate_string(blueprint_name)?,
                 method_name: generate_string(function)?,
-                arg: vec_to_struct!(fields),
+                args: args_from_value_vec!(fields),
             }
         }
         ast::Instruction::CallMethod {
@@ -334,7 +334,7 @@ pub fn generate_instruction(
             Instruction::CallMethod {
                 component_address: generate_component_address(component_address, bech32_decoder)?,
                 method_name: generate_string(method)?,
-                arg: vec_to_struct!(fields),
+                args: args_from_value_vec!(fields),
             }
         }
         ast::Instruction::CallMethodWithAllResources {
@@ -822,10 +822,10 @@ mod tests {
     use crate::manifest::lexer::tokenize;
     use crate::manifest::parser::Parser;
     use scrypto::address::Bech32Decoder;
+    use scrypto::args;
     use scrypto::buffer::scrypto_encode;
     use scrypto::core::Network;
     use scrypto::prelude::Package;
-    use scrypto::to_struct;
 
     #[macro_export]
     macro_rules! generate_value_ok {
@@ -1083,7 +1083,7 @@ mod tests {
                 .unwrap(),
                 blueprint_name: "Airdrop".into(),
                 method_name: "new".to_string(),
-                arg: to_struct!(500u32, HashMap::from([("key", 1u8),]), pdec!("120"))
+                args: args!(500u32, HashMap::from([("key", 1u8),]), pdec!("120"))
             }
         );
         generate_instruction_ok!(
@@ -1091,7 +1091,7 @@ mod tests {
             Instruction::CallMethod {
                 component_address: component1,
                 method_name: "refill".to_string(),
-                arg: to_struct!()
+                args: args!()
             }
         );
         generate_instruction_ok!(
@@ -1148,7 +1148,7 @@ mod tests {
                 Instruction::CallMethod {
                     component_address: component1,
                     method_name: "withdraw_by_amount".to_string(),
-                    arg: to_struct!(
+                    args: args!(
                         Decimal::from(5u32),
                         ResourceAddress::from_str(
                             "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag"
@@ -1166,7 +1166,7 @@ mod tests {
                 Instruction::CallMethod {
                     component_address: component2,
                     method_name: "buy_gumball".to_string(),
-                    arg: to_struct!(scrypto::resource::Bucket(512))
+                    args: args!(scrypto::resource::Bucket(512))
                 },
                 Instruction::AssertWorktopContainsByAmount {
                     amount: Decimal::from(3),
@@ -1194,7 +1194,7 @@ mod tests {
                 Instruction::CallMethod {
                     component_address: component1,
                     method_name: "create_proof_by_amount".to_string(),
-                    arg: to_struct!(
+                    args: args!(
                         Decimal::from(5u32),
                         ResourceAddress::from_str(
                             "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag"
@@ -1226,7 +1226,7 @@ mod tests {
                 Instruction::CallMethod {
                     component_address: component2,
                     method_name: "complicated_method".to_string(),
-                    arg: to_struct!(Decimal::from(1u32), PreciseDecimal::from(2u32))
+                    args: args!(Decimal::from(1u32), PreciseDecimal::from(2u32))
                 },
             ]
         );

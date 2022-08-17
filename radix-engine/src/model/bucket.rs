@@ -164,7 +164,7 @@ impl Bucket {
     pub fn main<'s, Y: SystemApi<'s, W, I, C>, W: WasmEngine<I>, I: WasmInstance, C: FeeReserve>(
         bucket_id: BucketId,
         bucket_fn: BucketFnIdentifier,
-        arg: ScryptoValue,
+        args: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, BucketError> {
         let substate_id = SubstateId::Bucket(bucket_id);
@@ -176,7 +176,7 @@ impl Bucket {
         let rtn = match bucket_fn {
             BucketFnIdentifier::Take => {
                 let input: BucketTakeInput =
-                    scrypto_decode(&arg.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
+                    scrypto_decode(&args.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
                 let container = bucket0
                     .take(input.amount)
                     .map_err(BucketError::ResourceContainerError)?;
@@ -190,7 +190,7 @@ impl Bucket {
             }
             BucketFnIdentifier::TakeNonFungibles => {
                 let input: BucketTakeNonFungiblesInput =
-                    scrypto_decode(&arg.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
+                    scrypto_decode(&args.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
                 let container = bucket0
                     .take_non_fungibles(&input.ids)
                     .map_err(BucketError::ResourceContainerError)?;
@@ -204,7 +204,7 @@ impl Bucket {
             }
             BucketFnIdentifier::GetNonFungibleIds => {
                 let _: BucketGetNonFungibleIdsInput =
-                    scrypto_decode(&arg.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
+                    scrypto_decode(&args.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
                 let ids = bucket0
                     .total_ids()
                     .map_err(BucketError::ResourceContainerError)?;
@@ -212,7 +212,7 @@ impl Bucket {
             }
             BucketFnIdentifier::Put => {
                 let input: BucketPutInput =
-                    scrypto_decode(&arg.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
+                    scrypto_decode(&args.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
                 let other_bucket = system_api
                     .node_drop(&RENodeId::Bucket(input.bucket.0))
                     .map_err(BucketError::CostingError)?
@@ -224,17 +224,17 @@ impl Bucket {
             }
             BucketFnIdentifier::GetAmount => {
                 let _: BucketGetAmountInput =
-                    scrypto_decode(&arg.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
+                    scrypto_decode(&args.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
                 Ok(ScryptoValue::from_typed(&bucket0.total_amount()))
             }
             BucketFnIdentifier::GetResourceAddress => {
                 let _: BucketGetResourceAddressInput =
-                    scrypto_decode(&arg.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
+                    scrypto_decode(&args.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
                 Ok(ScryptoValue::from_typed(&bucket0.resource_address()))
             }
             BucketFnIdentifier::CreateProof => {
                 let _: BucketCreateProofInput =
-                    scrypto_decode(&arg.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
+                    scrypto_decode(&args.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
                 let proof = bucket0
                     .create_proof(bucket_id)
                     .map_err(BucketError::ProofError)?;
@@ -265,13 +265,13 @@ impl Bucket {
     >(
         node_id: RENodeId,
         bucket_fn: BucketFnIdentifier,
-        arg: ScryptoValue,
+        args: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, BucketError> {
         match bucket_fn {
             BucketFnIdentifier::Burn => {
                 let _: ConsumingBucketBurnInput =
-                    scrypto_decode(&arg.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
+                    scrypto_decode(&args.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
 
                 let bucket: Bucket = system_api
                     .node_drop(&node_id)
