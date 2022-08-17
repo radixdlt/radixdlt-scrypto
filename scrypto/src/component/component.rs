@@ -38,7 +38,7 @@ pub struct Component(pub(crate) ComponentAddress);
 
 impl Component {
     /// Invokes a method on this component.
-    pub fn call<T: Decode>(&self, method: &str, args: Vec<Vec<u8>>) -> T {
+    pub fn call<T: Decode>(&self, method: &str, args: Vec<u8>) -> T {
         Runtime::call_method(self.0, method, args)
     }
 
@@ -102,14 +102,6 @@ scrypto_type!(Component, ScryptoType::Component, Vec::new());
 //======
 // text
 //======
-
-impl FromStr for Component {
-    type Err = AddressError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        ComponentAddress::from_str(s).map(|a| Component(a))
-    }
-}
 
 impl fmt::Display for Component {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {

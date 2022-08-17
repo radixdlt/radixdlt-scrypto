@@ -1,7 +1,6 @@
 use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use scrypto::prelude::*;
-use scrypto::to_struct;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -21,7 +20,7 @@ fn test_max_call_depth_success() {
     // ============================
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .lock_fee(10.into(), SYSTEM_COMPONENT)
-        .call_function(package_address, "Caller", "recursive", to_struct!(15u32))
+        .call_function(package_address, "Caller", "recursive", args!(15u32))
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -39,7 +38,7 @@ fn test_max_call_depth_failure() {
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .lock_fee(10.into(), SYSTEM_COMPONENT)
-        .call_function(package_address, "Caller", "recursive", to_struct!(16u32))
+        .call_function(package_address, "Caller", "recursive", args!(16u32))
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 

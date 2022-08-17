@@ -5,7 +5,6 @@ use transaction::builder::ManifestBuilder;
 
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use scrypto::prelude::*;
-use scrypto::to_struct;
 
 #[test]
 fn vector_of_buckets_argument_should_succeed() {
@@ -23,7 +22,7 @@ fn vector_of_buckets_argument_should_succeed() {
                     package_address,
                     "Arguments",
                     "vector_argument",
-                    to_struct!(vec![Bucket(bucket_id1), Bucket(bucket_id2),]),
+                    args!(vec![Bucket(bucket_id1), Bucket(bucket_id2),]),
                 )
             })
         })
@@ -50,7 +49,7 @@ fn tuple_of_buckets_argument_should_succeed() {
                     package_address,
                     "Arguments",
                     "tuple_argument",
-                    to_struct!((Bucket(bucket_id1), Bucket(bucket_id2),)),
+                    args!((Bucket(bucket_id1), Bucket(bucket_id2),)),
                 )
             })
         })
@@ -77,12 +76,7 @@ fn treemap_of_strings_and_buckets_argument_should_succeed() {
                 map.insert("first".to_string(), Bucket(bucket_id1));
                 map.insert("second".to_string(), Bucket(bucket_id2));
 
-                builder.call_function(
-                    package_address,
-                    "Arguments",
-                    "treemap_argument",
-                    to_struct!(map),
-                )
+                builder.call_function(package_address, "Arguments", "treemap_argument", args!(map))
             })
         })
         .build();
@@ -108,12 +102,7 @@ fn hashmap_of_strings_and_buckets_argument_should_succeed() {
                 map.insert("first".to_string(), Bucket(bucket_id1));
                 map.insert("second".to_string(), Bucket(bucket_id2));
 
-                builder.call_function(
-                    package_address,
-                    "Arguments",
-                    "hashmap_argument",
-                    to_struct!(map),
-                )
+                builder.call_function(package_address, "Arguments", "hashmap_argument", args!(map))
             })
         })
         .build();
@@ -138,7 +127,7 @@ fn some_optional_bucket_argument_should_succeed() {
                 package_address,
                 "Arguments",
                 "option_argument",
-                to_struct!(Some(Bucket(bucket_id))),
+                args!(Some(Bucket(bucket_id))),
             )
         })
         .build();
@@ -162,7 +151,7 @@ fn none_optional_bucket_argument_should_succeed() {
             package_address,
             "Arguments",
             "option_argument",
-            to_struct!(Option::<Bucket>::None),
+            args!(Option::<Bucket>::None),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);

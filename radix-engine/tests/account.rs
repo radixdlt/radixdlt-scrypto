@@ -2,7 +2,6 @@ use radix_engine::engine::ResourceChange;
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use scrypto::core::Network;
 use scrypto::prelude::*;
-use scrypto::to_struct;
 use scrypto::values::ScryptoValue;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -21,7 +20,7 @@ fn can_withdraw_from_my_account() {
         .lock_fee(10.into(), account)
         .withdraw_from_account(RADIX_TOKEN, account)
         .call_method_with_all_resources(other_account, "deposit_batch")
-        .call_method(other_account, "balance", to_struct!(RADIX_TOKEN))
+        .call_method(other_account, "balance", args!(RADIX_TOKEN))
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
@@ -93,7 +92,7 @@ fn account_to_bucket_to_account() {
                 .add_instruction(Instruction::CallMethod {
                     component_address: account,
                     method_name: "deposit".to_string(),
-                    arg: to_struct!(scrypto::resource::Bucket(bucket_id)),
+                    args: args!(scrypto::resource::Bucket(bucket_id)),
                 })
                 .0
         })
@@ -116,7 +115,7 @@ fn test_account_balance() {
     let (_, _, account2) = test_runner.new_account();
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .lock_fee(10.into(), account1)
-        .call_method(account2, "balance", to_struct!(RADIX_TOKEN))
+        .call_method(account2, "balance", args!(RADIX_TOKEN))
         .build();
 
     // Act

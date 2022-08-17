@@ -22,7 +22,7 @@ pub trait WasmInstance {
     fn invoke_export<'r>(
         &mut self,
         func_name: &str,
-        arg: &ScryptoValue,
+        args: &ScryptoValue,
         runtime: &mut Box<dyn WasmRuntime + 'r>,
     ) -> Result<ScryptoValue, InvokeError>;
 }

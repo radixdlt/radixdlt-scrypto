@@ -220,11 +220,11 @@ impl ResourceManager {
     pub fn get_auth(
         &self,
         fn_identifier: ResourceManagerFnIdentifier,
-        arg: &ScryptoValue,
+        args: &ScryptoValue,
     ) -> &MethodAuthorization {
         match &fn_identifier {
             ResourceManagerFnIdentifier::UpdateAuth => {
-                let input: ResourceManagerUpdateAuthInput = scrypto_decode(&arg.raw).unwrap();
+                let input: ResourceManagerUpdateAuthInput = scrypto_decode(&args.raw).unwrap();
                 match self.authorization.get(&input.method) {
                     None => &MethodAuthorization::Unsupported,
                     Some(entry) => {
@@ -233,7 +233,7 @@ impl ResourceManager {
                 }
             }
             ResourceManagerFnIdentifier::LockAuth => {
-                let input: ResourceManagerLockAuthInput = scrypto_decode(&arg.raw).unwrap();
+                let input: ResourceManagerLockAuthInput = scrypto_decode(&args.raw).unwrap();
                 match self.authorization.get(&input.method) {
                     None => &MethodAuthorization::Unsupported,
                     Some(entry) => entry.get_update_auth(MethodAccessRuleMethod::Lock()),
@@ -390,12 +390,12 @@ impl ResourceManager {
         C: FeeReserve,
     >(
         resource_manager_fn: ResourceManagerFnIdentifier,
-        arg: ScryptoValue,
+        args: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, ResourceManagerError> {
         match resource_manager_fn {
             ResourceManagerFnIdentifier::Create => {
-                let input: ResourceManagerCreateInput = scrypto_decode(&arg.raw)
+                let input: ResourceManagerCreateInput = scrypto_decode(&args.raw)
                     .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
 
                 let mut resource_manager =
@@ -476,7 +476,7 @@ impl ResourceManager {
     pub fn main<'s, Y: SystemApi<'s, W, I, C>, W: WasmEngine<I>, I: WasmInstance, C: FeeReserve>(
         resource_address: ResourceAddress,
         resource_manager_fn: ResourceManagerFnIdentifier,
-        arg: ScryptoValue,
+        args: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, ResourceManagerError> {
         let substate_id = SubstateId::ResourceManager(resource_address);
@@ -487,7 +487,7 @@ impl ResourceManager {
 
         let rtn = match resource_manager_fn {
             ResourceManagerFnIdentifier::UpdateAuth => {
-                let input: ResourceManagerUpdateAuthInput = scrypto_decode(&arg.raw)
+                let input: ResourceManagerUpdateAuthInput = scrypto_decode(&args.raw)
                     .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
                 let method_entry = resource_manager
                     .authorization
@@ -496,7 +496,7 @@ impl ResourceManager {
                 method_entry.main(MethodAccessRuleMethod::Update(input.access_rule))
             }
             ResourceManagerFnIdentifier::LockAuth => {
-                let input: ResourceManagerLockAuthInput = scrypto_decode(&arg.raw)
+                let input: ResourceManagerLockAuthInput = scrypto_decode(&args.raw)
                     .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
                 let method_entry = resource_manager
                     .authorization
@@ -505,7 +505,7 @@ impl ResourceManager {
                 method_entry.main(MethodAccessRuleMethod::Lock())
             }
             ResourceManagerFnIdentifier::CreateVault => {
-                let _: ResourceManagerCreateVaultInput = scrypto_decode(&arg.raw)
+                let _: ResourceManagerCreateVaultInput = scrypto_decode(&args.raw)
                     .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
                 let container = ResourceContainer::new_empty(
                     resource_address,
@@ -520,7 +520,7 @@ impl ResourceManager {
                 )))
             }
             ResourceManagerFnIdentifier::CreateBucket => {
-                let _: ResourceManagerCreateBucketInput = scrypto_decode(&arg.raw)
+                let _: ResourceManagerCreateBucketInput = scrypto_decode(&args.raw)
                     .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
                 let container = ResourceContainer::new_empty(
                     resource_address,
@@ -535,7 +535,7 @@ impl ResourceManager {
                 )))
             }
             ResourceManagerFnIdentifier::Mint => {
-                let input: ResourceManagerMintInput = scrypto_decode(&arg.raw)
+                let input: ResourceManagerMintInput = scrypto_decode(&args.raw)
                     .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
                 let container =
                     resource_manager.mint(input.mint_params, resource_address, system_api)?;
@@ -548,28 +548,28 @@ impl ResourceManager {
                 )))
             }
             ResourceManagerFnIdentifier::GetMetadata => {
-                let _: ResourceManagerGetMetadataInput = scrypto_decode(&arg.raw)
+                let _: ResourceManagerGetMetadataInput = scrypto_decode(&args.raw)
                     .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
                 Ok(ScryptoValue::from_typed(&resource_manager.metadata))
             }
             ResourceManagerFnIdentifier::GetResourceType => {
-                let _: ResourceManagerGetResourceTypeInput = scrypto_decode(&arg.raw)
+                let _: ResourceManagerGetResourceTypeInput = scrypto_decode(&args.raw)
                     .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
                 Ok(ScryptoValue::from_typed(&resource_manager.resource_type))
             }
             ResourceManagerFnIdentifier::GetTotalSupply => {
-                let _: ResourceManagerGetTotalSupplyInput = scrypto_decode(&arg.raw)
+                let _: ResourceManagerGetTotalSupplyInput = scrypto_decode(&args.raw)
                     .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
                 Ok(ScryptoValue::from_typed(&resource_manager.total_supply))
             }
             ResourceManagerFnIdentifier::UpdateMetadata => {
-                let input: ResourceManagerUpdateMetadataInput = scrypto_decode(&arg.raw)
+                let input: ResourceManagerUpdateMetadataInput = scrypto_decode(&args.raw)
                     .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
                 resource_manager.update_metadata(input.metadata)?;
                 Ok(ScryptoValue::from_typed(&()))
             }
             ResourceManagerFnIdentifier::UpdateNonFungibleData => {
-                let input: ResourceManagerUpdateNonFungibleDataInput = scrypto_decode(&arg.raw)
+                let input: ResourceManagerUpdateNonFungibleDataInput = scrypto_decode(&args.raw)
                     .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
 
                 // Read current value
@@ -601,7 +601,7 @@ impl ResourceManager {
                 Ok(ScryptoValue::from_typed(&()))
             }
             ResourceManagerFnIdentifier::NonFungibleExists => {
-                let input: ResourceManagerNonFungibleExistsInput = scrypto_decode(&arg.raw)
+                let input: ResourceManagerNonFungibleExistsInput = scrypto_decode(&args.raw)
                     .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
 
                 let value = system_api
@@ -611,7 +611,7 @@ impl ResourceManager {
                 Ok(ScryptoValue::from_typed(&wrapper.0.is_some()))
             }
             ResourceManagerFnIdentifier::GetNonFungible => {
-                let input: ResourceManagerGetNonFungibleInput = scrypto_decode(&arg.raw)
+                let input: ResourceManagerGetNonFungibleInput = scrypto_decode(&args.raw)
                     .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
                 let non_fungible_address =
                     NonFungibleAddress::new(resource_address.clone(), input.id.clone());

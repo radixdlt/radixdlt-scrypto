@@ -237,7 +237,7 @@ pub fn decompile(
                 package_address,
                 blueprint_name,
                 method_name,
-                arg,
+                args,
             } => {
                 buf.push_str(&format!(
                     "CALL_FUNCTION PackageAddress(\"{}\") \"{}\" \"{}\"",
@@ -248,7 +248,7 @@ pub fn decompile(
                     method_name
                 ));
                 let validated_arg =
-                    ScryptoValue::from_slice(&arg).map_err(DecompileError::DecodeError)?;
+                    ScryptoValue::from_slice(&args).map_err(DecompileError::DecodeError)?;
                 if let Value::Struct { fields } = validated_arg.dom {
                     for field in fields {
                         let bytes = encode_any(&field);
@@ -269,7 +269,7 @@ pub fn decompile(
             Instruction::CallMethod {
                 component_address,
                 method_name,
-                arg,
+                args,
             } => {
                 buf.push_str(&format!(
                     "CALL_METHOD ComponentAddress(\"{}\") \"{}\"",
@@ -280,7 +280,7 @@ pub fn decompile(
                 ));
 
                 let validated_arg =
-                    ScryptoValue::from_slice(&arg).map_err(DecompileError::DecodeError)?;
+                    ScryptoValue::from_slice(&args).map_err(DecompileError::DecodeError)?;
                 if let Value::Struct { fields } = validated_arg.dom {
                     for field in fields {
                         let bytes = encode_any(&field);

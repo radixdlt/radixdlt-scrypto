@@ -1,4 +1,5 @@
 use criterion::{criterion_group, criterion_main, Criterion};
+use scrypto::address::Bech32Decoder;
 use scrypto::core::Network;
 use scrypto::prelude::*;
 use transaction::builder::ManifestBuilder;
@@ -39,14 +40,18 @@ fn bench_ed25519_validation(c: &mut Criterion) {
 }
 
 fn bench_transaction_validation(c: &mut Criterion) {
-    let account1 = ComponentAddress::from_str(
-        "account_sim1qd5yl2lwcuk25q705sm9g7cven6f9kytjs8t2xvvggzq5d2mse",
-    )
-    .unwrap();
-    let account2 = ComponentAddress::from_str(
-        "account_sim1qdugngtu8y0e54zwe5j54mdwv3wnkse68u9840407zws6fzpn7",
-    )
-    .unwrap();
+    let bech32_decoder: Bech32Decoder = Bech32Decoder::new_from_network(&Network::LocalSimulator);
+
+    let account1 = bech32_decoder
+        .validate_and_decode_component_address(
+            "account_sim1qd5yl2lwcuk25q705sm9g7cven6f9kytjs8t2xvvggzq5d2mse",
+        )
+        .unwrap();
+    let account2 = bech32_decoder
+        .validate_and_decode_component_address(
+            "account_sim1qdugngtu8y0e54zwe5j54mdwv3wnkse68u9840407zws6fzpn7",
+        )
+        .unwrap();
     let signer = EcdsaPrivateKey::from_u64(1).unwrap();
 
     let transaction = TransactionBuilder::new()

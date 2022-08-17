@@ -2,6 +2,7 @@ use sbor::rust::collections::HashMap;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use sbor::{Decode, Encode, TypeId};
+use scrypto::args;
 use scrypto::buffer::scrypto_decode;
 use scrypto::component::Package;
 use scrypto::core::{
@@ -15,7 +16,6 @@ use scrypto::prelude::{
     ProofCloneInput, TransactionProcessorFnIdentifier,
 };
 use scrypto::resource::{AuthZonePopInput, ConsumingProofDropInput};
-use scrypto::to_struct;
 use scrypto::values::*;
 use transaction::model::*;
 use transaction::validation::*;
@@ -414,12 +414,12 @@ impl TransactionProcessor {
                             package_address,
                             blueprint_name,
                             method_name,
-                            arg,
+                            args,
                         } => {
                             Self::replace_ids(
                                 &mut proof_id_mapping,
                                 &mut bucket_id_mapping,
-                                ScryptoValue::from_slice(arg).expect("Should be valid arg"),
+                                ScryptoValue::from_slice(args).expect("Should be valid arg"),
                             )
                             .and_then(|call_data| {
                                 system_api.invoke_function(
@@ -466,12 +466,12 @@ impl TransactionProcessor {
                         ExecutableInstruction::CallMethod {
                             component_address,
                             method_name,
-                            arg,
+                            args,
                         } => {
                             Self::replace_ids(
                                 &mut proof_id_mapping,
                                 &mut bucket_id_mapping,
-                                ScryptoValue::from_slice(arg).expect("Should be valid arg"),
+                                ScryptoValue::from_slice(args).expect("Should be valid arg"),
                             )
                             .and_then(|call_data| {
                                 // TODO: Move this into preprocessor step
@@ -544,7 +544,7 @@ impl TransactionProcessor {
                                 for (_, real_id) in bucket_id_mapping.drain() {
                                     buckets.push(scrypto::resource::Bucket(real_id));
                                 }
-                                let encoded = to_struct!(buckets);
+                                let encoded = args!(buckets);
                                 // TODO: Move this into preprocessor step
                                 system_api
                                     .substate_read(SubstateId::ComponentInfo(*component_address))

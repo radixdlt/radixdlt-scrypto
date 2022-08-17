@@ -244,30 +244,30 @@ impl TransactionValidator {
                     package_address,
                     blueprint_name,
                     method_name,
-                    arg,
+                    args,
                 } => {
                     // TODO: decode into Value
-                    Self::validate_call_data(&arg, &mut id_validator)
+                    Self::validate_call_data(&args, &mut id_validator)
                         .map_err(TransactionValidationError::CallDataValidationError)?;
                     instructions.push(ExecutableInstruction::CallFunction {
                         package_address,
                         blueprint_name,
                         method_name,
-                        arg,
+                        args,
                     });
                 }
                 Instruction::CallMethod {
                     component_address,
                     method_name,
-                    arg,
+                    args,
                 } => {
                     // TODO: decode into Value
-                    Self::validate_call_data(&arg, &mut id_validator)
+                    Self::validate_call_data(&args, &mut id_validator)
                         .map_err(TransactionValidationError::CallDataValidationError)?;
                     instructions.push(ExecutableInstruction::CallMethod {
                         component_address,
                         method_name,
-                        arg,
+                        args,
                     });
                 }
                 Instruction::CallMethodWithAllResources {

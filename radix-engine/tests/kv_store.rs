@@ -3,7 +3,6 @@ use radix_engine::ledger::TypedInMemorySubstateStore;
 use scrypto::core::Network;
 use scrypto::engine::types::RENodeId;
 use scrypto::prelude::*;
-use scrypto::to_struct;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -17,7 +16,7 @@ fn can_insert_in_child_nodes() {
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .lock_fee(10.into(), SYSTEM_COMPONENT)
-        .call_function(package_address, "SuperKeyValueStore", "new", to_struct!())
+        .call_function(package_address, "SuperKeyValueStore", "new", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -39,7 +38,7 @@ fn create_mutable_key_value_store_into_map_and_referencing_before_storing() {
             package_address,
             "KeyValueStoreTest",
             "new_key_value_store_into_map_then_get",
-            to_struct!(),
+            args!(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -58,7 +57,7 @@ fn cyclic_map_fails_execution() {
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .lock_fee(10.into(), SYSTEM_COMPONENT)
-        .call_function(package_address, "CyclicMap", "new", to_struct!())
+        .call_function(package_address, "CyclicMap", "new", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -76,12 +75,7 @@ fn self_cyclic_map_fails_execution() {
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .lock_fee(10.into(), SYSTEM_COMPONENT)
-        .call_function(
-            package_address,
-            "CyclicMap",
-            "new_self_cyclic",
-            to_struct!(),
-        )
+        .call_function(package_address, "CyclicMap", "new_self_cyclic", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -101,7 +95,7 @@ fn cannot_remove_key_value_stores() {
             package_address,
             "KeyValueStoreTest",
             "new_key_value_store_into_vector",
-            to_struct!(),
+            args!(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -110,7 +104,7 @@ fn cannot_remove_key_value_stores() {
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .lock_fee(10.into(), SYSTEM_COMPONENT)
-        .call_method(component_address, "clear_vector", to_struct!())
+        .call_method(component_address, "clear_vector", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -130,7 +124,7 @@ fn cannot_overwrite_key_value_stores() {
             package_address,
             "KeyValueStoreTest",
             "new_key_value_store_into_key_value_store",
-            to_struct!(),
+            args!(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -139,7 +133,7 @@ fn cannot_overwrite_key_value_stores() {
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .lock_fee(10.into(), SYSTEM_COMPONENT)
-        .call_method(component_address, "overwrite_key_value_store", to_struct!())
+        .call_method(component_address, "overwrite_key_value_store", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -161,7 +155,7 @@ fn create_key_value_store_and_get() {
             package_address,
             "KeyValueStoreTest",
             "new_key_value_store_with_get",
-            to_struct!(),
+            args!(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -184,7 +178,7 @@ fn create_key_value_store_and_put() {
             package_address,
             "KeyValueStoreTest",
             "new_key_value_store_with_put",
-            to_struct!(),
+            args!(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -207,7 +201,7 @@ fn can_reference_in_memory_vault() {
             package_address,
             "Precommitted",
             "can_reference_precommitted_vault",
-            to_struct!(),
+            args!(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -230,7 +224,7 @@ fn can_reference_deep_in_memory_value() {
             package_address,
             "Precommitted",
             "can_reference_deep_precommitted_value",
-            to_struct!(),
+            args!(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -253,7 +247,7 @@ fn can_reference_deep_in_memory_vault() {
             package_address,
             "Precommitted",
             "can_reference_deep_precommitted_vault",
-            to_struct!(),
+            args!(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -276,7 +270,7 @@ fn cannot_directly_reference_inserted_vault() {
             package_address,
             "RefCheck",
             "cannot_directly_reference_inserted_vault",
-            to_struct!(),
+            args!(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -304,7 +298,7 @@ fn cannot_directly_reference_vault_after_container_moved() {
             package_address,
             "RefCheck",
             "cannot_directly_reference_vault_after_container_moved",
-            to_struct!(),
+            args!(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -332,7 +326,7 @@ fn cannot_directly_reference_vault_after_container_stored() {
             package_address,
             "RefCheck",
             "cannot_directly_reference_vault_after_container_stored",
-            to_struct!(),
+            args!(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -356,12 +350,7 @@ fn multiple_reads_should_work() {
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .lock_fee(10.into(), SYSTEM_COMPONENT)
-        .call_function(
-            package_address,
-            "MultipleReads",
-            "multiple_reads",
-            to_struct!(),
-        )
+        .call_function(package_address, "MultipleReads", "multiple_reads", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 

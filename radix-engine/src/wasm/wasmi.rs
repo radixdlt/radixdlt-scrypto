@@ -162,7 +162,7 @@ impl WasmInstance for WasmiInstance {
     fn invoke_export<'r>(
         &mut self,
         func_name: &str,
-        arg: &ScryptoValue,
+        args: &ScryptoValue,
         runtime: &mut Box<dyn WasmRuntime + 'r>,
     ) -> Result<ScryptoValue, InvokeError> {
         let mut externals = WasmiExternals {
@@ -170,7 +170,7 @@ impl WasmInstance for WasmiInstance {
             runtime,
         };
 
-        let pointer = externals.send_value(arg)?;
+        let pointer = externals.send_value(args)?;
         let result = self
             .module_ref
             .clone()

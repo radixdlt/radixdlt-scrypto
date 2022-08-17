@@ -1,7 +1,6 @@
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use scrypto::core::Network;
 use scrypto::prelude::*;
-use scrypto::to_struct;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -24,7 +23,7 @@ fn cannot_make_cross_component_call_without_authorization() {
             package_address,
             "CrossComponent",
             "create_component_with_auth",
-            to_struct!(authorization),
+            args!(authorization),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -37,7 +36,7 @@ fn cannot_make_cross_component_call_without_authorization() {
             package_address,
             "CrossComponent",
             "create_component",
-            to_struct!(),
+            args!(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -50,7 +49,7 @@ fn cannot_make_cross_component_call_without_authorization() {
         .call_method(
             my_component,
             "cross_component_call",
-            to_struct!(secured_component),
+            args!(secured_component),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -78,7 +77,7 @@ fn can_make_cross_component_call_with_authorization() {
             package_address,
             "CrossComponent",
             "create_component_with_auth",
-            to_struct!(authorization),
+            args!(authorization),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -91,7 +90,7 @@ fn can_make_cross_component_call_with_authorization() {
             package_address,
             "CrossComponent",
             "create_component",
-            to_struct!(),
+            args!(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -112,7 +111,7 @@ fn can_make_cross_component_call_with_authorization() {
         .call_method(
             my_component,
             "cross_component_call",
-            to_struct!(secured_component),
+            args!(secured_component),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);

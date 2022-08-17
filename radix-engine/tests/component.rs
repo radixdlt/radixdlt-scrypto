@@ -1,9 +1,9 @@
 use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::TypedInMemorySubstateStore;
+use scrypto::address::Bech32Decoder;
 use scrypto::core::Network;
 use scrypto::engine::types::SubstateId;
 use scrypto::prelude::*;
-use scrypto::to_struct;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -17,7 +17,7 @@ fn test_component() {
     // Create component
     let manifest1 = ManifestBuilder::new(Network::LocalSimulator)
         .lock_fee(10.into(), SYSTEM_COMPONENT)
-        .call_function(package, "ComponentTest", "create_component", to_struct!())
+        .call_function(package, "ComponentTest", "create_component", args!())
         .build();
     let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
     receipt1.expect_success();
@@ -32,10 +32,10 @@ fn test_component() {
             package,
             "ComponentTest",
             "get_component_info",
-            to_struct!(component),
+            args!(component),
         )
-        .call_method(component, "get_component_state", to_struct!())
-        .call_method(component, "put_component_state", to_struct!())
+        .call_method(component, "get_component_state", args!())
+        .call_method(component, "put_component_state", args!())
         .call_method_with_all_resources(account, "deposit_batch")
         .build();
     let receipt2 = test_runner.execute_manifest(manifest2, vec![public_key]);
@@ -56,7 +56,7 @@ fn invalid_blueprint_name_should_cause_error() {
             package_address,
             "NonExistentBlueprint",
             "create_component",
-            to_struct!(),
+            args!(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -79,7 +79,7 @@ fn reentrancy_should_not_be_possible() {
     let package_address = test_runner.extract_and_publish_package("component");
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .lock_fee(10.into(), SYSTEM_COMPONENT)
-        .call_function(package_address, "ReentrantComponent", "new", to_struct!())
+        .call_function(package_address, "ReentrantComponent", "new", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_success();
@@ -88,7 +88,7 @@ fn reentrancy_should_not_be_possible() {
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .lock_fee(10.into(), SYSTEM_COMPONENT)
-        .call_method(component_address, "call_self", to_struct!())
+        .call_method(component_address, "call_self", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -108,15 +108,16 @@ fn missing_component_address_in_manifest_should_cause_rejection() {
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let _ = test_runner.extract_and_publish_package("component");
-    let component_address = ComponentAddress::from_str(
-        "component_sim1qgqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqph4dhmhs42ee03",
-    )
-    .unwrap();
+    let component_address = Bech32Decoder::new_from_network(&Network::LocalSimulator)
+        .validate_and_decode_component_address(
+            "component_sim1qgqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqph4dhmhs42ee03",
+        )
+        .unwrap();
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .lock_fee(10.into(), SYSTEM_COMPONENT)
-        .call_method(component_address, "get_component_state", to_struct!())
+        .call_method(component_address, "get_component_state", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 

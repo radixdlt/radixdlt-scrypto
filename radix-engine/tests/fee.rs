@@ -6,7 +6,6 @@ use radix_engine::model::WorktopError;
 use radix_engine::transaction::TransactionReceipt;
 use scrypto::core::Network;
 use scrypto::prelude::*;
-use scrypto::to_struct;
 use scrypto::values::ScryptoValue;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -28,7 +27,7 @@ where
             .lock_fee(10.into(), account)
             .withdraw_from_account_by_amount(1000.into(), RADIX_TOKEN, account)
             .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
-                builder.call_function(package_address, "Fee", "new", to_struct!(Bucket(bucket_id)));
+                builder.call_function(package_address, "Fee", "new", args!(Bucket(bucket_id)));
                 builder
             })
             .build(),
@@ -45,7 +44,7 @@ where
 fn should_succeed_when_fee_is_paid() {
     let receipt = run_manifest(|component_address| {
         ManifestBuilder::new(Network::LocalSimulator)
-            .call_method(component_address, "lock_fee", to_struct!(Decimal::from(10)))
+            .call_method(component_address, "lock_fee", args!(Decimal::from(10)))
             .build()
     });
 
@@ -66,7 +65,7 @@ fn should_be_rejected_when_insufficient_balance() {
             .call_method(
                 component_address,
                 "lock_fee_with_empty_vault",
-                to_struct!(Decimal::from(10)),
+                args!(Decimal::from(10)),
             )
             .build()
     });
@@ -81,7 +80,7 @@ fn should_be_rejected_when_non_xrd() {
             .call_method(
                 component_address,
                 "lock_fee_with_doge",
-                to_struct!(Decimal::from(10)),
+                args!(Decimal::from(10)),
             )
             .build()
     });
@@ -96,7 +95,7 @@ fn should_be_rejected_when_system_loan_is_not_fully_repaid() {
             .call_method(
                 component_address,
                 "lock_fee",
-                to_struct!(Decimal::from_str("0.001").unwrap()), // = 1000 cost units
+                args!(Decimal::from_str("0.001").unwrap()), // = 1000 cost units
             )
             .build()
     });
@@ -111,7 +110,7 @@ fn should_be_rejected_when_lock_fee_with_temp_vault() {
             .call_method(
                 component_address,
                 "lock_fee_with_temp_vault",
-                to_struct!(Decimal::from(10)),
+                args!(Decimal::from(10)),
             )
             .build()
     });
@@ -126,7 +125,7 @@ fn should_be_rejected_when_query_vault_and_lock_fee() {
             .call_method(
                 component_address,
                 "query_vault_and_lock_fee",
-                to_struct!(Decimal::from(10)),
+                args!(Decimal::from(10)),
             )
             .build()
     });
@@ -141,7 +140,7 @@ fn should_succeed_when_lock_fee_and_query_vault() {
             .call_method(
                 component_address,
                 "lock_fee_and_query_vault",
-                to_struct!(Decimal::from(10)),
+                args!(Decimal::from(10)),
             )
             .build()
     });

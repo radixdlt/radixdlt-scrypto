@@ -508,9 +508,9 @@ where
             let input: TransactionProcessorRunInput = scrypto_decode(&input.raw).unwrap();
             for instruction in &input.instructions {
                 match instruction {
-                    ExecutableInstruction::CallFunction { arg, .. }
-                    | ExecutableInstruction::CallMethod { arg, .. } => {
-                        let scrypto_value = ScryptoValue::from_slice(&arg).unwrap();
+                    ExecutableInstruction::CallFunction { args, .. }
+                    | ExecutableInstruction::CallMethod { args, .. } => {
+                        let scrypto_value = ScryptoValue::from_slice(&args).unwrap();
                         component_addresses.extend(scrypto_value.refed_component_addresses);
                     }
                     _ => {}

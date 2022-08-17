@@ -1,7 +1,6 @@
 use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use scrypto::prelude::*;
-use scrypto::to_struct;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -19,7 +18,7 @@ fn stored_bucket_in_committed_component_should_fail() {
             package_address,
             "InvalidInitStoredBucket",
             "create",
-            to_struct!(),
+            args!(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -42,7 +41,7 @@ fn stored_bucket_in_owned_component_should_fail() {
             package_address,
             "InvalidStoredBucketInOwnedComponent",
             "create_bucket_in_owned_component",
-            to_struct!(),
+            args!(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);

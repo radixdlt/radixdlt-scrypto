@@ -37,23 +37,19 @@ fn test_native_and_safe_integer_interop() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let (public_key, _, account) = test_runner.new_account();
     let package_address = test_runner.extract_and_publish_package("math-ops-check");
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .lock_fee(10.into(), SYSTEM_COMPONENT)
-        .call_function_with_abi(
+        .call_function(
             package_address,
             "Hello",
             "native_and_safe_integer_interop",
-            vec!["55".to_string()],
-            Some(account),
-            &test_runner.export_abi(package_address, "Hello"),
+            args!(55u32),
         )
-        .unwrap()
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
     println!("{:?}", receipt);
 
     // Assert

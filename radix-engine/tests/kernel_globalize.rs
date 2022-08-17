@@ -3,7 +3,6 @@ use radix_engine::ledger::TypedInMemorySubstateStore;
 use scrypto::core::Network;
 use scrypto::engine::types::RENodeId;
 use scrypto::prelude::*;
-use scrypto::to_struct;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -17,12 +16,7 @@ fn should_not_be_able_to_globalize_key_value_store() {
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .lock_fee(10.into(), SYSTEM_COMPONENT)
-        .call_function(
-            package_address,
-            "Globalize",
-            "globalize_kv_store",
-            to_struct!(),
-        )
+        .call_function(package_address, "Globalize", "globalize_kv_store", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -45,12 +39,7 @@ fn should_not_be_able_to_globalize_bucket() {
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .lock_fee(10.into(), SYSTEM_COMPONENT)
-        .call_function(
-            package_address,
-            "Globalize",
-            "globalize_bucket",
-            to_struct!(),
-        )
+        .call_function(package_address, "Globalize", "globalize_bucket", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -73,12 +62,7 @@ fn should_not_be_able_to_globalize_proof() {
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .lock_fee(10.into(), SYSTEM_COMPONENT)
-        .call_function(
-            package_address,
-            "Globalize",
-            "globalize_proof",
-            to_struct!(),
-        )
+        .call_function(package_address, "Globalize", "globalize_proof", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -101,12 +85,7 @@ fn should_not_be_able_to_globalize_vault() {
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .lock_fee(10.into(), SYSTEM_COMPONENT)
-        .call_function(
-            package_address,
-            "Globalize",
-            "globalize_vault",
-            to_struct!(),
-        )
+        .call_function(package_address, "Globalize", "globalize_vault", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 

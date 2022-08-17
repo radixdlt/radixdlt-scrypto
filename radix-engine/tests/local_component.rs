@@ -2,7 +2,6 @@ use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use scrypto::core::Network;
 use scrypto::prelude::*;
-use scrypto::to_struct;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -20,7 +19,7 @@ fn local_component_should_return_correct_info() {
             package_address,
             "Secret",
             "check_info_of_local_component",
-            to_struct!(package_address, "Secret".to_string()),
+            args!(package_address, "Secret".to_string()),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -39,12 +38,7 @@ fn local_component_should_be_callable_read_only() {
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .lock_fee(10.into(), SYSTEM_COMPONENT)
-        .call_function(
-            package_address,
-            "Secret",
-            "read_local_component",
-            to_struct!(),
-        )
+        .call_function(package_address, "Secret", "read_local_component", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -62,12 +56,7 @@ fn local_component_should_be_callable_with_write() {
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .lock_fee(10.into(), SYSTEM_COMPONENT)
-        .call_function(
-            package_address,
-            "Secret",
-            "write_local_component",
-            to_struct!(),
-        )
+        .call_function(package_address, "Secret", "write_local_component", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -93,7 +82,7 @@ fn local_component_with_access_rules_should_not_be_callable() {
             package_address,
             "Secret",
             "try_to_read_local_component_with_auth",
-            to_struct!(auth_address),
+            args!(auth_address),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
@@ -119,13 +108,13 @@ fn local_component_with_access_rules_should_be_callable() {
         .call_method(
             account,
             "create_proof_by_ids",
-            to_struct!(BTreeSet::from([auth_id.clone()]), auth_resource_address),
+            args!(BTreeSet::from([auth_id.clone()]), auth_resource_address),
         )
         .call_function(
             package_address,
             "Secret",
             "try_to_read_local_component_with_auth",
-            to_struct!(auth_address),
+            args!(auth_address),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
@@ -152,7 +141,7 @@ fn recursion_bomb() {
                 package_address,
                 "LocalRecursionBomb",
                 "recursion_bomb",
-                to_struct!(scrypto::resource::Bucket(bucket_id)),
+                args!(scrypto::resource::Bucket(bucket_id)),
             )
         })
         .call_method_with_all_resources(account, "deposit_batch")
@@ -180,7 +169,7 @@ fn recursion_bomb_to_failure() {
                 package_address,
                 "LocalRecursionBomb",
                 "recursion_bomb",
-                to_struct!(scrypto::resource::Bucket(bucket_id)),
+                args!(scrypto::resource::Bucket(bucket_id)),
             )
         })
         .call_method_with_all_resources(account, "deposit_batch")
@@ -209,7 +198,7 @@ fn recursion_bomb_2() {
                 package_address,
                 "LocalRecursionBomb2",
                 "recursion_bomb",
-                to_struct!(scrypto::resource::Bucket(bucket_id)),
+                args!(scrypto::resource::Bucket(bucket_id)),
             )
         })
         .call_method_with_all_resources(account, "deposit_batch")
@@ -237,7 +226,7 @@ fn recursion_bomb_2_to_failure() {
                 package_address,
                 "LocalRecursionBomb2",
                 "recursion_bomb",
-                to_struct!(scrypto::resource::Bucket(bucket_id)),
+                args!(scrypto::resource::Bucket(bucket_id)),
             )
         })
         .call_method_with_all_resources(account, "deposit_batch")
