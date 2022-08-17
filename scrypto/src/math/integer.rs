@@ -26,7 +26,6 @@ macro_rules! types {
      $(
          {
              type: $t:ident,
-             type_id: $t_id:expr,
              self.0: $wrap:ty,
              self.zero(): $tt:ident($zero:expr),
              $ttt:ident::default(): $default:expr,
@@ -128,37 +127,6 @@ macro_rules! types {
                 }
             }
 
-            impl TypeId for $t {
-                #[inline]
-                fn type_id() -> u8 {
-                    $t_id
-                }
-            }
-
-            impl Encode for $t {
-                #[inline]
-                fn encode_type_id(encoder: &mut Encoder) {
-                    encoder.write_type_id(Self::type_id());
-                }
-                #[inline]
-                fn encode_value(&self, encoder: &mut Encoder) {
-                    encoder.write_slice(&self.to_le_bytes());
-                }
-            }
-
-            impl Decode for $t {
-                #[inline]
-                fn check_type_id(decoder: &mut Decoder) -> Result<(), DecodeError> {
-                    decoder.check_type_id(Self::type_id())
-                }
-                fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
-                    let slice = decoder.read_bytes((Self::BITS / 8) as usize)?;
-                    let mut bytes = [0u8; (Self::BITS / 8) as usize];
-                    bytes.copy_from_slice(&slice[..]);
-                    Ok(Self::from_le_bytes(bytes))
-                }
-            }
-
             )*
         }
     }
@@ -168,7 +136,6 @@ types! {
     self: self,
     {
         type: I8,
-        type_id: TYPE_I8,
         self.0: i8,
         self.zero(): I8(0),
         I8::default(): I8(0),
@@ -177,7 +144,6 @@ types! {
     },
     {
         type: I16,
-        type_id: TYPE_I16,
         self.0: i16,
         self.zero(): I16(0),
         I16::default(): I16(0),
@@ -186,7 +152,6 @@ types! {
     },
     {
         type: I32,
-        type_id: TYPE_I32,
         self.0: i32,
         self.zero(): I32(0),
         I32::default(): I32(0),
@@ -195,7 +160,6 @@ types! {
     },
     {
         type: I64,
-        type_id: TYPE_I64,
         self.0: i64,
         self.zero(): I64(0),
         I64::default(): I64(0),
@@ -204,7 +168,6 @@ types! {
     },
     {
         type: I128,
-        type_id: TYPE_I128,
         self.0: i128,
         self.zero(): I128(0),
         I128::default(): I128(0),
@@ -213,7 +176,6 @@ types! {
     },
     {
         type: I256,
-        type_id: TYPE_I256,
         self.0: [u8; 32],
         self.zero(): I256([0u8; 32]),
         I256::default(): I256([0u8; 32]),
@@ -224,7 +186,6 @@ types! {
     },
     {
         type: I384,
-        type_id: TYPE_I384,
         self.0: [u8; 48],
         self.zero(): I384([0u8; 48]),
         I384::default(): I384([0u8; 48]),
@@ -235,7 +196,6 @@ types! {
     },
     {
         type: I512,
-        type_id: TYPE_I512,
         self.0: [u8; 64],
         self.zero(): I512([0u8; 64]),
         I512::default(): I512([0u8; 64]),
@@ -246,7 +206,6 @@ types! {
     },
     {
         type: U8,
-        type_id: TYPE_U8,
         self.0: u8,
         self.zero(): U8(0),
         U8::default(): U8(0),
@@ -255,7 +214,6 @@ types! {
     },
     {
         type: U16,
-        type_id: TYPE_U16,
         self.0: u16,
         self.zero(): U16(0),
         U16::default(): U16(0),
@@ -264,7 +222,6 @@ types! {
     },
     {
         type: U32,
-        type_id: TYPE_U32,
         self.0: u32,
         self.zero(): U32(0),
         U32::default(): U32(0),
@@ -273,7 +230,6 @@ types! {
     },
     {
         type: U64,
-        type_id: TYPE_U64,
         self.0: u64,
         self.zero(): U64(0),
         U64::default(): U64(0),
@@ -282,7 +238,6 @@ types! {
     },
     {
         type: U128,
-        type_id: TYPE_U128,
         self.0: u128,
         self.zero(): U128(0),
         U128::default(): U128(0),
@@ -291,7 +246,6 @@ types! {
     },
     {
         type: U256,
-        type_id: TYPE_U256,
         self.0: [u8; 32],
         self.zero(): U256([0u8; 32]),
         U256::default(): U256([0u8; 32]),
@@ -302,7 +256,6 @@ types! {
     },
     {
         type: U384,
-        type_id: TYPE_U384,
         self.0: [u8; 48],
         self.zero(): U384([0u8; 48]),
         U384::default(): U384([0u8; 48]),
@@ -313,7 +266,6 @@ types! {
     },
     {
         type: U512,
-        type_id: TYPE_U512,
         self.0: [u8; 64],
         self.zero(): U512([0u8; 64]),
         U512::default(): U512([0u8; 64]),
@@ -323,6 +275,51 @@ types! {
         },
     }
 }
+
+macro_rules! sbor_codec {
+    ($t:ident, $t_id:expr) => {
+        impl TypeId for $t {
+            #[inline]
+            fn type_id() -> u8 {
+                $t_id
+            }
+        }
+
+        impl Encode for $t {
+            #[inline]
+            fn encode_type_id(encoder: &mut Encoder) {
+                encoder.write_type_id(Self::type_id());
+            }
+            #[inline]
+            fn encode_value(&self, encoder: &mut Encoder) {
+                encoder.write_slice(&self.to_le_bytes());
+            }
+        }
+
+        impl Decode for $t {
+            #[inline]
+            fn check_type_id(decoder: &mut Decoder) -> Result<(), DecodeError> {
+                decoder.check_type_id(Self::type_id())
+            }
+            fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
+                let slice = decoder.read_bytes((Self::BITS / 8) as usize)?;
+                let mut bytes = [0u8; (Self::BITS / 8) as usize];
+                bytes.copy_from_slice(&slice[..]);
+                Ok(Self::from_le_bytes(bytes))
+            }
+        }
+    };
+}
+sbor_codec!(I8, TYPE_I8);
+sbor_codec!(I16, TYPE_I16);
+sbor_codec!(I32, TYPE_I32);
+sbor_codec!(I64, TYPE_I64);
+sbor_codec!(I128, TYPE_I128);
+sbor_codec!(U8, TYPE_U8);
+sbor_codec!(U16, TYPE_U16);
+sbor_codec!(U32, TYPE_U32);
+sbor_codec!(U64, TYPE_U64);
+sbor_codec!(U128, TYPE_U128);
 
 fn fmt<
     T: fmt::Display
@@ -1043,17 +1040,11 @@ mod tests {
         I32::by(1i8).encode(enc);
         I64::by(1i8).encode(enc);
         I128::by(1i8).encode(enc);
-        I256::by(1i8).encode(enc);
-        I384::by(1i8).encode(enc);
-        I512::by(1i8).encode(enc);
         U8::by(1u8).encode(enc);
         U16::by(1u8).encode(enc);
         U32::by(1u8).encode(enc);
         U64::by(1u8).encode(enc);
         U128::by(1u8).encode(enc);
-        U256::by(1u8).encode(enc);
-        U384::by(1u8).encode(enc);
-        U512::by(1u8).encode(enc);
     }
 
     #[test]
@@ -1069,25 +1060,11 @@ mod tests {
                 4, 1, 0, 0, 0, // i32
                 5, 1, 0, 0, 0, 0, 0, 0, 0, // i64
                 6, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // i128
-                64, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, // i256
-                65, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // i384
-                66, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // i512
                 7, 1, // u8
                 8, 1, 0, // u16
                 9, 1, 0, 0, 0, // u32
                 10, 1, 0, 0, 0, 0, 0, 0, 0, // u64
                 11, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // u128
-                67, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, // u256
-                68, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // u384
-                69, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // u512
             ],
             bytes
         );
@@ -1105,16 +1082,10 @@ mod tests {
         assert_eq!(I32::by(1i8), <I32>::decode(&mut dec).unwrap());
         assert_eq!(I64::by(1i8), <I64>::decode(&mut dec).unwrap());
         assert_eq!(I128::by(1i8), <I128>::decode(&mut dec).unwrap());
-        assert_eq!(I256::by(1i8), <I256>::decode(&mut dec).unwrap());
-        assert_eq!(I384::by(1i8), <I384>::decode(&mut dec).unwrap());
-        assert_eq!(I512::by(1i8), <I512>::decode(&mut dec).unwrap());
         assert_eq!(U8::by(1u8), <U8>::decode(&mut dec).unwrap());
         assert_eq!(U16::by(1u8), <U16>::decode(&mut dec).unwrap());
         assert_eq!(U32::by(1u8), <U32>::decode(&mut dec).unwrap());
         assert_eq!(U64::by(1u8), <U64>::decode(&mut dec).unwrap());
         assert_eq!(U128::by(1u8), <U128>::decode(&mut dec).unwrap());
-        assert_eq!(U256::by(1u8), <U256>::decode(&mut dec).unwrap());
-        assert_eq!(U384::by(1u8), <U384>::decode(&mut dec).unwrap());
-        assert_eq!(U512::by(1u8), <U512>::decode(&mut dec).unwrap());
     }
 }
