@@ -6,7 +6,6 @@ use sbor::Type;
 use scrypto::abi::*;
 use scrypto::core::Network;
 use scrypto::prelude::*;
-use scrypto::to_struct;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -18,7 +17,7 @@ fn test_publish_package_from_scrypto() {
 
     let manifest1 = ManifestBuilder::new(Network::LocalSimulator)
         .lock_fee(10.into(), SYSTEM_COMPONENT)
-        .call_function(package, "PackageTest", "publish", to_struct!())
+        .call_function(package, "PackageTest", "publish", args!())
         .build();
     let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
     receipt1.expect_success();
@@ -71,7 +70,7 @@ fn large_return_len_should_cause_memory_access_error() {
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .lock_fee(10.into(), SYSTEM_COMPONENT)
-        .call_function(package, "LargeReturnSize", "f", to_struct!())
+        .call_function(package, "LargeReturnSize", "f", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -95,7 +94,7 @@ fn overflow_return_len_should_cause_memory_access_error() {
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .lock_fee(10.into(), SYSTEM_COMPONENT)
-        .call_function(package, "MaxReturnSize", "f", to_struct!())
+        .call_function(package, "MaxReturnSize", "f", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -119,7 +118,7 @@ fn zero_return_len_should_cause_data_validation_error() {
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .lock_fee(10.into(), SYSTEM_COMPONENT)
-        .call_function(package, "ZeroReturnSize", "f", to_struct!())
+        .call_function(package, "ZeroReturnSize", "f", args!())
         .build();
 
     let receipt = test_runner.execute_manifest(manifest, vec![]);

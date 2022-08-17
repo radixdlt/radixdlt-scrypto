@@ -403,7 +403,7 @@ impl ManifestBuilder {
             .add_instruction(Instruction::CallMethod {
                 component_address,
                 method_name: method.to_owned(),
-                arg: bytes_vec_to_struct!(arguments),
+                arg: args_from_bytes_vec!(arguments),
             })
             .0)
     }
@@ -462,7 +462,7 @@ impl ManifestBuilder {
             package_address: SYSTEM_PACKAGE,
             blueprint_name: "System".to_owned(),
             method_name: "new_resource".to_string(),
-            arg: to_struct!(
+            arg: args!(
                 ResourceType::Fungible { divisibility: 18 },
                 metadata,
                 resource_auth,
@@ -485,7 +485,7 @@ impl ManifestBuilder {
             package_address: SYSTEM_PACKAGE,
             blueprint_name: "System".to_owned(),
             method_name: "new_resource".to_string(),
-            arg: to_struct!(
+            arg: args!(
                 ResourceType::Fungible { divisibility: 18 },
                 metadata,
                 resource_auth,
@@ -520,7 +520,7 @@ impl ManifestBuilder {
             package_address: SYSTEM_PACKAGE,
             blueprint_name: "System".to_owned(),
             method_name: "new_resource".to_string(),
-            arg: to_struct!(
+            arg: args!(
                 ResourceType::Fungible { divisibility: 0 },
                 metadata,
                 resource_auth,
@@ -543,7 +543,7 @@ impl ManifestBuilder {
             package_address: SYSTEM_PACKAGE,
             blueprint_name: "System".to_owned(),
             method_name: "new_resource".to_string(),
-            arg: to_struct!(
+            arg: args!(
                 ResourceType::Fungible { divisibility: 0 },
                 metadata,
                 resource_auth,
@@ -561,7 +561,7 @@ impl ManifestBuilder {
             package_address: SYSTEM_PACKAGE,
             blueprint_name: "System".to_owned(),
             method_name: "mint".to_string(),
-            arg: to_struct!(amount, resource_address),
+            arg: args!(amount, resource_address),
         });
         self
     }
@@ -574,7 +574,7 @@ impl ManifestBuilder {
                     package_address: SYSTEM_PACKAGE,
                     blueprint_name: "System".to_owned(),
                     method_name: "burn".to_string(),
-                    arg: to_struct!(scrypto::resource::Bucket(bucket_id)),
+                    arg: args!(scrypto::resource::Bucket(bucket_id)),
                 })
                 .0
         })
@@ -592,7 +592,7 @@ impl ManifestBuilder {
                         package_address: SYSTEM_PACKAGE,
                         blueprint_name: "System".to_owned(),
                         method_name: "burn".to_string(),
-                        arg: to_struct!(scrypto::resource::Bucket(bucket_id)),
+                        arg: args!(scrypto::resource::Bucket(bucket_id)),
                     })
                     .0
             },
@@ -605,7 +605,7 @@ impl ManifestBuilder {
             package_address: ACCOUNT_PACKAGE,
             blueprint_name: "Account".to_owned(),
             method_name: "new".to_string(),
-            arg: to_struct!(withdraw_auth.clone()),
+            arg: args!(withdraw_auth.clone()),
         })
         .0
     }
@@ -620,7 +620,7 @@ impl ManifestBuilder {
             package_address: ACCOUNT_PACKAGE,
             blueprint_name: "Account".to_owned(),
             method_name: "new_with_resource".to_string(),
-            arg: to_struct!(withdraw_auth.clone(), scrypto::resource::Bucket(bucket_id)),
+            arg: args!(withdraw_auth.clone(), scrypto::resource::Bucket(bucket_id)),
         })
         .0
     }
@@ -630,7 +630,7 @@ impl ManifestBuilder {
         self.add_instruction(Instruction::CallMethod {
             component_address: account,
             method_name: "lock_fee".to_string(),
-            arg: to_struct!(amount),
+            arg: args!(amount),
         })
         .0
     }
@@ -639,7 +639,7 @@ impl ManifestBuilder {
         self.add_instruction(Instruction::CallMethod {
             component_address: account,
             method_name: "lock_contingent_fee".to_string(),
-            arg: to_struct!(amount),
+            arg: args!(amount),
         })
         .0
     }
@@ -653,7 +653,7 @@ impl ManifestBuilder {
         self.add_instruction(Instruction::CallMethod {
             component_address: account,
             method_name: "withdraw".to_string(),
-            arg: to_struct!(resource_address),
+            arg: args!(resource_address),
         })
         .0
     }
@@ -668,7 +668,7 @@ impl ManifestBuilder {
         self.add_instruction(Instruction::CallMethod {
             component_address: account,
             method_name: "withdraw_by_amount".to_string(),
-            arg: to_struct!(amount, resource_address),
+            arg: args!(amount, resource_address),
         })
         .0
     }
@@ -683,7 +683,7 @@ impl ManifestBuilder {
         self.add_instruction(Instruction::CallMethod {
             component_address: account,
             method_name: "withdraw_by_ids".to_string(),
-            arg: to_struct!(ids.clone(), resource_address),
+            arg: args!(ids.clone(), resource_address),
         })
         .0
     }
@@ -697,7 +697,7 @@ impl ManifestBuilder {
         self.add_instruction(Instruction::CallMethod {
             component_address: account,
             method_name: "create_proof".to_string(),
-            arg: to_struct!(resource_address),
+            arg: args!(resource_address),
         })
         .0
     }
@@ -712,7 +712,7 @@ impl ManifestBuilder {
         self.add_instruction(Instruction::CallMethod {
             component_address: account,
             method_name: "create_proof_by_amount".to_string(),
-            arg: to_struct!(amount, resource_address),
+            arg: args!(amount, resource_address),
         })
         .0
     }
@@ -727,7 +727,7 @@ impl ManifestBuilder {
         self.add_instruction(Instruction::CallMethod {
             component_address: account,
             method_name: "create_proof_by_ids".to_string(),
-            arg: to_struct!(ids.clone(), resource_address),
+            arg: args!(ids.clone(), resource_address),
         })
         .0
     }

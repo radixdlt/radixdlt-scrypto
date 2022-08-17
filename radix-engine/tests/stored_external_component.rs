@@ -1,7 +1,6 @@
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use scrypto::core::Network;
 use scrypto::prelude::*;
-use scrypto::to_struct;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -16,12 +15,7 @@ fn stored_component_addresses_in_non_globalized_component_are_invokable() {
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .lock_fee(10.into(), SYSTEM_COMPONENT)
-        .call_function(
-            package,
-            "ExternalComponent",
-            "create_and_call",
-            to_struct!(),
-        )
+        .call_function(package, "ExternalComponent", "create_and_call", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -37,7 +31,7 @@ fn stored_component_addresses_are_invokable() {
     let package = test_runner.extract_and_publish_package("stored_external_component");
     let manifest1 = ManifestBuilder::new(Network::LocalSimulator)
         .lock_fee(10.into(), SYSTEM_COMPONENT)
-        .call_function(package, "ExternalComponent", "create", to_struct!())
+        .call_function(package, "ExternalComponent", "create", args!())
         .build();
     let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
     receipt1.expect_success();
@@ -47,7 +41,7 @@ fn stored_component_addresses_are_invokable() {
     // Act
     let manifest2 = ManifestBuilder::new(Network::LocalSimulator)
         .lock_fee(10.into(), SYSTEM_COMPONENT)
-        .call_method(component0, "func", to_struct!())
+        .call_method(component0, "func", args!())
         .build();
     let receipt2 = test_runner.execute_manifest(manifest2, vec![public_key]);
 
@@ -57,7 +51,7 @@ fn stored_component_addresses_are_invokable() {
     // Act
     let manifest2 = ManifestBuilder::new(Network::LocalSimulator)
         .lock_fee(10.into(), SYSTEM_COMPONENT)
-        .call_method(component1, "func", to_struct!())
+        .call_method(component1, "func", args!())
         .build();
     let receipt2 = test_runner.execute_manifest(manifest2, vec![public_key]);
 

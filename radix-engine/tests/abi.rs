@@ -4,7 +4,6 @@ use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::model::ComponentError;
 use scrypto::core::Network;
 use scrypto::prelude::*;
-use scrypto::to_struct;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -22,7 +21,7 @@ fn test_invalid_access_rule_methods() {
             package_address,
             "AbiComponent",
             "create_invalid_abi_component",
-            to_struct!(),
+            args!(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);

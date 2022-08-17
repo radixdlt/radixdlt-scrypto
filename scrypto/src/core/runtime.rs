@@ -2,8 +2,8 @@ use sbor::rust::borrow::ToOwned;
 use sbor::rust::vec::Vec;
 use sbor::*;
 
+use crate::args_from_bytes_vec;
 use crate::buffer::scrypto_encode;
-use crate::bytes_vec_to_struct;
 use crate::component::*;
 use crate::core::*;
 use crate::crypto::*;
@@ -62,7 +62,7 @@ impl Runtime {
                 blueprint_name: blueprint_name.as_ref().to_owned(),
                 ident: function.as_ref().to_string(),
             },
-            bytes_vec_to_struct!(args),
+            args_from_bytes_vec!(args),
         );
         call_engine(input)
     }
@@ -83,7 +83,7 @@ impl Runtime {
                 blueprint_name,
                 ident: method.as_ref().to_string(),
             },
-            bytes_vec_to_struct!(args),
+            args_from_bytes_vec!(args),
         );
         call_engine(input)
     }

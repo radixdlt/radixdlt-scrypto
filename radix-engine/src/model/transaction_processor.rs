@@ -2,6 +2,7 @@ use sbor::rust::collections::HashMap;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use sbor::{Decode, Encode, TypeId};
+use scrypto::args;
 use scrypto::buffer::scrypto_decode;
 use scrypto::component::Package;
 use scrypto::core::{
@@ -15,7 +16,6 @@ use scrypto::prelude::{
     ProofCloneInput, TransactionProcessorFnIdentifier,
 };
 use scrypto::resource::{AuthZonePopInput, ConsumingProofDropInput};
-use scrypto::to_struct;
 use scrypto::values::*;
 use transaction::model::*;
 use transaction::validation::*;
@@ -544,7 +544,7 @@ impl TransactionProcessor {
                                 for (_, real_id) in bucket_id_mapping.drain() {
                                     buckets.push(scrypto::resource::Bucket(real_id));
                                 }
-                                let encoded = to_struct!(buckets);
+                                let encoded = args!(buckets);
                                 // TODO: Move this into preprocessor step
                                 system_api
                                     .substate_read(SubstateId::ComponentInfo(*component_address))

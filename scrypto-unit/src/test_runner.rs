@@ -20,7 +20,7 @@ use scrypto::engine::types::{KeyValueStoreId, RENodeId, SubstateId, VaultId};
 use scrypto::prelude::*;
 use scrypto::prelude::{HashMap, Package};
 use scrypto::values::ScryptoValue;
-use scrypto::{abi, to_struct};
+use scrypto::{abi, args};
 use transaction::builder::ManifestBuilder;
 use transaction::model::{ExecutableTransaction, TransactionManifest};
 use transaction::model::{PreviewIntent, TestTransaction};
@@ -114,7 +114,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     pub fn new_account_with_auth_rule(&mut self, withdraw_auth: &AccessRule) -> ComponentAddress {
         let manifest = ManifestBuilder::new(Network::LocalSimulator)
             .lock_fee(100.into(), SYSTEM_COMPONENT)
-            .call_method(SYSTEM_COMPONENT, "free_xrd", to_struct!())
+            .call_method(SYSTEM_COMPONENT, "free_xrd", args!())
             .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
                 builder.new_account_with_resource(withdraw_auth, bucket_id)
             })
@@ -171,7 +171,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             transaction::model::Instruction::CallMethod {
                 component_address: SYSTEM_COMPONENT,
                 method_name: "lock_fee".to_string(),
-                arg: to_struct!(dec!("1000")),
+                arg: args!(dec!("1000")),
             },
         );
         self.execute_manifest(manifest, signer_public_keys)
@@ -289,12 +289,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         let manifest = ManifestBuilder::new(Network::LocalSimulator)
             .lock_fee(100.into(), SYSTEM_COMPONENT)
             .create_proof_from_account(auth, account)
-            .call_function(
-                package,
-                "ResourceCreator",
-                function,
-                to_struct!(token, set_auth),
-            )
+            .call_function(package, "ResourceCreator", function, args!(token, set_auth))
             .call_method_with_all_resources(account, "deposit_batch")
             .build();
         self.execute_manifest(manifest, vec![signer_public_key])
@@ -323,7 +318,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
                 package,
                 "ResourceCreator",
                 "create_restricted_token",
-                to_struct!(mint_auth, burn_auth, withdraw_auth, admin_auth),
+                args!(mint_auth, burn_auth, withdraw_auth, admin_auth),
             )
             .call_method_with_all_resources(account, "deposit_batch")
             .build();
@@ -349,7 +344,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
                 package,
                 "ResourceCreator",
                 "create_restricted_burn",
-                to_struct!(auth_resource_address),
+                args!(auth_resource_address),
             )
             .call_method_with_all_resources(account, "deposit_batch")
             .build();
@@ -370,7 +365,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
                 package,
                 "ResourceCreator",
                 "create_restricted_transfer",
-                to_struct![auth_resource_address],
+                args![auth_resource_address],
             )
             .call_method_with_all_resources(account, "deposit_batch")
             .build();
@@ -386,7 +381,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
                 package,
                 "ResourceCreator",
                 "create_non_fungible_fixed",
-                to_struct!(),
+                args!(),
             )
             .call_method_with_all_resources(account, "deposit_batch")
             .build();
@@ -408,7 +403,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
                 package,
                 "ResourceCreator",
                 "create_fungible_fixed",
-                to_struct!(amount, divisibility),
+                args!(amount, divisibility),
             )
             .call_method_with_all_resources(account, "deposit_batch")
             .build();

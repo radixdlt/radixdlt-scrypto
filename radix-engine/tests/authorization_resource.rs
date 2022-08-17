@@ -3,7 +3,6 @@ extern crate core;
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use scrypto::core::Network;
 use scrypto::prelude::*;
-use scrypto::to_struct;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -75,7 +74,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
                 builder.call_method(
                     account,
                     "deposit",
-                    to_struct!(scrypto::resource::Bucket(bucket_id)),
+                    args!(scrypto::resource::Bucket(bucket_id)),
                 )
             })
             .call_method_with_all_resources(account, "deposit_batch"),

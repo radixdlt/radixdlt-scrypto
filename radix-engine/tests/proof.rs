@@ -2,7 +2,6 @@ use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use scrypto::core::Network;
 use scrypto::prelude::*;
-use scrypto::to_struct;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -59,7 +58,7 @@ fn can_create_clone_and_drop_vault_proof() {
         .call_method(
             component_address,
             "create_clone_drop_vault_proof",
-            to_struct!(Decimal::one()),
+            args!(Decimal::one()),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -135,7 +134,7 @@ fn can_create_clone_and_drop_vault_proof_by_ids() {
         .call_method(
             component_address,
             "create_clone_drop_vault_proof_by_ids",
-            to_struct!(total_ids, proof_ids),
+            args!(total_ids, proof_ids),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -326,7 +325,7 @@ fn can_compose_bucket_and_vault_proof() {
             builder.call_method(
                 component_address,
                 "compose_vault_and_bucket_proof",
-                to_struct!(Bucket(bucket_id)),
+                args!(Bucket(bucket_id)),
             )
         })
         .build();
@@ -362,7 +361,7 @@ fn can_compose_bucket_and_vault_proof_by_amount() {
             builder.call_method(
                 component_address,
                 "compose_vault_and_bucket_proof_by_amount",
-                to_struct!(Bucket(bucket_id), Decimal::from(2)),
+                args!(Bucket(bucket_id), Decimal::from(2)),
             )
         })
         .build();
@@ -404,7 +403,7 @@ fn can_compose_bucket_and_vault_proof_by_ids() {
                 builder.call_method(
                     component_address,
                     "compose_vault_and_bucket_proof_by_ids",
-                    to_struct!(
+                    args!(
                         Bucket(bucket_id),
                         BTreeSet::from([NonFungibleId::from_u32(1), NonFungibleId::from_u32(2),])
                     ),
@@ -441,7 +440,7 @@ fn can_create_vault_proof_by_amount_from_non_fungibles() {
         .call_method(
             component_address,
             "create_clone_drop_vault_proof_by_amount",
-            to_struct!(Decimal::from(3), Decimal::from(1)),
+            args!(Decimal::from(3), Decimal::from(1)),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -480,7 +479,7 @@ fn can_create_auth_zone_proof_by_amount_from_non_fungibles() {
                     package_address,
                     "Receiver",
                     "assert_ids",
-                    to_struct!(
+                    args!(
                         Proof(proof_id),
                         BTreeSet::from([NonFungibleId::from_u32(2), NonFungibleId::from_u32(3)]),
                         resource_address

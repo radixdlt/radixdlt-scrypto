@@ -1,7 +1,6 @@
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use scrypto::core::Network;
 use scrypto::prelude::*;
-use scrypto::to_struct;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::signing::EcdsaPrivateKey;
@@ -36,7 +35,7 @@ fn test_dynamic_auth(
             package,
             "AuthComponent",
             "create_component",
-            to_struct!(addresses.get(initial_auth).unwrap().clone()),
+            args!(addresses.get(initial_auth).unwrap().clone()),
         )
         .build();
     let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
@@ -49,7 +48,7 @@ fn test_dynamic_auth(
             .call_method(
                 component,
                 "update_auth",
-                to_struct!(addresses.get(next_auth).unwrap().clone()),
+                args!(addresses.get(next_auth).unwrap().clone()),
             )
             .build();
         test_runner
@@ -60,7 +59,7 @@ fn test_dynamic_auth(
     // Act
     let manifest2 = ManifestBuilder::new(Network::LocalSimulator)
         .lock_fee(10.into(), SYSTEM_COMPONENT)
-        .call_method(component, "get_secret", to_struct!())
+        .call_method(component, "get_secret", args!())
         .build();
     let receipt2 = test_runner.execute_manifest(manifest2, public_keys.to_vec());
 
@@ -102,7 +101,7 @@ fn test_dynamic_authlist(
             package,
             "AuthListComponent",
             "create_component",
-            to_struct!(2u8, list, authorization),
+            args!(2u8, list, authorization),
         )
         .build();
     let receipt0 = test_runner.execute_manifest(manifest1, vec![]);
@@ -112,7 +111,7 @@ fn test_dynamic_authlist(
     // Act
     let manifest2 = ManifestBuilder::new(Network::LocalSimulator)
         .lock_fee(10.into(), SYSTEM_COMPONENT)
-        .call_method(component, "get_secret", to_struct!())
+        .call_method(component, "get_secret", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest2, public_keys.to_vec());
 
@@ -225,7 +224,7 @@ fn chess_should_not_allow_second_player_to_move_if_first_player_didnt_move() {
     let players = [non_fungible_address, other_non_fungible_address];
     let manifest1 = ManifestBuilder::new(Network::LocalSimulator)
         .lock_fee(10.into(), SYSTEM_COMPONENT)
-        .call_function(package, "Chess", "create_game", to_struct!(players))
+        .call_function(package, "Chess", "create_game", args!(players))
         .build();
     let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
     receipt1.expect_success();
@@ -234,7 +233,7 @@ fn chess_should_not_allow_second_player_to_move_if_first_player_didnt_move() {
     // Act
     let manifest2 = ManifestBuilder::new(Network::LocalSimulator)
         .lock_fee(10.into(), SYSTEM_COMPONENT)
-        .call_method(component, "make_move", to_struct!())
+        .call_method(component, "make_move", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest2, vec![other_public_key]);
 
@@ -255,14 +254,14 @@ fn chess_should_allow_second_player_to_move_after_first_player() {
     let players = [non_fungible_address, other_non_fungible_address];
     let manifest1 = ManifestBuilder::new(Network::LocalSimulator)
         .lock_fee(10.into(), SYSTEM_COMPONENT)
-        .call_function(package, "Chess", "create_game", to_struct!(players))
+        .call_function(package, "Chess", "create_game", args!(players))
         .build();
     let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
     receipt1.expect_success();
     let component = receipt1.new_component_addresses[0];
     let manifest2 = ManifestBuilder::new(Network::LocalSimulator)
         .lock_fee(10.into(), SYSTEM_COMPONENT)
-        .call_method(component, "make_move", to_struct!())
+        .call_method(component, "make_move", args!())
         .build();
     test_runner
         .execute_manifest(manifest2, vec![public_key])
@@ -271,7 +270,7 @@ fn chess_should_allow_second_player_to_move_after_first_player() {
     // Act
     let manifest3 = ManifestBuilder::new(Network::LocalSimulator)
         .lock_fee(10.into(), SYSTEM_COMPONENT)
-        .call_method(component, "make_move", to_struct!())
+        .call_method(component, "make_move", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest3, vec![other_public_key]);
 

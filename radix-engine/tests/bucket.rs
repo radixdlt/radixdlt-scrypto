@@ -3,7 +3,6 @@ use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::model::{BucketError, ResourceContainerError};
 use scrypto::core::Network;
 use scrypto::prelude::*;
-use scrypto::to_struct;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -17,7 +16,7 @@ fn test_bucket_internal(method_name: &str) {
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .lock_fee(10.into(), account)
-        .call_function(package_address, "BucketTest", method_name, to_struct!())
+        .call_function(package_address, "BucketTest", method_name, args!())
         .call_method_with_all_resources(account, "deposit_batch")
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
@@ -80,10 +79,10 @@ fn test_bucket_of_badges() {
 
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .lock_fee(10.into(), account)
-        .call_function(package_address, "BadgeTest", "combine", to_struct!())
-        .call_function(package_address, "BadgeTest", "split", to_struct!())
-        .call_function(package_address, "BadgeTest", "borrow", to_struct!())
-        .call_function(package_address, "BadgeTest", "query", to_struct!())
+        .call_function(package_address, "BadgeTest", "combine", args!())
+        .call_function(package_address, "BadgeTest", "split", args!())
+        .call_function(package_address, "BadgeTest", "borrow", args!())
+        .call_function(package_address, "BadgeTest", "query", args!())
         .call_method_with_all_resources(account, "deposit_batch")
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
