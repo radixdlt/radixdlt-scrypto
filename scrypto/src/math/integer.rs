@@ -12,6 +12,7 @@ use sbor::rust::convert::{From, TryFrom};
 use sbor::rust::fmt;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
+use sbor::type_id::*;
 use sbor::*;
 
 pub mod basic;
@@ -25,6 +26,7 @@ macro_rules! types {
      $(
          {
              type: $t:ident,
+             type_id: $t_id:expr,
              self.0: $wrap:ty,
              self.zero(): $tt:ident($zero:expr),
              $ttt:ident::default(): $default:expr,
@@ -129,28 +131,31 @@ macro_rules! types {
             impl TypeId for $t {
                 #[inline]
                 fn type_id() -> u8 {
-                    todo!()
+                    $t_id
                 }
             }
 
             impl Encode for $t {
                 #[inline]
                 fn encode_type_id(encoder: &mut Encoder) {
-                    todo!()
+                    encoder.write_type_id(Self::type_id());
                 }
                 #[inline]
                 fn encode_value(&self, encoder: &mut Encoder) {
-                    todo!()
+                    encoder.write_slice(&self.to_le_bytes());
                 }
             }
 
             impl Decode for $t {
                 #[inline]
                 fn check_type_id(decoder: &mut Decoder) -> Result<(), DecodeError> {
-                    todo!()
+                    decoder.check_type_id(Self::type_id())
                 }
                 fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
-                    todo!()
+                    let slice = decoder.read_bytes((Self::BITS / 8) as usize)?;
+                    let mut bytes = [0u8; (Self::BITS / 8) as usize];
+                    bytes.copy_from_slice(&slice[..]);
+                    Ok(Self::from_le_bytes(bytes))
                 }
             }
 
@@ -163,6 +168,7 @@ types! {
     self: self,
     {
         type: I8,
+        type_id: TYPE_I8,
         self.0: i8,
         self.zero(): I8(0),
         I8::default(): I8(0),
@@ -171,6 +177,7 @@ types! {
     },
     {
         type: I16,
+        type_id: TYPE_I16,
         self.0: i16,
         self.zero(): I16(0),
         I16::default(): I16(0),
@@ -179,6 +186,7 @@ types! {
     },
     {
         type: I32,
+        type_id: TYPE_I32,
         self.0: i32,
         self.zero(): I32(0),
         I32::default(): I32(0),
@@ -187,6 +195,7 @@ types! {
     },
     {
         type: I64,
+        type_id: TYPE_I64,
         self.0: i64,
         self.zero(): I64(0),
         I64::default(): I64(0),
@@ -195,6 +204,7 @@ types! {
     },
     {
         type: I128,
+        type_id: TYPE_I128,
         self.0: i128,
         self.zero(): I128(0),
         I128::default(): I128(0),
@@ -203,6 +213,7 @@ types! {
     },
     {
         type: I256,
+        type_id: TYPE_I256,
         self.0: [u8; 32],
         self.zero(): I256([0u8; 32]),
         I256::default(): I256([0u8; 32]),
@@ -213,6 +224,7 @@ types! {
     },
     {
         type: I384,
+        type_id: TYPE_I384,
         self.0: [u8; 48],
         self.zero(): I384([0u8; 48]),
         I384::default(): I384([0u8; 48]),
@@ -223,6 +235,7 @@ types! {
     },
     {
         type: I512,
+        type_id: TYPE_I512,
         self.0: [u8; 64],
         self.zero(): I512([0u8; 64]),
         I512::default(): I512([0u8; 64]),
@@ -233,6 +246,7 @@ types! {
     },
     {
         type: U8,
+        type_id: TYPE_U8,
         self.0: u8,
         self.zero(): U8(0),
         U8::default(): U8(0),
@@ -241,6 +255,7 @@ types! {
     },
     {
         type: U16,
+        type_id: TYPE_U16,
         self.0: u16,
         self.zero(): U16(0),
         U16::default(): U16(0),
@@ -249,6 +264,7 @@ types! {
     },
     {
         type: U32,
+        type_id: TYPE_U32,
         self.0: u32,
         self.zero(): U32(0),
         U32::default(): U32(0),
@@ -257,6 +273,7 @@ types! {
     },
     {
         type: U64,
+        type_id: TYPE_U64,
         self.0: u64,
         self.zero(): U64(0),
         U64::default(): U64(0),
@@ -265,6 +282,7 @@ types! {
     },
     {
         type: U128,
+        type_id: TYPE_U128,
         self.0: u128,
         self.zero(): U128(0),
         U128::default(): U128(0),
@@ -273,6 +291,7 @@ types! {
     },
     {
         type: U256,
+        type_id: TYPE_U256,
         self.0: [u8; 32],
         self.zero(): U256([0u8; 32]),
         U256::default(): U256([0u8; 32]),
@@ -283,6 +302,7 @@ types! {
     },
     {
         type: U384,
+        type_id: TYPE_U384,
         self.0: [u8; 48],
         self.zero(): U384([0u8; 48]),
         U384::default(): U384([0u8; 48]),
@@ -293,6 +313,7 @@ types! {
     },
     {
         type: U512,
+        type_id: TYPE_U512,
         self.0: [u8; 64],
         self.zero(): U512([0u8; 64]),
         U512::default(): U512([0u8; 64]),
@@ -1011,3 +1032,11 @@ macro_rules! checked_int_impl_unsigned_small {
 
 checked_int_impl_unsigned_large! { U256, U384, U512 }
 checked_int_impl_unsigned_small! { U8, U16, U32, U64, U128 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_integer_encoding_and_decoding() {}
+}
