@@ -366,26 +366,23 @@ fn create_mutable_vault_with_get_nonfungible_ids() {
 #[test]
 fn create_mutable_vault_with_get_nonfungible_id() {
     // Arrange
-    let mut ledger = InMemorySubstateStore::with_bootstrap();
-    let mut executor = TransactionExecutor::new(&mut ledger, true);
-    let package = executor
-        .publish_package(&compile_package!(format!("./tests/{}", "vault")))
-        .unwrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
+    let package_address = test_runner.extract_and_publish_package("vault");
 
     // Act
-    let transaction = TransactionBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(
-            package,
+            package_address,
             "VaultTest",
             "new_vault_with_get_non_fungible_id",
             vec![],
         )
-        .build(executor.get_nonce([]))
-        .sign([]);
-    let receipt = executor.validate_and_execute(&transaction).unwrap();
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.result.expect("Should be okay");
+    receipt.expect_success();
 }
 
 #[test]
