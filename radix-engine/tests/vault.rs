@@ -372,11 +372,12 @@ fn create_mutable_vault_with_get_nonfungible_id() {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(
             package_address,
             "VaultTest",
             "new_vault_with_get_non_fungible_id",
-            vec![],
+            to_struct!(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);

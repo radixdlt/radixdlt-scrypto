@@ -160,7 +160,7 @@ blueprint! {
         pub fn new_vault_with_get_non_fungible_id() -> ComponentAddress {
             let vault = Self::create_non_fungible_vault();
             let _id = vault.non_fungible_id();
-            let vaults = LazyMap::new();
+            let vaults = KeyValueStore::new();
             let vault_vector = Vec::new();
             VaultTest {
                 vault,
