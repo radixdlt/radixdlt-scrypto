@@ -41,7 +41,7 @@ enum ExpectedResult {
     InvalidOutput,
 }
 
-fn test_arg(method_name: &str, arg: Vec<u8>, expected_result: ExpectedResult) {
+fn test_arg(method_name: &str, args: Vec<u8>, expected_result: ExpectedResult) {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
@@ -50,7 +50,7 @@ fn test_arg(method_name: &str, arg: Vec<u8>, expected_result: ExpectedResult) {
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .lock_fee(10.into(), SYSTEM_COMPONENT)
-        .call_function(package_address, "AbiComponent2", method_name, arg)
+        .call_function(package_address, "AbiComponent2", method_name, args)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 

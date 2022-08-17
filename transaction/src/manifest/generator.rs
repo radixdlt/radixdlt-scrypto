@@ -313,7 +313,7 @@ pub fn generate_instruction(
                 package_address: generate_package_address(package_address, bech32_decoder)?,
                 blueprint_name: generate_string(blueprint_name)?,
                 method_name: generate_string(function)?,
-                arg: args_from_value_vec!(fields),
+                args: args_from_value_vec!(fields),
             }
         }
         ast::Instruction::CallMethod {
@@ -334,7 +334,7 @@ pub fn generate_instruction(
             Instruction::CallMethod {
                 component_address: generate_component_address(component_address, bech32_decoder)?,
                 method_name: generate_string(method)?,
-                arg: args_from_value_vec!(fields),
+                args: args_from_value_vec!(fields),
             }
         }
         ast::Instruction::CallMethodWithAllResources {
@@ -1083,7 +1083,7 @@ mod tests {
                 .unwrap(),
                 blueprint_name: "Airdrop".into(),
                 method_name: "new".to_string(),
-                arg: args!(500u32, HashMap::from([("key", 1u8),]), pdec!("120"))
+                args: args!(500u32, HashMap::from([("key", 1u8),]), pdec!("120"))
             }
         );
         generate_instruction_ok!(
@@ -1091,7 +1091,7 @@ mod tests {
             Instruction::CallMethod {
                 component_address: component1,
                 method_name: "refill".to_string(),
-                arg: args!()
+                args: args!()
             }
         );
         generate_instruction_ok!(
@@ -1148,7 +1148,7 @@ mod tests {
                 Instruction::CallMethod {
                     component_address: component1,
                     method_name: "withdraw_by_amount".to_string(),
-                    arg: args!(
+                    args: args!(
                         Decimal::from(5u32),
                         ResourceAddress::from_str(
                             "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag"
@@ -1166,7 +1166,7 @@ mod tests {
                 Instruction::CallMethod {
                     component_address: component2,
                     method_name: "buy_gumball".to_string(),
-                    arg: args!(scrypto::resource::Bucket(512))
+                    args: args!(scrypto::resource::Bucket(512))
                 },
                 Instruction::AssertWorktopContainsByAmount {
                     amount: Decimal::from(3),
@@ -1194,7 +1194,7 @@ mod tests {
                 Instruction::CallMethod {
                     component_address: component1,
                     method_name: "create_proof_by_amount".to_string(),
-                    arg: args!(
+                    args: args!(
                         Decimal::from(5u32),
                         ResourceAddress::from_str(
                             "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag"
@@ -1226,7 +1226,7 @@ mod tests {
                 Instruction::CallMethod {
                     component_address: component2,
                     method_name: "complicated_method".to_string(),
-                    arg: args!(Decimal::from(1u32), PreciseDecimal::from(2u32))
+                    args: args!(Decimal::from(1u32), PreciseDecimal::from(2u32))
                 },
             ]
         );

@@ -337,7 +337,7 @@ impl Proof {
     pub fn main<'s, Y: SystemApi<'s, W, I, C>, W: WasmEngine<I>, I: WasmInstance, C: FeeReserve>(
         proof_id: ProofId,
         proof_fn: ProofFnIdentifier,
-        arg: ScryptoValue,
+        args: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, ProofError> {
         let substate_id = SubstateId::Proof(proof_id);
@@ -349,23 +349,23 @@ impl Proof {
         let rtn = match proof_fn {
             ProofFnIdentifier::GetAmount => {
                 let _: ProofGetAmountInput =
-                    scrypto_decode(&arg.raw).map_err(|e| ProofError::InvalidRequestData(e))?;
+                    scrypto_decode(&args.raw).map_err(|e| ProofError::InvalidRequestData(e))?;
                 Ok(ScryptoValue::from_typed(&proof.total_amount()))
             }
             ProofFnIdentifier::GetNonFungibleIds => {
                 let _: ProofGetNonFungibleIdsInput =
-                    scrypto_decode(&arg.raw).map_err(|e| ProofError::InvalidRequestData(e))?;
+                    scrypto_decode(&args.raw).map_err(|e| ProofError::InvalidRequestData(e))?;
                 let ids = proof.total_ids()?;
                 Ok(ScryptoValue::from_typed(&ids))
             }
             ProofFnIdentifier::GetResourceAddress => {
                 let _: ProofGetResourceAddressInput =
-                    scrypto_decode(&arg.raw).map_err(|e| ProofError::InvalidRequestData(e))?;
+                    scrypto_decode(&args.raw).map_err(|e| ProofError::InvalidRequestData(e))?;
                 Ok(ScryptoValue::from_typed(&proof.resource_address()))
             }
             ProofFnIdentifier::Clone => {
                 let _: ProofCloneInput =
-                    scrypto_decode(&arg.raw).map_err(|e| ProofError::InvalidRequestData(e))?;
+                    scrypto_decode(&args.raw).map_err(|e| ProofError::InvalidRequestData(e))?;
                 let cloned_proof = proof.clone();
                 let proof_id = system_api
                     .node_create(HeapRENode::Proof(cloned_proof))
@@ -393,7 +393,7 @@ impl Proof {
     >(
         node_id: RENodeId,
         proof_fn: ProofFnIdentifier,
-        arg: ScryptoValue,
+        args: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, ProofError> {
         let proof: Proof = system_api
@@ -403,7 +403,7 @@ impl Proof {
         match proof_fn {
             ProofFnIdentifier::Drop => {
                 let _: ConsumingProofDropInput =
-                    scrypto_decode(&arg.raw).map_err(|e| ProofError::InvalidRequestData(e))?;
+                    scrypto_decode(&args.raw).map_err(|e| ProofError::InvalidRequestData(e))?;
                 proof.drop();
                 Ok(ScryptoValue::from_typed(&()))
             }

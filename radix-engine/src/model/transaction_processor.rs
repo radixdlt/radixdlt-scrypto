@@ -414,12 +414,12 @@ impl TransactionProcessor {
                             package_address,
                             blueprint_name,
                             method_name,
-                            arg,
+                            args,
                         } => {
                             Self::replace_ids(
                                 &mut proof_id_mapping,
                                 &mut bucket_id_mapping,
-                                ScryptoValue::from_slice(arg).expect("Should be valid arg"),
+                                ScryptoValue::from_slice(args).expect("Should be valid arg"),
                             )
                             .and_then(|call_data| {
                                 system_api.invoke_function(
@@ -466,12 +466,12 @@ impl TransactionProcessor {
                         ExecutableInstruction::CallMethod {
                             component_address,
                             method_name,
-                            arg,
+                            args,
                         } => {
                             Self::replace_ids(
                                 &mut proof_id_mapping,
                                 &mut bucket_id_mapping,
-                                ScryptoValue::from_slice(arg).expect("Should be valid arg"),
+                                ScryptoValue::from_slice(args).expect("Should be valid arg"),
                             )
                             .and_then(|call_data| {
                                 // TODO: Move this into preprocessor step

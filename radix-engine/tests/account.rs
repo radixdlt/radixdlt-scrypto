@@ -92,7 +92,7 @@ fn account_to_bucket_to_account() {
                 .add_instruction(Instruction::CallMethod {
                     component_address: account,
                     method_name: "deposit".to_string(),
-                    arg: args!(scrypto::resource::Bucket(bucket_id)),
+                    args: args!(scrypto::resource::Bucket(bucket_id)),
                 })
                 .0
         })

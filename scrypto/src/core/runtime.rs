@@ -2,7 +2,6 @@ use sbor::rust::borrow::ToOwned;
 use sbor::rust::vec::Vec;
 use sbor::*;
 
-use crate::args_from_bytes_vec;
 use crate::buffer::scrypto_encode;
 use crate::component::*;
 use crate::core::*;
@@ -54,7 +53,7 @@ impl Runtime {
         package_address: PackageAddress,
         blueprint_name: S,
         function: S,
-        args: Vec<Vec<u8>>,
+        args: Vec<u8>,
     ) -> T {
         let input = RadixEngineInput::InvokeFunction(
             FnIdentifier::Scrypto {
@@ -62,7 +61,7 @@ impl Runtime {
                 blueprint_name: blueprint_name.as_ref().to_owned(),
                 ident: function.as_ref().to_string(),
             },
-            args_from_bytes_vec!(args),
+            args,
         );
         call_engine(input)
     }
@@ -71,7 +70,7 @@ impl Runtime {
     pub fn call_method<S: AsRef<str>, T: Decode>(
         component_address: ComponentAddress,
         method: S,
-        args: Vec<Vec<u8>>,
+        args: Vec<u8>,
     ) -> T {
         let input = RadixEngineInput::SubstateRead(SubstateId::ComponentInfo(component_address));
         let (package_address, blueprint_name): (PackageAddress, String) = call_engine(input);
@@ -83,7 +82,7 @@ impl Runtime {
                 blueprint_name,
                 ident: method.as_ref().to_string(),
             },
-            args_from_bytes_vec!(args),
+            args,
         );
         call_engine(input)
     }

@@ -171,7 +171,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             transaction::model::Instruction::CallMethod {
                 component_address: SYSTEM_COMPONENT,
                 method_name: "lock_fee".to_string(),
-                arg: args!(dec!("1000")),
+                args: args!(dec!("1000")),
             },
         );
         self.execute_manifest(manifest, signer_public_keys)

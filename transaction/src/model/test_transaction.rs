@@ -121,21 +121,21 @@ impl TestTransaction {
                     package_address,
                     blueprint_name,
                     method_name,
-                    arg,
+                    args,
                 } => ExecutableInstruction::CallFunction {
                     package_address,
                     blueprint_name,
                     method_name,
-                    arg,
+                    args,
                 },
                 Instruction::CallMethod {
                     component_address,
                     method_name,
-                    arg,
+                    args,
                 } => ExecutableInstruction::CallMethod {
                     component_address,
                     method_name,
-                    arg,
+                    args,
                 },
                 Instruction::CallMethodWithAllResources {
                     component_address,
