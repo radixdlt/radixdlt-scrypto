@@ -109,22 +109,22 @@ macro_rules! i {
 #[macro_export]
 macro_rules! pdec {
     ($x:literal) => {
-        scrypto::prelude::PreciseDecimal::from($x)
+        scrypto::math::PreciseDecimal::from($x)
     };
 
     ($base:literal, $shift:literal) => {
         // Base can be any type that converts into a PreciseDecimal, and shift must support
         // comparison and `-` unary operation, enforced by rustc.
         {
-            let base = scrypto::prelude::PreciseDecimal::from($base);
+            let base = scrypto::math::PreciseDecimal::from($base);
             if $shift >= 0 {
-                base * scrypto::prelude::PreciseDecimal::try_from(
+                base * scrypto::math::PreciseDecimal::try_from(
                     scrypto::prelude::I512::from(10u8)
                         .pow(u32::try_from($shift).expect("Shift overflow")),
                 )
                 .expect("Shift overflow")
             } else {
-                base / scrypto::prelude::PreciseDecimal::try_from(
+                base / scrypto::math::PreciseDecimal::try_from(
                     scrypto::prelude::I512::from(10u8)
                         .pow(u32::try_from(-$shift).expect("Shift overflow")),
                 )

@@ -8,3 +8,4 @@ pub use integer::bits::*;
 pub use integer::bits::*;
 pub use integer::convert::*;
 pub use integer::*;
+pub use precise_decimal::*;
