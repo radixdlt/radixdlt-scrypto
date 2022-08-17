@@ -1033,6 +1033,18 @@ mod tests {
 
     #[test]
     fn test_instructions() {
+        let bech32_decoder = Bech32Decoder::new_from_network(&Network::LocalSimulator);
+        let component1 = bech32_decoder
+            .validate_and_decode_component_address(
+                "component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum",
+            )
+            .unwrap();
+        let component2 = bech32_decoder
+            .validate_and_decode_component_address(
+                "account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qgsy064",
+            )
+            .unwrap();
+
         generate_instruction_ok!(
             r#"TAKE_FROM_WORKTOP_BY_AMOUNT  Decimal("1.0")  ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak")  Bucket("xrd_bucket");"#,
             Instruction::TakeFromWorktopByAmount {
@@ -1077,10 +1089,7 @@ mod tests {
         generate_instruction_ok!(
             r#"CALL_METHOD  ComponentAddress("component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum")  "refill";"#,
             Instruction::CallMethod {
-                component_address: ComponentAddress::from_str(
-                    "component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum".into()
-                )
-                .unwrap(),
+                component_address: component1,
                 method_name: "refill".to_string(),
                 arg: to_struct!()
             }
@@ -1088,10 +1097,7 @@ mod tests {
         generate_instruction_ok!(
             r#"CALL_METHOD_WITH_ALL_RESOURCES  ComponentAddress("account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qgsy064") "deposit_batch";"#,
             Instruction::CallMethodWithAllResources {
-                component_address: ComponentAddress::from_str(
-                    "account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qgsy064".into()
-                )
-                .unwrap(),
+                component_address: component2,
                 method: "deposit_batch".into(),
             }
         );
@@ -1122,16 +1128,25 @@ mod tests {
         };
         let encoded_package = scrypto_encode(&package);
 
+        let bech32_decoder = Bech32Decoder::new_from_network(&Network::LocalSimulator);
+        let component1 = bech32_decoder
+            .validate_and_decode_component_address(
+                "account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qgsy064",
+            )
+            .unwrap();
+        let component2 = bech32_decoder
+            .validate_and_decode_component_address(
+                "component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum",
+            )
+            .unwrap();
+
         assert_eq!(
             crate::manifest::compile(tx, &Network::LocalSimulator)
                 .unwrap()
                 .instructions,
             vec![
                 Instruction::CallMethod {
-                    component_address: ComponentAddress::from_str(
-                        "account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qgsy064".into()
-                    )
-                    .unwrap(),
+                    component_address: component1,
                     method_name: "withdraw_by_amount".to_string(),
                     arg: to_struct!(
                         Decimal::from(5u32),
@@ -1149,10 +1164,7 @@ mod tests {
                     .unwrap(),
                 },
                 Instruction::CallMethod {
-                    component_address: ComponentAddress::from_str(
-                        "component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum".into()
-                    )
-                    .unwrap(),
+                    component_address: component2,
                     method_name: "buy_gumball".to_string(),
                     arg: to_struct!(scrypto::resource::Bucket(512))
                 },
@@ -1180,10 +1192,7 @@ mod tests {
                 Instruction::DropProof { proof_id: 514 },
                 Instruction::DropProof { proof_id: 515 },
                 Instruction::CallMethod {
-                    component_address: ComponentAddress::from_str(
-                        "account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qgsy064".into()
-                    )
-                    .unwrap(),
+                    component_address: component1,
                     method_name: "create_proof_by_amount".to_string(),
                     arg: to_struct!(
                         Decimal::from(5u32),
@@ -1207,10 +1216,7 @@ mod tests {
                     .unwrap()
                 },
                 Instruction::CallMethodWithAllResources {
-                    component_address: ComponentAddress::from_str(
-                        "account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qgsy064".into()
-                    )
-                    .unwrap(),
+                    component_address: component1,
                     method: "deposit_batch".into(),
                 },
                 Instruction::DropAllProofs,
@@ -1218,10 +1224,7 @@ mod tests {
                     package: encoded_package.clone()
                 },
                 Instruction::CallMethod {
-                    component_address: ComponentAddress::from_str(
-                        "component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum".into()
-                    )
-                    .unwrap(),
+                    component_address: component2,
                     method_name: "complicated_method".to_string(),
                     arg: to_struct!(Decimal::from(1u32), PreciseDecimal::from(2u32))
                 },
