@@ -323,7 +323,6 @@ impl ValidatedProof {
         self.non_fungible_ids().into_iter().next().unwrap()
     }
 
-
     /// Returns a singleton non-fungible.
     ///
     /// # Panics

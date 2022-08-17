@@ -178,10 +178,7 @@ blueprint! {
                 non_fungible_bucket.non_fungible_id(),
                 NonFungibleId::from_u32(1)
             );
-            assert_eq!(
-                bucket.non_fungible_id(),
-                NonFungibleId::from_u32(2)
-            );
+            assert_eq!(bucket.non_fungible_id(), NonFungibleId::from_u32(2));
             (bucket, non_fungible_bucket)
         }
 
@@ -209,10 +206,7 @@ blueprint! {
                 non_fungible_bucket.non_fungible_id(),
                 NonFungibleId::from_u32(1)
             );
-            assert_eq!(
-                vault.non_fungible_id(),
-                NonFungibleId::from_u32(2)
-            );
+            assert_eq!(vault.non_fungible_id(), NonFungibleId::from_u32(2));
 
             NonFungibleTest { vault }.instantiate().globalize();
 

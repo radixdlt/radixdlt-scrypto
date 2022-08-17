@@ -388,7 +388,6 @@ fn create_mutable_vault_with_get_nonfungible_id() {
     receipt.result.expect("Should be okay");
 }
 
-
 #[test]
 fn create_mutable_vault_with_get_amount() {
     // Arrange
