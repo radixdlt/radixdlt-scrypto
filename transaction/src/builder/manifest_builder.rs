@@ -14,6 +14,7 @@ use scrypto::buffer::*;
 use scrypto::core::Network;
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
+use scrypto::math::*;
 use scrypto::prelude::Package;
 use scrypto::resource::{require, LOCKED};
 use scrypto::resource::{AccessRule, AccessRuleNode, Burn, Mint, Withdraw};
@@ -827,6 +828,12 @@ impl ManifestBuilder {
             ScryptoType::Decimal => {
                 let value = arg
                     .parse::<Decimal>()
+                    .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
+                Ok(scrypto_encode(&value))
+            }
+            ScryptoType::PreciseDecimal => {
+                let value = arg
+                    .parse::<PreciseDecimal>()
                     .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
                 Ok(scrypto_encode(&value))
             }

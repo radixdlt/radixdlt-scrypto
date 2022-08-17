@@ -1,20 +1,22 @@
-use sbor::rust::collections::HashMap;
+use sbor::rust::collections::{HashMap, HashSet};
 use scrypto::engine::types::{KeyValueStoreId, SubstateId};
 
 use crate::engine::Substate;
 use crate::ledger::*;
 use crate::ledger::{OutputValue, WriteableSubstateStore};
 
-/// A substate store that stores all substates in host memory.
+/// A substate store that stores all typed substates in host memory.
 #[derive(Debug, PartialEq, Eq)]
-pub struct InMemorySubstateStore {
+pub struct TypedInMemorySubstateStore {
     substates: HashMap<SubstateId, OutputValue>,
+    root_substates: HashSet<SubstateId>,
 }
 
-impl InMemorySubstateStore {
+impl TypedInMemorySubstateStore {
     pub fn new() -> Self {
         Self {
             substates: HashMap::new(),
+            root_substates: HashSet::new(),
         }
     }
 
@@ -24,25 +26,33 @@ impl InMemorySubstateStore {
     }
 }
 
-impl Default for InMemorySubstateStore {
+impl Default for TypedInMemorySubstateStore {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl ReadableSubstateStore for InMemorySubstateStore {
+impl ReadableSubstateStore for TypedInMemorySubstateStore {
     fn get_substate(&self, substate_id: &SubstateId) -> Option<OutputValue> {
         self.substates.get(substate_id).cloned()
     }
-}
 
-impl WriteableSubstateStore for InMemorySubstateStore {
-    fn put_substate(&mut self, substate_id: SubstateId, substate: OutputValue) {
-        self.substates.insert(substate_id, substate);
+    fn is_root(&self, substate_id: &SubstateId) -> bool {
+        self.root_substates.contains(substate_id)
     }
 }
 
-impl QueryableSubstateStore for InMemorySubstateStore {
+impl WriteableSubstateStore for TypedInMemorySubstateStore {
+    fn put_substate(&mut self, substate_id: SubstateId, substate: OutputValue) {
+        self.substates.insert(substate_id, substate);
+    }
+
+    fn set_root(&mut self, substate_id: SubstateId) {
+        self.root_substates.insert(substate_id);
+    }
+}
+
+impl QueryableSubstateStore for TypedInMemorySubstateStore {
     fn get_kv_store_entries(
         &self,
         kv_store_id: &KeyValueStoreId,

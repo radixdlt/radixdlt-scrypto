@@ -24,7 +24,7 @@ impl AuthModule {
         // FIXME: This is wrong as it allows extern component
         // FIXME: calls to use caller's auth zone
         // FIXME: Need to add a test for this
-        if let Some(frame) = call_frames.get(call_frames.len() - 2) {
+        if let Some(frame) = call_frames.iter().rev().nth(1) {
             auth_zones.push(&frame.auth_zone);
         }
 
@@ -117,7 +117,6 @@ impl AuthModule {
 
                 {
                     let value_ref = node_pointer.to_ref(call_frames, track);
-
                     let component = value_ref.component_info();
                     let component_state = value_ref.component_state();
                     component.method_authorization(component_state, &abi.structure, ident)

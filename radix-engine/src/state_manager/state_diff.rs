@@ -16,6 +16,7 @@ pub struct StateDiff {
     pub down_virtual_substates: Vec<VirtualSubstateId>,
     pub up_substates: BTreeMap<SubstateId, OutputValue>,
     pub down_substates: Vec<OutputId>,
+    pub new_roots: Vec<SubstateId>,
 }
 
 impl StateDiff {
@@ -24,6 +25,7 @@ impl StateDiff {
             up_substates: BTreeMap::new(),
             down_virtual_substates: Vec::new(),
             down_substates: Vec::new(),
+            new_roots: Vec::new(),
         }
     }
 
@@ -47,6 +49,11 @@ impl StateDiff {
             receipt.up(output_id);
             store.put_substate(substate_id.clone(), output_value.clone());
         }
+
+        for substate_id in &self.new_roots {
+            store.set_root(substate_id.clone());
+        }
+
         receipt
     }
 }

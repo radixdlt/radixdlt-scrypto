@@ -66,6 +66,9 @@ pub struct Kernel<
 
     /// ID allocator
     id_allocator: IdAllocator,
+
+    execution_trace: &'g mut ExecutionTrace,
+
     /// Call frames
     call_frames: Vec<CallFrame>,
 
@@ -89,7 +92,9 @@ where
         wasm_instrumenter: &'g mut WasmInstrumenter,
         fee_reserve: &'g mut C,
         fee_table: &'g FeeTable,
+        execution_trace: &'g mut ExecutionTrace,
     ) -> Self {
+        let frame = CallFrame::new_root(transaction_signers);
         let mut kernel = Self {
             transaction_hash,
             max_depth,
@@ -100,13 +105,35 @@ where
             fee_reserve,
             fee_table,
             id_allocator: IdAllocator::new(IdSpace::Application),
-            call_frames: vec![],
+            execution_trace,
+            call_frames: vec![frame],
             phantom: PhantomData,
         };
 
-        let frame = CallFrame::new_root(transaction_signers, is_system, &mut kernel);
-        kernel.call_frames.push(frame);
-
+        if is_system {
+            let non_fungible_ids = [NonFungibleId::from_u32(0)].into_iter().collect();
+            let bucket_id = match kernel
+                .node_create(HeapRENode::Bucket(Bucket::new(
+                    ResourceContainer::new_non_fungible(SYSTEM_TOKEN, non_fungible_ids),
+                )))
+                .unwrap()
+            {
+                RENodeId::Bucket(bucket_id) => bucket_id,
+                _ => panic!("Unexpected RENodeID returned"),
+            };
+            let substate_id = SubstateId::Bucket(bucket_id);
+            let mut node_ref = kernel
+                .substate_borrow_mut(&substate_id)
+                .expect("TODO check this unwrap");
+            let bucket = node_ref.bucket();
+            let system_proof = bucket
+                .create_proof(bucket_id)
+                .expect("TODO check this unwrap");
+            Self::current_frame_mut(&mut kernel.call_frames)
+                .auth_zone
+                .proofs
+                .push(system_proof);
+        }
         kernel
     }
 
@@ -494,8 +521,12 @@ where
             for component_address in component_addresses {
                 let node_id = RENodeId::Component(component_address);
                 let substate_id = SubstateId::ComponentInfo(component_address);
+
+                // Check if component exists as root
+                if !self.track.is_root(&substate_id) {
+                    return Err(RuntimeError::RENodeNotFound(node_id));
+                }
                 let node_pointer = RENodePointer::Store(node_id);
-                // Check if component exists
                 node_pointer.acquire_lock(substate_id.clone(), false, false, &mut self.track)?;
                 node_pointer.release_lock(substate_id, false, &mut self.track);
                 next_frame_node_refs.insert(node_id, node_pointer);
@@ -713,8 +744,7 @@ where
                 match node_id {
                     RENodeId::Component(..) => {
                         let package_address = {
-                            let node_ref =
-                                node_pointer.to_ref(&mut self.call_frames, &mut self.track);
+                            let node_ref = node_pointer.to_ref(&self.call_frames, &self.track);
                             node_ref.component_info().package_address()
                         };
                         let package_substate_id = SubstateId::Package(package_address);
@@ -735,8 +765,7 @@ where
                     }
                     RENodeId::Bucket(..) => {
                         let resource_address = {
-                            let node_ref =
-                                node_pointer.to_ref(&mut self.call_frames, &mut self.track);
+                            let node_ref = node_pointer.to_ref(&self.call_frames, &self.track);
                             node_ref.bucket().resource_address()
                         };
                         let resource_substate_id = SubstateId::ResourceManager(resource_address);
@@ -753,8 +782,7 @@ where
                     }
                     RENodeId::Vault(..) => {
                         let resource_address = {
-                            let node_ref =
-                                node_pointer.to_ref(&mut self.call_frames, &mut self.track);
+                            let node_ref = node_pointer.to_ref(&self.call_frames, &self.track);
                             node_ref.vault().resource_address()
                         };
                         let resource_substate_id = SubstateId::ResourceManager(resource_address);
@@ -790,6 +818,17 @@ where
                         next_frame_node_refs.insert(resource_node_id, resource_node_pointer);
                     }
                 }
+
+                self.execution_trace.trace_invoke_method(
+                    &self.call_frames,
+                    &self.track,
+                    &current_frame.actor,
+                    &fn_identifier,
+                    node_id,
+                    node_pointer,
+                    &input,
+                    &next_owned_values,
+                )?;
 
                 // Check method authorization
                 AuthModule::receiver_auth(
@@ -1059,11 +1098,21 @@ where
 
         let node_id = SubstateProperties::get_node_id(substate_id);
 
-        let node_pointer = Self::current_frame(&self.call_frames)
-            .node_refs
-            .get(&node_id)
-            .cloned()
-            .expect(&format!("Node should exist {:?}", node_id));
+        // TODO: Clean this up
+        let frame = Self::current_frame(&self.call_frames);
+        let node_pointer = if frame.owned_heap_nodes.contains_key(&node_id) {
+            RENodePointer::Heap {
+                frame_id: frame.depth,
+                root: node_id.clone(),
+                id: None,
+            }
+        } else {
+            Self::current_frame(&self.call_frames)
+                .node_refs
+                .get(&node_id)
+                .cloned()
+                .expect(&format!("Node should exist {:?}", node_id))
+        };
 
         Ok(node_pointer.borrow_native_ref(
             substate_id.clone(),
@@ -1281,7 +1330,7 @@ where
 
         for (substate_id, substate) in substates {
             self.track
-                .create_uuid_substate(substate_id.clone(), substate);
+                .create_uuid_substate(substate_id.clone(), substate, true);
         }
 
         let mut to_store_values = HashMap::new();
@@ -1341,6 +1390,15 @@ where
 
         let (parent_pointer, current_value) =
             Self::read_value_internal(&mut self.call_frames, self.track, &substate_id)?;
+
+        // TODO: Clean the following referencing up
+        for component_address in &current_value.refed_component_addresses {
+            let node_id = RENodeId::Component(*component_address);
+            Self::current_frame_mut(&mut self.call_frames)
+                .node_refs
+                .insert(node_id, RENodePointer::Store(node_id));
+        }
+
         let cur_children = current_value.node_ids();
         for child_id in cur_children {
             let child_pointer = parent_pointer.child(child_id);
@@ -1424,7 +1482,17 @@ where
             ));
         }
 
-        // If write, take values from current frame
+        // TODO: Do this in a better way once references cleaned up
+        for component_address in &value.refed_component_addresses {
+            if !self
+                .track
+                .is_root(&SubstateId::ComponentInfo(*component_address))
+            {
+                return Err(RuntimeError::ValueNotAllowed);
+            }
+        }
+
+        // Take values from current frame
         let (taken_nodes, missing_nodes) = {
             let node_ids = value.node_ids();
             if !node_ids.is_empty() {

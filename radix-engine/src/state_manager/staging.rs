@@ -4,6 +4,7 @@ use scrypto::buffer::{scrypto_decode, scrypto_encode};
 
 use crate::ledger::*;
 use indexmap::IndexMap;
+use indexmap::IndexSet;
 use scrypto::engine::types::SubstateId;
 
 /// Nodes form an acyclic graph towards the parent
@@ -11,6 +12,7 @@ struct StagedSubstateStoreNode {
     parent_id: u64,
     locked: bool,
     outputs: IndexMap<SubstateId, OutputValue>,
+    new_roots: IndexSet<SubstateId>,
 }
 
 impl StagedSubstateStoreNode {
@@ -19,6 +21,7 @@ impl StagedSubstateStoreNode {
             parent_id,
             locked: false,
             outputs: IndexMap::new(),
+            new_roots: IndexSet::new(),
         }
     }
 }
@@ -101,6 +104,10 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> StagedSubstateStoreM
             self.parent.put_substate(substate_id, output);
         }
 
+        for substate_id in node.new_roots {
+            self.parent.set_root(substate_id);
+        }
+
         if !remove_children {
             self.set_root_parent(id);
         }
@@ -127,6 +134,19 @@ impl<'t, 's, S: ReadableSubstateStore + WriteableSubstateStore> StagedSubstateSt
 
         self.get_substate_recurse(substate_id, node.parent_id)
     }
+
+    fn is_root_recurse(&self, substate_id: &SubstateId, id: u64) -> bool {
+        if id == 0 {
+            return self.stores.parent.is_root(substate_id);
+        }
+
+        let node = self.stores.nodes.get(&id).unwrap();
+        if node.new_roots.contains(substate_id) {
+            return true;
+        }
+
+        self.is_root_recurse(substate_id, node.parent_id)
+    }
 }
 
 impl<'t, 's, S: ReadableSubstateStore + WriteableSubstateStore> ReadableSubstateStore
@@ -134,6 +154,10 @@ impl<'t, 's, S: ReadableSubstateStore + WriteableSubstateStore> ReadableSubstate
 {
     fn get_substate(&self, substate_id: &SubstateId) -> Option<OutputValue> {
         self.get_substate_recurse(substate_id, self.id)
+    }
+
+    fn is_root(&self, substate_id: &SubstateId) -> bool {
+        self.is_root_recurse(substate_id, self.id)
     }
 }
 
@@ -148,17 +172,26 @@ impl<'t, 's, S: ReadableSubstateStore + WriteableSubstateStore> WriteableSubstat
             node.outputs.insert(substate_id, output);
         }
     }
+
+    fn set_root(&mut self, substate_id: SubstateId) {
+        if self.id == 0 {
+            self.stores.parent.set_root(substate_id);
+        } else {
+            let node = self.stores.nodes.get_mut(&self.id).unwrap();
+            node.new_roots.insert(substate_id);
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::ledger::InMemorySubstateStore;
+    use crate::ledger::TypedInMemorySubstateStore;
     use crate::state_manager::StagedSubstateStoreManager;
 
     #[test]
     fn test_complicated_merge() {
         // Arrange
-        let mut store = InMemorySubstateStore::with_bootstrap();
+        let mut store = TypedInMemorySubstateStore::with_bootstrap();
         let mut stores = StagedSubstateStoreManager::new(&mut store);
         let child_node1 = stores.new_child_node(0);
         let child_node2 = stores.new_child_node(child_node1);

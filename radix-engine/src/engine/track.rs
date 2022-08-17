@@ -71,9 +71,23 @@ impl<'s> Track<'s> {
     }
 
     /// Creates a row with the given key/value
-    pub fn create_uuid_substate<V: Into<Substate>>(&mut self, substate_id: SubstateId, value: V) {
+    pub fn create_uuid_substate<V: Into<Substate>>(
+        &mut self,
+        substate_id: SubstateId,
+        value: V,
+        is_root: bool,
+    ) {
         self.new_substates.push(substate_id.clone());
-        self.state_track.put_substate(substate_id, value.into());
+        self.state_track
+            .put_substate(substate_id.clone(), value.into());
+        if is_root {
+            self.state_track.set_substate_root(substate_id);
+        }
+    }
+
+    // TODO: Clean this up
+    pub fn is_root(&mut self, substate_id: &SubstateId) -> bool {
+        self.state_track.is_root(substate_id)
     }
 
     // TODO: to read/write a value owned by track requires three coordinated steps:

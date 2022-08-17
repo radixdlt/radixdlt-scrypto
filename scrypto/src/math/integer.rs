@@ -11,6 +11,7 @@ use num_traits::{One, Pow, Signed, ToPrimitive, Zero};
 use paste::paste;
 use sbor::rust::convert::{From, TryFrom};
 use sbor::rust::fmt;
+use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 use sbor::*;
 
@@ -30,6 +31,8 @@ macro_rules! types {
              self.0: $wrap:ty,
              self.zero(): $tt:ident($zero:expr),
              $ttt:ident::default(): $default:expr,
+             format_var: $f:ident,
+             format_expr: $fmt:expr,
          }
      ),*) => {
         paste!{
@@ -62,38 +65,14 @@ macro_rules! types {
             }
 
             impl fmt::Debug for $t {
-                fn fmt(&$self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-                    BigInt::from(*$self).fmt(f)
+                fn fmt(&$self, $f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                    $fmt
                 }
             }
 
             impl fmt::Display for $t {
-                fn fmt(&$self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-                    BigInt::from(*$self).fmt(f)
-                }
-            }
-
-            impl fmt::Binary for $t {
-                fn fmt(&$self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-                    BigInt::from(*$self).fmt(f)
-                }
-            }
-
-            impl fmt::Octal for $t {
-                fn fmt(&$self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-                    BigInt::from(*$self).fmt(f)
-                }
-            }
-
-            impl fmt::LowerHex for $t {
-                fn fmt(&$self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-                    BigInt::from(*$self).fmt(f)
-                }
-            }
-
-            impl fmt::UpperHex for $t {
-                fn fmt(&$self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-                    BigInt::from(*$self).fmt(f)
+                fn fmt(&$self, $f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                    $fmt
                 }
             }
 
@@ -164,97 +143,193 @@ types! {
         self.0: i8,
         self.zero(): I8(0),
         I8::default(): I8(0),
+        format_var: f,
+        format_expr: (*self).to_i8().unwrap().fmt(f),
     },
     {
         type: I16,
         self.0: i16,
         self.zero(): I16(0),
         I16::default(): I16(0),
+        format_var: f,
+        format_expr: (*self).to_i16().unwrap().fmt(f),
     },
     {
         type: I32,
         self.0: i32,
         self.zero(): I32(0),
         I32::default(): I32(0),
+        format_var: f,
+        format_expr: (*self).to_i32().unwrap().fmt(f),
     },
     {
         type: I64,
         self.0: i64,
         self.zero(): I64(0),
         I64::default(): I64(0),
+        format_var: f,
+        format_expr: (*self).to_i64().unwrap().fmt(f),
     },
     {
         type: I128,
         self.0: i128,
         self.zero(): I128(0),
         I128::default(): I128(0),
+        format_var: f,
+        format_expr: (*self).to_i128().unwrap().fmt(f),
     },
     {
         type: I256,
         self.0: [u8; 32],
         self.zero(): I256([0u8; 32]),
         I256::default(): I256([0u8; 32]),
+        format_var: f,
+        format_expr: {
+            fmt(*self, f, self.0.len() * 8)
+        },
     },
     {
         type: I384,
         self.0: [u8; 48],
         self.zero(): I384([0u8; 48]),
         I384::default(): I384([0u8; 48]),
+        format_var: f,
+        format_expr: {
+            fmt(*self, f, self.0.len() * 8)
+        },
     },
     {
         type: I512,
         self.0: [u8; 64],
         self.zero(): I512([0u8; 64]),
         I512::default(): I512([0u8; 64]),
+        format_var: f,
+        format_expr: {
+            fmt(*self, f, self.0.len() * 8)
+        },
     },
     {
         type: U8,
         self.0: u8,
         self.zero(): U8(0),
         U8::default(): U8(0),
+        format_var: f,
+        format_expr: (*self).to_u8().unwrap().fmt(f),
     },
     {
         type: U16,
         self.0: u16,
         self.zero(): U16(0),
         U16::default(): U16(0),
+        format_var: f,
+        format_expr: (*self).to_u16().unwrap().fmt(f),
     },
     {
         type: U32,
         self.0: u32,
         self.zero(): U32(0),
         U32::default(): U32(0),
+        format_var: f,
+        format_expr: (*self).to_u32().unwrap().fmt(f),
     },
     {
         type: U64,
         self.0: u64,
         self.zero(): U64(0),
         U64::default(): U64(0),
+        format_var: f,
+        format_expr: (*self).to_u64().unwrap().fmt(f),
     },
     {
         type: U128,
         self.0: u128,
         self.zero(): U128(0),
         U128::default(): U128(0),
+        format_var: f,
+        format_expr: (*self).to_u128().unwrap().fmt(f),
     },
     {
         type: U256,
         self.0: [u8; 32],
         self.zero(): U256([0u8; 32]),
         U256::default(): U256([0u8; 32]),
+        format_var: f,
+        format_expr: {
+            fmt(*self, f, self.0.len() * 8)
+        },
     },
     {
         type: U384,
         self.0: [u8; 48],
         self.zero(): U384([0u8; 48]),
         U384::default(): U384([0u8; 48]),
+        format_var: f,
+        format_expr: {
+            fmt(*self, f, self.0.len() * 8)
+        },
     },
     {
         type: U512,
         self.0: [u8; 64],
         self.zero(): U512([0u8; 64]),
         U512::default(): U512([0u8; 64]),
+        format_var: f,
+        format_expr: {
+            fmt(*self, f, self.0.len() * 8)
+        },
     }
+}
+
+fn fmt<
+    T: fmt::Display
+        + Copy
+        + From<u32>
+        + Pow<u32, Output = T>
+        + Zero
+        + TryInto<i128>
+        + Add<Output = T>
+        + Div<Output = T>
+        + Rem<Output = T>
+        + Sub<Output = T>
+        + Eq
+        + Ord,
+>(
+    to_fmt: T,
+    f: &mut fmt::Formatter<'_>,
+    bits: usize,
+) -> fmt::Result
+where
+    <T as TryInto<i128>>::Error: fmt::Debug,
+{
+    let mut minus = "";
+    let mut a = to_fmt;
+    if a < T::zero() {
+        minus = "-";
+        a = T::zero() - a;
+    }
+    let num;
+    let divisor = T::from(10u32).pow(38u32);
+    if a == T::from(0) {
+        num = String::from("0");
+    } else {
+        num = (0..bits / 128 + 1).fold(String::from(""), |acc, _| {
+            let num_part: i128 = (a % divisor).try_into().unwrap();
+            a = a / divisor;
+            if a == T::zero() {
+                if num_part == 0 {
+                    acc
+                } else {
+                    num_part.to_string() + &acc
+                }
+            } else {
+                let padding: String = vec!["0"; 38 - num_part.to_string().len()]
+                    .into_iter()
+                    .collect();
+                padding + &num_part.to_string() + &acc
+            }
+        });
+    }
+    write!(f, "{}{}", minus, num)
 }
 
 #[macro_export]
@@ -302,7 +377,6 @@ macro_rules! forward_ref_binop {
         }
     };
 }
-
 #[macro_export]
 macro_rules! forward_ref_op_assign {
     (impl $imp:ident, $method:ident for $t:ty, $u:ty) => {
@@ -315,7 +389,7 @@ macro_rules! forward_ref_op_assign {
     };
 }
 
-macro_rules! checked_impl {
+macro_rules! op_impl {
         ($(($t:ty, $o:ty, $out:ty)),*) => {
             paste! {
                 $(
@@ -413,7 +487,7 @@ macro_rules! checked_impl {
             }
         };
     }
-checked_impl! {
+op_impl! {
 //(self, other, output)
 (u8, U8, U8), (u8, U16, U16), (u8, U32, U32), (u8, U64, U64), (u8, U128, U128),
 (u8, U256, U256), (u8, U384, U384), (u8, U512, U512),
@@ -508,6 +582,131 @@ checked_impl! {
 
 }
 
+pub trait CheckedAdd<T>: Sized {
+    fn checked_add(self, other: T) -> Option<Self>;
+}
+
+pub trait CheckedSub<T>: Sized {
+    fn checked_sub(self, other: T) -> Option<Self>;
+}
+
+pub trait CheckedMul<T>: Sized {
+    fn checked_mul(self, other: T) -> Option<Self>;
+}
+
+pub trait CheckedDiv<T>: Sized {
+    fn checked_div(self, other: T) -> Option<Self>;
+}
+
+pub trait CheckedRem<T>: Sized {
+    fn checked_rem(self, other: T) -> Option<Self>;
+}
+
+pub trait CheckedNeg: Sized {
+    fn checked_neg(self) -> Option<Self>;
+}
+
+pub trait CheckedPow<T>: Sized {
+    fn checked_pow(self, other: T) -> Option<Self>;
+}
+
+macro_rules! checked_impl {
+    ($(($t:ident, $o:ident)),*) => {
+        paste!{
+            $(
+                impl CheckedAdd<$o> for $t {
+                    #[inline]
+                    fn checked_add(self, other: $o) -> Option<$t> {
+                        let v: Result<$t, [<Parse $t Error>]> = BigInt::from(self).add(&BigInt::from(other)).try_into();
+                        v.ok()
+                    }
+                }
+
+                impl CheckedSub<$o> for $t {
+                    #[inline]
+                    fn checked_sub(self, other: $o) -> Option<$t> {
+                        let v: Result<$t, [<Parse $t Error>]> = BigInt::from(self).sub(&BigInt::from(other)).try_into();
+                        v.ok()
+                    }
+                }
+
+                impl CheckedMul<$o> for $t {
+                    #[inline]
+                    fn checked_mul(self, other: $o) -> Option<$t> {
+                        let v: Result<$t, [<Parse $t Error>]> = BigInt::from(self).mul(&BigInt::from(other)).try_into();
+                        v.ok()
+                    }
+                }
+
+                impl CheckedDiv<$o> for $t {
+                    #[inline]
+                    fn checked_div(self, other: $o) -> Option<$t> {
+                        let v: Result<$t, [<Parse $t Error>]> = BigInt::from(self).div(&BigInt::from(other)).try_into();
+                        v.ok()
+                    }
+                }
+
+                impl CheckedRem<$o> for $t {
+                    #[inline]
+                    fn checked_rem(self, other: $o) -> Option<$t> {
+                        let v: Result<$t, [<Parse $t Error>]> = BigInt::from(self).rem(&BigInt::from(other)).try_into();
+                        v.ok()
+                    }
+                }
+                )*
+        }
+    }
+}
+checked_impl! {
+    (I8, i8), (I8, i16), (I8, i32), (I8, i64), (I8, i128),
+    (I8, I8), (I8, I16), (I8, I32), (I8, I64), (I8, I128), (I8, I256), (I8, I384), (I8, I512),
+
+    (I16, i8), (I16, i16), (I16, i32), (I16, i64), (I16, i128),
+    (I16, I8), (I16, I16), (I16, I32), (I16, I64), (I16, I128), (I16, I256), (I16, I384), (I16, I512),
+
+    (I32, i8), (I32, i16), (I32, i32), (I32, i64), (I32, i128),
+    (I32, I8), (I32, I16), (I32, I32), (I32, I64), (I32, I128), (I32, I256), (I32, I384), (I32, I512),
+
+    (I64, i8), (I64, i16), (I64, i32), (I64, i64), (I64, i128),
+    (I64, I8), (I64, I16), (I64, I32), (I64, I64), (I64, I128), (I64, I256), (I64, I384), (I64, I512),
+
+    (I128, i8), (I128, i16), (I128, i32), (I128, i64), (I128, i128),
+    (I128, I8), (I128, I16), (I128, I32), (I128, I64), (I128, I128), (I128, I256), (I128, I384), (I128, I512),
+
+    (I256, i8), (I256, i16), (I256, i32), (I256, i64), (I256, i128),
+    (I256, I8), (I256, I16), (I256, I32), (I256, I64), (I256, I128), (I256, I256), (I256, I384), (I256, I512),
+
+    (I384, i8), (I384, i16), (I384, i32), (I384, i64), (I384, i128),
+    (I384, I8), (I384, I16), (I384, I32), (I384, I64), (I384, I128), (I384, I256), (I384, I384), (I384, I512),
+
+    (I512, i8), (I512, i16), (I512, i32), (I512, i64), (I512, i128),
+    (I512, I8), (I512, I16), (I512, I32), (I512, I64), (I512, I128), (I512, I256), (I512, I384), (I512, I512),
+
+    (U8, u8), (U8, u16), (U8, u32), (U8, u64), (U8, u128),
+    (U8, U8), (U8, U16), (U8, U32), (U8, U64), (U8, U128), (U8, U256), (U8, U384), (U8, U512),
+
+    (U16, u8), (U16, u16), (U16, u32), (U16, u64), (U16, u128),
+    (U16, U8), (U16, U16), (U16, U32), (U16, U64), (U16, U128), (U16, U256), (U16, U384), (U16, U512),
+
+    (U32, u8), (U32, u16), (U32, u32), (U32, u64), (U32, u128),
+    (U32, U8), (U32, U16), (U32, U32), (U32, U64), (U32, U128), (U32, U256), (U32, U384), (U32, U512),
+
+    (U64, u8), (U64, u16), (U64, u32), (U64, u64), (U64, u128),
+    (U64, U8), (U64, U16), (U64, U32), (U64, U64), (U64, U128), (U64, U256), (U64, U384), (U64, U512),
+
+    (U128, u8), (U128, u16), (U128, u32), (U128, u64), (U128, u128),
+    (U128, U8), (U128, U16), (U128, U32), (U128, U64), (U128, U128), (U128, U256), (U128, U384), (U128, U512),
+
+    (U256, u8), (U256, u16), (U256, u32), (U256, u64), (U256, u128),
+    (U256, U8), (U256, U16), (U256, U32), (U256, U64), (U256, U128), (U256, U256), (U256, U384), (U256, U512),
+
+    (U384, u8), (U384, u16), (U384, u32), (U384, u64), (U384, u128),
+    (U384, U8), (U384, U16), (U384, U32), (U384, U64), (U384, U128), (U384, U256), (U384, U384), (U384, U512),
+
+    (U512, u8), (U512, u16), (U512, u32), (U512, u64), (U512, u128),
+    (U512, U8), (U512, U16), (U512, U32), (U512, U64), (U512, U128), (U512, U256), (U512, U384), (U512, U512)
+}
+
 macro_rules! pow_impl {
         ($($t:ty),*) => {
             paste! {
@@ -529,9 +728,25 @@ macro_rules! pow_impl {
                                 return self;
                             }
                             if exp % 2 == 0 {
-                                return (&self * &self).pow(exp / 2);
+                                return (self * self).pow(exp / 2);
                             } else {
-                                return &self * (&self * &self).pow((exp - 1) / 2);
+                                return self * (self * self).pow((exp - 1) / 2);
+                            }
+                        }
+                    }
+                    impl CheckedPow<u32> for $t
+                    {
+                        fn checked_pow(self, exp: u32) -> Option<$t> {
+                            if exp == 0 {
+                                return Some(Self::one());
+                            }
+                            if exp == 1 {
+                                return Some(self);
+                            }
+                            if exp % 2 == 0 {
+                                return self.checked_mul(self).and_then(|x| x.checked_pow(exp / 2));
+                            } else {
+                                return self.checked_mul(self).and_then(|x| x.checked_pow((exp - 1) / 2)).and_then(|x| x.checked_mul(self));
                             }
                         }
                     }
@@ -590,6 +805,12 @@ macro_rules! checked_int_impl_signed {
                 }
                 forward_ref_unop! { impl Neg, neg for $t }
 
+                impl CheckedNeg for $t {
+                    fn checked_neg(self) -> Option<Self> {
+                        Self::zero().checked_sub(self)
+                    }
+                }
+
                 impl $t {
 
                     /// Computes the absolute value of `self`, with overflow causing panic.
@@ -618,9 +839,9 @@ macro_rules! checked_int_impl_signed {
                     /// ```
                     #[doc = "use scrypto::prelude::*;"]
                     ///
-                    #[doc = "assert_eq!(" $t "::tfrom(10i8).signum(), " $t "::tfrom(1i8));"]
-                    #[doc = "assert_eq!(" $t "::tfrom(0i8).signum(), " $t "::tfrom(0i8));"]
-                    #[doc = "assert_eq!(" $t "::tfrom(-10i8).signum(), " $t "::tfrom(-1i8));"]
+                    #[doc = "assert_eq!(" $t "::by(10i8).signum(), " $t "::by(1i8));"]
+                    #[doc = "assert_eq!(" $t "::by(0i8).signum(), " $t "::by(0i8));"]
+                    #[doc = "assert_eq!(" $t "::by(-10i8).signum(), " $t "::by(-1i8));"]
                     /// ```
                     #[inline]
                     #[must_use = "this returns the result of the operation, \
@@ -639,8 +860,8 @@ macro_rules! checked_int_impl_signed {
                     /// ```
                     #[doc = "use scrypto::prelude::*;"]
                     ///
-                    #[doc = "assert!(" $t "::tfrom(10i8).is_positive());"]
-                    #[doc = "assert!(!" $t "::tfrom(-10i8).is_positive());"]
+                    #[doc = "assert!(" $t "::by(10i8).is_positive());"]
+                    #[doc = "assert!(!" $t "::by(-10i8).is_positive());"]
                     /// ```
                     #[must_use]
                     #[inline]
@@ -659,8 +880,8 @@ macro_rules! checked_int_impl_signed {
                     /// ```
                     #[doc = "use scrypto::prelude::*;"]
                     ///
-                    #[doc = "assert!(" $t "::tfrom(-10i8).is_negative());"]
-                    #[doc = "assert!(!" $t "::tfrom(10i8).is_negative());"]
+                    #[doc = "assert!(" $t "::by(-10i8).is_negative());"]
+                    #[doc = "assert!(!" $t "::by(10i8).is_negative());"]
                     /// ```
                     #[must_use]
                     #[inline]

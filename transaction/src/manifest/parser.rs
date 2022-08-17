@@ -202,6 +202,7 @@ impl Parser {
             TokenKind::Set => self.parse_set(),
             TokenKind::Map => self.parse_map(),
             TokenKind::Decimal
+            | TokenKind::PreciseDecimal
             | TokenKind::PackageAddress
             | TokenKind::ComponentAddress
             | TokenKind::ResourceAddress
@@ -316,6 +317,7 @@ impl Parser {
         let token = self.advance()?;
         match token.kind {
             TokenKind::Decimal => Ok(Value::Decimal(self.parse_values_one()?.into())),
+            TokenKind::PreciseDecimal => Ok(Value::PreciseDecimal(self.parse_values_one()?.into())),
             TokenKind::PackageAddress => Ok(Value::PackageAddress(self.parse_values_one()?.into())),
             TokenKind::ComponentAddress => {
                 Ok(Value::ComponentAddress(self.parse_values_one()?.into()))

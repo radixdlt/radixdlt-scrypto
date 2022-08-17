@@ -126,14 +126,29 @@ impl QueryableSubstateStore for RadixEngineDB {
     }
 }
 
+// Implement this as an enum for now to prevent clashes with Substates
+// TODO: Have a better key prefixing strategy
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub enum Root {
+    Root(SubstateId)
+}
+
 impl ReadableSubstateStore for RadixEngineDB {
     fn get_substate(&self, substate_id: &SubstateId) -> Option<OutputValue> {
         self.read(substate_id).map(|b| scrypto_decode(&b).unwrap())
+    }
+
+    fn is_root(&self, substate_id: &SubstateId) -> bool {
+        self.db.get(scrypto_encode(&Root::Root(substate_id.clone()))).unwrap().is_some()
     }
 }
 
 impl WriteableSubstateStore for RadixEngineDB {
     fn put_substate(&mut self, substate_id: SubstateId, substate: OutputValue) {
         self.write(substate_id, scrypto_encode(&substate));
+    }
+
+    fn set_root(&mut self, substate_id: SubstateId) {
+        self.db.put(scrypto_encode(&Root::Root(substate_id)), vec![]).unwrap();
     }
 }

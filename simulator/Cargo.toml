@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 radix-engine = { path = "../radix-engine" }
+radix-engine-stores = { path = "../radix-engine-stores" }
 scrypto = { path = "../scrypto", features = ["serde"] }
 sbor = { path = "../sbor" }
 transaction = { path = "../transaction" }
@@ -16,7 +17,6 @@ colored = { version = "2.0.0" }
 uuid = { version = "1.0.0", features = ["v4"] }
 hex = { version = "0.4.3" }
 cargo_toml = { version = "0.11.5" }
-rocksdb = { version = "0.18.0" }
 rand = { version = "0.8.5" }
 regex = { version = "1.5.5" }
 temp-env = { version = "0.2.0" }

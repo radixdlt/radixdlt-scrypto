@@ -12,7 +12,7 @@ use crate::misc::*;
 use crate::resource::*;
 
 /// Identifier for a non-fungible unit.
-#[derive(Clone, PartialEq, Eq, Hash)]
+#[derive(Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
 pub struct NonFungibleAddress {
     resource_address: ResourceAddress,
     non_fungible_id: NonFungibleId,

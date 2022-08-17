@@ -1,7 +1,9 @@
 use radix_engine::constants::{
     DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN,
 };
-use radix_engine::engine::RuntimeError;
+use radix_engine::engine::{ExecutionTrace, Kernel, SystemApi};
+use radix_engine::engine::{RuntimeError, Track};
+use radix_engine::fee::{FeeTable, SystemLoanFeeReserve};
 use radix_engine::ledger::*;
 use radix_engine::model::{export_abi, export_abi_by_component, extract_package};
 use radix_engine::state_manager::StagedSubstateStoreManager;
@@ -9,14 +11,15 @@ use radix_engine::transaction::{
     ExecutionConfig, PreviewError, PreviewExecutor, PreviewResult, TransactionExecutor,
     TransactionReceipt,
 };
-use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter};
+use radix_engine::wasm::{DefaultWasmEngine, DefaultWasmInstance, WasmInstrumenter};
 use sbor::describe::Fields;
 use sbor::Type;
 use scrypto::abi::{BlueprintAbi, Fn};
 use scrypto::core::Network;
-use scrypto::engine::types::{KeyValueStoreId, SubstateId, VaultId};
+use scrypto::engine::types::{KeyValueStoreId, RENodeId, SubstateId, VaultId};
 use scrypto::prelude::*;
 use scrypto::prelude::{HashMap, Package};
+use scrypto::values::ScryptoValue;
 use scrypto::{abi, to_struct};
 use transaction::builder::ManifestBuilder;
 use transaction::model::{ExecutableTransaction, TransactionManifest};
@@ -110,7 +113,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
 
     pub fn new_account_with_auth_rule(&mut self, withdraw_auth: &AccessRule) -> ComponentAddress {
         let manifest = ManifestBuilder::new(Network::LocalSimulator)
-            .lock_fee(10.into(), SYSTEM_COMPONENT)
+            .lock_fee(100.into(), SYSTEM_COMPONENT)
             .call_method(SYSTEM_COMPONENT, "free_xrd", to_struct!())
             .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
                 builder.new_account_with_resource(withdraw_auth, bucket_id)
@@ -132,7 +135,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
 
     pub fn publish_package(&mut self, package: Package) -> PackageAddress {
         let manifest = ManifestBuilder::new(Network::LocalSimulator)
-            .lock_fee(10.into(), SYSTEM_COMPONENT)
+            .lock_fee(100.into(), SYSTEM_COMPONENT)
             .publish_package(package)
             .build();
 
@@ -284,7 +287,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     ) {
         let package = self.extract_and_publish_package("resource_creator");
         let manifest = ManifestBuilder::new(Network::LocalSimulator)
-            .lock_fee(10.into(), SYSTEM_COMPONENT)
+            .lock_fee(100.into(), SYSTEM_COMPONENT)
             .create_proof_from_account(auth, account)
             .call_function(
                 package,
@@ -315,7 +318,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
 
         let package = self.extract_and_publish_package("resource_creator");
         let manifest = ManifestBuilder::new(Network::LocalSimulator)
-            .lock_fee(10.into(), SYSTEM_COMPONENT)
+            .lock_fee(100.into(), SYSTEM_COMPONENT)
             .call_function(
                 package,
                 "ResourceCreator",
@@ -341,7 +344,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         let auth_resource_address = self.create_non_fungible_resource(account);
         let package = self.extract_and_publish_package("resource_creator");
         let manifest = ManifestBuilder::new(Network::LocalSimulator)
-            .lock_fee(10.into(), SYSTEM_COMPONENT)
+            .lock_fee(100.into(), SYSTEM_COMPONENT)
             .call_function(
                 package,
                 "ResourceCreator",
@@ -362,7 +365,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
 
         let package = self.extract_and_publish_package("resource_creator");
         let manifest = ManifestBuilder::new(Network::LocalSimulator)
-            .lock_fee(10.into(), SYSTEM_COMPONENT)
+            .lock_fee(100.into(), SYSTEM_COMPONENT)
             .call_function(
                 package,
                 "ResourceCreator",
@@ -378,7 +381,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     pub fn create_non_fungible_resource(&mut self, account: ComponentAddress) -> ResourceAddress {
         let package = self.extract_and_publish_package("resource_creator");
         let manifest = ManifestBuilder::new(Network::LocalSimulator)
-            .lock_fee(10.into(), SYSTEM_COMPONENT)
+            .lock_fee(100.into(), SYSTEM_COMPONENT)
             .call_function(
                 package,
                 "ResourceCreator",
@@ -400,7 +403,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     ) -> ResourceAddress {
         let package = self.extract_and_publish_package("resource_creator");
         let manifest = ManifestBuilder::new(Network::LocalSimulator)
-            .lock_fee(10.into(), SYSTEM_COMPONENT)
+            .lock_fee(100.into(), SYSTEM_COMPONENT)
             .call_function(
                 package,
                 "ResourceCreator",
@@ -423,7 +426,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         signer_public_key: EcdsaPublicKey,
     ) -> ComponentAddress {
         let manifest = ManifestBuilder::new(Network::LocalSimulator)
-            .lock_fee(10.into(), SYSTEM_COMPONENT)
+            .lock_fee(100.into(), SYSTEM_COMPONENT)
             .call_function_with_abi(
                 package_address,
                 blueprint_name,
@@ -437,6 +440,73 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             .build();
         let receipt = self.execute_manifest(manifest, vec![signer_public_key]);
         receipt.new_component_addresses[0]
+    }
+
+    pub fn set_current_epoch(&mut self, epoch: u64) {
+        self.kernel_call(true, |kernel| {
+            kernel
+                .invoke_method(
+                    Receiver::Ref(RENodeId::System),
+                    FnIdentifier::Native(NativeFnIdentifier::System(SystemFnIdentifier::SetEpoch)),
+                    ScryptoValue::from_typed(&SystemSetEpochInput { epoch }),
+                )
+                .unwrap()
+        });
+    }
+
+    pub fn get_current_epoch(&mut self) -> u64 {
+        let current_epoch: ScryptoValue = self.kernel_call(false, |kernel| {
+            kernel
+                .invoke_method(
+                    Receiver::Ref(RENodeId::System),
+                    FnIdentifier::Native(NativeFnIdentifier::System(
+                        SystemFnIdentifier::GetCurrentEpoch,
+                    )),
+                    ScryptoValue::from_typed(&SystemGetCurrentEpochInput {}),
+                )
+                .unwrap()
+        });
+        scrypto_decode(&current_epoch.raw).unwrap()
+    }
+
+    /// Performs a kernel call through a kernel with `is_system = true`.
+    fn kernel_call<F>(&mut self, is_system: bool, fun: F) -> ScryptoValue
+    where
+        F: FnOnce(
+            &mut Kernel<DefaultWasmEngine, DefaultWasmInstance, SystemLoanFeeReserve>,
+        ) -> ScryptoValue,
+    {
+        let tx_hash = hash(self.next_transaction_nonce.to_string());
+        let mut substate_store = self.execution_stores.get_output_store(0);
+        let mut track = Track::new(&substate_store);
+        let mut fee_reserve = SystemLoanFeeReserve::default();
+        let fee_table = FeeTable::new();
+        let mut execution_trace = ExecutionTrace::new();
+
+        let mut kernel = Kernel::new(
+            tx_hash,
+            vec![],
+            is_system,
+            DEFAULT_MAX_CALL_DEPTH,
+            false,
+            &mut track,
+            &mut self.wasm_engine,
+            &mut self.wasm_instrumenter,
+            &mut fee_reserve,
+            &fee_table,
+            &mut execution_trace,
+        );
+
+        // Invoke the system
+        let output: ScryptoValue = fun(&mut kernel);
+
+        // Commit
+        self.next_transaction_nonce += 1;
+        track.commit();
+        let receipt = track.to_receipt();
+        receipt.state_updates.commit(&mut substate_store);
+
+        output
     }
 }
 

@@ -12,6 +12,7 @@ cd "$(dirname "$0")"
 (cd scrypto-derive; cargo build; cargo test --no-run)
 (cd scrypto-tests; cargo build; cargo test --no-run)
 (cd radix-engine; cargo build; cargo test --no-run)
+(cd radix-engine-stores; cargo build; cargo test --no-run)
 (cd transaction; cargo build; cargo test --no-run)
 (cd simulator; cargo build; cargo test --no-run)
 

@@ -1,5 +1,5 @@
 use radix_engine::engine::*;
-use radix_engine::ledger::InMemorySubstateStore;
+use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::model::{BucketError, ResourceContainerError};
 use scrypto::core::Network;
 use scrypto::prelude::*;
@@ -9,7 +9,7 @@ use transaction::builder::ManifestBuilder;
 
 fn test_bucket_internal(method_name: &str) {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account();
     let package_address = test_runner.extract_and_publish_package("bucket");
@@ -73,7 +73,7 @@ fn test_bucket_empty_non_fungible() {
 
 #[test]
 fn test_bucket_of_badges() {
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account();
     let package_address = test_runner.extract_and_publish_package("bucket");
@@ -93,7 +93,7 @@ fn test_bucket_of_badges() {
 #[test]
 fn test_take_with_invalid_granularity() {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account();
     let resource_address = test_runner.create_fungible_resource(100.into(), 2, account);
@@ -130,7 +130,7 @@ fn test_take_with_invalid_granularity() {
 #[test]
 fn test_take_with_negative_amount() {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account();
     let resource_address = test_runner.create_fungible_resource(100.into(), 2, account);
@@ -167,7 +167,7 @@ fn test_take_with_negative_amount() {
 #[test]
 fn create_empty_bucket() {
     // Arrange
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account();
 

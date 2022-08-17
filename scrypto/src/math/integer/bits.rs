@@ -1,5 +1,6 @@
 use super::*;
 use crate::scrypto::{forward_ref_binop, forward_ref_op_assign};
+use num_traits::ToPrimitive;
 use paste::paste;
 
 pub trait PrimIntExt<T> {
@@ -22,7 +23,7 @@ macro_rules! checked_int_impl_large {
                     /// ```
                     #[doc = "use scrypto::prelude::*;"]
                     ///
-                    #[doc = "let n = " $t "::tfrom(0b01001100u8);"]
+                    #[doc = "let n = " $t "::by(0b01001100u8);"]
                     ///
                     /// assert_eq!(n.count_ones(), 3);
                     /// ```
@@ -48,7 +49,7 @@ macro_rules! checked_int_impl_large {
                     #[doc = "use scrypto::prelude::*;"]
                     ///
                     #[doc = concat!("assert_eq!(", stringify!($t),
-                        "::tfrom(0i8).count_zeros(), ", stringify!(<$t>::BITS), ");")]
+                        "::by(0i8).count_zeros(), ", stringify!(<$t>::BITS), ");")]
                     /// ```
                     #[inline]
                     #[must_use = "this returns the result of the operation, \
@@ -69,7 +70,7 @@ macro_rules! checked_int_impl_large {
                     /// ```
                     #[doc = "use scrypto::prelude::*;"]
                     ///
-                    #[doc = "let n = I8::tfrom(0b0101000u8);"]
+                    #[doc = "let n = I8::by(0b0101000u8);"]
                     ///
                     /// assert_eq!(n.trailing_zeros(), 3);
                     /// ```
@@ -100,13 +101,13 @@ macro_rules! checked_int_impl_large {
                     /// ```
                     #[doc = "use scrypto::prelude::*;"]
                     ///
-                    #[doc = "let n: I16  = I16::tfrom(0b0000000_01010101i16);"]
-                    #[doc = "assert_eq!(n, I16::tfrom(85));"]
+                    #[doc = "let n: I16  = I16::by(0b0000000_01010101i16);"]
+                    #[doc = "assert_eq!(n, I16::by(85));"]
                     ///
                     /// let m = n.swap_bytes();
                     ///
-                    #[doc = "assert_eq!(m, I16::tfrom(0b01010101_00000000i16));"]
-                    #[doc = "assert_eq!(m, I16::tfrom(21760i16));"]
+                    #[doc = "assert_eq!(m, I16::by(0b01010101_00000000i16));"]
+                    #[doc = "assert_eq!(m, I16::by(21760i16));"]
                     /// ```
                     #[inline]
                     #[must_use = "this returns the result of the operation, \
@@ -127,13 +128,13 @@ macro_rules! checked_int_impl_large {
                     /// ```
                     #[doc = "use scrypto::prelude::*;"]
                     ///
-                    #[doc = "let n: I16  = I16::tfrom(0b0000000_01010101i16);"]
-                    #[doc = "assert_eq!(n, I16::tfrom(85i16));"]
+                    #[doc = "let n: I16  = I16::by(0b0000000_01010101i16);"]
+                    #[doc = "assert_eq!(n, I16::by(85i16));"]
                     ///
                     /// let m = n.reverse_bits();
                     ///
                     /// assert_eq!(m.0 as u16, 0b10101010_00000000);
-                    #[doc = "assert_eq!(m, I16::tfrom(-22016i16));"]
+                    #[doc = "assert_eq!(m, I16::by(-22016i16));"]
                     /// ```
                     #[must_use = "this returns the result of the operation, \
                           without modifying the original"]
@@ -179,7 +180,7 @@ macro_rules! checked_int_impl_small {
                 /// ```
                 #[doc = "use scrypto::prelude::*;"]
                 ///
-                #[doc = "let n = " $t "::tfrom(0b01001100u8);"]
+                #[doc = "let n = " $t "::by(0b01001100u8);"]
                 ///
                 /// assert_eq!(n.count_ones(), 3);
                 /// ```
@@ -204,7 +205,7 @@ macro_rules! checked_int_impl_small {
                 /// ```
                 #[doc = "use scrypto::prelude::*;"]
                 ///
-                #[doc = "assert_eq!(I8::tfrom(0i8).count_zeros(), 8);"]
+                #[doc = "assert_eq!(I8::by(0i8).count_zeros(), 8);"]
                 /// ```
                 #[inline]
                 #[must_use = "this returns the result of the operation, \
@@ -225,7 +226,7 @@ macro_rules! checked_int_impl_small {
                 /// ```
                 #[doc = "use scrypto::prelude::*;"]
                 ///
-                #[doc = "let n = I8::tfrom(0b0101000u8);"]
+                #[doc = "let n = I8::by(0b0101000u8);"]
                 ///
                 /// assert_eq!(n.trailing_zeros(), 3);
                 /// ```
@@ -248,13 +249,13 @@ macro_rules! checked_int_impl_small {
                 /// ```
                 #[doc = "use scrypto::prelude::*;"]
                 ///
-                #[doc = "let n: I16  = I16::tfrom(0b0000000_01010101i16);"]
-                #[doc = "assert_eq!(n, I16::tfrom(85));"]
+                #[doc = "let n: I16  = I16::by(0b0000000_01010101i16);"]
+                #[doc = "assert_eq!(n, I16::by(85));"]
                 ///
                 /// let m = n.swap_bytes();
                 ///
-                #[doc = "assert_eq!(m, I16::tfrom(0b01010101_00000000i16));"]
-                #[doc = "assert_eq!(m, I16::tfrom(21760i16));"]
+                #[doc = "assert_eq!(m, I16::by(0b01010101_00000000i16));"]
+                #[doc = "assert_eq!(m, I16::by(21760i16));"]
                 /// ```
                 #[inline]
                 #[must_use = "this returns the result of the operation, \
@@ -275,13 +276,13 @@ macro_rules! checked_int_impl_small {
                 /// ```
                 #[doc = "use scrypto::prelude::*;"]
                 ///
-                #[doc = "let n: I16  = I16::tfrom(0b0000000_01010101i16);"]
-                #[doc = "assert_eq!(n, I16::tfrom(85i16));"]
+                #[doc = "let n: I16  = I16::by(0b0000000_01010101i16);"]
+                #[doc = "assert_eq!(n, I16::by(85i16));"]
                 ///
                 /// let m = n.reverse_bits();
                 ///
                 /// assert_eq!(m.0 as u16, 0b10101010_00000000);
-                #[doc = "assert_eq!(m, I16::tfrom(-22016i16));"]
+                #[doc = "assert_eq!(m, I16::by(-22016i16));"]
                 /// ```
                 #[must_use = "this returns the result of the operation, \
                 without modifying the original"]
@@ -305,7 +306,7 @@ macro_rules! checked_int_impl_small {
                 /// ```
                 #[doc = "use scrypto::prelude::*;"]
                 ///
-                #[doc = "let n = " $t "::tfrom(0x1Ai8);"]
+                #[doc = "let n = " $t "::by(0x1Ai8);"]
                 ///
                 /// if cfg!(target_endian = "big") {
                 #[doc = "    assert_eq!(" $t "::from_be(n), n)"]
@@ -338,7 +339,7 @@ macro_rules! checked_int_impl_small {
                 /// ```
                 #[doc = "use scrypto::prelude::*;"]
                 ///
-                #[doc = "let n = " $t "::tfrom(0x1Ai8);"]
+                #[doc = "let n = " $t "::by(0x1Ai8);"]
                 ///
                 /// if cfg!(target_endian = "little") {
                 #[doc = "    assert_eq!(" $t "::from_le(n), n)"]
@@ -371,7 +372,7 @@ macro_rules! checked_int_impl_small {
                 /// ```
                 #[doc = "use scrypto::prelude::*;"]
                 ///
-                #[doc = "let n = " $t "::tfrom(0x1Ai8);"]
+                #[doc = "let n = " $t "::by(0x1Ai8);"]
                 ///
                 /// if cfg!(target_endian = "big") {
                 ///     assert_eq!(n.to_be(), n)
@@ -405,7 +406,7 @@ macro_rules! checked_int_impl_small {
                 /// ```
                 #[doc = "use scrypto::prelude::*;"]
                 ///
-                #[doc = "let n = " $t "::tfrom(0x1Ai8);"]
+                #[doc = "let n = " $t "::by(0x1Ai8);"]
                 ///
                 /// if cfg!(target_endian = "little") {
                 ///     assert_eq!(n.to_le(), n)

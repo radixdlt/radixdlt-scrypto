@@ -9,7 +9,7 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn test_hello() {
     // Setup the environment
-    let mut store = InMemorySubstateStore::with_bootstrap();
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
 
     // Create an account
