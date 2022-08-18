@@ -8,7 +8,7 @@ pub enum SysCall<'a> {
     },
     InvokeMethod {
         receiver: &'a Receiver,
-        function: &'a FnIdentifier,
+        fn_identifier: &'a FnIdentifier,
         input: &'a ScryptoValue,
     },
     BorrowNode {
@@ -59,6 +59,7 @@ pub enum SysCall<'a> {
     },
 }
 
+#[derive(Debug)]
 pub struct ModuleError(String);
 
 pub trait Module {

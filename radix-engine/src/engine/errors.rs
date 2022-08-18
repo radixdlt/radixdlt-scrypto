@@ -6,9 +6,14 @@ use crate::model::*;
 use crate::types::*;
 use crate::wasm::InvokeError;
 
+use super::ModuleError;
+
 /// Represents an error when executing a transaction.
 #[derive(Debug)]
 pub enum RuntimeError {
+    // TODO: better abstraction
+    KernelModuleError(ModuleError),
+
     /// Error when invoking a blueprint or component (recursive).
     InvokeError(Box<InvokeError>),
 

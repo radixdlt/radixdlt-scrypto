@@ -41,12 +41,14 @@ impl Module for LoggerModule {
                 self.depth = self.depth + 1;
             }
             super::SysCall::InvokeMethod {
-                function, input, ..
+                fn_identifier,
+                input,
+                ..
             } => {
                 log!(
                     self,
                     "Invoking method: fn = {:?}, buckets = {:?}, proofs = {:?}",
-                    function,
+                    fn_identifier,
                     input.bucket_ids,
                     input.proof_ids
                 );
@@ -117,8 +119,8 @@ impl Module for LoggerModule {
 
                 self.depth = self.depth - 1;
             }
-            super::SysCall::InvokeMethod { function, .. } => {
-                log!(self, "Exiting method: fn = {:?}", function);
+            super::SysCall::InvokeMethod { fn_identifier, .. } => {
+                log!(self, "Exiting method: fn = {:?}", fn_identifier);
 
                 self.depth = self.depth - 1;
             }

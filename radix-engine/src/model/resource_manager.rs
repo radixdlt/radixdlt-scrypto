@@ -465,7 +465,7 @@ impl ResourceManager {
         let substate_id = SubstateId::ResourceManager(resource_address);
         let mut ref_mut = system_api
             .substate_borrow_mut(&substate_id)
-            .map_err(ResourceManagerError::CostingError)?;
+            .expect("TODO: handle error");
         let resource_manager = ref_mut.resource_manager();
 
         let rtn = match resource_manager_fn {
@@ -615,7 +615,7 @@ impl ResourceManager {
 
         system_api
             .substate_return_mut(ref_mut)
-            .map_err(ResourceManagerError::CostingError)?;
+            .expect("TODO: handle error");
 
         Ok(rtn)
     }

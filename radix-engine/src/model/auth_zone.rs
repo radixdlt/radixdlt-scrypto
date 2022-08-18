@@ -108,7 +108,7 @@ impl AuthZone {
                     scrypto_decode(&args.raw).map_err(|e| AuthZoneError::InvalidRequestData(e))?;
                 let mut proof: Proof = system_api
                     .node_drop(&RENodeId::Proof(input.proof.0))
-                    .map_err(AuthZoneError::CostingError)?
+                    .expect("TODO: handle error")
                     .into();
                 proof.change_to_unrestricted();
 
@@ -122,7 +122,7 @@ impl AuthZone {
                 let resource_type = {
                     let value = system_api
                         .borrow_node(&RENodeId::ResourceManager(input.resource_address))
-                        .map_err(AuthZoneError::CostingError)?;
+                        .expect("TODO: handle error");
                     let resource_manager = value.resource_manager();
                     resource_manager.resource_type()
                 };
@@ -142,7 +142,7 @@ impl AuthZone {
                 let resource_type = {
                     let value = system_api
                         .borrow_node(&RENodeId::ResourceManager(input.resource_address))
-                        .map_err(AuthZoneError::CostingError)?;
+                        .expect("TODO: handle error");
                     let resource_manager = value.resource_manager();
                     resource_manager.resource_type()
                 };
@@ -166,7 +166,7 @@ impl AuthZone {
                 let resource_type = {
                     let value = system_api
                         .borrow_node(&RENodeId::ResourceManager(input.resource_address))
-                        .map_err(AuthZoneError::CostingError)?;
+                        .expect("TODO: handle error");
                     let resource_manager = value.resource_manager();
                     resource_manager.resource_type()
                 };

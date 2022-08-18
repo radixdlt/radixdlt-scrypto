@@ -157,7 +157,7 @@ impl Bucket {
         let substate_id = SubstateId::Bucket(bucket_id);
         let mut node_ref = system_api
             .substate_borrow_mut(&substate_id)
-            .map_err(BucketError::CostingError)?;
+            .expect("TODO: handle error");
         let bucket0 = node_ref.bucket();
 
         let rtn = match bucket_fn {
@@ -202,7 +202,7 @@ impl Bucket {
                     scrypto_decode(&args.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
                 let other_bucket = system_api
                     .node_drop(&RENodeId::Bucket(input.bucket.0))
-                    .map_err(BucketError::CostingError)?
+                    .expect("TODO: handle error")
                     .into();
                 bucket0
                     .put(other_bucket)
@@ -238,7 +238,7 @@ impl Bucket {
 
         system_api
             .substate_return_mut(node_ref)
-            .map_err(BucketError::CostingError)?;
+            .expect("TODO: handle error");
 
         Ok(rtn)
     }
@@ -262,7 +262,7 @@ impl Bucket {
 
                 let bucket: Bucket = system_api
                     .node_drop(&node_id)
-                    .map_err(BucketError::CostingError)?
+                    .expect("TODO: handle error")
                     .into();
 
                 // Notify resource manager, TODO: Should not need to notify manually
@@ -270,7 +270,7 @@ impl Bucket {
                 let resource_substate_id = SubstateId::ResourceManager(resource_address);
                 let mut value = system_api
                     .substate_borrow_mut(&resource_substate_id)
-                    .map_err(BucketError::CostingError)?;
+                    .expect("TODO: handle error");
                 let resource_manager = value.resource_manager();
                 resource_manager.burn(bucket.total_amount());
                 if matches!(resource_manager.resource_type(), ResourceType::NonFungible) {
@@ -281,7 +281,7 @@ impl Bucket {
                 }
                 system_api
                     .substate_return_mut(value)
-                    .map_err(BucketError::CostingError)?;
+                    .expect("TODO: handle error");
 
                 Ok(ScryptoValue::from_typed(&()))
             }

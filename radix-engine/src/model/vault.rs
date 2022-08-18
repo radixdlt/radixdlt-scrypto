@@ -157,7 +157,7 @@ impl Vault {
         let substate_id = SubstateId::Vault(vault_id.clone());
         let mut ref_mut = system_api
             .substate_borrow_mut(&substate_id)
-            .map_err(VaultError::CostingError)?;
+            .expect("TODO: handle error");
         let vault = ref_mut.vault();
 
         let rtn = match vault_fn {
@@ -166,7 +166,7 @@ impl Vault {
                     scrypto_decode(&args.raw).map_err(|e| VaultError::InvalidRequestData(e))?;
                 let bucket = system_api
                     .node_drop(&RENodeId::Bucket(input.bucket.0))
-                    .map_err(VaultError::CostingError)?
+                    .expect("TODO: handle error")
                     .into();
                 vault
                     .put(bucket)
@@ -207,7 +207,7 @@ impl Vault {
                         fee,
                         matches!(vault_fn, VaultFnIdentifier::LockContingentFee),
                     )
-                    .map_err(VaultError::CostingError)?;
+                    .expect("TODO: handle error");
 
                 // Return changes
                 vault
@@ -295,7 +295,7 @@ impl Vault {
 
         system_api
             .substate_return_mut(ref_mut)
-            .map_err(VaultError::CostingError)?;
+            .expect("TODO: handle error");
 
         Ok(rtn)
     }

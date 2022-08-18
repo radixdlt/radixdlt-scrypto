@@ -158,18 +158,11 @@ where
     }
 
     fn handle_generate_uuid(&mut self) -> Result<u128, RuntimeError> {
-        let uuid = self
-            .system_api
-            .generate_uuid()
-            .map_err(RuntimeError::CostingError)?;
-        Ok(uuid)
+        self.system_api.generate_uuid()
     }
 
     fn handle_emit_log(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
-        self.system_api
-            .emit_log(level, message)
-            .map_err(RuntimeError::CostingError)?;
-        Ok(())
+        self.system_api.emit_log(level, message)
     }
 
     fn handle_check_access_rule(
