@@ -1,7 +1,5 @@
-use sbor::rust::vec::Vec;
-use sbor::*;
-
 use crate::model::NonFungible;
+use crate::types::*;
 
 /// To support non-fungible deletion, we wrap it into a container
 /// when persisting into the substate store.

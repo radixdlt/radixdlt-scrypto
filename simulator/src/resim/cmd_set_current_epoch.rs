@@ -3,13 +3,8 @@ use radix_engine::constants::*;
 use radix_engine::engine::Track;
 use radix_engine::engine::{ExecutionTrace, Kernel, SystemApi};
 use radix_engine::fee::{FeeTable, SystemLoanFeeReserve};
+use radix_engine::types::*;
 use radix_engine_stores::rocks_db::RadixEngineDB;
-use scrypto::core::{
-    FnIdentifier, NativeFnIdentifier, Receiver, SystemFnIdentifier, SystemSetEpochInput,
-};
-use scrypto::crypto::hash;
-use scrypto::engine::types::RENodeId;
-use scrypto::values::ScryptoValue;
 
 use crate::resim::*;
 

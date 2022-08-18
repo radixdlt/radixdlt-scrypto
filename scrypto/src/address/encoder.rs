@@ -1,7 +1,8 @@
 use sbor::String;
 
+use crate::component::{ComponentAddress, PackageAddress};
 use crate::core::Network;
-use crate::engine::types::{ComponentAddress, PackageAddress, ResourceAddress};
+use crate::resource::ResourceAddress;
 
 use super::entity::{
     EntityType, ALLOWED_COMPONENT_ENTITY_TYPES, ALLOWED_PACKAGE_ENTITY_TYPES,

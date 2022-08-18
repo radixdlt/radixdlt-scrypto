@@ -1,23 +1,3 @@
-use sbor::rust::collections::*;
-use sbor::rust::string::String;
-use sbor::rust::vec::*;
-use sbor::*;
-use scrypto::buffer::scrypto_decode;
-use scrypto::core::{BucketFnIdentifier, ResourceManagerFnIdentifier, VaultFnIdentifier};
-use scrypto::engine::types::*;
-use scrypto::prelude::{
-    ResourceManagerCreateBucketInput, ResourceManagerCreateInput, ResourceManagerCreateVaultInput,
-    ResourceManagerGetNonFungibleInput, ResourceManagerGetResourceTypeInput,
-    ResourceManagerGetTotalSupplyInput, ResourceManagerLockAuthInput, ResourceManagerMintInput,
-    ResourceManagerNonFungibleExistsInput, ResourceManagerUpdateAuthInput,
-    ResourceManagerUpdateMetadataInput, ResourceManagerUpdateNonFungibleDataInput,
-};
-use scrypto::resource::AccessRule::{self, *};
-use scrypto::resource::Mutability::{self, *};
-use scrypto::resource::ResourceManagerGetMetadataInput;
-use scrypto::resource::ResourceMethodAuthKey::{self, *};
-use scrypto::values::ScryptoValue;
-
 use crate::engine::{HeapRENode, RuntimeError, SystemApi};
 use crate::fee::FeeReserve;
 use crate::fee::FeeReserveError;
@@ -26,6 +6,9 @@ use crate::model::NonFungibleWrapper;
 use crate::model::ResourceManagerError::InvalidMethod;
 use crate::model::{convert, MethodAuthorization, ResourceContainer};
 use crate::model::{Bucket, NonFungible, Vault};
+use crate::types::AccessRule::*;
+use crate::types::ResourceMethodAuthKey::*;
+use crate::types::*;
 use crate::wasm::*;
 
 /// Converts soft authorization rule to a hard authorization rule.

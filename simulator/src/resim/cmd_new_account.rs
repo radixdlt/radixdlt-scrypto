@@ -1,9 +1,7 @@
 use clap::Parser;
 use colored::*;
+use radix_engine::types::*;
 use rand::Rng;
-use scrypto::address::Bech32Encoder;
-use scrypto::core::Network;
-use scrypto::prelude::*;
 
 use crate::resim::*;
 

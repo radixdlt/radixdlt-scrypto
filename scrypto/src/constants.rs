@@ -1,5 +1,5 @@
 use crate::address::*;
-use crate::engine::types::{ComponentAddress, PackageAddress};
+use crate::component::{ComponentAddress, PackageAddress};
 use crate::resource::*;
 use crate::{address, entity_type_id_from_entity_type, type_from_entity_type};
 

@@ -1,17 +1,8 @@
-use sbor::rust::marker::PhantomData;
-use sbor::rust::vec::Vec;
-use sbor::*;
-use scrypto::buffer::scrypto_decode;
-use scrypto::core::{FnIdentifier, Receiver, ScryptoActor, ScryptoRENode};
-use scrypto::engine::api::RadixEngineInput;
-use scrypto::engine::types::*;
-use scrypto::resource::AccessRule;
-use scrypto::values::ScryptoValue;
-
 use crate::engine::RuntimeError;
 use crate::engine::{HeapRENode, SystemApi};
 use crate::fee::*;
 use crate::model::{ComponentInfo, ComponentState, HeapKeyValueStore};
+use crate::types::*;
 use crate::wasm::*;
 
 /// A glue between system api (call frame and track abstraction) and WASM.

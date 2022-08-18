@@ -1,13 +1,9 @@
-use sbor::rust::collections::*;
-use scrypto::engine::types::*;
-use scrypto::prelude::FnIdentifier;
-use scrypto::prelude::NativeFnIdentifier;
-use scrypto::prelude::TransactionProcessorFnIdentifier;
 use transaction::validation::*;
 
 use crate::engine::*;
 use crate::fee::*;
 use crate::model::*;
+use crate::types::*;
 use crate::wasm::*;
 
 // TODO: reduce fields visibility

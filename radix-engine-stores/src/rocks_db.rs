@@ -3,10 +3,8 @@ use std::path::PathBuf;
 
 use radix_engine::engine::Substate;
 use radix_engine::ledger::*;
+use radix_engine::types::*;
 use rocksdb::{DBWithThreadMode, Direction, IteratorMode, SingleThreaded, DB};
-use sbor::Decode;
-use scrypto::buffer::*;
-use scrypto::engine::types::*;
 
 pub struct RadixEngineDB {
     db: DBWithThreadMode<SingleThreaded>,
@@ -130,7 +128,7 @@ impl QueryableSubstateStore for RadixEngineDB {
 // TODO: Have a better key prefixing strategy
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub enum Root {
-    Root(SubstateId)
+    Root(SubstateId),
 }
 
 impl ReadableSubstateStore for RadixEngineDB {
@@ -139,7 +137,10 @@ impl ReadableSubstateStore for RadixEngineDB {
     }
 
     fn is_root(&self, substate_id: &SubstateId) -> bool {
-        self.db.get(scrypto_encode(&Root::Root(substate_id.clone()))).unwrap().is_some()
+        self.db
+            .get(scrypto_encode(&Root::Root(substate_id.clone())))
+            .unwrap()
+            .is_some()
     }
 }
 
@@ -149,6 +150,8 @@ impl WriteableSubstateStore for RadixEngineDB {
     }
 
     fn set_root(&mut self, substate_id: SubstateId) {
-        self.db.put(scrypto_encode(&Root::Root(substate_id)), vec![]).unwrap();
+        self.db
+            .put(scrypto_encode(&Root::Root(substate_id)), vec![])
+            .unwrap();
     }
 }

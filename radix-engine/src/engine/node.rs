@@ -1,10 +1,6 @@
-use sbor::rust::collections::*;
-use sbor::rust::vec::Vec;
-use scrypto::engine::types::*;
-use scrypto::values::ScryptoValue;
-
 use crate::engine::*;
 use crate::model::*;
+use crate::types::*;
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub enum Substate {

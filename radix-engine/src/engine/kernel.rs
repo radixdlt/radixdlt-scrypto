@@ -1,26 +1,10 @@
-use core::marker::PhantomData;
-
-use sbor::rust::boxed::Box;
-use sbor::rust::collections::*;
-use sbor::rust::format;
-use sbor::rust::string::String;
-use sbor::rust::string::ToString;
-use sbor::rust::vec;
-use sbor::*;
-use scrypto::buffer::scrypto_decode;
-use scrypto::core::Receiver;
-use scrypto::core::ScryptoActor;
-use scrypto::engine::types::*;
-use scrypto::prelude::FnIdentifier;
-use scrypto::prelude::NativeFnIdentifier;
-use scrypto::prelude::VaultFnIdentifier;
-use scrypto::values::*;
 use transaction::model::ExecutableInstruction;
 use transaction::validation::*;
 
 use crate::engine::*;
 use crate::fee::*;
 use crate::model::*;
+use crate::types::*;
 use crate::wasm::*;
 
 #[macro_export]

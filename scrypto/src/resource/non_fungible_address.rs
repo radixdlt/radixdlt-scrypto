@@ -6,8 +6,8 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::abi::*;
-use crate::engine::types::EcdsaPublicKey;
-use crate::engine::types::ECDSA_TOKEN;
+use crate::constants::ECDSA_TOKEN;
+use crate::crypto::EcdsaPublicKey;
 use crate::misc::*;
 use crate::resource::*;
 

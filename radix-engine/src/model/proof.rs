@@ -1,19 +1,3 @@
-use sbor::rust::cell::RefCell;
-use sbor::rust::collections::BTreeSet;
-use sbor::rust::collections::HashMap;
-use sbor::rust::rc::Rc;
-use sbor::rust::string::ToString;
-use sbor::rust::vec::Vec;
-use sbor::DecodeError;
-use scrypto::buffer::scrypto_decode;
-use scrypto::core::ProofFnIdentifier;
-use scrypto::engine::types::*;
-use scrypto::prelude::{
-    ProofCloneInput, ProofGetAmountInput, ProofGetNonFungibleIdsInput, ProofGetResourceAddressInput,
-};
-use scrypto::resource::ConsumingProofDropInput;
-use scrypto::values::ScryptoValue;
-
 use crate::engine::{HeapRENode, SystemApi};
 use crate::fee::FeeReserve;
 use crate::fee::FeeReserveError;
@@ -21,6 +5,7 @@ use crate::model::ProofError::UnknownMethod;
 use crate::model::{
     LockedAmountOrIds, ResourceContainer, ResourceContainerError, ResourceContainerId,
 };
+use crate::types::*;
 use crate::wasm::*;
 
 #[derive(Debug)]

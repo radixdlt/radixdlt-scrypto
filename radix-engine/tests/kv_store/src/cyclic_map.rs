@@ -1,6 +1,6 @@
+use radix_engine::types::*;
 use scrypto::engine::api::*;
 use scrypto::engine::call_engine;
-use scrypto::engine::types::*;
 use scrypto::prelude::*;
 use std::marker::PhantomData;
 

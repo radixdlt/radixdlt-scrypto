@@ -1,17 +1,7 @@
-use sbor::rust::collections::BTreeMap;
-use sbor::rust::ops::AddAssign;
-use sbor::rust::str::FromStr;
-use sbor::rust::string::String;
-use sbor::rust::string::ToString;
-use sbor::rust::vec::Vec;
-use scrypto::{
-    engine::types::VaultId,
-    math::{Decimal, RoundingMode},
-};
-
 use crate::constants::{DEFAULT_COST_UNIT_LIMIT, DEFAULT_COST_UNIT_PRICE, DEFAULT_SYSTEM_LOAN};
 use crate::fee::FeeSummary;
 use crate::model::ResourceContainer;
+use crate::types::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum FeeReserveError {

@@ -1,12 +1,6 @@
-use sbor::rust::collections::*;
-use scrypto::buffer::scrypto_decode;
-use scrypto::core::{FnIdentifier, NativeFnIdentifier, Receiver, VaultFnIdentifier};
-use scrypto::engine::types::*;
-use scrypto::prelude::{VaultPutInput, VaultTakeInput};
-use scrypto::values::*;
-
 use crate::engine::*;
 use crate::model::*;
+use crate::types::*;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct ResourceChange {

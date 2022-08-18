@@ -1,15 +1,7 @@
-use sbor::*;
-use scrypto::buffer::scrypto_decode;
-use scrypto::core::{
-    SystemFnIdentifier, SystemGetCurrentEpochInput, SystemGetTransactionHashInput,
-    SystemSetEpochInput,
-};
-use scrypto::engine::types::{RENodeId, SubstateId};
-use scrypto::values::ScryptoValue;
-
 use crate::engine::SystemApi;
 use crate::fee::FeeReserve;
 use crate::fee::FeeReserveError;
+use crate::types::*;
 use crate::wasm::*;
 
 #[derive(Debug, Clone, PartialEq)]

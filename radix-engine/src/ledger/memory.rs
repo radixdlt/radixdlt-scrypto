@@ -1,9 +1,7 @@
-use sbor::rust::collections::{HashMap, HashSet};
-use scrypto::engine::types::{KeyValueStoreId, SubstateId};
-
 use crate::engine::Substate;
 use crate::ledger::*;
 use crate::ledger::{OutputValue, WriteableSubstateStore};
+use crate::types::*;
 
 /// A substate store that stores all typed substates in host memory.
 #[derive(Debug, PartialEq, Eq)]

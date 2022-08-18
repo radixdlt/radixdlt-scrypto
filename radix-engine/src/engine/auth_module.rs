@@ -1,11 +1,6 @@
-use sbor::rust::vec;
-use sbor::rust::vec::Vec;
-use scrypto::core::{FnIdentifier, NativeFnIdentifier, Receiver, SystemFnIdentifier};
-use scrypto::engine::types::*;
-use scrypto::values::ScryptoValue;
-
 use crate::engine::*;
 use crate::model::*;
+use crate::types::*;
 
 pub struct AuthModule;
 

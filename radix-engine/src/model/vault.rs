@@ -1,26 +1,10 @@
-use sbor::rust::cell::{Ref, RefCell, RefMut};
-use sbor::rust::collections::BTreeSet;
-use sbor::rust::collections::HashMap;
-use sbor::rust::rc::Rc;
-use sbor::*;
-use scrypto::buffer::scrypto_decode;
-use scrypto::engine::types::*;
-use scrypto::prelude::{
-    VaultCreateProofByIdsInput, VaultCreateProofInput, VaultFnIdentifier, VaultGetAmountInput,
-    VaultGetNonFungibleIdsInput, VaultPutInput, VaultTakeInput,
-};
-use scrypto::resource::{
-    VaultCreateProofByAmountInput, VaultGetResourceAddressInput, VaultLockFeeInput,
-    VaultTakeNonFungiblesInput,
-};
-use scrypto::values::ScryptoValue;
-
 use crate::engine::{HeapRENode, LockFeeError, SystemApi};
 use crate::fee::FeeReserve;
 use crate::fee::FeeReserveError;
 use crate::model::{
     Bucket, Proof, ProofError, ResourceContainer, ResourceContainerError, ResourceContainerId,
 };
+use crate::types::*;
 use crate::wasm::*;
 
 #[derive(Debug, PartialEq)]

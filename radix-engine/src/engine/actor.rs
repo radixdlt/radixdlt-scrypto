@@ -1,5 +1,4 @@
-use scrypto::core::{FnIdentifier, Receiver};
-use scrypto::engine::types::*;
+use crate::types::*;
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct REActor {

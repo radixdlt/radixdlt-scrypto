@@ -1,16 +1,12 @@
 use core::ops::RangeFull;
 
 use indexmap::{IndexMap, IndexSet};
-use sbor::rust::vec::Vec;
-use scrypto::buffer::scrypto_decode;
-use scrypto::buffer::scrypto_encode;
-use scrypto::crypto::hash;
-use scrypto::engine::types::SubstateId;
 
 use crate::engine::*;
 use crate::ledger::*;
 use crate::state_manager::StateDiff;
 use crate::state_manager::VirtualSubstateId;
+use crate::types::*;
 
 /// Keeps track of state changes that that are non-reversible, such as fee payments
 pub struct BaseStateTrack<'s> {

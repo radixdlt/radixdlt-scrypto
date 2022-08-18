@@ -1,9 +1,5 @@
-use sbor::rust::collections::BTreeMap;
-use sbor::rust::string::String;
-use sbor::rust::vec::Vec;
-use scrypto::engine::types::*;
-
 use crate::model::ResourceContainer;
+use crate::types::*;
 
 #[derive(Debug)]
 pub struct FeeSummary {

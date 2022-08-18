@@ -1,5 +1,5 @@
 use clap::Parser;
-use scrypto::engine::types::*;
+use radix_engine::types::*;
 
 use crate::resim::*;
 

@@ -1,10 +1,7 @@
-use scrypto::core::{FnIdentifier, NativeFnIdentifier, Receiver};
-use scrypto::engine::types::*;
-use scrypto::values::*;
-
 use crate::engine::*;
 use crate::fee::*;
 use crate::model::*;
+use crate::types::*;
 use crate::wasm::*;
 
 pub struct NativeInterpreter;

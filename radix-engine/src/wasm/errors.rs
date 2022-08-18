@@ -1,12 +1,10 @@
-use sbor::rust::fmt;
-use sbor::rust::string::String;
-use sbor::DecodeError;
 use wasmi::HostError;
 
 // TODO: this is the only place which introduces circular dependency.
 // From WASM's perspective, they are host errors. We need a better solution to handle this.
 use crate::engine::RuntimeError;
 use crate::fee::FeeReserveError;
+use crate::types::*;
 
 /// Represents an error when validating a WASM file.
 #[derive(Debug, PartialEq, Eq, Clone)]

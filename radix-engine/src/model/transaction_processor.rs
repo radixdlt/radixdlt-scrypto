@@ -1,22 +1,3 @@
-use sbor::rust::collections::HashMap;
-use sbor::rust::string::ToString;
-use sbor::rust::vec::Vec;
-use sbor::{Decode, Encode, TypeId};
-use scrypto::args;
-use scrypto::buffer::scrypto_decode;
-use scrypto::component::Package;
-use scrypto::core::{
-    AuthZoneFnIdentifier, BucketFnIdentifier, FnIdentifier, NativeFnIdentifier,
-    PackageFnIdentifier, ProofFnIdentifier, Receiver, WorktopFnIdentifier,
-};
-use scrypto::engine::types::*;
-use scrypto::prelude::{
-    AuthZoneClearInput, AuthZoneCreateProofByAmountInput, AuthZoneCreateProofByIdsInput,
-    AuthZoneCreateProofInput, AuthZonePushInput, BucketCreateProofInput, PackagePublishInput,
-    ProofCloneInput, TransactionProcessorFnIdentifier,
-};
-use scrypto::resource::{AuthZonePopInput, ConsumingProofDropInput};
-use scrypto::values::*;
 use transaction::model::*;
 use transaction::validation::*;
 
@@ -27,6 +8,7 @@ use crate::model::worktop::{
     WorktopAssertContainsNonFungiblesInput, WorktopDrainInput, WorktopPutInput,
     WorktopTakeAllInput, WorktopTakeAmountInput, WorktopTakeNonFungiblesInput,
 };
+use crate::types::*;
 use crate::wasm::*;
 
 use super::Worktop;

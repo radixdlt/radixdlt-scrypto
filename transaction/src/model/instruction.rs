@@ -2,7 +2,10 @@ use sbor::rust::collections::BTreeSet;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
+use scrypto::component::{ComponentAddress, PackageAddress};
 use scrypto::engine::types::*;
+use scrypto::math::*;
+use scrypto::resource::{NonFungibleId, ResourceAddress};
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub enum Instruction {

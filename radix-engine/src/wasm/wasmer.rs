@@ -1,14 +1,9 @@
 use std::sync::{Arc, Mutex};
 
-use sbor::rust::boxed::Box;
-use sbor::rust::collections::HashMap;
-use sbor::rust::ptr;
-use sbor::rust::vec::Vec;
-use scrypto::crypto::{hash, Hash};
-use scrypto::values::ScryptoValue;
 use wasmer::*;
 use wasmer_compiler_singlepass::Singlepass;
 
+use crate::types::*;
 use crate::wasm::constants::*;
 use crate::wasm::errors::*;
 use crate::wasm::traits::*;

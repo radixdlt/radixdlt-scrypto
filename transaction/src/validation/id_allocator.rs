@@ -1,8 +1,11 @@
 use sbor::rust::ops::Range;
 use scrypto::address::EntityType;
-use scrypto::crypto::hash;
+use scrypto::component::{ComponentAddress, PackageAddress};
+use scrypto::constants::*;
+use scrypto::crypto::*;
 use scrypto::engine::types::*;
 use scrypto::misc::{combine, copy_u8_array};
+use scrypto::resource::ResourceAddress;
 
 use crate::errors::*;
 

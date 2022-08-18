@@ -1,18 +1,8 @@
-use sbor::rust::borrow::ToOwned;
-use sbor::rust::string::String;
-use sbor::rust::vec::Vec;
-use sbor::*;
-use scrypto::buffer::scrypto_decode;
-use scrypto::component::*;
-use scrypto::core::ComponentFnIdentifier;
-use scrypto::engine::types::*;
-use scrypto::resource::AccessRules;
-use scrypto::values::*;
-
 use crate::engine::SystemApi;
 use crate::fee::FeeReserve;
 use crate::fee::FeeReserveError;
 use crate::model::{convert, MethodAuthorization};
+use crate::types::*;
 use crate::wasm::{WasmEngine, WasmInstance};
 
 #[derive(Debug, Clone, PartialEq)]
