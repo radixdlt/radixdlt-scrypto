@@ -115,6 +115,7 @@ impl RENodePointer {
     }
 }
 
+#[derive(Debug)]
 pub enum NativeSubstateRef {
     Stack(HeapRootRENode, usize, RENodeId, Option<RENodeId>),
     Track(SubstateId, Substate),

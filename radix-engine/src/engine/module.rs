@@ -20,7 +20,7 @@ pub enum SysCall<'a> {
     },
 
     CreateNode {
-        re_node: &'a HeapRENode,
+        node: &'a HeapRENode,
     },
 
     GlobalizeNode {
@@ -32,7 +32,7 @@ pub enum SysCall<'a> {
     },
 
     ReturnSubstateMut {
-        val_ref: &'a NativeSubstateRef,
+        substate_ref: &'a NativeSubstateRef,
     },
 
     ReadSubstate {
