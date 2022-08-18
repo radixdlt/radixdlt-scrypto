@@ -23,11 +23,7 @@ impl NativeInterpreter {
         match (receiver, fn_identifier) {
             (None, NativeFnIdentifier::TransactionProcessor(transaction_processor_fn)) => {
                 TransactionProcessor::static_main(transaction_processor_fn, input, system_api)
-                    .map_err(|e| {
-                        RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
-                            e,
-                        ))
-                    })
+                    .map_err(|e| e.to_runtime_error())
             }
             (None, NativeFnIdentifier::Package(package_fn)) => {
                 ValidatedPackage::static_main(package_fn, input, system_api)
@@ -91,7 +87,7 @@ impl NativeInterpreter {
                     .map_err(|e| RuntimeError::ApplicationError(ApplicationError::SystemError(e)))
             }
             _ => {
-                return Err(RuntimeError::KernelError(KernelError::MethodDoesNotExist(
+                return Err(RuntimeError::KernelError(KernelError::MethodNotFound(
                     FnIdentifier::Native(fn_identifier.clone()),
                 )))
             }

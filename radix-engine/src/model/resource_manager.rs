@@ -32,7 +32,7 @@ pub enum ResourceManagerError {
     NonFungibleAlreadyExists(NonFungibleAddress),
     NonFungibleNotFound(NonFungibleAddress),
     InvalidRequestData(DecodeError),
-    MethodDoesNotExist(String),
+    MethodNotFound(String),
     CouldNotCreateBucket,
     CouldNotCreateVault,
     InvalidMethod,

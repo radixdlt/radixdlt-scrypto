@@ -1,4 +1,4 @@
-use radix_engine::engine::RuntimeError;
+use radix_engine::engine::{KernelError, RuntimeError};
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use scrypto::core::Network;
 use scrypto::prelude::*;

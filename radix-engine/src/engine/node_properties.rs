@@ -37,7 +37,7 @@ impl RENodeProperties {
                 }
                 RENodeId::Vault(vault_id) => SubstateId::Vault(vault_id),
                 _ => {
-                    return Err(RuntimeError::KernelError(KernelError::MethodDoesNotExist(
+                    return Err(RuntimeError::KernelError(KernelError::MethodNotFound(
                         function.clone(),
                     )))
                 }
@@ -47,7 +47,7 @@ impl RENodeProperties {
                     SubstateId::ComponentState(component_address)
                 }
                 _ => {
-                    return Err(RuntimeError::KernelError(KernelError::MethodDoesNotExist(
+                    return Err(RuntimeError::KernelError(KernelError::MethodNotFound(
                         function.clone(),
                     )))
                 }

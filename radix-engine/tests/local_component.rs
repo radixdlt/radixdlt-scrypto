@@ -1,4 +1,4 @@
-use radix_engine::engine::RuntimeError;
+use radix_engine::engine::{KernelError, ModuleError, RuntimeError};
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use scrypto::core::Network;
 use scrypto::prelude::*;
@@ -88,7 +88,12 @@ fn local_component_with_access_rules_should_not_be_callable() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
-    receipt.expect_failure(|e| matches!(e, RuntimeError::AuthorizationError { .. }));
+    receipt.expect_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ModuleError(ModuleError::AuthorizationError { .. })
+        )
+    });
 }
 
 #[test]
@@ -177,7 +182,12 @@ fn recursion_bomb_to_failure() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
-    receipt.expect_failure(|e| matches!(e, RuntimeError::MaxCallDepthLimitReached));
+    receipt.expect_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::KernelError(KernelError::MaxCallDepthLimitReached)
+        )
+    });
 }
 
 #[test]
@@ -234,5 +244,10 @@ fn recursion_bomb_2_to_failure() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
-    receipt.expect_failure(|e| matches!(e, RuntimeError::MaxCallDepthLimitReached));
+    receipt.expect_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::KernelError(KernelError::MaxCallDepthLimitReached)
+        )
+    });
 }

@@ -17,7 +17,7 @@ pub enum PackageError {
     InvalidRequestData(DecodeError),
     InvalidWasm(PrepareError),
     BlueprintNotFound,
-    MethodDoesNotExist(String),
+    MethodNotFound(String),
     CostingError(FeeReserveError),
 }
 

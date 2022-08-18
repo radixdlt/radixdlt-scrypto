@@ -2,6 +2,7 @@ use transaction::errors::IdAllocationError;
 use transaction::model::*;
 use transaction::validation::*;
 
+use crate::engine::ApplicationError;
 use crate::engine::{HeapRENode, RuntimeError, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::worktop::{
@@ -28,6 +29,25 @@ pub enum TransactionProcessorError {
     ProofNotFound(ProofId),
     IdAllocationError(IdAllocationError),
     InvalidPackage(DecodeError),
+}
+
+impl TransactionProcessorError {
+    /// Wraps into a runtime error unless it's already a runtime error.
+    ///
+    /// TODO: Is this really a good idea?
+    pub fn to_runtime_error(self) -> RuntimeError {
+        match self {
+            TransactionProcessorError::RuntimeError(e) => *e,
+            e @ TransactionProcessorError::InvalidRequestData(_)
+            | e @ TransactionProcessorError::InvalidMethod
+            | e @ TransactionProcessorError::BucketNotFound(_)
+            | e @ TransactionProcessorError::ProofNotFound(_)
+            | e @ TransactionProcessorError::IdAllocationError(_)
+            | e @ TransactionProcessorError::InvalidPackage(_) => {
+                RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(e))
+            }
+        }
+    }
 }
 
 pub struct TransactionProcessor {}

@@ -26,7 +26,7 @@ pub enum KernelError {
     InvokeMethodInvalidReferencePass(RENodeId),
     InvokeMethodInvalidReferenceReturn(RENodeId),
     MaxCallDepthLimitReached,
-    MethodDoesNotExist(FnIdentifier),
+    MethodNotFound(FnIdentifier),
     InvalidFnInput {
         fn_identifier: FnIdentifier,
     },

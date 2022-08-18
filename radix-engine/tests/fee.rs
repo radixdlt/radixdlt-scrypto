@@ -1,3 +1,4 @@
+use radix_engine::engine::ApplicationError;
 use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::ledger::WriteableSubstateStore;
@@ -225,8 +226,14 @@ fn test_fee_accounting_failure() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
-    receipt
-        .expect_failure(|e| matches!(e, RuntimeError::WorktopError(WorktopError::AssertionFailed)));
+    receipt.expect_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::WorktopError(
+                WorktopError::AssertionFailed
+            ))
+        )
+    });
     let account1_new_balance = query_account_balance(&mut test_runner, account1, RADIX_TOKEN);
     let account2_new_balance = query_account_balance(&mut test_runner, account2, RADIX_TOKEN);
     let summary = receipt.fee_summary;
@@ -311,8 +318,14 @@ fn test_contingent_fee_accounting_failure() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key1, public_key2]);
 
     // Assert
-    receipt
-        .expect_failure(|e| matches!(e, RuntimeError::WorktopError(WorktopError::AssertionFailed)));
+    receipt.expect_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::WorktopError(
+                WorktopError::AssertionFailed
+            ))
+        )
+    });
     let account1_new_balance = query_account_balance(&mut test_runner, account1, RADIX_TOKEN);
     let account2_new_balance = query_account_balance(&mut test_runner, account2, RADIX_TOKEN);
     let summary = receipt.fee_summary;

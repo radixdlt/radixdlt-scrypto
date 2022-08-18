@@ -16,7 +16,7 @@ pub enum BucketError {
     ResourceContainerError(ResourceContainerError),
     ProofError(ProofError),
     CouldNotCreateProof,
-    MethodDoesNotExist(BucketFnIdentifier),
+    MethodNotFound(BucketFnIdentifier),
     CostingError(FeeReserveError),
 }
 
@@ -233,7 +233,7 @@ impl Bucket {
                     proof_id,
                 )))
             }
-            _ => Err(BucketError::MethodDoesNotExist(bucket_fn)),
+            _ => Err(BucketError::MethodNotFound(bucket_fn)),
         }?;
 
         system_api
@@ -285,7 +285,7 @@ impl Bucket {
 
                 Ok(ScryptoValue::from_typed(&()))
             }
-            _ => Err(BucketError::MethodDoesNotExist(bucket_fn)),
+            _ => Err(BucketError::MethodNotFound(bucket_fn)),
         }
     }
 }

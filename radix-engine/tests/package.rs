@@ -1,4 +1,4 @@
-use radix_engine::engine::RuntimeError;
+use radix_engine::engine::{ApplicationError, KernelError, RuntimeError};
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::model::PackageError;
 use radix_engine::wasm::*;
@@ -53,9 +53,11 @@ fn missing_memory_should_cause_error() {
     receipt.expect_failure(|e| {
         matches!(
             e,
-            &RuntimeError::PackageError(PackageError::InvalidWasm(PrepareError::InvalidMemory(
-                InvalidMemory::NoMemorySection
-            )))
+            &RuntimeError::ApplicationError(ApplicationError::PackageError(
+                PackageError::InvalidWasm(PrepareError::InvalidMemory(
+                    InvalidMemory::NoMemorySection
+                ))
+            ))
         )
     });
 }
@@ -76,7 +78,7 @@ fn large_return_len_should_cause_memory_access_error() {
 
     // Assert
     receipt.expect_failure(|e| {
-        if let RuntimeError::InvokeError(b) = e {
+        if let RuntimeError::KernelError(KernelError::InvokeError(b)) = e {
             matches!(**b, InvokeError::MemoryAccessError)
         } else {
             false
@@ -100,7 +102,7 @@ fn overflow_return_len_should_cause_memory_access_error() {
 
     // Assert
     receipt.expect_failure(|e| {
-        if let RuntimeError::InvokeError(b) = e {
+        if let RuntimeError::KernelError(KernelError::InvokeError(b)) = e {
             matches!(**b, InvokeError::MemoryAccessError)
         } else {
             false
@@ -124,7 +126,7 @@ fn zero_return_len_should_cause_data_validation_error() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| matches!(e, RuntimeError::InvokeError(_)));
+    receipt.expect_failure(|e| matches!(e, RuntimeError::KernelError(KernelError::InvokeError(_))));
 }
 
 #[test]
@@ -182,8 +184,8 @@ fn test_basic_package_missing_export() {
     receipt.expect_failure(|e| {
         matches!(
             e,
-            RuntimeError::PackageError(PackageError::InvalidWasm(
-                PrepareError::MissingExport { .. }
+            RuntimeError::ApplicationError(ApplicationError::PackageError(
+                PackageError::InvalidWasm(PrepareError::MissingExport { .. })
             ))
         )
     });

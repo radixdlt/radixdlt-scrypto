@@ -102,7 +102,7 @@ impl AuthModule {
                     .blueprint_abi(blueprint_name)
                     .expect("Blueprint not found for existing component");
                 let fn_abi = abi.get_fn_abi(ident).ok_or(RuntimeError::KernelError(
-                    KernelError::MethodDoesNotExist(function.clone()),
+                    KernelError::MethodNotFound(function.clone()),
                 ))?; // TODO: Move this check into kernel
                 if !fn_abi.input.matches(&input.dom) {
                     return Err(RuntimeError::KernelError(KernelError::InvalidFnInput {

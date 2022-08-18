@@ -301,13 +301,13 @@ where
                                 ScryptoActor::blueprint(package_address, blueprint_name.clone())
                             }
                             _ => {
-                                return Err(RuntimeError::KernelError(
-                                    KernelError::MethodDoesNotExist(FnIdentifier::Scrypto {
+                                return Err(RuntimeError::KernelError(KernelError::MethodNotFound(
+                                    FnIdentifier::Scrypto {
                                         package_address,
                                         blueprint_name,
                                         ident,
-                                    }),
-                                ))
+                                    },
+                                )))
                             }
                         };
                         let mut runtime: Box<dyn WasmRuntime> =
@@ -501,7 +501,7 @@ where
                             blueprint_name.clone(),
                         )))?;
                 let fn_abi = abi.get_fn_abi(ident).ok_or(RuntimeError::KernelError(
-                    KernelError::MethodDoesNotExist(fn_identifier.clone()),
+                    KernelError::MethodNotFound(fn_identifier.clone()),
                 ))?;
                 if !fn_abi.input.matches(&input.dom) {
                     return Err(RuntimeError::KernelError(KernelError::InvalidFnInput {
@@ -767,12 +767,12 @@ where
                             // Don't support traits yet
                             if !package_address.eq(&component.package_address()) {
                                 return Err(RuntimeError::KernelError(
-                                    KernelError::MethodDoesNotExist(fn_identifier),
+                                    KernelError::MethodNotFound(fn_identifier),
                                 ));
                             }
                             if !blueprint_name.eq(component.blueprint_name()) {
                                 return Err(RuntimeError::KernelError(
-                                    KernelError::MethodDoesNotExist(fn_identifier),
+                                    KernelError::MethodNotFound(fn_identifier),
                                 ));
                             }
                         }
