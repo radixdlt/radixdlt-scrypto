@@ -8,7 +8,7 @@ use crate::wasm::{WasmEngine, WasmInstance};
 #[derive(Debug, Clone, PartialEq)]
 pub enum ComponentError {
     InvalidRequestData(DecodeError),
-    BlueprintFunctionDoesNotExist(String),
+    BlueprintFunctionNotFound(String),
     CostingError(FeeReserveError),
 }
 
@@ -121,7 +121,7 @@ impl ComponentInfo {
                     let blueprint_abi = package.blueprint_abi(&blueprint_name).unwrap();
                     for (func_name, _) in input.access_rules.iter() {
                         if !blueprint_abi.contains_fn(func_name.as_str()) {
-                            return Err(ComponentError::BlueprintFunctionDoesNotExist(
+                            return Err(ComponentError::BlueprintFunctionNotFound(
                                 func_name.to_string(),
                             ));
                         }

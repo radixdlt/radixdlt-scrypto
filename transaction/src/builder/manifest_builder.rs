@@ -398,7 +398,7 @@ impl ManifestBuilder {
             .iter()
             .find(|m| m.ident == method)
             .map(Clone::clone)
-            .ok_or_else(|| BuildCallWithAbiError::MethodNotFound(method.to_owned()))?;
+            .ok_or_else(|| BuildCallWithAbiError::MethodDoesNotExist(method.to_owned()))?;
 
         let arguments = self
             .parse_args(&abi.input, args, account)

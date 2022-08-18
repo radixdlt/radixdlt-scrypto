@@ -17,7 +17,7 @@ pub enum PackageError {
     InvalidRequestData(DecodeError),
     InvalidWasm(PrepareError),
     BlueprintNotFound,
-    MethodNotFound(String),
+    MethodDoesNotExist(String),
     CostingError(FeeReserveError),
 }
 
@@ -59,12 +59,9 @@ impl ValidatedPackage {
                 let node_id = system_api
                     .node_create(HeapRENode::Package(package))
                     .unwrap(); // FIXME: update all `create_value` calls to handle errors correctly
-                system_api.node_globalize(node_id).map_err(|e| match e {
-                    RuntimeError::CostingError(cost_unit_error) => {
-                        PackageError::CostingError(cost_unit_error)
-                    }
-                    _ => panic!("Unexpected error {}", e),
-                })?;
+                system_api
+                    .node_globalize(node_id)
+                    .expect("TODO handle error");
                 let package_address: PackageAddress = node_id.into();
                 Ok(ScryptoValue::from_typed(&package_address))
             }

@@ -23,31 +23,28 @@ impl NativeInterpreter {
         match (receiver, fn_identifier) {
             (None, NativeFnIdentifier::TransactionProcessor(transaction_processor_fn)) => {
                 TransactionProcessor::static_main(transaction_processor_fn, input, system_api)
-                    .map_err(|e| match e {
-                        TransactionProcessorError::InvalidRequestData(_) => {
-                            panic!("Illegal state")
-                        }
-                        TransactionProcessorError::InvalidMethod => {
-                            panic!("Illegal state")
-                        }
-                        TransactionProcessorError::RuntimeError(e) => e,
+                    .map_err(|e| {
+                        RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
+                            e,
+                        ))
                     })
             }
             (None, NativeFnIdentifier::Package(package_fn)) => {
                 ValidatedPackage::static_main(package_fn, input, system_api)
-                    .map_err(RuntimeError::PackageError)
+                    .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))
             }
             (None, NativeFnIdentifier::ResourceManager(resource_manager_fn)) => {
-                ResourceManager::static_main(resource_manager_fn, input, system_api)
-                    .map_err(RuntimeError::ResourceManagerError)
+                ResourceManager::static_main(resource_manager_fn, input, system_api).map_err(|e| {
+                    RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e))
+                })
             }
             (Some(Receiver::Consumed(node_id)), NativeFnIdentifier::Bucket(bucket_fn)) => {
                 Bucket::consuming_main(node_id, bucket_fn, input, system_api)
-                    .map_err(RuntimeError::BucketError)
+                    .map_err(|e| RuntimeError::ApplicationError(ApplicationError::BucketError(e)))
             }
             (Some(Receiver::Consumed(node_id)), NativeFnIdentifier::Proof(proof_fn)) => {
                 Proof::main_consume(node_id, proof_fn, input, system_api)
-                    .map_err(RuntimeError::ProofError)
+                    .map_err(|e| RuntimeError::ApplicationError(ApplicationError::ProofError(e)))
             }
             (Some(Receiver::CurrentAuthZone), NativeFnIdentifier::AuthZone(auth_zone_fn)) => {
                 AuthZone::main(
@@ -56,44 +53,46 @@ impl NativeInterpreter {
                     input,
                     system_api,
                 )
-                .map_err(RuntimeError::AuthZoneError)
+                .map_err(|e| RuntimeError::ApplicationError(ApplicationError::AuthZoneError(e)))
             }
             (
                 Some(Receiver::Ref(RENodeId::Bucket(bucket_id))),
                 NativeFnIdentifier::Bucket(bucket_fn),
             ) => Bucket::main(bucket_id, bucket_fn, input, system_api)
-                .map_err(RuntimeError::BucketError),
+                .map_err(|e| RuntimeError::ApplicationError(ApplicationError::BucketError(e))),
             (
                 Some(Receiver::Ref(RENodeId::Proof(proof_id))),
                 NativeFnIdentifier::Proof(proof_fn),
-            ) => {
-                Proof::main(proof_id, proof_fn, input, system_api).map_err(RuntimeError::ProofError)
-            }
+            ) => Proof::main(proof_id, proof_fn, input, system_api)
+                .map_err(|e| RuntimeError::ApplicationError(ApplicationError::ProofError(e))),
             (Some(Receiver::Ref(RENodeId::Worktop)), NativeFnIdentifier::Worktop(worktop_fn)) => {
-                Worktop::main(worktop_fn, input, system_api).map_err(RuntimeError::WorktopError)
+                Worktop::main(worktop_fn, input, system_api)
+                    .map_err(|e| RuntimeError::ApplicationError(ApplicationError::WorktopError(e)))
             }
             (
                 Some(Receiver::Ref(RENodeId::Vault(vault_id))),
                 NativeFnIdentifier::Vault(vault_fn),
-            ) => {
-                Vault::main(vault_id, vault_fn, input, system_api).map_err(RuntimeError::VaultError)
-            }
+            ) => Vault::main(vault_id, vault_fn, input, system_api)
+                .map_err(|e| RuntimeError::ApplicationError(ApplicationError::VaultError(e))),
             (
                 Some(Receiver::Ref(RENodeId::Component(component_address))),
                 NativeFnIdentifier::Component(component_fn),
             ) => ComponentInfo::main(component_address, component_fn, input, system_api)
-                .map_err(RuntimeError::ComponentError),
+                .map_err(|e| RuntimeError::ApplicationError(ApplicationError::ComponentError(e))),
             (
                 Some(Receiver::Ref(RENodeId::ResourceManager(resource_address))),
                 NativeFnIdentifier::ResourceManager(resource_manager_fn),
             ) => ResourceManager::main(resource_address, resource_manager_fn, input, system_api)
-                .map_err(RuntimeError::ResourceManagerError),
+                .map_err(|e| {
+                    RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e))
+                }),
             (Some(Receiver::Ref(RENodeId::System)), NativeFnIdentifier::System(system_fn)) => {
-                System::main(system_fn, input, system_api).map_err(RuntimeError::SystemError)
+                System::main(system_fn, input, system_api)
+                    .map_err(|e| RuntimeError::ApplicationError(ApplicationError::SystemError(e)))
             }
             _ => {
-                return Err(RuntimeError::MethodDoesNotExist(FnIdentifier::Native(
-                    fn_identifier.clone(),
+                return Err(RuntimeError::KernelError(KernelError::MethodDoesNotExist(
+                    FnIdentifier::Native(fn_identifier.clone()),
                 )))
             }
         }

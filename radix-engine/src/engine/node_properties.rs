@@ -1,4 +1,4 @@
-use super::RuntimeError;
+use super::{KernelError, RuntimeError};
 use crate::types::*;
 
 pub struct RENodeProperties;
@@ -36,13 +36,21 @@ impl RENodeProperties {
                     SubstateId::ComponentInfo(component_address)
                 }
                 RENodeId::Vault(vault_id) => SubstateId::Vault(vault_id),
-                _ => return Err(RuntimeError::MethodDoesNotExist(function.clone())),
+                _ => {
+                    return Err(RuntimeError::KernelError(KernelError::MethodDoesNotExist(
+                        function.clone(),
+                    )))
+                }
             },
             FnIdentifier::Scrypto { .. } => match node_id {
                 RENodeId::Component(component_address) => {
                     SubstateId::ComponentState(component_address)
                 }
-                _ => return Err(RuntimeError::MethodDoesNotExist(function.clone())),
+                _ => {
+                    return Err(RuntimeError::KernelError(KernelError::MethodDoesNotExist(
+                        function.clone(),
+                    )))
+                }
             },
         };
 

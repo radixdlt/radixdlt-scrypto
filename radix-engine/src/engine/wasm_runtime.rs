@@ -5,6 +5,8 @@ use crate::model::{ComponentInfo, ComponentState, HeapKeyValueStore};
 use crate::types::*;
 use crate::wasm::*;
 
+use super::KernelError;
+
 /// A glue between system api (call frame and track abstraction) and WASM.
 ///
 /// Execution is free from a costing perspective, as we assume
@@ -53,7 +55,8 @@ where
         fn_identifier: FnIdentifier,
         input: Vec<u8>,
     ) -> Result<ScryptoValue, RuntimeError> {
-        let call_data = ScryptoValue::from_slice(&input).map_err(RuntimeError::DecodeError)?;
+        let call_data = ScryptoValue::from_slice(&input)
+            .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
         self.system_api.invoke_function(fn_identifier, call_data)
     }
 
@@ -63,7 +66,8 @@ where
         fn_identifier: FnIdentifier,
         input: Vec<u8>,
     ) -> Result<ScryptoValue, RuntimeError> {
-        let call_data = ScryptoValue::from_slice(&input).map_err(RuntimeError::DecodeError)?;
+        let call_data = ScryptoValue::from_slice(&input)
+            .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
         self.system_api
             .invoke_method(receiver, fn_identifier, call_data)
     }
@@ -76,10 +80,14 @@ where
             ScryptoRENode::Component(package_address, blueprint_name, state) => {
                 // TODO: Move these two checks into CallFrame/System
                 if !blueprint_name.eq(self.actor.blueprint_name()) {
-                    return Err(RuntimeError::RENodeCreateInvalidPermission);
+                    return Err(RuntimeError::KernelError(
+                        KernelError::RENodeCreateInvalidPermission,
+                    ));
                 }
                 if !package_address.eq(self.actor.package_address()) {
-                    return Err(RuntimeError::RENodeCreateInvalidPermission);
+                    return Err(RuntimeError::KernelError(
+                        KernelError::RENodeCreateInvalidPermission,
+                    ));
                 }
 
                 // TODO: Check state against blueprint schema
@@ -100,16 +108,18 @@ where
     // TODO: This logic should move into KeyValueEntry decoding
     fn verify_stored_key(value: &ScryptoValue) -> Result<(), RuntimeError> {
         if !value.bucket_ids.is_empty() {
-            return Err(RuntimeError::BucketNotAllowed);
+            return Err(RuntimeError::KernelError(KernelError::BucketNotAllowed));
         }
         if !value.proof_ids.is_empty() {
-            return Err(RuntimeError::ProofNotAllowed);
+            return Err(RuntimeError::KernelError(KernelError::ProofNotAllowed));
         }
         if !value.vault_ids.is_empty() {
-            return Err(RuntimeError::VaultNotAllowed);
+            return Err(RuntimeError::KernelError(KernelError::VaultNotAllowed));
         }
         if !value.kv_store_ids.is_empty() {
-            return Err(RuntimeError::KeyValueStoreNotAllowed);
+            return Err(RuntimeError::KernelError(
+                KernelError::KeyValueStoreNotAllowed,
+            ));
         }
         Ok(())
     }
@@ -125,8 +135,8 @@ where
     ) -> Result<ScryptoValue, RuntimeError> {
         match &substate_id {
             SubstateId::KeyValueStoreEntry(_kv_store_id, key_bytes) => {
-                let key_data =
-                    ScryptoValue::from_slice(&key_bytes).map_err(RuntimeError::DecodeError)?;
+                let key_data = ScryptoValue::from_slice(&key_bytes)
+                    .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                 Self::verify_stored_key(&key_data)?;
             }
             _ => {}
@@ -142,13 +152,14 @@ where
     ) -> Result<ScryptoValue, RuntimeError> {
         match &substate_id {
             SubstateId::KeyValueStoreEntry(_kv_store_id, key_bytes) => {
-                let key_data =
-                    ScryptoValue::from_slice(&key_bytes).map_err(RuntimeError::DecodeError)?;
+                let key_data = ScryptoValue::from_slice(&key_bytes)
+                    .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                 Self::verify_stored_key(&key_data)?;
             }
             _ => {}
         }
-        let scrypto_value = ScryptoValue::from_slice(&value).map_err(RuntimeError::DecodeError)?;
+        let scrypto_value = ScryptoValue::from_slice(&value)
+            .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
         self.system_api.substate_write(substate_id, scrypto_value)?;
         Ok(ScryptoValue::unit())
     }

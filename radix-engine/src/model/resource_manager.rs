@@ -1,4 +1,4 @@
-use crate::engine::{HeapRENode, RuntimeError, SystemApi};
+use crate::engine::{HeapRENode, SystemApi};
 use crate::fee::FeeReserve;
 use crate::fee::FeeReserveError;
 use crate::model::resource_manager::ResourceMethodRule::{Protected, Public};
@@ -32,7 +32,7 @@ pub enum ResourceManagerError {
     NonFungibleAlreadyExists(NonFungibleAddress),
     NonFungibleNotFound(NonFungibleAddress),
     InvalidRequestData(DecodeError),
-    MethodNotFound(String),
+    MethodDoesNotExist(String),
     CouldNotCreateBucket,
     CouldNotCreateVault,
     InvalidMethod,
@@ -443,12 +443,7 @@ impl ResourceManager {
 
                 system_api
                     .node_globalize(resource_node_id)
-                    .map_err(|e| match e {
-                        RuntimeError::CostingError(cost_unit_error) => {
-                            ResourceManagerError::CostingError(cost_unit_error)
-                        }
-                        _ => panic!("Unexpected error {}", e),
-                    })?;
+                    .expect("TODO handle error");
 
                 Ok(ScryptoValue::from_typed(&(resource_address, bucket_id)))
             }

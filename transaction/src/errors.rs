@@ -80,7 +80,7 @@ pub enum BuildCallWithAbiError {
     FunctionNotFound(String),
 
     /// The given component method does not exist.
-    MethodNotFound(String),
+    MethodDoesNotExist(String),
 
     /// The provided arguments do not match ABI.
     FailedToBuildArgs(BuildArgsError),

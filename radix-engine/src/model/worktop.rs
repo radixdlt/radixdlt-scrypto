@@ -56,9 +56,9 @@ pub struct Worktop {
 #[derive(Debug, Clone, PartialEq)]
 pub enum WorktopError {
     InvalidRequestData(DecodeError),
-    MethodNotFound(String),
+    MethodDoesNotExist(String),
     ResourceContainerError(ResourceContainerError),
-    ResourceDoesNotExist(ResourceAddress),
+    ResourceNotFound(ResourceAddress),
     CouldNotCreateBucket,
     CouldNotTakeBucket,
     AssertionFailed,

@@ -52,7 +52,9 @@ impl ExecutionTrace {
                 match fn_identifier {
                     FnIdentifier::Native(NativeFnIdentifier::Vault(VaultFnIdentifier::Put)) => {
                         let decoded_input = scrypto_decode(&input.raw).map_err(|e| {
-                            RuntimeError::VaultError(VaultError::InvalidRequestData(e))
+                            RuntimeError::ApplicationError(ApplicationError::VaultError(
+                                VaultError::InvalidRequestData(e),
+                            ))
                         })?;
 
                         self.handle_vault_put(
@@ -64,7 +66,9 @@ impl ExecutionTrace {
                     }
                     FnIdentifier::Native(NativeFnIdentifier::Vault(VaultFnIdentifier::Take)) => {
                         let decoded_input = scrypto_decode(&input.raw).map_err(|e| {
-                            RuntimeError::VaultError(VaultError::InvalidRequestData(e))
+                            RuntimeError::ApplicationError(ApplicationError::VaultError(
+                                VaultError::InvalidRequestData(e),
+                            ))
                         })?;
 
                         let vault_node_ref = node_pointer.to_ref(call_frames, track);
@@ -96,9 +100,12 @@ impl ExecutionTrace {
         let bucket_id = input.bucket.0;
         let bucket_node_id = RENodeId::Bucket(bucket_id);
 
-        let bucket_node = next_owned_values
-            .get(&bucket_node_id)
-            .ok_or(RuntimeError::RENodeNotFound(bucket_node_id))?;
+        let bucket_node =
+            next_owned_values
+                .get(&bucket_node_id)
+                .ok_or(RuntimeError::KernelError(KernelError::RENodeNotFound(
+                    bucket_node_id,
+                )))?;
 
         if let HeapRENode::Bucket(bucket) = &bucket_node.root {
             if let ResourceType::Fungible { divisibility: _ } = bucket.resource_type() {
@@ -113,7 +120,9 @@ impl ExecutionTrace {
                 Ok(())
             }
         } else {
-            Err(RuntimeError::BucketNotFound(bucket_id))
+            Err(RuntimeError::KernelError(KernelError::BucketNotFound(
+                bucket_id,
+            )))
         }
     }
 

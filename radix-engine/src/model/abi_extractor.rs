@@ -12,15 +12,17 @@ pub fn export_abi<S: ReadableSubstateStore>(
     let package_value: Substate = substate_store
         .get_substate(&SubstateId::Package(package_address))
         .map(|s| s.substate)
-        .ok_or(RuntimeError::PackageNotFound(package_address))?;
+        .ok_or(RuntimeError::KernelError(KernelError::PackageNotFound(
+            package_address,
+        )))?;
 
     let abi = package_value
         .package()
         .blueprint_abi(blueprint_name)
-        .ok_or(RuntimeError::BlueprintNotFound(
+        .ok_or(RuntimeError::KernelError(KernelError::BlueprintNotFound(
             package_address,
             blueprint_name.to_owned(),
-        ))?
+        )))?
         .clone();
     Ok(abi)
 }
@@ -32,8 +34,8 @@ pub fn export_abi_by_component<S: ReadableSubstateStore>(
     let component_value: Substate = substate_store
         .get_substate(&SubstateId::ComponentInfo(component_address))
         .map(|s| s.substate)
-        .ok_or(RuntimeError::RENodeNotFound(RENodeId::Component(
-            component_address,
+        .ok_or(RuntimeError::KernelError(KernelError::RENodeNotFound(
+            RENodeId::Component(component_address),
         )))?;
     let component_info = component_value.component_info();
     export_abi(

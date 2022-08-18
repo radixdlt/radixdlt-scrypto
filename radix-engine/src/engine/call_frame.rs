@@ -94,7 +94,8 @@ impl CallFrame {
             .drain()
             .map(|(_id, value)| value)
             .collect();
-        HeapRENode::drop_nodes(values).map_err(|e| RuntimeError::DropFailure(e))
+        HeapRENode::drop_nodes(values)
+            .map_err(|e| RuntimeError::KernelError(KernelError::DropFailure(e)))
     }
 
     pub fn take_available_values(

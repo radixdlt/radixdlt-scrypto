@@ -6,28 +6,26 @@ use crate::model::*;
 use crate::types::*;
 use crate::wasm::InvokeError;
 
-use super::ModuleError;
-
-/// Represents an error when executing a transaction.
 #[derive(Debug)]
 pub enum RuntimeError {
-    // TODO: better abstraction
-    KernelModuleError(ModuleError),
+    /// An error occurred within the kernel.
+    KernelError(KernelError),
 
-    /// Error when invoking a blueprint or component (recursive).
+    /// An error occurred within a kernel module.
+    ModuleError(ModuleError),
+
+    /// An error occurred within application logic, like the RE models.
+    ApplicationError(ApplicationError),
+}
+
+#[derive(Debug)]
+pub enum KernelError {
+    // invocation
     InvokeError(Box<InvokeError>),
-
-    /// The data is not a valid SBOR value.
-    DecodeError(DecodeError),
-
-    AuthZoneDoesNotExist,
-
-    WorktopDoesNotExist,
-
-    /// Failed to allocate an ID.
-    IdAllocationError(IdAllocationError),
-
-    /// Invalid request code.
+    InvokeMethodInvalidReceiver(RENodeId),
+    InvokeMethodInvalidReferencePass(RENodeId),
+    InvokeMethodInvalidReferenceReturn(RENodeId),
+    MaxCallDepthLimitReached,
     MethodDoesNotExist(FnIdentifier),
     InvalidFnInput {
         fn_identifier: FnIdentifier,
@@ -37,115 +35,78 @@ pub enum RuntimeError {
         output: Value,
     },
 
-    /// Package does not exist.
+    // ID allocation
+    IdAllocationError(IdAllocationError),
+
+    // SBOR decoding
+    DecodeError(DecodeError),
+
+    // RENode
+    BucketNotFound(BucketId),
+    ProofNotFound(ProofId),
     PackageNotFound(PackageAddress),
-    InvalidPackage(DecodeError),
-
-    PackageError(PackageError),
-
-    SystemError(SystemError),
-
-    /// Blueprint does not exist.
     BlueprintNotFound(PackageAddress, String),
-
-    Reentrancy(SubstateId),
-    PackageReentrancy,
-
-    ComponentDecodeError(DecodeError),
-
-    /// Resource manager does not exist.
     ResourceManagerNotFound(ResourceAddress),
+    WorktopNotFound,
+    RENodeNotFound(RENodeId),
+    StoredNodeRemoved(RENodeId),
+    RENodeGlobalizeTypeNotAllowed(RENodeId),
+    RENodeCreateInvalidPermission,
+    RENodeCreateNodeNotFound(RENodeId),
+    RENodeAlreadyTouched,
+    RENodeNotInTrack,
 
+    // Substate
+    Reentrancy(SubstateId),
     SubstateReadNotReadable(REActor, SubstateId),
     SubstateWriteNotWriteable(REActor, SubstateId),
     SubstateReadSubstateNotFound(SubstateId),
-    RENodeNotFound(RENodeId),
 
-    MovingInvalidType,
-    StoredNodeRemoved(RENodeId),
-    StoredNodeChangedChildren,
-
-    /// Bucket does not exist.
-    BucketNotFound(BucketId),
-
-    /// Proof does not exist.
-    ProofNotFound(ProofId),
-
-    /// Resource manager access error.
-    ResourceManagerError(ResourceManagerError),
-    ComponentError(ComponentError),
-
-    /// Bucket access error.
-    BucketError(BucketError),
-
-    /// Vault access error.
-    VaultError(VaultError),
-
-    /// Worktop access error.
-    WorktopError(WorktopError),
-
-    /// Error when generating or accessing proof.
-    ProofError(ProofError),
-
+    // constraints
     ValueNotAllowed,
-
-    /// Bucket is not allowed.
     BucketNotAllowed,
-
-    /// Proof is not allowed.
     ProofNotAllowed,
-
-    /// Vault is not allowed
     VaultNotAllowed,
-
-    /// Key Value store is not allowed
     KeyValueStoreNotAllowed,
-
-    /// Resource check failure.
+    CantMoveLockedBucket,
+    CantMoveRestrictedProof,
+    CantMoveWorktop,
+    CantMoveAuthZone,
     DropFailure(DropFailure),
+}
 
-    /// AuthZone error
-    AuthZoneError(AuthZoneError),
-
-    /// System Authorization Failure
+#[derive(Debug)]
+pub enum ModuleError {
     AuthorizationError {
         function: FnIdentifier,
         authorization: MethodAuthorization,
         error: MethodAuthorizationError,
     },
 
-    /// Can't move a locked bucket.
-    CantMoveLockedBucket,
-
-    /// Can't move restricted proof.
-    CantMoveRestrictedProof,
-    CantMoveWorktop,
-    CantMoveAuthZone,
-
-    RENodeGlobalizeTypeNotAllowed(RENodeId),
-    RENodeCreateInvalidPermission,
-    RENodeCreateNodeNotFound(RENodeId),
-
-    InvokeMethodInvalidReceiver(RENodeId),
-    InvokeMethodInvalidReferencePass(RENodeId),
-    InvokeMethodInvalidReferenceReturn(RENodeId),
-
-    NotSupported,
-
     CostingError(FeeReserveError),
-
-    MaxCallDepthLimitReached,
-
-    LockFeeError(LockFeeError),
 }
 
-#[derive(Debug, PartialEq)]
-pub enum LockFeeError {
-    RENodeNotInTrack,
-    RENodeAlreadyTouched,
-    RENodeNotFound,
-    NotRadixToken,
-    InsufficientBalance,
+#[derive(Debug)]
+pub enum ApplicationError {
+    TransactionProcessorError(TransactionProcessorError),
+
+    PackageError(PackageError),
+
+    SystemError(SystemError),
+
+    ResourceManagerError(ResourceManagerError),
+
+    ComponentError(ComponentError),
+
+    BucketError(BucketError),
+
+    ProofError(ProofError),
+
+    VaultError(VaultError),
+
+    WorktopError(WorktopError),
+
+    AuthZoneError(AuthZoneError),
 }
 
 #[derive(Debug, PartialEq)]

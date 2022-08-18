@@ -255,7 +255,7 @@ impl HeapRENode {
         match self {
             HeapRENode::Component(_, component_state) => {
                 let value = ScryptoValue::from_slice(component_state.state())
-                    .map_err(RuntimeError::DecodeError)?;
+                    .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                 Ok(value.node_ids())
             }
             HeapRENode::Resource(..) => Ok(HashSet::new()),
@@ -384,14 +384,16 @@ impl HeapRENode {
         match self {
             HeapRENode::Bucket(bucket) => {
                 if bucket.is_locked() {
-                    Err(RuntimeError::CantMoveLockedBucket)
+                    Err(RuntimeError::KernelError(KernelError::CantMoveLockedBucket))
                 } else {
                     Ok(())
                 }
             }
             HeapRENode::Proof(proof) => {
                 if proof.is_restricted() {
-                    Err(RuntimeError::CantMoveRestrictedProof)
+                    Err(RuntimeError::KernelError(
+                        KernelError::CantMoveRestrictedProof,
+                    ))
                 } else {
                     Ok(())
                 }
@@ -401,7 +403,7 @@ impl HeapRENode {
             HeapRENode::Vault(..) => Ok(()),
             HeapRENode::Resource(..) => Ok(()),
             HeapRENode::Package(..) => Ok(()),
-            HeapRENode::Worktop(..) => Err(RuntimeError::CantMoveWorktop),
+            HeapRENode::Worktop(..) => Err(RuntimeError::KernelError(KernelError::CantMoveWorktop)),
             HeapRENode::System(..) => Ok(()),
         }
     }
@@ -411,12 +413,14 @@ impl HeapRENode {
             HeapRENode::KeyValueStore { .. } => Ok(()),
             HeapRENode::Component { .. } => Ok(()),
             HeapRENode::Vault(..) => Ok(()),
-            HeapRENode::Resource(..) => Err(RuntimeError::ValueNotAllowed),
-            HeapRENode::Package(..) => Err(RuntimeError::ValueNotAllowed),
-            HeapRENode::Bucket(..) => Err(RuntimeError::ValueNotAllowed),
-            HeapRENode::Proof(..) => Err(RuntimeError::ValueNotAllowed),
-            HeapRENode::Worktop(..) => Err(RuntimeError::ValueNotAllowed),
-            HeapRENode::System(..) => Err(RuntimeError::ValueNotAllowed),
+            HeapRENode::Resource(..) => {
+                Err(RuntimeError::KernelError(KernelError::ValueNotAllowed))
+            }
+            HeapRENode::Package(..) => Err(RuntimeError::KernelError(KernelError::ValueNotAllowed)),
+            HeapRENode::Bucket(..) => Err(RuntimeError::KernelError(KernelError::ValueNotAllowed)),
+            HeapRENode::Proof(..) => Err(RuntimeError::KernelError(KernelError::ValueNotAllowed)),
+            HeapRENode::Worktop(..) => Err(RuntimeError::KernelError(KernelError::ValueNotAllowed)),
+            HeapRENode::System(..) => Err(RuntimeError::KernelError(KernelError::ValueNotAllowed)),
         }
     }
 

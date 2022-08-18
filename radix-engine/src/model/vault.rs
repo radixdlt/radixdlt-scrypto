@@ -1,4 +1,4 @@
-use crate::engine::{HeapRENode, LockFeeError, SystemApi};
+use crate::engine::{HeapRENode, SystemApi};
 use crate::fee::FeeReserve;
 use crate::fee::FeeReserveError;
 use crate::model::{
@@ -16,7 +16,8 @@ pub enum VaultError {
     ProofError(ProofError),
     CouldNotCreateProof,
     CostingError(FeeReserveError),
-    LockFeeError(LockFeeError),
+    LockFeeNotRadixToken,
+    LockFeeInsufficientBalance,
 }
 
 /// A persistent resource container.
@@ -191,13 +192,13 @@ impl Vault {
 
                 // Check resource and take amount
                 if vault.resource_address() != RADIX_TOKEN {
-                    return Err(VaultError::LockFeeError(LockFeeError::NotRadixToken));
+                    return Err(VaultError::LockFeeNotRadixToken);
                 }
 
                 // Take fee from the vault
                 let fee = vault
                     .take(input.amount)
-                    .map_err(|_| VaultError::LockFeeError(LockFeeError::InsufficientBalance))?;
+                    .map_err(|_| VaultError::LockFeeInsufficientBalance)?;
 
                 // Refill fee reserve
                 let changes = system_api

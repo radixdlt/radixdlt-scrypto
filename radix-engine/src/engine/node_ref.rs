@@ -33,11 +33,15 @@ impl RENodePointer {
                     .acquire_lock(substate_id.clone(), mutable, write_through)
                     .map_err(|e| match e {
                         TrackError::StateTrackError(StateTrackError::RENodeAlreadyTouched) => {
-                            RuntimeError::LockFeeError(LockFeeError::RENodeAlreadyTouched)
+                            RuntimeError::KernelError(KernelError::RENodeAlreadyTouched)
                         }
                         // TODO: Remove when references cleaned up
-                        TrackError::NotFound => RuntimeError::RENodeNotFound(self.node_id()),
-                        TrackError::Reentrancy => RuntimeError::Reentrancy(substate_id.clone()),
+                        TrackError::NotFound => {
+                            RuntimeError::KernelError(KernelError::RENodeNotFound(self.node_id()))
+                        }
+                        TrackError::Reentrancy => {
+                            RuntimeError::KernelError(KernelError::Reentrancy(substate_id.clone()))
+                        }
                     })
             }
             RENodePointer::Heap { .. } => Ok(()),
@@ -661,13 +665,17 @@ pub fn verify_stored_value_update(
     // TODO: optimize intersection search
     for old_id in old.iter() {
         if !missing.contains(&old_id) {
-            return Err(RuntimeError::StoredNodeRemoved(old_id.clone()));
+            return Err(RuntimeError::KernelError(KernelError::StoredNodeRemoved(
+                old_id.clone(),
+            )));
         }
     }
 
     for missing_id in missing.iter() {
         if !old.contains(missing_id) {
-            return Err(RuntimeError::RENodeNotFound(*missing_id));
+            return Err(RuntimeError::KernelError(KernelError::RENodeNotFound(
+                *missing_id,
+            )));
         }
     }
 

@@ -69,9 +69,6 @@ pub enum SysCallOutput<'a> {
     CheckAccessRule { result: bool },
 }
 
-#[derive(Debug)]
-pub struct ModuleError(String);
-
 pub trait Module {
     fn pre_sys_call(
         &mut self,

@@ -10,7 +10,7 @@ use std::fs;
 use std::path::PathBuf;
 use transaction::builder::ManifestBuilder;
 
-use crate::resim::Error::{InvalidPackageError, PackageAddressDoesNotExist};
+use crate::resim::Error::{InvalidPackageError, PackageAddressNotFound};
 use crate::resim::*;
 use crate::utils::*;
 
@@ -53,7 +53,7 @@ impl Publish {
             let next_version = substate_store
                 .get_substate(&substate_id)
                 .map(|OutputValue { version, .. }| version + 1)
-                .ok_or(PackageAddressDoesNotExist)?;
+                .ok_or(PackageAddressNotFound)?;
 
             let validated_package =
                 ValidatedPackage::new(package).map_err(|_| InvalidPackageError)?;
