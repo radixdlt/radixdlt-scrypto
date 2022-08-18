@@ -214,7 +214,7 @@ macro_rules! trace {
 /// * This macro only works when `std` is linked;
 ///
 /// # Example
-/// ```no_run
+/// ```ignore
 /// use scrypto::prelude::*;
 ///
 /// // This package
