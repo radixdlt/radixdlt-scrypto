@@ -29,9 +29,9 @@ impl IdAllocator {
     pub fn new(kind: IdSpace) -> Self {
         Self {
             available: match kind {
-                IdSpace::System => (0..512),
-                IdSpace::Transaction => (512..1024),
-                IdSpace::Application => (1024..u32::MAX),
+                IdSpace::System => 0..512,
+                IdSpace::Transaction => 512..1024,
+                IdSpace::Application => 1024..u32::MAX,
             },
         }
     }

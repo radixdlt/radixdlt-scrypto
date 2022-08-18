@@ -1,3 +1,4 @@
+use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::component::{ComponentAddress, PackageAddress};
