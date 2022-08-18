@@ -1,10 +1,12 @@
+use core::fmt::Debug;
+
 use crate::engine::*;
 use crate::fee::{FeeReserve, FeeReserveError};
 use crate::types::*;
 use crate::wasm::*;
 
 /// A collection of blueprints, compiled and published as a single unit.
-#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
+#[derive(Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct ValidatedPackage {
     code: Vec<u8>,
     blueprint_abis: HashMap<String, BlueprintAbi>,
@@ -67,5 +69,14 @@ impl ValidatedPackage {
                 Ok(ScryptoValue::from_typed(&package_address))
             }
         }
+    }
+}
+
+impl Debug for ValidatedPackage {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("ValidatedPackage")
+            .field("code_len", &self.code.len())
+            .field("blueprint_abis", &self.blueprint_abis)
+            .finish()
     }
 }

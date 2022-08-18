@@ -396,7 +396,7 @@ where
         for m in &mut self.modules {
             m.pre_sys_call(
                 &mut self.call_frames,
-                SysCall::InvokeFunction {
+                SysCallInput::InvokeFunction {
                     fn_identifier: &fn_identifier,
                     input: &input,
                 },
@@ -582,6 +582,13 @@ where
                 .insert(node_id, RENodePointer::Store(node_id));
         }
 
+        for m in &mut self.modules {
+            m.post_sys_call(
+                &mut self.call_frames,
+                SysCallOutput::InvokeFunction { output: &output },
+            )
+            .map_err(RuntimeError::KernelModuleError)?;
+        }
         Ok(output)
     }
 
@@ -594,7 +601,7 @@ where
         for m in &mut self.modules {
             m.pre_sys_call(
                 &mut self.call_frames,
-                SysCall::InvokeMethod {
+                SysCallInput::InvokeMethod {
                     receiver: &receiver,
                     fn_identifier: &fn_identifier,
                     input: &input,
@@ -928,6 +935,13 @@ where
                 .insert(node_id, RENodePointer::Store(node_id));
         }
 
+        for m in &mut self.modules {
+            m.post_sys_call(
+                &mut self.call_frames,
+                SysCallOutput::InvokeMethod { output: &output },
+            )
+            .map_err(RuntimeError::KernelModuleError)?;
+        }
         Ok(output)
     }
 
@@ -935,7 +949,7 @@ where
         for m in &mut self.modules {
             m.pre_sys_call(
                 &mut self.call_frames,
-                SysCall::BorrowNode { node_id: node_id },
+                SysCallInput::BorrowNode { node_id: node_id },
             )
             .map_err(RuntimeError::KernelModuleError)?;
         }
@@ -998,7 +1012,19 @@ where
         let node_pointer = Self::current_frame(&self.call_frames)
             .node_refs
             .get(node_id)
+            .cloned()
             .expect(&format!("{:?} is unknown.", node_id));
+
+        for m in &mut self.modules {
+            m.post_sys_call(
+                &mut self.call_frames,
+                SysCallOutput::BorrowNode {
+                    // Can't return the NodeRef due to borrow checks on `call_frames`
+                    node_pointer: &node_pointer,
+                },
+            )
+            .map_err(RuntimeError::KernelModuleError)?;
+        }
 
         Ok(node_pointer.to_ref(&self.call_frames, &self.track))
     }
@@ -1010,7 +1036,7 @@ where
         for m in &mut self.modules {
             m.pre_sys_call(
                 &mut self.call_frames,
-                SysCall::BorrowSubstateMut {
+                SysCallInput::BorrowSubstateMut {
                     substate_id: substate_id,
                 },
             )
@@ -1123,18 +1149,30 @@ where
                 .expect(&format!("Node should exist {:?}", node_id))
         };
 
-        Ok(node_pointer.borrow_native_ref(
+        let substate_ref = node_pointer.borrow_native_ref(
             substate_id.clone(),
             &mut self.call_frames,
             &mut self.track,
-        ))
+        );
+
+        for m in &mut self.modules {
+            m.post_sys_call(
+                &mut self.call_frames,
+                SysCallOutput::BorrowSubstateMut {
+                    substate_ref: &substate_ref,
+                },
+            )
+            .map_err(RuntimeError::KernelModuleError)?;
+        }
+
+        Ok(substate_ref)
     }
 
     fn substate_return_mut(&mut self, substate_ref: NativeSubstateRef) -> Result<(), RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
                 &mut self.call_frames,
-                SysCall::ReturnSubstateMut {
+                SysCallInput::ReturnSubstateMut {
                     substate_ref: &substate_ref,
                 },
             )
@@ -1194,6 +1232,12 @@ where
             .map_err(RuntimeError::CostingError)?;
 
         substate_ref.return_to_location(&mut self.call_frames, &mut self.track);
+
+        for m in &mut self.modules {
+            m.post_sys_call(&mut self.call_frames, SysCallOutput::ReturnSubstateMut)
+                .map_err(RuntimeError::KernelModuleError)?;
+        }
+
         Ok(())
     }
 
@@ -1201,7 +1245,7 @@ where
         for m in &mut self.modules {
             m.pre_sys_call(
                 &mut self.call_frames,
-                SysCall::DropNode { node_id: node_id },
+                SysCallInput::DropNode { node_id: node_id },
             )
             .map_err(RuntimeError::KernelModuleError)?;
         }
@@ -1216,17 +1260,27 @@ where
 
         // TODO: Authorization
 
-        Ok(Self::current_frame_mut(&mut self.call_frames)
+        let node = Self::current_frame_mut(&mut self.call_frames)
             .owned_heap_nodes
             .remove(&node_id)
-            .unwrap())
+            .unwrap();
+
+        for m in &mut self.modules {
+            m.post_sys_call(
+                &mut self.call_frames,
+                SysCallOutput::DropNode { node: &node },
+            )
+            .map_err(RuntimeError::KernelModuleError)?;
+        }
+
+        Ok(node)
     }
 
     fn node_create(&mut self, re_node: HeapRENode) -> Result<RENodeId, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
                 &mut self.call_frames,
-                SysCall::CreateNode { node: &re_node },
+                SysCallInput::CreateNode { node: &re_node },
             )
             .map_err(RuntimeError::KernelModuleError)?;
         }
@@ -1303,6 +1357,14 @@ where
             _ => {}
         }
 
+        for m in &mut self.modules {
+            m.post_sys_call(
+                &mut self.call_frames,
+                SysCallOutput::CreateNode { node_id: &node_id },
+            )
+            .map_err(RuntimeError::KernelModuleError)?;
+        }
+
         Ok(node_id)
     }
 
@@ -1310,7 +1372,7 @@ where
         for m in &mut self.modules {
             m.pre_sys_call(
                 &mut self.call_frames,
-                SysCall::GlobalizeNode { node_id: &node_id },
+                SysCallInput::GlobalizeNode { node_id: &node_id },
             )
             .map_err(RuntimeError::KernelModuleError)?;
         }
@@ -1404,6 +1466,11 @@ where
             .node_refs
             .insert(node_id, RENodePointer::Store(node_id));
 
+        for m in &mut self.modules {
+            m.post_sys_call(&mut self.call_frames, SysCallOutput::GlobalizeNode)
+                .map_err(RuntimeError::KernelModuleError)?;
+        }
+
         Ok(())
     }
 
@@ -1411,7 +1478,7 @@ where
         for m in &mut self.modules {
             m.pre_sys_call(
                 &mut self.call_frames,
-                SysCall::ReadSubstate {
+                SysCallInput::ReadSubstate {
                     substate_id: &substate_id,
                 },
             )
@@ -1458,6 +1525,17 @@ where
                 .node_refs
                 .insert(child_id, child_pointer);
         }
+
+        for m in &mut self.modules {
+            m.post_sys_call(
+                &mut self.call_frames,
+                SysCallOutput::ReadSubstate {
+                    value: &current_value,
+                },
+            )
+            .map_err(RuntimeError::KernelModuleError)?;
+        }
+
         Ok(current_value)
     }
 
@@ -1465,7 +1543,7 @@ where
         for m in &mut self.modules {
             m.pre_sys_call(
                 &mut self.call_frames,
-                SysCall::TakeSubstate {
+                SysCallInput::TakeSubstate {
                     substate_id: &substate_id,
                 },
             )
@@ -1505,6 +1583,16 @@ where
         let mut node_ref = pointer.to_ref_mut(&mut self.call_frames, &mut self.track);
         node_ref.replace_value_with_default(&substate_id);
 
+        for m in &mut self.modules {
+            m.post_sys_call(
+                &mut self.call_frames,
+                SysCallOutput::TakeSubstate {
+                    value: &current_value,
+                },
+            )
+            .map_err(RuntimeError::KernelModuleError)?;
+        }
+
         Ok(current_value)
     }
 
@@ -1516,7 +1604,7 @@ where
         for m in &mut self.modules {
             m.pre_sys_call(
                 &mut self.call_frames,
-                SysCall::WriteSubstate {
+                SysCallInput::WriteSubstate {
                     substate_id: &substate_id,
                     value: &value,
                 },
@@ -1584,12 +1672,17 @@ where
         let mut node_ref = pointer.to_ref_mut(&mut self.call_frames, &mut self.track);
         node_ref.write_value(substate_id, value, taken_nodes);
 
+        for m in &mut self.modules {
+            m.post_sys_call(&mut self.call_frames, SysCallOutput::WriteSubstate)
+                .map_err(RuntimeError::KernelModuleError)?;
+        }
+
         Ok(())
     }
 
     fn transaction_hash(&mut self) -> Result<Hash, RuntimeError> {
         for m in &mut self.modules {
-            m.pre_sys_call(&mut self.call_frames, SysCall::ReadTransactionHash)
+            m.pre_sys_call(&mut self.call_frames, SysCallInput::ReadTransactionHash)
                 .map_err(RuntimeError::KernelModuleError)?;
         }
 
@@ -1601,12 +1694,22 @@ where
             )
             .map_err(RuntimeError::CostingError)?;
 
+        for m in &mut self.modules {
+            m.post_sys_call(
+                &mut self.call_frames,
+                SysCallOutput::ReadTransactionHash {
+                    hash: &self.transaction_hash,
+                },
+            )
+            .map_err(RuntimeError::KernelModuleError)?;
+        }
+
         Ok(self.transaction_hash)
     }
 
     fn generate_uuid(&mut self) -> Result<u128, RuntimeError> {
         for m in &mut self.modules {
-            m.pre_sys_call(&mut self.call_frames, SysCall::GenerateUuid)
+            m.pre_sys_call(&mut self.call_frames, SysCallInput::GenerateUuid)
                 .map_err(RuntimeError::KernelModuleError)?;
         }
 
@@ -1618,17 +1721,21 @@ where
             )
             .map_err(RuntimeError::CostingError)?;
 
-        Ok(Self::new_uuid(
-            &mut self.id_allocator,
-            self.transaction_hash,
-        ))
+        let uuid = Self::new_uuid(&mut self.id_allocator, self.transaction_hash);
+
+        for m in &mut self.modules {
+            m.post_sys_call(&mut self.call_frames, SysCallOutput::GenerateUuid { uuid })
+                .map_err(RuntimeError::KernelModuleError)?;
+        }
+
+        Ok(uuid)
     }
 
     fn emit_log(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
                 &mut self.call_frames,
-                SysCall::EmitLog {
+                SysCallInput::EmitLog {
                     level: &level,
                     message: &message,
                 },
@@ -1647,6 +1754,12 @@ where
             .map_err(RuntimeError::CostingError)?;
 
         self.track.add_log(level, message);
+
+        for m in &mut self.modules {
+            m.post_sys_call(&mut self.call_frames, SysCallOutput::EmitLog)
+                .map_err(RuntimeError::KernelModuleError)?;
+        }
+
         Ok(())
     }
 
@@ -1658,7 +1771,7 @@ where
         for m in &mut self.modules {
             m.pre_sys_call(
                 &mut self.call_frames,
-                SysCall::CheckAccessRule {
+                SysCallInput::CheckAccessRule {
                     access_rule: &access_rule,
                     proof_ids: &proof_ids,
                 },
@@ -1695,6 +1808,16 @@ where
         let method_authorization = convert(&Type::Unit, &Value::Unit, &access_rule);
         let is_authorized = method_authorization.check(&[&simulated_auth_zone]).is_ok();
         simulated_auth_zone.clear();
+
+        for m in &mut self.modules {
+            m.post_sys_call(
+                &mut self.call_frames,
+                SysCallOutput::CheckAccessRule {
+                    result: is_authorized,
+                },
+            )
+            .map_err(RuntimeError::KernelModuleError)?;
+        }
 
         Ok(is_authorized)
     }

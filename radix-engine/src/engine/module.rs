@@ -1,7 +1,7 @@
-use super::{CallFrame, HeapRENode, NativeSubstateRef};
+use crate::engine::*;
 use crate::types::*;
 
-pub enum SysCall<'a> {
+pub enum SysCallInput<'a> {
     InvokeFunction {
         fn_identifier: &'a FnIdentifier,
         input: &'a ScryptoValue,
@@ -14,36 +14,28 @@ pub enum SysCall<'a> {
     BorrowNode {
         node_id: &'a RENodeId,
     },
-
     DropNode {
         node_id: &'a RENodeId,
     },
-
     CreateNode {
         node: &'a HeapRENode,
     },
-
     GlobalizeNode {
         node_id: &'a RENodeId,
     },
-
     BorrowSubstateMut {
         substate_id: &'a SubstateId,
     },
-
     ReturnSubstateMut {
         substate_ref: &'a NativeSubstateRef,
     },
-
     ReadSubstate {
         substate_id: &'a SubstateId,
     },
-
     WriteSubstate {
         substate_id: &'a SubstateId,
         value: &'a ScryptoValue,
     },
-
     TakeSubstate {
         substate_id: &'a SubstateId,
     },
@@ -59,6 +51,24 @@ pub enum SysCall<'a> {
     },
 }
 
+pub enum SysCallOutput<'a> {
+    InvokeFunction { output: &'a ScryptoValue },
+    InvokeMethod { output: &'a ScryptoValue },
+    BorrowNode { node_pointer: &'a RENodePointer },
+    DropNode { node: &'a HeapRootRENode },
+    CreateNode { node_id: &'a RENodeId },
+    GlobalizeNode,
+    BorrowSubstateMut { substate_ref: &'a NativeSubstateRef },
+    ReturnSubstateMut,
+    ReadSubstate { value: &'a ScryptoValue },
+    WriteSubstate,
+    TakeSubstate { value: &'a ScryptoValue },
+    ReadTransactionHash { hash: &'a Hash },
+    GenerateUuid { uuid: u128 },
+    EmitLog,
+    CheckAccessRule { result: bool },
+}
+
 #[derive(Debug)]
 pub struct ModuleError(String);
 
@@ -66,12 +76,12 @@ pub trait Module {
     fn pre_sys_call(
         &mut self,
         heap: &mut Vec<CallFrame>,
-        sys_call: SysCall,
+        input: SysCallInput,
     ) -> Result<(), ModuleError>;
 
     fn post_sys_call(
         &mut self,
         heap: &mut Vec<CallFrame>,
-        sys_call: SysCall,
+        output: SysCallOutput,
     ) -> Result<(), ModuleError>;
 }
