@@ -1,6 +1,9 @@
 use std::sync::{Arc, Mutex};
 
-use wasmer::*;
+use wasmer::{
+    imports, Function, HostEnvInitError, Instance, LazyInit, Module, RuntimeError, Store,
+    Universal, Val, WasmerEnv,
+};
 use wasmer_compiler_singlepass::Singlepass;
 
 use crate::types::*;
@@ -42,7 +45,7 @@ pub fn send_value(instance: &Instance, value: &ScryptoValue) -> Result<usize, In
         .call(&[Val::I32(n as i32)])
         .map_err(|_| InvokeError::MemoryAllocError)?;
 
-    if let Some(Value::I32(ptr)) = result.as_ref().get(0) {
+    if let Some(wasmer::Value::I32(ptr)) = result.as_ref().get(0) {
         let ptr = *ptr as usize;
         let memory = instance
             .exports
