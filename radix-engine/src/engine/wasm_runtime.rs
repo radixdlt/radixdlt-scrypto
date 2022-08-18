@@ -8,10 +8,10 @@ use scrypto::engine::types::*;
 use scrypto::resource::AccessRule;
 use scrypto::values::ScryptoValue;
 
-use crate::engine::{HeapKeyValueStore, RuntimeError};
+use crate::engine::RuntimeError;
 use crate::engine::{HeapRENode, SystemApi};
 use crate::fee::*;
-use crate::model::{ComponentInfo, ComponentState};
+use crate::model::{ComponentInfo, ComponentState, HeapKeyValueStore};
 use crate::wasm::*;
 
 /// A glue between system api (call frame and track abstraction) and WASM.
