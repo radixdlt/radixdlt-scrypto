@@ -1,6 +1,7 @@
 use sbor::describe::Type;
 use sbor::rust::string::String;
 use sbor::DecodeError;
+use scrypto::component::{ComponentAddress, PackageAddress};
 use scrypto::engine::types::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]

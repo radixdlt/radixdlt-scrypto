@@ -1,7 +1,8 @@
 use sbor::rust::vec::Vec;
 use sbor::*;
 
-use crate::engine::types::{PackageAddress, RENodeId};
+use crate::component::PackageAddress;
+use crate::engine::types::RENodeId;
 
 #[derive(Debug, Clone, Copy, TypeId, Encode, Decode)]
 pub enum Receiver {

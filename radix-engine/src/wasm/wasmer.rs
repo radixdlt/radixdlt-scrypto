@@ -1,14 +1,12 @@
 use std::sync::{Arc, Mutex};
 
-use sbor::rust::boxed::Box;
-use sbor::rust::collections::HashMap;
-use sbor::rust::ptr;
-use sbor::rust::vec::Vec;
-use scrypto::crypto::{hash, Hash};
-use scrypto::values::ScryptoValue;
-use wasmer::*;
+use wasmer::{
+    imports, Function, HostEnvInitError, Instance, LazyInit, Module, RuntimeError, Store,
+    Universal, Val, WasmerEnv,
+};
 use wasmer_compiler_singlepass::Singlepass;
 
+use crate::types::*;
 use crate::wasm::constants::*;
 use crate::wasm::errors::*;
 use crate::wasm::traits::*;
@@ -47,7 +45,7 @@ pub fn send_value(instance: &Instance, value: &ScryptoValue) -> Result<usize, In
         .call(&[Val::I32(n as i32)])
         .map_err(|_| InvokeError::MemoryAllocError)?;
 
-    if let Some(Value::I32(ptr)) = result.as_ref().get(0) {
+    if let Some(wasmer::Value::I32(ptr)) = result.as_ref().get(0) {
         let ptr = *ptr as usize;
         let memory = instance
             .exports

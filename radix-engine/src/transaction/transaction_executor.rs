@@ -1,13 +1,3 @@
-use sbor::rust::marker::PhantomData;
-use sbor::rust::vec::Vec;
-use scrypto::buffer::*;
-use scrypto::core::{NativeFnIdentifier, TransactionProcessorFnIdentifier};
-use scrypto::engine::types::SubstateId;
-use scrypto::math::Decimal;
-use scrypto::prelude::FnIdentifier;
-use scrypto::prelude::RADIX_TOKEN;
-use scrypto::resource::ResourceType;
-use scrypto::values::ScryptoValue;
 use transaction::model::*;
 
 use crate::constants::{DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN};
@@ -17,6 +7,7 @@ use crate::fee::{FeeReserve, FeeTable, SystemLoanFeeReserve};
 use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
 use crate::model::*;
 use crate::transaction::*;
+use crate::types::*;
 use crate::wasm::*;
 
 pub struct ExecutionConfig {

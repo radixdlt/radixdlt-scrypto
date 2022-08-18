@@ -3,18 +3,13 @@ use parity_wasm::elements::{
     Instruction::{self, *},
     Internal, Module, Type, ValueType,
 };
-use sbor::rust::string::String;
-use sbor::rust::string::ToString;
-use sbor::rust::vec;
-use sbor::rust::vec::Vec;
-use scrypto::abi::BlueprintAbi;
-use scrypto::prelude::HashMap;
 use wasm_instrument::{
     gas_metering::{self, Rules},
     inject_stack_limiter,
 };
 use wasmi_validation::{validate_module, PlainValidator};
 
+use crate::types::*;
 use crate::wasm::{constants::*, errors::*, PrepareError};
 
 use super::WasmiEnvModule;

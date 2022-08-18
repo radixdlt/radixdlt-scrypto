@@ -1,9 +1,6 @@
-use sbor::rust::vec::Vec;
-use sbor::*;
-use scrypto::engine::types::*;
-
 use crate::model::method_authorization::MethodAuthorizationError::NotAuthorized;
 use crate::model::{AuthZone, Proof};
+use crate::types::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
 pub enum MethodAuthorizationError {

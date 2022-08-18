@@ -1,14 +1,8 @@
-use sbor::rust::string::String;
-use sbor::rust::vec::Vec;
-use scrypto::core::{FnIdentifier, Receiver};
-use scrypto::engine::types::*;
-use scrypto::resource::AccessRule;
-use scrypto::values::*;
-
 use crate::engine::node::*;
 use crate::engine::*;
 use crate::fee::*;
 use crate::model::AuthZone;
+use crate::types::*;
 use crate::wasm::*;
 
 pub trait SystemApi<'s, W, I, C>

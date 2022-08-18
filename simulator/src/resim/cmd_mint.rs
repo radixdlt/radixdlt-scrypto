@@ -1,6 +1,5 @@
 use clap::Parser;
-use scrypto::core::Network;
-use scrypto::engine::types::*;
+use radix_engine::types::*;
 use transaction::builder::ManifestBuilder;
 
 use crate::resim::*;

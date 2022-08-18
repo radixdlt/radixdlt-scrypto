@@ -2,9 +2,12 @@ use sbor::rust::collections::BTreeSet;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
+use scrypto::component::{ComponentAddress, PackageAddress};
 use scrypto::core::Network;
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
+use scrypto::math::*;
+use scrypto::resource::{NonFungibleId, ResourceAddress};
 
 /// Represents an instruction that can be executed by Radix Engine.
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]

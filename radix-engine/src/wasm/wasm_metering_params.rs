@@ -1,7 +1,5 @@
-use sbor::*;
-use scrypto::crypto::{hash, Hash};
-
 use super::InstructionCostRules;
+use crate::types::*;
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct WasmMeteringParams {
@@ -20,7 +18,7 @@ impl WasmMeteringParams {
     /// Wasm fee table is statically applied to the wasm code.
     /// This identifier helps decide whether or not re-instrumentation is required.
     pub fn identifier(&self) -> Hash {
-        let encoded = encode_with_static_info(self);
+        let encoded = scrypto_encode(self);
         hash(encoded)
     }
 

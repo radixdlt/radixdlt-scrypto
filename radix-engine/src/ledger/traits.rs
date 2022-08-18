@@ -1,9 +1,5 @@
 use crate::engine::Substate;
-use sbor::rust::collections::*;
-use sbor::rust::vec::Vec;
-use sbor::*;
-use scrypto::crypto::*;
-use scrypto::engine::types::*;
+use crate::types::*;
 
 pub trait QueryableSubstateStore {
     fn get_kv_store_entries(&self, kv_store_id: &KeyValueStoreId) -> HashMap<Vec<u8>, Substate>;

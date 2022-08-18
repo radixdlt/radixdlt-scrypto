@@ -1,12 +1,6 @@
-use sbor::rust::collections::*;
-use sbor::rust::vec::Vec;
-use sbor::*;
-use scrypto::buffer::scrypto_encode;
-use scrypto::crypto::hash;
-use scrypto::engine::types::SubstateId;
-
 use crate::ledger::*;
 use crate::state_manager::CommitReceipt;
+use crate::types::*;
 
 #[derive(Debug, Clone, Hash, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct VirtualSubstateId(pub SubstateId, pub Vec<u8>);

@@ -1,8 +1,11 @@
 use sbor::rust::ops::Range;
 use scrypto::address::EntityType;
-use scrypto::crypto::hash;
+use scrypto::component::{ComponentAddress, PackageAddress};
+use scrypto::constants::*;
+use scrypto::crypto::*;
 use scrypto::engine::types::*;
 use scrypto::misc::{combine, copy_u8_array};
+use scrypto::resource::ResourceAddress;
 
 use crate::errors::*;
 
@@ -26,9 +29,9 @@ impl IdAllocator {
     pub fn new(kind: IdSpace) -> Self {
         Self {
             available: match kind {
-                IdSpace::System => (0..512),
-                IdSpace::Transaction => (512..1024),
-                IdSpace::Application => (1024..u32::MAX),
+                IdSpace::System => 0..512,
+                IdSpace::Transaction => 512..1024,
+                IdSpace::Application => 1024..u32::MAX,
             },
         }
     }

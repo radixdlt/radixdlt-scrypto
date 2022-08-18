@@ -1,7 +1,6 @@
-use sbor::rust::vec::Vec;
-
 use crate::ledger::*;
 use crate::state_manager::VirtualSubstateId;
+use crate::types::*;
 
 pub struct CommitReceipt {
     pub virtual_inputs: Vec<VirtualSubstateId>,

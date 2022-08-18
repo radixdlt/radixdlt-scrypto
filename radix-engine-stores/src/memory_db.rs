@@ -1,10 +1,8 @@
-use sbor::rust::collections::{HashMap, HashSet};
 use radix_engine::engine::Substate;
-use radix_engine::ledger::{bootstrap, OutputValue, QueryableSubstateStore, ReadableSubstateStore, WriteableSubstateStore};
-use scrypto::engine::types::{SubstateId};
-
-use scrypto::buffer::*;
-use scrypto::engine::types::*;
+use radix_engine::ledger::{
+    bootstrap, OutputValue, QueryableSubstateStore, ReadableSubstateStore, WriteableSubstateStore,
+};
+use radix_engine::types::*;
 
 /// A substate store that stores all typed substates in host memory.
 #[derive(Debug, PartialEq, Eq)]
@@ -35,7 +33,9 @@ impl Default for SerializedInMemorySubstateStore {
 
 impl ReadableSubstateStore for SerializedInMemorySubstateStore {
     fn get_substate(&self, substate_id: &SubstateId) -> Option<OutputValue> {
-        self.substates.get(&scrypto_encode(substate_id)).map(|b| scrypto_decode(&b).unwrap())
+        self.substates
+            .get(&scrypto_encode(substate_id))
+            .map(|b| scrypto_decode(&b).unwrap())
     }
 
     fn is_root(&self, substate_id: &SubstateId) -> bool {
@@ -45,7 +45,8 @@ impl ReadableSubstateStore for SerializedInMemorySubstateStore {
 
 impl WriteableSubstateStore for SerializedInMemorySubstateStore {
     fn put_substate(&mut self, substate_id: SubstateId, substate: OutputValue) {
-        self.substates.insert(scrypto_encode(&substate_id), scrypto_encode(&substate));
+        self.substates
+            .insert(scrypto_encode(&substate_id), scrypto_encode(&substate));
     }
 
     fn set_root(&mut self, substate_id: SubstateId) {
@@ -54,10 +55,7 @@ impl WriteableSubstateStore for SerializedInMemorySubstateStore {
 }
 
 impl QueryableSubstateStore for SerializedInMemorySubstateStore {
-    fn get_kv_store_entries(
-        &self,
-        kv_store_id: &KeyValueStoreId,
-    ) -> HashMap<Vec<u8>, Substate> {
+    fn get_kv_store_entries(&self, kv_store_id: &KeyValueStoreId) -> HashMap<Vec<u8>, Substate> {
         self.substates
             .iter()
             .filter_map(|(key, value)| {

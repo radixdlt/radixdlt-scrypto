@@ -1,5 +1,3 @@
-use sbor::rust::marker::PhantomData;
-use scrypto::prelude::Network;
 use transaction::errors::TransactionValidationError;
 use transaction::model::PreviewIntent;
 use transaction::validation::IntentHashManager;
@@ -12,6 +10,7 @@ use crate::fee::UnlimitedLoanFeeReserve;
 use crate::ledger::*;
 use crate::transaction::TransactionReceipt;
 use crate::transaction::*;
+use crate::types::*;
 use crate::wasm::{WasmEngine, WasmInstance, WasmInstrumenter};
 
 #[derive(Debug)]

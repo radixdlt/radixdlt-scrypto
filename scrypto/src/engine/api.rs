@@ -3,7 +3,7 @@ use sbor::rust::vec::Vec;
 use sbor::{Decode, Encode, TypeId};
 use scrypto::prelude::AccessRule;
 
-use crate::core::{FnIdentifier, Receiver, ScryptoRENode};
+use crate::core::{FnIdentifier, Level, Receiver, ScryptoRENode};
 use crate::engine::types::*;
 
 #[cfg(target_arch = "wasm32")]

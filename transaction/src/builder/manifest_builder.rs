@@ -11,13 +11,18 @@ use sbor::*;
 use scrypto::abi::*;
 use scrypto::address::Bech32Decoder;
 use scrypto::buffer::*;
+use scrypto::component::{ComponentAddress, PackageAddress};
+use scrypto::constants::*;
 use scrypto::core::Network;
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
 use scrypto::math::*;
 use scrypto::prelude::Package;
+use scrypto::resource::MintParams;
+use scrypto::resource::ResourceType;
 use scrypto::resource::{require, LOCKED};
 use scrypto::resource::{AccessRule, AccessRuleNode, Burn, Mint, Withdraw};
+use scrypto::resource::{NonFungibleAddress, NonFungibleId, ResourceAddress};
 use scrypto::values::*;
 use scrypto::*;
 

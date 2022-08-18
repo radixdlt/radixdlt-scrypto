@@ -1,19 +1,10 @@
 use colored::*;
-use sbor::rust::borrow::ToOwned;
-use sbor::rust::fmt;
-use sbor::rust::format;
-use sbor::rust::string::String;
-use sbor::rust::string::ToString;
-use sbor::rust::vec::Vec;
-use scrypto::address::Bech32Encoder;
-use scrypto::core::Network;
-use scrypto::engine::types::*;
-use scrypto::values::*;
 use transaction::model::*;
 
 use crate::engine::{ResourceChange, RuntimeError};
 use crate::fee::FeeSummary;
 use crate::state_manager::StateDiff;
+use crate::types::*;
 
 #[derive(Debug)]
 pub enum TransactionStatus {

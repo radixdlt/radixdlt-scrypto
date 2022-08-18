@@ -1,19 +1,9 @@
-use sbor::rust::borrow::ToOwned;
-use sbor::rust::collections::*;
-use sbor::rust::vec;
-use sbor::*;
-use scrypto::buffer::*;
-use scrypto::constants::*;
-use scrypto::crypto::*;
-use scrypto::engine::types::*;
-use scrypto::resource::ResourceMethodAuthKey::Withdraw;
-use scrypto::resource::LOCKED;
-use scrypto::rule;
-
 use crate::engine::Track;
 use crate::engine::TrackReceipt;
 use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
 use crate::model::ValidatedPackage;
+use crate::types::ResourceMethodAuthKey::Withdraw;
+use crate::types::*;
 
 #[derive(TypeId, Encode, Decode)]
 struct SystemComponentState {

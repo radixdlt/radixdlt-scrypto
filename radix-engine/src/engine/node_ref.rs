@@ -1,13 +1,6 @@
-use sbor::rust::boxed::Box;
-use sbor::rust::collections::*;
-use sbor::rust::marker::*;
-use sbor::*;
-use scrypto::buffer::scrypto_decode;
-use scrypto::engine::types::*;
-use scrypto::values::*;
-
 use crate::engine::*;
 use crate::model::*;
+use crate::types::*;
 
 #[derive(Debug, Clone, Copy)]
 pub enum RENodePointer {

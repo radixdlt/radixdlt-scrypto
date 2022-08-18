@@ -1,9 +1,10 @@
 use core::num::NonZeroU32;
 
 use parity_wasm::elements::Instruction::{self, *};
-use sbor::*;
 use wasm_instrument::gas_metering::MemoryGrowCost;
 use wasm_instrument::gas_metering::Rules;
+
+use crate::types::*;
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct InstructionCostRules {

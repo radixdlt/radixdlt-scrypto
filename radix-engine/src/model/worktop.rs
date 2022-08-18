@@ -1,18 +1,7 @@
-use sbor::rust::cell::{Ref, RefCell, RefMut};
-use sbor::rust::collections::BTreeSet;
-use sbor::rust::collections::HashMap;
-use sbor::rust::rc::Rc;
-use sbor::rust::string::String;
-use sbor::rust::vec::Vec;
-use sbor::*;
-use scrypto::buffer::scrypto_decode;
-use scrypto::core::WorktopFnIdentifier;
-use scrypto::engine::types::*;
-use scrypto::values::ScryptoValue;
-
 use crate::engine::{DropFailure, HeapRENode, SystemApi};
 use crate::fee::{FeeReserve, FeeReserveError};
 use crate::model::{Bucket, ResourceContainer, ResourceContainerError};
+use crate::types::*;
 use crate::wasm::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]

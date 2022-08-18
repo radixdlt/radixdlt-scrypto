@@ -1,7 +1,4 @@
-use sbor::rust::collections::HashMap;
-use sbor::rust::vec::Vec;
-use scrypto::crypto::{hash, Hash};
-
+use crate::types::*;
 use crate::wasm::{WasmMeteringParams, WasmModule};
 
 pub struct WasmInstrumenter {

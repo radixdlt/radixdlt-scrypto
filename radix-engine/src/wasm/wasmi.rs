@@ -1,10 +1,6 @@
-use sbor::rust::boxed::Box;
-use sbor::rust::collections::HashMap;
-use sbor::rust::format;
-use scrypto::crypto::{hash, Hash};
-use scrypto::values::ScryptoValue;
 use wasmi::*;
 
+use crate::types::*;
 use crate::wasm::constants::*;
 use crate::wasm::errors::*;
 use crate::wasm::traits::*;

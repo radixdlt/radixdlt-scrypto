@@ -12,10 +12,11 @@ cd "$(dirname "$0")"
 (cd scrypto-abi; cargo fmt)
 (cd scrypto-derive; cargo fmt)
 (cd scrypto-tests; cargo fmt)
+(cd scrypto-unit; cargo fmt)
 (cd radix-engine; cargo fmt)
+(cd radix-engine-stores; cargo fmt)
 (cd simulator; cargo fmt)
 (cd transaction; cargo fmt)
-(cd scrypto-unit; cargo fmt)
 
 (cd assets/account; scrypto fmt)
 (cd assets/system; scrypto fmt)

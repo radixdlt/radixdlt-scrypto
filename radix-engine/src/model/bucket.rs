@@ -1,23 +1,10 @@
-use sbor::rust::cell::{Ref, RefCell, RefMut};
-use sbor::rust::collections::BTreeSet;
-use sbor::rust::collections::HashMap;
-use sbor::rust::rc::Rc;
-use sbor::*;
-use scrypto::buffer::scrypto_decode;
-use scrypto::engine::types::*;
-use scrypto::prelude::{
-    BucketCreateProofInput, BucketFnIdentifier, BucketGetAmountInput, BucketGetNonFungibleIdsInput,
-    BucketGetResourceAddressInput, BucketPutInput, BucketTakeInput, BucketTakeNonFungiblesInput,
-    ConsumingBucketBurnInput,
-};
-use scrypto::values::ScryptoValue;
-
 use crate::engine::{HeapRENode, SystemApi};
 use crate::fee::FeeReserve;
 use crate::fee::FeeReserveError;
 use crate::model::{
     Proof, ProofError, ResourceContainer, ResourceContainerError, ResourceContainerId,
 };
+use crate::types::*;
 use crate::wasm::*;
 
 #[derive(Debug, Clone, PartialEq)]

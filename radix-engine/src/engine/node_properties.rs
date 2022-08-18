@@ -1,6 +1,5 @@
-use scrypto::{engine::types::*, prelude::FnIdentifier};
-
 use super::RuntimeError;
+use crate::types::*;
 
 pub struct RENodeProperties;
 
