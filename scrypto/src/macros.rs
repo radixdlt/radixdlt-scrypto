@@ -1,7 +1,7 @@
 /// Creates a `Decimal` from literals.
 ///
 /// # Example
-/// ```ignore
+/// ```no_run
 /// use scrypto::prelude::*;
 ///
 /// let a = dec!(1);
@@ -40,7 +40,7 @@ macro_rules! dec {
 /// integer you want to create.
 ///
 /// # Example
-/// ```ignore
+/// ```no_run
 /// use scrypto::prelude::*;
 ///
 /// let a: I256 = i!(21);
@@ -56,7 +56,7 @@ macro_rules! i {
 /// Creates a `PreciseDecimal` from literals.
 ///
 /// # Example
-/// ```ignore
+/// ```no_run
 /// use scrypto::prelude::*;
 ///
 /// let a = pdec!(1);
@@ -90,6 +90,14 @@ macro_rules! pdec {
     };
 }
 
+/// Constructs argument list for Scrypto function/method invocation.
+///
+/// # Example
+/// ```no_run
+/// use scrypto::prelude::*;
+///
+/// let args = args!("1.1", 100u32);
+/// ```
 #[macro_export]
 macro_rules! args {
     ($($args: expr),*) => {{
@@ -128,7 +136,7 @@ macro_rules! args_from_bytes_vec {
 /// Logs an `ERROR` message.
 ///
 /// # Example
-/// ```ignore
+/// ```no_run
 /// use scrypto::prelude::*;
 ///
 /// error!("Input number: {}", 100);
@@ -143,7 +151,7 @@ macro_rules! error {
 /// Logs a `WARN` message.
 ///
 /// # Example
-/// ```ignore
+/// ```no_run
 /// use scrypto::prelude::*;
 ///
 /// warn!("Input number: {}", 100);
@@ -158,7 +166,7 @@ macro_rules! warn {
 /// Logs an `INFO` message.
 ///
 /// # Example
-/// ```ignore
+/// ```no_run
 /// use scrypto::prelude::*;
 ///
 /// info!("Input number: {}", 100);
@@ -173,7 +181,7 @@ macro_rules! info {
 /// Logs a `DEBUG` message.
 ///
 /// # Example
-/// ```ignore
+/// ```no_run
 /// use scrypto::prelude::*;
 ///
 /// debug!("Input number: {}", 100);
@@ -188,7 +196,7 @@ macro_rules! debug {
 /// Logs a `TRACE` message.
 ///
 /// # Example
-/// ```ignore
+/// ```no_run
 /// use scrypto::prelude::*;
 ///
 /// trace!("Input number: {}", 100);
@@ -206,7 +214,7 @@ macro_rules! trace {
 /// * This macro only works when `std` is linked;
 ///
 /// # Example
-/// ```ignore
+/// ```no_run
 /// use scrypto::prelude::*;
 ///
 /// // This package
@@ -261,57 +269,54 @@ macro_rules! include_package {
     };
 }
 
-/**
-Generates a bridge/stub to make package calls to a blueprint.
-
-You can also use this to make calls to the component itself.
-If you just wish to make calls to an instantiated component, see the [external_component]! macro.
-
-# Examples
-```norun
-use scrypto::prelude::*;
-use sbor::{TypeId, Encode, Decode, Describe};
-
-#[derive(TypeId, Encode, Decode, Describe)]
-enum DepositResult {
-    Success,
-    Failure
-}
-
-external_blueprint! {
-    {
-        package: "package_sim1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqsnznk7n",
-        blueprint: "CustomAccount"
-    },
-    CustomAccount {
-        fn instantiate_global(account_name: &str) -> ComponentAddress;
-        fn deposit(&mut self, b: Bucket) -> DepositResult;
-        fn deposit_no_return(&mut self, b: Bucket);
-        fn read_balance(&self) -> Decimal;
-    }
-}
-
-fn create_custom_accounts() {
-    let new_account_address = CustomAccount::instantiate_global("account_name");
-    let mut account = CustomAccount::from(new_account_address);
-
-    let empty_bucket = Bucket::new(ResourceAddress::from_str("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag").unwrap());
-    account.deposit(empty_bucket);
-}
-
-fn bridge_to_existing_account() {
-    let existing_account = CustomAccount::from(component_address);
-    let balance = existing_account.read_balance();
-    // ...
-}
-```
-
-# Related
-
-- Replaces the import! macro for importing an abi, using a more concise, readable syntax.
-- Similar to the [external_component]! macro, which is used for making cross-component calls to an already-instantiated component.
-
-*/
+/// Generates a bridge/stub to make package calls to a blueprint.
+///
+/// You can also use this to make calls to the component itself.
+/// If you just wish to make calls to an instantiated component, see the [external_component]! macro.
+///
+/// # Examples
+/// ```no_run
+/// use scrypto::prelude::*;
+/// use sbor::{TypeId, Encode, Decode, Describe};
+///
+/// #[derive(TypeId, Encode, Decode, Describe)]
+/// enum DepositResult {
+///     Success,
+///     Failure
+/// }
+///
+/// external_blueprint! {
+///     {
+///         package: "package_sim1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqsnznk7n",
+///         blueprint: "CustomAccount"
+///     },
+///     CustomAccount {
+///         fn instantiate_global(account_name: &str) -> ComponentAddress;
+///         fn deposit(&mut self, b: Bucket) -> DepositResult;
+///         fn deposit_no_return(&mut self, b: Bucket);
+///         fn read_balance(&self) -> Decimal;
+///     }
+/// }
+///
+/// fn create_custom_accounts() {
+///     let new_account_address = CustomAccount::instantiate_global("account_name");
+///     let mut account = CustomAccount::from(new_account_address);
+///
+///     let empty_bucket = Bucket::new(ResourceAddress::from_str("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag").unwrap());
+///     account.deposit(empty_bucket);
+/// }
+///
+/// fn bridge_to_existing_account(component_address: ComponentAddress) {
+///     let existing_account = CustomAccount::from(component_address);
+///     let balance = existing_account.read_balance();
+///     // ...
+/// }
+/// ```
+///
+/// # Related
+///
+/// - Replaces the import! macro for importing an abi, using a more concise, readable syntax.
+/// - Similar to the [external_component]! macro, which is used for making cross-component calls to an already-instantiated component.
 #[macro_export]
 macro_rules! external_blueprint {
     (
@@ -351,40 +356,37 @@ macro_rules! external_blueprint {
     };
 }
 
-/**
-Generates a bridge/stub to make cross-component calls.
-
-# Examples
-```norun
-use scrypto::prelude::*;
-use sbor::{TypeId, Encode, Decode, Describe};
-
-#[derive(TypeId, Encode, Decode, Describe)]
-enum DepositResult {
-    Success,
-    Failure
-}
-
-external_component! {
-    AccountInterface {
-        fn deposit(&mut self, b: Bucket) -> DepositResult;
-        fn deposit_no_return(&mut self, b: Bucket);
-        fn read_balance(&self) -> Decimal;
-    }
-}
-
-fn bridge_to_existing_account() {
-    let existing_account = AccountInterface::from(component_address);
-    let balance = existing_account.read_balance();
-    // ...
-}
-```
-
-# Related
-
-- Similar to the [external_blueprint] macro, but the external_component can be used without knowing the package and blueprint addresses.
-
-*/
+/// Generates a bridge/stub to make cross-component calls.
+///
+/// # Examples
+/// ```no_run
+/// use scrypto::prelude::*;
+/// use sbor::{TypeId, Encode, Decode, Describe};
+///
+/// #[derive(TypeId, Encode, Decode, Describe)]
+/// enum DepositResult {
+///     Success,
+///     Failure
+/// }
+///
+/// external_component! {
+///     AccountInterface {
+///         fn deposit(&mut self, b: Bucket) -> DepositResult;
+///         fn deposit_no_return(&mut self, b: Bucket);
+///         fn read_balance(&self) -> Decimal;
+///     }
+/// }
+///
+/// fn bridge_to_existing_account(component_address: ComponentAddress) {
+///     let existing_account = AccountInterface::from(component_address);
+///     let balance = existing_account.read_balance();
+///     // ...
+/// }
+/// ```
+///
+/// # Related
+///
+/// - Similar to the [external_blueprint] macro, but the external_component can be used without knowing the package and blueprint addresses.
 #[macro_export]
 macro_rules! external_component {
     (
