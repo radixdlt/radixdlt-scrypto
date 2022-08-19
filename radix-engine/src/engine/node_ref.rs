@@ -26,22 +26,18 @@ impl RENodePointer {
         mutable: bool,
         write_through: bool,
         track: &mut Track<'s>,
-    ) -> Result<(), RuntimeError> {
+    ) -> Result<(), KernelError> {
         match self {
             RENodePointer::Store(..) => {
                 track
                     .acquire_lock(substate_id.clone(), mutable, write_through)
                     .map_err(|e| match e {
                         TrackError::StateTrackError(StateTrackError::RENodeAlreadyTouched) => {
-                            RuntimeError::KernelError(KernelError::RENodeAlreadyTouched)
+                            KernelError::RENodeAlreadyTouched
                         }
                         // TODO: Remove when references cleaned up
-                        TrackError::NotFound => {
-                            RuntimeError::KernelError(KernelError::RENodeNotFound(self.node_id()))
-                        }
-                        TrackError::Reentrancy => {
-                            RuntimeError::KernelError(KernelError::Reentrancy(substate_id.clone()))
-                        }
+                        TrackError::NotFound => KernelError::RENodeNotFound(self.node_id()),
+                        TrackError::Reentrancy => KernelError::Reentrancy(substate_id.clone()),
                     })
             }
             RENodePointer::Heap { .. } => Ok(()),

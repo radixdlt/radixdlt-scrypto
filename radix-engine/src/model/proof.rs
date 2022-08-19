@@ -1,6 +1,5 @@
-use crate::engine::{HeapRENode, SystemApi};
+use crate::engine::{HeapRENode, RuntimeError, SystemApi};
 use crate::fee::FeeReserve;
-use crate::fee::FeeReserveError;
 use crate::model::ProofError::UnknownMethod;
 use crate::model::{
     LockedAmountOrIds, ResourceContainer, ResourceContainerError, ResourceContainerId,
@@ -22,8 +21,9 @@ pub struct Proof {
     evidence: HashMap<ResourceContainerId, (Rc<RefCell<ResourceContainer>>, LockedAmountOrIds)>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug)]
 pub enum ProofError {
+    RuntimeError(Box<RuntimeError>),
     /// Error produced by a resource container.
     ResourceContainerError(ResourceContainerError),
     /// Can't generate zero-amount or empty non-fungible set proofs.
@@ -37,7 +37,6 @@ pub enum ProofError {
     CouldNotCreateProof,
     InvalidRequestData(DecodeError),
     UnknownMethod,
-    CostingError(FeeReserveError),
 }
 
 impl Proof {
@@ -328,7 +327,7 @@ impl Proof {
         let substate_id = SubstateId::Proof(proof_id);
         let mut node_ref = system_api
             .substate_borrow_mut(&substate_id)
-            .expect("TODO: handle error");
+            .map_err(|e| ProofError::RuntimeError(Box::new(e)))?;
         let proof = node_ref.proof();
 
         let rtn = match proof_fn {
@@ -354,7 +353,7 @@ impl Proof {
                 let cloned_proof = proof.clone();
                 let proof_id = system_api
                     .node_create(HeapRENode::Proof(cloned_proof))
-                    .unwrap()
+                    .map_err(|e| ProofError::RuntimeError(Box::new(e)))?
                     .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Proof(
                     proof_id,
@@ -365,7 +364,7 @@ impl Proof {
 
         system_api
             .substate_return_mut(node_ref)
-            .expect("TODO: handle error");
+            .map_err(|e| ProofError::RuntimeError(Box::new(e)))?;
         Ok(rtn)
     }
 
@@ -383,7 +382,7 @@ impl Proof {
     ) -> Result<ScryptoValue, ProofError> {
         let proof: Proof = system_api
             .node_drop(&node_id)
-            .expect("TODO: handle error")
+            .map_err(|e| ProofError::RuntimeError(Box::new(e)))?
             .into();
         match proof_fn {
             ProofFnIdentifier::Drop => {

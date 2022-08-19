@@ -1,7 +1,7 @@
 use core::fmt::Debug;
 
 use crate::engine::*;
-use crate::fee::{FeeReserve, FeeReserveError};
+use crate::fee::FeeReserve;
 use crate::types::*;
 use crate::wasm::*;
 
@@ -12,13 +12,13 @@ pub struct ValidatedPackage {
     blueprint_abis: HashMap<String, BlueprintAbi>,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug)]
 pub enum PackageError {
+    RuntimeError(Box<RuntimeError>),
     InvalidRequestData(DecodeError),
     InvalidWasm(PrepareError),
     BlueprintNotFound,
     MethodNotFound(String),
-    CostingError(FeeReserveError),
 }
 
 impl ValidatedPackage {
@@ -58,10 +58,10 @@ impl ValidatedPackage {
                     ValidatedPackage::new(input.package).map_err(PackageError::InvalidWasm)?;
                 let node_id = system_api
                     .node_create(HeapRENode::Package(package))
-                    .unwrap(); // FIXME: update all `create_value` calls to handle errors correctly
+                    .map_err(|e| PackageError::RuntimeError(Box::new(e)))?;
                 system_api
                     .node_globalize(node_id)
-                    .expect("TODO handle error");
+                    .map_err(|e| PackageError::RuntimeError(Box::new(e)))?;
                 let package_address: PackageAddress = node_id.into();
                 Ok(ScryptoValue::from_typed(&package_address))
             }

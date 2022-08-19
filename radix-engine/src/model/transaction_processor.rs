@@ -93,7 +93,7 @@ impl TransactionProcessor {
 
                 let _worktop_id = system_api
                     .node_create(HeapRENode::Worktop(Worktop::new()))
-                    .expect("Should never fail.");
+                    .map_err(|e| TransactionProcessorError::RuntimeError(Box::new(e)))?;
 
                 for inst in &input.instructions.clone() {
                     let result = match inst {
@@ -456,7 +456,9 @@ impl TransactionProcessor {
                                         )),
                                         ScryptoValue::from_typed(&ConsumingProofDropInput {}),
                                     )
-                                    .unwrap();
+                                    .map_err(|e| {
+                                        TransactionProcessorError::RuntimeError(Box::new(e))
+                                    })?;
                             }
                             system_api
                                 .invoke_method(
@@ -506,7 +508,9 @@ impl TransactionProcessor {
                                                 proof: scrypto::resource::Proof(*proof_id),
                                             }),
                                         )
-                                        .unwrap(); // TODO: Remove unwrap
+                                        .map_err(|e| {
+                                            TransactionProcessorError::RuntimeError(Box::new(e))
+                                        })?;
                                 }
                                 // Auto move into worktop
                                 for (bucket_id, _) in &result.bucket_ids {
@@ -520,7 +524,9 @@ impl TransactionProcessor {
                                                 bucket: scrypto::resource::Bucket(*bucket_id),
                                             }),
                                         )
-                                        .unwrap(); // TODO: Remove unwrap
+                                        .map_err(|e| {
+                                            TransactionProcessorError::RuntimeError(Box::new(e))
+                                        })?;
                                 }
                                 Ok(result)
                             })
@@ -577,7 +583,9 @@ impl TransactionProcessor {
                                                 proof: scrypto::resource::Proof(*proof_id),
                                             }),
                                         )
-                                        .unwrap();
+                                        .map_err(|e| {
+                                            TransactionProcessorError::RuntimeError(Box::new(e))
+                                        })?;
                                 }
                                 // Auto move into worktop
                                 for (bucket_id, _) in &result.bucket_ids {
@@ -591,7 +599,9 @@ impl TransactionProcessor {
                                                 bucket: scrypto::resource::Bucket(*bucket_id),
                                             }),
                                         )
-                                        .unwrap(); // TODO: Remove unwrap
+                                        .map_err(|e| {
+                                            TransactionProcessorError::RuntimeError(Box::new(e))
+                                        })?;
                                 }
                                 Ok(result)
                             })

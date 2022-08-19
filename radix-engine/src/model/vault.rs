@@ -1,4 +1,4 @@
-use crate::engine::{HeapRENode, SystemApi};
+use crate::engine::{HeapRENode, RuntimeError, SystemApi};
 use crate::fee::FeeReserve;
 use crate::fee::FeeReserveError;
 use crate::model::{
@@ -7,17 +7,18 @@ use crate::model::{
 use crate::types::*;
 use crate::wasm::*;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug)]
 pub enum VaultError {
+    RuntimeError(Box<RuntimeError>),
     InvalidRequestData(DecodeError),
     ResourceContainerError(ResourceContainerError),
     CouldNotCreateBucket,
     CouldNotTakeBucket,
     ProofError(ProofError),
     CouldNotCreateProof,
-    CostingError(FeeReserveError),
     LockFeeNotRadixToken,
     LockFeeInsufficientBalance,
+    LockFeeRepayFailure(FeeReserveError),
 }
 
 /// A persistent resource container.
@@ -158,7 +159,7 @@ impl Vault {
         let substate_id = SubstateId::Vault(vault_id.clone());
         let mut ref_mut = system_api
             .substate_borrow_mut(&substate_id)
-            .expect("TODO: handle error");
+            .map_err(|e| VaultError::RuntimeError(Box::new(e)))?;
         let vault = ref_mut.vault();
 
         let rtn = match vault_fn {
@@ -167,7 +168,7 @@ impl Vault {
                     scrypto_decode(&args.raw).map_err(|e| VaultError::InvalidRequestData(e))?;
                 let bucket = system_api
                     .node_drop(&RENodeId::Bucket(input.bucket.0))
-                    .expect("TODO: handle error")
+                    .map_err(|e| VaultError::RuntimeError(Box::new(e)))?
                     .into();
                 vault
                     .put(bucket)
@@ -180,7 +181,7 @@ impl Vault {
                 let container = vault.take(input.amount)?;
                 let bucket_id = system_api
                     .node_create(HeapRENode::Bucket(Bucket::new(container)))
-                    .unwrap()
+                    .map_err(|e| VaultError::RuntimeError(Box::new(e)))?
                     .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
                     bucket_id,
@@ -208,7 +209,7 @@ impl Vault {
                         fee,
                         matches!(vault_fn, VaultFnIdentifier::LockContingentFee),
                     )
-                    .expect("TODO: handle error");
+                    .map_err(|e| VaultError::LockFeeRepayFailure(e))?;
 
                 // Return changes
                 vault
@@ -224,7 +225,7 @@ impl Vault {
                 let container = vault.take_non_fungibles(&input.non_fungible_ids)?;
                 let bucket_id = system_api
                     .node_create(HeapRENode::Bucket(Bucket::new(container)))
-                    .unwrap()
+                    .map_err(|e| VaultError::RuntimeError(Box::new(e)))?
                     .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
                     bucket_id,
@@ -258,7 +259,7 @@ impl Vault {
                     .map_err(VaultError::ProofError)?;
                 let proof_id = system_api
                     .node_create(HeapRENode::Proof(proof))
-                    .unwrap()
+                    .map_err(|e| VaultError::RuntimeError(Box::new(e)))?
                     .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Proof(
                     proof_id,
@@ -272,7 +273,7 @@ impl Vault {
                     .map_err(VaultError::ProofError)?;
                 let proof_id = system_api
                     .node_create(HeapRENode::Proof(proof))
-                    .unwrap()
+                    .map_err(|e| VaultError::RuntimeError(Box::new(e)))?
                     .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Proof(
                     proof_id,
@@ -286,7 +287,7 @@ impl Vault {
                     .map_err(VaultError::ProofError)?;
                 let proof_id = system_api
                     .node_create(HeapRENode::Proof(proof))
-                    .unwrap()
+                    .map_err(|e| VaultError::RuntimeError(Box::new(e)))?
                     .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Proof(
                     proof_id,
@@ -296,7 +297,7 @@ impl Vault {
 
         system_api
             .substate_return_mut(ref_mut)
-            .expect("TODO: handle error");
+            .map_err(|e| VaultError::RuntimeError(Box::new(e)))?;
 
         Ok(rtn)
     }
