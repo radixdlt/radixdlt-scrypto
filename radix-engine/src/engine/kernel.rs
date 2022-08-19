@@ -1886,7 +1886,7 @@ where
             .collect::<Result<Vec<Proof>, RuntimeError>>()?;
         let mut simulated_auth_zone = AuthZone::new_with_proofs(proofs);
 
-        let method_authorization = convert(&Type::Unit, &Value::Unit, &access_rule);
+        let method_authorization = convert(&Type::Unit, &ScryptoValue::unit(), &access_rule);
         let is_authorized = method_authorization.check(&[&simulated_auth_zone]).is_ok();
         simulated_auth_zone.clear();
 

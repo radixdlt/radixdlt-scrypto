@@ -62,9 +62,12 @@ impl Vault {
             ResourceType::Fungible { .. } => {
                 self.create_proof_by_amount(self.total_amount(), container_id)
             }
-            ResourceType::NonFungible => {
-                self.create_proof_by_ids(&self.total_ids().unwrap(), container_id)
-            }
+            ResourceType::NonFungible => self.create_proof_by_ids(
+                &self
+                    .total_ids()
+                    .expect("Failed to list non-fungible IDs of non-fungible vault"),
+                container_id,
+            ),
         }
     }
 
@@ -215,7 +218,7 @@ impl Vault {
                 vault
                     .borrow_container_mut()
                     .put(changes)
-                    .expect("Returning changes should not error");
+                    .expect("Failed to return fee changes to a locking-fee vault");
 
                 Ok(ScryptoValue::from_typed(&()))
             }

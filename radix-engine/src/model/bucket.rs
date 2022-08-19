@@ -53,9 +53,12 @@ impl Bucket {
             ResourceType::Fungible { .. } => {
                 self.create_proof_by_amount(self.total_amount(), container_id)
             }
-            ResourceType::NonFungible => {
-                self.create_proof_by_ids(&self.total_ids().unwrap(), container_id)
-            }
+            ResourceType::NonFungible => self.create_proof_by_ids(
+                &self
+                    .total_ids()
+                    .expect("Failed to list non-fungible IDs on non-fungible Bucket"),
+                container_id,
+            ),
         }
     }
 
@@ -273,7 +276,10 @@ impl Bucket {
                 let resource_manager = value.resource_manager();
                 resource_manager.burn(bucket.total_amount());
                 if matches!(resource_manager.resource_type(), ResourceType::NonFungible) {
-                    for id in bucket.total_ids().unwrap() {
+                    for id in bucket
+                        .total_ids()
+                        .expect("Failed to list non-fungible IDs on non-fungible Bucket")
+                    {
                         let address = SubstateId::NonFungible(resource_address, id);
                         system_api
                             .substate_take(address)

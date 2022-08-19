@@ -58,12 +58,13 @@ impl ComponentInfo {
         schema: &Type,
         method_name: &str,
     ) -> Vec<MethodAuthorization> {
-        let data = ScryptoValue::from_slice(&component_state.state).unwrap();
+        let data = ScryptoValue::from_slice(&component_state.state)
+            .expect("Failed to decode component state");
 
         let mut authorizations = Vec::new();
         for auth in &self.access_rules {
             let method_auth = auth.get(method_name);
-            let authorization = convert(schema, &data.dom, method_auth);
+            let authorization = convert(schema, &data, method_auth);
             authorizations.push(authorization);
         }
 
@@ -118,7 +119,10 @@ impl ComponentInfo {
                         .borrow_node(&package_id)
                         .map_err(|e| ComponentError::RuntimeError(Box::new(e)))?;
                     let package = package_ref.package();
-                    let blueprint_abi = package.blueprint_abi(&blueprint_name).unwrap();
+                    let blueprint_abi = package.blueprint_abi(&blueprint_name).expect(&format!(
+                        "Blueprint {} is not found in package node {:?}",
+                        blueprint_name, package_id
+                    ));
                     for (func_name, _) in input.access_rules.iter() {
                         if !blueprint_abi.contains_fn(func_name.as_str()) {
                             return Err(ComponentError::BlueprintFunctionNotFound(

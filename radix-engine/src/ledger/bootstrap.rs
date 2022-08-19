@@ -23,18 +23,20 @@ const SYSTEM_COMPONENT_NAME: &str = "System";
 use crate::model::*;
 
 fn create_genesis(mut track: Track) -> TrackReceipt {
-    let system_package =
-        extract_package(include_bytes!("../../../assets/system.wasm").to_vec()).unwrap();
-    let validated_system_package = ValidatedPackage::new(system_package).unwrap();
+    let system_package = extract_package(include_bytes!("../../../assets/system.wasm").to_vec())
+        .expect("Failed to construct SYSTEM package");
+    let validated_system_package =
+        ValidatedPackage::new(system_package).expect("Invalid SYSTEM package");
     track.create_uuid_substate(
         SubstateId::Package(SYSTEM_PACKAGE),
         validated_system_package,
         true,
     );
 
-    let account_package =
-        extract_package(include_bytes!("../../../assets/account.wasm").to_vec()).unwrap();
-    let validated_account_package = ValidatedPackage::new(account_package).unwrap();
+    let account_package = extract_package(include_bytes!("../../../assets/account.wasm").to_vec())
+        .expect("Failed to construct Account package");
+    let validated_account_package =
+        ValidatedPackage::new(account_package).expect("Invalid Account package");
     track.create_uuid_substate(
         SubstateId::Package(ACCOUNT_PACKAGE),
         validated_account_package,
@@ -56,10 +58,10 @@ fn create_genesis(mut track: Track) -> TrackReceipt {
         metadata,
         resource_auth,
     )
-    .unwrap();
+    .expect("Failed to construct XRD resource manager");
     let minted_xrd = xrd_resource_manager
         .mint_fungible(XRD_MAX_SUPPLY.into(), RADIX_TOKEN.clone())
-        .unwrap();
+        .expect("Failed to mint XRD");
     track.create_uuid_substate(
         SubstateId::ResourceManager(RADIX_TOKEN),
         xrd_resource_manager,
@@ -73,11 +75,12 @@ fn create_genesis(mut track: Track) -> TrackReceipt {
         HashMap::new(),
         ecdsa_resource_auth,
     )
-    .unwrap();
+    .expect("Failed to construct ECDSA resource manager");
     track.create_uuid_substate(SubstateId::ResourceManager(ECDSA_TOKEN), ecdsa_token, true);
 
     let system_token =
-        ResourceManager::new(ResourceType::NonFungible, HashMap::new(), HashMap::new()).unwrap();
+        ResourceManager::new(ResourceType::NonFungible, HashMap::new(), HashMap::new())
+            .expect("Failed to construct SYSTEM_TOKEN resource manager");
     track.create_uuid_substate(
         SubstateId::ResourceManager(SYSTEM_TOKEN),
         system_token,

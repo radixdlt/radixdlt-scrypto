@@ -14,7 +14,7 @@ use crate::wasm::*;
 /// Currently required as all auth is defined by soft authorization rules.
 macro_rules! convert_auth {
     ($auth:expr) => {
-        convert(&Type::Unit, &Value::Unit, &$auth)
+        convert(&Type::Unit, &ScryptoValue::unit(), &$auth)
     };
 }
 
@@ -185,9 +185,11 @@ impl ResourceManager {
         match self.vault_method_table.get(&vault_fn) {
             None => &MethodAuthorization::Unsupported,
             Some(Public) => &MethodAuthorization::AllowAll,
-            Some(Protected(auth_key)) => {
-                self.authorization.get(auth_key).unwrap().get_method_auth()
-            }
+            Some(Protected(auth_key)) => self
+                .authorization
+                .get(auth_key)
+                .expect(&format!("Authorization for {:?} not specified", vault_fn))
+                .get_method_auth(),
         }
     }
 
@@ -195,7 +197,11 @@ impl ResourceManager {
         match self.bucket_method_table.get(&bucket_fn) {
             None => &MethodAuthorization::Unsupported,
             Some(Public) => &MethodAuthorization::AllowAll,
-            Some(Protected(method)) => self.authorization.get(method).unwrap().get_method_auth(),
+            Some(Protected(method)) => self
+                .authorization
+                .get(method)
+                .expect(&format!("Authorization for {:?} not specified", bucket_fn))
+                .get_method_auth(),
         }
     }
 
@@ -206,6 +212,8 @@ impl ResourceManager {
     ) -> &MethodAuthorization {
         match &fn_identifier {
             ResourceManagerFnIdentifier::UpdateAuth => {
+                // FIXME we can't assume the input always match the function identifier
+                // especially for auth module code path
                 let input: ResourceManagerUpdateAuthInput = scrypto_decode(&args.raw).unwrap();
                 match self.authorization.get(&input.method) {
                     None => &MethodAuthorization::Unsupported,
@@ -215,6 +223,8 @@ impl ResourceManager {
                 }
             }
             ResourceManagerFnIdentifier::LockAuth => {
+                // FIXME we can't assume the input always match the function identifier
+                // especially for auth module code path
                 let input: ResourceManagerLockAuthInput = scrypto_decode(&args.raw).unwrap();
                 match self.authorization.get(&input.method) {
                     None => &MethodAuthorization::Unsupported,
@@ -224,9 +234,11 @@ impl ResourceManager {
             _ => match self.method_table.get(&fn_identifier) {
                 None => &MethodAuthorization::Unsupported,
                 Some(Public) => &MethodAuthorization::AllowAll,
-                Some(Protected(method)) => {
-                    self.authorization.get(method).unwrap().get_method_auth()
-                }
+                Some(Protected(method)) => self
+                    .authorization
+                    .get(method)
+                    .expect(&format!("Authorization for {:?} not specified", method))
+                    .get_method_auth(),
             },
         }
     }
@@ -319,7 +331,8 @@ impl ResourceManager {
             let value = system_api
                 .substate_read(SubstateId::NonFungible(self_address, id.clone()))
                 .map_err(|e| ResourceManagerError::RuntimeError(Box::new(e)))?;
-            let wrapper: NonFungibleWrapper = scrypto_decode(&value.raw).unwrap();
+            let wrapper: NonFungibleWrapper =
+                scrypto_decode(&value.raw).expect("Failed to decode NonFungibleWrapper substate");
             if wrapper.0.is_some() {
                 return Err(ResourceManagerError::NonFungibleAlreadyExists(
                     NonFungibleAddress::new(self_address, id.clone()),
@@ -469,7 +482,10 @@ impl ResourceManager {
                 let method_entry = resource_manager
                     .authorization
                     .get_mut(&input.method)
-                    .unwrap();
+                    .expect(&format!(
+                        "Authorization for {:?} not specified",
+                        input.method
+                    ));
                 method_entry.main(MethodAccessRuleMethod::Update(input.access_rule))
             }
             ResourceManagerFnIdentifier::LockAuth => {
@@ -478,7 +494,10 @@ impl ResourceManager {
                 let method_entry = resource_manager
                     .authorization
                     .get_mut(&input.method)
-                    .unwrap();
+                    .expect(&format!(
+                        "Authorization for {:?} not specified",
+                        input.method
+                    ));
                 method_entry.main(MethodAccessRuleMethod::Lock())
             }
             ResourceManagerFnIdentifier::CreateVault => {
@@ -556,7 +575,8 @@ impl ResourceManager {
                         input.id.clone(),
                     ))
                     .map_err(|e| ResourceManagerError::RuntimeError(Box::new(e)))?;
-                let wrapper: NonFungibleWrapper = scrypto_decode(&value.raw).unwrap();
+                let wrapper: NonFungibleWrapper = scrypto_decode(&value.raw)
+                    .expect("Failed to decode NonFungibleWrapper substate");
 
                 // Write new value
                 if let Some(mut non_fungible) = wrapper.0 {
@@ -584,7 +604,8 @@ impl ResourceManager {
                 let value = system_api
                     .substate_read(SubstateId::NonFungible(resource_address.clone(), input.id))
                     .map_err(|e| ResourceManagerError::RuntimeError(Box::new(e)))?;
-                let wrapper: NonFungibleWrapper = scrypto_decode(&value.raw).unwrap();
+                let wrapper: NonFungibleWrapper = scrypto_decode(&value.raw)
+                    .expect("Failed to decode NonFungibleWrapper substate");
                 Ok(ScryptoValue::from_typed(&wrapper.0.is_some()))
             }
             ResourceManagerFnIdentifier::GetNonFungible => {
@@ -595,7 +616,8 @@ impl ResourceManager {
                 let value = system_api
                     .substate_read(SubstateId::NonFungible(resource_address.clone(), input.id))
                     .map_err(|e| ResourceManagerError::RuntimeError(Box::new(e)))?;
-                let wrapper: NonFungibleWrapper = scrypto_decode(&value.raw).unwrap();
+                let wrapper: NonFungibleWrapper = scrypto_decode(&value.raw)
+                    .expect("Failed to decode NonFungibleWrapper substate");
                 let non_fungible = wrapper.0.ok_or(ResourceManagerError::NonFungibleNotFound(
                     non_fungible_address,
                 ))?;

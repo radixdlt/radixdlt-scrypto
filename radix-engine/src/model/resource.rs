@@ -152,7 +152,10 @@ impl ResourceContainer {
                 if Decimal::from(liquid_ids.len()) < amount {
                     return Err(ResourceContainerError::InsufficientBalance);
                 }
-                let n: usize = amount.to_string().parse().unwrap();
+                let n: usize = amount
+                    .to_string()
+                    .parse()
+                    .expect("Failed to convert amount to usize");
                 let ids: BTreeSet<NonFungibleId> = liquid_ids.iter().cloned().take(n).collect();
                 self.take_by_ids(&ids)
             }
@@ -220,7 +223,10 @@ impl ResourceContainer {
                     return Err(ResourceContainerError::InsufficientBalance);
                 }
 
-                let n: usize = amount.to_string().parse().unwrap();
+                let n: usize = amount
+                    .to_string()
+                    .parse()
+                    .expect("Failed to convert amount to usize");
                 let mut ids: BTreeSet<NonFungibleId> = locked_ids.keys().cloned().take(n).collect();
                 if ids.len() < n {
                     ids.extend(liquid_ids.iter().cloned().take(n - ids.len()));

@@ -71,6 +71,24 @@ impl TransactionProcessor {
         Ok(value)
     }
 
+    fn first_bucket(value: &ScryptoValue) -> BucketId {
+        *value
+            .bucket_ids
+            .iter()
+            .next()
+            .expect("No bucket found in value")
+            .0
+    }
+
+    fn first_proof(value: &ScryptoValue) -> ProofId {
+        *value
+            .proof_ids
+            .iter()
+            .next()
+            .expect("No proof found in value")
+            .0
+    }
+
     pub fn static_main<
         's,
         Y: SystemApi<'s, W, I, C>,
@@ -115,7 +133,7 @@ impl TransactionProcessor {
                                         TransactionProcessorError::RuntimeError(Box::new(e))
                                     })
                                     .map(|rtn| {
-                                        let bucket_id = *rtn.bucket_ids.iter().next().unwrap().0;
+                                        let bucket_id = Self::first_bucket(&rtn);
                                         bucket_id_mapping.insert(new_id, bucket_id);
                                         ScryptoValue::from_typed(&scrypto::resource::Bucket(new_id))
                                     })
@@ -142,7 +160,7 @@ impl TransactionProcessor {
                                         TransactionProcessorError::RuntimeError(Box::new(e))
                                     })
                                     .map(|rtn| {
-                                        let bucket_id = *rtn.bucket_ids.iter().next().unwrap().0;
+                                        let bucket_id = Self::first_bucket(&rtn);
                                         bucket_id_mapping.insert(new_id, bucket_id);
                                         ScryptoValue::from_typed(&scrypto::resource::Bucket(new_id))
                                     })
@@ -169,7 +187,7 @@ impl TransactionProcessor {
                                         TransactionProcessorError::RuntimeError(Box::new(e))
                                     })
                                     .map(|rtn| {
-                                        let bucket_id = *rtn.bucket_ids.iter().next().unwrap().0;
+                                        let bucket_id = Self::first_bucket(&rtn);
                                         bucket_id_mapping.insert(new_id, bucket_id);
                                         ScryptoValue::from_typed(&scrypto::resource::Bucket(new_id))
                                     })
@@ -252,7 +270,7 @@ impl TransactionProcessor {
                                         TransactionProcessorError::RuntimeError(Box::new(e))
                                     })
                                     .map(|rtn| {
-                                        let proof_id = *rtn.proof_ids.iter().next().unwrap().0;
+                                        let proof_id = Self::first_proof(&rtn);
                                         proof_id_mapping.insert(new_id, proof_id);
                                         ScryptoValue::from_typed(&scrypto::resource::Proof(new_id))
                                     })
@@ -306,7 +324,7 @@ impl TransactionProcessor {
                                             TransactionProcessorError::RuntimeError(Box::new(e))
                                         })
                                         .map(|rtn| {
-                                            let proof_id = *rtn.proof_ids.iter().next().unwrap().0;
+                                            let proof_id = Self::first_proof(&rtn);
                                             proof_id_mapping.insert(new_id, proof_id);
                                             ScryptoValue::from_typed(&scrypto::resource::Proof(
                                                 new_id,
@@ -338,7 +356,7 @@ impl TransactionProcessor {
                                         TransactionProcessorError::RuntimeError(Box::new(e))
                                     })
                                     .map(|rtn| {
-                                        let proof_id = *rtn.proof_ids.iter().next().unwrap().0;
+                                        let proof_id = Self::first_proof(&rtn);
                                         proof_id_mapping.insert(new_id, proof_id);
                                         ScryptoValue::from_typed(&scrypto::resource::Proof(new_id))
                                     })
@@ -365,7 +383,7 @@ impl TransactionProcessor {
                                         TransactionProcessorError::RuntimeError(Box::new(e))
                                     })
                                     .map(|rtn| {
-                                        let proof_id = *rtn.proof_ids.iter().next().unwrap().0;
+                                        let proof_id = Self::first_proof(&rtn);
                                         proof_id_mapping.insert(new_id, proof_id);
                                         ScryptoValue::from_typed(&scrypto::resource::Proof(new_id))
                                     })
@@ -393,7 +411,7 @@ impl TransactionProcessor {
                                         TransactionProcessorError::RuntimeError(Box::new(e))
                                     })
                                     .map(|rtn| {
-                                        let proof_id = *rtn.proof_ids.iter().next().unwrap().0;
+                                        let proof_id = Self::first_proof(&rtn);
                                         proof_id_mapping.insert(new_id, proof_id);
                                         ScryptoValue::from_typed(&scrypto::resource::Proof(new_id))
                                     })
@@ -418,9 +436,8 @@ impl TransactionProcessor {
                                                 TransactionProcessorError::RuntimeError(Box::new(e))
                                             })
                                             .map(|v| {
-                                                let cloned_proof_id =
-                                                    v.proof_ids.iter().next().unwrap().0;
-                                                proof_id_mapping.insert(new_id, *cloned_proof_id);
+                                                let cloned_proof_id = Self::first_proof(&v);
+                                                proof_id_mapping.insert(new_id, cloned_proof_id);
                                                 ScryptoValue::from_typed(&scrypto::resource::Proof(
                                                     new_id,
                                                 ))
@@ -479,7 +496,8 @@ impl TransactionProcessor {
                             Self::replace_ids(
                                 &mut proof_id_mapping,
                                 &mut bucket_id_mapping,
-                                ScryptoValue::from_slice(args).expect("Should be valid arg"),
+                                ScryptoValue::from_slice(args)
+                                    .expect("Invalid CALL_FUNCTION arguments"),
                             )
                             .and_then(|call_data| {
                                 system_api
@@ -539,7 +557,8 @@ impl TransactionProcessor {
                             Self::replace_ids(
                                 &mut proof_id_mapping,
                                 &mut bucket_id_mapping,
-                                ScryptoValue::from_slice(args).expect("Should be valid arg"),
+                                ScryptoValue::from_slice(args)
+                                    .expect("Invalid CALL_METHOD arguments"),
                             )
                             .and_then(|call_data| {
                                 // TODO: Move this into preprocessor step
@@ -552,7 +571,8 @@ impl TransactionProcessor {
                                         let (package_address, blueprint_name): (
                                             PackageAddress,
                                             String,
-                                        ) = scrypto_decode(&s.raw).expect("Should not fail.");
+                                        ) = scrypto_decode(&s.raw)
+                                            .expect("Failed to decode ComponentInfo substate");
                                         system_api
                                             .invoke_method(
                                                 Receiver::Ref(RENodeId::Component(
@@ -637,7 +657,8 @@ impl TransactionProcessor {
                                         let (package_address, blueprint_name): (
                                             PackageAddress,
                                             String,
-                                        ) = scrypto_decode(&s.raw).expect("Should not fail.");
+                                        ) = scrypto_decode(&s.raw)
+                                            .expect("Failed to decode ComponentInfo substate");
                                         system_api
                                             .invoke_method(
                                                 Receiver::Ref(RENodeId::Component(
@@ -648,7 +669,9 @@ impl TransactionProcessor {
                                                     blueprint_name,
                                                     ident: method.to_string(),
                                                 },
-                                                ScryptoValue::from_slice(&encoded).unwrap(),
+                                                ScryptoValue::from_slice(&encoded).expect(
+                                                    "Failed to decode ComponentInfo substate",
+                                                ),
                                             )
                                             .map_err(|e| {
                                                 TransactionProcessorError::RuntimeError(Box::new(e))
