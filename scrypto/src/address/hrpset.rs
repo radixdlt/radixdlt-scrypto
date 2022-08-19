@@ -7,7 +7,7 @@ pub struct HrpSet {
 
     pub package: &'static str,
 
-    pub component: &'static str,
+    pub normal_component: &'static str,
     pub account_component: &'static str,
     pub system_component: &'static str,
 }
@@ -18,7 +18,7 @@ impl HrpSet {
             EntityType::Resource => self.resource,
             EntityType::Package => self.package,
 
-            EntityType::Component => self.component,
+            EntityType::NormalComponent => self.normal_component,
             EntityType::AccountComponent => self.account_component,
             EntityType::SystemComponent => self.system_component,
         }
@@ -27,7 +27,7 @@ impl HrpSet {
 
 /// The Human Readable Parts used for the Local Simulator.
 pub const LOCAL_SIMULATOR_NETWORK_HRP_SET: HrpSet = HrpSet {
-    component: "component_sim",
+    normal_component: "component_sim",
     account_component: "account_sim",
     system_component: "system_sim",
     package: "package_sim",
@@ -36,7 +36,7 @@ pub const LOCAL_SIMULATOR_NETWORK_HRP_SET: HrpSet = HrpSet {
 
 /// The Human Readable Parts used for the Internal Test Network.
 pub const INTERNAL_TEST_NETWORK_HRP_SET: HrpSet = HrpSet {
-    component: "component_itn",
+    normal_component: "component_itn",
     account_component: "account_itn",
     system_component: "system_itn",
     package: "package_itn",

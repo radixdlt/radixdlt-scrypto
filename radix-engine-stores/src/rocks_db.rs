@@ -22,8 +22,8 @@ impl RadixEngineDB {
     }
 
     pub fn list_packages(&self) -> Vec<PackageAddress> {
-        let start = &scrypto_encode(&SubstateId::Package(PackageAddress([0; 27])));
-        let end = &scrypto_encode(&SubstateId::Package(PackageAddress([255; 27])));
+        let start = &scrypto_encode(&SubstateId::Package(PackageAddress::Normal([0; 26])));
+        let end = &scrypto_encode(&SubstateId::Package(PackageAddress::Normal([255; 26])));
         let substate_ids: Vec<SubstateId> = self.list_items(start, end);
         substate_ids
             .into_iter()
@@ -37,9 +37,13 @@ impl RadixEngineDB {
             .collect()
     }
 
-    pub fn list_components(&self) -> Vec<ComponentAddress> {
-        let start = &scrypto_encode(&SubstateId::ComponentState(ComponentAddress([0; 27])));
-        let end = &scrypto_encode(&SubstateId::ComponentState(ComponentAddress([255; 27])));
+    fn list_components_helper(
+        &self,
+        start: ComponentAddress,
+        end: ComponentAddress,
+    ) -> Vec<ComponentAddress> {
+        let start = &scrypto_encode(&SubstateId::ComponentState(start));
+        let end = &scrypto_encode(&SubstateId::ComponentState(end));
         let substate_ids: Vec<SubstateId> = self.list_items(start, end);
         substate_ids
             .into_iter()
@@ -53,9 +57,30 @@ impl RadixEngineDB {
             .collect()
     }
 
+    pub fn list_components(&self) -> Vec<ComponentAddress> {
+        let mut addresses = Vec::new();
+        addresses.extend(self.list_components_helper(
+            ComponentAddress::System([0u8; 26]),
+            ComponentAddress::System([255u8; 26]),
+        ));
+        addresses.extend(self.list_components_helper(
+            ComponentAddress::Account([0u8; 26]),
+            ComponentAddress::Account([255u8; 26]),
+        ));
+        addresses.extend(self.list_components_helper(
+            ComponentAddress::Normal([0u8; 26]),
+            ComponentAddress::Normal([255u8; 26]),
+        ));
+        addresses
+    }
+
     pub fn list_resource_managers(&self) -> Vec<ResourceAddress> {
-        let start = &scrypto_encode(&SubstateId::ResourceManager(ResourceAddress([0; 27])));
-        let end = &scrypto_encode(&SubstateId::ResourceManager(ResourceAddress([255; 27])));
+        let start = &scrypto_encode(&SubstateId::ResourceManager(ResourceAddress::Normal(
+            [0; 26],
+        )));
+        let end = &scrypto_encode(&SubstateId::ResourceManager(ResourceAddress::Normal(
+            [255; 26],
+        )));
         let substate_ids: Vec<SubstateId> = self.list_items(start, end);
         substate_ids
             .into_iter()

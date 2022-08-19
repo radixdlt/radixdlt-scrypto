@@ -108,25 +108,28 @@ mod tests {
     fn test_component_macro() {
         init_component_system(ComponentSystem::new());
 
-        let component = borrow_component!(ComponentAddress([0u8; 27]));
-        let component_same_id = borrow_component!(ComponentAddress([0u8; 27]));
-        let component_different_id = borrow_component!(ComponentAddress([1u8; 27]));
+        let component = borrow_component!(ComponentAddress::Normal([0u8; 26]));
+        let component_same_id = borrow_component!(ComponentAddress::Normal([0u8; 26]));
+        let component_different_id = borrow_component!(ComponentAddress::Normal([1u8; 26]));
 
-        assert_eq!(ComponentAddress([0u8; 27]), component.0);
-        assert_eq!(ComponentAddress([0u8; 27]), component_same_id.0);
-        assert_eq!(ComponentAddress([1u8; 27]), component_different_id.0);
+        assert_eq!(ComponentAddress::Normal([0u8; 26]), component.0);
+        assert_eq!(ComponentAddress::Normal([0u8; 26]), component_same_id.0);
+        assert_eq!(
+            ComponentAddress::Normal([1u8; 26]),
+            component_different_id.0
+        );
     }
 
     #[test]
     fn test_package_macro() {
         init_component_system(ComponentSystem::new());
 
-        let package = borrow_package!(PackageAddress([0u8; 27]));
-        let package_same_id = borrow_package!(PackageAddress([0u8; 27]));
-        let package_different_id = borrow_package!(PackageAddress([1u8; 27]));
+        let package = borrow_package!(PackageAddress::Normal([0u8; 26]));
+        let package_same_id = borrow_package!(PackageAddress::Normal([0u8; 26]));
+        let package_different_id = borrow_package!(PackageAddress::Normal([1u8; 26]));
 
-        assert_eq!(PackageAddress([0u8; 27]), package.0);
-        assert_eq!(PackageAddress([0u8; 27]), package_same_id.0);
-        assert_eq!(PackageAddress([1u8; 27]), package_different_id.0);
+        assert_eq!(PackageAddress::Normal([0u8; 26]), package.0);
+        assert_eq!(PackageAddress::Normal([0u8; 26]), package_same_id.0);
+        assert_eq!(PackageAddress::Normal([1u8; 26]), package_different_id.0);
     }
 }

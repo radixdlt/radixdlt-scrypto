@@ -4,12 +4,12 @@ use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto::engine::types::RENodeId;
 
 use crate::abi::*;
-use crate::address::{AddressError, BECH32_DECODER, BECH32_ENCODER};
+use crate::address::{AddressError, EntityType, BECH32_DECODER, BECH32_ENCODER};
 use crate::buffer::scrypto_encode;
 use crate::core::{FnIdentifier, Receiver, ResourceManagerFnIdentifier};
+use crate::engine::types::RENodeId;
 use crate::engine::{api::*, call_engine};
 use crate::math::*;
 use crate::misc::*;
@@ -97,7 +97,9 @@ pub struct ResourceManagerGetNonFungibleInput {
 
 /// Represents a resource address.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub struct ResourceAddress(pub [u8; 27]);
+pub enum ResourceAddress {
+    Normal([u8; 26]),
+}
 
 impl ResourceAddress {}
 
@@ -380,7 +382,12 @@ impl TryFrom<&[u8]> for ResourceAddress {
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         match slice.len() {
-            27 => Ok(Self(copy_u8_array(slice))),
+            27 => match EntityType::try_from(slice[0])
+                .map_err(|_| AddressError::InvalidEntityTypeId(slice[0]))?
+            {
+                EntityType::Resource => Ok(Self::Normal(copy_u8_array(&slice[1..]))),
+                _ => Err(AddressError::InvalidEntityTypeId(slice[0])),
+            },
             _ => Err(AddressError::InvalidLength(slice.len())),
         }
     }
@@ -388,7 +395,12 @@ impl TryFrom<&[u8]> for ResourceAddress {
 
 impl ResourceAddress {
     pub fn to_vec(&self) -> Vec<u8> {
-        self.0.to_vec()
+        let mut buf = Vec::new();
+        buf.push(EntityType::resource(self).id());
+        match self {
+            Self::Normal(v) => buf.extend(v),
+        }
+        buf
     }
 }
 
@@ -408,11 +420,7 @@ impl FromStr for ResourceAddress {
 
 impl fmt::Display for ResourceAddress {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(
-            f,
-            "{}",
-            BECH32_ENCODER.encode_resource_address(self)
-        )
+        write!(f, "{}", BECH32_ENCODER.encode_resource_address(self))
     }
 }
 

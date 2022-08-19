@@ -1,10 +1,10 @@
 use scrypto::address::{
     AddressError, Bech32Decoder, Bech32Encoder, ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID,
-    COMPONENT_ADDRESS_ENTITY_ID, PACKAGE_ADDRESS_ENTITY_ID, RESOURCE_ADDRESS_ENTITY_ID,
+    NORMAL_COMPONENT_ADDRESS_ENTITY_ID, PACKAGE_ADDRESS_ENTITY_ID, RESOURCE_ADDRESS_ENTITY_ID,
     SYSTEM_COMPONENT_ADDRESS_ENTITY_ID,
 };
 use scrypto::core::Network;
-use scrypto::prelude::{ComponentAddress, PackageAddress, ResourceAddress};
+use scrypto::prelude::{PackageAddress, ResourceAddress};
 
 use bech32::{self, ToBase32, Variant};
 
@@ -47,120 +47,18 @@ fn generate_u8_array(entity_byte: u8) -> [u8; 27] {
 #[test]
 fn encode_package_address_correct_entity_type_succeeds() {
     // Arrange
-    let package_address = PackageAddress(generate_u8_array(PACKAGE_ADDRESS_ENTITY_ID));
+    let package_address = PackageAddress::Normal([0u8; 26]);
     let bech32_encoder = Bech32Encoder::new_from_network(&Network::LocalSimulator);
 
     // Act
-    bech32_encoder.encode_package_address(&package_address);
+    let bech32 = bech32_encoder.encode_package_address(&package_address);
 
     // Assert
-    assert!(matches!(encoded_package_address, Ok(_)));
+    assert!(bech32.starts_with("package"));
 }
 
-#[test]
-fn encode_package_address_incorrect_entity_type_fails() {
-    // Arrange
-    let package_address = PackageAddress(generate_u8_array(RESOURCE_ADDRESS_ENTITY_ID));
-    let bech32_encoder = Bech32Encoder::new_from_network(&Network::LocalSimulator);
-
-    // Act
-    let encoded_package_address = bech32_encoder.encode_package_address(&package_address);
-
-    // Assert
-    assert!(matches!(
-        encoded_package_address,
-        Err(AddressError::InvalidEntityTypeId(
-            RESOURCE_ADDRESS_ENTITY_ID
-        ))
-    ));
-}
-
-#[test]
-fn encode_component_address_component_entity_type_succeeds() {
-    // Arrange
-    let component_address = ComponentAddress(generate_u8_array(COMPONENT_ADDRESS_ENTITY_ID));
-    let bech32_encoder = Bech32Encoder::new_from_network(&Network::LocalSimulator);
-
-    // Act
-    let encoded_component_address = bech32_encoder.encode_component_address(&component_address);
-
-    // Assert
-    assert!(matches!(encoded_component_address, Ok(_)));
-}
-
-#[test]
-fn encode_component_address_account_component_entity_type_succeeds() {
-    // Arrange
-    let component_address =
-        ComponentAddress(generate_u8_array(ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID));
-    let bech32_encoder = Bech32Encoder::new_from_network(&Network::LocalSimulator);
-
-    // Act
-    let encoded_component_address = bech32_encoder.encode_component_address(&component_address);
-
-    // Assert
-    assert!(matches!(encoded_component_address, Ok(_)));
-}
-
-#[test]
-fn encode_component_address_system_component_entity_type_succeeds() {
-    // Arrange
-    let component_address = ComponentAddress(generate_u8_array(SYSTEM_COMPONENT_ADDRESS_ENTITY_ID));
-    let bech32_encoder = Bech32Encoder::new_from_network(&Network::LocalSimulator);
-
-    // Act
-    let encoded_component_address = bech32_encoder.encode_component_address(&component_address);
-
-    // Assert
-    assert!(matches!(encoded_component_address, Ok(_)));
-}
-
-#[test]
-fn encode_component_address_incorrect_entity_type_fails() {
-    // Arrange
-    let component_address = ComponentAddress(generate_u8_array(RESOURCE_ADDRESS_ENTITY_ID));
-    let bech32_encoder = Bech32Encoder::new_from_network(&Network::LocalSimulator);
-
-    // Act
-    let encoded_component_address = bech32_encoder.encode_component_address(&component_address);
-
-    // Assert
-    assert!(matches!(
-        encoded_component_address,
-        Err(AddressError::InvalidEntityTypeId(
-            RESOURCE_ADDRESS_ENTITY_ID
-        ))
-    ));
-}
-
-#[test]
-fn encode_resource_address_correct_entity_type_succeeds() {
-    // Arrange
-    let resource_address = ResourceAddress(generate_u8_array(RESOURCE_ADDRESS_ENTITY_ID));
-    let bech32_encoder = Bech32Encoder::new_from_network(&Network::LocalSimulator);
-
-    // Act
-    let encoded_resource_address = bech32_encoder.encode_resource_address(&resource_address);
-
-    // Assert
-    assert!(matches!(encoded_resource_address, Ok(_)));
-}
-
-#[test]
-fn encode_resource_address_incorrect_entity_type_fails() {
-    // Arrange
-    let resource_address = ResourceAddress(generate_u8_array(PACKAGE_ADDRESS_ENTITY_ID));
-    let bech32_encoder = Bech32Encoder::new_from_network(&Network::LocalSimulator);
-
-    // Act
-    let encoded_resource_address = bech32_encoder.encode_resource_address(&resource_address);
-
-    // Assert
-    assert!(matches!(
-        encoded_resource_address,
-        Err(AddressError::InvalidEntityTypeId(PACKAGE_ADDRESS_ENTITY_ID))
-    ));
-}
+// Most of encoder tests are removed because entity id is no longer manually filled
+// Rust compiler helps ensure all PackageAddress/ComponentAddress/ResourceAddress instances can be encoded.
 
 // ==============
 // Decoder Tests
@@ -169,13 +67,11 @@ fn encode_resource_address_incorrect_entity_type_fails() {
 #[test]
 fn decode_truncated_checksum_address_fails() {
     // Arrange
-    let resource_address = ResourceAddress(generate_u8_array(RESOURCE_ADDRESS_ENTITY_ID));
+    let resource_address = ResourceAddress::Normal([0u8; 26]);
     let bech32_encoder = Bech32Encoder::new_from_network(&Network::LocalSimulator);
     let bech32_decoder = Bech32Decoder::new_from_network(&Network::LocalSimulator);
 
-    let encoded_resource_address = bech32_encoder
-        .encode_resource_address(&resource_address)
-        .unwrap();
+    let encoded_resource_address = bech32_encoder.encode_resource_address(&resource_address);
 
     // Act
     let decoded_resource_address = bech32_decoder.validate_and_decode_resource_address(
@@ -192,13 +88,11 @@ fn decode_truncated_checksum_address_fails() {
 #[test]
 fn decode_modified_checksum_address_fails() {
     // Arrange
-    let resource_address = ResourceAddress(generate_u8_array(RESOURCE_ADDRESS_ENTITY_ID));
+    let resource_address = ResourceAddress::Normal([0u8; 26]);
     let bech32_encoder = Bech32Encoder::new_from_network(&Network::LocalSimulator);
     let bech32_decoder = Bech32Decoder::new_from_network(&Network::LocalSimulator);
 
-    let mut encoded_resource_address = bech32_encoder
-        .encode_resource_address(&resource_address)
-        .unwrap();
+    let mut encoded_resource_address = bech32_encoder.encode_resource_address(&resource_address);
 
     // Act
     encoded_resource_address.push_str("qq");
@@ -216,14 +110,14 @@ fn decode_modified_checksum_address_fails() {
 #[test]
 fn decode_invalid_bech32_variant_fails() {
     // Arrange
-    let resource_address = ResourceAddress(generate_u8_array(RESOURCE_ADDRESS_ENTITY_ID));
+    let resource_address = ResourceAddress::Normal([0u8; 26]);
     let bech32_encoder = Bech32Encoder::new_from_network(&Network::LocalSimulator);
     let bech32_decoder = Bech32Decoder::new_from_network(&Network::LocalSimulator);
 
     // Act
     let encoded_resource_address = bech32::encode(
         bech32_encoder.hrp_set.resource,
-        resource_address.0.to_base32(),
+        resource_address.to_vec().to_base32(),
         Variant::Bech32,
     )
     .unwrap();
@@ -309,8 +203,8 @@ fn decode_matching_component_address_entity_id_succeeds() {
 
     // Act
     let encoded_component_address = bech32::encode(
-        bech32_encoder.hrp_set.component,
-        generate_u8_array(COMPONENT_ADDRESS_ENTITY_ID).to_base32(),
+        bech32_encoder.hrp_set.normal_component,
+        generate_u8_array(NORMAL_COMPONENT_ADDRESS_ENTITY_ID).to_base32(),
         Variant::Bech32m,
     )
     .unwrap();
@@ -342,9 +236,7 @@ fn decode_mismatched_package_address_entity_id_fails() {
     // Assert
     assert!(matches!(
         decoded_package_address,
-        Err(AddressError::InvalidEntityTypeId(
-            RESOURCE_ADDRESS_ENTITY_ID
-        ))
+        Err(AddressError::InvalidHrp)
     ));
 }
 
@@ -389,7 +281,7 @@ fn decode_mismatched_resource_address_entity_id_fails() {
     // Assert
     assert!(matches!(
         decoded_resource_address,
-        Err(AddressError::InvalidEntityTypeId(PACKAGE_ADDRESS_ENTITY_ID))
+        Err(AddressError::InvalidHrp)
     ));
 }
 

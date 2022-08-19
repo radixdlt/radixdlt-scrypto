@@ -9,10 +9,9 @@ pub enum AddressError {
     DecodingError(Error),
     InvalidVariant(Variant),
     DataSectionTooShort,
+    InvalidLength(usize),
     InvalidEntityTypeId(u8),
     InvalidHrp,
-    TryFromError,
-    InvalidLength(usize),
 }
 
 #[cfg(not(feature = "alloc"))]

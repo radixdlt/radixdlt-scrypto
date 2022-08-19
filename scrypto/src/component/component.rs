@@ -5,7 +5,7 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::abi::*;
-use crate::address::{AddressError, BECH32_DECODER, BECH32_ENCODER};
+use crate::address::*;
 use crate::buffer::scrypto_encode;
 use crate::component::*;
 use crate::core::*;
@@ -117,7 +117,11 @@ impl fmt::Debug for Component {
 
 /// An instance of a blueprint, which lives in the ledger state.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub struct ComponentAddress(pub [u8; 27]);
+pub enum ComponentAddress {
+    Normal([u8; 26]),
+    Account([u8; 26]),
+    System([u8; 26]),
+}
 
 impl ComponentAddress {}
 
@@ -130,7 +134,14 @@ impl TryFrom<&[u8]> for ComponentAddress {
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         match slice.len() {
-            27 => Ok(Self(copy_u8_array(slice))),
+            27 => match EntityType::try_from(slice[0])
+                .map_err(|_| AddressError::InvalidEntityTypeId(slice[0]))?
+            {
+                EntityType::NormalComponent => Ok(Self::Normal(copy_u8_array(&slice[1..]))),
+                EntityType::AccountComponent => Ok(Self::Account(copy_u8_array(&slice[1..]))),
+                EntityType::SystemComponent => Ok(Self::System(copy_u8_array(&slice[1..]))),
+                _ => Err(AddressError::InvalidEntityTypeId(slice[0])),
+            },
             _ => Err(AddressError::InvalidLength(slice.len())),
         }
     }
@@ -138,7 +149,12 @@ impl TryFrom<&[u8]> for ComponentAddress {
 
 impl ComponentAddress {
     pub fn to_vec(&self) -> Vec<u8> {
-        self.0.to_vec()
+        let mut buf = Vec::new();
+        buf.push(EntityType::component(self).id());
+        match self {
+            Self::Normal(v) | Self::Account(v) | Self::System(v) => buf.extend(v),
+        }
+        buf
     }
 }
 
@@ -158,11 +174,7 @@ impl FromStr for ComponentAddress {
 
 impl fmt::Display for ComponentAddress {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(
-            f,
-            "{}",
-            BECH32_ENCODER.encode_component_address(self)
-        )
+        write!(f, "{}", BECH32_ENCODER.encode_component_address(self))
     }
 }
 
