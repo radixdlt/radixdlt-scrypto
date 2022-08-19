@@ -156,7 +156,7 @@ impl<'s> Track<'s> {
         let borrowed = self
             .borrowed_substates
             .remove(&substate_id)
-            .expect("Value was never borrowed");
+            .expect("Attempted to release lock on never borrowed substate");
 
         if write_through {
             match borrowed {
@@ -197,7 +197,7 @@ impl<'s> Track<'s> {
         match self
             .borrowed_substates
             .get(&substate_id)
-            .expect(&format!("{:?} was never locked", substate_id))
+            .expect(&format!("Substate {:?} was never locked", substate_id))
         {
             BorrowedSubstate::LoadedMut(substate) => substate,
             BorrowedSubstate::Loaded(substate, ..) => substate,
@@ -209,7 +209,7 @@ impl<'s> Track<'s> {
         match self
             .borrowed_substates
             .insert(substate_id.clone(), BorrowedSubstate::Taken)
-            .expect(&format!("{:?} was never locked", substate_id))
+            .expect(&format!("Substate {:?} was never locked", substate_id))
         {
             BorrowedSubstate::LoadedMut(value) => value,
             BorrowedSubstate::Loaded(..) => {
@@ -223,7 +223,7 @@ impl<'s> Track<'s> {
         let cur_value = self
             .borrowed_substates
             .get(&substate_id)
-            .expect("value was never locked");
+            .expect(&format!("Substate {:?} was never locked", substate_id));
         match cur_value {
             BorrowedSubstate::Loaded(..) => panic!("Cannot write to immutable"),
             BorrowedSubstate::LoadedMut(..) | BorrowedSubstate::Taken => {}

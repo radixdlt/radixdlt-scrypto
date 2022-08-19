@@ -163,7 +163,7 @@ where
         // Note this must be run AFTER values are taken, otherwise there would be inconsistent readable_values state
         let node_pointer = call_frames
             .last()
-            .expect("Current frame always exists")
+            .expect("Current call frame does not exist")
             .node_refs
             .get(&node_id)
             .cloned()
@@ -285,10 +285,10 @@ where
                         let mut instance = self.wasm_engine.instantiate(instrumented_code);
                         let blueprint_abi = package
                             .blueprint_abi(&blueprint_name)
-                            .expect("Blueprint should exist, checked by auth module"); // TODO: assumption will break if auth module is optional
+                            .expect("Blueprint not found"); // TODO: assumption will break if auth module is optional
                         let export_name = &blueprint_abi
                             .get_fn_abi(&ident)
-                            .expect("Function should exist, checked by auth module")
+                            .expect("Function not found")
                             .export_name
                             .to_string();
                         let scrypto_actor = match receiver {
@@ -331,10 +331,10 @@ where
                         .package();
                     let blueprint_abi = package
                         .blueprint_abi(&blueprint_name)
-                        .expect("Blueprint should exist, checked by auth module"); // TODO: assumption will break if auth module is optional
+                        .expect("Blueprint not found"); // TODO: assumption will break if auth module is optional
                     let fn_abi = blueprint_abi
                         .get_fn_abi(&ident)
-                        .expect("Function should exist, checked by auth module");
+                        .expect("Function not found");
                     if !fn_abi.output.matches(&output.dom) {
                         Err(RuntimeError::KernelError(KernelError::InvalidFnOutput {
                             fn_identifier: FnIdentifier::Scrypto {
@@ -525,15 +525,14 @@ where
             for component_address in &input.refed_component_addresses {
                 component_addresses.insert(*component_address);
             }
-            let input: TransactionProcessorRunInput = scrypto_decode(&input.raw)
-                .expect("Received invalid transaction process input (at frame 0)");
+            let input: TransactionProcessorRunInput =
+                scrypto_decode(&input.raw).expect("Transaction processor received invalid input");
             for instruction in &input.instructions {
                 match instruction {
                     ExecutableInstruction::CallFunction { args, .. }
                     | ExecutableInstruction::CallMethod { args, .. } => {
-                        let scrypto_value = ScryptoValue::from_slice(&args).expect(
-                            "Call arguments should be valid, enforced by TransactionValidator",
-                        );
+                        let scrypto_value =
+                            ScryptoValue::from_slice(&args).expect("Invalid CALL arguments");
                         component_addresses.extend(scrypto_value.refed_component_addresses);
                     }
                     _ => {}
@@ -1074,7 +1073,7 @@ where
             .expect(&format!(
                 "Attempt to borrow node {:?}, which is not visible in current frame.",
                 node_id
-            )); // Assumption will break if auth is optional
+            )); // TODO: Assumption will break if auth is optional
 
         for m in &mut self.modules {
             m.post_sys_call(
@@ -1210,7 +1209,7 @@ where
                 .expect(&format!(
                     "Attempt to borrow node {:?}, which is not visible in current frame",
                     node_id
-                )) // Assumption will break if auth is optional
+                )) // TODO: Assumption will break if auth is optional
         };
 
         let substate_ref = node_pointer.borrow_native_ref(
@@ -1330,7 +1329,7 @@ where
             .expect(&format!(
                 "Attempt to drop node {:?}, which is not owned by current frame",
                 node_id
-            )); // Assumption will break if auth is optional
+            )); // TODO: Assumption will break if auth is optional
 
         for m in &mut self.modules {
             m.post_sys_call(
@@ -1397,7 +1396,7 @@ where
                 let frame = self
                     .call_frames
                     .last_mut()
-                    .expect("Current frame always exists");
+                    .expect("Current call frame does not exist");
                 frame.node_refs.insert(
                     node_id.clone(),
                     RENodePointer::Heap {
@@ -1414,7 +1413,7 @@ where
                 let frame = self
                     .call_frames
                     .last_mut()
-                    .expect("Current frame always exists");
+                    .expect("Current call frame does not exist");
                 frame.node_refs.insert(
                     node_id.clone(),
                     RENodePointer::Heap {

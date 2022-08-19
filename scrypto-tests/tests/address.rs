@@ -51,7 +51,7 @@ fn encode_package_address_correct_entity_type_succeeds() {
     let bech32_encoder = Bech32Encoder::new_from_network(&Network::LocalSimulator);
 
     // Act
-    let encoded_package_address = bech32_encoder.encode_package_address(&package_address);
+    bech32_encoder.encode_package_address(&package_address);
 
     // Assert
     assert!(matches!(encoded_package_address, Ok(_)));

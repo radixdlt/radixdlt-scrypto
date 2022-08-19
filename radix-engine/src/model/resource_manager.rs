@@ -213,7 +213,7 @@ impl ResourceManager {
         match &fn_identifier {
             ResourceManagerFnIdentifier::UpdateAuth => {
                 // FIXME we can't assume the input always match the function identifier
-                // especially for auth module code path
+                // especially for the auth module code path
                 let input: ResourceManagerUpdateAuthInput = scrypto_decode(&args.raw).unwrap();
                 match self.authorization.get(&input.method) {
                     None => &MethodAuthorization::Unsupported,
@@ -224,7 +224,7 @@ impl ResourceManager {
             }
             ResourceManagerFnIdentifier::LockAuth => {
                 // FIXME we can't assume the input always match the function identifier
-                // especially for auth module code path
+                // especially for the auth module code path
                 let input: ResourceManagerLockAuthInput = scrypto_decode(&args.raw).unwrap();
                 match self.authorization.get(&input.method) {
                     None => &MethodAuthorization::Unsupported,
