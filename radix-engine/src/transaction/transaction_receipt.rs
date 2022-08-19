@@ -134,10 +134,10 @@ impl fmt::Debug for TransactionReceipt {
                         args,
                     } => format!(
                         "CallFunction {{ package_address: {}, blueprint_name: {:?}, method_name: {:?}, args: {:?} }}",
-                        bech32_encoder.encode_package_address(&package_address).unwrap(),
+                        bech32_encoder.encode_package_address(&package_address),
                         blueprint_name,
                         method_name,
-                        ScryptoValue::from_slice(&args).expect("Invalid call data")
+                        ScryptoValue::from_slice(&args).expect("Failed parse call data")
                     ),
                     ExecutableInstruction::CallMethod {
                         component_address,
@@ -145,9 +145,9 @@ impl fmt::Debug for TransactionReceipt {
                         args,
                     } => format!(
                         "CallMethod {{ component_address: {}, method_name: {:?}, call_data: {:?} }}",
-                        bech32_encoder.encode_component_address(&component_address).unwrap(),
+                        bech32_encoder.encode_component_address(&component_address),
                         method_name,
-                        ScryptoValue::from_slice(&args).expect("Invalid call data")
+                        ScryptoValue::from_slice(&args).expect("Failed to parse call data")
                     ),
                     ExecutableInstruction::PublishPackage { .. } => "PublishPackage {..}".to_owned(),
                     i @ _ => format!("{:?}", i),
@@ -162,7 +162,7 @@ impl fmt::Debug for TransactionReceipt {
                     f,
                     "\n{} {:?}",
                     prefix!(i, outputs),
-                    ScryptoValue::from_slice(output).expect("Invalid return data")
+                    ScryptoValue::from_slice(output).expect("Failed to parse return data")
                 )?;
             }
         }
@@ -198,9 +198,7 @@ impl fmt::Debug for TransactionReceipt {
                 f,
                 "\n{} Package: {}",
                 prefix!(i, self.new_package_addresses),
-                bech32_encoder
-                    .encode_package_address(package_address)
-                    .unwrap()
+                bech32_encoder.encode_package_address(package_address)
             )?;
         }
         for (i, component_address) in self.new_component_addresses.iter().enumerate() {
@@ -208,9 +206,7 @@ impl fmt::Debug for TransactionReceipt {
                 f,
                 "\n{} Component: {}",
                 prefix!(i, self.new_component_addresses),
-                bech32_encoder
-                    .encode_component_address(component_address)
-                    .unwrap()
+                bech32_encoder.encode_component_address(component_address)
             )?;
         }
         for (i, resource_address) in self.new_resource_addresses.iter().enumerate() {
@@ -218,9 +214,7 @@ impl fmt::Debug for TransactionReceipt {
                 f,
                 "\n{} Resource: {}",
                 prefix!(i, self.new_resource_addresses),
-                bech32_encoder
-                    .encode_resource_address(resource_address)
-                    .unwrap()
+                bech32_encoder.encode_resource_address(resource_address)
             )?;
         }
 

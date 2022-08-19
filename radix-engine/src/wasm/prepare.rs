@@ -368,7 +368,7 @@ impl WasmModule {
 
         wasmi::ModuleInstance::new(
             &wasmi::Module::from_parity_wasm_module(self.module.clone())
-                .expect("Failed to convert  WASM module from parity to wasmi"),
+                .expect("Failed to convert WASM module from parity to wasmi"),
             &wasmi::ImportsBuilder::new().with_resolver(MODULE_ENV_NAME, &WasmiEnvModule {}),
         )
         .map_err(|_| PrepareError::NotInstantiatable)?;

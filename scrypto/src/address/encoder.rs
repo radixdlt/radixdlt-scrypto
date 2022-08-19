@@ -28,27 +28,21 @@ impl Bech32Encoder {
     }
 
     /// Encodes a package address in Bech32 and returns a String on success or an `AddressError` on failure.
-    pub fn encode_package_address(
-        &self,
-        package_address: &PackageAddress,
-    ) -> Result<String, AddressError> {
-        Ok(self.encode(&package_address.0, &ALLOWED_PACKAGE_ENTITY_TYPES)?)
+    pub fn encode_package_address(&self, package_address: &PackageAddress) -> String {
+        self.encode(&package_address.0, &ALLOWED_PACKAGE_ENTITY_TYPES)
+            .expect("Failed to encode package address as Bech32")
     }
 
     /// Encodes a component address in Bech32 and returns a String on success or an `AddressError` on failure.
-    pub fn encode_component_address(
-        &self,
-        component_address: &ComponentAddress,
-    ) -> Result<String, AddressError> {
-        Ok(self.encode(&component_address.0, &ALLOWED_COMPONENT_ENTITY_TYPES)?)
+    pub fn encode_component_address(&self, component_address: &ComponentAddress) -> String {
+        self.encode(&component_address.0, &ALLOWED_COMPONENT_ENTITY_TYPES)
+            .expect("Failed to encode component address as Bech32")
     }
 
     /// Encodes a resource address in Bech32 and returns a String on success or an `AddressError` on failure.
-    pub fn encode_resource_address(
-        &self,
-        resource_address: &ResourceAddress,
-    ) -> Result<String, AddressError> {
-        Ok(self.encode(&resource_address.0, &ALLOWED_RESOURCE_ENTITY_TYPES)?)
+    pub fn encode_resource_address(&self, resource_address: &ResourceAddress) -> String {
+        self.encode(&resource_address.0, &ALLOWED_RESOURCE_ENTITY_TYPES)
+            .expect("Failed to encode resource address as Bech32")
     }
 
     /// Low level method which performs the Bech32 encoding of the data.

@@ -411,7 +411,7 @@ impl fmt::Display for ResourceAddress {
         write!(
             f,
             "{}",
-            BECH32_ENCODER.encode_resource_address(self).unwrap()
+            BECH32_ENCODER.encode_resource_address(self)
         )
     }
 }

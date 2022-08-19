@@ -79,7 +79,7 @@ impl fmt::Display for PackageAddress {
         write!(
             f,
             "{}",
-            BECH32_ENCODER.encode_package_address(self).unwrap()
+            BECH32_ENCODER.encode_package_address(self)
         )
     }
 }

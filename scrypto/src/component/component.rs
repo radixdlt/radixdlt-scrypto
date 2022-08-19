@@ -161,7 +161,7 @@ impl fmt::Display for ComponentAddress {
         write!(
             f,
             "{}",
-            BECH32_ENCODER.encode_component_address(self).unwrap()
+            BECH32_ENCODER.encode_component_address(self)
         )
     }
 }
