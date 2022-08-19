@@ -112,7 +112,10 @@ impl WasmerModule {
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
             let output = {
-                let ptr = env.runtime_ptr.lock().unwrap();
+                let ptr = env
+                    .runtime_ptr
+                    .lock()
+                    .expect("Failed to lock WASM runtime pointer");
                 let runtime: &mut Box<dyn WasmRuntime> = unsafe { &mut *(*ptr as *mut _) };
                 runtime
                     .main(input)
@@ -125,7 +128,10 @@ impl WasmerModule {
         }
 
         fn consume_cost_units(env: &WasmerInstanceEnv, cost_unit: i32) -> Result<(), RuntimeError> {
-            let ptr = env.runtime_ptr.lock().unwrap();
+            let ptr = env
+                .runtime_ptr
+                .lock()
+                .expect("Failed to lock WASM runtime pointer");
             let runtime: &mut Box<dyn WasmRuntime> = unsafe { &mut *(*ptr as *mut _) };
             runtime
                 .consume_cost_units(cost_unit as u32)
@@ -148,7 +154,7 @@ impl WasmerModule {
 
         // instantiate
         let instance =
-            Instance::new(&self.module, &import_object).expect("Failed to instantiate module");
+            Instance::new(&self.module, &import_object).expect("Failed to instantiate WASM module");
 
         WasmerInstance {
             instance,
@@ -166,7 +172,10 @@ impl WasmInstance for WasmerInstance {
     ) -> Result<ScryptoValue, InvokeError> {
         {
             // set up runtime pointer
-            let mut guard = self.runtime_ptr.lock().unwrap();
+            let mut guard = self
+                .runtime_ptr
+                .lock()
+                .expect("Failed to lock WASM runtime pointer");
             *guard = runtime as *mut _ as usize;
         }
 
@@ -212,13 +221,11 @@ impl WasmerEngine {
 impl WasmEngine<WasmerInstance> for WasmerEngine {
     fn instantiate(&mut self, code: &[u8]) -> WasmerInstance {
         let code_hash = hash(code);
-        if !self.modules.contains_key(&code_hash) {
-            let module = WasmerModule {
-                module: Module::new(&self.store, code).expect("Failed to parse wasm code"),
-            };
-            self.modules.insert(code_hash, module);
-        }
-        let module = self.modules.get(&code_hash).unwrap();
-        module.instantiate()
+        self.modules
+            .entry(code_hash)
+            .or_insert_with(|| WasmerModule {
+                module: Module::new(&self.store, code).expect("Failed to parse WASM module"),
+            })
+            .instantiate()
     }
 }

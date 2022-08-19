@@ -368,7 +368,7 @@ impl WasmModule {
 
         wasmi::ModuleInstance::new(
             &wasmi::Module::from_parity_wasm_module(self.module.clone())
-                .expect("Due to the `init` step module should be valid"),
+                .expect("Failed to convert  WASM module from parity to wasmi"),
             &wasmi::ImportsBuilder::new().with_resolver(MODULE_ENV_NAME, &WasmiEnvModule {}),
         )
         .map_err(|_| PrepareError::NotInstantiatable)?;
@@ -421,13 +421,15 @@ impl WasmModule {
             .filter(|e| matches!(e.external(), External::Function(_)))
             .count();
 
-        let func = module
+        module
             .function_section()
             .map(|s| s.entries())
             .unwrap_or(&[])
             .get(func_index - func_import_count)
-            .expect("Due to validation function should exist");
-        Self::function_type_matches(module, func.type_ref() as usize, params, results)
+            .map(|func| {
+                Self::function_type_matches(module, func.type_ref() as usize, params, results)
+            })
+            .unwrap_or(false)
     }
 
     fn function_type_matches(
@@ -436,14 +438,13 @@ impl WasmModule {
         params: Vec<ValueType>,
         results: Vec<ValueType>,
     ) -> bool {
-        let ty = module
+        module
             .type_section()
             .map(|s| s.types())
             .unwrap_or(&[])
             .get(type_index)
-            .expect("Due to validation type should exist");
-
-        ty == &Type::Function(FunctionType::new(params, results))
+            .map(|ty| ty == &Type::Function(FunctionType::new(params, results)))
+            .unwrap_or(false)
     }
 }
 
