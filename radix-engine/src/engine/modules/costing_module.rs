@@ -394,4 +394,27 @@ impl<'g, R: FeeReserve> Module for CostingModule<'g, R> {
     ) -> Result<(), ModuleError> {
         Ok(())
     }
+
+    fn on_wasm_instantiation(
+        &mut self,
+        heap: &mut Vec<CallFrame>,
+        code: &[u8],
+    ) -> Result<(), ModuleError> {
+        self.fee_reserve
+            .consume(
+                self.fee_table.wasm_instantiation_per_byte() * code.len() as u32,
+                "instantiate_wasm",
+            )
+            .map_err(ModuleError::CostingError)
+    }
+
+    fn on_wasm_costing(
+        &mut self,
+        heap: &mut Vec<CallFrame>,
+        units: u32,
+    ) -> Result<(), ModuleError> {
+        self.fee_reserve
+            .consume(units, "run_wasm")
+            .map_err(ModuleError::CostingError)
+    }
 }

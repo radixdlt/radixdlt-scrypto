@@ -81,4 +81,13 @@ pub trait Module {
         heap: &mut Vec<CallFrame>,
         output: SysCallOutput,
     ) -> Result<(), ModuleError>;
+
+    fn on_wasm_instantiation(
+        &mut self,
+        heap: &mut Vec<CallFrame>,
+        code: &[u8],
+    ) -> Result<(), ModuleError>;
+
+    fn on_wasm_costing(&mut self, heap: &mut Vec<CallFrame>, units: u32)
+        -> Result<(), ModuleError>;
 }

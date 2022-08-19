@@ -141,4 +141,20 @@ impl Module for LoggerModule {
 
         Ok(())
     }
+
+    fn on_wasm_instantiation(
+        &mut self,
+        _heap: &mut Vec<CallFrame>,
+        _code: &[u8],
+    ) -> Result<(), ModuleError> {
+        Ok(())
+    }
+
+    fn on_wasm_costing(
+        &mut self,
+        _heap: &mut Vec<CallFrame>,
+        _units: u32,
+    ) -> Result<(), ModuleError> {
+        Ok(())
+    }
 }

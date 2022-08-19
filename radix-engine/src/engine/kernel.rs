@@ -23,7 +23,7 @@ pub struct Kernel<
     's, // Substate store lifetime
     W,  // WASM engine type
     I,  // WASM instance type
-    C,  // Fee reserve type
+    C,  // Fee reserve type  // TODO: remove
 > where
     W: WasmEngine<I>,
     I: WasmInstance,
@@ -41,24 +41,21 @@ pub struct Kernel<
     /// Wasm Instrumenter
     wasm_instrumenter: &'g mut WasmInstrumenter,
 
-    /// Fee reserve
-    fee_reserve: &'g mut C,
-    /// Fee table
-    fee_table: &'g FeeTable,
-
     /// ID allocator
     id_allocator: IdAllocator,
 
-    // TODO: move execution trace, fee, authorization to modules
+    /// Execution trace
     execution_trace: &'g mut ExecutionTrace,
 
     /// Call frames
     call_frames: Vec<CallFrame>,
 
     /// Kernel modules
+    /// TODO: move execution trace and  authorization to modules
     modules: Vec<Box<dyn Module>>,
 
     phantom: PhantomData<I>,
+    phantom2: PhantomData<C>,
 }
 
 impl<'g, 's, W, I, C> Kernel<'g, 's, W, I, C>
@@ -92,13 +89,12 @@ where
             track,
             wasm_engine,
             wasm_instrumenter,
-            fee_reserve,
-            fee_table,
             id_allocator: IdAllocator::new(IdSpace::Application),
             execution_trace,
             call_frames: vec![frame],
             modules,
             phantom: PhantomData,
+            phantom2: PhantomData,
         };
 
         if is_system {
@@ -271,13 +267,10 @@ where
                             .track
                             .read_substate(SubstateId::Package(package_address))
                             .package();
-                        self.fee_reserve
-                            .consume(
-                                self.fee_table.wasm_instantiation_per_byte()
-                                    * package.code().len() as u32,
-                                "instantiate_wasm",
-                            )
-                            .map_err(|e| RuntimeError::ModuleError(ModuleError::CostingError(e)))?;
+                        for m in &mut self.modules {
+                            m.on_wasm_instantiation(&mut self.call_frames, package.code())
+                                .map_err(RuntimeError::ModuleError)?;
+                        }
                         let wasm_metering_params = self.fee_table.wasm_metering_params();
                         let instrumented_code = self
                             .wasm_instrumenter
