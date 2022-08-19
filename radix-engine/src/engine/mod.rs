@@ -1,11 +1,8 @@
 mod actor;
-mod auth_module;
 mod call_frame;
 mod errors;
-mod execution_trace;
 mod kernel;
-mod logger_module;
-mod module;
+mod modules;
 mod native_interpreter;
 mod node;
 mod node_properties;
@@ -16,13 +13,10 @@ mod track_support;
 mod wasm_runtime;
 
 pub use actor::*;
-pub use auth_module::*;
 pub use call_frame::CallFrame;
 pub use errors::*;
-pub use execution_trace::*;
 pub use kernel::*;
-pub use logger_module::*;
-pub use module::*;
+pub use modules::*;
 pub use native_interpreter::NativeInterpreter;
 pub use node::*;
 pub use node_properties::*;
