@@ -134,7 +134,7 @@ impl FeeReserve for SystemLoanFeeReserve {
         self.payments.push((
             vault_id,
             fee.take_by_amount(actual_amount)
-                .expect("Check manual accounting"),
+                .expect("Failed to take from fee resource"),
             contingent,
         ));
 
@@ -183,7 +183,9 @@ impl Default for SystemLoanFeeReserve {
         Self::new(
             DEFAULT_COST_UNIT_LIMIT,
             0,
-            DEFAULT_COST_UNIT_PRICE.parse().unwrap(),
+            DEFAULT_COST_UNIT_PRICE
+                .parse()
+                .expect("Invalid DEFAULT_COST_UNIT_PRICE"),
             DEFAULT_SYSTEM_LOAN,
         )
     }
@@ -274,7 +276,9 @@ impl Default for UnlimitedLoanFeeReserve {
         UnlimitedLoanFeeReserve::new(
             DEFAULT_COST_UNIT_LIMIT,
             0,
-            DEFAULT_COST_UNIT_PRICE.parse().unwrap(),
+            DEFAULT_COST_UNIT_PRICE
+                .parse()
+                .expect("Invalid DEFAULT_COST_UNIT_PRICE"),
         )
     }
 }
