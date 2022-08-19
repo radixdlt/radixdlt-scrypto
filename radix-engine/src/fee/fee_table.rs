@@ -25,6 +25,8 @@ pub enum SystemApiCostingEntry<'a> {
     DropNode { size: u32 },
     /// Globalizes a RENode.
     GlobalizeNode { size: u32 },
+    /// Borrows a RENode.
+    BorrowNode { loaded: bool, size: u32 },
 
     /*
      * Substate
@@ -113,7 +115,7 @@ impl FeeTable {
 
     pub fn run_method_cost(
         &self,
-        receiver: Option<Receiver>,
+        receiver: Option<&Receiver>,
         fn_identifier: &FnIdentifier,
         input: &ScryptoValue,
     ) -> u32 {
@@ -228,6 +230,13 @@ impl FeeTable {
             SystemApiCostingEntry::CreateNode { .. } => self.fixed_medium,
             SystemApiCostingEntry::DropNode { .. } => self.fixed_medium,
             SystemApiCostingEntry::GlobalizeNode { size } => self.fixed_high + 200 * size,
+            SystemApiCostingEntry::BorrowNode { loaded, size } => {
+                if loaded {
+                    self.fixed_high
+                } else {
+                    self.fixed_low + 100 * size
+                }
+            }
 
             SystemApiCostingEntry::BorrowSubstate { loaded, size } => {
                 if loaded {
