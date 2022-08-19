@@ -18,25 +18,32 @@ const XRD_MAX_SUPPLY: i128 = 24_000_000_000i128;
 const XRD_VAULT_ID: VaultId = (Hash([0u8; 32]), 0);
 const XRD_VAULT: scrypto::resource::Vault = scrypto::resource::Vault(XRD_VAULT_ID);
 
-const SYSTEM_COMPONENT_NAME: &str = "System";
+const SYS_FAUCET_COMPONENT_NAME: &str = "SysFaucet";
 
 use crate::model::*;
 
 fn create_genesis(mut track: Track) -> TrackReceipt {
-    let system_package = extract_package(include_bytes!("../../../assets/system.wasm").to_vec())
-        .expect("Failed to construct SYSTEM package");
-    let validated_system_package =
-        ValidatedPackage::new(system_package).expect("Invalid SYSTEM package");
+    let sys_faucet_package =
+        extract_package(include_bytes!("../../../assets/sys_faucet.wasm").to_vec())
+            .expect("Failed to construct sys-faucet package");
     track.create_uuid_substate(
-        SubstateId::Package(SYSTEM_PACKAGE),
-        validated_system_package,
+        SubstateId::Package(SYS_FAUCET_PACKAGE),
+        ValidatedPackage::new(sys_faucet_package).expect("Invalid sys-faucet package"),
+        true,
+    );
+    let sys_utils_package =
+        extract_package(include_bytes!("../../../assets/sys_utils.wasm").to_vec())
+            .expect("Failed to construct sys-utils package");
+    track.create_uuid_substate(
+        SubstateId::Package(SYS_UTILS_PACKAGE),
+        ValidatedPackage::new(sys_utils_package).expect("Invalid sys-utils package"),
         true,
     );
 
     let account_package = extract_package(include_bytes!("../../../assets/account.wasm").to_vec())
-        .expect("Failed to construct Account package");
+        .expect("Failed to construct account package");
     let validated_account_package =
-        ValidatedPackage::new(account_package).expect("Invalid Account package");
+        ValidatedPackage::new(account_package).expect("Invalid account package");
     track.create_uuid_substate(
         SubstateId::Package(ACCOUNT_PACKAGE),
         validated_account_package,
@@ -90,18 +97,21 @@ fn create_genesis(mut track: Track) -> TrackReceipt {
     let system_vault = Vault::new(minted_xrd);
     track.create_uuid_substate(SubstateId::Vault(XRD_VAULT_ID), system_vault, false);
 
-    let system_component_info =
-        ComponentInfo::new(SYSTEM_PACKAGE, SYSTEM_COMPONENT_NAME.to_owned(), vec![]);
-    let system_component_state =
+    let sys_faucet_component_info = ComponentInfo::new(
+        SYS_FAUCET_PACKAGE,
+        SYS_FAUCET_COMPONENT_NAME.to_owned(),
+        vec![],
+    );
+    let sys_faucet_component_state =
         ComponentState::new(scrypto_encode(&SystemComponentState { xrd: XRD_VAULT }));
     track.create_uuid_substate(
-        SubstateId::ComponentInfo(SYSTEM_COMPONENT),
-        system_component_info,
+        SubstateId::ComponentInfo(SYS_FAUCET_COMPONENT),
+        sys_faucet_component_info,
         true,
     );
     track.create_uuid_substate(
-        SubstateId::ComponentState(SYSTEM_COMPONENT),
-        system_component_state,
+        SubstateId::ComponentState(SYS_FAUCET_COMPONENT),
+        sys_faucet_component_state,
         true,
     );
     track.create_uuid_substate(SubstateId::System, System { epoch: 0 }, true);
@@ -115,7 +125,7 @@ where
     S: ReadableSubstateStore + WriteableSubstateStore + 'static,
 {
     if substate_store
-        .get_substate(&SubstateId::Package(SYSTEM_PACKAGE))
+        .get_substate(&SubstateId::Package(SYS_FAUCET_PACKAGE))
         .is_none()
     {
         let track = Track::new(&substate_store);

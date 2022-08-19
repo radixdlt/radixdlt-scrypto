@@ -78,7 +78,7 @@ where
     ) -> Result<ScryptoValue, RuntimeError> {
         let node = match scrypto_node {
             ScryptoRENode::Component(package_address, blueprint_name, state) => {
-                // TODO: Move these two checks into CallFrame/System
+                // TODO: Move these two checks into kernel
                 if !blueprint_name.eq(self.actor.blueprint_name()) {
                     return Err(RuntimeError::KernelError(
                         KernelError::RENodeCreateInvalidPermission,

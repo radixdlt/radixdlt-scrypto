@@ -464,8 +464,8 @@ impl ManifestBuilder {
         let mint_params: Option<MintParams> = Option::None;
 
         self.add_instruction(Instruction::CallFunction {
-            package_address: SYSTEM_PACKAGE,
-            blueprint_name: "System".to_owned(),
+            package_address: SYS_UTILS_PACKAGE,
+            blueprint_name: "SysUtils".to_owned(),
             method_name: "new_resource".to_string(),
             args: args!(
                 ResourceType::Fungible { divisibility: 18 },
@@ -487,8 +487,8 @@ impl ManifestBuilder {
         resource_auth.insert(Withdraw, (rule!(allow_all), LOCKED));
 
         self.add_instruction(Instruction::CallFunction {
-            package_address: SYSTEM_PACKAGE,
-            blueprint_name: "System".to_owned(),
+            package_address: SYS_UTILS_PACKAGE,
+            blueprint_name: "SysUtils".to_owned(),
             method_name: "new_resource".to_string(),
             args: args!(
                 ResourceType::Fungible { divisibility: 18 },
@@ -522,8 +522,8 @@ impl ManifestBuilder {
         let mint_params: Option<MintParams> = Option::None;
 
         self.add_instruction(Instruction::CallFunction {
-            package_address: SYSTEM_PACKAGE,
-            blueprint_name: "System".to_owned(),
+            package_address: SYS_UTILS_PACKAGE,
+            blueprint_name: "SysUtils".to_owned(),
             method_name: "new_resource".to_string(),
             args: args!(
                 ResourceType::Fungible { divisibility: 0 },
@@ -545,8 +545,8 @@ impl ManifestBuilder {
         resource_auth.insert(Withdraw, (rule!(allow_all), LOCKED));
 
         self.add_instruction(Instruction::CallFunction {
-            package_address: SYSTEM_PACKAGE,
-            blueprint_name: "System".to_owned(),
+            package_address: SYS_UTILS_PACKAGE,
+            blueprint_name: "SysUtils".to_owned(),
             method_name: "new_resource".to_string(),
             args: args!(
                 ResourceType::Fungible { divisibility: 0 },
@@ -563,8 +563,8 @@ impl ManifestBuilder {
     /// Mints resource.
     pub fn mint(&mut self, amount: Decimal, resource_address: ResourceAddress) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {
-            package_address: SYSTEM_PACKAGE,
-            blueprint_name: "System".to_owned(),
+            package_address: SYS_UTILS_PACKAGE,
+            blueprint_name: "SysUtils".to_owned(),
             method_name: "mint".to_string(),
             args: args!(amount, resource_address),
         });
@@ -576,8 +576,8 @@ impl ManifestBuilder {
         self.take_from_worktop_by_amount(amount, resource_address, |builder, bucket_id| {
             builder
                 .add_instruction(Instruction::CallFunction {
-                    package_address: SYSTEM_PACKAGE,
-                    blueprint_name: "System".to_owned(),
+                    package_address: SYS_UTILS_PACKAGE,
+                    blueprint_name: "SysUtils".to_owned(),
                     method_name: "burn".to_string(),
                     args: args!(scrypto::resource::Bucket(bucket_id)),
                 })
@@ -594,8 +594,8 @@ impl ManifestBuilder {
             |builder, bucket_id| {
                 builder
                     .add_instruction(Instruction::CallFunction {
-                        package_address: SYSTEM_PACKAGE,
-                        blueprint_name: "System".to_owned(),
+                        package_address: SYS_UTILS_PACKAGE,
+                        blueprint_name: "SysUtils".to_owned(),
                         method_name: "burn".to_string(),
                         args: args!(scrypto::resource::Bucket(bucket_id)),
                     })

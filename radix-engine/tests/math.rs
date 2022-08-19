@@ -14,7 +14,7 @@ fn test_integer_basic_ops() {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
-        .lock_fee(10.into(), SYSTEM_COMPONENT)
+        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function_with_abi(
             package_address,
             "Hello",
@@ -41,7 +41,7 @@ fn test_native_and_safe_integer_interop() {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
-        .lock_fee(10.into(), SYSTEM_COMPONENT)
+        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(
             package_address,
             "Hello",

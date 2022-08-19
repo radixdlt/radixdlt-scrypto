@@ -1,13 +1,12 @@
 use scrypto::prelude::*;
 
 blueprint! {
-    // nobody can instantiate a system component except the bootstrap process
-    struct System {
-        xrd: Vault,
-    }
+    struct SysUtils {}
 
-    impl System {
+    impl SysUtils {
         /// Creates a resource.
+        ///
+        /// TODO: Remove if manifest natively supports this
         pub fn new_resource(
             resource_type: ResourceType,
             metadata: HashMap<String, String>,
@@ -17,25 +16,18 @@ blueprint! {
             resource_system().new_resource(resource_type, metadata, access_rules, initial_supply)
         }
 
-        /// Mints fungible resource. TODO: Remove
+        /// Mints fungible resource.
+        ///
+        /// TODO: Remove if manifest natively supports this
         pub fn mint(amount: Decimal, resource_address: ResourceAddress) -> Bucket {
             borrow_resource_manager!(resource_address).mint(amount)
         }
 
-        /// Burns bucket. TODO: Remove
+        /// Burns bucket.
+        ///
+        /// TODO: Remove if manifest natively supports this
         pub fn burn(bucket: Bucket) {
             bucket.burn()
-        }
-
-        /// Gives away XRD tokens for testing. TODO: Remove
-        pub fn free_xrd(&mut self) -> Bucket {
-            self.xrd.take(1_000_000)
-        }
-
-        /// Pays fee to bootstrap account creation.
-        /// TESTING ONLY. TODO: Remove
-        pub fn lock_fee(&mut self, amount: Decimal) {
-            self.xrd.lock_fee(amount);
         }
     }
 }

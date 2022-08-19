@@ -123,9 +123,12 @@ jobs:
     - name: Build account
       run: cargo build --target wasm32-unknown-unknown --release
       working-directory: assets/account
-    - name: Build system
+    - name: Build sys-faucet
       run: cargo build --target wasm32-unknown-unknown --release
-      working-directory: assets/system
+      working-directory: assets/sys-faucet
+    - name: Build sys-utils
+      run: cargo build --target wasm32-unknown-unknown --release
+      working-directory: assets/sys-utils
     - name: Build and test hello-world
       run: cargo build --target wasm32-unknown-unknown --release && cargo test --release
       working-directory: examples/hello-world

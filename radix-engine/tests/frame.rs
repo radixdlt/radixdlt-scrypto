@@ -19,7 +19,7 @@ fn test_max_call_depth_success() {
     // * 2-16: Caller::call x 15
     // ============================
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
-        .lock_fee(10.into(), SYSTEM_COMPONENT)
+        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(package_address, "Caller", "recursive", args!(15u32))
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -37,7 +37,7 @@ fn test_max_call_depth_failure() {
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)
-        .lock_fee(10.into(), SYSTEM_COMPONENT)
+        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(package_address, "Caller", "recursive", args!(16u32))
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);

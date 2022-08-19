@@ -19,7 +19,8 @@ cd "$(dirname "$0")"
 (cd transaction; cargo fmt)
 
 (cd assets/account; scrypto fmt)
-(cd assets/system; scrypto fmt)
+(cd assets/sys-faucet; scrypto fmt)
+(cd assets/sys-utils; scrypto fmt)
 (cd examples; find . -maxdepth 1 -type d \( ! -name . \) -print0 | xargs -0 -n1 -I '{}' scrypto fmt --path {})
 (cd radix-engine/tests; find . -maxdepth 1 -type d \( ! -name . \) -print0 | xargs -0 -n1 -I '{}' scrypto fmt --path {})
 

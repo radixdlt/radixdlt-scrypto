@@ -26,7 +26,8 @@ echo "Testing with no_std..."
 
 echo "Building assets and examples..."
 (cd assets/account; cargo build --target wasm32-unknown-unknown --release; cargo test --release)
-(cd assets/system; cargo build --target wasm32-unknown-unknown --release; cargo test --release)
+(cd assets/sys-faucet; cargo build --target wasm32-unknown-unknown --release; cargo test --release)
+(cd assets/sys-utils; cargo build --target wasm32-unknown-unknown --release; cargo test --release)
 (cd examples/hello-world; cargo build --target wasm32-unknown-unknown --release; cargo test --release)
 (cd examples/no-std; cargo build --target wasm32-unknown-unknown --release; cargo test --release)
 
