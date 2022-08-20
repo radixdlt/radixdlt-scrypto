@@ -21,7 +21,7 @@ fn test_normal_transaction_flow() {
     let mut wasm_instrumenter = WasmInstrumenter::new();
     let intent_hash_manager = TestIntentHashManager::new();
     let validation_params = ValidationConfig {
-        network: Network::LocalSimulator,
+        network: Network::LocalSimulator.get_definition(),
         current_epoch: 1,
         max_cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,
         min_tip_percentage: 0,
@@ -108,7 +108,7 @@ fn create_transaction() -> Vec<u8> {
     let transaction = TransactionBuilder::new()
         .header(TransactionHeader {
             version: 1,
-            network: Network::LocalSimulator,
+            network_id: Network::LocalSimulator.get_id(),
             start_epoch_inclusive: 0,
             end_epoch_exclusive: 100,
             nonce: 5,

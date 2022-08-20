@@ -34,7 +34,7 @@ pub fn run() -> Result<(), Error> {
 
     let content = std::fs::read_to_string(args.input).map_err(Error::IoError)?;
     let network = Network::from_str(&args.network).map_err(Error::NetworkError)?;
-    let transaction = compile(&content, &network).map_err(Error::CompileError)?;
+    let transaction = compile(&content, &network.get_definition()).map_err(Error::CompileError)?;
     std::fs::write(args.output, scrypto_encode(&transaction)).map_err(Error::IoError)?;
 
     Ok(())

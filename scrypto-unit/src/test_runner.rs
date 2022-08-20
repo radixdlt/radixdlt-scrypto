@@ -242,6 +242,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             .execute_and_commit(
                 &transaction,
                 &ExecutionConfig {
+                    network_definition: Network::LocalSimulator.get_definition(),
                     cost_unit_price: DEFAULT_COST_UNIT_PRICE.parse().unwrap(),
                     max_call_depth: DEFAULT_MAX_CALL_DEPTH,
                     system_loan: DEFAULT_SYSTEM_LOAN,

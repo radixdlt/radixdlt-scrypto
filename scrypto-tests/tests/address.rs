@@ -1,5 +1,5 @@
 use scrypto::address::{
-    AddressError, Bech32Decoder, Bech32Encoder, ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID,
+    AddressError, Bech32Decoder, Bech32Encoder, EntityType, ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID,
     COMPONENT_ADDRESS_ENTITY_ID, PACKAGE_ADDRESS_ENTITY_ID, RESOURCE_ADDRESS_ENTITY_ID,
     SYSTEM_COMPONENT_ADDRESS_ENTITY_ID,
 };
@@ -222,7 +222,7 @@ fn decode_invalid_bech32_variant_fails() {
 
     // Act
     let encoded_resource_address = bech32::encode(
-        bech32_encoder.hrp_set.resource,
+        bech32_encoder.hrp_set.get_entity_hrp(&EntityType::Resource),
         resource_address.0.to_base32(),
         Variant::Bech32,
     )
@@ -246,7 +246,7 @@ fn decode_matching_package_address_entity_id_succeeds() {
 
     // Act
     let encoded_package_address = bech32::encode(
-        bech32_encoder.hrp_set.package,
+        bech32_encoder.hrp_set.get_entity_hrp(&EntityType::Package),
         generate_u8_array(PACKAGE_ADDRESS_ENTITY_ID).to_base32(),
         Variant::Bech32m,
     )
@@ -267,7 +267,9 @@ fn decode_matching_account_address_entity_id_succeeds() {
 
     // Act
     let encoded_account_address = bech32::encode(
-        bech32_encoder.hrp_set.account_component,
+        bech32_encoder
+            .hrp_set
+            .get_entity_hrp(&EntityType::AccountComponent),
         generate_u8_array(ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID).to_base32(),
         Variant::Bech32m,
     )
@@ -288,7 +290,9 @@ fn decode_matching_system_address_entity_id_succeeds() {
 
     // Act
     let encoded_system_address = bech32::encode(
-        bech32_encoder.hrp_set.system_component,
+        bech32_encoder
+            .hrp_set
+            .get_entity_hrp(&EntityType::SystemComponent),
         generate_u8_array(SYSTEM_COMPONENT_ADDRESS_ENTITY_ID).to_base32(),
         Variant::Bech32m,
     )
@@ -309,7 +313,9 @@ fn decode_matching_component_address_entity_id_succeeds() {
 
     // Act
     let encoded_component_address = bech32::encode(
-        bech32_encoder.hrp_set.component,
+        bech32_encoder
+            .hrp_set
+            .get_entity_hrp(&EntityType::Component),
         generate_u8_array(COMPONENT_ADDRESS_ENTITY_ID).to_base32(),
         Variant::Bech32m,
     )
@@ -330,7 +336,7 @@ fn decode_mismatched_package_address_entity_id_fails() {
 
     // Act
     let encoded_package_address = bech32::encode(
-        bech32_encoder.hrp_set.package,
+        bech32_encoder.hrp_set.get_entity_hrp(&EntityType::Package),
         generate_u8_array(RESOURCE_ADDRESS_ENTITY_ID).to_base32(),
         Variant::Bech32m,
     )
@@ -356,7 +362,7 @@ fn decode_matching_resource_address_entity_id_succeeds() {
 
     // Act
     let encoded_resource_address = bech32::encode(
-        bech32_encoder.hrp_set.resource,
+        bech32_encoder.hrp_set.get_entity_hrp(&EntityType::Resource),
         generate_u8_array(RESOURCE_ADDRESS_ENTITY_ID).to_base32(),
         Variant::Bech32m,
     )
@@ -377,7 +383,7 @@ fn decode_mismatched_resource_address_entity_id_fails() {
 
     // Act
     let encoded_resource_address = bech32::encode(
-        bech32_encoder.hrp_set.resource,
+        bech32_encoder.hrp_set.get_entity_hrp(&EntityType::Resource),
         generate_u8_array(PACKAGE_ADDRESS_ENTITY_ID).to_base32(),
         Variant::Bech32m,
     )
@@ -401,7 +407,7 @@ fn decode_invalid_entity_specifier_fails() {
 
     // Act
     let encoded_resource_address = bech32::encode(
-        bech32_encoder.hrp_set.resource,
+        bech32_encoder.hrp_set.get_entity_hrp(&EntityType::Resource),
         generate_u8_array(PACKAGE_ADDRESS_ENTITY_ID).to_base32(),
         Variant::Bech32m,
     )
@@ -417,12 +423,12 @@ fn decode_invalid_entity_specifier_fails() {
 #[test]
 fn decode_invalid_network_specifier_fails() {
     // Arrange
-    let bech32_encoder = Bech32Encoder::new_from_network(&Network::InternalTestnet);
+    let bech32_encoder = Bech32Encoder::new_from_network(&Network::Mainnet);
     let bech32_decoder = Bech32Decoder::new_from_network(&Network::LocalSimulator);
 
     // Act
     let encoded_resource_address = bech32::encode(
-        bech32_encoder.hrp_set.resource,
+        bech32_encoder.hrp_set.get_entity_hrp(&EntityType::Resource),
         generate_u8_array(RESOURCE_ADDRESS_ENTITY_ID).to_base32(),
         Variant::Bech32m,
     )

@@ -33,9 +33,11 @@ impl Run {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
         let manifest = std::fs::read_to_string(&self.path).map_err(Error::IOError)?;
         let pre_processed_manifest = Self::pre_process_manifest(&manifest);
-        let compiled_manifest =
-            transaction::manifest::compile(&pre_processed_manifest, &Network::LocalSimulator)
-                .map_err(Error::CompileError)?;
+        let compiled_manifest = transaction::manifest::compile(
+            &pre_processed_manifest,
+            &Network::LocalSimulator.get_definition(),
+        )
+        .map_err(Error::CompileError)?;
         handle_manifest(
             compiled_manifest,
             &self.signing_keys,

@@ -1,3 +1,4 @@
+use scrypto::core::{Network, NetworkDefinition};
 use transaction::model::*;
 
 use crate::constants::{DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN};
@@ -11,6 +12,7 @@ use crate::types::*;
 use crate::wasm::*;
 
 pub struct ExecutionConfig {
+    pub network_definition: NetworkDefinition,
     pub cost_unit_price: Decimal,
     pub max_call_depth: usize,
     pub system_loan: u32,
@@ -20,7 +22,14 @@ pub struct ExecutionConfig {
 
 impl Default for ExecutionConfig {
     fn default() -> Self {
+        ExecutionConfig::with_network(Network::LocalSimulator.get_definition())
+    }
+}
+
+impl ExecutionConfig {
+    pub fn with_network(network_definition: NetworkDefinition) -> Self {
         Self {
+            network_definition: network_definition,
             cost_unit_price: DEFAULT_COST_UNIT_PRICE.parse().unwrap(),
             max_call_depth: DEFAULT_MAX_CALL_DEPTH,
             system_loan: DEFAULT_SYSTEM_LOAN,
@@ -28,11 +37,10 @@ impl Default for ExecutionConfig {
             trace: false,
         }
     }
-}
 
-impl ExecutionConfig {
     pub fn debug() -> Self {
         Self {
+            network_definition: Network::LocalSimulator.get_definition(),
             cost_unit_price: DEFAULT_COST_UNIT_PRICE.parse().unwrap(),
             max_call_depth: DEFAULT_MAX_CALL_DEPTH,
             system_loan: DEFAULT_SYSTEM_LOAN,
@@ -108,8 +116,16 @@ where
         #[cfg(not(feature = "alloc"))]
         let now = std::time::Instant::now();
 
+        // The transaction should already have been verified against the network
+        // TODO: Replace this with a rejection, for tests
+        assert_eq!(
+            transaction.transaction_network_id(),
+            params.network_definition.id,
+            "Transaction network id didn't match configuration"
+        );
+
         let transaction_hash = transaction.transaction_hash();
-        let transaction_network = transaction.transaction_network();
+        let transaction_network = &params.network_definition;
         let signer_public_keys = transaction.signer_public_keys().to_vec();
         let instructions = transaction.instructions().to_vec();
         #[cfg(not(feature = "alloc"))]
@@ -270,7 +286,7 @@ where
 
         let receipt = TransactionReceipt {
             status,
-            transaction_network,
+            transaction_network: params.network_definition.clone(),
             fee_summary: fee_summary,
             instructions,
             application_logs: track_receipt.application_logs,

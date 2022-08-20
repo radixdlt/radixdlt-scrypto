@@ -21,7 +21,7 @@ impl TestTransaction {
         let transaction = TransactionBuilder::new()
             .header(TransactionHeader {
                 version: TRANSACTION_VERSION_V1,
-                network: Network::LocalSimulator,
+                network_id: Network::LocalSimulator.get_id(),
                 start_epoch_inclusive: 0,
                 end_epoch_exclusive: 100,
                 nonce,
@@ -163,8 +163,8 @@ impl ExecutableTransaction for TestTransaction {
         self.transaction.hash()
     }
 
-    fn transaction_network(&self) -> Network {
-        self.transaction.signed_intent.intent.header.network.clone()
+    fn transaction_network_id(&self) -> u8 {
+        self.transaction.signed_intent.intent.header.network_id
     }
 
     fn transaction_payload_size(&self) -> u32 {

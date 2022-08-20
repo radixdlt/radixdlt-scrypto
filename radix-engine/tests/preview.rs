@@ -23,8 +23,10 @@ fn test_transaction_preview_cost_estimate() {
     let preview_receipt = preview_result.unwrap().receipt;
     preview_receipt.expect_success();
 
-    let receipt =
-        test_runner.execute_transaction(&validated_transaction, &ExecutionConfig::default());
+    let receipt = test_runner.execute_transaction(
+        &validated_transaction,
+        &ExecutionConfig::with_network(Network::LocalSimulator.get_definition()),
+    );
     receipt.expect_success();
 
     assert_eq!(
@@ -42,7 +44,7 @@ fn prepare_test_tx_and_preview_intent(
     let notarized_transaction = TransactionBuilder::new()
         .header(TransactionHeader {
             version: 1,
-            network: Network::LocalSimulator,
+            network_id: Network::LocalSimulator.get_id(),
             start_epoch_inclusive: 0,
             end_epoch_exclusive: 99,
             nonce: test_runner.next_transaction_nonce(),
@@ -65,7 +67,7 @@ fn prepare_test_tx_and_preview_intent(
         notarized_transaction.clone(),
         &TestIntentHashManager::new(),
         &ValidationConfig {
-            network: Network::LocalSimulator,
+            network: Network::LocalSimulator.get_definition(),
             current_epoch: 1,
             max_cost_unit_limit: 10_000_000,
             min_tip_percentage: 0,

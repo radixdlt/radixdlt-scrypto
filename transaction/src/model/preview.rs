@@ -1,6 +1,5 @@
 use sbor::*;
 use scrypto::buffer::scrypto_encode;
-use scrypto::core::Network;
 use scrypto::crypto::{hash, EcdsaPublicKey, EcdsaSignature, Hash};
 
 use crate::model::{
@@ -48,8 +47,8 @@ impl ExecutableTransaction for ValidatedPreviewTransaction {
         self.transaction_hash
     }
 
-    fn transaction_network(&self) -> Network {
-        self.preview_intent.intent.header.network.clone()
+    fn transaction_network_id(&self) -> u8 {
+        self.preview_intent.intent.header.network_id
     }
 
     fn transaction_payload_size(&self) -> u32 {

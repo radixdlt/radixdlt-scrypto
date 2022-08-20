@@ -1,7 +1,7 @@
 use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::buffer::{scrypto_decode, scrypto_encode};
-use scrypto::core::Network;
+use scrypto::core::NetworkDefinition;
 use scrypto::crypto::{hash, EcdsaPublicKey, EcdsaSignature, Hash};
 
 use crate::manifest::{compile, CompileError};
@@ -12,7 +12,7 @@ use crate::model::Instruction;
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct TransactionHeader {
     pub version: u8,
-    pub network: Network,
+    pub network_id: u8,
     pub start_epoch_inclusive: u64,
     pub end_epoch_exclusive: u64,
     pub nonce: u64,
@@ -45,9 +45,37 @@ pub struct NotarizedTransaction {
     pub notary_signature: EcdsaSignature,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum IntentCreationError {
+    CompileErr(CompileError),
+    ConfigErr(IntentConfigError),
+}
+
+impl From<CompileError> for IntentCreationError {
+    fn from(compile_error: CompileError) -> Self {
+        IntentCreationError::CompileErr(compile_error)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum IntentConfigError {
+    MismatchedNetwork { expected: u8, actual: u8 },
+}
+
 impl TransactionIntent {
-    pub fn new(header: TransactionHeader, manifest: &str) -> Result<Self, CompileError> {
-        let network: Network = header.network.clone();
+    pub fn new(
+        network: &NetworkDefinition,
+        header: TransactionHeader,
+        manifest: &str,
+    ) -> Result<Self, IntentCreationError> {
+        if network.id != header.network_id {
+            return Err(IntentCreationError::ConfigErr(
+                IntentConfigError::MismatchedNetwork {
+                    expected: network.id,
+                    actual: header.network_id,
+                },
+            ));
+        }
         Ok(Self {
             header,
             manifest: compile(manifest, &network)?,
@@ -100,6 +128,7 @@ mod tests {
     use super::*;
     use crate::signing::*;
     use scrypto::buffer::scrypto_encode;
+    use scrypto::core::Network;
 
     #[test]
     fn construct_sign_and_notarize() {
@@ -110,9 +139,10 @@ mod tests {
 
         // construct
         let intent = TransactionIntent::new(
+            &Network::LocalSimulator.get_definition(),
             TransactionHeader {
                 version: 1,
-                network: Network::InternalTestnet,
+                network_id: Network::LocalSimulator.get_id(),
                 start_epoch_inclusive: 0,
                 end_epoch_exclusive: 100,
                 nonce: 5,

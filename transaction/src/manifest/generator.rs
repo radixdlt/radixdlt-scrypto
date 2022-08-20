@@ -1141,7 +1141,7 @@ mod tests {
             .unwrap();
 
         assert_eq!(
-            crate::manifest::compile(tx, &Network::LocalSimulator)
+            crate::manifest::compile(tx, &Network::LocalSimulator.get_definition())
                 .unwrap()
                 .instructions,
             vec![

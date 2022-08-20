@@ -1,7 +1,7 @@
 use sbor::String;
 
 use crate::component::{ComponentAddress, PackageAddress};
-use crate::core::Network;
+use crate::core::{Network, NetworkDefinition};
 use crate::resource::ResourceAddress;
 
 use super::entity::{
@@ -23,7 +23,13 @@ impl Bech32Encoder {
     /// Instantiates a new Bech32Encoder with the HRP corresponding to the passed network.
     pub fn new_from_network(network: &Network) -> Self {
         Self {
-            hrp_set: get_network_hrp_set(network),
+            hrp_set: get_network_hrp_set(network.into()),
+        }
+    }
+
+    pub fn new_from_network_definition(network_definition: &NetworkDefinition) -> Self {
+        Self {
+            hrp_set: network_definition.into(),
         }
     }
 

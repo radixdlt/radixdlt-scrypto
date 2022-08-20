@@ -336,7 +336,7 @@ mod tests {
     fn test_decompile() {
         let tx = compile(
             include_str!("../../examples/complex.rtm"),
-            &Network::LocalSimulator,
+            &Network::LocalSimulator.get_definition(),
         )
         .unwrap();
 
@@ -344,6 +344,9 @@ mod tests {
         let manifest = &decompile(&tx, &bech32_encoder).unwrap();
         println!("{}", manifest);
 
-        assert_eq!(compile(manifest, &Network::LocalSimulator).unwrap(), tx);
+        assert_eq!(
+            compile(manifest, &Network::LocalSimulator.get_definition()).unwrap(),
+            tx
+        );
     }
 }
