@@ -1,4 +1,4 @@
-use radix_engine::engine::RuntimeError;
+use radix_engine::engine::{ApplicationError, RuntimeError};
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::model::ResourceManagerError;
 use scrypto::core::Network;
@@ -57,9 +57,8 @@ fn mint_with_bad_granularity_should_fail() {
 
     // Assert
     receipt.expect_failure(|e| {
-        if let RuntimeError::ResourceManagerError(ResourceManagerError::InvalidAmount(
-            amount,
-            granularity,
+        if let RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(
+            ResourceManagerError::InvalidAmount(amount, granularity),
         )) = e
         {
             amount.eq(&Decimal::from("0.1")) && *granularity == 0
@@ -94,7 +93,9 @@ fn mint_too_much_should_fail() {
     receipt.expect_failure(|e| {
         matches!(
             e,
-            RuntimeError::ResourceManagerError(ResourceManagerError::MaxMintAmountExceeded)
+            RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(
+                ResourceManagerError::MaxMintAmountExceeded
+            ))
         )
     })
 }

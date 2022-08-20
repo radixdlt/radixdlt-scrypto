@@ -1,7 +1,9 @@
+use transaction::errors::IdAllocationError;
 use transaction::model::*;
 use transaction::validation::*;
 
-use crate::engine::{HeapRENode, RuntimeError, RuntimeError::ProofNotFound, SystemApi};
+use crate::engine::ApplicationError;
+use crate::engine::{HeapRENode, RuntimeError, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::worktop::{
     WorktopAssertContainsAmountInput, WorktopAssertContainsInput,
@@ -20,9 +22,32 @@ pub struct TransactionProcessorRunInput {
 
 #[derive(Debug)]
 pub enum TransactionProcessorError {
+    RuntimeError(Box<RuntimeError>), // error propagation
     InvalidRequestData(DecodeError),
-    RuntimeError(RuntimeError),
     InvalidMethod,
+    BucketNotFound(BucketId),
+    ProofNotFound(ProofId),
+    IdAllocationError(IdAllocationError),
+    InvalidPackage(DecodeError),
+}
+
+impl TransactionProcessorError {
+    /// Wraps into a runtime error unless it's already a runtime error.
+    ///
+    /// TODO: Is this really a good idea?
+    pub fn to_runtime_error(self) -> RuntimeError {
+        match self {
+            TransactionProcessorError::RuntimeError(e) => *e,
+            e @ TransactionProcessorError::InvalidRequestData(_)
+            | e @ TransactionProcessorError::InvalidMethod
+            | e @ TransactionProcessorError::BucketNotFound(_)
+            | e @ TransactionProcessorError::ProofNotFound(_)
+            | e @ TransactionProcessorError::IdAllocationError(_)
+            | e @ TransactionProcessorError::InvalidPackage(_) => {
+                RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(e))
+            }
+        }
+    }
 }
 
 pub struct TransactionProcessor {}
@@ -32,15 +57,15 @@ impl TransactionProcessor {
         proof_id_mapping: &mut HashMap<ProofId, ProofId>,
         bucket_id_mapping: &mut HashMap<BucketId, BucketId>,
         mut value: ScryptoValue,
-    ) -> Result<ScryptoValue, RuntimeError> {
+    ) -> Result<ScryptoValue, TransactionProcessorError> {
         value
             .replace_ids(proof_id_mapping, bucket_id_mapping)
             .map_err(|e| match e {
                 ScryptoValueReplaceError::BucketIdNotFound(bucket_id) => {
-                    RuntimeError::BucketNotFound(bucket_id)
+                    TransactionProcessorError::BucketNotFound(bucket_id)
                 }
                 ScryptoValueReplaceError::ProofIdNotFound(proof_id) => {
-                    RuntimeError::ProofNotFound(proof_id)
+                    TransactionProcessorError::ProofNotFound(proof_id)
                 }
             })?;
         Ok(value)
@@ -74,7 +99,7 @@ impl TransactionProcessor {
                     let result = match inst {
                         ExecutableInstruction::TakeFromWorktop { resource_address } => id_allocator
                             .new_bucket_id()
-                            .map_err(RuntimeError::IdAllocationError)
+                            .map_err(TransactionProcessorError::IdAllocationError)
                             .and_then(|new_id| {
                                 system_api
                                     .invoke_method(
@@ -86,6 +111,9 @@ impl TransactionProcessor {
                                             resource_address: *resource_address,
                                         }),
                                     )
+                                    .map_err(|e| {
+                                        TransactionProcessorError::RuntimeError(Box::new(e))
+                                    })
                                     .map(|rtn| {
                                         let bucket_id = *rtn.bucket_ids.iter().next().unwrap().0;
                                         bucket_id_mapping.insert(new_id, bucket_id);
@@ -97,7 +125,7 @@ impl TransactionProcessor {
                             resource_address,
                         } => id_allocator
                             .new_bucket_id()
-                            .map_err(RuntimeError::IdAllocationError)
+                            .map_err(TransactionProcessorError::IdAllocationError)
                             .and_then(|new_id| {
                                 system_api
                                     .invoke_method(
@@ -110,6 +138,9 @@ impl TransactionProcessor {
                                             resource_address: *resource_address,
                                         }),
                                     )
+                                    .map_err(|e| {
+                                        TransactionProcessorError::RuntimeError(Box::new(e))
+                                    })
                                     .map(|rtn| {
                                         let bucket_id = *rtn.bucket_ids.iter().next().unwrap().0;
                                         bucket_id_mapping.insert(new_id, bucket_id);
@@ -121,7 +152,7 @@ impl TransactionProcessor {
                             resource_address,
                         } => id_allocator
                             .new_bucket_id()
-                            .map_err(RuntimeError::IdAllocationError)
+                            .map_err(TransactionProcessorError::IdAllocationError)
                             .and_then(|new_id| {
                                 system_api
                                     .invoke_method(
@@ -134,6 +165,9 @@ impl TransactionProcessor {
                                             resource_address: *resource_address,
                                         }),
                                     )
+                                    .map_err(|e| {
+                                        TransactionProcessorError::RuntimeError(Box::new(e))
+                                    })
                                     .map(|rtn| {
                                         let bucket_id = *rtn.bucket_ids.iter().next().unwrap().0;
                                         bucket_id_mapping.insert(new_id, bucket_id);
@@ -143,58 +177,68 @@ impl TransactionProcessor {
                         ExecutableInstruction::ReturnToWorktop { bucket_id } => bucket_id_mapping
                             .remove(bucket_id)
                             .map(|real_id| {
-                                system_api.invoke_method(
+                                system_api
+                                    .invoke_method(
+                                        Receiver::Ref(RENodeId::Worktop),
+                                        FnIdentifier::Native(NativeFnIdentifier::Worktop(
+                                            WorktopFnIdentifier::Put,
+                                        )),
+                                        ScryptoValue::from_typed(&WorktopPutInput {
+                                            bucket: scrypto::resource::Bucket(real_id),
+                                        }),
+                                    )
+                                    .map_err(|e| {
+                                        TransactionProcessorError::RuntimeError(Box::new(e))
+                                    })
+                            })
+                            .unwrap_or(Err(TransactionProcessorError::BucketNotFound(*bucket_id))),
+                        ExecutableInstruction::AssertWorktopContains { resource_address } => {
+                            system_api
+                                .invoke_method(
                                     Receiver::Ref(RENodeId::Worktop),
                                     FnIdentifier::Native(NativeFnIdentifier::Worktop(
-                                        WorktopFnIdentifier::Put,
+                                        WorktopFnIdentifier::AssertContains,
                                     )),
-                                    ScryptoValue::from_typed(&WorktopPutInput {
-                                        bucket: scrypto::resource::Bucket(real_id),
+                                    ScryptoValue::from_typed(&WorktopAssertContainsInput {
+                                        resource_address: *resource_address,
                                     }),
                                 )
-                            })
-                            .unwrap_or(Err(RuntimeError::BucketNotFound(*bucket_id))),
-                        ExecutableInstruction::AssertWorktopContains { resource_address } => {
-                            system_api.invoke_method(
-                                Receiver::Ref(RENodeId::Worktop),
-                                FnIdentifier::Native(NativeFnIdentifier::Worktop(
-                                    WorktopFnIdentifier::AssertContains,
-                                )),
-                                ScryptoValue::from_typed(&WorktopAssertContainsInput {
-                                    resource_address: *resource_address,
-                                }),
-                            )
+                                .map_err(|e| TransactionProcessorError::RuntimeError(Box::new(e)))
                         }
                         ExecutableInstruction::AssertWorktopContainsByAmount {
                             amount,
                             resource_address,
-                        } => system_api.invoke_method(
-                            Receiver::Ref(RENodeId::Worktop),
-                            FnIdentifier::Native(NativeFnIdentifier::Worktop(
-                                WorktopFnIdentifier::AssertContainsAmount,
-                            )),
-                            ScryptoValue::from_typed(&WorktopAssertContainsAmountInput {
-                                amount: *amount,
-                                resource_address: *resource_address,
-                            }),
-                        ),
+                        } => system_api
+                            .invoke_method(
+                                Receiver::Ref(RENodeId::Worktop),
+                                FnIdentifier::Native(NativeFnIdentifier::Worktop(
+                                    WorktopFnIdentifier::AssertContainsAmount,
+                                )),
+                                ScryptoValue::from_typed(&WorktopAssertContainsAmountInput {
+                                    amount: *amount,
+                                    resource_address: *resource_address,
+                                }),
+                            )
+                            .map_err(|e| TransactionProcessorError::RuntimeError(Box::new(e))),
                         ExecutableInstruction::AssertWorktopContainsByIds {
                             ids,
                             resource_address,
-                        } => system_api.invoke_method(
-                            Receiver::Ref(RENodeId::Worktop),
-                            FnIdentifier::Native(NativeFnIdentifier::Worktop(
-                                WorktopFnIdentifier::AssertContainsNonFungibles,
-                            )),
-                            ScryptoValue::from_typed(&WorktopAssertContainsNonFungiblesInput {
-                                ids: ids.clone(),
-                                resource_address: *resource_address,
-                            }),
-                        ),
+                        } => system_api
+                            .invoke_method(
+                                Receiver::Ref(RENodeId::Worktop),
+                                FnIdentifier::Native(NativeFnIdentifier::Worktop(
+                                    WorktopFnIdentifier::AssertContainsNonFungibles,
+                                )),
+                                ScryptoValue::from_typed(&WorktopAssertContainsNonFungiblesInput {
+                                    ids: ids.clone(),
+                                    resource_address: *resource_address,
+                                }),
+                            )
+                            .map_err(|e| TransactionProcessorError::RuntimeError(Box::new(e))),
 
                         ExecutableInstruction::PopFromAuthZone {} => id_allocator
                             .new_proof_id()
-                            .map_err(RuntimeError::IdAllocationError)
+                            .map_err(TransactionProcessorError::IdAllocationError)
                             .and_then(|new_id| {
                                 system_api
                                     .invoke_method(
@@ -204,6 +248,9 @@ impl TransactionProcessor {
                                         )),
                                         ScryptoValue::from_typed(&AuthZonePopInput {}),
                                     )
+                                    .map_err(|e| {
+                                        TransactionProcessorError::RuntimeError(Box::new(e))
+                                    })
                                     .map(|rtn| {
                                         let proof_id = *rtn.proof_ids.iter().next().unwrap().0;
                                         proof_id_mapping.insert(new_id, proof_id);
@@ -212,32 +259,38 @@ impl TransactionProcessor {
                             }),
                         ExecutableInstruction::ClearAuthZone => {
                             proof_id_mapping.clear();
-                            system_api.invoke_method(
-                                Receiver::CurrentAuthZone,
-                                FnIdentifier::Native(NativeFnIdentifier::AuthZone(
-                                    AuthZoneFnIdentifier::Clear,
-                                )),
-                                ScryptoValue::from_typed(&AuthZoneClearInput {}),
-                            )
+                            system_api
+                                .invoke_method(
+                                    Receiver::CurrentAuthZone,
+                                    FnIdentifier::Native(NativeFnIdentifier::AuthZone(
+                                        AuthZoneFnIdentifier::Clear,
+                                    )),
+                                    ScryptoValue::from_typed(&AuthZoneClearInput {}),
+                                )
+                                .map_err(|e| TransactionProcessorError::RuntimeError(Box::new(e)))
                         }
                         ExecutableInstruction::PushToAuthZone { proof_id } => proof_id_mapping
                             .remove(proof_id)
-                            .ok_or(RuntimeError::ProofNotFound(*proof_id))
+                            .ok_or(TransactionProcessorError::ProofNotFound(*proof_id))
                             .and_then(|real_id| {
-                                system_api.invoke_method(
-                                    Receiver::CurrentAuthZone,
-                                    FnIdentifier::Native(NativeFnIdentifier::AuthZone(
-                                        AuthZoneFnIdentifier::Push,
-                                    )),
-                                    ScryptoValue::from_typed(&AuthZonePushInput {
-                                        proof: scrypto::resource::Proof(real_id),
-                                    }),
-                                )
+                                system_api
+                                    .invoke_method(
+                                        Receiver::CurrentAuthZone,
+                                        FnIdentifier::Native(NativeFnIdentifier::AuthZone(
+                                            AuthZoneFnIdentifier::Push,
+                                        )),
+                                        ScryptoValue::from_typed(&AuthZonePushInput {
+                                            proof: scrypto::resource::Proof(real_id),
+                                        }),
+                                    )
+                                    .map_err(|e| {
+                                        TransactionProcessorError::RuntimeError(Box::new(e))
+                                    })
                             }),
                         ExecutableInstruction::CreateProofFromAuthZone { resource_address } => {
                             id_allocator
                                 .new_proof_id()
-                                .map_err(RuntimeError::IdAllocationError)
+                                .map_err(TransactionProcessorError::IdAllocationError)
                                 .and_then(|new_id| {
                                     system_api
                                         .invoke_method(
@@ -249,6 +302,9 @@ impl TransactionProcessor {
                                                 resource_address: *resource_address,
                                             }),
                                         )
+                                        .map_err(|e| {
+                                            TransactionProcessorError::RuntimeError(Box::new(e))
+                                        })
                                         .map(|rtn| {
                                             let proof_id = *rtn.proof_ids.iter().next().unwrap().0;
                                             proof_id_mapping.insert(new_id, proof_id);
@@ -263,7 +319,7 @@ impl TransactionProcessor {
                             resource_address,
                         } => id_allocator
                             .new_proof_id()
-                            .map_err(RuntimeError::IdAllocationError)
+                            .map_err(TransactionProcessorError::IdAllocationError)
                             .and_then(|new_id| {
                                 system_api
                                     .invoke_method(
@@ -278,6 +334,9 @@ impl TransactionProcessor {
                                             },
                                         ),
                                     )
+                                    .map_err(|e| {
+                                        TransactionProcessorError::RuntimeError(Box::new(e))
+                                    })
                                     .map(|rtn| {
                                         let proof_id = *rtn.proof_ids.iter().next().unwrap().0;
                                         proof_id_mapping.insert(new_id, proof_id);
@@ -289,7 +348,7 @@ impl TransactionProcessor {
                             resource_address,
                         } => id_allocator
                             .new_proof_id()
-                            .map_err(RuntimeError::IdAllocationError)
+                            .map_err(TransactionProcessorError::IdAllocationError)
                             .and_then(|new_id| {
                                 system_api
                                     .invoke_method(
@@ -302,6 +361,9 @@ impl TransactionProcessor {
                                             resource_address: *resource_address,
                                         }),
                                     )
+                                    .map_err(|e| {
+                                        TransactionProcessorError::RuntimeError(Box::new(e))
+                                    })
                                     .map(|rtn| {
                                         let proof_id = *rtn.proof_ids.iter().next().unwrap().0;
                                         proof_id_mapping.insert(new_id, proof_id);
@@ -310,13 +372,13 @@ impl TransactionProcessor {
                             }),
                         ExecutableInstruction::CreateProofFromBucket { bucket_id } => id_allocator
                             .new_proof_id()
-                            .map_err(RuntimeError::IdAllocationError)
+                            .map_err(TransactionProcessorError::IdAllocationError)
                             .and_then(|new_id| {
                                 bucket_id_mapping
                                     .get(bucket_id)
                                     .cloned()
                                     .map(|real_bucket_id| (new_id, real_bucket_id))
-                                    .ok_or(RuntimeError::BucketNotFound(new_id))
+                                    .ok_or(TransactionProcessorError::BucketNotFound(new_id))
                             })
                             .and_then(|(new_id, real_bucket_id)| {
                                 system_api
@@ -327,6 +389,9 @@ impl TransactionProcessor {
                                         )),
                                         ScryptoValue::from_typed(&BucketCreateProofInput {}),
                                     )
+                                    .map_err(|e| {
+                                        TransactionProcessorError::RuntimeError(Box::new(e))
+                                    })
                                     .map(|rtn| {
                                         let proof_id = *rtn.proof_ids.iter().next().unwrap().0;
                                         proof_id_mapping.insert(new_id, proof_id);
@@ -335,7 +400,7 @@ impl TransactionProcessor {
                             }),
                         ExecutableInstruction::CloneProof { proof_id } => id_allocator
                             .new_proof_id()
-                            .map_err(RuntimeError::IdAllocationError)
+                            .map_err(TransactionProcessorError::IdAllocationError)
                             .and_then(|new_id| {
                                 proof_id_mapping
                                     .get(proof_id)
@@ -349,6 +414,9 @@ impl TransactionProcessor {
                                                 )),
                                                 ScryptoValue::from_typed(&ProofCloneInput {}),
                                             )
+                                            .map_err(|e| {
+                                                TransactionProcessorError::RuntimeError(Box::new(e))
+                                            })
                                             .map(|v| {
                                                 let cloned_proof_id =
                                                     v.proof_ids.iter().next().unwrap().0;
@@ -358,20 +426,26 @@ impl TransactionProcessor {
                                                 ))
                                             })
                                     })
-                                    .unwrap_or(Err(RuntimeError::ProofNotFound(*proof_id)))
+                                    .unwrap_or(Err(TransactionProcessorError::ProofNotFound(
+                                        *proof_id,
+                                    )))
                             }),
                         ExecutableInstruction::DropProof { proof_id } => proof_id_mapping
                             .remove(proof_id)
                             .map(|real_id| {
-                                system_api.invoke_method(
-                                    Receiver::Consumed(RENodeId::Proof(real_id)),
-                                    FnIdentifier::Native(NativeFnIdentifier::Proof(
-                                        ProofFnIdentifier::Drop,
-                                    )),
-                                    ScryptoValue::from_typed(&ConsumingProofDropInput {}),
-                                )
+                                system_api
+                                    .invoke_method(
+                                        Receiver::Consumed(RENodeId::Proof(real_id)),
+                                        FnIdentifier::Native(NativeFnIdentifier::Proof(
+                                            ProofFnIdentifier::Drop,
+                                        )),
+                                        ScryptoValue::from_typed(&ConsumingProofDropInput {}),
+                                    )
+                                    .map_err(|e| {
+                                        TransactionProcessorError::RuntimeError(Box::new(e))
+                                    })
                             })
-                            .unwrap_or(Err(ProofNotFound(*proof_id))),
+                            .unwrap_or(Err(TransactionProcessorError::ProofNotFound(*proof_id))),
                         ExecutableInstruction::DropAllProofs => {
                             for (_, real_id) in proof_id_mapping.drain() {
                                 system_api
@@ -384,13 +458,15 @@ impl TransactionProcessor {
                                     )
                                     .unwrap();
                             }
-                            system_api.invoke_method(
-                                Receiver::CurrentAuthZone,
-                                FnIdentifier::Native(NativeFnIdentifier::AuthZone(
-                                    AuthZoneFnIdentifier::Clear,
-                                )),
-                                ScryptoValue::from_typed(&AuthZoneClearInput {}),
-                            )
+                            system_api
+                                .invoke_method(
+                                    Receiver::CurrentAuthZone,
+                                    FnIdentifier::Native(NativeFnIdentifier::AuthZone(
+                                        AuthZoneFnIdentifier::Clear,
+                                    )),
+                                    ScryptoValue::from_typed(&AuthZoneClearInput {}),
+                                )
+                                .map_err(|e| TransactionProcessorError::RuntimeError(Box::new(e)))
                         }
                         ExecutableInstruction::CallFunction {
                             package_address,
@@ -404,14 +480,18 @@ impl TransactionProcessor {
                                 ScryptoValue::from_slice(args).expect("Should be valid arg"),
                             )
                             .and_then(|call_data| {
-                                system_api.invoke_function(
-                                    FnIdentifier::Scrypto {
-                                        package_address: *package_address,
-                                        blueprint_name: blueprint_name.to_string(),
-                                        ident: method_name.to_string(),
-                                    },
-                                    call_data,
-                                )
+                                system_api
+                                    .invoke_function(
+                                        FnIdentifier::Scrypto {
+                                            package_address: *package_address,
+                                            blueprint_name: blueprint_name.to_string(),
+                                            ident: method_name.to_string(),
+                                        },
+                                        call_data,
+                                    )
+                                    .map_err(|e| {
+                                        TransactionProcessorError::RuntimeError(Box::new(e))
+                                    })
                             })
                             .and_then(|result| {
                                 // Auto move into auth_zone
@@ -459,20 +539,29 @@ impl TransactionProcessor {
                                 // TODO: Move this into preprocessor step
                                 system_api
                                     .substate_read(SubstateId::ComponentInfo(*component_address))
+                                    .map_err(|e| {
+                                        TransactionProcessorError::RuntimeError(Box::new(e))
+                                    })
                                     .and_then(|s| {
                                         let (package_address, blueprint_name): (
                                             PackageAddress,
                                             String,
                                         ) = scrypto_decode(&s.raw).expect("Should not fail.");
-                                        system_api.invoke_method(
-                                            Receiver::Ref(RENodeId::Component(*component_address)),
-                                            FnIdentifier::Scrypto {
-                                                ident: method_name.to_string(),
-                                                package_address,
-                                                blueprint_name,
-                                            },
-                                            call_data,
-                                        )
+                                        system_api
+                                            .invoke_method(
+                                                Receiver::Ref(RENodeId::Component(
+                                                    *component_address,
+                                                )),
+                                                FnIdentifier::Scrypto {
+                                                    ident: method_name.to_string(),
+                                                    package_address,
+                                                    blueprint_name,
+                                                },
+                                                call_data,
+                                            )
+                                            .map_err(|e| {
+                                                TransactionProcessorError::RuntimeError(Box::new(e))
+                                            })
                                     })
                             })
                             .and_then(|result| {
@@ -518,6 +607,7 @@ impl TransactionProcessor {
                                 )),
                                 ScryptoValue::from_typed(&WorktopDrainInput {}),
                             )
+                            .map_err(|e| TransactionProcessorError::RuntimeError(Box::new(e)))
                             .and_then(|result| {
                                 let mut buckets = Vec::new();
                                 for (bucket_id, _) in result.bucket_ids {
@@ -530,36 +620,48 @@ impl TransactionProcessor {
                                 // TODO: Move this into preprocessor step
                                 system_api
                                     .substate_read(SubstateId::ComponentInfo(*component_address))
+                                    .map_err(|e| {
+                                        TransactionProcessorError::RuntimeError(Box::new(e))
+                                    })
                                     .and_then(|s| {
                                         let (package_address, blueprint_name): (
                                             PackageAddress,
                                             String,
                                         ) = scrypto_decode(&s.raw).expect("Should not fail.");
-                                        system_api.invoke_method(
-                                            Receiver::Ref(RENodeId::Component(*component_address)),
-                                            FnIdentifier::Scrypto {
-                                                package_address,
-                                                blueprint_name,
-                                                ident: method.to_string(),
-                                            },
-                                            ScryptoValue::from_slice(&encoded).unwrap(),
-                                        )
+                                        system_api
+                                            .invoke_method(
+                                                Receiver::Ref(RENodeId::Component(
+                                                    *component_address,
+                                                )),
+                                                FnIdentifier::Scrypto {
+                                                    package_address,
+                                                    blueprint_name,
+                                                    ident: method.to_string(),
+                                                },
+                                                ScryptoValue::from_slice(&encoded).unwrap(),
+                                            )
+                                            .map_err(|e| {
+                                                TransactionProcessorError::RuntimeError(Box::new(e))
+                                            })
                                     })
                             }),
-                        ExecutableInstruction::PublishPackage { package } => {
-                            scrypto_decode::<Package>(package)
-                                .map_err(|e| RuntimeError::InvalidPackage(e))
-                                .and_then(|package| {
-                                    system_api.invoke_function(
-                                        FnIdentifier::Native(NativeFnIdentifier::Package(
-                                            PackageFnIdentifier::Publish,
-                                        )),
-                                        ScryptoValue::from_typed(&PackagePublishInput { package }),
-                                    )
-                                })
-                        }
-                    }
-                    .map_err(TransactionProcessorError::RuntimeError)?;
+                        ExecutableInstruction::PublishPackage { package } => scrypto_decode::<
+                            Package,
+                        >(
+                            package
+                        )
+                        .map_err(|e| TransactionProcessorError::InvalidPackage(e))
+                        .and_then(|package| {
+                            system_api
+                                .invoke_function(
+                                    FnIdentifier::Native(NativeFnIdentifier::Package(
+                                        PackageFnIdentifier::Publish,
+                                    )),
+                                    ScryptoValue::from_typed(&PackagePublishInput { package }),
+                                )
+                                .map_err(|e| TransactionProcessorError::RuntimeError(Box::new(e)))
+                        }),
+                    }?;
                     outputs.push(result);
                 }
 

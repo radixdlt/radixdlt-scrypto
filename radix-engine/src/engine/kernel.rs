@@ -32,9 +32,6 @@ pub struct Kernel<
     transaction_hash: Hash,
     /// The max call depth
     max_depth: usize,
-    /// Whether to show trace messages
-    #[allow(dead_code)] // for no_std
-    trace: bool,
 
     /// State track
     track: &'g mut Track<'s>,
@@ -51,10 +48,14 @@ pub struct Kernel<
     /// ID allocator
     id_allocator: IdAllocator,
 
+    // TODO: move execution trace, fee, authorization to modules
     execution_trace: &'g mut ExecutionTrace,
 
     /// Call frames
     call_frames: Vec<CallFrame>,
+
+    /// Kernel modules
+    modules: Vec<Box<dyn Module>>,
 
     phantom: PhantomData<I>,
 }
@@ -78,11 +79,15 @@ where
         fee_table: &'g FeeTable,
         execution_trace: &'g mut ExecutionTrace,
     ) -> Self {
+        let mut modules = Vec::<Box<dyn Module>>::new();
+        if trace {
+            modules.push(Box::new(LoggerModule::new()));
+        }
+
         let frame = CallFrame::new_root(transaction_signers);
         let mut kernel = Self {
             transaction_hash,
             max_depth,
-            trace,
             track,
             wasm_engine,
             wasm_instrumenter,
@@ -91,6 +96,7 @@ where
             id_allocator: IdAllocator::new(IdSpace::Application),
             execution_trace,
             call_frames: vec![frame],
+            modules,
             phantom: PhantomData,
         };
 
@@ -123,17 +129,21 @@ where
 
     fn process_call_data(validated: &ScryptoValue) -> Result<(), RuntimeError> {
         if !validated.kv_store_ids.is_empty() {
-            return Err(RuntimeError::KeyValueStoreNotAllowed);
+            return Err(RuntimeError::KernelError(
+                KernelError::KeyValueStoreNotAllowed,
+            ));
         }
         if !validated.vault_ids.is_empty() {
-            return Err(RuntimeError::VaultNotAllowed);
+            return Err(RuntimeError::KernelError(KernelError::VaultNotAllowed));
         }
         Ok(())
     }
 
     fn process_return_data(validated: &ScryptoValue) -> Result<(), RuntimeError> {
         if !validated.kv_store_ids.is_empty() {
-            return Err(RuntimeError::KeyValueStoreNotAllowed);
+            return Err(RuntimeError::KernelError(
+                KernelError::KeyValueStoreNotAllowed,
+            ));
         }
 
         // TODO: Should we disallow vaults to be moved?
@@ -156,7 +166,11 @@ where
             .node_refs
             .get(&node_id)
             .cloned()
-            .ok_or_else(|| RuntimeError::SubstateReadSubstateNotFound(substate_id.clone()))?;
+            .ok_or_else(|| {
+                RuntimeError::KernelError(KernelError::SubstateReadSubstateNotFound(
+                    substate_id.clone(),
+                ))
+            })?;
 
         if matches!(substate_id, SubstateId::ComponentInfo(..)) {
             node_pointer
@@ -235,8 +249,6 @@ where
         auth_zone_frame_id: Option<usize>,
         input: ScryptoValue,
     ) -> Result<(ScryptoValue, HashMap<RENodeId, HeapRootRENode>), RuntimeError> {
-        trace!(self, Level::Debug, "Run started!");
-
         let output = {
             let rtn = match Self::current_frame(&self.call_frames).actor.clone() {
                 REActor {
@@ -263,7 +275,7 @@ where
                                     * package.code().len() as u32,
                                 "instantiate_wasm",
                             )
-                            .map_err(RuntimeError::CostingError)?;
+                            .map_err(|e| RuntimeError::ModuleError(ModuleError::CostingError(e)))?;
                         let wasm_metering_params = self.fee_table.wasm_metering_params();
                         let instrumented_code = self
                             .wasm_instrumenter
@@ -289,13 +301,13 @@ where
                                 ScryptoActor::blueprint(package_address, blueprint_name.clone())
                             }
                             _ => {
-                                return Err(RuntimeError::MethodDoesNotExist(
+                                return Err(RuntimeError::KernelError(KernelError::MethodNotFound(
                                     FnIdentifier::Scrypto {
                                         package_address,
                                         blueprint_name,
                                         ident,
                                     },
-                                ))
+                                )))
                             }
                         };
                         let mut runtime: Box<dyn WasmRuntime> =
@@ -305,7 +317,9 @@ where
                             .map_err(|e| match e {
                                 // Flatten error code for more readable transaction receipt
                                 InvokeError::RuntimeError(e) => e,
-                                e @ _ => RuntimeError::InvokeError(e.into()),
+                                e @ _ => {
+                                    RuntimeError::KernelError(KernelError::InvokeError(e.into()))
+                                }
                             })?
                     };
 
@@ -318,14 +332,14 @@ where
                         .expect("Blueprint should exist");
                     let fn_abi = blueprint_abi.get_fn_abi(&ident).unwrap();
                     if !fn_abi.output.matches(&output.dom) {
-                        Err(RuntimeError::InvalidFnOutput {
+                        Err(RuntimeError::KernelError(KernelError::InvalidFnOutput {
                             fn_identifier: FnIdentifier::Scrypto {
                                 package_address,
                                 blueprint_name,
                                 ident,
                             },
                             output: output.dom,
-                        })
+                        }))
                     } else {
                         Ok(output)
                     }
@@ -344,7 +358,9 @@ where
             .take_available_values(values_to_take, false)?;
         let first_missing_value = missing.drain().nth(0);
         if let Some(missing_node) = first_missing_value {
-            return Err(RuntimeError::RENodeNotFound(missing_node));
+            return Err(RuntimeError::KernelError(KernelError::RENodeNotFound(
+                missing_node,
+            )));
         }
 
         // Check we have valid references to pass back
@@ -356,7 +372,9 @@ where
             {
                 // Only allow passing back global references
             } else {
-                return Err(RuntimeError::InvokeMethodInvalidReferencePass(node_id));
+                return Err(RuntimeError::KernelError(
+                    KernelError::InvokeMethodInvalidReferencePass(node_id),
+                ));
             }
         }
 
@@ -389,15 +407,15 @@ where
         fn_identifier: FnIdentifier,
         input: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError> {
-        trace!(
-            self,
-            Level::Debug,
-            "Invoking function: {:?}",
-            &fn_identifier
-        );
-
-        if Self::current_frame(&self.call_frames).depth == self.max_depth {
-            return Err(RuntimeError::MaxCallDepthLimitReached);
+        for m in &mut self.modules {
+            m.pre_sys_call(
+                &mut self.call_frames,
+                SysCallInput::InvokeFunction {
+                    fn_identifier: &fn_identifier,
+                    input: &input,
+                },
+            )
+            .map_err(RuntimeError::ModuleError)?;
         }
 
         self.fee_reserve
@@ -409,14 +427,21 @@ where
                     }),
                 "invoke_function",
             )
-            .map_err(RuntimeError::CostingError)?;
+            .map_err(|e| RuntimeError::ModuleError(ModuleError::CostingError(e)))?;
 
         self.fee_reserve
             .consume(
                 self.fee_table.run_method_cost(None, &fn_identifier, &input),
                 "run_function",
             )
-            .map_err(RuntimeError::CostingError)?;
+            .map_err(|e| RuntimeError::ModuleError(ModuleError::CostingError(e)))?;
+
+        // Check call depth
+        if Self::current_frame(&self.call_frames).depth == self.max_depth {
+            return Err(RuntimeError::KernelError(
+                KernelError::MaxCallDepthLimitReached,
+            ));
+        }
 
         // Prevent vaults/kvstores from being moved
         Self::process_call_data(&input)?;
@@ -427,7 +452,9 @@ where
             .take_available_values(values_to_take, false)?;
         let first_missing_value = missing.drain().nth(0);
         if let Some(missing_value) = first_missing_value {
-            return Err(RuntimeError::RENodeNotFound(missing_value));
+            return Err(RuntimeError::KernelError(KernelError::RENodeNotFound(
+                missing_value,
+            )));
         }
 
         let mut next_owned_values = HashMap::new();
@@ -453,7 +480,9 @@ where
                 self.track
                     .acquire_lock(SubstateId::Package(package_address.clone()), false, false)
                     .map_err(|e| match e {
-                        TrackError::NotFound => RuntimeError::PackageNotFound(*package_address),
+                        TrackError::NotFound => RuntimeError::KernelError(
+                            KernelError::PackageNotFound(*package_address),
+                        ),
                         TrackError::Reentrancy => {
                             panic!("Package reentrancy error should never occur.")
                         }
@@ -464,17 +493,20 @@ where
                     .track
                     .read_substate(SubstateId::Package(package_address.clone()))
                     .package();
-                let abi = package.blueprint_abi(blueprint_name).ok_or(
-                    RuntimeError::BlueprintNotFound(
-                        package_address.clone(),
-                        blueprint_name.clone(),
-                    ),
-                )?;
-                let fn_abi = abi
-                    .get_fn_abi(ident)
-                    .ok_or(RuntimeError::MethodDoesNotExist(fn_identifier.clone()))?;
+                let abi =
+                    package
+                        .blueprint_abi(blueprint_name)
+                        .ok_or(RuntimeError::KernelError(KernelError::BlueprintNotFound(
+                            package_address.clone(),
+                            blueprint_name.clone(),
+                        )))?;
+                let fn_abi = abi.get_fn_abi(ident).ok_or(RuntimeError::KernelError(
+                    KernelError::MethodNotFound(fn_identifier.clone()),
+                ))?;
                 if !fn_abi.input.matches(&input.dom) {
-                    return Err(RuntimeError::InvalidFnInput { fn_identifier });
+                    return Err(RuntimeError::KernelError(KernelError::InvalidFnInput {
+                        fn_identifier,
+                    }));
                 }
             }
             _ => {}
@@ -508,7 +540,9 @@ where
 
                 // Check if component exists as root
                 if !self.track.is_root(&substate_id) {
-                    return Err(RuntimeError::RENodeNotFound(node_id));
+                    return Err(RuntimeError::KernelError(KernelError::RENodeNotFound(
+                        node_id,
+                    )));
                 }
                 let node_pointer = RENodePointer::Store(node_id);
                 node_pointer.acquire_lock(substate_id.clone(), false, false, &mut self.track)?;
@@ -527,7 +561,9 @@ where
                     visible.insert(SubstateId::ComponentInfo(*refed_component_address));
                     next_frame_node_refs.insert(node_id.clone(), pointer.clone());
                 } else {
-                    return Err(RuntimeError::InvokeMethodInvalidReferencePass(node_id));
+                    return Err(RuntimeError::KernelError(
+                        KernelError::InvokeMethodInvalidReferencePass(node_id),
+                    ));
                 }
             }
         }
@@ -559,7 +595,6 @@ where
 
         // move buckets and proofs to this process.
         for (id, value) in received_values {
-            trace!(self, Level::Debug, "Received value: {:?}", value);
             Self::current_frame_mut(&mut self.call_frames)
                 .owned_heap_nodes
                 .insert(id, value);
@@ -575,7 +610,13 @@ where
                 .insert(node_id, RENodePointer::Store(node_id));
         }
 
-        trace!(self, Level::Debug, "Invoking finished!");
+        for m in &mut self.modules {
+            m.post_sys_call(
+                &mut self.call_frames,
+                SysCallOutput::InvokeFunction { output: &output },
+            )
+            .map_err(RuntimeError::ModuleError)?;
+        }
         Ok(output)
     }
 
@@ -585,16 +626,16 @@ where
         fn_identifier: FnIdentifier,
         input: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError> {
-        trace!(
-            self,
-            Level::Debug,
-            "Invoking method: {:?} {:?}",
-            receiver,
-            &fn_identifier
-        );
-
-        if Self::current_frame(&self.call_frames).depth == self.max_depth {
-            return Err(RuntimeError::MaxCallDepthLimitReached);
+        for m in &mut self.modules {
+            m.pre_sys_call(
+                &mut self.call_frames,
+                SysCallInput::InvokeMethod {
+                    receiver: &receiver,
+                    fn_identifier: &fn_identifier,
+                    input: &input,
+                },
+            )
+            .map_err(RuntimeError::ModuleError)?;
         }
 
         self.fee_reserve
@@ -606,7 +647,7 @@ where
                     }),
                 "invoke_method",
             )
-            .map_err(RuntimeError::CostingError)?;
+            .map_err(|e| RuntimeError::ModuleError(ModuleError::CostingError(e)))?;
 
         self.fee_reserve
             .consume(
@@ -614,7 +655,14 @@ where
                     .run_method_cost(Some(receiver), &fn_identifier, &input),
                 "run_method",
             )
-            .map_err(RuntimeError::CostingError)?;
+            .map_err(|e| RuntimeError::ModuleError(ModuleError::CostingError(e)))?;
+
+        // check call depth
+        if Self::current_frame(&self.call_frames).depth == self.max_depth {
+            return Err(RuntimeError::KernelError(
+                KernelError::MaxCallDepthLimitReached,
+            ));
+        }
 
         // Prevent vaults/kvstores from being moved
         Self::process_call_data(&input)?;
@@ -625,7 +673,9 @@ where
             .take_available_values(values_to_take, false)?;
         let first_missing_value = missing.drain().nth(0);
         if let Some(missing_value) = first_missing_value {
-            return Err(RuntimeError::RENodeNotFound(missing_value));
+            return Err(RuntimeError::KernelError(KernelError::RENodeNotFound(
+                missing_value,
+            )));
         }
 
         let mut next_owned_values = HashMap::new();
@@ -662,7 +712,11 @@ where
                         RENodeId::ResourceManager(..) | RENodeId::System => {
                             RENodePointer::Store(*node_id)
                         }
-                        _ => return Err(RuntimeError::InvokeMethodInvalidReceiver(*node_id)),
+                        _ => {
+                            return Err(RuntimeError::KernelError(
+                                KernelError::InvokeMethodInvalidReceiver(*node_id),
+                            ))
+                        }
                     }
                 };
 
@@ -676,7 +730,7 @@ where
                         VaultFnIdentifier::LockContingentFee,
                     ))));
                 if is_lock_fee && matches!(node_pointer, RENodePointer::Heap { .. }) {
-                    return Err(RuntimeError::LockFeeError(LockFeeError::RENodeNotInTrack));
+                    return Err(RuntimeError::KernelError(KernelError::RENodeNotInTrack));
                 }
                 node_pointer.acquire_lock(
                     substate_id.clone(),
@@ -712,10 +766,14 @@ where
 
                             // Don't support traits yet
                             if !package_address.eq(&component.package_address()) {
-                                return Err(RuntimeError::MethodDoesNotExist(fn_identifier));
+                                return Err(RuntimeError::KernelError(
+                                    KernelError::MethodNotFound(fn_identifier),
+                                ));
                             }
                             if !blueprint_name.eq(component.blueprint_name()) {
-                                return Err(RuntimeError::MethodDoesNotExist(fn_identifier));
+                                return Err(RuntimeError::KernelError(
+                                    KernelError::MethodNotFound(fn_identifier),
+                                ));
                             }
                         }
                         _ => panic!("Should not get here."),
@@ -829,7 +887,9 @@ where
                         let heap_node = Self::current_frame_mut(&mut self.call_frames)
                             .owned_heap_nodes
                             .remove(node_id)
-                            .ok_or(RuntimeError::InvokeMethodInvalidReceiver(*node_id))?;
+                            .ok_or(RuntimeError::KernelError(
+                                KernelError::InvokeMethodInvalidReceiver(*node_id),
+                            ))?;
                         next_owned_values.insert(*node_id, heap_node);
                     }
                     _ => {}
@@ -872,7 +932,9 @@ where
                 visible.insert(SubstateId::ComponentInfo(*refed_component_address));
                 next_frame_node_refs.insert(node_id.clone(), pointer.clone());
             } else {
-                return Err(RuntimeError::InvokeMethodInvalidReferencePass(node_id));
+                return Err(RuntimeError::KernelError(
+                    KernelError::InvokeMethodInvalidReferencePass(node_id),
+                ));
             }
         }
 
@@ -903,7 +965,6 @@ where
 
         // move buckets and proofs to this process.
         for (id, value) in received_values {
-            trace!(self, Level::Debug, "Received value: {:?}", value);
             Self::current_frame_mut(&mut self.call_frames)
                 .owned_heap_nodes
                 .insert(id, value);
@@ -919,70 +980,96 @@ where
                 .insert(node_id, RENodePointer::Store(node_id));
         }
 
-        trace!(self, Level::Debug, "Invoking finished!");
+        for m in &mut self.modules {
+            m.post_sys_call(
+                &mut self.call_frames,
+                SysCallOutput::InvokeMethod { output: &output },
+            )
+            .map_err(RuntimeError::ModuleError)?;
+        }
         Ok(output)
     }
 
-    fn borrow_node(&mut self, node_id: &RENodeId) -> Result<RENodeRef<'_, 's>, FeeReserveError> {
-        trace!(self, Level::Debug, "Borrowing value: {:?}", node_id);
+    fn borrow_node(&mut self, node_id: &RENodeId) -> Result<RENodeRef<'_, 's>, RuntimeError> {
+        for m in &mut self.modules {
+            m.pre_sys_call(
+                &mut self.call_frames,
+                SysCallInput::BorrowNode { node_id: node_id },
+            )
+            .map_err(RuntimeError::ModuleError)?;
+        }
 
-        self.fee_reserve.consume(
-            self.fee_table.system_api_cost({
-                match node_id {
-                    RENodeId::Bucket(_) => SystemApiCostingEntry::BorrowSubstate {
-                        // TODO: figure out loaded state and size
-                        loaded: true,
-                        size: 0,
-                    },
-                    RENodeId::Proof(_) => SystemApiCostingEntry::BorrowSubstate {
-                        // TODO: figure out loaded state and size
-                        loaded: true,
-                        size: 0,
-                    },
-                    RENodeId::Worktop => SystemApiCostingEntry::BorrowSubstate {
-                        // TODO: figure out loaded state and size
-                        loaded: true,
-                        size: 0,
-                    },
-                    RENodeId::Vault(_) => SystemApiCostingEntry::BorrowSubstate {
-                        // TODO: figure out loaded state and size
-                        loaded: false,
-                        size: 0,
-                    },
-                    RENodeId::Component(_) => SystemApiCostingEntry::BorrowSubstate {
-                        // TODO: figure out loaded state and size
-                        loaded: false,
-                        size: 0,
-                    },
-                    RENodeId::KeyValueStore(_) => SystemApiCostingEntry::BorrowSubstate {
-                        // TODO: figure out loaded state and size
-                        loaded: false,
-                        size: 0,
-                    },
-                    RENodeId::ResourceManager(_) => SystemApiCostingEntry::BorrowSubstate {
-                        // TODO: figure out loaded state and size
-                        loaded: false,
-                        size: 0,
-                    },
-                    RENodeId::Package(_) => SystemApiCostingEntry::BorrowSubstate {
-                        // TODO: figure out loaded state and size
-                        loaded: false,
-                        size: 0,
-                    },
-                    RENodeId::System => SystemApiCostingEntry::BorrowSubstate {
-                        // TODO: figure out loaded state and size
-                        loaded: false,
-                        size: 0,
-                    },
-                }
-            }),
-            "borrow_substate",
-        )?;
+        self.fee_reserve
+            .consume(
+                self.fee_table.system_api_cost({
+                    match node_id {
+                        RENodeId::Bucket(_) => SystemApiCostingEntry::BorrowSubstate {
+                            // TODO: figure out loaded state and size
+                            loaded: true,
+                            size: 0,
+                        },
+                        RENodeId::Proof(_) => SystemApiCostingEntry::BorrowSubstate {
+                            // TODO: figure out loaded state and size
+                            loaded: true,
+                            size: 0,
+                        },
+                        RENodeId::Worktop => SystemApiCostingEntry::BorrowSubstate {
+                            // TODO: figure out loaded state and size
+                            loaded: true,
+                            size: 0,
+                        },
+                        RENodeId::Vault(_) => SystemApiCostingEntry::BorrowSubstate {
+                            // TODO: figure out loaded state and size
+                            loaded: false,
+                            size: 0,
+                        },
+                        RENodeId::Component(_) => SystemApiCostingEntry::BorrowSubstate {
+                            // TODO: figure out loaded state and size
+                            loaded: false,
+                            size: 0,
+                        },
+                        RENodeId::KeyValueStore(_) => SystemApiCostingEntry::BorrowSubstate {
+                            // TODO: figure out loaded state and size
+                            loaded: false,
+                            size: 0,
+                        },
+                        RENodeId::ResourceManager(_) => SystemApiCostingEntry::BorrowSubstate {
+                            // TODO: figure out loaded state and size
+                            loaded: false,
+                            size: 0,
+                        },
+                        RENodeId::Package(_) => SystemApiCostingEntry::BorrowSubstate {
+                            // TODO: figure out loaded state and size
+                            loaded: false,
+                            size: 0,
+                        },
+                        RENodeId::System => SystemApiCostingEntry::BorrowSubstate {
+                            // TODO: figure out loaded state and size
+                            loaded: false,
+                            size: 0,
+                        },
+                    }
+                }),
+                "borrow_substate",
+            )
+            .map_err(|e| RuntimeError::ModuleError(ModuleError::CostingError(e)))?;
 
         let node_pointer = Self::current_frame(&self.call_frames)
             .node_refs
             .get(node_id)
+            .cloned()
             .expect(&format!("{:?} is unknown.", node_id));
+
+        for m in &mut self.modules {
+            m.post_sys_call(
+                &mut self.call_frames,
+                SysCallOutput::BorrowNode {
+                    // Can't return the NodeRef due to borrow checks on `call_frames`
+                    node_pointer: &node_pointer,
+                },
+            )
+            .map_err(RuntimeError::ModuleError)?;
+        }
 
         Ok(node_pointer.to_ref(&self.call_frames, &self.track))
     }
@@ -990,87 +1077,96 @@ where
     fn substate_borrow_mut(
         &mut self,
         substate_id: &SubstateId,
-    ) -> Result<NativeSubstateRef, FeeReserveError> {
-        trace!(
-            self,
-            Level::Debug,
-            "Borrowing substate (mut): {:?}",
-            substate_id
-        );
+    ) -> Result<NativeSubstateRef, RuntimeError> {
+        for m in &mut self.modules {
+            m.pre_sys_call(
+                &mut self.call_frames,
+                SysCallInput::BorrowSubstateMut {
+                    substate_id: substate_id,
+                },
+            )
+            .map_err(RuntimeError::ModuleError)?;
+        }
 
         // Costing
-        self.fee_reserve.consume(
-            self.fee_table.system_api_cost({
-                match substate_id {
-                    SubstateId::Bucket(_) => SystemApiCostingEntry::BorrowSubstate {
-                        // TODO: figure out loaded state and size
-                        loaded: true,
-                        size: 0,
-                    },
-                    SubstateId::Proof(_) => SystemApiCostingEntry::BorrowSubstate {
-                        // TODO: figure out loaded state and size
-                        loaded: true,
-                        size: 0,
-                    },
-                    SubstateId::Worktop => SystemApiCostingEntry::BorrowSubstate {
-                        // TODO: figure out loaded state and size
-                        loaded: true,
-                        size: 0,
-                    },
-                    SubstateId::Vault(_) => SystemApiCostingEntry::BorrowSubstate {
-                        // TODO: figure out loaded state and size
-                        loaded: false,
-                        size: 0,
-                    },
-                    SubstateId::ComponentState(..) => SystemApiCostingEntry::BorrowSubstate {
-                        // TODO: figure out loaded state and size
-                        loaded: false,
-                        size: 0,
-                    },
-                    SubstateId::ComponentInfo(..) => SystemApiCostingEntry::BorrowSubstate {
-                        // TODO: figure out loaded state and size
-                        loaded: false,
-                        size: 0,
-                    },
-                    SubstateId::KeyValueStoreSpace(_) => SystemApiCostingEntry::BorrowSubstate {
-                        // TODO: figure out loaded state and size
-                        loaded: false,
-                        size: 0,
-                    },
-                    SubstateId::KeyValueStoreEntry(..) => SystemApiCostingEntry::BorrowSubstate {
-                        // TODO: figure out loaded state and size
-                        loaded: false,
-                        size: 0,
-                    },
-                    SubstateId::ResourceManager(..) => SystemApiCostingEntry::BorrowSubstate {
-                        // TODO: figure out loaded state and size
-                        loaded: false,
-                        size: 0,
-                    },
-                    SubstateId::NonFungibleSpace(..) => SystemApiCostingEntry::BorrowSubstate {
-                        // TODO: figure out loaded state and size
-                        loaded: false,
-                        size: 0,
-                    },
-                    SubstateId::NonFungible(..) => SystemApiCostingEntry::BorrowSubstate {
-                        // TODO: figure out loaded state and size
-                        loaded: false,
-                        size: 0,
-                    },
-                    SubstateId::Package(..) => SystemApiCostingEntry::BorrowSubstate {
-                        // TODO: figure out loaded state and size
-                        loaded: false,
-                        size: 0,
-                    },
-                    SubstateId::System => SystemApiCostingEntry::BorrowSubstate {
-                        // TODO: figure out loaded state and size
-                        loaded: false,
-                        size: 0,
-                    },
-                }
-            }),
-            "borrow_substate",
-        )?;
+        self.fee_reserve
+            .consume(
+                self.fee_table.system_api_cost({
+                    match substate_id {
+                        SubstateId::Bucket(_) => SystemApiCostingEntry::BorrowSubstate {
+                            // TODO: figure out loaded state and size
+                            loaded: true,
+                            size: 0,
+                        },
+                        SubstateId::Proof(_) => SystemApiCostingEntry::BorrowSubstate {
+                            // TODO: figure out loaded state and size
+                            loaded: true,
+                            size: 0,
+                        },
+                        SubstateId::Worktop => SystemApiCostingEntry::BorrowSubstate {
+                            // TODO: figure out loaded state and size
+                            loaded: true,
+                            size: 0,
+                        },
+                        SubstateId::Vault(_) => SystemApiCostingEntry::BorrowSubstate {
+                            // TODO: figure out loaded state and size
+                            loaded: false,
+                            size: 0,
+                        },
+                        SubstateId::ComponentState(..) => SystemApiCostingEntry::BorrowSubstate {
+                            // TODO: figure out loaded state and size
+                            loaded: false,
+                            size: 0,
+                        },
+                        SubstateId::ComponentInfo(..) => SystemApiCostingEntry::BorrowSubstate {
+                            // TODO: figure out loaded state and size
+                            loaded: false,
+                            size: 0,
+                        },
+                        SubstateId::KeyValueStoreSpace(_) => {
+                            SystemApiCostingEntry::BorrowSubstate {
+                                // TODO: figure out loaded state and size
+                                loaded: false,
+                                size: 0,
+                            }
+                        }
+                        SubstateId::KeyValueStoreEntry(..) => {
+                            SystemApiCostingEntry::BorrowSubstate {
+                                // TODO: figure out loaded state and size
+                                loaded: false,
+                                size: 0,
+                            }
+                        }
+                        SubstateId::ResourceManager(..) => SystemApiCostingEntry::BorrowSubstate {
+                            // TODO: figure out loaded state and size
+                            loaded: false,
+                            size: 0,
+                        },
+                        SubstateId::NonFungibleSpace(..) => SystemApiCostingEntry::BorrowSubstate {
+                            // TODO: figure out loaded state and size
+                            loaded: false,
+                            size: 0,
+                        },
+                        SubstateId::NonFungible(..) => SystemApiCostingEntry::BorrowSubstate {
+                            // TODO: figure out loaded state and size
+                            loaded: false,
+                            size: 0,
+                        },
+                        SubstateId::Package(..) => SystemApiCostingEntry::BorrowSubstate {
+                            // TODO: figure out loaded state and size
+                            loaded: false,
+                            size: 0,
+                        },
+                        SubstateId::System => SystemApiCostingEntry::BorrowSubstate {
+                            // TODO: figure out loaded state and size
+                            loaded: false,
+                            size: 0,
+                        },
+                    }
+                }),
+                "borrow_substate",
+            )
+            .map_err(|e| RuntimeError::ModuleError(ModuleError::CostingError(e)))?;
 
         // Authorization
         if !Self::current_frame(&self.call_frames)
@@ -1098,79 +1194,141 @@ where
                 .expect(&format!("Node should exist {:?}", node_id))
         };
 
-        Ok(node_pointer.borrow_native_ref(
+        let substate_ref = node_pointer.borrow_native_ref(
             substate_id.clone(),
             &mut self.call_frames,
             &mut self.track,
-        ))
+        );
+
+        for m in &mut self.modules {
+            m.post_sys_call(
+                &mut self.call_frames,
+                SysCallOutput::BorrowSubstateMut {
+                    substate_ref: &substate_ref,
+                },
+            )
+            .map_err(RuntimeError::ModuleError)?;
+        }
+
+        Ok(substate_ref)
     }
 
-    fn substate_return_mut(&mut self, val_ref: NativeSubstateRef) -> Result<(), FeeReserveError> {
-        trace!(self, Level::Debug, "Returning value");
+    fn substate_return_mut(&mut self, substate_ref: NativeSubstateRef) -> Result<(), RuntimeError> {
+        for m in &mut self.modules {
+            m.pre_sys_call(
+                &mut self.call_frames,
+                SysCallInput::ReturnSubstateMut {
+                    substate_ref: &substate_ref,
+                },
+            )
+            .map_err(RuntimeError::ModuleError)?;
+        }
 
-        self.fee_reserve.consume(
-            self.fee_table.system_api_cost({
-                match &val_ref {
-                    NativeSubstateRef::Stack(..) => {
-                        SystemApiCostingEntry::ReturnSubstate { size: 0 }
+        self.fee_reserve
+            .consume(
+                self.fee_table.system_api_cost({
+                    match &substate_ref {
+                        NativeSubstateRef::Stack(..) => {
+                            SystemApiCostingEntry::ReturnSubstate { size: 0 }
+                        }
+                        NativeSubstateRef::Track(substate_id, _) => match substate_id {
+                            SubstateId::Vault(_) => {
+                                SystemApiCostingEntry::ReturnSubstate { size: 0 }
+                            }
+                            SubstateId::KeyValueStoreSpace(_) => {
+                                SystemApiCostingEntry::ReturnSubstate { size: 0 }
+                            }
+                            SubstateId::KeyValueStoreEntry(_, _) => {
+                                SystemApiCostingEntry::ReturnSubstate { size: 0 }
+                            }
+                            SubstateId::ResourceManager(_) => {
+                                SystemApiCostingEntry::ReturnSubstate { size: 0 }
+                            }
+                            SubstateId::Package(_) => {
+                                SystemApiCostingEntry::ReturnSubstate { size: 0 }
+                            }
+                            SubstateId::NonFungibleSpace(_) => {
+                                SystemApiCostingEntry::ReturnSubstate { size: 0 }
+                            }
+                            SubstateId::NonFungible(_, _) => {
+                                SystemApiCostingEntry::ReturnSubstate { size: 0 }
+                            }
+                            SubstateId::ComponentInfo(..) => {
+                                SystemApiCostingEntry::ReturnSubstate { size: 0 }
+                            }
+                            SubstateId::ComponentState(_) => {
+                                SystemApiCostingEntry::ReturnSubstate { size: 0 }
+                            }
+                            SubstateId::System => SystemApiCostingEntry::ReturnSubstate { size: 0 },
+                            SubstateId::Bucket(..) => {
+                                SystemApiCostingEntry::ReturnSubstate { size: 0 }
+                            }
+                            SubstateId::Proof(..) => {
+                                SystemApiCostingEntry::ReturnSubstate { size: 0 }
+                            }
+                            SubstateId::Worktop => {
+                                SystemApiCostingEntry::ReturnSubstate { size: 0 }
+                            }
+                        },
                     }
-                    NativeSubstateRef::Track(substate_id, _) => match substate_id {
-                        SubstateId::Vault(_) => SystemApiCostingEntry::ReturnSubstate { size: 0 },
-                        SubstateId::KeyValueStoreSpace(_) => {
-                            SystemApiCostingEntry::ReturnSubstate { size: 0 }
-                        }
-                        SubstateId::KeyValueStoreEntry(_, _) => {
-                            SystemApiCostingEntry::ReturnSubstate { size: 0 }
-                        }
-                        SubstateId::ResourceManager(_) => {
-                            SystemApiCostingEntry::ReturnSubstate { size: 0 }
-                        }
-                        SubstateId::Package(_) => SystemApiCostingEntry::ReturnSubstate { size: 0 },
-                        SubstateId::NonFungibleSpace(_) => {
-                            SystemApiCostingEntry::ReturnSubstate { size: 0 }
-                        }
-                        SubstateId::NonFungible(_, _) => {
-                            SystemApiCostingEntry::ReturnSubstate { size: 0 }
-                        }
-                        SubstateId::ComponentInfo(..) => {
-                            SystemApiCostingEntry::ReturnSubstate { size: 0 }
-                        }
-                        SubstateId::ComponentState(_) => {
-                            SystemApiCostingEntry::ReturnSubstate { size: 0 }
-                        }
-                        SubstateId::System => SystemApiCostingEntry::ReturnSubstate { size: 0 },
-                        SubstateId::Bucket(..) => SystemApiCostingEntry::ReturnSubstate { size: 0 },
-                        SubstateId::Proof(..) => SystemApiCostingEntry::ReturnSubstate { size: 0 },
-                        SubstateId::Worktop => SystemApiCostingEntry::ReturnSubstate { size: 0 },
-                    },
-                }
-            }),
-            "return_substate",
-        )?;
+                }),
+                "return_substate",
+            )
+            .map_err(|e| RuntimeError::ModuleError(ModuleError::CostingError(e)))?;
 
-        val_ref.return_to_location(&mut self.call_frames, &mut self.track);
+        substate_ref.return_to_location(&mut self.call_frames, &mut self.track);
+
+        for m in &mut self.modules {
+            m.post_sys_call(&mut self.call_frames, SysCallOutput::ReturnSubstateMut)
+                .map_err(RuntimeError::ModuleError)?;
+        }
+
         Ok(())
     }
 
-    fn node_drop(&mut self, node_id: &RENodeId) -> Result<HeapRootRENode, FeeReserveError> {
-        trace!(self, Level::Debug, "Dropping value: {:?}", node_id);
+    fn node_drop(&mut self, node_id: &RENodeId) -> Result<HeapRootRENode, RuntimeError> {
+        for m in &mut self.modules {
+            m.pre_sys_call(
+                &mut self.call_frames,
+                SysCallInput::DropNode { node_id: node_id },
+            )
+            .map_err(RuntimeError::ModuleError)?;
+        }
 
-        self.fee_reserve.consume(
-            self.fee_table
-                .system_api_cost(SystemApiCostingEntry::DropNode { size: 0 }),
-            "drop_node",
-        )?;
+        self.fee_reserve
+            .consume(
+                self.fee_table
+                    .system_api_cost(SystemApiCostingEntry::DropNode { size: 0 }),
+                "drop_node",
+            )
+            .map_err(|e| RuntimeError::ModuleError(ModuleError::CostingError(e)))?;
 
         // TODO: Authorization
 
-        Ok(Self::current_frame_mut(&mut self.call_frames)
+        let node = Self::current_frame_mut(&mut self.call_frames)
             .owned_heap_nodes
             .remove(&node_id)
-            .unwrap())
+            .unwrap();
+
+        for m in &mut self.modules {
+            m.post_sys_call(
+                &mut self.call_frames,
+                SysCallOutput::DropNode { node: &node },
+            )
+            .map_err(RuntimeError::ModuleError)?;
+        }
+
+        Ok(node)
     }
 
     fn node_create(&mut self, re_node: HeapRENode) -> Result<RENodeId, RuntimeError> {
-        trace!(self, Level::Debug, "Creating value");
+        for m in &mut self.modules {
+            m.pre_sys_call(
+                &mut self.call_frames,
+                SysCallInput::CreateNode { node: &re_node },
+            )
+            .map_err(RuntimeError::ModuleError)?;
+        }
 
         // Costing
         self.fee_reserve
@@ -1181,7 +1339,7 @@ where
                     }),
                 "create_node",
             )
-            .map_err(RuntimeError::CostingError)?;
+            .map_err(|e| RuntimeError::ModuleError(ModuleError::CostingError(e)))?;
 
         // TODO: Authorization
 
@@ -1191,7 +1349,9 @@ where
             Self::current_frame_mut(&mut self.call_frames).take_available_values(children, true)?;
         let first_missing_node = missing.drain().nth(0);
         if let Some(missing_node) = first_missing_node {
-            return Err(RuntimeError::RENodeCreateNodeNotFound(missing_node));
+            return Err(RuntimeError::KernelError(
+                KernelError::RENodeCreateNodeNotFound(missing_node),
+            ));
         }
         let mut child_nodes = HashMap::new();
         for (id, taken_root_node) in taken_root_nodes {
@@ -1244,11 +1404,25 @@ where
             _ => {}
         }
 
+        for m in &mut self.modules {
+            m.post_sys_call(
+                &mut self.call_frames,
+                SysCallOutput::CreateNode { node_id: &node_id },
+            )
+            .map_err(RuntimeError::ModuleError)?;
+        }
+
         Ok(node_id)
     }
 
     fn node_globalize(&mut self, node_id: RENodeId) -> Result<(), RuntimeError> {
-        trace!(self, Level::Debug, "Globalizing value: {:?}", node_id);
+        for m in &mut self.modules {
+            m.pre_sys_call(
+                &mut self.call_frames,
+                SysCallInput::GlobalizeNode { node_id: &node_id },
+            )
+            .map_err(RuntimeError::ModuleError)?;
+        }
 
         // Costing
         self.fee_reserve
@@ -1259,10 +1433,12 @@ where
                     }),
                 "globalize_node",
             )
-            .map_err(RuntimeError::CostingError)?;
+            .map_err(|e| RuntimeError::ModuleError(ModuleError::CostingError(e)))?;
 
         if !RENodeProperties::can_globalize(node_id) {
-            return Err(RuntimeError::RENodeGlobalizeTypeNotAllowed(node_id));
+            return Err(RuntimeError::KernelError(
+                KernelError::RENodeGlobalizeTypeNotAllowed(node_id),
+            ));
         }
 
         // TODO: Authorization
@@ -1339,16 +1515,24 @@ where
             .node_refs
             .insert(node_id, RENodePointer::Store(node_id));
 
+        for m in &mut self.modules {
+            m.post_sys_call(&mut self.call_frames, SysCallOutput::GlobalizeNode)
+                .map_err(RuntimeError::ModuleError)?;
+        }
+
         Ok(())
     }
 
     fn substate_read(&mut self, substate_id: SubstateId) -> Result<ScryptoValue, RuntimeError> {
-        trace!(
-            self,
-            Level::Debug,
-            "Reading substate data: {:?}",
-            substate_id
-        );
+        for m in &mut self.modules {
+            m.pre_sys_call(
+                &mut self.call_frames,
+                SysCallInput::ReadSubstate {
+                    substate_id: &substate_id,
+                },
+            )
+            .map_err(RuntimeError::ModuleError)?;
+        }
 
         // Costing
         self.fee_reserve
@@ -1359,16 +1543,18 @@ where
                     }),
                 "read_substate",
             )
-            .map_err(RuntimeError::CostingError)?;
+            .map_err(|e| RuntimeError::ModuleError(ModuleError::CostingError(e)))?;
 
         // Authorization
         if !Self::current_frame(&self.call_frames)
             .actor
             .is_substate_readable(&substate_id)
         {
-            return Err(RuntimeError::SubstateReadNotReadable(
-                Self::current_frame(&self.call_frames).actor.clone(),
-                substate_id.clone(),
+            return Err(RuntimeError::KernelError(
+                KernelError::SubstateReadNotReadable(
+                    Self::current_frame(&self.call_frames).actor.clone(),
+                    substate_id.clone(),
+                ),
             ));
         }
 
@@ -1390,11 +1576,30 @@ where
                 .node_refs
                 .insert(child_id, child_pointer);
         }
+
+        for m in &mut self.modules {
+            m.post_sys_call(
+                &mut self.call_frames,
+                SysCallOutput::ReadSubstate {
+                    value: &current_value,
+                },
+            )
+            .map_err(RuntimeError::ModuleError)?;
+        }
+
         Ok(current_value)
     }
 
     fn substate_take(&mut self, substate_id: SubstateId) -> Result<ScryptoValue, RuntimeError> {
-        trace!(self, Level::Debug, "Taking substate: {:?}", substate_id);
+        for m in &mut self.modules {
+            m.pre_sys_call(
+                &mut self.call_frames,
+                SysCallInput::TakeSubstate {
+                    substate_id: &substate_id,
+                },
+            )
+            .map_err(RuntimeError::ModuleError)?;
+        }
 
         // Costing
         self.fee_reserve
@@ -1405,16 +1610,18 @@ where
                     }),
                 "read_substate",
             )
-            .map_err(RuntimeError::CostingError)?;
+            .map_err(|e| RuntimeError::ModuleError(ModuleError::CostingError(e)))?;
 
         // Authorization
         if !Self::current_frame(&self.call_frames)
             .actor
             .is_substate_writeable(&substate_id)
         {
-            return Err(RuntimeError::SubstateWriteNotWriteable(
-                Self::current_frame(&self.call_frames).actor.clone(),
-                substate_id,
+            return Err(RuntimeError::KernelError(
+                KernelError::SubstateWriteNotWriteable(
+                    Self::current_frame(&self.call_frames).actor.clone(),
+                    substate_id,
+                ),
             ));
         }
 
@@ -1422,12 +1629,22 @@ where
             Self::read_value_internal(&mut self.call_frames, self.track, &substate_id)?;
         let cur_children = current_value.node_ids();
         if !cur_children.is_empty() {
-            return Err(RuntimeError::ValueNotAllowed);
+            return Err(RuntimeError::KernelError(KernelError::ValueNotAllowed));
         }
 
         // Write values
         let mut node_ref = pointer.to_ref_mut(&mut self.call_frames, &mut self.track);
         node_ref.replace_value_with_default(&substate_id);
+
+        for m in &mut self.modules {
+            m.post_sys_call(
+                &mut self.call_frames,
+                SysCallOutput::TakeSubstate {
+                    value: &current_value,
+                },
+            )
+            .map_err(RuntimeError::ModuleError)?;
+        }
 
         Ok(current_value)
     }
@@ -1437,12 +1654,16 @@ where
         substate_id: SubstateId,
         value: ScryptoValue,
     ) -> Result<(), RuntimeError> {
-        trace!(
-            self,
-            Level::Debug,
-            "Writing substate data: {:?}",
-            substate_id
-        );
+        for m in &mut self.modules {
+            m.pre_sys_call(
+                &mut self.call_frames,
+                SysCallInput::WriteSubstate {
+                    substate_id: &substate_id,
+                    value: &value,
+                },
+            )
+            .map_err(RuntimeError::ModuleError)?;
+        }
 
         // Costing
         self.fee_reserve
@@ -1453,16 +1674,18 @@ where
                     }),
                 "write_substate",
             )
-            .map_err(RuntimeError::CostingError)?;
+            .map_err(|e| RuntimeError::ModuleError(ModuleError::CostingError(e)))?;
 
         // Authorization
         if !Self::current_frame(&self.call_frames)
             .actor
             .is_substate_writeable(&substate_id)
         {
-            return Err(RuntimeError::SubstateWriteNotWriteable(
-                Self::current_frame(&self.call_frames).actor.clone(),
-                substate_id,
+            return Err(RuntimeError::KernelError(
+                KernelError::SubstateWriteNotWriteable(
+                    Self::current_frame(&self.call_frames).actor.clone(),
+                    substate_id,
+                ),
             ));
         }
 
@@ -1472,7 +1695,7 @@ where
                 .track
                 .is_root(&SubstateId::ComponentInfo(*component_address))
             {
-                return Err(RuntimeError::ValueNotAllowed);
+                return Err(RuntimeError::KernelError(KernelError::ValueNotAllowed));
             }
         }
 
@@ -1481,7 +1704,7 @@ where
             let node_ids = value.node_ids();
             if !node_ids.is_empty() {
                 if !SubstateProperties::can_own_nodes(&substate_id) {
-                    return Err(RuntimeError::ValueNotAllowed);
+                    return Err(RuntimeError::KernelError(KernelError::ValueNotAllowed));
                 }
 
                 Self::current_frame_mut(&mut self.call_frames)
@@ -1504,39 +1727,94 @@ where
         let mut node_ref = pointer.to_ref_mut(&mut self.call_frames, &mut self.track);
         node_ref.write_value(substate_id, value, taken_nodes);
 
+        for m in &mut self.modules {
+            m.post_sys_call(&mut self.call_frames, SysCallOutput::WriteSubstate)
+                .map_err(RuntimeError::ModuleError)?;
+        }
+
         Ok(())
     }
 
-    fn transaction_hash(&mut self) -> Result<Hash, FeeReserveError> {
-        self.fee_reserve.consume(
-            self.fee_table
-                .system_api_cost(SystemApiCostingEntry::ReadTransactionHash),
-            "read_transaction_hash",
-        )?;
+    fn transaction_hash(&mut self) -> Result<Hash, RuntimeError> {
+        for m in &mut self.modules {
+            m.pre_sys_call(&mut self.call_frames, SysCallInput::ReadTransactionHash)
+                .map_err(RuntimeError::ModuleError)?;
+        }
+
+        self.fee_reserve
+            .consume(
+                self.fee_table
+                    .system_api_cost(SystemApiCostingEntry::ReadTransactionHash),
+                "read_transaction_hash",
+            )
+            .map_err(|e| RuntimeError::ModuleError(ModuleError::CostingError(e)))?;
+
+        for m in &mut self.modules {
+            m.post_sys_call(
+                &mut self.call_frames,
+                SysCallOutput::ReadTransactionHash {
+                    hash: &self.transaction_hash,
+                },
+            )
+            .map_err(RuntimeError::ModuleError)?;
+        }
+
         Ok(self.transaction_hash)
     }
 
-    fn generate_uuid(&mut self) -> Result<u128, FeeReserveError> {
-        self.fee_reserve.consume(
-            self.fee_table
-                .system_api_cost(SystemApiCostingEntry::GenerateUuid),
-            "generate_uuid",
-        )?;
-        Ok(Self::new_uuid(
-            &mut self.id_allocator,
-            self.transaction_hash,
-        ))
+    fn generate_uuid(&mut self) -> Result<u128, RuntimeError> {
+        for m in &mut self.modules {
+            m.pre_sys_call(&mut self.call_frames, SysCallInput::GenerateUuid)
+                .map_err(RuntimeError::ModuleError)?;
+        }
+
+        self.fee_reserve
+            .consume(
+                self.fee_table
+                    .system_api_cost(SystemApiCostingEntry::GenerateUuid),
+                "generate_uuid",
+            )
+            .map_err(|e| RuntimeError::ModuleError(ModuleError::CostingError(e)))?;
+
+        let uuid = Self::new_uuid(&mut self.id_allocator, self.transaction_hash);
+
+        for m in &mut self.modules {
+            m.post_sys_call(&mut self.call_frames, SysCallOutput::GenerateUuid { uuid })
+                .map_err(RuntimeError::ModuleError)?;
+        }
+
+        Ok(uuid)
     }
 
-    fn emit_log(&mut self, level: Level, message: String) -> Result<(), FeeReserveError> {
-        self.fee_reserve.consume(
-            self.fee_table
-                .system_api_cost(SystemApiCostingEntry::EmitLog {
-                    size: message.len() as u32,
-                }),
-            "emit_log",
-        )?;
+    fn emit_log(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
+        for m in &mut self.modules {
+            m.pre_sys_call(
+                &mut self.call_frames,
+                SysCallInput::EmitLog {
+                    level: &level,
+                    message: &message,
+                },
+            )
+            .map_err(RuntimeError::ModuleError)?;
+        }
+
+        self.fee_reserve
+            .consume(
+                self.fee_table
+                    .system_api_cost(SystemApiCostingEntry::EmitLog {
+                        size: message.len() as u32,
+                    }),
+                "emit_log",
+            )
+            .map_err(|e| RuntimeError::ModuleError(ModuleError::CostingError(e)))?;
+
         self.track.add_log(level, message);
+
+        for m in &mut self.modules {
+            m.post_sys_call(&mut self.call_frames, SysCallOutput::EmitLog)
+                .map_err(RuntimeError::ModuleError)?;
+        }
+
         Ok(())
     }
 
@@ -1545,6 +1823,17 @@ where
         access_rule: scrypto::resource::AccessRule,
         proof_ids: Vec<ProofId>,
     ) -> Result<bool, RuntimeError> {
+        for m in &mut self.modules {
+            m.pre_sys_call(
+                &mut self.call_frames,
+                SysCallInput::CheckAccessRule {
+                    access_rule: &access_rule,
+                    proof_ids: &proof_ids,
+                },
+            )
+            .map_err(RuntimeError::ModuleError)?;
+        }
+
         // Costing
         self.fee_reserve
             .consume(
@@ -1554,7 +1843,7 @@ where
                     }),
                 "check_access_rule",
             )
-            .map_err(RuntimeError::CostingError)?;
+            .map_err(|e| RuntimeError::ModuleError(ModuleError::CostingError(e)))?;
 
         let proofs = proof_ids
             .iter()
@@ -1566,7 +1855,9 @@ where
                         HeapRENode::Proof(proof) => proof.clone(),
                         _ => panic!("Expected proof"),
                     })
-                    .ok_or(RuntimeError::ProofNotFound(proof_id.clone()))
+                    .ok_or(RuntimeError::KernelError(KernelError::ProofNotFound(
+                        proof_id.clone(),
+                    )))
             })
             .collect::<Result<Vec<Proof>, RuntimeError>>()?;
         let mut simulated_auth_zone = AuthZone::new_with_proofs(proofs);
@@ -1574,6 +1865,16 @@ where
         let method_authorization = convert(&Type::Unit, &Value::Unit, &access_rule);
         let is_authorized = method_authorization.check(&[&simulated_auth_zone]).is_ok();
         simulated_auth_zone.clear();
+
+        for m in &mut self.modules {
+            m.post_sys_call(
+                &mut self.call_frames,
+                SysCallOutput::CheckAccessRule {
+                    result: is_authorized,
+                },
+            )
+            .map_err(RuntimeError::ModuleError)?;
+        }
 
         Ok(is_authorized)
     }

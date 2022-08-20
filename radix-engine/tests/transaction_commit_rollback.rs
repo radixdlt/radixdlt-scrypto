@@ -1,4 +1,4 @@
-use radix_engine::engine::RuntimeError;
+use radix_engine::engine::*;
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use scrypto::core::Network;
 use scrypto::prelude::*;
@@ -45,7 +45,12 @@ fn test_state_track_failure() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
-    receipt.expect_failure(|e| matches!(e, RuntimeError::WorktopError(_)));
+    receipt.expect_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::WorktopError(_))
+        )
+    });
     assert_eq!(1, receipt.state_updates.down_substates.len()); // only the vault is down
     assert_eq!(1, receipt.state_updates.up_substates.len());
 }

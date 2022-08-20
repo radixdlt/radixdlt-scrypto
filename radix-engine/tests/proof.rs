@@ -1,4 +1,4 @@
-use radix_engine::engine::RuntimeError;
+use radix_engine::engine::{KernelError, RuntimeError};
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use scrypto::core::Network;
 use scrypto::prelude::*;
@@ -267,7 +267,12 @@ fn cant_move_restricted_proof() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
-    receipt.expect_failure(|e| matches!(e, RuntimeError::CantMoveRestrictedProof));
+    receipt.expect_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::KernelError(KernelError::CantMoveRestrictedProof)
+        )
+    });
 }
 
 #[test]
@@ -296,7 +301,12 @@ fn cant_move_locked_bucket() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
-    receipt.expect_failure(|e| matches!(e, RuntimeError::CantMoveLockedBucket));
+    receipt.expect_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::KernelError(KernelError::CantMoveLockedBucket)
+        )
+    });
 }
 
 #[test]

@@ -328,7 +328,7 @@ impl Proof {
         let substate_id = SubstateId::Proof(proof_id);
         let mut node_ref = system_api
             .substate_borrow_mut(&substate_id)
-            .map_err(ProofError::CostingError)?;
+            .expect("TODO: handle error");
         let proof = node_ref.proof();
 
         let rtn = match proof_fn {
@@ -365,7 +365,7 @@ impl Proof {
 
         system_api
             .substate_return_mut(node_ref)
-            .map_err(ProofError::CostingError)?;
+            .expect("TODO: handle error");
         Ok(rtn)
     }
 
@@ -383,7 +383,7 @@ impl Proof {
     ) -> Result<ScryptoValue, ProofError> {
         let proof: Proof = system_api
             .node_drop(&node_id)
-            .map_err(ProofError::CostingError)?
+            .expect("TODO: handle error")
             .into();
         match proof_fn {
             ProofFnIdentifier::Drop => {

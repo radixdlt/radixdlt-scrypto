@@ -1,4 +1,4 @@
-use radix_engine::engine::RuntimeError;
+use radix_engine::engine::{KernelError, RuntimeError};
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use scrypto::address::Bech32Decoder;
 use scrypto::core::Network;
@@ -63,7 +63,7 @@ fn invalid_blueprint_name_should_cause_error() {
 
     // Assert
     receipt.expect_failure(|e| {
-        if let RuntimeError::BlueprintNotFound(addr, blueprint) = e {
+        if let RuntimeError::KernelError(KernelError::BlueprintNotFound(addr, blueprint)) = e {
             addr.eq(&package_address) && blueprint.eq("NonExistentBlueprint")
         } else {
             false
@@ -94,7 +94,10 @@ fn reentrancy_should_not_be_possible() {
 
     // Assert
     receipt.expect_failure(|e| {
-        if let RuntimeError::Reentrancy(SubstateId::ComponentState(address)) = e {
+        if let RuntimeError::KernelError(KernelError::Reentrancy(SubstateId::ComponentState(
+            address,
+        ))) = e
+        {
             address.eq(&component_address)
         } else {
             false

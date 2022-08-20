@@ -1,4 +1,4 @@
-use crate::engine::{HeapRENode, LockFeeError, SystemApi};
+use crate::engine::{HeapRENode, SystemApi};
 use crate::fee::FeeReserve;
 use crate::fee::FeeReserveError;
 use crate::model::{
@@ -16,7 +16,8 @@ pub enum VaultError {
     ProofError(ProofError),
     CouldNotCreateProof,
     CostingError(FeeReserveError),
-    LockFeeError(LockFeeError),
+    LockFeeNotRadixToken,
+    LockFeeInsufficientBalance,
 }
 
 /// A persistent resource container.
@@ -157,7 +158,7 @@ impl Vault {
         let substate_id = SubstateId::Vault(vault_id.clone());
         let mut ref_mut = system_api
             .substate_borrow_mut(&substate_id)
-            .map_err(VaultError::CostingError)?;
+            .expect("TODO: handle error");
         let vault = ref_mut.vault();
 
         let rtn = match vault_fn {
@@ -166,7 +167,7 @@ impl Vault {
                     scrypto_decode(&args.raw).map_err(|e| VaultError::InvalidRequestData(e))?;
                 let bucket = system_api
                     .node_drop(&RENodeId::Bucket(input.bucket.0))
-                    .map_err(VaultError::CostingError)?
+                    .expect("TODO: handle error")
                     .into();
                 vault
                     .put(bucket)
@@ -191,13 +192,13 @@ impl Vault {
 
                 // Check resource and take amount
                 if vault.resource_address() != RADIX_TOKEN {
-                    return Err(VaultError::LockFeeError(LockFeeError::NotRadixToken));
+                    return Err(VaultError::LockFeeNotRadixToken);
                 }
 
                 // Take fee from the vault
                 let fee = vault
                     .take(input.amount)
-                    .map_err(|_| VaultError::LockFeeError(LockFeeError::InsufficientBalance))?;
+                    .map_err(|_| VaultError::LockFeeInsufficientBalance)?;
 
                 // Refill fee reserve
                 let changes = system_api
@@ -207,7 +208,7 @@ impl Vault {
                         fee,
                         matches!(vault_fn, VaultFnIdentifier::LockContingentFee),
                     )
-                    .map_err(VaultError::CostingError)?;
+                    .expect("TODO: handle error");
 
                 // Return changes
                 vault
@@ -295,7 +296,7 @@ impl Vault {
 
         system_api
             .substate_return_mut(ref_mut)
-            .map_err(VaultError::CostingError)?;
+            .expect("TODO: handle error");
 
         Ok(rtn)
     }

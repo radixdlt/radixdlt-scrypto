@@ -1,4 +1,4 @@
-use crate::engine::{HeapRENode, RuntimeError, SystemApi};
+use crate::engine::{HeapRENode, SystemApi};
 use crate::fee::FeeReserve;
 use crate::fee::FeeReserveError;
 use crate::model::resource_manager::ResourceMethodRule::{Protected, Public};
@@ -443,12 +443,7 @@ impl ResourceManager {
 
                 system_api
                     .node_globalize(resource_node_id)
-                    .map_err(|e| match e {
-                        RuntimeError::CostingError(cost_unit_error) => {
-                            ResourceManagerError::CostingError(cost_unit_error)
-                        }
-                        _ => panic!("Unexpected error {}", e),
-                    })?;
+                    .expect("TODO handle error");
 
                 Ok(ScryptoValue::from_typed(&(resource_address, bucket_id)))
             }
@@ -465,7 +460,7 @@ impl ResourceManager {
         let substate_id = SubstateId::ResourceManager(resource_address);
         let mut ref_mut = system_api
             .substate_borrow_mut(&substate_id)
-            .map_err(ResourceManagerError::CostingError)?;
+            .expect("TODO: handle error");
         let resource_manager = ref_mut.resource_manager();
 
         let rtn = match resource_manager_fn {
@@ -615,7 +610,7 @@ impl ResourceManager {
 
         system_api
             .substate_return_mut(ref_mut)
-            .map_err(ResourceManagerError::CostingError)?;
+            .expect("TODO: handle error");
 
         Ok(rtn)
     }

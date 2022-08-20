@@ -1,7 +1,7 @@
 use radix_engine::constants::{
     DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN,
 };
-use radix_engine::engine::{ExecutionTrace, Kernel, SystemApi};
+use radix_engine::engine::{ExecutionTrace, Kernel, ModuleError, SystemApi};
 use radix_engine::engine::{RuntimeError, Track};
 use radix_engine::fee::{FeeTable, SystemLoanFeeReserve};
 use radix_engine::ledger::*;
@@ -508,11 +508,11 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
 pub fn is_auth_error(e: &RuntimeError) -> bool {
     matches!(
         e,
-        RuntimeError::AuthorizationError {
+        RuntimeError::ModuleError(ModuleError::AuthorizationError {
             authorization: _,
             function: _,
             error: ::radix_engine::model::MethodAuthorizationError::NotAuthorized
-        }
+        })
     )
 }
 
@@ -521,7 +521,9 @@ macro_rules! assert_invoke_error {
     ($result:expr, $pattern:pat) => {{
         let matches = match &$result {
             radix_engine::transaction::TransactionStatus::Failed(
-                radix_engine::engine::RuntimeError::InvokeError(e),
+                radix_engine::engine::RuntimeError::KernelError(
+                    radix_engine::engine::KernelError::InvokeError(e),
+                ),
             ) => {
                 matches!(e.as_ref(), $pattern)
             }

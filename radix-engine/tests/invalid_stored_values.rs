@@ -1,4 +1,4 @@
-use radix_engine::engine::RuntimeError;
+use radix_engine::engine::{KernelError, RuntimeError};
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use scrypto::prelude::*;
 use scrypto_unit::*;
@@ -24,7 +24,8 @@ fn stored_bucket_in_committed_component_should_fail() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| matches!(e, RuntimeError::ValueNotAllowed));
+    receipt
+        .expect_failure(|e| matches!(e, RuntimeError::KernelError(KernelError::ValueNotAllowed)));
 }
 
 #[test]
@@ -47,5 +48,6 @@ fn stored_bucket_in_owned_component_should_fail() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| matches!(e, RuntimeError::ValueNotAllowed));
+    receipt
+        .expect_failure(|e| matches!(e, RuntimeError::KernelError(KernelError::ValueNotAllowed)));
 }

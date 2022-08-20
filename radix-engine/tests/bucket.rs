@@ -115,8 +115,11 @@ fn test_take_with_invalid_granularity() {
 
     // Assert
     receipt.expect_failure(|e| {
-        if let RuntimeError::BucketError(BucketError::ResourceContainerError(
-            ResourceContainerError::InvalidAmount(amount, granularity),
+        if let RuntimeError::ApplicationError(ApplicationError::BucketError(
+            BucketError::ResourceContainerError(ResourceContainerError::InvalidAmount(
+                amount,
+                granularity,
+            )),
         )) = e
         {
             amount.eq(&dec!("1.123")) && *granularity == 2
@@ -152,8 +155,11 @@ fn test_take_with_negative_amount() {
 
     // Assert
     receipt.expect_failure(|e| {
-        if let RuntimeError::BucketError(BucketError::ResourceContainerError(
-            ResourceContainerError::InvalidAmount(amount, granularity),
+        if let RuntimeError::ApplicationError(ApplicationError::BucketError(
+            BucketError::ResourceContainerError(ResourceContainerError::InvalidAmount(
+                amount,
+                granularity,
+            )),
         )) = e
         {
             amount.eq(&dec!("-2")) && *granularity == 2

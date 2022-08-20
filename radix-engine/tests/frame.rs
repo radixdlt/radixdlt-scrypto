@@ -1,4 +1,4 @@
-use radix_engine::engine::RuntimeError;
+use radix_engine::engine::{KernelError, RuntimeError};
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use scrypto::prelude::*;
 use scrypto_unit::*;
@@ -43,5 +43,10 @@ fn test_max_call_depth_failure() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| matches!(e, RuntimeError::MaxCallDepthLimitReached));
+    receipt.expect_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::KernelError(KernelError::MaxCallDepthLimitReached)
+        )
+    });
 }

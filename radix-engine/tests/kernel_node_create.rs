@@ -1,4 +1,4 @@
-use radix_engine::engine::RuntimeError;
+use radix_engine::engine::{KernelError, RuntimeError};
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use scrypto::core::Network;
 use scrypto::prelude::*;
@@ -25,7 +25,12 @@ fn should_not_be_able_to_node_create_with_invalid_blueprint() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| matches!(e, RuntimeError::RENodeCreateInvalidPermission));
+    receipt.expect_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::KernelError(KernelError::RENodeCreateInvalidPermission)
+        )
+    });
 }
 
 #[test]
@@ -48,5 +53,10 @@ fn should_not_be_able_to_node_create_with_invalid_package() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| matches!(e, RuntimeError::RENodeCreateInvalidPermission));
+    receipt.expect_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::KernelError(KernelError::RENodeCreateInvalidPermission)
+        )
+    });
 }

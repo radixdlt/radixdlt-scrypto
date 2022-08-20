@@ -8,7 +8,7 @@ use crate::wasm::{WasmEngine, WasmInstance};
 #[derive(Debug, Clone, PartialEq)]
 pub enum ComponentError {
     InvalidRequestData(DecodeError),
-    BlueprintFunctionDoesNotExist(String),
+    BlueprintFunctionNotFound(String),
     CostingError(FeeReserveError),
 }
 
@@ -105,7 +105,7 @@ impl ComponentInfo {
                     let (package_id, blueprint_name) = {
                         let component_ref = system_api
                             .borrow_node(&node_id)
-                            .map_err(ComponentError::CostingError)?;
+                            .expect("TODO: handle error");
                         let component = component_ref.component_info();
                         let blueprint_name = component.blueprint_name().to_owned();
                         (
@@ -116,12 +116,12 @@ impl ComponentInfo {
 
                     let package_ref = system_api
                         .borrow_node(&package_id)
-                        .map_err(ComponentError::CostingError)?;
+                        .expect("TODO: handle error");
                     let package = package_ref.package();
                     let blueprint_abi = package.blueprint_abi(&blueprint_name).unwrap();
                     for (func_name, _) in input.access_rules.iter() {
                         if !blueprint_abi.contains_fn(func_name.as_str()) {
-                            return Err(ComponentError::BlueprintFunctionDoesNotExist(
+                            return Err(ComponentError::BlueprintFunctionNotFound(
                                 func_name.to_string(),
                             ));
                         }
@@ -130,12 +130,12 @@ impl ComponentInfo {
 
                 let mut ref_mut = system_api
                     .substate_borrow_mut(&substate_id)
-                    .map_err(ComponentError::CostingError)?;
+                    .expect("TODO: handle error");
                 let component_info = ref_mut.component_info();
                 component_info.access_rules.push(input.access_rules);
                 system_api
                     .substate_return_mut(ref_mut)
-                    .map_err(ComponentError::CostingError)?;
+                    .expect("TODO: handle error");
 
                 Ok(ScryptoValue::from_typed(&()))
             }

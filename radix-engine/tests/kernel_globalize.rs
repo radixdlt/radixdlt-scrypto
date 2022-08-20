@@ -1,4 +1,4 @@
-use radix_engine::engine::RuntimeError;
+use radix_engine::engine::{KernelError, RuntimeError};
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use scrypto::core::Network;
 use scrypto::engine::types::RENodeId;
@@ -24,7 +24,9 @@ fn should_not_be_able_to_globalize_key_value_store() {
     receipt.expect_failure(|e| {
         matches!(
             e,
-            RuntimeError::RENodeGlobalizeTypeNotAllowed(RENodeId::KeyValueStore(..))
+            RuntimeError::KernelError(KernelError::RENodeGlobalizeTypeNotAllowed(
+                RENodeId::KeyValueStore(..)
+            ))
         )
     });
 }
@@ -47,7 +49,9 @@ fn should_not_be_able_to_globalize_bucket() {
     receipt.expect_failure(|e| {
         matches!(
             e,
-            RuntimeError::RENodeGlobalizeTypeNotAllowed(RENodeId::Bucket(..))
+            RuntimeError::KernelError(KernelError::RENodeGlobalizeTypeNotAllowed(
+                RENodeId::Bucket(..)
+            ))
         )
     });
 }
@@ -70,7 +74,9 @@ fn should_not_be_able_to_globalize_proof() {
     receipt.expect_failure(|e| {
         matches!(
             e,
-            RuntimeError::RENodeGlobalizeTypeNotAllowed(RENodeId::Proof(..))
+            RuntimeError::KernelError(KernelError::RENodeGlobalizeTypeNotAllowed(RENodeId::Proof(
+                ..
+            )))
         )
     });
 }
@@ -93,7 +99,9 @@ fn should_not_be_able_to_globalize_vault() {
     receipt.expect_failure(|e| {
         matches!(
             e,
-            RuntimeError::RENodeGlobalizeTypeNotAllowed(RENodeId::Vault(..))
+            RuntimeError::KernelError(KernelError::RENodeGlobalizeTypeNotAllowed(RENodeId::Vault(
+                ..
+            )))
         )
     });
 }

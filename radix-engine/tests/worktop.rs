@@ -1,4 +1,5 @@
 use radix_engine::engine::DropFailure;
+use radix_engine::engine::KernelError;
 use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use scrypto::core::Network;
@@ -21,5 +22,10 @@ fn test_worktop_resource_leak() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
-    receipt.expect_failure(|e| matches!(e, RuntimeError::DropFailure(DropFailure::Worktop)));
+    receipt.expect_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::KernelError(KernelError::DropFailure(DropFailure::Worktop))
+        )
+    });
 }

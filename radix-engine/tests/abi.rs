@@ -1,5 +1,5 @@
 use crate::ExpectedResult::{InvalidInput, InvalidOutput, Success};
-use radix_engine::engine::RuntimeError;
+use radix_engine::engine::{ApplicationError, KernelError, RuntimeError};
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::model::ComponentError;
 use scrypto::core::Network;
@@ -30,7 +30,9 @@ fn test_invalid_access_rule_methods() {
     receipt.expect_failure(|e| {
         matches!(
             e,
-            RuntimeError::ComponentError(ComponentError::BlueprintFunctionDoesNotExist(..))
+            RuntimeError::ApplicationError(ApplicationError::ComponentError(
+                ComponentError::BlueprintFunctionNotFound(..)
+            ))
         )
     })
 }
@@ -60,10 +62,20 @@ fn test_arg(method_name: &str, args: Vec<u8>, expected_result: ExpectedResult) {
             receipt.expect_success();
         }
         ExpectedResult::InvalidInput => {
-            receipt.expect_failure(|e| matches!(e, RuntimeError::InvalidFnInput { .. }));
+            receipt.expect_failure(|e| {
+                matches!(
+                    e,
+                    RuntimeError::KernelError(KernelError::InvalidFnInput { .. })
+                )
+            });
         }
         ExpectedResult::InvalidOutput => {
-            receipt.expect_failure(|e| matches!(e, RuntimeError::InvalidFnOutput { .. }));
+            receipt.expect_failure(|e| {
+                matches!(
+                    e,
+                    RuntimeError::KernelError(KernelError::InvalidFnOutput { .. })
+                )
+            });
         }
     }
 }

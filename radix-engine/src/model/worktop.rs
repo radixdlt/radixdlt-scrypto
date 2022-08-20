@@ -58,7 +58,7 @@ pub enum WorktopError {
     InvalidRequestData(DecodeError),
     MethodNotFound(String),
     ResourceContainerError(ResourceContainerError),
-    ResourceDoesNotExist(ResourceAddress),
+    ResourceNotFound(ResourceAddress),
     CouldNotCreateBucket,
     CouldNotTakeBucket,
     AssertionFailed,
@@ -212,7 +212,7 @@ impl Worktop {
     ) -> Result<ScryptoValue, WorktopError> {
         let mut node_ref = system_api
             .substate_borrow_mut(&SubstateId::Worktop)
-            .map_err(WorktopError::CostingError)?;
+            .expect("TODO: handle error");
         let worktop = node_ref.worktop();
 
         let rtn = match worktop_fn {
@@ -221,7 +221,7 @@ impl Worktop {
                     scrypto_decode(&args.raw).map_err(|e| WorktopError::InvalidRequestData(e))?;
                 let bucket = system_api
                     .node_drop(&RENodeId::Bucket(input.bucket.0))
-                    .map_err(WorktopError::CostingError)?
+                    .expect("TODO: handle error")
                     .into();
                 worktop
                     .put(bucket)
@@ -240,7 +240,7 @@ impl Worktop {
                     let resource_type = {
                         let node_ref = system_api
                             .borrow_node(&RENodeId::ResourceManager(input.resource_address))
-                            .map_err(WorktopError::CostingError)?;
+                            .expect("TODO: handle error");
                         let resource_manager = node_ref.resource_manager();
                         resource_manager.resource_type()
                     };
@@ -267,7 +267,7 @@ impl Worktop {
                     let resource_type = {
                         let node_ref = system_api
                             .borrow_node(&RENodeId::ResourceManager(input.resource_address))
-                            .map_err(WorktopError::CostingError)?;
+                            .expect("TODO: handle error");
                         let resource_manager = node_ref.resource_manager();
                         resource_manager.resource_type()
                     };
@@ -295,7 +295,7 @@ impl Worktop {
                     let resource_type = {
                         let node_ref = system_api
                             .borrow_node(&RENodeId::ResourceManager(input.resource_address))
-                            .map_err(WorktopError::CostingError)?;
+                            .expect("TODO: handle error");
                         let resource_manager = node_ref.resource_manager();
                         resource_manager.resource_type()
                     };
@@ -365,7 +365,7 @@ impl Worktop {
 
         system_api
             .substate_return_mut(node_ref)
-            .map_err(WorktopError::CostingError)?;
+            .expect("TODO: handle error");
         Ok(rtn)
     }
 }

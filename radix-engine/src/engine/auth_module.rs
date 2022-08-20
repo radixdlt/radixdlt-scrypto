@@ -27,11 +27,11 @@ impl AuthModule {
         if !method_auths.is_empty() {
             for method_auth in method_auths {
                 method_auth.check(&auth_zones).map_err(|error| {
-                    RuntimeError::AuthorizationError {
+                    RuntimeError::ModuleError(ModuleError::AuthorizationError {
                         function: function.clone(),
                         authorization: method_auth,
                         error,
-                    }
+                    })
                 })?;
             }
         }
@@ -101,13 +101,13 @@ impl AuthModule {
                 let abi = package
                     .blueprint_abi(blueprint_name)
                     .expect("Blueprint not found for existing component");
-                let fn_abi = abi
-                    .get_fn_abi(ident)
-                    .ok_or(RuntimeError::MethodDoesNotExist(function.clone()))?; // TODO: Move this check into kernel
+                let fn_abi = abi.get_fn_abi(ident).ok_or(RuntimeError::KernelError(
+                    KernelError::MethodNotFound(function.clone()),
+                ))?; // TODO: Move this check into kernel
                 if !fn_abi.input.matches(&input.dom) {
-                    return Err(RuntimeError::InvalidFnInput {
+                    return Err(RuntimeError::KernelError(KernelError::InvalidFnInput {
                         fn_identifier: function.clone(),
-                    });
+                    }));
                 }
 
                 {

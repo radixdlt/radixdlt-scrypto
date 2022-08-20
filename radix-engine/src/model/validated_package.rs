@@ -1,10 +1,12 @@
+use core::fmt::Debug;
+
 use crate::engine::*;
 use crate::fee::{FeeReserve, FeeReserveError};
 use crate::types::*;
 use crate::wasm::*;
 
 /// A collection of blueprints, compiled and published as a single unit.
-#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
+#[derive(Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct ValidatedPackage {
     code: Vec<u8>,
     blueprint_abis: HashMap<String, BlueprintAbi>,
@@ -57,15 +59,21 @@ impl ValidatedPackage {
                 let node_id = system_api
                     .node_create(HeapRENode::Package(package))
                     .unwrap(); // FIXME: update all `create_value` calls to handle errors correctly
-                system_api.node_globalize(node_id).map_err(|e| match e {
-                    RuntimeError::CostingError(cost_unit_error) => {
-                        PackageError::CostingError(cost_unit_error)
-                    }
-                    _ => panic!("Unexpected error {}", e),
-                })?;
+                system_api
+                    .node_globalize(node_id)
+                    .expect("TODO handle error");
                 let package_address: PackageAddress = node_id.into();
                 Ok(ScryptoValue::from_typed(&package_address))
             }
         }
+    }
+}
+
+impl Debug for ValidatedPackage {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("ValidatedPackage")
+            .field("code_len", &self.code.len())
+            .field("blueprint_abis", &self.blueprint_abis)
+            .finish()
     }
 }

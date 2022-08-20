@@ -1,4 +1,4 @@
-use radix_engine::engine::RuntimeError;
+use radix_engine::engine::{KernelError, RuntimeError};
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use scrypto::core::Network;
 use scrypto::engine::types::RENodeId;
@@ -29,7 +29,7 @@ fn non_existent_vault_in_component_creation_should_fail() {
     receipt.expect_failure(|e| {
         matches!(
             e,
-            RuntimeError::RENodeCreateNodeNotFound(RENodeId::Vault(_))
+            RuntimeError::KernelError(KernelError::RENodeCreateNodeNotFound(RENodeId::Vault(_)))
         )
     });
 }
@@ -55,7 +55,12 @@ fn non_existent_vault_in_committed_component_should_fail() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| matches!(e, RuntimeError::RENodeNotFound(RENodeId::Vault(_))));
+    receipt.expect_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::KernelError(KernelError::RENodeNotFound(RENodeId::Vault(_)))
+        )
+    });
 }
 
 #[test]
@@ -78,7 +83,12 @@ fn non_existent_vault_in_key_value_store_creation_should_fail() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| matches!(e, RuntimeError::RENodeNotFound(RENodeId::Vault(_))));
+    receipt.expect_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::KernelError(KernelError::RENodeNotFound(RENodeId::Vault(_)))
+        )
+    });
 }
 
 #[test]
@@ -106,7 +116,12 @@ fn non_existent_vault_in_committed_key_value_store_should_fail() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| matches!(e, RuntimeError::RENodeNotFound(RENodeId::Vault(_))));
+    receipt.expect_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::KernelError(KernelError::RENodeNotFound(RENodeId::Vault(_)))
+        )
+    });
 }
 
 #[test]
@@ -150,7 +165,7 @@ fn invalid_double_ownership_of_vault() {
     receipt.expect_failure(|e| {
         matches!(
             e,
-            RuntimeError::RENodeCreateNodeNotFound(RENodeId::Vault(_))
+            RuntimeError::KernelError(KernelError::RENodeCreateNodeNotFound(RENodeId::Vault(_)))
         )
     });
 }
@@ -199,7 +214,12 @@ fn cannot_overwrite_vault_in_map() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| matches!(e, RuntimeError::StoredNodeRemoved(RENodeId::Vault(_))));
+    receipt.expect_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::KernelError(KernelError::StoredNodeRemoved(RENodeId::Vault(_)))
+        )
+    });
 }
 
 #[test]
@@ -251,7 +271,12 @@ fn cannot_remove_vaults() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| matches!(e, RuntimeError::StoredNodeRemoved(RENodeId::Vault(_))));
+    receipt.expect_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::KernelError(KernelError::StoredNodeRemoved(RENodeId::Vault(_)))
+        )
+    });
 }
 
 #[test]

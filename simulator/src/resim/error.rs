@@ -26,7 +26,7 @@ pub enum Error {
 
     CargoError(CargoExecutionError),
 
-    PackageAddressDoesNotExist,
+    PackageAddressNotFound,
 
     InvalidPackageError,
 

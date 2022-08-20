@@ -1,4 +1,4 @@
-use radix_engine::engine::RuntimeError;
+use radix_engine::engine::{KernelError, RuntimeError};
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
 use scrypto_unit::*;
@@ -60,7 +60,12 @@ fn cyclic_map_fails_execution() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| matches!(e, RuntimeError::SubstateReadSubstateNotFound(_)));
+    receipt.expect_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::KernelError(KernelError::SubstateReadSubstateNotFound(_))
+        )
+    });
 }
 
 #[test]
@@ -78,7 +83,12 @@ fn self_cyclic_map_fails_execution() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| matches!(e, RuntimeError::SubstateReadSubstateNotFound(..)));
+    receipt.expect_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::KernelError(KernelError::SubstateReadSubstateNotFound(..))
+        )
+    });
 }
 
 #[test]
@@ -107,7 +117,12 @@ fn cannot_remove_key_value_stores() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| matches!(e, RuntimeError::StoredNodeRemoved(_)));
+    receipt.expect_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::KernelError(KernelError::StoredNodeRemoved(_))
+        )
+    });
 }
 
 #[test]
@@ -136,7 +151,12 @@ fn cannot_overwrite_key_value_stores() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| matches!(e, RuntimeError::StoredNodeRemoved(_)));
+    receipt.expect_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::KernelError(KernelError::StoredNodeRemoved(_))
+        )
+    });
 }
 
 #[test]
@@ -277,7 +297,7 @@ fn cannot_directly_reference_inserted_vault() {
     receipt.expect_failure(|e| {
         matches!(
             e,
-            RuntimeError::InvokeMethodInvalidReceiver(RENodeId::Vault(_))
+            RuntimeError::KernelError(KernelError::InvokeMethodInvalidReceiver(RENodeId::Vault(_)))
         )
     });
 }
@@ -305,7 +325,7 @@ fn cannot_directly_reference_vault_after_container_moved() {
     receipt.expect_failure(|e| {
         matches!(
             e,
-            RuntimeError::InvokeMethodInvalidReceiver(RENodeId::Vault(_))
+            RuntimeError::KernelError(KernelError::InvokeMethodInvalidReceiver(RENodeId::Vault(_)))
         )
     });
 }
@@ -333,7 +353,7 @@ fn cannot_directly_reference_vault_after_container_stored() {
     receipt.expect_failure(|e| {
         matches!(
             e,
-            RuntimeError::InvokeMethodInvalidReceiver(RENodeId::Vault(_))
+            RuntimeError::KernelError(KernelError::InvokeMethodInvalidReceiver(RENodeId::Vault(_)))
         )
     });
 }
