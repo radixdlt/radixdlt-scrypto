@@ -15,7 +15,7 @@ use radix_engine::wasm::{DefaultWasmEngine, DefaultWasmInstance, WasmInstrumente
 use sbor::describe::Fields;
 use sbor::Type;
 use scrypto::abi::{BlueprintAbi, Fn};
-use scrypto::core::Network;
+use scrypto::core::NetworkDefinition;
 use scrypto::engine::types::{KeyValueStoreId, RENodeId, SubstateId, VaultId};
 use scrypto::prelude::*;
 use scrypto::prelude::{HashMap, Package};
@@ -112,7 +112,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     }
 
     pub fn new_account_with_auth_rule(&mut self, withdraw_auth: &AccessRule) -> ComponentAddress {
-        let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
             .lock_fee(100.into(), SYSTEM_COMPONENT)
             .call_method(SYSTEM_COMPONENT, "free_xrd", args!())
             .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
@@ -134,7 +134,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     }
 
     pub fn publish_package(&mut self, package: Package) -> PackageAddress {
-        let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
             .lock_fee(100.into(), SYSTEM_COMPONENT)
             .publish_package(package)
             .build();
@@ -242,6 +242,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             .execute_and_commit(
                 &transaction,
                 &ExecutionConfig {
+                    network_definition: NetworkDefinition::local_simulator(),
                     cost_unit_price: DEFAULT_COST_UNIT_PRICE.parse().unwrap(),
                     max_call_depth: DEFAULT_MAX_CALL_DEPTH,
                     system_loan: DEFAULT_SYSTEM_LOAN,
@@ -286,7 +287,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         signer_public_key: EcdsaPublicKey,
     ) {
         let package = self.extract_and_publish_package("resource_creator");
-        let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
             .lock_fee(100.into(), SYSTEM_COMPONENT)
             .create_proof_from_account(auth, account)
             .call_function(package, "ResourceCreator", function, args!(token, set_auth))
@@ -312,7 +313,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         let admin_auth = self.create_non_fungible_resource(account);
 
         let package = self.extract_and_publish_package("resource_creator");
-        let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
             .lock_fee(100.into(), SYSTEM_COMPONENT)
             .call_function(
                 package,
@@ -338,7 +339,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     ) -> (ResourceAddress, ResourceAddress) {
         let auth_resource_address = self.create_non_fungible_resource(account);
         let package = self.extract_and_publish_package("resource_creator");
-        let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
             .lock_fee(100.into(), SYSTEM_COMPONENT)
             .call_function(
                 package,
@@ -359,7 +360,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         let auth_resource_address = self.create_non_fungible_resource(account);
 
         let package = self.extract_and_publish_package("resource_creator");
-        let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
             .lock_fee(100.into(), SYSTEM_COMPONENT)
             .call_function(
                 package,
@@ -375,7 +376,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
 
     pub fn create_non_fungible_resource(&mut self, account: ComponentAddress) -> ResourceAddress {
         let package = self.extract_and_publish_package("resource_creator");
-        let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
             .lock_fee(100.into(), SYSTEM_COMPONENT)
             .call_function(
                 package,
@@ -397,7 +398,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         account: ComponentAddress,
     ) -> ResourceAddress {
         let package = self.extract_and_publish_package("resource_creator");
-        let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
             .lock_fee(100.into(), SYSTEM_COMPONENT)
             .call_function(
                 package,
@@ -420,7 +421,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         account: ComponentAddress,
         signer_public_key: EcdsaPublicKey,
     ) -> ComponentAddress {
-        let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
             .lock_fee(100.into(), SYSTEM_COMPONENT)
             .call_function_with_abi(
                 package_address,

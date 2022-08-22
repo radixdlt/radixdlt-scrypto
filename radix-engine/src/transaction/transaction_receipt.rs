@@ -1,4 +1,5 @@
 use colored::*;
+use scrypto::core::NetworkDefinition;
 use transaction::model::*;
 
 use crate::engine::{ResourceChange, RuntimeError};
@@ -29,7 +30,7 @@ impl TransactionStatus {
 pub struct TransactionReceipt {
     pub status: TransactionStatus,
     pub fee_summary: FeeSummary,
-    pub transaction_network: Network,
+    pub transaction_network: NetworkDefinition,
     pub execution_time: Option<u128>,
     pub instructions: Vec<ExecutableInstruction>,
     pub application_logs: Vec<(Level, String)>,
@@ -81,7 +82,7 @@ macro_rules! prefix {
 
 impl fmt::Debug for TransactionReceipt {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let bech32_encoder = Bech32Encoder::new_from_network(&self.transaction_network);
+        let bech32_encoder = Bech32Encoder::new(&self.transaction_network);
 
         write!(
             f,

@@ -2,7 +2,7 @@ use radix_engine::engine::DropFailure;
 use radix_engine::engine::KernelError;
 use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::TypedInMemorySubstateStore;
-use scrypto::core::Network;
+use scrypto::core::NetworkDefinition;
 use scrypto::prelude::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -15,7 +15,7 @@ fn test_worktop_resource_leak() {
     let (public_key, _, account) = test_runner.new_account();
 
     // Act
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .withdraw_from_account(RADIX_TOKEN, account)
         .build();

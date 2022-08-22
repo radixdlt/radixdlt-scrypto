@@ -1,7 +1,7 @@
 use sbor::rust::string::String;
 
 use crate::component::{ComponentAddress, PackageAddress};
-use crate::core::Network;
+use crate::core::NetworkDefinition;
 use crate::resource::ResourceAddress;
 
 use super::entity::{
@@ -9,7 +9,7 @@ use super::entity::{
     ALLOWED_RESOURCE_ENTITY_TYPES,
 };
 use super::errors::AddressError;
-use super::hrpset::{get_network_hrp_set, HrpSet};
+use super::hrpset::HrpSet;
 
 use bech32::{self, ToBase32, Variant};
 use once_cell::unsync::Lazy;
@@ -20,10 +20,14 @@ pub struct Bech32Encoder {
 }
 
 impl Bech32Encoder {
+    pub fn for_simulator() -> Self {
+        Self::new(&NetworkDefinition::local_simulator())
+    }
+
     /// Instantiates a new Bech32Encoder with the HRP corresponding to the passed network.
-    pub fn new_from_network(network: &Network) -> Self {
+    pub fn new(network: &NetworkDefinition) -> Self {
         Self {
-            hrp_set: get_network_hrp_set(network),
+            hrp_set: network.into(),
         }
     }
 
@@ -81,4 +85,4 @@ impl Bech32Encoder {
 }
 
 pub const BECH32_ENCODER: Lazy<Bech32Encoder> =
-    Lazy::new(|| Bech32Encoder::new_from_network(&Network::LocalSimulator));
+    Lazy::new(|| Bech32Encoder::new(&NetworkDefinition::local_simulator()));

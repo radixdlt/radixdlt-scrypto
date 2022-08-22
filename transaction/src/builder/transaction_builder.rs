@@ -79,7 +79,7 @@ impl TransactionBuilder {
 
 #[cfg(test)]
 mod tests {
-    use scrypto::core::Network;
+    use scrypto::core::NetworkDefinition;
 
     use super::*;
     use crate::builder::*;
@@ -92,7 +92,7 @@ mod tests {
         let transaction = TransactionBuilder::new()
             .header(TransactionHeader {
                 version: 1,
-                network: Network::LocalSimulator,
+                network_id: NetworkDefinition::local_simulator().id,
                 start_epoch_inclusive: 0,
                 end_epoch_exclusive: 100,
                 nonce: 5,
@@ -102,7 +102,7 @@ mod tests {
                 tip_percentage: 5,
             })
             .manifest(
-                ManifestBuilder::new(Network::LocalSimulator)
+                ManifestBuilder::new(NetworkDefinition::local_simulator())
                     .clear_auth_zone()
                     .build(),
             )

@@ -5,7 +5,7 @@ use radix_engine::ledger::WriteableSubstateStore;
 use radix_engine::model::KeyValueStoreEntryWrapper;
 use radix_engine::model::WorktopError;
 use radix_engine::transaction::TransactionReceipt;
-use scrypto::core::Network;
+use scrypto::core::NetworkDefinition;
 use scrypto::prelude::*;
 use scrypto::values::ScryptoValue;
 use scrypto_unit::*;
@@ -24,7 +24,7 @@ where
     // Publish package and instantiate component
     let package_address = test_runner.extract_and_publish_package("fee");
     let receipt1 = test_runner.execute_manifest(
-        ManifestBuilder::new(Network::LocalSimulator)
+        ManifestBuilder::new(NetworkDefinition::local_simulator())
             .lock_fee(10.into(), account)
             .withdraw_from_account_by_amount(1000.into(), RADIX_TOKEN, account)
             .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
@@ -44,7 +44,7 @@ where
 #[test]
 fn should_succeed_when_fee_is_paid() {
     let receipt = run_manifest(|component_address| {
-        ManifestBuilder::new(Network::LocalSimulator)
+        ManifestBuilder::new(NetworkDefinition::local_simulator())
             .call_method(component_address, "lock_fee", args!(Decimal::from(10)))
             .build()
     });
@@ -54,7 +54,8 @@ fn should_succeed_when_fee_is_paid() {
 
 #[test]
 fn should_be_rejected_when_no_fee_is_paid() {
-    let receipt = run_manifest(|_| ManifestBuilder::new(Network::LocalSimulator).build());
+    let receipt =
+        run_manifest(|_| ManifestBuilder::new(NetworkDefinition::local_simulator()).build());
 
     receipt.expect_rejection();
 }
@@ -62,7 +63,7 @@ fn should_be_rejected_when_no_fee_is_paid() {
 #[test]
 fn should_be_rejected_when_insufficient_balance() {
     let receipt = run_manifest(|component_address| {
-        ManifestBuilder::new(Network::LocalSimulator)
+        ManifestBuilder::new(NetworkDefinition::local_simulator())
             .call_method(
                 component_address,
                 "lock_fee_with_empty_vault",
@@ -77,7 +78,7 @@ fn should_be_rejected_when_insufficient_balance() {
 #[test]
 fn should_be_rejected_when_non_xrd() {
     let receipt = run_manifest(|component_address| {
-        ManifestBuilder::new(Network::LocalSimulator)
+        ManifestBuilder::new(NetworkDefinition::local_simulator())
             .call_method(
                 component_address,
                 "lock_fee_with_doge",
@@ -92,7 +93,7 @@ fn should_be_rejected_when_non_xrd() {
 #[test]
 fn should_be_rejected_when_system_loan_is_not_fully_repaid() {
     let receipt = run_manifest(|component_address| {
-        ManifestBuilder::new(Network::LocalSimulator)
+        ManifestBuilder::new(NetworkDefinition::local_simulator())
             .call_method(
                 component_address,
                 "lock_fee",
@@ -107,7 +108,7 @@ fn should_be_rejected_when_system_loan_is_not_fully_repaid() {
 #[test]
 fn should_be_rejected_when_lock_fee_with_temp_vault() {
     let receipt = run_manifest(|component_address| {
-        ManifestBuilder::new(Network::LocalSimulator)
+        ManifestBuilder::new(NetworkDefinition::local_simulator())
             .call_method(
                 component_address,
                 "lock_fee_with_temp_vault",
@@ -122,7 +123,7 @@ fn should_be_rejected_when_lock_fee_with_temp_vault() {
 #[test]
 fn should_be_rejected_when_query_vault_and_lock_fee() {
     let receipt = run_manifest(|component_address| {
-        ManifestBuilder::new(Network::LocalSimulator)
+        ManifestBuilder::new(NetworkDefinition::local_simulator())
             .call_method(
                 component_address,
                 "query_vault_and_lock_fee",
@@ -137,7 +138,7 @@ fn should_be_rejected_when_query_vault_and_lock_fee() {
 #[test]
 fn should_succeed_when_lock_fee_and_query_vault() {
     let receipt = run_manifest(|component_address| {
-        ManifestBuilder::new(Network::LocalSimulator)
+        ManifestBuilder::new(NetworkDefinition::local_simulator())
             .call_method(
                 component_address,
                 "lock_fee_and_query_vault",
@@ -184,7 +185,7 @@ fn test_fee_accounting_success() {
     let account2_balance = query_account_balance(&mut test_runner, account2, RADIX_TOKEN);
 
     // Act
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
         .lock_fee(10.into(), account1)
         .withdraw_from_account_by_amount(66.into(), RADIX_TOKEN, account1)
         .call_method_with_all_resources(account2, "deposit_batch")
@@ -217,7 +218,7 @@ fn test_fee_accounting_failure() {
     let account2_balance = query_account_balance(&mut test_runner, account2, RADIX_TOKEN);
 
     // Act
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
         .lock_fee(10.into(), account1)
         .withdraw_from_account_by_amount(66.into(), RADIX_TOKEN, account1)
         .call_method_with_all_resources(account2, "deposit_batch")
@@ -255,7 +256,7 @@ fn test_fee_accounting_rejection() {
     let account1_balance = query_account_balance(&mut test_runner, account1, RADIX_TOKEN);
 
     // Act
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
         .lock_fee(Decimal::from_str("0.000000000000000001").unwrap(), account1)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
@@ -277,7 +278,7 @@ fn test_contingent_fee_accounting_success() {
     let account2_balance = query_account_balance(&mut test_runner, account2, RADIX_TOKEN);
 
     // Act
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
         .lock_fee(dec!("10"), account1)
         .lock_contingent_fee(dec!("0.001"), account2)
         .build();
@@ -310,7 +311,7 @@ fn test_contingent_fee_accounting_failure() {
     let account2_balance = query_account_balance(&mut test_runner, account2, RADIX_TOKEN);
 
     // Act
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
         .lock_fee(dec!("10"), account1)
         .lock_contingent_fee(dec!("0.001"), account2)
         .assert_worktop_contains_by_amount(1.into(), RADIX_TOKEN)

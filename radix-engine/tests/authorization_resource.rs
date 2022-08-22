@@ -1,7 +1,7 @@
 extern crate core;
 
 use radix_engine::ledger::TypedInMemorySubstateStore;
-use scrypto::core::Network;
+use scrypto::core::NetworkDefinition;
 use scrypto::prelude::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -51,7 +51,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
     };
 
     // Act
-    let mut builder = ManifestBuilder::new(Network::LocalSimulator);
+    let mut builder = ManifestBuilder::new(NetworkDefinition::local_simulator());
     builder.lock_fee(10.into(), SYSTEM_COMPONENT);
     builder.create_proof_from_account_by_amount(Decimal::one(), auth_to_use, account);
 

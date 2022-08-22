@@ -1,6 +1,6 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use scrypto::address::Bech32Decoder;
-use scrypto::core::Network;
+use scrypto::core::NetworkDefinition;
 use scrypto::prelude::*;
 use transaction::builder::ManifestBuilder;
 use transaction::builder::TransactionBuilder;
@@ -40,7 +40,7 @@ fn bench_ed25519_validation(c: &mut Criterion) {
 }
 
 fn bench_transaction_validation(c: &mut Criterion) {
-    let bech32_decoder: Bech32Decoder = Bech32Decoder::new_from_network(&Network::LocalSimulator);
+    let bech32_decoder: Bech32Decoder = Bech32Decoder::new(&NetworkDefinition::local_simulator());
 
     let account1 = bech32_decoder
         .validate_and_decode_component_address(
@@ -57,7 +57,7 @@ fn bench_transaction_validation(c: &mut Criterion) {
     let transaction = TransactionBuilder::new()
         .header(TransactionHeader {
             version: 1,
-            network: Network::LocalSimulator,
+            network_id: NetworkDefinition::local_simulator().id,
             start_epoch_inclusive: 0,
             end_epoch_exclusive: 100,
             nonce: 1,
@@ -67,7 +67,7 @@ fn bench_transaction_validation(c: &mut Criterion) {
             tip_percentage: 5,
         })
         .manifest(
-            ManifestBuilder::new(Network::LocalSimulator)
+            ManifestBuilder::new(NetworkDefinition::local_simulator())
                 .withdraw_from_account_by_amount(1u32.into(), RADIX_TOKEN, account1)
                 .call_method_with_all_resources(account2, "deposit_batch")
                 .build(),
@@ -81,7 +81,7 @@ fn bench_transaction_validation(c: &mut Criterion) {
         b.iter(|| {
             let intent_hash_manager = TestIntentHashManager::new();
             let config: ValidationConfig = ValidationConfig {
-                network: Network::LocalSimulator,
+                network: NetworkDefinition::local_simulator(),
                 current_epoch: 1,
                 max_cost_unit_limit: 10_000_000,
                 min_tip_percentage: 0,

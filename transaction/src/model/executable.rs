@@ -3,7 +3,6 @@ use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::component::{ComponentAddress, PackageAddress};
-use scrypto::core::Network;
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
 use scrypto::math::*;
@@ -88,8 +87,8 @@ pub trait ExecutableTransaction {
     /// Returns the transaction hash, which must be globally unique.
     fn transaction_hash(&self) -> Hash;
 
-    /// Returns the transaction network
-    fn transaction_network(&self) -> Network;
+    /// Returns the transaction network id
+    fn transaction_network_id(&self) -> u8;
 
     /// Returns the transaction payload size.
     fn transaction_payload_size(&self) -> u32;
