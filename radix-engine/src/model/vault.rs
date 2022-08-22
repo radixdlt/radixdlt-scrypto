@@ -1,6 +1,5 @@
 use crate::engine::{HeapRENode, RuntimeError, SystemApi};
-use crate::fee::FeeReserve;
-use crate::fee::FeeReserveError;
+use crate::fee::{FeeReserve, FeeReserveError};
 use crate::model::{
     Bucket, Proof, ProofError, ResourceContainer, ResourceContainerError, ResourceContainerId,
 };
@@ -153,12 +152,18 @@ impl Vault {
         self.container.borrow_mut()
     }
 
-    pub fn main<'s, Y: SystemApi<'s, W, I, C>, W: WasmEngine<I>, I: WasmInstance, C: FeeReserve>(
+    pub fn main<'s, Y, W, I, R>(
         vault_id: VaultId,
         vault_fn: VaultFnIdentifier,
         args: ScryptoValue,
         system_api: &mut Y,
-    ) -> Result<ScryptoValue, VaultError> {
+    ) -> Result<ScryptoValue, VaultError>
+    where
+        Y: SystemApi<'s, W, I, R>,
+        W: WasmEngine<I>,
+        I: WasmInstance,
+        R: FeeReserve,
+    {
         let substate_id = SubstateId::Vault(vault_id.clone());
         let mut ref_mut = system_api
             .substate_borrow_mut(&substate_id)
@@ -206,13 +211,12 @@ impl Vault {
 
                 // Refill fee reserve
                 let changes = system_api
-                    .fee_reserve()
-                    .repay(
+                    .lock_fee(
                         vault_id,
                         fee,
                         matches!(vault_fn, VaultFnIdentifier::LockContingentFee),
                     )
-                    .map_err(|e| VaultError::LockFeeRepayFailure(e))?;
+                    .map_err(|e| VaultError::RuntimeError(Box::new(e)))?;
 
                 // Return changes
                 vault

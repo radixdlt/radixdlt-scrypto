@@ -1,4 +1,5 @@
 use crate::engine::*;
+use crate::fee::FeeReserve;
 use crate::model::*;
 use crate::types::*;
 
@@ -22,12 +23,12 @@ impl RENodePointer {
         }
     }
 
-    pub fn acquire_lock<'s>(
+    pub fn acquire_lock<'s, R: FeeReserve>(
         &self,
         substate_id: SubstateId,
         mutable: bool,
         write_through: bool,
-        track: &mut Track<'s>,
+        track: &mut Track<'s, R>,
     ) -> Result<(), KernelError> {
         match self {
             RENodePointer::Store(..) => {
@@ -46,11 +47,11 @@ impl RENodePointer {
         }
     }
 
-    pub fn release_lock<'s>(
+    pub fn release_lock<'s, R: FeeReserve>(
         &self,
         substate_id: SubstateId,
         write_through: bool,
-        track: &mut Track<'s>,
+        track: &mut Track<'s, R>,
     ) {
         match self {
             RENodePointer::Store(..) => track.release_lock(substate_id, write_through),
@@ -69,11 +70,11 @@ impl RENodePointer {
         }
     }
 
-    pub fn borrow_native_ref<'p, 's>(
+    pub fn borrow_native_ref<'p, 's, R: FeeReserve>(
         &self, // TODO: Consider changing this to self
         substate_id: SubstateId,
         call_frames: &mut Vec<CallFrame>,
-        track: &mut Track<'s>,
+        track: &mut Track<'s, R>,
     ) -> NativeSubstateRef {
         match self {
             RENodePointer::Heap { frame_id, root, id } => {
@@ -88,11 +89,11 @@ impl RENodePointer {
         }
     }
 
-    pub fn to_ref<'f, 'p, 's>(
+    pub fn to_ref<'f, 'p, 's, R: FeeReserve>(
         &self,
         call_frames: &'f Vec<CallFrame>,
-        track: &'f Track<'s>,
-    ) -> RENodeRef<'f, 's> {
+        track: &'f Track<'s, R>,
+    ) -> RENodeRef<'f, 's, R> {
         match self {
             RENodePointer::Heap { frame_id, root, id } => {
                 let frame = call_frames.get(*frame_id).unwrap();
@@ -102,11 +103,11 @@ impl RENodePointer {
         }
     }
 
-    pub fn to_ref_mut<'f, 'p, 's>(
+    pub fn to_ref_mut<'f, 'p, 's, R: FeeReserve>(
         &self,
         call_frames: &'f mut Vec<CallFrame>,
-        track: &'f mut Track<'s>,
-    ) -> RENodeRefMut<'f, 's> {
+        track: &'f mut Track<'s, R>,
+    ) -> RENodeRefMut<'f, 's, R> {
         match self {
             RENodePointer::Heap { frame_id, root, id } => {
                 let frame = call_frames.get_mut(*frame_id).unwrap();
@@ -201,10 +202,10 @@ impl NativeSubstateRef {
         }
     }
 
-    pub fn return_to_location<'a, 'p, 's>(
+    pub fn return_to_location<'a, 'p, 's, R: FeeReserve>(
         self,
         call_frames: &mut Vec<CallFrame>,
-        track: &mut Track<'s>,
+        track: &mut Track<'s, R>,
     ) {
         match self {
             NativeSubstateRef::Stack(owned, frame_id, node_id, ..) => {
@@ -218,12 +219,12 @@ impl NativeSubstateRef {
     }
 }
 
-pub enum RENodeRef<'f, 's> {
+pub enum RENodeRef<'f, 's, R: FeeReserve> {
     Stack(&'f HeapRootRENode, Option<RENodeId>),
-    Track(&'f Track<'s>, RENodeId),
+    Track(&'f Track<'s, R>, RENodeId),
 }
 
-impl<'f, 's> RENodeRef<'f, 's> {
+impl<'f, 's, R: FeeReserve> RENodeRef<'f, 's, R> {
     pub fn bucket(&self) -> &Bucket {
         match self {
             RENodeRef::Stack(value, id) => id
@@ -339,12 +340,12 @@ impl<'f, 's> RENodeRef<'f, 's> {
     }
 }
 
-pub enum RENodeRefMut<'f, 's> {
+pub enum RENodeRefMut<'f, 's, R: FeeReserve> {
     Stack(&'f mut HeapRootRENode, Option<RENodeId>),
-    Track(&'f mut Track<'s>, RENodeId),
+    Track(&'f mut Track<'s, R>, RENodeId),
 }
 
-impl<'f, 's> RENodeRefMut<'f, 's> {
+impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
     pub fn read_scrypto_value(
         &mut self,
         substate_id: &SubstateId,
@@ -683,7 +684,10 @@ pub fn verify_stored_value_update(
     Ok(())
 }
 
-pub fn insert_non_root_nodes<'s>(track: &mut Track<'s>, values: HashMap<RENodeId, HeapRENode>) {
+pub fn insert_non_root_nodes<'s, R: FeeReserve>(
+    track: &mut Track<'s, R>,
+    values: HashMap<RENodeId, HeapRENode>,
+) {
     for (id, node) in values {
         match node {
             HeapRENode::Vault(vault) => {

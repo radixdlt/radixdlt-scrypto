@@ -1,4 +1,6 @@
 use crate::engine::*;
+use crate::fee::FeeReserve;
+use crate::model::ResourceContainer;
 use crate::types::*;
 
 pub struct LoggerModule {
@@ -19,9 +21,10 @@ macro_rules! log {
     };
 }
 
-impl Module for LoggerModule {
+impl<R: FeeReserve> Module<R> for LoggerModule {
     fn pre_sys_call(
         &mut self,
+        _track: &mut Track<R>,
         _heap: &mut Vec<CallFrame>,
         input: SysCallInput,
     ) -> Result<(), ModuleError> {
@@ -110,6 +113,7 @@ impl Module for LoggerModule {
 
     fn post_sys_call(
         &mut self,
+        _track: &mut Track<R>,
         _heap: &mut Vec<CallFrame>,
         output: SysCallOutput,
     ) -> Result<(), ModuleError> {
@@ -144,6 +148,7 @@ impl Module for LoggerModule {
 
     fn on_wasm_instantiation(
         &mut self,
+        _track: &mut Track<R>,
         _heap: &mut Vec<CallFrame>,
         _code: &[u8],
     ) -> Result<(), ModuleError> {
@@ -152,9 +157,21 @@ impl Module for LoggerModule {
 
     fn on_wasm_costing(
         &mut self,
+        _track: &mut Track<R>,
         _heap: &mut Vec<CallFrame>,
         _units: u32,
     ) -> Result<(), ModuleError> {
         Ok(())
+    }
+
+    fn on_lock_fee(
+        &mut self,
+        _track: &mut Track<R>,
+        _heap: &mut Vec<CallFrame>,
+        _vault_id: VaultId,
+        fee: ResourceContainer,
+        _contingent: bool,
+    ) -> Result<ResourceContainer, ModuleError> {
+        Ok(fee)
     }
 }

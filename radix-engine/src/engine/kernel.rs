@@ -3,7 +3,7 @@ use transaction::model::ExecutableInstruction;
 use transaction::validation::*;
 
 use crate::engine::*;
-use crate::fee::*;
+use crate::fee::FeeReserve;
 use crate::model::*;
 use crate::types::*;
 use crate::wasm::*;
@@ -23,11 +23,11 @@ pub struct Kernel<
     's, // Substate store lifetime
     W,  // WASM engine type
     I,  // WASM instance type
-    C,  // Fee reserve type  // TODO: remove
+    R,  // Fee reserve type
 > where
     W: WasmEngine<I>,
     I: WasmInstance,
-    C: FeeReserve,
+    R: FeeReserve,
 {
     /// The transaction hash
     transaction_hash: Hash,
@@ -35,11 +35,13 @@ pub struct Kernel<
     max_depth: usize,
 
     /// State track
-    track: &'g mut Track<'s>,
-    /// Wasm engine
+    track: &'g mut Track<'s, R>,
+    /// WASM engine
     wasm_engine: &'g mut W,
-    /// Wasm Instrumenter
+    /// WASM Instrumenter
     wasm_instrumenter: &'g mut WasmInstrumenter,
+    /// WASM metering params
+    wasm_metering_params: WasmMeteringParams,
 
     /// ID allocator
     id_allocator: IdAllocator,
@@ -52,36 +54,29 @@ pub struct Kernel<
 
     /// Kernel modules
     /// TODO: move execution trace and  authorization to modules
-    modules: Vec<Box<dyn Module>>,
+    modules: Vec<Box<dyn Module<R>>>,
 
     phantom: PhantomData<I>,
-    phantom2: PhantomData<C>,
 }
 
-impl<'g, 's, W, I, C> Kernel<'g, 's, W, I, C>
+impl<'g, 's, W, I, R> Kernel<'g, 's, W, I, R>
 where
     W: WasmEngine<I>,
     I: WasmInstance,
-    C: FeeReserve,
+    R: FeeReserve,
 {
     pub fn new(
         transaction_hash: Hash,
         transaction_signers: Vec<EcdsaPublicKey>,
         is_system: bool,
         max_depth: usize,
-        trace: bool,
-        track: &'g mut Track<'s>,
+        track: &'g mut Track<'s, R>,
         wasm_engine: &'g mut W,
         wasm_instrumenter: &'g mut WasmInstrumenter,
-        fee_reserve: &'g mut C,
-        fee_table: &'g FeeTable,
+        wasm_metering_params: WasmMeteringParams,
         execution_trace: &'g mut ExecutionTrace,
+        modules: Vec<Box<dyn Module<R>>>,
     ) -> Self {
-        let mut modules = Vec::<Box<dyn Module>>::new();
-        if trace {
-            modules.push(Box::new(LoggerModule::new()));
-        }
-
         let frame = CallFrame::new_root(transaction_signers);
         let mut kernel = Self {
             transaction_hash,
@@ -89,12 +84,12 @@ where
             track,
             wasm_engine,
             wasm_instrumenter,
+            wasm_metering_params,
             id_allocator: IdAllocator::new(IdSpace::Application),
             execution_trace,
             call_frames: vec![frame],
             modules,
             phantom: PhantomData,
-            phantom2: PhantomData,
         };
 
         if is_system {
@@ -150,7 +145,7 @@ where
 
     fn read_value_internal(
         call_frames: &mut Vec<CallFrame>,
-        track: &mut Track<'s>,
+        track: &mut Track<'s, R>,
         substate_id: &SubstateId,
     ) -> Result<(RENodePointer, ScryptoValue), RuntimeError> {
         let node_id = SubstateProperties::get_node_id(substate_id);
@@ -266,15 +261,19 @@ where
                         let package = self
                             .track
                             .read_substate(SubstateId::Package(package_address))
-                            .package();
+                            .package()
+                            .clone();
                         for m in &mut self.modules {
-                            m.on_wasm_instantiation(&mut self.call_frames, package.code())
-                                .map_err(RuntimeError::ModuleError)?;
+                            m.on_wasm_instantiation(
+                                &mut self.track,
+                                &mut self.call_frames,
+                                package.code(),
+                            )
+                            .map_err(RuntimeError::ModuleError)?;
                         }
-                        let wasm_metering_params = self.fee_table.wasm_metering_params();
                         let instrumented_code = self
                             .wasm_instrumenter
-                            .instrument(package.code(), &wasm_metering_params);
+                            .instrument(package.code(), &self.wasm_metering_params);
                         let mut instance = self.wasm_engine.instantiate(instrumented_code);
                         let blueprint_abi = package
                             .blueprint_abi(&blueprint_name)
@@ -393,12 +392,42 @@ where
     }
 }
 
-impl<'g, 's, W, I, C> SystemApi<'s, W, I, C> for Kernel<'g, 's, W, I, C>
+impl<'g, 's, W, I, R> SystemApi<'s, W, I, R> for Kernel<'g, 's, W, I, R>
 where
     W: WasmEngine<I>,
     I: WasmInstance,
-    C: FeeReserve,
+    R: FeeReserve,
 {
+    fn consume_cost_units(&mut self, units: u32) -> Result<(), RuntimeError> {
+        for m in &mut self.modules {
+            m.on_wasm_costing(&mut self.track, &mut self.call_frames, units)
+                .map_err(RuntimeError::ModuleError)?;
+        }
+
+        Ok(())
+    }
+
+    fn lock_fee(
+        &mut self,
+        vault_id: VaultId,
+        mut fee: ResourceContainer,
+        contingent: bool,
+    ) -> Result<ResourceContainer, RuntimeError> {
+        for m in &mut self.modules {
+            fee = m
+                .on_lock_fee(
+                    &mut self.track,
+                    &mut self.call_frames,
+                    vault_id,
+                    fee,
+                    contingent,
+                )
+                .map_err(RuntimeError::ModuleError)?;
+        }
+
+        Ok(fee)
+    }
+
     fn invoke_function(
         &mut self,
         fn_identifier: FnIdentifier,
@@ -406,6 +435,7 @@ where
     ) -> Result<ScryptoValue, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
+                &mut self.track,
                 &mut self.call_frames,
                 SysCallInput::InvokeFunction {
                     fn_identifier: &fn_identifier,
@@ -595,6 +625,7 @@ where
 
         for m in &mut self.modules {
             m.post_sys_call(
+                &mut self.track,
                 &mut self.call_frames,
                 SysCallOutput::InvokeFunction { output: &output },
             )
@@ -611,6 +642,7 @@ where
     ) -> Result<ScryptoValue, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
+                &mut self.track,
                 &mut self.call_frames,
                 SysCallInput::InvokeMethod {
                     receiver: &receiver,
@@ -950,6 +982,7 @@ where
 
         for m in &mut self.modules {
             m.post_sys_call(
+                &mut self.track,
                 &mut self.call_frames,
                 SysCallOutput::InvokeMethod { output: &output },
             )
@@ -958,9 +991,10 @@ where
         Ok(output)
     }
 
-    fn borrow_node(&mut self, node_id: &RENodeId) -> Result<RENodeRef<'_, 's>, RuntimeError> {
+    fn borrow_node(&mut self, node_id: &RENodeId) -> Result<RENodeRef<'_, 's, R>, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
+                &mut self.track,
                 &mut self.call_frames,
                 SysCallInput::BorrowNode { node_id: node_id },
             )
@@ -978,6 +1012,7 @@ where
 
         for m in &mut self.modules {
             m.post_sys_call(
+                &mut self.track,
                 &mut self.call_frames,
                 SysCallOutput::BorrowNode {
                     // Can't return the NodeRef due to borrow checks on `call_frames`
@@ -996,6 +1031,7 @@ where
     ) -> Result<NativeSubstateRef, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
+                &mut self.track,
                 &mut self.call_frames,
                 SysCallInput::BorrowSubstateMut {
                     substate_id: substate_id,
@@ -1041,6 +1077,7 @@ where
 
         for m in &mut self.modules {
             m.post_sys_call(
+                &mut self.track,
                 &mut self.call_frames,
                 SysCallOutput::BorrowSubstateMut {
                     substate_ref: &substate_ref,
@@ -1055,6 +1092,7 @@ where
     fn substate_return_mut(&mut self, substate_ref: NativeSubstateRef) -> Result<(), RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
+                &mut self.track,
                 &mut self.call_frames,
                 SysCallInput::ReturnSubstateMut {
                     substate_ref: &substate_ref,
@@ -1066,8 +1104,12 @@ where
         substate_ref.return_to_location(&mut self.call_frames, &mut self.track);
 
         for m in &mut self.modules {
-            m.post_sys_call(&mut self.call_frames, SysCallOutput::ReturnSubstateMut)
-                .map_err(RuntimeError::ModuleError)?;
+            m.post_sys_call(
+                &mut self.track,
+                &mut self.call_frames,
+                SysCallOutput::ReturnSubstateMut,
+            )
+            .map_err(RuntimeError::ModuleError)?;
         }
 
         Ok(())
@@ -1076,6 +1118,7 @@ where
     fn node_drop(&mut self, node_id: &RENodeId) -> Result<HeapRootRENode, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
+                &mut self.track,
                 &mut self.call_frames,
                 SysCallInput::DropNode { node_id: node_id },
             )
@@ -1094,6 +1137,7 @@ where
 
         for m in &mut self.modules {
             m.post_sys_call(
+                &mut self.track,
                 &mut self.call_frames,
                 SysCallOutput::DropNode { node: &node },
             )
@@ -1106,6 +1150,7 @@ where
     fn node_create(&mut self, re_node: HeapRENode) -> Result<RENodeId, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
+                &mut self.track,
                 &mut self.call_frames,
                 SysCallInput::CreateNode { node: &re_node },
             )
@@ -1178,6 +1223,7 @@ where
 
         for m in &mut self.modules {
             m.post_sys_call(
+                &mut self.track,
                 &mut self.call_frames,
                 SysCallOutput::CreateNode { node_id: &node_id },
             )
@@ -1190,6 +1236,7 @@ where
     fn node_globalize(&mut self, node_id: RENodeId) -> Result<(), RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
+                &mut self.track,
                 &mut self.call_frames,
                 SysCallInput::GlobalizeNode { node_id: &node_id },
             )
@@ -1277,8 +1324,12 @@ where
             .insert(node_id, RENodePointer::Store(node_id));
 
         for m in &mut self.modules {
-            m.post_sys_call(&mut self.call_frames, SysCallOutput::GlobalizeNode)
-                .map_err(RuntimeError::ModuleError)?;
+            m.post_sys_call(
+                &mut self.track,
+                &mut self.call_frames,
+                SysCallOutput::GlobalizeNode,
+            )
+            .map_err(RuntimeError::ModuleError)?;
         }
 
         Ok(())
@@ -1287,6 +1338,7 @@ where
     fn substate_read(&mut self, substate_id: SubstateId) -> Result<ScryptoValue, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
+                &mut self.track,
                 &mut self.call_frames,
                 SysCallInput::ReadSubstate {
                     substate_id: &substate_id,
@@ -1329,6 +1381,7 @@ where
 
         for m in &mut self.modules {
             m.post_sys_call(
+                &mut self.track,
                 &mut self.call_frames,
                 SysCallOutput::ReadSubstate {
                     value: &current_value,
@@ -1343,6 +1396,7 @@ where
     fn substate_take(&mut self, substate_id: SubstateId) -> Result<ScryptoValue, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
+                &mut self.track,
                 &mut self.call_frames,
                 SysCallInput::TakeSubstate {
                     substate_id: &substate_id,
@@ -1377,6 +1431,7 @@ where
 
         for m in &mut self.modules {
             m.post_sys_call(
+                &mut self.track,
                 &mut self.call_frames,
                 SysCallOutput::TakeSubstate {
                     value: &current_value,
@@ -1395,6 +1450,7 @@ where
     ) -> Result<(), RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
+                &mut self.track,
                 &mut self.call_frames,
                 SysCallInput::WriteSubstate {
                     substate_id: &substate_id,
@@ -1456,8 +1512,12 @@ where
         node_ref.write_value(substate_id, value, taken_nodes);
 
         for m in &mut self.modules {
-            m.post_sys_call(&mut self.call_frames, SysCallOutput::WriteSubstate)
-                .map_err(RuntimeError::ModuleError)?;
+            m.post_sys_call(
+                &mut self.track,
+                &mut self.call_frames,
+                SysCallOutput::WriteSubstate,
+            )
+            .map_err(RuntimeError::ModuleError)?;
         }
 
         Ok(())
@@ -1465,12 +1525,17 @@ where
 
     fn transaction_hash(&mut self) -> Result<Hash, RuntimeError> {
         for m in &mut self.modules {
-            m.pre_sys_call(&mut self.call_frames, SysCallInput::ReadTransactionHash)
-                .map_err(RuntimeError::ModuleError)?;
+            m.pre_sys_call(
+                &mut self.track,
+                &mut self.call_frames,
+                SysCallInput::ReadTransactionHash,
+            )
+            .map_err(RuntimeError::ModuleError)?;
         }
 
         for m in &mut self.modules {
             m.post_sys_call(
+                &mut self.track,
                 &mut self.call_frames,
                 SysCallOutput::ReadTransactionHash {
                     hash: &self.transaction_hash,
@@ -1484,16 +1549,24 @@ where
 
     fn generate_uuid(&mut self) -> Result<u128, RuntimeError> {
         for m in &mut self.modules {
-            m.pre_sys_call(&mut self.call_frames, SysCallInput::GenerateUuid)
-                .map_err(RuntimeError::ModuleError)?;
+            m.pre_sys_call(
+                &mut self.track,
+                &mut self.call_frames,
+                SysCallInput::GenerateUuid,
+            )
+            .map_err(RuntimeError::ModuleError)?;
         }
 
         let uuid = Self::new_uuid(&mut self.id_allocator, self.transaction_hash)
             .map_err(|e| RuntimeError::KernelError(KernelError::IdAllocationError(e)))?;
 
         for m in &mut self.modules {
-            m.post_sys_call(&mut self.call_frames, SysCallOutput::GenerateUuid { uuid })
-                .map_err(RuntimeError::ModuleError)?;
+            m.post_sys_call(
+                &mut self.track,
+                &mut self.call_frames,
+                SysCallOutput::GenerateUuid { uuid },
+            )
+            .map_err(RuntimeError::ModuleError)?;
         }
 
         Ok(uuid)
@@ -1502,6 +1575,7 @@ where
     fn emit_log(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
+                &mut self.track,
                 &mut self.call_frames,
                 SysCallInput::EmitLog {
                     level: &level,
@@ -1514,8 +1588,12 @@ where
         self.track.add_log(level, message);
 
         for m in &mut self.modules {
-            m.post_sys_call(&mut self.call_frames, SysCallOutput::EmitLog)
-                .map_err(RuntimeError::ModuleError)?;
+            m.post_sys_call(
+                &mut self.track,
+                &mut self.call_frames,
+                SysCallOutput::EmitLog,
+            )
+            .map_err(RuntimeError::ModuleError)?;
         }
 
         Ok(())
@@ -1528,6 +1606,7 @@ where
     ) -> Result<bool, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
+                &mut self.track,
                 &mut self.call_frames,
                 SysCallInput::CheckAccessRule {
                     access_rule: &access_rule,
@@ -1560,6 +1639,7 @@ where
 
         for m in &mut self.modules {
             m.post_sys_call(
+                &mut self.track,
                 &mut self.call_frames,
                 SysCallOutput::CheckAccessRule {
                     result: is_authorized,
@@ -1569,10 +1649,6 @@ where
         }
 
         Ok(is_authorized)
-    }
-
-    fn fee_reserve(&mut self) -> &mut C {
-        self.fee_reserve
     }
 
     fn auth_zone(&mut self, frame_id: usize) -> &mut AuthZone {

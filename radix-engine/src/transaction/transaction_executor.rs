@@ -103,11 +103,11 @@ where
         self.execute_with_fee_reserve(transaction, params, fee_reserve)
     }
 
-    pub fn execute_with_fee_reserve<T: ExecutableTransaction, C: FeeReserve>(
+    pub fn execute_with_fee_reserve<T: ExecutableTransaction, R: FeeReserve>(
         &mut self,
         transaction: &T,
         params: &ExecutionConfig,
-        mut fee_reserve: C,
+        mut fee_reserve: R,
     ) -> TransactionReceipt {
         #[cfg(not(feature = "alloc"))]
         let now = std::time::Instant::now();
@@ -126,50 +126,31 @@ where
             println!("{:-^80}", "Engine Execution Log");
         }
 
-        // 1. Start state track and execution trace
-        let mut track = Track::new(self.substate_store);
+        // Prepare state track and execution trace
+        let fee_table = FeeTable::new();
+        CostingModule::apply_static_fees(&mut fee_reserve, &fee_table, transaction);
+        let mut track = Track::new(self.substate_store, fee_reserve);
         let mut execution_trace = ExecutionTrace::new();
 
-        // 2. Apply pre-execution costing
-        let fee_table = FeeTable::new();
-        fee_reserve
-            .consume(fee_table.tx_base_fee(), "base_fee")
-            .expect("TX base fee not covered by system loan");
-        fee_reserve
-            .consume(
-                fee_table.tx_decoding_per_byte() * transaction.transaction_payload_size() as u32,
-                "decode_transaction",
-            )
-            .expect("TX decoding fee not covered by system loan");
-        fee_reserve
-            .consume(
-                fee_table.tx_manifest_verification_per_byte()
-                    * transaction.transaction_payload_size() as u32,
-                "verify_manifest",
-            )
-            .expect("TX manifest verification fee not covered by system loan");
-        fee_reserve
-            .consume(
-                fee_table.tx_signature_verification_per_sig()
-                    * transaction.signer_public_keys().len() as u32,
-                "verify_signatures",
-            )
-            .expect("TX signature verification fee not covered by system loan");
+        // Invoke the function/method
+        let invoke_result = {
+            let mut modules = Vec::<Box<dyn Module<R>>>::new();
+            if params.trace {
+                modules.push(Box::new(LoggerModule::new()));
+            }
+            modules.push(Box::new(CostingModule::new(fee_table)));
 
-        // 3. Start a kernel instance and invoke
-        let result = {
             let mut kernel = Kernel::new(
                 transaction_hash,
                 signer_public_keys,
                 params.is_system,
                 params.max_call_depth,
-                params.trace,
                 &mut track,
                 self.wasm_engine,
                 self.wasm_instrumenter,
-                &mut fee_reserve,
-                &fee_table,
+                WasmMeteringParams::new(InstructionCostRules::tiered(1, 5, 10, 5000), 512), // TODO: add to ExecutionConfig
                 &mut execution_trace,
+                modules,
             );
             let result = kernel.invoke_function(
                 FnIdentifier::Native(NativeFnIdentifier::TransactionProcessor(
@@ -179,88 +160,14 @@ where
                     instructions: instructions.clone(),
                 }),
             );
-            #[cfg(not(feature = "alloc"))]
-            if params.trace {
-                println!("{:-^80}", "Engine Result");
-                println!("{:?}", result);
-            }
-
             result.map(|o| {
                 scrypto_decode::<Vec<Vec<u8>>>(&o.raw)
                     .expect("TransactionProcessor returned data of unexpected type")
             })
         };
 
-        // 4. Settle transaction fee
-        let fee_summary = fee_reserve.finalize();
-        #[cfg(not(feature = "alloc"))]
-        if params.trace {
-            println!("{:-^80}", "Cost Analysis");
-            for (k, v) in &fee_summary.cost_breakdown {
-                println!("{:<30}: {:>8}", k, v);
-            }
-        }
-
-        let status = if fee_summary.loan_fully_repaid {
-            match result {
-                Ok(output) => TransactionStatus::Succeeded(output),
-                Err(error) => TransactionStatus::Failed(error),
-            }
-        } else {
-            TransactionStatus::Rejected
-        };
-
-        if status.is_success() {
-            track.commit();
-        } else {
-            track.rollback();
-        }
-
-        let mut required = fee_summary.burned + fee_summary.tipped;
-        let mut collector =
-            ResourceContainer::new_empty(RADIX_TOKEN, ResourceType::Fungible { divisibility: 18 });
-        for (vault_id, mut locked, contingent) in fee_summary.payments.iter().cloned().rev() {
-            let amount = if contingent {
-                if status.is_success() {
-                    Decimal::min(locked.liquid_amount(), required)
-                } else {
-                    Decimal::zero()
-                }
-            } else {
-                Decimal::min(locked.liquid_amount(), required)
-            };
-
-            // Deduct fee required
-            required = required - amount;
-
-            // Collect fees into collector
-            collector
-                .put(
-                    locked
-                        .take_by_amount(amount)
-                        .expect("Failed to extract locked fee"),
-                )
-                .expect("Failed to add fee to fee collector");
-
-            // Refund overpayment
-            let substate_id = SubstateId::Vault(vault_id);
-            track
-                .acquire_lock(substate_id.clone(), true, true)
-                .expect("Failed to acquire the lock of a fee-locking vault");
-            let mut substate = track.take_substate(substate_id.clone());
-            substate
-                .vault_mut()
-                .put(Bucket::new(locked))
-                .expect("Failed to update a fee-locking vault");
-            track.write_substate(substate_id.clone(), substate);
-            track.release_lock(substate_id, true);
-        }
-        // TODO: update XRD supply or disable it
-        // TODO: pay tips to the lead validator
-
-        // 5. Produce the final transaction receipt
-        let track_receipt = track.to_receipt();
-
+        // Produce the final transaction receipt
+        let track_receipt = track.finalize(invoke_result);
         let mut new_component_addresses = Vec::new();
         let mut new_resource_addresses = Vec::new();
         let mut new_package_addresses = Vec::new();
@@ -276,18 +183,15 @@ where
                 _ => {}
             }
         }
-
         let execution_trace_receipt = execution_trace.to_receipt();
-
         #[cfg(feature = "alloc")]
         let execution_time = None;
         #[cfg(not(feature = "alloc"))]
         let execution_time = Some(now.elapsed().as_millis());
-
         let receipt = TransactionReceipt {
-            status,
             transaction_network,
-            fee_summary: fee_summary,
+            status: track_receipt.status,
+            fee_summary: track_receipt.fee_summary,
             instructions,
             application_logs: track_receipt.application_logs,
             new_package_addresses,
@@ -297,8 +201,14 @@ where
             state_updates: track_receipt.state_updates,
             resource_changes: execution_trace_receipt.resource_changes,
         };
+
         #[cfg(not(feature = "alloc"))]
         if params.trace {
+            println!("{:-^80}", "Cost Analysis");
+            for (k, v) in &receipt.fee_summary.cost_breakdown {
+                println!("{:<30}: {:>8}", k, v);
+            }
+
             println!("{:-^80}", "Transaction Receipt");
             println!("{:?}", receipt);
             println!("{:-^80}", "");

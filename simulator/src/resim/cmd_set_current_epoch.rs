@@ -23,7 +23,7 @@ impl SetCurrentEpoch {
         let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?);
         let mut wasm_engine = DefaultWasmEngine::new();
         let mut wasm_instrumenter = WasmInstrumenter::new();
-        let mut track = Track::new(&substate_store);
+        let mut track = Track::new(&substate_store, SystemLoanFeeReserve::default());
         let mut fee_reserve = SystemLoanFeeReserve::default();
         let fee_table = FeeTable::new();
         let mut execution_trace = ExecutionTrace::new();

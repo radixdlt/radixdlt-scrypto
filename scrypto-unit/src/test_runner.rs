@@ -3,7 +3,7 @@ use radix_engine::constants::{
 };
 use radix_engine::engine::{ExecutionTrace, Kernel, ModuleError, SystemApi};
 use radix_engine::engine::{RuntimeError, Track};
-use radix_engine::fee::{FeeTable, SystemLoanFeeReserve};
+use radix_engine::fee::SystemLoanFeeReserve;
 use radix_engine::ledger::*;
 use radix_engine::model::{export_abi, export_abi_by_component, extract_package};
 use radix_engine::state_manager::StagedSubstateStoreManager;
@@ -11,7 +11,10 @@ use radix_engine::transaction::{
     ExecutionConfig, PreviewError, PreviewExecutor, PreviewResult, TransactionExecutor,
     TransactionReceipt,
 };
-use radix_engine::wasm::{DefaultWasmEngine, DefaultWasmInstance, WasmInstrumenter};
+use radix_engine::wasm::{
+    DefaultWasmEngine, DefaultWasmInstance, InstructionCostRules, WasmInstrumenter,
+    WasmMeteringParams,
+};
 use sbor::describe::Fields;
 use sbor::Type;
 use scrypto::abi::{BlueprintAbi, Fn};
@@ -473,23 +476,20 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     {
         let tx_hash = hash(self.next_transaction_nonce.to_string());
         let mut substate_store = self.execution_stores.get_output_store(0);
-        let mut track = Track::new(&substate_store);
-        let mut fee_reserve = SystemLoanFeeReserve::default();
-        let fee_table = FeeTable::new();
+        let mut track = Track::new(&substate_store, SystemLoanFeeReserve::default());
         let mut execution_trace = ExecutionTrace::new();
 
         let mut kernel = Kernel::new(
             tx_hash,
-            vec![],
+            Vec::new(),
             is_system,
             DEFAULT_MAX_CALL_DEPTH,
-            false,
             &mut track,
             &mut self.wasm_engine,
             &mut self.wasm_instrumenter,
-            &mut fee_reserve,
-            &fee_table,
+            WasmMeteringParams::new(InstructionCostRules::tiered(1, 5, 10, 5000), 512), // TODO: add to ExecutionConfig
             &mut execution_trace,
+            Vec::new(),
         );
 
         // Invoke the system
@@ -497,8 +497,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
 
         // Commit
         self.next_transaction_nonce += 1;
-        track.commit();
-        let receipt = track.to_receipt();
+        let receipt = track.finalize(Ok(Vec::new()));
         receipt.state_updates.commit(&mut substate_store);
 
         output

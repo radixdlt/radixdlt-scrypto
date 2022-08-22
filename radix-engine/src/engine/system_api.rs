@@ -1,20 +1,28 @@
 use crate::engine::node::*;
 use crate::engine::*;
-use crate::fee::*;
+use crate::fee::FeeReserve;
 use crate::model::AuthZone;
+use crate::model::ResourceContainer;
 use crate::types::*;
 use crate::wasm::*;
 
-pub trait SystemApi<'s, W, I, C>
+pub trait SystemApi<'s, W, I, R>
 where
     W: WasmEngine<I>,
     I: WasmInstance,
-    C: FeeReserve,
+    R: FeeReserve,
 {
-    fn fee_reserve(&mut self) -> &mut C;
-
     // TODO: possible to consider AuthZone as a RENode?
     fn auth_zone(&mut self, frame_id: usize) -> &mut AuthZone;
+
+    fn consume_cost_units(&mut self, units: u32) -> Result<(), RuntimeError>;
+
+    fn lock_fee(
+        &mut self,
+        vault_id: VaultId,
+        fee: ResourceContainer,
+        contingent: bool,
+    ) -> Result<ResourceContainer, RuntimeError>;
 
     fn invoke_function(
         &mut self,
@@ -30,7 +38,7 @@ where
     ) -> Result<ScryptoValue, RuntimeError>;
 
     // TODO: Convert to substate_borrow
-    fn borrow_node(&mut self, node_id: &RENodeId) -> Result<RENodeRef<'_, 's>, RuntimeError>;
+    fn borrow_node(&mut self, node_id: &RENodeId) -> Result<RENodeRef<'_, 's, R>, RuntimeError>;
 
     /// Removes an RENode and all of it's children from the Heap
     fn node_drop(&mut self, node_id: &RENodeId) -> Result<HeapRootRENode, RuntimeError>;

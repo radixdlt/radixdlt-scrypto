@@ -82,12 +82,18 @@ impl AuthZone {
             .map_err(AuthZoneError::ProofError)
     }
 
-    pub fn main<'s, Y: SystemApi<'s, W, I, C>, W: WasmEngine<I>, I: WasmInstance, C: FeeReserve>(
+    pub fn main<'s, Y, W, I, R>(
         auth_zone_frame_id: usize,
         auth_zone_fn: AuthZoneFnIdentifier,
         args: ScryptoValue,
         system_api: &mut Y,
-    ) -> Result<ScryptoValue, AuthZoneError> {
+    ) -> Result<ScryptoValue, AuthZoneError>
+    where
+        Y: SystemApi<'s, W, I, R>,
+        W: WasmEngine<I>,
+        I: WasmInstance,
+        R: FeeReserve,
+    {
         match auth_zone_fn {
             AuthZoneFnIdentifier::Pop => {
                 let _: AuthZonePopInput =

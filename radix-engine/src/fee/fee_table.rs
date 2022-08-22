@@ -1,5 +1,4 @@
 use crate::types::*;
-use crate::wasm::{InstructionCostRules, WasmMeteringParams};
 
 pub enum SystemApiCostingEntry<'a> {
     /*
@@ -68,7 +67,6 @@ pub struct FeeTable {
     fixed_medium: u32,
     fixed_high: u32,
     wasm_instantiation_per_byte: u32,
-    wasm_metering_params: WasmMeteringParams,
 }
 
 impl FeeTable {
@@ -82,10 +80,6 @@ impl FeeTable {
             fixed_low: 100,
             fixed_medium: 500,
             fixed_high: 1000,
-            wasm_metering_params: WasmMeteringParams::new(
-                InstructionCostRules::tiered(1, 5, 10, 5000),
-                512,
-            ),
         }
     }
 
@@ -107,10 +101,6 @@ impl FeeTable {
 
     pub fn wasm_instantiation_per_byte(&self) -> u32 {
         self.wasm_instantiation_per_byte
-    }
-
-    pub fn wasm_metering_params(&self) -> WasmMeteringParams {
-        self.wasm_metering_params.clone()
     }
 
     pub fn run_method_cost(

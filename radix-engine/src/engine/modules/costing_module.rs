@@ -1,26 +1,57 @@
+use transaction::model::ExecutableTransaction;
+
 use crate::engine::*;
 use crate::fee::{FeeReserve, FeeTable, SystemApiCostingEntry};
+use crate::model::ResourceContainer;
 use crate::types::*;
 
-pub struct CostingModule<'g, R: FeeReserve> {
-    /// Fee reserve
-    fee_reserve: &'g mut R,
-    /// Fee table
-    fee_table: &'g FeeTable,
+pub struct CostingModule {
+    fee_table: FeeTable,
 }
 
-impl<'g, R: FeeReserve> CostingModule<'g, R> {
-    pub fn new(fee_reserve: &'g mut R, fee_table: &'g FeeTable) -> Self {
-        Self {
-            fee_reserve,
-            fee_table,
-        }
+impl CostingModule {
+    pub fn new(fee_table: FeeTable) -> Self {
+        Self { fee_table }
+    }
+
+    pub fn apply_static_fees<R: FeeReserve, T: ExecutableTransaction>(
+        fee_reserve: &mut R,
+        fee_table: &FeeTable,
+        transaction: &T,
+    ) {
+        fee_reserve
+            .consume(fee_table.tx_base_fee(), "base_fee")
+            .expect("TX base fee not covered by system loan");
+
+        fee_reserve
+            .consume(
+                fee_table.tx_decoding_per_byte() * transaction.transaction_payload_size() as u32,
+                "decode_transaction",
+            )
+            .expect("TX decoding fee not covered by system loan");
+
+        fee_reserve
+            .consume(
+                fee_table.tx_manifest_verification_per_byte()
+                    * transaction.transaction_payload_size() as u32,
+                "verify_manifest",
+            )
+            .expect("TX manifest verification fee not covered by system loan");
+
+        fee_reserve
+            .consume(
+                fee_table.tx_signature_verification_per_sig()
+                    * transaction.signer_public_keys().len() as u32,
+                "verify_signatures",
+            )
+            .expect("TX signature verification fee not covered by system loan");
     }
 }
 
-impl<'g, R: FeeReserve> Module for CostingModule<'g, R> {
+impl<R: FeeReserve> Module<R> for CostingModule {
     fn pre_sys_call(
         &mut self,
+        track: &mut Track<R>,
         _heap: &mut Vec<CallFrame>,
         input: SysCallInput,
     ) -> Result<(), ModuleError> {
@@ -29,7 +60,8 @@ impl<'g, R: FeeReserve> Module for CostingModule<'g, R> {
                 fn_identifier,
                 input,
             } => {
-                self.fee_reserve
+                track
+                    .fee_reserve
                     .consume(
                         self.fee_table
                             .system_api_cost(SystemApiCostingEntry::InvokeFunction {
@@ -39,7 +71,8 @@ impl<'g, R: FeeReserve> Module for CostingModule<'g, R> {
                         "invoke_function",
                     )
                     .map_err(ModuleError::CostingError)?;
-                self.fee_reserve
+                track
+                    .fee_reserve
                     .consume(
                         self.fee_table.run_method_cost(None, &fn_identifier, &input),
                         "run_function",
@@ -51,7 +84,8 @@ impl<'g, R: FeeReserve> Module for CostingModule<'g, R> {
                 fn_identifier,
                 input,
             } => {
-                self.fee_reserve
+                track
+                    .fee_reserve
                     .consume(
                         self.fee_table
                             .system_api_cost(SystemApiCostingEntry::InvokeMethod {
@@ -62,7 +96,8 @@ impl<'g, R: FeeReserve> Module for CostingModule<'g, R> {
                     )
                     .map_err(ModuleError::CostingError)?;
 
-                self.fee_reserve
+                track
+                    .fee_reserve
                     .consume(
                         self.fee_table
                             .run_method_cost(Some(receiver), &fn_identifier, &input),
@@ -71,7 +106,8 @@ impl<'g, R: FeeReserve> Module for CostingModule<'g, R> {
                     .map_err(ModuleError::CostingError)?;
             }
             SysCallInput::BorrowNode { node_id } => {
-                self.fee_reserve
+                track
+                    .fee_reserve
                     .consume(
                         self.fee_table.system_api_cost({
                             match node_id {
@@ -127,7 +163,8 @@ impl<'g, R: FeeReserve> Module for CostingModule<'g, R> {
                     .map_err(ModuleError::CostingError)?;
             }
             SysCallInput::DropNode { .. } => {
-                self.fee_reserve
+                track
+                    .fee_reserve
                     .consume(
                         self.fee_table
                             .system_api_cost(SystemApiCostingEntry::DropNode { size: 0 }),
@@ -137,7 +174,8 @@ impl<'g, R: FeeReserve> Module for CostingModule<'g, R> {
             }
             SysCallInput::CreateNode { .. } => {
                 // Costing
-                self.fee_reserve
+                track
+                    .fee_reserve
                     .consume(
                         self.fee_table
                             .system_api_cost(SystemApiCostingEntry::CreateNode {
@@ -149,7 +187,8 @@ impl<'g, R: FeeReserve> Module for CostingModule<'g, R> {
             }
             SysCallInput::GlobalizeNode { .. } => {
                 // Costing
-                self.fee_reserve
+                track
+                    .fee_reserve
                     .consume(
                         self.fee_table
                             .system_api_cost(SystemApiCostingEntry::GlobalizeNode {
@@ -161,7 +200,8 @@ impl<'g, R: FeeReserve> Module for CostingModule<'g, R> {
             }
             SysCallInput::BorrowSubstateMut { substate_id } => {
                 // Costing
-                self.fee_reserve
+                track
+                    .fee_reserve
                     .consume(
                         self.fee_table.system_api_cost({
                             match substate_id {
@@ -251,7 +291,8 @@ impl<'g, R: FeeReserve> Module for CostingModule<'g, R> {
                     .map_err(ModuleError::CostingError)?;
             }
             SysCallInput::ReturnSubstateMut { substate_ref } => {
-                self.fee_reserve
+                track
+                    .fee_reserve
                     .consume(
                         self.fee_table.system_api_cost({
                             match &substate_ref {
@@ -307,7 +348,8 @@ impl<'g, R: FeeReserve> Module for CostingModule<'g, R> {
             }
             SysCallInput::ReadSubstate { .. } => {
                 // Costing
-                self.fee_reserve
+                track
+                    .fee_reserve
                     .consume(
                         self.fee_table
                             .system_api_cost(SystemApiCostingEntry::ReadSubstate {
@@ -319,7 +361,8 @@ impl<'g, R: FeeReserve> Module for CostingModule<'g, R> {
             }
             SysCallInput::WriteSubstate { .. } => {
                 // Costing
-                self.fee_reserve
+                track
+                    .fee_reserve
                     .consume(
                         self.fee_table
                             .system_api_cost(SystemApiCostingEntry::WriteSubstate {
@@ -331,7 +374,8 @@ impl<'g, R: FeeReserve> Module for CostingModule<'g, R> {
             }
             SysCallInput::TakeSubstate { .. } => {
                 // Costing
-                self.fee_reserve
+                track
+                    .fee_reserve
                     .consume(
                         self.fee_table
                             .system_api_cost(SystemApiCostingEntry::TakeSubstate {
@@ -342,7 +386,8 @@ impl<'g, R: FeeReserve> Module for CostingModule<'g, R> {
                     .map_err(ModuleError::CostingError)?;
             }
             SysCallInput::ReadTransactionHash => {
-                self.fee_reserve
+                track
+                    .fee_reserve
                     .consume(
                         self.fee_table
                             .system_api_cost(SystemApiCostingEntry::ReadTransactionHash),
@@ -351,7 +396,8 @@ impl<'g, R: FeeReserve> Module for CostingModule<'g, R> {
                     .map_err(ModuleError::CostingError)?;
             }
             SysCallInput::GenerateUuid => {
-                self.fee_reserve
+                track
+                    .fee_reserve
                     .consume(
                         self.fee_table
                             .system_api_cost(SystemApiCostingEntry::GenerateUuid),
@@ -360,7 +406,8 @@ impl<'g, R: FeeReserve> Module for CostingModule<'g, R> {
                     .map_err(ModuleError::CostingError)?;
             }
             SysCallInput::EmitLog { message, .. } => {
-                self.fee_reserve
+                track
+                    .fee_reserve
                     .consume(
                         self.fee_table
                             .system_api_cost(SystemApiCostingEntry::EmitLog {
@@ -372,7 +419,8 @@ impl<'g, R: FeeReserve> Module for CostingModule<'g, R> {
             }
             SysCallInput::CheckAccessRule { proof_ids, .. } => {
                 // Costing
-                self.fee_reserve
+                track
+                    .fee_reserve
                     .consume(
                         self.fee_table
                             .system_api_cost(SystemApiCostingEntry::CheckAccessRule {
@@ -389,6 +437,7 @@ impl<'g, R: FeeReserve> Module for CostingModule<'g, R> {
 
     fn post_sys_call(
         &mut self,
+        _track: &mut Track<R>,
         _heap: &mut Vec<CallFrame>,
         _output: SysCallOutput,
     ) -> Result<(), ModuleError> {
@@ -397,10 +446,12 @@ impl<'g, R: FeeReserve> Module for CostingModule<'g, R> {
 
     fn on_wasm_instantiation(
         &mut self,
-        heap: &mut Vec<CallFrame>,
+        track: &mut Track<R>,
+        _heap: &mut Vec<CallFrame>,
         code: &[u8],
     ) -> Result<(), ModuleError> {
-        self.fee_reserve
+        track
+            .fee_reserve
             .consume(
                 self.fee_table.wasm_instantiation_per_byte() * code.len() as u32,
                 "instantiate_wasm",
@@ -410,11 +461,27 @@ impl<'g, R: FeeReserve> Module for CostingModule<'g, R> {
 
     fn on_wasm_costing(
         &mut self,
-        heap: &mut Vec<CallFrame>,
+        track: &mut Track<R>,
+        _heap: &mut Vec<CallFrame>,
         units: u32,
     ) -> Result<(), ModuleError> {
-        self.fee_reserve
+        track
+            .fee_reserve
             .consume(units, "run_wasm")
+            .map_err(ModuleError::CostingError)
+    }
+
+    fn on_lock_fee(
+        &mut self,
+        track: &mut Track<R>,
+        _heap: &mut Vec<CallFrame>,
+        vault_id: VaultId,
+        fee: ResourceContainer,
+        contingent: bool,
+    ) -> Result<ResourceContainer, ModuleError> {
+        track
+            .fee_reserve
+            .repay(vault_id, fee, contingent)
             .map_err(ModuleError::CostingError)
     }
 }

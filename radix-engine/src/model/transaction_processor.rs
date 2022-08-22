@@ -89,21 +89,22 @@ impl TransactionProcessor {
             .0
     }
 
-    pub fn static_main<
-        's,
-        Y: SystemApi<'s, W, I, C>,
-        W: WasmEngine<I>,
-        I: WasmInstance,
-        C: FeeReserve,
-    >(
+    pub fn static_main<'s, Y, W, I, R>(
         transaction_processor_fn: TransactionProcessorFnIdentifier,
         call_data: ScryptoValue,
         system_api: &mut Y,
-    ) -> Result<ScryptoValue, TransactionProcessorError> {
+    ) -> Result<ScryptoValue, TransactionProcessorError>
+    where
+        Y: SystemApi<'s, W, I, R>,
+        W: WasmEngine<I>,
+        I: WasmInstance,
+        R: FeeReserve,
+    {
         match transaction_processor_fn {
             TransactionProcessorFnIdentifier::Run => {
                 let input: TransactionProcessorRunInput = scrypto_decode(&call_data.raw)
                     .map_err(|e| TransactionProcessorError::InvalidRequestData(e))?;
+
                 let mut proof_id_mapping = HashMap::new();
                 let mut bucket_id_mapping = HashMap::new();
                 let mut outputs = Vec::new();

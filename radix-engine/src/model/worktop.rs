@@ -205,11 +205,17 @@ impl Worktop {
             .insert(resource_address, Rc::new(RefCell::new(container)));
     }
 
-    pub fn main<'s, Y: SystemApi<'s, W, I, C>, W: WasmEngine<I>, I: WasmInstance, C: FeeReserve>(
+    pub fn main<'s, Y, W, I, R>(
         worktop_fn: WorktopFnIdentifier,
         args: ScryptoValue,
         system_api: &mut Y,
-    ) -> Result<ScryptoValue, WorktopError> {
+    ) -> Result<ScryptoValue, WorktopError>
+    where
+        Y: SystemApi<'s, W, I, R>,
+        W: WasmEngine<I>,
+        I: WasmInstance,
+        R: FeeReserve,
+    {
         let mut node_ref = system_api
             .substate_borrow_mut(&SubstateId::Worktop)
             .map_err(|e| WorktopError::RuntimeError(Box::new(e)))?;

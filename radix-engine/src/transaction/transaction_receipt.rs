@@ -8,9 +8,9 @@ use crate::types::*;
 
 #[derive(Debug)]
 pub enum TransactionStatus {
-    Rejected,
     Succeeded(Vec<Vec<u8>>),
     Failed(RuntimeError),
+    Rejected,
 }
 
 impl TransactionStatus {
@@ -27,9 +27,9 @@ impl TransactionStatus {
 
 /// Represents a transaction receipt.
 pub struct TransactionReceipt {
+    pub transaction_network: Network,
     pub status: TransactionStatus,
     pub fee_summary: FeeSummary,
-    pub transaction_network: Network,
     pub execution_time: Option<u128>,
     pub instructions: Vec<ExecutableInstruction>,
     pub application_logs: Vec<(Level, String)>,

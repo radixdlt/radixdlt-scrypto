@@ -1,7 +1,7 @@
 use transaction::validation::*;
 
 use crate::engine::*;
-use crate::fee::*;
+use crate::fee::FeeReserve;
 use crate::model::*;
 use crate::types::*;
 use crate::wasm::*;
@@ -66,7 +66,7 @@ impl CallFrame {
         }
     }
 
-    pub fn new_child<'s, W, I, C, Y>(
+    pub fn new_child<'s, Y, W, I, R>(
         depth: usize,
         actor: REActor,
         owned_heap_nodes: HashMap<RENodeId, HeapRootRENode>,
@@ -74,10 +74,10 @@ impl CallFrame {
         _system_api: &mut Y,
     ) -> Self
     where
+        Y: SystemApi<'s, W, I, R>,
         W: WasmEngine<I>,
         I: WasmInstance,
-        C: FeeReserve,
-        Y: SystemApi<'s, W, I, C>,
+        R: FeeReserve,
     {
         let auth_zone = AuthZone::new();
 

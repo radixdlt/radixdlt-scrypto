@@ -3,10 +3,8 @@ use scrypto::buffer::scrypto_encode;
 use scrypto::core::Network;
 use scrypto::crypto::{hash, EcdsaPublicKey, EcdsaSignature, Hash};
 
-use crate::model::{
-    ExecutableInstruction, ExecutableTransaction, NotarizedTransaction, SignedTransactionIntent,
-    TransactionIntent,
-};
+use crate::builder::TransactionBuilder;
+use crate::model::{ExecutableInstruction, ExecutableTransaction, TransactionIntent};
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct PreviewFlags {
@@ -53,26 +51,23 @@ impl ExecutableTransaction for ValidatedPreviewTransaction {
     }
 
     fn transaction_payload_size(&self) -> u32 {
-        // TODO: update the estimation after transaction specs are finalized
-
-        // Using a mocked notarized transaction of expected size
-        // to include the sbor overhead in the payload size estimation
         let fake_signature = EcdsaSignature([0; EcdsaSignature::LENGTH]);
-        let fake_notarized_transaction = NotarizedTransaction {
-            signed_intent: SignedTransactionIntent {
-                intent: self.preview_intent.intent.clone(),
-                intent_signatures: self
-                    .preview_intent
+
+        let transaction = TransactionBuilder::new()
+            .header(self.preview_intent.intent.header.clone())
+            .manifest(self.preview_intent.intent.manifest.clone())
+            .signer_signatures(
+                self.preview_intent
                     .signer_public_keys
                     .clone()
                     .into_iter()
-                    .map(|pub_key| (pub_key, fake_signature.clone()))
+                    .map(|pk| (pk, fake_signature))
                     .collect(),
-            },
-            notary_signature: fake_signature,
-        };
+            )
+            .notary_signature(fake_signature)
+            .build();
 
-        fake_notarized_transaction.to_bytes().len() as u32
+        transaction.to_bytes().len() as u32
     }
 
     fn instructions(&self) -> &[ExecutableInstruction] {
