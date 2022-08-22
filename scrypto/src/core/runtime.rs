@@ -1,4 +1,5 @@
 use sbor::rust::borrow::ToOwned;
+use sbor::rust::string::*;
 use sbor::rust::vec::Vec;
 use sbor::*;
 

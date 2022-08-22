@@ -1,4 +1,4 @@
-use sbor::String;
+use sbor::rust::string::String;
 
 use crate::component::{ComponentAddress, PackageAddress};
 use crate::core::Network;

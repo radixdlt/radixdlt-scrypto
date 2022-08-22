@@ -19,6 +19,7 @@ macro_rules! log {
     };
 }
 
+#[allow(unused_variables)] // for no_std
 impl Module for LoggerModule {
     fn pre_sys_call(
         &mut self,
