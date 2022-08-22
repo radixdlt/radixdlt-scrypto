@@ -162,11 +162,15 @@ fn test_basic_transfer() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key1]);
 
     // Assert
+
+    // NOTE: If this test fails, it should print out the actual fee table in the error logs.
+    // Or you can run just this test with the below:
+    // (cd radix-engine && cargo test test_basic_transfer -- --exact)
     assert_eq!(
         10000 /* base_fee */
         + 3300 /* borrow_substate */
         + 1500 /* create_node */
-        + 2001 /* decode_transaction */
+        + 1938 /* decode_transaction */
         + 1000 /* drop_node */
         + 603822 /* instantiate_wasm */
         + 1895 /* invoke_function */
@@ -176,7 +180,7 @@ fn test_basic_transfer() {
         + 1000 /* run_function */
         + 5200 /* run_method */
         + 262304 /* run_wasm */
-        + 583 /* verify_manifest */
+        + 646 /* verify_manifest */
         + 3750 /* verify_signatures */
         + 3000, /* write_substate */
         receipt.fee_summary.cost_unit_consumed
