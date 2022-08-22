@@ -1,5 +1,6 @@
 use core::str::FromStr;
 use sbor::{Decode, Encode, TypeId};
+use sbor::rust::string::String;
 
 /// Network Definition is intended to be the actual definition of a network
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
