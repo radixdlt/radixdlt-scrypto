@@ -27,6 +27,7 @@ pub fn scrypto_decode_from_buffer<T: Decode + ?Sized>(ptr: *mut u8) -> Result<T,
 #[cfg(test)]
 mod tests {
     use super::*;
+    use sbor::rust::string::String;
 
     #[test]
     fn test_encode_for_radix_engine() {
