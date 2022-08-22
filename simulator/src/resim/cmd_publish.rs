@@ -85,7 +85,9 @@ impl Publish {
                 writeln!(
                     out,
                     "Success! New Package: {}",
-                    receipt.new_package_addresses[0].to_string().green()
+                    receipt.expect_commit().entity_changes.new_package_addresses[0]
+                        .to_string()
+                        .green()
                 )
                 .map_err(Error::IOError)?;
             }

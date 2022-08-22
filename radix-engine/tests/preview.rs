@@ -30,8 +30,11 @@ fn test_transaction_preview_cost_estimate() {
     receipt.expect_success();
 
     assert_eq!(
-        preview_receipt.fee_summary.cost_unit_consumed,
-        receipt.fee_summary.cost_unit_consumed
+        preview_receipt
+            .expect_executed()
+            .fee_summary
+            .cost_unit_consumed,
+        receipt.expect_executed().fee_summary.cost_unit_consumed
     );
 }
 

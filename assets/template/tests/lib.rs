@@ -24,7 +24,7 @@ fn test_hello() {
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![public_key]);
     println!("{:?}\n", receipt);
     receipt.expect_success();
-    let component = receipt.new_component_addresses[0];
+    let component = receipt.expect_commit().entity_changes.new_component_addresses[0];
 
     // Test the `free_token` method.
     let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())

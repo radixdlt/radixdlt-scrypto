@@ -49,7 +49,7 @@ fn test_loop_out_of_cost_unit() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    assert_invoke_error!(receipt.status, InvokeError::CostingError { .. })
+    expect_invoke_error(&receipt, |err| matches!(err, InvokeError::CostingError(..)));
 }
 
 #[test]
@@ -96,7 +96,7 @@ fn test_recursion_stack_overflow() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    assert_invoke_error!(receipt.status, InvokeError::WasmError { .. })
+    expect_invoke_error(&receipt, |err| matches!(err, InvokeError::WasmError(..)));
 }
 
 #[test]
@@ -142,7 +142,7 @@ fn test_grow_memory_out_of_cost_unit() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    assert_invoke_error!(receipt.status, InvokeError::CostingError { .. })
+    expect_invoke_error(&receipt, |err| matches!(err, InvokeError::CostingError(..)));
 }
 
 #[test]
@@ -183,6 +183,6 @@ fn test_basic_transfer() {
         + 646 /* verify_manifest */
         + 3750 /* verify_signatures */
         + 3000, /* write_substate */
-        receipt.fee_summary.cost_unit_consumed
+        receipt.expect_executed().fee_summary.cost_unit_consumed
     );
 }

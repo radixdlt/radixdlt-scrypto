@@ -48,7 +48,10 @@ fn can_burn_non_fungible() {
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_success();
-    let resource_address = receipt.new_resource_addresses[0];
+    let resource_address = receipt
+        .expect_commit()
+        .entity_changes
+        .new_resource_addresses[0];
     let non_fungible_address =
         NonFungibleAddress::new(resource_address, NonFungibleId::from_u32(0));
     let mut ids = BTreeSet::new();

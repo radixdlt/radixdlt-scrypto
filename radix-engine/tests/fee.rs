@@ -34,7 +34,10 @@ where
             .build(),
         vec![public_key],
     );
-    let component_address = receipt1.new_component_addresses[0];
+    let component_address = receipt1
+        .expect_commit()
+        .entity_changes
+        .new_component_addresses[0];
 
     // Run the provided manifest
     let manifest = f(component_address);
@@ -196,7 +199,7 @@ fn test_fee_accounting_success() {
     receipt.expect_success();
     let account1_new_balance = query_account_balance(&mut test_runner, account1, RADIX_TOKEN);
     let account2_new_balance = query_account_balance(&mut test_runner, account2, RADIX_TOKEN);
-    let summary = receipt.fee_summary;
+    let summary = &receipt.expect_executed().fee_summary;
     assert_eq!(
         account1_new_balance,
         account1_balance
@@ -237,7 +240,7 @@ fn test_fee_accounting_failure() {
     });
     let account1_new_balance = query_account_balance(&mut test_runner, account1, RADIX_TOKEN);
     let account2_new_balance = query_account_balance(&mut test_runner, account2, RADIX_TOKEN);
-    let summary = receipt.fee_summary;
+    let summary = &receipt.expect_executed().fee_summary;
     assert_eq!(
         account1_new_balance,
         account1_balance
@@ -288,7 +291,7 @@ fn test_contingent_fee_accounting_success() {
     receipt.expect_success();
     let account1_new_balance = query_account_balance(&mut test_runner, account1, RADIX_TOKEN);
     let account2_new_balance = query_account_balance(&mut test_runner, account2, RADIX_TOKEN);
-    let summary = receipt.fee_summary;
+    let summary = &receipt.expect_executed().fee_summary;
     let effective_price =
         summary.cost_unit_price + summary.cost_unit_price * summary.tip_percentage / 100;
     let contingent_fee =
@@ -329,7 +332,7 @@ fn test_contingent_fee_accounting_failure() {
     });
     let account1_new_balance = query_account_balance(&mut test_runner, account1, RADIX_TOKEN);
     let account2_new_balance = query_account_balance(&mut test_runner, account2, RADIX_TOKEN);
-    let summary = receipt.fee_summary;
+    let summary = &receipt.expect_executed().fee_summary;
     let effective_price =
         summary.cost_unit_price + summary.cost_unit_price * summary.tip_percentage / 100;
     assert_eq!(

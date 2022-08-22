@@ -45,7 +45,10 @@ impl NewAccount {
         let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::local_simulator());
 
         if let Some(receipt) = receipt {
-            let account = receipt.new_component_addresses[0];
+            let account = receipt
+                .expect_commit()
+                .entity_changes
+                .new_component_addresses[0];
             writeln!(out, "A new account has been created!").map_err(Error::IOError)?;
             writeln!(
                 out,

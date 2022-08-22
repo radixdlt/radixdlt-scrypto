@@ -6,6 +6,24 @@ use crate::model::*;
 use crate::types::*;
 use crate::wasm::InvokeError;
 
+/// Represents an error which causes a tranasction to be rejected.
+#[derive(Debug)]
+pub enum RejectionError {
+    SuccessButFeeLoanNotRepaid,
+    ErrorBeforeFeeLoanRepaid(RuntimeError),
+    MismatchedNetwork {
+        transaction_network_id: u8,
+        expected_network_id: u8,
+    },
+}
+
+impl fmt::Display for RejectionError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+/// Represents an error when executing a transaction.
 #[derive(Debug)]
 pub enum RuntimeError {
     /// An error occurred within the kernel.

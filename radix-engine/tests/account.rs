@@ -29,7 +29,7 @@ fn can_withdraw_from_my_account() {
     let other_account_balance: Decimal = scrypto_decode(&outputs[3]).unwrap();
     let transfer_amount = other_account_balance - 1_000_000 /* initial balance */;
     assert_resource_changes_for_transfer(
-        &receipt.resource_changes,
+        &receipt.expect_commit().resource_changes,
         RADIX_TOKEN,
         account,
         other_account,
@@ -102,8 +102,8 @@ fn account_to_bucket_to_account() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
-    assert!(receipt.resource_changes.is_empty());
     receipt.expect_success();
+    assert!(receipt.expect_commit().resource_changes.is_empty());
 }
 
 #[test]
@@ -123,7 +123,7 @@ fn test_account_balance() {
     let outputs = receipt.expect_success();
 
     // Assert
-    assert!(receipt.resource_changes.is_empty());
+    assert!(receipt.expect_commit().resource_changes.is_empty());
     assert_eq!(
         outputs[1],
         ScryptoValue::from_typed(&Decimal::from(1000000)).raw
