@@ -387,7 +387,7 @@ impl TransactionValidator {
 
 #[cfg(test)]
 mod tests {
-    use scrypto::core::Network;
+    use scrypto::core::NetworkDefinition;
 
     use super::*;
     use crate::{builder::ManifestBuilder, builder::TransactionBuilder, signing::EcdsaPrivateKey};
@@ -396,7 +396,7 @@ mod tests {
         ($result: expr, ($version: expr, $start_epoch: expr, $end_epoch: expr, $nonce: expr, $signers: expr, $notary: expr)) => {{
             let mut intent_hash_manager: TestIntentHashManager = TestIntentHashManager::new();
             let config: ValidationConfig = ValidationConfig {
-                network: Network::LocalSimulator.get_definition(),
+                network: NetworkDefinition::local_simulator(),
                 current_epoch: 1,
                 max_cost_unit_limit: 10_000_000,
                 min_tip_percentage: 0,
@@ -467,7 +467,7 @@ mod tests {
     fn test_valid_preview() {
         let mut intent_hash_manager: TestIntentHashManager = TestIntentHashManager::new();
         let config: ValidationConfig = ValidationConfig {
-            network: Network::LocalSimulator.get_definition(),
+            network: NetworkDefinition::local_simulator(),
             current_epoch: 1,
             max_cost_unit_limit: 10_000_000,
             min_tip_percentage: 0,
@@ -510,7 +510,7 @@ mod tests {
         let mut builder = TransactionBuilder::new()
             .header(TransactionHeader {
                 version,
-                network_id: Network::LocalSimulator.get_id(),
+                network_id: NetworkDefinition::local_simulator().id,
                 start_epoch_inclusive: start_epoch,
                 end_epoch_exclusive: end_epoch,
                 nonce,
@@ -520,7 +520,7 @@ mod tests {
                 tip_percentage: 5,
             })
             .manifest(
-                ManifestBuilder::new(Network::LocalSimulator)
+                ManifestBuilder::new(NetworkDefinition::local_simulator())
                     .clear_auth_zone()
                     .build(),
             );

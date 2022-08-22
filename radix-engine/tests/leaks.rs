@@ -1,6 +1,6 @@
 use radix_engine::engine::{DropFailure, RuntimeError};
 use radix_engine::ledger::TypedInMemorySubstateStore;
-use scrypto::core::Network;
+use scrypto::core::NetworkDefinition;
 use scrypto::prelude::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -13,7 +13,7 @@ fn dangling_component_should_fail() {
     let package_address = test_runner.extract_and_publish_package("leaks");
 
     // Act
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(package_address, "Leaks", "dangling_component", args!())
         .build();
@@ -31,7 +31,7 @@ fn dangling_bucket_should_fail() {
     let package_address = test_runner.extract_and_publish_package("leaks");
 
     // Act
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(package_address, "Leaks", "dangling_bucket", args!())
         .build();
@@ -49,7 +49,7 @@ fn dangling_vault_should_fail() {
     let package_address = test_runner.extract_and_publish_package("leaks");
 
     // Act
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(package_address, "Leaks", "dangling_vault", args!())
         .build();
@@ -67,7 +67,7 @@ fn dangling_worktop_should_fail() {
     let package_address = test_runner.extract_and_publish_package("leaks");
 
     // Act
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(package_address, "Leaks", "get_bucket", args!())
         .build();
@@ -85,7 +85,7 @@ fn dangling_kv_store_should_fail() {
     let package_address = test_runner.extract_and_publish_package("leaks");
 
     // Act
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(package_address, "Leaks", "dangling_kv_store", args!())
         .build();
@@ -103,7 +103,7 @@ fn dangling_bucket_with_proof_should_fail() {
     let package_address = test_runner.extract_and_publish_package("leaks");
 
     // Act
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(
             package_address,

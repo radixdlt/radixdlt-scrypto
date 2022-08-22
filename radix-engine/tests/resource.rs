@@ -1,7 +1,7 @@
 use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::model::ResourceManagerError;
-use scrypto::core::Network;
+use scrypto::core::NetworkDefinition;
 use scrypto::prelude::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -15,7 +15,7 @@ fn test_resource_manager() {
     let package_address = test_runner.extract_and_publish_package("resource");
 
     // Act
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(package_address, "ResourceTest", "create_fungible", args!())
         .call_function(package_address, "ResourceTest", "query", args!())
@@ -43,7 +43,7 @@ fn mint_with_bad_granularity_should_fail() {
     let package_address = test_runner.extract_and_publish_package("resource");
 
     // Act
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(
             package_address,
@@ -78,7 +78,7 @@ fn mint_too_much_should_fail() {
     let package_address = test_runner.extract_and_publish_package("resource");
 
     // Act
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(
             package_address,

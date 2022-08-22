@@ -1,5 +1,5 @@
 use radix_engine::ledger::TypedInMemorySubstateStore;
-use scrypto::core::Network;
+use scrypto::core::NetworkDefinition;
 use scrypto::prelude::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -10,7 +10,7 @@ fn should_not_be_able_call_owned_components_directly() {
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("local_component");
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(
             package_address,
@@ -24,7 +24,7 @@ fn should_not_be_able_call_owned_components_directly() {
     let component_address = receipt.new_component_addresses[1];
 
     // Act
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_method(component_address, "get_secret", args!())
         .build();
@@ -42,7 +42,7 @@ fn should_be_able_to_call_read_method_on_a_stored_component_in_owned_component()
     let package_address = test_runner.extract_and_publish_package("local_component");
 
     // Act
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(
             package_address,
@@ -65,7 +65,7 @@ fn should_be_able_to_call_write_method_on_a_stored_component_in_owned_component(
     let package_address = test_runner.extract_and_publish_package("local_component");
 
     // Act
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(
             package_address,
@@ -86,7 +86,7 @@ fn should_be_able_to_call_read_method_on_a_stored_component_in_global_component(
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("local_component");
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(
             package_address,
@@ -100,7 +100,7 @@ fn should_be_able_to_call_read_method_on_a_stored_component_in_global_component(
     let component_address = receipt.new_component_addresses[0];
 
     // Act
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_method(component_address, "parent_get_secret", args!())
         .build();
@@ -118,7 +118,7 @@ fn should_be_able_to_call_write_method_on_a_stored_component_in_global_component
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("local_component");
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(
             package_address,
@@ -132,7 +132,7 @@ fn should_be_able_to_call_write_method_on_a_stored_component_in_global_component
     let component_address = receipt.new_component_addresses[0];
 
     // Act
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_method(component_address, "parent_set_secret", args!(8888u32))
         .call_method(component_address, "parent_get_secret", args!())
@@ -153,7 +153,7 @@ fn should_be_able_to_call_read_method_on_a_kv_stored_component_in_owned_componen
     let package_address = test_runner.extract_and_publish_package("local_component");
 
     // Act
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(
             package_address,
@@ -176,7 +176,7 @@ fn should_be_able_to_call_write_method_on_a_kv_stored_component_in_owned_compone
     let package_address = test_runner.extract_and_publish_package("local_component");
 
     // Act
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(
             package_address,
@@ -197,7 +197,7 @@ fn should_be_able_to_call_read_method_on_a_kv_stored_component_in_global_compone
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("local_component");
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(
             package_address,
@@ -211,7 +211,7 @@ fn should_be_able_to_call_read_method_on_a_kv_stored_component_in_global_compone
     let component_address = receipt.new_component_addresses[0];
 
     // Act
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_method(component_address, "parent_get_secret", args!())
         .build();
@@ -229,7 +229,7 @@ fn should_be_able_to_call_write_method_on_a_kv_stored_component_in_global_compon
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("local_component");
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(
             package_address,
@@ -243,7 +243,7 @@ fn should_be_able_to_call_write_method_on_a_kv_stored_component_in_global_compon
     let component_address = receipt.new_component_addresses[0];
 
     // Act
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_method(component_address, "parent_set_secret", args!(8888u32))
         .call_method(component_address, "parent_get_secret", args!())

@@ -1,5 +1,5 @@
 use crate::address::entity::EntityType;
-use crate::core::{Network, NetworkDefinition};
+use crate::core::NetworkDefinition;
 use crate::sbor::rust::format;
 use crate::sbor::rust::string::String;
 
@@ -39,10 +39,4 @@ impl From<&NetworkDefinition> for HrpSet {
             resource: format!("resource_{}", suffix),
         }
     }
-}
-
-/// Returns the HrpSet associated with the network.
-pub fn get_network_hrp_set(network: &Network) -> HrpSet {
-    let network_definition = &network.get_definition();
-    return network_definition.into();
 }

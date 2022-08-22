@@ -2,7 +2,7 @@ use crate::ExpectedResult::{InvalidInput, InvalidOutput, Success};
 use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::model::ComponentError;
-use scrypto::core::Network;
+use scrypto::core::NetworkDefinition;
 use scrypto::prelude::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -15,7 +15,7 @@ fn test_invalid_access_rule_methods() {
     let package_address = test_runner.extract_and_publish_package("abi");
 
     // Act
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(
             package_address,
@@ -48,7 +48,7 @@ fn test_arg(method_name: &str, args: Vec<u8>, expected_result: ExpectedResult) {
     let package_address = test_runner.extract_and_publish_package("abi");
 
     // Act
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(package_address, "AbiComponent2", method_name, args)
         .build();

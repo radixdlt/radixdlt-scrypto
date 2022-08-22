@@ -62,7 +62,7 @@ impl NewTokenMutable {
             metadata.insert("icon_url".to_string(), icon_url);
         };
 
-        let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
             .lock_fee(100.into(), SYSTEM_COMPONENT)
             .new_token_mutable(metadata, self.minter_resource_address)
             .build();

@@ -18,7 +18,7 @@ fn test_max_call_depth_success() {
     // * 1: Transaction Executor
     // * 2-16: Caller::call x 15
     // ============================
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(package_address, "Caller", "recursive", args!(15u32))
         .build();
@@ -36,7 +36,7 @@ fn test_max_call_depth_failure() {
     let package_address = test_runner.extract_and_publish_package("recursion");
 
     // Act
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(package_address, "Caller", "recursive", args!(16u32))
         .build();

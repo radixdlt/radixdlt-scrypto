@@ -128,7 +128,7 @@ mod tests {
     use super::*;
     use crate::signing::*;
     use scrypto::buffer::scrypto_encode;
-    use scrypto::core::Network;
+    use scrypto::core::NetworkDefinition;
 
     #[test]
     fn construct_sign_and_notarize() {
@@ -139,10 +139,10 @@ mod tests {
 
         // construct
         let intent = TransactionIntent::new(
-            &Network::LocalSimulator.get_definition(),
+            &NetworkDefinition::local_simulator(),
             TransactionHeader {
                 version: 1,
-                network_id: Network::LocalSimulator.get_id(),
+                network_id: NetworkDefinition::local_simulator().id,
                 start_epoch_inclusive: 0,
                 end_epoch_exclusive: 100,
                 nonce: 5,

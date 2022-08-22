@@ -4,7 +4,7 @@ use radix_engine::model::PackageError;
 use radix_engine::wasm::*;
 use sbor::Type;
 use scrypto::abi::*;
-use scrypto::core::Network;
+use scrypto::core::NetworkDefinition;
 use scrypto::prelude::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -15,7 +15,7 @@ fn test_publish_package_from_scrypto() {
     let mut test_runner = TestRunner::new(true, &mut store);
     let package = test_runner.extract_and_publish_package("package");
 
-    let manifest1 = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest1 = ManifestBuilder::new(NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(package, "PackageTest", "publish", args!())
         .build();
@@ -43,7 +43,7 @@ fn missing_memory_should_cause_error() {
         code,
         blueprints: HashMap::new(),
     };
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .publish_package(package)
         .build();
@@ -68,7 +68,7 @@ fn large_return_len_should_cause_memory_access_error() {
     let package = test_runner.extract_and_publish_package("package");
 
     // Act
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(package, "LargeReturnSize", "f", args!())
         .build();
@@ -92,7 +92,7 @@ fn overflow_return_len_should_cause_memory_access_error() {
     let package = test_runner.extract_and_publish_package("package");
 
     // Act
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(package, "MaxReturnSize", "f", args!())
         .build();
@@ -116,7 +116,7 @@ fn zero_return_len_should_cause_data_validation_error() {
     let package = test_runner.extract_and_publish_package("package");
 
     // Act
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(package, "ZeroReturnSize", "f", args!())
         .build();
@@ -139,7 +139,7 @@ fn test_basic_package() {
         code,
         blueprints: HashMap::new(),
     };
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .publish_package(package)
         .build();
@@ -172,7 +172,7 @@ fn test_basic_package_missing_export() {
     // Act
     let code = wat2wasm(include_str!("wasm/basic_package.wat"));
     let package = Package { code, blueprints };
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .publish_package(package)
         .build();

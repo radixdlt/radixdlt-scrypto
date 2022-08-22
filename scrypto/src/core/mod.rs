@@ -11,7 +11,7 @@ pub use data::*;
 pub use invocation::*;
 pub use level::Level;
 pub use logger::Logger;
-pub use network::{Network, NetworkDefinition, NetworkError};
+pub use network::{NetworkDefinition, NetworkError};
 pub use runtime::{
     Runtime, SystemGetCurrentEpochInput, SystemGetTransactionHashInput, SystemSetEpochInput,
 };

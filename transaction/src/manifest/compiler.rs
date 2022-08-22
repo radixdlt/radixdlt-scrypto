@@ -13,7 +13,7 @@ pub enum CompileError {
 }
 
 pub fn compile(s: &str, network: &NetworkDefinition) -> Result<TransactionManifest, CompileError> {
-    let bech32_decoder = Bech32Decoder::new_from_network_definition(network);
+    let bech32_decoder = Bech32Decoder::new(network);
 
     let tokens = lexer::tokenize(s).map_err(CompileError::LexerError)?;
     let instructions = parser::Parser::new(tokens)

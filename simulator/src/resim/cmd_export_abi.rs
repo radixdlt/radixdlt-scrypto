@@ -19,7 +19,7 @@ pub struct ExportAbi {
 
 impl ExportAbi {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
-        let bech32_encoder = Bech32Encoder::new_from_network(&Network::LocalSimulator);
+        let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::local_simulator());
 
         match export_abi(self.package_address, &self.blueprint_name) {
             Ok(a) => {

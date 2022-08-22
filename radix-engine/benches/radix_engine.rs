@@ -4,7 +4,7 @@ use radix_engine::transaction::ExecutionConfig;
 use radix_engine::transaction::TransactionExecutor;
 use radix_engine::wasm::DefaultWasmEngine;
 use radix_engine::wasm::WasmInstrumenter;
-use scrypto::core::Network;
+use scrypto::core::NetworkDefinition;
 use scrypto::prelude::*;
 use transaction::builder::ManifestBuilder;
 use transaction::model::TestTransaction;
@@ -26,7 +26,7 @@ fn bench_transfer(c: &mut Criterion) {
     let public_key = private_key.public_key();
 
     // Create two accounts
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_method(SYSTEM_COMPONENT, "free_xrd", args!())
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
@@ -50,7 +50,7 @@ fn bench_transfer(c: &mut Criterion) {
         .new_component_addresses[0];
 
     // Create a transfer manifest
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
         .lock_fee(10.into(), account1)
         .withdraw_from_account_by_amount(1.into(), RADIX_TOKEN, account1)
         .call_method_with_all_resources(account2, "deposit_batch")

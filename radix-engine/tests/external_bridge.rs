@@ -1,6 +1,6 @@
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use scrypto::address::Bech32Encoder;
-use scrypto::core::Network;
+use scrypto::core::NetworkDefinition;
 use scrypto::{args, prelude::*};
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -24,7 +24,7 @@ fn test_external_bridges() {
         test_runner.extract_and_publish_package("external_blueprint_caller");
 
     // Part 2 - Get a target component address
-    let manifest1 = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest1 = ManifestBuilder::new(NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(
             target_package_address,
@@ -39,7 +39,7 @@ fn test_external_bridges() {
     let target_component_address = receipt1.new_component_addresses[0];
 
     // Part 3 - Get the caller component address
-    let manifest2 = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest2 = ManifestBuilder::new(NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(
             caller_package_address,
@@ -54,7 +54,7 @@ fn test_external_bridges() {
     let caller_component_address = receipt2.new_component_addresses[0];
 
     // ACT
-    let manifest3 = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest3 = ManifestBuilder::new(NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_method(
             caller_component_address,
@@ -68,7 +68,7 @@ fn test_external_bridges() {
     receipt3.expect_success();
 
     // ACT
-    let manifest4 = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest4 = ManifestBuilder::new(NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_method(
             caller_component_address,
@@ -91,7 +91,7 @@ fn fill_in_package_name_template(
     use std::io::{Read, Write};
     use std::path::Path;
 
-    let bech32_encoder = Bech32Encoder::new_from_network(&Network::LocalSimulator);
+    let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::local_simulator());
 
     let package_address_string = bech32_encoder
         .encode_package_address(&package_address)

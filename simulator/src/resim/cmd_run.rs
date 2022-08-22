@@ -1,6 +1,6 @@
 use clap::Parser;
 use regex::{Captures, Regex};
-use scrypto::core::Network;
+use scrypto::core::NetworkDefinition;
 use std::env;
 use std::path::PathBuf;
 
@@ -35,7 +35,7 @@ impl Run {
         let pre_processed_manifest = Self::pre_process_manifest(&manifest);
         let compiled_manifest = transaction::manifest::compile(
             &pre_processed_manifest,
-            &Network::LocalSimulator.get_definition(),
+            &NetworkDefinition::local_simulator(),
         )
         .map_err(Error::CompileError)?;
         handle_manifest(

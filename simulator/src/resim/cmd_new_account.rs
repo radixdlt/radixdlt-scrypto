@@ -24,7 +24,7 @@ impl NewAccount {
         let public_key = private_key.public_key();
         let auth_address = NonFungibleAddress::from_public_key(&public_key);
         let withdraw_auth = rule!(require(auth_address));
-        let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
             .lock_fee(100.into(), SYSTEM_COMPONENT)
             .call_method(SYSTEM_COMPONENT, "free_xrd", args!())
             .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
@@ -42,7 +42,7 @@ impl NewAccount {
             out,
         )?;
 
-        let bech32_encoder = Bech32Encoder::new_from_network(&Network::LocalSimulator);
+        let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::local_simulator());
 
         if let Some(receipt) = receipt {
             let account = receipt.new_component_addresses[0];

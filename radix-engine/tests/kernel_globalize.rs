@@ -1,6 +1,6 @@
 use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::TypedInMemorySubstateStore;
-use scrypto::core::Network;
+use scrypto::core::NetworkDefinition;
 use scrypto::engine::types::RENodeId;
 use scrypto::prelude::*;
 use scrypto_unit::*;
@@ -14,7 +14,7 @@ fn should_not_be_able_to_globalize_key_value_store() {
     let package_address = test_runner.extract_and_publish_package("kernel");
 
     // Act
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(package_address, "Globalize", "globalize_kv_store", args!())
         .build();
@@ -37,7 +37,7 @@ fn should_not_be_able_to_globalize_bucket() {
     let package_address = test_runner.extract_and_publish_package("kernel");
 
     // Act
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(package_address, "Globalize", "globalize_bucket", args!())
         .build();
@@ -60,7 +60,7 @@ fn should_not_be_able_to_globalize_proof() {
     let package_address = test_runner.extract_and_publish_package("kernel");
 
     // Act
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(package_address, "Globalize", "globalize_proof", args!())
         .build();
@@ -83,7 +83,7 @@ fn should_not_be_able_to_globalize_vault() {
     let package_address = test_runner.extract_and_publish_package("kernel");
 
     // Act
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(package_address, "Globalize", "globalize_vault", args!())
         .build();

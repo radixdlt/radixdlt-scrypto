@@ -1,4 +1,4 @@
-use scrypto::core::{Network, NetworkDefinition};
+use scrypto::core::NetworkDefinition;
 use transaction::model::*;
 
 use crate::constants::{DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN};
@@ -22,7 +22,7 @@ pub struct ExecutionConfig {
 
 impl Default for ExecutionConfig {
     fn default() -> Self {
-        ExecutionConfig::with_network(Network::LocalSimulator.get_definition())
+        ExecutionConfig::with_network(NetworkDefinition::local_simulator())
     }
 }
 
@@ -40,7 +40,7 @@ impl ExecutionConfig {
 
     pub fn debug() -> Self {
         Self {
-            network_definition: Network::LocalSimulator.get_definition(),
+            network_definition: NetworkDefinition::local_simulator(),
             cost_unit_price: DEFAULT_COST_UNIT_PRICE.parse().unwrap(),
             max_call_depth: DEFAULT_MAX_CALL_DEPTH,
             system_loan: DEFAULT_SYSTEM_LOAN,

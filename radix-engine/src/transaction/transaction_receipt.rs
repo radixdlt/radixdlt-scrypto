@@ -1,5 +1,5 @@
 use colored::*;
-use scrypto::prelude::NetworkDefinition;
+use scrypto::core::NetworkDefinition;
 use transaction::model::*;
 
 use crate::engine::{ResourceChange, RuntimeError};
@@ -82,7 +82,7 @@ macro_rules! prefix {
 
 impl fmt::Debug for TransactionReceipt {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let bech32_encoder = Bech32Encoder::new_from_network_definition(&self.transaction_network);
+        let bech32_encoder = Bech32Encoder::new(&self.transaction_network);
 
         write!(
             f,
