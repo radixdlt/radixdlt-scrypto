@@ -1,3 +1,5 @@
+use radix_engine::engine::ModuleError;
+use radix_engine::fee::FeeReserveError;
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::wasm::WasmInvokeError;
 use scrypto::args;
@@ -49,7 +51,10 @@ fn test_loop_out_of_cost_unit() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    assert_invoke_error!(receipt.status, WasmInvokeError::CostingError { .. })
+    assert_module_error!(
+        receipt.status,
+        ModuleError::CostingError(FeeReserveError::OutOfCostUnit)
+    )
 }
 
 #[test]
@@ -96,7 +101,7 @@ fn test_recursion_stack_overflow() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    assert_invoke_error!(receipt.status, WasmInvokeError::WasmError { .. })
+    assert_wasm_error!(receipt.status, WasmInvokeError::WasmError { .. })
 }
 
 #[test]
@@ -142,7 +147,10 @@ fn test_grow_memory_out_of_cost_unit() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    assert_invoke_error!(receipt.status, WasmInvokeError::CostingError { .. })
+    assert_module_error!(
+        receipt.status,
+        ModuleError::CostingError(FeeReserveError::OutOfCostUnit)
+    )
 }
 
 #[test]

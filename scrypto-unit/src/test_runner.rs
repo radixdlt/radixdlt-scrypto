@@ -516,7 +516,43 @@ pub fn is_auth_error(e: &RuntimeError) -> bool {
 }
 
 #[macro_export]
-macro_rules! assert_invoke_error {
+macro_rules! assert_kernel_error {
+    ($result:expr, $pattern:pat) => {{
+        let matches = match &$result {
+            radix_engine::transaction::TransactionStatus::Failed(
+                radix_engine::engine::RuntimeError::KernelError(e),
+            ) => {
+                matches!(e, $pattern)
+            }
+            _ => false,
+        };
+
+        if !matches {
+            panic!("Expected invoke error but got: {:?}", $result);
+        }
+    }};
+}
+
+#[macro_export]
+macro_rules! assert_module_error {
+    ($result:expr, $pattern:pat) => {{
+        let matches = match &$result {
+            radix_engine::transaction::TransactionStatus::Failed(
+                radix_engine::engine::RuntimeError::ModuleError(e),
+            ) => {
+                matches!(e, $pattern)
+            }
+            _ => false,
+        };
+
+        if !matches {
+            panic!("Expected ModuleError error but got: {:?}", $result);
+        }
+    }};
+}
+
+#[macro_export]
+macro_rules! assert_wasm_error {
     ($result:expr, $pattern:pat) => {{
         let matches = match &$result {
             radix_engine::transaction::TransactionStatus::Failed(
@@ -530,7 +566,25 @@ macro_rules! assert_invoke_error {
         };
 
         if !matches {
-            panic!("Expected invoke error but got: {:?}", $result);
+            panic!("Expected WasmInvokeError error but got: {:?}", $result);
+        }
+    }};
+}
+
+#[macro_export]
+macro_rules! assert_application_error {
+    ($result:expr, $pattern:pat) => {{
+        let matches = match &$result {
+            radix_engine::transaction::TransactionStatus::Failed(
+                radix_engine::engine::RuntimeError::ApplicationError(e),
+            ) => {
+                matches!(e, $pattern)
+            }
+            _ => false,
+        };
+
+        if !matches {
+            panic!("Expected ApplicationError error but got: {:?}", $result);
         }
     }};
 }
