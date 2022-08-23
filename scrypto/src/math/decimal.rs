@@ -1,17 +1,16 @@
 use core::ops::*;
 use num_traits::{Pow, ToPrimitive, Zero};
+use paste::paste;
 use sbor::rust::convert::{TryFrom, TryInto};
 use sbor::rust::fmt;
 use sbor::rust::iter;
 use sbor::rust::str::FromStr;
-use sbor::rust::string::String;
-use sbor::rust::string::ToString;
+use sbor::rust::string::{String, ToString};
 use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::abi::*;
 use crate::math::*;
-use paste::paste;
 
 /// `Decimal` represents a 256 bit representation of a fixed-scale decimal number.
 ///
