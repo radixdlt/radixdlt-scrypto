@@ -1,4 +1,3 @@
-use scrypto::core::NetworkDefinition;
 use transaction::model::*;
 
 use crate::constants::{DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN};
@@ -12,7 +11,6 @@ use crate::types::*;
 use crate::wasm::*;
 
 pub struct ExecutionConfig {
-    pub network_definition: NetworkDefinition,
     pub cost_unit_price: Decimal,
     pub max_call_depth: usize,
     pub system_loan: u32,
@@ -22,14 +20,13 @@ pub struct ExecutionConfig {
 
 impl Default for ExecutionConfig {
     fn default() -> Self {
-        ExecutionConfig::with_network(NetworkDefinition::local_simulator())
+        ExecutionConfig::standard()
     }
 }
 
 impl ExecutionConfig {
-    pub fn with_network(network_definition: NetworkDefinition) -> Self {
+    pub fn standard() -> Self {
         Self {
-            network_definition: network_definition,
             cost_unit_price: DEFAULT_COST_UNIT_PRICE.parse().unwrap(),
             max_call_depth: DEFAULT_MAX_CALL_DEPTH,
             system_loan: DEFAULT_SYSTEM_LOAN,
@@ -40,7 +37,6 @@ impl ExecutionConfig {
 
     pub fn debug() -> Self {
         Self {
-            network_definition: NetworkDefinition::local_simulator(),
             cost_unit_price: DEFAULT_COST_UNIT_PRICE.parse().unwrap(),
             max_call_depth: DEFAULT_MAX_CALL_DEPTH,
             system_loan: DEFAULT_SYSTEM_LOAN,
@@ -119,38 +115,20 @@ where
         let now = std::time::Instant::now();
 
         let transaction_hash = transaction.transaction_hash();
-        let transaction_network_id = transaction.transaction_network_id();
         let signer_public_keys = transaction.signer_public_keys().to_vec();
         let instructions = transaction.instructions().to_vec();
         #[cfg(not(feature = "alloc"))]
         if params.trace {
             println!("{:-^80}", "Transaction Metadata");
             println!("Transaction hash: {}", transaction_hash);
-            println!("Transaction network id: {}", transaction_network_id);
             println!("Transaction signers: {:?}", signer_public_keys);
 
             println!("{:-^80}", "Engine Execution Log");
         }
 
         let transaction_contents = TransactionContents {
-            network_id: transaction_network_id,
             instructions: instructions,
         };
-
-        // 0. Precondition checks
-        if params.network_definition.id != transaction.transaction_network_id() {
-            return Self::compose_receipt(
-                params,
-                transaction_contents,
-                None,
-                TransactionResult::Reject(RejectResult {
-                    error: RejectionError::MismatchedNetwork {
-                        transaction_network_id: transaction.transaction_network_id(),
-                        expected_network_id: params.network_definition.id,
-                    },
-                }),
-            );
-        }
 
         // 1. Start state track and execution trace
         let mut track = Track::new(self.substate_store);
@@ -247,7 +225,6 @@ where
             let execution_time = Some(now.elapsed().as_millis());
 
             let execution_result = TransactionExecution {
-                execution_network: params.network_definition.clone(),
                 execution_time,
                 fee_summary,
                 application_logs: track_receipt.application_logs,
@@ -329,7 +306,6 @@ where
         let execution_time = Some(now.elapsed().as_millis());
 
         let execution_result = TransactionExecution {
-            execution_network: params.network_definition.clone(),
             execution_time,
             fee_summary,
             application_logs: track_receipt.application_logs,

@@ -9,13 +9,11 @@ use crate::types::*;
 
 #[derive(Debug)]
 pub struct TransactionContents {
-    pub network_id: u8,
     pub instructions: Vec<ExecutableInstruction>,
 }
 
 #[derive(Debug)]
 pub struct TransactionExecution {
-    pub execution_network: NetworkDefinition,
     pub execution_time: Option<u128>,
     pub fee_summary: FeeSummary,
     pub application_logs: Vec<(Level, String)>,
@@ -248,11 +246,8 @@ impl fmt::Debug for TransactionReceipt {
                 .unwrap_or(String::from("?"))
         )?;
 
-        let bech32_encoder = Bech32Encoder::new(
-            &execution
-                .map(|e| &e.execution_network)
-                .unwrap_or(&NetworkDefinition::local_simulator()),
-        );
+        // TODO - Need to fix the hardcoding of local simulator HRPs for transaction receipts, and for address formatting
+        let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::local_simulator());
         let instructions = &self.contents.instructions;
 
         write!(f, "\n{}", "Instructions:".bold().green())?;

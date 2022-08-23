@@ -177,7 +177,6 @@ pub fn handle_manifest<O: std::io::Write>(
             let receipt = executor.execute_and_commit(
                 &transaction,
                 &ExecutionConfig {
-                    network_definition: NetworkDefinition::local_simulator(),
                     cost_unit_price: DEFAULT_COST_UNIT_PRICE.parse().unwrap(),
                     max_call_depth: DEFAULT_MAX_CALL_DEPTH,
                     system_loan: DEFAULT_SYSTEM_LOAN,

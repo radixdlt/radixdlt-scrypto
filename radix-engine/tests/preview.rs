@@ -23,10 +23,8 @@ fn test_transaction_preview_cost_estimate() {
     let preview_receipt = preview_result.unwrap().receipt;
     preview_receipt.expect_success();
 
-    let receipt = test_runner.execute_transaction(
-        &validated_transaction,
-        &ExecutionConfig::with_network(NetworkDefinition::local_simulator()),
-    );
+    let receipt =
+        test_runner.execute_transaction(&validated_transaction, &ExecutionConfig::default());
     receipt.expect_success();
 
     assert_eq!(
