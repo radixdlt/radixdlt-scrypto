@@ -14,7 +14,7 @@ fn cannot_withdraw_restricted_transfer_from_my_account_with_no_auth() {
     let (_, token_resource_address) = test_runner.create_restricted_transfer_token(account);
 
     // Act
-    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), account)
         .withdraw_from_account_by_amount(Decimal::one(), token_resource_address, account)
         .call_method_with_all_resources(other_account, "deposit_batch")
@@ -36,7 +36,7 @@ fn can_withdraw_restricted_transfer_from_my_account_with_auth() {
         test_runner.create_restricted_transfer_token(account);
 
     // Act
-    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), account)
         .withdraw_from_account_by_ids(
             &BTreeSet::from([NonFungibleId::from_u32(1)]),

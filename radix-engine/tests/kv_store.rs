@@ -12,7 +12,7 @@ fn can_insert_in_child_nodes() {
     let package_address = test_runner.extract_and_publish_package("kv_store");
 
     // Act
-    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(package_address, "SuperKeyValueStore", "new", args!())
         .build();
@@ -30,7 +30,7 @@ fn create_mutable_key_value_store_into_map_and_referencing_before_storing() {
     let package_address = test_runner.extract_and_publish_package("kv_store");
 
     // Act
-    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(
             package_address,
@@ -53,7 +53,7 @@ fn cyclic_map_fails_execution() {
     let package_address = test_runner.extract_and_publish_package("kv_store");
 
     // Act
-    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(package_address, "CyclicMap", "new", args!())
         .build();
@@ -76,7 +76,7 @@ fn self_cyclic_map_fails_execution() {
     let package_address = test_runner.extract_and_publish_package("kv_store");
 
     // Act
-    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(package_address, "CyclicMap", "new_self_cyclic", args!())
         .build();
@@ -97,7 +97,7 @@ fn cannot_remove_key_value_stores() {
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("kv_store");
-    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(
             package_address,
@@ -113,7 +113,7 @@ fn cannot_remove_key_value_stores() {
         .new_component_addresses[0];
 
     // Act
-    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_method(component_address, "clear_vector", args!())
         .build();
@@ -134,7 +134,7 @@ fn cannot_overwrite_key_value_stores() {
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("kv_store");
-    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(
             package_address,
@@ -150,7 +150,7 @@ fn cannot_overwrite_key_value_stores() {
         .new_component_addresses[0];
 
     // Act
-    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_method(component_address, "overwrite_key_value_store", args!())
         .build();
@@ -173,7 +173,7 @@ fn create_key_value_store_and_get() {
     let package_address = test_runner.extract_and_publish_package("kv_store");
 
     // Act
-    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(
             package_address,
@@ -196,7 +196,7 @@ fn create_key_value_store_and_put() {
     let package_address = test_runner.extract_and_publish_package("kv_store");
 
     // Act
-    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(
             package_address,
@@ -219,7 +219,7 @@ fn can_reference_in_memory_vault() {
     let package_address = test_runner.extract_and_publish_package("kv_store");
 
     // Act
-    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(
             package_address,
@@ -242,7 +242,7 @@ fn can_reference_deep_in_memory_value() {
     let package_address = test_runner.extract_and_publish_package("kv_store");
 
     // Act
-    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(
             package_address,
@@ -265,7 +265,7 @@ fn can_reference_deep_in_memory_vault() {
     let package_address = test_runner.extract_and_publish_package("kv_store");
 
     // Act
-    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(
             package_address,
@@ -288,7 +288,7 @@ fn cannot_directly_reference_inserted_vault() {
     let package_address = test_runner.extract_and_publish_package("kv_store");
 
     // Act
-    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(
             package_address,
@@ -316,7 +316,7 @@ fn cannot_directly_reference_vault_after_container_moved() {
     let package_address = test_runner.extract_and_publish_package("kv_store");
 
     // Act
-    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(
             package_address,
@@ -344,7 +344,7 @@ fn cannot_directly_reference_vault_after_container_stored() {
     let package_address = test_runner.extract_and_publish_package("kv_store");
 
     // Act
-    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(
             package_address,
@@ -372,7 +372,7 @@ fn multiple_reads_should_work() {
     let package_address = test_runner.extract_and_publish_package("kv_store");
 
     // Act
-    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(package_address, "MultipleReads", "multiple_reads", args!())
         .build();

@@ -54,7 +54,7 @@ fn test_call_method_with_all_resources_doesnt_drop_auth_zone_proofs() {
     let (public_key, _, account) = test_runner.new_account();
 
     // Act
-    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(dec!("10"), account)
         .create_proof_from_account(RADIX_TOKEN, account)
         .create_proof_from_auth_zone(RADIX_TOKEN, |builder, proof_id| {
@@ -85,7 +85,7 @@ fn test_transaction_can_end_with_proofs_remaining_in_auth_zone() {
     let (public_key, _, account) = test_runner.new_account();
 
     // Act
-    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(dec!("10"), account)
         .create_proof_from_account_by_amount(dec!("1"), RADIX_TOKEN, account)
         .create_proof_from_account_by_amount(dec!("1"), RADIX_TOKEN, account)
@@ -118,7 +118,7 @@ fn create_transaction() -> Vec<u8> {
             tip_percentage: 5,
         })
         .manifest(
-            ManifestBuilder::new(NetworkDefinition::local_simulator())
+            ManifestBuilder::new(&NetworkDefinition::local_simulator())
                 .lock_fee(10.into(), SYSTEM_COMPONENT)
                 .clear_auth_zone()
                 .build(),

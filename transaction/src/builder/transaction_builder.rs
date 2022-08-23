@@ -102,7 +102,7 @@ mod tests {
                 tip_percentage: 5,
             })
             .manifest(
-                ManifestBuilder::new(NetworkDefinition::local_simulator())
+                ManifestBuilder::new(&NetworkDefinition::local_simulator())
                     .clear_auth_zone()
                     .build(),
             )

@@ -13,7 +13,7 @@ fn create_non_fungible_mutable() {
     let package = test_runner.extract_and_publish_package("non_fungible");
 
     // Act
-    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(
             package,
@@ -36,7 +36,7 @@ fn can_burn_non_fungible() {
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account();
     let package = test_runner.extract_and_publish_package("non_fungible");
-    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(
             package,
@@ -58,7 +58,7 @@ fn can_burn_non_fungible() {
     ids.insert(NonFungibleId::from_u32(0));
 
     // Act
-    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .withdraw_from_account(resource_address, account)
         .burn_non_fungible(non_fungible_address.clone())
@@ -83,7 +83,7 @@ fn test_non_fungible() {
     let (public_key, _, account) = test_runner.new_account();
     let package_address = test_runner.extract_and_publish_package("non_fungible");
 
-    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(
             package_address,
@@ -140,7 +140,7 @@ fn test_singleton_non_fungible() {
     let (public_key, _, account) = test_runner.new_account();
     let package_address = test_runner.extract_and_publish_package("non_fungible");
 
-    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(
             package_address,

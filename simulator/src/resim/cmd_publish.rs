@@ -67,7 +67,7 @@ impl Publish {
             substate_store.put_substate(SubstateId::Package(package_address), output_value);
             writeln!(out, "Package updated!").map_err(Error::IOError)?;
         } else {
-            let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
+            let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
                 .lock_fee(100.into(), SYSTEM_COMPONENT)
                 .publish_package(package)
                 .build();
