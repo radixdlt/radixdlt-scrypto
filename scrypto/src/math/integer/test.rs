@@ -1,3 +1,5 @@
+use sbor::rust::format;
+
 use super::*;
 
 macro_rules! test_from_builtin {

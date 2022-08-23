@@ -21,7 +21,10 @@ use sbor::*;
 pub mod basic;
 pub mod bits;
 pub mod convert;
-pub use convert::*;
+#[cfg(test)]
+pub mod test;
+
+use convert::*;
 
 macro_rules! types {
 
