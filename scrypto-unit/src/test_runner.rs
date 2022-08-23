@@ -521,7 +521,7 @@ macro_rules! assert_invoke_error {
         let matches = match &$result {
             radix_engine::transaction::TransactionStatus::Failed(
                 radix_engine::engine::RuntimeError::KernelError(
-                    radix_engine::engine::KernelError::InvokeError(e),
+                    radix_engine::engine::KernelError::WasmInvokeError(e),
                 ),
             ) => {
                 matches!(e.as_ref(), $pattern)

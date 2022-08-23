@@ -84,7 +84,7 @@ impl WasmiModule {
 }
 
 impl<'a, 'b, 'r> WasmiExternals<'a, 'b, 'r> {
-    pub fn send_value(&mut self, value: &ScryptoValue) -> Result<RuntimeValue, InvokeError> {
+    pub fn send_value(&mut self, value: &ScryptoValue) -> Result<RuntimeValue, WasmInvokeError> {
         let result = self.instance.module_ref.clone().invoke_export(
             EXPORT_SCRYPTO_ALLOC,
             &[RuntimeValue::I32((value.raw.len()) as i32)],
@@ -102,28 +102,30 @@ impl<'a, 'b, 'r> WasmiExternals<'a, 'b, 'r> {
             }
         }
 
-        Err(InvokeError::MemoryAllocError)
+        Err(WasmInvokeError::MemoryAllocError)
     }
 
-    pub fn read_value(&self, ptr: usize) -> Result<ScryptoValue, InvokeError> {
+    pub fn read_value(&self, ptr: usize) -> Result<ScryptoValue, WasmInvokeError> {
         let len = self
             .instance
             .memory_ref
             .get_value::<u32>(ptr as u32)
-            .map_err(|_| InvokeError::MemoryAccessError)? as usize;
+            .map_err(|_| WasmInvokeError::MemoryAccessError)? as usize;
 
-        let start = ptr.checked_add(4).ok_or(InvokeError::MemoryAccessError)?;
+        let start = ptr
+            .checked_add(4)
+            .ok_or(WasmInvokeError::MemoryAccessError)?;
         let end = start
             .checked_add(len)
-            .ok_or(InvokeError::MemoryAccessError)?;
+            .ok_or(WasmInvokeError::MemoryAccessError)?;
 
         let direct = self.instance.memory_ref.direct_access();
         let buffer = direct.as_ref();
         if end > buffer.len() {
-            return Err(InvokeError::MemoryAccessError);
+            return Err(WasmInvokeError::MemoryAccessError);
         }
 
-        ScryptoValue::from_slice(&buffer[start..end]).map_err(InvokeError::InvalidScryptoValue)
+        ScryptoValue::from_slice(&buffer[start..end]).map_err(WasmInvokeError::InvalidScryptoValue)
     }
 }
 
@@ -149,7 +151,7 @@ impl<'a, 'b, 'r> Externals for WasmiExternals<'a, 'b, 'r> {
                     .map(|_| Option::None)
                     .map_err(|e| e.into())
             }
-            _ => Err(InvokeError::FunctionNotFound.into()),
+            _ => Err(WasmInvokeError::FunctionNotFound.into()),
         }
     }
 }
@@ -160,7 +162,7 @@ impl WasmInstance for WasmiInstance {
         func_name: &str,
         args: &ScryptoValue,
         runtime: &mut Box<dyn WasmRuntime + 'r>,
-    ) -> Result<ScryptoValue, InvokeError> {
+    ) -> Result<ScryptoValue, WasmInvokeError> {
         let mut externals = WasmiExternals {
             instance: self,
             runtime,
@@ -178,15 +180,15 @@ impl WasmInstance for WasmiInstance {
                 match e.into_host_error() {
                     // Pass-through invoke errors
                     Some(host_error) => *host_error
-                        .downcast::<InvokeError>()
-                        .expect("Failed to downcast error into InvokeError"),
-                    None => InvokeError::WasmError(e_str),
+                        .downcast::<WasmInvokeError>()
+                        .expect("Failed to downcast error into WasmInvokeError"),
+                    None => WasmInvokeError::WasmError(e_str),
                 }
             })?
-            .ok_or(InvokeError::MissingReturnData)?;
+            .ok_or(WasmInvokeError::MissingReturnData)?;
         match rtn {
             RuntimeValue::I32(ptr) => externals.read_value(ptr as usize),
-            _ => Err(InvokeError::InvalidReturnData),
+            _ => Err(WasmInvokeError::InvalidReturnData),
         }
     }
 }

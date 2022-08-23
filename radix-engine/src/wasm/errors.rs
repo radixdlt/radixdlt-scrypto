@@ -81,7 +81,7 @@ pub enum InvalidTable {
 
 /// Represents an error when invoking an export of a Scrypto module.
 #[derive(Debug)]
-pub enum InvokeError {
+pub enum WasmInvokeError {
     MemoryAllocError,
 
     MemoryAccessError,
@@ -103,13 +103,13 @@ pub enum InvokeError {
     CostingError(FeeReserveError),
 }
 
-impl fmt::Display for InvokeError {
+impl fmt::Display for WasmInvokeError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
     }
 }
 
-impl HostError for InvokeError {}
+impl HostError for WasmInvokeError {}
 
 #[cfg(not(feature = "alloc"))]
-impl std::error::Error for InvokeError {}
+impl std::error::Error for WasmInvokeError {}

@@ -78,8 +78,8 @@ fn large_return_len_should_cause_memory_access_error() {
 
     // Assert
     receipt.expect_failure(|e| {
-        if let RuntimeError::KernelError(KernelError::InvokeError(b)) = e {
-            matches!(**b, InvokeError::MemoryAccessError)
+        if let RuntimeError::KernelError(KernelError::WasmInvokeError(b)) = e {
+            matches!(**b, WasmInvokeError::MemoryAccessError)
         } else {
             false
         }
@@ -102,8 +102,8 @@ fn overflow_return_len_should_cause_memory_access_error() {
 
     // Assert
     receipt.expect_failure(|e| {
-        if let RuntimeError::KernelError(KernelError::InvokeError(b)) = e {
-            matches!(**b, InvokeError::MemoryAccessError)
+        if let RuntimeError::KernelError(KernelError::WasmInvokeError(b)) = e {
+            matches!(**b, WasmInvokeError::MemoryAccessError)
         } else {
             false
         }
@@ -126,7 +126,12 @@ fn zero_return_len_should_cause_data_validation_error() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| matches!(e, RuntimeError::KernelError(KernelError::InvokeError(_))));
+    receipt.expect_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::KernelError(KernelError::WasmInvokeError(_))
+        )
+    });
 }
 
 #[test]

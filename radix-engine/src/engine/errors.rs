@@ -4,7 +4,7 @@ use crate::engine::REActor;
 use crate::fee::FeeReserveError;
 use crate::model::*;
 use crate::types::*;
-use crate::wasm::InvokeError;
+use crate::wasm::WasmInvokeError;
 
 #[derive(Debug)]
 pub enum RuntimeError {
@@ -21,7 +21,7 @@ pub enum RuntimeError {
 #[derive(Debug)]
 pub enum KernelError {
     // invocation
-    InvokeError(Box<InvokeError>),
+    WasmInvokeError(Box<WasmInvokeError>),
     InvokeMethodInvalidReceiver(RENodeId),
     InvokeMethodInvalidReferencePass(RENodeId),
     InvokeMethodInvalidReferenceReturn(RENodeId),
