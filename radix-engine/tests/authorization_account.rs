@@ -19,7 +19,7 @@ fn test_auth_rule<'s, S: ReadableSubstateStore + WriteableSubstateStore>(
     let (_, _, other_account) = test_runner.new_account();
 
     // Act
-    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .withdraw_from_account(RADIX_TOKEN, account)
         .call_method_with_all_resources(other_account, "deposit_batch")
@@ -229,7 +229,7 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_no_signature() {
     let (_, _, other_account) = test_runner.new_account();
 
     // Act
-    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_method(SYSTEM_COMPONENT, "free_xrd", args!())
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
@@ -259,7 +259,7 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_right_amount_of_proof() {
     let (_, _, other_account) = test_runner.new_account();
 
     // Act
-    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_method(SYSTEM_COMPONENT, "free_xrd", args!())
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
@@ -289,7 +289,7 @@ fn cannot_withdraw_from_my_any_xrd_auth_account_with_less_than_amount_of_proof()
     let (_, _, other_account) = test_runner.new_account();
 
     // Act
-    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_method(SYSTEM_COMPONENT, "free_xrd", args!())
         .take_from_worktop_by_amount(Decimal::from("0.9"), RADIX_TOKEN, |builder, bucket_id| {

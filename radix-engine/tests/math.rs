@@ -13,7 +13,7 @@ fn test_integer_basic_ops() {
     let package_address = test_runner.extract_and_publish_package("math-ops-check");
 
     // Act
-    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function_with_abi(
             package_address,
@@ -40,7 +40,7 @@ fn test_native_and_safe_integer_interop() {
     let package_address = test_runner.extract_and_publish_package("math-ops-check");
 
     // Act
-    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(
             package_address,

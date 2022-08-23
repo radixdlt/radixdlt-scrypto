@@ -15,7 +15,7 @@ fn test_worktop_resource_leak() {
     let (public_key, _, account) = test_runner.new_account();
 
     // Act
-    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .withdraw_from_account(RADIX_TOKEN, account)
         .build();

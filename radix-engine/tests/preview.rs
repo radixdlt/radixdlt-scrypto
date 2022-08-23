@@ -55,7 +55,7 @@ fn prepare_test_tx_and_preview_intent(
             tip_percentage: 0,
         })
         .manifest(
-            ManifestBuilder::new(NetworkDefinition::local_simulator())
+            ManifestBuilder::new(&NetworkDefinition::local_simulator())
                 .lock_fee(10.into(), SYSTEM_COMPONENT)
                 .clear_auth_zone()
                 .build(),

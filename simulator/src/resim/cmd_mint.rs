@@ -35,7 +35,7 @@ impl Mint {
         let default_account = get_default_account()?;
         let proofs = self.proofs.clone().unwrap_or_default();
 
-        let mut manifest_builder = &mut ManifestBuilder::new(NetworkDefinition::local_simulator());
+        let mut manifest_builder = &mut ManifestBuilder::new(&NetworkDefinition::local_simulator());
         for resource_specifier in proofs {
             manifest_builder = manifest_builder
                 .create_proof_from_account_by_resource_specifier(

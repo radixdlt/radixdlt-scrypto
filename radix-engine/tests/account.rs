@@ -16,7 +16,7 @@ fn can_withdraw_from_my_account() {
     let (_, _, other_account) = test_runner.new_account();
 
     // Act
-    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), account)
         .withdraw_from_account(RADIX_TOKEN, account)
         .call_method_with_all_resources(other_account, "deposit_batch")
@@ -47,7 +47,7 @@ fn can_withdraw_non_fungible_from_my_account() {
     let resource_address = test_runner.create_non_fungible_resource(account);
 
     // Act
-    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), account)
         .withdraw_from_account(resource_address, account)
         .call_method_with_all_resources(other_account, "deposit_batch")
@@ -65,7 +65,7 @@ fn cannot_withdraw_from_other_account() {
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account();
     let (_, _, other_account) = test_runner.new_account();
-    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), account)
         .withdraw_from_account(RADIX_TOKEN, other_account)
         .call_method_with_all_resources(account, "deposit_batch")
@@ -84,7 +84,7 @@ fn account_to_bucket_to_account() {
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account();
-    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), account)
         .withdraw_from_account(RADIX_TOKEN, account)
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
@@ -113,7 +113,7 @@ fn test_account_balance() {
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account1) = test_runner.new_account();
     let (_, _, account2) = test_runner.new_account();
-    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), account1)
         .call_method(account2, "balance", args!(RADIX_TOKEN))
         .build();

@@ -29,7 +29,7 @@ fn test_say_hello() {
     let public_key = private_key.public_key();
 
     // Publish package
-    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .publish_package(extract_package(include_package!("no_std").to_vec()).unwrap())
         .build();
@@ -43,7 +43,7 @@ fn test_say_hello() {
         .new_package_addresses[0];
 
     // Test the `say_hello` function.
-    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(package_address, "NoStd", "say_hello", args!())
         .build();

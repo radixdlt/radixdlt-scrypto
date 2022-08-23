@@ -13,7 +13,7 @@ fn local_component_should_return_correct_info() {
     let package_address = test_runner.extract_and_publish_package("local_component");
 
     // Act
-    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(
             package_address,
@@ -36,7 +36,7 @@ fn local_component_should_be_callable_read_only() {
     let package_address = test_runner.extract_and_publish_package("local_component");
 
     // Act
-    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(package_address, "Secret", "read_local_component", args!())
         .build();
@@ -54,7 +54,7 @@ fn local_component_should_be_callable_with_write() {
     let package_address = test_runner.extract_and_publish_package("local_component");
 
     // Act
-    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(package_address, "Secret", "write_local_component", args!())
         .build();
@@ -76,7 +76,7 @@ fn local_component_with_access_rules_should_not_be_callable() {
     let auth_address = NonFungibleAddress::new(auth_resource_address, auth_id);
 
     // Act
-    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_function(
             package_address,
@@ -108,7 +108,7 @@ fn local_component_with_access_rules_should_be_callable() {
     let auth_address = NonFungibleAddress::new(auth_resource_address, auth_id.clone());
 
     // Act
-    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .call_method(
             account,
@@ -138,7 +138,7 @@ fn recursion_bomb() {
 
     // Act
     // Note: currently SEGFAULT occurs if bucket with too much in it is sent. My guess the issue is a native stack overflow.
-    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .withdraw_from_account_by_amount(Decimal::from(10), RADIX_TOKEN, account)
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
@@ -166,7 +166,7 @@ fn recursion_bomb_to_failure() {
     let package_address = test_runner.extract_and_publish_package("local_recursion");
 
     // Act
-    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .withdraw_from_account_by_amount(Decimal::from(100), RADIX_TOKEN, account)
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
@@ -200,7 +200,7 @@ fn recursion_bomb_2() {
 
     // Act
     // Note: currently SEGFAULT occurs if bucket with too much in it is sent. My guess the issue is a native stack overflow.
-    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .withdraw_from_account_by_amount(Decimal::from(10), RADIX_TOKEN, account)
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
@@ -228,7 +228,7 @@ fn recursion_bomb_2_to_failure() {
     let package_address = test_runner.extract_and_publish_package("local_recursion");
 
     // Act
-    let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
         .withdraw_from_account_by_amount(Decimal::from(100), RADIX_TOKEN, account)
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {

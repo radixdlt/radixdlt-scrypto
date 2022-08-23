@@ -42,9 +42,9 @@ pub struct ManifestBuilder {
 
 impl ManifestBuilder {
     /// Starts a new transaction builder.
-    pub fn new(network: NetworkDefinition) -> Self {
+    pub fn new(network: &NetworkDefinition) -> Self {
         Self {
-            decoder: Bech32Decoder::new(&network),
+            decoder: Bech32Decoder::new(network),
             id_validator: IdValidator::new(),
             instructions: Vec::new(),
         }

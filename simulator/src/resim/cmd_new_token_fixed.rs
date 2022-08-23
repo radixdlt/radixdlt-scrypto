@@ -63,7 +63,7 @@ impl NewTokenFixed {
             metadata.insert("icon_url".to_string(), icon_url);
         };
 
-        let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
+        let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
             .lock_fee(100.into(), SYSTEM_COMPONENT)
             .new_token_fixed(metadata, self.total_supply)
             .call_method_with_all_resources(default_account, "deposit_batch")
