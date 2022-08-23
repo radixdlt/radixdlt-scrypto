@@ -82,10 +82,12 @@ pub enum ScryptoType {
     NonFungibleId,
     NonFungibleAddress,
     ResourceAddress,
+
+    Expression,
 }
 
 // Need to update `scrypto-derive/src/import.rs` after changing the table below
-const MAPPING: [(ScryptoType, u8, &str); 17] = [
+const MAPPING: [(ScryptoType, u8, &str); 18] = [
     (ScryptoType::PackageAddress, 0x80, "PackageAddress"), // 128
     (ScryptoType::ComponentAddress, 0x81, "ComponentAddress"), // 129
     (ScryptoType::Component, 0x82, "ComponentAddress"),    // 130
@@ -103,6 +105,7 @@ const MAPPING: [(ScryptoType, u8, &str); 17] = [
     (ScryptoType::NonFungibleId, 0xb4, "NonFungibleId"),   // 180
     (ScryptoType::NonFungibleAddress, 0xb5, "NonFungibleAddress"), // 181
     (ScryptoType::ResourceAddress, 0xb6, "ResourceAddress"), // 182
+    (ScryptoType::Expression, 0xc1, "Expression"),         // 193
 ];
 
 impl ScryptoType {

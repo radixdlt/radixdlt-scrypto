@@ -71,6 +71,51 @@ impl TransactionProcessor {
         Ok(value)
     }
 
+    fn process_expressions<'s, Y, W, I, R>(
+        args: ScryptoValue,
+        system_api: &mut Y,
+    ) -> Result<ScryptoValue, TransactionProcessorError>
+    where
+        Y: SystemApi<'s, W, I, R>,
+        W: WasmEngine<I>,
+        I: WasmInstance,
+        R: FeeReserve,
+    {
+        let mut value = args.dom;
+        for (expression, path) in args.expressions {
+            match expression.0.as_str() {
+                "ALL_WORKTOP_RESOURCES" => {
+                    let buckets = system_api
+                        .invoke_method(
+                            Receiver::Ref(RENodeId::Worktop),
+                            FnIdentifier::Native(NativeFnIdentifier::Worktop(
+                                WorktopFnIdentifier::Drain,
+                            )),
+                            ScryptoValue::from_typed(&WorktopDrainInput {}),
+                        )
+                        .map_err(|e| TransactionProcessorError::RuntimeError(Box::new(e)))
+                        .map(|result| {
+                            let mut buckets = Vec::new();
+                            for (bucket_id, _) in result.bucket_ids {
+                                buckets.push(scrypto::resource::Bucket(bucket_id));
+                            }
+                            buckets
+                        })?;
+
+                    let val = path
+                        .get_from_value_mut(&mut value)
+                        .expect("Failed to locate a expression using SBOR path");
+                    *val =
+                        decode_any(&scrypto_encode(&buckets)).expect("Failed to decode Vec<Bucket>")
+                }
+                _ => {} // no-op
+            }
+        }
+
+        Ok(ScryptoValue::from_value(value)
+            .expect("Value became invalid post expression transformation"))
+    }
+
     fn first_bucket(value: &ScryptoValue) -> BucketId {
         *value
             .bucket_ids
@@ -500,6 +545,7 @@ impl TransactionProcessor {
                                 ScryptoValue::from_slice(args)
                                     .expect("Invalid CALL_FUNCTION arguments"),
                             )
+                            .and_then(|call_data| Self::process_expressions(call_data, system_api))
                             .and_then(|call_data| {
                                 system_api
                                     .invoke_function(

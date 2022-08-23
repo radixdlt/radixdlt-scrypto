@@ -1,5 +1,6 @@
 mod actor;
 mod data;
+mod expression;
 mod invocation;
 mod level;
 mod logger;
@@ -8,6 +9,7 @@ mod runtime;
 
 pub use actor::ScryptoActor;
 pub use data::*;
+pub use expression::*;
 pub use invocation::*;
 pub use level::Level;
 pub use logger::Logger;
