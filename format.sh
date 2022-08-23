@@ -18,22 +18,20 @@ cd "$(dirname "$0")"
 (cd simulator; cargo fmt)
 (cd transaction; cargo fmt)
 
-(cd assets/account; scrypto fmt)
-(cd assets/system; scrypto fmt)
+scrypto="cargo run --manifest-path $PWD/simulator/Cargo.toml --bin scrypto $@ --"
 
-# The below bash does the following:
-# - Find all Cargo.toml files within 2 subdirectories (identifying crates)
-# - Remove Cargo.toml suffix
-# - Run scrypto fmt at that path
+(cd assets/account; $scrypto fmt)
+(cd assets/system; $scrypto fmt)
+
 (cd examples;
     find . -maxdepth 2 -type f \( -name Cargo.toml \) -print \
     | awk '{print substr($1, 1, length($1)-length("Cargo.toml"))}' \
-    | xargs -n1 -I '{}' scrypto fmt --path {}
+    | xargs -n1 -I '{}' $scrypto fmt --path {}
 )
 (cd radix-engine/tests;
     find . -maxdepth 2 -type f \( -name Cargo.toml \) -print \
     | awk '{print substr($1, 1, length($1)-length("Cargo.toml"))}' \
-    | xargs -n1 -I '{}' scrypto fmt --path {}
+    | xargs -n1 -I '{}' $scrypto fmt --path {}
 )
 
 echo "All packages have been formatted."
