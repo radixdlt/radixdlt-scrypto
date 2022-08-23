@@ -38,6 +38,8 @@ fn test_say_hello() {
             &TestTransaction::new(manifest, 1, vec![public_key]),
             &ExecutionConfig::debug(),
         )
+        .expect_commit()
+        .entity_changes
         .new_package_addresses[0];
 
     // Test the `say_hello` function.

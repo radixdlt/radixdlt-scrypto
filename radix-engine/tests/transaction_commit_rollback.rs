@@ -23,8 +23,11 @@ fn test_state_track_success() {
 
     // Assert
     receipt.expect_success();
-    assert_eq!(10, receipt.state_updates.down_substates.len());
-    assert_eq!(10, receipt.state_updates.up_substates.len());
+    assert_eq!(
+        10,
+        receipt.expect_commit().state_updates.down_substates.len()
+    );
+    assert_eq!(10, receipt.expect_commit().state_updates.up_substates.len());
 }
 
 #[test]
@@ -51,6 +54,9 @@ fn test_state_track_failure() {
             RuntimeError::ApplicationError(ApplicationError::WorktopError(_))
         )
     });
-    assert_eq!(1, receipt.state_updates.down_substates.len()); // only the vault is down
-    assert_eq!(1, receipt.state_updates.up_substates.len());
+    assert_eq!(
+        1,
+        receipt.expect_commit().state_updates.down_substates.len()
+    ); // only the vault is down
+    assert_eq!(1, receipt.expect_commit().state_updates.up_substates.len());
 }

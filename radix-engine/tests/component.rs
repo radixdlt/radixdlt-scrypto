@@ -23,7 +23,10 @@ fn test_component() {
     receipt1.expect_success();
 
     // Find the component address from receipt
-    let component = receipt1.new_component_addresses[0];
+    let component = receipt1
+        .expect_commit()
+        .entity_changes
+        .new_component_addresses[0];
 
     // Call functions & methods
     let manifest2 = ManifestBuilder::new(NetworkDefinition::local_simulator())
@@ -83,7 +86,10 @@ fn reentrancy_should_not_be_possible() {
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_success();
-    let component_address = receipt.new_component_addresses[0];
+    let component_address = receipt
+        .expect_commit()
+        .entity_changes
+        .new_component_addresses[0];
 
     // Act
     let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())

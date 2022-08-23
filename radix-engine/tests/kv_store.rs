@@ -107,7 +107,10 @@ fn cannot_remove_key_value_stores() {
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    let component_address = receipt.new_component_addresses[0];
+    let component_address = receipt
+        .expect_commit()
+        .entity_changes
+        .new_component_addresses[0];
 
     // Act
     let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
@@ -141,7 +144,10 @@ fn cannot_overwrite_key_value_stores() {
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    let component_address = receipt.new_component_addresses[0];
+    let component_address = receipt
+        .expect_commit()
+        .entity_changes
+        .new_component_addresses[0];
 
     // Act
     let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())

@@ -28,7 +28,10 @@ fn cannot_make_cross_component_call_without_authorization() {
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_success();
-    let secured_component = receipt.new_component_addresses[0];
+    let secured_component = receipt
+        .expect_commit()
+        .entity_changes
+        .new_component_addresses[0];
 
     let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
@@ -41,7 +44,10 @@ fn cannot_make_cross_component_call_without_authorization() {
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_success();
-    let my_component = receipt.new_component_addresses[0];
+    let my_component = receipt
+        .expect_commit()
+        .entity_changes
+        .new_component_addresses[0];
 
     // Act
     let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
@@ -82,7 +88,10 @@ fn can_make_cross_component_call_with_authorization() {
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_success();
-    let secured_component = receipt.new_component_addresses[0];
+    let secured_component = receipt
+        .expect_commit()
+        .entity_changes
+        .new_component_addresses[0];
 
     let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)
@@ -95,7 +104,10 @@ fn can_make_cross_component_call_with_authorization() {
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_success();
-    let my_component = receipt.new_component_addresses[0];
+    let my_component = receipt
+        .expect_commit()
+        .entity_changes
+        .new_component_addresses[0];
 
     let manifest = ManifestBuilder::new(NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYSTEM_COMPONENT)

@@ -51,8 +51,9 @@ use radix_engine::constants::*;
 use radix_engine::model::*;
 use radix_engine::transaction::ExecutionConfig;
 use radix_engine::transaction::TransactionExecutor;
+use radix_engine::transaction::TransactionOutcome;
 use radix_engine::transaction::TransactionReceipt;
-use radix_engine::transaction::TransactionStatus;
+use radix_engine::transaction::TransactionResult;
 use radix_engine::wasm::*;
 use radix_engine_stores::rocks_db::RadixEngineDB;
 use scrypto::abi;
@@ -176,7 +177,6 @@ pub fn handle_manifest<O: std::io::Write>(
             let receipt = executor.execute_and_commit(
                 &transaction,
                 &ExecutionConfig {
-                    network_definition: NetworkDefinition::local_simulator(),
                     cost_unit_price: DEFAULT_COST_UNIT_PRICE.parse().unwrap(),
                     max_call_depth: DEFAULT_MAX_CALL_DEPTH,
                     system_loan: DEFAULT_SYSTEM_LOAN,
@@ -189,15 +189,25 @@ pub fn handle_manifest<O: std::io::Write>(
                 writeln!(out, "{:?}", receipt).map_err(Error::IOError)?;
             }
 
-            match receipt.status {
-                TransactionStatus::Failed(error) => Err(Error::TransactionExecutionError(error)),
-                TransactionStatus::Succeeded(_) => {
-                    let mut configs = get_configs()?;
-                    configs.nonce = nonce + 1;
-                    set_configs(&configs)?;
-                    Ok(Some(receipt))
+            if receipt.result.is_success() {
+                let mut configs = get_configs()?;
+                configs.nonce = nonce + 1;
+                set_configs(&configs)?;
+                return Ok(Some(receipt));
+            }
+
+            match receipt.result {
+                TransactionResult::Commit(commit) => match commit.outcome {
+                    TransactionOutcome::Failure(error) => {
+                        Err(Error::TransactionExecutionError(error))
+                    }
+                    TransactionOutcome::Success(..) => {
+                        panic!("Success case handled above to appease borrowing rules")
+                    }
+                },
+                TransactionResult::Reject(rejection) => {
+                    Err(Error::TransactionRejected(rejection.error))
                 }
-                TransactionStatus::Rejected => Err(Error::TransactionRejected),
             }
         }
     }

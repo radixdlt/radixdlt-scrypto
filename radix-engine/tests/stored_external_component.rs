@@ -35,8 +35,14 @@ fn stored_component_addresses_are_invokable() {
         .build();
     let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
     receipt1.expect_success();
-    let component0 = receipt1.new_component_addresses[0];
-    let component1 = receipt1.new_component_addresses[1];
+    let component0 = receipt1
+        .expect_commit()
+        .entity_changes
+        .new_component_addresses[0];
+    let component1 = receipt1
+        .expect_commit()
+        .entity_changes
+        .new_component_addresses[1];
 
     // Act
     let manifest2 = ManifestBuilder::new(NetworkDefinition::local_simulator())

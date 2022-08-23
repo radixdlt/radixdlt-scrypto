@@ -38,7 +38,7 @@ pub enum Error {
 
     TransactionExecutionError(RuntimeError),
 
-    TransactionRejected,
+    TransactionRejected(RejectionError),
 
     AbiExportError(RuntimeError),
 

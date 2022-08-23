@@ -47,10 +47,6 @@ impl ExecutableTransaction for ValidatedPreviewTransaction {
         self.transaction_hash
     }
 
-    fn transaction_network_id(&self) -> u8 {
-        self.preview_intent.intent.header.network_id
-    }
-
     fn transaction_payload_size(&self) -> u32 {
         // TODO: update the estimation after transaction specs are finalized
 

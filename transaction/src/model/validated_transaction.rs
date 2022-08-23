@@ -18,10 +18,6 @@ impl ExecutableTransaction for ValidatedTransaction {
         self.transaction_hash
     }
 
-    fn transaction_network_id(&self) -> u8 {
-        self.transaction.signed_intent.intent.header.network_id
-    }
-
     fn transaction_payload_size(&self) -> u32 {
         self.transaction.to_bytes().len() as u32
     }
