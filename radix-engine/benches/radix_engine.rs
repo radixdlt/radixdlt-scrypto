@@ -41,12 +41,16 @@ fn bench_transfer(c: &mut Criterion) {
             &TestTransaction::new(manifest.clone(), 1, vec![public_key]),
             &ExecutionConfig::default(),
         )
+        .expect_commit()
+        .entity_changes
         .new_component_addresses[0];
     let account2 = executor
         .execute_and_commit(
             &TestTransaction::new(manifest, 2, vec![public_key]),
             &ExecutionConfig::default(),
         )
+        .expect_commit()
+        .entity_changes
         .new_component_addresses[0];
 
     // Create a transfer manifest
