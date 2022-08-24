@@ -1,5 +1,3 @@
-use sbor::rust::format;
-
 use super::*;
 
 macro_rules! test_from_builtin {
@@ -14,6 +12,41 @@ macro_rules! test_from_builtin {
             )*
         }
     };
+}
+#[cfg(test)]
+macro_rules! from_builtin {
+        ($a:expr, $i:ty, ($($t:ident),*)) => {
+            paste!{
+                $(
+                    $a = <$i>::[<from_$t>]( 8 as $t ).unwrap();
+                    assert_eq!($a.to_string(), "8");
+                )*
+            }
+        }
+}
+
+#[cfg(test)]
+macro_rules! try_from_safe {
+        ($a:expr, $i:ty, ($($t:ident),*)) => {
+            paste!{
+                $(
+                    $a = <$i>::try_from(<$t>::try_from(19u8).unwrap()).unwrap();
+                    assert_eq!($a.to_string(), "19");
+                )*
+            }
+        }
+}
+
+#[cfg(test)]
+macro_rules! to_builtin {
+        ($a:expr, $i:ty, ($($t:ident),*)) => {
+            paste!{
+                $(
+                    let builtin: $t = $a.[<to_$t>]().unwrap();
+                    assert_eq!(builtin.to_string(), "11");
+                )*
+            }
+        }
 }
 
 macro_rules! test_impl {
@@ -53,25 +86,25 @@ macro_rules! test_impl {
                 #[test]
                 #[should_panic]
                 fn  [<test_shl_overflow_$i:lower>]() {
-                    let _ = <$i>::MAX << (<$i>::BITS + 1);  // panics because of overflow
+                    let _ = <$i>::MAX << (<$i>::try_from(<$i>::BITS).unwrap() + <$i>::one());  // panics because of overflow
                 }
 
                 #[test]
                 #[should_panic]
                 fn  [<test_shr_overflow_$i:lower>]() {
-                    let _ = <$i>::MAX >> (<$i>::BITS + 1);  // panics because of overflow
+                    let _ = <$i>::MAX >> (<$i>::try_from(<$i>::BITS).unwrap() + <$i>::one());  // panics because of overflow
                 }
 
                 #[test]
                 #[should_panic]
                 fn  [<test_shl_overflow_neg_$i:lower>]() {
-                    let _ = <$i>::MIN << (<$i>::BITS + 1);  // panics because of overflow
+                    let _ = <$i>::MIN << (<$i>::try_from(<$i>::BITS).unwrap() + <$i>::one());  // panics because of overflow
                 }
 
                 #[test]
                 #[should_panic]
                 fn  [<test_shr_overflow_neg_$i:lower>]() {
-                    let _ = <$i>::MIN >> (<$i>::BITS + 1);  // panics because of overflow
+                    let _ = <$i>::MIN >> (<$i>::try_from(<$i>::BITS).unwrap() + <$i>::one());  // panics because of overflow
                 }
 
                 #[test]
@@ -184,178 +217,6 @@ macro_rules! test_impl {
     )*)
 }
 test_impl! { I8, I16, I32, I64, I128, I256, I384, I512, U8, U16, U32, U64, U128, U256, U384, U512 }
-
-macro_rules! test_ops_output_type_builtin {
-    ($i:literal, $i_bits:literal, $ops:ident, ($($t:literal, $t_bits:literal),*)) => {
-        paste! {
-            $(
-                //#[cfg(type_name_of_val_enable)]
-                #[test]
-                fn [<test_ $ops _output_type_ $i:lower $i_bits _ $t:lower $t_bits>]() {
-                    test_ops_output_type_fn!($i, $i_bits, $ops, $t, $t_bits);
-                }
-            )*
-        }
-    };
-}
-
-macro_rules! test_ops_output_type {
-    ($i:literal, $i_bits:literal, $ops:ident, ($($t:literal, $t_bits:literal),*)) => {
-        paste! {
-            $(
-                //#[cfg(type_name_of_val_enable)]
-                #[test]
-                fn [<test_ $ops _output_type_ $i:lower $i_bits _ $t:lower$t:lower $t_bits>]() {
-                    test_ops_output_type_fn!($i, $i_bits, $ops, $t, $t_bits);
-                }
-            )*
-        }
-    };
-}
-
-macro_rules! test_ops_output_type_fn {
-    ($i:literal, $i_bits:literal, $ops:ident, $t:literal, $t_bits:literal) => {
-        paste! {
-                {
-                    let my_bits: usize = $i_bits;
-                    let other_bits: usize = $t_bits;
-                    let out_bits: usize = my_bits.max(other_bits);
-                    let out_type_name = if $i == 'I' || $t == 'I' || $t == 'i' {
-                        'I'
-                    } else {
-                        'U'
-                    };
-                    let a: [<$i $i_bits>] = [<$i $i_bits>]::from_str("2").unwrap();
-                    let b: [<$t $t_bits>] = [<$t $t_bits>]::from_str("1").unwrap();
-                    assert_eq!(a.$ops(b).type_name(), format!("{}{}", out_type_name, out_bits));
-                }
-        }
-    };
-}
-
-macro_rules! test_otput_type_unsigned {
-    ($i:literal, $ops:ident, ($($i_bits:literal),*)) => {
-        $(
-
-            test_ops_output_type!{ $i, $i_bits, $ops, ('U', 8, 'U', 16, 'U', 32, 'U', 64, 'U', 128, 'U', 256, 'U', 384, 'U', 512) }
-            test_ops_output_type_builtin!{ $i, $i_bits, $ops, ('u', 8, 'u', 16, 'u', 32, 'u', 64, 'u', 128) }
-        )*
-    };
-}
-
-macro_rules! test_otput_type_signed {
-    ($i:literal, $ops:ident, ($($i_bits:literal),*)) => {
-        $(
-
-            test_ops_output_type!{ $i, $i_bits, $ops, ('I', 8, 'I', 16, 'I', 32, 'I', 64, 'I', 128, 'I', 256, 'I', 384, 'I', 512) }
-            test_ops_output_type_builtin!{ $i, $i_bits, $ops, ('i', 8, 'i', 16, 'i', 32, 'i', 64, 'i', 128) }
-        )*
-    };
-}
-
-macro_rules! test_otput_type_all {
-    ($($ops:ident),*) => {
-        $(
-            test_otput_type_signed! { 'I', $ops, (8, 16, 32, 64, 128, 256, 384, 512) }
-            test_otput_type_unsigned! { 'U', $ops, (8, 16, 32, 64, 128, 256, 384, 512) }
-        )*
-    };
-}
-
-test_otput_type_all! { add, sub, mul, div, rem }
-
-macro_rules! test_ops_output_type_builtin_simple {
-    ($i:literal, $i_bits:literal, $ops:ident, ($($t:literal, $t_bits:literal),*)) => {
-        paste! {
-            $(
-                //#[cfg(type_name_of_val_enable)]
-                #[test]
-                fn [<test_simple_ $ops _output_type_ $i:lower $i_bits _ $t:lower $t_bits>]() {
-                    test_ops_output_type_simple_fn!($i, $i_bits, $ops, $t, $t_bits);
-                }
-            )*
-        }
-    };
-}
-
-macro_rules! test_ops_output_type_simple {
-    ($i:literal, $i_bits:literal, $ops:ident, ($($t:literal, $t_bits:literal),*)) => {
-        paste! {
-            $(
-                //#[cfg(type_name_of_val_enable)]
-                #[test]
-                fn [<test_simple_ $ops _output_type_ $i:lower $i_bits _ $t:lower$t:lower $t_bits>]() {
-                    test_ops_output_type_simple_fn!($i, $i_bits, $ops, $t, $t_bits);
-                }
-
-            )*
-        }
-    };
-}
-
-macro_rules! test_ops_output_type_simple_fn {
-    ($i:literal, $i_bits:literal, $ops:ident, $t:literal, $t_bits:literal) => {
-        paste! {
-            let a: [<$i $i_bits>] = [<$i $i_bits>]::from_str("2").unwrap();
-            let b: u32 = 1;
-            assert_eq!(a.$ops(b).type_name(), format!("{}{}", $i, $i_bits));
-        }
-    };
-}
-
-macro_rules! test_otput_type_simple {
-    ($i:literal, $ops:ident, ($($i_bits:literal),*)) => {
-        $(
-
-            test_ops_output_type_simple!{ $i, $i_bits, $ops, ('I', 8, 'I', 16, 'I', 32, 'I', 64, 'I', 128, 'I', 256, 'I', 384, 'I', 512, 'U', 8, 'U', 16, 'U', 32, 'U', 64, 'U', 128, 'U', 256, 'U', 384, 'U', 512) }
-            test_ops_output_type_builtin_simple!{ $i, $i_bits, $ops, ('i', 8, 'i', 16, 'i', 32, 'i', 64, 'i', 128, 'u', 8, 'u', 16, 'u', 32, 'u', 64, 'u', 128) }
-        )*
-    };
-}
-
-macro_rules! test_otput_type_all_simple {
-    ($($ops:ident),*) => {
-        $(
-            test_otput_type_simple! { 'I', $ops, (8, 16, 32, 64, 128, 256, 384, 512) }
-            test_otput_type_simple! { 'U', $ops, (8, 16, 32, 64, 128, 256, 384, 512) }
-        )*
-    };
-}
-
-test_otput_type_all_simple! { pow }
-
-macro_rules! from_builtin {
-        ($a:expr, $i:ty, ($($t:ident),*)) => {
-            paste!{
-                $(
-                    $a = <$i>::[<from_$t>]( 8 as $t ).unwrap();
-                    assert_eq!($a.to_string(), "8");
-                )*
-            }
-        }
-}
-
-macro_rules! try_from_safe {
-        ($a:expr, $i:ty, ($($t:ident),*)) => {
-            paste!{
-                $(
-                    $a = <$i>::try_from(<$t>::try_from(19u8).unwrap()).unwrap();
-                    assert_eq!($a.to_string(), "19");
-                )*
-            }
-        }
-}
-
-macro_rules! to_builtin {
-        ($a:expr, $i:ty, ($($t:ident),*)) => {
-            paste!{
-                $(
-                    let builtin: $t = $a.[<to_$t>]().unwrap();
-                    assert_eq!(builtin.to_string(), "11");
-                )*
-            }
-        }
-}
 
 macro_rules! test_math {
     ($i:ident, $t:ident) => {
@@ -600,7 +461,7 @@ macro_rules! test_math {
                     } else {
                         a = BigInt::from_signed_bytes_le(&bytes).try_into().unwrap();
                     }
-                    a <<= i;
+                    a <<= i.try_into().unwrap();
                     assert_eq!(a.trailing_zeros(), i as u32);
                 }
             }
@@ -668,7 +529,7 @@ macro_rules! test_math {
                     } else {
                         a = BigInt::from_signed_bytes_le(&bytes).try_into().unwrap();
                     }
-                    a >>= i;
+                    a >>= i.try_into().unwrap();
                     assert_eq!(a.leading_zeros(), i as u32 + 1);
                 }
             }
@@ -761,8 +622,8 @@ macro_rules! test_math {
                         a = BigInt::from_signed_bytes_le(&bytes).try_into().unwrap();
                     }
                     b = a;
-                    a >>= i;
-                    a <<= i;
+                    a >>= i.try_into().unwrap();
+                    a <<= i.try_into().unwrap();
                     shift = <$i>::try_from(2).unwrap().pow(i as u32);
                     assert_eq!(a, b / shift * shift);
                 }
@@ -787,7 +648,7 @@ macro_rules! test_math {
                     }
                     expect = a.into();
                     expect <<= i;
-                    a <<= i;
+                    a <<= i.try_into().unwrap();
                     let mut expect_bytes = expect.to_signed_bytes_le();
                     expect_bytes.resize((<$i>::BITS / 8) as usize, 0);
                     assert_eq!(a, <$i>::from_le_bytes(expect_bytes.as_slice().try_into().unwrap()));
@@ -812,7 +673,7 @@ macro_rules! test_math {
                     }
                     expect = a.into();
                     expect >>= i;
-                    a >>= i;
+                    a >>= i.try_into().unwrap();
                     assert_eq!(a, expect.try_into().unwrap());
                 }
             }

@@ -21,7 +21,6 @@ use sbor::*;
 pub mod basic;
 pub mod bits;
 pub mod convert;
-#[cfg(test)]
 pub mod test;
 
 use convert::*;
@@ -443,265 +442,172 @@ macro_rules! forward_ref_op_assign {
 }
 
 macro_rules! op_impl {
-        ($(($t:ty, $o:ty, $out:ty)),*) => {
+        ($($t:ty),*) => {
             paste! {
                 $(
-                    impl Add<$o> for $t {
-                        type Output = $out;
+                    impl Add for $t {
+                        type Output = $t;
 
                         #[inline]
-                        fn add(self, other: $o) -> $out {
+                        fn add(self, other: $t) -> Self {
                             BigInt::from(self).add(&BigInt::from(other)).try_into().unwrap()
                         }
                     }
-                    forward_ref_binop! { impl Add, add for $t, $o }
+                    forward_ref_binop! { impl Add, add for $t, $t }
 
-                    impl AddAssign<$o> for $t {
+                    impl AddAssign for $t {
                         #[inline]
-                        fn add_assign(&mut self, other: $o) {
+                        fn add_assign(&mut self, other: $t) {
                             *self = (*self + other).try_into().unwrap();
                         }
                     }
-                    forward_ref_op_assign! { impl AddAssign, add_assign for $t, $o }
+                    forward_ref_op_assign! { impl AddAssign, add_assign for $t, $t }
 
-                    impl Sub<$o> for $t {
-                        type Output = $out;
+                    impl Sub for $t {
+                        type Output = $t;
 
                         #[inline]
-                        fn sub(self, other: $o) -> $out {
+                        fn sub(self, other: $t) -> Self {
                             BigInt::from(self).sub(&BigInt::from(other)).try_into().unwrap()
                         }
                     }
-                    forward_ref_binop! { impl Sub, sub for $t, $o }
+                    forward_ref_binop! { impl Sub, sub for $t, $t }
 
-                    impl SubAssign<$o> for $t {
+                    impl SubAssign for $t {
                         #[inline]
-                        fn sub_assign(&mut self, other: $o) {
+                        fn sub_assign(&mut self, other: $t) {
                             *self = (*self - other).try_into().unwrap();
                         }
                     }
-                    forward_ref_op_assign! { impl SubAssign, sub_assign for $t, $o }
+                    forward_ref_op_assign! { impl SubAssign, sub_assign for $t, $t }
 
-                    impl Mul<$o> for $t {
-                        type Output = $out;
+                    impl Mul for $t {
+                        type Output = $t;
 
                         #[inline]
-                        fn mul(self, other: $o) -> $out {
+                        fn mul(self, other: $t) -> Self {
                             BigInt::from(self).mul(&BigInt::from(other)).try_into().unwrap()
                         }
                     }
-                    forward_ref_binop! { impl Mul, mul for $t, $o }
+                    forward_ref_binop! { impl Mul, mul for $t, $t }
 
-                    impl MulAssign<$o> for $t {
+                    impl MulAssign for $t {
                         #[inline]
-                        fn mul_assign(&mut self, other: $o) {
+                        fn mul_assign(&mut self, other: $t) {
                             *self = (*self * other).try_into().unwrap();
                         }
                     }
-                    forward_ref_op_assign! { impl MulAssign, mul_assign for $t, $o }
+                    forward_ref_op_assign! { impl MulAssign, mul_assign for $t, $t }
 
-                    impl Div<$o> for $t {
-                        type Output = $out;
+                    impl Div for $t {
+                        type Output = $t;
 
                         #[inline]
-                        fn div(self, other: $o) -> $out {
+                        fn div(self, other: $t) -> Self {
                             BigInt::from(self).div(&BigInt::from(other)).try_into().unwrap()
                         }
                     }
-                    forward_ref_binop! { impl Div, div for $t, $o }
+                    forward_ref_binop! { impl Div, div for $t, $t }
 
-                    impl DivAssign<$o> for $t {
+                    impl DivAssign for $t {
                         #[inline]
-                        fn div_assign(&mut self, other: $o) {
+                        fn div_assign(&mut self, other: $t) {
                             *self = (*self / other).try_into().unwrap();
                         }
                     }
-                    forward_ref_op_assign! { impl DivAssign, div_assign for $t, $o }
+                    forward_ref_op_assign! { impl DivAssign, div_assign for $t, $t }
 
-                    impl Rem<$o> for $t {
-                        type Output = $out;
+                    impl Rem for $t {
+                        type Output = $t;
 
                         #[inline]
-                        fn rem(self, other: $o) -> $out {
+                        fn rem(self, other: $t) -> Self {
                             BigInt::from(self).rem(&BigInt::from(other)).try_into().unwrap()
                         }
                     }
-                    forward_ref_binop! { impl Rem, rem for $t, $o }
+                    forward_ref_binop! { impl Rem, rem for $t, $t }
 
-                    impl RemAssign<$o> for $t {
+                    impl RemAssign for $t {
                         #[inline]
-                        fn rem_assign(&mut self, other: $o) {
+                        fn rem_assign(&mut self, other: $t) {
                             *self = (*self % other).try_into().unwrap();
                         }
                     }
-                    forward_ref_op_assign! { impl RemAssign, rem_assign for $t, $o }
+                    forward_ref_op_assign! { impl RemAssign, rem_assign for $t, $t }
 
                     )*
             }
         };
     }
-op_impl! {
-//(self, other, output)
-(u8, U8, U8), (u8, U16, U16), (u8, U32, U32), (u8, U64, U64), (u8, U128, U128),
-(u8, U256, U256), (u8, U384, U384), (u8, U512, U512),
+op_impl! { I8, I16, I32, I64, I128, I256, I384, I512, U8, U16, U32, U64, U128, U256, U384, U512 }
 
-(u16, U8, U16), (u16, U16, U16), (u16, U32, U32), (u16, U64, U64), (u16, U128, U128),
-
-(u32, U8, U32), (u32, U16, U32), (u32, U32, U32), (u32, U64, U64), (u32, U128, U128),
-
-(u64, U8, U64), (u64, U16, U64), (u64, U32, U64), (u64, U64, U64), (u64, U128, U128),
-
-(u128, U8, U128), (u128, U16, U128), (u128, U32, U128), (u128, U64, U128),
-(u128, U128, U128), (u128, U256, U256), (u128, U384, U384), (u128, U512, U512),
-
-(i8, I32, I32), (i8, I64, I64), (i8, I128, I128), (i8, I256, I256), (i8, I384, I384),
-(i8, I512, I512),
-
-(i16, I32, I32), (i16, I64, I64), (i16, I128, I128), (i16, I256, I256), (i16, I384, I384),
-(i16, I512, I512),
-
-(i32, I32, I32), (i32, I64, I64), (i32, I128, I128), (i32, I256, I256), (i32, I384, I384),
-(i32, I512, I512),
-
-(i64, I32, I64), (i64, I64, I64), (i64, I128, I128), (i64, I256, I256), (i64, I384, I384),
-(i64, I512, I512),
-
-(i128, I8, I128), (i128, I16, I128), (i128, I32, I128), (i128, I64, I128),
-(i128, I128, I128), (i128, I256, I256), (i128, I384, I384), (i128, I512, I512),
-
-(I8, i8, I8), (I8, i16, I16), (I8, i32, I32), (I8, i64, I64), (I8, i128, I128),
-(I8, I8, I8), (I8, I16, I16), (I8, I32, I32), (I8, I64, I64), (I8, I128, I128),
-(I8, I256, I256), (I8, I384, I384), (I8, I512, I512),
-
-(I16, i8, I16), (I16, i16, I16), (I16, i32, I32), (I16, i64, I64), (I16, i128, I128),
-(I16, I8, I16), (I16, I16, I16), (I16, I32, I32), (I16, I64, I64), (I16, I128, I128), (I16, I256, I256),
-(I16, I384, I384), (I16, I512, I512),
-
-(I32, i8, I32), (I32, i16, I32), (I32, i32, I32), (I32, i64, I64), (I32, i128, I128),
-(I32, I8, I32), (I32, I16, I32), (I32, I32, I32), (I32, I64, I64), (I32, I128, I128),
-(I32, I256, I256), (I32, I384, I384), (I32, I512, I512),
-
-(I64, i8, I64), (I64, i16, I64), (I64, i32, I64), (I64, i64, I64), (I64, i128, I128),
-(I64, I8, I64), (I64, I16, I64), (I64, I32, I64), (I64, I64, I64), (I64, I128, I128),
-(I64, I256, I256), (I64, I384, I384), (I64, I512, I512),
-
-(I128, i8, I128), (I128, i16, I128), (I128, i32, I128), (I128, i64, I128), (I128, i128, I128),
-(I128, I8, I128), (I128, I16, I128), (I128, I32, I128), (I128, I64, I128),
-(I128, I128, I128), (I128, I256, I256), (I128, I384, I384), (I128, I512, I512),
-
-(I256, i8, I256), (I256, i16, I256), (I256, i32, I256), (I256, i64, I256), (I256, i128, I256),
-(I256, I8, I256), (I256, I16, I256), (I256, I32, I256), (I256, I64, I256),
-(I256, I128, I256), (I256, I256, I256), (I256, I384, I384), (I256, I512, I512),
-
-(I384, i8, I384), (I384, i16, I384), (I384, i32, I384), (I384, i64, I384), (I384, i128, I384),
-(I384, I8, I384), (I384, I16, I384), (I384, I32, I384), (I384, I64, I384),
-(I384, I128, I384), (I384, I256, I384), (I384, I384, I384), (I384, I512, I512),
-
-(I512, i8, I512), (I512, i16, I512), (I512, i32, I512), (I512, i64, I512), (I512, i128, I512),
-(I512, I8, I512), (I512, I16, I512), (I512, I32, I512), (I512, I64, I512),
-(I512, I128, I512), (I512, I256, I512), (I512, I384, I512), (I512, I512, I512),
-
-(U8, u8, U8), (U8, u16, U16), (U8, u32, U32), (U8, u64, U64), (U8, u128, U128),
-(U8, U8, U8), (U8, U16, U16), (U8, U32, U32), (U8, U64, U64), (U8, U128, U128),
-(U8, U256, U256), (U8, U384, U384), (U8, U512, U512),
-
-(U16, u8, U16), (U16, u16, U16), (U16, u32, U32), (U16, u64, U64), (U16, u128, U128),
-(U16, U8, U16), (U16, U16, U16), (U16, U32, U32), (U16, U64, U64), (U16, U128, U128),
-(U16, U256, U256), (U16, U384, U384), (U16, U512, U512),
-
-(U32, u8, U32), (U32, u16, U32), (U32, u32, U32), (U32, u64, U64), (U32, u128, U128),
-(U32, U8, U32), (U32, U16, U32), (U32, U32, U32), (U32, U64, U64), (U32, U128, U128),
-(U32, U256, U256), (U32, U384, U384), (U32, U512, U512),
-
-(U64, u8, U64), (U64, u16, U64), (U64, u32, U64), (U64, u64, U64), (U64, u128, U128),
-(U64, U8, U64), (U64, U16, U64), (U64, U32, U64), (U64, U64, U64), (U64, U128, U128),
-(U64, U256, U256), (U64, U384, U384), (U64, U512, U512),
-
-(U128, u8, U128), (U128, u16, U128), (U128, u32, U128), (U128, u64, U128), (U128, u128, U128),
-(U128, U8, U128), (U128, U16, U128), (U128, U32, U128), (U128, U64, U128),
-(U128, U128, U128), (U128, U256, U256), (U128, U384, U384), (U128, U512, U512),
-
-(U256, u8, U256), (U256, u16, U256), (U256, u32, U256), (U256, u64, U256), (U256, u128, U256),
-(U256, U8, U256),  (U256, U16, U256), (U256, U32, U256), (U256, U64, U256),
-(U256, U128, U256), (U256, U256, U256), (U256, U384, U384), (U256, U512, U512),
-
-(U384, u8, U384), (U384, u16, U384), (U384, u32, U384), (U384, u64, U384), (U384, u128, U384),
-(U384, U8, U384), (U384, U16, U384), (U384, U32, U384), (U384, U64, U384),
-(U384, U128, U384), (U384, U256, U384), (U384, U384, U384), (U384, U512, U512),
-
-(U512, u8, U512), (U512, u16, U512), (U512, u32, U512), (U512, u64, U512), (U512, u128, U512),
-(U512, U8, U512), (U512, U16, U512), (U512, U32, U512), (U512, U64, U512),
-(U512, U128, U512), (U512, U256, U512), (U512, U384, U512), (U512, U512, U512)
-
+pub trait CheckedAdd {
+    fn checked_add(self, other: Self) -> Option<Self> where Self: Sized;
 }
 
-pub trait CheckedAdd<T>: Sized {
-    fn checked_add(self, other: T) -> Option<Self>;
+pub trait CheckedSub {
+    fn checked_sub(self, other: Self) -> Option<Self> where Self: Sized;
 }
 
-pub trait CheckedSub<T>: Sized {
-    fn checked_sub(self, other: T) -> Option<Self>;
+pub trait CheckedMul {
+    fn checked_mul(self, other: Self) -> Option<Self> where Self: Sized;
 }
 
-pub trait CheckedMul<T>: Sized {
-    fn checked_mul(self, other: T) -> Option<Self>;
+pub trait CheckedDiv {
+    fn checked_div(self, other: Self) -> Option<Self> where Self: Sized;
 }
 
-pub trait CheckedDiv<T>: Sized {
-    fn checked_div(self, other: T) -> Option<Self>;
+pub trait CheckedRem {
+    fn checked_rem(self, other: Self) -> Option<Self> where Self: Sized;
 }
 
-pub trait CheckedRem<T>: Sized {
-    fn checked_rem(self, other: T) -> Option<Self>;
+pub trait CheckedNeg {
+    fn checked_neg(self) -> Option<Self> where Self: Sized;
 }
 
-pub trait CheckedNeg: Sized {
-    fn checked_neg(self) -> Option<Self>;
-}
-
-pub trait CheckedPow<T>: Sized {
-    fn checked_pow(self, other: T) -> Option<Self>;
+pub trait CheckedPow {
+    fn checked_pow(self, other: u32) -> Option<Self> where Self: Sized;
 }
 
 macro_rules! checked_impl {
-    ($(($t:ident, $o:ident)),*) => {
+    ($($t:ident),*) => {
         paste!{
             $(
-                impl CheckedAdd<$o> for $t {
+                impl CheckedAdd for $t {
                     #[inline]
-                    fn checked_add(self, other: $o) -> Option<$t> {
+                    fn checked_add(self, other: $t) -> Option<$t> {
                         let v: Result<$t, [<Parse $t Error>]> = BigInt::from(self).add(&BigInt::from(other)).try_into();
                         v.ok()
                     }
                 }
 
-                impl CheckedSub<$o> for $t {
+                impl CheckedSub for $t {
                     #[inline]
-                    fn checked_sub(self, other: $o) -> Option<$t> {
+                    fn checked_sub(self, other: $t) -> Option<$t> {
                         let v: Result<$t, [<Parse $t Error>]> = BigInt::from(self).sub(&BigInt::from(other)).try_into();
                         v.ok()
                     }
                 }
 
-                impl CheckedMul<$o> for $t {
+                impl CheckedMul for $t {
                     #[inline]
-                    fn checked_mul(self, other: $o) -> Option<$t> {
+                    fn checked_mul(self, other: $t) -> Option<$t> {
                         let v: Result<$t, [<Parse $t Error>]> = BigInt::from(self).mul(&BigInt::from(other)).try_into();
                         v.ok()
                     }
                 }
 
-                impl CheckedDiv<$o> for $t {
+                impl CheckedDiv for $t {
                     #[inline]
-                    fn checked_div(self, other: $o) -> Option<$t> {
+                    fn checked_div(self, other: $t) -> Option<$t> {
                         let v: Result<$t, [<Parse $t Error>]> = BigInt::from(self).div(&BigInt::from(other)).try_into();
                         v.ok()
                     }
                 }
 
-                impl CheckedRem<$o> for $t {
+                impl CheckedRem for $t {
                     #[inline]
-                    fn checked_rem(self, other: $o) -> Option<$t> {
+                    fn checked_rem(self, other: $t) -> Option<$t> {
                         let v: Result<$t, [<Parse $t Error>]> = BigInt::from(self).rem(&BigInt::from(other)).try_into();
                         v.ok()
                     }
@@ -710,55 +616,7 @@ macro_rules! checked_impl {
         }
     }
 }
-checked_impl! {
-    (I8, i8), (I8, i16), (I8, i32), (I8, i64), (I8, i128),
-    (I8, I8), (I8, I16), (I8, I32), (I8, I64), (I8, I128), (I8, I256), (I8, I384), (I8, I512),
-
-    (I16, i8), (I16, i16), (I16, i32), (I16, i64), (I16, i128),
-    (I16, I8), (I16, I16), (I16, I32), (I16, I64), (I16, I128), (I16, I256), (I16, I384), (I16, I512),
-
-    (I32, i8), (I32, i16), (I32, i32), (I32, i64), (I32, i128),
-    (I32, I8), (I32, I16), (I32, I32), (I32, I64), (I32, I128), (I32, I256), (I32, I384), (I32, I512),
-
-    (I64, i8), (I64, i16), (I64, i32), (I64, i64), (I64, i128),
-    (I64, I8), (I64, I16), (I64, I32), (I64, I64), (I64, I128), (I64, I256), (I64, I384), (I64, I512),
-
-    (I128, i8), (I128, i16), (I128, i32), (I128, i64), (I128, i128),
-    (I128, I8), (I128, I16), (I128, I32), (I128, I64), (I128, I128), (I128, I256), (I128, I384), (I128, I512),
-
-    (I256, i8), (I256, i16), (I256, i32), (I256, i64), (I256, i128),
-    (I256, I8), (I256, I16), (I256, I32), (I256, I64), (I256, I128), (I256, I256), (I256, I384), (I256, I512),
-
-    (I384, i8), (I384, i16), (I384, i32), (I384, i64), (I384, i128),
-    (I384, I8), (I384, I16), (I384, I32), (I384, I64), (I384, I128), (I384, I256), (I384, I384), (I384, I512),
-
-    (I512, i8), (I512, i16), (I512, i32), (I512, i64), (I512, i128),
-    (I512, I8), (I512, I16), (I512, I32), (I512, I64), (I512, I128), (I512, I256), (I512, I384), (I512, I512),
-
-    (U8, u8), (U8, u16), (U8, u32), (U8, u64), (U8, u128),
-    (U8, U8), (U8, U16), (U8, U32), (U8, U64), (U8, U128), (U8, U256), (U8, U384), (U8, U512),
-
-    (U16, u8), (U16, u16), (U16, u32), (U16, u64), (U16, u128),
-    (U16, U8), (U16, U16), (U16, U32), (U16, U64), (U16, U128), (U16, U256), (U16, U384), (U16, U512),
-
-    (U32, u8), (U32, u16), (U32, u32), (U32, u64), (U32, u128),
-    (U32, U8), (U32, U16), (U32, U32), (U32, U64), (U32, U128), (U32, U256), (U32, U384), (U32, U512),
-
-    (U64, u8), (U64, u16), (U64, u32), (U64, u64), (U64, u128),
-    (U64, U8), (U64, U16), (U64, U32), (U64, U64), (U64, U128), (U64, U256), (U64, U384), (U64, U512),
-
-    (U128, u8), (U128, u16), (U128, u32), (U128, u64), (U128, u128),
-    (U128, U8), (U128, U16), (U128, U32), (U128, U64), (U128, U128), (U128, U256), (U128, U384), (U128, U512),
-
-    (U256, u8), (U256, u16), (U256, u32), (U256, u64), (U256, u128),
-    (U256, U8), (U256, U16), (U256, U32), (U256, U64), (U256, U128), (U256, U256), (U256, U384), (U256, U512),
-
-    (U384, u8), (U384, u16), (U384, u32), (U384, u64), (U384, u128),
-    (U384, U8), (U384, U16), (U384, U32), (U384, U64), (U384, U128), (U384, U256), (U384, U384), (U384, U512),
-
-    (U512, u8), (U512, u16), (U512, u32), (U512, u64), (U512, u128),
-    (U512, U8), (U512, U16), (U512, U32), (U512, U64), (U512, U128), (U512, U256), (U512, U384), (U512, U512)
-}
+checked_impl! { I8, I16, I32, I64, I128, I256, I384, I512, U8, U16, U32, U64, U128, U256, U384, U512 }
 
 macro_rules! pow_impl {
         ($($t:ty),*) => {
@@ -773,7 +631,7 @@ macro_rules! pow_impl {
                         #[inline]
                         #[must_use = "this returns the result of the operation, \
                               without modifying the original"]
-                        fn pow(self, exp: u32) -> $t {
+                        fn pow(self, exp: u32) -> Self {
                             if exp == 0 {
                                 return Self::one();
                             }
@@ -787,7 +645,7 @@ macro_rules! pow_impl {
                             }
                         }
                     }
-                    impl CheckedPow<u32> for $t
+                    impl CheckedPow for $t
                     {
                         fn checked_pow(self, exp: u32) -> Option<$t> {
                             if exp == 0 {
@@ -817,7 +675,7 @@ macro_rules! checked_impl_not_large {
                 type Output = $t;
 
                 #[inline]
-                fn not(self) -> $t {
+                fn not(self) -> Self {
                     self.0.iter().map(|x| x.not()).collect::<Vec<u8>>().try_into().unwrap()
                 }
             }
@@ -833,7 +691,7 @@ macro_rules! checked_impl_not_small {
                 type Output = $t;
 
                 #[inline]
-                fn not(self) -> $t {
+                fn not(self) -> Self {
                     $t(!self.0)
                 }
             }
@@ -875,7 +733,7 @@ macro_rules! checked_int_impl_signed {
                     #[inline]
                     #[must_use = "this returns the result of the operation, \
                       without modifying the original"]
-                    pub fn abs($self) -> $t {
+                    pub fn abs($self) -> Self {
                         $base.abs().try_into().unwrap()
                     }
 
@@ -899,7 +757,7 @@ macro_rules! checked_int_impl_signed {
                     #[inline]
                     #[must_use = "this returns the result of the operation, \
                           without modifying the original"]
-                    pub fn signum($self) -> $t {
+                    pub fn signum($self) -> Self {
                         $base.signum().try_into().unwrap()
                     }
 
@@ -1004,7 +862,7 @@ macro_rules! checked_int_impl_unsigned_large {
                         if co == 1 {
                             self
                         } else {
-                            Self::from(1u8) << (Self::BITS - lz)
+                            Self::from(1u8) << Self::from(Self::BITS - lz)
                         }
                     }
                 }

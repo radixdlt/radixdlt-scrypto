@@ -1031,7 +1031,7 @@ macro_rules! from_string {
                 fn [<read_digit $t:lower>](c: char) -> Result<U8, [<Parse $t Error>]> {
                     let n = U8::from(c as u8);
                     if n >= U8(48u8) && n <= U8(48u8 + 9u8) {
-                        Ok(n - 48u8)
+                        Ok(n - U8(48u8))
                     } else {
                         Err([<Parse $t Error>]::InvalidChar(c))
                     }

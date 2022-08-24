@@ -1,5 +1,5 @@
 use core::ops::*;
-use num_traits::{Pow, ToPrimitive, Zero};
+use num_traits::{Pow, ToPrimitive, Zero, One};
 use paste::paste;
 use sbor::rust::convert::{TryFrom, TryInto};
 use sbor::rust::fmt;
@@ -107,14 +107,14 @@ impl Decimal {
                 } else if self.is_negative() {
                     Self(self.0 / divisor * divisor)
                 } else {
-                    Self((self.0 / divisor + 1) * divisor)
+                    Self((self.0 / divisor + I256::one()) * divisor)
                 }
             }
             RoundingMode::TowardsNegativeInfinity => {
                 if self.0 % divisor == I256::zero() {
                     self.clone()
                 } else if self.is_negative() {
-                    Self((self.0 / divisor - 1) * divisor)
+                    Self((self.0 / divisor - I256::one()) * divisor)
                 } else {
                     Self(self.0 / divisor * divisor)
                 }
@@ -130,21 +130,21 @@ impl Decimal {
                 if self.0 % divisor == I256::zero() {
                     self.clone()
                 } else if self.is_negative() {
-                    Self((self.0 / divisor - 1) * divisor)
+                    Self((self.0 / divisor - I256::one()) * divisor)
                 } else {
-                    Self((self.0 / divisor + 1) * divisor)
+                    Self((self.0 / divisor + I256::one()) * divisor)
                 }
             }
             RoundingMode::TowardsNearestAndHalfTowardsZero => {
                 if self.0 % divisor == I256::zero() {
                     self.clone()
                 } else {
-                    let digit = (self.0 / (divisor / 10i128) % 10i128).abs();
+                    let digit = (self.0 / (divisor / I256::from(10i128)) % I256::from(10i128)).abs();
                     if digit > 5.into() {
                         if self.is_negative() {
-                            Self((self.0 / divisor - 1) * divisor)
+                            Self((self.0 / divisor - I256::one()) * divisor)
                         } else {
-                            Self((self.0 / divisor + 1) * divisor)
+                            Self((self.0 / divisor + I256::one()) * divisor)
                         }
                     } else {
                         Self(self.0 / divisor * divisor)
@@ -155,14 +155,14 @@ impl Decimal {
                 if self.0 % divisor == I256::zero() {
                     self.clone()
                 } else {
-                    let digit = (self.0 / (divisor / 10i128) % 10i128).abs();
+                    let digit = (self.0 / (divisor / I256::from(10i128)) % I256::from(10i128)).abs();
                     if digit < 5.into() {
                         Self(self.0 / divisor * divisor)
                     } else {
                         if self.is_negative() {
-                            Self((self.0 / divisor - 1) * divisor)
+                            Self((self.0 / divisor - I256::one()) * divisor)
                         } else {
-                            Self((self.0 / divisor + 1) * divisor)
+                            Self((self.0 / divisor + I256::one()) * divisor)
                         }
                     }
                 }
@@ -419,7 +419,7 @@ impl FromStr for Decimal {
                 }
                 p += 1;
             } else {
-                value *= 10;
+                value *= I256::from(10u8);
             }
         }
 
@@ -438,12 +438,12 @@ impl fmt::Display for Decimal {
 
         let mut trailing_zeros = true;
         for _ in 0..Self::SCALE {
-            let m: I256 = a % 10;
+            let m: I256 = a % I256::from(10u8);
             if m != 0.into() || !trailing_zeros {
                 trailing_zeros = false;
                 buf.push(char::from_digit(m.abs().to_u32().expect("Overflow"), 10).unwrap())
             }
-            a /= 10;
+            a /= I256::from(10u8);
         }
 
         if !buf.is_empty() {
@@ -454,9 +454,9 @@ impl fmt::Display for Decimal {
             buf.push('0')
         } else {
             while a != 0.into() {
-                let m: I256 = a % 10;
+                let m: I256 = a % I256::from(10u8);
                 buf.push(char::from_digit(m.abs().to_u32().expect("Overflow"), 10).unwrap());
-                a /= 10
+                a /= I256::from(10u8);
             }
         }
 
@@ -477,7 +477,7 @@ impl fmt::Debug for Decimal {
 fn read_digitdecimal(c: char) -> Result<U8, ParseDecimalError> {
     let n = U8::from(c as u8);
     if n >= U8(48u8) && n <= U8(48u8 + 9u8) {
-        Ok(n - 48u8)
+        Ok(n - U8(48u8))
     } else {
         Err(ParseDecimalError::InvalidChar(c))
     }
