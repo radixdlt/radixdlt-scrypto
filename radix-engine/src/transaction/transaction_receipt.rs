@@ -146,7 +146,7 @@ impl fmt::Debug for TransactionReceipt {
             "Transaction Status:".bold().green(),
             match result {
                 TransactionResult::Commit(c) => match &c.outcome {
-                    TransactionOutcome::Success(_) => "COMMITTED SUCCESS".blue(),
+                    TransactionOutcome::Success(_) => "COMMITTED SUCCESS".green(),
                     TransactionOutcome::Failure(e) => format!("COMMITTED FAILURE: {}", e).red(),
                 },
                 TransactionResult::Reject(r) => format!("REJECTED: {}", r.error).red(),
@@ -169,6 +169,29 @@ impl fmt::Debug for TransactionReceipt {
             execution.fee_summary.cost_unit_consumed,
             execution.fee_summary.cost_unit_price,
         )?;
+
+        write!(
+            f,
+            "\n{} {}",
+            "Logs:".bold().green(),
+            execution.application_logs.len()
+        )?;
+        for (i, (level, msg)) in execution.application_logs.iter().enumerate() {
+            let (l, m) = match level {
+                Level::Error => ("ERROR".red(), msg.red()),
+                Level::Warn => ("WARN".yellow(), msg.yellow()),
+                Level::Info => ("INFO".green(), msg.green()),
+                Level::Debug => ("DEBUG".cyan(), msg.cyan()),
+                Level::Trace => ("TRACE".normal(), msg.normal()),
+            };
+            write!(
+                f,
+                "\n{} [{:5}] {}",
+                prefix!(i, execution.application_logs),
+                l,
+                m
+            )?;
+        }
 
         // TODO - Need to fix the hardcoding of local simulator HRPs for transaction receipts, and for address formatting
         let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::local_simulator());
@@ -220,29 +243,6 @@ impl fmt::Debug for TransactionReceipt {
                     )?;
                 }
             }
-        }
-
-        write!(
-            f,
-            "\n{} {}",
-            "Logs:".bold().green(),
-            execution.application_logs.len()
-        )?;
-        for (i, (level, msg)) in execution.application_logs.iter().enumerate() {
-            let (l, m) = match level {
-                Level::Error => ("ERROR".red(), msg.red()),
-                Level::Warn => ("WARN".yellow(), msg.yellow()),
-                Level::Info => ("INFO".green(), msg.green()),
-                Level::Debug => ("DEBUG".cyan(), msg.cyan()),
-                Level::Trace => ("TRACE".normal(), msg.normal()),
-            };
-            write!(
-                f,
-                "\n{} [{:5}] {}",
-                prefix!(i, execution.application_logs),
-                l,
-                m
-            )?;
         }
 
         if let TransactionResult::Commit(c) = &result {
