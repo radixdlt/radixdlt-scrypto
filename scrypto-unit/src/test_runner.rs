@@ -202,6 +202,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     pub fn execute_preview(
         &mut self,
         preview_intent: PreviewIntent,
+        network: &NetworkDefinition,
     ) -> Result<PreviewResult, PreviewError> {
         let node_id = self.create_child_node(0);
         let substate_store = &mut self.execution_stores.get_output_store(node_id);
@@ -211,6 +212,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             &mut self.wasm_engine,
             &mut self.wasm_instrumenter,
             &self.intent_hash_manager,
+            network,
         )
         .execute(preview_intent)
     }
