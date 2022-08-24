@@ -1,5 +1,5 @@
 use core::ops::*;
-use num_traits::{Pow, ToPrimitive, Zero, One};
+use num_traits::{One, Pow, ToPrimitive, Zero};
 use paste::paste;
 use sbor::rust::convert::{TryFrom, TryInto};
 use sbor::rust::fmt;
@@ -139,7 +139,8 @@ impl Decimal {
                 if self.0 % divisor == I256::zero() {
                     self.clone()
                 } else {
-                    let digit = (self.0 / (divisor / I256::from(10i128)) % I256::from(10i128)).abs();
+                    let digit =
+                        (self.0 / (divisor / I256::from(10i128)) % I256::from(10i128)).abs();
                     if digit > 5.into() {
                         if self.is_negative() {
                             Self((self.0 / divisor - I256::one()) * divisor)
@@ -155,7 +156,8 @@ impl Decimal {
                 if self.0 % divisor == I256::zero() {
                     self.clone()
                 } else {
-                    let digit = (self.0 / (divisor / I256::from(10i128)) % I256::from(10i128)).abs();
+                    let digit =
+                        (self.0 / (divisor / I256::from(10i128)) % I256::from(10i128)).abs();
                     if digit < 5.into() {
                         Self(self.0 / divisor * divisor)
                     } else {
