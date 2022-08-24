@@ -81,7 +81,7 @@ fn bench_transaction_validation(c: &mut Criterion) {
         b.iter(|| {
             let intent_hash_manager = TestIntentHashManager::new();
             let config: ValidationConfig = ValidationConfig {
-                network: NetworkDefinition::local_simulator(),
+                network: &NetworkDefinition::local_simulator(),
                 current_epoch: 1,
                 max_cost_unit_limit: 10_000_000,
                 min_tip_percentage: 0,
