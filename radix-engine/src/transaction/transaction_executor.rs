@@ -190,6 +190,9 @@ where
             for (level, message) in &receipt.execution.application_logs {
                 println!("[{}] {}", level, message);
             }
+            if receipt.execution.application_logs.is_empty() {
+                println!("None");
+            }
         }
         receipt
     }
