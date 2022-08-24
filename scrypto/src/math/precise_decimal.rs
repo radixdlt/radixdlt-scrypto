@@ -1,5 +1,5 @@
 use core::ops::*;
-use num_traits::{Pow, ToPrimitive, Zero, One};
+use num_traits::{One, Pow, ToPrimitive, Zero};
 use sbor::rust::convert::{TryFrom, TryInto};
 use sbor::rust::fmt;
 use sbor::rust::iter;
@@ -141,7 +141,8 @@ impl PreciseDecimal {
                 if self.0 % divisor == I512::zero() {
                     self.clone()
                 } else {
-                    let digit = (self.0 / (divisor / I512::from(10i128)) % I512::from(10i128)).abs();
+                    let digit =
+                        (self.0 / (divisor / I512::from(10i128)) % I512::from(10i128)).abs();
                     if digit > 5.into() {
                         if self.is_negative() {
                             Self((self.0 / divisor - I512::one()) * divisor)
@@ -157,7 +158,8 @@ impl PreciseDecimal {
                 if self.0 % divisor == I512::zero() {
                     self.clone()
                 } else {
-                    let digit = (self.0 / (divisor / I512::from(10i128)) % I512::from(10i128)).abs();
+                    let digit =
+                        (self.0 / (divisor / I512::from(10i128)) % I512::from(10i128)).abs();
                     if digit < 5.into() {
                         Self(self.0 / divisor * divisor)
                     } else {

@@ -542,31 +542,45 @@ macro_rules! op_impl {
 op_impl! { I8, I16, I32, I64, I128, I256, I384, I512, U8, U16, U32, U64, U128, U256, U384, U512 }
 
 pub trait CheckedAdd {
-    fn checked_add(self, other: Self) -> Option<Self> where Self: Sized;
+    fn checked_add(self, other: Self) -> Option<Self>
+    where
+        Self: Sized;
 }
 
 pub trait CheckedSub {
-    fn checked_sub(self, other: Self) -> Option<Self> where Self: Sized;
+    fn checked_sub(self, other: Self) -> Option<Self>
+    where
+        Self: Sized;
 }
 
 pub trait CheckedMul {
-    fn checked_mul(self, other: Self) -> Option<Self> where Self: Sized;
+    fn checked_mul(self, other: Self) -> Option<Self>
+    where
+        Self: Sized;
 }
 
 pub trait CheckedDiv {
-    fn checked_div(self, other: Self) -> Option<Self> where Self: Sized;
+    fn checked_div(self, other: Self) -> Option<Self>
+    where
+        Self: Sized;
 }
 
 pub trait CheckedRem {
-    fn checked_rem(self, other: Self) -> Option<Self> where Self: Sized;
+    fn checked_rem(self, other: Self) -> Option<Self>
+    where
+        Self: Sized;
 }
 
 pub trait CheckedNeg {
-    fn checked_neg(self) -> Option<Self> where Self: Sized;
+    fn checked_neg(self) -> Option<Self>
+    where
+        Self: Sized;
 }
 
 pub trait CheckedPow {
-    fn checked_pow(self, other: u32) -> Option<Self> where Self: Sized;
+    fn checked_pow(self, other: u32) -> Option<Self>
+    where
+        Self: Sized;
 }
 
 macro_rules! checked_impl {
