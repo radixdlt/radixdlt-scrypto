@@ -1,4 +1,6 @@
 use super::*;
+#[cfg(test)]
+use sbor::rust::format;
 
 macro_rules! test_from_builtin {
     ($i:ident, ($($t:ident),*)) => {
