@@ -16,11 +16,17 @@ pub struct System {
 }
 
 impl System {
-    pub fn main<'s, Y: SystemApi<'s, W, I, C>, W: WasmEngine<I>, I: WasmInstance, C: FeeReserve>(
+    pub fn main<'s, Y, W, I, R>(
         system_fn: SystemFnIdentifier,
         args: ScryptoValue,
         system_api: &mut Y,
-    ) -> Result<ScryptoValue, SystemError> {
+    ) -> Result<ScryptoValue, SystemError>
+    where
+        Y: SystemApi<'s, W, I, R>,
+        W: WasmEngine<I>,
+        I: WasmInstance,
+        R: FeeReserve,
+    {
         match system_fn {
             SystemFnIdentifier::GetCurrentEpoch => {
                 let _: SystemGetCurrentEpochInput =

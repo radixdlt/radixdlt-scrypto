@@ -43,7 +43,7 @@ fn test_normal_transaction_flow() {
     );
     let receipt = executor.execute_and_commit(&validated_transaction, &execution_params);
 
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 #[test]
@@ -74,7 +74,7 @@ fn test_call_method_with_all_resources_doesnt_drop_auth_zone_proofs() {
     println!("{:?}", receipt);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 #[test]
@@ -96,7 +96,7 @@ fn test_transaction_can_end_with_proofs_remaining_in_auth_zone() {
     println!("{:?}", receipt);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 fn create_transaction() -> Vec<u8> {

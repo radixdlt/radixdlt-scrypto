@@ -1,4 +1,5 @@
 use crate::engine::*;
+use crate::fee::FeeReserve;
 use crate::model::*;
 use crate::types::*;
 
@@ -39,13 +40,13 @@ impl AuthModule {
         Ok(())
     }
 
-    pub fn receiver_auth(
+    pub fn receiver_auth<'s, R: FeeReserve>(
         function: &FnIdentifier,
         receiver: Receiver,
         input: &ScryptoValue,
         node_pointer: RENodePointer,
         call_frames: &mut Vec<CallFrame>,
-        track: &mut Track,
+        track: &mut Track<'s, R>,
     ) -> Result<(), RuntimeError> {
         let auth = match (receiver, function) {
             (

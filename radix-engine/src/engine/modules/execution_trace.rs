@@ -1,4 +1,5 @@
 use crate::engine::*;
+use crate::fee::FeeReserve;
 use crate::model::*;
 use crate::types::*;
 
@@ -27,10 +28,10 @@ impl ExecutionTrace {
         }
     }
 
-    pub fn trace_invoke_method(
+    pub fn trace_invoke_method<'s, R: FeeReserve>(
         &mut self,
         call_frames: &Vec<CallFrame>,
-        track: &Track,
+        track: &Track<'s, R>,
         actor: &REActor,
         fn_identifier: &FnIdentifier,
         node_id: &RENodeId,

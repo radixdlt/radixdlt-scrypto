@@ -19,7 +19,7 @@ fn stored_component_addresses_in_non_globalized_component_are_invokable() {
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 #[test]
@@ -34,7 +34,7 @@ fn stored_component_addresses_are_invokable() {
         .call_function(package, "ExternalComponent", "create", args!())
         .build();
     let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
-    receipt1.expect_success();
+    receipt1.expect_commit_success();
     let component0 = receipt1
         .expect_commit()
         .entity_changes
@@ -52,7 +52,7 @@ fn stored_component_addresses_are_invokable() {
     let receipt2 = test_runner.execute_manifest(manifest2, vec![public_key]);
 
     // Assert
-    receipt2.expect_success();
+    receipt2.expect_commit_success();
 
     // Act
     let manifest2 = ManifestBuilder::new(&NetworkDefinition::local_simulator())
@@ -62,5 +62,5 @@ fn stored_component_addresses_are_invokable() {
     let receipt2 = test_runner.execute_manifest(manifest2, vec![public_key]);
 
     // Assert
-    receipt2.expect_success();
+    receipt2.expect_commit_success();
 }

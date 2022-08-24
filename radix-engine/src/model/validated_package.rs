@@ -39,16 +39,16 @@ impl ValidatedPackage {
         self.blueprint_abis.get(blueprint_name)
     }
 
-    pub fn static_main<'s, Y, W, I, C>(
+    pub fn static_main<'s, Y, W, I, R>(
         package_fn: PackageFnIdentifier,
         call_data: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, PackageError>
     where
-        Y: SystemApi<'s, W, I, C>,
+        Y: SystemApi<'s, W, I, R>,
         W: WasmEngine<I>,
         I: WasmInstance,
-        C: FeeReserve,
+        R: FeeReserve,
     {
         match package_fn {
             PackageFnIdentifier::Publish => {

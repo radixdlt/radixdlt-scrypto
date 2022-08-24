@@ -88,7 +88,7 @@ where
         params: &ExecutionConfig,
     ) -> TransactionReceipt {
         let receipt = self.execute(transaction, params);
-        if let Some(commit) = receipt.result.get_commit_result() {
+        if let TransactionResult::Commit(commit) = &receipt.result {
             commit.state_updates.commit(self.substate_store);
         }
         receipt
@@ -109,18 +109,16 @@ where
         self.execute_with_fee_reserve(transaction, params, fee_reserve)
     }
 
-    pub fn execute_with_fee_reserve<T: ExecutableTransaction, C: FeeReserve>(
+    pub fn execute_with_fee_reserve<T: ExecutableTransaction, R: FeeReserve>(
         &mut self,
         transaction: &T,
         params: &ExecutionConfig,
-        mut fee_reserve: C,
+        mut fee_reserve: R,
     ) -> TransactionReceipt {
-        #[cfg(not(feature = "alloc"))]
-        let now = std::time::Instant::now();
-
         let transaction_hash = transaction.transaction_hash();
         let signer_public_keys = transaction.signer_public_keys().to_vec();
         let instructions = transaction.instructions().to_vec();
+
         #[cfg(not(feature = "alloc"))]
         if params.trace {
             println!("{:-^80}", "Transaction Metadata");
@@ -130,239 +128,68 @@ where
             println!("{:-^80}", "Engine Execution Log");
         }
 
-        let transaction_contents = TransactionContents {
-            instructions: instructions,
-        };
-
-        // 1. Start state track and execution trace
-        let mut track = Track::new(self.substate_store);
+        // Prepare state track and execution trace
+        let fee_table = FeeTable::new();
+        CostingModule::apply_static_fees(&mut fee_reserve, &fee_table, transaction);
+        let mut track = Track::new(self.substate_store, fee_reserve);
         let mut execution_trace = ExecutionTrace::new();
 
-        // 2. Apply pre-execution costing
-        let fee_table = FeeTable::new();
-        fee_reserve
-            .consume(fee_table.tx_base_fee(), "base_fee")
-            .expect("TX base fee not covered by system loan");
-        fee_reserve
-            .consume(
-                fee_table.tx_decoding_per_byte() * transaction.transaction_payload_size() as u32,
-                "decode_transaction",
-            )
-            .expect("TX decoding fee not covered by system loan");
-        fee_reserve
-            .consume(
-                fee_table.tx_manifest_verification_per_byte()
-                    * transaction.transaction_payload_size() as u32,
-                "verify_manifest",
-            )
-            .expect("TX manifest verification fee not covered by system loan");
-        fee_reserve
-            .consume(
-                fee_table.tx_signature_verification_per_sig()
-                    * transaction.signer_public_keys().len() as u32,
-                "verify_signatures",
-            )
-            .expect("TX signature verification fee not covered by system loan");
+        // Invoke the function/method
+        let invoke_result = {
+            let mut modules = Vec::<Box<dyn Module<R>>>::new();
+            if params.trace {
+                modules.push(Box::new(LoggerModule::new()));
+            }
+            modules.push(Box::new(CostingModule::new(fee_table)));
 
-        // 3. Start a kernel instance and invoke
-        let result = {
             let mut kernel = Kernel::new(
                 transaction_hash,
                 signer_public_keys,
                 params.is_system,
                 params.max_call_depth,
-                params.trace,
                 &mut track,
                 self.wasm_engine,
                 self.wasm_instrumenter,
-                &mut fee_reserve,
-                &fee_table,
+                WasmMeteringParams::new(InstructionCostRules::tiered(1, 5, 10, 5000), 512), // TODO: add to ExecutionConfig
                 &mut execution_trace,
+                modules,
             );
             let result = kernel.invoke_function(
                 FnIdentifier::Native(NativeFnIdentifier::TransactionProcessor(
                     TransactionProcessorFnIdentifier::Run,
                 )),
                 ScryptoValue::from_typed(&TransactionProcessorRunInput {
-                    instructions: transaction_contents.instructions.clone(),
+                    instructions: instructions.clone(),
                 }),
             );
-            #[cfg(not(feature = "alloc"))]
-            if params.trace {
-                println!("{:-^80}", "Engine Result");
-                println!("{:?}", result);
-            }
-
             result.map(|o| {
                 scrypto_decode::<Vec<Vec<u8>>>(&o.raw)
                     .expect("TransactionProcessor returned data of unexpected type")
             })
         };
 
-        // 4. Finalize transaction fee, determine outcome, and reject transaction if required
-        let fee_summary = fee_reserve.finalize();
+        // Produce the final transaction receipt
+        let execution_trace_receipt = execution_trace.to_receipt();
+        let track_receipt = track.finalize(invoke_result, execution_trace_receipt.resource_changes);
+        let receipt = TransactionReceipt {
+            contents: TransactionContents { instructions },
+            execution: TransactionExecution {
+                fee_summary: track_receipt.fee_summary,
+                application_logs: track_receipt.application_logs,
+            },
+            result: track_receipt.result,
+        };
         #[cfg(not(feature = "alloc"))]
         if params.trace {
             println!("{:-^80}", "Cost Analysis");
-            for (k, v) in &fee_summary.cost_breakdown {
+            for (k, v) in &receipt.execution.fee_summary.cost_breakdown {
                 println!("{:<30}: {:>8}", k, v);
             }
-        }
-        let is_success_result = result.is_ok();
 
-        if is_success_result {
-            track.commit();
-        } else {
-            track.rollback();
-        }
-
-        let is_reject_result = !fee_summary.loan_fully_repaid;
-
-        // If transaction was rejected, we shouldn't commit anything - so return early with a rejection result
-        if is_reject_result {
-            let rejection_error = match result {
-                Ok(..) => RejectionError::SuccessButFeeLoanNotRepaid,
-                Err(error) => RejectionError::ErrorBeforeFeeLoanRepaid(error),
-            };
-            let track_receipt = track.to_receipt();
-
-            #[cfg(feature = "alloc")]
-            let execution_time = None;
-            #[cfg(not(feature = "alloc"))]
-            let execution_time = Some(now.elapsed().as_millis());
-
-            let execution_result = TransactionExecution {
-                execution_time,
-                fee_summary,
-                application_logs: track_receipt.application_logs,
-            };
-
-            return Self::compose_receipt(
-                params,
-                transaction_contents,
-                Some(execution_result),
-                TransactionResult::Reject(RejectResult {
-                    error: rejection_error,
-                }),
-            );
-        }
-
-        let commit_status = match result {
-            Ok(output) => TransactionOutcome::Success(output),
-            Err(error) => TransactionOutcome::Failure(error),
-        };
-
-        // 5. Resolve fee payment
-        let mut required = fee_summary.burned + fee_summary.tipped;
-        let mut collector =
-            ResourceContainer::new_empty(RADIX_TOKEN, ResourceType::Fungible { divisibility: 18 });
-        for (vault_id, mut locked, contingent) in fee_summary.payments.iter().cloned().rev() {
-            let amount = if contingent {
-                if commit_status.is_success() {
-                    Decimal::min(locked.liquid_amount(), required)
-                } else {
-                    Decimal::zero()
-                }
-            } else {
-                Decimal::min(locked.liquid_amount(), required)
-            };
-
-            // Deduct fee required
-            required = required - amount;
-
-            // Collect fees into collector
-            collector
-                .put(
-                    locked
-                        .take_by_amount(amount)
-                        .expect("Failed to extract locked fee"),
-                )
-                .expect("Failed to add fee to fee collector");
-
-            // Refund overpayment
-            let substate_id = SubstateId::Vault(vault_id);
-            track
-                .acquire_lock(substate_id.clone(), true, true)
-                .expect("Failed to acquire the lock of a fee-locking vault");
-            let mut substate = track.take_substate(substate_id.clone());
-            substate
-                .vault_mut()
-                .put(Bucket::new(locked))
-                .expect("Failed to update a fee-locking vault");
-            track.write_substate(substate_id.clone(), substate);
-            track.release_lock(substate_id, true);
-        }
-        // TODO: update XRD supply or disable it
-        // TODO: pay tips to the lead validator
-
-        // 6. Produce the final transaction receipt
-        let track_receipt = track.to_receipt();
-
-        let mut new_component_addresses = Vec::new();
-        let mut new_resource_addresses = Vec::new();
-        let mut new_package_addresses = Vec::new();
-        for address in track_receipt.new_addresses {
-            match address {
-                SubstateId::ComponentInfo(component_address) => {
-                    new_component_addresses.push(component_address)
-                }
-                SubstateId::ResourceManager(resource_address) => {
-                    new_resource_addresses.push(resource_address)
-                }
-                SubstateId::Package(package_address) => new_package_addresses.push(package_address),
-                _ => {}
+            println!("{:-^80}", "Application Logs");
+            for (level, message) in &receipt.execution.application_logs {
+                println!("[{}] {}", level, message);
             }
-        }
-
-        let execution_trace_receipt = execution_trace.to_receipt();
-
-        #[cfg(feature = "alloc")]
-        let execution_time = None;
-        #[cfg(not(feature = "alloc"))]
-        let execution_time = Some(now.elapsed().as_millis());
-
-        let execution_result = TransactionExecution {
-            execution_time,
-            fee_summary,
-            application_logs: track_receipt.application_logs,
-        };
-
-        let transaction_result = TransactionResult::Commit(CommitResult {
-            outcome: commit_status,
-            entity_changes: EntityChanges {
-                new_package_addresses,
-                new_component_addresses,
-                new_resource_addresses,
-            },
-            state_updates: track_receipt.state_updates,
-            resource_changes: execution_trace_receipt.resource_changes,
-        });
-
-        Self::compose_receipt(
-            params,
-            transaction_contents,
-            Some(execution_result),
-            transaction_result,
-        )
-    }
-
-    fn compose_receipt(
-        #[cfg(feature = "alloc")] _params: &ExecutionConfig,
-        #[cfg(not(feature = "alloc"))] params: &ExecutionConfig,
-        contents: TransactionContents,
-        execution: Option<TransactionExecution>,
-        result: TransactionResult,
-    ) -> TransactionReceipt {
-        let receipt = TransactionReceipt {
-            contents,
-            execution,
-            result,
-        };
-        #[cfg(not(feature = "alloc"))]
-        if params.trace {
-            println!("{:-^80}", "Transaction Receipt");
-            println!("{:?}", receipt);
-            println!("{:-^80}", "");
         }
         receipt
     }

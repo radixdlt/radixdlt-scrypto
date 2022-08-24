@@ -25,7 +25,7 @@ fn can_withdraw_from_my_account() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
-    let outputs = receipt.expect_success();
+    let outputs = receipt.expect_commit_success();
     let other_account_balance: Decimal = scrypto_decode(&outputs[3]).unwrap();
     let transfer_amount = other_account_balance - 1_000_000 /* initial balance */;
     assert_resource_changes_for_transfer(
@@ -55,7 +55,7 @@ fn can_withdraw_non_fungible_from_my_account() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 #[test]
@@ -75,7 +75,7 @@ fn cannot_withdraw_from_other_account() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
-    receipt.expect_failure(is_auth_error);
+    receipt.expect_commit_failure(is_auth_error);
 }
 
 #[test]
@@ -102,7 +102,7 @@ fn account_to_bucket_to_account() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
     assert!(receipt.expect_commit().resource_changes.is_empty());
 }
 
@@ -120,7 +120,7 @@ fn test_account_balance() {
 
     // Act
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
-    let outputs = receipt.expect_success();
+    let outputs = receipt.expect_commit_success();
 
     // Assert
     assert!(receipt.expect_commit().resource_changes.is_empty());

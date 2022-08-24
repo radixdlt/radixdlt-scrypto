@@ -6,7 +6,7 @@ use crate::wasm::*;
 #[derive(Debug)]
 pub enum ExtractAbiError {
     InvalidWasm(PrepareError),
-    FailedToExportBlueprintAbi(InvokeError),
+    FailedToExportBlueprintAbi(WasmInvokeError),
     AbiDecodeError(DecodeError),
     InvalidBlueprintAbi,
 }

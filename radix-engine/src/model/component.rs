@@ -87,12 +87,18 @@ impl ComponentInfo {
         &self.blueprint_name
     }
 
-    pub fn main<'s, Y: SystemApi<'s, W, I, C>, W: WasmEngine<I>, I: WasmInstance, C: FeeReserve>(
+    pub fn main<'s, Y, W, I, R>(
         component_address: ComponentAddress,
         component_fn: ComponentFnIdentifier,
         args: ScryptoValue,
         system_api: &mut Y,
-    ) -> Result<ScryptoValue, ComponentError> {
+    ) -> Result<ScryptoValue, ComponentError>
+    where
+        Y: SystemApi<'s, W, I, R>,
+        W: WasmEngine<I>,
+        I: WasmInstance,
+        R: FeeReserve,
+    {
         let substate_id = SubstateId::ComponentInfo(component_address);
         let node_id = RENodeId::Component(component_address);
 

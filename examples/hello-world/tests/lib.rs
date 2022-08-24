@@ -23,7 +23,7 @@ fn test_hello() {
         .build();
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![public_key]);
     println!("{:?}\n", receipt);
-    receipt.expect_success();
+    receipt.expect_commit_success();
     let component = receipt
         .expect_commit()
         .entity_changes
@@ -36,5 +36,5 @@ fn test_hello() {
         .build();
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![public_key]);
     println!("{:?}\n", receipt);
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }

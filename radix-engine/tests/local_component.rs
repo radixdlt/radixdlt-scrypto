@@ -25,7 +25,7 @@ fn local_component_should_return_correct_info() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 #[test]
@@ -43,7 +43,7 @@ fn local_component_should_be_callable_read_only() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 #[test]
@@ -61,7 +61,7 @@ fn local_component_should_be_callable_with_write() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 #[test]
@@ -88,7 +88,7 @@ fn local_component_with_access_rules_should_not_be_callable() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
-    receipt.expect_failure(|e| {
+    receipt.expect_commit_failure(|e| {
         matches!(
             e,
             RuntimeError::ModuleError(ModuleError::AuthorizationError { .. })
@@ -125,7 +125,7 @@ fn local_component_with_access_rules_should_be_callable() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 #[test]
@@ -154,7 +154,7 @@ fn recursion_bomb() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 #[test]
@@ -182,7 +182,7 @@ fn recursion_bomb_to_failure() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
-    receipt.expect_failure(|e| {
+    receipt.expect_commit_failure(|e| {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::MaxCallDepthLimitReached)
@@ -216,7 +216,7 @@ fn recursion_bomb_2() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 #[test]
@@ -244,7 +244,7 @@ fn recursion_bomb_2_to_failure() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
-    receipt.expect_failure(|e| {
+    receipt.expect_commit_failure(|e| {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::MaxCallDepthLimitReached)

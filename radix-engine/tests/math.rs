@@ -29,7 +29,7 @@ fn test_integer_basic_ops() {
     println!("{:?}", receipt);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 #[test]
@@ -53,5 +53,5 @@ fn test_native_and_safe_integer_interop() {
     println!("{:?}", receipt);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }

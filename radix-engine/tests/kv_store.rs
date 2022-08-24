@@ -19,7 +19,7 @@ fn can_insert_in_child_nodes() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 #[test]
@@ -42,7 +42,7 @@ fn create_mutable_key_value_store_into_map_and_referencing_before_storing() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 #[test]
@@ -60,7 +60,7 @@ fn cyclic_map_fails_execution() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| {
+    receipt.expect_commit_failure(|e| {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::SubstateReadSubstateNotFound(_))
@@ -83,7 +83,7 @@ fn self_cyclic_map_fails_execution() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| {
+    receipt.expect_commit_failure(|e| {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::SubstateReadSubstateNotFound(..))
@@ -120,7 +120,7 @@ fn cannot_remove_key_value_stores() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| {
+    receipt.expect_commit_failure(|e| {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::StoredNodeRemoved(_))
@@ -157,7 +157,7 @@ fn cannot_overwrite_key_value_stores() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| {
+    receipt.expect_commit_failure(|e| {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::StoredNodeRemoved(_))
@@ -185,7 +185,7 @@ fn create_key_value_store_and_get() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 #[test]
@@ -208,7 +208,7 @@ fn create_key_value_store_and_put() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 #[test]
@@ -231,7 +231,7 @@ fn can_reference_in_memory_vault() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 #[test]
@@ -254,7 +254,7 @@ fn can_reference_deep_in_memory_value() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 #[test]
@@ -277,7 +277,7 @@ fn can_reference_deep_in_memory_vault() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 #[test]
@@ -300,7 +300,7 @@ fn cannot_directly_reference_inserted_vault() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| {
+    receipt.expect_commit_failure(|e| {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::InvokeMethodInvalidReceiver(RENodeId::Vault(_)))
@@ -328,7 +328,7 @@ fn cannot_directly_reference_vault_after_container_moved() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| {
+    receipt.expect_commit_failure(|e| {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::InvokeMethodInvalidReceiver(RENodeId::Vault(_)))
@@ -356,7 +356,7 @@ fn cannot_directly_reference_vault_after_container_stored() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| {
+    receipt.expect_commit_failure(|e| {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::InvokeMethodInvalidReceiver(RENodeId::Vault(_)))
@@ -379,5 +379,5 @@ fn multiple_reads_should_work() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }

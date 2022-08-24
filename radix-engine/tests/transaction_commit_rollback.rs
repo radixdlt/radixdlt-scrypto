@@ -22,7 +22,7 @@ fn test_state_track_success() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
     assert_eq!(
         10,
         receipt.expect_commit().state_updates.down_substates.len()
@@ -48,7 +48,7 @@ fn test_state_track_failure() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
-    receipt.expect_failure(|e| {
+    receipt.expect_commit_failure(|e| {
         matches!(
             e,
             RuntimeError::ApplicationError(ApplicationError::WorktopError(_))

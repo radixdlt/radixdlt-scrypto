@@ -26,7 +26,7 @@ fn test_trace_resource_transfers() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
-    let output = receipt.expect_success();
+    let output = receipt.expect_commit_success();
     let (resource_address, source_component, target_component): (
         ResourceAddress,
         ComponentAddress,

@@ -20,7 +20,7 @@ fn test_component() {
         .call_function(package, "ComponentTest", "create_component", args!())
         .build();
     let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
-    receipt1.expect_success();
+    receipt1.expect_commit_success();
 
     // Find the component address from receipt
     let component = receipt1
@@ -42,7 +42,7 @@ fn test_component() {
         .call_method_with_all_resources(account, "deposit_batch")
         .build();
     let receipt2 = test_runner.execute_manifest(manifest2, vec![public_key]);
-    receipt2.expect_success();
+    receipt2.expect_commit_success();
 }
 
 #[test]
@@ -65,7 +65,7 @@ fn invalid_blueprint_name_should_cause_error() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| {
+    receipt.expect_commit_failure(|e| {
         if let RuntimeError::KernelError(KernelError::BlueprintNotFound(addr, blueprint)) = e {
             addr.eq(&package_address) && blueprint.eq("NonExistentBlueprint")
         } else {
@@ -85,7 +85,7 @@ fn reentrancy_should_not_be_possible() {
         .call_function(package_address, "ReentrantComponent", "new", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    receipt.expect_success();
+    receipt.expect_commit_success();
     let component_address = receipt
         .expect_commit()
         .entity_changes
@@ -99,7 +99,7 @@ fn reentrancy_should_not_be_possible() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| {
+    receipt.expect_commit_failure(|e| {
         if let RuntimeError::KernelError(KernelError::Reentrancy(SubstateId::ComponentState(
             address,
         ))) = e

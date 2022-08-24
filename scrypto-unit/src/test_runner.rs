@@ -1,18 +1,20 @@
 use radix_engine::constants::{
     DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN,
 };
-use radix_engine::engine::{
-    ExecutionTrace, Kernel, KernelError, ModuleError, RuntimeError, SystemApi, Track,
-};
-use radix_engine::fee::{FeeTable, SystemLoanFeeReserve};
+use radix_engine::engine::{ExecutionTrace, Kernel, KernelError, ModuleError, SystemApi};
+use radix_engine::engine::{RuntimeError, Track};
+use radix_engine::fee::SystemLoanFeeReserve;
 use radix_engine::ledger::*;
 use radix_engine::model::{export_abi, export_abi_by_component, extract_package};
 use radix_engine::state_manager::StagedSubstateStoreManager;
 use radix_engine::transaction::{
     ExecutionConfig, PreviewError, PreviewExecutor, PreviewResult, TransactionExecutor,
-    TransactionReceipt,
+    TransactionReceipt, TransactionResult,
 };
-use radix_engine::wasm::{DefaultWasmEngine, DefaultWasmInstance, InvokeError, WasmInstrumenter};
+use radix_engine::wasm::{
+    DefaultWasmEngine, DefaultWasmInstance, InstructionCostRules, WasmInstrumenter,
+    WasmMeteringParams,
+};
 use sbor::describe::Fields;
 use sbor::Type;
 use scrypto::abi::{BlueprintAbi, Fn};
@@ -122,7 +124,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             .build();
 
         let receipt = self.execute_manifest(manifest, vec![]);
-        receipt.expect_success();
+        receipt.expect_commit_success();
 
         receipt
             .expect_commit()
@@ -144,7 +146,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             .build();
 
         let receipt = self.execute_manifest(manifest, vec![]);
-        receipt.expect_success();
+        receipt.expect_commit_success();
         receipt.expect_commit().entity_changes.new_package_addresses[0]
     }
 
@@ -297,7 +299,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             .call_method_with_all_resources(account, "deposit_batch")
             .build();
         self.execute_manifest(manifest, vec![signer_public_key])
-            .expect_success();
+            .expect_commit_success();
     }
 
     pub fn create_restricted_token(
@@ -327,7 +329,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             .call_method_with_all_resources(account, "deposit_batch")
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
-        receipt.expect_success();
+        receipt.expect_commit_success();
 
         (
             receipt
@@ -358,7 +360,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             .call_method_with_all_resources(account, "deposit_batch")
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
-        receipt.expect_success();
+        receipt.expect_commit_success();
         (
             auth_resource_address,
             receipt
@@ -386,7 +388,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             .call_method_with_all_resources(account, "deposit_batch")
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
-        receipt.expect_success();
+        receipt.expect_commit_success();
         (
             auth_resource_address,
             receipt
@@ -409,7 +411,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             .call_method_with_all_resources(account, "deposit_batch")
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
-        receipt.expect_success();
+        receipt.expect_commit_success();
         receipt
             .expect_commit()
             .entity_changes
@@ -434,7 +436,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             .call_method_with_all_resources(account, "deposit_batch")
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
-        receipt.expect_success();
+        receipt.expect_commit_success();
         receipt
             .expect_commit()
             .entity_changes
@@ -464,7 +466,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             .call_method_with_all_resources(account, "deposit_batch")
             .build();
         let receipt = self.execute_manifest(manifest, vec![signer_public_key]);
-        receipt.expect_success();
+        receipt.expect_commit_success();
         receipt
             .expect_commit()
             .entity_changes
@@ -507,23 +509,20 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     {
         let tx_hash = hash(self.next_transaction_nonce.to_string());
         let mut substate_store = self.execution_stores.get_output_store(0);
-        let mut track = Track::new(&substate_store);
-        let mut fee_reserve = SystemLoanFeeReserve::default();
-        let fee_table = FeeTable::new();
+        let mut track = Track::new(&substate_store, SystemLoanFeeReserve::default());
         let mut execution_trace = ExecutionTrace::new();
 
         let mut kernel = Kernel::new(
             tx_hash,
-            vec![],
+            Vec::new(),
             is_system,
             DEFAULT_MAX_CALL_DEPTH,
-            false,
             &mut track,
             &mut self.wasm_engine,
             &mut self.wasm_instrumenter,
-            &mut fee_reserve,
-            &fee_table,
+            WasmMeteringParams::new(InstructionCostRules::tiered(1, 5, 10, 5000), 512), // TODO: add to ExecutionConfig
             &mut execution_trace,
+            Vec::new(),
         );
 
         // Invoke the system
@@ -531,9 +530,10 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
 
         // Commit
         self.next_transaction_nonce += 1;
-        track.commit();
-        let receipt = track.to_receipt();
-        receipt.state_updates.commit(&mut substate_store);
+        let receipt = track.finalize(Ok(Vec::new()), Vec::new());
+        if let TransactionResult::Commit(c) = receipt.result {
+            c.state_updates.commit(&mut substate_store);
+        }
 
         output
     }
@@ -550,14 +550,15 @@ pub fn is_auth_error(e: &RuntimeError) -> bool {
     )
 }
 
-pub fn expect_invoke_error<F>(receipt: &TransactionReceipt, f: F)
-where
-    F: FnOnce(&InvokeError) -> bool,
-{
-    receipt.expect_failure(|e| match e {
-        RuntimeError::KernelError(KernelError::InvokeError(err)) => f(err.as_ref()),
-        _default => false,
-    })
+pub fn is_costing_error(e: &RuntimeError) -> bool {
+    matches!(e, RuntimeError::ModuleError(ModuleError::CostingError(_)))
+}
+
+pub fn is_wasm_error(e: &RuntimeError) -> bool {
+    matches!(
+        e,
+        RuntimeError::KernelError(KernelError::WasmInvokeError(_))
+    )
 }
 
 pub fn wat2wasm(wat: &str) -> Vec<u8> {

@@ -11,27 +11,27 @@ use super::KernelError;
 ///
 /// Execution is free from a costing perspective, as we assume
 /// the system api will bill properly.
-pub struct RadixEngineWasmRuntime<'y, 's, Y, W, I, C>
+pub struct RadixEngineWasmRuntime<'y, 's, Y, W, I, R>
 where
-    Y: SystemApi<'s, W, I, C>,
+    Y: SystemApi<'s, W, I, R>,
     W: WasmEngine<I>,
     I: WasmInstance,
-    C: FeeReserve,
+    R: FeeReserve,
 {
     actor: ScryptoActor,
     system_api: &'y mut Y,
     phantom1: PhantomData<W>,
     phantom2: PhantomData<I>,
-    phantom3: PhantomData<C>,
+    phantom3: PhantomData<R>,
     phantom4: PhantomData<&'s ()>,
 }
 
-impl<'y, 's, Y, W, I, C> RadixEngineWasmRuntime<'y, 's, Y, W, I, C>
+impl<'y, 's, Y, W, I, R> RadixEngineWasmRuntime<'y, 's, Y, W, I, R>
 where
-    Y: SystemApi<'s, W, I, C>,
+    Y: SystemApi<'s, W, I, R>,
     W: WasmEngine<I>,
     I: WasmInstance,
-    C: FeeReserve,
+    R: FeeReserve,
 {
     pub fn new(actor: ScryptoActor, system_api: &'y mut Y) -> Self {
         RadixEngineWasmRuntime {
@@ -42,10 +42,6 @@ where
             phantom3: PhantomData,
             phantom4: PhantomData,
         }
-    }
-
-    fn fee_reserve(&mut self) -> &mut C {
-        self.system_api.fee_reserve()
     }
 
     // FIXME: limit access to the API
@@ -189,12 +185,16 @@ fn encode<T: Encode>(output: T) -> ScryptoValue {
     ScryptoValue::from_typed(&output)
 }
 
-impl<'y, 's, Y: SystemApi<'s, W, I, C>, W: WasmEngine<I>, I: WasmInstance, C: FeeReserve>
-    WasmRuntime for RadixEngineWasmRuntime<'y, 's, Y, W, I, C>
+impl<'y, 's, Y, W, I, R> WasmRuntime for RadixEngineWasmRuntime<'y, 's, Y, W, I, R>
+where
+    Y: SystemApi<'s, W, I, R>,
+    W: WasmEngine<I>,
+    I: WasmInstance,
+    R: FeeReserve,
 {
-    fn main(&mut self, input: ScryptoValue) -> Result<ScryptoValue, InvokeError> {
+    fn main(&mut self, input: ScryptoValue) -> Result<ScryptoValue, WasmInvokeError> {
         let input: RadixEngineInput =
-            scrypto_decode(&input.raw).map_err(|_| InvokeError::InvalidRadixEngineInput)?;
+            scrypto_decode(&input.raw).map_err(|_| WasmInvokeError::InvalidRadixEngineInput)?;
         match input {
             RadixEngineInput::InvokeFunction(fn_identifier, input_bytes) => {
                 self.handle_invoke_function(fn_identifier, input_bytes)
@@ -217,13 +217,13 @@ impl<'y, 's, Y: SystemApi<'s, W, I, C>, W: WasmEngine<I>, I: WasmInstance, C: Fe
                 self.handle_check_access_rule(rule, proof_ids).map(encode)
             }
         }
-        .map_err(InvokeError::RuntimeError)
+        .map_err(WasmInvokeError::RuntimeError)
     }
 
-    fn consume_cost_units(&mut self, n: u32) -> Result<(), InvokeError> {
-        self.fee_reserve()
-            .consume(n, "run_wasm")
-            .map_err(InvokeError::CostingError)
+    fn consume_cost_units(&mut self, n: u32) -> Result<(), WasmInvokeError> {
+        self.system_api
+            .consume_cost_units(n)
+            .map_err(WasmInvokeError::RuntimeError)
     }
 }
 
@@ -239,13 +239,13 @@ impl NopWasmRuntime {
 }
 
 impl WasmRuntime for NopWasmRuntime {
-    fn main(&mut self, _input: ScryptoValue) -> Result<ScryptoValue, InvokeError> {
+    fn main(&mut self, _input: ScryptoValue) -> Result<ScryptoValue, WasmInvokeError> {
         Ok(ScryptoValue::unit())
     }
 
-    fn consume_cost_units(&mut self, n: u32) -> Result<(), InvokeError> {
+    fn consume_cost_units(&mut self, n: u32) -> Result<(), WasmInvokeError> {
         self.fee_reserve
             .consume(n, "run_wasm")
-            .map_err(InvokeError::CostingError)
+            .map_err(WasmInvokeError::CostingError)
     }
 }

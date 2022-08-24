@@ -1,7 +1,10 @@
 use crate::engine::Track;
 use crate::engine::TrackReceipt;
+use crate::fee::FeeReserve;
+use crate::fee::UnlimitedLoanFeeReserve;
 use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
 use crate::model::ValidatedPackage;
+use crate::transaction::TransactionResult;
 use crate::types::ResourceMethodAuthKey::Withdraw;
 use crate::types::*;
 
@@ -22,7 +25,7 @@ const SYS_FAUCET_COMPONENT_NAME: &str = "SysFaucet";
 
 use crate::model::*;
 
-fn create_genesis(mut track: Track) -> TrackReceipt {
+fn create_genesis<'s, R: FeeReserve>(mut track: Track<'s, R>) -> TrackReceipt {
     let sys_faucet_package =
         extract_package(include_bytes!("../../../assets/sys_faucet.wasm").to_vec())
             .expect("Failed to construct sys-faucet package");
@@ -116,8 +119,7 @@ fn create_genesis(mut track: Track) -> TrackReceipt {
     );
     track.create_uuid_substate(SubstateId::System, System { epoch: 0 }, true);
 
-    track.commit();
-    track.to_receipt()
+    track.finalize(Ok(Vec::new()), Vec::new())
 }
 
 pub fn bootstrap<S>(mut substate_store: S) -> S
@@ -128,9 +130,13 @@ where
         .get_substate(&SubstateId::Package(SYS_FAUCET_PACKAGE))
         .is_none()
     {
-        let track = Track::new(&substate_store);
+        let track = Track::new(&substate_store, UnlimitedLoanFeeReserve::default());
         let receipt = create_genesis(track);
-        receipt.state_updates.commit(&mut substate_store);
+        if let TransactionResult::Commit(c) = receipt.result {
+            c.state_updates.commit(&mut substate_store);
+        } else {
+            panic!("Failed to bootstrap")
+        }
     }
     substate_store
 }

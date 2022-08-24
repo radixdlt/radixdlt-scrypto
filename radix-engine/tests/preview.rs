@@ -21,18 +21,15 @@ fn test_transaction_preview_cost_estimate() {
     // Ensure that both succeed and that the preview result provides an accurate cost estimate
     let preview_result = test_runner.execute_preview(preview_intent);
     let preview_receipt = preview_result.unwrap().receipt;
-    preview_receipt.expect_success();
+    preview_receipt.expect_commit_success();
 
     let receipt =
         test_runner.execute_transaction(&validated_transaction, &ExecutionConfig::standard());
-    receipt.expect_success();
+    receipt.expect_commit_success();
 
     assert_eq!(
-        preview_receipt
-            .expect_executed()
-            .fee_summary
-            .cost_unit_consumed,
-        receipt.expect_executed().fee_summary.cost_unit_consumed
+        preview_receipt.execution.fee_summary.cost_unit_consumed,
+        receipt.execution.fee_summary.cost_unit_consumed
     );
 }
 

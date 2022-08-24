@@ -20,7 +20,7 @@ fn should_not_be_able_call_owned_components_directly() {
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    receipt.expect_success();
+    receipt.expect_commit_success();
     let component_address = receipt
         .expect_commit()
         .entity_changes
@@ -57,7 +57,7 @@ fn should_be_able_to_call_read_method_on_a_stored_component_in_owned_component()
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 #[test]
@@ -80,7 +80,7 @@ fn should_be_able_to_call_write_method_on_a_stored_component_in_owned_component(
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 #[test]
@@ -99,7 +99,7 @@ fn should_be_able_to_call_read_method_on_a_stored_component_in_global_component(
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    receipt.expect_success();
+    receipt.expect_commit_success();
     let component_address = receipt
         .expect_commit()
         .entity_changes
@@ -113,7 +113,7 @@ fn should_be_able_to_call_read_method_on_a_stored_component_in_global_component(
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    let outputs = receipt.expect_success();
+    let outputs = receipt.expect_commit_success();
     let rtn: u32 = scrypto_decode(&outputs[1]).unwrap();
     assert_eq!(rtn, 34567u32);
 }
@@ -134,7 +134,7 @@ fn should_be_able_to_call_write_method_on_a_stored_component_in_global_component
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    receipt.expect_success();
+    receipt.expect_commit_success();
     let component_address = receipt
         .expect_commit()
         .entity_changes
@@ -149,7 +149,7 @@ fn should_be_able_to_call_write_method_on_a_stored_component_in_global_component
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    let outputs = receipt.expect_success();
+    let outputs = receipt.expect_commit_success();
     let rtn: u32 = scrypto_decode(&outputs[2]).unwrap();
     assert_eq!(rtn, 8888u32);
 }
@@ -174,7 +174,7 @@ fn should_be_able_to_call_read_method_on_a_kv_stored_component_in_owned_componen
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 #[test]
@@ -197,7 +197,7 @@ fn should_be_able_to_call_write_method_on_a_kv_stored_component_in_owned_compone
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 #[test]
@@ -216,7 +216,7 @@ fn should_be_able_to_call_read_method_on_a_kv_stored_component_in_global_compone
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    receipt.expect_success();
+    receipt.expect_commit_success();
     let component_address = receipt
         .expect_commit()
         .entity_changes
@@ -230,7 +230,7 @@ fn should_be_able_to_call_read_method_on_a_kv_stored_component_in_global_compone
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    let outputs = receipt.expect_success();
+    let outputs = receipt.expect_commit_success();
     let rtn: u32 = scrypto_decode(&outputs[1]).unwrap();
     assert_eq!(rtn, 34567u32);
 }
@@ -251,7 +251,7 @@ fn should_be_able_to_call_write_method_on_a_kv_stored_component_in_global_compon
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    receipt.expect_success();
+    receipt.expect_commit_success();
     let component_address = receipt
         .expect_commit()
         .entity_changes
@@ -266,7 +266,7 @@ fn should_be_able_to_call_write_method_on_a_kv_stored_component_in_global_compon
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    let outputs = receipt.expect_success();
+    let outputs = receipt.expect_commit_success();
     let rtn: u32 = scrypto_decode(&outputs[2]).unwrap();
     assert_eq!(rtn, 8888u32);
 }

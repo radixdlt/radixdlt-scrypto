@@ -32,7 +32,7 @@ fn can_create_clone_and_drop_bucket_proof() {
     println!("{:?}", receipt);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 #[test]
@@ -65,7 +65,7 @@ fn can_create_clone_and_drop_vault_proof() {
     println!("{:?}", receipt);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 #[test]
@@ -102,7 +102,7 @@ fn can_create_clone_and_drop_vault_proof_by_amount() {
     println!("{:?}", receipt);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 #[test]
@@ -140,7 +140,7 @@ fn can_create_clone_and_drop_vault_proof_by_ids() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 #[test]
@@ -173,7 +173,7 @@ fn can_use_bucket_for_authorization() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 #[test]
@@ -209,7 +209,7 @@ fn can_use_vault_for_authorization() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 #[test]
@@ -238,7 +238,7 @@ fn can_create_proof_from_account_and_pass_on() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 #[test]
@@ -267,7 +267,7 @@ fn cant_move_restricted_proof() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
-    receipt.expect_failure(|e| {
+    receipt.expect_commit_failure(|e| {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CantMoveRestrictedProof)
@@ -301,7 +301,7 @@ fn cant_move_locked_bucket() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
-    receipt.expect_failure(|e| {
+    receipt.expect_commit_failure(|e| {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CantMoveLockedBucket)
@@ -342,7 +342,7 @@ fn can_compose_bucket_and_vault_proof() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 #[test]
@@ -378,7 +378,7 @@ fn can_compose_bucket_and_vault_proof_by_amount() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 #[test]
@@ -424,7 +424,7 @@ fn can_compose_bucket_and_vault_proof_by_ids() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 #[test]
@@ -456,7 +456,7 @@ fn can_create_vault_proof_by_amount_from_non_fungibles() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 #[test]
@@ -501,5 +501,5 @@ fn can_create_auth_zone_proof_by_amount_from_non_fungibles() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }

@@ -1,5 +1,4 @@
 use crate::types::*;
-use crate::wasm::{InstructionCostRules, WasmMeteringParams};
 
 pub enum SystemApiCostingEntry<'a> {
     /*
@@ -25,6 +24,8 @@ pub enum SystemApiCostingEntry<'a> {
     DropNode { size: u32 },
     /// Globalizes a RENode.
     GlobalizeNode { size: u32 },
+    /// Borrows a RENode.
+    BorrowNode { loaded: bool, size: u32 },
 
     /*
      * Substate
@@ -66,7 +67,6 @@ pub struct FeeTable {
     fixed_medium: u32,
     fixed_high: u32,
     wasm_instantiation_per_byte: u32,
-    wasm_metering_params: WasmMeteringParams,
 }
 
 impl FeeTable {
@@ -80,10 +80,6 @@ impl FeeTable {
             fixed_low: 100,
             fixed_medium: 500,
             fixed_high: 1000,
-            wasm_metering_params: WasmMeteringParams::new(
-                InstructionCostRules::tiered(1, 5, 10, 5000),
-                512,
-            ),
         }
     }
 
@@ -107,13 +103,9 @@ impl FeeTable {
         self.wasm_instantiation_per_byte
     }
 
-    pub fn wasm_metering_params(&self) -> WasmMeteringParams {
-        self.wasm_metering_params.clone()
-    }
-
     pub fn run_method_cost(
         &self,
-        receiver: Option<Receiver>,
+        receiver: Option<&Receiver>,
         fn_identifier: &FnIdentifier,
         input: &ScryptoValue,
     ) -> u32 {
@@ -228,6 +220,13 @@ impl FeeTable {
             SystemApiCostingEntry::CreateNode { .. } => self.fixed_medium,
             SystemApiCostingEntry::DropNode { .. } => self.fixed_medium,
             SystemApiCostingEntry::GlobalizeNode { size } => self.fixed_high + 200 * size,
+            SystemApiCostingEntry::BorrowNode { loaded, size } => {
+                if loaded {
+                    self.fixed_high
+                } else {
+                    self.fixed_low + 100 * size
+                }
+            }
 
             SystemApiCostingEntry::BorrowSubstate { loaded, size } => {
                 if loaded {

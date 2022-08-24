@@ -2,10 +2,18 @@ use crate::engine::AppStateTrack;
 use crate::engine::BaseStateTrack;
 use crate::engine::StateTrackError;
 use crate::engine::*;
+use crate::fee::FeeReserve;
+use crate::fee::FeeSummary;
 use crate::ledger::*;
+use crate::model::Bucket;
 use crate::model::KeyValueStoreEntryWrapper;
 use crate::model::NonFungibleWrapper;
-use crate::state_manager::StateDiff;
+use crate::model::ResourceContainer;
+use crate::transaction::CommitResult;
+use crate::transaction::EntityChanges;
+use crate::transaction::RejectResult;
+use crate::transaction::TransactionOutcome;
+use crate::transaction::TransactionResult;
 use crate::types::*;
 
 #[derive(Debug)]
@@ -27,11 +35,12 @@ impl BorrowedSubstate {
 
 /// Enforces borrow semantics of global objects and collects transaction-wise side effects,
 /// such as logs and events.
-pub struct Track<'s> {
+pub struct Track<'s, R: FeeReserve> {
     application_logs: Vec<(Level, String)>,
     new_substates: Vec<SubstateId>,
     state_track: AppStateTrack<'s>,
     borrowed_substates: HashMap<SubstateId, BorrowedSubstate>,
+    pub fee_reserve: R,
 }
 
 #[derive(Debug)]
@@ -42,13 +51,13 @@ pub enum TrackError {
 }
 
 pub struct TrackReceipt {
-    pub new_addresses: Vec<SubstateId>,
+    pub fee_summary: FeeSummary,
     pub application_logs: Vec<(Level, String)>,
-    pub state_updates: StateDiff,
+    pub result: TransactionResult,
 }
 
-impl<'s> Track<'s> {
-    pub fn new(substate_store: &'s dyn ReadableSubstateStore) -> Self {
+impl<'s, R: FeeReserve> Track<'s, R> {
+    pub fn new(substate_store: &'s dyn ReadableSubstateStore, fee_reserve: R) -> Self {
         let base_state_track = BaseStateTrack::new(substate_store);
         let state_track = AppStateTrack::new(base_state_track);
 
@@ -57,6 +66,7 @@ impl<'s> Track<'s> {
             new_substates: Vec::new(),
             state_track,
             borrowed_substates: HashMap::new(),
+            fee_reserve,
         }
     }
 
@@ -282,23 +292,118 @@ impl<'s> Track<'s> {
         self.state_track.put_substate(substate_id, value.into());
     }
 
-    pub fn commit(&mut self) {
-        self.state_track.commit();
-    }
+    pub fn finalize(
+        mut self,
+        invoke_result: Result<Vec<Vec<u8>>, RuntimeError>,
+        resource_changes: Vec<ResourceChange>, // TODO: wrong abstraction, resource change should be derived from track instead of kernel
+    ) -> TrackReceipt {
+        let is_success = invoke_result.is_ok();
 
-    pub fn rollback(&mut self) {
-        self.state_track.rollback();
+        // Commit/rollback application state changes
+        if is_success {
+            self.state_track.commit();
+            assert!(self.borrowed_substates.is_empty())
+        } else {
+            self.state_track.rollback();
+            self.borrowed_substates.clear();
+            self.new_substates.clear();
+        }
 
-        // self.application_logs.clear();
-        self.new_substates.clear();
-        self.borrowed_substates.clear();
-    }
+        // Close fee reserve
+        let fee_summary = self.fee_reserve.finalize();
+        let is_rejection = !fee_summary.loan_fully_repaid;
 
-    pub fn to_receipt(self) -> TrackReceipt {
+        // Commit fee state changes
+        let result = if is_rejection {
+            TransactionResult::Reject(RejectResult {
+                error: match invoke_result {
+                    Ok(..) => RejectionError::SuccessButFeeLoanNotRepaid,
+                    Err(error) => RejectionError::ErrorBeforeFeeLoanRepaid(error),
+                },
+            })
+        } else {
+            let mut required = fee_summary.burned + fee_summary.tipped;
+            let mut collector = ResourceContainer::new_empty(
+                RADIX_TOKEN,
+                ResourceType::Fungible { divisibility: 18 },
+            );
+            for (vault_id, mut locked, contingent) in fee_summary.payments.iter().cloned().rev() {
+                let amount = if contingent {
+                    if is_success {
+                        Decimal::min(locked.liquid_amount(), required)
+                    } else {
+                        Decimal::zero()
+                    }
+                } else {
+                    Decimal::min(locked.liquid_amount(), required)
+                };
+
+                // Deduct fee required
+                required = required - amount;
+
+                // Collect fees into collector
+                collector
+                    .put(
+                        locked
+                            .take_by_amount(amount)
+                            .expect("Failed to extract locked fee"),
+                    )
+                    .expect("Failed to add fee to fee collector");
+
+                // Refund overpayment
+                let substate_id = SubstateId::Vault(vault_id);
+                let mut substate = self
+                    .state_track
+                    .get_substate_from_base(&substate_id)
+                    .expect("Failed to fetch a fee-locking vault")
+                    .expect("Vault not found");
+                substate
+                    .vault_mut()
+                    .put(Bucket::new(locked))
+                    .expect("Failed to put a fee-locking vault");
+                self.state_track.put_substate_to_base(substate_id, substate);
+            }
+
+            // TODO: update XRD supply or disable it
+            // TODO: pay tips to the lead validator
+
+            let mut new_component_addresses = Vec::new();
+            let mut new_resource_addresses = Vec::new();
+            let mut new_package_addresses = Vec::new();
+            for substate_id in self.new_substates {
+                match substate_id {
+                    SubstateId::ComponentInfo(component_address) => {
+                        new_component_addresses.push(component_address)
+                    }
+                    SubstateId::ResourceManager(resource_address) => {
+                        new_resource_addresses.push(resource_address)
+                    }
+                    SubstateId::Package(package_address) => {
+                        new_package_addresses.push(package_address)
+                    }
+                    _ => {}
+                }
+            }
+
+            TransactionResult::Commit(CommitResult {
+                outcome: match invoke_result {
+                    Ok(output) => TransactionOutcome::Success(output),
+                    Err(error) => TransactionOutcome::Failure(error),
+                },
+                state_updates: self.state_track.into_base().generate_diff(),
+                entity_changes: EntityChanges {
+                    new_package_addresses,
+                    new_component_addresses,
+                    new_resource_addresses,
+                },
+                resource_changes,
+            })
+        };
+
         TrackReceipt {
-            new_addresses: self.new_substates,
+            fee_summary,
             application_logs: self.application_logs,
-            state_updates: self.state_track.into_base().generate_diff(),
+            result,
         }
     }
 }

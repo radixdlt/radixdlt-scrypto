@@ -14,7 +14,6 @@ pub struct TransactionContents {
 
 #[derive(Debug)]
 pub struct TransactionExecution {
-    pub execution_time: Option<u128>,
     pub fee_summary: FeeSummary,
     pub application_logs: Vec<(Level, String)>,
 }
@@ -50,71 +49,6 @@ impl TransactionOutcome {
     }
 }
 
-/// A flattened combination of the transaction's result and outcome
-#[derive(Debug)]
-pub enum TransactionStatus<'a> {
-    Success(&'a Vec<Vec<u8>>),
-    Failure(&'a RuntimeError),
-    Rejection(&'a RejectionError),
-}
-
-impl TransactionStatus<'_> {
-    pub fn is_success(&self) -> bool {
-        match self {
-            Self::Success(..) => true,
-            Self::Failure(..) => false,
-            Self::Rejection(..) => false,
-        }
-    }
-
-    pub fn is_failure(&self) -> bool {
-        match self {
-            Self::Success(..) => false,
-            Self::Failure(..) => true,
-            Self::Rejection(..) => false,
-        }
-    }
-
-    pub fn is_rejection(&self) -> bool {
-        match self {
-            Self::Success(..) => false,
-            Self::Failure(..) => false,
-            Self::Rejection(..) => true,
-        }
-    }
-}
-
-impl TransactionResult {
-    pub fn is_success(&self) -> bool {
-        self.get_status().is_success()
-    }
-
-    pub fn is_failure(&self) -> bool {
-        self.get_status().is_failure()
-    }
-
-    pub fn is_rejection(&self) -> bool {
-        self.get_status().is_rejection()
-    }
-
-    pub fn get_status(&self) -> TransactionStatus {
-        match self {
-            TransactionResult::Commit(commit) => match &commit.outcome {
-                TransactionOutcome::Success(x) => TransactionStatus::Success(x),
-                TransactionOutcome::Failure(e) => TransactionStatus::Failure(e),
-            },
-            TransactionResult::Reject(rejection) => TransactionStatus::Rejection(&rejection.error),
-        }
-    }
-
-    pub fn get_commit_result(&self) -> Option<&CommitResult> {
-        match self {
-            TransactionResult::Commit(commit) => Some(commit),
-            TransactionResult::Reject(..) => None,
-        }
-    }
-}
-
 #[derive(Debug)]
 pub struct EntityChanges {
     pub new_package_addresses: Vec<PackageAddress>,
@@ -130,63 +64,63 @@ pub struct RejectResult {
 /// Represents a transaction receipt.
 pub struct TransactionReceipt {
     pub contents: TransactionContents,
-    pub execution: Option<TransactionExecution>,
+    pub execution: TransactionExecution, // THIS FIELD IS USEFUL FOR DEBUGGING EVEN IF THE TRANSACTION IS REJECTED
     pub result: TransactionResult,
 }
 
 impl TransactionReceipt {
-    pub fn expect_success(&self) -> &Vec<Vec<u8>> {
-        match self.result.get_status() {
-            TransactionStatus::Success(x) => &x,
-            TransactionStatus::Failure(err) => {
-                panic!("Expected success but was failed:\n{:?}", err)
-            }
-            TransactionStatus::Rejection(err) => {
-                panic!("Expected success but was rejection:\n{:?}", err)
-            }
+    pub fn is_commit(&self) -> bool {
+        matches!(self.result, TransactionResult::Commit(_))
+    }
+
+    pub fn is_rejection(&self) -> bool {
+        matches!(self.result, TransactionResult::Reject(_))
+    }
+
+    pub fn expect_commit(&self) -> &CommitResult {
+        match &self.result {
+            TransactionResult::Commit(c) => c,
+            TransactionResult::Reject(_) => panic!("Transaction was rejected"),
         }
     }
 
-    pub fn expect_failure<F>(&self, f: F)
+    pub fn expect_commit_success(&self) -> &Vec<Vec<u8>> {
+        match &self.result {
+            TransactionResult::Commit(c) => match &c.outcome {
+                TransactionOutcome::Success(x) => x,
+                TransactionOutcome::Failure(err) => {
+                    panic!("Expected success but was failed:\n{:?}", err)
+                }
+            },
+            TransactionResult::Reject(_) => panic!("Transaction was rejected"),
+        }
+    }
+
+    pub fn expect_commit_failure<F>(&self, f: F)
     where
         F: FnOnce(&RuntimeError) -> bool,
     {
-        let failure_error = match self.result.get_status() {
-            TransactionStatus::Success(..) => panic!("Expected failure but was success"),
-            TransactionStatus::Failure(err) => err,
-            TransactionStatus::Rejection(err) => {
-                panic!("Expected failure but was rejection:\n{:?}", err)
-            }
-        };
-
-        if !f(&failure_error) {
-            panic!(
-                "Expected specific failure but was different error:\n{:?}",
-                self
-            );
+        match &self.result {
+            TransactionResult::Commit(c) => match &c.outcome {
+                TransactionOutcome::Success(_) => panic!("Expected failure but was success"),
+                TransactionOutcome::Failure(err) => {
+                    if !f(&err) {
+                        panic!(
+                            "Expected specific failure but was different error:\n{:?}",
+                            self
+                        );
+                    }
+                }
+            },
+            TransactionResult::Reject(_) => panic!("Transaction was rejected"),
         }
     }
 
     pub fn expect_rejection(&self) -> &RejectionError {
-        match self.result.get_status() {
-            TransactionStatus::Success(..) => panic!("Expected rejection but was success"),
-            TransactionStatus::Failure(err) => {
-                panic!("Expected rejection but was failed:\n{:?}", err)
-            }
-            TransactionStatus::Rejection(err) => err,
+        match &self.result {
+            TransactionResult::Commit(..) => panic!("Expected rejection but was commit"),
+            TransactionResult::Reject(ref r) => &r.error,
         }
-    }
-
-    pub fn expect_commit(&self) -> &CommitResult {
-        self.result
-            .get_commit_result()
-            .expect("The transaction was not set to be committed")
-    }
-
-    pub fn expect_executed(&self) -> &TransactionExecution {
-        self.execution
-            .as_ref()
-            .expect("The transaction was not executed")
     }
 }
 
@@ -202,60 +136,72 @@ macro_rules! prefix {
 
 impl fmt::Debug for TransactionReceipt {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let contents = &self.contents;
+        let execution = &self.execution;
         let result = &self.result;
-        let execution = self.execution.as_ref();
-        let commit = result.get_commit_result();
 
         write!(
             f,
             "{} {}",
             "Transaction Status:".bold().green(),
-            match result.get_status() {
-                TransactionStatus::Success(..) => "COMMITTED SUCCESS".blue(),
-                TransactionStatus::Failure(e) => format!("COMMITTED FAILURE: {}", e).red(),
-                TransactionStatus::Rejection(e) => format!("REJECTION: {}", e).red(),
+            match result {
+                TransactionResult::Commit(c) => match &c.outcome {
+                    TransactionOutcome::Success(_) => "COMMITTED SUCCESS".green(),
+                    TransactionOutcome::Failure(e) => format!("COMMITTED FAILURE: {}", e).red(),
+                },
+                TransactionResult::Reject(r) => format!("REJECTED: {}", r.error).red(),
             },
         )?;
 
-        if let Some(fee_summary) = execution.map(|e| &e.fee_summary) {
-            write!(
-                f,
-                "\n{} {} XRD burned, {} XRD tipped to validators",
-                "Transaction Fee:".bold().green(),
-                fee_summary.burned,
-                fee_summary.tipped,
-            )?;
-
-            write!(
-                f,
-                "\n{} {} limit, {} consumed, {} XRD per cost unit",
-                "Cost Units:".bold().green(),
-                fee_summary.cost_unit_limit,
-                fee_summary.cost_unit_consumed,
-                fee_summary.cost_unit_price,
-            )?;
-        }
+        write!(
+            f,
+            "\n{} {} XRD burned, {} XRD tipped to validators",
+            "Transaction Fee:".bold().green(),
+            execution.fee_summary.burned,
+            execution.fee_summary.tipped,
+        )?;
 
         write!(
             f,
-            "\n{} {} ms",
-            "Execution Time:".bold().green(),
-            execution
-                .and_then(|v| v.execution_time)
-                .map(|v| v.to_string())
-                .unwrap_or(String::from("?"))
+            "\n{} {} limit, {} consumed, {} XRD per cost unit",
+            "Cost Units:".bold().green(),
+            execution.fee_summary.cost_unit_limit,
+            execution.fee_summary.cost_unit_consumed,
+            execution.fee_summary.cost_unit_price,
         )?;
+
+        write!(
+            f,
+            "\n{} {}",
+            "Logs:".bold().green(),
+            execution.application_logs.len()
+        )?;
+        for (i, (level, msg)) in execution.application_logs.iter().enumerate() {
+            let (l, m) = match level {
+                Level::Error => ("ERROR".red(), msg.red()),
+                Level::Warn => ("WARN".yellow(), msg.yellow()),
+                Level::Info => ("INFO".green(), msg.green()),
+                Level::Debug => ("DEBUG".cyan(), msg.cyan()),
+                Level::Trace => ("TRACE".normal(), msg.normal()),
+            };
+            write!(
+                f,
+                "\n{} [{:5}] {}",
+                prefix!(i, execution.application_logs),
+                l,
+                m
+            )?;
+        }
 
         // TODO - Need to fix the hardcoding of local simulator HRPs for transaction receipts, and for address formatting
         let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::local_simulator());
-        let instructions = &self.contents.instructions;
 
         write!(f, "\n{}", "Instructions:".bold().green())?;
-        for (i, inst) in instructions.iter().enumerate() {
+        for (i, inst) in contents.instructions.iter().enumerate() {
             write!(
                 f,
                 "\n{} {}",
-                prefix!(i, instructions),
+                prefix!(i, contents.instructions),
                 match inst {
                     ExecutableInstruction::CallFunction {
                         package_address,
@@ -285,64 +231,54 @@ impl fmt::Debug for TransactionReceipt {
             )?;
         }
 
-        if let TransactionStatus::Success(outputs) = &result.get_status() {
-            write!(f, "\n{}", "Instruction Outputs:".bold().green())?;
-            for (i, output) in outputs.iter().enumerate() {
-                write!(
-                    f,
-                    "\n{} {:?}",
-                    prefix!(i, outputs),
-                    ScryptoValue::from_slice(output).expect("Failed to parse return data")
-                )?;
+        if let TransactionResult::Commit(c) = &result {
+            if let TransactionOutcome::Success(outputs) = &c.outcome {
+                write!(f, "\n{}", "Instruction Outputs:".bold().green())?;
+                for (i, output) in outputs.iter().enumerate() {
+                    write!(
+                        f,
+                        "\n{} {:?}",
+                        prefix!(i, outputs),
+                        ScryptoValue::from_slice(output).expect("Failed to parse return data")
+                    )?;
+                }
             }
         }
 
-        if let Some(application_logs) = execution.map(|e| &e.application_logs) {
-            write!(f, "\n{} {}", "Logs:".bold().green(), application_logs.len())?;
-            for (i, (level, msg)) in application_logs.iter().enumerate() {
-                let (l, m) = match level {
-                    Level::Error => ("ERROR".red(), msg.red()),
-                    Level::Warn => ("WARN".yellow(), msg.yellow()),
-                    Level::Info => ("INFO".green(), msg.green()),
-                    Level::Debug => ("DEBUG".cyan(), msg.cyan()),
-                    Level::Trace => ("TRACE".normal(), msg.normal()),
-                };
-                write!(f, "\n{} [{:5}] {}", prefix!(i, application_logs), l, m)?;
-            }
-        }
-
-        if let Some(entity_changes) = commit.map(|c| &c.entity_changes) {
+        if let TransactionResult::Commit(c) = &result {
             write!(
                 f,
                 "\n{} {}",
                 "New Entities:".bold().green(),
-                entity_changes.new_package_addresses.len()
-                    + entity_changes.new_component_addresses.len()
-                    + entity_changes.new_resource_addresses.len()
+                c.entity_changes.new_package_addresses.len()
+                    + c.entity_changes.new_component_addresses.len()
+                    + c.entity_changes.new_resource_addresses.len()
             )?;
 
-            for (i, package_address) in entity_changes.new_package_addresses.iter().enumerate() {
+            for (i, package_address) in c.entity_changes.new_package_addresses.iter().enumerate() {
                 write!(
                     f,
                     "\n{} Package: {}",
-                    prefix!(i, entity_changes.new_package_addresses),
+                    prefix!(i, c.entity_changes.new_package_addresses),
                     bech32_encoder.encode_package_address(package_address)
                 )?;
             }
-            for (i, component_address) in entity_changes.new_component_addresses.iter().enumerate()
+            for (i, component_address) in
+                c.entity_changes.new_component_addresses.iter().enumerate()
             {
                 write!(
                     f,
                     "\n{} Component: {}",
-                    prefix!(i, entity_changes.new_component_addresses),
+                    prefix!(i, c.entity_changes.new_component_addresses),
                     bech32_encoder.encode_component_address(component_address)
                 )?;
             }
-            for (i, resource_address) in entity_changes.new_resource_addresses.iter().enumerate() {
+            for (i, resource_address) in c.entity_changes.new_resource_addresses.iter().enumerate()
+            {
                 write!(
                     f,
                     "\n{} Resource: {}",
-                    prefix!(i, entity_changes.new_resource_addresses),
+                    prefix!(i, c.entity_changes.new_resource_addresses),
                     bech32_encoder.encode_resource_address(resource_address)
                 )?;
             }

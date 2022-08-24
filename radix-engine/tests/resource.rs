@@ -31,7 +31,7 @@ fn test_resource_manager() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 #[test]
@@ -56,7 +56,7 @@ fn mint_with_bad_granularity_should_fail() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
-    receipt.expect_failure(|e| {
+    receipt.expect_commit_failure(|e| {
         if let RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(
             ResourceManagerError::InvalidAmount(amount, granularity),
         )) = e
@@ -90,7 +90,7 @@ fn mint_too_much_should_fail() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
-    receipt.expect_failure(|e| {
+    receipt.expect_commit_failure(|e| {
         matches!(
             e,
             RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(

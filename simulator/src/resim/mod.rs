@@ -189,7 +189,7 @@ pub fn handle_manifest<O: std::io::Write>(
                 writeln!(out, "{:?}", receipt).map_err(Error::IOError)?;
             }
 
-            if receipt.result.is_success() {
+            if receipt.is_commit() {
                 let mut configs = get_configs()?;
                 configs.nonce = nonce + 1;
                 set_configs(&configs)?;

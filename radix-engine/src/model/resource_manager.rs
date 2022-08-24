@@ -255,12 +255,18 @@ impl ResourceManager {
         self.total_supply
     }
 
-    pub fn mint<'s, Y: SystemApi<'s, W, I, C>, W: WasmEngine<I>, I: WasmInstance, C: FeeReserve>(
+    pub fn mint<'s, Y, W, I, R>(
         &mut self,
         mint_params: MintParams,
         self_address: ResourceAddress,
         system_api: &mut Y,
-    ) -> Result<ResourceContainer, ResourceManagerError> {
+    ) -> Result<ResourceContainer, ResourceManagerError>
+    where
+        Y: SystemApi<'s, W, I, R>,
+        W: WasmEngine<I>,
+        I: WasmInstance,
+        R: FeeReserve,
+    {
         match mint_params {
             MintParams::Fungible { amount } => self.mint_fungible(amount, self_address),
             MintParams::NonFungible { entries } => {
@@ -296,18 +302,18 @@ impl ResourceManager {
         }
     }
 
-    pub fn mint_non_fungibles<
-        's,
-        Y: SystemApi<'s, W, I, C>,
-        W: WasmEngine<I>,
-        I: WasmInstance,
-        C: FeeReserve,
-    >(
+    pub fn mint_non_fungibles<'s, Y, W, I, R>(
         &mut self,
         entries: HashMap<NonFungibleId, (Vec<u8>, Vec<u8>)>,
         self_address: ResourceAddress,
         system_api: &mut Y,
-    ) -> Result<ResourceContainer, ResourceManagerError> {
+    ) -> Result<ResourceContainer, ResourceManagerError>
+    where
+        Y: SystemApi<'s, W, I, R>,
+        W: WasmEngine<I>,
+        I: WasmInstance,
+        R: FeeReserve,
+    {
         // check resource type
         if !matches!(self.resource_type, ResourceType::NonFungible) {
             return Err(ResourceManagerError::ResourceTypeDoesNotMatch);
@@ -377,17 +383,17 @@ impl ResourceManager {
         }
     }
 
-    pub fn static_main<
-        's,
-        Y: SystemApi<'s, W, I, C>,
-        W: WasmEngine<I>,
-        I: WasmInstance,
-        C: FeeReserve,
-    >(
+    pub fn static_main<'s, Y, W, I, R>(
         resource_manager_fn: ResourceManagerFnIdentifier,
         args: ScryptoValue,
         system_api: &mut Y,
-    ) -> Result<ScryptoValue, ResourceManagerError> {
+    ) -> Result<ScryptoValue, ResourceManagerError>
+    where
+        Y: SystemApi<'s, W, I, R>,
+        W: WasmEngine<I>,
+        I: WasmInstance,
+        R: FeeReserve,
+    {
         match resource_manager_fn {
             ResourceManagerFnIdentifier::Create => {
                 let input: ResourceManagerCreateInput = scrypto_decode(&args.raw)
@@ -463,12 +469,18 @@ impl ResourceManager {
         }
     }
 
-    pub fn main<'s, Y: SystemApi<'s, W, I, C>, W: WasmEngine<I>, I: WasmInstance, C: FeeReserve>(
+    pub fn main<'s, Y, W, I, R>(
         resource_address: ResourceAddress,
         resource_manager_fn: ResourceManagerFnIdentifier,
         args: ScryptoValue,
         system_api: &mut Y,
-    ) -> Result<ScryptoValue, ResourceManagerError> {
+    ) -> Result<ScryptoValue, ResourceManagerError>
+    where
+        Y: SystemApi<'s, W, I, R>,
+        W: WasmEngine<I>,
+        I: WasmInstance,
+        R: FeeReserve,
+    {
         let substate_id = SubstateId::ResourceManager(resource_address);
         let mut ref_mut = system_api
             .substate_borrow_mut(&substate_id)

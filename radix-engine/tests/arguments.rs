@@ -30,7 +30,7 @@ fn vector_of_buckets_argument_should_succeed() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 #[test]
@@ -57,7 +57,7 @@ fn tuple_of_buckets_argument_should_succeed() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 #[test]
@@ -83,7 +83,7 @@ fn treemap_of_strings_and_buckets_argument_should_succeed() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 #[test]
@@ -109,7 +109,7 @@ fn hashmap_of_strings_and_buckets_argument_should_succeed() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 #[test]
@@ -134,7 +134,7 @@ fn some_optional_bucket_argument_should_succeed() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 #[test]
@@ -157,5 +157,5 @@ fn none_optional_bucket_argument_should_succeed() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }

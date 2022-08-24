@@ -25,7 +25,7 @@ fn should_not_be_able_to_read_component_state_after_creation() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| {
+    receipt.expect_commit_failure(|e| {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::SubstateReadNotReadable(..))
@@ -53,7 +53,7 @@ fn should_not_be_able_to_write_component_state_after_creation() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| {
+    receipt.expect_commit_failure(|e| {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::SubstateWriteNotWriteable(..))
@@ -81,7 +81,7 @@ fn should_be_able_to_read_component_info() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 #[test]
@@ -104,7 +104,7 @@ fn should_not_be_able_to_write_component_info() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| {
+    receipt.expect_commit_failure(|e| {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::SubstateWriteNotWriteable(..))

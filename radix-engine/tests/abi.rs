@@ -27,7 +27,7 @@ fn test_invalid_access_rule_methods() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| {
+    receipt.expect_commit_failure(|e| {
         matches!(
             e,
             RuntimeError::ApplicationError(ApplicationError::ComponentError(
@@ -59,10 +59,10 @@ fn test_arg(method_name: &str, args: Vec<u8>, expected_result: ExpectedResult) {
     // Assert
     match expected_result {
         ExpectedResult::Success => {
-            receipt.expect_success();
+            receipt.expect_commit_success();
         }
         ExpectedResult::InvalidInput => {
-            receipt.expect_failure(|e| {
+            receipt.expect_commit_failure(|e| {
                 matches!(
                     e,
                     RuntimeError::KernelError(KernelError::InvalidFnInput { .. })
@@ -70,7 +70,7 @@ fn test_arg(method_name: &str, args: Vec<u8>, expected_result: ExpectedResult) {
             });
         }
         ExpectedResult::InvalidOutput => {
-            receipt.expect_failure(|e| {
+            receipt.expect_commit_failure(|e| {
                 matches!(
                     e,
                     RuntimeError::KernelError(KernelError::InvalidFnOutput { .. })

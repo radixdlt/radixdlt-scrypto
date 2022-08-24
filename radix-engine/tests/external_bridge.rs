@@ -34,7 +34,7 @@ fn test_external_bridges() {
         )
         .build();
     let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
-    receipt1.expect_success();
+    receipt1.expect_commit_success();
 
     let target_component_address = receipt1
         .expect_commit()
@@ -52,7 +52,7 @@ fn test_external_bridges() {
         )
         .build();
     let receipt2 = test_runner.execute_manifest(manifest2, vec![]);
-    receipt2.expect_success();
+    receipt2.expect_commit_success();
 
     let caller_component_address = receipt2
         .expect_commit()
@@ -71,7 +71,7 @@ fn test_external_bridges() {
     let receipt3 = test_runner.execute_manifest(manifest3, vec![]);
 
     // ASSERT
-    receipt3.expect_success();
+    receipt3.expect_commit_success();
 
     // ACT
     let manifest4 = ManifestBuilder::new(&NetworkDefinition::local_simulator())
@@ -85,7 +85,7 @@ fn test_external_bridges() {
     let receipt4 = test_runner.execute_manifest(manifest4, vec![]);
 
     // ASSERT
-    receipt4.expect_success();
+    receipt4.expect_commit_success();
 }
 
 fn fill_in_package_name_template(

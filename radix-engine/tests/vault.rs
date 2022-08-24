@@ -26,7 +26,7 @@ fn non_existent_vault_in_component_creation_should_fail() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| {
+    receipt.expect_commit_failure(|e| {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::RENodeCreateNodeNotFound(RENodeId::Vault(_)))
@@ -58,7 +58,7 @@ fn non_existent_vault_in_committed_component_should_fail() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| {
+    receipt.expect_commit_failure(|e| {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::RENodeNotFound(RENodeId::Vault(_)))
@@ -86,7 +86,7 @@ fn non_existent_vault_in_key_value_store_creation_should_fail() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| {
+    receipt.expect_commit_failure(|e| {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::RENodeNotFound(RENodeId::Vault(_)))
@@ -122,7 +122,7 @@ fn non_existent_vault_in_committed_key_value_store_should_fail() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| {
+    receipt.expect_commit_failure(|e| {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::RENodeNotFound(RENodeId::Vault(_)))
@@ -145,7 +145,7 @@ fn create_mutable_vault_into_map() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 #[test]
@@ -168,7 +168,7 @@ fn invalid_double_ownership_of_vault() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| {
+    receipt.expect_commit_failure(|e| {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::RENodeCreateNodeNotFound(RENodeId::Vault(_)))
@@ -196,7 +196,7 @@ fn create_mutable_vault_into_map_and_referencing_before_storing() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 #[test]
@@ -223,7 +223,7 @@ fn cannot_overwrite_vault_in_map() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| {
+    receipt.expect_commit_failure(|e| {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::StoredNodeRemoved(RENodeId::Vault(_)))
@@ -251,7 +251,7 @@ fn create_mutable_vault_into_vector() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 #[test]
@@ -283,7 +283,7 @@ fn cannot_remove_vaults() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| {
+    receipt.expect_commit_failure(|e| {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::StoredNodeRemoved(RENodeId::Vault(_)))
@@ -320,7 +320,7 @@ fn can_push_vault_into_vector() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 #[test]
@@ -338,7 +338,7 @@ fn create_mutable_vault_with_take() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 #[test]
@@ -361,7 +361,7 @@ fn create_mutable_vault_with_take_non_fungible() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 #[test]
@@ -384,7 +384,7 @@ fn create_mutable_vault_with_get_nonfungible_ids() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 #[test]
@@ -407,7 +407,7 @@ fn create_mutable_vault_with_get_nonfungible_id() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 #[test]
@@ -430,7 +430,7 @@ fn create_mutable_vault_with_get_amount() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 #[test]
@@ -453,5 +453,5 @@ fn create_mutable_vault_with_get_resource_manager() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }

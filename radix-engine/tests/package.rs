@@ -20,7 +20,7 @@ fn test_publish_package_from_scrypto() {
         .call_function(package, "PackageTest", "publish", args!())
         .build();
     let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
-    receipt1.expect_success();
+    receipt1.expect_commit_success();
 }
 
 #[test]
@@ -50,7 +50,7 @@ fn missing_memory_should_cause_error() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| {
+    receipt.expect_commit_failure(|e| {
         matches!(
             e,
             &RuntimeError::ApplicationError(ApplicationError::PackageError(
@@ -77,9 +77,9 @@ fn large_return_len_should_cause_memory_access_error() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| {
-        if let RuntimeError::KernelError(KernelError::InvokeError(b)) = e {
-            matches!(**b, InvokeError::MemoryAccessError)
+    receipt.expect_commit_failure(|e| {
+        if let RuntimeError::KernelError(KernelError::WasmInvokeError(b)) = e {
+            matches!(**b, WasmInvokeError::MemoryAccessError)
         } else {
             false
         }
@@ -101,9 +101,9 @@ fn overflow_return_len_should_cause_memory_access_error() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| {
-        if let RuntimeError::KernelError(KernelError::InvokeError(b)) = e {
-            matches!(**b, InvokeError::MemoryAccessError)
+    receipt.expect_commit_failure(|e| {
+        if let RuntimeError::KernelError(KernelError::WasmInvokeError(b)) = e {
+            matches!(**b, WasmInvokeError::MemoryAccessError)
         } else {
             false
         }
@@ -126,7 +126,12 @@ fn zero_return_len_should_cause_data_validation_error() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| matches!(e, RuntimeError::KernelError(KernelError::InvokeError(_))));
+    receipt.expect_commit_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::KernelError(KernelError::WasmInvokeError(_))
+        )
+    });
 }
 
 #[test]
@@ -148,7 +153,7 @@ fn test_basic_package() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 #[test]
@@ -181,7 +186,7 @@ fn test_basic_package_missing_export() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| {
+    receipt.expect_commit_failure(|e| {
         matches!(
             e,
             RuntimeError::ApplicationError(ApplicationError::PackageError(

@@ -27,7 +27,7 @@ fn cannot_make_cross_component_call_without_authorization() {
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    receipt.expect_success();
+    receipt.expect_commit_success();
     let secured_component = receipt
         .expect_commit()
         .entity_changes
@@ -43,7 +43,7 @@ fn cannot_make_cross_component_call_without_authorization() {
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    receipt.expect_success();
+    receipt.expect_commit_success();
     let my_component = receipt
         .expect_commit()
         .entity_changes
@@ -61,7 +61,7 @@ fn cannot_make_cross_component_call_without_authorization() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(is_auth_error);
+    receipt.expect_commit_failure(is_auth_error);
 }
 
 #[test]
@@ -87,7 +87,7 @@ fn can_make_cross_component_call_with_authorization() {
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    receipt.expect_success();
+    receipt.expect_commit_success();
     let secured_component = receipt
         .expect_commit()
         .entity_changes
@@ -103,7 +103,7 @@ fn can_make_cross_component_call_with_authorization() {
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    receipt.expect_success();
+    receipt.expect_commit_success();
     let my_component = receipt
         .expect_commit()
         .entity_changes
@@ -115,7 +115,7 @@ fn can_make_cross_component_call_with_authorization() {
         .call_method_with_all_resources(my_component, "put_auth")
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
-    receipt.expect_success();
+    receipt.expect_commit_success();
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
@@ -129,5 +129,5 @@ fn can_make_cross_component_call_with_authorization() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }

@@ -1,5 +1,4 @@
 use radix_engine::ledger::TypedInMemorySubstateStore;
-use radix_engine::wasm::InvokeError;
 use scrypto::args;
 use scrypto::core::NetworkDefinition;
 use scrypto::prelude::{Package, RADIX_TOKEN, SYS_FAUCET_COMPONENT};
@@ -26,7 +25,7 @@ fn test_loop() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 #[test]
@@ -49,7 +48,7 @@ fn test_loop_out_of_cost_unit() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    expect_invoke_error(&receipt, |err| matches!(err, InvokeError::CostingError(..)));
+    receipt.expect_commit_failure(is_costing_error)
 }
 
 #[test]
@@ -73,7 +72,7 @@ fn test_recursion() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 #[test]
@@ -96,7 +95,7 @@ fn test_recursion_stack_overflow() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    expect_invoke_error(&receipt, |err| matches!(err, InvokeError::WasmError(..)));
+    receipt.expect_commit_failure(is_wasm_error)
 }
 
 #[test]
@@ -119,7 +118,7 @@ fn test_grow_memory() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 #[test]
@@ -142,7 +141,7 @@ fn test_grow_memory_out_of_cost_unit() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    expect_invoke_error(&receipt, |err| matches!(err, InvokeError::CostingError(..)));
+    receipt.expect_commit_failure(is_costing_error)
 }
 
 #[test]
@@ -183,6 +182,6 @@ fn test_basic_transfer() {
         + 646 /* verify_manifest */
         + 3750 /* verify_signatures */
         + 3000, /* write_substate */
-        receipt.expect_executed().fee_summary.cost_unit_consumed
+        receipt.execution.fee_summary.cost_unit_consumed
     );
 }

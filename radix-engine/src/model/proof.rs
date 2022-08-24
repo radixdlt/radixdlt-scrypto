@@ -325,12 +325,18 @@ impl Proof {
         self.restricted
     }
 
-    pub fn main<'s, Y: SystemApi<'s, W, I, C>, W: WasmEngine<I>, I: WasmInstance, C: FeeReserve>(
+    pub fn main<'s, Y, W, I, R>(
         proof_id: ProofId,
         proof_fn: ProofFnIdentifier,
         args: ScryptoValue,
         system_api: &mut Y,
-    ) -> Result<ScryptoValue, ProofError> {
+    ) -> Result<ScryptoValue, ProofError>
+    where
+        Y: SystemApi<'s, W, I, R>,
+        W: WasmEngine<I>,
+        I: WasmInstance,
+        R: FeeReserve,
+    {
         let substate_id = SubstateId::Proof(proof_id);
         let mut node_ref = system_api
             .substate_borrow_mut(&substate_id)
@@ -375,18 +381,18 @@ impl Proof {
         Ok(rtn)
     }
 
-    pub fn main_consume<
-        's,
-        Y: SystemApi<'s, W, I, C>,
-        W: WasmEngine<I>,
-        I: WasmInstance,
-        C: FeeReserve,
-    >(
+    pub fn main_consume<'s, Y, W, I, R>(
         node_id: RENodeId,
         proof_fn: ProofFnIdentifier,
         args: ScryptoValue,
         system_api: &mut Y,
-    ) -> Result<ScryptoValue, ProofError> {
+    ) -> Result<ScryptoValue, ProofError>
+    where
+        Y: SystemApi<'s, W, I, R>,
+        W: WasmEngine<I>,
+        I: WasmInstance,
+        R: FeeReserve,
+    {
         let proof: Proof = system_api
             .node_drop(&node_id)
             .map_err(|e| ProofError::RuntimeError(Box::new(e)))?

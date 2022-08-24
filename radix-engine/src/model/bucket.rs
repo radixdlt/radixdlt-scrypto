@@ -150,12 +150,18 @@ impl Bucket {
         self.container.borrow_mut()
     }
 
-    pub fn main<'s, Y: SystemApi<'s, W, I, C>, W: WasmEngine<I>, I: WasmInstance, C: FeeReserve>(
+    pub fn main<'s, Y, W, I, R>(
         bucket_id: BucketId,
         bucket_fn: BucketFnIdentifier,
         args: ScryptoValue,
         system_api: &mut Y,
-    ) -> Result<ScryptoValue, BucketError> {
+    ) -> Result<ScryptoValue, BucketError>
+    where
+        Y: SystemApi<'s, W, I, R>,
+        W: WasmEngine<I>,
+        I: WasmInstance,
+        R: FeeReserve,
+    {
         let substate_id = SubstateId::Bucket(bucket_id);
         let mut node_ref = system_api
             .substate_borrow_mut(&substate_id)
@@ -245,18 +251,18 @@ impl Bucket {
         Ok(rtn)
     }
 
-    pub fn consuming_main<
-        's,
-        Y: SystemApi<'s, W, I, C>,
-        W: WasmEngine<I>,
-        I: WasmInstance,
-        C: FeeReserve,
-    >(
+    pub fn consuming_main<'s, Y, W, I, R>(
         node_id: RENodeId,
         bucket_fn: BucketFnIdentifier,
         args: ScryptoValue,
         system_api: &mut Y,
-    ) -> Result<ScryptoValue, BucketError> {
+    ) -> Result<ScryptoValue, BucketError>
+    where
+        Y: SystemApi<'s, W, I, R>,
+        W: WasmEngine<I>,
+        I: WasmInstance,
+        R: FeeReserve,
+    {
         match bucket_fn {
             BucketFnIdentifier::Burn => {
                 let _: ConsumingBucketBurnInput =

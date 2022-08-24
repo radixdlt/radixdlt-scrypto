@@ -22,7 +22,7 @@ fn test_bucket_internal(method_name: &str) {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 #[test]
@@ -86,7 +86,7 @@ fn test_bucket_of_badges() {
         .call_method_with_all_resources(account, "deposit_batch")
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 #[test]
@@ -114,7 +114,7 @@ fn test_take_with_invalid_granularity() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
-    receipt.expect_failure(|e| {
+    receipt.expect_commit_failure(|e| {
         if let RuntimeError::ApplicationError(ApplicationError::BucketError(
             BucketError::ResourceContainerError(ResourceContainerError::InvalidAmount(
                 amount,
@@ -154,7 +154,7 @@ fn test_take_with_negative_amount() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
-    receipt.expect_failure(|e| {
+    receipt.expect_commit_failure(|e| {
         if let RuntimeError::ApplicationError(ApplicationError::BucketError(
             BucketError::ResourceContainerError(ResourceContainerError::InvalidAmount(
                 amount,
@@ -196,5 +196,5 @@ fn create_empty_bucket() {
     println!("{:?}", receipt);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }

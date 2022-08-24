@@ -51,5 +51,5 @@ fn test_say_hello() {
         &TestTransaction::new(manifest, 2, vec![]),
         &ExecutionConfig::debug(),
     );
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }

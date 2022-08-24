@@ -44,7 +44,7 @@ fn batched_executions_should_result_in_the_same_result() {
     // Test Runner 0: One by One
     for (manifest, signers) in &manifests {
         let receipt = test_runner0.execute_manifest(manifest.clone(), signers.clone());
-        receipt.expect_success();
+        receipt.expect_commit_success();
     }
 
     // Test Runner 1: Batch

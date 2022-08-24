@@ -52,7 +52,7 @@ fn should_succeed_when_fee_is_paid() {
             .build()
     });
 
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 #[test]
@@ -150,7 +150,7 @@ fn should_succeed_when_lock_fee_and_query_vault() {
             .build()
     });
 
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 fn query_account_balance<'s, S>(
@@ -196,10 +196,10 @@ fn test_fee_accounting_success() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
     let account1_new_balance = query_account_balance(&mut test_runner, account1, RADIX_TOKEN);
     let account2_new_balance = query_account_balance(&mut test_runner, account2, RADIX_TOKEN);
-    let summary = &receipt.expect_executed().fee_summary;
+    let summary = &receipt.execution.fee_summary;
     assert_eq!(
         account1_new_balance,
         account1_balance
@@ -230,7 +230,7 @@ fn test_fee_accounting_failure() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
-    receipt.expect_failure(|e| {
+    receipt.expect_commit_failure(|e| {
         matches!(
             e,
             RuntimeError::ApplicationError(ApplicationError::WorktopError(
@@ -240,7 +240,7 @@ fn test_fee_accounting_failure() {
     });
     let account1_new_balance = query_account_balance(&mut test_runner, account1, RADIX_TOKEN);
     let account2_new_balance = query_account_balance(&mut test_runner, account2, RADIX_TOKEN);
-    let summary = &receipt.expect_executed().fee_summary;
+    let summary = &receipt.execution.fee_summary;
     assert_eq!(
         account1_new_balance,
         account1_balance
@@ -288,10 +288,10 @@ fn test_contingent_fee_accounting_success() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key1, public_key2]);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
     let account1_new_balance = query_account_balance(&mut test_runner, account1, RADIX_TOKEN);
     let account2_new_balance = query_account_balance(&mut test_runner, account2, RADIX_TOKEN);
-    let summary = &receipt.expect_executed().fee_summary;
+    let summary = &receipt.execution.fee_summary;
     let effective_price =
         summary.cost_unit_price + summary.cost_unit_price * summary.tip_percentage / 100;
     let contingent_fee =
@@ -322,7 +322,7 @@ fn test_contingent_fee_accounting_failure() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key1, public_key2]);
 
     // Assert
-    receipt.expect_failure(|e| {
+    receipt.expect_commit_failure(|e| {
         matches!(
             e,
             RuntimeError::ApplicationError(ApplicationError::WorktopError(
@@ -332,7 +332,7 @@ fn test_contingent_fee_accounting_failure() {
     });
     let account1_new_balance = query_account_balance(&mut test_runner, account1, RADIX_TOKEN);
     let account2_new_balance = query_account_balance(&mut test_runner, account2, RADIX_TOKEN);
-    let summary = &receipt.expect_executed().fee_summary;
+    let summary = &receipt.execution.fee_summary;
     let effective_price =
         summary.cost_unit_price + summary.cost_unit_price * summary.tip_percentage / 100;
     assert_eq!(

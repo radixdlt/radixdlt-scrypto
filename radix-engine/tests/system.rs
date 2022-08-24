@@ -20,7 +20,7 @@ fn test_get_epoch() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    let outputs = receipt.expect_success();
+    let outputs = receipt.expect_commit_success();
     let epoch: u64 = scrypto_decode(&outputs[1]).unwrap();
     assert_eq!(epoch, 0);
 }
@@ -42,7 +42,7 @@ fn test_set_epoch_without_system_auth_fails() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| {
+    receipt.expect_commit_failure(|e| {
         matches!(
             e,
             RuntimeError::ModuleError(ModuleError::AuthorizationError { .. })

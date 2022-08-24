@@ -4,17 +4,13 @@ use crate::engine::REActor;
 use crate::fee::FeeReserveError;
 use crate::model::*;
 use crate::types::*;
-use crate::wasm::InvokeError;
+use crate::wasm::WasmInvokeError;
 
 /// Represents an error which causes a tranasction to be rejected.
 #[derive(Debug)]
 pub enum RejectionError {
     SuccessButFeeLoanNotRepaid,
     ErrorBeforeFeeLoanRepaid(RuntimeError),
-    MismatchedNetwork {
-        transaction_network_id: u8,
-        expected_network_id: u8,
-    },
 }
 
 impl fmt::Display for RejectionError {
@@ -39,7 +35,7 @@ pub enum RuntimeError {
 #[derive(Debug)]
 pub enum KernelError {
     // invocation
-    InvokeError(Box<InvokeError>),
+    WasmInvokeError(Box<WasmInvokeError>),
     InvokeMethodInvalidReceiver(RENodeId),
     InvokeMethodInvalidReferencePass(RENodeId),
     InvokeMethodInvalidReferenceReturn(RENodeId),

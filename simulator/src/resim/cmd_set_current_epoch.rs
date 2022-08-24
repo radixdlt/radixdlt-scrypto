@@ -2,7 +2,7 @@ use clap::Parser;
 use radix_engine::constants::*;
 use radix_engine::engine::Track;
 use radix_engine::engine::{ExecutionTrace, Kernel, SystemApi};
-use radix_engine::fee::{FeeTable, SystemLoanFeeReserve};
+use radix_engine::fee::SystemLoanFeeReserve;
 use radix_engine::types::*;
 use radix_engine_stores::rocks_db::RadixEngineDB;
 
@@ -23,23 +23,20 @@ impl SetCurrentEpoch {
         let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?);
         let mut wasm_engine = DefaultWasmEngine::new();
         let mut wasm_instrumenter = WasmInstrumenter::new();
-        let mut track = Track::new(&substate_store);
-        let mut fee_reserve = SystemLoanFeeReserve::default();
-        let fee_table = FeeTable::new();
+        let mut track = Track::new(&substate_store, SystemLoanFeeReserve::default());
         let mut execution_trace = ExecutionTrace::new();
 
         let mut kernel = Kernel::new(
             tx_hash,
-            vec![],
+            Vec::new(),
             true,
             DEFAULT_MAX_CALL_DEPTH,
-            false,
             &mut track,
             &mut wasm_engine,
             &mut wasm_instrumenter,
-            &mut fee_reserve,
-            &fee_table,
+            WasmMeteringParams::new(InstructionCostRules::tiered(1, 5, 10, 5000), 512), // TODO: add to ExecutionConfig
             &mut execution_trace,
+            Vec::new(),
         );
 
         // Invoke the system
@@ -53,9 +50,10 @@ impl SetCurrentEpoch {
             .map_err(Error::TransactionExecutionError)?;
 
         // Commit
-        track.commit();
-        let receipt = track.to_receipt();
-        receipt.state_updates.commit(&mut substate_store);
+        let receipt = track.finalize(Ok(Vec::new()), Vec::new());
+        if let TransactionResult::Commit(c) = receipt.result {
+            c.state_updates.commit(&mut substate_store);
+        }
 
         Ok(())
     }

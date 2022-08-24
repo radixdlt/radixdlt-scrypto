@@ -1,5 +1,5 @@
 use crate::engine::*;
-use crate::fee::*;
+use crate::fee::FeeReserve;
 use crate::model::*;
 use crate::types::*;
 use crate::wasm::*;
@@ -7,7 +7,7 @@ use crate::wasm::*;
 pub struct NativeInterpreter;
 
 impl NativeInterpreter {
-    pub fn run<'s, Y, W, I, C>(
+    pub fn run<'s, Y, W, I, R>(
         receiver: Option<Receiver>,
         auth_zone_frame_id: Option<usize>,
         fn_identifier: NativeFnIdentifier,
@@ -15,10 +15,10 @@ impl NativeInterpreter {
         system_api: &mut Y,
     ) -> Result<ScryptoValue, RuntimeError>
     where
-        Y: SystemApi<'s, W, I, C>,
+        Y: SystemApi<'s, W, I, R>,
         W: WasmEngine<I>,
         I: WasmInstance,
-        C: FeeReserve,
+        R: FeeReserve,
     {
         match (receiver, fn_identifier) {
             (None, NativeFnIdentifier::TransactionProcessor(transaction_processor_fn)) => {

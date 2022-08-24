@@ -68,7 +68,7 @@ fn bench_transfer(c: &mut Criterion) {
                 &TestTransaction::new(manifest.clone(), nonce, vec![public_key]),
                 &ExecutionConfig::default(),
             );
-            receipt.expect_success();
+            receipt.expect_commit_success();
             nonce += 1;
         })
     });
