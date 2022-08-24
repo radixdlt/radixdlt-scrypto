@@ -35,8 +35,6 @@ echo "Running simulator..."
 (cd simulator; bash ./tests/resim.sh)
 (cd simulator; bash ./tests/scrypto.sh)
 (cd simulator; bash ./tests/manifest.sh)
-(cd simulator; bash ./tests/interoperability-tests/sanity-check.sh)
-(cd simulator; bash ./tests/interoperability-tests/math-ops-check.sh)
 
 echo "Running benchmark..."
 (cd sbor-tests; cargo bench)
