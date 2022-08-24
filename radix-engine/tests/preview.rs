@@ -1,6 +1,6 @@
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::transaction::ExecutionConfig;
-use scrypto::core::Network;
+use scrypto::core::NetworkDefinition;
 use scrypto::prelude::SYS_FAUCET_COMPONENT;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -24,12 +24,15 @@ fn test_transaction_preview_cost_estimate() {
     preview_receipt.expect_success();
 
     let receipt =
-        test_runner.execute_transaction(&validated_transaction, &ExecutionConfig::default());
+        test_runner.execute_transaction(&validated_transaction, &ExecutionConfig::standard());
     receipt.expect_success();
 
     assert_eq!(
-        preview_receipt.fee_summary.cost_unit_consumed,
-        receipt.fee_summary.cost_unit_consumed
+        preview_receipt
+            .expect_executed()
+            .fee_summary
+            .cost_unit_consumed,
+        receipt.expect_executed().fee_summary.cost_unit_consumed
     );
 }
 
@@ -42,7 +45,7 @@ fn prepare_test_tx_and_preview_intent(
     let notarized_transaction = TransactionBuilder::new()
         .header(TransactionHeader {
             version: 1,
-            network: Network::LocalSimulator,
+            network_id: NetworkDefinition::local_simulator().id,
             start_epoch_inclusive: 0,
             end_epoch_exclusive: 99,
             nonce: test_runner.next_transaction_nonce(),
@@ -52,7 +55,7 @@ fn prepare_test_tx_and_preview_intent(
             tip_percentage: 0,
         })
         .manifest(
-            ManifestBuilder::new(Network::LocalSimulator)
+            ManifestBuilder::new(&NetworkDefinition::local_simulator())
                 .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
                 .clear_auth_zone()
                 .build(),
@@ -65,7 +68,7 @@ fn prepare_test_tx_and_preview_intent(
         notarized_transaction.clone(),
         &TestIntentHashManager::new(),
         &ValidationConfig {
-            network: Network::LocalSimulator,
+            network: NetworkDefinition::local_simulator(),
             current_epoch: 1,
             max_cost_unit_limit: 10_000_000,
             min_tip_percentage: 0,

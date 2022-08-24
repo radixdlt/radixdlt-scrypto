@@ -1,5 +1,5 @@
 use sbor::rust::vec::Vec;
-use scrypto::core::Network;
+use scrypto::core::NetworkDefinition;
 use scrypto::crypto::*;
 
 use crate::builder::TransactionBuilder;
@@ -21,7 +21,7 @@ impl TestTransaction {
         let transaction = TransactionBuilder::new()
             .header(TransactionHeader {
                 version: TRANSACTION_VERSION_V1,
-                network: Network::LocalSimulator,
+                network_id: NetworkDefinition::local_simulator().id,
                 start_epoch_inclusive: 0,
                 end_epoch_exclusive: 100,
                 nonce,
@@ -161,10 +161,6 @@ impl TestTransaction {
 impl ExecutableTransaction for TestTransaction {
     fn transaction_hash(&self) -> Hash {
         self.transaction.hash()
-    }
-
-    fn transaction_network(&self) -> Network {
-        self.transaction.signed_intent.intent.header.network.clone()
     }
 
     fn transaction_payload_size(&self) -> u32 {

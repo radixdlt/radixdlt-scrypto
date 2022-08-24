@@ -10,6 +10,7 @@ use num_traits::{One, Pow, Signed, ToPrimitive, Zero};
 use paste::paste;
 use sbor::rust::convert::{From, TryFrom};
 use sbor::rust::fmt;
+use sbor::rust::string::*;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 use sbor::type_id::*;

@@ -1,51 +1,149 @@
 use colored::*;
+use scrypto::core::NetworkDefinition;
 use transaction::model::*;
 
-use crate::engine::{ResourceChange, RuntimeError};
+use crate::engine::{RejectionError, ResourceChange, RuntimeError};
 use crate::fee::FeeSummary;
 use crate::state_manager::StateDiff;
 use crate::types::*;
 
 #[derive(Debug)]
-pub enum TransactionStatus {
-    Rejected,
-    Succeeded(Vec<Vec<u8>>),
-    Failed(RuntimeError),
+pub struct TransactionContents {
+    pub instructions: Vec<ExecutableInstruction>,
 }
 
-impl TransactionStatus {
+#[derive(Debug)]
+pub struct TransactionExecution {
+    pub execution_time: Option<u128>,
+    pub fee_summary: FeeSummary,
+    pub application_logs: Vec<(Level, String)>,
+}
+
+/// Captures whether a transaction should be committed, and its other results
+#[derive(Debug)]
+pub enum TransactionResult {
+    Commit(CommitResult),
+    Reject(RejectResult),
+}
+
+#[derive(Debug)]
+pub struct CommitResult {
+    pub outcome: TransactionOutcome,
+    pub state_updates: StateDiff,
+    pub entity_changes: EntityChanges,
+    pub resource_changes: Vec<ResourceChange>,
+}
+
+/// Captures whether a transaction's commit outcome is Success or Failure
+#[derive(Debug)]
+pub enum TransactionOutcome {
+    Success(Vec<Vec<u8>>),
+    Failure(RuntimeError),
+}
+
+impl TransactionOutcome {
     pub fn is_success(&self) -> bool {
-        matches!(self, Self::Succeeded(..))
+        match self {
+            Self::Success(..) => true,
+            Self::Failure(..) => false,
+        }
     }
+}
+
+/// A flattened combination of the transaction's result and outcome
+#[derive(Debug)]
+pub enum TransactionStatus<'a> {
+    Success(&'a Vec<Vec<u8>>),
+    Failure(&'a RuntimeError),
+    Rejection(&'a RejectionError),
+}
+
+impl TransactionStatus<'_> {
+    pub fn is_success(&self) -> bool {
+        match self {
+            Self::Success(..) => true,
+            Self::Failure(..) => false,
+            Self::Rejection(..) => false,
+        }
+    }
+
     pub fn is_failure(&self) -> bool {
-        matches!(self, Self::Failed(..))
+        match self {
+            Self::Success(..) => false,
+            Self::Failure(..) => true,
+            Self::Rejection(..) => false,
+        }
     }
+
     pub fn is_rejection(&self) -> bool {
-        matches!(self, Self::Rejected)
+        match self {
+            Self::Success(..) => false,
+            Self::Failure(..) => false,
+            Self::Rejection(..) => true,
+        }
     }
+}
+
+impl TransactionResult {
+    pub fn is_success(&self) -> bool {
+        self.get_status().is_success()
+    }
+
+    pub fn is_failure(&self) -> bool {
+        self.get_status().is_failure()
+    }
+
+    pub fn is_rejection(&self) -> bool {
+        self.get_status().is_rejection()
+    }
+
+    pub fn get_status(&self) -> TransactionStatus {
+        match self {
+            TransactionResult::Commit(commit) => match &commit.outcome {
+                TransactionOutcome::Success(x) => TransactionStatus::Success(x),
+                TransactionOutcome::Failure(e) => TransactionStatus::Failure(e),
+            },
+            TransactionResult::Reject(rejection) => TransactionStatus::Rejection(&rejection.error),
+        }
+    }
+
+    pub fn get_commit_result(&self) -> Option<&CommitResult> {
+        match self {
+            TransactionResult::Commit(commit) => Some(commit),
+            TransactionResult::Reject(..) => None,
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct EntityChanges {
+    pub new_package_addresses: Vec<PackageAddress>,
+    pub new_component_addresses: Vec<ComponentAddress>,
+    pub new_resource_addresses: Vec<ResourceAddress>,
+}
+
+#[derive(Debug)]
+pub struct RejectResult {
+    pub error: RejectionError,
 }
 
 /// Represents a transaction receipt.
 pub struct TransactionReceipt {
-    pub status: TransactionStatus,
-    pub fee_summary: FeeSummary,
-    pub transaction_network: Network,
-    pub execution_time: Option<u128>,
-    pub instructions: Vec<ExecutableInstruction>,
-    pub application_logs: Vec<(Level, String)>,
-    pub new_package_addresses: Vec<PackageAddress>,
-    pub new_component_addresses: Vec<ComponentAddress>,
-    pub new_resource_addresses: Vec<ResourceAddress>,
-    pub state_updates: StateDiff,
-    pub resource_changes: Vec<ResourceChange>,
+    pub contents: TransactionContents,
+    pub execution: Option<TransactionExecution>,
+    pub result: TransactionResult,
 }
 
 impl TransactionReceipt {
     pub fn expect_success(&self) -> &Vec<Vec<u8>> {
-        match &self.status {
-            TransactionStatus::Succeeded(output) => output,
-            TransactionStatus::Failed(err) => panic!("Expected success but was:\n{:?}", err),
-            TransactionStatus::Rejected => panic!("Expected success but was rejection"),
+        match self.result.get_status() {
+            TransactionStatus::Success(x) => &x,
+            TransactionStatus::Failure(err) => {
+                panic!("Expected success but was failed:\n{:?}", err)
+            }
+            TransactionStatus::Rejection(err) => {
+                panic!("Expected success but was rejection:\n{:?}", err)
+            }
         }
     }
 
@@ -53,19 +151,42 @@ impl TransactionReceipt {
     where
         F: FnOnce(&RuntimeError) -> bool,
     {
-        if let TransactionStatus::Failed(e) = &self.status {
-            if !f(e) {
-                panic!("Expected failure but was different error:\n{:?}", self);
+        let failure_error = match self.result.get_status() {
+            TransactionStatus::Success(..) => panic!("Expected failure but was success"),
+            TransactionStatus::Failure(err) => err,
+            TransactionStatus::Rejection(err) => {
+                panic!("Expected failure but was rejection:\n{:?}", err)
             }
-        } else {
-            panic!("Expected failure but was:\n{:?}", self);
+        };
+
+        if !f(&failure_error) {
+            panic!(
+                "Expected specific failure but was different error:\n{:?}",
+                self
+            );
         }
     }
 
-    pub fn expect_rejection(&self) {
-        if !matches!(self.status, TransactionStatus::Rejected) {
-            panic!("Expected rejection but was:\n{:?}", self);
+    pub fn expect_rejection(&self) -> &RejectionError {
+        match self.result.get_status() {
+            TransactionStatus::Success(..) => panic!("Expected rejection but was success"),
+            TransactionStatus::Failure(err) => {
+                panic!("Expected rejection but was failed:\n{:?}", err)
+            }
+            TransactionStatus::Rejection(err) => err,
         }
+    }
+
+    pub fn expect_commit(&self) -> &CommitResult {
+        self.result
+            .get_commit_result()
+            .expect("The transaction was not set to be committed")
+    }
+
+    pub fn expect_executed(&self) -> &TransactionExecution {
+        self.execution
+            .as_ref()
+            .expect("The transaction was not executed")
     }
 }
 
@@ -81,51 +202,60 @@ macro_rules! prefix {
 
 impl fmt::Debug for TransactionReceipt {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let bech32_encoder = Bech32Encoder::new_from_network(&self.transaction_network);
+        let result = &self.result;
+        let execution = self.execution.as_ref();
+        let commit = result.get_commit_result();
 
         write!(
             f,
             "{} {}",
             "Transaction Status:".bold().green(),
-            match &self.status {
-                TransactionStatus::Succeeded(_) => "SUCCESS".blue(),
-                TransactionStatus::Failed(e) => format!("FAILURE: {}", e).red(),
-                TransactionStatus::Rejected => "REJECTION".red(),
-            }
+            match result.get_status() {
+                TransactionStatus::Success(..) => "COMMITTED SUCCESS".blue(),
+                TransactionStatus::Failure(e) => format!("COMMITTED FAILURE: {}", e).red(),
+                TransactionStatus::Rejection(e) => format!("REJECTION: {}", e).red(),
+            },
         )?;
 
-        write!(
-            f,
-            "\n{} {} XRD burned, {} XRD tipped to validators",
-            "Transaction Fee:".bold().green(),
-            self.fee_summary.burned,
-            self.fee_summary.tipped,
-        )?;
+        if let Some(fee_summary) = execution.map(|e| &e.fee_summary) {
+            write!(
+                f,
+                "\n{} {} XRD burned, {} XRD tipped to validators",
+                "Transaction Fee:".bold().green(),
+                fee_summary.burned,
+                fee_summary.tipped,
+            )?;
 
-        write!(
-            f,
-            "\n{} {} limit, {} consumed, {} XRD per cost unit",
-            "Cost Units:".bold().green(),
-            self.fee_summary.cost_unit_limit,
-            self.fee_summary.cost_unit_consumed,
-            self.fee_summary.cost_unit_price,
-        )?;
+            write!(
+                f,
+                "\n{} {} limit, {} consumed, {} XRD per cost unit",
+                "Cost Units:".bold().green(),
+                fee_summary.cost_unit_limit,
+                fee_summary.cost_unit_consumed,
+                fee_summary.cost_unit_price,
+            )?;
+        }
 
         write!(
             f,
             "\n{} {} ms",
             "Execution Time:".bold().green(),
-            self.execution_time
+            execution
+                .and_then(|v| v.execution_time)
                 .map(|v| v.to_string())
                 .unwrap_or(String::from("?"))
         )?;
 
+        // TODO - Need to fix the hardcoding of local simulator HRPs for transaction receipts, and for address formatting
+        let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::local_simulator());
+        let instructions = &self.contents.instructions;
+
         write!(f, "\n{}", "Instructions:".bold().green())?;
-        for (i, inst) in self.instructions.iter().enumerate() {
+        for (i, inst) in instructions.iter().enumerate() {
             write!(
                 f,
                 "\n{} {}",
-                prefix!(i, self.instructions),
+                prefix!(i, instructions),
                 match inst {
                     ExecutableInstruction::CallFunction {
                         package_address,
@@ -155,7 +285,7 @@ impl fmt::Debug for TransactionReceipt {
             )?;
         }
 
-        if let TransactionStatus::Succeeded(outputs) = &self.status {
+        if let TransactionStatus::Success(outputs) = &result.get_status() {
             write!(f, "\n{}", "Instruction Outputs:".bold().green())?;
             for (i, output) in outputs.iter().enumerate() {
                 write!(
@@ -167,55 +297,55 @@ impl fmt::Debug for TransactionReceipt {
             }
         }
 
-        write!(
-            f,
-            "\n{} {}",
-            "Logs:".bold().green(),
-            self.application_logs.len()
-        )?;
-        for (i, (level, msg)) in self.application_logs.iter().enumerate() {
-            let (l, m) = match level {
-                Level::Error => ("ERROR".red(), msg.red()),
-                Level::Warn => ("WARN".yellow(), msg.yellow()),
-                Level::Info => ("INFO".green(), msg.green()),
-                Level::Debug => ("DEBUG".cyan(), msg.cyan()),
-                Level::Trace => ("TRACE".normal(), msg.normal()),
-            };
-            write!(f, "\n{} [{:5}] {}", prefix!(i, self.application_logs), l, m)?;
+        if let Some(application_logs) = execution.map(|e| &e.application_logs) {
+            write!(f, "\n{} {}", "Logs:".bold().green(), application_logs.len())?;
+            for (i, (level, msg)) in application_logs.iter().enumerate() {
+                let (l, m) = match level {
+                    Level::Error => ("ERROR".red(), msg.red()),
+                    Level::Warn => ("WARN".yellow(), msg.yellow()),
+                    Level::Info => ("INFO".green(), msg.green()),
+                    Level::Debug => ("DEBUG".cyan(), msg.cyan()),
+                    Level::Trace => ("TRACE".normal(), msg.normal()),
+                };
+                write!(f, "\n{} [{:5}] {}", prefix!(i, application_logs), l, m)?;
+            }
         }
 
-        write!(
-            f,
-            "\n{} {}",
-            "New Entities:".bold().green(),
-            self.new_package_addresses.len()
-                + self.new_component_addresses.len()
-                + self.new_resource_addresses.len()
-        )?;
+        if let Some(entity_changes) = commit.map(|c| &c.entity_changes) {
+            write!(
+                f,
+                "\n{} {}",
+                "New Entities:".bold().green(),
+                entity_changes.new_package_addresses.len()
+                    + entity_changes.new_component_addresses.len()
+                    + entity_changes.new_resource_addresses.len()
+            )?;
 
-        for (i, package_address) in self.new_package_addresses.iter().enumerate() {
-            write!(
-                f,
-                "\n{} Package: {}",
-                prefix!(i, self.new_package_addresses),
-                bech32_encoder.encode_package_address(package_address)
-            )?;
-        }
-        for (i, component_address) in self.new_component_addresses.iter().enumerate() {
-            write!(
-                f,
-                "\n{} Component: {}",
-                prefix!(i, self.new_component_addresses),
-                bech32_encoder.encode_component_address(component_address)
-            )?;
-        }
-        for (i, resource_address) in self.new_resource_addresses.iter().enumerate() {
-            write!(
-                f,
-                "\n{} Resource: {}",
-                prefix!(i, self.new_resource_addresses),
-                bech32_encoder.encode_resource_address(resource_address)
-            )?;
+            for (i, package_address) in entity_changes.new_package_addresses.iter().enumerate() {
+                write!(
+                    f,
+                    "\n{} Package: {}",
+                    prefix!(i, entity_changes.new_package_addresses),
+                    bech32_encoder.encode_package_address(package_address)
+                )?;
+            }
+            for (i, component_address) in entity_changes.new_component_addresses.iter().enumerate()
+            {
+                write!(
+                    f,
+                    "\n{} Component: {}",
+                    prefix!(i, entity_changes.new_component_addresses),
+                    bech32_encoder.encode_component_address(component_address)
+                )?;
+            }
+            for (i, resource_address) in entity_changes.new_resource_addresses.iter().enumerate() {
+                write!(
+                    f,
+                    "\n{} Resource: {}",
+                    prefix!(i, entity_changes.new_resource_addresses),
+                    bech32_encoder.encode_resource_address(resource_address)
+                )?;
+            }
         }
 
         Ok(())

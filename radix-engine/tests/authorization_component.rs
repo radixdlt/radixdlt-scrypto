@@ -1,5 +1,5 @@
 use radix_engine::ledger::TypedInMemorySubstateStore;
-use scrypto::core::Network;
+use scrypto::core::NetworkDefinition;
 use scrypto::prelude::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -17,7 +17,7 @@ fn cannot_make_cross_component_call_without_authorization() {
         AccessRules::new().method("get_component_state", rule!(require(auth_address.clone())));
 
     let package_address = test_runner.extract_and_publish_package("component");
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(
             package_address,
@@ -28,9 +28,12 @@ fn cannot_make_cross_component_call_without_authorization() {
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_success();
-    let secured_component = receipt.new_component_addresses[0];
+    let secured_component = receipt
+        .expect_commit()
+        .entity_changes
+        .new_component_addresses[0];
 
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(
             package_address,
@@ -41,10 +44,13 @@ fn cannot_make_cross_component_call_without_authorization() {
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_success();
-    let my_component = receipt.new_component_addresses[0];
+    let my_component = receipt
+        .expect_commit()
+        .entity_changes
+        .new_component_addresses[0];
 
     // Act
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_method(
             my_component,
@@ -71,7 +77,7 @@ fn can_make_cross_component_call_with_authorization() {
         AccessRules::new().method("get_component_state", rule!(require(auth_address.clone())));
 
     let package_address = test_runner.extract_and_publish_package("component");
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(
             package_address,
@@ -82,9 +88,12 @@ fn can_make_cross_component_call_with_authorization() {
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_success();
-    let secured_component = receipt.new_component_addresses[0];
+    let secured_component = receipt
+        .expect_commit()
+        .entity_changes
+        .new_component_addresses[0];
 
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(
             package_address,
@@ -95,9 +104,12 @@ fn can_make_cross_component_call_with_authorization() {
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_success();
-    let my_component = receipt.new_component_addresses[0];
+    let my_component = receipt
+        .expect_commit()
+        .entity_changes
+        .new_component_addresses[0];
 
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .withdraw_from_account_by_ids(&BTreeSet::from([auth_id.clone()]), auth, account)
         .call_method_with_all_resources(my_component, "put_auth")
@@ -106,7 +118,7 @@ fn can_make_cross_component_call_with_authorization() {
     receipt.expect_success();
 
     // Act
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_method(
             my_component,

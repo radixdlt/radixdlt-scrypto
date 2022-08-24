@@ -20,6 +20,12 @@ pub struct ExecutionConfig {
 
 impl Default for ExecutionConfig {
     fn default() -> Self {
+        ExecutionConfig::standard()
+    }
+}
+
+impl ExecutionConfig {
+    pub fn standard() -> Self {
         Self {
             cost_unit_price: DEFAULT_COST_UNIT_PRICE
                 .parse()
@@ -30,9 +36,7 @@ impl Default for ExecutionConfig {
             trace: false,
         }
     }
-}
 
-impl ExecutionConfig {
     pub fn debug() -> Self {
         Self {
             cost_unit_price: DEFAULT_COST_UNIT_PRICE
@@ -84,7 +88,9 @@ where
         params: &ExecutionConfig,
     ) -> TransactionReceipt {
         let receipt = self.execute(transaction, params);
-        receipt.state_updates.commit(self.substate_store);
+        if let Some(commit) = receipt.result.get_commit_result() {
+            commit.state_updates.commit(self.substate_store);
+        }
         receipt
     }
 
@@ -113,18 +119,20 @@ where
         let now = std::time::Instant::now();
 
         let transaction_hash = transaction.transaction_hash();
-        let transaction_network = transaction.transaction_network();
         let signer_public_keys = transaction.signer_public_keys().to_vec();
         let instructions = transaction.instructions().to_vec();
         #[cfg(not(feature = "alloc"))]
         if params.trace {
             println!("{:-^80}", "Transaction Metadata");
             println!("Transaction hash: {}", transaction_hash);
-            println!("Transaction network: {:?}", transaction_network);
             println!("Transaction signers: {:?}", signer_public_keys);
 
             println!("{:-^80}", "Engine Execution Log");
         }
+
+        let transaction_contents = TransactionContents {
+            instructions: instructions,
+        };
 
         // 1. Start state track and execution trace
         let mut track = Track::new(self.substate_store);
@@ -176,7 +184,7 @@ where
                     TransactionProcessorFnIdentifier::Run,
                 )),
                 ScryptoValue::from_typed(&TransactionProcessorRunInput {
-                    instructions: instructions.clone(),
+                    instructions: transaction_contents.instructions.clone(),
                 }),
             );
             #[cfg(not(feature = "alloc"))]
@@ -191,7 +199,7 @@ where
             })
         };
 
-        // 4. Settle transaction fee
+        // 4. Finalize transaction fee, determine outcome, and reject transaction if required
         let fee_summary = fee_reserve.finalize();
         #[cfg(not(feature = "alloc"))]
         if params.trace {
@@ -200,28 +208,57 @@ where
                 println!("{:<30}: {:>8}", k, v);
             }
         }
+        let is_success_result = result.is_ok();
 
-        let status = if fee_summary.loan_fully_repaid {
-            match result {
-                Ok(output) => TransactionStatus::Succeeded(output),
-                Err(error) => TransactionStatus::Failed(error),
-            }
-        } else {
-            TransactionStatus::Rejected
-        };
-
-        if status.is_success() {
+        if is_success_result {
             track.commit();
         } else {
             track.rollback();
         }
 
+        let is_reject_result = !fee_summary.loan_fully_repaid;
+
+        // If transaction was rejected, we shouldn't commit anything - so return early with a rejection result
+        if is_reject_result {
+            let rejection_error = match result {
+                Ok(..) => RejectionError::SuccessButFeeLoanNotRepaid,
+                Err(error) => RejectionError::ErrorBeforeFeeLoanRepaid(error),
+            };
+            let track_receipt = track.to_receipt();
+
+            #[cfg(feature = "alloc")]
+            let execution_time = None;
+            #[cfg(not(feature = "alloc"))]
+            let execution_time = Some(now.elapsed().as_millis());
+
+            let execution_result = TransactionExecution {
+                execution_time,
+                fee_summary,
+                application_logs: track_receipt.application_logs,
+            };
+
+            return Self::compose_receipt(
+                params,
+                transaction_contents,
+                Some(execution_result),
+                TransactionResult::Reject(RejectResult {
+                    error: rejection_error,
+                }),
+            );
+        }
+
+        let commit_status = match result {
+            Ok(output) => TransactionOutcome::Success(output),
+            Err(error) => TransactionOutcome::Failure(error),
+        };
+
+        // 5. Resolve fee payment
         let mut required = fee_summary.burned + fee_summary.tipped;
         let mut collector =
             ResourceContainer::new_empty(RADIX_TOKEN, ResourceType::Fungible { divisibility: 18 });
         for (vault_id, mut locked, contingent) in fee_summary.payments.iter().cloned().rev() {
             let amount = if contingent {
-                if status.is_success() {
+                if commit_status.is_success() {
                     Decimal::min(locked.liquid_amount(), required)
                 } else {
                     Decimal::zero()
@@ -258,7 +295,7 @@ where
         // TODO: update XRD supply or disable it
         // TODO: pay tips to the lead validator
 
-        // 5. Produce the final transaction receipt
+        // 6. Produce the final transaction receipt
         let track_receipt = track.to_receipt();
 
         let mut new_component_addresses = Vec::new();
@@ -284,18 +321,42 @@ where
         #[cfg(not(feature = "alloc"))]
         let execution_time = Some(now.elapsed().as_millis());
 
-        let receipt = TransactionReceipt {
-            status,
-            transaction_network,
-            fee_summary: fee_summary,
-            instructions,
-            application_logs: track_receipt.application_logs,
-            new_package_addresses,
-            new_component_addresses,
-            new_resource_addresses,
+        let execution_result = TransactionExecution {
             execution_time,
+            fee_summary,
+            application_logs: track_receipt.application_logs,
+        };
+
+        let transaction_result = TransactionResult::Commit(CommitResult {
+            outcome: commit_status,
+            entity_changes: EntityChanges {
+                new_package_addresses,
+                new_component_addresses,
+                new_resource_addresses,
+            },
             state_updates: track_receipt.state_updates,
             resource_changes: execution_trace_receipt.resource_changes,
+        });
+
+        Self::compose_receipt(
+            params,
+            transaction_contents,
+            Some(execution_result),
+            transaction_result,
+        )
+    }
+
+    fn compose_receipt(
+        #[cfg(feature = "alloc")] _params: &ExecutionConfig,
+        #[cfg(not(feature = "alloc"))] params: &ExecutionConfig,
+        contents: TransactionContents,
+        execution: Option<TransactionExecution>,
+        result: TransactionResult,
+    ) -> TransactionReceipt {
+        let receipt = TransactionReceipt {
+            contents,
+            execution,
+            result,
         };
         #[cfg(not(feature = "alloc"))]
         if params.trace {
@@ -303,7 +364,6 @@ where
             println!("{:?}", receipt);
             println!("{:-^80}", "");
         }
-
         receipt
     }
 }

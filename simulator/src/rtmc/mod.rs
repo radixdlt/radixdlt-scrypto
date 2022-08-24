@@ -1,6 +1,6 @@
 use clap::Parser;
 use scrypto::buffer::scrypto_encode;
-use scrypto::core::{Network, NetworkError};
+use scrypto::core::{NetworkDefinition, NetworkError};
 use std::path::PathBuf;
 use std::str::FromStr;
 use transaction::manifest::compile;
@@ -33,7 +33,7 @@ pub fn run() -> Result<(), Error> {
     let args = Args::parse();
 
     let content = std::fs::read_to_string(args.input).map_err(Error::IoError)?;
-    let network = Network::from_str(&args.network).map_err(Error::NetworkError)?;
+    let network = NetworkDefinition::from_str(&args.network).map_err(Error::NetworkError)?;
     let transaction = compile(&content, &network).map_err(Error::CompileError)?;
     std::fs::write(args.output, scrypto_encode(&transaction)).map_err(Error::IoError)?;
 

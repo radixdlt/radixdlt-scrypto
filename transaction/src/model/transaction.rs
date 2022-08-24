@@ -1,7 +1,7 @@
 use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::buffer::{scrypto_decode, scrypto_encode};
-use scrypto::core::Network;
+use scrypto::core::NetworkDefinition;
 use scrypto::crypto::{hash, EcdsaPublicKey, EcdsaSignature, Hash};
 
 use crate::manifest::{compile, CompileError};
@@ -12,7 +12,7 @@ use crate::model::Instruction;
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct TransactionHeader {
     pub version: u8,
-    pub network: Network,
+    pub network_id: u8,
     pub start_epoch_inclusive: u64,
     pub end_epoch_exclusive: u64,
     pub nonce: u64,
@@ -45,9 +45,37 @@ pub struct NotarizedTransaction {
     pub notary_signature: EcdsaSignature,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum IntentCreationError {
+    CompileErr(CompileError),
+    ConfigErr(IntentConfigError),
+}
+
+impl From<CompileError> for IntentCreationError {
+    fn from(compile_error: CompileError) -> Self {
+        IntentCreationError::CompileErr(compile_error)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum IntentConfigError {
+    MismatchedNetwork { expected: u8, actual: u8 },
+}
+
 impl TransactionIntent {
-    pub fn new(header: TransactionHeader, manifest: &str) -> Result<Self, CompileError> {
-        let network: Network = header.network.clone();
+    pub fn new(
+        network: &NetworkDefinition,
+        header: TransactionHeader,
+        manifest: &str,
+    ) -> Result<Self, IntentCreationError> {
+        if network.id != header.network_id {
+            return Err(IntentCreationError::ConfigErr(
+                IntentConfigError::MismatchedNetwork {
+                    expected: network.id,
+                    actual: header.network_id,
+                },
+            ));
+        }
         Ok(Self {
             header,
             manifest: compile(manifest, &network)?,
@@ -100,6 +128,7 @@ mod tests {
     use super::*;
     use crate::signing::*;
     use scrypto::buffer::scrypto_encode;
+    use scrypto::core::NetworkDefinition;
 
     #[test]
     fn construct_sign_and_notarize() {
@@ -110,9 +139,10 @@ mod tests {
 
         // construct
         let intent = TransactionIntent::new(
+            &NetworkDefinition::local_simulator(),
             TransactionHeader {
                 version: 1,
-                network: Network::InternalTestnet,
+                network_id: NetworkDefinition::local_simulator().id,
                 start_epoch_inclusive: 0,
                 end_epoch_exclusive: 100,
                 nonce: 5,
@@ -141,17 +171,17 @@ mod tests {
         };
 
         assert_eq!(
-            "e2ad3c72620ef90cd633df835e9632669b004e40e94dd316c10cd9d285ec9471",
+            "2949b45e2dd2b47b8a0cee87aa1a62395bdf59e6c5d0078900f1743c1969120d",
             transaction.signed_intent.intent.hash().to_string()
         );
         assert_eq!(
-            "9dfda4ed6ebfe032e6e577f75611a3e1c571b56edab42ec68257ba14e71c1e09",
+            "ebcafd203a5c768fa32fdae77ea8d4f151616367108aeba7efa3f9320816b6cf",
             transaction.signed_intent.hash().to_string()
         );
         assert_eq!(
-            "e62bf0a7d63ba2ef9d015fb0a0febd82cc99eae02594b279b74374b144436442",
+            "76c5f5b4600ba65b533f216f2ccaf580a8d08f1a938685f581b8214eeefb1c11",
             transaction.hash().to_string()
         );
-        assert_eq!("10020000001002000000100200000010090000000701110f000000496e7465726e616c546573746e6574000000000a00000000000000000a64000000000000000a0500000000000000912100000002f9308a019258c31049344f85f89d5229b531c845836f99b08601f113bce036f901000940420f00090500000010010000003011010000000d000000436c656172417574685a6f6e65000000003021020000000200000091210000000279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798924000000028ad4c978705c7857bd2b71498d3bd8fcefd825f4b09af21909381a09204ce3a792a7217bdbe51c4cf54532954aeb15831cabe5cf394d2df321440796ceec65302000000912100000002c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee59240000000bd02fd19ebb958ab1f500790b70520c0fe79e67882d492c11289d41e3c9c16214f09f3fa59d5d2ffcd797a0fefa3993e607d01afb2f9e47ff6792e9f87064eab924000000023086c21e536ef12d4b97b051f29cbf8b2ad07b77927cccd142f6b4dc316f65c7b1fb7ae0273e0cbab14214d43a2635aabfdb2228128b7c60404416901d1c2e6", hex::encode(scrypto_encode(&transaction)));
+        assert_eq!("1002000000100200000010020000001009000000070107f20a00000000000000000a64000000000000000a0500000000000000912100000002f9308a019258c31049344f85f89d5229b531c845836f99b08601f113bce036f901000940420f00090500000010010000003011010000000d000000436c656172417574685a6f6e65000000003021020000000200000091210000000279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f817989240000000350ab31365dae6e336fc8b5e5bf1e01712b934b18408d75754ddaea1f6ba283f07fb1e6b629a39400384cadb57a8c68aebabd004fd40e4a9d88359ae0e7ddb9c02000000912100000002c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee592400000000032e58635c3ca75b2447944eb5882fe4a1811123b9db585def5d11766814c463fa326a87e44b135ad108bf49a5a2a41b64ab01a2899e36910ddeaaf3d6730f29240000000e107bfa1fef13a6b210db368ce60cc002bd00184840b0ce7f335481a8292d28d0760ec74e189dc9d9ece00389b70935006d1624695ce6b47412a0beb2badac9b", hex::encode(scrypto_encode(&transaction)));
     }
 }

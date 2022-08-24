@@ -1,6 +1,6 @@
 use radix_engine::engine::{KernelError, RuntimeError};
 use radix_engine::ledger::TypedInMemorySubstateStore;
-use scrypto::core::Network;
+use scrypto::core::NetworkDefinition;
 use scrypto::prelude::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -13,7 +13,7 @@ fn should_not_be_able_to_read_component_state_after_creation() {
     let package_address = test_runner.extract_and_publish_package("data_access");
 
     // Act
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(
             package_address,
@@ -41,7 +41,7 @@ fn should_not_be_able_to_write_component_state_after_creation() {
     let package_address = test_runner.extract_and_publish_package("data_access");
 
     // Act
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(
             package_address,
@@ -69,7 +69,7 @@ fn should_be_able_to_read_component_info() {
     let package_address = test_runner.extract_and_publish_package("data_access");
 
     // Act
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(
             package_address,
@@ -92,7 +92,7 @@ fn should_not_be_able_to_write_component_info() {
     let package_address = test_runner.extract_and_publish_package("data_access");
 
     // Act
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(
             package_address,

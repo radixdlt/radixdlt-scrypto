@@ -1,6 +1,5 @@
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto::core::Network;
 use scrypto::crypto::*;
 
 use crate::model::*;
@@ -17,10 +16,6 @@ pub struct ValidatedTransaction {
 impl ExecutableTransaction for ValidatedTransaction {
     fn transaction_hash(&self) -> Hash {
         self.transaction_hash
-    }
-
-    fn transaction_network(&self) -> Network {
-        self.transaction.signed_intent.intent.header.network.clone()
     }
 
     fn transaction_payload_size(&self) -> u32 {

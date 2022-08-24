@@ -1,5 +1,5 @@
 use radix_engine::ledger::TypedInMemorySubstateStore;
-use scrypto::core::Network;
+use scrypto::core::NetworkDefinition;
 use scrypto::prelude::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -14,7 +14,7 @@ fn test_trace_resource_transfers() {
     let transfer_amount = 10u8;
 
     // Act
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), account)
         .call_function(
             package_address,
@@ -33,14 +33,16 @@ fn test_trace_resource_transfers() {
         ComponentAddress,
     ) = scrypto_decode(&output.get(1).unwrap()[..]).unwrap();
     /* There should be two resource changes, one for source component and one for target */
-    assert_eq!(2, receipt.resource_changes.len());
+    assert_eq!(2, receipt.expect_commit().resource_changes.len());
     assert!(receipt
+        .expect_commit()
         .resource_changes
         .iter()
         .any(|r| r.resource_address == resource_address
             && r.component_address == source_component
             && r.amount == -Decimal::from(transfer_amount)));
     assert!(receipt
+        .expect_commit()
         .resource_changes
         .iter()
         .any(|r| r.resource_address == resource_address

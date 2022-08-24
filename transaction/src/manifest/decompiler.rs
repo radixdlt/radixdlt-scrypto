@@ -316,20 +316,23 @@ pub fn decompile(
 mod tests {
     use super::*;
     use crate::manifest::compile;
-    use scrypto::core::Network;
+    use scrypto::core::NetworkDefinition;
 
     #[test]
     fn test_decompile() {
         let tx = compile(
             include_str!("../../examples/complex.rtm"),
-            &Network::LocalSimulator,
+            &NetworkDefinition::local_simulator(),
         )
         .unwrap();
 
-        let bech32_encoder = Bech32Encoder::new_from_network(&Network::LocalSimulator);
+        let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::local_simulator());
         let manifest = &decompile(&tx, &bech32_encoder).unwrap();
         println!("{}", manifest);
 
-        assert_eq!(compile(manifest, &Network::LocalSimulator).unwrap(), tx);
+        assert_eq!(
+            compile(manifest, &NetworkDefinition::local_simulator()).unwrap(),
+            tx
+        );
     }
 }

@@ -22,7 +22,7 @@ pub fn dump_package<T: ReadableSubstateStore, O: std::io::Write>(
     substate_store: &T,
     output: &mut O,
 ) -> Result<(), DisplayError> {
-    let bech32_encoder = Bech32Encoder::new_from_network(&Network::LocalSimulator);
+    let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::local_simulator());
 
     let package: Option<ValidatedPackage> = substate_store
         .get_substate(&SubstateId::Package(package_address))
@@ -54,7 +54,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
     substate_store: &T,
     output: &mut O,
 ) -> Result<(), DisplayError> {
-    let bech32_encoder = Bech32Encoder::new_from_network(&Network::LocalSimulator);
+    let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::local_simulator());
 
     let component: Option<ComponentInfo> = substate_store
         .get_substate(&SubstateId::ComponentInfo(component_address))
@@ -145,7 +145,7 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
     substate_store: &T,
     output: &mut O,
 ) -> Result<(), DisplayError> {
-    let bech32_encoder = Bech32Encoder::new_from_network(&Network::LocalSimulator);
+    let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::local_simulator());
 
     writeln!(output, "{}:", "Resources".green().bold());
     for (last, vault_id) in vaults.iter().identify_last() {

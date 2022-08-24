@@ -1,3 +1,4 @@
+use sbor::rust::string::*;
 use sbor::rust::vec::Vec;
 use sbor::*;
 

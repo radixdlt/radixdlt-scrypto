@@ -1,12 +1,12 @@
 use sbor::rust::vec::Vec;
 
 use crate::component::{ComponentAddress, PackageAddress};
-use crate::core::Network;
+use crate::core::NetworkDefinition;
 use crate::resource::ResourceAddress;
 
 use super::entity::EntityType;
 use super::errors::AddressError;
-use super::hrpset::{get_network_hrp_set, HrpSet};
+use super::hrpset::HrpSet;
 
 use bech32::{self, FromBase32, Variant};
 use once_cell::unsync::Lazy;
@@ -17,10 +17,14 @@ pub struct Bech32Decoder {
 }
 
 impl Bech32Decoder {
+    pub fn for_simulator() -> Self {
+        Self::new(&NetworkDefinition::local_simulator())
+    }
+
     /// Instantiates a new Bech32Decoder with the HRP corresponding to the passed network.
-    pub fn new_from_network(network: &Network) -> Self {
+    pub fn new(network: &NetworkDefinition) -> Self {
         Self {
-            hrp_set: get_network_hrp_set(network),
+            hrp_set: network.into(),
         }
     }
 
@@ -94,4 +98,4 @@ impl Bech32Decoder {
 }
 
 pub const BECH32_DECODER: Lazy<Bech32Decoder> =
-    Lazy::new(|| Bech32Decoder::new_from_network(&Network::LocalSimulator));
+    Lazy::new(|| Bech32Decoder::new(&NetworkDefinition::local_simulator()));

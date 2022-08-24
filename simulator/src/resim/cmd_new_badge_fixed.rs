@@ -63,7 +63,7 @@ impl NewBadgeFixed {
             metadata.insert("icon_url".to_string(), icon_url);
         };
 
-        let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
             .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
             .new_badge_fixed(metadata, self.total_supply)
             .call_method_with_all_resources(default_account, "deposit_batch")

@@ -1,8 +1,9 @@
 use radix_engine::constants::{
     DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN,
 };
-use radix_engine::engine::{ExecutionTrace, Kernel, ModuleError, SystemApi};
-use radix_engine::engine::{RuntimeError, Track};
+use radix_engine::engine::{
+    ExecutionTrace, Kernel, KernelError, ModuleError, RuntimeError, SystemApi, Track,
+};
 use radix_engine::fee::{FeeTable, SystemLoanFeeReserve};
 use radix_engine::ledger::*;
 use radix_engine::model::{export_abi, export_abi_by_component, extract_package};
@@ -11,11 +12,11 @@ use radix_engine::transaction::{
     ExecutionConfig, PreviewError, PreviewExecutor, PreviewResult, TransactionExecutor,
     TransactionReceipt,
 };
-use radix_engine::wasm::{DefaultWasmEngine, DefaultWasmInstance, WasmInstrumenter};
+use radix_engine::wasm::{DefaultWasmEngine, DefaultWasmInstance, InvokeError, WasmInstrumenter};
 use sbor::describe::Fields;
 use sbor::Type;
 use scrypto::abi::{BlueprintAbi, Fn};
-use scrypto::core::Network;
+use scrypto::core::NetworkDefinition;
 use scrypto::engine::types::{KeyValueStoreId, RENodeId, SubstateId, VaultId};
 use scrypto::prelude::*;
 use scrypto::prelude::{HashMap, Package};
@@ -112,7 +113,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     }
 
     pub fn new_account_with_auth_rule(&mut self, withdraw_auth: &AccessRule) -> ComponentAddress {
-        let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
             .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
             .call_method(SYS_FAUCET_COMPONENT, "free_xrd", args!())
             .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
@@ -123,7 +124,10 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_success();
 
-        receipt.new_component_addresses[0]
+        receipt
+            .expect_commit()
+            .entity_changes
+            .new_component_addresses[0]
     }
 
     pub fn new_account(&mut self) -> (EcdsaPublicKey, EcdsaPrivateKey, ComponentAddress) {
@@ -134,14 +138,14 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     }
 
     pub fn publish_package(&mut self, package: Package) -> PackageAddress {
-        let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
             .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
             .publish_package(package)
             .build();
 
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_success();
-        receipt.new_package_addresses[0]
+        receipt.expect_commit().entity_changes.new_package_addresses[0]
     }
 
     pub fn extract_and_publish_package(&mut self, name: &str) -> PackageAddress {
@@ -286,7 +290,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         signer_public_key: EcdsaPublicKey,
     ) {
         let package = self.extract_and_publish_package("resource_creator");
-        let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
             .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
             .create_proof_from_account(auth, account)
             .call_function(package, "ResourceCreator", function, args!(token, set_auth))
@@ -312,7 +316,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         let admin_auth = self.create_non_fungible_resource(account);
 
         let package = self.extract_and_publish_package("resource_creator");
-        let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
             .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
             .call_function(
                 package,
@@ -323,8 +327,13 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             .call_method_with_all_resources(account, "deposit_batch")
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
+        receipt.expect_success();
+
         (
-            receipt.new_resource_addresses[0],
+            receipt
+                .expect_commit()
+                .entity_changes
+                .new_resource_addresses[0],
             mint_auth,
             burn_auth,
             withdraw_auth,
@@ -338,7 +347,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     ) -> (ResourceAddress, ResourceAddress) {
         let auth_resource_address = self.create_non_fungible_resource(account);
         let package = self.extract_and_publish_package("resource_creator");
-        let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
             .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
             .call_function(
                 package,
@@ -349,7 +358,14 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             .call_method_with_all_resources(account, "deposit_batch")
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
-        (auth_resource_address, receipt.new_resource_addresses[0])
+        receipt.expect_success();
+        (
+            auth_resource_address,
+            receipt
+                .expect_commit()
+                .entity_changes
+                .new_resource_addresses[0],
+        )
     }
 
     pub fn create_restricted_transfer_token(
@@ -359,7 +375,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         let auth_resource_address = self.create_non_fungible_resource(account);
 
         let package = self.extract_and_publish_package("resource_creator");
-        let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
             .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
             .call_function(
                 package,
@@ -370,12 +386,19 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             .call_method_with_all_resources(account, "deposit_batch")
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
-        (auth_resource_address, receipt.new_resource_addresses[0])
+        receipt.expect_success();
+        (
+            auth_resource_address,
+            receipt
+                .expect_commit()
+                .entity_changes
+                .new_resource_addresses[0],
+        )
     }
 
     pub fn create_non_fungible_resource(&mut self, account: ComponentAddress) -> ResourceAddress {
         let package = self.extract_and_publish_package("resource_creator");
-        let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
             .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
             .call_function(
                 package,
@@ -387,7 +410,10 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_success();
-        receipt.new_resource_addresses[0]
+        receipt
+            .expect_commit()
+            .entity_changes
+            .new_resource_addresses[0]
     }
 
     pub fn create_fungible_resource(
@@ -397,7 +423,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         account: ComponentAddress,
     ) -> ResourceAddress {
         let package = self.extract_and_publish_package("resource_creator");
-        let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
             .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
             .call_function(
                 package,
@@ -408,7 +434,11 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             .call_method_with_all_resources(account, "deposit_batch")
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
-        receipt.new_resource_addresses[0]
+        receipt.expect_success();
+        receipt
+            .expect_commit()
+            .entity_changes
+            .new_resource_addresses[0]
     }
 
     pub fn instantiate_component(
@@ -420,7 +450,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         account: ComponentAddress,
         signer_public_key: EcdsaPublicKey,
     ) -> ComponentAddress {
-        let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
             .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
             .call_function_with_abi(
                 package_address,
@@ -434,7 +464,11 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             .call_method_with_all_resources(account, "deposit_batch")
             .build();
         let receipt = self.execute_manifest(manifest, vec![signer_public_key]);
-        receipt.new_component_addresses[0]
+        receipt.expect_success();
+        receipt
+            .expect_commit()
+            .entity_changes
+            .new_component_addresses[0]
     }
 
     pub fn set_current_epoch(&mut self, epoch: u64) {
@@ -516,24 +550,14 @@ pub fn is_auth_error(e: &RuntimeError) -> bool {
     )
 }
 
-#[macro_export]
-macro_rules! assert_invoke_error {
-    ($result:expr, $pattern:pat) => {{
-        let matches = match &$result {
-            radix_engine::transaction::TransactionStatus::Failed(
-                radix_engine::engine::RuntimeError::KernelError(
-                    radix_engine::engine::KernelError::InvokeError(e),
-                ),
-            ) => {
-                matches!(e.as_ref(), $pattern)
-            }
-            _ => false,
-        };
-
-        if !matches {
-            panic!("Expected invoke error but got: {:?}", $result);
-        }
-    }};
+pub fn expect_invoke_error<F>(receipt: &TransactionReceipt, f: F)
+where
+    F: FnOnce(&InvokeError) -> bool,
+{
+    receipt.expect_failure(|e| match e {
+        RuntimeError::KernelError(KernelError::InvokeError(err)) => f(err.as_ref()),
+        _default => false,
+    })
 }
 
 pub fn wat2wasm(wat: &str) -> Vec<u8> {
