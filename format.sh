@@ -18,10 +18,24 @@ cd "$(dirname "$0")"
 (cd simulator; cargo fmt)
 (cd transaction; cargo fmt)
 
-(cd assets/account; scrypto fmt)
-(cd assets/sys-faucet; scrypto fmt)
-(cd assets/sys-utils; scrypto fmt)
-(cd examples; find . -maxdepth 1 -type d \( ! -name . \) -print0 | xargs -0 -n1 -I '{}' scrypto fmt --path {})
-(cd radix-engine/tests; find . -maxdepth 1 -type d \( ! -name . \) -print0 | xargs -0 -n1 -I '{}' scrypto fmt --path {})
+# We use a globally loaded scrypto CLI so that this script works even if the code doesn't compile at present
+# It's also a little faster. If you wish to use the local version instead, swap out the below line.
+# scrypto="cargo run --manifest-path $PWD/simulator/Cargo.toml --bin scrypto $@ --"
+scrypto="scrypto"
+
+(cd assets/account; $scrypto fmt)
+(cd assets/sys-faucet; $scrypto fmt)
+(cd assets/sys-utils; $scrypto fmt)
+
+(cd examples;
+    find . -maxdepth 2 -type f \( -name Cargo.toml \) -print \
+    | awk '{print substr($1, 1, length($1)-length("Cargo.toml"))}' \
+    | xargs -n1 -I '{}' $scrypto fmt --path {}
+)
+(cd radix-engine/tests;
+    find . -maxdepth 2 -type f \( -name Cargo.toml \) -print \
+    | awk '{print substr($1, 1, length($1)-length("Cargo.toml"))}' \
+    | xargs -n1 -I '{}' $scrypto fmt --path {}
+)
 
 echo "All packages have been formatted."
