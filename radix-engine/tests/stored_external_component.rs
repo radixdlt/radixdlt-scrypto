@@ -14,7 +14,7 @@ fn stored_component_addresses_in_non_globalized_component_are_invokable() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
-        .lock_fee(10.into(), SYSTEM_COMPONENT)
+        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(package, "ExternalComponent", "create_and_call", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -30,7 +30,7 @@ fn stored_component_addresses_are_invokable() {
     let (public_key, _, _) = test_runner.new_account();
     let package = test_runner.extract_and_publish_package("stored_external_component");
     let manifest1 = ManifestBuilder::new(&NetworkDefinition::local_simulator())
-        .lock_fee(10.into(), SYSTEM_COMPONENT)
+        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(package, "ExternalComponent", "create", args!())
         .build();
     let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
@@ -46,7 +46,7 @@ fn stored_component_addresses_are_invokable() {
 
     // Act
     let manifest2 = ManifestBuilder::new(&NetworkDefinition::local_simulator())
-        .lock_fee(10.into(), SYSTEM_COMPONENT)
+        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_method(component0, "func", args!())
         .build();
     let receipt2 = test_runner.execute_manifest(manifest2, vec![public_key]);
@@ -56,7 +56,7 @@ fn stored_component_addresses_are_invokable() {
 
     // Act
     let manifest2 = ManifestBuilder::new(&NetworkDefinition::local_simulator())
-        .lock_fee(10.into(), SYSTEM_COMPONENT)
+        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_method(component1, "func", args!())
         .build();
     let receipt2 = test_runner.execute_manifest(manifest2, vec![public_key]);

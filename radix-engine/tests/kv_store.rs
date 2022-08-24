@@ -13,7 +13,7 @@ fn can_insert_in_child_nodes() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
-        .lock_fee(10.into(), SYSTEM_COMPONENT)
+        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(package_address, "SuperKeyValueStore", "new", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -31,7 +31,7 @@ fn create_mutable_key_value_store_into_map_and_referencing_before_storing() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
-        .lock_fee(10.into(), SYSTEM_COMPONENT)
+        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(
             package_address,
             "KeyValueStoreTest",
@@ -54,7 +54,7 @@ fn cyclic_map_fails_execution() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
-        .lock_fee(10.into(), SYSTEM_COMPONENT)
+        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(package_address, "CyclicMap", "new", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -77,7 +77,7 @@ fn self_cyclic_map_fails_execution() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
-        .lock_fee(10.into(), SYSTEM_COMPONENT)
+        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(package_address, "CyclicMap", "new_self_cyclic", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -98,7 +98,7 @@ fn cannot_remove_key_value_stores() {
     let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("kv_store");
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
-        .lock_fee(10.into(), SYSTEM_COMPONENT)
+        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(
             package_address,
             "KeyValueStoreTest",
@@ -114,7 +114,7 @@ fn cannot_remove_key_value_stores() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
-        .lock_fee(10.into(), SYSTEM_COMPONENT)
+        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_method(component_address, "clear_vector", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -135,7 +135,7 @@ fn cannot_overwrite_key_value_stores() {
     let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.extract_and_publish_package("kv_store");
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
-        .lock_fee(10.into(), SYSTEM_COMPONENT)
+        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(
             package_address,
             "KeyValueStoreTest",
@@ -151,7 +151,7 @@ fn cannot_overwrite_key_value_stores() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
-        .lock_fee(10.into(), SYSTEM_COMPONENT)
+        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_method(component_address, "overwrite_key_value_store", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -174,7 +174,7 @@ fn create_key_value_store_and_get() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
-        .lock_fee(10.into(), SYSTEM_COMPONENT)
+        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(
             package_address,
             "KeyValueStoreTest",
@@ -197,7 +197,7 @@ fn create_key_value_store_and_put() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
-        .lock_fee(10.into(), SYSTEM_COMPONENT)
+        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(
             package_address,
             "KeyValueStoreTest",
@@ -220,7 +220,7 @@ fn can_reference_in_memory_vault() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
-        .lock_fee(10.into(), SYSTEM_COMPONENT)
+        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(
             package_address,
             "Precommitted",
@@ -243,7 +243,7 @@ fn can_reference_deep_in_memory_value() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
-        .lock_fee(10.into(), SYSTEM_COMPONENT)
+        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(
             package_address,
             "Precommitted",
@@ -266,7 +266,7 @@ fn can_reference_deep_in_memory_vault() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
-        .lock_fee(10.into(), SYSTEM_COMPONENT)
+        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(
             package_address,
             "Precommitted",
@@ -289,7 +289,7 @@ fn cannot_directly_reference_inserted_vault() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
-        .lock_fee(10.into(), SYSTEM_COMPONENT)
+        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(
             package_address,
             "RefCheck",
@@ -317,7 +317,7 @@ fn cannot_directly_reference_vault_after_container_moved() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
-        .lock_fee(10.into(), SYSTEM_COMPONENT)
+        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(
             package_address,
             "RefCheck",
@@ -345,7 +345,7 @@ fn cannot_directly_reference_vault_after_container_stored() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
-        .lock_fee(10.into(), SYSTEM_COMPONENT)
+        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(
             package_address,
             "RefCheck",
@@ -373,7 +373,7 @@ fn multiple_reads_should_work() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
-        .lock_fee(10.into(), SYSTEM_COMPONENT)
+        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(package_address, "MultipleReads", "multiple_reads", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);

@@ -1,3 +1,4 @@
+use transaction::errors::IdAllocationError;
 use transaction::model::ExecutableInstruction;
 use transaction::validation::*;
 
@@ -106,19 +107,19 @@ where
                 .node_create(HeapRENode::Bucket(Bucket::new(
                     ResourceContainer::new_non_fungible(SYSTEM_TOKEN, non_fungible_ids),
                 )))
-                .unwrap()
+                .expect("Failed to create SYSTEM_TOKEN bucket")
             {
                 RENodeId::Bucket(bucket_id) => bucket_id,
-                _ => panic!("Unexpected RENodeID returned"),
+                _ => panic!("Expected Bucket RENodeId but received something else"),
             };
             let substate_id = SubstateId::Bucket(bucket_id);
             let mut node_ref = kernel
                 .substate_borrow_mut(&substate_id)
-                .expect("TODO check this unwrap");
+                .expect("Failed to borrow SYSTEM_TOKEN bucket substate");
             let bucket = node_ref.bucket();
             let system_proof = bucket
                 .create_proof(bucket_id)
-                .expect("TODO check this unwrap");
+                .expect("Failed to create SYSTEM_TOKEN proof");
             Self::current_frame_mut(&mut kernel.call_frames)
                 .auth_zone
                 .proofs
@@ -162,7 +163,7 @@ where
         // Note this must be run AFTER values are taken, otherwise there would be inconsistent readable_values state
         let node_pointer = call_frames
             .last()
-            .expect("Current frame always exists")
+            .expect("Current call frame does not exist")
             .node_refs
             .get(&node_id)
             .cloned()
@@ -175,7 +176,7 @@ where
         if matches!(substate_id, SubstateId::ComponentInfo(..)) {
             node_pointer
                 .acquire_lock(substate_id.clone(), false, false, track)
-                .expect("Should never fail");
+                .map_err(RuntimeError::KernelError)?;
         }
 
         // Read current value
@@ -192,54 +193,55 @@ where
         Ok((node_pointer.clone(), current_value))
     }
 
-    fn new_uuid(id_allocator: &mut IdAllocator, transaction_hash: Hash) -> u128 {
-        id_allocator.new_uuid(transaction_hash).unwrap()
+    fn new_uuid(
+        id_allocator: &mut IdAllocator,
+        transaction_hash: Hash,
+    ) -> Result<u128, IdAllocationError> {
+        id_allocator.new_uuid(transaction_hash)
     }
 
     fn new_node_id(
         id_allocator: &mut IdAllocator,
         transaction_hash: Hash,
         re_node: &HeapRENode,
-    ) -> RENodeId {
+    ) -> Result<RENodeId, IdAllocationError> {
         match re_node {
             HeapRENode::Bucket(..) => {
-                let bucket_id = id_allocator.new_bucket_id().unwrap();
-                RENodeId::Bucket(bucket_id)
+                let bucket_id = id_allocator.new_bucket_id()?;
+                Ok(RENodeId::Bucket(bucket_id))
             }
             HeapRENode::Proof(..) => {
-                let proof_id = id_allocator.new_proof_id().unwrap();
-                RENodeId::Proof(proof_id)
+                let proof_id = id_allocator.new_proof_id()?;
+                Ok(RENodeId::Proof(proof_id))
             }
-            HeapRENode::Worktop(..) => RENodeId::Worktop,
+            HeapRENode::Worktop(..) => Ok(RENodeId::Worktop),
             HeapRENode::Vault(..) => {
-                let vault_id = id_allocator.new_vault_id(transaction_hash).unwrap();
-                RENodeId::Vault(vault_id)
+                let vault_id = id_allocator.new_vault_id(transaction_hash)?;
+                Ok(RENodeId::Vault(vault_id))
             }
             HeapRENode::KeyValueStore(..) => {
-                let kv_store_id = id_allocator.new_kv_store_id(transaction_hash).unwrap();
-                RENodeId::KeyValueStore(kv_store_id)
+                let kv_store_id = id_allocator.new_kv_store_id(transaction_hash)?;
+                Ok(RENodeId::KeyValueStore(kv_store_id))
             }
             HeapRENode::Package(..) => {
                 // Security Alert: ensure ID allocating will practically never fail
-                let package_address = id_allocator.new_package_address(transaction_hash).unwrap();
-                RENodeId::Package(package_address)
+                let package_address = id_allocator.new_package_address(transaction_hash)?;
+                Ok(RENodeId::Package(package_address))
             }
             HeapRENode::Resource(..) => {
-                let resource_address = id_allocator.new_resource_address(transaction_hash).unwrap();
-                RENodeId::ResourceManager(resource_address)
+                let resource_address = id_allocator.new_resource_address(transaction_hash)?;
+                Ok(RENodeId::ResourceManager(resource_address))
             }
             HeapRENode::Component(ref component, ..) => {
-                let component_address = id_allocator
-                    .new_component_address(
-                        transaction_hash,
-                        &component.package_address(),
-                        component.blueprint_name(),
-                    )
-                    .unwrap();
-                RENodeId::Component(component_address)
+                let component_address = id_allocator.new_component_address(
+                    transaction_hash,
+                    &component.package_address(),
+                    component.blueprint_name(),
+                )?;
+                Ok(RENodeId::Component(component_address))
             }
             HeapRENode::System(..) => {
-                panic!("Should not get here.");
+                panic!("Attempted to create System RENodeId");
             }
         }
     }
@@ -283,10 +285,10 @@ where
                         let mut instance = self.wasm_engine.instantiate(instrumented_code);
                         let blueprint_abi = package
                             .blueprint_abi(&blueprint_name)
-                            .expect("Blueprint should exist");
+                            .expect("Blueprint not found"); // TODO: assumption will break if auth module is optional
                         let export_name = &blueprint_abi
                             .get_fn_abi(&ident)
-                            .unwrap()
+                            .expect("Function not found")
                             .export_name
                             .to_string();
                         let scrypto_actor = match receiver {
@@ -329,8 +331,10 @@ where
                         .package();
                     let blueprint_abi = package
                         .blueprint_abi(&blueprint_name)
-                        .expect("Blueprint should exist");
-                    let fn_abi = blueprint_abi.get_fn_abi(&ident).unwrap();
+                        .expect("Blueprint not found"); // TODO: assumption will break if auth module is optional
+                    let fn_abi = blueprint_abi
+                        .get_fn_abi(&ident)
+                        .expect("Function not found");
                     if !fn_abi.output.matches(&output.dom) {
                         Err(RuntimeError::KernelError(KernelError::InvalidFnOutput {
                             fn_identifier: FnIdentifier::Scrypto {
@@ -521,12 +525,14 @@ where
             for component_address in &input.refed_component_addresses {
                 component_addresses.insert(*component_address);
             }
-            let input: TransactionProcessorRunInput = scrypto_decode(&input.raw).unwrap();
+            let input: TransactionProcessorRunInput =
+                scrypto_decode(&input.raw).expect("Transaction processor received invalid input");
             for instruction in &input.instructions {
                 match instruction {
                     ExecutableInstruction::CallFunction { args, .. }
                     | ExecutableInstruction::CallMethod { args, .. } => {
-                        let scrypto_value = ScryptoValue::from_slice(&args).unwrap();
+                        let scrypto_value =
+                            ScryptoValue::from_slice(&args).expect("Invalid CALL arguments");
                         component_addresses.extend(scrypto_value.refed_component_addresses);
                     }
                     _ => {}
@@ -545,7 +551,9 @@ where
                     )));
                 }
                 let node_pointer = RENodePointer::Store(node_id);
-                node_pointer.acquire_lock(substate_id.clone(), false, false, &mut self.track)?;
+                node_pointer
+                    .acquire_lock(substate_id.clone(), false, false, &mut self.track)
+                    .map_err(RuntimeError::KernelError)?;
                 node_pointer.release_lock(substate_id, false, &mut self.track);
                 next_frame_node_refs.insert(node_id, node_pointer);
             }
@@ -732,12 +740,9 @@ where
                 if is_lock_fee && matches!(node_pointer, RENodePointer::Heap { .. }) {
                     return Err(RuntimeError::KernelError(KernelError::RENodeNotInTrack));
                 }
-                node_pointer.acquire_lock(
-                    substate_id.clone(),
-                    true,
-                    is_lock_fee,
-                    &mut self.track,
-                )?;
+                node_pointer
+                    .acquire_lock(substate_id.clone(), true, is_lock_fee, &mut self.track)
+                    .map_err(RuntimeError::KernelError)?;
                 locked_pointers.push((node_pointer, substate_id.clone(), is_lock_fee));
 
                 // TODO: Refactor when locking model finalized
@@ -753,12 +758,14 @@ where
                         RENodeId::Component(component_address) => {
                             let temporary_substate_id =
                                 SubstateId::ComponentInfo(*component_address);
-                            node_pointer.acquire_lock(
-                                temporary_substate_id.clone(),
-                                false,
-                                false,
-                                &mut self.track,
-                            )?;
+                            node_pointer
+                                .acquire_lock(
+                                    temporary_substate_id.clone(),
+                                    false,
+                                    false,
+                                    &mut self.track,
+                                )
+                                .map_err(RuntimeError::KernelError)?;
                             temporary_locks.push((node_pointer, temporary_substate_id, false));
 
                             let node_ref = node_pointer.to_ref(&self.call_frames, &mut self.track);
@@ -792,12 +799,14 @@ where
                         let package_substate_id = SubstateId::Package(package_address);
                         let package_node_id = RENodeId::Package(package_address);
                         let package_node_pointer = RENodePointer::Store(package_node_id);
-                        package_node_pointer.acquire_lock(
-                            package_substate_id.clone(),
-                            false,
-                            false,
-                            &mut self.track,
-                        )?;
+                        package_node_pointer
+                            .acquire_lock(
+                                package_substate_id.clone(),
+                                false,
+                                false,
+                                &mut self.track,
+                            )
+                            .map_err(RuntimeError::KernelError)?;
                         locked_pointers.push((
                             package_node_pointer,
                             package_substate_id.clone(),
@@ -813,12 +822,14 @@ where
                         let resource_substate_id = SubstateId::ResourceManager(resource_address);
                         let resource_node_id = RENodeId::ResourceManager(resource_address);
                         let resource_node_pointer = RENodePointer::Store(resource_node_id);
-                        resource_node_pointer.acquire_lock(
-                            resource_substate_id.clone(),
-                            true,
-                            false,
-                            &mut self.track,
-                        )?;
+                        resource_node_pointer
+                            .acquire_lock(
+                                resource_substate_id.clone(),
+                                true,
+                                false,
+                                &mut self.track,
+                            )
+                            .map_err(RuntimeError::KernelError)?;
                         locked_pointers.push((resource_node_pointer, resource_substate_id, false));
                         next_frame_node_refs.insert(resource_node_id, resource_node_pointer);
                     }
@@ -830,12 +841,14 @@ where
                         let resource_substate_id = SubstateId::ResourceManager(resource_address);
                         let resource_node_id = RENodeId::ResourceManager(resource_address);
                         let resource_node_pointer = RENodePointer::Store(resource_node_id);
-                        resource_node_pointer.acquire_lock(
-                            resource_substate_id.clone(),
-                            true,
-                            false,
-                            &mut self.track,
-                        )?;
+                        resource_node_pointer
+                            .acquire_lock(
+                                resource_substate_id.clone(),
+                                true,
+                                false,
+                                &mut self.track,
+                            )
+                            .map_err(RuntimeError::KernelError)?;
                         locked_pointers.push((resource_node_pointer, resource_substate_id, false));
                         next_frame_node_refs.insert(resource_node_id, resource_node_pointer);
                     }
@@ -850,12 +863,14 @@ where
                             SubstateId::ResourceManager(resource_address.clone());
                         let resource_node_id = RENodeId::ResourceManager(resource_address.clone());
                         let resource_node_pointer = RENodePointer::Store(resource_node_id);
-                        resource_node_pointer.acquire_lock(
-                            resource_substate_id.clone(),
-                            false,
-                            false,
-                            &mut self.track,
-                        )?;
+                        resource_node_pointer
+                            .acquire_lock(
+                                resource_substate_id.clone(),
+                                false,
+                                false,
+                                &mut self.track,
+                            )
+                            .map_err(RuntimeError::KernelError)?;
                         locked_pointers.push((resource_node_pointer, resource_substate_id, false));
                         next_frame_node_refs.insert(resource_node_id, resource_node_pointer);
                     }
@@ -908,12 +923,9 @@ where
                         SubstateId::ResourceManager(resource_address.clone());
                     let resource_node_id = RENodeId::ResourceManager(resource_address.clone());
                     let resource_node_pointer = RENodePointer::Store(resource_node_id);
-                    resource_node_pointer.acquire_lock(
-                        resource_substate_id.clone(),
-                        false,
-                        false,
-                        &mut self.track,
-                    )?;
+                    resource_node_pointer
+                        .acquire_lock(resource_substate_id.clone(), false, false, &mut self.track)
+                        .map_err(RuntimeError::KernelError)?;
                     locked_pointers.push((resource_node_pointer, resource_substate_id, false));
                     next_frame_node_refs.insert(resource_node_id, resource_node_pointer);
                 }
@@ -1058,7 +1070,10 @@ where
             .node_refs
             .get(node_id)
             .cloned()
-            .expect(&format!("{:?} is unknown.", node_id));
+            .expect(&format!(
+                "Attempt to borrow node {:?}, which is not visible in current frame.",
+                node_id
+            )); // TODO: Assumption will break if auth is optional
 
         for m in &mut self.modules {
             m.post_sys_call(
@@ -1191,7 +1206,10 @@ where
                 .node_refs
                 .get(&node_id)
                 .cloned()
-                .expect(&format!("Node should exist {:?}", node_id))
+                .expect(&format!(
+                    "Attempt to borrow node {:?}, which is not visible in current frame",
+                    node_id
+                )) // TODO: Assumption will break if auth is optional
         };
 
         let substate_ref = node_pointer.borrow_native_ref(
@@ -1308,7 +1326,10 @@ where
         let node = Self::current_frame_mut(&mut self.call_frames)
             .owned_heap_nodes
             .remove(&node_id)
-            .unwrap();
+            .expect(&format!(
+                "Attempt to drop node {:?}, which is not owned by current frame",
+                node_id
+            )); // TODO: Assumption will break if auth is optional
 
         for m in &mut self.modules {
             m.post_sys_call(
@@ -1359,7 +1380,8 @@ where
         }
 
         // Insert node into heap
-        let node_id = Self::new_node_id(&mut self.id_allocator, self.transaction_hash, &re_node);
+        let node_id = Self::new_node_id(&mut self.id_allocator, self.transaction_hash, &re_node)
+            .map_err(|e| RuntimeError::KernelError(KernelError::IdAllocationError(e)))?;
         let heap_root_node = HeapRootRENode {
             root: re_node,
             child_nodes,
@@ -1374,7 +1396,7 @@ where
                 let frame = self
                     .call_frames
                     .last_mut()
-                    .expect("Current frame always exists");
+                    .expect("Current call frame does not exist");
                 frame.node_refs.insert(
                     node_id.clone(),
                     RENodePointer::Heap {
@@ -1391,7 +1413,7 @@ where
                 let frame = self
                     .call_frames
                     .last_mut()
-                    .expect("Current frame always exists");
+                    .expect("Current call frame does not exist");
                 frame.node_refs.insert(
                     node_id.clone(),
                     RENodePointer::Heap {
@@ -1776,7 +1798,8 @@ where
             )
             .map_err(|e| RuntimeError::ModuleError(ModuleError::CostingError(e)))?;
 
-        let uuid = Self::new_uuid(&mut self.id_allocator, self.transaction_hash);
+        let uuid = Self::new_uuid(&mut self.id_allocator, self.transaction_hash)
+            .map_err(|e| RuntimeError::KernelError(KernelError::IdAllocationError(e)))?;
 
         for m in &mut self.modules {
             m.post_sys_call(&mut self.call_frames, SysCallOutput::GenerateUuid { uuid })
@@ -1862,7 +1885,7 @@ where
             .collect::<Result<Vec<Proof>, RuntimeError>>()?;
         let mut simulated_auth_zone = AuthZone::new_with_proofs(proofs);
 
-        let method_authorization = convert(&Type::Unit, &Value::Unit, &access_rule);
+        let method_authorization = convert(&Type::Unit, &ScryptoValue::unit(), &access_rule);
         let is_authorized = method_authorization.check(&[&simulated_auth_zone]).is_ok();
         simulated_auth_zone.clear();
 
@@ -1884,6 +1907,10 @@ where
     }
 
     fn auth_zone(&mut self, frame_id: usize) -> &mut AuthZone {
-        &mut self.call_frames.get_mut(frame_id).unwrap().auth_zone
+        &mut self
+            .call_frames
+            .get_mut(frame_id)
+            .expect(&format!("CallFrame #{} not found", frame_id))
+            .auth_zone
     }
 }

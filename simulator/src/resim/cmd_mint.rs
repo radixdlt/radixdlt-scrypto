@@ -46,7 +46,7 @@ impl Mint {
         }
 
         let manifest = manifest_builder
-            .lock_fee(100.into(), SYSTEM_COMPONENT)
+            .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
             .mint(self.amount, self.resource_address)
             .call_method_with_all_resources(default_account, "deposit_batch")
             .build();

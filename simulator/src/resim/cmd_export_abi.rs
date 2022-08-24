@@ -24,9 +24,7 @@ impl ExportAbi {
         match export_abi(self.package_address, &self.blueprint_name) {
             Ok(a) => {
                 let blueprint = abi::Blueprint {
-                    package_address: bech32_encoder
-                        .encode_package_address(&self.package_address)
-                        .map_err(Error::AddressError)?,
+                    package_address: bech32_encoder.encode_package_address(&self.package_address),
                     blueprint_name: self.blueprint_name.clone(),
                     abi: a,
                 };

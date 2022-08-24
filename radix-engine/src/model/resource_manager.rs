@@ -1,6 +1,5 @@
-use crate::engine::{HeapRENode, SystemApi};
+use crate::engine::{HeapRENode, RuntimeError, SystemApi};
 use crate::fee::FeeReserve;
-use crate::fee::FeeReserveError;
 use crate::model::resource_manager::ResourceMethodRule::{Protected, Public};
 use crate::model::NonFungibleWrapper;
 use crate::model::ResourceManagerError::InvalidMethod;
@@ -15,13 +14,14 @@ use crate::wasm::*;
 /// Currently required as all auth is defined by soft authorization rules.
 macro_rules! convert_auth {
     ($auth:expr) => {
-        convert(&Type::Unit, &Value::Unit, &$auth)
+        convert(&Type::Unit, &ScryptoValue::unit(), &$auth)
     };
 }
 
 /// Represents an error when accessing a bucket.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug)]
 pub enum ResourceManagerError {
+    RuntimeError(Box<RuntimeError>),
     InvalidDivisibility,
     InvalidAmount(Decimal, u8),
     InvalidResourceFlags(u64),
@@ -36,7 +36,6 @@ pub enum ResourceManagerError {
     CouldNotCreateBucket,
     CouldNotCreateVault,
     InvalidMethod,
-    CostingError(FeeReserveError),
 }
 
 enum MethodAccessRuleMethod {
@@ -186,9 +185,11 @@ impl ResourceManager {
         match self.vault_method_table.get(&vault_fn) {
             None => &MethodAuthorization::Unsupported,
             Some(Public) => &MethodAuthorization::AllowAll,
-            Some(Protected(auth_key)) => {
-                self.authorization.get(auth_key).unwrap().get_method_auth()
-            }
+            Some(Protected(auth_key)) => self
+                .authorization
+                .get(auth_key)
+                .expect(&format!("Authorization for {:?} not specified", vault_fn))
+                .get_method_auth(),
         }
     }
 
@@ -196,7 +197,11 @@ impl ResourceManager {
         match self.bucket_method_table.get(&bucket_fn) {
             None => &MethodAuthorization::Unsupported,
             Some(Public) => &MethodAuthorization::AllowAll,
-            Some(Protected(method)) => self.authorization.get(method).unwrap().get_method_auth(),
+            Some(Protected(method)) => self
+                .authorization
+                .get(method)
+                .expect(&format!("Authorization for {:?} not specified", bucket_fn))
+                .get_method_auth(),
         }
     }
 
@@ -207,6 +212,8 @@ impl ResourceManager {
     ) -> &MethodAuthorization {
         match &fn_identifier {
             ResourceManagerFnIdentifier::UpdateAuth => {
+                // FIXME we can't assume the input always match the function identifier
+                // especially for the auth module code path
                 let input: ResourceManagerUpdateAuthInput = scrypto_decode(&args.raw).unwrap();
                 match self.authorization.get(&input.method) {
                     None => &MethodAuthorization::Unsupported,
@@ -216,6 +223,8 @@ impl ResourceManager {
                 }
             }
             ResourceManagerFnIdentifier::LockAuth => {
+                // FIXME we can't assume the input always match the function identifier
+                // especially for the auth module code path
                 let input: ResourceManagerLockAuthInput = scrypto_decode(&args.raw).unwrap();
                 match self.authorization.get(&input.method) {
                     None => &MethodAuthorization::Unsupported,
@@ -225,9 +234,11 @@ impl ResourceManager {
             _ => match self.method_table.get(&fn_identifier) {
                 None => &MethodAuthorization::Unsupported,
                 Some(Public) => &MethodAuthorization::AllowAll,
-                Some(Protected(method)) => {
-                    self.authorization.get(method).unwrap().get_method_auth()
-                }
+                Some(Protected(method)) => self
+                    .authorization
+                    .get(method)
+                    .expect(&format!("Authorization for {:?} not specified", method))
+                    .get_method_auth(),
             },
         }
     }
@@ -319,8 +330,9 @@ impl ResourceManager {
         for (id, data) in entries {
             let value = system_api
                 .substate_read(SubstateId::NonFungible(self_address, id.clone()))
-                .expect("Should never fail");
-            let wrapper: NonFungibleWrapper = scrypto_decode(&value.raw).unwrap();
+                .map_err(|e| ResourceManagerError::RuntimeError(Box::new(e)))?;
+            let wrapper: NonFungibleWrapper =
+                scrypto_decode(&value.raw).expect("Failed to decode NonFungibleWrapper substate");
             if wrapper.0.is_some() {
                 return Err(ResourceManagerError::NonFungibleAlreadyExists(
                     NonFungibleAddress::new(self_address, id.clone()),
@@ -333,7 +345,7 @@ impl ResourceManager {
                     SubstateId::NonFungible(self_address, id.clone()),
                     ScryptoValue::from_typed(&NonFungibleWrapper(Some(non_fungible))),
                 )
-                .expect("Should never fail");
+                .map_err(|e| ResourceManagerError::RuntimeError(Box::new(e)))?;
             ids.insert(id);
         }
 
@@ -399,7 +411,7 @@ impl ResourceManager {
                     }
                     system_api
                         .node_create(HeapRENode::Resource(resource_manager, Some(non_fungibles)))
-                        .expect("Should never fail")
+                        .map_err(|e| ResourceManagerError::RuntimeError(Box::new(e)))?
                 } else {
                     if let Some(mint_params) = &input.mint_params {
                         if let MintParams::Fungible { amount } = mint_params {
@@ -416,7 +428,7 @@ impl ResourceManager {
                     }
                     system_api
                         .node_create(HeapRENode::Resource(resource_manager, None))
-                        .expect("Should never fail")
+                        .map_err(|e| ResourceManagerError::RuntimeError(Box::new(e)))?
                 };
                 let resource_address = resource_node_id.clone().into();
 
@@ -434,7 +446,7 @@ impl ResourceManager {
                     };
                     let bucket_id = system_api
                         .node_create(HeapRENode::Bucket(Bucket::new(container)))
-                        .unwrap()
+                        .map_err(|e| ResourceManagerError::RuntimeError(Box::new(e)))?
                         .into();
                     Some(scrypto::resource::Bucket(bucket_id))
                 } else {
@@ -443,7 +455,7 @@ impl ResourceManager {
 
                 system_api
                     .node_globalize(resource_node_id)
-                    .expect("TODO handle error");
+                    .map_err(|e| ResourceManagerError::RuntimeError(Box::new(e)))?;
 
                 Ok(ScryptoValue::from_typed(&(resource_address, bucket_id)))
             }
@@ -460,7 +472,7 @@ impl ResourceManager {
         let substate_id = SubstateId::ResourceManager(resource_address);
         let mut ref_mut = system_api
             .substate_borrow_mut(&substate_id)
-            .expect("TODO: handle error");
+            .map_err(|e| ResourceManagerError::RuntimeError(Box::new(e)))?;
         let resource_manager = ref_mut.resource_manager();
 
         let rtn = match resource_manager_fn {
@@ -470,7 +482,10 @@ impl ResourceManager {
                 let method_entry = resource_manager
                     .authorization
                     .get_mut(&input.method)
-                    .unwrap();
+                    .expect(&format!(
+                        "Authorization for {:?} not specified",
+                        input.method
+                    ));
                 method_entry.main(MethodAccessRuleMethod::Update(input.access_rule))
             }
             ResourceManagerFnIdentifier::LockAuth => {
@@ -479,7 +494,10 @@ impl ResourceManager {
                 let method_entry = resource_manager
                     .authorization
                     .get_mut(&input.method)
-                    .unwrap();
+                    .expect(&format!(
+                        "Authorization for {:?} not specified",
+                        input.method
+                    ));
                 method_entry.main(MethodAccessRuleMethod::Lock())
             }
             ResourceManagerFnIdentifier::CreateVault => {
@@ -491,7 +509,7 @@ impl ResourceManager {
                 );
                 let vault_id = system_api
                     .node_create(HeapRENode::Vault(Vault::new(container)))
-                    .unwrap()
+                    .map_err(|e| ResourceManagerError::RuntimeError(Box::new(e)))?
                     .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Vault(
                     vault_id,
@@ -506,7 +524,7 @@ impl ResourceManager {
                 );
                 let bucket_id = system_api
                     .node_create(HeapRENode::Bucket(Bucket::new(container)))
-                    .unwrap()
+                    .map_err(|e| ResourceManagerError::RuntimeError(Box::new(e)))?
                     .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
                     bucket_id,
@@ -519,7 +537,7 @@ impl ResourceManager {
                     resource_manager.mint(input.mint_params, resource_address, system_api)?;
                 let bucket_id = system_api
                     .node_create(HeapRENode::Bucket(Bucket::new(container)))
-                    .unwrap()
+                    .map_err(|e| ResourceManagerError::RuntimeError(Box::new(e)))?
                     .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
                     bucket_id,
@@ -556,8 +574,9 @@ impl ResourceManager {
                         resource_address.clone(),
                         input.id.clone(),
                     ))
-                    .expect("Should never fail");
-                let wrapper: NonFungibleWrapper = scrypto_decode(&value.raw).unwrap();
+                    .map_err(|e| ResourceManagerError::RuntimeError(Box::new(e)))?;
+                let wrapper: NonFungibleWrapper = scrypto_decode(&value.raw)
+                    .expect("Failed to decode NonFungibleWrapper substate");
 
                 // Write new value
                 if let Some(mut non_fungible) = wrapper.0 {
@@ -567,7 +586,7 @@ impl ResourceManager {
                             SubstateId::NonFungible(resource_address.clone(), input.id.clone()),
                             ScryptoValue::from_typed(&NonFungibleWrapper(Some(non_fungible))),
                         )
-                        .expect("Should never fail");
+                        .map_err(|e| ResourceManagerError::RuntimeError(Box::new(e)))?;
                 } else {
                     let non_fungible_address =
                         NonFungibleAddress::new(resource_address.clone(), input.id);
@@ -584,8 +603,9 @@ impl ResourceManager {
 
                 let value = system_api
                     .substate_read(SubstateId::NonFungible(resource_address.clone(), input.id))
-                    .expect("Should never fail");
-                let wrapper: NonFungibleWrapper = scrypto_decode(&value.raw).unwrap();
+                    .map_err(|e| ResourceManagerError::RuntimeError(Box::new(e)))?;
+                let wrapper: NonFungibleWrapper = scrypto_decode(&value.raw)
+                    .expect("Failed to decode NonFungibleWrapper substate");
                 Ok(ScryptoValue::from_typed(&wrapper.0.is_some()))
             }
             ResourceManagerFnIdentifier::GetNonFungible => {
@@ -595,8 +615,9 @@ impl ResourceManager {
                     NonFungibleAddress::new(resource_address.clone(), input.id.clone());
                 let value = system_api
                     .substate_read(SubstateId::NonFungible(resource_address.clone(), input.id))
-                    .expect("Should never fail");
-                let wrapper: NonFungibleWrapper = scrypto_decode(&value.raw).unwrap();
+                    .map_err(|e| ResourceManagerError::RuntimeError(Box::new(e)))?;
+                let wrapper: NonFungibleWrapper = scrypto_decode(&value.raw)
+                    .expect("Failed to decode NonFungibleWrapper substate");
                 let non_fungible = wrapper.0.ok_or(ResourceManagerError::NonFungibleNotFound(
                     non_fungible_address,
                 ))?;
@@ -610,7 +631,7 @@ impl ResourceManager {
 
         system_api
             .substate_return_mut(ref_mut)
-            .expect("TODO: handle error");
+            .map_err(|e| ResourceManagerError::RuntimeError(Box::new(e)))?;
 
         Ok(rtn)
     }

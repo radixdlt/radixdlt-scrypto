@@ -4,10 +4,7 @@ use crate::component::{ComponentAddress, PackageAddress};
 use crate::core::NetworkDefinition;
 use crate::resource::ResourceAddress;
 
-use super::entity::{
-    EntityType, ALLOWED_COMPONENT_ENTITY_TYPES, ALLOWED_PACKAGE_ENTITY_TYPES,
-    ALLOWED_RESOURCE_ENTITY_TYPES,
-};
+use super::entity::EntityType;
 use super::errors::AddressError;
 use super::hrpset::HrpSet;
 
@@ -20,6 +17,10 @@ pub struct Bech32Decoder {
 }
 
 impl Bech32Decoder {
+    pub fn for_simulator() -> Self {
+        Self::new(&NetworkDefinition::local_simulator())
+    }
+
     /// Instantiates a new Bech32Decoder with the HRP corresponding to the passed network.
     pub fn new(network: &NetworkDefinition) -> Self {
         Self {
@@ -34,8 +35,7 @@ impl Bech32Decoder {
         package_address: &str,
     ) -> Result<PackageAddress, AddressError> {
         Ok(PackageAddress::try_from(
-            self.validate_and_decode(package_address, &ALLOWED_PACKAGE_ENTITY_TYPES)?
-                .as_slice(),
+            self.validate_and_decode(package_address)?.as_slice(),
         )?)
     }
 
@@ -46,8 +46,7 @@ impl Bech32Decoder {
         component_address: &str,
     ) -> Result<ComponentAddress, AddressError> {
         Ok(ComponentAddress::try_from(
-            self.validate_and_decode(component_address, &ALLOWED_COMPONENT_ENTITY_TYPES)?
-                .as_slice(),
+            self.validate_and_decode(component_address)?.as_slice(),
         )?)
     }
 
@@ -58,17 +57,12 @@ impl Bech32Decoder {
         resource_address: &str,
     ) -> Result<ResourceAddress, AddressError> {
         Ok(ResourceAddress::try_from(
-            self.validate_and_decode(resource_address, &ALLOWED_RESOURCE_ENTITY_TYPES)?
-                .as_slice(),
+            self.validate_and_decode(resource_address)?.as_slice(),
         )?)
     }
 
     /// Low level method which performs the Bech32 validation and decoding of the data.
-    fn validate_and_decode(
-        &self,
-        address: &str,
-        allowed_entity_types: &[EntityType],
-    ) -> Result<Vec<u8>, AddressError> {
+    fn validate_and_decode(&self, address: &str) -> Result<Vec<u8>, AddressError> {
         // Decode the address string
         let (actual_hrp, data, variant) =
             bech32::decode(address).map_err(|err| AddressError::DecodingError(err))?;
@@ -86,11 +80,6 @@ impl Bech32Decoder {
         let expected_hrp = if let Some(entity_type_id) = data.get(0) {
             let entity_type = EntityType::try_from(*entity_type_id)
                 .map_err(|_| AddressError::InvalidEntityTypeId(*entity_type_id))?;
-
-            // Enure that the entity type of the address matches the allowed list of entity types
-            if !allowed_entity_types.contains(&entity_type) {
-                return Err(AddressError::InvalidEntityTypeId(*entity_type_id));
-            }
 
             // Obtain the HRP corresponding to this entity type
             self.hrp_set.get_entity_hrp(&entity_type)

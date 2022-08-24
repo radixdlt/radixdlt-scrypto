@@ -2,6 +2,8 @@ use crate::engine::*;
 use crate::model::*;
 use crate::types::*;
 
+// TODO: still lots of unwraps
+
 #[derive(Debug, Clone, Copy)]
 pub enum RENodePointer {
     Heap {
@@ -26,22 +28,18 @@ impl RENodePointer {
         mutable: bool,
         write_through: bool,
         track: &mut Track<'s>,
-    ) -> Result<(), RuntimeError> {
+    ) -> Result<(), KernelError> {
         match self {
             RENodePointer::Store(..) => {
                 track
                     .acquire_lock(substate_id.clone(), mutable, write_through)
                     .map_err(|e| match e {
                         TrackError::StateTrackError(StateTrackError::RENodeAlreadyTouched) => {
-                            RuntimeError::KernelError(KernelError::RENodeAlreadyTouched)
+                            KernelError::RENodeAlreadyTouched
                         }
                         // TODO: Remove when references cleaned up
-                        TrackError::NotFound => {
-                            RuntimeError::KernelError(KernelError::RENodeNotFound(self.node_id()))
-                        }
-                        TrackError::Reentrancy => {
-                            RuntimeError::KernelError(KernelError::Reentrancy(substate_id.clone()))
-                        }
+                        TrackError::NotFound => KernelError::RENodeNotFound(self.node_id()),
+                        TrackError::Reentrancy => KernelError::Reentrancy(substate_id.clone()),
                     })
             }
             RENodePointer::Heap { .. } => Ok(()),
@@ -80,7 +78,7 @@ impl RENodePointer {
         match self {
             RENodePointer::Heap { frame_id, root, id } => {
                 let frame = call_frames.get_mut(*frame_id).unwrap();
-                let re_value = frame.owned_heap_nodes.remove(root).expect("Should exist");
+                let re_value = frame.owned_heap_nodes.remove(root).unwrap();
                 NativeSubstateRef::Stack(re_value, frame_id.clone(), root.clone(), id.clone())
             }
             RENodePointer::Store(..) => {
@@ -357,7 +355,7 @@ impl<'f, 's> RENodeRefMut<'f, 's> {
             }
             SubstateId::ComponentState(..) => {
                 Ok(ScryptoValue::from_slice(self.component_state().state())
-                    .expect("Expected to decode"))
+                    .expect("Failed to decode component state"))
             }
             SubstateId::NonFungible(.., id) => Ok(self.non_fungible_get(id)),
             SubstateId::KeyValueStoreEntry(.., key) => Ok(self.kv_store_get(key)),
@@ -506,11 +504,14 @@ impl<'f, 's> RENodeRefMut<'f, 's> {
                 value: Box::new(Option::None),
             },
             |v| Value::Option {
-                value: Box::new(Some(decode_any(&v).unwrap())),
+                value: Box::new(Some(
+                    decode_any(&v).expect("Failed to decode the value in NonFungibleWrapper"),
+                )),
             },
         );
 
-        ScryptoValue::from_value(value).unwrap()
+        ScryptoValue::from_value(value)
+            .expect("Failed to convert non-fungible value to Scrypto value")
     }
 
     pub fn non_fungible_get(&mut self, id: &NonFungibleId) -> ScryptoValue {
@@ -565,8 +566,8 @@ impl<'f, 's> RENodeRefMut<'f, 's> {
     pub fn non_fungible_put(&mut self, id: NonFungibleId, value: ScryptoValue) {
         match self {
             RENodeRefMut::Stack(re_value, re_id) => {
-                let wrapper: NonFungibleWrapper =
-                    scrypto_decode(&value.raw).expect("Should not fail.");
+                let wrapper: NonFungibleWrapper = scrypto_decode(&value.raw)
+                    .expect("Attempted to put non-NonFungibleWrapper for non-fungible.");
 
                 let non_fungible_set = re_value.get_node_mut(re_id.as_ref()).non_fungibles_mut();
                 if let Some(non_fungible) = wrapper.0 {
@@ -582,8 +583,8 @@ impl<'f, 's> RENodeRefMut<'f, 's> {
                     }
                     _ => panic!("Unexpeceted"),
                 };
-                let wrapper: NonFungibleWrapper =
-                    scrypto_decode(&value.raw).expect("Should not fail.");
+                let wrapper: NonFungibleWrapper = scrypto_decode(&value.raw)
+                    .expect("Attempted to put non-NonFungibleWrapper for non-fungible.");
                 track.set_key_value(
                     parent_substate_id,
                     id.to_vec(),

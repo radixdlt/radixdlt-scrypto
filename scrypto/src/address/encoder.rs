@@ -1,18 +1,14 @@
-use sbor::rust::string::String;
-
-use crate::component::{ComponentAddress, PackageAddress};
-use crate::core::NetworkDefinition;
-use crate::resource::ResourceAddress;
-
-use super::entity::{
-    EntityType, ALLOWED_COMPONENT_ENTITY_TYPES, ALLOWED_PACKAGE_ENTITY_TYPES,
-    ALLOWED_RESOURCE_ENTITY_TYPES,
-};
-use super::errors::AddressError;
-use super::hrpset::HrpSet;
-
 use bech32::{self, ToBase32, Variant};
 use once_cell::unsync::Lazy;
+use sbor::rust::string::String;
+
+use super::entity::EntityType;
+use super::errors::AddressError;
+use super::hrpset::HrpSet;
+use crate::component::{ComponentAddress, PackageAddress};
+use crate::core::NetworkDefinition;
+use crate::misc::combine;
+use crate::resource::ResourceAddress;
 
 /// Represents an encoder which understands how to encode Scrypto addresses in Bech32.
 pub struct Bech32Encoder {
@@ -32,52 +28,43 @@ impl Bech32Encoder {
     }
 
     /// Encodes a package address in Bech32 and returns a String on success or an `AddressError` on failure.
-    pub fn encode_package_address(
-        &self,
-        package_address: &PackageAddress,
-    ) -> Result<String, AddressError> {
-        Ok(self.encode(&package_address.0, &ALLOWED_PACKAGE_ENTITY_TYPES)?)
+    pub fn encode_package_address(&self, package_address: &PackageAddress) -> String {
+        match package_address {
+            PackageAddress::Normal(data) => self.encode(EntityType::package(package_address), data),
+        }
+        .expect("Failed to encode package address as Bech32")
     }
 
     /// Encodes a component address in Bech32 and returns a String on success or an `AddressError` on failure.
-    pub fn encode_component_address(
-        &self,
-        component_address: &ComponentAddress,
-    ) -> Result<String, AddressError> {
-        Ok(self.encode(&component_address.0, &ALLOWED_COMPONENT_ENTITY_TYPES)?)
+    pub fn encode_component_address(&self, component_address: &ComponentAddress) -> String {
+        match component_address {
+            ComponentAddress::Normal(data)
+            | ComponentAddress::Account(data)
+            | ComponentAddress::System(data) => {
+                self.encode(EntityType::component(component_address), data)
+            }
+        }
+        .expect("Failed to encode component address as Bech32")
     }
 
     /// Encodes a resource address in Bech32 and returns a String on success or an `AddressError` on failure.
-    pub fn encode_resource_address(
-        &self,
-        resource_address: &ResourceAddress,
-    ) -> Result<String, AddressError> {
-        Ok(self.encode(&resource_address.0, &ALLOWED_RESOURCE_ENTITY_TYPES)?)
+    pub fn encode_resource_address(&self, resource_address: &ResourceAddress) -> String {
+        match resource_address {
+            ResourceAddress::Normal(data) => {
+                self.encode(EntityType::resource(resource_address), data)
+            }
+        }
+        .expect("Failed to encode resource address as Bech32")
     }
 
     /// Low level method which performs the Bech32 encoding of the data.
-    fn encode(
-        &self,
-        data: &[u8],
-        allowed_entity_types: &[EntityType],
-    ) -> Result<String, AddressError> {
-        // Obtain the HRP used for the encoding of this address
-        let hrp = if let Some(entity_type_id) = data.get(0) {
-            let entity_type = EntityType::try_from(*entity_type_id)
-                .map_err(|_| AddressError::InvalidEntityTypeId(*entity_type_id))?;
+    fn encode(&self, entity_type: EntityType, other_data: &[u8]) -> Result<String, AddressError> {
+        // Obtain the HRP corresponding to this entity type
+        let hrp = self.hrp_set.get_entity_hrp(&entity_type);
 
-            // Enure that the entity type of the address matches the allowed list of entity types
-            if !allowed_entity_types.contains(&entity_type) {
-                return Err(AddressError::InvalidEntityTypeId(*entity_type_id));
-            }
+        let full_data = combine(entity_type.id(), other_data);
 
-            // Obtain the HRP corresponding to this entity type
-            self.hrp_set.get_entity_hrp(&entity_type)
-        } else {
-            return Err(AddressError::DataSectionTooShort);
-        };
-
-        let bech32_string = bech32::encode(hrp, data.to_base32(), Variant::Bech32m)
+        let bech32_string = bech32::encode(hrp, full_data.to_base32(), Variant::Bech32m)
             .map_err(|err| AddressError::EncodingError(err))?;
 
         Ok(bech32_string)

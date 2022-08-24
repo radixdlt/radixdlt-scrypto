@@ -33,9 +33,7 @@ pub fn decompile(
                 buckets.insert(bucket_id, name.clone());
                 buf.push_str(&format!(
                     "TAKE_FROM_WORKTOP ResourceAddress(\"{}\") Bucket(\"{}\");\n",
-                    bech32_encoder
-                        .encode_resource_address(&resource_address)
-                        .map_err(|err| DecompileError::AddressError(err))?,
+                    bech32_encoder.encode_resource_address(&resource_address),
                     name
                 ));
             }
@@ -50,7 +48,7 @@ pub fn decompile(
                 buckets.insert(bucket_id, name.clone());
                 buf.push_str(&format!(
                     "TAKE_FROM_WORKTOP_BY_AMOUNT Decimal(\"{}\") ResourceAddress(\"{}\") Bucket(\"{}\");\n",
-                    amount, bech32_encoder.encode_resource_address(&resource_address).map_err(|err| DecompileError::AddressError(err))?, name
+                    amount, bech32_encoder.encode_resource_address(&resource_address), name
                 ));
             }
             Instruction::TakeFromWorktopByIds {
@@ -68,7 +66,7 @@ pub fn decompile(
                     .map(|k| format!("NonFungibleId(\"{}\")", k))
                     .collect::<Vec<String>>()
                     .join(", "),
-                    bech32_encoder.encode_resource_address(&resource_address).map_err(|err| DecompileError::AddressError(err))?, name
+                    bech32_encoder.encode_resource_address(&resource_address), name
                 ));
             }
             Instruction::ReturnToWorktop { bucket_id } => {
@@ -86,9 +84,7 @@ pub fn decompile(
             Instruction::AssertWorktopContains { resource_address } => {
                 buf.push_str(&format!(
                     "ASSERT_WORKTOP_CONTAINS ResourceAddress(\"{}\");\n",
-                    bech32_encoder
-                        .encode_resource_address(&resource_address)
-                        .map_err(|err| DecompileError::AddressError(err))?
+                    bech32_encoder.encode_resource_address(&resource_address)
                 ));
             }
             Instruction::AssertWorktopContainsByAmount {
@@ -98,9 +94,7 @@ pub fn decompile(
                 buf.push_str(&format!(
                     "ASSERT_WORKTOP_CONTAINS_BY_AMOUNT Decimal(\"{}\") ResourceAddress(\"{}\");\n",
                     amount,
-                    bech32_encoder
-                        .encode_resource_address(&resource_address)
-                        .map_err(|err| DecompileError::AddressError(err))?
+                    bech32_encoder.encode_resource_address(&resource_address)
                 ));
             }
             Instruction::AssertWorktopContainsByIds {
@@ -113,7 +107,7 @@ pub fn decompile(
                         .map(|k| format!("NonFungibleId(\"{}\")", k))
                         .collect::<Vec<String>>()
                         .join(", "),
-                    bech32_encoder.encode_resource_address(&resource_address).map_err(|err| DecompileError::AddressError(err))?
+                    bech32_encoder.encode_resource_address(&resource_address)
                 ));
             }
             Instruction::PopFromAuthZone => {
@@ -147,9 +141,7 @@ pub fn decompile(
                 proofs.insert(proof_id, name.clone());
                 buf.push_str(&format!(
                     "CREATE_PROOF_FROM_AUTH_ZONE ResourceAddress(\"{}\") Proof(\"{}\");\n",
-                    bech32_encoder
-                        .encode_resource_address(&resource_address)
-                        .map_err(|err| DecompileError::AddressError(err))?,
+                    bech32_encoder.encode_resource_address(&resource_address),
                     name
                 ));
             }
@@ -165,7 +157,7 @@ pub fn decompile(
                 buf.push_str(&format!(
                     "CREATE_PROOF_FROM_AUTH_ZONE_BY_AMOUNT Decimal(\"{}\") ResourceAddress(\"{}\") Proof(\"{}\");\n",
                     amount,
-                    bech32_encoder.encode_resource_address(&resource_address).map_err(|err| DecompileError::AddressError(err))?, name
+                    bech32_encoder.encode_resource_address(&resource_address), name
                 ));
             }
             Instruction::CreateProofFromAuthZoneByIds {
@@ -182,7 +174,7 @@ pub fn decompile(
                     .map(|k| format!("NonFungibleId(\"{}\")", k))
                     .collect::<Vec<String>>()
                     .join(", "),
-                    bech32_encoder.encode_resource_address(&resource_address).map_err(|err| DecompileError::AddressError(err))?, name
+                    bech32_encoder.encode_resource_address(&resource_address), name
                 ));
             }
             Instruction::CreateProofFromBucket { bucket_id } => {
@@ -241,9 +233,7 @@ pub fn decompile(
             } => {
                 buf.push_str(&format!(
                     "CALL_FUNCTION PackageAddress(\"{}\") \"{}\" \"{}\"",
-                    bech32_encoder
-                        .encode_package_address(&package_address)
-                        .map_err(|err| DecompileError::AddressError(err))?,
+                    bech32_encoder.encode_package_address(&package_address),
                     blueprint_name,
                     method_name
                 ));
@@ -273,9 +263,7 @@ pub fn decompile(
             } => {
                 buf.push_str(&format!(
                     "CALL_METHOD ComponentAddress(\"{}\") \"{}\"",
-                    bech32_encoder
-                        .encode_component_address(&component_address)
-                        .map_err(|err| DecompileError::AddressError(err))?,
+                    bech32_encoder.encode_component_address(&component_address),
                     method_name
                 ));
 
@@ -308,9 +296,7 @@ pub fn decompile(
                     .map_err(DecompileError::IdValidationError)?;
                 buf.push_str(&format!(
                     "CALL_METHOD_WITH_ALL_RESOURCES ComponentAddress(\"{}\") \"{}\";\n",
-                    bech32_encoder
-                        .encode_component_address(&component_address)
-                        .map_err(|err| DecompileError::AddressError(err))?,
+                    bech32_encoder.encode_component_address(&component_address),
                     method
                 ));
             }

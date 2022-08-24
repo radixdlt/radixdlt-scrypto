@@ -10,7 +10,7 @@ pub struct HrpSet {
 
     package: String,
 
-    component: String,
+    normal_component: String,
     account_component: String,
     system_component: String,
 }
@@ -21,7 +21,7 @@ impl HrpSet {
             EntityType::Resource => &self.resource,
             EntityType::Package => &self.package,
 
-            EntityType::Component => &self.component,
+            EntityType::NormalComponent => &self.normal_component,
             EntityType::AccountComponent => &self.account_component,
             EntityType::SystemComponent => &self.system_component,
         }
@@ -32,7 +32,7 @@ impl From<&NetworkDefinition> for HrpSet {
     fn from(network_definition: &NetworkDefinition) -> Self {
         let suffix = &network_definition.hrp_suffix;
         HrpSet {
-            component: format!("component_{}", suffix),
+            normal_component: format!("component_{}", suffix),
             account_component: format!("account_{}", suffix),
             system_component: format!("system_{}", suffix),
             package: format!("package_{}", suffix),

@@ -14,7 +14,7 @@ fn local_component_should_return_correct_info() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
-        .lock_fee(10.into(), SYSTEM_COMPONENT)
+        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(
             package_address,
             "Secret",
@@ -37,7 +37,7 @@ fn local_component_should_be_callable_read_only() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
-        .lock_fee(10.into(), SYSTEM_COMPONENT)
+        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(package_address, "Secret", "read_local_component", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -55,7 +55,7 @@ fn local_component_should_be_callable_with_write() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
-        .lock_fee(10.into(), SYSTEM_COMPONENT)
+        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(package_address, "Secret", "write_local_component", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -77,7 +77,7 @@ fn local_component_with_access_rules_should_not_be_callable() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
-        .lock_fee(10.into(), SYSTEM_COMPONENT)
+        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(
             package_address,
             "Secret",
@@ -109,7 +109,7 @@ fn local_component_with_access_rules_should_be_callable() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
-        .lock_fee(10.into(), SYSTEM_COMPONENT)
+        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_method(
             account,
             "create_proof_by_ids",
@@ -139,7 +139,7 @@ fn recursion_bomb() {
     // Act
     // Note: currently SEGFAULT occurs if bucket with too much in it is sent. My guess the issue is a native stack overflow.
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
-        .lock_fee(10.into(), SYSTEM_COMPONENT)
+        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .withdraw_from_account_by_amount(Decimal::from(10), RADIX_TOKEN, account)
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.call_function(
@@ -167,7 +167,7 @@ fn recursion_bomb_to_failure() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
-        .lock_fee(10.into(), SYSTEM_COMPONENT)
+        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .withdraw_from_account_by_amount(Decimal::from(100), RADIX_TOKEN, account)
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.call_function(
@@ -201,7 +201,7 @@ fn recursion_bomb_2() {
     // Act
     // Note: currently SEGFAULT occurs if bucket with too much in it is sent. My guess the issue is a native stack overflow.
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
-        .lock_fee(10.into(), SYSTEM_COMPONENT)
+        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .withdraw_from_account_by_amount(Decimal::from(10), RADIX_TOKEN, account)
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.call_function(
@@ -229,7 +229,7 @@ fn recursion_bomb_2_to_failure() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
-        .lock_fee(10.into(), SYSTEM_COMPONENT)
+        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .withdraw_from_account_by_amount(Decimal::from(100), RADIX_TOKEN, account)
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.call_function(

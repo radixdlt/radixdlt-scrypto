@@ -67,7 +67,7 @@ impl WasmiModule {
             &self.module,
             &ImportsBuilder::new().with_resolver(MODULE_ENV_NAME, &WasmiEnvModule {}),
         )
-        .expect("Failed to instantiate wasm module")
+        .expect("Failed to instantiate WASM module")
         .assert_no_start();
 
         // find memory ref
@@ -119,7 +119,7 @@ impl<'a, 'b, 'r> WasmiExternals<'a, 'b, 'r> {
 
         let direct = self.instance.memory_ref.direct_access();
         let buffer = direct.as_ref();
-        if end > buffer.len().try_into().unwrap() {
+        if end > buffer.len() {
             return Err(InvokeError::MemoryAccessError);
         }
 
@@ -177,7 +177,9 @@ impl WasmInstance for WasmiInstance {
                 let e_str = format!("{:?}", e);
                 match e.into_host_error() {
                     // Pass-through invoke errors
-                    Some(host_error) => *host_error.downcast::<InvokeError>().unwrap(),
+                    Some(host_error) => *host_error
+                        .downcast::<InvokeError>()
+                        .expect("Failed to downcast error into InvokeError"),
                     None => InvokeError::WasmError(e_str),
                 }
             })?
@@ -200,14 +202,11 @@ impl WasmiEngine {
 impl WasmEngine<WasmiInstance> for WasmiEngine {
     fn instantiate(&mut self, code: &[u8]) -> WasmiInstance {
         let code_hash = hash(code);
-        if !self.modules.contains_key(&code_hash) {
-            let module = WasmiModule {
-                module: Module::from_buffer(code).expect("Failed to parse wasm code"),
-            };
-
-            self.modules.insert(code_hash, module);
-        }
-        let module = self.modules.get(&code_hash).unwrap();
-        module.instantiate()
+        self.modules
+            .entry(code_hash)
+            .or_insert_with(|| WasmiModule {
+                module: Module::from_buffer(code).expect("Failed to parse WASM module"),
+            })
+            .instantiate()
     }
 }

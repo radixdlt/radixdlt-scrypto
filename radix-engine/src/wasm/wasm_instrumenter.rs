@@ -24,7 +24,7 @@ impl WasmInstrumenter {
                     })
                     .and_then(|m| m.inject_stack_metering(wasm_metering_params.max_stack_size()))
                     .and_then(|m| m.to_bytes())
-                    .expect("Failed to instrument code")
+                    .expect("Failed to instrument WASM module")
                     .0
             })
     }

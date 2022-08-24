@@ -1,5 +1,5 @@
-use crate::engine::{DropFailure, HeapRENode, SystemApi};
-use crate::fee::{FeeReserve, FeeReserveError};
+use crate::engine::{DropFailure, HeapRENode, RuntimeError, SystemApi};
+use crate::fee::FeeReserve;
 use crate::model::{Bucket, ResourceContainer, ResourceContainerError};
 use crate::types::*;
 use crate::wasm::*;
@@ -53,8 +53,9 @@ pub struct Worktop {
     containers: HashMap<ResourceAddress, Rc<RefCell<ResourceContainer>>>,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug)]
 pub enum WorktopError {
+    RuntimeError(Box<RuntimeError>),
     InvalidRequestData(DecodeError),
     MethodNotFound(String),
     ResourceContainerError(ResourceContainerError),
@@ -62,7 +63,6 @@ pub enum WorktopError {
     CouldNotCreateBucket,
     CouldNotTakeBucket,
     AssertionFailed,
-    CostingError(FeeReserveError),
 }
 
 impl Worktop {
@@ -212,7 +212,7 @@ impl Worktop {
     ) -> Result<ScryptoValue, WorktopError> {
         let mut node_ref = system_api
             .substate_borrow_mut(&SubstateId::Worktop)
-            .expect("TODO: handle error");
+            .map_err(|e| WorktopError::RuntimeError(Box::new(e)))?;
         let worktop = node_ref.worktop();
 
         let rtn = match worktop_fn {
@@ -221,7 +221,7 @@ impl Worktop {
                     scrypto_decode(&args.raw).map_err(|e| WorktopError::InvalidRequestData(e))?;
                 let bucket = system_api
                     .node_drop(&RENodeId::Bucket(input.bucket.0))
-                    .expect("TODO: handle error")
+                    .map_err(|e| WorktopError::RuntimeError(Box::new(e)))?
                     .into();
                 worktop
                     .put(bucket)
@@ -240,7 +240,7 @@ impl Worktop {
                     let resource_type = {
                         let node_ref = system_api
                             .borrow_node(&RENodeId::ResourceManager(input.resource_address))
-                            .expect("TODO: handle error");
+                            .map_err(|e| WorktopError::RuntimeError(Box::new(e)))?;
                         let resource_manager = node_ref.resource_manager();
                         resource_manager.resource_type()
                     };
@@ -249,7 +249,7 @@ impl Worktop {
                 };
                 let bucket_id = system_api
                     .node_create(HeapRENode::Bucket(Bucket::new(resource_container)))
-                    .unwrap()
+                    .map_err(|e| WorktopError::RuntimeError(Box::new(e)))?
                     .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
                     bucket_id,
@@ -267,7 +267,7 @@ impl Worktop {
                     let resource_type = {
                         let node_ref = system_api
                             .borrow_node(&RENodeId::ResourceManager(input.resource_address))
-                            .expect("TODO: handle error");
+                            .map_err(|e| WorktopError::RuntimeError(Box::new(e)))?;
                         let resource_manager = node_ref.resource_manager();
                         resource_manager.resource_type()
                     };
@@ -277,7 +277,7 @@ impl Worktop {
 
                 let bucket_id = system_api
                     .node_create(HeapRENode::Bucket(Bucket::new(resource_container)))
-                    .unwrap()
+                    .map_err(|e| WorktopError::RuntimeError(Box::new(e)))?
                     .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
                     bucket_id,
@@ -295,7 +295,7 @@ impl Worktop {
                     let resource_type = {
                         let node_ref = system_api
                             .borrow_node(&RENodeId::ResourceManager(input.resource_address))
-                            .expect("TODO: handle error");
+                            .map_err(|e| WorktopError::RuntimeError(Box::new(e)))?;
                         let resource_manager = node_ref.resource_manager();
                         resource_manager.resource_type()
                     };
@@ -305,7 +305,7 @@ impl Worktop {
 
                 let bucket_id = system_api
                     .node_create(HeapRENode::Bucket(Bucket::new(resource_container)))
-                    .unwrap()
+                    .map_err(|e| WorktopError::RuntimeError(Box::new(e)))?
                     .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
                     bucket_id,
@@ -354,7 +354,7 @@ impl Worktop {
                     if !container.is_empty() {
                         let bucket_id = system_api
                             .node_create(HeapRENode::Bucket(Bucket::new(container)))
-                            .unwrap()
+                            .map_err(|e| WorktopError::RuntimeError(Box::new(e)))?
                             .into();
                         buckets.push(scrypto::resource::Bucket(bucket_id));
                     }
@@ -365,7 +365,8 @@ impl Worktop {
 
         system_api
             .substate_return_mut(node_ref)
-            .expect("TODO: handle error");
+            .map_err(|e| WorktopError::RuntimeError(Box::new(e)))?;
+
         Ok(rtn)
     }
 }

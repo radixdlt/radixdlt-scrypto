@@ -1,7 +1,7 @@
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::transaction::ExecutionConfig;
 use scrypto::core::NetworkDefinition;
-use scrypto::prelude::SYSTEM_COMPONENT;
+use scrypto::prelude::SYS_FAUCET_COMPONENT;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::builder::TransactionBuilder;
@@ -24,7 +24,7 @@ fn test_transaction_preview_cost_estimate() {
     preview_receipt.expect_success();
 
     let receipt =
-        test_runner.execute_transaction(&validated_transaction, &ExecutionConfig::default());
+        test_runner.execute_transaction(&validated_transaction, &ExecutionConfig::standard());
     receipt.expect_success();
 
     assert_eq!(
@@ -56,7 +56,7 @@ fn prepare_test_tx_and_preview_intent(
         })
         .manifest(
             ManifestBuilder::new(&NetworkDefinition::local_simulator())
-                .lock_fee(10.into(), SYSTEM_COMPONENT)
+                .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
                 .clear_auth_zone()
                 .build(),
         )

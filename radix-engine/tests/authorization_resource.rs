@@ -52,7 +52,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
 
     // Act
     let mut builder = ManifestBuilder::new(&NetworkDefinition::local_simulator());
-    builder.lock_fee(10.into(), SYSTEM_COMPONENT);
+    builder.lock_fee(10.into(), SYS_FAUCET_COMPONENT);
     builder.create_proof_from_account_by_amount(Decimal::one(), auth_to_use, account);
 
     match action {

@@ -1,15 +1,15 @@
+use crate::engine::RuntimeError;
 use crate::engine::SystemApi;
 use crate::fee::FeeReserve;
-use crate::fee::FeeReserveError;
 use crate::model::{convert, MethodAuthorization};
 use crate::types::*;
 use crate::wasm::{WasmEngine, WasmInstance};
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug)]
 pub enum ComponentError {
+    RuntimeError(Box<RuntimeError>),
     InvalidRequestData(DecodeError),
     BlueprintFunctionNotFound(String),
-    CostingError(FeeReserveError),
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
@@ -58,12 +58,13 @@ impl ComponentInfo {
         schema: &Type,
         method_name: &str,
     ) -> Vec<MethodAuthorization> {
-        let data = ScryptoValue::from_slice(&component_state.state).unwrap();
+        let data = ScryptoValue::from_slice(&component_state.state)
+            .expect("Failed to decode component state");
 
         let mut authorizations = Vec::new();
         for auth in &self.access_rules {
             let method_auth = auth.get(method_name);
-            let authorization = convert(schema, &data.dom, method_auth);
+            let authorization = convert(schema, &data, method_auth);
             authorizations.push(authorization);
         }
 
@@ -105,7 +106,7 @@ impl ComponentInfo {
                     let (package_id, blueprint_name) = {
                         let component_ref = system_api
                             .borrow_node(&node_id)
-                            .expect("TODO: handle error");
+                            .map_err(|e| ComponentError::RuntimeError(Box::new(e)))?;
                         let component = component_ref.component_info();
                         let blueprint_name = component.blueprint_name().to_owned();
                         (
@@ -116,9 +117,12 @@ impl ComponentInfo {
 
                     let package_ref = system_api
                         .borrow_node(&package_id)
-                        .expect("TODO: handle error");
+                        .map_err(|e| ComponentError::RuntimeError(Box::new(e)))?;
                     let package = package_ref.package();
-                    let blueprint_abi = package.blueprint_abi(&blueprint_name).unwrap();
+                    let blueprint_abi = package.blueprint_abi(&blueprint_name).expect(&format!(
+                        "Blueprint {} is not found in package node {:?}",
+                        blueprint_name, package_id
+                    ));
                     for (func_name, _) in input.access_rules.iter() {
                         if !blueprint_abi.contains_fn(func_name.as_str()) {
                             return Err(ComponentError::BlueprintFunctionNotFound(
@@ -130,12 +134,12 @@ impl ComponentInfo {
 
                 let mut ref_mut = system_api
                     .substate_borrow_mut(&substate_id)
-                    .expect("TODO: handle error");
+                    .map_err(|e| ComponentError::RuntimeError(Box::new(e)))?;
                 let component_info = ref_mut.component_info();
                 component_info.access_rules.push(input.access_rules);
                 system_api
                     .substate_return_mut(ref_mut)
-                    .expect("TODO: handle error");
+                    .map_err(|e| ComponentError::RuntimeError(Box::new(e)))?;
 
                 Ok(ScryptoValue::from_typed(&()))
             }

@@ -2,6 +2,8 @@ use crate::engine::*;
 use crate::model::*;
 use crate::types::*;
 
+// TODO: still lots of unwraps
+
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub enum Substate {
     System(System),
@@ -67,7 +69,7 @@ impl Substate {
         if let Substate::ComponentState(state) = self {
             state
         } else {
-            panic!("Not component state");
+            panic!("Not a component state");
         }
     }
 
@@ -75,14 +77,7 @@ impl Substate {
         if let Substate::ComponentInfo(component) = self {
             component
         } else {
-            match self {
-                Substate::ComponentState(component_state) => {
-                    let value = decode_any(component_state.state()).unwrap();
-                    panic!("Not a component {:?}", value);
-                }
-                _ => {}
-            }
-            panic!("Not a component");
+            panic!("Not a component info");
         }
     }
 

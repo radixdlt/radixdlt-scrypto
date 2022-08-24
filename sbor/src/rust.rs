@@ -19,6 +19,8 @@ pub use alloc::vec;
 #[cfg(feature = "alloc")]
 pub use core::cell;
 #[cfg(feature = "alloc")]
+pub use core::cmp;
+#[cfg(feature = "alloc")]
 pub use core::convert;
 #[cfg(feature = "alloc")]
 pub use core::hash;
@@ -41,6 +43,8 @@ pub use std::borrow;
 pub use std::boxed;
 #[cfg(not(feature = "alloc"))]
 pub use std::cell;
+#[cfg(not(feature = "alloc"))]
+pub use std::cmp;
 #[cfg(not(feature = "alloc"))]
 pub use std::convert;
 #[cfg(not(feature = "alloc"))]

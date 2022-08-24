@@ -234,7 +234,7 @@ impl Rules for InstructionCostRules {
 
     fn memory_grow_cost(&self) -> MemoryGrowCost {
         MemoryGrowCost::Linear(
-            NonZeroU32::new(self.grow_memory_cost).expect("Grow memory cost can't be zero"),
+            NonZeroU32::new(self.grow_memory_cost).expect("GROW_MEMORY_COST value is zero"),
         )
     }
 }

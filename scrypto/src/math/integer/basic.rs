@@ -1,5 +1,4 @@
 use super::*;
-use paste::paste;
 
 macro_rules! checked_int_impl_large {
     (type_id: $t:ident, bytes_len: $bytes_len:literal, MIN: $min: expr, MAX: $max: expr) => {

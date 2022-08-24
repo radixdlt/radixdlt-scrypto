@@ -1,5 +1,5 @@
 [package]
-name = "system"
+name = "sys-faucet"
 version = "0.1.0"
 edition = "2021"
 

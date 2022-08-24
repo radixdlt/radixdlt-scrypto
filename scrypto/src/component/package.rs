@@ -7,7 +7,7 @@ use sbor::*;
 use scrypto_abi::BlueprintAbi;
 
 use crate::abi::*;
-use crate::address::{AddressError, BECH32_DECODER, BECH32_ENCODER};
+use crate::address::{AddressError, EntityType, BECH32_DECODER, BECH32_ENCODER};
 use crate::core::*;
 use crate::misc::*;
 
@@ -24,7 +24,9 @@ pub struct Package {
 
 /// A collection of blueprints, compiled and published as a single unit.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub struct PackageAddress(pub [u8; 27]);
+pub enum PackageAddress {
+    Normal([u8; 26]),
+}
 
 impl PackageAddress {}
 
@@ -48,7 +50,12 @@ impl TryFrom<&[u8]> for PackageAddress {
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         match slice.len() {
-            27 => Ok(Self(copy_u8_array(slice))),
+            27 => match EntityType::try_from(slice[0])
+                .map_err(|_| AddressError::InvalidEntityTypeId(slice[0]))?
+            {
+                EntityType::Package => Ok(Self::Normal(copy_u8_array(&slice[1..]))),
+                _ => Err(AddressError::InvalidEntityTypeId(slice[0])),
+            },
             _ => Err(AddressError::InvalidLength(slice.len())),
         }
     }
@@ -56,7 +63,12 @@ impl TryFrom<&[u8]> for PackageAddress {
 
 impl PackageAddress {
     pub fn to_vec(&self) -> Vec<u8> {
-        self.0.to_vec()
+        let mut buf = Vec::new();
+        buf.push(EntityType::package(self).id());
+        match self {
+            Self::Normal(v) => buf.extend(v),
+        }
+        buf
     }
 }
 
@@ -76,11 +88,7 @@ impl FromStr for PackageAddress {
 
 impl fmt::Display for PackageAddress {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(
-            f,
-            "{}",
-            BECH32_ENCODER.encode_package_address(self).unwrap()
-        )
+        write!(f, "{}", BECH32_ENCODER.encode_package_address(self))
     }
 }
 

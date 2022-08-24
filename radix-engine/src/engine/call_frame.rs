@@ -43,7 +43,9 @@ impl CallFrame {
                 ECDSA_TOKEN,
                 signer_non_fungible_ids,
             ));
-            let ecdsa_proof = ecdsa_bucket.create_proof(ECDSA_TOKEN_BUCKET_ID).unwrap();
+            let ecdsa_proof = ecdsa_bucket
+                .create_proof(ECDSA_TOKEN_BUCKET_ID)
+                .expect("Failed to construct signature proof");
             initial_auth_zone_proofs.push(ecdsa_proof);
         }
 

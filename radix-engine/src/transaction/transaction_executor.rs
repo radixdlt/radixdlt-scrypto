@@ -27,7 +27,9 @@ impl Default for ExecutionConfig {
 impl ExecutionConfig {
     pub fn standard() -> Self {
         Self {
-            cost_unit_price: DEFAULT_COST_UNIT_PRICE.parse().unwrap(),
+            cost_unit_price: DEFAULT_COST_UNIT_PRICE
+                .parse()
+                .expect("Invalid cost unit price"),
             max_call_depth: DEFAULT_MAX_CALL_DEPTH,
             system_loan: DEFAULT_SYSTEM_LOAN,
             is_system: false,
@@ -37,7 +39,9 @@ impl ExecutionConfig {
 
     pub fn debug() -> Self {
         Self {
-            cost_unit_price: DEFAULT_COST_UNIT_PRICE.parse().unwrap(),
+            cost_unit_price: DEFAULT_COST_UNIT_PRICE
+                .parse()
+                .expect("Invalid cost unit price"),
             max_call_depth: DEFAULT_MAX_CALL_DEPTH,
             system_loan: DEFAULT_SYSTEM_LOAN,
             is_system: false,
@@ -138,27 +142,27 @@ where
         let fee_table = FeeTable::new();
         fee_reserve
             .consume(fee_table.tx_base_fee(), "base_fee")
-            .expect("System loan should cover this");
+            .expect("TX base fee not covered by system loan");
         fee_reserve
             .consume(
                 fee_table.tx_decoding_per_byte() * transaction.transaction_payload_size() as u32,
                 "decode_transaction",
             )
-            .expect("System loan should cover this");
+            .expect("TX decoding fee not covered by system loan");
         fee_reserve
             .consume(
                 fee_table.tx_manifest_verification_per_byte()
                     * transaction.transaction_payload_size() as u32,
                 "verify_manifest",
             )
-            .expect("System loan should cover this");
+            .expect("TX manifest verification fee not covered by system loan");
         fee_reserve
             .consume(
                 fee_table.tx_signature_verification_per_sig()
                     * transaction.signer_public_keys().len() as u32,
                 "verify_signatures",
             )
-            .expect("System loan should cover this");
+            .expect("TX signature verification fee not covered by system loan");
 
         // 3. Start a kernel instance and invoke
         let result = {
@@ -189,7 +193,10 @@ where
                 println!("{:?}", result);
             }
 
-            result.map(|o| scrypto_decode::<Vec<Vec<u8>>>(&o.raw).unwrap())
+            result.map(|o| {
+                scrypto_decode::<Vec<Vec<u8>>>(&o.raw)
+                    .expect("TransactionProcessor returned data of unexpected type")
+            })
         };
 
         // 4. Finalize transaction fee, determine outcome, and reject transaction if required
@@ -265,14 +272,23 @@ where
 
             // Collect fees into collector
             collector
-                .put(locked.take_by_amount(amount).unwrap())
-                .unwrap();
+                .put(
+                    locked
+                        .take_by_amount(amount)
+                        .expect("Failed to extract locked fee"),
+                )
+                .expect("Failed to add fee to fee collector");
 
             // Refund overpayment
             let substate_id = SubstateId::Vault(vault_id);
-            track.acquire_lock(substate_id.clone(), true, true).unwrap();
+            track
+                .acquire_lock(substate_id.clone(), true, true)
+                .expect("Failed to acquire the lock of a fee-locking vault");
             let mut substate = track.take_substate(substate_id.clone());
-            substate.vault_mut().put(Bucket::new(locked)).unwrap();
+            substate
+                .vault_mut()
+                .put(Bucket::new(locked))
+                .expect("Failed to update a fee-locking vault");
             track.write_substate(substate_id.clone(), substate);
             track.release_lock(substate_id, true);
         }

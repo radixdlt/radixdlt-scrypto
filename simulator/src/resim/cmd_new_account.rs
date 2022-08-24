@@ -25,8 +25,8 @@ impl NewAccount {
         let auth_address = NonFungibleAddress::from_public_key(&public_key);
         let withdraw_auth = rule!(require(auth_address));
         let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
-            .lock_fee(100.into(), SYSTEM_COMPONENT)
-            .call_method(SYSTEM_COMPONENT, "free_xrd", args!())
+            .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
+            .call_method(SYS_FAUCET_COMPONENT, "free_xrd", args!())
             .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
                 builder.new_account_with_resource(&withdraw_auth, bucket_id)
             })
@@ -55,7 +55,6 @@ impl NewAccount {
                 "Account component address: {}",
                 bech32_encoder
                     .encode_component_address(&account)
-                    .map_err(|err| Error::AddressError(err))?
                     .to_string()
                     .green()
             )

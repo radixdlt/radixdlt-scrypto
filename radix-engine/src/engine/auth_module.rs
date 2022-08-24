@@ -13,7 +13,7 @@ impl AuthModule {
         let mut auth_zones = vec![
             &call_frames
                 .last()
-                .expect("Current frame always exists")
+                .expect("Current call frame does not exist")
                 .auth_zone,
         ];
         // FIXME: This is wrong as it allows extern component

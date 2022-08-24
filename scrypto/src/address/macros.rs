@@ -1,75 +1,87 @@
 #[macro_export]
-macro_rules! type_from_entity_type {
-    (EntityType::Resource) => {
-        ResourceAddress
+macro_rules! construct_address {
+    (EntityType::Resource, $($bytes:expr),*) => {
+        ::scrypto::resource::ResourceAddress::Normal([$($bytes),*])
     };
-    (EntityType::Package) => {
-        PackageAddress
+    (EntityType::Package, $($bytes:expr),*) => {
+        ::scrypto::component::PackageAddress::Normal([$($bytes),*])
     };
-    (EntityType::Component) => {
-        ComponentAddress
+    (EntityType::NormalComponent, $($bytes:expr),*) => {
+        ::scrypto::component::ComponentAddress::Normal([$($bytes),*])
     };
-    (EntityType::AccountComponent) => {
-        ComponentAddress
+    (EntityType::AccountComponent, $($bytes:expr),*) => {
+        ::scrypto::component::ComponentAddress::Account([$($bytes),*])
     };
-    (EntityType::SystemComponent) => {
-        ComponentAddress
-    };
-}
-
-#[macro_export]
-macro_rules! entity_type_id_from_entity_type {
-    (EntityType::Resource) => {
-        RESOURCE_ADDRESS_ENTITY_ID
-    };
-    (EntityType::Package) => {
-        PACKAGE_ADDRESS_ENTITY_ID
-    };
-    (EntityType::Component) => {
-        COMPONENT_ADDRESS_ENTITY_ID
-    };
-    (EntityType::AccountComponent) => {
-        ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID
-    };
-    (EntityType::SystemComponent) => {
-        SYSTEM_COMPONENT_ADDRESS_ENTITY_ID
+    (EntityType::SystemComponent, $($bytes:expr),*) => {
+        ::scrypto::component::ComponentAddress::System([$($bytes),*])
     };
 }
 
 #[macro_export]
 macro_rules! address {
-    (EntityType::$entity_type: tt, [$last_byte: expr; 26]) => {
-        address!(EntityType::$entity_type, $last_byte)
+    (EntityType::$entity_type:tt, $last_byte:literal) => {
+        ::scrypto::construct_address!(
+            EntityType::$entity_type,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            $last_byte
+        )
     };
-    (EntityType::$entity_type: tt, $last_byte: expr) => {
-        type_from_entity_type!(EntityType::$entity_type)([
-            entity_type_id_from_entity_type!(EntityType::$entity_type),
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            $last_byte,
-        ])
+    (EntityType::$entity_type:tt, [$repeat_byte:literal; 26]) => {
+        ::scrypto::construct_address!(
+            EntityType::$entity_type,
+            $repeat_byte,
+            $repeat_byte,
+            $repeat_byte,
+            $repeat_byte,
+            $repeat_byte,
+            $repeat_byte,
+            $repeat_byte,
+            $repeat_byte,
+            $repeat_byte,
+            $repeat_byte,
+            $repeat_byte,
+            $repeat_byte,
+            $repeat_byte,
+            $repeat_byte,
+            $repeat_byte,
+            $repeat_byte,
+            $repeat_byte,
+            $repeat_byte,
+            $repeat_byte,
+            $repeat_byte,
+            $repeat_byte,
+            $repeat_byte,
+            $repeat_byte,
+            $repeat_byte,
+            $repeat_byte,
+            $repeat_byte
+        )
+    };
+    (EntityType::$entity_type:tt, $($bytes:literal),*) => {
+        ::scrypto::construct_address!(EntityType::$entity_type, $($bytes),*)
     };
 }

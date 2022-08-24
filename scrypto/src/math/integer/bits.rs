@@ -1,7 +1,5 @@
 use super::*;
-use crate::scrypto::{forward_ref_binop, forward_ref_op_assign};
-use num_traits::ToPrimitive;
-use paste::paste;
+use crate::{forward_ref_binop, forward_ref_op_assign};
 
 pub trait PrimIntExt<T> {
     type Output;

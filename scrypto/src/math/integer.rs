@@ -1,15 +1,17 @@
 //! Definitions of safe integers and uints.
 
-use core::cmp::{Ord, Ordering, PartialEq, PartialOrd};
-use core::ops::{Add, AddAssign, BitAnd, BitAndAssign, BitOr, BitOrAssign};
-use core::ops::{BitXor, BitXorAssign, Div, DivAssign};
-use core::ops::{Mul, MulAssign, Neg, Not, Rem, RemAssign};
-use core::ops::{Shl, ShlAssign, Shr, ShrAssign, Sub, SubAssign};
 use num_bigint::{BigInt, Sign};
+use num_traits::FromPrimitive;
 use num_traits::{One, Pow, Signed, ToPrimitive, Zero};
 use paste::paste;
+use sbor::rust::cmp::{Ord, Ordering, PartialEq, PartialOrd};
 use sbor::rust::convert::{From, TryFrom};
 use sbor::rust::fmt;
+use sbor::rust::ops::{Add, AddAssign, BitAnd, BitAndAssign, BitOr, BitOrAssign};
+use sbor::rust::ops::{BitXor, BitXorAssign, Div, DivAssign};
+use sbor::rust::ops::{Mul, MulAssign, Neg, Not, Rem, RemAssign};
+use sbor::rust::ops::{Shl, ShlAssign, Shr, ShrAssign, Sub, SubAssign};
+use sbor::rust::str::FromStr;
 use sbor::rust::string::*;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
@@ -19,7 +21,10 @@ use sbor::*;
 pub mod basic;
 pub mod bits;
 pub mod convert;
-pub use convert::*;
+#[cfg(test)]
+pub mod test;
+
+use convert::*;
 
 macro_rules! types {
 

@@ -25,7 +25,7 @@ fn test_external_bridges() {
 
     // Part 2 - Get a target component address
     let manifest1 = ManifestBuilder::new(&NetworkDefinition::local_simulator())
-        .lock_fee(10.into(), SYSTEM_COMPONENT)
+        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(
             target_package_address,
             "ExternalBlueprintTarget",
@@ -43,7 +43,7 @@ fn test_external_bridges() {
 
     // Part 3 - Get the caller component address
     let manifest2 = ManifestBuilder::new(&NetworkDefinition::local_simulator())
-        .lock_fee(10.into(), SYSTEM_COMPONENT)
+        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(
             caller_package_address,
             "ExternalBlueprintCaller",
@@ -61,7 +61,7 @@ fn test_external_bridges() {
 
     // ACT
     let manifest3 = ManifestBuilder::new(&NetworkDefinition::local_simulator())
-        .lock_fee(10.into(), SYSTEM_COMPONENT)
+        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_method(
             caller_component_address,
             "run_tests_with_external_blueprint",
@@ -75,7 +75,7 @@ fn test_external_bridges() {
 
     // ACT
     let manifest4 = ManifestBuilder::new(&NetworkDefinition::local_simulator())
-        .lock_fee(10.into(), SYSTEM_COMPONENT)
+        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_method(
             caller_component_address,
             "run_tests_with_external_component",
@@ -99,9 +99,7 @@ fn fill_in_package_name_template(
 
     let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::local_simulator());
 
-    let package_address_string = bech32_encoder
-        .encode_package_address(&package_address)
-        .unwrap();
+    let package_address_string = bech32_encoder.encode_package_address(&package_address);
 
     println!(
         "Copying template from {:?} to {:?} whilst updating package address to {}",

@@ -63,7 +63,7 @@ blueprint! {
         }
 
         pub fn create_node_with_invalid_package() {
-            let package_address = PackageAddress([0u8; 27]);
+            let package_address = PackageAddress::Normal([0u8; 26]);
             let input = RadixEngineInput::RENodeCreate(ScryptoRENode::Component(
                 package_address,
                 "NodeCreate".to_owned(),

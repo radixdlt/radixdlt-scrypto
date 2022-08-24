@@ -119,7 +119,7 @@ fn create_transaction() -> Vec<u8> {
         })
         .manifest(
             ManifestBuilder::new(&NetworkDefinition::local_simulator())
-                .lock_fee(10.into(), SYSTEM_COMPONENT)
+                .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
                 .clear_auth_zone()
                 .build(),
         )

@@ -1,14 +1,14 @@
-use crate::engine::{HeapRENode, SystemApi};
+use crate::engine::{HeapRENode, RuntimeError, SystemApi};
 use crate::fee::FeeReserve;
-use crate::fee::FeeReserveError;
 use crate::model::{
     Proof, ProofError, ResourceContainer, ResourceContainerError, ResourceContainerId,
 };
 use crate::types::*;
 use crate::wasm::*;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug)]
 pub enum BucketError {
+    RuntimeError(Box<RuntimeError>),
     InvalidDivisibility,
     InvalidRequestData(DecodeError),
     CouldNotCreateBucket,
@@ -17,7 +17,6 @@ pub enum BucketError {
     ProofError(ProofError),
     CouldNotCreateProof,
     MethodNotFound(BucketFnIdentifier),
-    CostingError(FeeReserveError),
 }
 
 /// A transient resource container.
@@ -54,9 +53,12 @@ impl Bucket {
             ResourceType::Fungible { .. } => {
                 self.create_proof_by_amount(self.total_amount(), container_id)
             }
-            ResourceType::NonFungible => {
-                self.create_proof_by_ids(&self.total_ids().unwrap(), container_id)
-            }
+            ResourceType::NonFungible => self.create_proof_by_ids(
+                &self
+                    .total_ids()
+                    .expect("Failed to list non-fungible IDs on non-fungible Bucket"),
+                container_id,
+            ),
         }
     }
 
@@ -157,7 +159,7 @@ impl Bucket {
         let substate_id = SubstateId::Bucket(bucket_id);
         let mut node_ref = system_api
             .substate_borrow_mut(&substate_id)
-            .expect("TODO: handle error");
+            .map_err(|e| BucketError::RuntimeError(Box::new(e)))?;
         let bucket0 = node_ref.bucket();
 
         let rtn = match bucket_fn {
@@ -169,7 +171,7 @@ impl Bucket {
                     .map_err(BucketError::ResourceContainerError)?;
                 let bucket_id = system_api
                     .node_create(HeapRENode::Bucket(Bucket::new(container)))
-                    .unwrap()
+                    .map_err(|e| BucketError::RuntimeError(Box::new(e)))?
                     .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
                     bucket_id,
@@ -183,7 +185,7 @@ impl Bucket {
                     .map_err(BucketError::ResourceContainerError)?;
                 let bucket_id = system_api
                     .node_create(HeapRENode::Bucket(Bucket::new(container)))
-                    .unwrap()
+                    .map_err(|e| BucketError::RuntimeError(Box::new(e)))?
                     .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
                     bucket_id,
@@ -202,7 +204,7 @@ impl Bucket {
                     scrypto_decode(&args.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
                 let other_bucket = system_api
                     .node_drop(&RENodeId::Bucket(input.bucket.0))
-                    .expect("TODO: handle error")
+                    .map_err(|e| BucketError::RuntimeError(Box::new(e)))?
                     .into();
                 bucket0
                     .put(other_bucket)
@@ -227,7 +229,7 @@ impl Bucket {
                     .map_err(BucketError::ProofError)?;
                 let proof_id = system_api
                     .node_create(HeapRENode::Proof(proof))
-                    .unwrap()
+                    .map_err(|e| BucketError::RuntimeError(Box::new(e)))?
                     .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Proof(
                     proof_id,
@@ -238,7 +240,7 @@ impl Bucket {
 
         system_api
             .substate_return_mut(node_ref)
-            .expect("TODO: handle error");
+            .map_err(|e| BucketError::RuntimeError(Box::new(e)))?;
 
         Ok(rtn)
     }
@@ -262,7 +264,7 @@ impl Bucket {
 
                 let bucket: Bucket = system_api
                     .node_drop(&node_id)
-                    .expect("TODO: handle error")
+                    .map_err(|e| BucketError::RuntimeError(Box::new(e)))?
                     .into();
 
                 // Notify resource manager, TODO: Should not need to notify manually
@@ -270,18 +272,23 @@ impl Bucket {
                 let resource_substate_id = SubstateId::ResourceManager(resource_address);
                 let mut value = system_api
                     .substate_borrow_mut(&resource_substate_id)
-                    .expect("TODO: handle error");
+                    .map_err(|e| BucketError::RuntimeError(Box::new(e)))?;
                 let resource_manager = value.resource_manager();
                 resource_manager.burn(bucket.total_amount());
                 if matches!(resource_manager.resource_type(), ResourceType::NonFungible) {
-                    for id in bucket.total_ids().unwrap() {
+                    for id in bucket
+                        .total_ids()
+                        .expect("Failed to list non-fungible IDs on non-fungible Bucket")
+                    {
                         let address = SubstateId::NonFungible(resource_address, id);
-                        system_api.substate_take(address).expect("Should not fail.");
+                        system_api
+                            .substate_take(address)
+                            .map_err(|e| BucketError::RuntimeError(Box::new(e)))?;
                     }
                 }
                 system_api
                     .substate_return_mut(value)
-                    .expect("TODO: handle error");
+                    .map_err(|e| BucketError::RuntimeError(Box::new(e)))?;
 
                 Ok(ScryptoValue::from_typed(&()))
             }

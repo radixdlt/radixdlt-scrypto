@@ -1,12 +1,12 @@
-use crate::engine::{HeapRENode, SystemApi};
+use crate::engine::{HeapRENode, RuntimeError, SystemApi};
 use crate::fee::FeeReserve;
-use crate::fee::FeeReserveError;
 use crate::model::{Proof, ProofError};
 use crate::types::*;
 use crate::wasm::*;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug)]
 pub enum AuthZoneError {
+    RuntimeError(Box<RuntimeError>),
     EmptyAuthZone,
     ProofError(ProofError),
     CouldNotCreateProof,
@@ -14,7 +14,6 @@ pub enum AuthZoneError {
     CouldNotGetProof,
     CouldNotGetResource,
     NoMethodSpecified,
-    CostingError(FeeReserveError),
 }
 
 /// A transient resource container.
@@ -97,7 +96,7 @@ impl AuthZone {
                 let proof = auth_zone.pop()?;
                 let proof_id = system_api
                     .node_create(HeapRENode::Proof(proof))
-                    .unwrap()
+                    .map_err(|e| AuthZoneError::RuntimeError(Box::new(e)))?
                     .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Proof(
                     proof_id,
@@ -108,7 +107,7 @@ impl AuthZone {
                     scrypto_decode(&args.raw).map_err(|e| AuthZoneError::InvalidRequestData(e))?;
                 let mut proof: Proof = system_api
                     .node_drop(&RENodeId::Proof(input.proof.0))
-                    .expect("TODO: handle error")
+                    .map_err(|e| AuthZoneError::RuntimeError(Box::new(e)))?
                     .into();
                 proof.change_to_unrestricted();
 
@@ -122,7 +121,7 @@ impl AuthZone {
                 let resource_type = {
                     let value = system_api
                         .borrow_node(&RENodeId::ResourceManager(input.resource_address))
-                        .expect("TODO: handle error");
+                        .map_err(|e| AuthZoneError::RuntimeError(Box::new(e)))?;
                     let resource_manager = value.resource_manager();
                     resource_manager.resource_type()
                 };
@@ -130,7 +129,7 @@ impl AuthZone {
                 let proof = auth_zone.create_proof(input.resource_address, resource_type)?;
                 let proof_id = system_api
                     .node_create(HeapRENode::Proof(proof))
-                    .unwrap()
+                    .map_err(|e| AuthZoneError::RuntimeError(Box::new(e)))?
                     .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Proof(
                     proof_id,
@@ -142,7 +141,7 @@ impl AuthZone {
                 let resource_type = {
                     let value = system_api
                         .borrow_node(&RENodeId::ResourceManager(input.resource_address))
-                        .expect("TODO: handle error");
+                        .map_err(|e| AuthZoneError::RuntimeError(Box::new(e)))?;
                     let resource_manager = value.resource_manager();
                     resource_manager.resource_type()
                 };
@@ -154,7 +153,7 @@ impl AuthZone {
                 )?;
                 let proof_id = system_api
                     .node_create(HeapRENode::Proof(proof))
-                    .unwrap()
+                    .map_err(|e| AuthZoneError::RuntimeError(Box::new(e)))?
                     .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Proof(
                     proof_id,
@@ -166,7 +165,7 @@ impl AuthZone {
                 let resource_type = {
                     let value = system_api
                         .borrow_node(&RENodeId::ResourceManager(input.resource_address))
-                        .expect("TODO: handle error");
+                        .map_err(|e| AuthZoneError::RuntimeError(Box::new(e)))?;
                     let resource_manager = value.resource_manager();
                     resource_manager.resource_type()
                 };
@@ -178,7 +177,7 @@ impl AuthZone {
                 )?;
                 let proof_id = system_api
                     .node_create(HeapRENode::Proof(proof))
-                    .unwrap()
+                    .map_err(|e| AuthZoneError::RuntimeError(Box::new(e)))?
                     .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Proof(
                     proof_id,

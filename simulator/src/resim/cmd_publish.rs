@@ -4,7 +4,7 @@ use radix_engine::engine::Substate;
 use radix_engine::ledger::{OutputValue, ReadableSubstateStore, WriteableSubstateStore};
 use scrypto::core::NetworkDefinition;
 use scrypto::engine::types::SubstateId;
-use scrypto::prelude::SYSTEM_COMPONENT;
+use scrypto::prelude::SYS_FAUCET_COMPONENT;
 use std::ffi::OsStr;
 use std::fs;
 use std::path::PathBuf;
@@ -68,7 +68,7 @@ impl Publish {
             writeln!(out, "Package updated!").map_err(Error::IOError)?;
         } else {
             let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
-                .lock_fee(100.into(), SYSTEM_COMPONENT)
+                .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
                 .publish_package(package)
                 .build();
 

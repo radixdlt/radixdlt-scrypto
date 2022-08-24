@@ -68,7 +68,8 @@ impl<'s> BaseStateTrack<'s> {
                         };
 
                         let output_value = OutputValue {
-                            substate: scrypto_decode(&substate).unwrap(),
+                            substate: scrypto_decode(&substate)
+                                .expect("Failed to decode NonFungibleWrapper substate"),
                             version: next_version,
                         };
                         diff.up_substates.insert(substate_id.clone(), output_value);
@@ -88,7 +89,8 @@ impl<'s> BaseStateTrack<'s> {
                         };
 
                         let output_value = OutputValue {
-                            substate: scrypto_decode(&substate).unwrap(),
+                            substate: scrypto_decode(&substate)
+                                .expect("Failed to decode KeyValueStoreEntryWrapper substate"),
                             version: next_version,
                         };
                         diff.up_substates.insert(substate_id.clone(), output_value);
@@ -104,7 +106,8 @@ impl<'s> BaseStateTrack<'s> {
                             0
                         };
                         let output_value = OutputValue {
-                            substate: scrypto_decode(&substate).unwrap(),
+                            substate: scrypto_decode(&substate)
+                                .expect(&format!("Failed to decode substate {:?}", substate_id)),
                             version: next_version,
                         };
                         diff.up_substates.insert(substate_id.clone(), output_value);
@@ -182,7 +185,9 @@ impl<'s> AppStateTrack<'s> {
                     })
             })
             .as_ref()
-            .map(|x| scrypto_decode(x).unwrap())
+            .map(|x| {
+                scrypto_decode(x).expect(&format!("Failed to decode substate {:?}", substate_id))
+            })
     }
 
     /// Returns a copy of the substate associated with the given address from the base track
@@ -206,7 +211,9 @@ impl<'s> AppStateTrack<'s> {
                     .map(|s| scrypto_encode(&s.substate))
             })
             .as_ref()
-            .map(|x| scrypto_decode(x).unwrap()))
+            .map(|x| {
+                scrypto_decode(x).expect(&format!("Failed to decode substate {:?}", substate_id))
+            }))
     }
 
     /// Creates a new substate and updates an existing one
