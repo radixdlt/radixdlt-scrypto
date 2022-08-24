@@ -1,3 +1,4 @@
+use scrypto::core::NetworkDefinition;
 use transaction::errors::TransactionValidationError;
 use transaction::model::PreviewIntent;
 use transaction::validation::IntentHashManager;
@@ -24,7 +25,7 @@ pub enum PreviewError {
     TransactionValidationError(TransactionValidationError),
 }
 
-pub struct PreviewExecutor<'s, 'w, S, W, I, IHM>
+pub struct PreviewExecutor<'s, 'w, 'n, S, W, I, IHM>
 where
     S: ReadableSubstateStore + WriteableSubstateStore,
     W: WasmEngine<I>,
@@ -35,10 +36,11 @@ where
     wasm_engine: &'w mut W,
     wasm_instrumenter: &'w mut WasmInstrumenter,
     intent_hash_manager: &'w IHM,
+    network: &'n NetworkDefinition,
     phantom1: PhantomData<I>,
 }
 
-impl<'s, 'w, S, W, I, IHM> PreviewExecutor<'s, 'w, S, W, I, IHM>
+impl<'s, 'w, 'n, S, W, I, IHM> PreviewExecutor<'s, 'w, 'n, S, W, I, IHM>
 where
     S: ReadableSubstateStore + WriteableSubstateStore,
     W: WasmEngine<I>,
@@ -50,12 +52,14 @@ where
         wasm_engine: &'w mut W,
         wasm_instrumenter: &'w mut WasmInstrumenter,
         intent_hash_manager: &'w IHM,
+        network: &'n NetworkDefinition,
     ) -> Self {
         PreviewExecutor {
             substate_store,
             wasm_engine,
             wasm_instrumenter,
             intent_hash_manager,
+            network,
             phantom1: PhantomData,
         }
     }
@@ -66,7 +70,7 @@ where
     ) -> Result<PreviewResult, PreviewError> {
         // TODO: construct validation config based on current world state
         let validation_params = ValidationConfig {
-            network: NetworkDefinition::local_simulator(),
+            network: self.network,
             current_epoch: 1,
             max_cost_unit_limit: DEFAULT_MAX_COST_UNIT_LIMIT,
             min_tip_percentage: 0,

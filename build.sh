@@ -7,11 +7,11 @@ cd "$(dirname "$0")"
 
 (cd sbor; cargo build; cargo test --no-run)
 (cd sbor-derive; cargo build; cargo test --no-run)
-(cd sbor-tests; cargo build; cargo test --no-run)
+(cd sbor-tests; cargo build; cargo test --no-run; cargo bench --no-run)
 (cd scrypto; cargo build; cargo test --no-run)
 (cd scrypto-derive; cargo build; cargo test --no-run)
 (cd scrypto-tests; cargo build; cargo test --no-run)
-(cd radix-engine; cargo build; cargo test --no-run)
+(cd radix-engine; cargo build; cargo test --no-run; cargo bench --no-run)
 (cd radix-engine-stores; cargo build; cargo test --no-run)
 (cd transaction; cargo build; cargo test --no-run)
 (cd simulator; cargo build; cargo test --no-run)

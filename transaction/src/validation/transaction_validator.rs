@@ -10,8 +10,8 @@ use crate::errors::{SignatureValidationError, *};
 use crate::model::*;
 use crate::validation::*;
 
-pub struct ValidationConfig {
-    pub network: NetworkDefinition,
+pub struct ValidationConfig<'n> {
+    pub network: &'n NetworkDefinition,
     pub current_epoch: u64,
     pub max_cost_unit_limit: u32,
     pub min_tip_percentage: u32,
@@ -396,7 +396,7 @@ mod tests {
         ($result: expr, ($version: expr, $start_epoch: expr, $end_epoch: expr, $nonce: expr, $signers: expr, $notary: expr)) => {{
             let mut intent_hash_manager: TestIntentHashManager = TestIntentHashManager::new();
             let config: ValidationConfig = ValidationConfig {
-                network: NetworkDefinition::local_simulator(),
+                network: &NetworkDefinition::local_simulator(),
                 current_epoch: 1,
                 max_cost_unit_limit: 10_000_000,
                 min_tip_percentage: 0,
@@ -467,7 +467,7 @@ mod tests {
     fn test_valid_preview() {
         let mut intent_hash_manager: TestIntentHashManager = TestIntentHashManager::new();
         let config: ValidationConfig = ValidationConfig {
-            network: NetworkDefinition::local_simulator(),
+            network: &NetworkDefinition::local_simulator(),
             current_epoch: 1,
             max_cost_unit_limit: 10_000_000,
             min_tip_percentage: 0,
