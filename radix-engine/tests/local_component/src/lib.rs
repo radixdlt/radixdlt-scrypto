@@ -14,7 +14,7 @@ blueprint! {
             self.secret = next;
         }
 
-        pub fn new(secret: u32) -> Secret_Component {
+        pub fn new(secret: u32) -> SecretComponent {
             Self { secret }.instantiate()
         }
 
@@ -65,7 +65,7 @@ blueprint! {
 
 blueprint! {
     struct StoredKVLocal {
-        components: KeyValueStore<u32, Secret_Component>,
+        components: KeyValueStore<u32, SecretComponent>,
     }
 
     impl StoredKVLocal {
@@ -77,8 +77,8 @@ blueprint! {
             self.components.get(&0u32).unwrap().set_secret(next)
         }
 
-        pub fn new(secret: u32) -> StoredKVLocal_Component {
-            let component = Secret_Component::new(secret);
+        pub fn new(secret: u32) -> StoredKVLocalComponent {
+            let component = SecretComponent::new(secret);
             let components = KeyValueStore::new();
             components.insert(0u32, component);
 
@@ -112,7 +112,7 @@ blueprint! {
 
 blueprint! {
     struct StoredSecret {
-        component: Secret_Component,
+        component: SecretComponent,
     }
 
     impl StoredSecret {
@@ -124,8 +124,8 @@ blueprint! {
             self.component.set_secret(next)
         }
 
-        pub fn new(secret: u32) -> StoredSecret_Component {
-            let component = Secret_Component::new(secret);
+        pub fn new(secret: u32) -> StoredSecretComponent {
+            let component = SecretComponent::new(secret);
 
             Self { component }.instantiate()
         }

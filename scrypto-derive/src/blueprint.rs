@@ -43,7 +43,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     }
 
     let module_ident = format_ident!("{}_impl", bp_ident);
-    let value_ident = format_ident!("{}_Component", bp_ident);
+    let value_ident = format_ident!("{}Component", bp_ident);
 
     let output_mod = quote! {
         #[allow(non_snake_case)]
@@ -550,13 +550,13 @@ mod tests {
                         }
                     }
 
-                    impl ::scrypto::component::ComponentState<Test_Component> for Test {
-                        fn instantiate(self) -> Test_Component {
+                    impl ::scrypto::component::ComponentState<TestComponent> for Test {
+                        fn instantiate(self) -> TestComponent {
                             let component = ::scrypto::component::component_system().create_component(
                                 "Test",
                                 self
                             );
-                            Test_Component {
+                            TestComponent {
                                 component
                             }
                         }
@@ -641,11 +641,11 @@ mod tests {
 
                 #[allow(non_camel_case_types)]
                 #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
-                pub struct Test_Component {
+                pub struct TestComponent {
                     pub component: ::scrypto::component::Component,
                 }
 
-                impl ::scrypto::component::LocalComponent for Test_Component {
+                impl ::scrypto::component::LocalComponent for TestComponent {
                     fn package_address(&self) -> PackageAddress {
                         self.component.package_address()
                     }
@@ -661,7 +661,7 @@ mod tests {
                     }
                 }
 
-                impl Test_Component {
+                impl TestComponent {
                     pub fn y(arg0: u32) -> u32 {
                         ::scrypto::core::Runtime::call_function(::scrypto::core::Runtime::package_address(), "Test", "y", ::scrypto::args!(arg0))
                     }
@@ -692,13 +692,13 @@ mod tests {
                     impl Test {
                     }
 
-                    impl ::scrypto::component::ComponentState<Test_Component> for Test {
-                        fn instantiate(self) -> Test_Component {
+                    impl ::scrypto::component::ComponentState<TestComponent> for Test {
+                        fn instantiate(self) -> TestComponent {
                             let component = ::scrypto::component::component_system().create_component(
                                 "Test",
                                 self
                             );
-                            Test_Component {
+                            TestComponent {
                                 component
                             }
                         }
@@ -723,11 +723,11 @@ mod tests {
 
                 #[allow(non_camel_case_types)]
                 #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
-                pub struct Test_Component {
+                pub struct TestComponent {
                     pub component: ::scrypto::component::Component,
                 }
 
-                impl ::scrypto::component::LocalComponent for Test_Component {
+                impl ::scrypto::component::LocalComponent for TestComponent {
                     fn package_address(&self) -> PackageAddress {
                         self.component.package_address()
                     }
@@ -743,7 +743,7 @@ mod tests {
                     }
                 }
 
-                impl Test_Component {
+                impl TestComponent {
                 }
             },
         );
