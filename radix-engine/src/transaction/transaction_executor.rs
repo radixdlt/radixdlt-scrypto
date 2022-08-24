@@ -20,6 +20,12 @@ pub struct ExecutionConfig {
 
 impl Default for ExecutionConfig {
     fn default() -> Self {
+        ExecutionConfig::standard()
+    }
+}
+
+impl ExecutionConfig {
+    pub fn standard() -> Self {
         Self {
             cost_unit_price: DEFAULT_COST_UNIT_PRICE
                 .parse()
@@ -30,9 +36,7 @@ impl Default for ExecutionConfig {
             trace: false,
         }
     }
-}
 
-impl ExecutionConfig {
     pub fn debug() -> Self {
         Self {
             cost_unit_price: DEFAULT_COST_UNIT_PRICE
@@ -84,7 +88,9 @@ where
         params: &ExecutionConfig,
     ) -> TransactionReceipt {
         let receipt = self.execute(transaction, params);
-        receipt.state_updates.commit(self.substate_store);
+        if let TransactionResult::Commit(commit) = &receipt.result {
+            commit.state_updates.commit(self.substate_store);
+        }
         receipt
     }
 
@@ -109,18 +115,14 @@ where
         params: &ExecutionConfig,
         mut fee_reserve: R,
     ) -> TransactionReceipt {
-        #[cfg(not(feature = "alloc"))]
-        let now = std::time::Instant::now();
-
         let transaction_hash = transaction.transaction_hash();
-        let transaction_network = transaction.transaction_network();
         let signer_public_keys = transaction.signer_public_keys().to_vec();
         let instructions = transaction.instructions().to_vec();
+
         #[cfg(not(feature = "alloc"))]
         if params.trace {
             println!("{:-^80}", "Transaction Metadata");
             println!("Transaction hash: {}", transaction_hash);
-            println!("Transaction network: {:?}", transaction_network);
             println!("Transaction signers: {:?}", signer_public_keys);
 
             println!("{:-^80}", "Engine Execution Log");
@@ -167,53 +169,28 @@ where
         };
 
         // Produce the final transaction receipt
-        let track_receipt = track.finalize(invoke_result);
-        let mut new_component_addresses = Vec::new();
-        let mut new_resource_addresses = Vec::new();
-        let mut new_package_addresses = Vec::new();
-        for address in track_receipt.new_addresses {
-            match address {
-                SubstateId::ComponentInfo(component_address) => {
-                    new_component_addresses.push(component_address)
-                }
-                SubstateId::ResourceManager(resource_address) => {
-                    new_resource_addresses.push(resource_address)
-                }
-                SubstateId::Package(package_address) => new_package_addresses.push(package_address),
-                _ => {}
-            }
-        }
         let execution_trace_receipt = execution_trace.to_receipt();
-        #[cfg(feature = "alloc")]
-        let execution_time = None;
-        #[cfg(not(feature = "alloc"))]
-        let execution_time = Some(now.elapsed().as_millis());
+        let track_receipt = track.finalize(invoke_result, execution_trace_receipt.resource_changes);
         let receipt = TransactionReceipt {
-            transaction_network,
-            status: track_receipt.status,
-            fee_summary: track_receipt.fee_summary,
-            instructions,
-            application_logs: track_receipt.application_logs,
-            new_package_addresses,
-            new_component_addresses,
-            new_resource_addresses,
-            execution_time,
-            state_updates: track_receipt.state_updates,
-            resource_changes: execution_trace_receipt.resource_changes,
+            contents: TransactionContents { instructions },
+            execution: TransactionExecution {
+                fee_summary: track_receipt.fee_summary,
+                application_logs: track_receipt.application_logs,
+            },
+            result: track_receipt.result,
         };
-
         #[cfg(not(feature = "alloc"))]
         if params.trace {
             println!("{:-^80}", "Cost Analysis");
-            for (k, v) in &receipt.fee_summary.cost_breakdown {
+            for (k, v) in &receipt.execution.fee_summary.cost_breakdown {
                 println!("{:<30}: {:>8}", k, v);
             }
 
-            println!("{:-^80}", "Transaction Receipt");
-            println!("{:?}", receipt);
-            println!("{:-^80}", "");
+            println!("{:-^80}", "Application Logs");
+            for (level, message) in &receipt.execution.application_logs {
+                println!("[{}] {}", level, message);
+            }
         }
-
         receipt
     }
 }

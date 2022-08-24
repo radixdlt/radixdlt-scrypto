@@ -51,13 +51,14 @@ use radix_engine::constants::*;
 use radix_engine::model::*;
 use radix_engine::transaction::ExecutionConfig;
 use radix_engine::transaction::TransactionExecutor;
+use radix_engine::transaction::TransactionOutcome;
 use radix_engine::transaction::TransactionReceipt;
-use radix_engine::transaction::TransactionStatus;
+use radix_engine::transaction::TransactionResult;
 use radix_engine::wasm::*;
 use radix_engine_stores::rocks_db::RadixEngineDB;
 use scrypto::abi;
 use scrypto::address::Bech32Encoder;
-use scrypto::core::Network;
+use scrypto::core::NetworkDefinition;
 use scrypto::crypto::*;
 use scrypto::prelude::ComponentAddress;
 use scrypto::prelude::PackageAddress;
@@ -147,7 +148,7 @@ pub fn handle_manifest<O: std::io::Write>(
     match manifest_path {
         Some(path) => {
             if !env::var(ENV_DISABLE_MANIFEST_OUTPUT).is_ok() {
-                let bech32_encoder = Bech32Encoder::new_from_network(&Network::LocalSimulator);
+                let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::local_simulator());
 
                 let manifest =
                     decompile(&manifest, &bech32_encoder).map_err(Error::DecompileError)?;
@@ -188,15 +189,25 @@ pub fn handle_manifest<O: std::io::Write>(
                 writeln!(out, "{:?}", receipt).map_err(Error::IOError)?;
             }
 
-            match receipt.status {
-                TransactionStatus::Failed(error) => Err(Error::TransactionExecutionError(error)),
-                TransactionStatus::Succeeded(_) => {
-                    let mut configs = get_configs()?;
-                    configs.nonce = nonce + 1;
-                    set_configs(&configs)?;
-                    Ok(Some(receipt))
+            if receipt.is_commit() {
+                let mut configs = get_configs()?;
+                configs.nonce = nonce + 1;
+                set_configs(&configs)?;
+                return Ok(Some(receipt));
+            }
+
+            match receipt.result {
+                TransactionResult::Commit(commit) => match commit.outcome {
+                    TransactionOutcome::Failure(error) => {
+                        Err(Error::TransactionExecutionError(error))
+                    }
+                    TransactionOutcome::Success(..) => {
+                        panic!("Success case handled above to appease borrowing rules")
+                    }
+                },
+                TransactionResult::Reject(rejection) => {
+                    Err(Error::TransactionRejected(rejection.error))
                 }
-                TransactionStatus::Rejected => Err(Error::TransactionRejected),
             }
         }
     }

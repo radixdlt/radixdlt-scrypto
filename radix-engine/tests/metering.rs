@@ -1,9 +1,6 @@
-use radix_engine::engine::ModuleError;
-use radix_engine::fee::FeeReserveError;
 use radix_engine::ledger::TypedInMemorySubstateStore;
-use radix_engine::wasm::WasmInvokeError;
 use scrypto::args;
-use scrypto::core::Network;
+use scrypto::core::NetworkDefinition;
 use scrypto::prelude::{Package, RADIX_TOKEN, SYS_FAUCET_COMPONENT};
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -21,14 +18,14 @@ fn test_loop() {
         blueprints: abi_single_fn_any_input_void_output("Test", "f"),
     };
     let package_address = test_runner.publish_package(package);
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(package_address, "Test", "f", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 #[test]
@@ -44,17 +41,14 @@ fn test_loop_out_of_cost_unit() {
         blueprints: abi_single_fn_any_input_void_output("Test", "f"),
     };
     let package_address = test_runner.publish_package(package);
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(45.into(), SYS_FAUCET_COMPONENT)
         .call_function(package_address, "Test", "f", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    assert_module_error!(
-        receipt.status,
-        ModuleError::CostingError(FeeReserveError::OutOfCostUnit)
-    )
+    receipt.expect_commit_failure(is_costing_error)
 }
 
 #[test]
@@ -71,14 +65,14 @@ fn test_recursion() {
         blueprints: abi_single_fn_any_input_void_output("Test", "f"),
     };
     let package_address = test_runner.publish_package(package);
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(package_address, "Test", "f", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 #[test]
@@ -94,14 +88,14 @@ fn test_recursion_stack_overflow() {
         blueprints: abi_single_fn_any_input_void_output("Test", "f"),
     };
     let package_address = test_runner.publish_package(package);
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(package_address, "Test", "f", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    assert_wasm_error!(receipt.status, WasmInvokeError::WasmError { .. })
+    receipt.expect_commit_failure(is_wasm_error)
 }
 
 #[test]
@@ -117,14 +111,14 @@ fn test_grow_memory() {
         blueprints: abi_single_fn_any_input_void_output("Test", "f"),
     };
     let package_address = test_runner.publish_package(package);
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(package_address, "Test", "f", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 #[test]
@@ -140,17 +134,14 @@ fn test_grow_memory_out_of_cost_unit() {
         blueprints: abi_single_fn_any_input_void_output("Test", "f"),
     };
     let package_address = test_runner.publish_package(package);
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(package_address, "Test", "f", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    assert_module_error!(
-        receipt.status,
-        ModuleError::CostingError(FeeReserveError::OutOfCostUnit)
-    )
+    receipt.expect_commit_failure(is_costing_error)
 }
 
 #[test]
@@ -162,7 +153,7 @@ fn test_basic_transfer() {
     let (_, _, account2) = test_runner.new_account();
 
     // Act
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), account1)
         .withdraw_from_account_by_amount(100.into(), RADIX_TOKEN, account1)
         .call_method_with_all_resources(account2, "deposit_batch")
@@ -170,13 +161,17 @@ fn test_basic_transfer() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key1]);
 
     // Assert
+
+    // NOTE: If this test fails, it should print out the actual fee table in the error logs.
+    // Or you can run just this test with the below:
+    // (cd radix-engine && cargo test test_basic_transfer -- --exact)
     assert_eq!(
         10000 /* base_fee */
         + 3300 /* borrow_substate */
         + 1500 /* create_node */
-        + 2001 /* decode_transaction */
+        + 1938 /* decode_transaction */
         + 1000 /* drop_node */
-        + 605115 /* instantiate_wasm */
+        + 605313 /* instantiate_wasm */
         + 1895 /* invoke_function */
         + 2215 /* invoke_method */
         + 5000 /* read_substate */
@@ -184,9 +179,9 @@ fn test_basic_transfer() {
         + 1000 /* run_function */
         + 5200 /* run_method */
         + 274170 /* run_wasm */
-        + 667 /* verify_manifest */
+        + 646 /* verify_manifest */
         + 3750 /* verify_signatures */
         + 3000, /* write_substate */
-        receipt.fee_summary.cost_unit_consumed
+        receipt.execution.fee_summary.cost_unit_consumed
     );
 }

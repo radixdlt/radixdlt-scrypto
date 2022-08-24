@@ -2,7 +2,7 @@ use clap::Parser;
 use radix_engine::types::*;
 use radix_engine_stores::rocks_db::RadixEngineDB;
 use scrypto::address::Bech32Decoder;
-use scrypto::core::Network;
+use scrypto::core::NetworkDefinition;
 
 use crate::ledger::*;
 use crate::resim::*;
@@ -18,7 +18,7 @@ impl Show {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
         let ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
 
-        let bech32_decoder = Bech32Decoder::new_from_network(&Network::LocalSimulator);
+        let bech32_decoder = Bech32Decoder::new(&NetworkDefinition::local_simulator());
 
         if let Ok(package_address) =
             bech32_decoder.validate_and_decode_package_address(&self.address)

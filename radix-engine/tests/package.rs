@@ -4,7 +4,7 @@ use radix_engine::model::PackageError;
 use radix_engine::wasm::*;
 use sbor::Type;
 use scrypto::abi::*;
-use scrypto::core::Network;
+use scrypto::core::NetworkDefinition;
 use scrypto::prelude::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -15,12 +15,12 @@ fn test_publish_package_from_scrypto() {
     let mut test_runner = TestRunner::new(true, &mut store);
     let package = test_runner.extract_and_publish_package("package");
 
-    let manifest1 = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest1 = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(package, "PackageTest", "publish", args!())
         .build();
     let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
-    receipt1.expect_success();
+    receipt1.expect_commit_success();
 }
 
 #[test]
@@ -43,14 +43,14 @@ fn missing_memory_should_cause_error() {
         code,
         blueprints: HashMap::new(),
     };
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .publish_package(package)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| {
+    receipt.expect_commit_failure(|e| {
         matches!(
             e,
             &RuntimeError::ApplicationError(ApplicationError::PackageError(
@@ -70,14 +70,14 @@ fn large_return_len_should_cause_memory_access_error() {
     let package = test_runner.extract_and_publish_package("package");
 
     // Act
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(package, "LargeReturnSize", "f", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| {
+    receipt.expect_commit_failure(|e| {
         if let RuntimeError::KernelError(KernelError::WasmInvokeError(b)) = e {
             matches!(**b, WasmInvokeError::MemoryAccessError)
         } else {
@@ -94,14 +94,14 @@ fn overflow_return_len_should_cause_memory_access_error() {
     let package = test_runner.extract_and_publish_package("package");
 
     // Act
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(package, "MaxReturnSize", "f", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| {
+    receipt.expect_commit_failure(|e| {
         if let RuntimeError::KernelError(KernelError::WasmInvokeError(b)) = e {
             matches!(**b, WasmInvokeError::MemoryAccessError)
         } else {
@@ -118,7 +118,7 @@ fn zero_return_len_should_cause_data_validation_error() {
     let package = test_runner.extract_and_publish_package("package");
 
     // Act
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(package, "ZeroReturnSize", "f", args!())
         .build();
@@ -126,7 +126,7 @@ fn zero_return_len_should_cause_data_validation_error() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| {
+    receipt.expect_commit_failure(|e| {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::WasmInvokeError(_))
@@ -146,14 +146,14 @@ fn test_basic_package() {
         code,
         blueprints: HashMap::new(),
     };
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .publish_package(package)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 #[test]
@@ -179,14 +179,14 @@ fn test_basic_package_missing_export() {
     // Act
     let code = wat2wasm(include_str!("wasm/basic_package.wat"));
     let package = Package { code, blueprints };
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .publish_package(package)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_failure(|e| {
+    receipt.expect_commit_failure(|e| {
         matches!(
             e,
             RuntimeError::ApplicationError(ApplicationError::PackageError(

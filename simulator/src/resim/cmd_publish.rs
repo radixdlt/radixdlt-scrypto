@@ -2,7 +2,7 @@ use clap::Parser;
 use colored::*;
 use radix_engine::engine::Substate;
 use radix_engine::ledger::{OutputValue, ReadableSubstateStore, WriteableSubstateStore};
-use scrypto::core::Network;
+use scrypto::core::NetworkDefinition;
 use scrypto::engine::types::SubstateId;
 use scrypto::prelude::SYS_FAUCET_COMPONENT;
 use std::ffi::OsStr;
@@ -67,7 +67,7 @@ impl Publish {
             substate_store.put_substate(SubstateId::Package(package_address), output_value);
             writeln!(out, "Package updated!").map_err(Error::IOError)?;
         } else {
-            let manifest = ManifestBuilder::new(Network::LocalSimulator)
+            let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
                 .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
                 .publish_package(package)
                 .build();
@@ -85,7 +85,9 @@ impl Publish {
                 writeln!(
                     out,
                     "Success! New Package: {}",
-                    receipt.new_package_addresses[0].to_string().green()
+                    receipt.expect_commit().entity_changes.new_package_addresses[0]
+                        .to_string()
+                        .green()
                 )
                 .map_err(Error::IOError)?;
             }

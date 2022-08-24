@@ -4,6 +4,7 @@ use crate::fee::FeeReserve;
 use crate::fee::UnlimitedLoanFeeReserve;
 use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
 use crate::model::ValidatedPackage;
+use crate::transaction::TransactionResult;
 use crate::types::ResourceMethodAuthKey::Withdraw;
 use crate::types::*;
 
@@ -118,7 +119,7 @@ fn create_genesis<'s, R: FeeReserve>(mut track: Track<'s, R>) -> TrackReceipt {
     );
     track.create_uuid_substate(SubstateId::System, System { epoch: 0 }, true);
 
-    track.finalize(Ok(Vec::new()))
+    track.finalize(Ok(Vec::new()), Vec::new())
 }
 
 pub fn bootstrap<S>(mut substate_store: S) -> S
@@ -131,7 +132,11 @@ where
     {
         let track = Track::new(&substate_store, UnlimitedLoanFeeReserve::default());
         let receipt = create_genesis(track);
-        receipt.state_updates.commit(&mut substate_store);
+        if let TransactionResult::Commit(c) = receipt.result {
+            c.state_updates.commit(&mut substate_store);
+        } else {
+            panic!("Failed to bootstrap")
+        }
     }
     substate_store
 }

@@ -4,7 +4,7 @@ use radix_engine::transaction::ExecutionConfig;
 use radix_engine::transaction::TransactionExecutor;
 use radix_engine::wasm::DefaultWasmEngine;
 use radix_engine::wasm::WasmInstrumenter;
-use scrypto::core::Network;
+use scrypto::core::NetworkDefinition;
 use scrypto::prelude::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -21,7 +21,7 @@ fn test_normal_transaction_flow() {
     let mut wasm_instrumenter = WasmInstrumenter::new();
     let intent_hash_manager = TestIntentHashManager::new();
     let validation_params = ValidationConfig {
-        network: Network::LocalSimulator,
+        network: NetworkDefinition::local_simulator(),
         current_epoch: 1,
         max_cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,
         min_tip_percentage: 0,
@@ -43,7 +43,7 @@ fn test_normal_transaction_flow() {
     );
     let receipt = executor.execute_and_commit(&validated_transaction, &execution_params);
 
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 #[test]
@@ -54,7 +54,7 @@ fn test_call_method_with_all_resources_doesnt_drop_auth_zone_proofs() {
     let (public_key, _, account) = test_runner.new_account();
 
     // Act
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(dec!("10"), account)
         .create_proof_from_account(RADIX_TOKEN, account)
         .create_proof_from_auth_zone(RADIX_TOKEN, |builder, proof_id| {
@@ -74,7 +74,7 @@ fn test_call_method_with_all_resources_doesnt_drop_auth_zone_proofs() {
     println!("{:?}", receipt);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 #[test]
@@ -85,7 +85,7 @@ fn test_transaction_can_end_with_proofs_remaining_in_auth_zone() {
     let (public_key, _, account) = test_runner.new_account();
 
     // Act
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(dec!("10"), account)
         .create_proof_from_account_by_amount(dec!("1"), RADIX_TOKEN, account)
         .create_proof_from_account_by_amount(dec!("1"), RADIX_TOKEN, account)
@@ -96,7 +96,7 @@ fn test_transaction_can_end_with_proofs_remaining_in_auth_zone() {
     println!("{:?}", receipt);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
 
 fn create_transaction() -> Vec<u8> {
@@ -108,7 +108,7 @@ fn create_transaction() -> Vec<u8> {
     let transaction = TransactionBuilder::new()
         .header(TransactionHeader {
             version: 1,
-            network: Network::LocalSimulator,
+            network_id: NetworkDefinition::local_simulator().id,
             start_epoch_inclusive: 0,
             end_epoch_exclusive: 100,
             nonce: 5,
@@ -118,7 +118,7 @@ fn create_transaction() -> Vec<u8> {
             tip_percentage: 5,
         })
         .manifest(
-            ManifestBuilder::new(Network::LocalSimulator)
+            ManifestBuilder::new(&NetworkDefinition::local_simulator())
                 .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
                 .clear_auth_zone()
                 .build(),

@@ -1,10 +1,6 @@
+use sbor::rust::format;
+
 use super::*;
-use num_traits::FromPrimitive;
-use sbor::rust::str::FromStr;
-use sbor::rust::string::ToString;
-use sbor::rust::vec::Vec;
-use sbor::rust::{format, vec};
-use sbor::String;
 
 macro_rules! test_from_builtin {
     ($i:ident, ($($t:ident),*)) => {

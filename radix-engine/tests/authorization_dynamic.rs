@@ -1,5 +1,5 @@
 use radix_engine::ledger::TypedInMemorySubstateStore;
-use scrypto::core::Network;
+use scrypto::core::NetworkDefinition;
 use scrypto::prelude::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -29,7 +29,7 @@ fn test_dynamic_auth(
         .collect();
 
     let package = test_runner.extract_and_publish_package("component");
-    let manifest1 = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest1 = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(
             package,
@@ -39,11 +39,14 @@ fn test_dynamic_auth(
         )
         .build();
     let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
-    receipt1.expect_success();
-    let component = receipt1.new_component_addresses[0];
+    receipt1.expect_commit_success();
+    let component = receipt1
+        .expect_commit()
+        .entity_changes
+        .new_component_addresses[0];
 
     if let Some(next_auth) = update_auth {
-        let update_manifest = ManifestBuilder::new(Network::LocalSimulator)
+        let update_manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
             .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
             .call_method(
                 component,
@@ -53,11 +56,11 @@ fn test_dynamic_auth(
             .build();
         test_runner
             .execute_manifest(update_manifest, vec![])
-            .expect_success();
+            .expect_commit_success();
     }
 
     // Act
-    let manifest2 = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest2 = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_method(component, "get_secret", args!())
         .build();
@@ -65,9 +68,9 @@ fn test_dynamic_auth(
 
     // Assert
     if should_succeed {
-        receipt2.expect_success();
+        receipt2.expect_commit_success();
     } else {
-        receipt2.expect_failure(is_auth_error);
+        receipt2.expect_commit_failure(is_auth_error);
     }
 }
 
@@ -95,7 +98,7 @@ fn test_dynamic_authlist(
 
     // Arrange
     let package = test_runner.extract_and_publish_package("component");
-    let manifest1 = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest1 = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(
             package,
@@ -105,11 +108,14 @@ fn test_dynamic_authlist(
         )
         .build();
     let receipt0 = test_runner.execute_manifest(manifest1, vec![]);
-    receipt0.expect_success();
-    let component = receipt0.new_component_addresses[0];
+    receipt0.expect_commit_success();
+    let component = receipt0
+        .expect_commit()
+        .entity_changes
+        .new_component_addresses[0];
 
     // Act
-    let manifest2 = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest2 = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_method(component, "get_secret", args!())
         .build();
@@ -117,9 +123,9 @@ fn test_dynamic_authlist(
 
     // Assert
     if should_succeed {
-        receipt.expect_success();
+        receipt.expect_commit_success();
     } else {
-        receipt.expect_failure(is_auth_error);
+        receipt.expect_commit_failure(is_auth_error);
     }
 }
 
@@ -222,23 +228,26 @@ fn chess_should_not_allow_second_player_to_move_if_first_player_didnt_move() {
         NonFungibleId::from_bytes(other_public_key.to_vec()),
     );
     let players = [non_fungible_address, other_non_fungible_address];
-    let manifest1 = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest1 = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(package, "Chess", "create_game", args!(players))
         .build();
     let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
-    receipt1.expect_success();
-    let component = receipt1.new_component_addresses[0];
+    receipt1.expect_commit_success();
+    let component = receipt1
+        .expect_commit()
+        .entity_changes
+        .new_component_addresses[0];
 
     // Act
-    let manifest2 = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest2 = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_method(component, "make_move", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest2, vec![other_public_key]);
 
     // Assert
-    receipt.expect_failure(is_auth_error);
+    receipt.expect_commit_failure(is_auth_error);
 }
 
 #[test]
@@ -252,28 +261,31 @@ fn chess_should_allow_second_player_to_move_after_first_player() {
     let non_fungible_address = NonFungibleAddress::from_public_key(&public_key);
     let other_non_fungible_address = NonFungibleAddress::from_public_key(&other_public_key);
     let players = [non_fungible_address, other_non_fungible_address];
-    let manifest1 = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest1 = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(package, "Chess", "create_game", args!(players))
         .build();
     let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
-    receipt1.expect_success();
-    let component = receipt1.new_component_addresses[0];
-    let manifest2 = ManifestBuilder::new(Network::LocalSimulator)
+    receipt1.expect_commit_success();
+    let component = receipt1
+        .expect_commit()
+        .entity_changes
+        .new_component_addresses[0];
+    let manifest2 = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_method(component, "make_move", args!())
         .build();
     test_runner
         .execute_manifest(manifest2, vec![public_key])
-        .expect_success();
+        .expect_commit_success();
 
     // Act
-    let manifest3 = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest3 = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_method(component, "make_move", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest3, vec![other_public_key]);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }

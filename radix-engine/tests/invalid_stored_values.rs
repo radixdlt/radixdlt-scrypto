@@ -12,7 +12,7 @@ fn stored_bucket_in_committed_component_should_fail() {
     let package_address = test_runner.extract_and_publish_package("stored_values");
 
     // Act
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(
             package_address,
@@ -24,8 +24,9 @@ fn stored_bucket_in_committed_component_should_fail() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt
-        .expect_failure(|e| matches!(e, RuntimeError::KernelError(KernelError::ValueNotAllowed)));
+    receipt.expect_commit_failure(|e| {
+        matches!(e, RuntimeError::KernelError(KernelError::ValueNotAllowed))
+    });
 }
 
 #[test]
@@ -36,7 +37,7 @@ fn stored_bucket_in_owned_component_should_fail() {
     let package_address = test_runner.extract_and_publish_package("stored_values");
 
     // Act
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(
             package_address,
@@ -48,6 +49,7 @@ fn stored_bucket_in_owned_component_should_fail() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt
-        .expect_failure(|e| matches!(e, RuntimeError::KernelError(KernelError::ValueNotAllowed)));
+    receipt.expect_commit_failure(|e| {
+        matches!(e, RuntimeError::KernelError(KernelError::ValueNotAllowed))
+    });
 }

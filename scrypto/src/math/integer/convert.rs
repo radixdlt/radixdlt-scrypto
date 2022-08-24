@@ -1,10 +1,4 @@
 use super::*;
-use num_bigint::{BigInt, Sign};
-use num_traits::{FromPrimitive, One, Signed, ToPrimitive, Zero};
-use paste::paste;
-use sbor::rust::convert::{From, TryFrom};
-use sbor::rust::str::FromStr;
-use sbor::rust::string::String;
 
 /// Trait for short hand notation for try_from().unwrap()
 /// As opposed to `try_from(x).unwrap()` this will panic if the conversion fails.

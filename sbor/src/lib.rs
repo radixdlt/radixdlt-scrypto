@@ -19,48 +19,14 @@ pub mod path;
 pub mod rust;
 /// SBOR type ids.
 pub mod type_id;
+mod utils;
 
-pub use crate::rust::string::String;
-pub use crate::rust::string::ToString;
 pub use any::{decode_any, encode_any, encode_any_with_buffer, Value};
 pub use decode::{Decode, DecodeError, Decoder};
 pub use describe::{Describe, Type};
 pub use encode::{Encode, Encoder};
 pub use type_id::TypeId;
-
-use crate::rust::vec::Vec;
-
-/// Encode a `T` into byte array, with type info included.
-pub fn encode_with_static_info<T: Encode + ?Sized>(v: &T) -> Vec<u8> {
-    let mut buf = Vec::with_capacity(512);
-    let mut enc = Encoder::with_static_info(&mut buf);
-    v.encode(&mut enc);
-    buf
-}
-
-/// Encode a `T` into byte array, with no type info.
-pub fn encode_no_static_info<T: Encode + ?Sized>(v: &T) -> Vec<u8> {
-    let mut buf = Vec::with_capacity(512);
-    let mut enc = Encoder::no_static_info(&mut buf);
-    v.encode(&mut enc);
-    buf
-}
-
-/// Decode an instance of `T` from a slice, with type info included.
-pub fn decode_with_static_info<T: Decode>(buf: &[u8]) -> Result<T, DecodeError> {
-    let mut dec = Decoder::with_static_info(buf);
-    let v = T::decode(&mut dec)?;
-    dec.check_end()?;
-    Ok(v)
-}
-
-/// Decode an instance of `T` from a slice, with no type info.
-pub fn decode_no_static_info<T: Decode>(buf: &[u8]) -> Result<T, DecodeError> {
-    let mut dec = Decoder::no_static_info(buf);
-    let v = T::decode(&mut dec)?;
-    dec.check_end()?;
-    Ok(v)
-}
+pub use utils::*;
 
 // Re-export derives
 extern crate sbor_derive;

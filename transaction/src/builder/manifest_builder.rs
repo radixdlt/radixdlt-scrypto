@@ -13,7 +13,7 @@ use scrypto::address::Bech32Decoder;
 use scrypto::buffer::*;
 use scrypto::component::{ComponentAddress, PackageAddress};
 use scrypto::constants::*;
-use scrypto::core::Network;
+use scrypto::core::NetworkDefinition;
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
 use scrypto::math::*;
@@ -42,9 +42,9 @@ pub struct ManifestBuilder {
 
 impl ManifestBuilder {
     /// Starts a new transaction builder.
-    pub fn new(network: Network) -> Self {
+    pub fn new(network: &NetworkDefinition) -> Self {
         Self {
-            decoder: Bech32Decoder::new_from_network(&network),
+            decoder: Bech32Decoder::new(network),
             id_validator: IdValidator::new(),
             instructions: Vec::new(),
         }

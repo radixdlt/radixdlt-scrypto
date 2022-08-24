@@ -824,7 +824,7 @@ mod tests {
     use scrypto::address::Bech32Decoder;
     use scrypto::args;
     use scrypto::buffer::scrypto_encode;
-    use scrypto::core::Network;
+    use scrypto::core::NetworkDefinition;
     use scrypto::prelude::Package;
 
     #[macro_export]
@@ -837,7 +837,7 @@ mod tests {
                     &value,
                     None,
                     &mut resolver,
-                    &Bech32Decoder::new_from_network(&Network::LocalSimulator)
+                    &Bech32Decoder::new(&NetworkDefinition::local_simulator())
                 ),
                 Ok($expected)
             );
@@ -857,7 +857,7 @@ mod tests {
                     &instruction,
                     &mut id_validator,
                     &mut resolver,
-                    &Bech32Decoder::new_from_network(&Network::LocalSimulator)
+                    &Bech32Decoder::new(&NetworkDefinition::local_simulator())
                 ),
                 Ok($expected)
             );
@@ -872,7 +872,7 @@ mod tests {
                 &value,
                 None,
                 &mut NameResolver::new(),
-                &Bech32Decoder::new_from_network(&Network::LocalSimulator),
+                &Bech32Decoder::new(&NetworkDefinition::local_simulator()),
             ) {
                 Ok(_) => {
                     panic!("Expected {:?} but no error is thrown", $expected);
@@ -1033,7 +1033,7 @@ mod tests {
 
     #[test]
     fn test_instructions() {
-        let bech32_decoder = Bech32Decoder::new_from_network(&Network::LocalSimulator);
+        let bech32_decoder = Bech32Decoder::new(&NetworkDefinition::local_simulator());
         let component1 = bech32_decoder
             .validate_and_decode_component_address(
                 "component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum",
@@ -1128,7 +1128,7 @@ mod tests {
         };
         let encoded_package = scrypto_encode(&package);
 
-        let bech32_decoder = Bech32Decoder::new_from_network(&Network::LocalSimulator);
+        let bech32_decoder = Bech32Decoder::new(&NetworkDefinition::local_simulator());
         let component1 = bech32_decoder
             .validate_and_decode_component_address(
                 "account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qgsy064",
@@ -1141,7 +1141,7 @@ mod tests {
             .unwrap();
 
         assert_eq!(
-            crate::manifest::compile(tx, &Network::LocalSimulator)
+            crate::manifest::compile(tx, &NetworkDefinition::local_simulator())
                 .unwrap()
                 .instructions,
             vec![

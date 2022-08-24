@@ -6,7 +6,7 @@ use radix_engine::model::extract_package;
 use radix_engine::transaction::ExecutionConfig;
 use radix_engine::transaction::TransactionExecutor;
 use radix_engine::wasm::*;
-use scrypto::core::Network;
+use scrypto::core::NetworkDefinition;
 use scrypto::prelude::*;
 use transaction::builder::ManifestBuilder;
 use transaction::model::TestTransaction;
@@ -29,7 +29,7 @@ fn test_say_hello() {
     let public_key = private_key.public_key();
 
     // Publish package
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .publish_package(extract_package(include_package!("no_std").to_vec()).unwrap())
         .build();
@@ -38,10 +38,12 @@ fn test_say_hello() {
             &TestTransaction::new(manifest, 1, vec![public_key]),
             &ExecutionConfig::debug(),
         )
+        .expect_commit()
+        .entity_changes
         .new_package_addresses[0];
 
     // Test the `say_hello` function.
-    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(package_address, "NoStd", "say_hello", args!())
         .build();
@@ -49,5 +51,5 @@ fn test_say_hello() {
         &TestTransaction::new(manifest, 2, vec![]),
         &ExecutionConfig::debug(),
     );
-    receipt.expect_success();
+    receipt.expect_commit_success();
 }
