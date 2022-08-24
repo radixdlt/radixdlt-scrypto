@@ -375,7 +375,7 @@ impl ResourceManager {
         let divisibility = self.resource_type.divisibility();
 
         if amount.is_negative()
-            || amount.0 % 10i128.pow((18 - divisibility).into()) != I256::from(0)
+            || amount.0 % I256::from(10i128.pow((18 - divisibility).into())) != I256::from(0)
         {
             Err(ResourceManagerError::InvalidAmount(amount, divisibility))
         } else {
