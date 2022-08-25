@@ -210,7 +210,8 @@ impl Parser {
             | TokenKind::Bucket
             | TokenKind::Proof
             | TokenKind::NonFungibleId
-            | TokenKind::NonFungibleAddress => self.parse_scrypto_types(),
+            | TokenKind::NonFungibleAddress
+            | TokenKind::Expression => self.parse_scrypto_types(),
             TokenKind::Bytes => self.parse_bytes(),
             _ => Err(ParserError::UnexpectedToken(token)),
         }
@@ -332,6 +333,7 @@ impl Parser {
             TokenKind::NonFungibleAddress => {
                 Ok(Value::NonFungibleAddress(self.parse_values_one()?.into()))
             }
+            TokenKind::Expression => Ok(Value::Expression(self.parse_values_one()?.into())),
             _ => Err(ParserError::UnexpectedToken(token)),
         }
     }
@@ -421,6 +423,7 @@ impl Parser {
             TokenKind::Bucket => Ok(Type::Bucket),
             TokenKind::Proof => Ok(Type::Proof),
             TokenKind::NonFungibleId => Ok(Type::NonFungibleId),
+            TokenKind::Expression => Ok(Type::Expression),
             _ => Err(ParserError::UnexpectedToken(token)),
         }
     }

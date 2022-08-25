@@ -35,6 +35,7 @@ pub enum GeneratorError {
     InvalidVaultId(String),
     InvalidNonFungibleId(String),
     InvalidNonFungibleAddress(String),
+    InvalidExpression(String),
     OddNumberOfElements(usize),
     NameResolverError(NameResolverError),
     IdValidationError(IdValidationError),
@@ -583,6 +584,18 @@ fn generate_non_fungible_address(value: &ast::Value) -> Result<NonFungibleAddres
     }
 }
 
+fn generate_expression(value: &ast::Value) -> Result<Expression, GeneratorError> {
+    match value {
+        ast::Value::Expression(inner) => match &**inner {
+            ast::Value::String(s) => {
+                Expression::from_str(s).map_err(|_| GeneratorError::InvalidExpression(s.into()))
+            }
+            v @ _ => invalid_type!(v, ast::Type::String),
+        },
+        v @ _ => invalid_type!(v, ast::Type::Expression),
+    }
+}
+
 fn generate_non_fungible_ids(
     value: &ast::Value,
 ) -> Result<BTreeSet<NonFungibleId>, GeneratorError> {
@@ -721,6 +734,10 @@ fn generate_value(
                 bytes: v.to_vec(),
             })
         }
+        ast::Value::Expression(_) => generate_expression(value).map(|v| Value::Custom {
+            type_id: ScryptoType::Expression.id(),
+            bytes: v.to_vec(),
+        }),
         ast::Value::Bytes(_) => match value {
             ast::Value::Bytes(bytes) => {
                 let mut elements = Vec::new();
@@ -812,6 +829,7 @@ fn generate_type_id(ty: &ast::Type) -> u8 {
         ast::Type::Proof => ScryptoType::Proof.id(),
         ast::Type::NonFungibleId => ScryptoType::NonFungibleId.id(),
         ast::Type::NonFungibleAddress => ScryptoType::NonFungibleAddress.id(),
+        ast::Type::Expression => ScryptoType::Expression.id(),
         ast::Type::Bytes => TYPE_LIST,
     }
 }
@@ -1004,6 +1022,13 @@ mod tests {
                         elements: vec![Value::U8 { value: 2 }]
                     }
                 ]
+            }
+        );
+        generate_value_ok!(
+            r#"Expression("ALL_WORKTOP_RESOURCES")"#,
+            Value::Custom {
+                type_id: ScryptoType::Expression.id(),
+                bytes: scrypto::core::Expression("ALL_WORKTOP_RESOURCES".to_owned()).to_vec()
             }
         );
     }
