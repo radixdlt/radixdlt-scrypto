@@ -10,7 +10,7 @@ use std::fs;
 use std::path::PathBuf;
 use transaction::builder::ManifestBuilder;
 
-use crate::resim::Error::{InvalidPackageError, PackageAddressNotFound};
+use crate::resim::Error::InvalidPackageError;
 use crate::resim::*;
 use crate::utils::*;
 
@@ -50,16 +50,15 @@ impl Publish {
 
             let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?);
 
-            let next_version = substate_store
+            let previous_version = substate_store
                 .get_substate(&substate_id)
-                .map(|OutputValue { version, .. }| version + 1)
-                .ok_or(PackageAddressNotFound)?;
+                .map(|output| output.version);
 
             let validated_package =
                 ValidatedPackage::new(package).map_err(|_| InvalidPackageError)?;
             let output_value = OutputValue {
                 substate: Substate::Package(validated_package),
-                version: next_version,
+                version: previous_version.unwrap_or(0),
             };
 
             // Overwrite package
