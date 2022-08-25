@@ -104,9 +104,33 @@ impl TransactionProcessor {
 
                     let val = path
                         .get_from_value_mut(&mut value)
-                        .expect("Failed to locate a expression using SBOR path");
+                        .expect("Failed to locate an expression value using SBOR path");
                     *val =
                         decode_any(&scrypto_encode(&buckets)).expect("Failed to decode Vec<Bucket>")
+                }
+                "ENTIRE_AUTH_ZONE" => {
+                    let auth_zone = system_api.auth_zone(1);
+                    let proofs = auth_zone.drain();
+                    let node_ids: Result<Vec<RENodeId>, TransactionProcessorError> = proofs
+                        .into_iter()
+                        .map(|proof| {
+                            system_api
+                                .node_create(HeapRENode::Proof(proof))
+                                .map_err(|e| TransactionProcessorError::RuntimeError(Box::new(e)))
+                        })
+                        .collect();
+
+                    let mut proofs = Vec::new();
+                    for node_id in node_ids? {
+                        let proof_id: ProofId = node_id.into();
+                        proofs.push(scrypto::resource::Proof(proof_id));
+                    }
+
+                    let val = path
+                        .get_from_value_mut(&mut value)
+                        .expect("Failed to locate an expression value using SBOR path");
+                    *val =
+                        decode_any(&scrypto_encode(&proofs)).expect("Failed to decode Vec<Proof>")
                 }
                 _ => {} // no-op
             }

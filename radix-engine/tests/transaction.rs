@@ -111,6 +111,32 @@ fn test_transaction_can_end_with_proofs_remaining_in_auth_zone() {
     receipt.expect_commit_success();
 }
 
+#[test]
+fn test_entire_auth_zone() {
+    // Arrange
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
+    let (public_key, _, account) = test_runner.new_account();
+    let package_address = test_runner.extract_and_publish_package("proof");
+
+    // Act
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+        .lock_fee(dec!("10"), account)
+        .create_proof_from_account_by_amount(dec!("1"), RADIX_TOKEN, account)
+        .call_function(
+            package_address,
+            "Receiver",
+            "assert_first_proof",
+            args!(Expression::new("ENTIRE_AUTH_ZONE"), dec!("1"), RADIX_TOKEN),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+    println!("{:?}", receipt);
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
 fn create_transaction() -> Vec<u8> {
     // create key pairs
     let sk1 = EcdsaPrivateKey::from_u64(1).unwrap();
