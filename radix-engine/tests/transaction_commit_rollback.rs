@@ -17,7 +17,11 @@ fn test_state_track_success() {
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), account)
         .withdraw_from_account(RADIX_TOKEN, account)
-        .call_method_with_all_resources(other_account, "deposit_batch")
+        .call_method(
+            other_account,
+            "deposit_batch",
+            args!(Expression::new("ALL_WORKTOP_RESOURCES")),
+        )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
@@ -42,7 +46,11 @@ fn test_state_track_failure() {
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), account)
         .withdraw_from_account(RADIX_TOKEN, account)
-        .call_method_with_all_resources(other_account, "deposit_batch")
+        .call_method(
+            other_account,
+            "deposit_batch",
+            args!(Expression::new("ALL_WORKTOP_RESOURCES")),
+        )
         .assert_worktop_contains_by_amount(Decimal::from(5), RADIX_TOKEN)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);

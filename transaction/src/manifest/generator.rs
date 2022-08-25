@@ -338,18 +338,6 @@ pub fn generate_instruction(
                 args: args_from_value_vec!(fields),
             }
         }
-        ast::Instruction::CallMethodWithAllResources {
-            component_address,
-            method,
-        } => {
-            id_validator
-                .move_all_buckets()
-                .map_err(GeneratorError::IdValidationError)?;
-            Instruction::CallMethodWithAllResources {
-                component_address: generate_component_address(component_address, bech32_decoder)?,
-                method: generate_string(method)?,
-            }
-        }
         ast::Instruction::PublishPackage { package } => Instruction::PublishPackage {
             package: generate_bytes(package)?,
         },
@@ -1064,11 +1052,6 @@ mod tests {
                 "component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum",
             )
             .unwrap();
-        let component2 = bech32_decoder
-            .validate_and_decode_component_address(
-                "account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qgsy064",
-            )
-            .unwrap();
 
         generate_instruction_ok!(
             r#"TAKE_FROM_WORKTOP_BY_AMOUNT  Decimal("1.0")  ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak")  Bucket("xrd_bucket");"#,
@@ -1117,13 +1100,6 @@ mod tests {
                 component_address: component1,
                 method_name: "refill".to_string(),
                 args: args!()
-            }
-        );
-        generate_instruction_ok!(
-            r#"CALL_METHOD_WITH_ALL_RESOURCES  ComponentAddress("account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qgsy064") "deposit_batch";"#,
-            Instruction::CallMethodWithAllResources {
-                component_address: component2,
-                method: "deposit_batch".into(),
             }
         );
     }
@@ -1240,9 +1216,10 @@ mod tests {
                     )
                     .unwrap()
                 },
-                Instruction::CallMethodWithAllResources {
+                Instruction::CallMethod {
                     component_address: component1,
-                    method: "deposit_batch".into(),
+                    method_name: "deposit_batch".into(),
+                    args: args!(Expression("ALL_WORKTOP_RESOURCES".to_owned()))
                 },
                 Instruction::DropAllProofs,
                 Instruction::PublishPackage {

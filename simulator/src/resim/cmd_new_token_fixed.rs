@@ -1,5 +1,6 @@
 use clap::Parser;
 use radix_engine::types::*;
+use scrypto::prelude::Expression;
 use transaction::builder::ManifestBuilder;
 
 use crate::resim::*;
@@ -66,7 +67,11 @@ impl NewTokenFixed {
         let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
             .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
             .new_token_fixed(metadata, self.total_supply)
-            .call_method_with_all_resources(default_account, "deposit_batch")
+            .call_method(
+                default_account,
+                "deposit_batch",
+                args!(Expression::new("ALL_WORKTOP_RESOURCES")),
+            )
             .build();
         handle_manifest(
             manifest,

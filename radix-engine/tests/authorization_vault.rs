@@ -17,7 +17,11 @@ fn cannot_withdraw_restricted_transfer_from_my_account_with_no_auth() {
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), account)
         .withdraw_from_account_by_amount(Decimal::one(), token_resource_address, account)
-        .call_method_with_all_resources(other_account, "deposit_batch")
+        .call_method(
+            other_account,
+            "deposit_batch",
+            args!(Expression::new("ALL_WORKTOP_RESOURCES")),
+        )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
@@ -54,7 +58,11 @@ fn can_withdraw_restricted_transfer_from_my_account_with_auth() {
         )
         .withdraw_from_account_by_amount(Decimal::one(), token_resource_address, account)
         .pop_from_auth_zone(|builder, proof_id| builder.drop_proof(proof_id))
-        .call_method_with_all_resources(other_account, "deposit_batch")
+        .call_method(
+            other_account,
+            "deposit_batch",
+            args!(Expression::new("ALL_WORKTOP_RESOURCES")),
+        )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 

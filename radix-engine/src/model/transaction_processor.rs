@@ -607,6 +607,7 @@ impl TransactionProcessor {
                                 ScryptoValue::from_slice(args)
                                     .expect("Invalid CALL_METHOD arguments"),
                             )
+                            .and_then(|call_data| Self::process_expressions(call_data, system_api))
                             .and_then(|call_data| {
                                 // TODO: Move this into preprocessor step
                                 system_api
@@ -673,58 +674,6 @@ impl TransactionProcessor {
                                 Ok(result)
                             })
                         }
-                        ExecutableInstruction::CallMethodWithAllResources {
-                            component_address,
-                            method,
-                        } => system_api
-                            .invoke_method(
-                                Receiver::Ref(RENodeId::Worktop),
-                                FnIdentifier::Native(NativeFnIdentifier::Worktop(
-                                    WorktopFnIdentifier::Drain,
-                                )),
-                                ScryptoValue::from_typed(&WorktopDrainInput {}),
-                            )
-                            .map_err(|e| TransactionProcessorError::RuntimeError(Box::new(e)))
-                            .and_then(|result| {
-                                let mut buckets = Vec::new();
-                                for (bucket_id, _) in result.bucket_ids {
-                                    buckets.push(scrypto::resource::Bucket(bucket_id));
-                                }
-                                for (_, real_id) in bucket_id_mapping.drain() {
-                                    buckets.push(scrypto::resource::Bucket(real_id));
-                                }
-                                let encoded = args!(buckets);
-                                // TODO: Move this into preprocessor step
-                                system_api
-                                    .substate_read(SubstateId::ComponentInfo(*component_address))
-                                    .map_err(|e| {
-                                        TransactionProcessorError::RuntimeError(Box::new(e))
-                                    })
-                                    .and_then(|s| {
-                                        let (package_address, blueprint_name): (
-                                            PackageAddress,
-                                            String,
-                                        ) = scrypto_decode(&s.raw)
-                                            .expect("Failed to decode ComponentInfo substate");
-                                        system_api
-                                            .invoke_method(
-                                                Receiver::Ref(RENodeId::Component(
-                                                    *component_address,
-                                                )),
-                                                FnIdentifier::Scrypto {
-                                                    package_address,
-                                                    blueprint_name,
-                                                    ident: method.to_string(),
-                                                },
-                                                ScryptoValue::from_slice(&encoded).expect(
-                                                    "Failed to decode ComponentInfo substate",
-                                                ),
-                                            )
-                                            .map_err(|e| {
-                                                TransactionProcessorError::RuntimeError(Box::new(e))
-                                            })
-                                    })
-                            }),
                         ExecutableInstruction::PublishPackage { package } => scrypto_decode::<
                             Package,
                         >(

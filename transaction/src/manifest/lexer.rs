@@ -103,7 +103,6 @@ pub enum TokenKind {
     DropAllProofs,
     CallFunction,
     CallMethod,
-    CallMethodWithAllResources,
     PublishPackage,
 }
 
@@ -425,7 +424,6 @@ impl Lexer {
             "DROP_ALL_PROOFS" => Ok(TokenKind::DropAllProofs),
             "CALL_FUNCTION" => Ok(TokenKind::CallFunction),
             "CALL_METHOD" => Ok(TokenKind::CallMethod),
-            "CALL_METHOD_WITH_ALL_RESOURCES" => Ok(TokenKind::CallMethodWithAllResources),
             "PUBLISH_PACKAGE" => Ok(TokenKind::PublishPackage),
 
             s @ _ => Err(LexerError::UnknownIdentifier(s.into())),

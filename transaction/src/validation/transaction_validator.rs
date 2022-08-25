@@ -270,18 +270,6 @@ impl TransactionValidator {
                         args,
                     });
                 }
-                Instruction::CallMethodWithAllResources {
-                    component_address,
-                    method,
-                } => {
-                    id_validator
-                        .move_all_buckets()
-                        .map_err(TransactionValidationError::IdValidationError)?;
-                    instructions.push(ExecutableInstruction::CallMethodWithAllResources {
-                        component_address,
-                        method,
-                    });
-                }
                 Instruction::PublishPackage { package } => {
                     instructions.push(ExecutableInstruction::PublishPackage { package });
                 }

@@ -11,6 +11,12 @@ use crate::abi::*;
 #[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Expression(pub String);
 
+impl Expression {
+    pub fn new(s: &str) -> Self {
+        Self(s.to_owned())
+    }
+}
+
 //========
 // error
 //========

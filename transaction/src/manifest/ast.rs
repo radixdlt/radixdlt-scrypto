@@ -91,11 +91,6 @@ pub enum Instruction {
         args: Vec<Value>,
     },
 
-    CallMethodWithAllResources {
-        component_address: Value,
-        method: Value,
-    },
-
     PublishPackage {
         package: Value,
     },

@@ -149,7 +149,11 @@ fn recursion_bomb() {
                 args!(scrypto::resource::Bucket(bucket_id)),
             )
         })
-        .call_method_with_all_resources(account, "deposit_batch")
+        .call_method(
+            account,
+            "deposit_batch",
+            args!(Expression::new("ALL_WORKTOP_RESOURCES")),
+        )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
@@ -177,7 +181,11 @@ fn recursion_bomb_to_failure() {
                 args!(scrypto::resource::Bucket(bucket_id)),
             )
         })
-        .call_method_with_all_resources(account, "deposit_batch")
+        .call_method(
+            account,
+            "deposit_batch",
+            args!(Expression::new("ALL_WORKTOP_RESOURCES")),
+        )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
@@ -211,7 +219,11 @@ fn recursion_bomb_2() {
                 args!(scrypto::resource::Bucket(bucket_id)),
             )
         })
-        .call_method_with_all_resources(account, "deposit_batch")
+        .call_method(
+            account,
+            "deposit_batch",
+            args!(Expression::new("ALL_WORKTOP_RESOURCES")),
+        )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
@@ -239,7 +251,11 @@ fn recursion_bomb_2_to_failure() {
                 args!(scrypto::resource::Bucket(bucket_id)),
             )
         })
-        .call_method_with_all_resources(account, "deposit_batch")
+        .call_method(
+            account,
+            "deposit_batch",
+            args!(Expression::new("ALL_WORKTOP_RESOURCES")),
+        )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 

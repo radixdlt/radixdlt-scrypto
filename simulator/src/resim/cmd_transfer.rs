@@ -1,5 +1,6 @@
 use clap::Parser;
 use radix_engine::types::*;
+use scrypto::prelude::Expression;
 use transaction::builder::ManifestBuilder;
 
 use crate::resim::*;
@@ -51,7 +52,11 @@ impl Transfer {
         let manifest = manifest_builder
             .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
             .withdraw_from_account_by_amount(self.amount, self.resource_address, default_account)
-            .call_method_with_all_resources(self.recipient, "deposit_batch")
+            .call_method(
+                self.recipient,
+                "deposit_batch",
+                args!(Expression::new("ALL_WORKTOP_RESOURCES")),
+            )
             .build();
         handle_manifest(
             manifest,

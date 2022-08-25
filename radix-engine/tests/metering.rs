@@ -1,7 +1,7 @@
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use scrypto::args;
 use scrypto::core::NetworkDefinition;
-use scrypto::prelude::{Package, RADIX_TOKEN, SYS_FAUCET_COMPONENT};
+use scrypto::prelude::{Expression, Package, RADIX_TOKEN, SYS_FAUCET_COMPONENT};
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -156,7 +156,11 @@ fn test_basic_transfer() {
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), account1)
         .withdraw_from_account_by_amount(100.into(), RADIX_TOKEN, account1)
-        .call_method_with_all_resources(account2, "deposit_batch")
+        .call_method(
+            account2,
+            "deposit_batch",
+            args!(Expression::new("ALL_WORKTOP_RESOURCES")),
+        )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key1]);
 

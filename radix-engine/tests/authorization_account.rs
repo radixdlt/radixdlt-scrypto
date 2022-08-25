@@ -22,7 +22,11 @@ fn test_auth_rule<'s, S: ReadableSubstateStore + WriteableSubstateStore>(
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .withdraw_from_account(RADIX_TOKEN, account)
-        .call_method_with_all_resources(other_account, "deposit_batch")
+        .call_method(
+            other_account,
+            "deposit_batch",
+            args!(Expression::new("ALL_WORKTOP_RESOURCES")),
+        )
         .build();
     let receipt = test_runner.execute_manifest(manifest, signer_public_keys.to_vec());
 
@@ -241,7 +245,11 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_no_signature() {
             });
             builder
         })
-        .call_method_with_all_resources(other_account, "deposit_batch")
+        .call_method(
+            other_account,
+            "deposit_batch",
+            args!(Expression::new("ALL_WORKTOP_RESOURCES")),
+        )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -271,7 +279,11 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_right_amount_of_proof() {
             });
             builder
         })
-        .call_method_with_all_resources(other_account, "deposit_batch")
+        .call_method(
+            other_account,
+            "deposit_batch",
+            args!(Expression::new("ALL_WORKTOP_RESOURCES")),
+        )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -301,7 +313,11 @@ fn cannot_withdraw_from_my_any_xrd_auth_account_with_less_than_amount_of_proof()
             });
             builder
         })
-        .call_method_with_all_resources(other_account, "deposit_batch")
+        .call_method(
+            other_account,
+            "deposit_batch",
+            args!(Expression::new("ALL_WORKTOP_RESOURCES")),
+        )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 

@@ -2,6 +2,7 @@
 
 use clap::Parser;
 use radix_engine::types::*;
+use scrypto::prelude::Expression;
 use transaction::builder::ManifestBuilder;
 
 use crate::resim::*;
@@ -60,7 +61,11 @@ impl CallMethod {
                 &export_abi_by_component(self.component_address)?,
             )
             .map_err(Error::TransactionConstructionError)?
-            .call_method_with_all_resources(default_account, "deposit_batch")
+            .call_method(
+                default_account,
+                "deposit_batch",
+                args!(Expression::new("ALL_WORKTOP_RESOURCES")),
+            )
             .build();
         handle_manifest(
             manifest,

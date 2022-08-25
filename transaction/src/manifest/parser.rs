@@ -157,10 +157,6 @@ impl Parser {
                     values
                 },
             },
-            TokenKind::CallMethodWithAllResources => Instruction::CallMethodWithAllResources {
-                component_address: self.parse_value()?,
-                method: self.parse_value()?,
-            },
             TokenKind::PublishPackage => Instruction::PublishPackage {
                 package: self.parse_value()?,
             },
@@ -708,18 +704,6 @@ mod tests {
                     Value::NonFungibleId(Value::String("00".into()).into()),
                     Value::Proof(Value::String("admin_auth".into()).into())
                 ]
-            }
-        );
-        parse_instruction_ok!(
-            r#"CALL_METHOD_WITH_ALL_RESOURCES  ComponentAddress("account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qgsy064") "deposit_batch";"#,
-            Instruction::CallMethodWithAllResources {
-                component_address: Value::ComponentAddress(
-                    Value::String(
-                        "account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qgsy064".into()
-                    )
-                    .into()
-                ),
-                method: Value::String("deposit_batch".into()),
             }
         );
     }
