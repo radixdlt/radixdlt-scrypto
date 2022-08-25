@@ -122,7 +122,10 @@ pub fn fmt_package<P: AsRef<Path>>(
             if let Some(ext) = p.extension() {
                 if ext.to_str() == Some("rs") {
                     let code = fs::read_to_string(&p).map_err(CargoExecutionError::IOError)?;
-                    let code_transformed = code.replace("blueprint!", "mod blueprint");
+                    let code_transformed = code
+                        .replace("blueprint!", "mod blueprint")
+                        // Reverts unintended replacement of `external_blueprint!` to `external_mod blueprint` by the `replace` above
+                        .replace("external_mod blueprint", "external_blueprint!");
                     fs::write(&p, code_transformed).map_err(CargoExecutionError::IOError)?;
                 }
             }
