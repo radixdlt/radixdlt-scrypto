@@ -6,7 +6,11 @@ blueprint! {
     }
 
     impl Receiver {
-        pub fn assert_first_proof(mut proofs: Vec<Proof>, amount: Decimal, resource_address: ResourceAddress) {
+        pub fn assert_first_proof(
+            mut proofs: Vec<Proof>,
+            amount: Decimal,
+            resource_address: ResourceAddress,
+        ) {
             let proof = proofs.remove(0).unsafe_skip_proof_validation();
             assert_eq!(proof.amount(), amount);
             assert_eq!(proof.resource_address(), resource_address);
