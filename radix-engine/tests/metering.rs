@@ -168,22 +168,22 @@ fn test_basic_transfer() {
 
     // NOTE: If this test fails, it should print out the actual fee table in the error logs.
     // Or you can run just this test with the below:
-    // (cd radix-engine && cargo test test_basic_transfer -- --exact)
+    // (cd radix-engine && cargo test --test metering -- test_basic_transfer)
     assert_eq!(
         10000 /* base_fee */
         + 3300 /* borrow_substate */
         + 1500 /* create_node */
-        + 1959 /* decode_transaction */
+        + 1980 /* decode_transaction */
         + 1000 /* drop_node */
         + 605313 /* instantiate_wasm */
-        + 1930 /* invoke_function */
+        + 1965 /* invoke_function */
         + 2215 /* invoke_method */
         + 5000 /* read_substate */
         + 600 /* return_substate */
         + 1000 /* run_function */
         + 5200 /* run_method */
         + 274170 /* run_wasm */
-        + 653 /* verify_manifest */
+        + 660 /* verify_manifest */
         + 3750 /* verify_signatures */
         + 3000, /* write_substate */
         receipt.execution.fee_summary.cost_unit_consumed
