@@ -21,11 +21,7 @@ fn create_non_fungible_mutable() {
             "create_non_fungible_mutable",
             args!(),
         )
-        .call_method(
-            account,
-            "deposit_batch",
-            args!(Expression::new("ALL_WORKTOP_RESOURCES")),
-        )
+        .call_method(account, "deposit_batch", args!(Expression::new("WORKTOP")))
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
@@ -48,11 +44,7 @@ fn can_burn_non_fungible() {
             "create_burnable_non_fungible",
             args!(),
         )
-        .call_method(
-            account,
-            "deposit_batch",
-            args!(Expression::new("ALL_WORKTOP_RESOURCES")),
-        )
+        .call_method(account, "deposit_batch", args!(Expression::new("WORKTOP")))
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
@@ -76,11 +68,7 @@ fn can_burn_non_fungible() {
             "verify_does_not_exist",
             args!(non_fungible_address),
         )
-        .call_method(
-            account,
-            "deposit_batch",
-            args!(Expression::new("ALL_WORKTOP_RESOURCES")),
-        )
+        .call_method(account, "deposit_batch", args!(Expression::new("WORKTOP")))
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
@@ -139,11 +127,7 @@ fn test_non_fungible() {
             "get_non_fungible_ids_vault",
             args!(),
         )
-        .call_method(
-            account,
-            "deposit_batch",
-            args!(Expression::new("ALL_WORKTOP_RESOURCES")),
-        )
+        .call_method(account, "deposit_batch", args!(Expression::new("WORKTOP")))
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
     receipt.expect_commit_success();
@@ -164,11 +148,7 @@ fn test_singleton_non_fungible() {
             "singleton_non_fungible",
             args!(),
         )
-        .call_method(
-            account,
-            "deposit_batch",
-            args!(Expression::new("ALL_WORKTOP_RESOURCES")),
-        )
+        .call_method(account, "deposit_batch", args!(Expression::new("WORKTOP")))
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
     receipt.expect_commit_success();

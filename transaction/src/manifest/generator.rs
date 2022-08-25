@@ -1013,10 +1013,10 @@ mod tests {
             }
         );
         generate_value_ok!(
-            r#"Expression("ALL_WORKTOP_RESOURCES")"#,
+            r#"Expression("WORKTOP")"#,
             Value::Custom {
                 type_id: ScryptoType::Expression.id(),
-                bytes: scrypto::core::Expression("ALL_WORKTOP_RESOURCES".to_owned()).to_vec()
+                bytes: scrypto::core::Expression("WORKTOP".to_owned()).to_vec()
             }
         );
     }
@@ -1219,7 +1219,7 @@ mod tests {
                 Instruction::CallMethod {
                     component_address: component1,
                     method_name: "deposit_batch".into(),
-                    args: args!(Expression("ALL_WORKTOP_RESOURCES".to_owned()))
+                    args: args!(Expression("WORKTOP".to_owned()))
                 },
                 Instruction::DropAllProofs,
                 Instruction::PublishPackage {

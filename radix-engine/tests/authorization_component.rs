@@ -112,11 +112,7 @@ fn can_make_cross_component_call_with_authorization() {
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .withdraw_from_account_by_ids(&BTreeSet::from([auth_id.clone()]), auth, account)
-        .call_method(
-            my_component,
-            "put_auth",
-            args!(Expression::new("ALL_WORKTOP_RESOURCES")),
-        )
+        .call_method(my_component, "put_auth", args!(Expression::new("WORKTOP")))
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
     receipt.expect_commit_success();

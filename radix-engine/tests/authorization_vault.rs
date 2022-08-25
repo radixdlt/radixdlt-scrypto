@@ -20,7 +20,7 @@ fn cannot_withdraw_restricted_transfer_from_my_account_with_no_auth() {
         .call_method(
             other_account,
             "deposit_batch",
-            args!(Expression::new("ALL_WORKTOP_RESOURCES")),
+            args!(Expression::new("WORKTOP")),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
@@ -52,16 +52,22 @@ fn can_withdraw_restricted_transfer_from_my_account_with_auth() {
             auth_resource_address,
             |builder, bucket_id| {
                 builder.create_proof_from_bucket(bucket_id, |builder, proof_id| {
-                    builder.push_to_auth_zone(proof_id)
-                })
+                    builder
+                        .push_to_auth_zone(proof_id)
+                        .withdraw_from_account_by_amount(
+                            Decimal::one(),
+                            token_resource_address,
+                            account,
+                        )
+                        .pop_from_auth_zone(|builder, proof_id| builder.drop_proof(proof_id))
+                });
+                builder.return_to_worktop(bucket_id)
             },
         )
-        .withdraw_from_account_by_amount(Decimal::one(), token_resource_address, account)
-        .pop_from_auth_zone(|builder, proof_id| builder.drop_proof(proof_id))
         .call_method(
             other_account,
             "deposit_batch",
-            args!(Expression::new("ALL_WORKTOP_RESOURCES")),
+            args!(Expression::new("WORKTOP")),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);

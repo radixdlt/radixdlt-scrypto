@@ -26,11 +26,7 @@ fn can_create_clone_and_drop_bucket_proof() {
             &test_runner.export_abi(package_address, "BucketProof"),
         )
         .unwrap()
-        .call_method(
-            account,
-            "deposit_batch",
-            args!(Expression::new("ALL_WORKTOP_RESOURCES")),
-        )
+        .call_method(account, "deposit_batch", args!(Expression::new("WORKTOP")))
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
     println!("{:?}", receipt);
@@ -172,11 +168,7 @@ fn can_use_bucket_for_authorization() {
             &test_runner.export_abi(package_address, "BucketProof"),
         )
         .unwrap()
-        .call_method(
-            account,
-            "deposit_batch",
-            args!(Expression::new("ALL_WORKTOP_RESOURCES")),
-        )
+        .call_method(account, "deposit_batch", args!(Expression::new("WORKTOP")))
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 

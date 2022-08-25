@@ -9,11 +9,7 @@ fn self_transfer_txn(account: ComponentAddress, amount: Decimal) -> TransactionM
     ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), account)
         .withdraw_from_account_by_amount(amount, RADIX_TOKEN, account)
-        .call_method(
-            account,
-            "deposit_batch",
-            args!(Expression::new("ALL_WORKTOP_RESOURCES")),
-        )
+        .call_method(account, "deposit_batch", args!(Expression::new("WORKTOP")))
         .build()
 }
 

@@ -64,7 +64,7 @@ impl CallMethod {
             .call_method(
                 default_account,
                 "deposit_batch",
-                args!(Expression::new("ALL_WORKTOP_RESOURCES")),
+                args!(Expression::new("WORKTOP")),
             )
             .build();
         handle_manifest(

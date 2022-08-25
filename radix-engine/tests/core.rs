@@ -29,11 +29,7 @@ fn test_call() {
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(package_address, "MoveTest", "move_bucket", args![])
         .call_function(package_address, "MoveTest", "move_proof", args![])
-        .call_method(
-            account,
-            "deposit_batch",
-            args!(Expression::new("ALL_WORKTOP_RESOURCES")),
-        )
+        .call_method(account, "deposit_batch", args!(Expression::new("WORKTOP")))
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
     receipt.expect_commit_success();
