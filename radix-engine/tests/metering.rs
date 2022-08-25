@@ -169,17 +169,17 @@ fn test_basic_transfer() {
         10000 /* base_fee */
         + 3300 /* borrow_substate */
         + 1500 /* create_node */
-        + 1938 /* decode_transaction */
+        + 1959 /* decode_transaction */
         + 1000 /* drop_node */
         + 605313 /* instantiate_wasm */
-        + 1895 /* invoke_function */
+        + 1930 /* invoke_function */
         + 2215 /* invoke_method */
         + 5000 /* read_substate */
         + 600 /* return_substate */
         + 1000 /* run_function */
         + 5200 /* run_method */
         + 274170 /* run_wasm */
-        + 646 /* verify_manifest */
+        + 653 /* verify_manifest */
         + 3750 /* verify_signatures */
         + 3000, /* write_substate */
         receipt.execution.fee_summary.cost_unit_consumed
