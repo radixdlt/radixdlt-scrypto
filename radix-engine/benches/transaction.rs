@@ -69,7 +69,11 @@ fn bench_transaction_validation(c: &mut Criterion) {
         .manifest(
             ManifestBuilder::new(&NetworkDefinition::local_simulator())
                 .withdraw_from_account_by_amount(1u32.into(), RADIX_TOKEN, account1)
-                .call_method(account2, "deposit_batch", args!(Expression::new("WORKTOP")))
+                .call_method(
+                    account2,
+                    "deposit_batch",
+                    args!(Expression::new("ENTIRE_WORKTOP")),
+                )
                 .build(),
         )
         .notarize(&signer)

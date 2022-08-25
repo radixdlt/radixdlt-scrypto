@@ -66,7 +66,7 @@ impl CallFunction {
             .call_method(
                 default_account,
                 "deposit_batch",
-                args!(Expression::new("WORKTOP")),
+                args!(Expression::new("ENTIRE_WORKTOP")),
             )
             .build();
         handle_manifest(

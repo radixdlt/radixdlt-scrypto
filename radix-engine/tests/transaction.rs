@@ -60,15 +60,27 @@ fn test_call_method_with_all_resources_doesnt_drop_auth_zone_proofs() {
         .create_proof_from_auth_zone(RADIX_TOKEN, |builder, proof_id| {
             builder.push_to_auth_zone(proof_id)
         })
-        .call_method(account, "deposit_batch", args!(Expression::new("WORKTOP")))
+        .call_method(
+            account,
+            "deposit_batch",
+            args!(Expression::new("ENTIRE_WORKTOP")),
+        )
         .create_proof_from_auth_zone(RADIX_TOKEN, |builder, proof_id| {
             builder.push_to_auth_zone(proof_id)
         })
-        .call_method(account, "deposit_batch", args!(Expression::new("WORKTOP")))
+        .call_method(
+            account,
+            "deposit_batch",
+            args!(Expression::new("ENTIRE_WORKTOP")),
+        )
         .create_proof_from_auth_zone(RADIX_TOKEN, |builder, proof_id| {
             builder.push_to_auth_zone(proof_id)
         })
-        .call_method(account, "deposit_batch", args!(Expression::new("WORKTOP")))
+        .call_method(
+            account,
+            "deposit_batch",
+            args!(Expression::new("ENTIRE_WORKTOP")),
+        )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
     println!("{:?}", receipt);

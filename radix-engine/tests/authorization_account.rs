@@ -25,7 +25,7 @@ fn test_auth_rule<'s, S: ReadableSubstateStore + WriteableSubstateStore>(
         .call_method(
             other_account,
             "deposit_batch",
-            args!(Expression::new("WORKTOP")),
+            args!(Expression::new("ENTIRE_WORKTOP")),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, signer_public_keys.to_vec());
@@ -249,7 +249,7 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_no_signature() {
         .call_method(
             other_account,
             "deposit_batch",
-            args!(Expression::new("WORKTOP")),
+            args!(Expression::new("ENTIRE_WORKTOP")),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -284,7 +284,7 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_right_amount_of_proof() {
         .call_method(
             other_account,
             "deposit_batch",
-            args!(Expression::new("WORKTOP")),
+            args!(Expression::new("ENTIRE_WORKTOP")),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -319,7 +319,7 @@ fn cannot_withdraw_from_my_any_xrd_auth_account_with_less_than_amount_of_proof()
         .call_method(
             other_account,
             "deposit_batch",
-            args!(Expression::new("WORKTOP")),
+            args!(Expression::new("ENTIRE_WORKTOP")),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);

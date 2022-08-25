@@ -57,7 +57,11 @@ fn bench_transfer(c: &mut Criterion) {
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), account1)
         .withdraw_from_account_by_amount(1.into(), RADIX_TOKEN, account1)
-        .call_method(account2, "deposit_batch", args!(Expression::new("WORKTOP")))
+        .call_method(
+            account2,
+            "deposit_batch",
+            args!(Expression::new("ENTIRE_WORKTOP")),
+        )
         .build();
 
     // Loop

@@ -84,7 +84,7 @@ impl TransactionProcessor {
         let mut value = args.dom;
         for (expression, path) in args.expressions {
             match expression.0.as_str() {
-                "WORKTOP" => {
+                "ENTIRE_WORKTOP" => {
                     let buckets = system_api
                         .invoke_method(
                             Receiver::Ref(RENodeId::Worktop),

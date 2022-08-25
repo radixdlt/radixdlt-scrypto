@@ -39,7 +39,11 @@ fn test_component() {
         )
         .call_method(component, "get_component_state", args!())
         .call_method(component, "put_component_state", args!())
-        .call_method(account, "deposit_batch", args!(Expression::new("WORKTOP")))
+        .call_method(
+            account,
+            "deposit_batch",
+            args!(Expression::new("ENTIRE_WORKTOP")),
+        )
         .build();
     let receipt2 = test_runner.execute_manifest(manifest2, vec![public_key]);
     receipt2.expect_commit_success();

@@ -58,15 +58,27 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
     match action {
         Action::Mint => builder
             .mint(Decimal::from("1.0"), token_address)
-            .call_method(account, "deposit_batch", args!(Expression::new("WORKTOP"))),
+            .call_method(
+                account,
+                "deposit_batch",
+                args!(Expression::new("ENTIRE_WORKTOP")),
+            ),
         Action::Burn => builder
             .create_proof_from_account(withdraw_auth, account)
             .withdraw_from_account_by_amount(Decimal::from("1.0"), token_address, account)
             .burn(Decimal::from("1.0"), token_address)
-            .call_method(account, "deposit_batch", args!(Expression::new("WORKTOP"))),
+            .call_method(
+                account,
+                "deposit_batch",
+                args!(Expression::new("ENTIRE_WORKTOP")),
+            ),
         Action::Withdraw => builder
             .withdraw_from_account_by_amount(Decimal::from("1.0"), token_address, account)
-            .call_method(account, "deposit_batch", args!(Expression::new("WORKTOP"))),
+            .call_method(
+                account,
+                "deposit_batch",
+                args!(Expression::new("ENTIRE_WORKTOP")),
+            ),
         Action::Deposit => builder
             .create_proof_from_account(withdraw_auth, account)
             .withdraw_from_account_by_amount(Decimal::from("1.0"), token_address, account)
@@ -77,7 +89,11 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
                     args!(scrypto::resource::Bucket(bucket_id)),
                 )
             })
-            .call_method(account, "deposit_batch", args!(Expression::new("WORKTOP"))),
+            .call_method(
+                account,
+                "deposit_batch",
+                args!(Expression::new("ENTIRE_WORKTOP")),
+            ),
     };
 
     let manifest = builder.build();

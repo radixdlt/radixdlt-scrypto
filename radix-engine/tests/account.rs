@@ -22,7 +22,7 @@ fn can_withdraw_from_my_account() {
         .call_method(
             other_account,
             "deposit_batch",
-            args!(Expression::new("WORKTOP")),
+            args!(Expression::new("ENTIRE_WORKTOP")),
         )
         .call_method(other_account, "balance", args!(RADIX_TOKEN))
         .build();
@@ -57,7 +57,7 @@ fn can_withdraw_non_fungible_from_my_account() {
         .call_method(
             other_account,
             "deposit_batch",
-            args!(Expression::new("WORKTOP")),
+            args!(Expression::new("ENTIRE_WORKTOP")),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
@@ -76,7 +76,11 @@ fn cannot_withdraw_from_other_account() {
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), account)
         .withdraw_from_account(RADIX_TOKEN, other_account)
-        .call_method(account, "deposit_batch", args!(Expression::new("WORKTOP")))
+        .call_method(
+            account,
+            "deposit_batch",
+            args!(Expression::new("ENTIRE_WORKTOP")),
+        )
         .build();
 
     // Act

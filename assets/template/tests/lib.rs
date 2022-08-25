@@ -29,7 +29,7 @@ fn test_hello() {
     // Test the `free_token` method.
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .call_method(component, "free_token", args!())
-        .call_method(account_component, "deposit_batch", args!(Expression::new("WORKTOP")))
+        .call_method(account_component, "deposit_batch", args!(Expression::new("ENTIRE_WORKTOP")))
         .build();
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![public_key]);
     println!("{:?}\n", receipt);
