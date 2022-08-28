@@ -74,8 +74,20 @@ impl TransactionReceipt {
             TransactionResult::Reject(_) => panic!("Transaction was rejected"),
         }
     }
+    
+    pub fn expect_commit_success(&self) -> bool {
+        match &self.result {
+            TransactionResult::Commit(c) => match &c.outcome {
+                TransactionOutcome::Success(x) => true,
+                TransactionOutcome::Failure(err) => {
+                    false
+                }
+            },
+            TransactionResult::Reject(_) => panic!("Transaction was rejected"),
+        }
+    }
 
-    pub fn expect_commit_success<T: Decode>(&self) -> T {
+    pub fn output<T: Decode>(&self) -> T {
         match &self.result {
             TransactionResult::Commit(c) => match &c.outcome {
                 TransactionOutcome::Success(x) => scrypto_decode::<T>(&x[1][..]).expect("Wrong transaction output type!"),
