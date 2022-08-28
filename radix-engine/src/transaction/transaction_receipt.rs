@@ -74,23 +74,18 @@ impl TransactionReceipt {
             TransactionResult::Reject(_) => panic!("Transaction was rejected"),
         }
     }
-    
-    pub fn expect_commit_success(&self) -> bool {
+
+    pub fn expect_rejection(&self) -> &RejectionError {
         match &self.result {
-            TransactionResult::Commit(c) => match &c.outcome {
-                TransactionOutcome::Success(x) => true,
-                TransactionOutcome::Failure(err) => {
-                    false
-                }
-            },
-            TransactionResult::Reject(_) => panic!("Transaction was rejected"),
+            TransactionResult::Commit(..) => panic!("Expected rejection but was commit"),
+            TransactionResult::Reject(ref r) => &r.error,
         }
     }
 
-    pub fn output<T: Decode>(&self) -> T {
+    pub fn expect_commit_success(&self) -> &[u8] {
         match &self.result {
             TransactionResult::Commit(c) => match &c.outcome {
-                TransactionOutcome::Success(x) => scrypto_decode::<T>(&x[1][..]).expect("Wrong transaction output type!"),
+                TransactionOutcome::Success(x) => &x[1][..],
                 TransactionOutcome::Failure(err) => {
                     panic!("Expected success but was failed:\n{:?}", err)
                 }
@@ -99,7 +94,19 @@ impl TransactionReceipt {
         }
     }
 
-    pub fn expect_commit_failure<F>(&self, f: F)
+    pub fn expect_commit_failure(&self) -> &RuntimeError {
+        match &self.result {
+            TransactionResult::Commit(c) => match &c.outcome {
+                TransactionOutcome::Success(_) => {
+                    panic!("Expected failure but was success")
+                },
+                TransactionOutcome::Failure(err) => err
+            },
+            TransactionResult::Reject(_) => panic!("Transaction was rejected"),
+        }
+    }
+
+    pub fn expect_specific_failure<F>(&self, f: F)
     where
         F: FnOnce(&RuntimeError) -> bool,
     {
@@ -119,26 +126,25 @@ impl TransactionReceipt {
         }
     }
 
-    pub fn expect_rejection(&self) -> &RejectionError {
-        match &self.result {
-            TransactionResult::Commit(..) => panic!("Expected rejection but was commit"),
-            TransactionResult::Reject(ref r) => &r.error,
-        }
+    pub fn output<T: Decode>(&self) -> T {
+
+        scrypto_decode::<T>(self.expect_commit_success()).expect("Wrong transaction output type!")
+
+    } 
+
+    pub fn new_package_addresses(&self) -> &Vec<PackageAddress> {
+        let commit = self.expect_commit();
+        &commit.entity_changes.new_package_addresses
     }
 
-    pub fn new_package_addresses(&self) -> Vec<PackageAddress> {
+    pub fn new_component_addresses(&self) -> &Vec<ComponentAddress> {
         let commit = self.expect_commit();
-        commit.entity_changes.new_package_addresses
+        &commit.entity_changes.new_component_addresses
     }
 
-    pub fn new_component_addresses(&self) -> Vec<ComponentAddress> {
+    pub fn new_resource_addresses(&self) -> &Vec<ResourceAddress> {
         let commit = self.expect_commit();
-        commit.entity_changes.new_component_addresses
-    }
-
-    pub fn new_resource_addresses(&self) -> Vec<ResourceAddress> {
-        let commit = self.expect_commit();
-        commit.entity_changes.new_resource_addresses
+        &commit.entity_changes.new_resource_addresses
     }
 }
 
