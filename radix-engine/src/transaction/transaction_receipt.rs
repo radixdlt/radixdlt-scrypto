@@ -40,15 +40,6 @@ pub enum TransactionOutcome {
     Failure(RuntimeError),
 }
 
-impl TransactionOutcome {
-    pub fn is_success(&self) -> bool {
-        match self {
-            Self::Success(..) => true,
-            Self::Failure(..) => false,
-        }
-    }
-}
-
 #[derive(Debug)]
 pub struct EntityChanges {
     pub new_package_addresses: Vec<PackageAddress>,
@@ -84,10 +75,10 @@ impl TransactionReceipt {
         }
     }
 
-    pub fn expect_commit_success(&self) -> &Vec<Vec<u8>> {
+    pub fn expect_commit_success<T>(&self) -> T {
         match &self.result {
             TransactionResult::Commit(c) => match &c.outcome {
-                TransactionOutcome::Success(x) => x,
+                TransactionOutcome::Success(x) => scrypto_decode::<T>(&x[1][..]),
                 TransactionOutcome::Failure(err) => {
                     panic!("Expected success but was failed:\n{:?}", err)
                 }
@@ -121,6 +112,21 @@ impl TransactionReceipt {
             TransactionResult::Commit(..) => panic!("Expected rejection but was commit"),
             TransactionResult::Reject(ref r) => &r.error,
         }
+    }
+
+    pub fn new_package_addresses(&self) -> Vec<PackageAddress> {
+        let commit = self.expect_commit();
+        commit.entity_changes.new_package_addresses
+    }
+
+    pub fn new_component_addresses(&self) -> Vec<ComponentAddress> {
+        let commit = self.expect_commit();
+        commit.entity_changes.new_component_addresses
+    }
+
+    pub fn new_resource_addresses(&self) -> Vec<ResourceAddress> {
+        let commit = self.expect_commit();
+        commit.entity_changes.new_resource_addresses
     }
 }
 
