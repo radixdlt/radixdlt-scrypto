@@ -70,7 +70,7 @@ impl NewTokenFixed {
             .call_method(
                 default_account,
                 "deposit_batch",
-                args!(Expression::new("ENTIRE_WORKTOP")),
+                args!(Expression::entire_worktop()),
             )
             .build();
         handle_manifest(

@@ -63,7 +63,7 @@ fn test_call_method_with_all_resources_doesnt_drop_auth_zone_proofs() {
         .call_method(
             account,
             "deposit_batch",
-            args!(Expression::new("ENTIRE_WORKTOP")),
+            args!(Expression::entire_worktop()),
         )
         .create_proof_from_auth_zone(RADIX_TOKEN, |builder, proof_id| {
             builder.push_to_auth_zone(proof_id)
@@ -71,7 +71,7 @@ fn test_call_method_with_all_resources_doesnt_drop_auth_zone_proofs() {
         .call_method(
             account,
             "deposit_batch",
-            args!(Expression::new("ENTIRE_WORKTOP")),
+            args!(Expression::entire_worktop()),
         )
         .create_proof_from_auth_zone(RADIX_TOKEN, |builder, proof_id| {
             builder.push_to_auth_zone(proof_id)
@@ -79,7 +79,7 @@ fn test_call_method_with_all_resources_doesnt_drop_auth_zone_proofs() {
         .call_method(
             account,
             "deposit_batch",
-            args!(Expression::new("ENTIRE_WORKTOP")),
+            args!(Expression::entire_worktop()),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
@@ -127,7 +127,7 @@ fn test_entire_auth_zone() {
             package_address,
             "Receiver",
             "assert_first_proof",
-            args!(Expression::new("ENTIRE_AUTH_ZONE"), dec!("1"), RADIX_TOKEN),
+            args!(Expression::entire_auth_zone(), dec!("1"), RADIX_TOKEN),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);

@@ -42,7 +42,7 @@ fn test_component() {
         .call_method(
             account,
             "deposit_batch",
-            args!(Expression::new("ENTIRE_WORKTOP")),
+            args!(Expression::entire_worktop()),
         )
         .build();
     let receipt2 = test_runner.execute_manifest(manifest2, vec![public_key]);

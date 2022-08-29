@@ -15,6 +15,14 @@ impl Expression {
     pub fn new(s: &str) -> Self {
         Self(s.to_owned())
     }
+
+    pub fn entire_worktop() -> Self {
+        Self::new("ENTIRE_WORKTOP")
+    }
+
+    pub fn entire_auth_zone() -> Self {
+        Self::new("ENTIRE_AUTH_ZONE")
+    }
 }
 
 //========

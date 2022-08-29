@@ -152,7 +152,7 @@ fn recursion_bomb() {
         .call_method(
             account,
             "deposit_batch",
-            args!(Expression::new("ENTIRE_WORKTOP")),
+            args!(Expression::entire_worktop()),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
@@ -184,7 +184,7 @@ fn recursion_bomb_to_failure() {
         .call_method(
             account,
             "deposit_batch",
-            args!(Expression::new("ENTIRE_WORKTOP")),
+            args!(Expression::entire_worktop()),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
@@ -222,7 +222,7 @@ fn recursion_bomb_2() {
         .call_method(
             account,
             "deposit_batch",
-            args!(Expression::new("ENTIRE_WORKTOP")),
+            args!(Expression::entire_worktop()),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
@@ -254,7 +254,7 @@ fn recursion_bomb_2_to_failure() {
         .call_method(
             account,
             "deposit_batch",
-            args!(Expression::new("ENTIRE_WORKTOP")),
+            args!(Expression::entire_worktop()),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);

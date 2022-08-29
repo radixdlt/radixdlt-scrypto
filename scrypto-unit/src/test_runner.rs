@@ -301,7 +301,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             .call_method(
                 account,
                 "deposit_batch",
-                args!(Expression::new("ENTIRE_WORKTOP")),
+                args!(Expression::entire_worktop()),
             )
             .build();
         self.execute_manifest(manifest, vec![signer_public_key])
@@ -335,7 +335,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             .call_method(
                 account,
                 "deposit_batch",
-                args!(Expression::new("ENTIRE_WORKTOP")),
+                args!(Expression::entire_worktop()),
             )
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
@@ -370,7 +370,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             .call_method(
                 account,
                 "deposit_batch",
-                args!(Expression::new("ENTIRE_WORKTOP")),
+                args!(Expression::entire_worktop()),
             )
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
@@ -402,7 +402,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             .call_method(
                 account,
                 "deposit_batch",
-                args!(Expression::new("ENTIRE_WORKTOP")),
+                args!(Expression::entire_worktop()),
             )
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
@@ -429,7 +429,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             .call_method(
                 account,
                 "deposit_batch",
-                args!(Expression::new("ENTIRE_WORKTOP")),
+                args!(Expression::entire_worktop()),
             )
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
@@ -458,7 +458,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             .call_method(
                 account,
                 "deposit_batch",
-                args!(Expression::new("ENTIRE_WORKTOP")),
+                args!(Expression::entire_worktop()),
             )
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
@@ -492,7 +492,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             .call_method(
                 account,
                 "deposit_batch",
-                args!(Expression::new("ENTIRE_WORKTOP")),
+                args!(Expression::entire_worktop()),
             )
             .build();
         let receipt = self.execute_manifest(manifest, vec![signer_public_key]);

@@ -55,7 +55,7 @@ impl Transfer {
             .call_method(
                 self.recipient,
                 "deposit_batch",
-                args!(Expression::new("ENTIRE_WORKTOP")),
+                args!(Expression::entire_worktop()),
             )
             .build();
         handle_manifest(

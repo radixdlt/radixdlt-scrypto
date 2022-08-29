@@ -115,7 +115,7 @@ fn can_make_cross_component_call_with_authorization() {
         .call_method(
             my_component,
             "put_auth",
-            args!(Expression::new("ENTIRE_WORKTOP")),
+            args!(Expression::entire_worktop()),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);

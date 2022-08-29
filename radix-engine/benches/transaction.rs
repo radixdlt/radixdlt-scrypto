@@ -72,7 +72,7 @@ fn bench_transaction_validation(c: &mut Criterion) {
                 .call_method(
                     account2,
                     "deposit_batch",
-                    args!(Expression::new("ENTIRE_WORKTOP")),
+                    args!(Expression::entire_worktop()),
                 )
                 .build(),
         )

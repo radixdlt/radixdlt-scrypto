@@ -61,7 +61,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
             .call_method(
                 account,
                 "deposit_batch",
-                args!(Expression::new("ENTIRE_WORKTOP")),
+                args!(Expression::entire_worktop()),
             ),
         Action::Burn => builder
             .create_proof_from_account(withdraw_auth, account)
@@ -70,14 +70,14 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
             .call_method(
                 account,
                 "deposit_batch",
-                args!(Expression::new("ENTIRE_WORKTOP")),
+                args!(Expression::entire_worktop()),
             ),
         Action::Withdraw => builder
             .withdraw_from_account_by_amount(Decimal::from("1.0"), token_address, account)
             .call_method(
                 account,
                 "deposit_batch",
-                args!(Expression::new("ENTIRE_WORKTOP")),
+                args!(Expression::entire_worktop()),
             ),
         Action::Deposit => builder
             .create_proof_from_account(withdraw_auth, account)
@@ -92,7 +92,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
             .call_method(
                 account,
                 "deposit_batch",
-                args!(Expression::new("ENTIRE_WORKTOP")),
+                args!(Expression::entire_worktop()),
             ),
     };
 

@@ -194,7 +194,7 @@ fn test_fee_accounting_success() {
         .call_method(
             account2,
             "deposit_batch",
-            args!(Expression::new("ENTIRE_WORKTOP")),
+            args!(Expression::entire_worktop()),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
@@ -231,7 +231,7 @@ fn test_fee_accounting_failure() {
         .call_method(
             account2,
             "deposit_batch",
-            args!(Expression::new("ENTIRE_WORKTOP")),
+            args!(Expression::entire_worktop()),
         )
         .assert_worktop_contains_by_amount(1.into(), RADIX_TOKEN)
         .build();
