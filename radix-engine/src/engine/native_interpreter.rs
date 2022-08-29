@@ -97,7 +97,14 @@ impl NativeInterpreter {
                 }),
             (Some(Receiver::Ref(RENodeId::System)), NativeFnIdentifier::System(system_fn)) => {
                 System::main(system_fn, input, system_api)
-                    .map_err(|e| RuntimeError::ApplicationError(ApplicationError::SystemError(e)))
+                    .map_err(|e| {
+                        match e {
+                            InvokeError::Downstream(runtime_error) => runtime_error,
+                            InvokeError::Error(e) => RuntimeError::ApplicationError(
+                                ApplicationError::SystemError(e),
+                            ),
+                        }
+                    })
             }
             _ => {
                 return Err(RuntimeError::KernelError(KernelError::MethodNotFound(
