@@ -8,7 +8,7 @@ use crate::wasm::WasmError;
 use sbor::*;
 
 /// Represents an error which causes a tranasction to be rejected.
-#[derive(Debug)]
+#[derive(Debug, TypeId, Encode, Decode)]
 pub enum RejectionError {
     SuccessButFeeLoanNotRepaid,
     ErrorBeforeFeeLoanRepaid(RuntimeError),
