@@ -23,7 +23,12 @@ impl NativeInterpreter {
         match (receiver, fn_identifier) {
             (None, NativeFnIdentifier::TransactionProcessor(transaction_processor_fn)) => {
                 TransactionProcessor::static_main(transaction_processor_fn, input, system_api)
-                    .map_err(|e| e.to_runtime_error())
+                    .map_err(|e| {
+                        match e {
+                            InvokeError::Downstream(runtime_error) => runtime_error,
+                            InvokeError::Error(e) => RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(e)),
+                        }
+                    })
             }
             (None, NativeFnIdentifier::Package(package_fn)) => {
                 ValidatedPackage::static_main(package_fn, input, system_api)
