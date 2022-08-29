@@ -40,7 +40,12 @@ impl NativeInterpreter {
             }
             (None, NativeFnIdentifier::ResourceManager(resource_manager_fn)) => {
                 ResourceManager::static_main(resource_manager_fn, input, system_api).map_err(|e| {
-                    RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e))
+                    match e {
+                        InvokeError::Downstream(runtime_error) => runtime_error,
+                        InvokeError::Error(e) => RuntimeError::ApplicationError(
+                            ApplicationError::ResourceManagerError(e),
+                        ),
+                    }
                 })
             }
             (Some(Receiver::Consumed(node_id)), NativeFnIdentifier::Bucket(bucket_fn)) => {
@@ -92,19 +97,19 @@ impl NativeInterpreter {
                 Some(Receiver::Ref(RENodeId::ResourceManager(resource_address))),
                 NativeFnIdentifier::ResourceManager(resource_manager_fn),
             ) => ResourceManager::main(resource_address, resource_manager_fn, input, system_api)
-                .map_err(|e| {
-                    RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e))
+                .map_err(|e| match e {
+                    InvokeError::Downstream(runtime_error) => runtime_error,
+                    InvokeError::Error(e) => {
+                        RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e))
+                    }
                 }),
             (Some(Receiver::Ref(RENodeId::System)), NativeFnIdentifier::System(system_fn)) => {
-                System::main(system_fn, input, system_api)
-                    .map_err(|e| {
-                        match e {
-                            InvokeError::Downstream(runtime_error) => runtime_error,
-                            InvokeError::Error(e) => RuntimeError::ApplicationError(
-                                ApplicationError::SystemError(e),
-                            ),
-                        }
-                    })
+                System::main(system_fn, input, system_api).map_err(|e| match e {
+                    InvokeError::Downstream(runtime_error) => runtime_error,
+                    InvokeError::Error(e) => {
+                        RuntimeError::ApplicationError(ApplicationError::SystemError(e))
+                    }
+                })
             }
             _ => {
                 return Err(RuntimeError::KernelError(KernelError::MethodNotFound(
