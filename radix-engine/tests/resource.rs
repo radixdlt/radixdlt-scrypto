@@ -7,6 +7,30 @@ use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
 #[test]
+fn test_set_mintable_with_self_resource_address() {
+    // Arrange
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
+    let (public_key, _, _) = test_runner.new_account();
+    let package_address = test_runner.extract_and_publish_package("resource");
+
+    // Act
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .call_function(
+            package_address,
+            "ResourceTest",
+            "set_mintable_with_self_resource_address",
+            args!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
 fn test_resource_manager() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();

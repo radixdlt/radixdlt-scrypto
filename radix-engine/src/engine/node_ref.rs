@@ -5,7 +5,7 @@ use crate::types::*;
 
 // TODO: still lots of unwraps
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RENodePointer {
     Heap {
         frame_id: usize,
