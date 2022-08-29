@@ -60,7 +60,7 @@ fn cyclic_map_fails_execution() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_commit_failure(|e| {
+    receipt.expect_specific_failure(|e| {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::SubstateReadSubstateNotFound(_))
@@ -83,7 +83,7 @@ fn self_cyclic_map_fails_execution() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_commit_failure(|e| {
+    receipt.expect_specific_failure(|e| {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::SubstateReadSubstateNotFound(..))
@@ -120,7 +120,7 @@ fn cannot_remove_key_value_stores() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_commit_failure(|e| {
+    receipt.expect_specific_failure(|e| {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::StoredNodeRemoved(_))
@@ -157,7 +157,7 @@ fn cannot_overwrite_key_value_stores() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_commit_failure(|e| {
+    receipt.expect_specific_failure(|e| {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::StoredNodeRemoved(_))
@@ -300,7 +300,7 @@ fn cannot_directly_reference_inserted_vault() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_commit_failure(|e| {
+    receipt.expect_specific_failure(|e| {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::InvokeMethodInvalidReceiver(RENodeId::Vault(_)))
@@ -328,7 +328,7 @@ fn cannot_directly_reference_vault_after_container_moved() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_commit_failure(|e| {
+    receipt.expect_specific_failure(|e| {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::InvokeMethodInvalidReceiver(RENodeId::Vault(_)))
@@ -356,7 +356,7 @@ fn cannot_directly_reference_vault_after_container_stored() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_commit_failure(|e| {
+    receipt.expect_specific_failure(|e| {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::InvokeMethodInvalidReceiver(RENodeId::Vault(_)))

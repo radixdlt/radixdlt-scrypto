@@ -40,15 +40,6 @@ pub enum TransactionOutcome {
     Failure(RuntimeError),
 }
 
-impl TransactionOutcome {
-    pub fn is_success(&self) -> bool {
-        match self {
-            Self::Success(..) => true,
-            Self::Failure(..) => false,
-        }
-    }
-}
-
 #[derive(Debug)]
 pub struct EntityChanges {
     pub new_package_addresses: Vec<PackageAddress>,
@@ -84,6 +75,13 @@ impl TransactionReceipt {
         }
     }
 
+    pub fn expect_rejection(&self) -> &RejectionError {
+        match &self.result {
+            TransactionResult::Commit(..) => panic!("Expected rejection but was commit"),
+            TransactionResult::Reject(ref r) => &r.error,
+        }
+    }
+
     pub fn expect_commit_success(&self) -> &Vec<Vec<u8>> {
         match &self.result {
             TransactionResult::Commit(c) => match &c.outcome {
@@ -96,7 +94,19 @@ impl TransactionReceipt {
         }
     }
 
-    pub fn expect_commit_failure<F>(&self, f: F)
+    pub fn expect_commit_failure(&self) -> &RuntimeError {
+        match &self.result {
+            TransactionResult::Commit(c) => match &c.outcome {
+                TransactionOutcome::Success(_) => {
+                    panic!("Expected failure but was success")
+                }
+                TransactionOutcome::Failure(err) => err,
+            },
+            TransactionResult::Reject(_) => panic!("Transaction was rejected"),
+        }
+    }
+
+    pub fn expect_specific_failure<F>(&self, f: F)
     where
         F: FnOnce(&RuntimeError) -> bool,
     {
@@ -116,11 +126,24 @@ impl TransactionReceipt {
         }
     }
 
-    pub fn expect_rejection(&self) -> &RejectionError {
-        match &self.result {
-            TransactionResult::Commit(..) => panic!("Expected rejection but was commit"),
-            TransactionResult::Reject(ref r) => &r.error,
-        }
+    pub fn output<T: Decode>(&self, nth: usize) -> T {
+        scrypto_decode::<T>(&self.expect_commit_success()[nth][..])
+            .expect("Wrong instruction output type!")
+    }
+
+    pub fn new_package_addresses(&self) -> &Vec<PackageAddress> {
+        let commit = self.expect_commit();
+        &commit.entity_changes.new_package_addresses
+    }
+
+    pub fn new_component_addresses(&self) -> &Vec<ComponentAddress> {
+        let commit = self.expect_commit();
+        &commit.entity_changes.new_component_addresses
+    }
+
+    pub fn new_resource_addresses(&self) -> &Vec<ResourceAddress> {
+        let commit = self.expect_commit();
+        &commit.entity_changes.new_resource_addresses
     }
 }
 

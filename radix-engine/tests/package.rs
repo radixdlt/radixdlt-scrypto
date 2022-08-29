@@ -50,7 +50,7 @@ fn missing_memory_should_cause_error() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_commit_failure(|e| {
+    receipt.expect_specific_failure(|e| {
         matches!(
             e,
             &RuntimeError::ApplicationError(ApplicationError::PackageError(
@@ -77,7 +77,7 @@ fn large_return_len_should_cause_memory_access_error() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_commit_failure(|e| {
+    receipt.expect_specific_failure(|e| {
         if let RuntimeError::KernelError(KernelError::WasmInvokeError(b)) = e {
             matches!(**b, WasmInvokeError::MemoryAccessError)
         } else {
@@ -101,7 +101,7 @@ fn overflow_return_len_should_cause_memory_access_error() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_commit_failure(|e| {
+    receipt.expect_specific_failure(|e| {
         if let RuntimeError::KernelError(KernelError::WasmInvokeError(b)) = e {
             matches!(**b, WasmInvokeError::MemoryAccessError)
         } else {
@@ -126,7 +126,7 @@ fn zero_return_len_should_cause_data_validation_error() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_commit_failure(|e| {
+    receipt.expect_specific_failure(|e| {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::WasmInvokeError(_))
@@ -186,7 +186,7 @@ fn test_basic_package_missing_export() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_commit_failure(|e| {
+    receipt.expect_specific_failure(|e| {
         matches!(
             e,
             RuntimeError::ApplicationError(ApplicationError::PackageError(

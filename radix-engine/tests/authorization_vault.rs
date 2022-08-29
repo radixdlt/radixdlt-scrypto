@@ -22,7 +22,7 @@ fn cannot_withdraw_restricted_transfer_from_my_account_with_no_auth() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
-    receipt.expect_commit_failure(is_auth_error);
+    receipt.expect_specific_failure(is_auth_error);
 }
 
 #[test]
