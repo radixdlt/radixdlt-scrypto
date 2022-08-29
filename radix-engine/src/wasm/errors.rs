@@ -5,7 +5,7 @@ use crate::model::InvokeError;
 use crate::types::*;
 
 /// Represents an error when validating a WASM file.
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, TypeId, Encode, Decode)]
 pub enum PrepareError {
     /// Failed to deserialize.
     /// See https://webassembly.github.io/spec/core/syntax/index.html
@@ -49,13 +49,13 @@ pub enum PrepareError {
     NotCompilable,
 }
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, TypeId, Encode, Decode)]
 pub enum InvalidImport {
     /// The import is not allowed
     ImportNotAllowed,
 }
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, TypeId, Encode, Decode)]
 pub enum InvalidMemory {
     /// The wasm module has no memory section.
     NoMemorySection,
@@ -69,7 +69,7 @@ pub enum InvalidMemory {
     MemoryNotExported,
 }
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, TypeId, Encode, Decode)]
 pub enum InvalidTable {
     /// More than one table defined, against WebAssembly MVP spec
     MoreThanOneTable,

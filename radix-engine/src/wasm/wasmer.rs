@@ -1,11 +1,11 @@
 use std::sync::{Arc, Mutex};
 
+use crate::model::InvokeError;
 use wasmer::{
     imports, Function, HostEnvInitError, Instance, LazyInit, Module, RuntimeError, Store,
     Universal, Val, WasmerEnv,
 };
 use wasmer_compiler_singlepass::Singlepass;
-use crate::model::InvokeError;
 
 use crate::types::*;
 use crate::wasm::constants::*;

@@ -1,5 +1,5 @@
-use wasmi::*;
 use crate::model::InvokeError;
+use wasmi::*;
 
 use crate::types::*;
 use crate::wasm::constants::*;

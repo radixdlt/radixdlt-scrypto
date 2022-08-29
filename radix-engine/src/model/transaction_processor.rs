@@ -4,12 +4,12 @@ use transaction::validation::*;
 
 use crate::engine::{HeapRENode, SystemApi};
 use crate::fee::FeeReserve;
-use crate::model::InvokeError;
 use crate::model::worktop::{
     WorktopAssertContainsAmountInput, WorktopAssertContainsInput,
     WorktopAssertContainsNonFungiblesInput, WorktopDrainInput, WorktopPutInput,
     WorktopTakeAllInput, WorktopTakeAmountInput, WorktopTakeNonFungiblesInput,
 };
+use crate::model::InvokeError;
 use crate::types::*;
 use crate::wasm::*;
 
@@ -82,8 +82,10 @@ impl TransactionProcessor {
     {
         match transaction_processor_fn {
             TransactionProcessorFnIdentifier::Run => {
-                let input: TransactionProcessorRunInput = scrypto_decode(&call_data.raw)
-                    .map_err(|e| InvokeError::Error(TransactionProcessorError::InvalidRequestData(e)))?;
+                let input: TransactionProcessorRunInput =
+                    scrypto_decode(&call_data.raw).map_err(|e| {
+                        InvokeError::Error(TransactionProcessorError::InvalidRequestData(e))
+                    })?;
 
                 let mut proof_id_mapping = HashMap::new();
                 let mut bucket_id_mapping = HashMap::new();
@@ -98,7 +100,9 @@ impl TransactionProcessor {
                     let result = match inst {
                         ExecutableInstruction::TakeFromWorktop { resource_address } => id_allocator
                             .new_bucket_id()
-                            .map_err(|e| InvokeError::Error(TransactionProcessorError::IdAllocationError(e)))
+                            .map_err(|e| {
+                                InvokeError::Error(TransactionProcessorError::IdAllocationError(e))
+                            })
                             .and_then(|new_id| {
                                 system_api
                                     .invoke_method(
@@ -122,7 +126,9 @@ impl TransactionProcessor {
                             resource_address,
                         } => id_allocator
                             .new_bucket_id()
-                            .map_err(|e| InvokeError::Error(TransactionProcessorError::IdAllocationError(e)))
+                            .map_err(|e| {
+                                InvokeError::Error(TransactionProcessorError::IdAllocationError(e))
+                            })
                             .and_then(|new_id| {
                                 system_api
                                     .invoke_method(
@@ -147,7 +153,9 @@ impl TransactionProcessor {
                             resource_address,
                         } => id_allocator
                             .new_bucket_id()
-                            .map_err(|e| InvokeError::Error(TransactionProcessorError::IdAllocationError(e)))
+                            .map_err(|e| {
+                                InvokeError::Error(TransactionProcessorError::IdAllocationError(e))
+                            })
                             .and_then(|new_id| {
                                 system_api
                                     .invoke_method(
@@ -182,7 +190,9 @@ impl TransactionProcessor {
                                     )
                                     .map_err(InvokeError::Downstream)
                             })
-                            .unwrap_or(Err(InvokeError::Error(TransactionProcessorError::BucketNotFound(*bucket_id)))),
+                            .unwrap_or(Err(InvokeError::Error(
+                                TransactionProcessorError::BucketNotFound(*bucket_id),
+                            ))),
                         ExecutableInstruction::AssertWorktopContains { resource_address } => {
                             system_api
                                 .invoke_method(
@@ -229,7 +239,9 @@ impl TransactionProcessor {
 
                         ExecutableInstruction::PopFromAuthZone {} => id_allocator
                             .new_proof_id()
-                            .map_err(|e| InvokeError::Error(TransactionProcessorError::IdAllocationError(e)))
+                            .map_err(|e| {
+                                InvokeError::Error(TransactionProcessorError::IdAllocationError(e))
+                            })
                             .and_then(|new_id| {
                                 system_api
                                     .invoke_method(
@@ -260,7 +272,9 @@ impl TransactionProcessor {
                         }
                         ExecutableInstruction::PushToAuthZone { proof_id } => proof_id_mapping
                             .remove(proof_id)
-                            .ok_or(InvokeError::Error(TransactionProcessorError::ProofNotFound(*proof_id)))
+                            .ok_or(InvokeError::Error(
+                                TransactionProcessorError::ProofNotFound(*proof_id),
+                            ))
                             .and_then(|real_id| {
                                 system_api
                                     .invoke_method(
@@ -277,7 +291,11 @@ impl TransactionProcessor {
                         ExecutableInstruction::CreateProofFromAuthZone { resource_address } => {
                             id_allocator
                                 .new_proof_id()
-                                .map_err(|e| InvokeError::Error(TransactionProcessorError::IdAllocationError(e)))
+                                .map_err(|e| {
+                                    InvokeError::Error(
+                                        TransactionProcessorError::IdAllocationError(e),
+                                    )
+                                })
                                 .and_then(|new_id| {
                                     system_api
                                         .invoke_method(
@@ -304,7 +322,9 @@ impl TransactionProcessor {
                             resource_address,
                         } => id_allocator
                             .new_proof_id()
-                            .map_err(|e| InvokeError::Error(TransactionProcessorError::IdAllocationError(e)))
+                            .map_err(|e| {
+                                InvokeError::Error(TransactionProcessorError::IdAllocationError(e))
+                            })
                             .and_then(|new_id| {
                                 system_api
                                     .invoke_method(
@@ -331,7 +351,9 @@ impl TransactionProcessor {
                             resource_address,
                         } => id_allocator
                             .new_proof_id()
-                            .map_err(|e| InvokeError::Error(TransactionProcessorError::IdAllocationError(e)))
+                            .map_err(|e| {
+                                InvokeError::Error(TransactionProcessorError::IdAllocationError(e))
+                            })
                             .and_then(|new_id| {
                                 system_api
                                     .invoke_method(
@@ -353,13 +375,17 @@ impl TransactionProcessor {
                             }),
                         ExecutableInstruction::CreateProofFromBucket { bucket_id } => id_allocator
                             .new_proof_id()
-                            .map_err(|e| InvokeError::Error(TransactionProcessorError::IdAllocationError(e)))
+                            .map_err(|e| {
+                                InvokeError::Error(TransactionProcessorError::IdAllocationError(e))
+                            })
                             .and_then(|new_id| {
                                 bucket_id_mapping
                                     .get(bucket_id)
                                     .cloned()
                                     .map(|real_bucket_id| (new_id, real_bucket_id))
-                                    .ok_or(InvokeError::Error(TransactionProcessorError::BucketNotFound(new_id)))
+                                    .ok_or(InvokeError::Error(
+                                        TransactionProcessorError::BucketNotFound(new_id),
+                                    ))
                             })
                             .and_then(|(new_id, real_bucket_id)| {
                                 system_api
@@ -379,7 +405,9 @@ impl TransactionProcessor {
                             }),
                         ExecutableInstruction::CloneProof { proof_id } => id_allocator
                             .new_proof_id()
-                            .map_err(|e| InvokeError::Error(TransactionProcessorError::IdAllocationError(e)))
+                            .map_err(|e| {
+                                InvokeError::Error(TransactionProcessorError::IdAllocationError(e))
+                            })
                             .and_then(|new_id| {
                                 proof_id_mapping
                                     .get(proof_id)
@@ -402,9 +430,9 @@ impl TransactionProcessor {
                                                 ))
                                             })
                                     })
-                                    .unwrap_or(Err(InvokeError::Error(TransactionProcessorError::ProofNotFound(
-                                        *proof_id,
-                                    ))))
+                                    .unwrap_or(Err(InvokeError::Error(
+                                        TransactionProcessorError::ProofNotFound(*proof_id),
+                                    )))
                             }),
                         ExecutableInstruction::DropProof { proof_id } => proof_id_mapping
                             .remove(proof_id)
@@ -419,7 +447,9 @@ impl TransactionProcessor {
                                     )
                                     .map_err(InvokeError::Downstream)
                             })
-                            .unwrap_or(Err(InvokeError::Error(TransactionProcessorError::ProofNotFound(*proof_id)))),
+                            .unwrap_or(Err(InvokeError::Error(
+                                TransactionProcessorError::ProofNotFound(*proof_id),
+                            ))),
                         ExecutableInstruction::DropAllProofs => {
                             for (_, real_id) in proof_id_mapping.drain() {
                                 system_api
@@ -615,22 +645,24 @@ impl TransactionProcessor {
                                             .map_err(InvokeError::Downstream)
                                     })
                             }),
-                        ExecutableInstruction::PublishPackage { package } => scrypto_decode::<
-                            Package,
-                        >(
-                            package
-                        )
-                        .map_err(|e| InvokeError::Error(TransactionProcessorError::InvalidPackage(e)))
-                        .and_then(|package| {
-                            system_api
-                                .invoke_function(
-                                    FnIdentifier::Native(NativeFnIdentifier::Package(
-                                        PackageFnIdentifier::Publish,
-                                    )),
-                                    ScryptoValue::from_typed(&PackagePublishInput { package }),
-                                )
-                                .map_err(InvokeError::Downstream)
-                        }),
+                        ExecutableInstruction::PublishPackage { package } => {
+                            scrypto_decode::<Package>(package)
+                                .map_err(|e| {
+                                    InvokeError::Error(TransactionProcessorError::InvalidPackage(e))
+                                })
+                                .and_then(|package| {
+                                    system_api
+                                        .invoke_function(
+                                            FnIdentifier::Native(NativeFnIdentifier::Package(
+                                                PackageFnIdentifier::Publish,
+                                            )),
+                                            ScryptoValue::from_typed(&PackagePublishInput {
+                                                package,
+                                            }),
+                                        )
+                                        .map_err(InvokeError::Downstream)
+                                })
+                        }
                     }?;
                     outputs.push(result);
                 }

@@ -4,7 +4,7 @@ use crate::engine::REActor;
 use crate::fee::FeeReserveError;
 use crate::model::*;
 use crate::types::*;
-use crate::wasm::{WasmError};
+use crate::wasm::WasmError;
 use sbor::*;
 
 /// Represents an error which causes a tranasction to be rejected.
@@ -42,12 +42,8 @@ pub enum KernelError {
     InvokeMethodInvalidReferenceReturn(RENodeId),
     MaxCallDepthLimitReached,
     MethodNotFound(FnIdentifier),
-    InvalidFnInput {
-        fn_identifier: FnIdentifier,
-    },
-    InvalidFnOutput {
-        fn_identifier: FnIdentifier,
-    },
+    InvalidFnInput { fn_identifier: FnIdentifier },
+    InvalidFnOutput { fn_identifier: FnIdentifier },
 
     // ID allocation
     IdAllocationError(IdAllocationError),
@@ -115,7 +111,6 @@ impl<E> InvokeError<E> {
         InvokeError::Downstream(runtime_error)
     }
 }
-
 
 #[derive(Debug)]
 pub enum ApplicationError {

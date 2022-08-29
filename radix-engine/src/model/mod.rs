@@ -17,6 +17,7 @@ mod vault;
 mod worktop;
 mod wrappers;
 
+pub use crate::engine::InvokeError;
 pub use abi_extractor::*;
 pub use auth_converter::convert;
 pub use auth_zone::{AuthZone, AuthZoneError};
@@ -40,4 +41,3 @@ pub use validated_package::{PackageError, ValidatedPackage};
 pub use vault::{Vault, VaultError};
 pub use worktop::{Worktop, WorktopError};
 pub use wrappers::*;
-pub use crate::engine::InvokeError;

@@ -308,11 +308,11 @@ where
                             Box::new(RadixEngineWasmRuntime::new(scrypto_actor, self));
                         instance
                             .invoke_export(&export_name, &input, &mut runtime)
-                            .map_err(|e| {
-                                match e {
-                                    InvokeError::Error(e) => RuntimeError::KernelError(KernelError::WasmError(e)),
-                                    InvokeError::Downstream(runtime_error) => runtime_error,
+                            .map_err(|e| match e {
+                                InvokeError::Error(e) => {
+                                    RuntimeError::KernelError(KernelError::WasmError(e))
                                 }
+                                InvokeError::Downstream(runtime_error) => runtime_error,
                             })?
                     };
 

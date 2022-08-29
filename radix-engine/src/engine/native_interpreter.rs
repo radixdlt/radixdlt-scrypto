@@ -23,16 +23,20 @@ impl NativeInterpreter {
         match (receiver, fn_identifier) {
             (None, NativeFnIdentifier::TransactionProcessor(transaction_processor_fn)) => {
                 TransactionProcessor::static_main(transaction_processor_fn, input, system_api)
-                    .map_err(|e| {
-                        match e {
-                            InvokeError::Downstream(runtime_error) => runtime_error,
-                            InvokeError::Error(e) => RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(e)),
-                        }
+                    .map_err(|e| match e {
+                        InvokeError::Downstream(runtime_error) => runtime_error,
+                        InvokeError::Error(e) => RuntimeError::ApplicationError(
+                            ApplicationError::TransactionProcessorError(e),
+                        ),
                     })
             }
             (None, NativeFnIdentifier::Package(package_fn)) => {
-                ValidatedPackage::static_main(package_fn, input, system_api)
-                    .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))
+                ValidatedPackage::static_main(package_fn, input, system_api).map_err(|e| match e {
+                    InvokeError::Downstream(runtime_error) => runtime_error,
+                    InvokeError::Error(e) => {
+                        RuntimeError::ApplicationError(ApplicationError::PackageError(e))
+                    }
+                })
             }
             (None, NativeFnIdentifier::ResourceManager(resource_manager_fn)) => {
                 ResourceManager::static_main(resource_manager_fn, input, system_api).map_err(|e| {
@@ -67,13 +71,12 @@ impl NativeInterpreter {
             ) => Proof::main(proof_id, proof_fn, input, system_api)
                 .map_err(|e| RuntimeError::ApplicationError(ApplicationError::ProofError(e))),
             (Some(Receiver::Ref(RENodeId::Worktop)), NativeFnIdentifier::Worktop(worktop_fn)) => {
-                Worktop::main(worktop_fn, input, system_api)
-                    .map_err(|e| {
-                        match e {
-                            InvokeError::Downstream(runtime_error) => runtime_error,
-                            InvokeError::Error(worktop_error) => RuntimeError::ApplicationError(ApplicationError::WorktopError(worktop_error)),
-                        }
-                    })
+                Worktop::main(worktop_fn, input, system_api).map_err(|e| match e {
+                    InvokeError::Downstream(runtime_error) => runtime_error,
+                    InvokeError::Error(worktop_error) => RuntimeError::ApplicationError(
+                        ApplicationError::WorktopError(worktop_error),
+                    ),
+                })
             }
             (
                 Some(Receiver::Ref(RENodeId::Vault(vault_id))),
