@@ -6,6 +6,7 @@ use crate::engine::{RejectionError, ResourceChange, RuntimeError};
 use crate::fee::FeeSummary;
 use crate::state_manager::StateDiff;
 use crate::types::*;
+use sbor::{Encode, Decode, TypeId};
 
 #[derive(Debug)]
 pub struct TransactionContents {
@@ -25,7 +26,7 @@ pub enum TransactionResult {
     Reject(RejectResult),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Encode, Decode, TypeId)]
 pub struct CommitResult {
     pub outcome: TransactionOutcome,
     pub state_updates: StateDiff,
@@ -40,7 +41,7 @@ pub enum TransactionOutcome {
     Failure(RuntimeError),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Encode, Decode, TypeId)]
 pub struct EntityChanges {
     pub new_package_addresses: Vec<PackageAddress>,
     pub new_component_addresses: Vec<ComponentAddress>,
