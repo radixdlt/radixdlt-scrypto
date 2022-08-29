@@ -20,7 +20,7 @@ fn dangling_component_should_fail() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_commit_failure(|e| {
+    receipt.expect_specific_failure(|e| {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::DropFailure(DropFailure::Component))
@@ -43,7 +43,7 @@ fn dangling_bucket_should_fail() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_commit_failure(|e| {
+    receipt.expect_specific_failure(|e| {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::DropFailure(DropFailure::Bucket))
@@ -66,7 +66,7 @@ fn dangling_vault_should_fail() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_commit_failure(|e| {
+    receipt.expect_specific_failure(|e| {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::DropFailure(DropFailure::Vault))
@@ -89,7 +89,7 @@ fn dangling_worktop_should_fail() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_commit_failure(|e| {
+    receipt.expect_specific_failure(|e| {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::DropFailure(DropFailure::Worktop))
@@ -112,7 +112,7 @@ fn dangling_kv_store_should_fail() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_commit_failure(|e| {
+    receipt.expect_specific_failure(|e| {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::DropFailure(DropFailure::KeyValueStore))
@@ -140,7 +140,7 @@ fn dangling_bucket_with_proof_should_fail() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_commit_failure(|e| {
+    receipt.expect_specific_failure(|e| {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::DropFailure(DropFailure::Bucket))

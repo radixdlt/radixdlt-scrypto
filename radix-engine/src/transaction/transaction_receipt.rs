@@ -82,10 +82,10 @@ impl TransactionReceipt {
         }
     }
 
-    pub fn expect_commit_success(&self) -> &[u8] {
+    pub fn expect_commit_success(&self) -> &Vec<Vec<u8>> {
         match &self.result {
             TransactionResult::Commit(c) => match &c.outcome {
-                TransactionOutcome::Success(x) => &x[1][..],
+                TransactionOutcome::Success(x) => x,
                 TransactionOutcome::Failure(err) => {
                     panic!("Expected success but was failed:\n{:?}", err)
                 }
@@ -99,8 +99,8 @@ impl TransactionReceipt {
             TransactionResult::Commit(c) => match &c.outcome {
                 TransactionOutcome::Success(_) => {
                     panic!("Expected failure but was success")
-                },
-                TransactionOutcome::Failure(err) => err
+                }
+                TransactionOutcome::Failure(err) => err,
             },
             TransactionResult::Reject(_) => panic!("Transaction was rejected"),
         }
@@ -126,11 +126,10 @@ impl TransactionReceipt {
         }
     }
 
-    pub fn output<T: Decode>(&self) -> T {
-
-        scrypto_decode::<T>(self.expect_commit_success()).expect("Wrong transaction output type!")
-
-    } 
+    pub fn output<T: Decode>(&self, nth: usize) -> T {
+        scrypto_decode::<T>(&self.expect_commit_success()[nth][..])
+            .expect("Wrong instruction output type!")
+    }
 
     pub fn new_package_addresses(&self) -> &Vec<PackageAddress> {
         let commit = self.expect_commit();

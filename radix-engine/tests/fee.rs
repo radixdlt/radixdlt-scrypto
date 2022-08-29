@@ -230,7 +230,7 @@ fn test_fee_accounting_failure() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
-    receipt.expect_commit_failure(|e| {
+    receipt.expect_specific_failure(|e| {
         matches!(
             e,
             RuntimeError::ApplicationError(ApplicationError::WorktopError(
@@ -322,7 +322,7 @@ fn test_contingent_fee_accounting_failure() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key1, public_key2]);
 
     // Assert
-    receipt.expect_commit_failure(|e| {
+    receipt.expect_specific_failure(|e| {
         matches!(
             e,
             RuntimeError::ApplicationError(ApplicationError::WorktopError(
