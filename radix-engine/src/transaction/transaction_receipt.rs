@@ -41,7 +41,7 @@ pub enum TransactionOutcome {
     Failure(RuntimeError),
 }
 
-#[derive(Debug, Encode, Decode, TypeId)]
+#[derive(Debug, Clone, Encode, Decode, TypeId)]
 pub struct EntityChanges {
     pub new_package_addresses: Vec<PackageAddress>,
     pub new_component_addresses: Vec<ComponentAddress>,
