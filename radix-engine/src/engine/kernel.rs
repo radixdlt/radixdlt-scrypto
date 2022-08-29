@@ -843,26 +843,7 @@ where
                     _ => {}
                 }
 
-                // Lock Resource Managers in request
-                // TODO: Remove when references cleaned up
-                if let FnIdentifier::Native(..) = &fn_identifier {
-                    for resource_address in &input.resource_addresses {
-                        let resource_substate_id =
-                            SubstateId::ResourceManager(resource_address.clone());
-                        let resource_node_id = RENodeId::ResourceManager(resource_address.clone());
-                        let resource_node_pointer = RENodePointer::Store(resource_node_id);
-                        resource_node_pointer
-                            .acquire_lock(
-                                resource_substate_id.clone(),
-                                false,
-                                false,
-                                &mut self.track,
-                            )
-                            .map_err(RuntimeError::KernelError)?;
-                        locked_pointers.push((resource_node_pointer, resource_substate_id, false));
-                        next_frame_node_refs.insert(resource_node_id, resource_node_pointer);
-                    }
-                }
+                // TODO: decide if we need to lock referenced resource managers when cleaning up reference model.
 
                 self.execution_trace.trace_invoke_method(
                     &self.call_frames,
