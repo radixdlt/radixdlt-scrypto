@@ -71,7 +71,12 @@ impl NativeInterpreter {
                     input,
                     system_api,
                 )
-                .map_err(|e| RuntimeError::ApplicationError(ApplicationError::AuthZoneError(e)))
+                .map_err(|e| match e {
+                    InvokeError::Downstream(runtime_error) => runtime_error,
+                    InvokeError::Error(e) => {
+                        RuntimeError::ApplicationError(ApplicationError::AuthZoneError(e))
+                    }
+                })
             }
             (
                 Some(Receiver::Ref(RENodeId::Bucket(bucket_id))),
@@ -102,8 +107,12 @@ impl NativeInterpreter {
             (
                 Some(Receiver::Ref(RENodeId::Vault(vault_id))),
                 NativeFnIdentifier::Vault(vault_fn),
-            ) => Vault::main(vault_id, vault_fn, input, system_api)
-                .map_err(|e| RuntimeError::ApplicationError(ApplicationError::VaultError(e))),
+            ) => Vault::main(vault_id, vault_fn, input, system_api).map_err(|e| match e {
+                InvokeError::Downstream(runtime_error) => runtime_error,
+                InvokeError::Error(e) => {
+                    RuntimeError::ApplicationError(ApplicationError::VaultError(e))
+                }
+            }),
             (
                 Some(Receiver::Ref(RENodeId::Component(component_address))),
                 NativeFnIdentifier::Component(component_fn),
