@@ -30,6 +30,42 @@ Release workflow:
 1. Update `main` branch to point to the "newest" release (by version number);
 1. Update `docs` branch to include documentation based on the "newest" release (by version number).
 
+### Workspace Setup (macOS)
+
+1. Install brew package manager
+   ```bash
+   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+   ```
+2. Install `llvm`, `cmake` and `binaryen`
+   ```bash
+   brew install llvm cmake binaryen
+   ```
+3. Install Rust toolchain
+   ```bash
+   curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+   source $HOME/.cargo/env
+   rustup target add wasm32-unknown-unknown
+   rustup +nightly target add wasm32-unknown-unknown
+   ```
+4. Install Scrypto CLIs
+   ```bash
+   cargo install --git https://github.com/radixdlt/radixdlt-scrypto --branch develop simulator
+   ```
+5. (Recommended) Install VSCode and the following plugins
+   * [Code Spell Checker](https://marketplace.visualstudio.com/items?itemName=streetsidesoftware.code-spell-checker)
+   * [CodeLLDB](https://marketplace.visualstudio.com/items?itemName=vadimcn.vscode-lldb)
+   * [crates](https://marketplace.visualstudio.com/items?itemName=serayuzgur.crates)
+   * [Markdown Preview Enhanced](https://marketplace.visualstudio.com/items?itemName=shd101wyy.markdown-preview-enhanced)
+   * [Radix Transaction Manifest Support](https://marketplace.visualstudio.com/items?itemName=RadixPublishing.radix-transaction-manifest-support)
+   * [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
+
+
+Bash scripts that might be of help:
+* `format.sh` - Formats the entire repo
+* `build.sh` - Builds main packages
+* `test.sh` - Runs all the tests
+* `assets/update-assets.sh` - Updates `Account`/`SysFaucet`/`SysUtils` scrypto packages (needed when your change would affect the output WASM)
+
 ## Branching strategy
 
 ### Branches

@@ -61,7 +61,7 @@ fn cannot_make_cross_component_call_without_authorization() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_commit_failure(is_auth_error);
+    receipt.expect_specific_failure(is_auth_error);
 }
 
 #[test]

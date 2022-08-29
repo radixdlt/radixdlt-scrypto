@@ -48,7 +48,7 @@ fn test_loop_out_of_cost_unit() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_commit_failure(is_costing_error)
+    receipt.expect_specific_failure(is_costing_error)
 }
 
 #[test]
@@ -95,7 +95,7 @@ fn test_recursion_stack_overflow() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_commit_failure(is_wasm_error)
+    receipt.expect_specific_failure(is_wasm_error)
 }
 
 #[test]
@@ -141,7 +141,7 @@ fn test_grow_memory_out_of_cost_unit() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_commit_failure(is_costing_error)
+    receipt.expect_specific_failure(is_costing_error)
 }
 
 #[test]

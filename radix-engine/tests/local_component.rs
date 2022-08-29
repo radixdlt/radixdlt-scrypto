@@ -88,7 +88,7 @@ fn local_component_with_access_rules_should_not_be_callable() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
-    receipt.expect_commit_failure(|e| {
+    receipt.expect_specific_failure(|e| {
         matches!(
             e,
             RuntimeError::ModuleError(ModuleError::AuthorizationError { .. })
@@ -190,7 +190,7 @@ fn recursion_bomb_to_failure() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
-    receipt.expect_commit_failure(|e| {
+    receipt.expect_specific_failure(|e| {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::MaxCallDepthLimitReached)
@@ -260,7 +260,7 @@ fn recursion_bomb_2_to_failure() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
-    receipt.expect_commit_failure(|e| {
+    receipt.expect_specific_failure(|e| {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::MaxCallDepthLimitReached)

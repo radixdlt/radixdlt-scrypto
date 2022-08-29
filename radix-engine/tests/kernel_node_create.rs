@@ -25,7 +25,7 @@ fn should_not_be_able_to_node_create_with_invalid_blueprint() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_commit_failure(|e| {
+    receipt.expect_specific_failure(|e| {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::RENodeCreateInvalidPermission)
@@ -53,7 +53,7 @@ fn should_not_be_able_to_node_create_with_invalid_package() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_commit_failure(|e| {
+    receipt.expect_specific_failure(|e| {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::RENodeCreateInvalidPermission)

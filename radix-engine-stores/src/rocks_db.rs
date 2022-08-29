@@ -100,11 +100,12 @@ impl RadixEngineDB {
             .iterator(IteratorMode::From(start, Direction::Forward));
         let mut items = Vec::new();
         while let Some(kv) = iter.next() {
-            if kv.0.as_ref() > inclusive_end {
+            let (key, _value) = kv.unwrap();
+            if key.as_ref() > inclusive_end {
                 break;
             }
-            if kv.0.len() == start.len() {
-                items.push(scrypto_decode(kv.0.as_ref()).unwrap());
+            if key.len() == start.len() {
+                items.push(scrypto_decode(key.as_ref()).unwrap());
             }
         }
         items
@@ -132,7 +133,8 @@ impl QueryableSubstateStore for RadixEngineDB {
             .db
             .iterator(IteratorMode::From(&id, Direction::Forward));
         let mut items = HashMap::new();
-        while let Some((key, value)) = iter.next() {
+        while let Some(kv) = iter.next() {
+            let (key, value) = kv.unwrap();
             let substate: OutputValue = scrypto_decode(&value.to_vec()).unwrap();
             let substate_id: SubstateId = scrypto_decode(&key).unwrap();
             if let SubstateId::KeyValueStoreEntry(id, key) = substate_id {

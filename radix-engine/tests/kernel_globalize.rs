@@ -21,7 +21,7 @@ fn should_not_be_able_to_globalize_key_value_store() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_commit_failure(|e| {
+    receipt.expect_specific_failure(|e| {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::RENodeGlobalizeTypeNotAllowed(
@@ -46,7 +46,7 @@ fn should_not_be_able_to_globalize_bucket() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_commit_failure(|e| {
+    receipt.expect_specific_failure(|e| {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::RENodeGlobalizeTypeNotAllowed(
@@ -71,7 +71,7 @@ fn should_not_be_able_to_globalize_proof() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_commit_failure(|e| {
+    receipt.expect_specific_failure(|e| {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::RENodeGlobalizeTypeNotAllowed(RENodeId::Proof(
@@ -96,7 +96,7 @@ fn should_not_be_able_to_globalize_vault() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_commit_failure(|e| {
+    receipt.expect_specific_failure(|e| {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::RENodeGlobalizeTypeNotAllowed(RENodeId::Vault(

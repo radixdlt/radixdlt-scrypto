@@ -22,7 +22,7 @@ fn test_worktop_resource_leak() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
-    receipt.expect_commit_failure(|e| {
+    receipt.expect_specific_failure(|e| {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::DropFailure(DropFailure::Worktop))

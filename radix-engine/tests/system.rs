@@ -42,7 +42,7 @@ fn test_set_epoch_without_system_auth_fails() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_commit_failure(|e| {
+    receipt.expect_specific_failure(|e| {
         matches!(
             e,
             RuntimeError::ModuleError(ModuleError::AuthorizationError { .. })

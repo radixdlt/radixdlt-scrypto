@@ -26,7 +26,7 @@ fn non_existent_vault_in_component_creation_should_fail() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_commit_failure(|e| {
+    receipt.expect_specific_failure(|e| {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::RENodeCreateNodeNotFound(RENodeId::Vault(_)))
@@ -58,7 +58,7 @@ fn non_existent_vault_in_committed_component_should_fail() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_commit_failure(|e| {
+    receipt.expect_specific_failure(|e| {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::RENodeNotFound(RENodeId::Vault(_)))
@@ -86,7 +86,7 @@ fn non_existent_vault_in_key_value_store_creation_should_fail() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_commit_failure(|e| {
+    receipt.expect_specific_failure(|e| {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::RENodeNotFound(RENodeId::Vault(_)))
@@ -122,7 +122,7 @@ fn non_existent_vault_in_committed_key_value_store_should_fail() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_commit_failure(|e| {
+    receipt.expect_specific_failure(|e| {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::RENodeNotFound(RENodeId::Vault(_)))
@@ -168,7 +168,7 @@ fn invalid_double_ownership_of_vault() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_commit_failure(|e| {
+    receipt.expect_specific_failure(|e| {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::RENodeCreateNodeNotFound(RENodeId::Vault(_)))
@@ -223,7 +223,7 @@ fn cannot_overwrite_vault_in_map() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_commit_failure(|e| {
+    receipt.expect_specific_failure(|e| {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::StoredNodeRemoved(RENodeId::Vault(_)))
@@ -283,7 +283,7 @@ fn cannot_remove_vaults() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_commit_failure(|e| {
+    receipt.expect_specific_failure(|e| {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::StoredNodeRemoved(RENodeId::Vault(_)))
