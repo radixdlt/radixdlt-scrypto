@@ -1,13 +1,11 @@
-use crate::engine::RuntimeError;
 use crate::engine::SystemApi;
 use crate::fee::FeeReserve;
-use crate::model::{convert, MethodAuthorization};
+use crate::model::{convert, InvokeError, MethodAuthorization};
 use crate::types::*;
 use crate::wasm::{WasmEngine, WasmInstance};
 
 #[derive(Debug)]
 pub enum ComponentError {
-    RuntimeError(Box<RuntimeError>),
     InvalidRequestData(DecodeError),
     BlueprintFunctionNotFound(String),
 }
@@ -92,7 +90,7 @@ impl ComponentInfo {
         component_fn: ComponentFnIdentifier,
         args: ScryptoValue,
         system_api: &mut Y,
-    ) -> Result<ScryptoValue, ComponentError>
+    ) -> Result<ScryptoValue, InvokeError<ComponentError>>
     where
         Y: SystemApi<'s, W, I, R>,
         W: WasmEngine<I>,
@@ -104,15 +102,15 @@ impl ComponentInfo {
 
         let rtn = match component_fn {
             ComponentFnIdentifier::AddAccessCheck => {
-                let input: ComponentAddAccessCheckInput =
-                    scrypto_decode(&args.raw).map_err(|e| ComponentError::InvalidRequestData(e))?;
+                let input: ComponentAddAccessCheckInput = scrypto_decode(&args.raw)
+                    .map_err(|e| InvokeError::Error(ComponentError::InvalidRequestData(e)))?;
 
                 // Abi checks
                 {
                     let (package_id, blueprint_name) = {
                         let component_ref = system_api
                             .borrow_node(&node_id)
-                            .map_err(|e| ComponentError::RuntimeError(Box::new(e)))?;
+                            .map_err(InvokeError::Downstream)?;
                         let component = component_ref.component_info();
                         let blueprint_name = component.blueprint_name().to_owned();
                         (
@@ -123,7 +121,7 @@ impl ComponentInfo {
 
                     let package_ref = system_api
                         .borrow_node(&package_id)
-                        .map_err(|e| ComponentError::RuntimeError(Box::new(e)))?;
+                        .map_err(InvokeError::Downstream)?;
                     let package = package_ref.package();
                     let blueprint_abi = package.blueprint_abi(&blueprint_name).expect(&format!(
                         "Blueprint {} is not found in package node {:?}",
@@ -131,8 +129,8 @@ impl ComponentInfo {
                     ));
                     for (func_name, _) in input.access_rules.iter() {
                         if !blueprint_abi.contains_fn(func_name.as_str()) {
-                            return Err(ComponentError::BlueprintFunctionNotFound(
-                                func_name.to_string(),
+                            return Err(InvokeError::Error(
+                                ComponentError::BlueprintFunctionNotFound(func_name.to_string()),
                             ));
                         }
                     }
@@ -140,12 +138,12 @@ impl ComponentInfo {
 
                 let mut ref_mut = system_api
                     .substate_borrow_mut(&substate_id)
-                    .map_err(|e| ComponentError::RuntimeError(Box::new(e)))?;
+                    .map_err(InvokeError::Downstream)?;
                 let component_info = ref_mut.component_info();
                 component_info.access_rules.push(input.access_rules);
                 system_api
                     .substate_return_mut(ref_mut)
-                    .map_err(|e| ComponentError::RuntimeError(Box::new(e)))?;
+                    .map_err(InvokeError::Downstream)?;
 
                 Ok(ScryptoValue::from_typed(&()))
             }

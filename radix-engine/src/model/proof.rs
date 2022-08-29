@@ -1,8 +1,8 @@
-use crate::engine::{HeapRENode, RuntimeError, SystemApi};
+use crate::engine::{HeapRENode, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::ProofError::UnknownMethod;
 use crate::model::{
-    LockedAmountOrIds, ResourceContainer, ResourceContainerError, ResourceContainerId,
+    InvokeError, LockedAmountOrIds, ResourceContainer, ResourceContainerError, ResourceContainerId,
 };
 use crate::types::*;
 use crate::wasm::*;
@@ -23,7 +23,6 @@ pub struct Proof {
 
 #[derive(Debug)]
 pub enum ProofError {
-    RuntimeError(Box<RuntimeError>),
     /// Error produced by a resource container.
     ResourceContainerError(ResourceContainerError),
     /// Can't generate zero-amount or empty non-fungible set proofs.
@@ -315,10 +314,10 @@ impl Proof {
         self.total_locked.amount()
     }
 
-    pub fn total_ids(&self) -> Result<BTreeSet<NonFungibleId>, ProofError> {
+    pub fn total_ids(&self) -> Result<BTreeSet<NonFungibleId>, InvokeError<ProofError>> {
         self.total_locked
             .ids()
-            .map_err(|_| ProofError::NonFungibleOperationNotAllowed)
+            .map_err(|_| InvokeError::Error(ProofError::NonFungibleOperationNotAllowed))
     }
 
     pub fn is_restricted(&self) -> bool {
@@ -330,7 +329,7 @@ impl Proof {
         proof_fn: ProofFnIdentifier,
         args: ScryptoValue,
         system_api: &mut Y,
-    ) -> Result<ScryptoValue, ProofError>
+    ) -> Result<ScryptoValue, InvokeError<ProofError>>
     where
         Y: SystemApi<'s, W, I, R>,
         W: WasmEngine<I>,
@@ -340,44 +339,44 @@ impl Proof {
         let substate_id = SubstateId::Proof(proof_id);
         let mut node_ref = system_api
             .substate_borrow_mut(&substate_id)
-            .map_err(|e| ProofError::RuntimeError(Box::new(e)))?;
+            .map_err(InvokeError::Downstream)?;
         let proof = node_ref.proof();
 
         let rtn = match proof_fn {
             ProofFnIdentifier::GetAmount => {
-                let _: ProofGetAmountInput =
-                    scrypto_decode(&args.raw).map_err(|e| ProofError::InvalidRequestData(e))?;
+                let _: ProofGetAmountInput = scrypto_decode(&args.raw)
+                    .map_err(|e| InvokeError::Error(ProofError::InvalidRequestData(e)))?;
                 Ok(ScryptoValue::from_typed(&proof.total_amount()))
             }
             ProofFnIdentifier::GetNonFungibleIds => {
-                let _: ProofGetNonFungibleIdsInput =
-                    scrypto_decode(&args.raw).map_err(|e| ProofError::InvalidRequestData(e))?;
+                let _: ProofGetNonFungibleIdsInput = scrypto_decode(&args.raw)
+                    .map_err(|e| InvokeError::Error(ProofError::InvalidRequestData(e)))?;
                 let ids = proof.total_ids()?;
                 Ok(ScryptoValue::from_typed(&ids))
             }
             ProofFnIdentifier::GetResourceAddress => {
-                let _: ProofGetResourceAddressInput =
-                    scrypto_decode(&args.raw).map_err(|e| ProofError::InvalidRequestData(e))?;
+                let _: ProofGetResourceAddressInput = scrypto_decode(&args.raw)
+                    .map_err(|e| InvokeError::Error(ProofError::InvalidRequestData(e)))?;
                 Ok(ScryptoValue::from_typed(&proof.resource_address()))
             }
             ProofFnIdentifier::Clone => {
-                let _: ProofCloneInput =
-                    scrypto_decode(&args.raw).map_err(|e| ProofError::InvalidRequestData(e))?;
+                let _: ProofCloneInput = scrypto_decode(&args.raw)
+                    .map_err(|e| InvokeError::Error(ProofError::InvalidRequestData(e)))?;
                 let cloned_proof = proof.clone();
                 let proof_id = system_api
                     .node_create(HeapRENode::Proof(cloned_proof))
-                    .map_err(|e| ProofError::RuntimeError(Box::new(e)))?
+                    .map_err(InvokeError::Downstream)?
                     .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Proof(
                     proof_id,
                 )))
             }
-            _ => return Err(ProofError::UnknownMethod),
+            _ => return Err(InvokeError::Error(ProofError::UnknownMethod)),
         }?;
 
         system_api
             .substate_return_mut(node_ref)
-            .map_err(|e| ProofError::RuntimeError(Box::new(e)))?;
+            .map_err(InvokeError::Downstream)?;
         Ok(rtn)
     }
 
@@ -386,7 +385,7 @@ impl Proof {
         proof_fn: ProofFnIdentifier,
         args: ScryptoValue,
         system_api: &mut Y,
-    ) -> Result<ScryptoValue, ProofError>
+    ) -> Result<ScryptoValue, InvokeError<ProofError>>
     where
         Y: SystemApi<'s, W, I, R>,
         W: WasmEngine<I>,
@@ -395,16 +394,16 @@ impl Proof {
     {
         let proof: Proof = system_api
             .node_drop(&node_id)
-            .map_err(|e| ProofError::RuntimeError(Box::new(e)))?
+            .map_err(InvokeError::Downstream)?
             .into();
         match proof_fn {
             ProofFnIdentifier::Drop => {
-                let _: ConsumingProofDropInput =
-                    scrypto_decode(&args.raw).map_err(|e| ProofError::InvalidRequestData(e))?;
+                let _: ConsumingProofDropInput = scrypto_decode(&args.raw)
+                    .map_err(|e| InvokeError::Error(ProofError::InvalidRequestData(e)))?;
                 proof.drop();
                 Ok(ScryptoValue::from_typed(&()))
             }
-            _ => Err(UnknownMethod),
+            _ => Err(InvokeError::Error(UnknownMethod)),
         }
     }
 }

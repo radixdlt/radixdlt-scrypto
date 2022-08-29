@@ -49,12 +49,20 @@ impl NativeInterpreter {
                 })
             }
             (Some(Receiver::Consumed(node_id)), NativeFnIdentifier::Bucket(bucket_fn)) => {
-                Bucket::consuming_main(node_id, bucket_fn, input, system_api)
-                    .map_err(|e| RuntimeError::ApplicationError(ApplicationError::BucketError(e)))
+                Bucket::consuming_main(node_id, bucket_fn, input, system_api).map_err(|e| match e {
+                    InvokeError::Downstream(runtime_error) => runtime_error,
+                    InvokeError::Error(e) => {
+                        RuntimeError::ApplicationError(ApplicationError::BucketError(e))
+                    }
+                })
             }
             (Some(Receiver::Consumed(node_id)), NativeFnIdentifier::Proof(proof_fn)) => {
-                Proof::main_consume(node_id, proof_fn, input, system_api)
-                    .map_err(|e| RuntimeError::ApplicationError(ApplicationError::ProofError(e)))
+                Proof::main_consume(node_id, proof_fn, input, system_api).map_err(|e| match e {
+                    InvokeError::Downstream(runtime_error) => runtime_error,
+                    InvokeError::Error(e) => {
+                        RuntimeError::ApplicationError(ApplicationError::ProofError(e))
+                    }
+                })
             }
             (Some(Receiver::CurrentAuthZone), NativeFnIdentifier::AuthZone(auth_zone_fn)) => {
                 AuthZone::main(
@@ -68,13 +76,21 @@ impl NativeInterpreter {
             (
                 Some(Receiver::Ref(RENodeId::Bucket(bucket_id))),
                 NativeFnIdentifier::Bucket(bucket_fn),
-            ) => Bucket::main(bucket_id, bucket_fn, input, system_api)
-                .map_err(|e| RuntimeError::ApplicationError(ApplicationError::BucketError(e))),
+            ) => Bucket::main(bucket_id, bucket_fn, input, system_api).map_err(|e| match e {
+                InvokeError::Downstream(runtime_error) => runtime_error,
+                InvokeError::Error(e) => {
+                    RuntimeError::ApplicationError(ApplicationError::BucketError(e))
+                }
+            }),
             (
                 Some(Receiver::Ref(RENodeId::Proof(proof_id))),
                 NativeFnIdentifier::Proof(proof_fn),
-            ) => Proof::main(proof_id, proof_fn, input, system_api)
-                .map_err(|e| RuntimeError::ApplicationError(ApplicationError::ProofError(e))),
+            ) => Proof::main(proof_id, proof_fn, input, system_api).map_err(|e| match e {
+                InvokeError::Downstream(runtime_error) => runtime_error,
+                InvokeError::Error(e) => {
+                    RuntimeError::ApplicationError(ApplicationError::ProofError(e))
+                }
+            }),
             (Some(Receiver::Ref(RENodeId::Worktop)), NativeFnIdentifier::Worktop(worktop_fn)) => {
                 Worktop::main(worktop_fn, input, system_api).map_err(|e| match e {
                     InvokeError::Downstream(runtime_error) => runtime_error,
@@ -91,8 +107,14 @@ impl NativeInterpreter {
             (
                 Some(Receiver::Ref(RENodeId::Component(component_address))),
                 NativeFnIdentifier::Component(component_fn),
-            ) => ComponentInfo::main(component_address, component_fn, input, system_api)
-                .map_err(|e| RuntimeError::ApplicationError(ApplicationError::ComponentError(e))),
+            ) => ComponentInfo::main(component_address, component_fn, input, system_api).map_err(
+                |e| match e {
+                    InvokeError::Downstream(runtime_error) => runtime_error,
+                    InvokeError::Error(e) => {
+                        RuntimeError::ApplicationError(ApplicationError::ComponentError(e))
+                    }
+                },
+            ),
             (
                 Some(Receiver::Ref(RENodeId::ResourceManager(resource_address))),
                 NativeFnIdentifier::ResourceManager(resource_manager_fn),
