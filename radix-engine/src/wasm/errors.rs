@@ -79,28 +79,36 @@ pub enum InvalidTable {
     InitialTableSizeLimitExceeded,
 }
 
+
+#[derive(Debug)]
+pub enum WasmError {
+    MemoryAllocError,
+    MemoryAccessError,
+    InvalidScryptoValue(DecodeError),
+    WasmError(String),
+    FunctionNotFound,
+    InvalidRadixEngineInput,
+    MissingReturnData,
+    InvalidReturnData,
+    CostingError(FeeReserveError),
+}
+
+impl fmt::Display for WasmError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+impl HostError for WasmError {}
+
+#[cfg(not(feature = "alloc"))]
+impl std::error::Error for WasmError {}
+
 /// Represents an error when invoking an export of a Scrypto module.
 #[derive(Debug)]
 pub enum WasmInvokeError {
-    MemoryAllocError,
-
-    MemoryAccessError,
-
-    InvalidScryptoValue(DecodeError),
-
-    WasmError(String),
-
-    RuntimeError(RuntimeError),
-
-    FunctionNotFound,
-
-    InvalidRadixEngineInput,
-
-    MissingReturnData,
-
-    InvalidReturnData,
-
-    CostingError(FeeReserveError),
+    Error(WasmError),
+    DownstreamError(RuntimeError),
 }
 
 impl fmt::Display for WasmInvokeError {

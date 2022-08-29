@@ -310,10 +310,12 @@ where
                             .invoke_export(&export_name, &input, &mut runtime)
                             .map_err(|e| match e {
                                 // Flatten error code for more readable transaction receipt
-                                WasmInvokeError::RuntimeError(e) => e,
-                                e @ _ => RuntimeError::KernelError(KernelError::WasmInvokeError(
-                                    e.into(),
-                                )),
+                                WasmInvokeError::DownstreamError(e) => e,
+                                e @ _ => {
+                                    RuntimeError::KernelError(KernelError::WasmInvokeError(
+                                        e.into(),
+                                    ))
+                                },
                             })?
                     };
 

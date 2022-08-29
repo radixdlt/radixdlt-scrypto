@@ -194,7 +194,7 @@ where
 {
     fn main(&mut self, input: ScryptoValue) -> Result<ScryptoValue, WasmInvokeError> {
         let input: RadixEngineInput =
-            scrypto_decode(&input.raw).map_err(|_| WasmInvokeError::InvalidRadixEngineInput)?;
+            scrypto_decode(&input.raw).map_err(|_| WasmInvokeError::Error(WasmError::InvalidRadixEngineInput))?;
         match input {
             RadixEngineInput::InvokeFunction(fn_identifier, input_bytes) => {
                 self.handle_invoke_function(fn_identifier, input_bytes)
@@ -217,13 +217,13 @@ where
                 self.handle_check_access_rule(rule, proof_ids).map(encode)
             }
         }
-        .map_err(WasmInvokeError::RuntimeError)
+        .map_err(WasmInvokeError::DownstreamError)
     }
 
     fn consume_cost_units(&mut self, n: u32) -> Result<(), WasmInvokeError> {
         self.system_api
             .consume_cost_units(n)
-            .map_err(WasmInvokeError::RuntimeError)
+            .map_err(WasmInvokeError::DownstreamError)
     }
 }
 
@@ -246,6 +246,6 @@ impl WasmRuntime for NopWasmRuntime {
     fn consume_cost_units(&mut self, n: u32) -> Result<(), WasmInvokeError> {
         self.fee_reserve
             .consume(n, "run_wasm")
-            .map_err(WasmInvokeError::CostingError)
+            .map_err(|e| WasmInvokeError::Error(WasmError::CostingError(e)))
     }
 }

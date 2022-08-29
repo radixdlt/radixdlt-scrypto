@@ -84,7 +84,7 @@ impl WasmiModule {
 }
 
 impl<'a, 'b, 'r> WasmiExternals<'a, 'b, 'r> {
-    pub fn send_value(&mut self, value: &ScryptoValue) -> Result<RuntimeValue, WasmInvokeError> {
+    pub fn send_value(&mut self, value: &ScryptoValue) -> Result<RuntimeValue, WasmError> {
         let result = self.instance.module_ref.clone().invoke_export(
             EXPORT_SCRYPTO_ALLOC,
             &[RuntimeValue::I32((value.raw.len()) as i32)],
@@ -102,30 +102,30 @@ impl<'a, 'b, 'r> WasmiExternals<'a, 'b, 'r> {
             }
         }
 
-        Err(WasmInvokeError::MemoryAllocError)
+        Err(WasmError::MemoryAllocError)
     }
 
-    pub fn read_value(&self, ptr: usize) -> Result<ScryptoValue, WasmInvokeError> {
+    pub fn read_value(&self, ptr: usize) -> Result<ScryptoValue, WasmError> {
         let len = self
             .instance
             .memory_ref
             .get_value::<u32>(ptr as u32)
-            .map_err(|_| WasmInvokeError::MemoryAccessError)? as usize;
+            .map_err(|_| WasmError::MemoryAccessError)? as usize;
 
         let start = ptr
             .checked_add(4)
-            .ok_or(WasmInvokeError::MemoryAccessError)?;
+            .ok_or(WasmError::MemoryAccessError)?;
         let end = start
             .checked_add(len)
-            .ok_or(WasmInvokeError::MemoryAccessError)?;
+            .ok_or(WasmError::MemoryAccessError)?;
 
         let direct = self.instance.memory_ref.direct_access();
         let buffer = direct.as_ref();
         if end > buffer.len() {
-            return Err(WasmInvokeError::MemoryAccessError);
+            return Err(WasmError::MemoryAccessError);
         }
 
-        ScryptoValue::from_slice(&buffer[start..end]).map_err(WasmInvokeError::InvalidScryptoValue)
+        ScryptoValue::from_slice(&buffer[start..end]).map_err(WasmError::InvalidScryptoValue)
     }
 }
 
@@ -151,7 +151,7 @@ impl<'a, 'b, 'r> Externals for WasmiExternals<'a, 'b, 'r> {
                     .map(|_| Option::None)
                     .map_err(|e| e.into())
             }
-            _ => Err(WasmInvokeError::FunctionNotFound.into()),
+            _ => Err(WasmError::FunctionNotFound.into()),
         }
     }
 }
@@ -168,7 +168,7 @@ impl WasmInstance for WasmiInstance {
             runtime,
         };
 
-        let pointer = externals.send_value(args)?;
+        let pointer = externals.send_value(args).map_err(WasmInvokeError::Error)?;
         let result = self
             .module_ref
             .clone()
@@ -182,13 +182,13 @@ impl WasmInstance for WasmiInstance {
                     Some(host_error) => *host_error
                         .downcast::<WasmInvokeError>()
                         .expect("Failed to downcast error into WasmInvokeError"),
-                    None => WasmInvokeError::WasmError(e_str),
+                    None => WasmInvokeError::Error(WasmError::WasmError(e_str)),
                 }
             })?
-            .ok_or(WasmInvokeError::MissingReturnData)?;
+            .ok_or(WasmInvokeError::Error(WasmError::MissingReturnData))?;
         match rtn {
-            RuntimeValue::I32(ptr) => externals.read_value(ptr as usize),
-            _ => Err(WasmInvokeError::InvalidReturnData),
+            RuntimeValue::I32(ptr) => externals.read_value(ptr as usize).map_err(WasmInvokeError::Error),
+            _ => Err(WasmInvokeError::Error(WasmError::InvalidReturnData)),
         }
     }
 }

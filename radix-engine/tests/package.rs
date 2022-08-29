@@ -79,7 +79,7 @@ fn large_return_len_should_cause_memory_access_error() {
     // Assert
     receipt.expect_specific_failure(|e| {
         if let RuntimeError::KernelError(KernelError::WasmInvokeError(b)) = e {
-            matches!(**b, WasmInvokeError::MemoryAccessError)
+            matches!(**b, WasmInvokeError::Error(WasmError::MemoryAccessError))
         } else {
             false
         }
@@ -103,7 +103,7 @@ fn overflow_return_len_should_cause_memory_access_error() {
     // Assert
     receipt.expect_specific_failure(|e| {
         if let RuntimeError::KernelError(KernelError::WasmInvokeError(b)) = e {
-            matches!(**b, WasmInvokeError::MemoryAccessError)
+            matches!(**b, WasmInvokeError::Error(WasmError::MemoryAccessError))
         } else {
             false
         }
