@@ -7,7 +7,7 @@ use crate::model::{
 use crate::types::*;
 use crate::wasm::*;
 
-#[derive(Debug)]
+#[derive(Debug, TypeId, Encode, Decode)]
 pub enum VaultError {
     InvalidRequestData(DecodeError),
     ResourceContainerError(ResourceContainerError),

@@ -4,7 +4,7 @@ use crate::model::{InvokeError, Proof, ProofError};
 use crate::types::*;
 use crate::wasm::*;
 
-#[derive(Debug)]
+#[derive(Debug, TypeId, Encode, Decode)]
 pub enum AuthZoneError {
     EmptyAuthZone,
     ProofError(ProofError),
