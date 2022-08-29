@@ -80,7 +80,7 @@ pub enum InvalidTable {
 }
 
 
-#[derive(Debug)]
+#[derive(Debug, Encode, Decode, TypeId)]
 pub enum WasmError {
     MemoryAllocError,
     MemoryAccessError,
