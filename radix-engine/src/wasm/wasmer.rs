@@ -5,6 +5,7 @@ use wasmer::{
     Universal, Val, WasmerEnv,
 };
 use wasmer_compiler_singlepass::Singlepass;
+use crate::model::InvokeError;
 
 use crate::types::*;
 use crate::wasm::constants::*;
@@ -34,23 +35,23 @@ pub struct WasmerEngine {
     modules: HashMap<Hash, WasmerModule>,
 }
 
-pub fn send_value(instance: &Instance, value: &ScryptoValue) -> Result<usize, WasmInvokeError> {
+pub fn send_value(instance: &Instance, value: &ScryptoValue) -> Result<usize, WasmError> {
     let slice = &value.raw;
     let n = slice.len();
 
     let result = instance
         .exports
         .get_function(EXPORT_SCRYPTO_ALLOC)
-        .map_err(|_| WasmInvokeError::MemoryAllocError)?
+        .map_err(|_| WasmError::MemoryAllocError)?
         .call(&[Val::I32(n as i32)])
-        .map_err(|_| WasmInvokeError::MemoryAllocError)?;
+        .map_err(|_| WasmError::MemoryAllocError)?;
 
     if let Some(wasmer::Value::I32(ptr)) = result.as_ref().get(0) {
         let ptr = *ptr as usize;
         let memory = instance
             .exports
             .get_memory(EXPORT_MEMORY)
-            .map_err(|_| WasmInvokeError::MemoryAllocError)?;
+            .map_err(|_| WasmError::MemoryAllocError)?;
         let size = memory.size().bytes().0;
         if size > ptr && size - ptr >= n {
             unsafe {
@@ -61,14 +62,14 @@ pub fn send_value(instance: &Instance, value: &ScryptoValue) -> Result<usize, Wa
         }
     }
 
-    Err(WasmInvokeError::MemoryAllocError)
+    Err(WasmError::MemoryAllocError)
 }
 
-pub fn read_value(instance: &Instance, ptr: usize) -> Result<ScryptoValue, WasmInvokeError> {
+pub fn read_value(instance: &Instance, ptr: usize) -> Result<ScryptoValue, WasmError> {
     let memory = instance
         .exports
         .get_memory(EXPORT_MEMORY)
-        .map_err(|_| WasmInvokeError::MemoryAccessError)?;
+        .map_err(|_| WasmError::MemoryAccessError)?;
     let size = memory.size().bytes().0;
     if size > ptr && size - ptr >= 4 {
         // read len
@@ -89,11 +90,11 @@ pub fn read_value(instance: &Instance, ptr: usize) -> Result<ScryptoValue, WasmI
                 temp.set_len(n);
             }
 
-            return ScryptoValue::from_slice(&temp).map_err(WasmInvokeError::InvalidScryptoValue);
+            return ScryptoValue::from_slice(&temp).map_err(WasmError::InvalidScryptoValue);
         }
     }
 
-    Err(WasmInvokeError::MemoryAccessError)
+    Err(WasmError::MemoryAccessError)
 }
 
 impl WasmerEnv for WasmerInstanceEnv {
@@ -135,7 +136,7 @@ impl WasmerModule {
             let runtime: &mut Box<dyn WasmRuntime> = unsafe { &mut *(*ptr as *mut _) };
             runtime
                 .consume_cost_units(cost_unit as u32)
-                .map_err(|e| RuntimeError::user(Box::new(WasmInvokeError::Error(e))))
+                .map_err(|e| RuntimeError::user(Box::new(e)))
         }
 
         // env
@@ -169,7 +170,7 @@ impl WasmInstance for WasmerInstance {
         func_name: &str,
         args: &ScryptoValue,
         runtime: &mut Box<dyn WasmRuntime + 'r>,
-    ) -> Result<ScryptoValue, WasmInvokeError> {
+    ) -> Result<ScryptoValue, InvokeError<WasmError>> {
         {
             // set up runtime pointer
             let mut guard = self
@@ -184,7 +185,7 @@ impl WasmInstance for WasmerInstance {
             .instance
             .exports
             .get_function(func_name)
-            .map_err(|_| WasmInvokeError::FunctionNotFound)?
+            .map_err(|_| InvokeError::Error(WasmError::FunctionNotFound))?
             .call(&[Val::I32(pointer as i32)]);
 
         match result {
@@ -192,16 +193,16 @@ impl WasmInstance for WasmerInstance {
                 let ptr = return_data
                     .as_ref()
                     .get(0)
-                    .ok_or(WasmInvokeError::MissingReturnData)?
+                    .ok_or(InvokeError::Error(WasmError::MissingReturnData))?
                     .i32()
-                    .ok_or(WasmInvokeError::InvalidReturnData)?;
+                    .ok_or(InvokeError::Error(WasmError::InvalidReturnData))?;
                 read_value(&self.instance, ptr as usize)
             }
             Err(e) => {
                 let e_str = format!("{:?}", e);
-                match e.downcast::<WasmInvokeError>() {
+                match e.downcast::<InvokeError<WasmError>>() {
                     Ok(e) => Err(e),
-                    _ => Err(WasmInvokeError::WasmError(e_str)),
+                    _ => Err(InvokeError::Error(WasmError::WasmError(e_str))),
                 }
             }
         }

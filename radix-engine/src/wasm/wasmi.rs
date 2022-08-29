@@ -1,4 +1,5 @@
 use wasmi::*;
+use crate::model::InvokeError;
 
 use crate::types::*;
 use crate::wasm::constants::*;
@@ -158,13 +159,13 @@ impl WasmInstance for WasmiInstance {
         func_name: &str,
         args: &ScryptoValue,
         runtime: &mut Box<dyn WasmRuntime + 'r>,
-    ) -> Result<ScryptoValue, WasmInvokeError> {
+    ) -> Result<ScryptoValue, InvokeError<WasmError>> {
         let mut externals = WasmiExternals {
             instance: self,
             runtime,
         };
 
-        let pointer = externals.send_value(args).map_err(WasmInvokeError::Error)?;
+        let pointer = externals.send_value(args).map_err(InvokeError::Error)?;
         let result = self
             .module_ref
             .clone()
@@ -176,17 +177,17 @@ impl WasmInstance for WasmiInstance {
                 match e.into_host_error() {
                     // Pass-through invoke errors
                     Some(host_error) => *host_error
-                        .downcast::<WasmInvokeError>()
+                        .downcast::<InvokeError<WasmError>>()
                         .expect("Failed to downcast error into WasmInvokeError"),
-                    None => WasmInvokeError::Error(WasmError::WasmError(e_str)),
+                    None => InvokeError::Error(WasmError::WasmError(e_str)),
                 }
             })?
-            .ok_or(WasmInvokeError::Error(WasmError::MissingReturnData))?;
+            .ok_or(InvokeError::Error(WasmError::MissingReturnData))?;
         match rtn {
             RuntimeValue::I32(ptr) => externals
                 .read_value(ptr as usize)
-                .map_err(WasmInvokeError::Error),
-            _ => Err(WasmInvokeError::Error(WasmError::InvalidReturnData)),
+                .map_err(InvokeError::Error),
+            _ => Err(InvokeError::Error(WasmError::InvalidReturnData)),
         }
     }
 }

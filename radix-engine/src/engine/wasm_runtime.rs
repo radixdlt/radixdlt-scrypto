@@ -1,7 +1,7 @@
 use crate::engine::RuntimeError;
 use crate::engine::{HeapRENode, SystemApi};
 use crate::fee::*;
-use crate::model::{ComponentInfo, ComponentState, HeapKeyValueStore};
+use crate::model::{ComponentInfo, ComponentState, HeapKeyValueStore, InvokeError};
 use crate::types::*;
 use crate::wasm::*;
 
@@ -192,9 +192,9 @@ where
     I: WasmInstance,
     R: FeeReserve,
 {
-    fn main(&mut self, input: ScryptoValue) -> Result<ScryptoValue, WasmInvokeError> {
+    fn main(&mut self, input: ScryptoValue) -> Result<ScryptoValue, InvokeError<WasmError>> {
         let input: RadixEngineInput = scrypto_decode(&input.raw)
-            .map_err(|_| WasmInvokeError::Error(WasmError::InvalidRadixEngineInput))?;
+            .map_err(|_| InvokeError::Error(WasmError::InvalidRadixEngineInput))?;
         match input {
             RadixEngineInput::InvokeFunction(fn_identifier, input_bytes) => {
                 self.handle_invoke_function(fn_identifier, input_bytes)
@@ -217,13 +217,13 @@ where
                 self.handle_check_access_rule(rule, proof_ids).map(encode)
             }
         }
-        .map_err(WasmInvokeError::DownstreamError)
+        .map_err(InvokeError::downstream)
     }
 
-    fn consume_cost_units(&mut self, n: u32) -> Result<(), WasmInvokeError> {
+    fn consume_cost_units(&mut self, n: u32) -> Result<(), InvokeError<WasmError>> {
         self.system_api
             .consume_cost_units(n)
-            .map_err(WasmInvokeError::DownstreamError)
+            .map_err(InvokeError::downstream)
     }
 }
 
@@ -239,13 +239,13 @@ impl NopWasmRuntime {
 }
 
 impl WasmRuntime for NopWasmRuntime {
-    fn main(&mut self, _input: ScryptoValue) -> Result<ScryptoValue, WasmInvokeError> {
+    fn main(&mut self, _input: ScryptoValue) -> Result<ScryptoValue, InvokeError<WasmError>> {
         Ok(ScryptoValue::unit())
     }
 
-    fn consume_cost_units(&mut self, n: u32) -> Result<(), WasmInvokeError> {
+    fn consume_cost_units(&mut self, n: u32) -> Result<(), InvokeError<WasmError>> {
         self.fee_reserve
             .consume(n, "run_wasm")
-            .map_err(|e| WasmInvokeError::Error(WasmError::CostingError(e)))
+            .map_err(|e| InvokeError::Error(WasmError::CostingError(e)))
     }
 }

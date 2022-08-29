@@ -1,9 +1,7 @@
 use wasmi::HostError;
 
-// TODO: this is the only place which introduces circular dependency.
-// From WASM's perspective, they are host errors. We need a better solution to handle this.
-use crate::engine::RuntimeError;
 use crate::fee::FeeReserveError;
+use crate::model::InvokeError;
 use crate::types::*;
 
 /// Represents an error when validating a WASM file.
@@ -79,6 +77,7 @@ pub enum InvalidTable {
     InitialTableSizeLimitExceeded,
 }
 
+/// Represents an error when invoking an export of a Scrypto module.
 #[derive(Debug, Encode, Decode, TypeId)]
 pub enum WasmError {
     MemoryAllocError,
@@ -103,20 +102,13 @@ impl HostError for WasmError {}
 #[cfg(not(feature = "alloc"))]
 impl std::error::Error for WasmError {}
 
-/// Represents an error when invoking an export of a Scrypto module.
-#[derive(Debug)]
-pub enum WasmInvokeError {
-    Error(WasmError),
-    DownstreamError(RuntimeError),
-}
-
-impl fmt::Display for WasmInvokeError {
+impl fmt::Display for InvokeError<WasmError> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
     }
 }
 
-impl HostError for WasmInvokeError {}
+impl HostError for InvokeError<WasmError> {}
 
 #[cfg(not(feature = "alloc"))]
-impl std::error::Error for WasmInvokeError {}
+impl std::error::Error for InvokeError<WasmError> {}

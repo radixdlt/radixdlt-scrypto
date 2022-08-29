@@ -309,8 +309,10 @@ where
                         instance
                             .invoke_export(&export_name, &input, &mut runtime)
                             .map_err(|e| {
-                                let runtime_error: RuntimeError = e.into();
-                                runtime_error
+                                match e {
+                                    InvokeError::Error(e) => RuntimeError::KernelError(KernelError::WasmError(e)),
+                                    InvokeError::Downstream(runtime_error) => runtime_error,
+                                }
                             })?
                     };
 
