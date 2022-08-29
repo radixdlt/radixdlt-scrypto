@@ -79,7 +79,6 @@ pub enum InvalidTable {
     InitialTableSizeLimitExceeded,
 }
 
-
 #[derive(Debug, Encode, Decode, TypeId)]
 pub enum WasmError {
     MemoryAllocError,

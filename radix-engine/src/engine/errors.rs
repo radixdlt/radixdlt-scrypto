@@ -4,7 +4,7 @@ use crate::engine::REActor;
 use crate::fee::FeeReserveError;
 use crate::model::*;
 use crate::types::*;
-use crate::wasm::WasmInvokeError;
+use crate::wasm::{WasmError, WasmInvokeError};
 
 /// Represents an error which causes a tranasction to be rejected.
 #[derive(Debug)]
@@ -32,10 +32,22 @@ pub enum RuntimeError {
     ApplicationError(ApplicationError),
 }
 
+impl From<WasmInvokeError> for RuntimeError {
+    fn from(e: WasmInvokeError) -> Self {
+        // Flatten error code for more readable transaction receipt
+        match e {
+            WasmInvokeError::Error(wasm_error) => {
+                RuntimeError::KernelError(KernelError::WasmError(wasm_error))
+            }
+            WasmInvokeError::DownstreamError(runtime_error) => runtime_error,
+        }
+    }
+}
+
 #[derive(Debug)]
 pub enum KernelError {
     // invocation
-    WasmInvokeError(Box<WasmInvokeError>),
+    WasmError(WasmError),
     InvokeMethodInvalidReceiver(RENodeId),
     InvokeMethodInvalidReferencePass(RENodeId),
     InvokeMethodInvalidReferenceReturn(RENodeId),

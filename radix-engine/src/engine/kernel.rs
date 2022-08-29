@@ -308,14 +308,9 @@ where
                             Box::new(RadixEngineWasmRuntime::new(scrypto_actor, self));
                         instance
                             .invoke_export(&export_name, &input, &mut runtime)
-                            .map_err(|e| match e {
-                                // Flatten error code for more readable transaction receipt
-                                WasmInvokeError::DownstreamError(e) => e,
-                                e @ _ => {
-                                    RuntimeError::KernelError(KernelError::WasmInvokeError(
-                                        e.into(),
-                                    ))
-                                },
+                            .map_err(|e| {
+                                let runtime_error: RuntimeError = e.into();
+                                runtime_error
                             })?
                     };
 

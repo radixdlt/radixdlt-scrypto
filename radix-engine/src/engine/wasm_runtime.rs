@@ -193,8 +193,8 @@ where
     R: FeeReserve,
 {
     fn main(&mut self, input: ScryptoValue) -> Result<ScryptoValue, WasmInvokeError> {
-        let input: RadixEngineInput =
-            scrypto_decode(&input.raw).map_err(|_| WasmInvokeError::Error(WasmError::InvalidRadixEngineInput))?;
+        let input: RadixEngineInput = scrypto_decode(&input.raw)
+            .map_err(|_| WasmInvokeError::Error(WasmError::InvalidRadixEngineInput))?;
         match input {
             RadixEngineInput::InvokeFunction(fn_identifier, input_bytes) => {
                 self.handle_invoke_function(fn_identifier, input_bytes)

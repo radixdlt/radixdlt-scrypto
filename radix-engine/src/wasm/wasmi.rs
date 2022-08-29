@@ -112,12 +112,8 @@ impl<'a, 'b, 'r> WasmiExternals<'a, 'b, 'r> {
             .get_value::<u32>(ptr as u32)
             .map_err(|_| WasmError::MemoryAccessError)? as usize;
 
-        let start = ptr
-            .checked_add(4)
-            .ok_or(WasmError::MemoryAccessError)?;
-        let end = start
-            .checked_add(len)
-            .ok_or(WasmError::MemoryAccessError)?;
+        let start = ptr.checked_add(4).ok_or(WasmError::MemoryAccessError)?;
+        let end = start.checked_add(len).ok_or(WasmError::MemoryAccessError)?;
 
         let direct = self.instance.memory_ref.direct_access();
         let buffer = direct.as_ref();
@@ -187,7 +183,9 @@ impl WasmInstance for WasmiInstance {
             })?
             .ok_or(WasmInvokeError::Error(WasmError::MissingReturnData))?;
         match rtn {
-            RuntimeValue::I32(ptr) => externals.read_value(ptr as usize).map_err(WasmInvokeError::Error),
+            RuntimeValue::I32(ptr) => externals
+                .read_value(ptr as usize)
+                .map_err(WasmInvokeError::Error),
             _ => Err(WasmInvokeError::Error(WasmError::InvalidReturnData)),
         }
     }
