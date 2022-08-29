@@ -77,23 +77,23 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
             SysCallInput::ReturnSubstateMut { substate_ref } => {
                 log!(
                     self,
-                    "Borrowing substate: substate_ref = {:?}",
+                    "Returning substate: substate_ref = {:?}",
                     substate_ref
                 );
             }
             SysCallInput::ReadSubstate { substate_id } => {
-                log!(self, "Borrowing substate: substate_id = {:?}", substate_id);
+                log!(self, "Reading substate: substate_id = {:?}", substate_id);
             }
             SysCallInput::WriteSubstate { substate_id, value } => {
                 log!(
                     self,
-                    "Borrowing substate: substate_id = {:?}, value = {:?}",
+                    "Writing substate: substate_id = {:?}, value = {:?}",
                     substate_id,
                     value
                 );
             }
             SysCallInput::TakeSubstate { substate_id } => {
-                log!(self, "Borrowing substate: substate_id = {:?}", substate_id);
+                log!(self, "Taking substate: substate_id = {:?}", substate_id);
             }
             SysCallInput::ReadTransactionHash => {
                 log!(self, "Reading transaction hash");
