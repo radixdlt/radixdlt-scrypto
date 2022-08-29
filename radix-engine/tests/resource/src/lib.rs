@@ -4,7 +4,7 @@ blueprint! {
     struct ResourceTest;
 
     impl ResourceTest {
-        pub fn create_resource_and_update_mintable() {
+        pub fn set_mintable_with_self_resource_address() {
             let super_admin_badge: ResourceAddress = ResourceBuilder::new_non_fungible()
                 .metadata("name", "Super Admin Badge")
                 .mintable(rule!(allow_all), MUTABLE(rule!(allow_all)))

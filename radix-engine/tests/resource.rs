@@ -7,7 +7,7 @@ use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
 #[test]
-fn test_create_resource_and_update_mintable() {
+fn test_set_mintable_with_self_resource_address() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
@@ -20,7 +20,7 @@ fn test_create_resource_and_update_mintable() {
         .call_function(
             package_address,
             "ResourceTest",
-            "create_resource_and_update_mintable",
+            "set_mintable_with_self_resource_address",
             args!(),
         )
         .build();
