@@ -331,7 +331,6 @@ where
                                 blueprint_name,
                                 ident,
                             },
-                            output: output.dom,
                         }))
                     } else {
                         Ok(output)

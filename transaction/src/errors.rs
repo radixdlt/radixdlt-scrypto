@@ -1,6 +1,6 @@
 use sbor::describe::Type;
 use sbor::rust::string::String;
-use sbor::DecodeError;
+use sbor::*;
 use scrypto::component::{ComponentAddress, PackageAddress};
 use scrypto::engine::types::*;
 
@@ -23,7 +23,7 @@ pub enum SignatureValidationError {
     DuplicateSigner,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
 pub enum IdAllocationError {
     OutOfID,
 }

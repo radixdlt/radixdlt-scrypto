@@ -5,6 +5,7 @@ use crate::fee::FeeReserveError;
 use crate::model::*;
 use crate::types::*;
 use crate::wasm::{WasmError, WasmInvokeError};
+use sbor::*;
 
 /// Represents an error which causes a tranasction to be rejected.
 #[derive(Debug)]
@@ -44,7 +45,7 @@ impl From<WasmInvokeError> for RuntimeError {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Encode, Decode, TypeId)]
 pub enum KernelError {
     // invocation
     WasmError(WasmError),
@@ -58,7 +59,6 @@ pub enum KernelError {
     },
     InvalidFnOutput {
         fn_identifier: FnIdentifier,
-        output: Value,
     },
 
     // ID allocation
@@ -135,7 +135,7 @@ pub enum ApplicationError {
     AuthZoneError(AuthZoneError),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Encode, Decode, TypeId)]
 pub enum DropFailure {
     System,
     Resource,
