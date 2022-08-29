@@ -275,6 +275,7 @@ pub enum ScryptoCustomValueCheckError {
     InvalidNonFungibleId(ParseNonFungibleIdError),
     InvalidNonFungibleAddress(ParseNonFungibleAddressError),
     InvalidExpression(ParseExpressionError),
+    InvalidBlob(ParseBlobError),
     DuplicateIds,
 }
 
@@ -400,6 +401,9 @@ impl CustomValueVisitor for ScryptoCustomValueChecker {
                 let expression = Expression::try_from(data)
                     .map_err(ScryptoCustomValueCheckError::InvalidExpression)?;
                 self.expressions.push((expression, path.clone().into()));
+            }
+            ScryptoType::Blob => {
+                Blob::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidBlob)?;
             }
         }
         Ok(())
@@ -654,6 +658,9 @@ impl ScryptoValueFormatter {
             ),
             ScryptoType::Expression => {
                 format!("Expression(\"{}\")", Expression::try_from(data).unwrap())
+            }
+            ScryptoType::Blob => {
+                format!("Blob(\"{}\")", Blob::try_from(data).unwrap())
             }
         }
     }
