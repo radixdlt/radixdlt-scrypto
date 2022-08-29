@@ -101,7 +101,7 @@ pub enum KernelError {
     DropFailure(DropFailure),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Encode, Decode, TypeId)]
 pub enum ModuleError {
     AuthorizationError {
         function: FnIdentifier,
@@ -111,6 +111,23 @@ pub enum ModuleError {
 
     CostingError(FeeReserveError),
 }
+
+#[derive(Debug)]
+pub enum InvokeError<E> {
+    Error(E),
+    Downstream(RuntimeError),
+}
+
+impl<E> InvokeError<E> {
+    pub fn error(error: E) -> Self {
+        InvokeError::Error(error)
+    }
+
+    pub fn downstream(runtime_error: RuntimeError) -> Self {
+        InvokeError::Downstream(runtime_error)
+    }
+}
+
 
 #[derive(Debug)]
 pub enum ApplicationError {

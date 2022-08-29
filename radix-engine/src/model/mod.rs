@@ -40,3 +40,4 @@ pub use validated_package::{PackageError, ValidatedPackage};
 pub use vault::{Vault, VaultError};
 pub use worktop::{Worktop, WorktopError};
 pub use wrappers::*;
+pub use crate::engine::InvokeError;

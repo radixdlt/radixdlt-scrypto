@@ -63,7 +63,12 @@ impl NativeInterpreter {
                 .map_err(|e| RuntimeError::ApplicationError(ApplicationError::ProofError(e))),
             (Some(Receiver::Ref(RENodeId::Worktop)), NativeFnIdentifier::Worktop(worktop_fn)) => {
                 Worktop::main(worktop_fn, input, system_api)
-                    .map_err(|e| RuntimeError::ApplicationError(ApplicationError::WorktopError(e)))
+                    .map_err(|e| {
+                        match e {
+                            InvokeError::Downstream(runtime_error) => runtime_error,
+                            InvokeError::Error(worktop_error) => RuntimeError::ApplicationError(ApplicationError::WorktopError(worktop_error)),
+                        }
+                    })
             }
             (
                 Some(Receiver::Ref(RENodeId::Vault(vault_id))),
