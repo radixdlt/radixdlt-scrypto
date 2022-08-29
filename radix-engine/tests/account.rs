@@ -75,7 +75,7 @@ fn cannot_withdraw_from_other_account() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
-    receipt.expect_commit_failure(is_auth_error);
+    receipt.expect_specific_failure(is_auth_error);
 }
 
 #[test]

@@ -65,7 +65,7 @@ fn invalid_blueprint_name_should_cause_error() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_commit_failure(|e| {
+    receipt.expect_specific_failure(|e| {
         if let RuntimeError::KernelError(KernelError::BlueprintNotFound(addr, blueprint)) = e {
             addr.eq(&package_address) && blueprint.eq("NonExistentBlueprint")
         } else {
@@ -99,7 +99,7 @@ fn reentrancy_should_not_be_possible() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_commit_failure(|e| {
+    receipt.expect_specific_failure(|e| {
         if let RuntimeError::KernelError(KernelError::Reentrancy(SubstateId::ComponentState(
             address,
         ))) = e
