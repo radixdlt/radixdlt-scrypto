@@ -851,6 +851,11 @@ where
                             SubstateId::ResourceManager(resource_address.clone());
                         let resource_node_id = RENodeId::ResourceManager(resource_address.clone());
                         let resource_node_pointer = RENodePointer::Store(resource_node_id);
+
+                        // This condition check is a hack to fix a resource manager locking issue when the receiver
+                        // is a resource manager and its address is present in the argument lists.
+                        //
+                        // TODO: See the outer TODO for clean-up instruction.
                         if !locked_pointers.contains(&(
                             resource_node_pointer,
                             resource_substate_id.clone(),
