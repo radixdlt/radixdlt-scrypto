@@ -2,8 +2,9 @@ use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::*;
 use crate::types::*;
+use sbor::{Encode, Decode, TypeId};
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Encode, Decode, TypeId)]
 pub struct ResourceChange {
     pub resource_address: ResourceAddress,
     pub component_address: ComponentAddress,
