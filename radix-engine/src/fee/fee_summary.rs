@@ -1,7 +1,8 @@
 use crate::model::ResourceContainer;
 use crate::types::*;
+use sbor::{Encode, Decode, TypeId};
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Encode, Decode, TypeId)]
 pub struct FeeSummary {
     /// Whether the system loan is fully repaid
     pub loan_fully_repaid: bool,
