@@ -302,7 +302,7 @@ pub fn decompile(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::manifest::compile;
+    use crate::manifest::{compile, InMemoryBlobLoader};
     use scrypto::core::NetworkDefinition;
 
     #[test]
@@ -310,6 +310,7 @@ mod tests {
         let tx = compile(
             include_str!("../../examples/complex.rtm"),
             &NetworkDefinition::local_simulator(),
+            &InMemoryBlobLoader::default(),
         )
         .unwrap();
 
@@ -318,7 +319,12 @@ mod tests {
         println!("{}", manifest);
 
         assert_eq!(
-            compile(manifest, &NetworkDefinition::local_simulator()).unwrap(),
+            compile(
+                manifest,
+                &NetworkDefinition::local_simulator(),
+                &InMemoryBlobLoader::default()
+            )
+            .unwrap(),
             tx
         );
     }

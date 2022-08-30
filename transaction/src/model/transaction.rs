@@ -1,10 +1,11 @@
+use blob_loader::BlobLoader;
 use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::buffer::{scrypto_decode, scrypto_encode};
 use scrypto::core::NetworkDefinition;
 use scrypto::crypto::{hash, EcdsaPublicKey, EcdsaSignature, Hash};
 
-use crate::manifest::{compile, CompileError};
+use crate::manifest::{blob_loader, compile, CompileError};
 use crate::model::Instruction;
 
 // TODO: add versioning of transaction schema
@@ -63,10 +64,11 @@ pub enum IntentConfigError {
 }
 
 impl TransactionIntent {
-    pub fn new(
+    pub fn new<T: BlobLoader>(
         network: &NetworkDefinition,
         header: TransactionHeader,
         manifest: &str,
+        blob_loader: &T,
     ) -> Result<Self, IntentCreationError> {
         if network.id != header.network_id {
             return Err(IntentCreationError::ConfigErr(
@@ -78,7 +80,7 @@ impl TransactionIntent {
         }
         Ok(Self {
             header,
-            manifest: compile(manifest, &network)?,
+            manifest: compile(manifest, &network, blob_loader)?,
         })
     }
 
@@ -127,6 +129,7 @@ impl NotarizedTransaction {
 mod tests {
     use super::*;
     use crate::signing::*;
+    use blob_loader::InMemoryBlobLoader;
     use scrypto::buffer::scrypto_encode;
     use scrypto::core::NetworkDefinition;
 
@@ -152,6 +155,7 @@ mod tests {
                 tip_percentage: 5,
             },
             "CLEAR_AUTH_ZONE;",
+            &InMemoryBlobLoader::default(),
         )
         .unwrap();
 

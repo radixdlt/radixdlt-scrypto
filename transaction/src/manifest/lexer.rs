@@ -71,6 +71,7 @@ pub enum TokenKind {
     NonFungibleId,
     NonFungibleAddress,
     Expression,
+    Blob,
 
     /* Punctuations */
     OpenParenthesis,
@@ -395,6 +396,7 @@ impl Lexer {
             "NonFungibleId" => Ok(TokenKind::NonFungibleId),
             "NonFungibleAddress" => Ok(TokenKind::NonFungibleAddress),
             "Expression" => Ok(TokenKind::Expression),
+            "Blob" => Ok(TokenKind::Blob),
 
             "Some" => Ok(TokenKind::Some),
             "None" => Ok(TokenKind::None),
