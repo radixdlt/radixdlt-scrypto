@@ -9,9 +9,10 @@ use crate::rust::string::String;
 use crate::rust::string::ToString;
 use crate::rust::vec::Vec;
 use crate::type_id::*;
+use sbor::*;
 
 /// Represents an error ocurred during decoding.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
 pub enum DecodeError {
     Underflow { required: usize, remaining: usize },
 

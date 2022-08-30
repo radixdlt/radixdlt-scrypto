@@ -12,9 +12,8 @@ pub struct ValidatedPackage {
     blueprint_abis: HashMap<String, BlueprintAbi>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, TypeId, Encode, Decode)]
 pub enum PackageError {
-    RuntimeError(Box<RuntimeError>),
     InvalidRequestData(DecodeError),
     InvalidWasm(PrepareError),
     BlueprintNotFound,
@@ -43,7 +42,7 @@ impl ValidatedPackage {
         package_fn: PackageFnIdentifier,
         call_data: ScryptoValue,
         system_api: &mut Y,
-    ) -> Result<ScryptoValue, PackageError>
+    ) -> Result<ScryptoValue, InvokeError<PackageError>>
     where
         Y: SystemApi<'s, W, I, R>,
         W: WasmEngine<I>,
@@ -53,15 +52,15 @@ impl ValidatedPackage {
         match package_fn {
             PackageFnIdentifier::Publish => {
                 let input: PackagePublishInput = scrypto_decode(&call_data.raw)
-                    .map_err(|e| PackageError::InvalidRequestData(e))?;
-                let package =
-                    ValidatedPackage::new(input.package).map_err(PackageError::InvalidWasm)?;
+                    .map_err(|e| InvokeError::Error(PackageError::InvalidRequestData(e)))?;
+                let package = ValidatedPackage::new(input.package)
+                    .map_err(|e| InvokeError::Error(PackageError::InvalidWasm(e)))?;
                 let node_id = system_api
                     .node_create(HeapRENode::Package(package))
-                    .map_err(|e| PackageError::RuntimeError(Box::new(e)))?;
+                    .map_err(InvokeError::Downstream)?;
                 system_api
                     .node_globalize(node_id)
-                    .map_err(|e| PackageError::RuntimeError(Box::new(e)))?;
+                    .map_err(InvokeError::Downstream)?;
                 let package_address: PackageAddress = node_id.into();
                 Ok(ScryptoValue::from_typed(&package_address))
             }

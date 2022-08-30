@@ -309,11 +309,10 @@ where
                         instance
                             .invoke_export(&export_name, &input, &mut runtime)
                             .map_err(|e| match e {
-                                // Flatten error code for more readable transaction receipt
-                                WasmInvokeError::RuntimeError(e) => e,
-                                e @ _ => RuntimeError::KernelError(KernelError::WasmInvokeError(
-                                    e.into(),
-                                )),
+                                InvokeError::Error(e) => {
+                                    RuntimeError::KernelError(KernelError::WasmError(e))
+                                }
+                                InvokeError::Downstream(runtime_error) => runtime_error,
                             })?
                     };
 
@@ -334,7 +333,6 @@ where
                                 blueprint_name,
                                 ident,
                             },
-                            output: output.dom,
                         }))
                     } else {
                         Ok(output)
