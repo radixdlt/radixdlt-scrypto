@@ -87,7 +87,9 @@ impl Encode for () {
         encoder.write_type_id(Self::type_id());
     }
     #[inline]
-    fn encode_value(&self, _encoder: &mut Encoder) {}
+    fn encode_value(&self, encoder: &mut Encoder) {
+        encoder.write_byte(0);
+    }
 }
 
 impl Encode for bool {
@@ -97,7 +99,7 @@ impl Encode for bool {
     }
     #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
-        encoder.write_byte(if *self { 1u8 } else { 0u8 })
+        encoder.write_byte(if *self { 1u8 } else { 0u8 });
     }
 }
 
@@ -458,7 +460,7 @@ mod tests {
 
         assert_eq!(
             vec![
-                0, // unit
+                0, 0, // unit
                 1, 1, // bool
                 2, 1, // i8
                 3, 1, 0, // i16
@@ -493,7 +495,7 @@ mod tests {
 
         assert_eq!(
             vec![
-                // unit
+                0, // unit
                 1, // bool
                 1, // i8
                 1, 0, // i16

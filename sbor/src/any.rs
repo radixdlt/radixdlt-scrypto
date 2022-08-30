@@ -276,7 +276,10 @@ fn decode_next(ty_ctx: Option<u8>, dec: &mut Decoder) -> Result<Value, DecodeErr
 
     match ty {
         // primitive types
-        TYPE_UNIT => Ok(Value::Unit),
+        TYPE_UNIT => {
+            <()>::decode_value(dec)?;
+            Ok(Value::Unit)
+        }
         TYPE_BOOL => Ok(Value::Bool {
             value: <bool>::decode_value(dec)?,
         }),

@@ -25,6 +25,8 @@ pub enum DecodeError {
 
     InvalidEnumVariant(String),
 
+    InvalidUnit(u8),
+
     InvalidBool(u8),
 
     InvalidUtf8,
@@ -169,8 +171,12 @@ impl Decode for () {
     fn check_type_id(decoder: &mut Decoder) -> Result<(), DecodeError> {
         decoder.check_type_id(Self::type_id())
     }
-    fn decode_value(_decoder: &mut Decoder) -> Result<Self, DecodeError> {
-        Ok(())
+    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
+        let value = decoder.read_byte()?;
+        match value {
+            0 => Ok(()),
+            _ => Err(DecodeError::InvalidUnit(value)),
+        }
     }
 }
 
@@ -560,7 +566,7 @@ mod tests {
     #[test]
     pub fn test_decoding() {
         let bytes = vec![
-            0, // unit
+            0, 0, // unit
             1, 1, // bool
             2, 1, // i8
             3, 1, 0, // i16
@@ -590,7 +596,7 @@ mod tests {
     #[test]
     pub fn test_decoding_no_static_info() {
         let bytes = vec![
-            // unit
+            0, // unit
             1, // bool
             1, // i8
             1, 0, // i16
