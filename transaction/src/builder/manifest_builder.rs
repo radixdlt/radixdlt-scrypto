@@ -425,8 +425,8 @@ impl ManifestBuilder {
     }
 
     /// Builds a transaction manifest.
+    /// TODO: consider using self
     pub fn build(&self) -> TransactionManifest {
-        // TODO: consider using self
         TransactionManifest {
             instructions: self.instructions.clone(),
             blobs: self.blobs.values().cloned().collect(),

@@ -8,7 +8,7 @@ pub struct VirtualSubstateId(pub SubstateId, pub Vec<u8>);
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct StateDiff {
     pub down_virtual_substates: Vec<VirtualSubstateId>,
-    pub up_substates: HashMap<SubstateId, OutputValue>,
+    pub up_substates: BTreeMap<SubstateId, OutputValue>,
     pub down_substates: Vec<OutputId>,
     pub new_roots: Vec<SubstateId>,
 }
@@ -16,7 +16,7 @@ pub struct StateDiff {
 impl StateDiff {
     pub fn new() -> Self {
         Self {
-            up_substates: HashMap::new(),
+            up_substates: BTreeMap::new(),
             down_virtual_substates: Vec::new(),
             down_substates: Vec::new(),
             new_roots: Vec::new(),

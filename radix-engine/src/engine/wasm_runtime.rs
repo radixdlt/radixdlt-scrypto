@@ -37,6 +37,8 @@ where
 
     // TODO: do we want to allow dynamic creation of blobs?
 
+    // TODO: do we check existence of blobs when being passed as arguments/return?
+
     pub fn new(actor: ScryptoActor, system_api: &'y mut Y) -> Self {
         RadixEngineWasmRuntime {
             actor,
