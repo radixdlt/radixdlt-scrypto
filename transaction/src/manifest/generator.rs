@@ -345,7 +345,7 @@ pub fn generate_instruction<T: BlobLoader>(
             }
         }
         ast::Instruction::PublishPackage { package } => Instruction::PublishPackage {
-            package: generate_bytes(package)?,
+            package: generate_blob(package, blob_loader)?,
         },
     })
 }
@@ -379,37 +379,6 @@ fn generate_string(value: &ast::Value) -> Result<String, GeneratorError> {
     match value {
         ast::Value::String(s) => Ok(s.into()),
         v @ _ => invalid_type!(v, ast::Type::String),
-    }
-}
-
-fn generate_bytes(value: &ast::Value) -> Result<Vec<u8>, GeneratorError> {
-    match value {
-        ast::Value::Bytes(bytes) => Ok(bytes.clone()),
-        ast::Value::List(ty, values) => {
-            if ty == &ast::Type::U8 {
-                let mut result = Vec::new();
-                for v in values {
-                    match v {
-                        ast::Value::U8(num) => {
-                            result.push(*num);
-                        }
-                        _ => {
-                            return Err(GeneratorError::InvalidValue {
-                                expected_type: vec![ast::Type::U8],
-                                actual: v.clone(),
-                            })
-                        }
-                    }
-                }
-                Ok(result)
-            } else {
-                Err(GeneratorError::InvalidType {
-                    expected_type: ast::Type::U8,
-                    actual: *ty,
-                })
-            }
-        }
-        v @ _ => invalid_type!(v, ast::Type::List, ast::Type::Bytes),
     }
 }
 
@@ -803,19 +772,6 @@ fn generate_value<T: BlobLoader>(
             type_id: ScryptoType::Blob.id(),
             bytes: v.to_vec(),
         }),
-        ast::Value::Bytes(_) => match value {
-            ast::Value::Bytes(bytes) => {
-                let mut elements = Vec::new();
-                for b in bytes {
-                    elements.push(Value::U8 { value: *b });
-                }
-                Ok(Value::List {
-                    element_type_id: TYPE_U8,
-                    elements,
-                })
-            }
-            v @ _ => invalid_type!(v, ast::Type::Bytes),
-        },
     }
 }
 
@@ -906,7 +862,6 @@ fn generate_type_id(ty: &ast::Type) -> u8 {
         ast::Type::NonFungibleAddress => ScryptoType::NonFungibleAddress.id(),
         ast::Type::Expression => ScryptoType::Expression.id(),
         ast::Type::Blob => ScryptoType::Blob.id(),
-        ast::Type::Bytes => TYPE_LIST,
     }
 }
 
@@ -918,9 +873,7 @@ mod tests {
     use crate::manifest::InMemoryBlobLoader;
     use scrypto::address::Bech32Decoder;
     use scrypto::args;
-    use scrypto::buffer::scrypto_encode;
     use scrypto::core::NetworkDefinition;
-    use scrypto::prelude::Package;
 
     #[macro_export]
     macro_rules! generate_value_ok {
@@ -1202,140 +1155,6 @@ mod tests {
                 method_name: "refill".to_string(),
                 args: args!()
             }
-        );
-    }
-
-    #[test]
-    fn test_transaction() {
-        let tx = include_str!("../../examples/complex.rtm");
-        let code = vec![
-            0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, 0x04, 0x05, 0x01, 0x70, 0x01, 0x01,
-            0x01, 0x05, 0x03, 0x01, 0x00, 0x10, 0x06, 0x19, 0x03, 0x7f, 0x01, 0x41, 0x80, 0x80,
-            0xc0, 0x00, 0x0b, 0x7f, 0x00, 0x41, 0x80, 0x80, 0xc0, 0x00, 0x0b, 0x7f, 0x00, 0x41,
-            0x80, 0x80, 0xc0, 0x00, 0x0b, 0x07, 0x25, 0x03, 0x06, 0x6d, 0x65, 0x6d, 0x6f, 0x72,
-            0x79, 0x02, 0x00, 0x0a, 0x5f, 0x5f, 0x64, 0x61, 0x74, 0x61, 0x5f, 0x65, 0x6e, 0x64,
-            0x03, 0x01, 0x0b, 0x5f, 0x5f, 0x68, 0x65, 0x61, 0x70, 0x5f, 0x62, 0x61, 0x73, 0x65,
-            0x03, 0x02, 0x00, 0x19, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x07, 0x12, 0x01, 0x00, 0x0f,
-            0x5f, 0x5f, 0x73, 0x74, 0x61, 0x63, 0x6b, 0x5f, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x65,
-            0x72, 0x00, 0x4d, 0x09, 0x70, 0x72, 0x6f, 0x64, 0x75, 0x63, 0x65, 0x72, 0x73, 0x02,
-            0x08, 0x6c, 0x61, 0x6e, 0x67, 0x75, 0x61, 0x67, 0x65, 0x01, 0x04, 0x52, 0x75, 0x73,
-            0x74, 0x00, 0x0c, 0x70, 0x72, 0x6f, 0x63, 0x65, 0x73, 0x73, 0x65, 0x64, 0x2d, 0x62,
-            0x79, 0x01, 0x05, 0x72, 0x75, 0x73, 0x74, 0x63, 0x1d, 0x31, 0x2e, 0x35, 0x39, 0x2e,
-            0x30, 0x20, 0x28, 0x39, 0x64, 0x31, 0x62, 0x32, 0x31, 0x30, 0x36, 0x65, 0x20, 0x32,
-            0x30, 0x32, 0x32, 0x2d, 0x30, 0x32, 0x2d, 0x32, 0x33, 0x29,
-        ];
-        let package = Package {
-            code,
-            blueprints: HashMap::new(),
-        };
-        let encoded_package = scrypto_encode(&package);
-
-        let bech32_decoder = Bech32Decoder::new(&NetworkDefinition::local_simulator());
-        let component1 = bech32_decoder
-            .validate_and_decode_component_address(
-                "account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qgsy064",
-            )
-            .unwrap();
-        let component2 = bech32_decoder
-            .validate_and_decode_component_address(
-                "component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum",
-            )
-            .unwrap();
-
-        assert_eq!(
-            crate::manifest::compile(
-                tx,
-                &NetworkDefinition::local_simulator(),
-                &mut InMemoryBlobLoader::default()
-            )
-            .unwrap()
-            .instructions,
-            vec![
-                Instruction::CallMethod {
-                    component_address: component1,
-                    method_name: "withdraw_by_amount".to_string(),
-                    args: args!(
-                        Decimal::from(5u32),
-                        ResourceAddress::from_str(
-                            "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag"
-                        )
-                        .unwrap()
-                    )
-                },
-                Instruction::TakeFromWorktopByAmount {
-                    amount: Decimal::from(2),
-                    resource_address: ResourceAddress::from_str(
-                        "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag"
-                    )
-                    .unwrap(),
-                },
-                Instruction::CallMethod {
-                    component_address: component2,
-                    method_name: "buy_gumball".to_string(),
-                    args: args!(scrypto::resource::Bucket(512))
-                },
-                Instruction::AssertWorktopContainsByAmount {
-                    amount: Decimal::from(3),
-                    resource_address: ResourceAddress::from_str(
-                        "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag"
-                    )
-                    .unwrap(),
-                },
-                Instruction::AssertWorktopContains {
-                    resource_address: ResourceAddress::from_str(
-                        "resource_sim1qzhdk7tq68u8msj38r6v6yqa5myc64ejx3ud20zlh9gseqtux6"
-                    )
-                    .unwrap(),
-                },
-                Instruction::TakeFromWorktop {
-                    resource_address: ResourceAddress::from_str(
-                        "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag"
-                    )
-                    .unwrap(),
-                },
-                Instruction::CreateProofFromBucket { bucket_id: 513 },
-                Instruction::CloneProof { proof_id: 514 },
-                Instruction::DropProof { proof_id: 514 },
-                Instruction::DropProof { proof_id: 515 },
-                Instruction::CallMethod {
-                    component_address: component1,
-                    method_name: "create_proof_by_amount".to_string(),
-                    args: args!(
-                        Decimal::from(5u32),
-                        ResourceAddress::from_str(
-                            "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag"
-                        )
-                        .unwrap()
-                    )
-                },
-                Instruction::PopFromAuthZone,
-                Instruction::DropProof { proof_id: 516 },
-                Instruction::ReturnToWorktop { bucket_id: 513 },
-                Instruction::TakeFromWorktopByIds {
-                    ids: BTreeSet::from([
-                        NonFungibleId::from_str("0905000000").unwrap(),
-                        NonFungibleId::from_str("0907000000").unwrap(),
-                    ]),
-                    resource_address: ResourceAddress::from_str(
-                        "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag"
-                    )
-                    .unwrap()
-                },
-                Instruction::CallMethod {
-                    component_address: component1,
-                    method_name: "deposit_batch".into(),
-                    args: args!(Expression("ENTIRE_WORKTOP".to_owned()))
-                },
-                Instruction::DropAllProofs,
-                Instruction::PublishPackage {
-                    package: encoded_package.clone()
-                },
-                Instruction::CallMethod {
-                    component_address: component2,
-                    method_name: "complicated_method".to_string(),
-                    args: args!(Decimal::from(1u32), PreciseDecimal::from(2u32))
-                },
-            ]
         );
     }
 }

@@ -1,7 +1,8 @@
 use std::env;
 use std::fs;
 use std::path::{Path, PathBuf};
-use transaction::manifest::BlobLoader;
+
+use crate::manifest::BlobLoader;
 
 /// A blob loader that loads from local file system.
 ///

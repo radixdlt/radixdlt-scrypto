@@ -3,6 +3,7 @@ use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::component::{ComponentAddress, PackageAddress};
+use scrypto::core::Blob;
 use scrypto::engine::types::*;
 use scrypto::math::*;
 use scrypto::resource::{NonFungibleId, ResourceAddress};
@@ -99,5 +100,5 @@ pub enum Instruction {
     },
 
     /// Publishes a package.
-    PublishPackage { package: Vec<u8> },
+    PublishPackage { package: Blob },
 }

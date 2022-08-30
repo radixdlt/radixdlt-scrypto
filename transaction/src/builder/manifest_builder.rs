@@ -1,6 +1,5 @@
 use sbor::describe::*;
 use sbor::rust::borrow::ToOwned;
-use sbor::rust::collections::BTreeSet;
 use sbor::rust::collections::*;
 use sbor::rust::fmt;
 use sbor::rust::str::FromStr;
@@ -11,13 +10,14 @@ use sbor::*;
 use scrypto::abi::*;
 use scrypto::address::Bech32Decoder;
 use scrypto::buffer::*;
+use scrypto::component::Package;
 use scrypto::component::{ComponentAddress, PackageAddress};
 use scrypto::constants::*;
+use scrypto::core::Blob;
 use scrypto::core::NetworkDefinition;
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
 use scrypto::math::*;
-use scrypto::prelude::Package;
 use scrypto::resource::MintParams;
 use scrypto::resource::ResourceType;
 use scrypto::resource::{require, LOCKED};
@@ -38,6 +38,8 @@ pub struct ManifestBuilder {
     id_validator: IdValidator,
     /// Instructions generated.
     instructions: Vec<Instruction>,
+    /// Blobs
+    blobs: BTreeMap<Hash, Vec<u8>>,
 }
 
 impl ManifestBuilder {
@@ -47,6 +49,7 @@ impl ManifestBuilder {
             decoder: Bech32Decoder::new(network),
             id_validator: IdValidator::new(),
             instructions: Vec::new(),
+            blobs: BTreeMap::default(),
         }
     }
 
@@ -412,8 +415,11 @@ impl ManifestBuilder {
 
     /// Publishes a package.
     pub fn publish_package(&mut self, package: Package) -> &mut Self {
+        let package_blob = scrypto_encode(&package);
+        let package_blob_hash = hash(&package_blob);
+        self.blobs.insert(package_blob_hash, package_blob);
         self.add_instruction(Instruction::PublishPackage {
-            package: scrypto_encode(&package),
+            package: Blob(package_blob_hash),
         })
         .0
     }

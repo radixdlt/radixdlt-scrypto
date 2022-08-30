@@ -81,9 +81,6 @@ pub enum TokenKind {
     Comma,
     Semicolon,
 
-    /* Bytes is a convenient way of producing `Vec<u8>` */
-    Bytes,
-
     /* Instructions */
     TakeFromWorktop,
     TakeFromWorktopByAmount,
@@ -402,8 +399,6 @@ impl Lexer {
             "None" => Ok(TokenKind::None),
             "Ok" => Ok(TokenKind::Ok),
             "Err" => Ok(TokenKind::Err),
-
-            "Bytes" => Ok(TokenKind::Bytes),
 
             "TAKE_FROM_WORKTOP" => Ok(TokenKind::TakeFromWorktop),
             "TAKE_FROM_WORKTOP_BY_AMOUNT" => Ok(TokenKind::TakeFromWorktopByAmount),
