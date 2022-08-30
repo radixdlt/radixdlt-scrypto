@@ -5,6 +5,7 @@ use std::env;
 use std::path::PathBuf;
 
 use crate::resim::*;
+use crate::utils::FileBlobLoader;
 
 /// Compiles, signs and runs a transaction manifest
 #[derive(Parser, Debug)]
@@ -36,6 +37,7 @@ impl Run {
         let compiled_manifest = transaction::manifest::compile(
             &pre_processed_manifest,
             &NetworkDefinition::local_simulator(),
+            &FileBlobLoader::with_current_dir(),
         )
         .map_err(Error::CompileError)?;
         handle_manifest(
