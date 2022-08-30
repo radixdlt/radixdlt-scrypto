@@ -545,6 +545,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         let mut kernel = Kernel::new(
             tx_hash,
             Vec::new(),
+            HashMap::new(),
             is_system,
             DEFAULT_MAX_CALL_DEPTH,
             &mut track,

@@ -57,7 +57,6 @@ use radix_engine::transaction::TransactionResult;
 use radix_engine::wasm::*;
 use radix_engine_stores::rocks_db::RadixEngineDB;
 use scrypto::abi;
-use scrypto::address::Bech32Encoder;
 use scrypto::core::NetworkDefinition;
 use scrypto::crypto::*;
 use scrypto::prelude::ComponentAddress;
@@ -148,10 +147,8 @@ pub fn handle_manifest<O: std::io::Write>(
     match manifest_path {
         Some(path) => {
             if !env::var(ENV_DISABLE_MANIFEST_OUTPUT).is_ok() {
-                let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::local_simulator());
-
-                let manifest =
-                    decompile(&manifest, &bech32_encoder).map_err(Error::DecompileError)?;
+                let manifest = decompile(&manifest, &NetworkDefinition::local_simulator())
+                    .map_err(Error::DecompileError)?;
                 fs::write(path, manifest).map_err(Error::IOError)?;
             }
             Ok(None)

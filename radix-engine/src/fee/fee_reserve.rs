@@ -51,7 +51,7 @@ pub struct SystemLoanFeeReserve {
     /// At which point the system loan repayment is checked
     check_point: u32,
     /// Cost breakdown
-    cost_breakdown: BTreeMap<String, u32>,
+    cost_breakdown: HashMap<String, u32>,
 }
 
 impl SystemLoanFeeReserve {
@@ -70,7 +70,7 @@ impl SystemLoanFeeReserve {
             consumed: 0,
             limit: cost_unit_limit,
             check_point: system_loan,
-            cost_breakdown: BTreeMap::new(),
+            cost_breakdown: HashMap::new(),
         }
     }
 }
@@ -201,7 +201,7 @@ pub struct UnlimitedLoanFeeReserve {
     /// The max number of cost units that can be consumed
     limit: u32,
     /// The cost breakdown
-    cost_breakdown: BTreeMap<String, u32>,
+    cost_breakdown: HashMap<String, u32>,
 }
 
 impl UnlimitedLoanFeeReserve {
@@ -211,7 +211,7 @@ impl UnlimitedLoanFeeReserve {
             tip_percentage,
             consumed: 0,
             limit: limit,
-            cost_breakdown: BTreeMap::new(),
+            cost_breakdown: HashMap::new(),
         }
     }
 }

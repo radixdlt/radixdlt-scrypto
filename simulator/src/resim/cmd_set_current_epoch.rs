@@ -29,6 +29,7 @@ impl SetCurrentEpoch {
         let mut kernel = Kernel::new(
             tx_hash,
             Vec::new(),
+            HashMap::new(),
             true,
             DEFAULT_MAX_CALL_DEPTH,
             &mut track,

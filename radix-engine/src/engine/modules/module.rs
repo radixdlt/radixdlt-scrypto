@@ -42,6 +42,9 @@ pub enum SysCallInput<'a> {
         substate_id: &'a SubstateId,
     },
     ReadTransactionHash,
+    ReadBlob {
+        blob_hash: &'a Hash,
+    },
     GenerateUuid,
     EmitLog {
         level: &'a Level,
@@ -66,6 +69,7 @@ pub enum SysCallOutput<'a> {
     WriteSubstate,
     TakeSubstate { value: &'a ScryptoValue },
     ReadTransactionHash { hash: &'a Hash },
+    ReadBlob { blob: &'a [u8] },
     GenerateUuid { uuid: u128 },
     EmitLog,
     CheckAccessRule { result: bool },

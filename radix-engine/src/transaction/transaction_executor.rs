@@ -118,12 +118,18 @@ where
         let transaction_hash = transaction.transaction_hash();
         let signer_public_keys = transaction.signer_public_keys().to_vec();
         let instructions = transaction.instructions().to_vec();
+        let blobs: HashMap<Hash, Vec<u8>> = transaction
+            .blobs()
+            .iter()
+            .map(|b| (hash(b), b.clone()))
+            .collect();
 
         #[cfg(not(feature = "alloc"))]
         if params.trace {
             println!("{:-^80}", "Transaction Metadata");
             println!("Transaction hash: {}", transaction_hash);
             println!("Transaction signers: {:?}", signer_public_keys);
+            println!("# of unique blobs: {}", blobs.len());
 
             println!("{:-^80}", "Engine Execution Log");
         }
@@ -145,6 +151,7 @@ where
             let mut kernel = Kernel::new(
                 transaction_hash,
                 signer_public_keys,
+                blobs,
                 params.is_system,
                 params.max_call_depth,
                 &mut track,
@@ -182,7 +189,13 @@ where
         #[cfg(not(feature = "alloc"))]
         if params.trace {
             println!("{:-^80}", "Cost Analysis");
-            for (k, v) in &receipt.execution.fee_summary.cost_breakdown {
+            let break_down = receipt
+                .execution
+                .fee_summary
+                .cost_breakdown
+                .iter()
+                .collect::<BTreeMap<&String, &u32>>();
+            for (k, v) in break_down {
                 println!("{:<30}: {:>8}", k, v);
             }
 

@@ -698,22 +698,25 @@ impl TransactionProcessor {
                                 Ok(result)
                             })
                         }
-                        ExecutableInstruction::PublishPackage { package } => scrypto_decode::<
-                            Package,
-                        >(
-                            package
-                        )
-                        .map_err(|e| TransactionProcessorError::InvalidPackage(e))
-                        .and_then(|package| {
-                            system_api
-                                .invoke_function(
-                                    FnIdentifier::Native(NativeFnIdentifier::Package(
-                                        PackageFnIdentifier::Publish,
-                                    )),
-                                    ScryptoValue::from_typed(&PackagePublishInput { package }),
-                                )
-                                .map_err(|e| TransactionProcessorError::RuntimeError(Box::new(e)))
-                        }),
+                        ExecutableInstruction::PublishPackage { package } => system_api
+                            .read_blob(&package.0)
+                            .map_err(|e| TransactionProcessorError::RuntimeError(Box::new(e)))
+                            .and_then(|blob| {
+                                scrypto_decode::<Package>(blob)
+                                    .map_err(|e| TransactionProcessorError::InvalidPackage(e))
+                            })
+                            .and_then(|package| {
+                                system_api
+                                    .invoke_function(
+                                        FnIdentifier::Native(NativeFnIdentifier::Package(
+                                            PackageFnIdentifier::Publish,
+                                        )),
+                                        ScryptoValue::from_typed(&PackagePublishInput { package }),
+                                    )
+                                    .map_err(|e| {
+                                        TransactionProcessorError::RuntimeError(Box::new(e))
+                                    })
+                            }),
                     }?;
                     outputs.push(result);
                 }

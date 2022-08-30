@@ -3,9 +3,9 @@ use regex::{Captures, Regex};
 use scrypto::core::NetworkDefinition;
 use std::env;
 use std::path::PathBuf;
+use transaction::manifest::FileBlobLoader;
 
 use crate::resim::*;
-use crate::utils::FileBlobLoader;
 
 /// Compiles, signs and runs a transaction manifest
 #[derive(Parser, Debug)]
@@ -37,7 +37,7 @@ impl Run {
         let compiled_manifest = transaction::manifest::compile(
             &pre_processed_manifest,
             &NetworkDefinition::local_simulator(),
-            &mut FileBlobLoader::with_current_dir(),
+            &FileBlobLoader::new(self.path.parent().expect("Manifest path parent not found")),
         )
         .map_err(Error::CompileError)?;
         handle_manifest(

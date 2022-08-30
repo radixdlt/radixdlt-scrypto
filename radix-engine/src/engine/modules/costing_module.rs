@@ -395,6 +395,16 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                     )
                     .map_err(ModuleError::CostingError)?;
             }
+            SysCallInput::ReadBlob { .. } => {
+                track
+                    .fee_reserve
+                    .consume(
+                        self.fee_table
+                            .system_api_cost(SystemApiCostingEntry::ReadBlob { size: 0 }), // TODO pass the right size
+                        "read_blob",
+                    )
+                    .map_err(ModuleError::CostingError)?;
+            }
             SysCallInput::GenerateUuid => {
                 track
                     .fee_reserve

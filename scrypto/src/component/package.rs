@@ -1,4 +1,4 @@
-use sbor::rust::collections::BTreeMap;
+use sbor::rust::collections::HashMap;
 use sbor::rust::fmt;
 use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
@@ -19,7 +19,7 @@ pub struct PackagePublishInput {
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct Package {
     pub code: Vec<u8>,
-    pub blueprints: BTreeMap<String, BlueprintAbi>,
+    pub blueprints: HashMap<String, BlueprintAbi>,
 }
 
 /// A collection of blueprints, compiled and published as a single unit.
