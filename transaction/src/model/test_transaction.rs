@@ -175,4 +175,8 @@ impl ExecutableTransaction for TestTransaction {
     fn signer_public_keys(&self) -> &[EcdsaPublicKey] {
         &self.signer_public_keys
     }
+
+    fn blobs(&self) -> &[Vec<u8>] {
+        &self.transaction.signed_intent.intent.manifest.blobs
+    }
 }

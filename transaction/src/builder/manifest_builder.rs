@@ -39,7 +39,7 @@ pub struct ManifestBuilder {
     /// Instructions generated.
     instructions: Vec<Instruction>,
     /// Blobs
-    blobs: BTreeMap<Hash, Vec<u8>>,
+    blobs: HashMap<Hash, Vec<u8>>,
 }
 
 impl ManifestBuilder {
@@ -49,7 +49,7 @@ impl ManifestBuilder {
             decoder: Bech32Decoder::new(network),
             id_validator: IdValidator::new(),
             instructions: Vec::new(),
-            blobs: BTreeMap::default(),
+            blobs: HashMap::default(),
         }
     }
 
@@ -426,8 +426,10 @@ impl ManifestBuilder {
 
     /// Builds a transaction manifest.
     pub fn build(&self) -> TransactionManifest {
+        // TODO: consider using self
         TransactionManifest {
             instructions: self.instructions.clone(),
+            blobs: self.blobs.values().cloned().collect(),
         }
     }
 

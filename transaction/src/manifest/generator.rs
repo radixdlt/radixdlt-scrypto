@@ -108,11 +108,12 @@ impl NameResolver {
 pub fn generate_manifest<T: BlobLoader>(
     instructions: &[ast::Instruction],
     bech32_decoder: &Bech32Decoder,
-    blob_loader: &mut T,
+    blob_loader: &T,
 ) -> Result<TransactionManifest, GeneratorError> {
     let mut id_validator = IdValidator::new();
     let mut name_resolver = NameResolver::new();
     let mut output = Vec::new();
+    let mut blobs = HashMap::new();
 
     for instruction in instructions {
         output.push(generate_instruction(
@@ -121,11 +122,13 @@ pub fn generate_manifest<T: BlobLoader>(
             &mut name_resolver,
             bech32_decoder,
             blob_loader,
+            &mut blobs,
         )?);
     }
 
     Ok(TransactionManifest {
         instructions: output,
+        blobs: blobs.into_values().collect(),
     })
 }
 
@@ -134,7 +137,8 @@ pub fn generate_instruction<T: BlobLoader>(
     id_validator: &mut IdValidator,
     resolver: &mut NameResolver,
     bech32_decoder: &Bech32Decoder,
-    blob_loader: &mut T,
+    blob_loader: &T,
+    blobs: &mut HashMap<Hash, Vec<u8>>,
 ) -> Result<Instruction, GeneratorError> {
     Ok(match instruction {
         ast::Instruction::TakeFromWorktop {
@@ -306,7 +310,7 @@ pub fn generate_instruction<T: BlobLoader>(
             function,
             args,
         } => {
-            let args = generate_args(args, resolver, bech32_decoder, blob_loader)?;
+            let args = generate_args(args, resolver, bech32_decoder, blob_loader, blobs)?;
             let mut fields = Vec::new();
             for arg in &args {
                 let validated_arg = ScryptoValue::from_slice(arg).unwrap();
@@ -328,7 +332,7 @@ pub fn generate_instruction<T: BlobLoader>(
             method,
             args,
         } => {
-            let args = generate_args(args, resolver, bech32_decoder, blob_loader)?;
+            let args = generate_args(args, resolver, bech32_decoder, blob_loader, blobs)?;
             let mut fields = Vec::new();
             for arg in &args {
                 let validated_arg = ScryptoValue::from_slice(arg).unwrap();
@@ -345,7 +349,7 @@ pub fn generate_instruction<T: BlobLoader>(
             }
         }
         ast::Instruction::PublishPackage { package } => Instruction::PublishPackage {
-            package: generate_blob(package, blob_loader)?,
+            package: generate_blob(package, blob_loader, blobs)?,
         },
     })
 }
@@ -364,11 +368,12 @@ fn generate_args<T: BlobLoader>(
     values: &Vec<ast::Value>,
     resolver: &mut NameResolver,
     bech32_decoder: &Bech32Decoder,
-    blob_loader: &mut T,
+    blob_loader: &T,
+    blobs: &mut HashMap<Hash, Vec<u8>>,
 ) -> Result<Vec<Vec<u8>>, GeneratorError> {
     let mut result = Vec::new();
     for v in values {
-        let value = generate_value(v, None, resolver, bech32_decoder, blob_loader)?;
+        let value = generate_value(v, None, resolver, bech32_decoder, blob_loader, blobs)?;
 
         result.push(encode_any(&value));
     }
@@ -562,7 +567,8 @@ fn generate_expression(value: &ast::Value) -> Result<Expression, GeneratorError>
 
 fn generate_blob<T: BlobLoader>(
     value: &ast::Value,
-    blob_loader: &mut T,
+    blob_loader: &T,
+    blobs: &mut HashMap<Hash, Vec<u8>>,
 ) -> Result<Blob, GeneratorError> {
     match value {
         ast::Value::Blob(inner) => match &**inner {
@@ -570,7 +576,8 @@ fn generate_blob<T: BlobLoader>(
                 let blob = blob_loader
                     .load(&s)
                     .ok_or(GeneratorError::BlobNotFound(s.clone()))?;
-                let hash = hash(blob);
+                let hash = hash(&blob);
+                blobs.insert(hash, blob);
                 Ok(Blob(hash))
             }
             v @ _ => invalid_type!(v, ast::Type::String),
@@ -602,7 +609,8 @@ fn generate_value<T: BlobLoader>(
     expected: Option<ast::Type>,
     resolver: &mut NameResolver,
     bech32_decoder: &Bech32Decoder,
-    blob_loader: &mut T,
+    blob_loader: &T,
+    blobs: &mut HashMap<Hash, Vec<u8>>,
 ) -> Result<Value, GeneratorError> {
     if let Some(ty) = expected {
         if ty != value.kind() {
@@ -630,11 +638,25 @@ fn generate_value<T: BlobLoader>(
             value: value.clone(),
         }),
         ast::Value::Struct(fields) => Ok(Value::Struct {
-            fields: generate_singletons(fields, None, resolver, bech32_decoder, blob_loader)?,
+            fields: generate_singletons(
+                fields,
+                None,
+                resolver,
+                bech32_decoder,
+                blob_loader,
+                blobs,
+            )?,
         }),
         ast::Value::Enum(name, fields) => Ok(Value::Enum {
             name: name.clone(),
-            fields: generate_singletons(fields, None, resolver, bech32_decoder, blob_loader)?,
+            fields: generate_singletons(
+                fields,
+                None,
+                resolver,
+                bech32_decoder,
+                blob_loader,
+                blobs,
+            )?,
         }),
         ast::Value::Option(value) => match &**value {
             Some(inner) => Ok(Value::Option {
@@ -644,6 +666,7 @@ fn generate_value<T: BlobLoader>(
                     resolver,
                     bech32_decoder,
                     blob_loader,
+                    blobs,
                 )?)
                 .into(),
             }),
@@ -657,10 +680,18 @@ fn generate_value<T: BlobLoader>(
                 resolver,
                 bech32_decoder,
                 blob_loader,
+                blobs,
             )?,
         }),
         ast::Value::Tuple(elements) => Ok(Value::Tuple {
-            elements: generate_singletons(elements, None, resolver, bech32_decoder, blob_loader)?,
+            elements: generate_singletons(
+                elements,
+                None,
+                resolver,
+                bech32_decoder,
+                blob_loader,
+                blobs,
+            )?,
         }),
         ast::Value::Result(value) => match &**value {
             Ok(inner) => Ok(Value::Result {
@@ -670,6 +701,7 @@ fn generate_value<T: BlobLoader>(
                     resolver,
                     bech32_decoder,
                     blob_loader,
+                    blobs,
                 )?)
                 .into(),
             }),
@@ -680,6 +712,7 @@ fn generate_value<T: BlobLoader>(
                     resolver,
                     bech32_decoder,
                     blob_loader,
+                    blobs,
                 )?)
                 .into(),
             }),
@@ -692,6 +725,7 @@ fn generate_value<T: BlobLoader>(
                 resolver,
                 bech32_decoder,
                 blob_loader,
+                blobs,
             )?,
         }),
         ast::Value::Set(element_type, elements) => Ok(Value::Set {
@@ -702,6 +736,7 @@ fn generate_value<T: BlobLoader>(
                 resolver,
                 bech32_decoder,
                 blob_loader,
+                blobs,
             )?,
         }),
         ast::Value::Map(key_type, value_type, elements) => Ok(Value::Map {
@@ -714,6 +749,7 @@ fn generate_value<T: BlobLoader>(
                 resolver,
                 bech32_decoder,
                 blob_loader,
+                blobs,
             )?,
         }),
         ast::Value::Decimal(_) => generate_decimal(value).map(|v| Value::Custom {
@@ -768,7 +804,7 @@ fn generate_value<T: BlobLoader>(
             type_id: ScryptoType::Expression.id(),
             bytes: v.to_vec(),
         }),
-        ast::Value::Blob(_) => generate_blob(value, blob_loader).map(|v| Value::Custom {
+        ast::Value::Blob(_) => generate_blob(value, blob_loader, blobs).map(|v| Value::Custom {
             type_id: ScryptoType::Blob.id(),
             bytes: v.to_vec(),
         }),
@@ -780,7 +816,8 @@ fn generate_singletons<T: BlobLoader>(
     ty: Option<ast::Type>,
     resolver: &mut NameResolver,
     bech32_decoder: &Bech32Decoder,
-    blob_loader: &mut T,
+    blob_loader: &T,
+    blobs: &mut HashMap<Hash, Vec<u8>>,
 ) -> Result<Vec<Value>, GeneratorError> {
     let mut result = vec![];
     for element in elements {
@@ -790,6 +827,7 @@ fn generate_singletons<T: BlobLoader>(
             resolver,
             bech32_decoder,
             blob_loader,
+            blobs,
         )?);
     }
     Ok(result)
@@ -801,7 +839,8 @@ fn generate_pairs<T: BlobLoader>(
     value_type: ast::Type,
     resolver: &mut NameResolver,
     bech32_decoder: &Bech32Decoder,
-    blob_loader: &mut T,
+    blob_loader: &T,
+    blobs: &mut HashMap<Hash, Vec<u8>>,
 ) -> Result<Vec<Value>, GeneratorError> {
     if elements.len() % 2 != 0 {
         return Err(GeneratorError::OddNumberOfElements(elements.len()));
@@ -814,6 +853,7 @@ fn generate_pairs<T: BlobLoader>(
             resolver,
             bech32_decoder,
             blob_loader,
+            blobs,
         )?);
         result.push(generate_value(
             &elements[2 * i + 1],
@@ -821,6 +861,7 @@ fn generate_pairs<T: BlobLoader>(
             resolver,
             bech32_decoder,
             blob_loader,
+            blobs,
         )?);
     }
     Ok(result)
@@ -878,7 +919,7 @@ mod tests {
     #[macro_export]
     macro_rules! generate_value_ok {
         ( $s:expr, $expected:expr ) => {{
-            generate_value_ok!($s, &mut InMemoryBlobLoader::default(), $expected)
+            generate_value_ok!($s, &InMemoryBlobLoader::default(), $expected)
         }};
         ( $s:expr, $blob_loader:expr, $expected:expr ) => {{
             let value = Parser::new(tokenize($s).unwrap()).parse_value().unwrap();
@@ -890,6 +931,7 @@ mod tests {
                     &mut resolver,
                     &Bech32Decoder::new(&NetworkDefinition::local_simulator()),
                     $blob_loader,
+                    &mut HashMap::new()
                 ),
                 Ok($expected)
             );
@@ -899,7 +941,7 @@ mod tests {
     #[macro_export]
     macro_rules! generate_instruction_ok {
         ( $s:expr, $expected:expr ) => {{
-            generate_instruction_ok!($s, &mut InMemoryBlobLoader::default(), $expected)
+            generate_instruction_ok!($s, &InMemoryBlobLoader::default(), $expected)
         }};
         ( $s:expr, $blob_loader:expr, $expected:expr ) => {{
             let instruction = Parser::new(tokenize($s).unwrap())
@@ -913,7 +955,8 @@ mod tests {
                     &mut id_validator,
                     &mut resolver,
                     &Bech32Decoder::new(&NetworkDefinition::local_simulator()),
-                    $blob_loader
+                    $blob_loader,
+                    &mut HashMap::new()
                 ),
                 Ok($expected)
             );
@@ -923,7 +966,7 @@ mod tests {
     #[macro_export]
     macro_rules! generate_value_error {
         ( $s:expr, $expected:expr ) => {{
-            generate_value_error!($s, &mut InMemoryBlobLoader::default(), $expected)
+            generate_value_error!($s, &InMemoryBlobLoader::default(), $expected)
         }};
         ( $s:expr, $blob_loader:expr, $expected:expr ) => {{
             let value = Parser::new(tokenize($s).unwrap()).parse_value().unwrap();
@@ -933,6 +976,7 @@ mod tests {
                 &mut NameResolver::new(),
                 &Bech32Decoder::new(&NetworkDefinition::local_simulator()),
                 $blob_loader,
+                &mut HashMap::new(),
             ) {
                 Ok(_) => {
                     panic!("Expected {:?} but no error is thrown", $expected);

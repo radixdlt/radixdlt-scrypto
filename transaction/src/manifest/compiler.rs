@@ -14,7 +14,7 @@ pub enum CompileError {
 pub fn compile<T: BlobLoader>(
     s: &str,
     network: &NetworkDefinition,
-    blob_loader: &mut T,
+    blob_loader: &T,
 ) -> Result<TransactionManifest, CompileError> {
     let bech32_decoder = Bech32Decoder::new(network);
 

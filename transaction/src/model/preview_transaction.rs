@@ -80,4 +80,8 @@ impl ExecutableTransaction for ValidatedPreviewTransaction {
     fn tip_percentage(&self) -> u32 {
         self.preview_intent.intent.header.tip_percentage
     }
+
+    fn blobs(&self) -> &[Vec<u8>] {
+        &self.preview_intent.intent.manifest.blobs
+    }
 }

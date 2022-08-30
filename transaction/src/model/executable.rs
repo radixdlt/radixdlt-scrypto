@@ -98,4 +98,6 @@ pub trait ExecutableTransaction {
 
     /// Returns the public key of signers.
     fn signer_public_keys(&self) -> &[EcdsaPublicKey];
+
+    fn blobs(&self) -> &[Vec<u8>];
 }
