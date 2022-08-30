@@ -19,6 +19,8 @@ impl CostingModule {
         fee_table: &FeeTable,
         transaction: &T,
     ) {
+        // TODO charge manifest size and blobs separately
+
         fee_reserve
             .consume(fee_table.tx_base_fee(), "base_fee")
             .expect("TX base fee not covered by system loan");

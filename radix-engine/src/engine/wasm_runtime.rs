@@ -33,6 +33,10 @@ where
     I: WasmInstance,
     R: FeeReserve,
 {
+    // TODO: expose API for reading blobs
+
+    // TODO: do we want to allow dynamic creation of blobs?
+
     pub fn new(actor: ScryptoActor, system_api: &'y mut Y) -> Self {
         RadixEngineWasmRuntime {
             actor,
