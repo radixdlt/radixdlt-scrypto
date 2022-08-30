@@ -24,7 +24,7 @@ impl FileBlobLoader {
 }
 
 impl BlobLoader for FileBlobLoader {
-    fn load(&self, key: &str) -> Option<Vec<u8>> {
+    fn load(&mut self, key: &str) -> Option<Vec<u8>> {
         let mut path = self.root.clone();
         path.push(key);
 

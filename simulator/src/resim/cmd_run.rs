@@ -37,7 +37,7 @@ impl Run {
         let compiled_manifest = transaction::manifest::compile(
             &pre_processed_manifest,
             &NetworkDefinition::local_simulator(),
-            &FileBlobLoader::with_current_dir(),
+            &mut FileBlobLoader::with_current_dir(),
         )
         .map_err(Error::CompileError)?;
         handle_manifest(

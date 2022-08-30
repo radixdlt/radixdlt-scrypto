@@ -3,7 +3,7 @@ use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 
 pub trait BlobLoader {
-    fn load(&self, key: &str) -> Option<Vec<u8>>;
+    fn load(&mut self, key: &str) -> Option<Vec<u8>>;
 }
 
 #[derive(Default)]
@@ -18,7 +18,7 @@ impl InMemoryBlobLoader {
 }
 
 impl BlobLoader for InMemoryBlobLoader {
-    fn load(&self, key: &str) -> Option<Vec<u8>> {
+    fn load(&mut self, key: &str) -> Option<Vec<u8>> {
         self.blobs.get(key).cloned()
     }
 }

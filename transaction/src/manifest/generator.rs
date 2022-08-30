@@ -108,7 +108,7 @@ impl NameResolver {
 pub fn generate_manifest<T: BlobLoader>(
     instructions: &[ast::Instruction],
     bech32_decoder: &Bech32Decoder,
-    blob_loader: &T,
+    blob_loader: &mut T,
 ) -> Result<TransactionManifest, GeneratorError> {
     let mut id_validator = IdValidator::new();
     let mut name_resolver = NameResolver::new();
@@ -134,7 +134,7 @@ pub fn generate_instruction<T: BlobLoader>(
     id_validator: &mut IdValidator,
     resolver: &mut NameResolver,
     bech32_decoder: &Bech32Decoder,
-    blob_loader: &T,
+    blob_loader: &mut T,
 ) -> Result<Instruction, GeneratorError> {
     Ok(match instruction {
         ast::Instruction::TakeFromWorktop {
@@ -364,7 +364,7 @@ fn generate_args<T: BlobLoader>(
     values: &Vec<ast::Value>,
     resolver: &mut NameResolver,
     bech32_decoder: &Bech32Decoder,
-    blob_loader: &T,
+    blob_loader: &mut T,
 ) -> Result<Vec<Vec<u8>>, GeneratorError> {
     let mut result = Vec::new();
     for v in values {
@@ -593,7 +593,7 @@ fn generate_expression(value: &ast::Value) -> Result<Expression, GeneratorError>
 
 fn generate_blob<T: BlobLoader>(
     value: &ast::Value,
-    blob_loader: &T,
+    blob_loader: &mut T,
 ) -> Result<Blob, GeneratorError> {
     match value {
         ast::Value::Blob(inner) => match &**inner {
@@ -633,7 +633,7 @@ fn generate_value<T: BlobLoader>(
     expected: Option<ast::Type>,
     resolver: &mut NameResolver,
     bech32_decoder: &Bech32Decoder,
-    blob_loader: &T,
+    blob_loader: &mut T,
 ) -> Result<Value, GeneratorError> {
     if let Some(ty) = expected {
         if ty != value.kind() {
@@ -824,7 +824,7 @@ fn generate_singletons<T: BlobLoader>(
     ty: Option<ast::Type>,
     resolver: &mut NameResolver,
     bech32_decoder: &Bech32Decoder,
-    blob_loader: &T,
+    blob_loader: &mut T,
 ) -> Result<Vec<Value>, GeneratorError> {
     let mut result = vec![];
     for element in elements {
@@ -845,7 +845,7 @@ fn generate_pairs<T: BlobLoader>(
     value_type: ast::Type,
     resolver: &mut NameResolver,
     bech32_decoder: &Bech32Decoder,
-    blob_loader: &T,
+    blob_loader: &mut T,
 ) -> Result<Vec<Value>, GeneratorError> {
     if elements.len() % 2 != 0 {
         return Err(GeneratorError::OddNumberOfElements(elements.len()));
@@ -925,7 +925,7 @@ mod tests {
     #[macro_export]
     macro_rules! generate_value_ok {
         ( $s:expr, $expected:expr ) => {{
-            generate_value_ok!($s, &InMemoryBlobLoader::default(), $expected)
+            generate_value_ok!($s, &mut InMemoryBlobLoader::default(), $expected)
         }};
         ( $s:expr, $blob_loader:expr, $expected:expr ) => {{
             let value = Parser::new(tokenize($s).unwrap()).parse_value().unwrap();
@@ -946,7 +946,7 @@ mod tests {
     #[macro_export]
     macro_rules! generate_instruction_ok {
         ( $s:expr, $expected:expr ) => {{
-            generate_instruction_ok!($s, &InMemoryBlobLoader::default(), $expected)
+            generate_instruction_ok!($s, &mut InMemoryBlobLoader::default(), $expected)
         }};
         ( $s:expr, $blob_loader:expr, $expected:expr ) => {{
             let instruction = Parser::new(tokenize($s).unwrap())
@@ -970,7 +970,7 @@ mod tests {
     #[macro_export]
     macro_rules! generate_value_error {
         ( $s:expr, $expected:expr ) => {{
-            generate_value_error!($s, &InMemoryBlobLoader::default(), $expected)
+            generate_value_error!($s, &mut InMemoryBlobLoader::default(), $expected)
         }};
         ( $s:expr, $blob_loader:expr, $expected:expr ) => {{
             let value = Parser::new(tokenize($s).unwrap()).parse_value().unwrap();
@@ -1246,7 +1246,7 @@ mod tests {
             crate::manifest::compile(
                 tx,
                 &NetworkDefinition::local_simulator(),
-                &InMemoryBlobLoader::default()
+                &mut InMemoryBlobLoader::default()
             )
             .unwrap()
             .instructions,

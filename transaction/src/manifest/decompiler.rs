@@ -310,7 +310,7 @@ mod tests {
         let tx = compile(
             include_str!("../../examples/complex.rtm"),
             &NetworkDefinition::local_simulator(),
-            &InMemoryBlobLoader::default(),
+            &mut InMemoryBlobLoader::default(),
         )
         .unwrap();
 
@@ -322,7 +322,7 @@ mod tests {
             compile(
                 manifest,
                 &NetworkDefinition::local_simulator(),
-                &InMemoryBlobLoader::default()
+                &mut InMemoryBlobLoader::default()
             )
             .unwrap(),
             tx

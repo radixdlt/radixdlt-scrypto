@@ -68,7 +68,7 @@ impl TransactionIntent {
         network: &NetworkDefinition,
         header: TransactionHeader,
         manifest: &str,
-        blob_loader: &T,
+        blob_loader: &mut T,
     ) -> Result<Self, IntentCreationError> {
         if network.id != header.network_id {
             return Err(IntentCreationError::ConfigErr(
@@ -155,7 +155,7 @@ mod tests {
                 tip_percentage: 5,
             },
             "CLEAR_AUTH_ZONE;",
-            &InMemoryBlobLoader::default(),
+            &mut InMemoryBlobLoader::default(),
         )
         .unwrap();
 
