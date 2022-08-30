@@ -180,7 +180,7 @@ impl WasmInstance for WasmerInstance {
             *guard = runtime as *mut _ as usize;
         }
 
-        let pointer = send_value(&self.instance, args)?;
+        let pointer = send_value(&self.instance, args).map_err(InvokeError::Error)?;
         let result = self
             .instance
             .exports
@@ -196,7 +196,7 @@ impl WasmInstance for WasmerInstance {
                     .ok_or(InvokeError::Error(WasmError::MissingReturnData))?
                     .i32()
                     .ok_or(InvokeError::Error(WasmError::InvalidReturnData))?;
-                read_value(&self.instance, ptr as usize)
+                read_value(&self.instance, ptr as usize).map_err(InvokeError::Error)
             }
             Err(e) => {
                 let e_str = format!("{:?}", e);

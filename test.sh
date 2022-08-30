@@ -14,6 +14,7 @@ echo "Testing with std..."
 (cd scrypto-derive; cargo test)
 (cd scrypto-tests; cargo test)
 (cd radix-engine; cargo test)
+(cd radix-engine; cargo test --features wasmer)
 (cd transaction; cargo test)
 
 echo "Testing with no_std..."
