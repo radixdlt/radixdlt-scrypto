@@ -53,7 +53,7 @@ impl ExecutionConfig {
 /// An executor that runs transactions.
 pub struct TransactionExecutor<'s, 'w, S, W, I>
 where
-    S: ReadableSubstateStore + WriteableSubstateStore,
+    S: ReadableSubstateStore,
     W: WasmEngine<I>,
     I: WasmInstance,
 {
@@ -65,7 +65,7 @@ where
 
 impl<'s, 'w, S, W, I> TransactionExecutor<'s, 'w, S, W, I>
 where
-    S: ReadableSubstateStore + WriteableSubstateStore,
+    S: ReadableSubstateStore,
     W: WasmEngine<I>,
     I: WasmInstance,
 {
@@ -80,18 +80,6 @@ where
             wasm_instrumenter,
             phantom: PhantomData,
         }
-    }
-
-    pub fn execute_and_commit<T: ExecutableTransaction>(
-        &mut self,
-        transaction: &T,
-        params: &ExecutionConfig,
-    ) -> TransactionReceipt {
-        let receipt = self.execute(transaction, params);
-        if let TransactionResult::Commit(commit) = &receipt.result {
-            commit.state_updates.commit(self.substate_store);
-        }
-        receipt
     }
 
     pub fn execute<T: ExecutableTransaction>(
@@ -193,6 +181,25 @@ where
             if receipt.execution.application_logs.is_empty() {
                 println!("None");
             }
+        }
+        receipt
+    }
+}
+
+impl<'s, 'w, S, W, I> TransactionExecutor<'s, 'w, S, W, I>
+where
+    S: ReadableSubstateStore + WriteableSubstateStore,
+    W: WasmEngine<I>,
+    I: WasmInstance,
+{
+    pub fn execute_and_commit<T: ExecutableTransaction>(
+        &mut self,
+        transaction: &T,
+        params: &ExecutionConfig,
+    ) -> TransactionReceipt {
+        let receipt = self.execute(transaction, params);
+        if let TransactionResult::Commit(commit) = &receipt.result {
+            commit.state_updates.commit(self.substate_store);
         }
         receipt
     }
