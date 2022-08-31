@@ -309,11 +309,10 @@ where
                         instance
                             .invoke_export(&export_name, &input, &mut runtime)
                             .map_err(|e| match e {
-                                // Flatten error code for more readable transaction receipt
-                                WasmInvokeError::RuntimeError(e) => e,
-                                e @ _ => RuntimeError::KernelError(KernelError::WasmInvokeError(
-                                    e.into(),
-                                )),
+                                InvokeError::Error(e) => {
+                                    RuntimeError::KernelError(KernelError::WasmError(e))
+                                }
+                                InvokeError::Downstream(runtime_error) => runtime_error,
                             })?
                     };
 
@@ -334,7 +333,6 @@ where
                                 blueprint_name,
                                 ident,
                             },
-                            output: output.dom,
                         }))
                     } else {
                         Ok(output)
@@ -851,15 +849,30 @@ where
                             SubstateId::ResourceManager(resource_address.clone());
                         let resource_node_id = RENodeId::ResourceManager(resource_address.clone());
                         let resource_node_pointer = RENodePointer::Store(resource_node_id);
-                        resource_node_pointer
-                            .acquire_lock(
-                                resource_substate_id.clone(),
+
+                        // This condition check is a hack to fix a resource manager locking issue when the receiver
+                        // is a resource manager and its address is present in the argument lists.
+                        //
+                        // TODO: See the outer TODO for clean-up instruction.
+                        if !locked_pointers.contains(&(
+                            resource_node_pointer,
+                            resource_substate_id.clone(),
+                            false,
+                        )) {
+                            resource_node_pointer
+                                .acquire_lock(
+                                    resource_substate_id.clone(),
+                                    false,
+                                    false,
+                                    &mut self.track,
+                                )
+                                .map_err(RuntimeError::KernelError)?;
+                            locked_pointers.push((
+                                resource_node_pointer,
+                                resource_substate_id,
                                 false,
-                                false,
-                                &mut self.track,
-                            )
-                            .map_err(RuntimeError::KernelError)?;
-                        locked_pointers.push((resource_node_pointer, resource_substate_id, false));
+                            ));
+                        }
                         next_frame_node_refs.insert(resource_node_id, resource_node_pointer);
                     }
                 }

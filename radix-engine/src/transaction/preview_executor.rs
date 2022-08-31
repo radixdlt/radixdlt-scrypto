@@ -27,7 +27,7 @@ pub enum PreviewError {
 
 pub struct PreviewExecutor<'s, 'w, 'n, S, W, I, IHM>
 where
-    S: ReadableSubstateStore + WriteableSubstateStore,
+    S: ReadableSubstateStore,
     W: WasmEngine<I>,
     I: WasmInstance,
     IHM: IntentHashManager,
@@ -42,7 +42,7 @@ where
 
 impl<'s, 'w, 'n, S, W, I, IHM> PreviewExecutor<'s, 'w, 'n, S, W, I, IHM>
 where
-    S: ReadableSubstateStore + WriteableSubstateStore,
+    S: ReadableSubstateStore,
     W: WasmEngine<I>,
     I: WasmInstance,
     IHM: IntentHashManager,

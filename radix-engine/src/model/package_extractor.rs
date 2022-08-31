@@ -1,12 +1,13 @@
 use crate::engine::NopWasmRuntime;
 use crate::fee::SystemLoanFeeReserve;
+use crate::model::InvokeError;
 use crate::types::*;
 use crate::wasm::*;
 
 #[derive(Debug)]
 pub enum ExtractAbiError {
     InvalidWasm(PrepareError),
-    FailedToExportBlueprintAbi(WasmInvokeError),
+    FailedToExportBlueprintAbi(InvokeError<WasmError>),
     AbiDecodeError(DecodeError),
     InvalidBlueprintAbi,
 }
