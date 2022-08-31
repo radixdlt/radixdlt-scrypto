@@ -309,7 +309,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             .consume(self.fee_table.tx_base_fee(), "base_fee")?;
 
         self.fee_reserve.consume(
-            self.fee_table.tx_decoding_per_byte() * transaction.manifest_size() as u32,
+            self.fee_table.tx_manifest_decoding_per_byte() * transaction.manifest_size() as u32,
             "decode_manifest",
         )?;
 
@@ -331,7 +331,10 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         &mut self,
         blobs: &HashMap<Hash, Vec<u8>>,
     ) -> Result<(), FeeReserveError> {
-        self.fee_reserve.consume(blobs.len() as u32, "blobs")?; // TODO: introduce costing item
+        self.fee_reserve.consume(
+            blobs.iter().map(|b| b.1.len()).sum::<usize>() as u32,
+            "blobs",
+        )?;
 
         Ok(())
     }
