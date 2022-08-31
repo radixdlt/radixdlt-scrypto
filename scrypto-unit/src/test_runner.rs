@@ -81,7 +81,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         component_address: ComponentAddress,
     ) -> Option<radix_engine::model::ComponentInfo> {
         self.execution_stores
-            .get_output_store(0)
+            .get_root_store()
             .get_substate(&SubstateId::ComponentInfo(component_address))
             .map(|output| output.substate.into())
     }
@@ -91,7 +91,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         component_address: ComponentAddress,
     ) -> Option<radix_engine::model::ComponentState> {
         self.execution_stores
-            .get_output_store(0)
+            .get_root_store()
             .get_substate(&SubstateId::ComponentState(component_address))
             .map(|output| output.substate.into())
     }
@@ -102,14 +102,14 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         key: Vec<u8>,
     ) -> Option<radix_engine::model::KeyValueStoreEntryWrapper> {
         self.execution_stores
-            .get_output_store(0)
+            .get_root_store()
             .get_substate(&SubstateId::KeyValueStoreEntry(kv_store_id, key))
             .map(|output| output.substate.into())
     }
 
     pub fn inspect_vault(&mut self, vault_id: VaultId) -> Option<radix_engine::model::Vault> {
         self.execution_stores
-            .get_output_store(0)
+            .get_root_store()
             .get_substate(&SubstateId::Vault(vault_id))
             .map(|output| output.substate.into())
     }
@@ -272,16 +272,16 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         package_address: PackageAddress,
         blueprint_name: &str,
     ) -> abi::BlueprintAbi {
-        let output_store = self.execution_stores.get_output_store(0);
-        export_abi(&output_store, package_address, blueprint_name).expect("Failed to export ABI")
+        let output_store = self.execution_stores.get_root_store();
+        export_abi(output_store, package_address, blueprint_name).expect("Failed to export ABI")
     }
 
     pub fn export_abi_by_component(
         &mut self,
         component_address: ComponentAddress,
     ) -> abi::BlueprintAbi {
-        let output_store = self.execution_stores.get_output_store(0);
-        export_abi_by_component(&output_store, component_address).expect("Failed to export ABI")
+        let output_store = self.execution_stores.get_root_store();
+        export_abi_by_component(output_store, component_address).expect("Failed to export ABI")
     }
 
     pub fn update_resource_auth(
@@ -510,8 +510,8 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         ) -> ScryptoValue,
     {
         let tx_hash = hash(self.next_transaction_nonce.to_string());
-        let mut substate_store = self.execution_stores.get_output_store(0);
-        let mut track = Track::new(&substate_store, SystemLoanFeeReserve::default());
+        let substate_store = self.execution_stores.get_root_store();
+        let mut track = Track::new(substate_store, SystemLoanFeeReserve::default());
         let mut execution_trace = ExecutionTrace::new();
 
         let mut kernel = Kernel::new(
@@ -534,7 +534,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         self.next_transaction_nonce += 1;
         let receipt = track.finalize(Ok(Vec::new()), Vec::new());
         if let TransactionResult::Commit(c) = receipt.result {
-            c.state_updates.commit(&mut substate_store);
+            c.state_updates.commit(substate_store);
         }
 
         output
