@@ -46,7 +46,7 @@ impl ComponentSystem {
 
     /// Publishes a package.
     pub fn publish_package(&mut self, _package: Package) -> PackageAddress {
-        todo!("Not supported yet due to lack dynamic blob creation")
+        todo!("Not supported yet due to lack of dynamic blob creation")
     }
 
     /// Instantiates a component.
