@@ -85,8 +85,9 @@ impl SystemLoanFeeReserve {
         }
     }
 
-    /// For testing and non-protocol process ONLY.
-    /// May overflow.
+    /// Adds free credit.
+    ///
+    /// Note that overflow is not checked.
     pub fn credit(&mut self, n: u32) {
         let repay = min(n, self.owed);
         self.owed = self.owed - repay;
@@ -233,118 +234,6 @@ impl Default for SystemLoanFeeReserve {
                 .parse()
                 .expect("Invalid DEFAULT_COST_UNIT_PRICE"),
             DEFAULT_SYSTEM_LOAN,
-        )
-    }
-}
-
-pub struct UnlimitedLoanFeeReserve {
-    /// The price of cost unit
-    cost_unit_price: Decimal,
-    /// The tip percentage
-    tip_percentage: u32,
-    /// The total cost units consumed so far, instant
-    consumed_instant: u32,
-    /// The total cost units consumed so far, deferred
-    consumed_deferred: u32,
-    /// The max number of cost units that can be consumed
-    limit: u32,
-    /// The cost breakdown
-    cost_breakdown: HashMap<String, u32>,
-}
-
-impl UnlimitedLoanFeeReserve {
-    pub fn new(limit: u32, tip_percentage: u32, cost_unit_price: Decimal) -> Self {
-        Self {
-            cost_unit_price,
-            tip_percentage,
-            consumed_instant: 0,
-            consumed_deferred: 0,
-            limit: limit,
-            cost_breakdown: HashMap::new(),
-        }
-    }
-}
-
-impl FeeReserve for UnlimitedLoanFeeReserve {
-    fn consume<T: ToString>(
-        &mut self,
-        n: u32,
-        reason: T,
-        deferred: bool,
-    ) -> Result<(), FeeReserveError> {
-        if !deferred {
-            self.consumed_instant = self
-                .consumed_instant
-                .checked_add(n)
-                .ok_or(FeeReserveError::Overflow)?;
-        } else {
-            self.consumed_deferred = self
-                .consumed_deferred
-                .checked_add(n)
-                .ok_or(FeeReserveError::Overflow)?;
-        }
-
-        self.cost_breakdown
-            .entry(reason.to_string())
-            .or_default()
-            .add_assign(n);
-
-        Ok(())
-    }
-
-    fn repay(
-        &mut self,
-        _vault_id: VaultId,
-        fee: ResourceContainer,
-        _contingent: bool,
-    ) -> Result<ResourceContainer, FeeReserveError> {
-        Ok(fee) // No-op
-    }
-
-    fn finalize(self) -> FeeSummary {
-        let consumed = self.consumed_instant + self.consumed_deferred;
-        FeeSummary {
-            loan_fully_repaid: true,
-            cost_unit_limit: self.limit,
-            cost_unit_consumed: consumed,
-            cost_unit_price: self.cost_unit_price,
-            tip_percentage: self.tip_percentage,
-            burned: self.cost_unit_price * consumed,
-            tipped: self.cost_unit_price * self.tip_percentage / 100 * consumed,
-            payments: Vec::new(),
-            cost_breakdown: self.cost_breakdown,
-        }
-    }
-
-    fn limit(&self) -> u32 {
-        self.limit
-    }
-
-    fn consumed_deferred(&self) -> u32 {
-        self.consumed_deferred
-    }
-
-    fn consumed_instant(&self) -> u32 {
-        self.consumed_instant
-    }
-
-    fn balance(&self) -> u32 {
-        u32::MAX
-    }
-
-    fn owed(&self) -> u32 {
-        0
-    }
-}
-
-impl Default for UnlimitedLoanFeeReserve {
-    fn default() -> UnlimitedLoanFeeReserve {
-        UnlimitedLoanFeeReserve::new(
-            DEFAULT_COST_UNIT_LIMIT,
-            0,
-            DEFAULT_COST_UNIT_PRICE
-                .parse()
-                .expect("Invalid DEFAULT_COST_UNIT_PRICE"),
         )
     }
 }

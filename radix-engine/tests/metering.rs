@@ -176,7 +176,7 @@ fn test_basic_transfer() {
         + 0 /* blobs */
         + 3300 /* borrow_substate */
         + 1500 /* create_node */
-        + 1137 /* decode_manifest */
+        + 1104 /* decode_manifest */
         + 1000 /* drop_node */
         + 616107 /* instantiate_wasm */
         + 1965 /* invoke_function */
@@ -186,7 +186,7 @@ fn test_basic_transfer() {
         + 1000 /* run_function */
         + 5200 /* run_method */
         + 275043 /* run_wasm */
-        + 379 /* verify_manifest */
+        + 368 /* verify_manifest */
         + 3750 /* verify_signatures */
         + 3000, /* write_substate */
         receipt.execution.fee_summary.cost_unit_consumed

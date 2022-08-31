@@ -1,8 +1,9 @@
+use crate::constants::GENESIS_CREATION_CREDIT;
 use crate::engine::Track;
 use crate::engine::TrackReceipt;
 use crate::fee::FeeReserve;
 use crate::fee::FeeTable;
-use crate::fee::UnlimitedLoanFeeReserve;
+use crate::fee::SystemLoanFeeReserve;
 use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
 use crate::model::ValidatedPackage;
 use crate::transaction::TransactionResult;
@@ -131,11 +132,9 @@ where
         .get_substate(&SubstateId::Package(SYS_FAUCET_PACKAGE))
         .is_none()
     {
-        let track = Track::new(
-            &substate_store,
-            UnlimitedLoanFeeReserve::default(),
-            FeeTable::new(),
-        );
+        let mut fee_reserve = SystemLoanFeeReserve::default();
+        fee_reserve.credit(GENESIS_CREATION_CREDIT);
+        let track = Track::new(&substate_store, fee_reserve, FeeTable::new());
         let receipt = create_genesis(track);
         if let TransactionResult::Commit(c) = receipt.result {
             c.state_updates.commit(&mut substate_store);
