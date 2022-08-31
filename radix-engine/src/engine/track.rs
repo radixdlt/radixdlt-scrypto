@@ -1,9 +1,13 @@
+use transaction::model::ExecutableTransaction;
+
 use crate::engine::AppStateTrack;
 use crate::engine::BaseStateTrack;
 use crate::engine::StateTrackError;
 use crate::engine::*;
 use crate::fee::FeeReserve;
+use crate::fee::FeeReserveError;
 use crate::fee::FeeSummary;
+use crate::fee::FeeTable;
 use crate::ledger::*;
 use crate::model::Bucket;
 use crate::model::KeyValueStoreEntryWrapper;
@@ -33,14 +37,14 @@ impl BorrowedSubstate {
     }
 }
 
-/// Enforces borrow semantics of global objects and collects transaction-wise side effects,
-/// such as logs and events.
+/// Transaction-wide states and side effects
 pub struct Track<'s, R: FeeReserve> {
     application_logs: Vec<(Level, String)>,
     new_substates: Vec<SubstateId>,
     state_track: AppStateTrack<'s>,
     borrowed_substates: HashMap<SubstateId, BorrowedSubstate>,
     pub fee_reserve: R,
+    pub fee_table: FeeTable,
 }
 
 #[derive(Debug)]
@@ -57,7 +61,11 @@ pub struct TrackReceipt {
 }
 
 impl<'s, R: FeeReserve> Track<'s, R> {
-    pub fn new(substate_store: &'s dyn ReadableSubstateStore, fee_reserve: R) -> Self {
+    pub fn new(
+        substate_store: &'s dyn ReadableSubstateStore,
+        fee_reserve: R,
+        fee_table: FeeTable,
+    ) -> Self {
         let base_state_track = BaseStateTrack::new(substate_store);
         let state_track = AppStateTrack::new(base_state_track);
 
@@ -67,6 +75,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             state_track,
             borrowed_substates: HashMap::new(),
             fee_reserve,
+            fee_table,
         }
     }
 
@@ -290,6 +299,41 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         };
 
         self.state_track.put_substate(substate_id, value.into());
+    }
+
+    pub fn apply_pre_execution_costs<T: ExecutableTransaction>(
+        &mut self,
+        transaction: &T,
+    ) -> Result<(), FeeReserveError> {
+        self.fee_reserve
+            .consume(self.fee_table.tx_base_fee(), "base_fee")?;
+
+        self.fee_reserve.consume(
+            self.fee_table.tx_decoding_per_byte() * transaction.manifest_size() as u32,
+            "decode_manifest",
+        )?;
+
+        self.fee_reserve.consume(
+            self.fee_table.tx_manifest_verification_per_byte() * transaction.manifest_size() as u32,
+            "verify_manifest",
+        )?;
+
+        self.fee_reserve.consume(
+            self.fee_table.tx_signature_verification_per_sig()
+                * transaction.signer_public_keys().len() as u32,
+            "verify_signatures",
+        )?;
+
+        Ok(())
+    }
+
+    pub fn apply_post_execution_costs(
+        &mut self,
+        blobs: &HashMap<Hash, Vec<u8>>,
+    ) -> Result<(), FeeReserveError> {
+        self.fee_reserve.consume(blobs.len() as u32, "blobs")?; // TODO: introduce costing item
+
+        Ok(())
     }
 
     pub fn finalize(

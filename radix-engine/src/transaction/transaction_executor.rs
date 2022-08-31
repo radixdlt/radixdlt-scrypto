@@ -101,7 +101,7 @@ where
         &mut self,
         transaction: &T,
         params: &ExecutionConfig,
-        mut fee_reserve: R,
+        fee_reserve: R,
     ) -> TransactionReceipt {
         let transaction_hash = transaction.transaction_hash();
         let signer_public_keys = transaction.signer_public_keys().to_vec();
@@ -123,9 +123,7 @@ where
         }
 
         // Prepare state track and execution trace
-        let fee_table = FeeTable::new();
-        CostingModule::apply_static_fees(&mut fee_reserve, &fee_table, transaction);
-        let mut track = Track::new(self.substate_store, fee_reserve);
+        let mut track = Track::new(self.substate_store, fee_reserve, FeeTable::new());
         let mut execution_trace = ExecutionTrace::new();
 
         // Invoke the function/method
@@ -134,12 +132,15 @@ where
             if params.trace {
                 modules.push(Box::new(LoggerModule::new()));
             }
-            modules.push(Box::new(CostingModule::new(fee_table)));
+            modules.push(Box::new(CostingModule::default()));
 
+            track
+                .apply_pre_execution_costs(transaction)
+                .expect("Fee reserve not enough cover pre-execution cost");
             let mut kernel = Kernel::new(
                 transaction_hash,
                 signer_public_keys,
-                blobs,
+                &blobs,
                 params.is_system,
                 params.max_call_depth,
                 &mut track,
@@ -149,18 +150,25 @@ where
                 &mut execution_trace,
                 modules,
             );
-            let result = kernel.invoke_function(
-                FnIdentifier::Native(NativeFnIdentifier::TransactionProcessor(
-                    TransactionProcessorFnIdentifier::Run,
-                )),
-                ScryptoValue::from_typed(&TransactionProcessorRunInput {
-                    instructions: instructions.clone(),
-                }),
-            );
-            result.map(|o| {
-                scrypto_decode::<Vec<Vec<u8>>>(&o.raw)
-                    .expect("TransactionProcessor returned data of unexpected type")
-            })
+            kernel
+                .invoke_function(
+                    FnIdentifier::Native(NativeFnIdentifier::TransactionProcessor(
+                        TransactionProcessorFnIdentifier::Run,
+                    )),
+                    ScryptoValue::from_typed(&TransactionProcessorRunInput {
+                        instructions: instructions.clone(),
+                    }),
+                )
+                .map(|o| {
+                    scrypto_decode::<Vec<Vec<u8>>>(&o.raw)
+                        .expect("TransactionProcessor returned data of unexpected type")
+                })
+                .and_then(|result| {
+                    track
+                        .apply_post_execution_costs(&blobs)
+                        .map_err(|e| RuntimeError::ModuleError(ModuleError::CostingError(e)))?;
+                    Ok(result)
+                })
         };
 
         // Produce the final transaction receipt

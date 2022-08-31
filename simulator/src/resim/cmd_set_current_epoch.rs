@@ -2,7 +2,7 @@ use clap::Parser;
 use radix_engine::constants::*;
 use radix_engine::engine::Track;
 use radix_engine::engine::{ExecutionTrace, Kernel, SystemApi};
-use radix_engine::fee::SystemLoanFeeReserve;
+use radix_engine::fee::{FeeTable, SystemLoanFeeReserve};
 use radix_engine::types::*;
 use radix_engine_stores::rocks_db::RadixEngineDB;
 
@@ -20,16 +20,21 @@ impl SetCurrentEpoch {
         // TODO: can we construct a proper transaction to do the following?
 
         let tx_hash = hash(get_nonce()?.to_string());
+        let blobs = HashMap::new();
         let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?);
         let mut wasm_engine = DefaultWasmEngine::new();
         let mut wasm_instrumenter = WasmInstrumenter::new();
-        let mut track = Track::new(&substate_store, SystemLoanFeeReserve::default());
+        let mut track = Track::new(
+            &substate_store,
+            SystemLoanFeeReserve::default(),
+            FeeTable::new(),
+        );
         let mut execution_trace = ExecutionTrace::new();
 
         let mut kernel = Kernel::new(
             tx_hash,
             Vec::new(),
-            HashMap::new(),
+            &blobs,
             true,
             DEFAULT_MAX_CALL_DEPTH,
             &mut track,

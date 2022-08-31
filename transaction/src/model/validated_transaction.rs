@@ -1,5 +1,6 @@
 use sbor::rust::vec::Vec;
 use sbor::*;
+use scrypto::buffer::scrypto_encode;
 use scrypto::crypto::*;
 
 use crate::model::*;
@@ -18,8 +19,8 @@ impl ExecutableTransaction for ValidatedTransaction {
         self.transaction_hash
     }
 
-    fn transaction_payload_size(&self) -> u32 {
-        self.transaction.to_bytes().len() as u32
+    fn manifest_size(&self) -> u32 {
+        scrypto_encode(&self.transaction.signed_intent.intent.manifest).len() as u32
     }
 
     fn cost_unit_limit(&self) -> u32 {

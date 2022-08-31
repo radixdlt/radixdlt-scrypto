@@ -32,7 +32,7 @@ pub struct Kernel<
     /// The transaction hash
     transaction_hash: Hash,
     /// Blobs attached to the transaction
-    blobs: HashMap<Hash, Vec<u8>>,
+    blobs: &'g HashMap<Hash, Vec<u8>>,
     /// The max call depth
     max_depth: usize,
 
@@ -70,7 +70,7 @@ where
     pub fn new(
         transaction_hash: Hash,
         transaction_signers: Vec<EcdsaPublicKey>,
-        blobs: HashMap<Hash, Vec<u8>>,
+        blobs: &'g HashMap<Hash, Vec<u8>>,
         is_system: bool,
         max_depth: usize,
         track: &'g mut Track<'s, R>,

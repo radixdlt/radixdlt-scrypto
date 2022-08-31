@@ -1,8 +1,7 @@
 use sbor::*;
 use scrypto::buffer::scrypto_encode;
-use scrypto::crypto::{hash, EcdsaPublicKey, EcdsaSignature, Hash};
+use scrypto::crypto::{hash, EcdsaPublicKey, Hash};
 
-use crate::builder::TransactionBuilder;
 use crate::model::{ExecutableInstruction, ExecutableTransaction, TransactionIntent};
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
@@ -45,24 +44,8 @@ impl ExecutableTransaction for ValidatedPreviewTransaction {
         self.transaction_hash
     }
 
-    fn transaction_payload_size(&self) -> u32 {
-        let fake_signature = EcdsaSignature([0; EcdsaSignature::LENGTH]);
-
-        let transaction = TransactionBuilder::new()
-            .header(self.preview_intent.intent.header.clone())
-            .manifest(self.preview_intent.intent.manifest.clone())
-            .signer_signatures(
-                self.preview_intent
-                    .signer_public_keys
-                    .clone()
-                    .into_iter()
-                    .map(|pk| (pk, fake_signature))
-                    .collect(),
-            )
-            .notary_signature(fake_signature)
-            .build();
-
-        transaction.to_bytes().len() as u32
+    fn manifest_size(&self) -> u32 {
+        scrypto_encode(&self.preview_intent.intent.manifest).len() as u32
     }
 
     fn instructions(&self) -> &[ExecutableInstruction] {

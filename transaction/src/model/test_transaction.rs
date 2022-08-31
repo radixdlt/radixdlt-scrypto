@@ -1,4 +1,5 @@
 use sbor::rust::vec::Vec;
+use scrypto::buffer::scrypto_encode;
 use scrypto::core::NetworkDefinition;
 use scrypto::crypto::*;
 
@@ -156,8 +157,8 @@ impl ExecutableTransaction for TestTransaction {
         self.transaction.hash()
     }
 
-    fn transaction_payload_size(&self) -> u32 {
-        self.transaction.to_bytes().len() as u32
+    fn manifest_size(&self) -> u32 {
+        scrypto_encode(&self.transaction.signed_intent.intent.manifest).len() as u32
     }
 
     fn cost_unit_limit(&self) -> u32 {

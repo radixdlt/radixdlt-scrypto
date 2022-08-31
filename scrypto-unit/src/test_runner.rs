@@ -3,7 +3,7 @@ use radix_engine::constants::{
 };
 use radix_engine::engine::{ExecutionTrace, Kernel, KernelError, ModuleError, SystemApi};
 use radix_engine::engine::{RuntimeError, Track};
-use radix_engine::fee::SystemLoanFeeReserve;
+use radix_engine::fee::{FeeTable, SystemLoanFeeReserve};
 use radix_engine::ledger::*;
 use radix_engine::model::{export_abi, export_abi_by_component, extract_package};
 use radix_engine::state_manager::StagedSubstateStoreManager;
@@ -538,14 +538,19 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         ) -> ScryptoValue,
     {
         let tx_hash = hash(self.next_transaction_nonce.to_string());
+        let blobs = HashMap::new();
         let mut substate_store = self.execution_stores.get_output_store(0);
-        let mut track = Track::new(&substate_store, SystemLoanFeeReserve::default());
+        let mut track = Track::new(
+            &substate_store,
+            SystemLoanFeeReserve::default(),
+            FeeTable::new(),
+        );
         let mut execution_trace = ExecutionTrace::new();
 
         let mut kernel = Kernel::new(
             tx_hash,
             Vec::new(),
-            HashMap::new(),
+            &blobs,
             is_system,
             DEFAULT_MAX_CALL_DEPTH,
             &mut track,
