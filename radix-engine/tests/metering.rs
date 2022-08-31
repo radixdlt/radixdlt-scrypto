@@ -164,6 +164,7 @@ fn test_basic_transfer() {
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key1]);
+    receipt.expect_commit_success();
 
     // Assert
 
@@ -203,13 +204,13 @@ fn test_publish_large_package() {
         r#"
             (module
                 (data (i32.const 0) "{}")
-                (memory $0 1)
+                (memory $0 64)
                 (export "memory" (memory $0))
             )
         "#,
-        "Hi".repeat(2 * 1024 * 1024)
+        "i".repeat(4 * 1024 * 1024)
     ));
-    println!("Size: {}", code.len());
+    assert_eq!(4194343, code.len());
     let package = Package {
         code,
         blueprints: HashMap::new(),
@@ -219,8 +220,8 @@ fn test_publish_large_package() {
         .publish_package(package)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    println!("Receipt: {:?}", receipt);
+    receipt.expect_commit_success();
 
     // Assert
-    receipt.expect_commit_failure(); // FIXME: update the wasm to be a valid package
+    assert_eq!(4394312, receipt.execution.fee_summary.cost_unit_consumed);
 }
