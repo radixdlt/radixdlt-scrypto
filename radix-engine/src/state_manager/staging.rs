@@ -25,13 +25,13 @@ impl StagedSubstateStoreNode {
 }
 
 /// Structure which manages the acyclic graph
-pub struct StagedSubstateStoreManager<'s, S: ReadableSubstateStore + WriteableSubstateStore> {
+pub struct StagedSubstateStoreManager<'s, S: ReadableSubstateStore> {
     parent: &'s mut S,
     nodes: HashMap<u64, StagedSubstateStoreNode>,
     cur_id: u64,
 }
 
-impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> StagedSubstateStoreManager<'s, S> {
+impl<'s, S: ReadableSubstateStore> StagedSubstateStoreManager<'s, S> {
     pub fn new(parent: &'s mut S) -> Self {
         StagedSubstateStoreManager {
             parent,
@@ -72,7 +72,9 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> StagedSubstateStoreM
             self.nodes.remove(&to_delete_id);
         }
     }
+}
 
+impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> StagedSubstateStoreManager<'s, S> {
     fn set_root_parent(&mut self, id: u64) {
         for node in self.nodes.values_mut().filter(|node| id == node.parent_id) {
             node.parent_id = 0;
@@ -112,12 +114,12 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> StagedSubstateStoreM
     }
 }
 
-pub struct StagedSubstateStore<'t, 's, S: ReadableSubstateStore + WriteableSubstateStore> {
+pub struct StagedSubstateStore<'t, 's, S: ReadableSubstateStore> {
     stores: &'t mut StagedSubstateStoreManager<'s, S>,
     id: u64,
 }
 
-impl<'t, 's, S: ReadableSubstateStore + WriteableSubstateStore> StagedSubstateStore<'t, 's, S> {
+impl<'t, 's, S: ReadableSubstateStore> StagedSubstateStore<'t, 's, S> {
     fn get_substate_recurse(&self, substate_id: &SubstateId, id: u64) -> Option<OutputValue> {
         if id == 0 {
             return self.stores.parent.get_substate(substate_id);
@@ -147,9 +149,7 @@ impl<'t, 's, S: ReadableSubstateStore + WriteableSubstateStore> StagedSubstateSt
     }
 }
 
-impl<'t, 's, S: ReadableSubstateStore + WriteableSubstateStore> ReadableSubstateStore
-    for StagedSubstateStore<'t, 's, S>
-{
+impl<'t, 's, S: ReadableSubstateStore> ReadableSubstateStore for StagedSubstateStore<'t, 's, S> {
     fn get_substate(&self, substate_id: &SubstateId) -> Option<OutputValue> {
         self.get_substate_recurse(substate_id, self.id)
     }
