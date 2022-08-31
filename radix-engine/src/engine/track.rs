@@ -306,34 +306,34 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         transaction: &T,
     ) -> Result<(), FeeReserveError> {
         self.fee_reserve
-            .consume(self.fee_table.tx_base_fee(), "base_fee")?;
+            .consume(self.fee_table.tx_base_fee(), "base_fee", false)?;
 
         self.fee_reserve.consume(
-            self.fee_table.tx_manifest_decoding_per_byte() * transaction.manifest_size() as u32,
+            self.fee_table.tx_manifest_decoding_per_byte()
+                * transaction.manifest_instructions_size() as u32,
             "decode_manifest",
+            false,
         )?;
 
         self.fee_reserve.consume(
-            self.fee_table.tx_manifest_verification_per_byte() * transaction.manifest_size() as u32,
+            self.fee_table.tx_manifest_verification_per_byte()
+                * transaction.manifest_instructions_size() as u32,
             "verify_manifest",
+            false,
         )?;
 
         self.fee_reserve.consume(
             self.fee_table.tx_signature_verification_per_sig()
                 * transaction.signer_public_keys().len() as u32,
             "verify_signatures",
+            false,
         )?;
 
-        Ok(())
-    }
-
-    pub fn apply_post_execution_costs(
-        &mut self,
-        blobs: &HashMap<Hash, Vec<u8>>,
-    ) -> Result<(), FeeReserveError> {
         self.fee_reserve.consume(
-            blobs.iter().map(|b| b.1.len()).sum::<usize>() as u32,
+            transaction.blobs().iter().map(|b| b.len()).sum::<usize>() as u32
+                * self.fee_table.tx_blob_price_per_byte(),
             "blobs",
+            false,
         )?;
 
         Ok(())

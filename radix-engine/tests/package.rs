@@ -1,6 +1,6 @@
 use radix_engine::engine::{ApplicationError, KernelError, RuntimeError};
 use radix_engine::ledger::TypedInMemorySubstateStore;
-use radix_engine::model::PackageError;
+use radix_engine::model::ValidatedPackageError;
 use radix_engine::wasm::*;
 use sbor::Type;
 use scrypto::abi::*;
@@ -9,6 +9,7 @@ use scrypto::prelude::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
+#[ignore] // TODO: enable this after allowing dynamic creation of blobs
 #[test]
 fn test_publish_package_from_scrypto() {
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
@@ -53,8 +54,8 @@ fn missing_memory_should_cause_error() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            &RuntimeError::ApplicationError(ApplicationError::PackageError(
-                PackageError::InvalidWasm(PrepareError::InvalidMemory(
+            &RuntimeError::ApplicationError(ApplicationError::ValidatedPackageError(
+                ValidatedPackageError::InvalidWasm(PrepareError::InvalidMemory(
                     InvalidMemory::NoMemorySection
                 ))
             ))
@@ -186,8 +187,8 @@ fn test_basic_package_missing_export() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::ApplicationError(ApplicationError::PackageError(
-                PackageError::InvalidWasm(PrepareError::MissingExport { .. })
+            RuntimeError::ApplicationError(ApplicationError::ValidatedPackageError(
+                ValidatedPackageError::InvalidWasm(PrepareError::MissingExport { .. })
             ))
         )
     });

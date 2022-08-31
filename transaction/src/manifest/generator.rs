@@ -348,8 +348,8 @@ pub fn generate_instruction<T: BlobLoader>(
                 args: args_from_value_vec!(fields),
             }
         }
-        ast::Instruction::PublishPackage { package } => Instruction::PublishPackage {
-            package: generate_blob(package, blob_loader, blobs)?,
+        ast::Instruction::PublishPackage { package_blob } => Instruction::PublishPackage {
+            package_blob: generate_blob(package_blob, blob_loader, blobs)?,
         },
     })
 }

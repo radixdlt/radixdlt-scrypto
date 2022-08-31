@@ -44,8 +44,8 @@ impl ExecutableTransaction for ValidatedPreviewTransaction {
         self.transaction_hash
     }
 
-    fn manifest_size(&self) -> u32 {
-        scrypto_encode(&self.preview_intent.intent.manifest).len() as u32
+    fn manifest_instructions_size(&self) -> u32 {
+        scrypto_encode(&self.preview_intent.intent.manifest.instructions).len() as u32
     }
 
     fn instructions(&self) -> &[ExecutableInstruction] {

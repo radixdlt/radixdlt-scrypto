@@ -419,7 +419,7 @@ impl ManifestBuilder {
         let package_blob_hash = hash(&package_blob);
         self.blobs.insert(package_blob_hash, package_blob);
         self.add_instruction(Instruction::PublishPackage {
-            package: Blob(package_blob_hash),
+            package_blob: Blob(package_blob_hash),
         })
         .0
     }

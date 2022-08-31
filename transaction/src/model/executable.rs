@@ -75,7 +75,7 @@ pub enum ExecutableInstruction {
         args: Vec<u8>,
     },
     PublishPackage {
-        package: Blob,
+        package_blob: Blob,
     },
 }
 
@@ -85,7 +85,7 @@ pub trait ExecutableTransaction {
     fn transaction_hash(&self) -> Hash;
 
     /// Returns the manifest size.
-    fn manifest_size(&self) -> u32;
+    fn manifest_instructions_size(&self) -> u32;
 
     /// Returns the limit of cost units consumable
     fn cost_unit_limit(&self) -> u32;

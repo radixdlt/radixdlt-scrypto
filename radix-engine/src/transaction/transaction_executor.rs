@@ -117,7 +117,7 @@ where
             println!("{:-^80}", "Transaction Metadata");
             println!("Transaction hash: {}", transaction_hash);
             println!("Transaction signers: {:?}", signer_public_keys);
-            println!("# of unique blobs: {}", blobs.len());
+            println!("Number of unique blobs: {}", blobs.len());
 
             println!("{:-^80}", "Engine Execution Log");
         }
@@ -162,12 +162,6 @@ where
                 .map(|o| {
                     scrypto_decode::<Vec<Vec<u8>>>(&o.raw)
                         .expect("TransactionProcessor returned data of unexpected type")
-                })
-                .and_then(|result| {
-                    track
-                        .apply_post_execution_costs(&blobs)
-                        .map_err(|e| RuntimeError::ModuleError(ModuleError::CostingError(e)))?;
-                    Ok(result)
                 })
         };
 

@@ -13,8 +13,9 @@ pub struct ValidatedPackage {
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub enum PackageError {
+pub enum ValidatedPackageError {
     InvalidRequestData(DecodeError),
+    InvalidPackage(DecodeError),
     InvalidWasm(PrepareError),
     BlueprintNotFound,
     MethodNotFound(String),
@@ -42,7 +43,7 @@ impl ValidatedPackage {
         package_fn: PackageFnIdentifier,
         call_data: ScryptoValue,
         system_api: &mut Y,
-    ) -> Result<ScryptoValue, InvokeError<PackageError>>
+    ) -> Result<ScryptoValue, InvokeError<ValidatedPackageError>>
     where
         Y: SystemApi<'s, W, I, R>,
         W: WasmEngine<I>,
@@ -51,10 +52,19 @@ impl ValidatedPackage {
     {
         match package_fn {
             PackageFnIdentifier::Publish => {
-                let input: PackagePublishInput = scrypto_decode(&call_data.raw)
-                    .map_err(|e| InvokeError::Error(PackageError::InvalidRequestData(e)))?;
-                let package = ValidatedPackage::new(input.package)
-                    .map_err(|e| InvokeError::Error(PackageError::InvalidWasm(e)))?;
+                let input: PackagePublishInput = scrypto_decode(&call_data.raw).map_err(|e| {
+                    InvokeError::Error(ValidatedPackageError::InvalidRequestData(e))
+                })?;
+                let package = system_api
+                    .read_blob(&input.package_blob.0)
+                    .map_err(InvokeError::Downstream)
+                    .and_then(|blob| {
+                        scrypto_decode::<Package>(blob).map_err(|e| {
+                            InvokeError::Error(ValidatedPackageError::InvalidPackage(e))
+                        })
+                    })?;
+                let package = ValidatedPackage::new(package)
+                    .map_err(|e| InvokeError::Error(ValidatedPackageError::InvalidWasm(e)))?;
                 let node_id = system_api
                     .node_create(HeapRENode::Package(package))
                     .map_err(InvokeError::Downstream)?;

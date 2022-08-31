@@ -151,7 +151,7 @@ mod tests {
                     args: args!(Decimal::from(1u32), PreciseDecimal::from(2u32))
                 },
                 Instruction::PublishPackage {
-                    package: Blob(blob_hash)
+                    package_blob: Blob(blob_hash)
                 },
             ]
         );

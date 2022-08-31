@@ -1,4 +1,5 @@
 use radix_engine::ledger::TypedInMemorySubstateStore;
+use radix_engine::types::*;
 use scrypto::args;
 use scrypto::core::NetworkDefinition;
 use scrypto::prelude::{Expression, Package, RADIX_TOKEN, SYS_FAUCET_COMPONENT};
@@ -189,4 +190,37 @@ fn test_basic_transfer() {
         + 3000, /* write_substate */
         receipt.execution.fee_summary.cost_unit_consumed
     );
+}
+
+#[test]
+fn test_publish_large_package() {
+    // Arrange
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
+
+    // Act
+    let code = wat2wasm(&format!(
+        r#"
+            (module
+                (data (i32.const 0) "{}")
+                (memory $0 1)
+                (export "memory" (memory $0))
+            )
+        "#,
+        "Hi".repeat(2 * 1024 * 1024)
+    ));
+    println!("Size: {}", code.len());
+    let package = Package {
+        code,
+        blueprints: HashMap::new(),
+    };
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+        .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
+        .publish_package(package)
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    println!("Receipt: {:?}", receipt);
+
+    // Assert
+    receipt.expect_commit_failure(); // FIXME: update the wasm to be a valid package
 }

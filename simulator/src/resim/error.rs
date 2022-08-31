@@ -28,9 +28,9 @@ pub enum Error {
 
     PackageAddressNotFound,
 
-    InvalidPackageError,
+    InvalidValidatedPackageError,
 
-    PackageError(ExtractAbiError),
+    ValidatedPackageError(ExtractAbiError),
 
     TransactionConstructionError(BuildCallWithAbiError),
 

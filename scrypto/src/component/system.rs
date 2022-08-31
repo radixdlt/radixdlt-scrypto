@@ -1,7 +1,7 @@
 use crate::buffer::*;
 use crate::component::package::Package;
 use crate::component::*;
-use crate::core::{FnIdentifier, NativeFnIdentifier, PackageFnIdentifier, Runtime};
+use crate::core::Runtime;
 use crate::engine::types::RENodeId;
 use crate::engine::{api::*, call_engine};
 use crate::prelude::ScryptoRENode;
@@ -45,12 +45,8 @@ impl ComponentSystem {
     }
 
     /// Publishes a package.
-    pub fn publish_package(&mut self, package: Package) -> PackageAddress {
-        let input = RadixEngineInput::InvokeFunction(
-            FnIdentifier::Native(NativeFnIdentifier::Package(PackageFnIdentifier::Publish)),
-            scrypto_encode(&PackagePublishInput { package }),
-        );
-        call_engine(input)
+    pub fn publish_package(&mut self, _package: Package) -> PackageAddress {
+        todo!("Not supported yet due to lack dynamic blob creation")
     }
 
     /// Instantiates a component.

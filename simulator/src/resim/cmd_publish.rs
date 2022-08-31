@@ -10,7 +10,7 @@ use std::fs;
 use std::path::PathBuf;
 use transaction::builder::ManifestBuilder;
 
-use crate::resim::Error::InvalidPackageError;
+use crate::resim::Error::InvalidValidatedPackageError;
 use crate::resim::*;
 use crate::utils::*;
 
@@ -43,7 +43,7 @@ impl Publish {
         })
         .map_err(Error::IOError)?;
 
-        let package = extract_package(code).map_err(Error::PackageError)?;
+        let package = extract_package(code).map_err(Error::ValidatedPackageError)?;
 
         if let Some(package_address) = self.package_address.clone() {
             let substate_id = SubstateId::Package(package_address);
@@ -55,7 +55,7 @@ impl Publish {
                 .map(|output| output.version);
 
             let validated_package =
-                ValidatedPackage::new(package).map_err(|_| InvalidPackageError)?;
+                ValidatedPackage::new(package).map_err(|_| InvalidValidatedPackageError)?;
             let output_value = OutputValue {
                 substate: Substate::Package(validated_package),
                 version: previous_version.unwrap_or(0),

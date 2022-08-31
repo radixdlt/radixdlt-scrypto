@@ -13,7 +13,7 @@ use crate::misc::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct PackagePublishInput {
-    pub package: Package,
+    pub package_blob: Blob,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]

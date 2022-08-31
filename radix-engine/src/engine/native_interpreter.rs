@@ -21,9 +21,9 @@ impl Into<ApplicationError> for TransactionProcessorError {
     }
 }
 
-impl Into<ApplicationError> for PackageError {
+impl Into<ApplicationError> for ValidatedPackageError {
     fn into(self) -> ApplicationError {
-        ApplicationError::PackageError(self)
+        ApplicationError::ValidatedPackageError(self)
     }
 }
 

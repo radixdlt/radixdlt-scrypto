@@ -289,8 +289,11 @@ pub fn decompile(
 
                 buf.push_str(";\n");
             }
-            Instruction::PublishPackage { package } => {
-                buf.push_str(&format!("PUBLISH_PACKAGE Blob(\"{}.data\");\n", package));
+            Instruction::PublishPackage { package_blob } => {
+                buf.push_str(&format!(
+                    "PUBLISH_PACKAGE Blob(\"{}.data\");\n",
+                    package_blob
+                ));
             }
         }
     }

@@ -125,7 +125,7 @@ fn test_non_existent_blob_hash() {
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(dec!("10"), account)
         .add_instruction(Instruction::PublishPackage {
-            package: Blob(Hash([0; 32])),
+            package_blob: Blob(Hash([0; 32])),
         })
         .0
         .build();

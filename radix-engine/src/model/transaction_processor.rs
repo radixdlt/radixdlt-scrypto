@@ -27,7 +27,6 @@ pub enum TransactionProcessorError {
     BucketNotFound(BucketId),
     ProofNotFound(ProofId),
     IdAllocationError(IdAllocationError),
-    InvalidPackage(DecodeError),
 }
 
 pub struct TransactionProcessor {}
@@ -669,24 +668,16 @@ impl TransactionProcessor {
                                 Ok(result)
                             })
                         }
-                        ExecutableInstruction::PublishPackage { package } => system_api
-                            .read_blob(&package.0)
-                            .map_err(InvokeError::Downstream)
-                            .and_then(|blob| {
-                                scrypto_decode::<Package>(blob).map_err(|e| {
-                                    InvokeError::Error(TransactionProcessorError::InvalidPackage(e))
-                                })
-                            })
-                            .and_then(|package| {
-                                system_api
-                                    .invoke_function(
-                                        FnIdentifier::Native(NativeFnIdentifier::Package(
-                                            PackageFnIdentifier::Publish,
-                                        )),
-                                        ScryptoValue::from_typed(&PackagePublishInput { package }),
-                                    )
-                                    .map_err(InvokeError::Downstream)
-                            }),
+                        ExecutableInstruction::PublishPackage { package_blob } => system_api
+                            .invoke_function(
+                                FnIdentifier::Native(NativeFnIdentifier::Package(
+                                    PackageFnIdentifier::Publish,
+                                )),
+                                ScryptoValue::from_typed(&PackagePublishInput {
+                                    package_blob: package_blob.clone(),
+                                }),
+                            )
+                            .map_err(InvokeError::Downstream),
                     }?;
                     outputs.push(result);
                 }

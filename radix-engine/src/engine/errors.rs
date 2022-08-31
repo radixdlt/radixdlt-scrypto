@@ -118,7 +118,7 @@ impl<E> InvokeError<E> {
 pub enum ApplicationError {
     TransactionProcessorError(TransactionProcessorError),
 
-    PackageError(PackageError),
+    ValidatedPackageError(ValidatedPackageError),
 
     SystemError(SystemError),
 

@@ -28,6 +28,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                                 input: &input,
                             }),
                         "invoke_function",
+                        false,
                     )
                     .map_err(ModuleError::CostingError)?;
                 track
@@ -37,6 +38,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                             .fee_table
                             .run_method_cost(None, &fn_identifier, &input),
                         "run_function",
+                        false,
                     )
                     .map_err(ModuleError::CostingError)?;
             }
@@ -55,6 +57,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                                 input: &input,
                             }),
                         "invoke_method",
+                        false,
                     )
                     .map_err(ModuleError::CostingError)?;
 
@@ -65,6 +68,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                             .fee_table
                             .run_method_cost(Some(receiver), &fn_identifier, &input),
                         "run_method",
+                        false,
                     )
                     .map_err(ModuleError::CostingError)?;
             }
@@ -122,6 +126,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                             }
                         }),
                         "borrow_node",
+                        false,
                     )
                     .map_err(ModuleError::CostingError)?;
             }
@@ -133,6 +138,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                             .fee_table
                             .system_api_cost(SystemApiCostingEntry::DropNode { size: 0 }),
                         "drop_node",
+                        false,
                     )
                     .map_err(ModuleError::CostingError)?;
             }
@@ -147,6 +153,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                                 size: 0, // TODO: get size of the value
                             }),
                         "create_node",
+                        false,
                     )
                     .map_err(ModuleError::CostingError)?;
             }
@@ -161,6 +168,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                                 size: 0, // TODO: get size of the value
                             }),
                         "globalize_node",
+                        false,
                     )
                     .map_err(ModuleError::CostingError)?;
             }
@@ -253,6 +261,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                             }
                         }),
                         "borrow_substate",
+                        false,
                     )
                     .map_err(ModuleError::CostingError)?;
             }
@@ -309,6 +318,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                             }
                         }),
                         "return_substate",
+                        false,
                     )
                     .map_err(ModuleError::CostingError)?;
             }
@@ -323,6 +333,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                                 size: 0, // TODO: get size of the value
                             }),
                         "read_substate",
+                        false,
                     )
                     .map_err(ModuleError::CostingError)?;
             }
@@ -337,6 +348,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                                 size: 0, // TODO: get size of the value
                             }),
                         "write_substate",
+                        false,
                     )
                     .map_err(ModuleError::CostingError)?;
             }
@@ -351,6 +363,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                                 size: 0, // TODO: get size of the value
                             }),
                         "read_substate",
+                        false,
                     )
                     .map_err(ModuleError::CostingError)?;
             }
@@ -362,6 +375,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                             .fee_table
                             .system_api_cost(SystemApiCostingEntry::ReadTransactionHash),
                         "read_transaction_hash",
+                        false,
                     )
                     .map_err(ModuleError::CostingError)?;
             }
@@ -373,6 +387,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                             .fee_table
                             .system_api_cost(SystemApiCostingEntry::ReadBlob { size: 0 }), // TODO pass the right size
                         "read_blob",
+                        false,
                     )
                     .map_err(ModuleError::CostingError)?;
             }
@@ -384,6 +399,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                             .fee_table
                             .system_api_cost(SystemApiCostingEntry::GenerateUuid),
                         "generate_uuid",
+                        false,
                     )
                     .map_err(ModuleError::CostingError)?;
             }
@@ -397,6 +413,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                                 size: message.len() as u32,
                             }),
                         "emit_log",
+                        false,
                     )
                     .map_err(ModuleError::CostingError)?;
             }
@@ -411,6 +428,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                                 size: proof_ids.len() as u32,
                             }),
                         "check_access_rule",
+                        false,
                     )
                     .map_err(ModuleError::CostingError)?;
             }
@@ -439,6 +457,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
             .consume(
                 track.fee_table.wasm_instantiation_per_byte() * code.len() as u32,
                 "instantiate_wasm",
+                false,
             )
             .map_err(ModuleError::CostingError)
     }
@@ -451,7 +470,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
     ) -> Result<(), ModuleError> {
         track
             .fee_reserve
-            .consume(units, "run_wasm")
+            .consume(units, "run_wasm", false)
             .map_err(ModuleError::CostingError)
     }
 

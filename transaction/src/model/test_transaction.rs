@@ -138,8 +138,8 @@ impl TestTransaction {
                     method_name,
                     args,
                 },
-                Instruction::PublishPackage { package } => {
-                    ExecutableInstruction::PublishPackage { package }
+                Instruction::PublishPackage { package_blob } => {
+                    ExecutableInstruction::PublishPackage { package_blob }
                 }
             })
             .collect();
@@ -157,8 +157,8 @@ impl ExecutableTransaction for TestTransaction {
         self.transaction.hash()
     }
 
-    fn manifest_size(&self) -> u32 {
-        scrypto_encode(&self.transaction.signed_intent.intent.manifest).len() as u32
+    fn manifest_instructions_size(&self) -> u32 {
+        scrypto_encode(&self.transaction.signed_intent.intent.manifest.instructions).len() as u32
     }
 
     fn cost_unit_limit(&self) -> u32 {
