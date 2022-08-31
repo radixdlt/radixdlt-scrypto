@@ -136,7 +136,7 @@ where
 
             track
                 .apply_pre_execution_costs(transaction)
-                .expect("Fee reserve not enough cover pre-execution cost");
+                .expect("Not enough to cover pre-execution cost");
             let mut kernel = Kernel::new(
                 transaction_hash,
                 signer_public_keys,

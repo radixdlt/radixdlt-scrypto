@@ -333,7 +333,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             transaction.blobs().iter().map(|b| b.len()).sum::<usize>() as u32
                 * self.fee_table.tx_blob_price_per_byte(),
             "blobs",
-            false,
+            true,
         )?;
 
         Ok(())

@@ -1,3 +1,4 @@
+use crate::constants::EXTRACT_ABI_CREDIT;
 use crate::engine::NopWasmRuntime;
 use crate::fee::SystemLoanFeeReserve;
 use crate::model::InvokeError;
@@ -26,8 +27,9 @@ fn extract_abi(code: &[u8]) -> Result<HashMap<String, BlueprintAbi>, ExtractAbiE
     let metering_params =
         WasmMeteringParams::new(InstructionCostRules::tiered(1, 5, 10, 50000), 512);
     let instrumented_code = wasm_instrumenter.instrument(code, &metering_params);
-    let mut runtime: Box<dyn WasmRuntime> =
-        Box::new(NopWasmRuntime::new(SystemLoanFeeReserve::default()));
+    let mut fee_reserve = SystemLoanFeeReserve::default();
+    fee_reserve.credit(EXTRACT_ABI_CREDIT);
+    let mut runtime: Box<dyn WasmRuntime> = Box::new(NopWasmRuntime::new(fee_reserve));
     let mut instance = wasm_engine.instantiate(&instrumented_code);
     let mut blueprints = HashMap::new();
     for method_name in function_exports {

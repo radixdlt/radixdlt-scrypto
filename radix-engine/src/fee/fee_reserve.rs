@@ -2,6 +2,7 @@ use crate::constants::{DEFAULT_COST_UNIT_LIMIT, DEFAULT_COST_UNIT_PRICE, DEFAULT
 use crate::fee::FeeSummary;
 use crate::model::ResourceContainer;
 use crate::types::*;
+use sbor::rust::cmp::min;
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
 pub enum FeeReserveError {
@@ -82,6 +83,14 @@ impl SystemLoanFeeReserve {
             check_point: system_loan,
             cost_breakdown: HashMap::new(),
         }
+    }
+
+    /// For testing and non-protocol process ONLY.
+    /// May overflow.
+    pub fn credit(&mut self, n: u32) {
+        let repay = min(n, self.owed);
+        self.owed = self.owed - repay;
+        self.balance = self.balance + (n - repay);
     }
 }
 
