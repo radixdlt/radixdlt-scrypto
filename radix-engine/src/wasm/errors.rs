@@ -1,13 +1,11 @@
 use wasmi::HostError;
 
-// TODO: this is the only place which introduces circular dependency.
-// From WASM's perspective, they are host errors. We need a better solution to handle this.
-use crate::engine::RuntimeError;
 use crate::fee::FeeReserveError;
+use crate::model::InvokeError;
 use crate::types::*;
 
 /// Represents an error when validating a WASM file.
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, TypeId, Encode, Decode)]
 pub enum PrepareError {
     /// Failed to deserialize.
     /// See https://webassembly.github.io/spec/core/syntax/index.html
@@ -51,13 +49,13 @@ pub enum PrepareError {
     NotCompilable,
 }
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, TypeId, Encode, Decode)]
 pub enum InvalidImport {
     /// The import is not allowed
     ImportNotAllowed,
 }
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, TypeId, Encode, Decode)]
 pub enum InvalidMemory {
     /// The wasm module has no memory section.
     NoMemorySection,
@@ -71,7 +69,7 @@ pub enum InvalidMemory {
     MemoryNotExported,
 }
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, TypeId, Encode, Decode)]
 pub enum InvalidTable {
     /// More than one table defined, against WebAssembly MVP spec
     MoreThanOneTable,
@@ -80,36 +78,37 @@ pub enum InvalidTable {
 }
 
 /// Represents an error when invoking an export of a Scrypto module.
-#[derive(Debug)]
-pub enum WasmInvokeError {
+#[derive(Debug, Encode, Decode, TypeId)]
+pub enum WasmError {
     MemoryAllocError,
-
     MemoryAccessError,
-
     InvalidScryptoValue(DecodeError),
-
     WasmError(String),
-
-    RuntimeError(RuntimeError),
-
     FunctionNotFound,
-
     InvalidRadixEngineInput,
-
     MissingReturnData,
-
     InvalidReturnData,
-
     CostingError(FeeReserveError),
 }
 
-impl fmt::Display for WasmInvokeError {
+impl fmt::Display for WasmError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
     }
 }
 
-impl HostError for WasmInvokeError {}
+impl HostError for WasmError {}
 
 #[cfg(not(feature = "alloc"))]
-impl std::error::Error for WasmInvokeError {}
+impl std::error::Error for WasmError {}
+
+impl fmt::Display for InvokeError<WasmError> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+impl HostError for InvokeError<WasmError> {}
+
+#[cfg(not(feature = "alloc"))]
+impl std::error::Error for InvokeError<WasmError> {}

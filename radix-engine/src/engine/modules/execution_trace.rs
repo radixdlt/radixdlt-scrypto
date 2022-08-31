@@ -3,7 +3,7 @@ use crate::fee::FeeReserve;
 use crate::model::*;
 use crate::types::*;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, TypeId, Encode, Decode)]
 pub struct ResourceChange {
     pub resource_address: ResourceAddress,
     pub component_address: ComponentAddress,

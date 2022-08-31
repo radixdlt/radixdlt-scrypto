@@ -1,7 +1,7 @@
 use crate::types::*;
 
 /// Represents an error when manipulating resources in a container.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
 pub enum ResourceContainerError {
     /// Resource addresses do not match.
     ResourceAddressNotMatching,

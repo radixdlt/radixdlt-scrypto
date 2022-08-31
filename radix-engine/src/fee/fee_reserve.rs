@@ -3,7 +3,7 @@ use crate::fee::FeeSummary;
 use crate::model::ResourceContainer;
 use crate::types::*;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
 pub enum FeeReserveError {
     OutOfCostUnit,
     Overflow,

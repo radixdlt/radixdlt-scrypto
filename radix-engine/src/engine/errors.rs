@@ -4,10 +4,11 @@ use crate::engine::REActor;
 use crate::fee::FeeReserveError;
 use crate::model::*;
 use crate::types::*;
-use crate::wasm::WasmInvokeError;
+use crate::wasm::WasmError;
+use sbor::*;
 
 /// Represents an error which causes a tranasction to be rejected.
-#[derive(Debug)]
+#[derive(Debug, TypeId, Encode, Decode)]
 pub enum RejectionError {
     SuccessButFeeLoanNotRepaid,
     ErrorBeforeFeeLoanRepaid(RuntimeError),
@@ -20,7 +21,7 @@ impl fmt::Display for RejectionError {
 }
 
 /// Represents an error when executing a transaction.
-#[derive(Debug)]
+#[derive(Debug, TypeId, Encode, Decode)]
 pub enum RuntimeError {
     /// An error occurred within the kernel.
     KernelError(KernelError),
@@ -32,22 +33,17 @@ pub enum RuntimeError {
     ApplicationError(ApplicationError),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Encode, Decode, TypeId)]
 pub enum KernelError {
     // invocation
-    WasmInvokeError(Box<WasmInvokeError>),
+    WasmError(WasmError),
     InvokeMethodInvalidReceiver(RENodeId),
     InvokeMethodInvalidReferencePass(RENodeId),
     InvokeMethodInvalidReferenceReturn(RENodeId),
     MaxCallDepthLimitReached,
     MethodNotFound(FnIdentifier),
-    InvalidFnInput {
-        fn_identifier: FnIdentifier,
-    },
-    InvalidFnOutput {
-        fn_identifier: FnIdentifier,
-        output: Value,
-    },
+    InvalidFnInput { fn_identifier: FnIdentifier },
+    InvalidFnOutput { fn_identifier: FnIdentifier },
 
     // ID allocation
     IdAllocationError(IdAllocationError),
@@ -91,7 +87,7 @@ pub enum KernelError {
     BlobNotFound(Hash),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Encode, Decode, TypeId)]
 pub enum ModuleError {
     AuthorizationError {
         function: FnIdentifier,
@@ -103,6 +99,22 @@ pub enum ModuleError {
 }
 
 #[derive(Debug)]
+pub enum InvokeError<E> {
+    Error(E),
+    Downstream(RuntimeError),
+}
+
+impl<E> InvokeError<E> {
+    pub fn error(error: E) -> Self {
+        InvokeError::Error(error)
+    }
+
+    pub fn downstream(runtime_error: RuntimeError) -> Self {
+        InvokeError::Downstream(runtime_error)
+    }
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
 pub enum ApplicationError {
     TransactionProcessorError(TransactionProcessorError),
 
@@ -125,7 +137,7 @@ pub enum ApplicationError {
     AuthZoneError(AuthZoneError),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Encode, Decode, TypeId)]
 pub enum DropFailure {
     System,
     Resource,
