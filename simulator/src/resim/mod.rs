@@ -175,8 +175,8 @@ pub fn handle_manifest<O: std::io::Write>(
             let sks = get_signing_keys(signing_keys)?;
             let pks = sks
                 .iter()
-                .map(|e| e.public_key())
-                .collect::<Vec<EcdsaPublicKey>>();
+                .map(|e| e.public_key().into())
+                .collect::<Vec<PublicKey>>();
             let nonce = get_nonce()?;
             let transaction = TestTransaction::new(manifest, nonce, pks);
 

@@ -69,7 +69,7 @@ where
 {
     pub fn new(
         transaction_hash: Hash,
-        transaction_signers: Vec<EcdsaPublicKey>,
+        transaction_signers: Vec<PublicKey>,
         blobs: &'g HashMap<Hash, Vec<u8>>,
         is_system: bool,
         max_depth: usize,

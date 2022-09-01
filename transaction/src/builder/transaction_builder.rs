@@ -5,8 +5,8 @@ use crate::{model::*, signing::Signer};
 pub struct TransactionBuilder {
     manifest: Option<TransactionManifest>,
     header: Option<TransactionHeader>,
-    intent_signatures: Vec<(EcdsaPublicKey, EcdsaSignature)>,
-    notary_signature: Option<EcdsaSignature>,
+    intent_signatures: Vec<SignatureWithPublicKey>,
+    notary_signature: Option<Signature>,
 }
 
 impl TransactionBuilder {
@@ -32,12 +32,11 @@ impl TransactionBuilder {
     pub fn sign<S: Signer>(mut self, signer: &S) -> Self {
         let intent = self.transaction_intent();
         let intent_payload = scrypto_encode(&intent);
-        self.intent_signatures
-            .push((signer.public_key(), signer.sign(&intent_payload)));
+        self.intent_signatures.push(signer.sign(&intent_payload));
         self
     }
 
-    pub fn signer_signatures(mut self, signatures: Vec<(EcdsaPublicKey, EcdsaSignature)>) -> Self {
+    pub fn signer_signatures(mut self, signatures: Vec<SignatureWithPublicKey>) -> Self {
         self.intent_signatures.extend(signatures);
         self
     }
@@ -45,11 +44,11 @@ impl TransactionBuilder {
     pub fn notarize<S: Signer>(mut self, signer: &S) -> Self {
         let signed_intent = self.signed_transaction_intent();
         let signed_intent_payload = scrypto_encode(&signed_intent);
-        self.notary_signature = Some(signer.sign(&signed_intent_payload));
+        self.notary_signature = Some(signer.sign(&signed_intent_payload).signature());
         self
     }
 
-    pub fn notary_signature(mut self, signature: EcdsaSignature) -> Self {
+    pub fn notary_signature(mut self, signature: Signature) -> Self {
         self.notary_signature = Some(signature);
         self
     }
@@ -96,7 +95,7 @@ mod tests {
                 start_epoch_inclusive: 0,
                 end_epoch_exclusive: 100,
                 nonce: 5,
-                notary_public_key: private_key.public_key(),
+                notary_public_key: private_key.public_key().into(),
                 notary_as_signatory: true,
                 cost_unit_limit: 1_000_000,
                 tip_percentage: 5,

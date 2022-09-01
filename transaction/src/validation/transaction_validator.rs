@@ -56,11 +56,11 @@ impl TransactionValidator {
         // TODO: whether to use intent hash or transaction hash
         let transaction_hash = transaction.hash();
 
-        let mut signer_public_keys: Vec<EcdsaPublicKey> = transaction
+        let mut signer_public_keys: Vec<PublicKey> = transaction
             .signed_intent
             .intent_signatures
             .iter()
-            .map(|e| e.0)
+            .map(|e| e.public_key())
             .collect();
         if transaction.signed_intent.intent.header.notary_as_signatory {
             signer_public_keys.push(transaction.signed_intent.intent.header.notary_public_key);
@@ -331,20 +331,19 @@ impl TransactionValidator {
         let intent_payload = transaction.signed_intent.intent.to_bytes();
         let mut signers = HashSet::new();
         for sig in &transaction.signed_intent.intent_signatures {
-            if !verify_ecdsa(&intent_payload, &sig.0, &sig.1) {
+            if !sig.verify(&intent_payload) {
                 return Err(SignatureValidationError::InvalidIntentSignature);
             }
-            if !signers.insert(sig.0.to_vec()) {
+            if !signers.insert(sig.public_key()) {
                 return Err(SignatureValidationError::DuplicateSigner);
             }
         }
 
         // verify notary signature
         let signed_intent_payload = transaction.signed_intent.to_bytes();
-        if !verify_ecdsa(
+        if !transaction.notary_signature.verify(
             &signed_intent_payload,
             &transaction.signed_intent.intent.header.notary_public_key,
-            &transaction.notary_signature,
         ) {
             return Err(SignatureValidationError::InvalidNotarySignature);
         }
@@ -467,7 +466,7 @@ mod tests {
             .signed_intent
             .intent_signatures
             .into_iter()
-            .map(|p| p.0)
+            .map(|s| s.public_key())
             .collect();
 
         let result = TransactionValidator::validate_preview_intent(
@@ -502,7 +501,7 @@ mod tests {
                 start_epoch_inclusive: start_epoch,
                 end_epoch_exclusive: end_epoch,
                 nonce,
-                notary_public_key: sk_notary.public_key(),
+                notary_public_key: sk_notary.public_key().into(),
                 notary_as_signatory: false,
                 cost_unit_limit: 1_000_000,
                 tip_percentage: 5,
