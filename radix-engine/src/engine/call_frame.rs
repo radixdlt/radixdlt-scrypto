@@ -63,7 +63,7 @@ impl CallFrame {
                 ed25519_non_fungible_ids,
             ));
             let ecdsa_proof = ecdsa_bucket
-                .create_proof(ECDSA_TOKEN_BUCKET_ID)
+                .create_proof(ED25519_TOKEN_BUCKET_ID)
                 .expect("Failed to construct ED25519 signature proof");
             initial_auth_zone_proofs.push(ecdsa_proof);
         }
