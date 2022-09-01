@@ -14,8 +14,14 @@ impl EcdsaPrivateKey {
 
     pub fn sign(&self, msg: &[u8]) -> EcdsaSignature {
         let h = sha256(sha256(msg));
-        let m = Message::from_slice(&h.0).expect("The slice is a valid hash");
-        EcdsaSignature(self.0.sign_ecdsa(m).serialize_compact())
+        let m = Message::from_slice(&h.0).expect("Hash is always a valid message");
+        let signature = secp256k1::SECP256K1.sign_ecdsa_recoverable(&m, &self.0);
+        let (recovery_id, signature_data) = signature.serialize_compact();
+
+        let mut buf = [0u8; 65];
+        buf[0] = recovery_id.to_i32() as u8;
+        buf[1..].copy_from_slice(&signature_data);
+        EcdsaSignature(buf)
     }
 
     pub fn to_bytes(&self) -> Vec<u8> {
@@ -53,7 +59,7 @@ mod tests {
         let test_sk = "0000000000000000000000000000000000000000000000000000000000000001";
         let test_pk = "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798";
         let test_message = "Test";
-        let test_signature = "79224ea514206706298d8d620f660828f7987068d6d02757e6f3cbbf4a51ab133395db69db1bc9b2726dd99e34efc252d8258dcb003ebaba42be349f50f7765e";
+        let test_signature = "0079224ea514206706298d8d620f660828f7987068d6d02757e6f3cbbf4a51ab133395db69db1bc9b2726dd99e34efc252d8258dcb003ebaba42be349f50f7765e";
         let sk = EcdsaPrivateKey::from_bytes(&hex::decode(test_sk).unwrap()).unwrap();
         let pk = EcdsaPublicKey::from_str(test_pk).unwrap();
         let sig = EcdsaSignature::from_str(test_signature).unwrap();

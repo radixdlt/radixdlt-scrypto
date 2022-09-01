@@ -23,27 +23,12 @@ pub enum SignatureWithPublicKey {
     Ed25519(Ed25519PublicKey, Ed25519Signature),
 }
 
-impl Signature {
-    pub fn verify(&self, message: &[u8], public_key: &PublicKey) -> bool {
-        todo!()
-    }
-}
-
 impl SignatureWithPublicKey {
-    pub fn public_key(&self) -> PublicKey {
-        match &self {
-            SignatureWithPublicKey::Ecdsa(_) => todo!("Recover"),
-            SignatureWithPublicKey::Ed25519(pk, _) => pk.clone().into(),
-        }
-    }
     pub fn signature(&self) -> Signature {
         match &self {
             SignatureWithPublicKey::Ecdsa(sig) => sig.clone().into(),
             SignatureWithPublicKey::Ed25519(_, sig) => sig.clone().into(),
         }
-    }
-    pub fn verify(&self, message: &[u8]) -> bool {
-        todo!()
     }
 }
 
@@ -72,8 +57,8 @@ impl From<Ed25519Signature> for Signature {
 }
 
 impl From<EcdsaSignature> for SignatureWithPublicKey {
-    fn from(_signature: EcdsaSignature) -> Self {
-        todo!("Recover")
+    fn from(signature: EcdsaSignature) -> Self {
+        Self::Ecdsa(signature)
     }
 }
 

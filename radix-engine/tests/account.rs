@@ -26,7 +26,7 @@ fn can_withdraw_from_my_account() {
         )
         .call_method(other_account, "balance", args!(RADIX_TOKEN))
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
 
     // Assert
     let outputs = receipt.expect_commit_success();
@@ -60,7 +60,7 @@ fn can_withdraw_non_fungible_from_my_account() {
             args!(Expression::entire_worktop()),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
 
     // Assert
     receipt.expect_commit_success();
@@ -84,7 +84,7 @@ fn cannot_withdraw_from_other_account() {
         .build();
 
     // Act
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
 
     // Assert
     receipt.expect_specific_failure(is_auth_error);
@@ -111,7 +111,7 @@ fn account_to_bucket_to_account() {
         .build();
 
     // Act
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
 
     // Assert
     receipt.expect_commit_success();
@@ -131,7 +131,7 @@ fn test_account_balance() {
         .build();
 
     // Act
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
     let outputs = receipt.expect_commit_success();
 
     // Assert

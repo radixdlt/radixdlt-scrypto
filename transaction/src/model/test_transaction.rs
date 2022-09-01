@@ -37,12 +37,12 @@ impl TestTransaction {
                     .iter()
                     .cloned()
                     .map(|pk| match pk {
-                        PublicKey::Ecdsa(_) => EcdsaSignature([0u8; 64]).into(),
+                        PublicKey::Ecdsa(_) => EcdsaSignature([0u8; 65]).into(),
                         PublicKey::Ed25519(pk) => (pk, Ed25519Signature([0u8; 64])).into(),
                     })
                     .collect(),
             )
-            .notary_signature(EcdsaSignature([0u8; 64]).into())
+            .notary_signature(EcdsaSignature([0u8; 65]).into())
             .build();
 
         let executable_instructions = transaction

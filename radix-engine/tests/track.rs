@@ -24,10 +24,10 @@ fn batched_executions_should_result_in_the_same_result() {
     let mut store0 = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner0 = TestRunner::new(true, &mut store0);
     let (public_key, _, account) = test_runner0.new_account();
-    let mut manifests = Vec::new();
+    let mut manifests = Vec::<(TransactionManifest, Vec<PublicKey>)>::new();
     for amount in 0..10 {
         let manifest = self_transfer_txn(account, Decimal::from(amount));
-        manifests.push((manifest, vec![public_key]));
+        manifests.push((manifest, vec![public_key.into()]));
     }
 
     let mut store1 = TypedInMemorySubstateStore::with_bootstrap();

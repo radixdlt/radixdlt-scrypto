@@ -23,7 +23,7 @@ fn test_bucket_internal(method_name: &str) {
             args!(Expression::entire_worktop()),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
 
     // Assert
     receipt.expect_commit_success();
@@ -93,7 +93,7 @@ fn test_bucket_of_badges() {
             args!(Expression::entire_worktop()),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
     receipt.expect_commit_success();
 }
 
@@ -119,7 +119,7 @@ fn test_take_with_invalid_granularity() {
         )
         .unwrap()
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -159,7 +159,7 @@ fn test_take_with_negative_amount() {
         )
         .unwrap()
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -202,7 +202,7 @@ fn create_empty_bucket() {
             |builder, bucket_id| builder.return_to_worktop(bucket_id),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
     println!("{:?}", receipt);
 
     // Assert

@@ -28,7 +28,7 @@ impl EcdsaPublicKey {
 }
 
 impl EcdsaSignature {
-    pub const LENGTH: usize = 64;
+    pub const LENGTH: usize = 65; // recovery id + signature
 }
 
 //======

@@ -35,7 +35,7 @@ fn test_say_hello() {
         .build();
     let package_address = executor
         .execute_and_commit(
-            &TestTransaction::new(manifest, 1, vec![public_key]),
+            &TestTransaction::new(manifest, 1, vec![public_key.into()]),
             &ExecutionConfig::debug(),
         )
         .expect_commit()

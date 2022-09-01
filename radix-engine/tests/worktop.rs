@@ -19,7 +19,7 @@ fn test_worktop_resource_leak() {
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .withdraw_from_account(RADIX_TOKEN, account)
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
 
     // Assert
     receipt.expect_specific_failure(|e| {

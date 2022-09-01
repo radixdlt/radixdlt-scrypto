@@ -32,7 +32,7 @@ where
                 builder
             })
             .build(),
-        vec![public_key],
+        vec![public_key.into()],
     );
     let component_address = receipt1
         .expect_commit()
@@ -197,7 +197,7 @@ fn test_fee_accounting_success() {
             args!(Expression::entire_worktop()),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
 
     // Assert
     receipt.expect_commit_success();
@@ -235,7 +235,7 @@ fn test_fee_accounting_failure() {
         )
         .assert_worktop_contains_by_amount(1.into(), RADIX_TOKEN)
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -270,7 +270,7 @@ fn test_fee_accounting_rejection() {
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(Decimal::from_str("0.000000000000000001").unwrap(), account1)
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
 
     // Assert
     receipt.expect_rejection();
@@ -293,7 +293,8 @@ fn test_contingent_fee_accounting_success() {
         .lock_fee(dec!("10"), account1)
         .lock_contingent_fee(dec!("0.001"), account2)
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key1, public_key2]);
+    let receipt =
+        test_runner.execute_manifest(manifest, vec![public_key1.into(), public_key2.into()]);
 
     // Assert
     receipt.expect_commit_success();
@@ -327,7 +328,8 @@ fn test_contingent_fee_accounting_failure() {
         .lock_contingent_fee(dec!("0.001"), account2)
         .assert_worktop_contains_by_amount(1.into(), RADIX_TOKEN)
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key1, public_key2]);
+    let receipt =
+        test_runner.execute_manifest(manifest, vec![public_key1.into(), public_key2.into()]);
 
     // Assert
     receipt.expect_specific_failure(|e| {

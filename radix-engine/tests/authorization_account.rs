@@ -11,7 +11,7 @@ use transaction::builder::ManifestBuilder;
 fn test_auth_rule<'s, S: ReadableSubstateStore + WriteableSubstateStore>(
     test_runner: &mut TestRunner<'s, S>,
     auth_rule: &AccessRule,
-    signer_public_keys: &[EcdsaPublicKey],
+    signer_public_keys: &[PublicKey],
     should_succeed: bool,
 ) {
     // Arrange
@@ -52,7 +52,7 @@ fn can_withdraw_from_my_1_of_2_account_with_either_key_sign() {
 
     for auth in auths {
         for pk in [pk0, pk1] {
-            test_auth_rule(&mut test_runner, &auth, &[pk], true);
+            test_auth_rule(&mut test_runner, &auth, &[pk.into()], true);
         }
     }
 }
@@ -77,7 +77,7 @@ fn can_withdraw_from_my_1_of_3_account_with_either_key_sign() {
 
     for auth in auths {
         for pk in [pk0, pk1, pk2] {
-            test_auth_rule(&mut test_runner, &auth, &[pk], true);
+            test_auth_rule(&mut test_runner, &auth, &[pk.into()], true);
         }
     }
 }
@@ -91,7 +91,7 @@ fn can_withdraw_from_my_2_of_2_resource_auth_account_with_both_signatures() {
 
     let auth = rule!(require_any_of(vec![auth0, auth1,]));
 
-    test_auth_rule(&mut test_runner, &auth, &[pk0, pk1], true);
+    test_auth_rule(&mut test_runner, &auth, &[pk0.into(), pk1.into()], true);
 }
 
 #[test]
@@ -103,7 +103,7 @@ fn cannot_withdraw_from_my_2_of_2_account_with_single_signature() {
     let (_, _, auth1) = test_runner.new_key_pair_with_auth_address();
 
     let auth = rule!(require_all_of(vec![auth0, auth1]));
-    test_auth_rule(&mut test_runner, &auth, &[pk0], false);
+    test_auth_rule(&mut test_runner, &auth, &[pk0.into()], false);
 }
 
 #[test]
@@ -114,7 +114,12 @@ fn can_withdraw_from_my_2_of_3_account_with_2_signatures() {
     let (pk1, _, auth1) = test_runner.new_key_pair_with_auth_address();
     let (pk2, _, auth2) = test_runner.new_key_pair_with_auth_address();
     let auth_2_of_3 = rule!(require_n_of(2, vec![auth0, auth1, auth2]));
-    test_auth_rule(&mut test_runner, &auth_2_of_3, &[pk1, pk2], true);
+    test_auth_rule(
+        &mut test_runner,
+        &auth_2_of_3,
+        &[pk1.into(), pk2.into()],
+        true,
+    );
 }
 
 #[test]
@@ -131,7 +136,11 @@ fn can_withdraw_from_my_complex_account() {
         rule!(require(auth2.clone()) || require(auth0.clone()) && require(auth1.clone())),
         rule!(require(auth2.clone()) || (require(auth0.clone()) && require(auth1.clone()))),
     ];
-    let signer_public_keys_list = [vec![pk2], vec![pk0, pk1], vec![pk0, pk1, pk2]];
+    let signer_public_keys_list = [
+        vec![pk2.into()],
+        vec![pk0.into(), pk1.into()],
+        vec![pk0.into(), pk1.into(), pk2.into()],
+    ];
 
     for auth in auths {
         for signer_public_keys in &signer_public_keys_list {
@@ -154,7 +163,7 @@ fn cannot_withdraw_from_my_complex_account() {
         rule!(require(auth2.clone()) || require(auth0.clone()) && require(auth1.clone())),
         rule!(require(auth2.clone()) || (require(auth0.clone()) && require(auth1.clone()))),
     ];
-    let signer_public_keys_list = [vec![pk0], vec![pk1]];
+    let signer_public_keys_list = [vec![pk0.into()], vec![pk1.into()]];
 
     for auth in auths {
         for signer_public_keys in &signer_public_keys_list {
@@ -181,7 +190,7 @@ fn can_withdraw_from_my_complex_account_2() {
                 || require(auth3.clone())
         ),
     ];
-    let signer_public_keys_list = [vec![pk0, pk1, pk2], vec![pk3]];
+    let signer_public_keys_list = [vec![pk0.into(), pk1.into(), pk2.into()], vec![pk3.into()]];
 
     for auth in auths {
         for signer_public_keys in &signer_public_keys_list {
@@ -209,11 +218,11 @@ fn cannot_withdraw_from_my_complex_account_2() {
         ),
     ];
     let signer_public_keys_list = [
-        vec![pk0],
-        vec![pk1],
-        vec![pk2],
-        vec![pk0, pk1],
-        vec![pk1, pk2],
+        vec![pk0.into()],
+        vec![pk1.into()],
+        vec![pk2.into()],
+        vec![pk0.into(), pk1.into()],
+        vec![pk1.into(), pk2.into()],
     ];
 
     for auth in auths {

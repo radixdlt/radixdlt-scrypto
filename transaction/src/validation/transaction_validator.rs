@@ -50,27 +50,20 @@ impl TransactionValidator {
         )?;
 
         // verify signatures
-        Self::validate_signatures(&transaction)
+        let mut signers = Self::validate_signatures(&transaction)
             .map_err(TransactionValidationError::SignatureValidationError)?;
+        if transaction.signed_intent.intent.header.notary_as_signatory {
+            signers.insert(transaction.signed_intent.intent.header.notary_public_key);
+        }
 
         // TODO: whether to use intent hash or transaction hash
         let transaction_hash = transaction.hash();
-
-        let mut signer_public_keys: Vec<PublicKey> = transaction
-            .signed_intent
-            .intent_signatures
-            .iter()
-            .map(|e| e.public_key())
-            .collect();
-        if transaction.signed_intent.intent.header.notary_as_signatory {
-            signer_public_keys.push(transaction.signed_intent.intent.header.notary_public_key);
-        }
 
         Ok(ValidatedTransaction {
             transaction,
             transaction_hash,
             instructions,
-            signer_public_keys,
+            signer_public_keys: signers.into_iter().collect(),
         })
     }
 
@@ -321,7 +314,7 @@ impl TransactionValidator {
 
     fn validate_signatures(
         transaction: &NotarizedTransaction,
-    ) -> Result<(), SignatureValidationError> {
+    ) -> Result<HashSet<PublicKey>, SignatureValidationError> {
         // TODO: split into static validation part and runtime validation part to support more signatures
         if transaction.signed_intent.intent_signatures.len() > MAX_NUMBER_OF_INTENT_SIGNATURES {
             return Err(SignatureValidationError::TooManySignatures);
@@ -331,24 +324,29 @@ impl TransactionValidator {
         let intent_payload = transaction.signed_intent.intent.to_bytes();
         let mut signers = HashSet::new();
         for sig in &transaction.signed_intent.intent_signatures {
-            if !sig.verify(&intent_payload) {
+            let public_key = recover(&intent_payload, sig)
+                .ok_or(SignatureValidationError::InvalidIntentSignature)?;
+
+            if !verify(&intent_payload, &public_key, &sig.signature()) {
                 return Err(SignatureValidationError::InvalidIntentSignature);
             }
-            if !signers.insert(sig.public_key()) {
+
+            if !signers.insert(public_key) {
                 return Err(SignatureValidationError::DuplicateSigner);
             }
         }
 
         // verify notary signature
         let signed_intent_payload = transaction.signed_intent.to_bytes();
-        if !transaction.notary_signature.verify(
+        if !verify(
             &signed_intent_payload,
             &transaction.signed_intent.intent.header.notary_public_key,
+            &transaction.notary_signature,
         ) {
             return Err(SignatureValidationError::InvalidNotarySignature);
         }
 
-        Ok(())
+        Ok(signers)
     }
 
     fn validate_call_data(
@@ -462,17 +460,11 @@ mod tests {
 
         // Build the whole transaction but only really care about the intent
         let tx = create_transaction(1, 0, 100, 5, vec![1, 2], 2);
-        let signer_public_keys = tx
-            .signed_intent
-            .intent_signatures
-            .into_iter()
-            .map(|s| s.public_key())
-            .collect();
 
         let result = TransactionValidator::validate_preview_intent(
             PreviewIntent {
                 intent: tx.signed_intent.intent,
-                signer_public_keys: signer_public_keys,
+                signer_public_keys: Vec::new(),
                 flags: PreviewFlags {
                     unlimited_loan: true,
                 },

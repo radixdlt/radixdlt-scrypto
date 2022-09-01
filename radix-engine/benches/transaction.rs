@@ -61,7 +61,7 @@ fn bench_transaction_validation(c: &mut Criterion) {
             start_epoch_inclusive: 0,
             end_epoch_exclusive: 100,
             nonce: 1,
-            notary_public_key: signer.public_key(),
+            notary_public_key: signer.public_key().into(),
             notary_as_signatory: true,
             cost_unit_limit: 1_000_000,
             tip_percentage: 5,

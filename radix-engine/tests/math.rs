@@ -25,7 +25,7 @@ fn test_integer_basic_ops() {
         )
         .unwrap()
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
     println!("{:?}", receipt);
 
     // Assert

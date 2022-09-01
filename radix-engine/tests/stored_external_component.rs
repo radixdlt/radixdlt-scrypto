@@ -49,7 +49,7 @@ fn stored_component_addresses_are_invokable() {
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_method(component0, "func", args!())
         .build();
-    let receipt2 = test_runner.execute_manifest(manifest2, vec![public_key]);
+    let receipt2 = test_runner.execute_manifest(manifest2, vec![public_key.into()]);
 
     // Assert
     receipt2.expect_commit_success();
@@ -59,7 +59,7 @@ fn stored_component_addresses_are_invokable() {
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_method(component1, "func", args!())
         .build();
-    let receipt2 = test_runner.execute_manifest(manifest2, vec![public_key]);
+    let receipt2 = test_runner.execute_manifest(manifest2, vec![public_key.into()]);
 
     // Assert
     receipt2.expect_commit_success();

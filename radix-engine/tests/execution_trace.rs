@@ -23,7 +23,7 @@ fn test_trace_resource_transfers() {
             args!(transfer_amount),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
 
     // Assert
     let output = receipt.expect_commit_success();

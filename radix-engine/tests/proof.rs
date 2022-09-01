@@ -32,7 +32,7 @@ fn can_create_clone_and_drop_bucket_proof() {
             args!(Expression::entire_worktop()),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
     println!("{:?}", receipt);
 
     // Assert
@@ -178,7 +178,7 @@ fn can_use_bucket_for_authorization() {
             args!(Expression::entire_worktop()),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
 
     // Assert
     receipt.expect_commit_success();
@@ -214,7 +214,7 @@ fn can_use_vault_for_authorization() {
         )
         .unwrap()
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
 
     // Assert
     receipt.expect_commit_success();
@@ -243,7 +243,7 @@ fn can_create_proof_from_account_and_pass_on() {
         )
         .unwrap()
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
 
     // Assert
     receipt.expect_commit_success();
@@ -272,7 +272,7 @@ fn cant_move_restricted_proof() {
         )
         .unwrap()
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -306,7 +306,7 @@ fn cant_move_locked_bucket() {
         )
         .unwrap()
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -347,7 +347,7 @@ fn can_compose_bucket_and_vault_proof() {
             )
         })
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
 
     // Assert
     receipt.expect_commit_success();
@@ -383,7 +383,7 @@ fn can_compose_bucket_and_vault_proof_by_amount() {
             )
         })
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
 
     // Assert
     receipt.expect_commit_success();
@@ -429,7 +429,7 @@ fn can_compose_bucket_and_vault_proof_by_ids() {
             },
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
 
     // Assert
     receipt.expect_commit_success();
@@ -506,7 +506,7 @@ fn can_create_auth_zone_proof_by_amount_from_non_fungibles() {
             },
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
 
     // Assert
     receipt.expect_commit_success();
