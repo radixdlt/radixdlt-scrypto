@@ -1,7 +1,7 @@
 use wasmi::*;
 
 use crate::model::InvokeError;
-use crate::types::{hash, Hash, HashMap, ScryptoValue};
+use crate::types::{format, hash, Box, Hash, HashMap, ScryptoValue};
 use crate::wasm::constants::*;
 use crate::wasm::errors::*;
 use crate::wasm::traits::*;
