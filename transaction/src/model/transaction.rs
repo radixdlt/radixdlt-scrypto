@@ -44,7 +44,7 @@ pub struct SignedTransactionIntent {
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct NotarizedTransaction {
     pub signed_intent: SignedTransactionIntent,
-    pub notary_signature: Signature, // TODO: may be able to get rid of redundant public key with more types
+    pub notary_signature: Signature,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
