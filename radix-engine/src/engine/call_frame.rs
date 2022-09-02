@@ -58,14 +58,14 @@ impl CallFrame {
         }
         if !ed25519_non_fungible_ids.is_empty() {
             // Proofs can't be zero amount
-            let mut ecdsa_bucket = Bucket::new(ResourceContainer::new_non_fungible(
+            let mut ed25519_bucket = Bucket::new(ResourceContainer::new_non_fungible(
                 ED25519_TOKEN,
                 ed25519_non_fungible_ids,
             ));
-            let ecdsa_proof = ecdsa_bucket
+            let ed25519_proof = ed25519_bucket
                 .create_proof(ED25519_TOKEN_BUCKET_ID)
                 .expect("Failed to construct ED25519 signature proof");
-            initial_auth_zone_proofs.push(ecdsa_proof);
+            initial_auth_zone_proofs.push(ed25519_proof);
         }
 
         Self {
