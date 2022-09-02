@@ -36,13 +36,16 @@ pub fn verify_ecdsa(
     public_key: &EcdsaPublicKey,
     signature: &EcdsaSignature,
 ) -> bool {
+    let recovery_id = signature.0[0];
     let signature_data = &signature.0[1..];
-    if let Ok(sig) = secp256k1::ecdsa::Signature::from_compact(signature_data) {
-        if let Ok(pk) = secp256k1::PublicKey::from_slice(&public_key.0) {
-            let hash = sha256(sha256(message));
-            let msg =
-                secp256k1::Message::from_slice(&hash.0).expect("Hash is always a valid message");
-            return sig.verify(&msg, &pk).is_ok();
+    if secp256k1::ecdsa::RecoveryId::from_i32(recovery_id.into()).is_ok() {
+        if let Ok(sig) = secp256k1::ecdsa::Signature::from_compact(signature_data) {
+            if let Ok(pk) = secp256k1::PublicKey::from_slice(&public_key.0) {
+                let hash = sha256(sha256(message));
+                let msg = secp256k1::Message::from_slice(&hash.0)
+                    .expect("Hash is always a valid message");
+                return sig.verify(&msg, &pk).is_ok();
+            }
         }
     }
 
