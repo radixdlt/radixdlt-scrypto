@@ -1306,7 +1306,7 @@ where
                 let resource_address: ResourceAddress = node_id.into();
                 substates.insert(
                     SubstateId::ResourceManager(resource_address),
-                    Substate::Resource(resource_manager),
+                    Substate::ResourceManager(resource_manager),
                 );
                 (substates, non_fungibles)
             }

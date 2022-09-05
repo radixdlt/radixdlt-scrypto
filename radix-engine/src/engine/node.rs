@@ -7,7 +7,7 @@ use crate::types::*;
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub enum Substate {
     System(System),
-    Resource(ResourceManager),
+    ResourceManager(ResourceManager),
     ComponentInfo(ComponentInfo),
     ComponentState(ComponentState),
     Package(Package),
@@ -34,7 +34,7 @@ impl Substate {
     }
 
     pub fn resource_manager_mut(&mut self) -> &mut ResourceManager {
-        if let Substate::Resource(resource_manager) = self {
+        if let Substate::ResourceManager(resource_manager) = self {
             resource_manager
         } else {
             panic!("Not a resource manager");
@@ -58,7 +58,7 @@ impl Substate {
     }
 
     pub fn resource_manager(&self) -> &ResourceManager {
-        if let Substate::Resource(resource_manager) = self {
+        if let Substate::ResourceManager(resource_manager) = self {
             resource_manager
         } else {
             panic!("Not a resource manager");
@@ -140,7 +140,7 @@ impl Into<Substate> for ComponentState {
 
 impl Into<Substate> for ResourceManager {
     fn into(self) -> Substate {
-        Substate::Resource(self)
+        Substate::ResourceManager(self)
     }
 }
 
@@ -184,7 +184,7 @@ impl Into<ComponentState> for Substate {
 
 impl Into<ResourceManager> for Substate {
     fn into(self) -> ResourceManager {
-        if let Substate::Resource(resource_manager) = self {
+        if let Substate::ResourceManager(resource_manager) = self {
             resource_manager
         } else {
             panic!("Not a resource manager");
