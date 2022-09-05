@@ -1,5 +1,133 @@
 use crate::types::*;
 
+/// A raw record of resource persisted in the substate store
+#[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
+pub enum Resource {
+    Fungible {
+        /// The resource address.
+        resource_address: ResourceAddress,
+        /// The resource divisibility.
+        divisibility: u8,
+        /// The total amount.
+        amount: Decimal,
+    },
+    NonFungible {
+        /// The resource address.
+        resource_address: ResourceAddress,
+        /// The total non-fungible ids.
+        ids: BTreeSet<NonFungibleId>,
+    },
+}
+
+impl Resource {
+    pub fn new_fungible(
+        resource_address: ResourceAddress,
+        divisibility: u8,
+        amount: Decimal,
+    ) -> Self {
+        Self::Fungible {
+            resource_address,
+            divisibility,
+            amount,
+        }
+    }
+
+    pub fn new_non_fungible(
+        resource_address: ResourceAddress,
+        ids: BTreeSet<NonFungibleId>,
+    ) -> Self {
+        Self::NonFungible {
+            resource_address,
+            ids,
+        }
+    }
+    pub fn new_empty(resource_address: ResourceAddress, resource_type: ResourceType) -> Self {
+        match resource_type {
+            ResourceType::Fungible { divisibility } => {
+                Self::new_fungible(resource_address, divisibility, Decimal::zero())
+            }
+            ResourceType::NonFungible => Self::new_non_fungible(resource_address, BTreeSet::new()),
+        }
+    }
+
+    pub fn ids(&self) -> &BTreeSet<NonFungibleId> {
+        match self {
+            Resource::Fungible {
+                resource_address,
+                divisibility,
+                amount,
+            } => panic!("Attempted to list non-fungible IDs on fungible resource"),
+            Resource::NonFungible {
+                resource_address,
+                ids,
+            } => &ids,
+        }
+    }
+
+    pub fn amount(&self) -> Decimal {
+        match self {
+            Resource::Fungible {
+                resource_address,
+                divisibility,
+                amount,
+            } => amount.clone(),
+            Resource::NonFungible {
+                resource_address,
+                ids,
+            } => ids.len().into(),
+        }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.amount().is_zero()
+    }
+
+    pub fn resource_address(&self) -> ResourceAddress {
+        match self {
+            Self::Fungible {
+                resource_address, ..
+            }
+            | Self::NonFungible {
+                resource_address, ..
+            } => *resource_address,
+        }
+    }
+
+    pub fn resource_type(&self) -> ResourceType {
+        match self {
+            Self::Fungible { divisibility, .. } => ResourceType::Fungible {
+                divisibility: *divisibility,
+            },
+            Self::NonFungible { .. } => ResourceType::NonFungible,
+        }
+    }
+}
+
+impl Into<ResourceContainer> for Resource {
+    fn into(self) -> ResourceContainer {
+        match self {
+            Resource::Fungible {
+                resource_address,
+                divisibility,
+                amount,
+            } => ResourceContainer::Fungible {
+                resource_address,
+                divisibility,
+                locked_amounts: BTreeMap::default(),
+                liquid_amount: amount,
+            },
+            Resource::NonFungible {
+                resource_address,
+                ids,
+            } => ResourceContainer::NonFungible {
+                resource_address,
+                locked_ids: BTreeMap::new(),
+                liquid_ids: ids,
+            },
+        }
+    }
+}
+
 /// Represents an error when manipulating resources in a container.
 #[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
 pub enum ResourceContainerError {
@@ -17,7 +145,7 @@ pub enum ResourceContainerError {
     ContainerLocked,
 }
 
-#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum ResourceContainer {
     Fungible {
         /// The resource address.
@@ -33,7 +161,7 @@ pub enum ResourceContainer {
         /// The resource address.
         resource_address: ResourceAddress,
         /// The locked non-fungible ids and the corresponding times of being locked.
-        locked_ids: HashMap<NonFungibleId, usize>,
+        locked_ids: BTreeMap<NonFungibleId, usize>,
         /// The liquid non-fungible ids.
         liquid_ids: BTreeSet<NonFungibleId>,
     },
@@ -76,61 +204,25 @@ impl LockedAmountOrIds {
 }
 
 impl ResourceContainer {
-    pub fn new_fungible(
-        resource_address: ResourceAddress,
-        divisibility: u8,
-        amount: Decimal,
-    ) -> Self {
-        Self::Fungible {
-            resource_address,
-            divisibility,
-            locked_amounts: BTreeMap::new(),
-            liquid_amount: amount,
-        }
-    }
-
-    pub fn new_non_fungible(
-        resource_address: ResourceAddress,
-        ids: BTreeSet<NonFungibleId>,
-    ) -> Self {
-        Self::NonFungible {
-            resource_address,
-            locked_ids: HashMap::new(),
-            liquid_ids: ids.clone(),
-        }
-    }
-
-    pub fn new_empty(resource_address: ResourceAddress, resource_type: ResourceType) -> Self {
-        match resource_type {
-            ResourceType::Fungible { divisibility } => {
-                Self::new_fungible(resource_address, divisibility, Decimal::zero())
-            }
-            ResourceType::NonFungible => Self::new_non_fungible(resource_address, BTreeSet::new()),
-        }
-    }
-
-    pub fn put(&mut self, other: Self) -> Result<(), ResourceContainerError> {
+    pub fn put(&mut self, other: Resource) -> Result<(), ResourceContainerError> {
         // check resource address
         if self.resource_address() != other.resource_address() {
             return Err(ResourceContainerError::ResourceAddressNotMatching);
         }
 
-        // Invariant: owned container should always be free
-        assert!(!other.is_locked());
-
         // update liquidity
         match self {
             Self::Fungible { liquid_amount, .. } => {
-                *liquid_amount += other.liquid_amount();
+                *liquid_amount += other.amount();
             }
             Self::NonFungible { liquid_ids, .. } => {
-                liquid_ids.extend(other.liquid_ids()?);
+                liquid_ids.extend(other.ids().clone());
             }
         }
         Ok(())
     }
 
-    pub fn take_by_amount(&mut self, amount: Decimal) -> Result<Self, ResourceContainerError> {
+    pub fn take_by_amount(&mut self, amount: Decimal) -> Result<Resource, ResourceContainerError> {
         // check amount granularity
         let divisibility = self.resource_type().divisibility();
         Self::check_amount(amount, divisibility)?;
@@ -142,7 +234,7 @@ impl ResourceContainer {
                     return Err(ResourceContainerError::InsufficientBalance);
                 }
                 *liquid_amount = *liquid_amount - amount;
-                Ok(Self::new_fungible(
+                Ok(Resource::new_fungible(
                     self.resource_address(),
                     divisibility,
                     amount,
@@ -165,7 +257,7 @@ impl ResourceContainer {
     pub fn take_by_ids(
         &mut self,
         ids: &BTreeSet<NonFungibleId>,
-    ) -> Result<Self, ResourceContainerError> {
+    ) -> Result<Resource, ResourceContainerError> {
         match self {
             Self::Fungible { .. } => Err(ResourceContainerError::NonFungibleOperationNotAllowed),
             Self::NonFungible { liquid_ids, .. } => {
@@ -174,12 +266,15 @@ impl ResourceContainer {
                         return Err(ResourceContainerError::InsufficientBalance);
                     }
                 }
-                Ok(Self::new_non_fungible(self.resource_address(), ids.clone()))
+                Ok(Resource::new_non_fungible(
+                    self.resource_address(),
+                    ids.clone(),
+                ))
             }
         }
     }
 
-    pub fn take_all_liquid(&mut self) -> Result<Self, ResourceContainerError> {
+    pub fn take_all_liquid(&mut self) -> Result<Resource, ResourceContainerError> {
         self.take_by_amount(self.liquid_amount())
     }
 
