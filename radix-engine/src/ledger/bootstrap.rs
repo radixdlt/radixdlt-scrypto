@@ -1,5 +1,5 @@
-use crate::engine::Track;
 use crate::engine::TrackReceipt;
+use crate::engine::{ResourceChange, Track};
 use crate::fee::FeeReserve;
 use crate::fee::UnlimitedLoanFeeReserve;
 use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
@@ -25,7 +25,9 @@ const SYS_FAUCET_COMPONENT_NAME: &str = "SysFaucet";
 
 use crate::model::*;
 
-fn create_genesis<'s, R: FeeReserve>(mut track: Track<'s, R>) -> TrackReceipt {
+// TODO: This would be much better handled if bootstrap was implemented as an executed transaction
+// TODO: rather than a state snapshot.
+pub fn execute_genesis<'s, R: FeeReserve>(mut track: Track<'s, R>) -> TrackReceipt {
     let sys_faucet_package =
         extract_package(include_bytes!("../../../assets/sys_faucet.wasm").to_vec())
             .expect("Failed to construct sys-faucet package");
@@ -97,6 +99,13 @@ fn create_genesis<'s, R: FeeReserve>(mut track: Track<'s, R>) -> TrackReceipt {
         true,
     );
 
+    let initial_xrd = ResourceChange {
+        resource_address: RADIX_TOKEN,
+        component_address: SYS_FAUCET_COMPONENT,
+        vault_id: XRD_VAULT_ID,
+        amount: minted_xrd.total_amount(),
+    };
+
     let system_vault = Vault::new(minted_xrd);
     track.create_uuid_substate(SubstateId::Vault(XRD_VAULT_ID), system_vault, false);
 
@@ -119,7 +128,7 @@ fn create_genesis<'s, R: FeeReserve>(mut track: Track<'s, R>) -> TrackReceipt {
     );
     track.create_uuid_substate(SubstateId::System, System { epoch: 0 }, true);
 
-    track.finalize(Ok(Vec::new()), Vec::new())
+    track.finalize(Ok(Vec::new()), vec![initial_xrd])
 }
 
 pub fn bootstrap<S>(mut substate_store: S) -> S
@@ -131,7 +140,7 @@ where
         .is_none()
     {
         let track = Track::new(&substate_store, UnlimitedLoanFeeReserve::default());
-        let receipt = create_genesis(track);
+        let receipt = execute_genesis(track);
         if let TransactionResult::Commit(c) = receipt.result {
             c.state_updates.commit(&mut substate_store);
         } else {
