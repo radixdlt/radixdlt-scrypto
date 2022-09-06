@@ -6,6 +6,7 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::abi::*;
+use crate::address::EntityType;
 use crate::constants::ECDSA_TOKEN;
 use crate::crypto::EcdsaPublicKey;
 use crate::misc::*;
@@ -41,9 +42,9 @@ impl NonFungibleAddress {
     }
 }
 
-//========
-// binary
-//========
+//=======
+// error
+//=======
 
 /// Represents an error when parsing non-fungible address.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -54,6 +55,20 @@ pub enum ParseNonFungibleAddressError {
     InvalidHex(String),
     InvalidPrefix,
 }
+
+#[cfg(not(feature = "alloc"))]
+impl std::error::Error for ParseNonFungibleAddressError {}
+
+#[cfg(not(feature = "alloc"))]
+impl fmt::Display for ParseNonFungibleAddressError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+//========
+// binary
+//========
 
 impl TryFrom<&[u8]> for NonFungibleAddress {
     type Error = ParseNonFungibleAddressError;
@@ -100,10 +115,10 @@ impl FromStr for NonFungibleAddress {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let bytes =
             hex::decode(s).map_err(|_| ParseNonFungibleAddressError::InvalidHex(s.to_owned()))?;
-        if bytes.get(0) != Some(&3u8) {
+        if bytes.get(0) != Some(&EntityType::Resource.id()) {
             return Err(ParseNonFungibleAddressError::InvalidPrefix);
         }
-        Self::try_from(&bytes[1..])
+        Self::try_from(bytes.as_ref())
     }
 }
 
@@ -111,12 +126,42 @@ impl fmt::Display for NonFungibleAddress {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         // Note that if the non-fungible ID is empty, the non-fungible address won't be distinguishable from resource address.
         // TODO: figure out what's best for the users
-        write!(f, "{}", hex::encode(combine(3, &self.to_vec())))
+        write!(f, "{}", hex::encode(&self.to_vec()))
     }
 }
 
 impl fmt::Debug for NonFungibleAddress {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(f, "{}", self)
+    }
+}
+
+//======
+// test
+//======
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    pub fn non_fungible_address_from_and_to_string_succeeds() {
+        // Arrange
+        let resource_address = ResourceAddress::from_str(
+            "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p",
+        )
+        .expect("Resource address from str failed.");
+        let non_fungible_id = NonFungibleId(
+            hex::decode("30071000000071dba5dd36e30de857049805fd1553cd")
+                .expect("Invalid NonFungibleId hex"),
+        );
+        let non_fungible_address = NonFungibleAddress::new(resource_address, non_fungible_id);
+
+        // Act
+        let converted_non_fungible_address =
+            NonFungibleAddress::from_str(&non_fungible_address.to_string());
+
+        // Assert
+        assert_eq!(converted_non_fungible_address, Ok(non_fungible_address));
     }
 }
