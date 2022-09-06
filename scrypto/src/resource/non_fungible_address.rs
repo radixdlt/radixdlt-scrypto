@@ -9,7 +9,6 @@ use crate::abi::*;
 use crate::address::EntityType;
 use crate::constants::ECDSA_TOKEN;
 use crate::crypto::EcdsaPublicKey;
-use crate::misc::*;
 use crate::resource::*;
 
 /// Identifier for a non-fungible unit.
@@ -142,6 +141,7 @@ impl fmt::Debug for NonFungibleAddress {
 
 #[cfg(test)]
 mod tests {
+    use crate::sbor::rust::string::ToString;
     use super::*;
 
     #[test]
