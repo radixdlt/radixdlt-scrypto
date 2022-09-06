@@ -124,7 +124,7 @@ fn create_genesis<'s, R: FeeReserve>(mut track: Track<'s, R>) -> TrackReceipt {
 
 pub fn bootstrap<S>(mut substate_store: S) -> S
 where
-    S: ReadableSubstateStore + WriteableSubstateStore + 'static,
+    S: ReadableSubstateStore + WriteableSubstateStore,
 {
     if substate_store
         .get_substate(&SubstateId::Package(SYS_FAUCET_PACKAGE))
