@@ -141,8 +141,8 @@ impl fmt::Debug for NonFungibleAddress {
 
 #[cfg(test)]
 mod tests {
-    use crate::sbor::rust::string::ToString;
     use super::*;
+    use crate::sbor::rust::string::ToString;
 
     #[test]
     pub fn non_fungible_address_from_and_to_string_succeeds() {
