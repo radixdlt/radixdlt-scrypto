@@ -28,7 +28,7 @@ pub use method_authorization::{
     MethodAuthorizationError,
 };
 pub use non_fungible::NonFungible;
-pub use package_extractor::{extract_package, ExtractAbiError};
+pub use package_extractor::{extract_abi, extract_package, ExtractAbiError};
 pub use precommitted_kv_store::HeapKeyValueStore;
 pub use proof::*;
 pub use resource::*;

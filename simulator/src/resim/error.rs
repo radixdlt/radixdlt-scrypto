@@ -24,7 +24,7 @@ pub enum Error {
 
     JSONError(serde_json::Error),
 
-    CargoError(CargoExecutionError),
+    BuildError(BuildError),
 
     PackageAddressNotFound,
 

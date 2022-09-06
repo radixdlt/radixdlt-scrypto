@@ -12,7 +12,7 @@ pub enum ExtractAbiError {
     InvalidBlueprintAbi,
 }
 
-fn extract_abi(code: &[u8]) -> Result<HashMap<String, BlueprintAbi>, ExtractAbiError> {
+pub fn extract_abi(code: &[u8]) -> Result<HashMap<String, BlueprintAbi>, ExtractAbiError> {
     let function_exports = WasmModule::init(code)
         .and_then(WasmModule::to_bytes)
         .map_err(ExtractAbiError::InvalidWasm)?

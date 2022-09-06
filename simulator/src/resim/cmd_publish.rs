@@ -37,7 +37,7 @@ impl Publish {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
         // Load wasm code
         let code = fs::read(if self.path.extension() != Some(OsStr::new("wasm")) {
-            build_package(&self.path, false).map_err(Error::CargoError)?
+            build_package(&self.path, false).map_err(Error::BuildError)?
         } else {
             self.path.clone()
         })
