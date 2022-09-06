@@ -21,12 +21,12 @@ pub enum PackageError {
 }
 
 impl ValidatedPackage {
-    pub fn new(package: scrypto::prelude::Package) -> Result<Self, PrepareError> {
-        WasmValidator::default().validate(&package.code, &package.blueprints)?;
+    pub fn new(code: Vec<u8>, abi: HashMap<String, BlueprintAbi>) -> Result<Self, PrepareError> {
+        WasmValidator::default().validate(&code, &abi)?;
 
         Ok(Self {
-            code: package.code,
-            blueprint_abis: package.blueprints,
+            code: code,
+            blueprint_abis: abi,
         })
     }
 
@@ -53,7 +53,7 @@ impl ValidatedPackage {
             PackageFnIdentifier::Publish => {
                 let input: PackagePublishInput = scrypto_decode(&call_data.raw)
                     .map_err(|e| InvokeError::Error(PackageError::InvalidRequestData(e)))?;
-                let package = ValidatedPackage::new(input.package)
+                let package = ValidatedPackage::new(input.code, input.abi)
                     .map_err(|e| InvokeError::Error(PackageError::InvalidWasm(e)))?;
                 let node_id = system_api
                     .node_create(HeapRENode::Package(package))

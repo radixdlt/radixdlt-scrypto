@@ -30,7 +30,7 @@ pub enum Error {
 
     InvalidPackageError,
 
-    PackageError(ExtractAbiError),
+    ExtractAbiError(ExtractAbiError),
 
     TransactionConstructionError(BuildCallWithAbiError),
 

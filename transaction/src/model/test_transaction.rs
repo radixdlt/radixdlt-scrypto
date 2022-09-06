@@ -144,8 +144,8 @@ impl TestTransaction {
                     component_address,
                     method,
                 },
-                Instruction::PublishPackage { package } => {
-                    ExecutableInstruction::PublishPackage { package }
+                Instruction::PublishPackage { code, abi } => {
+                    ExecutableInstruction::PublishPackage { code, abi }
                 }
             })
             .collect();

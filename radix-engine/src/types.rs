@@ -17,7 +17,7 @@ pub use sbor::{Decode, DecodeError, Encode, Type, TypeId, Value};
 pub use scrypto::abi::{BlueprintAbi, ScryptoType};
 pub use scrypto::address::{AddressError, Bech32Decoder, Bech32Encoder};
 pub use scrypto::component::{
-    ComponentAddAccessCheckInput, ComponentAddress, Package, PackageAddress, PackagePublishInput,
+    ComponentAddAccessCheckInput, ComponentAddress, PackageAddress, PackagePublishInput,
 };
 pub use scrypto::constants::*;
 pub use scrypto::core::{

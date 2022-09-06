@@ -26,30 +26,27 @@ const SYS_FAUCET_COMPONENT_NAME: &str = "SysFaucet";
 use crate::model::*;
 
 fn create_genesis<'s, R: FeeReserve>(mut track: Track<'s, R>) -> TrackReceipt {
-    let sys_faucet_package =
-        extract_package(include_bytes!("../../../assets/sys_faucet.wasm").to_vec())
-            .expect("Failed to construct sys-faucet package");
+    let sys_faucet_code = include_bytes!("../../../assets/sys_faucet.wasm").to_vec();
+    let sys_faucet_abi =
+        extract_abi(&sys_faucet_code).expect("Failed to construct sys-faucet package");
     track.create_uuid_substate(
         SubstateId::Package(SYS_FAUCET_PACKAGE),
-        ValidatedPackage::new(sys_faucet_package).expect("Invalid sys-faucet package"),
+        ValidatedPackage::new(sys_faucet_code, sys_faucet_abi).expect("Invalid sys-faucet package"),
         true,
     );
-    let sys_utils_package =
-        extract_package(include_bytes!("../../../assets/sys_utils.wasm").to_vec())
-            .expect("Failed to construct sys-utils package");
+    let sys_utils_code = include_bytes!("../../../assets/sys_utils.wasm").to_vec();
+    let sys_utils_abi =
+        extract_abi(&sys_utils_code).expect("Failed to construct sys-utils package");
     track.create_uuid_substate(
         SubstateId::Package(SYS_UTILS_PACKAGE),
-        ValidatedPackage::new(sys_utils_package).expect("Invalid sys-utils package"),
+        ValidatedPackage::new(sys_utils_code, sys_utils_abi).expect("Invalid sys-utils package"),
         true,
     );
-
-    let account_package = extract_package(include_bytes!("../../../assets/account.wasm").to_vec())
-        .expect("Failed to construct account package");
-    let validated_account_package =
-        ValidatedPackage::new(account_package).expect("Invalid account package");
+    let account_code = include_bytes!("../../../assets/account.wasm").to_vec();
+    let account_abi = extract_abi(&account_code).expect("Failed to construct account package");
     track.create_uuid_substate(
         SubstateId::Package(ACCOUNT_PACKAGE),
-        validated_account_package,
+        ValidatedPackage::new(account_code, account_abi).expect("Invalid account package"),
         true,
     );
 

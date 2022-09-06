@@ -17,7 +17,6 @@ use scrypto::core::NetworkDefinition;
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
 use scrypto::math::*;
-use scrypto::prelude::Package;
 use scrypto::resource::MintParams;
 use scrypto::resource::ResourceType;
 use scrypto::resource::{require, LOCKED};
@@ -430,9 +429,14 @@ impl ManifestBuilder {
     }
 
     /// Publishes a package.
-    pub fn publish_package(&mut self, package: Package) -> &mut Self {
+    pub fn publish_package(
+        &mut self,
+        code: Vec<u8>,
+        abi: HashMap<String, BlueprintAbi>,
+    ) -> &mut Self {
         self.add_instruction(Instruction::PublishPackage {
-            package: scrypto_encode(&package),
+            code,
+            abi: scrypto_encode(&abi),
         })
         .0
     }

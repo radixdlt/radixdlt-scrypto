@@ -5,7 +5,7 @@ use radix_engine::engine::{ExecutionTrace, Kernel, KernelError, ModuleError, Sys
 use radix_engine::engine::{RuntimeError, Track};
 use radix_engine::fee::SystemLoanFeeReserve;
 use radix_engine::ledger::*;
-use radix_engine::model::{export_abi, export_abi_by_component, extract_package};
+use radix_engine::model::{export_abi, export_abi_by_component, extract_abi};
 use radix_engine::state_manager::StagedSubstateStoreManager;
 use radix_engine::transaction::{
     ExecutionConfig, PreviewError, PreviewExecutor, PreviewResult, TransactionExecutor,
@@ -21,7 +21,6 @@ use scrypto::abi::{BlueprintAbi, Fn};
 use scrypto::core::NetworkDefinition;
 use scrypto::engine::types::{KeyValueStoreId, RENodeId, SubstateId, VaultId};
 use scrypto::prelude::*;
-use scrypto::prelude::{HashMap, Package};
 use scrypto::values::ScryptoValue;
 use scrypto::{abi, args};
 use transaction::builder::ManifestBuilder;
@@ -139,10 +138,14 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         (key_pair.0, key_pair.1, account)
     }
 
-    pub fn publish_package(&mut self, package: Package) -> PackageAddress {
+    pub fn publish_package(
+        &mut self,
+        code: Vec<u8>,
+        abi: HashMap<String, BlueprintAbi>,
+    ) -> PackageAddress {
         let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
             .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
-            .publish_package(package)
+            .publish_package(code, abi)
             .build();
 
         let receipt = self.execute_manifest(manifest, vec![]);
@@ -155,7 +158,8 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     }
 
     pub fn publish_package_with_code(&mut self, code: Vec<u8>) -> PackageAddress {
-        self.publish_package(extract_package(code).expect("Failed to extract package"))
+        let abi = extract_abi(&code).expect("Failed to extract ABI");
+        self.publish_package(code, abi)
     }
 
     pub fn execute_manifest(

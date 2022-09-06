@@ -43,7 +43,7 @@ impl Publish {
         })
         .map_err(Error::IOError)?;
 
-        let package = extract_package(code).map_err(Error::PackageError)?;
+        let abi = extract_abi(&code).map_err(Error::ExtractAbiError)?;
 
         if let Some(package_address) = self.package_address.clone() {
             let substate_id = SubstateId::Package(package_address);
@@ -55,7 +55,7 @@ impl Publish {
                 .map(|output| output.version);
 
             let validated_package =
-                ValidatedPackage::new(package).map_err(|_| InvalidPackageError)?;
+                ValidatedPackage::new(code, abi).map_err(|_| InvalidPackageError)?;
             let output_value = OutputValue {
                 substate: Substate::Package(validated_package),
                 version: previous_version.unwrap_or(0),
@@ -68,7 +68,7 @@ impl Publish {
         } else {
             let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
                 .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
-                .publish_package(package)
+                .publish_package(code, abi)
                 .build();
 
             let receipt = handle_manifest(

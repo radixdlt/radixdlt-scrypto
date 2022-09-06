@@ -78,7 +78,8 @@ pub enum ExecutableInstruction {
         method: String,
     },
     PublishPackage {
-        package: Vec<u8>,
+        code: Vec<u8>,
+        abi: Vec<u8>,
     },
 }
 

@@ -105,5 +105,5 @@ pub enum Instruction {
     },
 
     /// Publishes a package.
-    PublishPackage { package: Vec<u8> },
+    PublishPackage { code: Vec<u8>, abi: Vec<u8> },
 }

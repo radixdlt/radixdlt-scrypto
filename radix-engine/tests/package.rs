@@ -39,13 +39,9 @@ fn missing_memory_should_cause_error() {
             )
             "#,
     );
-    let package = Package {
-        code,
-        blueprints: HashMap::new(),
-    };
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .publish_package(package)
+        .publish_package(code, HashMap::new())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -139,13 +135,9 @@ fn test_basic_package() {
 
     // Act
     let code = wat2wasm(include_str!("wasm/basic_package.wat"));
-    let package = Package {
-        code,
-        blueprints: HashMap::new(),
-    };
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .publish_package(package)
+        .publish_package(code, HashMap::new())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -175,10 +167,9 @@ fn test_basic_package_missing_export() {
 
     // Act
     let code = wat2wasm(include_str!("wasm/basic_package.wat"));
-    let package = Package { code, blueprints };
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .publish_package(package)
+        .publish_package(code, blueprints)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 

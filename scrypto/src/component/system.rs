@@ -1,5 +1,5 @@
+use crate::abi::BlueprintAbi;
 use crate::buffer::*;
-use crate::component::package::Package;
 use crate::component::*;
 use crate::core::{FnIdentifier, NativeFnIdentifier, PackageFnIdentifier, Runtime};
 use crate::engine::types::RENodeId;
@@ -7,6 +7,8 @@ use crate::engine::{api::*, call_engine};
 use crate::prelude::ScryptoRENode;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::*;
+use sbor::rust::string::String;
+use sbor::rust::vec::Vec;
 
 /// Represents the Radix Engine component subsystem.
 ///
@@ -45,10 +47,14 @@ impl ComponentSystem {
     }
 
     /// Publishes a package.
-    pub fn publish_package(&mut self, package: Package) -> PackageAddress {
+    pub fn publish_package(
+        &mut self,
+        code: Vec<u8>,
+        abi: HashMap<String, BlueprintAbi>,
+    ) -> PackageAddress {
         let input = RadixEngineInput::InvokeFunction(
             FnIdentifier::Native(NativeFnIdentifier::Package(PackageFnIdentifier::Publish)),
-            scrypto_encode(&PackagePublishInput { package }),
+            scrypto_encode(&PackagePublishInput { code, abi }),
         );
         call_engine(input)
     }

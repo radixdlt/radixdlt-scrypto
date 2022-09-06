@@ -282,8 +282,8 @@ impl TransactionValidator {
                         method,
                     });
                 }
-                Instruction::PublishPackage { package } => {
-                    instructions.push(ExecutableInstruction::PublishPackage { package });
+                Instruction::PublishPackage { code, abi } => {
+                    instructions.push(ExecutableInstruction::PublishPackage { code, abi });
                 }
             }
         }
