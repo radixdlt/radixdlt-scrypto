@@ -52,8 +52,7 @@ impl Publish {
                 .get_substate(&substate_id)
                 .map(|output| output.version);
 
-            let validated_package =
-                ValidatedPackage::new(code, abi).map_err(|_| InvalidPackageError)?;
+            let validated_package = Package::new(code, abi).map_err(|_| InvalidPackageError)?;
             let output_value = OutputValue {
                 substate: Substate::Package(validated_package),
                 version: previous_version.unwrap_or(0),

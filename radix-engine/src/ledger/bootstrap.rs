@@ -3,7 +3,7 @@ use crate::engine::TrackReceipt;
 use crate::fee::FeeReserve;
 use crate::fee::UnlimitedLoanFeeReserve;
 use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
-use crate::model::ValidatedPackage;
+use crate::model::Package;
 use crate::transaction::TransactionResult;
 use crate::types::ResourceMethodAuthKey::Withdraw;
 use crate::types::*;
@@ -31,7 +31,7 @@ fn create_genesis<'s, R: FeeReserve>(mut track: Track<'s, R>) -> TrackReceipt {
         extract_abi(&sys_faucet_code).expect("Failed to construct sys-faucet package");
     track.create_uuid_substate(
         SubstateId::Package(SYS_FAUCET_PACKAGE),
-        ValidatedPackage::new(sys_faucet_code, sys_faucet_abi).expect("Invalid sys-faucet package"),
+        Package::new(sys_faucet_code, sys_faucet_abi).expect("Invalid sys-faucet package"),
         true,
     );
     let sys_utils_code = include_bytes!("../../../assets/sys_utils.wasm").to_vec();
@@ -39,14 +39,14 @@ fn create_genesis<'s, R: FeeReserve>(mut track: Track<'s, R>) -> TrackReceipt {
         extract_abi(&sys_utils_code).expect("Failed to construct sys-utils package");
     track.create_uuid_substate(
         SubstateId::Package(SYS_UTILS_PACKAGE),
-        ValidatedPackage::new(sys_utils_code, sys_utils_abi).expect("Invalid sys-utils package"),
+        Package::new(sys_utils_code, sys_utils_abi).expect("Invalid sys-utils package"),
         true,
     );
     let account_code = include_bytes!("../../../assets/account.wasm").to_vec();
     let account_abi = extract_abi(&account_code).expect("Failed to construct account package");
     track.create_uuid_substate(
         SubstateId::Package(ACCOUNT_PACKAGE),
-        ValidatedPackage::new(account_code, account_abi).expect("Invalid account package"),
+        Package::new(account_code, account_abi).expect("Invalid account package"),
         true,
     );
 

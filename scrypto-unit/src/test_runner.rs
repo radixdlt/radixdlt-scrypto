@@ -567,7 +567,7 @@ pub fn wat2wasm(wat: &str) -> Vec<u8> {
     .expect("Failed to compiled WAT into WASM")
 }
 
-pub fn abi_single_fn_any_input_void_output(
+pub fn test_abi_any_in_void_out(
     blueprint_name: &str,
     function_name: &str,
 ) -> HashMap<String, BlueprintAbi> {

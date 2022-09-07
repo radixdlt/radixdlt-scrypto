@@ -7,7 +7,7 @@ use crate::wasm::*;
 
 /// A collection of blueprints, compiled and published as a single unit.
 #[derive(Clone, TypeId, Encode, Decode, PartialEq, Eq)]
-pub struct ValidatedPackage {
+pub struct Package {
     code: Vec<u8>,
     blueprint_abis: HashMap<String, BlueprintAbi>,
 }
@@ -20,7 +20,7 @@ pub enum PackageError {
     MethodNotFound(String),
 }
 
-impl ValidatedPackage {
+impl Package {
     pub fn new(code: Vec<u8>, abi: HashMap<String, BlueprintAbi>) -> Result<Self, PrepareError> {
         WasmValidator::default().validate(&code, &abi)?;
 
@@ -53,7 +53,7 @@ impl ValidatedPackage {
             PackageFnIdentifier::Publish => {
                 let input: PackagePublishInput = scrypto_decode(&call_data.raw)
                     .map_err(|e| InvokeError::Error(PackageError::InvalidRequestData(e)))?;
-                let package = ValidatedPackage::new(input.code, input.abi)
+                let package = Package::new(input.code, input.abi)
                     .map_err(|e| InvokeError::Error(PackageError::InvalidWasm(e)))?;
                 let node_id = system_api
                     .node_create(HeapRENode::Package(package))
@@ -68,9 +68,9 @@ impl ValidatedPackage {
     }
 }
 
-impl Debug for ValidatedPackage {
+impl Debug for Package {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("ValidatedPackage")
+        f.debug_struct("Package")
             .field("code_len", &self.code.len())
             .field("blueprint_abis", &self.blueprint_abis)
             .finish()
