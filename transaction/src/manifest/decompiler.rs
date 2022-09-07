@@ -287,19 +287,6 @@ pub fn decompile(
 
                 buf.push_str(";\n");
             }
-            Instruction::CallMethodWithAllResources {
-                component_address,
-                method,
-            } => {
-                id_validator
-                    .move_all_buckets()
-                    .map_err(DecompileError::IdValidationError)?;
-                buf.push_str(&format!(
-                    "CALL_METHOD_WITH_ALL_RESOURCES ComponentAddress(\"{}\") \"{}\";\n",
-                    bech32_encoder.encode_component_address(&component_address),
-                    method
-                ));
-            }
             Instruction::PublishPackage { code, abi } => {
                 buf.push_str(&format!(
                     "PUBLISH_PACKAGE Bytes(\"{}\") Bytes(\"{}\");\n",

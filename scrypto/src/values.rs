@@ -14,6 +14,7 @@ use crate::abi::*;
 use crate::address::AddressError;
 use crate::buffer::*;
 use crate::component::*;
+use crate::core::*;
 use crate::crypto::*;
 use crate::engine::types::*;
 use crate::math::*;
@@ -30,6 +31,7 @@ pub enum ScryptoValueReplaceError {
 pub struct ScryptoValue {
     pub raw: Vec<u8>,
     pub dom: Value,
+    pub expressions: Vec<(Expression, SborPath)>,
     pub bucket_ids: HashMap<BucketId, SborPath>,
     pub proof_ids: HashMap<ProofId, SborPath>,
     pub vault_ids: HashSet<VaultId>,
@@ -62,6 +64,7 @@ impl ScryptoValue {
         Ok(Self {
             raw: encode_any(&value),
             dom: value,
+            expressions: checker.expressions,
             bucket_ids: checker
                 .buckets
                 .drain()
@@ -88,6 +91,7 @@ impl ScryptoValue {
         Ok(Self {
             raw: encode_any(&value),
             dom: value,
+            expressions: Vec::new(),
             bucket_ids: HashMap::new(),
             proof_ids: HashMap::new(),
             vault_ids: HashSet::new(),
@@ -240,6 +244,7 @@ impl CustomValueVisitor for ScryptoNoCustomValuesChecker {
 
 /// A checker the check a Scrypto-specific value.
 pub struct ScryptoCustomValueChecker {
+    pub expressions: Vec<(Expression, SborPath)>,
     pub buckets: HashMap<Bucket, SborPath>,
     pub proofs: HashMap<Proof, SborPath>,
     pub vaults: HashSet<Vault>,
@@ -269,12 +274,14 @@ pub enum ScryptoCustomValueCheckError {
     InvalidVault(ParseVaultError),
     InvalidNonFungibleId(ParseNonFungibleIdError),
     InvalidNonFungibleAddress(ParseNonFungibleAddressError),
+    InvalidExpression(ParseExpressionError),
     DuplicateIds,
 }
 
 impl ScryptoCustomValueChecker {
     pub fn new() -> Self {
         Self {
+            expressions: Vec::new(),
             buckets: HashMap::new(),
             proofs: HashMap::new(),
             vaults: HashSet::new(),
@@ -388,6 +395,11 @@ impl CustomValueVisitor for ScryptoCustomValueChecker {
                 let resource_address = ResourceAddress::try_from(data)
                     .map_err(ScryptoCustomValueCheckError::InvalidResourceAddress)?;
                 self.resource_addresses.insert(resource_address);
+            }
+            ScryptoType::Expression => {
+                let expression = Expression::try_from(data)
+                    .map_err(ScryptoCustomValueCheckError::InvalidExpression)?;
+                self.expressions.push((expression, path.clone().into()));
             }
         }
         Ok(())
@@ -640,6 +652,9 @@ impl ScryptoValueFormatter {
                 "ResourceAddress(\"{}\")",
                 ResourceAddress::try_from(data).unwrap()
             ),
+            ScryptoType::Expression => {
+                format!("Expression(\"{}\")", Expression::try_from(data).unwrap())
+            }
         }
     }
 }

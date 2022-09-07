@@ -73,10 +73,6 @@ pub enum ExecutableInstruction {
         method_name: String,
         args: Vec<u8>,
     },
-    CallMethodWithAllResources {
-        component_address: ComponentAddress,
-        method: String,
-    },
     PublishPackage {
         code: Vec<u8>,
         abi: Vec<u8>,

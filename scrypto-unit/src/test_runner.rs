@@ -344,7 +344,11 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
             .create_proof_from_account(auth, account)
             .call_function(package, "ResourceCreator", function, args!(token, set_auth))
-            .call_method_with_all_resources(account, "deposit_batch")
+            .call_method(
+                account,
+                "deposit_batch",
+                args!(Expression::entire_worktop()),
+            )
             .build();
         self.execute_manifest(manifest, vec![signer_public_key])
             .expect_commit_success();
@@ -374,7 +378,11 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
                 "create_restricted_token",
                 args!(mint_auth, burn_auth, withdraw_auth, admin_auth),
             )
-            .call_method_with_all_resources(account, "deposit_batch")
+            .call_method(
+                account,
+                "deposit_batch",
+                args!(Expression::entire_worktop()),
+            )
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_commit_success();
@@ -405,7 +413,11 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
                 "create_restricted_burn",
                 args!(auth_resource_address),
             )
-            .call_method_with_all_resources(account, "deposit_batch")
+            .call_method(
+                account,
+                "deposit_batch",
+                args!(Expression::entire_worktop()),
+            )
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_commit_success();
@@ -433,7 +445,11 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
                 "create_restricted_transfer",
                 args![auth_resource_address],
             )
-            .call_method_with_all_resources(account, "deposit_batch")
+            .call_method(
+                account,
+                "deposit_batch",
+                args!(Expression::entire_worktop()),
+            )
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_commit_success();
@@ -456,7 +472,11 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
                 "create_non_fungible_fixed",
                 args!(),
             )
-            .call_method_with_all_resources(account, "deposit_batch")
+            .call_method(
+                account,
+                "deposit_batch",
+                args!(Expression::entire_worktop()),
+            )
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_commit_success();
@@ -481,7 +501,11 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
                 "create_fungible_fixed",
                 args!(amount, divisibility),
             )
-            .call_method_with_all_resources(account, "deposit_batch")
+            .call_method(
+                account,
+                "deposit_batch",
+                args!(Expression::entire_worktop()),
+            )
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_commit_success();
@@ -511,7 +535,11 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
                 &self.export_abi(package_address, blueprint_name),
             )
             .unwrap()
-            .call_method_with_all_resources(account, "deposit_batch")
+            .call_method(
+                account,
+                "deposit_batch",
+                args!(Expression::entire_worktop()),
+            )
             .build();
         let receipt = self.execute_manifest(manifest, vec![signer_public_key]);
         receipt.expect_commit_success();

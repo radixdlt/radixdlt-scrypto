@@ -91,11 +91,6 @@ pub enum Instruction {
         args: Vec<Value>,
     },
 
-    CallMethodWithAllResources {
-        component_address: Value,
-        method: Value,
-    },
-
     PublishPackage {
         code: Value,
         abi: Value,
@@ -145,6 +140,7 @@ pub enum Type {
     Proof,
     NonFungibleId,
     NonFungibleAddress,
+    Expression,
 
     /* Bytes is a convenient way of producing `Vec<u8>` */
     Bytes,
@@ -188,6 +184,7 @@ pub enum Value {
     Proof(Box<Value>),
     NonFungibleId(Box<Value>),
     NonFungibleAddress(Box<Value>),
+    Expression(Box<Value>),
 
     Bytes(Vec<u8>),
 }
@@ -227,6 +224,7 @@ impl Value {
             Value::Proof(_) => Type::Proof,
             Value::NonFungibleId(_) => Type::NonFungibleId,
             Value::NonFungibleAddress(_) => Type::NonFungibleAddress,
+            Value::Expression(_) => Type::Expression,
             Value::Bytes(_) => Type::List,
         }
     }

@@ -137,13 +137,7 @@ impl TestTransaction {
                     method_name,
                     args,
                 },
-                Instruction::CallMethodWithAllResources {
-                    component_address,
-                    method,
-                } => ExecutableInstruction::CallMethodWithAllResources {
-                    component_address,
-                    method,
-                },
+
                 Instruction::PublishPackage { code, abi } => {
                     ExecutableInstruction::PublishPackage { code, abi }
                 }

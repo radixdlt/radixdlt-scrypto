@@ -112,11 +112,6 @@ impl IdValidator {
         Ok(())
     }
 
-    pub fn move_all_buckets(&mut self) -> Result<(), IdValidationError> {
-        self.bucket_ids.clear();
-        Ok(())
-    }
-
     pub fn move_resources(&mut self, args: &ScryptoValue) -> Result<(), IdValidationError> {
         for (bucket_id, _) in &args.bucket_ids {
             self.drop_bucket(*bucket_id)?;

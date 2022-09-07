@@ -1,5 +1,6 @@
 use clap::Parser;
 use radix_engine::types::*;
+use scrypto::prelude::Expression;
 use transaction::builder::ManifestBuilder;
 
 use crate::resim::*;
@@ -48,7 +49,11 @@ impl Mint {
         let manifest = manifest_builder
             .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
             .mint(self.amount, self.resource_address)
-            .call_method_with_all_resources(default_account, "deposit_batch")
+            .call_method(
+                default_account,
+                "deposit_batch",
+                args!(Expression::entire_worktop()),
+            )
             .build();
         handle_manifest(
             manifest,

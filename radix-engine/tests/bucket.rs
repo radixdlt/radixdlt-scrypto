@@ -16,7 +16,11 @@ fn test_bucket_internal(method_name: &str) {
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), account)
         .call_function(package_address, "BucketTest", method_name, args!())
-        .call_method_with_all_resources(account, "deposit_batch")
+        .call_method(
+            account,
+            "deposit_batch",
+            args!(Expression::entire_worktop()),
+        )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
@@ -82,7 +86,11 @@ fn test_bucket_of_badges() {
         .call_function(package_address, "BadgeTest", "split", args!())
         .call_function(package_address, "BadgeTest", "borrow", args!())
         .call_function(package_address, "BadgeTest", "query", args!())
-        .call_method_with_all_resources(account, "deposit_batch")
+        .call_method(
+            account,
+            "deposit_batch",
+            args!(Expression::entire_worktop()),
+        )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
     receipt.expect_commit_success();
@@ -174,14 +182,20 @@ fn create_empty_bucket() {
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account();
+    let non_fungible_resource = test_runner.create_non_fungible_resource(account);
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), account)
-        .take_from_worktop(RADIX_TOKEN, |builder, _bucket_id| builder)
-        .take_from_worktop_by_amount(Decimal::zero(), RADIX_TOKEN, |builder, _bucket_id| builder)
-        .take_from_worktop_by_ids(&BTreeSet::new(), RADIX_TOKEN, |builder, _bucket_id| builder)
-        .call_method_with_all_resources(account, "deposit_batch")
+        .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
+            builder.return_to_worktop(bucket_id)
+        })
+        .take_from_worktop_by_amount(Decimal::zero(), RADIX_TOKEN, |builder, bucket_id| {
+            builder.return_to_worktop(bucket_id)
+        })
+        .take_from_worktop_by_ids(&BTreeSet::new(), RADIX_TOKEN, |builder, bucket_id| {
+            builder.return_to_worktop(bucket_id)
+        })
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
     println!("{:?}", receipt);
