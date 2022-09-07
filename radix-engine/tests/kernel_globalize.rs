@@ -10,7 +10,7 @@ fn should_not_be_able_to_globalize_key_value_store() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.extract_and_publish_package("kernel");
+    let package_address = test_runner.publish_package_under_tests("kernel");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
@@ -35,7 +35,7 @@ fn should_not_be_able_to_globalize_bucket() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.extract_and_publish_package("kernel");
+    let package_address = test_runner.publish_package_under_tests("kernel");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
@@ -60,7 +60,7 @@ fn should_not_be_able_to_globalize_proof() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.extract_and_publish_package("kernel");
+    let package_address = test_runner.publish_package_under_tests("kernel");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
@@ -85,7 +85,7 @@ fn should_not_be_able_to_globalize_vault() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.extract_and_publish_package("kernel");
+    let package_address = test_runner.publish_package_under_tests("kernel");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())

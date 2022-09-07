@@ -10,7 +10,7 @@ fn test_bucket_internal(method_name: &str) {
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account();
-    let package_address = test_runner.extract_and_publish_package("bucket");
+    let package_address = test_runner.publish_package_under_tests("bucket");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
@@ -74,7 +74,7 @@ fn test_bucket_of_badges() {
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account();
-    let package_address = test_runner.extract_and_publish_package("bucket");
+    let package_address = test_runner.publish_package_under_tests("bucket");
 
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), account)
@@ -95,7 +95,7 @@ fn test_take_with_invalid_granularity() {
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account();
     let resource_address = test_runner.create_fungible_resource(100.into(), 2, account);
-    let package_address = test_runner.extract_and_publish_package("bucket");
+    let package_address = test_runner.publish_package_under_tests("bucket");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
@@ -135,7 +135,7 @@ fn test_take_with_negative_amount() {
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account();
     let resource_address = test_runner.create_fungible_resource(100.into(), 2, account);
-    let package_address = test_runner.extract_and_publish_package("bucket");
+    let package_address = test_runner.publish_package_under_tests("bucket");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())

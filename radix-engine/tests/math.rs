@@ -9,7 +9,7 @@ fn test_integer_basic_ops() {
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account();
-    let package_address = test_runner.extract_and_publish_package("math-ops-check");
+    let package_address = test_runner.publish_package_under_tests("math-ops-check");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
@@ -36,7 +36,7 @@ fn test_native_and_safe_integer_interop() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.extract_and_publish_package("math-ops-check");
+    let package_address = test_runner.publish_package_under_tests("math-ops-check");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())

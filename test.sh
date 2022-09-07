@@ -25,12 +25,12 @@ echo "Testing with no_std..."
 (cd scrypto-abi; cargo test --no-default-features --features alloc)
 (cd scrypto-tests; cargo test --no-default-features --features alloc)
 
-echo "Building assets and examples..."
-(cd assets/account; cargo build --target wasm32-unknown-unknown --release; cargo test --release)
-(cd assets/sys-faucet; cargo build --target wasm32-unknown-unknown --release; cargo test --release)
-(cd assets/sys-utils; cargo build --target wasm32-unknown-unknown --release; cargo test --release)
-(cd examples/hello-world; cargo build --target wasm32-unknown-unknown --release; cargo test --release)
-(cd examples/no-std; cargo build --target wasm32-unknown-unknown --release; cargo test --release)
+echo "Building system packages and examples..."
+(cd assets/account; scrypto test)
+(cd assets/sys-faucet; scrypto test)
+(cd assets/sys-utils; scrypto test)
+(cd examples/hello-world; scrypto test)
+(cd examples/no-std; scrypto test)
 
 echo "Running simulator..."
 (cd simulator; bash ./tests/resim.sh)

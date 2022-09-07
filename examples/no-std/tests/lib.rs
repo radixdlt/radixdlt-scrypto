@@ -29,7 +29,7 @@ fn test_say_hello() {
     let public_key = private_key.public_key();
 
     // Publish package
-    let code = include_package!("no_std").to_vec();
+    let code = include_code!("no_std").to_vec();
     let abi = extract_abi(&code).unwrap();
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)

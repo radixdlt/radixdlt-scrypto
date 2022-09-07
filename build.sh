@@ -17,8 +17,8 @@ cd "$(dirname "$0")"
 (cd simulator; cargo build; cargo test --no-run)
 
 echo "Building assets and examples..."
-(cd assets/account; cargo build --target wasm32-unknown-unknown --release)
-(cd assets/sys-faucet; cargo build --target wasm32-unknown-unknown --release)
-(cd assets/sys-utils; cargo build --target wasm32-unknown-unknown --release)
-(cd examples/hello-world; cargo build --target wasm32-unknown-unknown --release)
-(cd examples/no-std; cargo build --target wasm32-unknown-unknown --release)
+(cd assets/account; scrypto build)
+(cd assets/sys-faucet; scrypto build)
+(cd assets/sys-utils; scrypto build)
+(cd examples/hello-world; scrypto build)
+(cd examples/no-std; scrypto build)

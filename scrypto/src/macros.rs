@@ -218,10 +218,10 @@ macro_rules! trace {
 /// use scrypto::prelude::*;
 ///
 /// // This package
-/// let wasm1 = compile_package!();
+/// let (code, abi) = compile_package!();
 ///
 /// // Another package
-/// let wasm2 = compile_package!("/path/to/package");
+/// let (code, abi) = compile_package!("/path/to/package");
 /// ```
 #[macro_export]
 macro_rules! compile_package {
@@ -237,34 +237,70 @@ macro_rules! compile_package {
 ///
 /// Notes:
 /// * This macro will NOT compile the package;
-/// * The WASM file name is normally the package name with `-` replaced with `_`.
+/// * The binary name is normally the package name with `-` replaced with `_`.
 ///
 /// # Example
 /// ```ignore
 /// use scrypto::prelude::*;
 ///
 /// // This package
-/// let wasm1 = include_package!("wasm_name");
+/// let wasm1 = include_code!("bin_name");
 ///
 /// // Another package
-/// let wasm2 = include_package!("/path/to/package", "wasm_name");
+/// let wasm2 = include_code!("/path/to/package", "bin_name");
 /// ```
 #[macro_export]
-macro_rules! include_package {
-    ($wasm_name: expr) => {
+macro_rules! include_code {
+    ($bin_name: expr) => {
         include_bytes!(concat!(
             env!("CARGO_MANIFEST_DIR"),
             "/target/wasm32-unknown-unknown/release/",
-            $wasm_name,
+            $bin_name,
             ".wasm"
         ))
     };
-    ($package_dir: expr, $wasm_name: expr) => {
+    ($package_dir: expr, $bin_name: expr) => {
         include_bytes!(concat!(
             $package_dir,
             "/target/wasm32-unknown-unknown/release/",
-            $wasm_name,
+            $bin_name,
             ".wasm"
+        ))
+    };
+}
+
+/// Includes the ABI file of a Scrypto package.
+///
+/// Notes:
+/// * This macro will NOT compile the package;
+/// * The binary name is normally the package name with `-` replaced with `_`.
+///
+/// # Example
+/// ```ignore
+/// use scrypto::prelude::*;
+///
+/// // This package
+/// let abi1 = include_abi!("bin_name");
+///
+/// // Another package
+/// let abi2 = include_abi!("/path/to/package", "bin_name");
+/// ```
+#[macro_export]
+macro_rules! include_abi {
+    ($bin_name: expr) => {
+        include_bytes!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/target/wasm32-unknown-unknown/release/",
+            $bin_name,
+            ".abi"
+        ))
+    };
+    ($package_dir: expr, $bin_name: expr) => {
+        include_bytes!(concat!(
+            $package_dir,
+            "/target/wasm32-unknown-unknown/release/",
+            $bin_name,
+            ".abi"
         ))
     };
 }

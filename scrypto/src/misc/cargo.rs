@@ -1,3 +1,6 @@
+use scrypto::abi::BlueprintAbi;
+use scrypto::buffer::scrypto_decode;
+use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -16,21 +19,23 @@ fn extract_crate_name(mut content: &str) -> Result<String, ()> {
 }
 
 /// Compiles a Scrypto package.
-pub fn compile_package<P: AsRef<Path>>(package_dir: P) -> Vec<u8> {
+///
+/// For testing purpose only.
+pub fn compile_package<P: AsRef<Path>>(package_dir: P) -> (Vec<u8>, HashMap<String, BlueprintAbi>) {
     // build
-    let status = Command::new("cargo")
+    let status = Command::new("scrypto")
         .current_dir(package_dir.as_ref())
-        .args(["build", "--target", "wasm32-unknown-unknown", "--release"])
+        .args(["build"])
         .status()
         .unwrap();
     if !status.success() {
-        panic!("Failed to compile package: {:?}", package_dir.as_ref());
+        panic!("Failed to build package: {:?}", package_dir.as_ref());
     }
 
     // resolve wasm name
     let mut cargo = package_dir.as_ref().to_owned();
     cargo.push("Cargo.toml");
-    let wasm_name = if cargo.exists() {
+    let bin_name = if cargo.exists() {
         let content = fs::read_to_string(cargo).expect("Failed to read the Cargo.toml file");
         extract_crate_name(&content)
             .expect("Failed to extract crate name from the Cargo.toml file")
@@ -52,11 +57,15 @@ pub fn compile_package<P: AsRef<Path>>(package_dir: P) -> Vec<u8> {
     path.push("target");
     path.push("wasm32-unknown-unknown");
     path.push("release");
-    path.push(wasm_name);
-    path.set_extension("wasm");
+    path.push(bin_name);
+    let code_path = path.with_extension("wasm");
+    let abi_path = path.with_extension("abi");
 
-    // return
-    fs::read(path).unwrap()
+    // extract ABI
+    (
+        fs::read(code_path).unwrap(),
+        scrypto_decode(&fs::read(abi_path).unwrap()).unwrap(),
+    )
 }
 
 #[cfg(test)]

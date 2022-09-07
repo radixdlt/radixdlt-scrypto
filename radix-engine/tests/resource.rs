@@ -11,7 +11,7 @@ fn test_set_mintable_with_self_resource_address() {
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, _) = test_runner.new_account();
-    let package_address = test_runner.extract_and_publish_package("resource");
+    let package_address = test_runner.publish_package_under_tests("resource");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
@@ -35,7 +35,7 @@ fn test_resource_manager() {
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account();
-    let package_address = test_runner.extract_and_publish_package("resource");
+    let package_address = test_runner.publish_package_under_tests("resource");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
@@ -63,7 +63,7 @@ fn mint_with_bad_granularity_should_fail() {
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account();
-    let package_address = test_runner.extract_and_publish_package("resource");
+    let package_address = test_runner.publish_package_under_tests("resource");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
@@ -97,7 +97,7 @@ fn mint_too_much_should_fail() {
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account();
-    let package_address = test_runner.extract_and_publish_package("resource");
+    let package_address = test_runner.publish_package_under_tests("resource");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())

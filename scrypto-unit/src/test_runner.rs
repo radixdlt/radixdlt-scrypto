@@ -5,7 +5,7 @@ use radix_engine::engine::{ExecutionTrace, Kernel, KernelError, ModuleError, Sys
 use radix_engine::engine::{RuntimeError, Track};
 use radix_engine::fee::SystemLoanFeeReserve;
 use radix_engine::ledger::*;
-use radix_engine::model::{export_abi, export_abi_by_component, extract_abi};
+use radix_engine::model::{export_abi, export_abi_by_component};
 use radix_engine::state_manager::StagedSubstateStoreManager;
 use radix_engine::transaction::{
     ExecutionConfig, PreviewError, PreviewExecutor, PreviewResult, TransactionExecutor,
@@ -149,12 +149,8 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         receipt.expect_commit().entity_changes.new_package_addresses[0]
     }
 
-    pub fn extract_and_publish_package(&mut self, name: &str) -> PackageAddress {
-        self.publish_package_with_code(compile_package!(format!("./tests/{}", name)))
-    }
-
-    pub fn publish_package_with_code(&mut self, code: Vec<u8>) -> PackageAddress {
-        let abi = extract_abi(&code).expect("Failed to extract ABI");
+    pub fn publish_package_under_tests(&mut self, name: &str) -> PackageAddress {
+        let (code, abi) = compile_package!(format!("./tests/{}", name));
         self.publish_package(code, abi)
     }
 
@@ -290,7 +286,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         account: ComponentAddress,
         signer_public_key: EcdsaPublicKey,
     ) {
-        let package = self.extract_and_publish_package("resource_creator");
+        let package = self.publish_package_under_tests("resource_creator");
         let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
             .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
             .create_proof_from_account(auth, account)
@@ -316,7 +312,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         let withdraw_auth = self.create_non_fungible_resource(account);
         let admin_auth = self.create_non_fungible_resource(account);
 
-        let package = self.extract_and_publish_package("resource_creator");
+        let package = self.publish_package_under_tests("resource_creator");
         let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
             .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
             .call_function(
@@ -347,7 +343,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         account: ComponentAddress,
     ) -> (ResourceAddress, ResourceAddress) {
         let auth_resource_address = self.create_non_fungible_resource(account);
-        let package = self.extract_and_publish_package("resource_creator");
+        let package = self.publish_package_under_tests("resource_creator");
         let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
             .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
             .call_function(
@@ -375,7 +371,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     ) -> (ResourceAddress, ResourceAddress) {
         let auth_resource_address = self.create_non_fungible_resource(account);
 
-        let package = self.extract_and_publish_package("resource_creator");
+        let package = self.publish_package_under_tests("resource_creator");
         let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
             .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
             .call_function(
@@ -398,7 +394,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     }
 
     pub fn create_non_fungible_resource(&mut self, account: ComponentAddress) -> ResourceAddress {
-        let package = self.extract_and_publish_package("resource_creator");
+        let package = self.publish_package_under_tests("resource_creator");
         let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
             .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
             .call_function(
@@ -423,7 +419,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         divisibility: u8,
         account: ComponentAddress,
     ) -> ResourceAddress {
-        let package = self.extract_and_publish_package("resource_creator");
+        let package = self.publish_package_under_tests("resource_creator");
         let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
             .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
             .call_function(

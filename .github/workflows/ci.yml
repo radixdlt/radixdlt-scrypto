@@ -120,20 +120,22 @@ jobs:
       run: rustup target add wasm32-unknown-unknown
     - name: Add wasm target (nightly)
       run: rustup +nightly target add wasm32-unknown-unknown
+    - name: Install Scrypto toolchain
+      run: cargo install --path ./simulator
     - name: Build account
-      run: cargo build --target wasm32-unknown-unknown --release
+      run: scrypto build
       working-directory: assets/account
     - name: Build sys-faucet
-      run: cargo build --target wasm32-unknown-unknown --release
+      run: scrypto build
       working-directory: assets/sys-faucet
     - name: Build sys-utils
-      run: cargo build --target wasm32-unknown-unknown --release
+      run: scrypto build
       working-directory: assets/sys-utils
     - name: Build and test hello-world
-      run: cargo build --target wasm32-unknown-unknown --release && cargo test --release
+      run: scrypto test
       working-directory: examples/hello-world
     - name: Build and test no-std
-      run: cargo build --target wasm32-unknown-unknown --release && cargo test --release
+      run: scrypto test
       working-directory: examples/no-std
   radix-engine:
     name: Run Radix Engine tests

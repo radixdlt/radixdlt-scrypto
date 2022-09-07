@@ -20,7 +20,7 @@ where
     let (public_key, _, account) = test_runner.new_account();
 
     // Publish package and instantiate component
-    let package_address = test_runner.extract_and_publish_package("fee");
+    let package_address = test_runner.publish_package_under_tests("fee");
     let receipt1 = test_runner.execute_manifest(
         ManifestBuilder::new(&NetworkDefinition::local_simulator())
             .lock_fee(10.into(), account)

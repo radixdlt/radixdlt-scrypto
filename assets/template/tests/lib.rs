@@ -15,8 +15,7 @@ fn test_hello() {
     let (public_key, _private_key, account_component) = test_runner.new_account();
 
     // Publish package
-    let code = compile_package!();
-    let abi = extract_abi(&code).unwrap();
+    let (code, abi) = compile_package!();
     let package_address = test_runner.publish_package(code, abi);
 
     // Test the `instantiate_hello` function.
