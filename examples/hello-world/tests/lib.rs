@@ -1,5 +1,5 @@
 use radix_engine::ledger::*;
-use radix_engine::model::extract_package;
+use radix_engine::model::extract_abi;
 use scrypto::core::NetworkDefinition;
 use scrypto::prelude::*;
 use scrypto_unit::*;
@@ -15,7 +15,9 @@ fn test_hello() {
     let (public_key, _private_key, account_component) = test_runner.new_account();
 
     // Publish package
-    let package_address = test_runner.publish_package(extract_package(compile_package!()).unwrap());
+    let code = compile_package!();
+    let abi = extract_abi(&code).unwrap();
+    let package_address = test_runner.publish_package(code, abi);
 
     // Test the `instantiate_hello` function.
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())

@@ -2,7 +2,7 @@
 #![no_std]
 
 use radix_engine::ledger::*;
-use radix_engine::model::extract_package;
+use radix_engine::model::extract_abi;
 use radix_engine::transaction::ExecutionConfig;
 use radix_engine::transaction::TransactionExecutor;
 use radix_engine::wasm::*;
@@ -29,9 +29,11 @@ fn test_say_hello() {
     let public_key = private_key.public_key();
 
     // Publish package
+    let code = include_package!("no_std").to_vec();
+    let abi = extract_abi(&code).unwrap();
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .publish_package(extract_package(include_package!("no_std").to_vec()).unwrap())
+        .publish_package(code, abi)
         .build();
     let package_address = executor
         .execute_and_commit(

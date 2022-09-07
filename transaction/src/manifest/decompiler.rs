@@ -1,7 +1,6 @@
 use sbor::rust::collections::*;
 use sbor::{encode_any, DecodeError, Value};
 use scrypto::address::{AddressError, Bech32Encoder};
-use scrypto::buffer::*;
 use scrypto::engine::types::*;
 use scrypto::values::*;
 
@@ -305,7 +304,7 @@ pub fn decompile(
                 buf.push_str(&format!(
                     "PUBLISH_PACKAGE Bytes(\"{}\") Bytes(\"{}\");\n",
                     hex::encode(&code),
-                    hex::encode(&scrypto_encode(&abi))
+                    hex::encode(&abi)
                 ));
             }
         }
