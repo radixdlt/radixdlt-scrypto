@@ -32,3 +32,6 @@ serde = ["sbor/serde", "scrypto-abi/serde"]
 # Enable prelude.
 # Note that prelude introduces duplicated symbols which may confuse rustc suggestions.
 prelude = []
+
+# Disable ABI gen in the output WASM.
+no-abi-gen = ["scrypto-derive/no-abi-gen"]

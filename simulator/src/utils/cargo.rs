@@ -46,32 +46,45 @@ pub enum FormatError {
     CargoFailure(ExitStatus),
 }
 
+fn run_cargo_build(path: &str, trace: bool, no_abi_gen: bool) -> Result<(), BuildError> {
+    let mut features = Vec::<String>::new();
+    if trace {
+        features.push("scrypto/trace".to_owned());
+    }
+    if no_abi_gen {
+        features.push("scrypto/no-abi-gen".to_owned());
+    }
+    if !features.is_empty() {
+        features.insert(0, "--features".to_owned());
+    }
+
+    let status = Command::new("cargo")
+        .arg("build")
+        .arg("--target")
+        .arg("wasm32-unknown-unknown")
+        .arg("--release")
+        .arg("--manifest-path")
+        .arg(path)
+        .args(features)
+        .status()
+        .map_err(BuildError::IOError)?;
+    if status.success() {
+        Ok(())
+    } else {
+        Err(BuildError::CargoFailure(status))
+    }
+}
+
 /// Builds a package.
 pub fn build_package<P: AsRef<Path>>(path: P, trace: bool) -> Result<PathBuf, BuildError> {
     let mut cargo = path.as_ref().to_owned();
     cargo.push("Cargo.toml");
     if cargo.exists() {
-        let status = Command::new("cargo")
-            .arg("build")
-            .arg("--target")
-            .arg("wasm32-unknown-unknown")
-            .arg("--release")
-            .arg("--manifest-path")
-            .arg(cargo.to_str().unwrap())
-            .args(if trace {
-                vec!["--features", "scrypto/trace"]
-            } else {
-                vec![]
-            })
-            .status()
-            .map_err(BuildError::IOError)?;
-        if !status.success() {
-            return Err(BuildError::CargoFailure(status));
-        }
+        // Build with ABI
+        run_cargo_build(cargo.to_str().unwrap(), trace, false)?;
 
+        // Find the binary paths
         let manifest = Manifest::from_path(&cargo).map_err(|_| BuildError::InvalidManifestFile)?;
-
-        // resolve lib name from manifest
         let mut wasm_name = None;
         if let Some(lib) = manifest.lib {
             wasm_name = lib.name.clone();
@@ -81,7 +94,6 @@ pub fn build_package<P: AsRef<Path>>(path: P, trace: bool) -> Result<PathBuf, Bu
                 wasm_name = Some(pkg.name.replace("-", "_"));
             }
         }
-
         let mut bin = path.as_ref().to_owned();
         bin.push("target");
         bin.push("wasm32-unknown-unknown");
@@ -90,9 +102,13 @@ pub fn build_package<P: AsRef<Path>>(path: P, trace: bool) -> Result<PathBuf, Bu
         let wasm_path = bin.with_extension("wasm");
         let abi_path = bin.with_extension("abi");
 
+        // Extract ABI
         let wasm = fs::read(&wasm_path).map_err(BuildError::IOError)?;
         let abi = extract_abi(&wasm).map_err(BuildError::AbiExtractionError)?;
         fs::write(&abi_path, scrypto_encode(&abi)).map_err(BuildError::IOError)?;
+
+        // Build without ABI
+        run_cargo_build(cargo.to_str().unwrap(), trace, true)?;
 
         Ok(wasm_path)
     } else {
