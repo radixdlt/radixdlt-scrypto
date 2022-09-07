@@ -1,14 +1,14 @@
-use transaction::model::ExecutableInstruction;
 use crate::constants::DEFAULT_MAX_CALL_DEPTH;
 use crate::engine::{ExecutionTrace, Kernel, SystemApi, TrackReceipt};
 use crate::engine::{ResourceChange, Track};
 use crate::fee::FeeReserve;
 use crate::fee::UnlimitedLoanFeeReserve;
-use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
+use crate::ledger::{ReadableSubstateStore, TypedInMemorySubstateStore, WriteableSubstateStore};
 use crate::model::ValidatedPackage;
 use crate::transaction::TransactionResult;
 use crate::types::ResourceMethodAuthKey::Withdraw;
 use crate::types::*;
+use transaction::model::ExecutableInstruction;
 
 #[derive(TypeId, Encode, Decode)]
 struct SystemComponentState {
@@ -30,7 +30,9 @@ use crate::wasm::{DefaultWasmEngine, InstructionCostRules, WasmInstrumenter, Was
 
 // TODO: This would be much better handled if bootstrap was implemented as an executed transaction
 // TODO: rather than a state snapshot.
-pub fn execute_genesis<'s, R: FeeReserve>(mut track: Track<'s, R>) -> TrackReceipt {
+pub fn execute_genesis<'s, R: FeeReserve>(
+    mut track: Track<'s, R>,
+) -> (TrackReceipt, BootstrapReceipt) {
     let mut wasm_engine = DefaultWasmEngine::new();
     let mut wasm_instrumenter = WasmInstrumenter::new();
     let mut execution_trace = ExecutionTrace::new();
@@ -52,18 +54,18 @@ pub fn execute_genesis<'s, R: FeeReserve>(mut track: Track<'s, R>) -> TrackRecei
         extract_package(include_bytes!("../../../assets/sys_faucet.wasm").to_vec())
             .expect("Failed to construct sys-faucet package");
 
-    let result = kernel.invoke_function(
-        FnIdentifier::Native(NativeFnIdentifier::TransactionProcessor(
-            TransactionProcessorFnIdentifier::Run,
-        )),
-        ScryptoValue::from_typed(&TransactionProcessorRunInput {
-            instructions: vec![
-                ExecutableInstruction::PublishPackage {
-                    package: scrypto_encode(&sys_faucet_package)
-                }
-            ]
-        }),
-    ).unwrap();
+    let result = kernel
+        .invoke_function(
+            FnIdentifier::Native(NativeFnIdentifier::TransactionProcessor(
+                TransactionProcessorFnIdentifier::Run,
+            )),
+            ScryptoValue::from_typed(&TransactionProcessorRunInput {
+                instructions: vec![ExecutableInstruction::PublishPackage {
+                    package: scrypto_encode(&sys_faucet_package),
+                }],
+            }),
+        )
+        .unwrap();
 
     let results: Vec<Vec<u8>> = scrypto_decode(&result.raw).unwrap();
     let sys_faucet_package_address: PackageAddress = scrypto_decode(&results[0]).unwrap();
@@ -160,10 +162,20 @@ pub fn execute_genesis<'s, R: FeeReserve>(mut track: Track<'s, R>) -> TrackRecei
     );
     track.create_uuid_substate(SubstateId::System, System { epoch: 0 }, true);
 
-    track.finalize(Ok(Vec::new()), vec![initial_xrd])
+    let track_receipt = track.finalize(Ok(Vec::new()), vec![initial_xrd]);
+    (
+        track_receipt,
+        BootstrapReceipt {
+            sys_faucet_package_address,
+        },
+    )
 }
 
-pub fn bootstrap<S>(mut substate_store: S) -> S
+pub struct BootstrapReceipt {
+    sys_faucet_package_address: PackageAddress,
+}
+
+pub fn bootstrap<S>(substate_store: &mut S) -> BootstrapReceipt
 where
     S: ReadableSubstateStore + WriteableSubstateStore,
 {
@@ -171,13 +183,21 @@ where
         .get_substate(&SubstateId::ResourceManager(RADIX_TOKEN))
         .is_none()
     {
-        let track = Track::new(&substate_store, UnlimitedLoanFeeReserve::default());
-        let receipt = execute_genesis(track);
-        if let TransactionResult::Commit(c) = receipt.result {
-            c.state_updates.commit(&mut substate_store);
+        let track = Track::new(substate_store, UnlimitedLoanFeeReserve::default());
+        let (track_receipt, bootstrap_receipt) = execute_genesis(track);
+        if let TransactionResult::Commit(c) = track_receipt.result {
+            c.state_updates.commit(substate_store);
         } else {
             panic!("Failed to bootstrap")
         }
+        bootstrap_receipt
+    } else {
+        let mut temporary_substate_store = TypedInMemorySubstateStore::new();
+        let track = Track::new(
+            &mut temporary_substate_store,
+            UnlimitedLoanFeeReserve::default(),
+        );
+        let (_track_receipt, bootstrap_receipt) = execute_genesis(track);
+        bootstrap_receipt
     }
-    substate_store
 }
