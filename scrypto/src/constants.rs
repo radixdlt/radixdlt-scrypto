@@ -95,7 +95,35 @@ pub const ACCOUNT_PACKAGE: PackageAddress = construct_address!(
 );
 
 /// The address of the SysFaucet component
-pub const SYS_FAUCET_COMPONENT: ComponentAddress = address!(EntityType::SystemComponent, 1u8);
+pub const SYS_FAUCET_COMPONENT: ComponentAddress = construct_address!(
+    EntityType::NormalComponent,
+    8,
+    176,
+    243,
+    225,
+    122,
+    72,
+    73,
+    246,
+    165,
+    39,
+    153,
+    157,
+    162,
+    22,
+    192,
+    89,
+    71,
+    248,
+    164,
+    205,
+    128,
+    162,
+    219,
+    72,
+    86,
+    194
+);
 // TODO Add other system components
 
 /// The system token which allows access to system resources (e.g. setting epoch)
@@ -164,4 +192,32 @@ pub const ECDSA_TOKEN: ResourceAddress = construct_address!(
 pub const ED25519_TOKEN: ResourceAddress = address!(EntityType::Resource, 3u8);
 
 /// The XRD resource address.
-pub const RADIX_TOKEN: ResourceAddress = address!(EntityType::Resource, 4u8);
+pub const RADIX_TOKEN: ResourceAddress = address!(
+    EntityType::Resource,
+    143,
+    46,
+    234,
+    87,
+    25,
+    53,
+    120,
+    228,
+    5,
+    237,
+    56,
+    58,
+    19,
+    153,
+    205,
+    168,
+    37,
+    196,
+    182,
+    161,
+    162,
+    189,
+    144,
+    106,
+    252,
+    99
+);
