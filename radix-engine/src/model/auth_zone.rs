@@ -42,6 +42,10 @@ impl AuthZone {
         self.proofs.push(proof);
     }
 
+    pub fn drain(&mut self) -> Vec<Proof> {
+        self.proofs.drain(0..).collect()
+    }
+
     pub fn clear(&mut self) {
         loop {
             if let Some(proof) = self.proofs.pop() {

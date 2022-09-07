@@ -110,9 +110,6 @@ impl ManifestBuilder {
                 let scrypt_value = ScryptoValue::from_slice(&args).unwrap();
                 self.id_validator.move_resources(&scrypt_value).unwrap();
             }
-            Instruction::CallMethodWithAllResources { .. } => {
-                self.id_validator.move_all_buckets().unwrap();
-            }
             Instruction::PublishPackage { .. } => {}
         }
 
@@ -411,22 +408,6 @@ impl ManifestBuilder {
                 args: args_from_bytes_vec!(arguments),
             })
             .0)
-    }
-
-    /// Calls a method with all the resources on worktop.
-    ///
-    /// The callee method must have only one parameter with type `Vec<Bucket>`; otherwise,
-    /// a runtime failure is triggered.
-    pub fn call_method_with_all_resources(
-        &mut self,
-        component_address: ComponentAddress,
-        method: &str,
-    ) -> &mut Self {
-        self.add_instruction(Instruction::CallMethodWithAllResources {
-            component_address,
-            method: method.into(),
-        })
-        .0
     }
 
     /// Publishes a package.

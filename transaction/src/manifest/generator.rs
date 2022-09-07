@@ -35,6 +35,7 @@ pub enum GeneratorError {
     InvalidVaultId(String),
     InvalidNonFungibleId(String),
     InvalidNonFungibleAddress(String),
+    InvalidExpression(String),
     OddNumberOfElements(usize),
     NameResolverError(NameResolverError),
     IdValidationError(IdValidationError),
@@ -337,18 +338,6 @@ pub fn generate_instruction(
                 args: args_from_value_vec!(fields),
             }
         }
-        ast::Instruction::CallMethodWithAllResources {
-            component_address,
-            method,
-        } => {
-            id_validator
-                .move_all_buckets()
-                .map_err(GeneratorError::IdValidationError)?;
-            Instruction::CallMethodWithAllResources {
-                component_address: generate_component_address(component_address, bech32_decoder)?,
-                method: generate_string(method)?,
-            }
-        }
         ast::Instruction::PublishPackage { package } => Instruction::PublishPackage {
             package: generate_bytes(package)?,
         },
@@ -583,6 +572,18 @@ fn generate_non_fungible_address(value: &ast::Value) -> Result<NonFungibleAddres
     }
 }
 
+fn generate_expression(value: &ast::Value) -> Result<Expression, GeneratorError> {
+    match value {
+        ast::Value::Expression(inner) => match &**inner {
+            ast::Value::String(s) => {
+                Expression::from_str(s).map_err(|_| GeneratorError::InvalidExpression(s.into()))
+            }
+            v @ _ => invalid_type!(v, ast::Type::String),
+        },
+        v @ _ => invalid_type!(v, ast::Type::Expression),
+    }
+}
+
 fn generate_non_fungible_ids(
     value: &ast::Value,
 ) -> Result<BTreeSet<NonFungibleId>, GeneratorError> {
@@ -721,6 +722,10 @@ fn generate_value(
                 bytes: v.to_vec(),
             })
         }
+        ast::Value::Expression(_) => generate_expression(value).map(|v| Value::Custom {
+            type_id: ScryptoType::Expression.id(),
+            bytes: v.to_vec(),
+        }),
         ast::Value::Bytes(_) => match value {
             ast::Value::Bytes(bytes) => {
                 let mut elements = Vec::new();
@@ -812,6 +817,7 @@ fn generate_type_id(ty: &ast::Type) -> u8 {
         ast::Type::Proof => ScryptoType::Proof.id(),
         ast::Type::NonFungibleId => ScryptoType::NonFungibleId.id(),
         ast::Type::NonFungibleAddress => ScryptoType::NonFungibleAddress.id(),
+        ast::Type::Expression => ScryptoType::Expression.id(),
         ast::Type::Bytes => TYPE_LIST,
     }
 }
@@ -1006,6 +1012,13 @@ mod tests {
                 ]
             }
         );
+        generate_value_ok!(
+            r#"Expression("ENTIRE_WORKTOP")"#,
+            Value::Custom {
+                type_id: ScryptoType::Expression.id(),
+                bytes: scrypto::core::Expression("ENTIRE_WORKTOP".to_owned()).to_vec()
+            }
+        );
     }
 
     #[test]
@@ -1037,11 +1050,6 @@ mod tests {
         let component1 = bech32_decoder
             .validate_and_decode_component_address(
                 "component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum",
-            )
-            .unwrap();
-        let component2 = bech32_decoder
-            .validate_and_decode_component_address(
-                "account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qgsy064",
             )
             .unwrap();
 
@@ -1092,13 +1100,6 @@ mod tests {
                 component_address: component1,
                 method_name: "refill".to_string(),
                 args: args!()
-            }
-        );
-        generate_instruction_ok!(
-            r#"CALL_METHOD_WITH_ALL_RESOURCES  ComponentAddress("account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qgsy064") "deposit_batch";"#,
-            Instruction::CallMethodWithAllResources {
-                component_address: component2,
-                method: "deposit_batch".into(),
             }
         );
     }
@@ -1215,9 +1216,10 @@ mod tests {
                     )
                     .unwrap()
                 },
-                Instruction::CallMethodWithAllResources {
+                Instruction::CallMethod {
                     component_address: component1,
-                    method: "deposit_batch".into(),
+                    method_name: "deposit_batch".into(),
+                    args: args!(Expression("ENTIRE_WORKTOP".to_owned()))
                 },
                 Instruction::DropAllProofs,
                 Instruction::PublishPackage {

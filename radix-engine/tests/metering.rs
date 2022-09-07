@@ -1,7 +1,7 @@
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use scrypto::args;
 use scrypto::core::NetworkDefinition;
-use scrypto::prelude::{Package, RADIX_TOKEN, SYS_FAUCET_COMPONENT};
+use scrypto::prelude::{Expression, Package, RADIX_TOKEN, SYS_FAUCET_COMPONENT};
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -156,7 +156,11 @@ fn test_basic_transfer() {
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), account1)
         .withdraw_from_account_by_amount(100.into(), RADIX_TOKEN, account1)
-        .call_method_with_all_resources(account2, "deposit_batch")
+        .call_method(
+            account2,
+            "deposit_batch",
+            args!(Expression::entire_worktop()),
+        )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key1]);
 
@@ -164,22 +168,22 @@ fn test_basic_transfer() {
 
     // NOTE: If this test fails, it should print out the actual fee table in the error logs.
     // Or you can run just this test with the below:
-    // (cd radix-engine && cargo test test_basic_transfer -- --exact)
+    // (cd radix-engine && cargo test --test metering -- test_basic_transfer)
     assert_eq!(
         10000 /* base_fee */
         + 3300 /* borrow_substate */
         + 1500 /* create_node */
-        + 1938 /* decode_transaction */
+        + 1980 /* decode_transaction */
         + 1000 /* drop_node */
         + 616107 /* instantiate_wasm */
-        + 1895 /* invoke_function */
+        + 1965 /* invoke_function */
         + 2215 /* invoke_method */
         + 5000 /* read_substate */
         + 600 /* return_substate */
         + 1000 /* run_function */
         + 5200 /* run_method */
         + 275043 /* run_wasm */
-        + 646 /* verify_manifest */
+        + 660 /* verify_manifest */
         + 3750 /* verify_signatures */
         + 3000, /* write_substate */
         receipt.execution.fee_summary.cost_unit_consumed

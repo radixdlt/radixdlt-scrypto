@@ -50,7 +50,11 @@ fn test_resource_manager() {
             "update_resource_metadata",
             args!(),
         )
-        .call_method_with_all_resources(account, "deposit_batch")
+        .call_method(
+            account,
+            "deposit_batch",
+            args!(Expression::entire_worktop()),
+        )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
@@ -75,7 +79,11 @@ fn mint_with_bad_granularity_should_fail() {
             "create_fungible_and_mint",
             args!(0u8, dec!("0.1")),
         )
-        .call_method_with_all_resources(account, "deposit_batch")
+        .call_method(
+            account,
+            "deposit_batch",
+            args!(Expression::entire_worktop()),
+        )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
@@ -109,7 +117,11 @@ fn mint_too_much_should_fail() {
             "create_fungible_and_mint",
             args!(0u8, dec!(100_000_000_001i128)),
         )
-        .call_method_with_all_resources(account, "deposit_batch")
+        .call_method(
+            account,
+            "deposit_batch",
+            args!(Expression::entire_worktop()),
+        )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 

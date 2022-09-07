@@ -51,6 +51,76 @@ impl TransactionProcessor {
         Ok(value)
     }
 
+    fn process_expressions<'s, Y, W, I, R>(
+        args: ScryptoValue,
+        system_api: &mut Y,
+    ) -> Result<ScryptoValue, InvokeError<TransactionProcessorError>>
+    where
+        Y: SystemApi<'s, W, I, R>,
+        W: WasmEngine<I>,
+        I: WasmInstance,
+        R: FeeReserve,
+    {
+        let mut value = args.dom;
+        for (expression, path) in args.expressions {
+            match expression.0.as_str() {
+                "ENTIRE_WORKTOP" => {
+                    let buckets = system_api
+                        .invoke_method(
+                            Receiver::Ref(RENodeId::Worktop),
+                            FnIdentifier::Native(NativeFnIdentifier::Worktop(
+                                WorktopFnIdentifier::Drain,
+                            )),
+                            ScryptoValue::from_typed(&WorktopDrainInput {}),
+                        )
+                        .map_err(InvokeError::Downstream)
+                        .map(|result| {
+                            let mut buckets = Vec::new();
+                            for (bucket_id, _) in result.bucket_ids {
+                                buckets.push(scrypto::resource::Bucket(bucket_id));
+                            }
+                            buckets
+                        })?;
+
+                    let val = path
+                        .get_from_value_mut(&mut value)
+                        .expect("Failed to locate an expression value using SBOR path");
+                    *val =
+                        decode_any(&scrypto_encode(&buckets)).expect("Failed to decode Vec<Bucket>")
+                }
+                "ENTIRE_AUTH_ZONE" => {
+                    let auth_zone = system_api.auth_zone(1);
+                    let proofs = auth_zone.drain();
+                    let node_ids: Result<Vec<RENodeId>, InvokeError<TransactionProcessorError>> =
+                        proofs
+                            .into_iter()
+                            .map(|proof| {
+                                system_api
+                                    .node_create(HeapRENode::Proof(proof))
+                                    .map_err(InvokeError::Downstream)
+                            })
+                            .collect();
+
+                    let mut proofs = Vec::new();
+                    for node_id in node_ids? {
+                        let proof_id: ProofId = node_id.into();
+                        proofs.push(scrypto::resource::Proof(proof_id));
+                    }
+
+                    let val = path
+                        .get_from_value_mut(&mut value)
+                        .expect("Failed to locate an expression value using SBOR path");
+                    *val =
+                        decode_any(&scrypto_encode(&proofs)).expect("Failed to decode Vec<Proof>")
+                }
+                _ => {} // no-op
+            }
+        }
+
+        Ok(ScryptoValue::from_value(value)
+            .expect("Value became invalid post expression transformation"))
+    }
+
     fn first_bucket(value: &ScryptoValue) -> BucketId {
         *value
             .bucket_ids
@@ -484,6 +554,7 @@ impl TransactionProcessor {
                                 ScryptoValue::from_slice(args)
                                     .expect("Invalid CALL_FUNCTION arguments"),
                             )
+                            .and_then(|call_data| Self::process_expressions(call_data, system_api))
                             .and_then(|call_data| {
                                 system_api
                                     .invoke_function(
@@ -539,6 +610,7 @@ impl TransactionProcessor {
                                 ScryptoValue::from_slice(args)
                                     .expect("Invalid CALL_METHOD arguments"),
                             )
+                            .and_then(|call_data| Self::process_expressions(call_data, system_api))
                             .and_then(|call_data| {
                                 // TODO: Move this into preprocessor step
                                 system_api
@@ -597,54 +669,6 @@ impl TransactionProcessor {
                                 Ok(result)
                             })
                         }
-                        ExecutableInstruction::CallMethodWithAllResources {
-                            component_address,
-                            method,
-                        } => system_api
-                            .invoke_method(
-                                Receiver::Ref(RENodeId::Worktop),
-                                FnIdentifier::Native(NativeFnIdentifier::Worktop(
-                                    WorktopFnIdentifier::Drain,
-                                )),
-                                ScryptoValue::from_typed(&WorktopDrainInput {}),
-                            )
-                            .map_err(InvokeError::Downstream)
-                            .and_then(|result| {
-                                let mut buckets = Vec::new();
-                                for (bucket_id, _) in result.bucket_ids {
-                                    buckets.push(scrypto::resource::Bucket(bucket_id));
-                                }
-                                for (_, real_id) in bucket_id_mapping.drain() {
-                                    buckets.push(scrypto::resource::Bucket(real_id));
-                                }
-                                let encoded = args!(buckets);
-                                // TODO: Move this into preprocessor step
-                                system_api
-                                    .substate_read(SubstateId::ComponentInfo(*component_address))
-                                    .map_err(InvokeError::Downstream)
-                                    .and_then(|s| {
-                                        let (package_address, blueprint_name): (
-                                            PackageAddress,
-                                            String,
-                                        ) = scrypto_decode(&s.raw)
-                                            .expect("Failed to decode ComponentInfo substate");
-                                        system_api
-                                            .invoke_method(
-                                                Receiver::Ref(RENodeId::Component(
-                                                    *component_address,
-                                                )),
-                                                FnIdentifier::Scrypto {
-                                                    package_address,
-                                                    blueprint_name,
-                                                    ident: method.to_string(),
-                                                },
-                                                ScryptoValue::from_slice(&encoded).expect(
-                                                    "Failed to decode ComponentInfo substate",
-                                                ),
-                                            )
-                                            .map_err(InvokeError::Downstream)
-                                    })
-                            }),
                         ExecutableInstruction::PublishPackage { package } => {
                             scrypto_decode::<Package>(package)
                                 .map_err(|e| {

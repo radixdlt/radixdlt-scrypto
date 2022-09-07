@@ -98,12 +98,6 @@ pub enum Instruction {
         args: Vec<u8>,
     },
 
-    /// Calls a component method with all resources owned by the transaction.
-    CallMethodWithAllResources {
-        component_address: ComponentAddress,
-        method: String,
-    },
-
     /// Publishes a package.
     PublishPackage { package: Vec<u8> },
 }

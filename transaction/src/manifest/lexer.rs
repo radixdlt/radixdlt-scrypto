@@ -70,6 +70,7 @@ pub enum TokenKind {
     Proof,
     NonFungibleId,
     NonFungibleAddress,
+    Expression,
 
     /* Punctuations */
     OpenParenthesis,
@@ -102,7 +103,6 @@ pub enum TokenKind {
     DropAllProofs,
     CallFunction,
     CallMethod,
-    CallMethodWithAllResources,
     PublishPackage,
 }
 
@@ -394,6 +394,7 @@ impl Lexer {
             "Proof" => Ok(TokenKind::Proof),
             "NonFungibleId" => Ok(TokenKind::NonFungibleId),
             "NonFungibleAddress" => Ok(TokenKind::NonFungibleAddress),
+            "Expression" => Ok(TokenKind::Expression),
 
             "Some" => Ok(TokenKind::Some),
             "None" => Ok(TokenKind::None),
@@ -423,7 +424,6 @@ impl Lexer {
             "DROP_ALL_PROOFS" => Ok(TokenKind::DropAllProofs),
             "CALL_FUNCTION" => Ok(TokenKind::CallFunction),
             "CALL_METHOD" => Ok(TokenKind::CallMethod),
-            "CALL_METHOD_WITH_ALL_RESOURCES" => Ok(TokenKind::CallMethodWithAllResources),
             "PUBLISH_PACKAGE" => Ok(TokenKind::PublishPackage),
 
             s @ _ => Err(LexerError::UnknownIdentifier(s.into())),

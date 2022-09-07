@@ -22,7 +22,11 @@ fn test_auth_rule<'s, S: ReadableSubstateStore + WriteableSubstateStore>(
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .withdraw_from_account(RADIX_TOKEN, account)
-        .call_method_with_all_resources(other_account, "deposit_batch")
+        .call_method(
+            other_account,
+            "deposit_batch",
+            args!(Expression::entire_worktop()),
+        )
         .build();
     let receipt = test_runner.execute_manifest(manifest, signer_public_keys.to_vec());
 
@@ -239,9 +243,14 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_no_signature() {
                 builder.pop_from_auth_zone(|builder, proof_id| builder.drop_proof(proof_id));
                 builder
             });
+            builder.return_to_worktop(bucket_id);
             builder
         })
-        .call_method_with_all_resources(other_account, "deposit_batch")
+        .call_method(
+            other_account,
+            "deposit_batch",
+            args!(Expression::entire_worktop()),
+        )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -269,9 +278,14 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_right_amount_of_proof() {
                 builder.pop_from_auth_zone(|builder, proof_id| builder.drop_proof(proof_id));
                 builder
             });
+            builder.return_to_worktop(bucket_id);
             builder
         })
-        .call_method_with_all_resources(other_account, "deposit_batch")
+        .call_method(
+            other_account,
+            "deposit_batch",
+            args!(Expression::entire_worktop()),
+        )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -299,9 +313,14 @@ fn cannot_withdraw_from_my_any_xrd_auth_account_with_less_than_amount_of_proof()
                 builder.pop_from_auth_zone(|builder, proof_id| builder.drop_proof(proof_id));
                 builder
             });
+            builder.return_to_worktop(bucket_id);
             builder
         })
-        .call_method_with_all_resources(other_account, "deposit_batch")
+        .call_method(
+            other_account,
+            "deposit_batch",
+            args!(Expression::entire_worktop()),
+        )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 

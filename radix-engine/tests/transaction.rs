@@ -60,15 +60,27 @@ fn test_call_method_with_all_resources_doesnt_drop_auth_zone_proofs() {
         .create_proof_from_auth_zone(RADIX_TOKEN, |builder, proof_id| {
             builder.push_to_auth_zone(proof_id)
         })
-        .call_method_with_all_resources(account, "deposit_batch")
+        .call_method(
+            account,
+            "deposit_batch",
+            args!(Expression::entire_worktop()),
+        )
         .create_proof_from_auth_zone(RADIX_TOKEN, |builder, proof_id| {
             builder.push_to_auth_zone(proof_id)
         })
-        .call_method_with_all_resources(account, "deposit_batch")
+        .call_method(
+            account,
+            "deposit_batch",
+            args!(Expression::entire_worktop()),
+        )
         .create_proof_from_auth_zone(RADIX_TOKEN, |builder, proof_id| {
             builder.push_to_auth_zone(proof_id)
         })
-        .call_method_with_all_resources(account, "deposit_batch")
+        .call_method(
+            account,
+            "deposit_batch",
+            args!(Expression::entire_worktop()),
+        )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
     println!("{:?}", receipt);
@@ -91,6 +103,32 @@ fn test_transaction_can_end_with_proofs_remaining_in_auth_zone() {
         .create_proof_from_account_by_amount(dec!("1"), RADIX_TOKEN, account)
         .create_proof_from_account_by_amount(dec!("1"), RADIX_TOKEN, account)
         .create_proof_from_account_by_amount(dec!("1"), RADIX_TOKEN, account)
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+    println!("{:?}", receipt);
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
+fn test_entire_auth_zone() {
+    // Arrange
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
+    let (public_key, _, account) = test_runner.new_account();
+    let package_address = test_runner.extract_and_publish_package("proof");
+
+    // Act
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+        .lock_fee(dec!("10"), account)
+        .create_proof_from_account_by_amount(dec!("1"), RADIX_TOKEN, account)
+        .call_function(
+            package_address,
+            "Receiver",
+            "assert_first_proof",
+            args!(Expression::entire_auth_zone(), dec!("1"), RADIX_TOKEN),
+        )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
     println!("{:?}", receipt);
