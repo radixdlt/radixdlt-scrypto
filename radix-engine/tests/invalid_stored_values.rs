@@ -9,7 +9,7 @@ fn stored_bucket_in_committed_component_should_fail() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.publish_package_under_tests("stored_values");
+    let package_address = test_runner.compile_and_publish("./tests/stored_values");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
@@ -34,7 +34,7 @@ fn stored_bucket_in_owned_component_should_fail() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.publish_package_under_tests("stored_values");
+    let package_address = test_runner.compile_and_publish("./tests/stored_values");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())

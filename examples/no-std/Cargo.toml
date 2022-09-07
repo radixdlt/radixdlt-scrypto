@@ -8,10 +8,6 @@ sbor = { path = "../../sbor", default-features = false, features = ["alloc"] }
 scrypto = { path = "../../scrypto", default-features = false, features = ["alloc", "prelude"] }
 wee_alloc = { version = "0.4", default-features = false }
 
-[dev-dependencies]
-transaction = { path = "../../transaction", default-features = false, features = ["alloc"] }
-radix-engine = { path = "../../radix-engine", default-features = false, features = ["alloc"] }
-
 [profile.release]
 opt-level = 's'     # Optimize for size.
 lto = true          # Enable Link Time Optimization.

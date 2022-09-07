@@ -208,28 +208,10 @@ macro_rules! trace {
     }};
 }
 
-/// Compiles a Scrypto package and returns the output WASM file as byte array.
-///
-/// Notes:
-/// * This macro only works when `std` is linked;
-///
-/// # Example
-/// ```ignore
-/// use scrypto::prelude::*;
-///
-/// // This package
-/// let (code, abi) = compile_package!();
-///
-/// // Another package
-/// let (code, abi) = compile_package!("/path/to/package");
-/// ```
 #[macro_export]
-macro_rules! compile_package {
+macro_rules! this_package {
     () => {
-        ::scrypto::misc::compile_package(env!("CARGO_MANIFEST_DIR"))
-    };
-    ($package_dir: expr) => {
-        ::scrypto::misc::compile_package($package_dir)
+        env!("CARGO_MANIFEST_DIR")
     };
 }
 

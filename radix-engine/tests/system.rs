@@ -9,7 +9,7 @@ fn test_get_epoch() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.publish_package_under_tests("system");
+    let package_address = test_runner.compile_and_publish("./tests/system");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
@@ -29,7 +29,7 @@ fn test_set_epoch_without_system_auth_fails() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.publish_package_under_tests("system");
+    let package_address = test_runner.compile_and_publish("./tests/system");
 
     // Act
     let epoch = 9876u64;

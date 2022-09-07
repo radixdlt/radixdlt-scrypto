@@ -11,7 +11,7 @@ fn test_external_bridges() {
     let mut test_runner = TestRunner::new(true, &mut store);
 
     // Part 1 - Upload the target and caller packages
-    let target_package_address = test_runner.publish_package_under_tests("component");
+    let target_package_address = test_runner.compile_and_publish("./tests/component");
     fill_in_package_name_template(
         "./tests/external_blueprint_caller/src/external_blueprint_caller.rs.template",
         "./tests/external_blueprint_caller/src/external_blueprint_caller.rs",
@@ -19,7 +19,7 @@ fn test_external_bridges() {
     )
     .expect("Package address rewrite expected to succeed");
     let caller_package_address =
-        test_runner.publish_package_under_tests("external_blueprint_caller");
+        test_runner.compile_and_publish("./tests/external_blueprint_caller");
 
     // Part 2 - Get a target component address
     let manifest1 = ManifestBuilder::new(&NetworkDefinition::local_simulator())

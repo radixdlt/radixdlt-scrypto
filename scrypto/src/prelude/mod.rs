@@ -11,9 +11,10 @@ pub use crate::misc::*;
 pub use crate::resource::*;
 pub use crate::{
     access_and_or, access_rule_node, args, args_from_bytes_vec, args_from_value_vec, blueprint,
-    borrow_component, borrow_package, borrow_resource_manager, compile_package, debug, dec, error,
+    borrow_component, borrow_package, borrow_resource_manager, debug, dec, error,
     external_blueprint, external_component, i, import, include_abi, include_code, info, pdec,
-    resource_list, rule, trace, warn, Decode, Describe, Encode, NonFungibleData, TypeId,
+    resource_list, rule, this_package, trace, warn, Decode, Describe, Encode, NonFungibleData,
+    TypeId,
 };
 pub use num_traits::{
     cast::FromPrimitive, cast::ToPrimitive, identities::One, identities::Zero, pow::Pow,

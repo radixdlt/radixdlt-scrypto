@@ -9,7 +9,7 @@ fn create_non_fungible_mutable() {
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account();
-    let package = test_runner.publish_package_under_tests("non_fungible");
+    let package = test_runner.compile_and_publish("./tests/non_fungible");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
@@ -34,7 +34,7 @@ fn can_burn_non_fungible() {
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account();
-    let package = test_runner.publish_package_under_tests("non_fungible");
+    let package = test_runner.compile_and_publish("./tests/non_fungible");
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(
@@ -80,7 +80,7 @@ fn test_non_fungible() {
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account();
-    let package_address = test_runner.publish_package_under_tests("non_fungible");
+    let package_address = test_runner.compile_and_publish("./tests/non_fungible");
 
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
@@ -137,7 +137,7 @@ fn test_singleton_non_fungible() {
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account();
-    let package_address = test_runner.publish_package_under_tests("non_fungible");
+    let package_address = test_runner.compile_and_publish("./tests/non_fungible");
 
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)

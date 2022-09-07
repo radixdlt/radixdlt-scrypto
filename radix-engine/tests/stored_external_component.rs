@@ -9,7 +9,7 @@ fn stored_component_addresses_in_non_globalized_component_are_invokable() {
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let (_, _, _) = test_runner.new_account();
-    let package = test_runner.publish_package_under_tests("stored_external_component");
+    let package = test_runner.compile_and_publish("./tests/stored_external_component");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
@@ -27,7 +27,7 @@ fn stored_component_addresses_are_invokable() {
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, _) = test_runner.new_account();
-    let package = test_runner.publish_package_under_tests("stored_external_component");
+    let package = test_runner.compile_and_publish("./tests/stored_external_component");
     let manifest1 = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(package, "ExternalComponent", "create", args!())
