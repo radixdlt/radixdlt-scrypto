@@ -1,8 +1,7 @@
 use radix_engine::engine::*;
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::model::{BucketError, ResourceContainerError};
-use scrypto::core::NetworkDefinition;
-use scrypto::prelude::*;
+use radix_engine::types::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -179,17 +178,9 @@ fn create_empty_bucket() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), account)
-        .take_from_worktop(scrypto::prelude::RADIX_TOKEN, |builder, _bucket_id| builder)
-        .take_from_worktop_by_amount(
-            Decimal::zero(),
-            scrypto::prelude::RADIX_TOKEN,
-            |builder, _bucket_id| builder,
-        )
-        .take_from_worktop_by_ids(
-            &BTreeSet::new(),
-            scrypto::prelude::RADIX_TOKEN,
-            |builder, _bucket_id| builder,
-        )
+        .take_from_worktop(RADIX_TOKEN, |builder, _bucket_id| builder)
+        .take_from_worktop_by_amount(Decimal::zero(), RADIX_TOKEN, |builder, _bucket_id| builder)
+        .take_from_worktop_by_ids(&BTreeSet::new(), RADIX_TOKEN, |builder, _bucket_id| builder)
         .call_method_with_all_resources(account, "deposit_batch")
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);

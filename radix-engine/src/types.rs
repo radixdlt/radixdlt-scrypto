@@ -14,7 +14,7 @@ pub use sbor::rust::string::ToString;
 pub use sbor::rust::vec;
 pub use sbor::rust::vec::Vec;
 pub use sbor::{Decode, DecodeError, Encode, Type, TypeId, Value};
-pub use scrypto::abi::{BlueprintAbi, ScryptoType};
+pub use scrypto::abi::{BlueprintAbi, Fn, ScryptoType};
 pub use scrypto::address::{AddressError, Bech32Decoder, Bech32Encoder};
 pub use scrypto::component::{
     ComponentAddAccessCheckInput, ComponentAddress, PackageAddress, PackagePublishInput,
@@ -55,5 +55,7 @@ pub use scrypto::values::{ScryptoValue, ScryptoValueReplaceError};
 pub use sbor::decode_any;
 pub use scrypto::buffer::{scrypto_decode, scrypto_encode};
 pub use scrypto::crypto::hash;
-pub use scrypto::resource::require;
-pub use scrypto::{access_rule_node, args, rule};
+pub use scrypto::resource::{
+    require, require_all_of, require_amount, require_any_of, require_n_of,
+};
+pub use scrypto::{access_and_or, access_rule_node, args, dec, pdec, rule};

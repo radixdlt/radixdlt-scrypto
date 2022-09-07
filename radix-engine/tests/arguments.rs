@@ -1,10 +1,8 @@
-use scrypto_unit::*;
-
-use scrypto::core::NetworkDefinition;
-use transaction::builder::ManifestBuilder;
-
 use radix_engine::ledger::TypedInMemorySubstateStore;
-use scrypto::prelude::*;
+use radix_engine::types::*;
+use scrypto::resource::Bucket;
+use scrypto_unit::*;
+use transaction::builder::ManifestBuilder;
 
 #[test]
 fn vector_of_buckets_argument_should_succeed() {

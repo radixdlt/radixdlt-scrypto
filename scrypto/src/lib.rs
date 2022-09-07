@@ -39,6 +39,7 @@ pub mod math;
 /// Miscellaneous functions.
 pub mod misc;
 /// Scrypto preludes.
+#[cfg(not(feature = "no-prelude"))]
 pub mod prelude;
 /// Scrypto resource library.
 pub mod resource;

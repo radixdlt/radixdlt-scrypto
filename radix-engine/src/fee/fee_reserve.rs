@@ -286,7 +286,7 @@ impl Default for UnlimitedLoanFeeReserve {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use scrypto::{crypto::Hash, prelude::RADIX_TOKEN};
+    use scrypto::{constants::RADIX_TOKEN, crypto::Hash};
 
     const TEST_VAULT_ID: VaultId = (Hash([0u8; 32]), 1);
 

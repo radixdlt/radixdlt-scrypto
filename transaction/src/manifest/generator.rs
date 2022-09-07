@@ -6,8 +6,12 @@ use sbor::type_id::*;
 use scrypto::abi::*;
 use scrypto::address::Bech32Decoder;
 use scrypto::args_from_value_vec;
+use scrypto::component::ComponentAddress;
+use scrypto::component::PackageAddress;
+use scrypto::crypto::*;
 use scrypto::engine::types::*;
-use scrypto::prelude::*;
+use scrypto::math::*;
+use scrypto::resource::{NonFungibleAddress, NonFungibleId, ResourceAddress};
 use scrypto::values::*;
 
 use crate::errors::*;
@@ -823,9 +827,9 @@ mod tests {
     use crate::manifest::lexer::tokenize;
     use crate::manifest::parser::Parser;
     use scrypto::address::Bech32Decoder;
-    use scrypto::args;
     use scrypto::buffer::scrypto_encode;
     use scrypto::core::NetworkDefinition;
+    use scrypto::{args, pdec};
 
     #[macro_export]
     macro_rules! generate_value_ok {

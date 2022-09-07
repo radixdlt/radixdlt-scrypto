@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 radix-engine = { path = "../radix-engine" }
 transaction = { path = "../transaction", default-features = false }
-scrypto = { path = "../scrypto", default-features = false }
+scrypto = { path = "../scrypto", default-features = false, features = ["no-prelude"]}
 sbor = { path = "../sbor", default-features = false }
 wabt = { version = "0.10.0" }
 

@@ -2,8 +2,7 @@ use crate::ExpectedResult::{InvalidInput, InvalidOutput, Success};
 use radix_engine::engine::{ApplicationError, KernelError, RuntimeError};
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::model::ComponentError;
-use scrypto::core::NetworkDefinition;
-use scrypto::prelude::*;
+use radix_engine::types::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 

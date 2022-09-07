@@ -1,10 +1,10 @@
 use crate::abi::BlueprintAbi;
 use crate::buffer::*;
 use crate::component::*;
+use crate::core::ScryptoRENode;
 use crate::core::{FnIdentifier, NativeFnIdentifier, PackageFnIdentifier, Runtime};
 use crate::engine::types::RENodeId;
 use crate::engine::{api::*, call_engine};
-use crate::prelude::ScryptoRENode;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::*;
 use sbor::rust::string::String;

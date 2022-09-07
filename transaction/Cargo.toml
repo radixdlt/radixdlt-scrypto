@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 sbor = { path = "../sbor", default-features = false }
-scrypto = { path = "../scrypto", default-features = false }
+scrypto = { path = "../scrypto", default-features = false, features = ["no-prelude"] }
 clap = { version = "3.1.17", features = ["derive", "cargo"] }
 hex = { version = "0.4.3", default-features = false }
 ed25519-dalek = { version = "1.0.1", default-features = false, features = ["u64_backend"]}

@@ -10,22 +10,22 @@
 #[macro_export]
 macro_rules! dec {
     ($x:literal) => {
-        scrypto::prelude::Decimal::from($x)
+        scrypto::math::Decimal::from($x)
     };
 
     ($base:literal, $shift:literal) => {
         // Base can be any type that converts into a Decimal, and shift must support
         // comparison and `-` unary operation, enforced by rustc.
         {
-            let base = scrypto::prelude::Decimal::from($base);
+            let base = scrypto::math::Decimal::from($base);
             if $shift >= 0 {
-                base * scrypto::prelude::Decimal::try_from(
+                base * scrypto::math::Decimal::try_from(
                     scrypto::math::I256::from(10u8)
                         .pow(u32::try_from($shift).expect("Shift overflow")),
                 )
                 .expect("Shift overflow")
             } else {
-                base / scrypto::prelude::Decimal::try_from(
+                base / scrypto::math::Decimal::try_from(
                     scrypto::math::I256::from(10u8)
                         .pow(u32::try_from(-$shift).expect("Shift overflow")),
                 )

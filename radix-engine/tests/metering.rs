@@ -1,7 +1,6 @@
 use radix_engine::ledger::TypedInMemorySubstateStore;
+use radix_engine::types::*;
 use scrypto::args;
-use scrypto::core::NetworkDefinition;
-use scrypto::prelude::{RADIX_TOKEN, SYS_FAUCET_COMPONENT};
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 

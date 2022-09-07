@@ -1,8 +1,7 @@
 use radix_engine::engine::{KernelError, RuntimeError};
 use radix_engine::ledger::TypedInMemorySubstateStore;
-use scrypto::core::NetworkDefinition;
+use radix_engine::types::*;
 use scrypto::engine::types::RENodeId;
-use scrypto::prelude::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 

@@ -1,7 +1,5 @@
 use radix_engine::ledger::TypedInMemorySubstateStore;
-use scrypto::address::Bech32Encoder;
-use scrypto::core::NetworkDefinition;
-use scrypto::{args, prelude::*};
+use radix_engine::types::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 

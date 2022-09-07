@@ -1,7 +1,7 @@
 use radix_engine::engine::{KernelError, RuntimeError};
 use radix_engine::ledger::TypedInMemorySubstateStore;
-use scrypto::core::NetworkDefinition;
-use scrypto::prelude::*;
+use radix_engine::types::*;
+use scrypto::resource::{Bucket, Proof, DIVISIBILITY_MAXIMUM};
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
