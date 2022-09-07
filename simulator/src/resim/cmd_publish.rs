@@ -34,14 +34,16 @@ pub struct Publish {
 impl Publish {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
         // Load wasm code
-        let code = fs::read(if self.path.extension() != Some(OsStr::new("wasm")) {
+        let code_path = if self.path.extension() != Some(OsStr::new("wasm")) {
             build_package(&self.path, false).map_err(Error::BuildError)?
         } else {
             self.path.clone()
-        })
-        .map_err(Error::IOError)?;
+        };
+        let abi_path = code_path.with_extension("abi");
 
-        let abi = extract_abi(&code).map_err(Error::ExtractAbiError)?;
+        let code = fs::read(&code_path).map_err(Error::IOError)?;
+        let abi = scrypto_decode(&fs::read(&abi_path).map_err(Error::IOError)?)
+            .map_err(Error::DataError)?;
 
         if let Some(package_address) = self.package_address.clone() {
             let substate_id = SubstateId::Package(package_address);

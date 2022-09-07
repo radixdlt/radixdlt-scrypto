@@ -154,6 +154,8 @@ jobs:
         working-directory: radix-engine
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
+    - name: Install Scrypto toolchain
+      run: cargo install --path ./simulator
     - name: Run tests
       run: cargo test
       working-directory: radix-engine
@@ -174,6 +176,8 @@ jobs:
         working-directory: radix-engine
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
+    - name: Install Scrypto toolchain
+      run: cargo install --path ./simulator
     - name: Run tests
       run: cargo test --features wasmer
       working-directory: radix-engine
@@ -194,6 +198,8 @@ jobs:
         working-directory: radix-engine
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
+    - name: Install Scrypto toolchain
+      run: cargo install --path ./simulator
     - name: Run bench
       run: cargo bench
       working-directory: radix-engine
@@ -228,6 +234,8 @@ jobs:
         working-directory: simulator
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
+    - name: Install Scrypto toolchain
+      run: cargo install --path ./simulator
     - name: Set LIBCLANG_PATH # See https://github.com/rust-lang/rust-bindgen/issues/1797
       if: runner.os == 'Windows'
       run: echo "LIBCLANG_PATH=$((gcm clang).source -replace "clang.exe")" >> $env:GITHUB_ENV
