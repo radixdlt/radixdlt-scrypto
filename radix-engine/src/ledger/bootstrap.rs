@@ -7,6 +7,7 @@ use crate::ledger::{ReadableSubstateStore, TypedInMemorySubstateStore, Writeable
 use crate::transaction::TransactionResult;
 use crate::types::ResourceMethodAuthKey::Withdraw;
 use crate::types::*;
+use scrypto::prelude::Bucket;
 use transaction::model::ExecutableInstruction;
 
 #[derive(TypeId, Encode, Decode)]
@@ -28,9 +29,11 @@ use crate::model::*;
 use crate::wasm::{DefaultWasmEngine, InstructionCostRules, WasmInstrumenter, WasmMeteringParams};
 
 pub struct GenesisReceipt {
-    pub sys_faucet_package_address: PackageAddress,
-    pub sys_utils_package_address: PackageAddress,
-    pub account_package_address: PackageAddress,
+    pub sys_faucet_package: PackageAddress,
+    pub sys_utils_package: PackageAddress,
+    pub account_package: PackageAddress,
+    pub ecdsa_token: ResourceAddress,
+    pub system_token: ResourceAddress,
 }
 
 // TODO: This would be much better handled if bootstrap was implemented as an executed transaction
@@ -55,14 +58,71 @@ pub fn execute_genesis<'s, R: FeeReserve>(
         vec![],
     );
 
-    let sys_faucet_package =
-        extract_package(include_bytes!("../../../assets/sys_faucet.wasm").to_vec())
-            .expect("Failed to construct sys-faucet package");
-    let sys_utils_package =
-        extract_package(include_bytes!("../../../assets/sys_utils.wasm").to_vec())
-            .expect("Failed to construct sys-utils package");
-    let account_package = extract_package(include_bytes!("../../../assets/account.wasm").to_vec())
-        .expect("Failed to construct account package");
+    let create_sys_faucet_package = {
+        let sys_faucet_package =
+            extract_package(include_bytes!("../../../assets/sys_faucet.wasm").to_vec())
+                .expect("Failed to construct sys-faucet package");
+        ExecutableInstruction::PublishPackage {
+            package: scrypto_encode(&sys_faucet_package),
+        }
+    };
+    let create_sys_utils_package = {
+        let sys_utils_package =
+            extract_package(include_bytes!("../../../assets/sys_utils.wasm").to_vec())
+                .expect("Failed to construct sys-utils package");
+        ExecutableInstruction::PublishPackage {
+            package: scrypto_encode(&sys_utils_package),
+        }
+    };
+    let create_account_package = {
+        let account_package =
+            extract_package(include_bytes!("../../../assets/account.wasm").to_vec())
+                .expect("Failed to construct account package");
+        ExecutableInstruction::PublishPackage {
+            package: scrypto_encode(&account_package),
+        }
+    };
+    let create_ecdsa_token = {
+        let metadata: HashMap<String, String> = HashMap::new();
+        let mut ecdsa_resource_auth = HashMap::new();
+        ecdsa_resource_auth.insert(Withdraw, (rule!(allow_all), LOCKED));
+        let initial_supply: Option<MintParams> = None;
+
+        // TODO: Remove nasty circular dependency on SYS_UTILS_PACKAGE
+        ExecutableInstruction::CallFunction {
+            package_address: SYS_UTILS_PACKAGE,
+            blueprint_name: "SysUtils".to_string(),
+            method_name: "new_resource".to_string(),
+            args: args!(
+                ResourceType::NonFungible,
+                metadata,
+                ecdsa_resource_auth,
+                initial_supply
+            ),
+        }
+    };
+
+    // TODO: Perhaps combine with ecdsa token?
+    let create_system_token = {
+        let metadata: HashMap<String, String> = HashMap::new();
+        let mut access_rules: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)> =
+            HashMap::new();
+        access_rules.insert(Withdraw, (rule!(allow_all), LOCKED));
+        let initial_supply: Option<MintParams> = None;
+
+        // TODO: Remove nasty circular dependency on SYS_UTILS_PACKAGE
+        ExecutableInstruction::CallFunction {
+            package_address: SYS_UTILS_PACKAGE,
+            blueprint_name: "SysUtils".to_string(),
+            method_name: "new_resource".to_string(),
+            args: args!(
+                ResourceType::NonFungible,
+                metadata,
+                access_rules,
+                initial_supply
+            ),
+        }
+    };
 
     let result = kernel
         .invoke_function(
@@ -71,44 +131,63 @@ pub fn execute_genesis<'s, R: FeeReserve>(
             )),
             ScryptoValue::from_typed(&TransactionProcessorRunInput {
                 instructions: vec![
-                    ExecutableInstruction::PublishPackage {
-                        package: scrypto_encode(&sys_faucet_package),
-                    },
-                    ExecutableInstruction::PublishPackage {
-                        package: scrypto_encode(&sys_utils_package),
-                    },
-                    ExecutableInstruction::PublishPackage {
-                        package: scrypto_encode(&account_package),
-                    },
+                    create_sys_faucet_package,
+                    create_sys_utils_package,
+                    create_account_package,
+                    create_ecdsa_token,
+                    create_system_token,
                 ],
             }),
         )
         .unwrap();
 
     let results: Vec<Vec<u8>> = scrypto_decode(&result.raw).unwrap();
-    let sys_faucet_package_address: PackageAddress = scrypto_decode(&results[0]).unwrap();
-    let sys_utils_package_address: PackageAddress = scrypto_decode(&results[1]).unwrap();
-    let account_package_address: PackageAddress = scrypto_decode(&results[2]).unwrap();
+    let sys_faucet_package: PackageAddress = scrypto_decode(&results[0]).unwrap();
+    let sys_utils_package: PackageAddress = scrypto_decode(&results[1]).unwrap();
+    let account_package: PackageAddress = scrypto_decode(&results[2]).unwrap();
+    let (ecdsa_token, _bucket): (ResourceAddress, Option<Bucket>) =
+        scrypto_decode(&results[3]).unwrap();
+    let (system_token, _bucket): (ResourceAddress, Option<Bucket>) =
+        scrypto_decode(&results[4]).unwrap();
 
-    println!(
-        "account_package_address: {:?}",
-        account_package_address.to_vec()
-    );
-
-    // Radix token resource address
+    /*
     let mut metadata = HashMap::new();
     metadata.insert("symbol".to_owned(), XRD_SYMBOL.to_owned());
     metadata.insert("name".to_owned(), XRD_NAME.to_owned());
     metadata.insert("description".to_owned(), XRD_DESCRIPTION.to_owned());
     metadata.insert("url".to_owned(), XRD_URL.to_owned());
 
-    let mut resource_auth = HashMap::new();
-    resource_auth.insert(Withdraw, (rule!(allow_all), LOCKED));
+    let mut resource_access_rules = HashMap::new();
+    resource_access_rules.insert(Withdraw, (rule!(allow_all), LOCKED));
+
+    let initial_supply = Option::Some(MintParams::Fungible { amount: XRD_MAX_SUPPLY });
+
+    ExecutableInstruction::CallFunction {
+        package_address: SYS_UTILS_PACKAGE,
+        blueprint_name: "SysUtils",
+        method_name: "new_resource",
+        args: args!(
+            ResourceType::Fungible { divisibility: 18 },
+            metadata,
+            resource_access_rules,
+            initial_supply,
+        )
+    };
+     */
+
+    let mut metadata = HashMap::new();
+    metadata.insert("symbol".to_owned(), XRD_SYMBOL.to_owned());
+    metadata.insert("name".to_owned(), XRD_NAME.to_owned());
+    metadata.insert("description".to_owned(), XRD_DESCRIPTION.to_owned());
+    metadata.insert("url".to_owned(), XRD_URL.to_owned());
+
+    let mut resource_access_rules = HashMap::new();
+    resource_access_rules.insert(Withdraw, (rule!(allow_all), LOCKED));
 
     let mut xrd_resource_manager = ResourceManager::new(
         ResourceType::Fungible { divisibility: 18 },
         metadata,
-        resource_auth,
+        resource_access_rules,
     )
     .expect("Failed to construct XRD resource manager");
     let minted_xrd = xrd_resource_manager
@@ -117,25 +196,6 @@ pub fn execute_genesis<'s, R: FeeReserve>(
     track.create_uuid_substate(
         SubstateId::ResourceManager(RADIX_TOKEN),
         xrd_resource_manager,
-        true,
-    );
-
-    let mut ecdsa_resource_auth = HashMap::new();
-    ecdsa_resource_auth.insert(Withdraw, (rule!(allow_all), LOCKED));
-    let ecdsa_token = ResourceManager::new(
-        ResourceType::NonFungible,
-        HashMap::new(),
-        ecdsa_resource_auth,
-    )
-    .expect("Failed to construct ECDSA resource manager");
-    track.create_uuid_substate(SubstateId::ResourceManager(ECDSA_TOKEN), ecdsa_token, true);
-
-    let system_token =
-        ResourceManager::new(ResourceType::NonFungible, HashMap::new(), HashMap::new())
-            .expect("Failed to construct SYSTEM_TOKEN resource manager");
-    track.create_uuid_substate(
-        SubstateId::ResourceManager(SYSTEM_TOKEN),
-        system_token,
         true,
     );
 
@@ -150,7 +210,7 @@ pub fn execute_genesis<'s, R: FeeReserve>(
     track.create_uuid_substate(SubstateId::Vault(XRD_VAULT_ID), system_vault, false);
 
     let sys_faucet_component_info = ComponentInfo::new(
-        sys_faucet_package_address,
+        sys_faucet_package,
         SYS_FAUCET_COMPONENT_NAME.to_owned(),
         vec![],
     );
@@ -166,15 +226,18 @@ pub fn execute_genesis<'s, R: FeeReserve>(
         sys_faucet_component_state,
         true,
     );
+
     track.create_uuid_substate(SubstateId::System, System { epoch: 0 }, true);
 
     let track_receipt = track.finalize(Ok(Vec::new()), vec![initial_xrd]);
     (
         track_receipt,
         GenesisReceipt {
-            sys_faucet_package_address,
-            sys_utils_package_address,
-            account_package_address,
+            sys_faucet_package,
+            sys_utils_package,
+            account_package,
+            ecdsa_token,
+            system_token,
         },
     )
 }
@@ -212,7 +275,7 @@ mod tests {
     use crate::fee::UnlimitedLoanFeeReserve;
     use crate::ledger::{execute_genesis, TypedInMemorySubstateStore};
     use scrypto::constants::ACCOUNT_PACKAGE;
-    use scrypto::prelude::{SYS_FAUCET_PACKAGE, SYS_UTILS_PACKAGE};
+    use scrypto::prelude::{ECDSA_TOKEN, SYSTEM_TOKEN, SYS_FAUCET_PACKAGE, SYS_UTILS_PACKAGE};
 
     #[test]
     fn bootstrap_receipt_should_match_constants() {
@@ -223,14 +286,10 @@ mod tests {
         );
         let (_track_receipt, bootstrap_receipt) = execute_genesis(track);
 
-        assert_eq!(
-            bootstrap_receipt.sys_faucet_package_address,
-            SYS_FAUCET_PACKAGE
-        );
-        assert_eq!(
-            bootstrap_receipt.sys_utils_package_address,
-            SYS_UTILS_PACKAGE
-        );
-        assert_eq!(bootstrap_receipt.account_package_address, ACCOUNT_PACKAGE);
+        assert_eq!(bootstrap_receipt.sys_faucet_package, SYS_FAUCET_PACKAGE);
+        assert_eq!(bootstrap_receipt.sys_utils_package, SYS_UTILS_PACKAGE);
+        assert_eq!(bootstrap_receipt.account_package, ACCOUNT_PACKAGE);
+        assert_eq!(bootstrap_receipt.ecdsa_token, ECDSA_TOKEN);
+        assert_eq!(bootstrap_receipt.system_token, SYSTEM_TOKEN);
     }
 }

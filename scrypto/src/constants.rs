@@ -99,10 +99,66 @@ pub const SYS_FAUCET_COMPONENT: ComponentAddress = address!(EntityType::SystemCo
 // TODO Add other system components
 
 /// The system token which allows access to system resources (e.g. setting epoch)
-pub const SYSTEM_TOKEN: ResourceAddress = address!(EntityType::Resource, 1u8);
+pub const SYSTEM_TOKEN: ResourceAddress = construct_address!(
+    EntityType::Resource,
+    185,
+    23,
+    55,
+    238,
+    138,
+    77,
+    229,
+    157,
+    73,
+    218,
+    212,
+    13,
+    229,
+    86,
+    14,
+    87,
+    84,
+    70,
+    106,
+    200,
+    76,
+    245,
+    67,
+    46,
+    169,
+    93
+);
 
 /// The ECDSA virtual resource address.
-pub const ECDSA_TOKEN: ResourceAddress = address!(EntityType::Resource, 2u8);
+pub const ECDSA_TOKEN: ResourceAddress = construct_address!(
+    EntityType::Resource,
+    43,
+    113,
+    132,
+    253,
+    47,
+    66,
+    111,
+    180,
+    52,
+    199,
+    68,
+    195,
+    33,
+    205,
+    145,
+    223,
+    131,
+    117,
+    181,
+    225,
+    240,
+    27,
+    116,
+    0,
+    157,
+    255
+);
 
 /// The ED25519 virtual resource address.
 pub const ED25519_TOKEN: ResourceAddress = address!(EntityType::Resource, 3u8);

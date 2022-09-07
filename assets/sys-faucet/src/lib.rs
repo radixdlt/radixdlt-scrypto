@@ -9,8 +9,10 @@ blueprint! {
     impl Faucet {
         pub fn new(bucket: Bucket) -> ComponentAddress {
             Self {
-                vault: Vault::with_bucket(bucket)
-            }.instantiate().globalize()
+                vault: Vault::with_bucket(bucket),
+            }
+            .instantiate()
+            .globalize()
         }
 
         /// Gives away tokens.
