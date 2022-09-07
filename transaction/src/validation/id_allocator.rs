@@ -69,7 +69,7 @@ impl IdAllocator {
             (ACCOUNT_PACKAGE, "Account") => {
                 Ok(ComponentAddress::Account(hash(data).lower_26_bytes()))
             }
-            (SYS_UTILS_PACKAGE, "SysUtils") => {
+            (SYS_FAUCET_PACKAGE, "SysFaucet") | (SYS_UTILS_PACKAGE, "SysUtils") => {
                 Ok(ComponentAddress::System(hash(data).lower_26_bytes()))
             }
             _ => Ok(ComponentAddress::Normal(hash(data).lower_26_bytes())),

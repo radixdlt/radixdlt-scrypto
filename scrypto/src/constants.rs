@@ -1,9 +1,67 @@
-use crate::address;
 use crate::component::{ComponentAddress, PackageAddress};
 use crate::resource::*;
+use crate::{address, construct_address};
 
+/// The address of the sys-faucet package.
+pub const SYS_FAUCET_PACKAGE: PackageAddress = construct_address!(
+    EntityType::Package,
+    72,
+    223,
+    194,
+    44,
+    177,
+    98,
+    231,
+    38,
+    12,
+    132,
+    2,
+    197,
+    57,
+    40,
+    72,
+    34,
+    129,
+    17,
+    124,
+    16,
+    161,
+    221,
+    137,
+    22,
+    103,
+    240
+);
 /// The address of the sys-utils package.
-pub const SYS_UTILS_PACKAGE: PackageAddress = address!(EntityType::Package, 2u8);
+pub const SYS_UTILS_PACKAGE: PackageAddress = construct_address!(
+    EntityType::Package,
+    0,
+    44,
+    100,
+    204,
+    153,
+    17,
+    167,
+    139,
+    223,
+    159,
+    221,
+    222,
+    95,
+    90,
+    157,
+    196,
+    136,
+    236,
+    235,
+    197,
+    213,
+    35,
+    187,
+    15,
+    207,
+    158
+);
 
 /// The address of the account package.
 pub const ACCOUNT_PACKAGE: PackageAddress = address!(EntityType::Package, 3u8);

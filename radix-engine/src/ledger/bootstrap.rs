@@ -28,11 +28,16 @@ const SYS_FAUCET_COMPONENT_NAME: &str = "SysFaucet";
 use crate::model::*;
 use crate::wasm::{DefaultWasmEngine, InstructionCostRules, WasmInstrumenter, WasmMeteringParams};
 
+pub struct GenesisReceipt {
+    pub sys_faucet_package_address: PackageAddress,
+    pub sys_utils_package_address: PackageAddress,
+}
+
 // TODO: This would be much better handled if bootstrap was implemented as an executed transaction
 // TODO: rather than a state snapshot.
 pub fn execute_genesis<'s, R: FeeReserve>(
     mut track: Track<'s, R>,
-) -> (TrackReceipt, BootstrapReceipt) {
+) -> (TrackReceipt, GenesisReceipt) {
     let mut wasm_engine = DefaultWasmEngine::new();
     let mut wasm_instrumenter = WasmInstrumenter::new();
     let mut execution_trace = ExecutionTrace::new();
@@ -53,6 +58,9 @@ pub fn execute_genesis<'s, R: FeeReserve>(
     let sys_faucet_package =
         extract_package(include_bytes!("../../../assets/sys_faucet.wasm").to_vec())
             .expect("Failed to construct sys-faucet package");
+    let sys_utils_package =
+        extract_package(include_bytes!("../../../assets/sys_utils.wasm").to_vec())
+            .expect("Failed to construct sys-utils package");
 
     let result = kernel
         .invoke_function(
@@ -60,24 +68,21 @@ pub fn execute_genesis<'s, R: FeeReserve>(
                 TransactionProcessorFnIdentifier::Run,
             )),
             ScryptoValue::from_typed(&TransactionProcessorRunInput {
-                instructions: vec![ExecutableInstruction::PublishPackage {
-                    package: scrypto_encode(&sys_faucet_package),
-                }],
+                instructions: vec![
+                    ExecutableInstruction::PublishPackage {
+                        package: scrypto_encode(&sys_faucet_package),
+                    },
+                    ExecutableInstruction::PublishPackage {
+                        package: scrypto_encode(&sys_utils_package),
+                    },
+                ],
             }),
         )
         .unwrap();
 
     let results: Vec<Vec<u8>> = scrypto_decode(&result.raw).unwrap();
     let sys_faucet_package_address: PackageAddress = scrypto_decode(&results[0]).unwrap();
-
-    let sys_utils_package =
-        extract_package(include_bytes!("../../../assets/sys_utils.wasm").to_vec())
-            .expect("Failed to construct sys-utils package");
-    track.create_uuid_substate(
-        SubstateId::Package(SYS_UTILS_PACKAGE),
-        ValidatedPackage::new(sys_utils_package).expect("Invalid sys-utils package"),
-        true,
-    );
+    let sys_utils_package_address: PackageAddress = scrypto_decode(&results[1]).unwrap();
 
     let account_package = extract_package(include_bytes!("../../../assets/account.wasm").to_vec())
         .expect("Failed to construct account package");
@@ -165,17 +170,14 @@ pub fn execute_genesis<'s, R: FeeReserve>(
     let track_receipt = track.finalize(Ok(Vec::new()), vec![initial_xrd]);
     (
         track_receipt,
-        BootstrapReceipt {
+        GenesisReceipt {
             sys_faucet_package_address,
+            sys_utils_package_address,
         },
     )
 }
 
-pub struct BootstrapReceipt {
-    sys_faucet_package_address: PackageAddress,
-}
-
-pub fn bootstrap<S>(substate_store: &mut S) -> BootstrapReceipt
+pub fn bootstrap<S>(substate_store: &mut S) -> GenesisReceipt
 where
     S: ReadableSubstateStore + WriteableSubstateStore,
 {
@@ -199,5 +201,32 @@ where
         );
         let (_track_receipt, bootstrap_receipt) = execute_genesis(track);
         bootstrap_receipt
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::engine::Track;
+    use crate::fee::UnlimitedLoanFeeReserve;
+    use crate::ledger::{execute_genesis, TypedInMemorySubstateStore};
+    use scrypto::prelude::{SYS_FAUCET_PACKAGE, SYS_UTILS_PACKAGE};
+
+    #[test]
+    fn bootstrap_receipt_should_match_constants() {
+        let mut temporary_substate_store = TypedInMemorySubstateStore::new();
+        let track = Track::new(
+            &mut temporary_substate_store,
+            UnlimitedLoanFeeReserve::default(),
+        );
+        let (_track_receipt, bootstrap_receipt) = execute_genesis(track);
+
+        assert_eq!(
+            bootstrap_receipt.sys_faucet_package_address,
+            SYS_FAUCET_PACKAGE
+        );
+        assert_eq!(
+            bootstrap_receipt.sys_utils_package_address,
+            SYS_UTILS_PACKAGE
+        );
     }
 }
