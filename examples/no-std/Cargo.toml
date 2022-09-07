@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 sbor = { path = "../../sbor", default-features = false, features = ["alloc"] }
-scrypto = { path = "../../scrypto", default-features = false, features = ["alloc"] }
+scrypto = { path = "../../scrypto", default-features = false, features = ["alloc", "prelude"] }
 wee_alloc = { version = "0.4", default-features = false }
 
 [dev-dependencies]
