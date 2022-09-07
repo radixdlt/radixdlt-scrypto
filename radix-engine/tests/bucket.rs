@@ -193,9 +193,11 @@ fn create_empty_bucket() {
         .take_from_worktop_by_amount(Decimal::zero(), RADIX_TOKEN, |builder, bucket_id| {
             builder.return_to_worktop(bucket_id)
         })
-        .take_from_worktop_by_ids(&BTreeSet::new(), RADIX_TOKEN, |builder, bucket_id| {
-            builder.return_to_worktop(bucket_id)
-        })
+        .take_from_worktop_by_ids(
+            &BTreeSet::new(),
+            non_fungible_resource,
+            |builder, bucket_id| builder.return_to_worktop(bucket_id),
+        )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
     println!("{:?}", receipt);
