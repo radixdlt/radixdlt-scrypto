@@ -59,6 +59,21 @@ pub struct Kernel<
     phantom: PhantomData<I>,
 }
 
+#[derive(Copy, Clone, Debug)]
+pub enum ExecutionPrivilege {
+    User,
+    Supervisor,
+}
+
+impl ExecutionPrivilege {
+    fn system_tokens(&self) -> Vec<NonFungibleId> {
+        match self {
+            ExecutionPrivilege::User => vec![],
+            ExecutionPrivilege::Supervisor => vec![NonFungibleId::from_u32(0)],
+        }
+    }
+}
+
 impl<'g, 's, W, I, R> Kernel<'g, 's, W, I, R>
 where
     W: WasmEngine<I>,
@@ -68,7 +83,7 @@ where
     pub fn new(
         transaction_hash: Hash,
         transaction_signers: Vec<EcdsaPublicKey>,
-        is_system: bool,
+        execution_privilege: ExecutionPrivilege,
         max_depth: usize,
         track: &'g mut Track<'s, R>,
         wasm_engine: &'g mut W,
@@ -92,8 +107,9 @@ where
             phantom: PhantomData,
         };
 
-        if is_system {
-            let non_fungible_ids = [NonFungibleId::from_u32(0)].into_iter().collect();
+        let system_tokens = execution_privilege.system_tokens();
+        if !system_tokens.is_empty() {
+            let non_fungible_ids = system_tokens.into_iter().collect();
             let bucket_id = match kernel
                 .node_create(HeapRENode::Bucket(Bucket::new(
                     ResourceContainer::new_non_fungible(SYSTEM_TOKEN, non_fungible_ids),
@@ -116,6 +132,7 @@ where
                 .proofs
                 .push(system_proof);
         }
+
         kernel
     }
 

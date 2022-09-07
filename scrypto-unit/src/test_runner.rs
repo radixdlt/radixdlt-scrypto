@@ -1,7 +1,9 @@
 use radix_engine::constants::{
     DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN,
 };
-use radix_engine::engine::{ExecutionTrace, Kernel, KernelError, ModuleError, SystemApi};
+use radix_engine::engine::{
+    ExecutionPrivilege, ExecutionTrace, Kernel, KernelError, ModuleError, SystemApi,
+};
 use radix_engine::engine::{RuntimeError, Track};
 use radix_engine::fee::SystemLoanFeeReserve;
 use radix_engine::ledger::*;
@@ -253,7 +255,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
                     cost_unit_price: DEFAULT_COST_UNIT_PRICE.parse().unwrap(),
                     max_call_depth: DEFAULT_MAX_CALL_DEPTH,
                     system_loan: DEFAULT_SYSTEM_LOAN,
-                    is_system: false,
+                    execution_privilege: ExecutionPrivilege::User,
                     trace: self.trace,
                 },
             );
@@ -504,7 +506,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     }
 
     pub fn set_current_epoch(&mut self, epoch: u64) {
-        self.kernel_call(true, |kernel| {
+        self.kernel_call(ExecutionPrivilege::Supervisor, |kernel| {
             kernel
                 .invoke_method(
                     Receiver::Ref(RENodeId::System),
@@ -516,7 +518,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     }
 
     pub fn get_current_epoch(&mut self) -> u64 {
-        let current_epoch: ScryptoValue = self.kernel_call(false, |kernel| {
+        let current_epoch: ScryptoValue = self.kernel_call(ExecutionPrivilege::User, |kernel| {
             kernel
                 .invoke_method(
                     Receiver::Ref(RENodeId::System),
@@ -531,7 +533,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     }
 
     /// Performs a kernel call through a kernel with `is_system = true`.
-    fn kernel_call<F>(&mut self, is_system: bool, fun: F) -> ScryptoValue
+    fn kernel_call<F>(&mut self, execution_privilege: ExecutionPrivilege, fun: F) -> ScryptoValue
     where
         F: FnOnce(
             &mut Kernel<DefaultWasmEngine, DefaultWasmInstance, SystemLoanFeeReserve>,
@@ -545,7 +547,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         let mut kernel = Kernel::new(
             tx_hash,
             Vec::new(),
-            is_system,
+            execution_privilege,
             DEFAULT_MAX_CALL_DEPTH,
             &mut track,
             &mut self.wasm_engine,

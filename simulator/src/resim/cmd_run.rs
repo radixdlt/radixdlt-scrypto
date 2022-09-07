@@ -42,7 +42,7 @@ impl Run {
             compiled_manifest,
             &self.signing_keys,
             &None,
-            false,
+            ExecutionPrivilege::User,
             self.trace,
             true,
             out,

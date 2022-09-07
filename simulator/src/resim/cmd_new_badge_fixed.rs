@@ -77,7 +77,7 @@ impl NewBadgeFixed {
             manifest,
             &self.signing_keys,
             &self.manifest,
-            false,
+            ExecutionPrivilege::User,
             self.trace,
             true,
             out,

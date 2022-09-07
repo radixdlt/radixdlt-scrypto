@@ -48,6 +48,7 @@ pub const ENV_DISABLE_MANIFEST_OUTPUT: &'static str = "DISABLE_MANIFEST_OUTPUT";
 
 use clap::{Parser, Subcommand};
 use radix_engine::constants::*;
+use radix_engine::engine::ExecutionPrivilege;
 use radix_engine::model::*;
 use radix_engine::transaction::ExecutionConfig;
 use radix_engine::transaction::TransactionExecutor;
@@ -140,7 +141,7 @@ pub fn handle_manifest<O: std::io::Write>(
     manifest: TransactionManifest,
     signing_keys: &Option<String>,
     manifest_path: &Option<PathBuf>,
-    is_system: bool,
+    execution_privilege: ExecutionPrivilege,
     trace: bool,
     output_receipt: bool,
     out: &mut O,
@@ -180,7 +181,7 @@ pub fn handle_manifest<O: std::io::Write>(
                     cost_unit_price: DEFAULT_COST_UNIT_PRICE.parse().unwrap(),
                     max_call_depth: DEFAULT_MAX_CALL_DEPTH,
                     system_loan: DEFAULT_SYSTEM_LOAN,
-                    is_system,
+                    execution_privilege,
                     trace,
                 },
             );

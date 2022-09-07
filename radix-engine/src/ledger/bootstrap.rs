@@ -1,5 +1,5 @@
 use crate::constants::DEFAULT_MAX_CALL_DEPTH;
-use crate::engine::Track;
+use crate::engine::{ExecutionPrivilege, Track};
 use crate::engine::{ExecutionTrace, Kernel, SystemApi, TrackReceipt};
 use crate::fee::FeeReserve;
 use crate::fee::UnlimitedLoanFeeReserve;
@@ -47,7 +47,7 @@ pub fn execute_genesis<'s, R: FeeReserve>(
     let mut kernel = Kernel::new(
         Hash([0u8; Hash::LENGTH]),
         vec![],
-        true,
+        ExecutionPrivilege::Supervisor,
         DEFAULT_MAX_CALL_DEPTH,
         &mut track,
         &mut wasm_engine,

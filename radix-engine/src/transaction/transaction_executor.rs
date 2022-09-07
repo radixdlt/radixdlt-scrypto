@@ -14,7 +14,7 @@ pub struct ExecutionConfig {
     pub cost_unit_price: Decimal,
     pub max_call_depth: usize,
     pub system_loan: u32,
-    pub is_system: bool,
+    pub execution_privilege: ExecutionPrivilege,
     pub trace: bool,
 }
 
@@ -32,7 +32,7 @@ impl ExecutionConfig {
                 .expect("Invalid cost unit price"),
             max_call_depth: DEFAULT_MAX_CALL_DEPTH,
             system_loan: DEFAULT_SYSTEM_LOAN,
-            is_system: false,
+            execution_privilege: ExecutionPrivilege::User,
             trace: false,
         }
     }
@@ -44,7 +44,7 @@ impl ExecutionConfig {
                 .expect("Invalid cost unit price"),
             max_call_depth: DEFAULT_MAX_CALL_DEPTH,
             system_loan: DEFAULT_SYSTEM_LOAN,
-            is_system: false,
+            execution_privilege: ExecutionPrivilege::User,
             trace: true,
         }
     }
@@ -133,7 +133,7 @@ where
             let mut kernel = Kernel::new(
                 transaction_hash,
                 signer_public_keys,
-                params.is_system,
+                params.execution_privilege,
                 params.max_call_depth,
                 &mut track,
                 self.wasm_engine,

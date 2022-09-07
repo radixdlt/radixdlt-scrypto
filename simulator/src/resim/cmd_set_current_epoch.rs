@@ -1,6 +1,6 @@
 use clap::Parser;
 use radix_engine::constants::*;
-use radix_engine::engine::Track;
+use radix_engine::engine::{ExecutionPrivilege, Track};
 use radix_engine::engine::{ExecutionTrace, Kernel, SystemApi};
 use radix_engine::fee::SystemLoanFeeReserve;
 use radix_engine::types::*;
@@ -29,7 +29,7 @@ impl SetCurrentEpoch {
         let mut kernel = Kernel::new(
             tx_hash,
             Vec::new(),
-            true,
+            ExecutionPrivilege::Supervisor,
             DEFAULT_MAX_CALL_DEPTH,
             &mut track,
             &mut wasm_engine,

@@ -75,7 +75,7 @@ impl Publish {
                 manifest,
                 &None,
                 &self.manifest,
-                false,
+                ExecutionPrivilege::User,
                 self.trace,
                 false,
                 out,
