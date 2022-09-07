@@ -2,19 +2,25 @@ use scrypto::prelude::*;
 
 // Faucet - TestNet only
 blueprint! {
-    struct SysFaucet {
-        xrd: Vault,
+    struct Faucet {
+        vault: Vault,
     }
 
-    impl SysFaucet {
-        /// Gives away XRD tokens.
-        pub fn free_xrd(&mut self) -> Bucket {
-            self.xrd.take(1_000_000)
+    impl Faucet {
+        pub fn new(bucket: Bucket) -> ComponentAddress {
+            Self {
+                vault: Vault::with_bucket(bucket)
+            }.instantiate().globalize()
+        }
+
+        /// Gives away tokens.
+        pub fn free(&mut self) -> Bucket {
+            self.vault.take(1_000_000)
         }
 
         /// Locks fees.
         pub fn lock_fee(&mut self, amount: Decimal) {
-            self.xrd.lock_fee(amount);
+            self.vault.lock_fee(amount);
         }
     }
 }

@@ -4,7 +4,6 @@ use crate::engine::{ResourceChange, Track};
 use crate::fee::FeeReserve;
 use crate::fee::UnlimitedLoanFeeReserve;
 use crate::ledger::{ReadableSubstateStore, TypedInMemorySubstateStore, WriteableSubstateStore};
-use crate::model::ValidatedPackage;
 use crate::transaction::TransactionResult;
 use crate::types::ResourceMethodAuthKey::Withdraw;
 use crate::types::*;
@@ -23,7 +22,7 @@ const XRD_MAX_SUPPLY: i128 = 24_000_000_000i128;
 const XRD_VAULT_ID: VaultId = (Hash([0u8; 32]), 0);
 const XRD_VAULT: scrypto::resource::Vault = scrypto::resource::Vault(XRD_VAULT_ID);
 
-const SYS_FAUCET_COMPONENT_NAME: &str = "SysFaucet";
+const SYS_FAUCET_COMPONENT_NAME: &str = "Faucet";
 
 use crate::model::*;
 use crate::wasm::{DefaultWasmEngine, InstructionCostRules, WasmInstrumenter, WasmMeteringParams};
