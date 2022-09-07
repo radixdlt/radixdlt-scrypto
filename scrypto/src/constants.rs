@@ -64,7 +64,35 @@ pub const SYS_UTILS_PACKAGE: PackageAddress = construct_address!(
 );
 
 /// The address of the account package.
-pub const ACCOUNT_PACKAGE: PackageAddress = address!(EntityType::Package, 3u8);
+pub const ACCOUNT_PACKAGE: PackageAddress = construct_address!(
+    EntityType::Package,
+    117,
+    149,
+    161,
+    192,
+    155,
+    192,
+    68,
+    56,
+    79,
+    186,
+    128,
+    155,
+    199,
+    188,
+    92,
+    59,
+    83,
+    241,
+    146,
+    178,
+    126,
+    213,
+    55,
+    167,
+    164,
+    201
+);
 
 /// The address of the SysFaucet component
 pub const SYS_FAUCET_COMPONENT: ComponentAddress = address!(EntityType::SystemComponent, 1u8);

@@ -31,6 +31,7 @@ use crate::wasm::{DefaultWasmEngine, InstructionCostRules, WasmInstrumenter, Was
 pub struct GenesisReceipt {
     pub sys_faucet_package_address: PackageAddress,
     pub sys_utils_package_address: PackageAddress,
+    pub account_package_address: PackageAddress,
 }
 
 // TODO: This would be much better handled if bootstrap was implemented as an executed transaction
@@ -61,6 +62,8 @@ pub fn execute_genesis<'s, R: FeeReserve>(
     let sys_utils_package =
         extract_package(include_bytes!("../../../assets/sys_utils.wasm").to_vec())
             .expect("Failed to construct sys-utils package");
+    let account_package = extract_package(include_bytes!("../../../assets/account.wasm").to_vec())
+        .expect("Failed to construct account package");
 
     let result = kernel
         .invoke_function(
@@ -75,6 +78,9 @@ pub fn execute_genesis<'s, R: FeeReserve>(
                     ExecutableInstruction::PublishPackage {
                         package: scrypto_encode(&sys_utils_package),
                     },
+                    ExecutableInstruction::PublishPackage {
+                        package: scrypto_encode(&account_package),
+                    },
                 ],
             }),
         )
@@ -83,15 +89,11 @@ pub fn execute_genesis<'s, R: FeeReserve>(
     let results: Vec<Vec<u8>> = scrypto_decode(&result.raw).unwrap();
     let sys_faucet_package_address: PackageAddress = scrypto_decode(&results[0]).unwrap();
     let sys_utils_package_address: PackageAddress = scrypto_decode(&results[1]).unwrap();
+    let account_package_address: PackageAddress = scrypto_decode(&results[2]).unwrap();
 
-    let account_package = extract_package(include_bytes!("../../../assets/account.wasm").to_vec())
-        .expect("Failed to construct account package");
-    let validated_account_package =
-        ValidatedPackage::new(account_package).expect("Invalid account package");
-    track.create_uuid_substate(
-        SubstateId::Package(ACCOUNT_PACKAGE),
-        validated_account_package,
-        true,
+    println!(
+        "account_package_address: {:?}",
+        account_package_address.to_vec()
     );
 
     // Radix token resource address
@@ -173,6 +175,7 @@ pub fn execute_genesis<'s, R: FeeReserve>(
         GenesisReceipt {
             sys_faucet_package_address,
             sys_utils_package_address,
+            account_package_address,
         },
     )
 }
@@ -209,6 +212,7 @@ mod tests {
     use crate::engine::Track;
     use crate::fee::UnlimitedLoanFeeReserve;
     use crate::ledger::{execute_genesis, TypedInMemorySubstateStore};
+    use scrypto::constants::ACCOUNT_PACKAGE;
     use scrypto::prelude::{SYS_FAUCET_PACKAGE, SYS_UTILS_PACKAGE};
 
     #[test]
@@ -228,5 +232,6 @@ mod tests {
             bootstrap_receipt.sys_utils_package_address,
             SYS_UTILS_PACKAGE
         );
+        assert_eq!(bootstrap_receipt.account_package_address, ACCOUNT_PACKAGE);
     }
 }
