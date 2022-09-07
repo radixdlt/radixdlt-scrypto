@@ -1,4 +1,6 @@
-use crate::engine::TrackReceipt;
+use transaction::model::ExecutableInstruction;
+use crate::constants::DEFAULT_MAX_CALL_DEPTH;
+use crate::engine::{ExecutionTrace, Kernel, SystemApi, TrackReceipt};
 use crate::engine::{ResourceChange, Track};
 use crate::fee::FeeReserve;
 use crate::fee::UnlimitedLoanFeeReserve;
@@ -24,18 +26,48 @@ const XRD_VAULT: scrypto::resource::Vault = scrypto::resource::Vault(XRD_VAULT_I
 const SYS_FAUCET_COMPONENT_NAME: &str = "SysFaucet";
 
 use crate::model::*;
+use crate::wasm::{DefaultWasmEngine, InstructionCostRules, WasmInstrumenter, WasmMeteringParams};
 
 // TODO: This would be much better handled if bootstrap was implemented as an executed transaction
 // TODO: rather than a state snapshot.
 pub fn execute_genesis<'s, R: FeeReserve>(mut track: Track<'s, R>) -> TrackReceipt {
+    let mut wasm_engine = DefaultWasmEngine::new();
+    let mut wasm_instrumenter = WasmInstrumenter::new();
+    let mut execution_trace = ExecutionTrace::new();
+
+    let mut kernel = Kernel::new(
+        Hash([0u8; Hash::LENGTH]),
+        vec![],
+        true,
+        DEFAULT_MAX_CALL_DEPTH,
+        &mut track,
+        &mut wasm_engine,
+        &mut wasm_instrumenter,
+        WasmMeteringParams::new(InstructionCostRules::tiered(1, 5, 10, 5000), 512),
+        &mut execution_trace,
+        vec![],
+    );
+
     let sys_faucet_package =
         extract_package(include_bytes!("../../../assets/sys_faucet.wasm").to_vec())
             .expect("Failed to construct sys-faucet package");
-    track.create_uuid_substate(
-        SubstateId::Package(SYS_FAUCET_PACKAGE),
-        ValidatedPackage::new(sys_faucet_package).expect("Invalid sys-faucet package"),
-        true,
-    );
+
+    let result = kernel.invoke_function(
+        FnIdentifier::Native(NativeFnIdentifier::TransactionProcessor(
+            TransactionProcessorFnIdentifier::Run,
+        )),
+        ScryptoValue::from_typed(&TransactionProcessorRunInput {
+            instructions: vec![
+                ExecutableInstruction::PublishPackage {
+                    package: scrypto_encode(&sys_faucet_package)
+                }
+            ]
+        }),
+    ).unwrap();
+
+    let results: Vec<Vec<u8>> = scrypto_decode(&result.raw).unwrap();
+    let sys_faucet_package_address: PackageAddress = scrypto_decode(&results[0]).unwrap();
+
     let sys_utils_package =
         extract_package(include_bytes!("../../../assets/sys_utils.wasm").to_vec())
             .expect("Failed to construct sys-utils package");
@@ -110,7 +142,7 @@ pub fn execute_genesis<'s, R: FeeReserve>(mut track: Track<'s, R>) -> TrackRecei
     track.create_uuid_substate(SubstateId::Vault(XRD_VAULT_ID), system_vault, false);
 
     let sys_faucet_component_info = ComponentInfo::new(
-        SYS_FAUCET_PACKAGE,
+        sys_faucet_package_address,
         SYS_FAUCET_COMPONENT_NAME.to_owned(),
         vec![],
     );
@@ -136,7 +168,7 @@ where
     S: ReadableSubstateStore + WriteableSubstateStore,
 {
     if substate_store
-        .get_substate(&SubstateId::Package(SYS_FAUCET_PACKAGE))
+        .get_substate(&SubstateId::ResourceManager(RADIX_TOKEN))
         .is_none()
     {
         let track = Track::new(&substate_store, UnlimitedLoanFeeReserve::default());
