@@ -2,8 +2,7 @@ use blob_loader::BlobLoader;
 use sbor::*;
 use scrypto::buffer::{scrypto_decode, scrypto_encode};
 use scrypto::core::NetworkDefinition;
-use scrypto::crypto::{hash, Hash, PublicKey, Signature};
-use scrypto::prelude::SignatureWithPublicKey;
+use scrypto::crypto::{hash, Hash, PublicKey, Signature, SignatureWithPublicKey};
 
 use crate::manifest::{blob_loader, compile, CompileError};
 use crate::model::Instruction;
