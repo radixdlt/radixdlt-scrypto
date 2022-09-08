@@ -114,9 +114,6 @@ impl FromStr for NonFungibleAddress {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let bytes =
             hex::decode(s).map_err(|_| ParseNonFungibleAddressError::InvalidHex(s.to_owned()))?;
-        if bytes.get(0) != Some(&EntityType::Resource.id()) {
-            return Err(ParseNonFungibleAddressError::InvalidPrefix);
-        }
         Self::try_from(bytes.as_ref())
     }
 }
