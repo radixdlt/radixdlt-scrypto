@@ -2,7 +2,8 @@ use sbor::rust::collections::BTreeSet;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto::component::{ComponentAddress, PackageAddress};
+use scrypto::component::ComponentAddress;
+use scrypto::core::FnIdentifier;
 use scrypto::engine::types::*;
 use scrypto::math::*;
 use scrypto::resource::{NonFungibleId, ResourceAddress};
@@ -83,9 +84,7 @@ pub enum Instruction {
     ///
     /// Buckets and proofs in arguments moves from transaction context to the callee.
     CallFunction {
-        package_address: PackageAddress,
-        blueprint_name: String,
-        method_name: String,
+        fn_identifier: FnIdentifier,
         args: Vec<u8>,
     },
 
