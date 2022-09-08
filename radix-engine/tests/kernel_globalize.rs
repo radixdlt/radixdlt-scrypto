@@ -1,8 +1,7 @@
 use radix_engine::engine::{KernelError, RuntimeError};
 use radix_engine::ledger::TypedInMemorySubstateStore;
-use scrypto::core::NetworkDefinition;
+use radix_engine::types::*;
 use scrypto::engine::types::RENodeId;
-use scrypto::prelude::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -11,7 +10,7 @@ fn should_not_be_able_to_globalize_key_value_store() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.extract_and_publish_package("kernel");
+    let package_address = test_runner.compile_and_publish("./tests/kernel");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
@@ -36,7 +35,7 @@ fn should_not_be_able_to_globalize_bucket() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.extract_and_publish_package("kernel");
+    let package_address = test_runner.compile_and_publish("./tests/kernel");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
@@ -61,7 +60,7 @@ fn should_not_be_able_to_globalize_proof() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.extract_and_publish_package("kernel");
+    let package_address = test_runner.compile_and_publish("./tests/kernel");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
@@ -86,7 +85,7 @@ fn should_not_be_able_to_globalize_vault() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.extract_and_publish_package("kernel");
+    let package_address = test_runner.compile_and_publish("./tests/kernel");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())

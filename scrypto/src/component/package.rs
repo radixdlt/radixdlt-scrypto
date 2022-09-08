@@ -1,10 +1,7 @@
-use sbor::rust::collections::HashMap;
 use sbor::rust::fmt;
 use sbor::rust::str::FromStr;
-use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto_abi::BlueprintAbi;
 
 use crate::abi::*;
 use crate::address::{AddressError, EntityType, BECH32_DECODER, BECH32_ENCODER};
@@ -13,13 +10,8 @@ use crate::misc::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct PackagePublishInput {
-    pub package_blob: Blob,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct Package {
-    pub code: Vec<u8>,
-    pub blueprints: HashMap<String, BlueprintAbi>,
+    pub code: Blob,
+    pub abi: Blob,
 }
 
 /// A collection of blueprints, compiled and published as a single unit.

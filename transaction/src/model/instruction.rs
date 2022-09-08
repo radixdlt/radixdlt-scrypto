@@ -100,5 +100,5 @@ pub enum Instruction {
     },
 
     /// Publishes a package.
-    PublishPackage { package_blob: Blob },
+    PublishPackage { code: Blob, abi: Blob },
 }

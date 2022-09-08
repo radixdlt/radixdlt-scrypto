@@ -141,8 +141,9 @@ impl TestTransaction {
                     method_name,
                     args,
                 },
-                Instruction::PublishPackage { package_blob } => {
-                    ExecutableInstruction::PublishPackage { package_blob }
+
+                Instruction::PublishPackage { code, abi } => {
+                    ExecutableInstruction::PublishPackage { code, abi }
                 }
             })
             .collect();

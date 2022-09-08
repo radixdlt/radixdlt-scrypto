@@ -1,8 +1,7 @@
 use radix_engine::engine::*;
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::model::{BucketError, ResourceContainerError};
-use scrypto::core::NetworkDefinition;
-use scrypto::prelude::*;
+use radix_engine::types::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -11,7 +10,7 @@ fn test_bucket_internal(method_name: &str) {
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account();
-    let package_address = test_runner.extract_and_publish_package("bucket");
+    let package_address = test_runner.compile_and_publish("./tests/bucket");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
@@ -79,7 +78,7 @@ fn test_bucket_of_badges() {
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account();
-    let package_address = test_runner.extract_and_publish_package("bucket");
+    let package_address = test_runner.compile_and_publish("./tests/bucket");
 
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), account)
@@ -104,7 +103,7 @@ fn test_take_with_invalid_granularity() {
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account();
     let resource_address = test_runner.create_fungible_resource(100.into(), 2, account);
-    let package_address = test_runner.extract_and_publish_package("bucket");
+    let package_address = test_runner.compile_and_publish("./tests/bucket");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
@@ -144,7 +143,7 @@ fn test_take_with_negative_amount() {
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account();
     let resource_address = test_runner.create_fungible_resource(100.into(), 2, account);
-    let package_address = test_runner.extract_and_publish_package("bucket");
+    let package_address = test_runner.compile_and_publish("./tests/bucket");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
@@ -188,14 +187,12 @@ fn create_empty_bucket() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), account)
-        .take_from_worktop(scrypto::prelude::RADIX_TOKEN, |builder, bucket_id| {
+        .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.return_to_worktop(bucket_id)
         })
-        .take_from_worktop_by_amount(
-            Decimal::zero(),
-            scrypto::prelude::RADIX_TOKEN,
-            |builder, bucket_id| builder.return_to_worktop(bucket_id),
-        )
+        .take_from_worktop_by_amount(Decimal::zero(), RADIX_TOKEN, |builder, bucket_id| {
+            builder.return_to_worktop(bucket_id)
+        })
         .take_from_worktop_by_ids(
             &BTreeSet::new(),
             non_fungible_resource,

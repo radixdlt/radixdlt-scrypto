@@ -7,27 +7,27 @@ use crate::wasm::*;
 
 /// A collection of blueprints, compiled and published as a single unit.
 #[derive(Clone, TypeId, Encode, Decode, PartialEq, Eq)]
-pub struct ValidatedPackage {
+pub struct Package {
     code: Vec<u8>,
     blueprint_abis: HashMap<String, BlueprintAbi>,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub enum ValidatedPackageError {
+pub enum PackageError {
     InvalidRequestData(DecodeError),
-    InvalidPackage(DecodeError),
+    InvalidAbi(DecodeError),
     InvalidWasm(PrepareError),
     BlueprintNotFound,
     MethodNotFound(String),
 }
 
-impl ValidatedPackage {
-    pub fn new(package: scrypto::prelude::Package) -> Result<Self, PrepareError> {
-        WasmValidator::default().validate(&package.code, &package.blueprints)?;
+impl Package {
+    pub fn new(code: Vec<u8>, abi: HashMap<String, BlueprintAbi>) -> Result<Self, PrepareError> {
+        WasmValidator::default().validate(&code, &abi)?;
 
         Ok(Self {
-            code: package.code,
-            blueprint_abis: package.blueprints,
+            code: code,
+            blueprint_abis: abi,
         })
     }
 
@@ -43,7 +43,7 @@ impl ValidatedPackage {
         package_fn: PackageFnIdentifier,
         call_data: ScryptoValue,
         system_api: &mut Y,
-    ) -> Result<ScryptoValue, InvokeError<ValidatedPackageError>>
+    ) -> Result<ScryptoValue, InvokeError<PackageError>>
     where
         Y: SystemApi<'s, W, I, R>,
         W: WasmEngine<I>,
@@ -52,19 +52,21 @@ impl ValidatedPackage {
     {
         match package_fn {
             PackageFnIdentifier::Publish => {
-                let input: PackagePublishInput = scrypto_decode(&call_data.raw).map_err(|e| {
-                    InvokeError::Error(ValidatedPackageError::InvalidRequestData(e))
-                })?;
-                let package = system_api
-                    .read_blob(&input.package_blob.0)
+                let input: PackagePublishInput = scrypto_decode(&call_data.raw)
+                    .map_err(|e| InvokeError::Error(PackageError::InvalidRequestData(e)))?;
+                let code = system_api
+                    .read_blob(&input.code.0)
+                    .map_err(InvokeError::Downstream)?
+                    .to_vec();
+                let abi = system_api
+                    .read_blob(&input.abi.0)
                     .map_err(InvokeError::Downstream)
                     .and_then(|blob| {
-                        scrypto_decode::<Package>(blob).map_err(|e| {
-                            InvokeError::Error(ValidatedPackageError::InvalidPackage(e))
-                        })
+                        scrypto_decode::<HashMap<String, BlueprintAbi>>(blob)
+                            .map_err(|e| InvokeError::Error(PackageError::InvalidAbi(e)))
                     })?;
-                let package = ValidatedPackage::new(package)
-                    .map_err(|e| InvokeError::Error(ValidatedPackageError::InvalidWasm(e)))?;
+                let package = Package::new(code, abi)
+                    .map_err(|e| InvokeError::Error(PackageError::InvalidWasm(e)))?;
                 let node_id = system_api
                     .node_create(HeapRENode::Package(package))
                     .map_err(InvokeError::Downstream)?;
@@ -78,9 +80,9 @@ impl ValidatedPackage {
     }
 }
 
-impl Debug for ValidatedPackage {
+impl Debug for Package {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("ValidatedPackage")
+        f.debug_struct("Package")
             .field("code_len", &self.code.len())
             .field("blueprint_abis", &self.blueprint_abis)
             .finish()

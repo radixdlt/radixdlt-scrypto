@@ -5,9 +5,7 @@ use radix_engine::ledger::WriteableSubstateStore;
 use radix_engine::model::KeyValueStoreEntryWrapper;
 use radix_engine::model::WorktopError;
 use radix_engine::transaction::TransactionReceipt;
-use scrypto::core::NetworkDefinition;
-use scrypto::prelude::*;
-use scrypto::values::ScryptoValue;
+use radix_engine::types::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::model::*;
@@ -22,13 +20,18 @@ where
     let (public_key, _, account) = test_runner.new_account();
 
     // Publish package and instantiate component
-    let package_address = test_runner.extract_and_publish_package("fee");
+    let package_address = test_runner.compile_and_publish("./tests/fee");
     let receipt1 = test_runner.execute_manifest(
         ManifestBuilder::new(&NetworkDefinition::local_simulator())
             .lock_fee(10.into(), account)
             .withdraw_from_account_by_amount(1000.into(), RADIX_TOKEN, account)
             .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
-                builder.call_function(package_address, "Fee", "new", args!(Bucket(bucket_id)));
+                builder.call_function(
+                    package_address,
+                    "Fee",
+                    "new",
+                    args!(scrypto::resource::Bucket(bucket_id)),
+                );
                 builder
             })
             .build(),

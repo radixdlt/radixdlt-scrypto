@@ -1,6 +1,5 @@
 use radix_engine::ledger::TypedInMemorySubstateStore;
-use scrypto::core::NetworkDefinition;
-use scrypto::prelude::*;
+use radix_engine::types::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -16,7 +15,7 @@ fn cannot_make_cross_component_call_without_authorization() {
     let authorization =
         AccessRules::new().method("get_component_state", rule!(require(auth_address.clone())));
 
-    let package_address = test_runner.extract_and_publish_package("component");
+    let package_address = test_runner.compile_and_publish("./tests/component");
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(
@@ -76,7 +75,7 @@ fn can_make_cross_component_call_with_authorization() {
     let authorization =
         AccessRules::new().method("get_component_state", rule!(require(auth_address.clone())));
 
-    let package_address = test_runner.extract_and_publish_package("component");
+    let package_address = test_runner.compile_and_publish("./tests/component");
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(

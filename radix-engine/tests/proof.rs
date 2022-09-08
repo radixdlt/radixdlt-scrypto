@@ -1,7 +1,7 @@
 use radix_engine::engine::{KernelError, RuntimeError};
 use radix_engine::ledger::TypedInMemorySubstateStore;
-use scrypto::core::NetworkDefinition;
-use scrypto::prelude::*;
+use radix_engine::types::*;
+use scrypto::resource::{Bucket, Proof, DIVISIBILITY_MAXIMUM};
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -12,7 +12,7 @@ fn can_create_clone_and_drop_bucket_proof() {
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account();
     let resource_address = test_runner.create_non_fungible_resource(account);
-    let package_address = test_runner.extract_and_publish_package("proof");
+    let package_address = test_runner.compile_and_publish("./tests/proof");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
@@ -46,7 +46,7 @@ fn can_create_clone_and_drop_vault_proof() {
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account();
     let resource_address = test_runner.create_non_fungible_resource(account);
-    let package_address = test_runner.extract_and_publish_package("proof");
+    let package_address = test_runner.compile_and_publish("./tests/proof");
     let component_address = test_runner.instantiate_component(
         package_address,
         "VaultProof",
@@ -80,7 +80,7 @@ fn can_create_clone_and_drop_vault_proof_by_amount() {
     let (public_key, _, account) = test_runner.new_account();
     let resource_address =
         test_runner.create_fungible_resource(100.into(), DIVISIBILITY_MAXIMUM, account);
-    let package_address = test_runner.extract_and_publish_package("proof");
+    let package_address = test_runner.compile_and_publish("./tests/proof");
     let component_address = test_runner.instantiate_component(
         package_address,
         "VaultProof",
@@ -116,7 +116,7 @@ fn can_create_clone_and_drop_vault_proof_by_ids() {
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account();
     let resource_address = test_runner.create_non_fungible_resource(account);
-    let package_address = test_runner.extract_and_publish_package("proof");
+    let package_address = test_runner.compile_and_publish("./tests/proof");
     let component_address = test_runner.instantiate_component(
         package_address,
         "VaultProof",
@@ -155,7 +155,7 @@ fn can_use_bucket_for_authorization() {
     let (public_key, _, account) = test_runner.new_account();
     let (auth_resource_address, burnable_resource_address) =
         test_runner.create_restricted_burn_token(account);
-    let package_address = test_runner.extract_and_publish_package("proof");
+    let package_address = test_runner.compile_and_publish("./tests/proof");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
@@ -192,7 +192,7 @@ fn can_use_vault_for_authorization() {
     let (public_key, _, account) = test_runner.new_account();
     let (auth_resource_address, burnable_resource_address) =
         test_runner.create_restricted_burn_token(account);
-    let package_address = test_runner.extract_and_publish_package("proof");
+    let package_address = test_runner.compile_and_publish("./tests/proof");
     let component_address = test_runner.instantiate_component(
         package_address,
         "VaultProof",
@@ -228,7 +228,7 @@ fn can_create_proof_from_account_and_pass_on() {
     let (public_key, _, account) = test_runner.new_account();
     let resource_address =
         test_runner.create_fungible_resource(100.into(), DIVISIBILITY_MAXIMUM, account);
-    let package_address = test_runner.extract_and_publish_package("proof");
+    let package_address = test_runner.compile_and_publish("./tests/proof");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
@@ -257,7 +257,7 @@ fn cant_move_restricted_proof() {
     let (public_key, _, account) = test_runner.new_account();
     let resource_address =
         test_runner.create_fungible_resource(100.into(), DIVISIBILITY_MAXIMUM, account);
-    let package_address = test_runner.extract_and_publish_package("proof");
+    let package_address = test_runner.compile_and_publish("./tests/proof");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
@@ -291,7 +291,7 @@ fn cant_move_locked_bucket() {
     let (public_key, _, account) = test_runner.new_account();
     let resource_address =
         test_runner.create_fungible_resource(100.into(), DIVISIBILITY_MAXIMUM, account);
-    let package_address = test_runner.extract_and_publish_package("proof");
+    let package_address = test_runner.compile_and_publish("./tests/proof");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
@@ -325,7 +325,7 @@ fn can_compose_bucket_and_vault_proof() {
     let (public_key, _, account) = test_runner.new_account();
     let resource_address =
         test_runner.create_fungible_resource(100.into(), DIVISIBILITY_MAXIMUM, account);
-    let package_address = test_runner.extract_and_publish_package("proof");
+    let package_address = test_runner.compile_and_publish("./tests/proof");
     let component_address = test_runner.instantiate_component(
         package_address,
         "VaultProof",
@@ -361,7 +361,7 @@ fn can_compose_bucket_and_vault_proof_by_amount() {
     let (public_key, _, account) = test_runner.new_account();
     let resource_address =
         test_runner.create_fungible_resource(100.into(), DIVISIBILITY_MAXIMUM, account);
-    let package_address = test_runner.extract_and_publish_package("proof");
+    let package_address = test_runner.compile_and_publish("./tests/proof");
     let component_address = test_runner.instantiate_component(
         package_address,
         "VaultProof",
@@ -396,7 +396,7 @@ fn can_compose_bucket_and_vault_proof_by_ids() {
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account();
     let resource_address = test_runner.create_non_fungible_resource(account);
-    let package_address = test_runner.extract_and_publish_package("proof");
+    let package_address = test_runner.compile_and_publish("./tests/proof");
     let component_address = test_runner.instantiate_component(
         package_address,
         "VaultProof",
@@ -442,7 +442,7 @@ fn can_create_vault_proof_by_amount_from_non_fungibles() {
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account();
     let resource_address = test_runner.create_non_fungible_resource(account);
-    let package_address = test_runner.extract_and_publish_package("proof");
+    let package_address = test_runner.compile_and_publish("./tests/proof");
     let component_address = test_runner.instantiate_component(
         package_address,
         "VaultProof",
@@ -474,7 +474,7 @@ fn can_create_auth_zone_proof_by_amount_from_non_fungibles() {
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account();
     let resource_address = test_runner.create_non_fungible_resource(account);
-    let package_address = test_runner.extract_and_publish_package("proof");
+    let package_address = test_runner.compile_and_publish("./tests/proof");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())

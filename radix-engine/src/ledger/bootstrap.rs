@@ -1,11 +1,12 @@
 use crate::constants::GENESIS_CREATION_CREDIT;
+use crate::engine::ResourceChange;
 use crate::engine::Track;
 use crate::engine::TrackReceipt;
 use crate::fee::FeeReserve;
 use crate::fee::FeeTable;
 use crate::fee::SystemLoanFeeReserve;
 use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
-use crate::model::ValidatedPackage;
+use crate::model::Package;
 use crate::transaction::TransactionResult;
 use crate::types::ResourceMethodAuthKey::Withdraw;
 use crate::types::*;
@@ -27,31 +28,31 @@ const SYS_FAUCET_COMPONENT_NAME: &str = "SysFaucet";
 
 use crate::model::*;
 
-fn create_genesis<'s, R: FeeReserve>(mut track: Track<'s, R>) -> TrackReceipt {
-    let sys_faucet_package =
-        extract_package(include_bytes!("../../../assets/sys_faucet.wasm").to_vec())
-            .expect("Failed to construct sys-faucet package");
+// TODO: This would be much better handled if bootstrap was implemented as an executed transaction
+// TODO: rather than a state snapshot.
+pub fn execute_genesis<'s, R: FeeReserve>(mut track: Track<'s, R>) -> TrackReceipt {
+    let sys_faucet_code = include_bytes!("../../../assets/sys_faucet.wasm").to_vec();
+    let sys_faucet_abi = scrypto_decode(include_bytes!("../../../assets/sys_faucet.abi"))
+        .expect("Failed to construct sys-faucet package");
     track.create_uuid_substate(
         SubstateId::Package(SYS_FAUCET_PACKAGE),
-        ValidatedPackage::new(sys_faucet_package).expect("Invalid sys-faucet package"),
+        Package::new(sys_faucet_code, sys_faucet_abi).expect("Invalid sys-faucet package"),
         true,
     );
-    let sys_utils_package =
-        extract_package(include_bytes!("../../../assets/sys_utils.wasm").to_vec())
-            .expect("Failed to construct sys-utils package");
+    let sys_utils_code = include_bytes!("../../../assets/sys_utils.wasm").to_vec();
+    let sys_utils_abi = scrypto_decode(include_bytes!("../../../assets/sys_utils.abi"))
+        .expect("Failed to construct sys-utils package");
     track.create_uuid_substate(
         SubstateId::Package(SYS_UTILS_PACKAGE),
-        ValidatedPackage::new(sys_utils_package).expect("Invalid sys-utils package"),
+        Package::new(sys_utils_code, sys_utils_abi).expect("Invalid sys-utils package"),
         true,
     );
-
-    let account_package = extract_package(include_bytes!("../../../assets/account.wasm").to_vec())
+    let account_code = include_bytes!("../../../assets/account.wasm").to_vec();
+    let account_abi = scrypto_decode(include_bytes!("../../../assets/account.abi"))
         .expect("Failed to construct account package");
-    let validated_account_package =
-        ValidatedPackage::new(account_package).expect("Invalid account package");
     track.create_uuid_substate(
         SubstateId::Package(ACCOUNT_PACKAGE),
-        validated_account_package,
+        Package::new(account_code, account_abi).expect("Invalid account package"),
         true,
     );
 
@@ -99,6 +100,13 @@ fn create_genesis<'s, R: FeeReserve>(mut track: Track<'s, R>) -> TrackReceipt {
         true,
     );
 
+    let initial_xrd = ResourceChange {
+        resource_address: RADIX_TOKEN,
+        component_address: SYS_FAUCET_COMPONENT,
+        vault_id: XRD_VAULT_ID,
+        amount: minted_xrd.total_amount(),
+    };
+
     let system_vault = Vault::new(minted_xrd);
     track.create_uuid_substate(SubstateId::Vault(XRD_VAULT_ID), system_vault, false);
 
@@ -121,12 +129,12 @@ fn create_genesis<'s, R: FeeReserve>(mut track: Track<'s, R>) -> TrackReceipt {
     );
     track.create_uuid_substate(SubstateId::System, System { epoch: 0 }, true);
 
-    track.finalize(Ok(Vec::new()), Vec::new())
+    track.finalize(Ok(Vec::new()), vec![initial_xrd])
 }
 
 pub fn bootstrap<S>(mut substate_store: S) -> S
 where
-    S: ReadableSubstateStore + WriteableSubstateStore + 'static,
+    S: ReadableSubstateStore + WriteableSubstateStore,
 {
     if substate_store
         .get_substate(&SubstateId::Package(SYS_FAUCET_PACKAGE))
@@ -135,7 +143,7 @@ where
         let mut fee_reserve = SystemLoanFeeReserve::default();
         fee_reserve.credit(GENESIS_CREATION_CREDIT);
         let track = Track::new(&substate_store, fee_reserve, FeeTable::new());
-        let receipt = create_genesis(track);
+        let receipt = execute_genesis(track);
         if let TransactionResult::Commit(c) = receipt.result {
             c.state_updates.commit(&mut substate_store);
         } else {

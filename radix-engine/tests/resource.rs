@@ -1,8 +1,7 @@
 use radix_engine::engine::{ApplicationError, RuntimeError};
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::model::ResourceManagerError;
-use scrypto::core::NetworkDefinition;
-use scrypto::prelude::*;
+use radix_engine::types::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -12,7 +11,7 @@ fn test_set_mintable_with_self_resource_address() {
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, _) = test_runner.new_account();
-    let package_address = test_runner.extract_and_publish_package("resource");
+    let package_address = test_runner.compile_and_publish("./tests/resource");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
@@ -36,7 +35,7 @@ fn test_resource_manager() {
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account();
-    let package_address = test_runner.extract_and_publish_package("resource");
+    let package_address = test_runner.compile_and_publish("./tests/resource");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
@@ -68,7 +67,7 @@ fn mint_with_bad_granularity_should_fail() {
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account();
-    let package_address = test_runner.extract_and_publish_package("resource");
+    let package_address = test_runner.compile_and_publish("./tests/resource");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
@@ -106,7 +105,7 @@ fn mint_too_much_should_fail() {
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account();
-    let package_address = test_runner.extract_and_publish_package("resource");
+    let package_address = test_runner.compile_and_publish("./tests/resource");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())

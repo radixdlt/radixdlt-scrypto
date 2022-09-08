@@ -95,11 +95,10 @@ blueprint! {
 
     impl PackageTest {
         pub fn publish() -> PackageAddress {
-            let package = Package {
-                code: include_bytes!("../../../../assets/sys_faucet.wasm").to_vec(),
-                blueprints: HashMap::new(),
-            };
-            component_system().publish_package(package)
+            component_system().publish_package(
+                include_bytes!("../../../../assets/sys_faucet.wasm").to_vec(),
+                HashMap::new(),
+            )
         }
     }
 }

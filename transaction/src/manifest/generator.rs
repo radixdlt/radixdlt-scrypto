@@ -6,9 +6,14 @@ use sbor::type_id::*;
 use scrypto::abi::*;
 use scrypto::address::Bech32Decoder;
 use scrypto::args_from_value_vec;
+use scrypto::component::ComponentAddress;
+use scrypto::component::PackageAddress;
+use scrypto::core::Blob;
+use scrypto::core::Expression;
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
-use scrypto::prelude::*;
+use scrypto::math::*;
+use scrypto::resource::{NonFungibleAddress, NonFungibleId, ResourceAddress};
 use scrypto::values::*;
 
 use crate::errors::*;
@@ -348,8 +353,9 @@ pub fn generate_instruction<T: BlobLoader>(
                 args: args_from_value_vec!(fields),
             }
         }
-        ast::Instruction::PublishPackage { package_blob } => Instruction::PublishPackage {
-            package_blob: generate_blob(package_blob, blob_loader, blobs)?,
+        ast::Instruction::PublishPackage { code, abi } => Instruction::PublishPackage {
+            code: generate_blob(code, blob_loader, blobs)?,
+            abi: generate_blob(abi, blob_loader, blobs)?,
         },
     })
 }
@@ -913,8 +919,8 @@ mod tests {
     use crate::manifest::parser::Parser;
     use crate::manifest::InMemoryBlobLoader;
     use scrypto::address::Bech32Decoder;
-    use scrypto::args;
     use scrypto::core::NetworkDefinition;
+    use scrypto::{args, pdec};
 
     #[macro_export]
     macro_rules! generate_value_ok {

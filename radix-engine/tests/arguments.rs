@@ -1,17 +1,15 @@
-use scrypto_unit::*;
-
-use scrypto::core::NetworkDefinition;
-use transaction::builder::ManifestBuilder;
-
 use radix_engine::ledger::TypedInMemorySubstateStore;
-use scrypto::prelude::*;
+use radix_engine::types::*;
+use scrypto::resource::Bucket;
+use scrypto_unit::*;
+use transaction::builder::ManifestBuilder;
 
 #[test]
 fn vector_of_buckets_argument_should_succeed() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.extract_and_publish_package("arguments");
+    let package_address = test_runner.compile_and_publish("./tests/arguments");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
@@ -38,7 +36,7 @@ fn tuple_of_buckets_argument_should_succeed() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.extract_and_publish_package("arguments");
+    let package_address = test_runner.compile_and_publish("./tests/arguments");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
@@ -65,7 +63,7 @@ fn treemap_of_strings_and_buckets_argument_should_succeed() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.extract_and_publish_package("arguments");
+    let package_address = test_runner.compile_and_publish("./tests/arguments");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
@@ -91,7 +89,7 @@ fn hashmap_of_strings_and_buckets_argument_should_succeed() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.extract_and_publish_package("arguments");
+    let package_address = test_runner.compile_and_publish("./tests/arguments");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
@@ -117,7 +115,7 @@ fn some_optional_bucket_argument_should_succeed() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.extract_and_publish_package("arguments");
+    let package_address = test_runner.compile_and_publish("./tests/arguments");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
@@ -142,7 +140,7 @@ fn none_optional_bucket_argument_should_succeed() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.extract_and_publish_package("arguments");
+    let package_address = test_runner.compile_and_publish("./tests/arguments");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())

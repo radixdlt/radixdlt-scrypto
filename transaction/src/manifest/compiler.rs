@@ -39,7 +39,7 @@ mod tests {
     use scrypto::crypto::*;
     use scrypto::math::*;
     use scrypto::resource::ResourceAddress;
-    use scrypto::{prelude::Expression, resource::NonFungibleId};
+    use scrypto::{core::Expression, resource::NonFungibleId};
 
     #[cfg(not(feature = "alloc"))]
     #[test]
@@ -47,7 +47,8 @@ mod tests {
         let bech32_decoder = Bech32Decoder::new(&NetworkDefinition::local_simulator());
         let mut blob_loader = FileBlobLoader::new("./examples/");
         let manifest = include_str!("../../examples/complex.rtm");
-        let blob_hash = hash(include_bytes!("../../examples/package.data"));
+        let code_hash = hash(include_bytes!("../../examples/code.data"));
+        let abi_hash = hash(include_bytes!("../../examples/abi.data"));
 
         let component1 = bech32_decoder
             .validate_and_decode_component_address(
@@ -151,7 +152,8 @@ mod tests {
                     args: args!(Decimal::from(1u32), PreciseDecimal::from(2u32))
                 },
                 Instruction::PublishPackage {
-                    package_blob: Blob(blob_hash)
+                    code: Blob(code_hash),
+                    abi: Blob(abi_hash),
                 },
             ]
         );

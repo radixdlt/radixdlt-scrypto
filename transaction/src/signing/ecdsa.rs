@@ -1,7 +1,6 @@
 use sbor::rust::vec::Vec;
-use secp256k1::{Message, PublicKey, SecretKey};
-
 use scrypto::crypto::*;
+use secp256k1::{Message, PublicKey, SecretKey};
 
 pub struct EcdsaPrivateKey(SecretKey);
 
@@ -50,7 +49,7 @@ mod tests {
     use crate::validation::verify_ecdsa;
     use sbor::rust::str::FromStr;
     use scrypto::{
-        prelude::ECDSA_TOKEN,
+        constants::ECDSA_TOKEN,
         resource::{NonFungibleAddress, NonFungibleId},
     };
 

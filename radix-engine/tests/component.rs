@@ -1,9 +1,8 @@
 use radix_engine::engine::{KernelError, RuntimeError};
 use radix_engine::ledger::TypedInMemorySubstateStore;
+use radix_engine::types::*;
 use scrypto::address::Bech32Decoder;
-use scrypto::core::NetworkDefinition;
 use scrypto::engine::types::SubstateId;
-use scrypto::prelude::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -12,7 +11,7 @@ fn test_component() {
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account();
-    let package = test_runner.extract_and_publish_package("component");
+    let package = test_runner.compile_and_publish("./tests/component");
 
     // Create component
     let manifest1 = ManifestBuilder::new(&NetworkDefinition::local_simulator())
@@ -54,7 +53,7 @@ fn invalid_blueprint_name_should_cause_error() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.extract_and_publish_package("component");
+    let package_address = test_runner.compile_and_publish("./tests/component");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
@@ -83,7 +82,7 @@ fn reentrancy_should_not_be_possible() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.extract_and_publish_package("component");
+    let package_address = test_runner.compile_and_publish("./tests/component");
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(package_address, "ReentrantComponent", "new", args!())
@@ -120,7 +119,7 @@ fn missing_component_address_in_manifest_should_cause_rejection() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let _ = test_runner.extract_and_publish_package("component");
+    let _ = test_runner.compile_and_publish("./tests/component");
     let component_address = Bech32Decoder::new(&NetworkDefinition::local_simulator())
         .validate_and_decode_component_address(
             "component_sim1qgqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqph4dhmhs42ee03",

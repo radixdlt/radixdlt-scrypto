@@ -10,7 +10,6 @@ use sbor::*;
 use scrypto::abi::*;
 use scrypto::address::Bech32Decoder;
 use scrypto::buffer::*;
-use scrypto::component::Package;
 use scrypto::component::{ComponentAddress, PackageAddress};
 use scrypto::constants::*;
 use scrypto::core::Blob;
@@ -414,12 +413,21 @@ impl ManifestBuilder {
     }
 
     /// Publishes a package.
-    pub fn publish_package(&mut self, package: Package) -> &mut Self {
-        let package_blob = scrypto_encode(&package);
-        let package_blob_hash = hash(&package_blob);
-        self.blobs.insert(package_blob_hash, package_blob);
+    pub fn publish_package(
+        &mut self,
+        code: Vec<u8>,
+        abi: HashMap<String, BlueprintAbi>,
+    ) -> &mut Self {
+        let code_hash = hash(&code);
+        self.blobs.insert(code_hash, code);
+
+        let abi = scrypto_encode(&abi);
+        let abi_hash = hash(&abi);
+        self.blobs.insert(abi_hash, abi);
+
         self.add_instruction(Instruction::PublishPackage {
-            package_blob: Blob(package_blob_hash),
+            code: Blob(code_hash),
+            abi: Blob(abi_hash),
         })
         .0
     }
