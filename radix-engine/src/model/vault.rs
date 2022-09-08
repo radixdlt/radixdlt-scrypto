@@ -144,7 +144,7 @@ impl Vault {
         self.borrow_container().is_empty()
     }
 
-    fn borrow_container(&self) -> Ref<ResourceContainer> {
+    pub fn borrow_container(&self) -> Ref<ResourceContainer> {
         self.container.borrow()
     }
 
