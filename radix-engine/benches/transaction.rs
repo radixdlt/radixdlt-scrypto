@@ -1,7 +1,5 @@
 use criterion::{criterion_group, criterion_main, Criterion};
-use scrypto::address::Bech32Decoder;
-use scrypto::core::NetworkDefinition;
-use scrypto::prelude::*;
+use radix_engine::types::*;
 use transaction::builder::ManifestBuilder;
 use transaction::builder::TransactionBuilder;
 use transaction::model::TransactionHeader;

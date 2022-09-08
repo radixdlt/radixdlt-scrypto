@@ -1,11 +1,9 @@
 use radix_engine::engine::{ApplicationError, KernelError, RuntimeError};
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::model::PackageError;
+use radix_engine::types::*;
 use radix_engine::wasm::*;
 use sbor::Type;
-use scrypto::abi::*;
-use scrypto::core::NetworkDefinition;
-use scrypto::prelude::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -13,7 +11,7 @@ use transaction::builder::ManifestBuilder;
 fn test_publish_package_from_scrypto() {
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package = test_runner.extract_and_publish_package("package");
+    let package = test_runner.compile_and_publish("./tests/package");
 
     let manifest1 = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
@@ -39,13 +37,9 @@ fn missing_memory_should_cause_error() {
             )
             "#,
     );
-    let package = Package {
-        code,
-        blueprints: HashMap::new(),
-    };
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .publish_package(package)
+        .publish_package(code, HashMap::new())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -67,7 +61,7 @@ fn large_return_len_should_cause_memory_access_error() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package = test_runner.extract_and_publish_package("package");
+    let package = test_runner.compile_and_publish("./tests/package");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
@@ -91,7 +85,7 @@ fn overflow_return_len_should_cause_memory_access_error() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package = test_runner.extract_and_publish_package("package");
+    let package = test_runner.compile_and_publish("./tests/package");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
@@ -115,7 +109,7 @@ fn zero_return_len_should_cause_data_validation_error() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package = test_runner.extract_and_publish_package("package");
+    let package = test_runner.compile_and_publish("./tests/package");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
@@ -139,13 +133,9 @@ fn test_basic_package() {
 
     // Act
     let code = wat2wasm(include_str!("wasm/basic_package.wat"));
-    let package = Package {
-        code,
-        blueprints: HashMap::new(),
-    };
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .publish_package(package)
+        .publish_package(code, HashMap::new())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -175,10 +165,9 @@ fn test_basic_package_missing_export() {
 
     // Act
     let code = wat2wasm(include_str!("wasm/basic_package.wat"));
-    let package = Package { code, blueprints };
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .publish_package(package)
+        .publish_package(code, blueprints)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 

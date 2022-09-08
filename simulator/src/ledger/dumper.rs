@@ -24,7 +24,7 @@ pub fn dump_package<T: ReadableSubstateStore, O: std::io::Write>(
 ) -> Result<(), DisplayError> {
     let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::local_simulator());
 
-    let package: Option<ValidatedPackage> = substate_store
+    let package: Option<Package> = substate_store
         .get_substate(&SubstateId::Package(package_address))
         .map(|s| s.substate)
         .map(|s| s.into());
@@ -187,7 +187,7 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
                     .map(|s| s.into())
                     .unwrap();
                 if let Some(non_fungible) = non_fungible.0 {
-                    let id = ScryptoValue::from_slice(&id.to_vec()).unwrap();
+                    let id = ScryptoValue::from_typed(id);
                     let immutable_data =
                         ScryptoValue::from_slice(&non_fungible.immutable_data()).unwrap();
                     let mutable_data =

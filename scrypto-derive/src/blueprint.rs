@@ -81,25 +81,30 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
     trace!("Generated dispatcher: \n{}", quote! { #output_dispatcher });
 
-    let abi_ident = format_ident!("{}_abi", bp_ident);
-    let abi_functions = generate_abi(bp_ident, bp_items)?;
-    let output_abi = quote! {
-        #[no_mangle]
-        pub extern "C" fn #abi_ident(input: *mut u8) -> *mut u8 {
-            use ::sbor::{Describe, Type};
-            use ::scrypto::abi::{BlueprintAbi, Fn};
-            use ::sbor::rust::borrow::ToOwned;
-            use ::sbor::rust::vec;
-            use ::sbor::rust::vec::Vec;
+    #[cfg(feature = "no-abi-gen")]
+    let output_abi = quote! {};
+    #[cfg(not(feature = "no-abi-gen"))]
+    let output_abi = {
+        let abi_ident = format_ident!("{}_abi", bp_ident);
+        let abi_functions = generate_abi(bp_ident, bp_items)?;
+        quote! {
+            #[no_mangle]
+            pub extern "C" fn #abi_ident(input: *mut u8) -> *mut u8 {
+                use ::sbor::{Describe, Type};
+                use ::scrypto::abi::{BlueprintAbi, Fn};
+                use ::sbor::rust::borrow::ToOwned;
+                use ::sbor::rust::vec;
+                use ::sbor::rust::vec::Vec;
 
-            let fns: Vec<Fn> = vec![ #(#abi_functions),* ];
-            let structure: Type = #module_ident::#bp_ident::describe();
-            let output = BlueprintAbi {
-                structure,
-                fns,
-            };
+                let fns: Vec<Fn> = vec![ #(#abi_functions),* ];
+                let structure: Type = #module_ident::#bp_ident::describe();
+                let output = BlueprintAbi {
+                    structure,
+                    fns,
+                };
 
-            ::scrypto::buffer::scrypto_encode_to_buffer(&output)
+                ::scrypto::buffer::scrypto_encode_to_buffer(&output)
+            }
         }
     };
     trace!(
@@ -281,6 +286,7 @@ fn generate_dispatcher(
 }
 
 // Parses function items of an `Impl` and returns ABI of functions.
+#[allow(dead_code)]
 fn generate_abi(bp_ident: &Ident, items: &[ImplItem]) -> Result<Vec<Expr>> {
     let mut fns = Vec::<Expr>::new();
 
@@ -459,6 +465,14 @@ fn generate_stubs(
         #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
         pub struct #value_ident {
             pub component: ::scrypto::component::Component,
+        }
+
+        impl From<ComponentAddress> for #value_ident {
+            fn from(component: ComponentAddress) -> Self {
+                Self {
+                    component: ::scrypto::component::Component::from(component)
+                }
+            }
         }
 
         impl ::scrypto::component::LocalComponent for #value_ident {
@@ -645,6 +659,14 @@ mod tests {
                     pub component: ::scrypto::component::Component,
                 }
 
+                impl From<ComponentAddress> for TestComponent {
+                    fn from(component: ComponentAddress) -> Self {
+                        Self {
+                            component: ::scrypto::component::Component::from(component)
+                        }
+                    }
+                }
+
                 impl ::scrypto::component::LocalComponent for TestComponent {
                     fn package_address(&self) -> PackageAddress {
                         self.component.package_address()
@@ -725,6 +747,14 @@ mod tests {
                 #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
                 pub struct TestComponent {
                     pub component: ::scrypto::component::Component,
+                }
+
+                impl From<ComponentAddress> for TestComponent {
+                    fn from(component: ComponentAddress) -> Self {
+                        Self {
+                            component: ::scrypto::component::Component::from(component)
+                        }
+                    }
                 }
 
                 impl ::scrypto::component::LocalComponent for TestComponent {

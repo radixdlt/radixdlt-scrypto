@@ -1,3 +1,4 @@
+use scrypto::resource::Bucket;
 use crate::constants::DEFAULT_MAX_CALL_DEPTH;
 use crate::engine::{ExecutionPrivilege, Track};
 use crate::engine::{ExecutionTrace, Kernel, SystemApi, TrackReceipt};
@@ -7,7 +8,6 @@ use crate::ledger::{ReadableSubstateStore, TypedInMemorySubstateStore, Writeable
 use crate::transaction::TransactionResult;
 use crate::types::ResourceMethodAuthKey::Withdraw;
 use crate::types::*;
-use scrypto::prelude::Bucket;
 use transaction::model::ExecutableInstruction;
 use transaction::validation::{IdAllocator, IdSpace};
 
@@ -54,33 +54,33 @@ pub fn execute_genesis<'s, R: FeeReserve>(
         &mut wasm_instrumenter,
         WasmMeteringParams::new(InstructionCostRules::tiered(1, 5, 10, 5000), 512),
         &mut execution_trace,
-        vec![],
+        vec![]
     );
 
     let mut id_allocator = IdAllocator::new(IdSpace::Transaction);
 
     let create_sys_faucet_package = {
-        let sys_faucet_package =
-            extract_package(include_bytes!("../../../assets/sys_faucet.wasm").to_vec())
-                .expect("Failed to construct sys-faucet package");
+        let sys_faucet_code = include_bytes!("../../../assets/sys_faucet.wasm").to_vec();
+        let sys_faucet_abi = include_bytes!("../../../assets/sys_faucet.abi").to_vec();
         ExecutableInstruction::PublishPackage {
-            package: scrypto_encode(&sys_faucet_package),
+            code: sys_faucet_code,
+            abi: sys_faucet_abi,
         }
     };
     let create_sys_utils_package = {
-        let sys_utils_package =
-            extract_package(include_bytes!("../../../assets/sys_utils.wasm").to_vec())
-                .expect("Failed to construct sys-utils package");
+        let sys_utils_code = include_bytes!("../../../assets/sys_utils.wasm").to_vec();
+        let sys_utils_abi = include_bytes!("../../../assets/sys_utils.abi").to_vec();
         ExecutableInstruction::PublishPackage {
-            package: scrypto_encode(&sys_utils_package),
+            code: sys_utils_code,
+            abi: sys_utils_abi,
         }
     };
     let create_account_package = {
-        let account_package =
-            extract_package(include_bytes!("../../../assets/account.wasm").to_vec())
-                .expect("Failed to construct account package");
+        let account_code = include_bytes!("../../../assets/account.wasm").to_vec();
+        let account_abi = include_bytes!("../../../assets/account.abi").to_vec();
         ExecutableInstruction::PublishPackage {
-            package: scrypto_encode(&account_package),
+            code: account_code,
+            abi: account_abi,
         }
     };
     let create_ecdsa_token = {
@@ -250,11 +250,7 @@ mod tests {
     use crate::engine::Track;
     use crate::fee::UnlimitedLoanFeeReserve;
     use crate::ledger::{execute_genesis, TypedInMemorySubstateStore};
-    use scrypto::constants::ACCOUNT_PACKAGE;
-    use scrypto::prelude::{
-        ECDSA_TOKEN, RADIX_TOKEN, SYSTEM_TOKEN, SYS_FAUCET_COMPONENT, SYS_FAUCET_PACKAGE,
-        SYS_UTILS_PACKAGE,
-    };
+    use scrypto::constants::*;
 
     #[test]
     fn bootstrap_receipt_should_match_constants() {

@@ -1,7 +1,6 @@
 use sbor::rust::vec::Vec;
-use secp256k1::{Message, PublicKey, SecretKey};
-
 use scrypto::crypto::*;
+use secp256k1::{Message, PublicKey, SecretKey};
 
 pub struct EcdsaPrivateKey(SecretKey);
 
@@ -44,7 +43,7 @@ mod tests {
     use crate::validation::verify_ecdsa;
     use sbor::rust::str::FromStr;
     use scrypto::{
-        prelude::ECDSA_TOKEN,
+        constants::ECDSA_TOKEN,
         resource::{NonFungibleAddress, NonFungibleId},
     };
 
@@ -65,7 +64,7 @@ mod tests {
 
     #[test]
     fn test_non_fungible_address_codec() {
-        let expected = "03000000000000000000000000000000000000000000000000000002300721000000031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f";
+        let expected = "000000000000000000000000000000000000000000000000000002300721000000031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f";
         let private_key = EcdsaPrivateKey::from_bytes(&[1u8; 32]).unwrap();
         let public_key = private_key.public_key();
         let auth_address =

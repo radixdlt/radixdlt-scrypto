@@ -2,10 +2,9 @@ use radix_engine::constants::*;
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::transaction::ExecutionConfig;
 use radix_engine::transaction::TransactionExecutor;
+use radix_engine::types::*;
 use radix_engine::wasm::DefaultWasmEngine;
 use radix_engine::wasm::WasmInstrumenter;
-use scrypto::core::NetworkDefinition;
-use scrypto::prelude::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::builder::TransactionBuilder;
@@ -117,7 +116,7 @@ fn test_entire_auth_zone() {
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account();
-    let package_address = test_runner.extract_and_publish_package("proof");
+    let package_address = test_runner.compile_and_publish("./tests/proof");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())

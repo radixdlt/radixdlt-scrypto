@@ -8,13 +8,13 @@ use sbor::*;
 use crate::abi::*;
 use crate::address::{AddressError, EntityType, BECH32_DECODER, BECH32_ENCODER};
 use crate::buffer::scrypto_encode;
+use crate::core::NativeFnIdentifier;
 use crate::core::{FnIdentifier, Receiver, ResourceManagerFnIdentifier};
 use crate::engine::types::RENodeId;
 use crate::engine::{api::*, call_engine};
 use crate::math::*;
 use crate::misc::*;
 use crate::native_functions;
-use crate::prelude::NativeFnIdentifier;
 use crate::resource::*;
 
 #[derive(

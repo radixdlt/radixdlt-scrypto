@@ -287,10 +287,11 @@ pub fn decompile(
 
                 buf.push_str(";\n");
             }
-            Instruction::PublishPackage { package } => {
+            Instruction::PublishPackage { code, abi } => {
                 buf.push_str(&format!(
-                    "PUBLISH_PACKAGE Bytes(\"{}\");\n",
-                    hex::encode(&package)
+                    "PUBLISH_PACKAGE Bytes(\"{}\") Bytes(\"{}\");\n",
+                    hex::encode(&code),
+                    hex::encode(&abi)
                 ));
             }
         }

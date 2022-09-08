@@ -2,8 +2,7 @@ use radix_engine::engine::DropFailure;
 use radix_engine::engine::KernelError;
 use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::TypedInMemorySubstateStore;
-use scrypto::core::NetworkDefinition;
-use scrypto::prelude::*;
+use radix_engine::types::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 

@@ -92,7 +92,8 @@ pub enum Instruction {
     },
 
     PublishPackage {
-        package: Value,
+        code: Value,
+        abi: Value,
     },
 }
 
