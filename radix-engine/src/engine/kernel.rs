@@ -596,6 +596,11 @@ where
             }
         }
 
+        AuthModule::function_auth(
+            &fn_identifier,
+            &mut self.call_frames,
+        )?;
+
         // start a new frame and run
         let (output, received_values) = {
             let frame = CallFrame::new_child(
