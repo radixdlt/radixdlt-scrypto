@@ -10,7 +10,7 @@ pub enum Substate {
     Resource(ResourceManager),
     ComponentInfo(ComponentInfo),
     ComponentState(ComponentState),
-    Package(ValidatedPackage),
+    Package(Package),
     Vault(Vault),
     NonFungible(NonFungibleWrapper),
     KeyValueStoreEntry(KeyValueStoreEntryWrapper),
@@ -89,7 +89,7 @@ impl Substate {
         }
     }
 
-    pub fn package(&self) -> &ValidatedPackage {
+    pub fn package(&self) -> &Package {
         if let Substate::Package(package) = self {
             package
         } else {
@@ -120,7 +120,7 @@ impl Into<Substate> for System {
     }
 }
 
-impl Into<Substate> for ValidatedPackage {
+impl Into<Substate> for Package {
     fn into(self) -> Substate {
         Substate::Package(self)
     }
@@ -192,8 +192,8 @@ impl Into<ResourceManager> for Substate {
     }
 }
 
-impl Into<ValidatedPackage> for Substate {
-    fn into(self) -> ValidatedPackage {
+impl Into<Package> for Substate {
+    fn into(self) -> Package {
         if let Substate::Package(package) = self {
             package
         } else {
@@ -240,7 +240,7 @@ pub enum HeapRENode {
     KeyValueStore(HeapKeyValueStore),
     Component(ComponentInfo, ComponentState),
     Worktop(Worktop),
-    Package(ValidatedPackage),
+    Package(Package),
     Resource(ResourceManager, Option<HashMap<NonFungibleId, NonFungible>>),
     System(System),
 }
@@ -305,7 +305,7 @@ impl HeapRENode {
         }
     }
 
-    pub fn package(&self) -> &ValidatedPackage {
+    pub fn package(&self) -> &Package {
         match self {
             HeapRENode::Package(package) => package,
             _ => panic!("Expected to be a package"),

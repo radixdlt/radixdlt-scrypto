@@ -80,7 +80,7 @@ jobs:
       run: cargo test
       working-directory: scrypto
     - name: Run tests (no_std)
-      run: cargo test --no-default-features --features alloc
+      run: cargo test --no-default-features --features alloc,prelude
       working-directory: scrypto
     - name: Run abi tests
       run: cargo test
@@ -129,12 +129,12 @@ jobs:
     - name: Build sys-utils
       run: cargo build --target wasm32-unknown-unknown --release
       working-directory: assets/sys-utils
+    - name: Build no-std
+      run: cargo build --target wasm32-unknown-unknown --release
+      working-directory: examples/no-std
     - name: Build and test hello-world
       run: cargo build --target wasm32-unknown-unknown --release && cargo test --release
       working-directory: examples/hello-world
-    - name: Build and test no-std
-      run: cargo build --target wasm32-unknown-unknown --release && cargo test --release
-      working-directory: examples/no-std
   radix-engine:
     name: Run Radix Engine tests
     runs-on: ${{ matrix.os }}

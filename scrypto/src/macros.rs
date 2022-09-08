@@ -10,22 +10,22 @@
 #[macro_export]
 macro_rules! dec {
     ($x:literal) => {
-        scrypto::prelude::Decimal::from($x)
+        scrypto::math::Decimal::from($x)
     };
 
     ($base:literal, $shift:literal) => {
         // Base can be any type that converts into a Decimal, and shift must support
         // comparison and `-` unary operation, enforced by rustc.
         {
-            let base = scrypto::prelude::Decimal::from($base);
+            let base = scrypto::math::Decimal::from($base);
             if $shift >= 0 {
-                base * scrypto::prelude::Decimal::try_from(
+                base * scrypto::math::Decimal::try_from(
                     scrypto::math::I256::from(10u8)
                         .pow(u32::try_from($shift).expect("Shift overflow")),
                 )
                 .expect("Shift overflow")
             } else {
-                base / scrypto::prelude::Decimal::try_from(
+                base / scrypto::math::Decimal::try_from(
                     scrypto::math::I256::from(10u8)
                         .pow(u32::try_from(-$shift).expect("Shift overflow")),
                 )
@@ -208,28 +208,10 @@ macro_rules! trace {
     }};
 }
 
-/// Compiles a Scrypto package and returns the output WASM file as byte array.
-///
-/// Notes:
-/// * This macro only works when `std` is linked;
-///
-/// # Example
-/// ```ignore
-/// use scrypto::prelude::*;
-///
-/// // This package
-/// let wasm1 = compile_package!();
-///
-/// // Another package
-/// let wasm2 = compile_package!("/path/to/package");
-/// ```
 #[macro_export]
-macro_rules! compile_package {
+macro_rules! this_package {
     () => {
-        ::scrypto::misc::compile_package(env!("CARGO_MANIFEST_DIR"))
-    };
-    ($package_dir: expr) => {
-        ::scrypto::misc::compile_package($package_dir)
+        env!("CARGO_MANIFEST_DIR")
     };
 }
 
@@ -237,34 +219,70 @@ macro_rules! compile_package {
 ///
 /// Notes:
 /// * This macro will NOT compile the package;
-/// * The WASM file name is normally the package name with `-` replaced with `_`.
+/// * The binary name is normally the package name with `-` replaced with `_`.
 ///
 /// # Example
 /// ```ignore
 /// use scrypto::prelude::*;
 ///
 /// // This package
-/// let wasm1 = include_package!("wasm_name");
+/// let wasm1 = include_code!("bin_name");
 ///
 /// // Another package
-/// let wasm2 = include_package!("/path/to/package", "wasm_name");
+/// let wasm2 = include_code!("/path/to/package", "bin_name");
 /// ```
 #[macro_export]
-macro_rules! include_package {
-    ($wasm_name: expr) => {
+macro_rules! include_code {
+    ($bin_name: expr) => {
         include_bytes!(concat!(
             env!("CARGO_MANIFEST_DIR"),
             "/target/wasm32-unknown-unknown/release/",
-            $wasm_name,
+            $bin_name,
             ".wasm"
         ))
     };
-    ($package_dir: expr, $wasm_name: expr) => {
+    ($package_dir: expr, $bin_name: expr) => {
         include_bytes!(concat!(
             $package_dir,
             "/target/wasm32-unknown-unknown/release/",
-            $wasm_name,
+            $bin_name,
             ".wasm"
+        ))
+    };
+}
+
+/// Includes the ABI file of a Scrypto package.
+///
+/// Notes:
+/// * This macro will NOT compile the package;
+/// * The binary name is normally the package name with `-` replaced with `_`.
+///
+/// # Example
+/// ```ignore
+/// use scrypto::prelude::*;
+///
+/// // This package
+/// let abi1 = include_abi!("bin_name");
+///
+/// // Another package
+/// let abi2 = include_abi!("/path/to/package", "bin_name");
+/// ```
+#[macro_export]
+macro_rules! include_abi {
+    ($bin_name: expr) => {
+        include_bytes!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/target/wasm32-unknown-unknown/release/",
+            $bin_name,
+            ".abi"
+        ))
+    };
+    ($package_dir: expr, $bin_name: expr) => {
+        include_bytes!(concat!(
+            $package_dir,
+            "/target/wasm32-unknown-unknown/release/",
+            $bin_name,
+            ".abi"
         ))
     };
 }

@@ -13,13 +13,8 @@ use crate::misc::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct PackagePublishInput {
-    pub package: Package,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct Package {
     pub code: Vec<u8>,
-    pub blueprints: HashMap<String, BlueprintAbi>,
+    pub abi: HashMap<String, BlueprintAbi>,
 }
 
 /// A collection of blueprints, compiled and published as a single unit.

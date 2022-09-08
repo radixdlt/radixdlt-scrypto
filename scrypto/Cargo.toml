@@ -19,7 +19,7 @@ paste = { version = "1.0.7"}
 
 [features]
 # You should enable either `std` or `alloc`
-default = ["std"]
+default = ["std", "prelude"]
 std = ["hex/std", "sbor/std", "scrypto-abi/std", "scrypto-derive/std"]
 alloc = ["hex/alloc", "sbor/alloc", "scrypto-abi/alloc", "scrypto-derive/alloc"]
 
@@ -28,3 +28,10 @@ trace = ["scrypto-derive/trace"]
 
 # Enable serde derives
 serde = ["sbor/serde", "scrypto-abi/serde"]
+
+# Enable prelude.
+# Note that prelude introduces duplicated symbols which may confuse rustc suggestions.
+prelude = []
+
+# Disable ABI gen in the output WASM.
+no-abi-gen = ["scrypto-derive/no-abi-gen"]

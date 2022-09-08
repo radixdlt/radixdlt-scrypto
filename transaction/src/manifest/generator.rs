@@ -6,8 +6,13 @@ use sbor::type_id::*;
 use scrypto::abi::*;
 use scrypto::address::Bech32Decoder;
 use scrypto::args_from_value_vec;
+use scrypto::component::ComponentAddress;
+use scrypto::component::PackageAddress;
+use scrypto::core::Expression;
+use scrypto::crypto::*;
 use scrypto::engine::types::*;
-use scrypto::prelude::*;
+use scrypto::math::*;
+use scrypto::resource::{NonFungibleAddress, NonFungibleId, ResourceAddress};
 use scrypto::values::*;
 
 use crate::errors::*;
@@ -338,8 +343,9 @@ pub fn generate_instruction(
                 args: args_from_value_vec!(fields),
             }
         }
-        ast::Instruction::PublishPackage { package } => Instruction::PublishPackage {
-            package: generate_bytes(package)?,
+        ast::Instruction::PublishPackage { code, abi } => Instruction::PublishPackage {
+            code: generate_bytes(code)?,
+            abi: generate_bytes(abi)?,
         },
     })
 }
@@ -828,10 +834,9 @@ mod tests {
     use crate::manifest::lexer::tokenize;
     use crate::manifest::parser::Parser;
     use scrypto::address::Bech32Decoder;
-    use scrypto::args;
     use scrypto::buffer::scrypto_encode;
     use scrypto::core::NetworkDefinition;
-    use scrypto::prelude::Package;
+    use scrypto::{args, pdec};
 
     #[macro_export]
     macro_rules! generate_value_ok {
@@ -1123,11 +1128,7 @@ mod tests {
             0x30, 0x20, 0x28, 0x39, 0x64, 0x31, 0x62, 0x32, 0x31, 0x30, 0x36, 0x65, 0x20, 0x32,
             0x30, 0x32, 0x32, 0x2d, 0x30, 0x32, 0x2d, 0x32, 0x33, 0x29,
         ];
-        let package = Package {
-            code,
-            blueprints: HashMap::new(),
-        };
-        let encoded_package = scrypto_encode(&package);
+        let abi = HashMap::<String, BlueprintAbi>::new();
 
         let bech32_decoder = Bech32Decoder::new(&NetworkDefinition::local_simulator());
         let component1 = bech32_decoder
@@ -1223,7 +1224,8 @@ mod tests {
                 },
                 Instruction::DropAllProofs,
                 Instruction::PublishPackage {
-                    package: encoded_package.clone()
+                    code: code.clone(),
+                    abi: scrypto_encode(&abi)
                 },
                 Instruction::CallMethod {
                     component_address: component2,
