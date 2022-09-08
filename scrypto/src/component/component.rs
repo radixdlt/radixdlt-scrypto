@@ -91,6 +91,13 @@ impl TryFrom<&[u8]> for Component {
     }
 }
 
+impl From<ComponentAddress> for Component {
+    fn from(component: ComponentAddress) -> Self {
+        let component_address = ComponentAddress::try_from(component.to_vec().as_slice()).unwrap();
+        Self(component_address)
+    }
+}
+
 impl Component {
     pub fn to_vec(&self) -> Vec<u8> {
         self.0.to_vec()
