@@ -461,6 +461,14 @@ fn generate_stubs(
             pub component: ::scrypto::component::Component,
         }
 
+        impl From<ComponentAddress> for #value_ident {
+            fn from(component: ComponentAddress) -> Self {
+                Self {
+                    component: ::scrypto::component::Component::from(component)
+                }
+            }
+        }
+
         impl ::scrypto::component::LocalComponent for #value_ident {
             fn package_address(&self) -> PackageAddress {
                 self.component.package_address()
@@ -645,6 +653,14 @@ mod tests {
                     pub component: ::scrypto::component::Component,
                 }
 
+                impl From<ComponentAddress> for TestComponent {
+                    fn from(component: ComponentAddress) -> Self {
+                        Self {
+                            component: ::scrypto::component::Component::from(component)
+                        }
+                    }
+                }
+
                 impl ::scrypto::component::LocalComponent for TestComponent {
                     fn package_address(&self) -> PackageAddress {
                         self.component.package_address()
@@ -725,6 +741,14 @@ mod tests {
                 #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
                 pub struct TestComponent {
                     pub component: ::scrypto::component::Component,
+                }
+
+                impl From<ComponentAddress> for TestComponent {
+                    fn from(component: ComponentAddress) -> Self {
+                        Self {
+                            component: ::scrypto::component::Component::from(component)
+                        }
+                    }
                 }
 
                 impl ::scrypto::component::LocalComponent for TestComponent {
