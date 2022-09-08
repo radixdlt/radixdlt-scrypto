@@ -104,10 +104,10 @@ pub fn execute_genesis<'s, R: FeeReserve>(mut track: Track<'s, R>) -> TrackRecei
         resource_address: RADIX_TOKEN,
         component_address: SYS_FAUCET_COMPONENT,
         vault_id: XRD_VAULT_ID,
-        amount: minted_xrd.total_amount(),
+        amount: minted_xrd.amount(),
     };
 
-    let system_vault = Vault::new(minted_xrd);
+    let system_vault = SingleBalanceVault(minted_xrd);
     track.create_uuid_substate(SubstateId::Vault(XRD_VAULT_ID), system_vault, false);
 
     let sys_faucet_component_info = ComponentInfo::new(

@@ -12,6 +12,7 @@ use crate::ledger::*;
 use crate::model::Bucket;
 use crate::model::KeyValueStoreEntryWrapper;
 use crate::model::NonFungibleWrapper;
+use crate::model::Resource;
 use crate::model::ResourceContainer;
 use crate::transaction::CommitResult;
 use crate::transaction::EntityChanges;
@@ -370,19 +371,18 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             })
         } else {
             let mut required = fee_summary.burned + fee_summary.tipped;
-            let mut collector = ResourceContainer::new_empty(
-                RADIX_TOKEN,
-                ResourceType::Fungible { divisibility: 18 },
-            );
+            let mut collector: ResourceContainer =
+                Resource::new_empty(RADIX_TOKEN, ResourceType::Fungible { divisibility: 18 })
+                    .into();
             for (vault_id, mut locked, contingent) in fee_summary.payments.iter().cloned().rev() {
                 let amount = if contingent {
                     if is_success {
-                        Decimal::min(locked.liquid_amount(), required)
+                        Decimal::min(locked.amount(), required)
                     } else {
                         Decimal::zero()
                     }
                 } else {
-                    Decimal::min(locked.liquid_amount(), required)
+                    Decimal::min(locked.amount(), required)
                 };
 
                 // Deduct fee required
@@ -390,11 +390,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
 
                 // Collect fees into collector
                 collector
-                    .put(
-                        locked
-                            .take_by_amount(amount)
-                            .expect("Failed to extract locked fee"),
-                    )
+                    .put(locked)
                     .expect("Failed to add fee to fee collector");
 
                 // Refund overpayment
@@ -406,7 +402,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                     .expect("Vault not found");
                 substate
                     .vault_mut()
-                    .put(Bucket::new(locked))
+                    .put(locked)
                     .expect("Failed to put a fee-locking vault");
                 self.state_track.put_substate_to_base(substate_id, substate);
             }

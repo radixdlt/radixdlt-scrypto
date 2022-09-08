@@ -1,6 +1,6 @@
 use crate::engine::*;
 use crate::fee::FeeReserve;
-use crate::model::ResourceContainer;
+use crate::model::Resource;
 use crate::types::*;
 
 pub enum SysCallInput<'a> {
@@ -109,7 +109,7 @@ pub trait Module<R: FeeReserve> {
         track: &mut Track<R>,
         heap: &mut Vec<CallFrame>,
         vault_id: VaultId,
-        fee: ResourceContainer,
+        fee: Resource,
         contingent: bool,
-    ) -> Result<ResourceContainer, ModuleError>;
+    ) -> Result<Resource, ModuleError>;
 }

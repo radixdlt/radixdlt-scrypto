@@ -1,6 +1,6 @@
 use crate::engine::*;
 use crate::fee::FeeReserve;
-use crate::model::ResourceContainer;
+use crate::model::Resource;
 use crate::types::*;
 
 pub struct LoggerModule {
@@ -172,9 +172,9 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
         _track: &mut Track<R>,
         _heap: &mut Vec<CallFrame>,
         _vault_id: VaultId,
-        fee: ResourceContainer,
+        fee: Resource,
         _contingent: bool,
-    ) -> Result<ResourceContainer, ModuleError> {
+    ) -> Result<Resource, ModuleError> {
         Ok(fee)
     }
 }

@@ -11,13 +11,13 @@ pub enum Substate {
     ComponentInfo(ComponentInfo),
     ComponentState(ComponentState),
     Package(Package),
-    Vault(Vault),
+    Vault(SingleBalanceVault),
     NonFungible(NonFungibleWrapper),
     KeyValueStoreEntry(KeyValueStoreEntryWrapper),
 }
 
 impl Substate {
-    pub fn vault_mut(&mut self) -> &mut Vault {
+    pub fn vault_mut(&mut self) -> &mut SingleBalanceVault {
         if let Substate::Vault(vault) = self {
             vault
         } else {
@@ -25,7 +25,7 @@ impl Substate {
         }
     }
 
-    pub fn vault(&self) -> &Vault {
+    pub fn vault(&self) -> &SingleBalanceVault {
         if let Substate::Vault(vault) = self {
             vault
         } else {
@@ -144,7 +144,7 @@ impl Into<Substate> for ResourceManager {
     }
 }
 
-impl Into<Substate> for Vault {
+impl Into<Substate> for SingleBalanceVault {
     fn into(self) -> Substate {
         Substate::Vault(self)
     }
@@ -222,8 +222,8 @@ impl Into<KeyValueStoreEntryWrapper> for Substate {
     }
 }
 
-impl Into<Vault> for Substate {
-    fn into(self) -> Vault {
+impl Into<SingleBalanceVault> for Substate {
+    fn into(self) -> SingleBalanceVault {
         if let Substate::Vault(vault) = self {
             vault
         } else {

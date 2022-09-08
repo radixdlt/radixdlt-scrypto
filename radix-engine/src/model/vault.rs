@@ -1,11 +1,13 @@
 use crate::engine::{HeapRENode, SystemApi};
 use crate::fee::{FeeReserve, FeeReserveError};
 use crate::model::{
-    Bucket, InvokeError, Proof, ProofError, ResourceContainer, ResourceContainerError,
+    Bucket, InvokeError, Proof, ProofError, Resource, ResourceContainer, ResourceContainerError,
     ResourceContainerId,
 };
 use crate::types::*;
 use crate::wasm::*;
+
+use super::SingleBalanceVault;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub enum VaultError {
@@ -21,39 +23,39 @@ pub enum VaultError {
 }
 
 /// A persistent resource container.
-#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
+#[derive(Debug)]
 pub struct Vault {
     container: Rc<RefCell<ResourceContainer>>,
 }
 
 impl Vault {
-    pub fn new(container: ResourceContainer) -> Self {
+    pub fn new(resource: Resource) -> Self {
         Self {
-            container: Rc::new(RefCell::new(container)),
+            container: Rc::new(RefCell::new(resource.into())),
         }
     }
 
     pub fn put(&mut self, other: Bucket) -> Result<(), ResourceContainerError> {
-        self.borrow_container_mut().put(other.into_container()?)
+        self.borrow_container_mut().put(other.resource()?)
     }
 
-    fn take(&mut self, amount: Decimal) -> Result<ResourceContainer, InvokeError<VaultError>> {
-        let container = self
+    fn take(&mut self, amount: Decimal) -> Result<Resource, InvokeError<VaultError>> {
+        let resource = self
             .borrow_container_mut()
             .take_by_amount(amount)
             .map_err(|e| InvokeError::Error(VaultError::ResourceContainerError(e)))?;
-        Ok(container)
+        Ok(resource)
     }
 
     fn take_non_fungibles(
         &mut self,
         ids: &BTreeSet<NonFungibleId>,
-    ) -> Result<ResourceContainer, InvokeError<VaultError>> {
-        let container = self
+    ) -> Result<Resource, InvokeError<VaultError>> {
+        let resource = self
             .borrow_container_mut()
             .take_by_ids(ids)
             .map_err(|e| InvokeError::Error(VaultError::ResourceContainerError(e)))?;
-        Ok(container)
+        Ok(resource)
     }
 
     pub fn create_proof(&mut self, container_id: ResourceContainerId) -> Result<Proof, ProofError> {

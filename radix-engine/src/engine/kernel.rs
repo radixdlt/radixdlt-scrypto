@@ -99,9 +99,10 @@ where
         if is_system {
             let non_fungible_ids = [NonFungibleId::from_u32(0)].into_iter().collect();
             let bucket_id = match kernel
-                .node_create(HeapRENode::Bucket(Bucket::new(
-                    ResourceContainer::new_non_fungible(SYSTEM_TOKEN, non_fungible_ids),
-                )))
+                .node_create(HeapRENode::Bucket(Bucket::new(Resource::new_non_fungible(
+                    SYSTEM_TOKEN,
+                    non_fungible_ids,
+                ))))
                 .expect("Failed to create SYSTEM_TOKEN bucket")
             {
                 RENodeId::Bucket(bucket_id) => bucket_id,
@@ -412,9 +413,9 @@ where
     fn lock_fee(
         &mut self,
         vault_id: VaultId,
-        mut fee: ResourceContainer,
+        mut fee: Resource,
         contingent: bool,
-    ) -> Result<ResourceContainer, RuntimeError> {
+    ) -> Result<Resource, RuntimeError> {
         for m in &mut self.modules {
             fee = m
                 .on_lock_fee(

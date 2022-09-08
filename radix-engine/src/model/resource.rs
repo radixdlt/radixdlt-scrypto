@@ -145,6 +145,8 @@ pub enum ResourceContainerError {
     ContainerLocked,
 }
 
+/// A resource container is a runtime object that stores resource and supports
+/// proof generation. It can't be persisted or cloned.
 #[derive(Debug, PartialEq, Eq)]
 pub enum ResourceContainer {
     Fungible {
@@ -494,6 +496,37 @@ impl ResourceContainer {
             Err(ResourceContainerError::InvalidAmount(amount, divisibility))
         } else {
             Ok(())
+        }
+    }
+}
+
+impl Into<Resource> for ResourceContainer {
+    fn into(self) -> Resource {
+        if self.is_locked() {
+            // We keep resource containers in Rc<RefCell> for all concrete resource containers, like Bucket, Vault and Worktop.
+            // When extracting the resource within a container, there should be no locked resource.
+            // It should have failed the Rc::try_unwrap() check.
+            panic!("Attempted to convert resource container with locked resource");
+        }
+        match self {
+            ResourceContainer::Fungible {
+                resource_address,
+                divisibility,
+                locked_amounts,
+                liquid_amount,
+            } => Resource::Fungible {
+                resource_address,
+                divisibility,
+                amount: liquid_amount,
+            },
+            ResourceContainer::NonFungible {
+                resource_address,
+                locked_ids,
+                liquid_ids,
+            } => Resource::NonFungible {
+                resource_address,
+                ids: liquid_ids,
+            },
         }
     }
 }

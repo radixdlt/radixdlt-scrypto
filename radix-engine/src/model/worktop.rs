@@ -4,6 +4,8 @@ use crate::model::{Bucket, ResourceContainer, ResourceContainerError};
 use crate::types::*;
 use crate::wasm::*;
 
+use super::Resource;
+
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct WorktopPutInput {
     pub bucket: scrypto::resource::Bucket,
@@ -83,11 +85,11 @@ impl Worktop {
 
     pub fn put(&mut self, other: Bucket) -> Result<(), ResourceContainerError> {
         let resource_address = other.resource_address();
-        let other_container = other.into_container()?;
+        let resource = other.resource()?;
         if let Some(mut container) = self.borrow_container_mut(resource_address) {
-            return container.put(other_container);
+            return container.put(resource);
         }
-        self.put_container(resource_address, other_container);
+        self.put_container(resource_address, resource.into());
         Ok(())
     }
 
@@ -95,7 +97,7 @@ impl Worktop {
         &mut self,
         amount: Decimal,
         resource_address: ResourceAddress,
-    ) -> Result<Option<ResourceContainer>, ResourceContainerError> {
+    ) -> Result<Option<Resource>, ResourceContainerError> {
         if let Some(mut container) = self.borrow_container_mut(resource_address) {
             container.take_by_amount(amount).map(Option::Some)
         } else if !amount.is_zero() {
@@ -109,7 +111,7 @@ impl Worktop {
         &mut self,
         ids: &BTreeSet<NonFungibleId>,
         resource_address: ResourceAddress,
-    ) -> Result<Option<ResourceContainer>, ResourceContainerError> {
+    ) -> Result<Option<Resource>, ResourceContainerError> {
         if let Some(mut container) = self.borrow_container_mut(resource_address) {
             container.take_by_ids(ids).map(Option::Some)
         } else if !ids.is_empty() {
@@ -122,7 +124,7 @@ impl Worktop {
     fn take_all(
         &mut self,
         resource_address: ResourceAddress,
-    ) -> Result<Option<ResourceContainer>, ResourceContainerError> {
+    ) -> Result<Option<Resource>, ResourceContainerError> {
         if let Some(mut container) = self.borrow_container_mut(resource_address) {
             Ok(Some(container.take_all_liquid()?))
         } else {
@@ -250,7 +252,7 @@ impl Worktop {
                         resource_manager.resource_type()
                     };
 
-                    ResourceContainer::new_empty(input.resource_address, resource_type)
+                    Resource::new_empty(input.resource_address, resource_type)
                 };
                 let bucket_id = system_api
                     .node_create(HeapRENode::Bucket(Bucket::new(resource_container)))
@@ -277,7 +279,7 @@ impl Worktop {
                         resource_manager.resource_type()
                     };
 
-                    ResourceContainer::new_empty(input.resource_address, resource_type)
+                    Resource::new_empty(input.resource_address, resource_type)
                 };
 
                 let bucket_id = system_api
@@ -305,7 +307,7 @@ impl Worktop {
                         resource_manager.resource_type()
                     };
 
-                    ResourceContainer::new_empty(input.resource_address, resource_type)
+                    Resource::new_empty(input.resource_address, resource_type)
                 };
 
                 let bucket_id = system_api

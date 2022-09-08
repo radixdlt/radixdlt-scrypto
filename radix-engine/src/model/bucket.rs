@@ -1,7 +1,8 @@
 use crate::engine::{HeapRENode, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::{
-    InvokeError, Proof, ProofError, ResourceContainer, ResourceContainerError, ResourceContainerId,
+    InvokeError, Proof, ProofError, Resource, ResourceContainer, ResourceContainerError,
+    ResourceContainerId,
 };
 use crate::types::*;
 use crate::wasm::*;
@@ -25,24 +26,24 @@ pub struct Bucket {
 }
 
 impl Bucket {
-    pub fn new(container: ResourceContainer) -> Self {
+    pub fn new(resource: Resource) -> Self {
         Self {
-            container: Rc::new(RefCell::new(container)),
+            container: Rc::new(RefCell::new(resource.into())),
         }
     }
 
     fn put(&mut self, other: Bucket) -> Result<(), ResourceContainerError> {
-        self.borrow_container_mut().put(other.into_container()?)
+        self.borrow_container_mut().put(other.resource()?)
     }
 
-    fn take(&mut self, amount: Decimal) -> Result<ResourceContainer, ResourceContainerError> {
+    fn take(&mut self, amount: Decimal) -> Result<Resource, ResourceContainerError> {
         self.borrow_container_mut().take_by_amount(amount)
     }
 
     fn take_non_fungibles(
         &mut self,
         ids: &BTreeSet<NonFungibleId>,
-    ) -> Result<ResourceContainer, ResourceContainerError> {
+    ) -> Result<Resource, ResourceContainerError> {
         self.borrow_container_mut().take_by_ids(ids)
     }
 
@@ -135,10 +136,11 @@ impl Bucket {
         self.borrow_container().is_empty()
     }
 
-    pub fn into_container(self) -> Result<ResourceContainer, ResourceContainerError> {
+    pub fn resource(self) -> Result<Resource, ResourceContainerError> {
         Rc::try_unwrap(self.container)
             .map_err(|_| ResourceContainerError::ContainerLocked)
             .map(|c| c.into_inner())
+            .map(Into::into)
     }
 
     fn borrow_container(&self) -> Ref<ResourceContainer> {

@@ -1,6 +1,6 @@
 use crate::engine::*;
 use crate::fee::{FeeReserve, SystemApiCostingEntry};
-use crate::model::ResourceContainer;
+use crate::model::Resource;
 use crate::types::*;
 
 #[derive(Default)]
@@ -479,9 +479,9 @@ impl<R: FeeReserve> Module<R> for CostingModule {
         track: &mut Track<R>,
         _heap: &mut Vec<CallFrame>,
         vault_id: VaultId,
-        fee: ResourceContainer,
+        fee: Resource,
         contingent: bool,
-    ) -> Result<ResourceContainer, ModuleError> {
+    ) -> Result<Resource, ModuleError> {
         track
             .fee_reserve
             .repay(vault_id, fee, contingent)

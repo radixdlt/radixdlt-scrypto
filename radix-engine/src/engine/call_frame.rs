@@ -47,7 +47,7 @@ impl CallFrame {
         let mut initial_auth_zone_proofs = Vec::new();
         if !ecdsa_non_fungible_ids.is_empty() {
             // Proofs can't be zero amount
-            let mut ecdsa_bucket = Bucket::new(ResourceContainer::new_non_fungible(
+            let mut ecdsa_bucket = Bucket::new(Resource::new_non_fungible(
                 ECDSA_TOKEN,
                 ecdsa_non_fungible_ids,
             ));
@@ -58,7 +58,7 @@ impl CallFrame {
         }
         if !ed25519_non_fungible_ids.is_empty() {
             // Proofs can't be zero amount
-            let mut ed25519_bucket = Bucket::new(ResourceContainer::new_non_fungible(
+            let mut ed25519_bucket = Bucket::new(Resource::new_non_fungible(
                 ED25519_TOKEN,
                 ed25519_non_fungible_ids,
             ));
