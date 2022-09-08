@@ -10,9 +10,9 @@ use crate::fee::FeeSummary;
 use crate::fee::FeeTable;
 use crate::ledger::*;
 use crate::model::KeyValueStoreEntrySubstate;
+use crate::model::LockableResource;
 use crate::model::NonFungibleSubstate;
 use crate::model::Resource;
-use crate::model::ResourceContainer;
 use crate::transaction::CommitResult;
 use crate::transaction::EntityChanges;
 use crate::transaction::RejectResult;
@@ -370,7 +370,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             })
         } else {
             let mut required = fee_summary.burned + fee_summary.tipped;
-            let mut collector: ResourceContainer =
+            let mut collector: LockableResource =
                 Resource::new_empty(RADIX_TOKEN, ResourceType::Fungible { divisibility: 18 })
                     .into();
             for (vault_id, mut locked, contingent) in fee_summary.payments.iter().cloned().rev() {
