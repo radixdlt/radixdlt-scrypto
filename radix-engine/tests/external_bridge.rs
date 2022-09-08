@@ -1,7 +1,5 @@
 use radix_engine::ledger::TypedInMemorySubstateStore;
-use scrypto::address::Bech32Encoder;
-use scrypto::core::NetworkDefinition;
-use scrypto::{args, prelude::*};
+use radix_engine::types::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -13,7 +11,7 @@ fn test_external_bridges() {
     let mut test_runner = TestRunner::new(true, &mut store);
 
     // Part 1 - Upload the target and caller packages
-    let target_package_address = test_runner.extract_and_publish_package("component");
+    let target_package_address = test_runner.compile_and_publish("./tests/component");
     fill_in_package_name_template(
         "./tests/external_blueprint_caller/src/external_blueprint_caller.rs.template",
         "./tests/external_blueprint_caller/src/external_blueprint_caller.rs",
@@ -21,7 +19,7 @@ fn test_external_bridges() {
     )
     .expect("Package address rewrite expected to succeed");
     let caller_package_address =
-        test_runner.extract_and_publish_package("external_blueprint_caller");
+        test_runner.compile_and_publish("./tests/external_blueprint_caller");
 
     // Part 2 - Get a target component address
     let manifest1 = ManifestBuilder::new(&NetworkDefinition::local_simulator())

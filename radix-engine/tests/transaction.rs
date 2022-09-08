@@ -4,10 +4,10 @@ use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::transaction::ExecutionConfig;
 use radix_engine::transaction::TransactionExecutor;
+use radix_engine::types::*;
 use radix_engine::wasm::DefaultWasmEngine;
 use radix_engine::wasm::WasmInstrumenter;
-use scrypto::core::NetworkDefinition;
-use scrypto::prelude::*;
+use scrypto::core::Blob;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::builder::TransactionBuilder;
@@ -125,7 +125,8 @@ fn test_non_existent_blob_hash() {
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(dec!("10"), account)
         .add_instruction(Instruction::PublishPackage {
-            package_blob: Blob(Hash([0; 32])),
+            code: Blob(Hash([0; 32])),
+            abi: Blob(Hash([0; 32])),
         })
         .0
         .build();
@@ -144,7 +145,7 @@ fn test_entire_auth_zone() {
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account();
-    let package_address = test_runner.extract_and_publish_package("proof");
+    let package_address = test_runner.compile_and_publish("./tests/proof");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())

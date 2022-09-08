@@ -270,8 +270,8 @@ impl TransactionValidator {
                         args,
                     });
                 }
-                Instruction::PublishPackage { package_blob } => {
-                    instructions.push(ExecutableInstruction::PublishPackage { package_blob });
+                Instruction::PublishPackage { code, abi } => {
+                    instructions.push(ExecutableInstruction::PublishPackage { code, abi });
                 }
             }
         }

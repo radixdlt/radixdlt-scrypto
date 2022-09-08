@@ -668,13 +668,14 @@ impl TransactionProcessor {
                                 Ok(result)
                             })
                         }
-                        ExecutableInstruction::PublishPackage { package_blob } => system_api
+                        ExecutableInstruction::PublishPackage { code, abi } => system_api
                             .invoke_function(
                                 FnIdentifier::Native(NativeFnIdentifier::Package(
                                     PackageFnIdentifier::Publish,
                                 )),
                                 ScryptoValue::from_typed(&PackagePublishInput {
-                                    package_blob: package_blob.clone(),
+                                    code: code.clone(),
+                                    abi: abi.clone(),
                                 }),
                             )
                             .map_err(InvokeError::Downstream),

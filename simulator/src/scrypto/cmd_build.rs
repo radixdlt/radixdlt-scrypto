@@ -24,6 +24,6 @@ impl Build {
             self.trace,
         )
         .map(|_| ())
-        .map_err(Error::CargoError)
+        .map_err(Error::BuildError)
     }
 }

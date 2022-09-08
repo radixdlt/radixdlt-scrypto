@@ -1,10 +1,10 @@
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::{Decode, Encode, TypeId};
-use scrypto::prelude::AccessRule;
 
 use crate::core::{FnIdentifier, Level, Receiver, ScryptoRENode};
 use crate::engine::types::*;
+use crate::resource::AccessRule;
 
 #[cfg(target_arch = "wasm32")]
 extern "C" {

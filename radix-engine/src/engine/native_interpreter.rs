@@ -21,9 +21,9 @@ impl Into<ApplicationError> for TransactionProcessorError {
     }
 }
 
-impl Into<ApplicationError> for ValidatedPackageError {
+impl Into<ApplicationError> for PackageError {
     fn into(self) -> ApplicationError {
-        ApplicationError::ValidatedPackageError(self)
+        ApplicationError::PackageError(self)
     }
 }
 
@@ -95,7 +95,7 @@ impl NativeInterpreter {
                     .map_err(|e| e.into())
             }
             (None, NativeFnIdentifier::Package(package_fn)) => {
-                ValidatedPackage::static_main(package_fn, input, system_api).map_err(|e| e.into())
+                Package::static_main(package_fn, input, system_api).map_err(|e| e.into())
             }
             (None, NativeFnIdentifier::ResourceManager(resource_manager_fn)) => {
                 ResourceManager::static_main(resource_manager_fn, input, system_api)

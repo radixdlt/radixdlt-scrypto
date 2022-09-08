@@ -1,7 +1,7 @@
 use clap::Parser;
 use colored::*;
+use radix_engine::types::*;
 use rand::Rng;
-use scrypto::prelude::*;
 use transaction::signing::EcdsaPrivateKey;
 
 use crate::resim::*;

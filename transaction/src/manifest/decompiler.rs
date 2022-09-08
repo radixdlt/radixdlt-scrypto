@@ -289,10 +289,10 @@ pub fn decompile(
 
                 buf.push_str(";\n");
             }
-            Instruction::PublishPackage { package_blob } => {
+            Instruction::PublishPackage { code, abi } => {
                 buf.push_str(&format!(
-                    "PUBLISH_PACKAGE Blob(\"{}.data\");\n",
-                    package_blob
+                    "PUBLISH_PACKAGE Blob(\"{}.data\") Blob(\"{}.data\");\n",
+                    code, abi
                 ));
             }
         }
@@ -336,7 +336,7 @@ TAKE_FROM_WORKTOP_BY_IDS Set<NonFungibleId>(NonFungibleId("0905000000"), NonFung
 CALL_METHOD ComponentAddress("account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qgsy064") "deposit_batch" Expression("ENTIRE_WORKTOP");
 DROP_ALL_PROOFS;
 CALL_METHOD ComponentAddress("component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum") "complicated_method" Decimal("1") PreciseDecimal("2");
-PUBLISH_PACKAGE Blob("36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618.data");
+PUBLISH_PACKAGE Blob("36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618.data") Blob("15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d.data");
 "#
         )
     }

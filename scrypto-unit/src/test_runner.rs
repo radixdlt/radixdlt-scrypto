@@ -1,29 +1,26 @@
-use radix_engine::constants::{
-    DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN,
-};
+use std::fs;
+use std::path::{Path, PathBuf};
+use std::process::Command;
+
+use radix_engine::constants::*;
 use radix_engine::engine::{ExecutionTrace, Kernel, KernelError, ModuleError, SystemApi};
 use radix_engine::engine::{RuntimeError, Track};
 use radix_engine::fee::{FeeTable, SystemLoanFeeReserve};
 use radix_engine::ledger::*;
-use radix_engine::model::{export_abi, export_abi_by_component, extract_package};
+use radix_engine::model::{export_abi, export_abi_by_component, extract_abi};
 use radix_engine::state_manager::StagedSubstateStoreManager;
 use radix_engine::transaction::{
     ExecutionConfig, PreviewError, PreviewExecutor, PreviewResult, TransactionExecutor,
     TransactionReceipt, TransactionResult,
 };
+use radix_engine::types::*;
 use radix_engine::wasm::{
     DefaultWasmEngine, DefaultWasmInstance, InstructionCostRules, WasmInstrumenter,
     WasmMeteringParams,
 };
-use sbor::describe::Fields;
-use sbor::Type;
-use scrypto::abi::{BlueprintAbi, Fn};
-use scrypto::core::NetworkDefinition;
-use scrypto::engine::types::{KeyValueStoreId, RENodeId, SubstateId, VaultId};
-use scrypto::prelude::*;
-use scrypto::prelude::{HashMap, Package};
-use scrypto::values::ScryptoValue;
-use scrypto::{abi, args};
+use sbor::describe::*;
+use scrypto::dec;
+use scrypto::math::Decimal;
 use transaction::builder::ManifestBuilder;
 use transaction::model::{ExecutableTransaction, TransactionManifest};
 use transaction::model::{PreviewIntent, TestTransaction};
@@ -81,7 +78,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         component_address: ComponentAddress,
     ) -> Option<radix_engine::model::ComponentInfo> {
         self.execution_stores
-            .get_output_store(0)
+            .get_root_store()
             .get_substate(&SubstateId::ComponentInfo(component_address))
             .map(|output| output.substate.into())
     }
@@ -91,7 +88,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         component_address: ComponentAddress,
     ) -> Option<radix_engine::model::ComponentState> {
         self.execution_stores
-            .get_output_store(0)
+            .get_root_store()
             .get_substate(&SubstateId::ComponentState(component_address))
             .map(|output| output.substate.into())
     }
@@ -102,14 +99,14 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         key: Vec<u8>,
     ) -> Option<radix_engine::model::KeyValueStoreEntryWrapper> {
         self.execution_stores
-            .get_output_store(0)
+            .get_root_store()
             .get_substate(&SubstateId::KeyValueStoreEntry(kv_store_id, key))
             .map(|output| output.substate.into())
     }
 
     pub fn inspect_vault(&mut self, vault_id: VaultId) -> Option<radix_engine::model::Vault> {
         self.execution_stores
-            .get_output_store(0)
+            .get_root_store()
             .get_substate(&SubstateId::Vault(vault_id))
             .map(|output| output.substate.into())
     }
@@ -139,10 +136,14 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         (key_pair.0, key_pair.1, account)
     }
 
-    pub fn publish_package(&mut self, package: Package) -> PackageAddress {
+    pub fn publish_package(
+        &mut self,
+        code: Vec<u8>,
+        abi: HashMap<String, BlueprintAbi>,
+    ) -> PackageAddress {
         let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
             .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
-            .publish_package(package)
+            .publish_package(code, abi)
             .build();
 
         let receipt = self.execute_manifest(manifest, vec![]);
@@ -150,12 +151,60 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         receipt.expect_commit().entity_changes.new_package_addresses[0]
     }
 
-    pub fn extract_and_publish_package(&mut self, name: &str) -> PackageAddress {
-        self.publish_package_with_code(compile_package!(format!("./tests/{}", name)))
+    // Naive pattern matching to find the crate name.
+    fn extract_crate_name(mut content: &str) -> Result<String, ()> {
+        let idx = content.find("name").ok_or(())?;
+        content = &content[idx + 4..];
+
+        let idx = content.find('"').ok_or(())?;
+        content = &content[idx + 1..];
+
+        let end = content.find('"').ok_or(())?;
+        Ok(content[..end].to_string())
     }
 
-    pub fn publish_package_with_code(&mut self, code: Vec<u8>) -> PackageAddress {
-        self.publish_package(extract_package(code).expect("Failed to extract package"))
+    pub fn compile_and_publish<P: AsRef<Path>>(&mut self, package_dir: P) -> PackageAddress {
+        // Build
+        let status = Command::new("cargo")
+            .current_dir(package_dir.as_ref())
+            .args(["build", "--target", "wasm32-unknown-unknown", "--release"])
+            .status()
+            .unwrap();
+        if !status.success() {
+            panic!("Failed to compile package: {:?}", package_dir.as_ref());
+        }
+
+        // Find wasm path
+        let mut cargo = package_dir.as_ref().to_owned();
+        cargo.push("Cargo.toml");
+        let wasm_name = if cargo.exists() {
+            let content = fs::read_to_string(cargo).expect("Failed to read the Cargo.toml file");
+            Self::extract_crate_name(&content)
+                .expect("Failed to extract crate name from the Cargo.toml file")
+                .replace("-", "_")
+        } else {
+            // file name
+            package_dir
+                .as_ref()
+                .file_name()
+                .unwrap()
+                .to_str()
+                .unwrap()
+                .to_owned()
+                .replace("-", "_")
+        };
+        let mut path = PathBuf::from(package_dir.as_ref());
+        path.push("target");
+        path.push("wasm32-unknown-unknown");
+        path.push("release");
+        path.push(wasm_name);
+        path.set_extension("wasm");
+
+        // Extract ABI
+        let code = fs::read(path).unwrap();
+        let abi = extract_abi(&code).unwrap();
+
+        self.publish_package(code, abi)
     }
 
     pub fn execute_manifest(
@@ -271,17 +320,14 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         &mut self,
         package_address: PackageAddress,
         blueprint_name: &str,
-    ) -> abi::BlueprintAbi {
-        let output_store = self.execution_stores.get_output_store(0);
-        export_abi(&output_store, package_address, blueprint_name).expect("Failed to export ABI")
+    ) -> BlueprintAbi {
+        let output_store = self.execution_stores.get_root_store();
+        export_abi(output_store, package_address, blueprint_name).expect("Failed to export ABI")
     }
 
-    pub fn export_abi_by_component(
-        &mut self,
-        component_address: ComponentAddress,
-    ) -> abi::BlueprintAbi {
-        let output_store = self.execution_stores.get_output_store(0);
-        export_abi_by_component(&output_store, component_address).expect("Failed to export ABI")
+    pub fn export_abi_by_component(&mut self, component_address: ComponentAddress) -> BlueprintAbi {
+        let output_store = self.execution_stores.get_root_store();
+        export_abi_by_component(output_store, component_address).expect("Failed to export ABI")
     }
 
     pub fn update_resource_auth(
@@ -293,7 +339,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         account: ComponentAddress,
         signer_public_key: EcdsaPublicKey,
     ) {
-        let package = self.extract_and_publish_package("resource_creator");
+        let package = self.compile_and_publish("./tests/resource_creator");
         let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
             .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
             .create_proof_from_account(auth, account)
@@ -323,7 +369,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         let withdraw_auth = self.create_non_fungible_resource(account);
         let admin_auth = self.create_non_fungible_resource(account);
 
-        let package = self.extract_and_publish_package("resource_creator");
+        let package = self.compile_and_publish("./tests/resource_creator");
         let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
             .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
             .call_function(
@@ -358,7 +404,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         account: ComponentAddress,
     ) -> (ResourceAddress, ResourceAddress) {
         let auth_resource_address = self.create_non_fungible_resource(account);
-        let package = self.extract_and_publish_package("resource_creator");
+        let package = self.compile_and_publish("./tests/resource_creator");
         let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
             .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
             .call_function(
@@ -390,7 +436,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     ) -> (ResourceAddress, ResourceAddress) {
         let auth_resource_address = self.create_non_fungible_resource(account);
 
-        let package = self.extract_and_publish_package("resource_creator");
+        let package = self.compile_and_publish("./tests/resource_creator");
         let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
             .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
             .call_function(
@@ -417,7 +463,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     }
 
     pub fn create_non_fungible_resource(&mut self, account: ComponentAddress) -> ResourceAddress {
-        let package = self.extract_and_publish_package("resource_creator");
+        let package = self.compile_and_publish("./tests/resource_creator");
         let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
             .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
             .call_function(
@@ -446,7 +492,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         divisibility: u8,
         account: ComponentAddress,
     ) -> ResourceAddress {
-        let package = self.extract_and_publish_package("resource_creator");
+        let package = self.compile_and_publish("./tests/resource_creator");
         let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
             .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
             .call_function(
@@ -604,7 +650,7 @@ pub fn wat2wasm(wat: &str) -> Vec<u8> {
     .expect("Failed to compiled WAT into WASM")
 }
 
-pub fn abi_single_fn_any_input_void_output(
+pub fn test_abi_any_in_void_out(
     blueprint_name: &str,
     function_name: &str,
 ) -> HashMap<String, BlueprintAbi> {

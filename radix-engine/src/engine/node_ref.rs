@@ -186,7 +186,7 @@ impl NativeSubstateRef {
         }
     }
 
-    pub fn package(&mut self) -> &ValidatedPackage {
+    pub fn package(&mut self) -> &Package {
         match self {
             NativeSubstateRef::Track(_address, value) => value.package(),
             _ => panic!("Expecting to be tracked"),
@@ -323,7 +323,7 @@ impl<'f, 's, R: FeeReserve> RENodeRef<'f, 's, R> {
         }
     }
 
-    pub fn package(&self) -> &ValidatedPackage {
+    pub fn package(&self) -> &Package {
         match self {
             RENodeRef::Stack(value, id) => id
                 .as_ref()

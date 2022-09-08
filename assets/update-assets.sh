@@ -6,9 +6,9 @@ set -e
 cd "$(dirname "$0")"
 
 echo "Building packages..."
-(cd account; cargo build --target wasm32-unknown-unknown --release)
-(cd sys-faucet; cargo build --target wasm32-unknown-unknown --release)
-(cd sys-utils; cargo build --target wasm32-unknown-unknown --release)
+(cd account; scrypto build)
+(cd sys-faucet; scrypto build)
+(cd sys-utils; scrypto build)
 
 echo "Publishing artifacts..."
 wasm-opt \
@@ -16,15 +16,26 @@ wasm-opt \
   --strip-debug --strip-dwarf --strip-producers \
   -o ./account.wasm \
   ./account/target/wasm32-unknown-unknown/release/account.wasm
+cp \
+  ./account/target/wasm32-unknown-unknown/release/account.abi \
+  ./account.abi
+
 wasm-opt \
   -Os -g \
   --strip-debug --strip-dwarf --strip-producers \
   -o ./sys_faucet.wasm \
   ./sys-faucet/target/wasm32-unknown-unknown/release/sys_faucet.wasm
+cp \
+  ./sys-faucet/target/wasm32-unknown-unknown/release/sys_faucet.abi \
+  ./sys_faucet.abi
+
 wasm-opt \
   -Os -g \
   --strip-debug --strip-dwarf --strip-producers \
   -o ./sys_utils.wasm \
   ./sys-utils/target/wasm32-unknown-unknown/release/sys_utils.wasm
+cp \
+  ./sys-utils/target/wasm32-unknown-unknown/release/sys_utils.abi \
+  ./sys_utils.abi
 
 echo "Done!"

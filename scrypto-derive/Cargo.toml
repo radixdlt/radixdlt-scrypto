@@ -39,4 +39,8 @@ alloc = [
     "scrypto-abi/alloc", "scrypto-abi/serde"
 ]
 
+# Enable trace
 trace = []
+
+# Disable ABI gen in the output WASM.
+no-abi-gen = []

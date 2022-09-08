@@ -25,13 +25,13 @@ pub enum Error {
 
     JSONError(serde_json::Error),
 
-    CargoError(CargoExecutionError),
+    BuildError(BuildError),
 
     PackageAddressNotFound,
 
     ExtractAbiError(ExtractAbiError),
 
-    PrepareError(PrepareError),
+    InvalidPackage(PrepareError),
 
     TransactionConstructionError(BuildCallWithAbiError),
 

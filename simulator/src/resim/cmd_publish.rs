@@ -2,9 +2,7 @@ use clap::Parser;
 use colored::*;
 use radix_engine::engine::Substate;
 use radix_engine::ledger::{OutputValue, ReadableSubstateStore, WriteableSubstateStore};
-use scrypto::core::NetworkDefinition;
-use scrypto::engine::types::SubstateId;
-use scrypto::prelude::SYS_FAUCET_COMPONENT;
+use radix_engine::types::*;
 use std::ffi::OsStr;
 use std::fs;
 use std::path::PathBuf;
@@ -35,14 +33,16 @@ pub struct Publish {
 impl Publish {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
         // Load wasm code
-        let code = fs::read(if self.path.extension() != Some(OsStr::new("wasm")) {
-            build_package(&self.path, false).map_err(Error::CargoError)?
+        let code_path = if self.path.extension() != Some(OsStr::new("wasm")) {
+            build_package(&self.path, false).map_err(Error::BuildError)?
         } else {
             self.path.clone()
-        })
-        .map_err(Error::IOError)?;
+        };
+        let abi_path = code_path.with_extension("abi");
 
-        let package = extract_package(code).map_err(Error::ExtractAbiError)?;
+        let code = fs::read(&code_path).map_err(Error::IOError)?;
+        let abi = scrypto_decode(&fs::read(&abi_path).map_err(Error::IOError)?)
+            .map_err(Error::DataError)?;
 
         if let Some(package_address) = self.package_address.clone() {
             let substate_id = SubstateId::Package(package_address);
@@ -53,7 +53,7 @@ impl Publish {
                 .get_substate(&substate_id)
                 .map(|output| output.version);
 
-            let validated_package = ValidatedPackage::new(package).map_err(Error::PrepareError)?;
+            let validated_package = Package::new(code, abi).map_err(Error::InvalidPackage)?;
             let output_value = OutputValue {
                 substate: Substate::Package(validated_package),
                 version: previous_version.unwrap_or(0),
@@ -66,7 +66,7 @@ impl Publish {
         } else {
             let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
                 .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
-                .publish_package(package)
+                .publish_package(code, abi)
                 .build();
 
             let receipt = handle_manifest(

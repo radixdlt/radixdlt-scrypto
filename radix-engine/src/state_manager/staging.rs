@@ -25,16 +25,16 @@ impl StagedSubstateStoreNode {
 }
 
 /// Structure which manages the acyclic graph
-pub struct StagedSubstateStoreManager<'s, S: ReadableSubstateStore + WriteableSubstateStore> {
-    parent: &'s mut S,
+pub struct StagedSubstateStoreManager<'s, S: ReadableSubstateStore> {
+    root: &'s mut S,
     nodes: HashMap<u64, StagedSubstateStoreNode>,
     cur_id: u64,
 }
 
-impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> StagedSubstateStoreManager<'s, S> {
-    pub fn new(parent: &'s mut S) -> Self {
+impl<'s, S: ReadableSubstateStore> StagedSubstateStoreManager<'s, S> {
+    pub fn new(root: &'s mut S) -> Self {
         StagedSubstateStoreManager {
-            parent,
+            root,
             nodes: HashMap::new(),
             cur_id: 0,
         }
@@ -52,8 +52,16 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> StagedSubstateStoreM
         self.cur_id
     }
 
+    pub fn get_root_store(&mut self) -> &mut S {
+        &mut self.root
+    }
+
     pub fn get_output_store<'t>(&'t mut self, id: u64) -> StagedSubstateStore<'t, 's, S> {
-        if id != 0 && self.nodes.get(&id).unwrap().locked {
+        if id == 0 {
+            panic!("Use get_root_store to get root store");
+        }
+
+        if self.nodes.get(&id).unwrap().locked {
             panic!("Should not write to locked node");
         }
 
@@ -72,7 +80,9 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> StagedSubstateStoreM
             self.nodes.remove(&to_delete_id);
         }
     }
+}
 
+impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> StagedSubstateStoreManager<'s, S> {
     fn set_root_parent(&mut self, id: u64) {
         for node in self.nodes.values_mut().filter(|node| id == node.parent_id) {
             node.parent_id = 0;
@@ -99,11 +109,11 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> StagedSubstateStoreM
         self.merge_to_parent_recurse(node.parent_id, true);
 
         for (substate_id, output) in node.outputs {
-            self.parent.put_substate(substate_id, output);
+            self.root.put_substate(substate_id, output);
         }
 
         for substate_id in node.new_roots {
-            self.parent.set_root(substate_id);
+            self.root.set_root(substate_id);
         }
 
         if !remove_children {
@@ -112,15 +122,15 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> StagedSubstateStoreM
     }
 }
 
-pub struct StagedSubstateStore<'t, 's, S: ReadableSubstateStore + WriteableSubstateStore> {
+pub struct StagedSubstateStore<'t, 's, S: ReadableSubstateStore> {
     stores: &'t mut StagedSubstateStoreManager<'s, S>,
     id: u64,
 }
 
-impl<'t, 's, S: ReadableSubstateStore + WriteableSubstateStore> StagedSubstateStore<'t, 's, S> {
+impl<'t, 's, S: ReadableSubstateStore> StagedSubstateStore<'t, 's, S> {
     fn get_substate_recurse(&self, substate_id: &SubstateId, id: u64) -> Option<OutputValue> {
         if id == 0 {
-            return self.stores.parent.get_substate(substate_id);
+            return self.stores.root.get_substate(substate_id);
         }
 
         let node = self.stores.nodes.get(&id).unwrap();
@@ -135,7 +145,7 @@ impl<'t, 's, S: ReadableSubstateStore + WriteableSubstateStore> StagedSubstateSt
 
     fn is_root_recurse(&self, substate_id: &SubstateId, id: u64) -> bool {
         if id == 0 {
-            return self.stores.parent.is_root(substate_id);
+            return self.stores.root.is_root(substate_id);
         }
 
         let node = self.stores.nodes.get(&id).unwrap();
@@ -147,9 +157,7 @@ impl<'t, 's, S: ReadableSubstateStore + WriteableSubstateStore> StagedSubstateSt
     }
 }
 
-impl<'t, 's, S: ReadableSubstateStore + WriteableSubstateStore> ReadableSubstateStore
-    for StagedSubstateStore<'t, 's, S>
-{
+impl<'t, 's, S: ReadableSubstateStore> ReadableSubstateStore for StagedSubstateStore<'t, 's, S> {
     fn get_substate(&self, substate_id: &SubstateId) -> Option<OutputValue> {
         self.get_substate_recurse(substate_id, self.id)
     }
@@ -159,12 +167,10 @@ impl<'t, 's, S: ReadableSubstateStore + WriteableSubstateStore> ReadableSubstate
     }
 }
 
-impl<'t, 's, S: ReadableSubstateStore + WriteableSubstateStore> WriteableSubstateStore
-    for StagedSubstateStore<'t, 's, S>
-{
+impl<'t, 's, S: ReadableSubstateStore> WriteableSubstateStore for StagedSubstateStore<'t, 's, S> {
     fn put_substate(&mut self, substate_id: SubstateId, output: OutputValue) {
         if self.id == 0 {
-            self.stores.parent.put_substate(substate_id, output);
+            panic!("Cannot write to root store");
         } else {
             let node = self.stores.nodes.get_mut(&self.id).unwrap();
             node.outputs.insert(substate_id, output);
@@ -173,7 +179,7 @@ impl<'t, 's, S: ReadableSubstateStore + WriteableSubstateStore> WriteableSubstat
 
     fn set_root(&mut self, substate_id: SubstateId) {
         if self.id == 0 {
-            self.stores.parent.set_root(substate_id);
+            panic!("Cannot write to root store");
         } else {
             let node = self.stores.nodes.get_mut(&self.id).unwrap();
             node.new_roots.insert(substate_id);
