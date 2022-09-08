@@ -1,7 +1,8 @@
 use crate::engine::{HeapRENode, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::{
-    InvokeError, LockableResource, LockableResourceId, Proof, ProofError, Resource, ResourceError,
+    InvokeError, LockableResource, Proof, ProofError, Resource, ResourceContainerId,
+    ResourceOperationError,
 };
 use crate::types::*;
 use crate::wasm::*;
@@ -12,7 +13,7 @@ pub enum BucketError {
     InvalidRequestData(DecodeError),
     CouldNotCreateBucket,
     CouldNotTakeBucket,
-    ResourceError(ResourceError),
+    ResourceOperationError(ResourceOperationError),
     ProofError(ProofError),
     CouldNotCreateProof,
     MethodNotFound(BucketFnIdentifier),
@@ -21,33 +22,33 @@ pub enum BucketError {
 /// A transient resource container.
 #[derive(Debug)]
 pub struct Bucket {
-    container: Rc<RefCell<LockableResource>>,
+    resource: Rc<RefCell<LockableResource>>,
 }
 
 impl Bucket {
     pub fn new(resource: Resource) -> Self {
         Self {
-            container: Rc::new(RefCell::new(resource.into())),
+            resource: Rc::new(RefCell::new(resource.into())),
         }
     }
 
-    fn put(&mut self, other: Bucket) -> Result<(), ResourceError> {
-        self.borrow_container_mut().put(other.resource()?)
+    fn put(&mut self, other: Bucket) -> Result<(), ResourceOperationError> {
+        self.borrow_resource_mut().put(other.resource()?)
     }
 
-    fn take(&mut self, amount: Decimal) -> Result<Resource, ResourceError> {
-        self.borrow_container_mut().take_by_amount(amount)
+    fn take(&mut self, amount: Decimal) -> Result<Resource, ResourceOperationError> {
+        self.borrow_resource_mut().take_by_amount(amount)
     }
 
     fn take_non_fungibles(
         &mut self,
         ids: &BTreeSet<NonFungibleId>,
-    ) -> Result<Resource, ResourceError> {
-        self.borrow_container_mut().take_by_ids(ids)
+    ) -> Result<Resource, ResourceOperationError> {
+        self.borrow_resource_mut().take_by_ids(ids)
     }
 
     pub fn create_proof(&mut self, self_bucket_id: BucketId) -> Result<Proof, ProofError> {
-        let container_id = LockableResourceId::Bucket(self_bucket_id);
+        let container_id = ResourceContainerId::Bucket(self_bucket_id);
         match self.resource_type() {
             ResourceType::Fungible { .. } => {
                 self.create_proof_by_amount(self.total_amount(), container_id)
@@ -64,19 +65,19 @@ impl Bucket {
     pub fn create_proof_by_amount(
         &mut self,
         amount: Decimal,
-        container_id: LockableResourceId,
+        container_id: ResourceContainerId,
     ) -> Result<Proof, ProofError> {
         // lock the specified amount
         let locked_amount_or_ids = self
-            .borrow_container_mut()
+            .borrow_resource_mut()
             .lock_by_amount(amount)
-            .map_err(ProofError::ResourceError)?;
+            .map_err(ProofError::ResourceOperationError)?;
 
         // produce proof
         let mut evidence = HashMap::new();
         evidence.insert(
             container_id,
-            (self.container.clone(), locked_amount_or_ids.clone()),
+            (self.resource.clone(), locked_amount_or_ids.clone()),
         );
         Proof::new(
             self.resource_address(),
@@ -89,19 +90,19 @@ impl Bucket {
     pub fn create_proof_by_ids(
         &mut self,
         ids: &BTreeSet<NonFungibleId>,
-        container_id: LockableResourceId,
+        container_id: ResourceContainerId,
     ) -> Result<Proof, ProofError> {
         // lock the specified id set
         let locked_amount_or_ids = self
-            .borrow_container_mut()
+            .borrow_resource_mut()
             .lock_by_ids(ids)
-            .map_err(ProofError::ResourceError)?;
+            .map_err(ProofError::ResourceOperationError)?;
 
         // produce proof
         let mut evidence = HashMap::new();
         evidence.insert(
             container_id,
-            (self.container.clone(), locked_amount_or_ids.clone()),
+            (self.resource.clone(), locked_amount_or_ids.clone()),
         );
         Proof::new(
             self.resource_address(),
@@ -112,42 +113,42 @@ impl Bucket {
     }
 
     pub fn resource_address(&self) -> ResourceAddress {
-        self.borrow_container().resource_address()
+        self.borrow_resource().resource_address()
     }
 
     pub fn resource_type(&self) -> ResourceType {
-        self.borrow_container().resource_type()
+        self.borrow_resource().resource_type()
     }
 
     pub fn total_amount(&self) -> Decimal {
-        self.borrow_container().total_amount()
+        self.borrow_resource().total_amount()
     }
 
-    fn total_ids(&self) -> Result<BTreeSet<NonFungibleId>, ResourceError> {
-        self.borrow_container().total_ids()
+    fn total_ids(&self) -> Result<BTreeSet<NonFungibleId>, ResourceOperationError> {
+        self.borrow_resource().total_ids()
     }
 
     pub fn is_locked(&self) -> bool {
-        self.borrow_container().is_locked()
+        self.borrow_resource().is_locked()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.borrow_container().is_empty()
+        self.borrow_resource().is_empty()
     }
 
-    pub fn resource(self) -> Result<Resource, ResourceError> {
-        Rc::try_unwrap(self.container)
-            .map_err(|_| ResourceError::ResourceLocked)
+    pub fn resource(self) -> Result<Resource, ResourceOperationError> {
+        Rc::try_unwrap(self.resource)
+            .map_err(|_| ResourceOperationError::ResourceLocked)
             .map(|c| c.into_inner())
             .map(Into::into)
     }
 
-    fn borrow_container(&self) -> Ref<LockableResource> {
-        self.container.borrow()
+    fn borrow_resource(&self) -> Ref<LockableResource> {
+        self.resource.borrow()
     }
 
-    fn borrow_container_mut(&mut self) -> RefMut<LockableResource> {
-        self.container.borrow_mut()
+    fn borrow_resource_mut(&mut self) -> RefMut<LockableResource> {
+        self.resource.borrow_mut()
     }
 
     pub fn main<'s, Y, W, I, R>(
@@ -174,7 +175,7 @@ impl Bucket {
                     .map_err(|e| InvokeError::Error(BucketError::InvalidRequestData(e)))?;
                 let container = bucket0
                     .take(input.amount)
-                    .map_err(|e| InvokeError::Error(BucketError::ResourceError(e)))?;
+                    .map_err(|e| InvokeError::Error(BucketError::ResourceOperationError(e)))?;
                 let bucket_id = system_api
                     .node_create(HeapRENode::Bucket(Bucket::new(container)))
                     .map_err(InvokeError::Downstream)?
@@ -188,7 +189,7 @@ impl Bucket {
                     .map_err(|e| InvokeError::Error(BucketError::InvalidRequestData(e)))?;
                 let container = bucket0
                     .take_non_fungibles(&input.ids)
-                    .map_err(|e| InvokeError::Error(BucketError::ResourceError(e)))?;
+                    .map_err(|e| InvokeError::Error(BucketError::ResourceOperationError(e)))?;
                 let bucket_id = system_api
                     .node_create(HeapRENode::Bucket(Bucket::new(container)))
                     .map_err(InvokeError::Downstream)?
@@ -202,7 +203,7 @@ impl Bucket {
                     .map_err(|e| InvokeError::Error(BucketError::InvalidRequestData(e)))?;
                 let ids = bucket0
                     .total_ids()
-                    .map_err(|e| InvokeError::Error(BucketError::ResourceError(e)))?;
+                    .map_err(|e| InvokeError::Error(BucketError::ResourceOperationError(e)))?;
                 Ok(ScryptoValue::from_typed(&ids))
             }
             BucketFnIdentifier::Put => {
@@ -214,7 +215,7 @@ impl Bucket {
                     .into();
                 bucket0
                     .put(other_bucket)
-                    .map_err(|e| InvokeError::Error(BucketError::ResourceError(e)))?;
+                    .map_err(|e| InvokeError::Error(BucketError::ResourceOperationError(e)))?;
                 Ok(ScryptoValue::from_typed(&()))
             }
             BucketFnIdentifier::GetAmount => {

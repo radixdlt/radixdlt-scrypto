@@ -341,7 +341,7 @@ impl ResourceManager {
                 .substate_read(SubstateId::NonFungible(self_address, id.clone()))
                 .map_err(InvokeError::Downstream)?;
             let wrapper: NonFungibleSubstate =
-                scrypto_decode(&value.raw).expect("Failed to decode NonFungibleSubstate substate");
+                scrypto_decode(&value.raw).expect("Failed to decode NonFungibleSubstate");
             if wrapper.0.is_some() {
                 return Err(InvokeError::Error(
                     ResourceManagerError::NonFungibleAlreadyExists(NonFungibleAddress::new(
@@ -598,8 +598,8 @@ impl ResourceManager {
                         input.id.clone(),
                     ))
                     .map_err(InvokeError::Downstream)?;
-                let wrapper: NonFungibleSubstate = scrypto_decode(&value.raw)
-                    .expect("Failed to decode NonFungibleSubstate substate");
+                let wrapper: NonFungibleSubstate =
+                    scrypto_decode(&value.raw).expect("Failed to decode NonFungibleSubstate");
 
                 // Write new value
                 if let Some(mut non_fungible) = wrapper.0 {
@@ -627,8 +627,8 @@ impl ResourceManager {
                 let value = system_api
                     .substate_read(SubstateId::NonFungible(resource_address.clone(), input.id))
                     .map_err(InvokeError::Downstream)?;
-                let wrapper: NonFungibleSubstate = scrypto_decode(&value.raw)
-                    .expect("Failed to decode NonFungibleSubstate substate");
+                let wrapper: NonFungibleSubstate =
+                    scrypto_decode(&value.raw).expect("Failed to decode NonFungibleSubstate");
                 Ok(ScryptoValue::from_typed(&wrapper.0.is_some()))
             }
             ResourceManagerFnIdentifier::GetNonFungible => {
@@ -639,8 +639,8 @@ impl ResourceManager {
                 let value = system_api
                     .substate_read(SubstateId::NonFungible(resource_address.clone(), input.id))
                     .map_err(InvokeError::Downstream)?;
-                let wrapper: NonFungibleSubstate = scrypto_decode(&value.raw)
-                    .expect("Failed to decode NonFungibleSubstate substate");
+                let wrapper: NonFungibleSubstate =
+                    scrypto_decode(&value.raw).expect("Failed to decode NonFungibleSubstate");
                 let non_fungible = wrapper.0.ok_or(InvokeError::Error(
                     ResourceManagerError::NonFungibleNotFound(non_fungible_address),
                 ))?;

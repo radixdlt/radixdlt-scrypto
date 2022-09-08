@@ -69,7 +69,7 @@ impl<'s> BaseStateTrack<'s> {
 
                         let output_value = OutputValue {
                             substate: scrypto_decode(&substate)
-                                .expect("Failed to decode NonFungibleSubstate substate"),
+                                .expect("Failed to decode NonFungibleSubstate"),
                             version: next_version,
                         };
                         diff.up_substates.insert(substate_id.clone(), output_value);
@@ -90,7 +90,7 @@ impl<'s> BaseStateTrack<'s> {
 
                         let output_value = OutputValue {
                             substate: scrypto_decode(&substate)
-                                .expect("Failed to decode KeyValueStoreEntrySubstate substate"),
+                                .expect("Failed to decode KeyValueStoreEntrySubstate"),
                             version: next_version,
                         };
                         diff.up_substates.insert(substate_id.clone(), output_value);

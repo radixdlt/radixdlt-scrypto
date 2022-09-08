@@ -1,6 +1,6 @@
 use crate::engine::{DropFailure, HeapRENode, InvokeError, SystemApi};
 use crate::fee::FeeReserve;
-use crate::model::{Bucket, LockableResource, ResourceError};
+use crate::model::{Bucket, LockableResource, ResourceOperationError};
 use crate::types::*;
 use crate::wasm::*;
 
@@ -59,7 +59,7 @@ pub struct Worktop {
 pub enum WorktopError {
     InvalidRequestData(DecodeError),
     MethodNotFound(String),
-    ResourceError(ResourceError),
+    ResourceOperationError(ResourceOperationError),
     ResourceNotFound(ResourceAddress),
     CouldNotCreateBucket,
     CouldNotTakeBucket,
@@ -83,10 +83,10 @@ impl Worktop {
         Ok(())
     }
 
-    pub fn put(&mut self, other: Bucket) -> Result<(), ResourceError> {
+    pub fn put(&mut self, other: Bucket) -> Result<(), ResourceOperationError> {
         let resource_address = other.resource_address();
         let resource = other.resource()?;
-        if let Some(mut container) = self.borrow_container_mut(resource_address) {
+        if let Some(mut container) = self.borrow_resource_mut(resource_address) {
             return container.put(resource);
         }
         self.put_container(resource_address, resource.into());
@@ -97,11 +97,11 @@ impl Worktop {
         &mut self,
         amount: Decimal,
         resource_address: ResourceAddress,
-    ) -> Result<Option<Resource>, ResourceError> {
-        if let Some(mut container) = self.borrow_container_mut(resource_address) {
+    ) -> Result<Option<Resource>, ResourceOperationError> {
+        if let Some(mut container) = self.borrow_resource_mut(resource_address) {
             container.take_by_amount(amount).map(Option::Some)
         } else if !amount.is_zero() {
-            Err(ResourceError::InsufficientBalance)
+            Err(ResourceOperationError::InsufficientBalance)
         } else {
             Ok(None)
         }
@@ -111,11 +111,11 @@ impl Worktop {
         &mut self,
         ids: &BTreeSet<NonFungibleId>,
         resource_address: ResourceAddress,
-    ) -> Result<Option<Resource>, ResourceError> {
-        if let Some(mut container) = self.borrow_container_mut(resource_address) {
+    ) -> Result<Option<Resource>, ResourceOperationError> {
+        if let Some(mut container) = self.borrow_resource_mut(resource_address) {
             container.take_by_ids(ids).map(Option::Some)
         } else if !ids.is_empty() {
-            Err(ResourceError::InsufficientBalance)
+            Err(ResourceOperationError::InsufficientBalance)
         } else {
             Ok(None)
         }
@@ -124,8 +124,8 @@ impl Worktop {
     fn take_all(
         &mut self,
         resource_address: ResourceAddress,
-    ) -> Result<Option<Resource>, ResourceError> {
-        if let Some(mut container) = self.borrow_container_mut(resource_address) {
+    ) -> Result<Option<Resource>, ResourceOperationError> {
+        if let Some(mut container) = self.borrow_resource_mut(resource_address) {
             Ok(Some(container.take_all_liquid()?))
         } else {
             Ok(None)
@@ -137,7 +137,7 @@ impl Worktop {
     }
 
     pub fn total_amount(&self, resource_address: ResourceAddress) -> Decimal {
-        if let Some(container) = self.borrow_container(resource_address) {
+        if let Some(container) = self.borrow_resource(resource_address) {
             container.total_amount()
         } else {
             Decimal::zero()
@@ -147,8 +147,8 @@ impl Worktop {
     pub fn total_ids(
         &self,
         resource_address: ResourceAddress,
-    ) -> Result<BTreeSet<NonFungibleId>, ResourceError> {
-        if let Some(container) = self.borrow_container(resource_address) {
+    ) -> Result<BTreeSet<NonFungibleId>, ResourceOperationError> {
+        if let Some(container) = self.borrow_resource(resource_address) {
             container.total_ids()
         } else {
             Ok(BTreeSet::new())
@@ -157,7 +157,7 @@ impl Worktop {
 
     pub fn is_locked(&self) -> bool {
         for resource_address in self.resource_addresses() {
-            if let Some(container) = self.borrow_container(resource_address) {
+            if let Some(container) = self.borrow_resource(resource_address) {
                 if container.is_locked() {
                     return true;
                 }
@@ -168,7 +168,7 @@ impl Worktop {
 
     pub fn is_empty(&self) -> bool {
         for resource_address in self.resource_addresses() {
-            if let Some(container) = self.borrow_container(resource_address) {
+            if let Some(container) = self.borrow_resource(resource_address) {
                 if !container.total_amount().is_zero() {
                     return false;
                 }
@@ -184,11 +184,11 @@ impl Worktop {
         self.containers.get(&resource_address).map(Clone::clone)
     }
 
-    fn borrow_container(&self, resource_address: ResourceAddress) -> Option<Ref<LockableResource>> {
+    fn borrow_resource(&self, resource_address: ResourceAddress) -> Option<Ref<LockableResource>> {
         self.containers.get(&resource_address).map(|c| c.borrow())
     }
 
-    fn borrow_container_mut(
+    fn borrow_resource_mut(
         &mut self,
         resource_address: ResourceAddress,
     ) -> Option<RefMut<LockableResource>> {
@@ -229,7 +229,7 @@ impl Worktop {
                     .into();
                 worktop
                     .put(bucket)
-                    .map_err(|e| InvokeError::Error(WorktopError::ResourceError(e)))?;
+                    .map_err(|e| InvokeError::Error(WorktopError::ResourceOperationError(e)))?;
                 Ok(ScryptoValue::from_typed(&()))
             }
             WorktopFnIdentifier::TakeAmount => {
@@ -237,7 +237,7 @@ impl Worktop {
                     .map_err(|e| InvokeError::Error(WorktopError::InvalidRequestData(e)))?;
                 let maybe_container = worktop
                     .take(input.amount, input.resource_address)
-                    .map_err(|e| InvokeError::Error(WorktopError::ResourceError(e)))?;
+                    .map_err(|e| InvokeError::Error(WorktopError::ResourceOperationError(e)))?;
                 let resource_container = if let Some(container) = maybe_container {
                     container
                 } else {
@@ -264,7 +264,7 @@ impl Worktop {
                     .map_err(|e| InvokeError::Error(WorktopError::InvalidRequestData(e)))?;
                 let maybe_container = worktop
                     .take_all(input.resource_address)
-                    .map_err(|e| InvokeError::Error(WorktopError::ResourceError(e)))?;
+                    .map_err(|e| InvokeError::Error(WorktopError::ResourceOperationError(e)))?;
                 let resource_container = if let Some(container) = maybe_container {
                     container
                 } else {
@@ -292,7 +292,7 @@ impl Worktop {
                     .map_err(|e| InvokeError::Error(WorktopError::InvalidRequestData(e)))?;
                 let maybe_container = worktop
                     .take_non_fungibles(&input.ids, input.resource_address)
-                    .map_err(|e| InvokeError::Error(WorktopError::ResourceError(e)))?;
+                    .map_err(|e| InvokeError::Error(WorktopError::ResourceOperationError(e)))?;
                 let resource_container = if let Some(container) = maybe_container {
                     container
                 } else {
@@ -338,7 +338,7 @@ impl Worktop {
                     .map_err(|e| InvokeError::Error(WorktopError::InvalidRequestData(e)))?;
                 if !worktop
                     .total_ids(input.resource_address)
-                    .map_err(|e| InvokeError::Error(WorktopError::ResourceError(e)))?
+                    .map_err(|e| InvokeError::Error(WorktopError::ResourceOperationError(e)))?
                     .is_superset(&input.ids)
                 {
                     Err(InvokeError::Error(WorktopError::AssertionFailed))
@@ -354,7 +354,7 @@ impl Worktop {
                     let container = container
                         .borrow_mut()
                         .take_all_liquid()
-                        .map_err(|e| InvokeError::Error(WorktopError::ResourceError(e)))?;
+                        .map_err(|e| InvokeError::Error(WorktopError::ResourceOperationError(e)))?;
                     if !container.is_empty() {
                         let bucket_id = system_api
                             .node_create(HeapRENode::Bucket(Bucket::new(container)))

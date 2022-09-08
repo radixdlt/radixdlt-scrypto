@@ -2,7 +2,7 @@ use crate::engine::{HeapRENode, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::ProofError::UnknownMethod;
 use crate::model::{
-    InvokeError, LockableResource, LockableResourceId, LockedAmountOrIds, ResourceError,
+    InvokeError, LockableResource, LockedAmountOrIds, ResourceContainerId, ResourceOperationError,
 };
 use crate::types::*;
 use crate::wasm::*;
@@ -18,13 +18,13 @@ pub struct Proof {
     /// The total locked amount or non-fungible ids.
     total_locked: LockedAmountOrIds,
     /// The supporting containers.
-    evidence: HashMap<LockableResourceId, (Rc<RefCell<LockableResource>>, LockedAmountOrIds)>,
+    evidence: HashMap<ResourceContainerId, (Rc<RefCell<LockableResource>>, LockedAmountOrIds)>,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub enum ProofError {
     /// Error produced by a resource container.
-    ResourceError(ResourceError),
+    ResourceOperationError(ResourceOperationError),
     /// Can't generate zero-amount or empty non-fungible set proofs.
     EmptyProofNotAllowed,
     /// The base proofs are not enough to cover the requested amount or non-fungible ids.
@@ -43,7 +43,7 @@ impl Proof {
         resource_address: ResourceAddress,
         resource_type: ResourceType,
         total_locked: LockedAmountOrIds,
-        evidence: HashMap<LockableResourceId, (Rc<RefCell<LockableResource>>, LockedAmountOrIds)>,
+        evidence: HashMap<ResourceContainerId, (Rc<RefCell<LockableResource>>, LockedAmountOrIds)>,
     ) -> Result<Proof, ProofError> {
         if total_locked.is_empty() {
             return Err(ProofError::EmptyProofNotAllowed);
@@ -65,7 +65,7 @@ impl Proof {
         resource_type: ResourceType,
     ) -> (
         LockedAmountOrIds,
-        HashMap<LockableResourceId, LockedAmountOrIds>,
+        HashMap<ResourceContainerId, LockedAmountOrIds>,
     ) {
         // filter proofs by resource address and restricted flag
         let proofs: Vec<&Proof> = proofs
@@ -76,7 +76,7 @@ impl Proof {
         // calculate the max locked amount (or ids) of each container
         match resource_type {
             ResourceType::Fungible { .. } => {
-                let mut max = HashMap::<LockableResourceId, Decimal>::new();
+                let mut max = HashMap::<ResourceContainerId, Decimal>::new();
                 for proof in &proofs {
                     for (container_id, (_, locked_amount_or_ids)) in &proof.evidence {
                         let new_amount = locked_amount_or_ids.amount();
@@ -99,7 +99,7 @@ impl Proof {
                 (LockedAmountOrIds::Amount(total), per_container)
             }
             ResourceType::NonFungible => {
-                let mut max = HashMap::<LockableResourceId, BTreeSet<NonFungibleId>>::new();
+                let mut max = HashMap::<ResourceContainerId, BTreeSet<NonFungibleId>>::new();
                 for proof in &proofs {
                     for (container_id, (_, locked_amount_or_ids)) in &proof.evidence {
                         let new_ids = locked_amount_or_ids
@@ -172,7 +172,7 @@ impl Proof {
                             container
                                 .borrow_mut()
                                 .lock_by_amount(amount)
-                                .map_err(ProofError::ResourceError)?;
+                                .map_err(ProofError::ResourceOperationError)?;
                             remaining -= amount;
                             evidence.insert(
                                 container_id.clone(),
@@ -240,7 +240,7 @@ impl Proof {
                             container
                                 .borrow_mut()
                                 .lock_by_ids(&ids)
-                                .map_err(ProofError::ResourceError)?;
+                                .map_err(ProofError::ResourceOperationError)?;
                             for id in &ids {
                                 remaining.remove(id);
                             }
