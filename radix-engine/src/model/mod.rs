@@ -3,11 +3,11 @@ mod auth_converter;
 mod auth_zone;
 mod bucket;
 mod component;
+mod key_value_store;
 mod method_authorization;
 mod non_fungible;
 mod package;
 mod package_extractor;
-mod precommitted_kv_store;
 mod proof;
 mod resource;
 mod resource_manager;
@@ -23,6 +23,7 @@ pub use auth_converter::convert;
 pub use auth_zone::{AuthZone, AuthZoneError};
 pub use bucket::{Bucket, BucketError};
 pub use component::{ComponentError, ComponentInfo, ComponentState};
+pub use key_value_store::HeapKeyValueStore;
 pub use method_authorization::{
     HardAuthRule, HardProofRule, HardResourceOrNonFungible, MethodAuthorization,
     MethodAuthorizationError,
@@ -30,7 +31,6 @@ pub use method_authorization::{
 pub use non_fungible::NonFungible;
 pub use package::{Package, PackageError};
 pub use package_extractor::{extract_abi, ExtractAbiError};
-pub use precommitted_kv_store::HeapKeyValueStore;
 pub use proof::*;
 pub use resource::*;
 pub use resource_manager::{ResourceManager, ResourceManagerError};
