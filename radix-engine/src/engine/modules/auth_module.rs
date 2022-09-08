@@ -74,12 +74,8 @@ impl AuthModule {
             }
             (
                 Receiver::Ref(RENodeId::System),
-                FnIdentifier::Native(NativeFnIdentifier::System(SystemFnIdentifier::SetEpoch)),
-            ) => {
-                vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(
-                    HardProofRule::Require(HardResourceOrNonFungible::Resource(SYSTEM_TOKEN)),
-                ))]
-            }
+                FnIdentifier::Native(NativeFnIdentifier::System(system_fn)),
+            ) => System::auth(system_fn),
             (Receiver::Ref(RENodeId::Component(..)), FnIdentifier::Native(..)) => {
                 match node_pointer {
                     RENodePointer::Store(..) => vec![MethodAuthorization::DenyAll],

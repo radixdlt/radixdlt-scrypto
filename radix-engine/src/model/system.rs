@@ -1,6 +1,8 @@
 use crate::engine::SystemApi;
 use crate::fee::FeeReserve;
-use crate::model::InvokeError;
+use crate::model::{
+    HardAuthRule, HardProofRule, HardResourceOrNonFungible, InvokeError, MethodAuthorization,
+};
 use crate::types::*;
 use crate::wasm::*;
 
@@ -15,6 +17,19 @@ pub struct System {
 }
 
 impl System {
+    pub fn auth(system_fn: &SystemFnIdentifier) -> Vec<MethodAuthorization> {
+        match system_fn {
+            SystemFnIdentifier::SetEpoch => {
+                vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(
+                    HardProofRule::Require(HardResourceOrNonFungible::NonFungible(
+                        NonFungibleAddress::new(SYSTEM_TOKEN, NonFungibleId::from_u32(0)),
+                    )),
+                ))]
+            }
+            _ => vec![],
+        }
+    }
+
     pub fn main<'s, Y, W, I, R>(
         system_fn: SystemFnIdentifier,
         args: ScryptoValue,
