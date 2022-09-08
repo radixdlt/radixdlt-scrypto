@@ -9,9 +9,8 @@ use crate::fee::FeeReserveError;
 use crate::fee::FeeSummary;
 use crate::fee::FeeTable;
 use crate::ledger::*;
-use crate::model::Bucket;
-use crate::model::KeyValueStoreEntryWrapper;
-use crate::model::NonFungibleWrapper;
+use crate::model::KeyValueStoreEntrySubstate;
+use crate::model::NonFungibleSubstate;
 use crate::model::Resource;
 use crate::model::ResourceContainer;
 use crate::transaction::CommitResult;
@@ -270,11 +269,11 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             SubstateId::NonFungibleSpace(_) => self
                 .state_track
                 .get_substate(&substate_id)
-                .unwrap_or(Substate::NonFungible(NonFungibleWrapper(None))),
+                .unwrap_or(Substate::NonFungible(NonFungibleSubstate(None))),
             SubstateId::KeyValueStoreSpace(..) => self
                 .state_track
                 .get_substate(&substate_id)
-                .unwrap_or(Substate::KeyValueStoreEntry(KeyValueStoreEntryWrapper(
+                .unwrap_or(Substate::KeyValueStoreEntry(KeyValueStoreEntrySubstate(
                     None,
                 ))),
             _ => panic!("Invalid keyed value address {:?}", parent_address),
@@ -390,7 +389,11 @@ impl<'s, R: FeeReserve> Track<'s, R> {
 
                 // Collect fees into collector
                 collector
-                    .put(locked)
+                    .put(
+                        locked
+                            .take_by_amount(amount)
+                            .expect("Failed to extract locked fee"),
+                    )
                     .expect("Failed to add fee to fee collector");
 
                 // Refund overpayment
@@ -402,6 +405,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                     .expect("Vault not found");
                 substate
                     .vault_mut()
+                    .0
                     .put(locked)
                     .expect("Failed to put a fee-locking vault");
                 self.state_track.put_substate_to_base(substate_id, substate);

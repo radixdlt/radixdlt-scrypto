@@ -149,13 +149,13 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
 
     writeln!(output, "{}:", "Resources".green().bold());
     for (last, vault_id) in vaults.iter().identify_last() {
-        let vault: Vault = substate_store
+        let vault: VaultSubstate = substate_store
             .get_substate(&SubstateId::Vault(*vault_id))
             .map(|s| s.substate)
             .map(|s| s.into())
             .unwrap();
-        let amount = vault.total_amount();
-        let resource_address = vault.resource_address();
+        let amount = vault.0.amount();
+        let resource_address = vault.0.resource_address();
         let resource_manager: ResourceManager = substate_store
             .get_substate(&SubstateId::ResourceManager(resource_address))
             .map(|s| s.substate)
@@ -179,9 +179,9 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
                 .unwrap_or(String::new()),
         );
         if matches!(resource_manager.resource_type(), ResourceType::NonFungible) {
-            let ids = vault.total_ids().unwrap();
+            let ids = vault.0.ids();
             for (inner_last, id) in ids.iter().identify_last() {
-                let non_fungible: NonFungibleWrapper = substate_store
+                let non_fungible: NonFungibleSubstate = substate_store
                     .get_substate(&SubstateId::NonFungible(resource_address, id.clone()))
                     .map(|s| s.substate)
                     .map(|s| s.into())

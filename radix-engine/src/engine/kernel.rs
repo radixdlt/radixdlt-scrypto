@@ -1332,7 +1332,7 @@ where
                 self.track.set_key_value(
                     parent_address.clone(),
                     id.to_vec(),
-                    Substate::NonFungible(NonFungibleWrapper(Some(non_fungible))),
+                    Substate::NonFungible(NonFungibleSubstate(Some(non_fungible))),
                 );
             }
         }

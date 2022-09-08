@@ -107,7 +107,7 @@ pub fn execute_genesis<'s, R: FeeReserve>(mut track: Track<'s, R>) -> TrackRecei
         amount: minted_xrd.amount(),
     };
 
-    let system_vault = SingleBalanceVault(minted_xrd);
+    let system_vault = VaultSubstate(minted_xrd);
     track.create_uuid_substate(SubstateId::Vault(XRD_VAULT_ID), system_vault, false);
 
     let sys_faucet_component_info = ComponentInfo::new(

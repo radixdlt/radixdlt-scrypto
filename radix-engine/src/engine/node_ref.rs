@@ -161,12 +161,15 @@ impl NativeSubstateRef {
         }
     }
 
-    pub fn vault(&mut self) -> &mut Vault {
+    pub fn vault(&mut self) -> VaultMutRef {
         match self {
             NativeSubstateRef::Stack(root, _frame_id, _root_id, maybe_child) => {
-                root.get_node_mut(maybe_child.as_ref()).vault_mut()
+                VaultMutRef::Stack(root.get_node_mut(maybe_child.as_ref()).vault_mut())
             }
-            NativeSubstateRef::Track(_address, value) => value.vault_mut(),
+            NativeSubstateRef::Track(_address, value) => match value {
+                Substate::Vault(substate) => VaultMutRef::Track(substate),
+                s @ _ => panic!("Expected vault but found {:?}", s),
+            },
         }
     }
 
@@ -219,6 +222,25 @@ impl NativeSubstateRef {
     }
 }
 
+pub enum VaultMutRef<'a, 'b> {
+    Stack(&'a mut Vault),
+    Track(&'b mut VaultSubstate),
+}
+
+pub enum VaultRef<'a, 'b> {
+    Stack(&'a Vault),
+    Track(&'b VaultSubstate),
+}
+
+impl<'a, 'b> VaultRef<'a, 'b> {
+    pub fn resource_address(&self) -> ResourceAddress {
+        match self {
+            VaultRef::Stack(v) => v.resource_address(),
+            VaultRef::Track(v) => v.0.resource_address(),
+        }
+    }
+}
+
 pub enum RENodeRef<'f, 's, R: FeeReserve> {
     Stack(&'f HeapRootRENode, Option<RENodeId>),
     Track(&'f Track<'s, R>, RENodeId),
@@ -237,18 +259,20 @@ impl<'f, 's, R: FeeReserve> RENodeRef<'f, 's, R> {
         }
     }
 
-    pub fn vault(&self) -> &Vault {
+    pub fn vault(&self) -> VaultRef {
         match self {
-            RENodeRef::Stack(value, id) => id
-                .as_ref()
-                .map_or(value.root(), |v| value.non_root(v))
-                .vault(),
+            RENodeRef::Stack(value, id) => VaultRef::Stack(
+                id.as_ref()
+                    .map_or(value.root(), |v| value.non_root(v))
+                    .vault(),
+            ),
             RENodeRef::Track(track, node_id) => {
                 let substate_id = match node_id {
                     RENodeId::Vault(vault_id) => SubstateId::Vault(*vault_id),
                     _ => panic!("Unexpected"),
                 };
-                track.read_substate(substate_id).vault()
+                let vault_substate = track.read_substate(substate_id).vault();
+                VaultRef::Track(vault_substate)
             }
         }
     }
@@ -467,7 +491,7 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
                 track.set_key_value(
                     parent_substate_id,
                     key,
-                    Substate::KeyValueStoreEntry(KeyValueStoreEntryWrapper(Some(value.raw))),
+                    Substate::KeyValueStoreEntry(KeyValueStoreEntrySubstate(Some(value.raw))),
                 );
                 for (id, val) in to_store {
                     insert_non_root_nodes(track, val.to_nodes(id));
@@ -482,8 +506,8 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
                 let store = re_value.get_node_mut(id.as_ref()).kv_store_mut();
                 store
                     .get(key)
-                    .map(|v| KeyValueStoreEntryWrapper(Some(v.raw)))
-                    .unwrap_or(KeyValueStoreEntryWrapper(None))
+                    .map(|v| KeyValueStoreEntrySubstate(Some(v.raw)))
+                    .unwrap_or(KeyValueStoreEntrySubstate(None))
             }
             RENodeRefMut::Track(track, node_id) => {
                 let parent_substate_id = match node_id {
@@ -498,7 +522,7 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
         };
 
         // TODO: Cleanup after adding polymorphism support for SBOR
-        // For now, we have to use `Vec<u8>` within `KeyValueStoreEntryWrapper`
+        // For now, we have to use `Vec<u8>` within `KeyValueStoreEntrySubstate`
         // and apply the following ugly conversion.
         let value = wrapper.0.map_or(
             Value::Option {
@@ -506,7 +530,7 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
             },
             |v| Value::Option {
                 value: Box::new(Some(
-                    decode_any(&v).expect("Failed to decode the value in NonFungibleWrapper"),
+                    decode_any(&v).expect("Failed to decode the value in NonFungibleSubstate"),
                 )),
             },
         );
@@ -525,8 +549,8 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
                 non_fungible_set
                     .get(id)
                     .cloned()
-                    .map(|v| NonFungibleWrapper(Some(v)))
-                    .unwrap_or(NonFungibleWrapper(None))
+                    .map(|v| NonFungibleSubstate(Some(v)))
+                    .unwrap_or(NonFungibleSubstate(None))
             }
             RENodeRefMut::Track(track, node_id) => {
                 let parent_substate_id = match node_id {
@@ -558,7 +582,7 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
                 track.set_key_value(
                     parent_substate_id,
                     id.to_vec(),
-                    Substate::NonFungible(NonFungibleWrapper(None)),
+                    Substate::NonFungible(NonFungibleSubstate(None)),
                 );
             }
         }
@@ -567,8 +591,8 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
     pub fn non_fungible_put(&mut self, id: NonFungibleId, value: ScryptoValue) {
         match self {
             RENodeRefMut::Stack(re_value, re_id) => {
-                let wrapper: NonFungibleWrapper = scrypto_decode(&value.raw)
-                    .expect("Attempted to put non-NonFungibleWrapper for non-fungible.");
+                let wrapper: NonFungibleSubstate = scrypto_decode(&value.raw)
+                    .expect("Attempted to put non-NonFungibleSubstate for non-fungible.");
 
                 let non_fungible_set = re_value.get_node_mut(re_id.as_ref()).non_fungibles_mut();
                 if let Some(non_fungible) = wrapper.0 {
@@ -584,8 +608,8 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
                     }
                     _ => panic!("Unexpeceted"),
                 };
-                let wrapper: NonFungibleWrapper = scrypto_decode(&value.raw)
-                    .expect("Attempted to put non-NonFungibleWrapper for non-fungible.");
+                let wrapper: NonFungibleSubstate = scrypto_decode(&value.raw)
+                    .expect("Attempted to put non-NonFungibleSubstate for non-fungible.");
                 track.set_key_value(
                     parent_substate_id,
                     id.to_vec(),
@@ -691,8 +715,14 @@ pub fn insert_non_root_nodes<'s, R: FeeReserve>(
     for (id, node) in values {
         match node {
             HeapRENode::Vault(vault) => {
-                let addr = SubstateId::Vault(id.into());
-                track.create_uuid_substate(addr, vault, false);
+                let resource = vault
+                    .resource()
+                    .expect("TODO: make sure engine has checked the vault status");
+                track.create_uuid_substate(
+                    SubstateId::Vault(id.into()),
+                    VaultSubstate(resource),
+                    false,
+                );
             }
             HeapRENode::Component(component, component_state) => {
                 let component_address = id.into();
@@ -714,7 +744,7 @@ pub fn insert_non_root_nodes<'s, R: FeeReserve>(
                     track.set_key_value(
                         substate_id.clone(),
                         k,
-                        KeyValueStoreEntryWrapper(Some(v.raw)),
+                        KeyValueStoreEntrySubstate(Some(v.raw)),
                     );
                 }
             }

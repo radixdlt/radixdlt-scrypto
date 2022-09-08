@@ -4,7 +4,7 @@ use crate::model::resource_manager::ResourceMethodRule::{Protected, Public};
 use crate::model::ResourceManagerError::InvalidMethod;
 use crate::model::{convert, MethodAuthorization};
 use crate::model::{Bucket, NonFungible, Resource, Vault};
-use crate::model::{InvokeError, NonFungibleWrapper};
+use crate::model::{InvokeError, NonFungibleSubstate};
 use crate::types::AccessRule::*;
 use crate::types::ResourceMethodAuthKey::*;
 use crate::types::*;
@@ -340,8 +340,8 @@ impl ResourceManager {
             let value = system_api
                 .substate_read(SubstateId::NonFungible(self_address, id.clone()))
                 .map_err(InvokeError::Downstream)?;
-            let wrapper: NonFungibleWrapper =
-                scrypto_decode(&value.raw).expect("Failed to decode NonFungibleWrapper substate");
+            let wrapper: NonFungibleSubstate =
+                scrypto_decode(&value.raw).expect("Failed to decode NonFungibleSubstate substate");
             if wrapper.0.is_some() {
                 return Err(InvokeError::Error(
                     ResourceManagerError::NonFungibleAlreadyExists(NonFungibleAddress::new(
@@ -355,7 +355,7 @@ impl ResourceManager {
             system_api
                 .substate_write(
                     SubstateId::NonFungible(self_address, id.clone()),
-                    ScryptoValue::from_typed(&NonFungibleWrapper(Some(non_fungible))),
+                    ScryptoValue::from_typed(&NonFungibleSubstate(Some(non_fungible))),
                 )
                 .map_err(InvokeError::Downstream)?;
             ids.insert(id);
@@ -598,8 +598,8 @@ impl ResourceManager {
                         input.id.clone(),
                     ))
                     .map_err(InvokeError::Downstream)?;
-                let wrapper: NonFungibleWrapper = scrypto_decode(&value.raw)
-                    .expect("Failed to decode NonFungibleWrapper substate");
+                let wrapper: NonFungibleSubstate = scrypto_decode(&value.raw)
+                    .expect("Failed to decode NonFungibleSubstate substate");
 
                 // Write new value
                 if let Some(mut non_fungible) = wrapper.0 {
@@ -607,7 +607,7 @@ impl ResourceManager {
                     system_api
                         .substate_write(
                             SubstateId::NonFungible(resource_address.clone(), input.id.clone()),
-                            ScryptoValue::from_typed(&NonFungibleWrapper(Some(non_fungible))),
+                            ScryptoValue::from_typed(&NonFungibleSubstate(Some(non_fungible))),
                         )
                         .map_err(InvokeError::Downstream)?;
                 } else {
@@ -627,8 +627,8 @@ impl ResourceManager {
                 let value = system_api
                     .substate_read(SubstateId::NonFungible(resource_address.clone(), input.id))
                     .map_err(InvokeError::Downstream)?;
-                let wrapper: NonFungibleWrapper = scrypto_decode(&value.raw)
-                    .expect("Failed to decode NonFungibleWrapper substate");
+                let wrapper: NonFungibleSubstate = scrypto_decode(&value.raw)
+                    .expect("Failed to decode NonFungibleSubstate substate");
                 Ok(ScryptoValue::from_typed(&wrapper.0.is_some()))
             }
             ResourceManagerFnIdentifier::GetNonFungible => {
@@ -639,8 +639,8 @@ impl ResourceManager {
                 let value = system_api
                     .substate_read(SubstateId::NonFungible(resource_address.clone(), input.id))
                     .map_err(InvokeError::Downstream)?;
-                let wrapper: NonFungibleWrapper = scrypto_decode(&value.raw)
-                    .expect("Failed to decode NonFungibleWrapper substate");
+                let wrapper: NonFungibleSubstate = scrypto_decode(&value.raw)
+                    .expect("Failed to decode NonFungibleSubstate substate");
                 let non_fungible = wrapper.0.ok_or(InvokeError::Error(
                     ResourceManagerError::NonFungibleNotFound(non_fungible_address),
                 ))?;

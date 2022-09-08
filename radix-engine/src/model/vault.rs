@@ -1,4 +1,4 @@
-use crate::engine::{HeapRENode, SystemApi};
+use crate::engine::{HeapRENode, SystemApi, VaultMutRef};
 use crate::fee::{FeeReserve, FeeReserveError};
 use crate::model::{
     Bucket, InvokeError, Proof, ProofError, Resource, ResourceContainer, ResourceContainerError,
@@ -6,8 +6,6 @@ use crate::model::{
 };
 use crate::types::*;
 use crate::wasm::*;
-
-use super::SingleBalanceVault;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub enum VaultError {
@@ -146,6 +144,13 @@ impl Vault {
         self.borrow_container().is_empty()
     }
 
+    pub fn resource(self) -> Result<Resource, ResourceContainerError> {
+        Rc::try_unwrap(self.container)
+            .map_err(|_| ResourceContainerError::ContainerLocked)
+            .map(|c| c.into_inner())
+            .map(Into::into)
+    }
+
     fn borrow_container(&self) -> Ref<ResourceContainer> {
         self.container.borrow()
     }
@@ -171,6 +176,11 @@ impl Vault {
             .substate_borrow_mut(&substate_id)
             .map_err(InvokeError::Downstream)?;
         let vault = ref_mut.vault();
+        if let VaultMutRef::Track(substate) = vault {
+            system_api
+                .substate_return_mut(ref_mut)
+                .map_err(InvokeError::Downstream)?;
+        }
 
         let rtn = match vault_fn {
             VaultFnIdentifier::Put => {

@@ -11,11 +11,11 @@ mod package_extractor;
 mod proof;
 mod resource;
 mod resource_manager;
+mod substates;
 mod system;
 mod transaction_processor;
 mod vault;
 mod worktop;
-mod wrappers;
 
 pub use crate::engine::InvokeError;
 pub use abi_extractor::*;
@@ -34,10 +34,10 @@ pub use package_extractor::{extract_abi, ExtractAbiError};
 pub use proof::*;
 pub use resource::*;
 pub use resource_manager::{ResourceManager, ResourceManagerError};
+pub use substates::*;
 pub use system::{System, SystemError};
 pub use transaction_processor::{
     TransactionProcessor, TransactionProcessorError, TransactionProcessorRunInput,
 };
 pub use vault::{Vault, VaultError};
 pub use worktop::{Worktop, WorktopError};
-pub use wrappers::*;

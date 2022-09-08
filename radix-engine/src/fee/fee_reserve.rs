@@ -172,7 +172,12 @@ impl FeeReserve for SystemLoanFeeReserve {
         }
 
         let actual_amount = effective_cost_unit_price * n;
-        self.payments.push((vault_id, fee, contingent));
+        self.payments.push((
+            vault_id,
+            fee.take_by_amount(actual_amount)
+                .expect("Failed to take from fee resource"),
+            contingent,
+        ));
 
         Ok(fee)
     }
