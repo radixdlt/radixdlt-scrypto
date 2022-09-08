@@ -585,9 +585,9 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     {
         let tx_hash = hash(self.next_transaction_nonce.to_string());
         let blobs = HashMap::new();
-        let mut substate_store = self.execution_stores.get_output_store(0);
+        let substate_store = self.execution_stores.get_root_store();
         let mut track = Track::new(
-            &substate_store,
+            substate_store,
             SystemLoanFeeReserve::default(),
             FeeTable::new(),
         );
@@ -614,7 +614,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         self.next_transaction_nonce += 1;
         let receipt = track.finalize(Ok(Vec::new()), Vec::new());
         if let TransactionResult::Commit(c) = receipt.result {
-            c.state_updates.commit(&mut substate_store);
+            c.state_updates.commit(substate_store);
         }
 
         output
