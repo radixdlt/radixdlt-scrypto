@@ -1,8 +1,10 @@
 use sbor::rust::collections::*;
 use sbor::{encode_any, DecodeError, Value};
 use scrypto::address::{AddressError, Bech32Encoder};
-use scrypto::core::FnIdentifier;
+use scrypto::buffer::scrypto_decode;
+use scrypto::core::{FnIdentifier, NativeFnIdentifier, ResourceManagerFnIdentifier};
 use scrypto::engine::types::*;
+use scrypto::resource::ResourceManagerCreateInput;
 use scrypto::values::*;
 
 use crate::errors::*;
@@ -14,6 +16,7 @@ pub enum DecompileError {
     IdValidationError(IdValidationError),
     DecodeError(DecodeError),
     AddressError(AddressError),
+    Unsupported,
 }
 
 pub fn decompile(
@@ -261,9 +264,32 @@ pub fn decompile(
                     }
                     buf.push_str(";\n");
                 }
-                FnIdentifier::Native(..) => {
-                    panic!("Unsupported");
-                }
+                FnIdentifier::Native(native_fn_identifier) => match native_fn_identifier {
+                    NativeFnIdentifier::ResourceManager(ResourceManagerFnIdentifier::Create) => {
+                        buf.push_str("CREATE_RESOURCE ;");
+                        let input: ResourceManagerCreateInput =
+                            scrypto_decode(&args).map_err(DecompileError::DecodeError)?;
+
+                        let resource_type = ScryptoValue::from_typed(&input.resource_type);
+                        buf.push(' ');
+                        buf.push_str(&resource_type.to_string());
+
+                        let metadata = ScryptoValue::from_typed(&input.metadata);
+                        buf.push(' ');
+                        buf.push_str(&metadata.to_string());
+
+                        let access_rules = ScryptoValue::from_typed(&input.access_rules);
+                        buf.push(' ');
+                        buf.push_str(&access_rules.to_string());
+
+                        let mint_params = ScryptoValue::from_typed(&input.mint_params);
+                        buf.push(' ');
+                        buf.push_str(&mint_params.to_string());
+
+                        buf.push_str(";\n");
+                    }
+                    _ => return Err(DecompileError::Unsupported),
+                },
             },
             Instruction::CallMethod {
                 component_address,

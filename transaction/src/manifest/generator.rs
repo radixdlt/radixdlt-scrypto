@@ -8,7 +8,7 @@ use scrypto::address::Bech32Decoder;
 use scrypto::args_from_value_vec;
 use scrypto::component::ComponentAddress;
 use scrypto::component::PackageAddress;
-use scrypto::core::{Expression, FnIdentifier};
+use scrypto::core::{Expression, FnIdentifier, NativeFnIdentifier, ResourceManagerFnIdentifier};
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
 use scrypto::math::*;
@@ -349,6 +349,25 @@ pub fn generate_instruction(
             code: generate_bytes(code)?,
             abi: generate_bytes(abi)?,
         },
+        ast::Instruction::CreateResource { args } => {
+            // TODO: Add arg verification
+            let args = generate_args(args, resolver, bech32_decoder)?;
+            let mut fields = Vec::new();
+            for arg in &args {
+                let validated_arg = ScryptoValue::from_slice(arg).unwrap();
+                id_validator
+                    .move_resources(&validated_arg)
+                    .map_err(GeneratorError::IdValidationError)?;
+                fields.push(validated_arg.dom);
+            }
+
+            Instruction::CallFunction {
+                fn_identifier: FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
+                    ResourceManagerFnIdentifier::Create,
+                )),
+                args: args_from_value_vec!(fields),
+            }
+        }
     })
 }
 
