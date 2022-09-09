@@ -532,14 +532,16 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         divisibility: u8,
         account: ComponentAddress,
     ) -> ResourceAddress {
-        let package = self.compile_and_publish("./tests/resource_creator");
+        let mut access_rules = HashMap::new();
+        access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
+        access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
         let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
             .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
-            .call_function(
-                package,
-                "ResourceCreator",
-                "create_fungible_fixed",
-                args!(amount, divisibility),
+            .create_resource(
+                ResourceType::Fungible { divisibility },
+                HashMap::new(),
+                access_rules,
+                Some(MintParams::Fungible { amount }),
             )
             .call_method(
                 account,
