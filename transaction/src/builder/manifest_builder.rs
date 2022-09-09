@@ -479,13 +479,10 @@ impl ManifestBuilder {
         );
 
         let mint_params: Option<MintParams> = Option::None;
-
         self.add_instruction(Instruction::CallFunction {
-            fn_identifier: FnIdentifier::Scrypto {
-                package_address: SYS_UTILS_PACKAGE,
-                blueprint_name: "SysUtils".to_owned(),
-                ident: "new_resource".to_string(),
-            },
+            fn_identifier: FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
+                ResourceManagerFnIdentifier::Create,
+            )),
             args: args!(
                 ResourceType::Fungible { divisibility: 18 },
                 metadata,
@@ -506,11 +503,9 @@ impl ManifestBuilder {
         resource_auth.insert(Withdraw, (rule!(allow_all), LOCKED));
 
         self.add_instruction(Instruction::CallFunction {
-            fn_identifier: FnIdentifier::Scrypto {
-                package_address: SYS_UTILS_PACKAGE,
-                blueprint_name: "SysUtils".to_owned(),
-                ident: "new_resource".to_string(),
-            },
+            fn_identifier: FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
+                ResourceManagerFnIdentifier::Create,
+            )),
             args: args!(
                 ResourceType::Fungible { divisibility: 18 },
                 metadata,
@@ -543,11 +538,9 @@ impl ManifestBuilder {
         let mint_params: Option<MintParams> = Option::None;
 
         self.add_instruction(Instruction::CallFunction {
-            fn_identifier: FnIdentifier::Scrypto {
-                package_address: SYS_UTILS_PACKAGE,
-                blueprint_name: "SysUtils".to_owned(),
-                ident: "new_resource".to_string(),
-            },
+            fn_identifier: FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
+                ResourceManagerFnIdentifier::Create,
+            )),
             args: args!(
                 ResourceType::Fungible { divisibility: 0 },
                 metadata,
@@ -568,11 +561,9 @@ impl ManifestBuilder {
         resource_auth.insert(Withdraw, (rule!(allow_all), LOCKED));
 
         self.add_instruction(Instruction::CallFunction {
-            fn_identifier: FnIdentifier::Scrypto {
-                package_address: SYS_UTILS_PACKAGE,
-                blueprint_name: "SysUtils".to_owned(),
-                ident: "new_resource".to_string(),
-            },
+            fn_identifier: FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
+                ResourceManagerFnIdentifier::Create,
+            )),
             args: args!(
                 ResourceType::Fungible { divisibility: 0 },
                 metadata,
