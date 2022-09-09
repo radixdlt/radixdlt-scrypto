@@ -8,7 +8,7 @@ use scrypto::address::Bech32Decoder;
 use scrypto::args_from_value_vec;
 use scrypto::component::ComponentAddress;
 use scrypto::component::PackageAddress;
-use scrypto::core::Expression;
+use scrypto::core::{Expression, FnIdentifier, NativeFnIdentifier, ResourceManagerFnIdentifier};
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
 use scrypto::math::*;
@@ -316,9 +316,11 @@ pub fn generate_instruction(
             }
 
             Instruction::CallFunction {
-                package_address: generate_package_address(package_address, bech32_decoder)?,
-                blueprint_name: generate_string(blueprint_name)?,
-                method_name: generate_string(function)?,
+                fn_identifier: FnIdentifier::Scrypto {
+                    package_address: generate_package_address(package_address, bech32_decoder)?,
+                    blueprint_name: generate_string(blueprint_name)?,
+                    ident: generate_string(function)?,
+                },
                 args: args_from_value_vec!(fields),
             }
         }
@@ -347,6 +349,25 @@ pub fn generate_instruction(
             code: generate_bytes(code)?,
             abi: generate_bytes(abi)?,
         },
+        ast::Instruction::CreateResource { args } => {
+            // TODO: Add arg verification
+            let args = generate_args(args, resolver, bech32_decoder)?;
+            let mut fields = Vec::new();
+            for arg in &args {
+                let validated_arg = ScryptoValue::from_slice(arg).unwrap();
+                id_validator
+                    .move_resources(&validated_arg)
+                    .map_err(GeneratorError::IdValidationError)?;
+                fields.push(validated_arg.dom);
+            }
+
+            Instruction::CallFunction {
+                fn_identifier: FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
+                    ResourceManagerFnIdentifier::Create,
+                )),
+                args: args_from_value_vec!(fields),
+            }
+        }
     })
 }
 
@@ -836,6 +857,9 @@ mod tests {
     use scrypto::address::Bech32Decoder;
     use scrypto::buffer::scrypto_encode;
     use scrypto::core::NetworkDefinition;
+    use scrypto::resource::{
+        AccessRule, MintParams, Mutability, ResourceMethodAuthKey, ResourceType,
+    };
     use scrypto::{args, pdec};
 
     #[macro_export]
@@ -1090,12 +1114,14 @@ mod tests {
         generate_instruction_ok!(
             r#"CALL_FUNCTION  PackageAddress("package_sim1q8gl2qqsusgzmz92es68wy2fr7zjc523xj57eanm597qrz3dx7")  "Airdrop"  "new"  500u32  Map<String, U8>("key", 1u8)  PreciseDecimal("120");"#,
             Instruction::CallFunction {
-                package_address: PackageAddress::from_str(
-                    "package_sim1q8gl2qqsusgzmz92es68wy2fr7zjc523xj57eanm597qrz3dx7".into()
-                )
-                .unwrap(),
-                blueprint_name: "Airdrop".into(),
-                method_name: "new".to_string(),
+                fn_identifier: FnIdentifier::Scrypto {
+                    package_address: PackageAddress::from_str(
+                        "package_sim1q8gl2qqsusgzmz92es68wy2fr7zjc523xj57eanm597qrz3dx7".into()
+                    )
+                    .unwrap(),
+                    blueprint_name: "Airdrop".into(),
+                    ident: "new".to_string(),
+                },
                 args: args!(500u32, HashMap::from([("key", 1u8),]), pdec!("120"))
             }
         );
@@ -1216,6 +1242,19 @@ mod tests {
                         "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag"
                     )
                     .unwrap()
+                },
+                Instruction::CallFunction {
+                    fn_identifier: FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
+                        ResourceManagerFnIdentifier::Create
+                    )),
+                    args: args!(
+                        ResourceType::Fungible { divisibility: 0 },
+                        HashMap::<String, String>::new(),
+                        HashMap::<ResourceMethodAuthKey, (AccessRule, Mutability)>::new(),
+                        Some(MintParams::Fungible {
+                            amount: "1.0".into()
+                        })
+                    ),
                 },
                 Instruction::CallMethod {
                     component_address: component1,

@@ -13,14 +13,18 @@ use scrypto::address::Bech32Decoder;
 use scrypto::buffer::*;
 use scrypto::component::{ComponentAddress, PackageAddress};
 use scrypto::constants::*;
-use scrypto::core::NetworkDefinition;
+use scrypto::core::{
+    FnIdentifier, NativeFnIdentifier, NetworkDefinition, ResourceManagerFnIdentifier,
+};
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
 use scrypto::math::*;
-use scrypto::resource::MintParams;
 use scrypto::resource::ResourceType;
 use scrypto::resource::{require, LOCKED};
 use scrypto::resource::{AccessRule, AccessRuleNode, Burn, Mint, Withdraw};
+use scrypto::resource::{
+    MintParams, Mutability, ResourceManagerCreateInput, ResourceMethodAuthKey,
+};
 use scrypto::resource::{NonFungibleAddress, NonFungibleId, ResourceAddress};
 use scrypto::values::*;
 use scrypto::*;
@@ -298,6 +302,30 @@ impl ManifestBuilder {
         self.add_instruction(Instruction::DropAllProofs).0
     }
 
+    pub fn create_resource(
+        &mut self,
+        resource_type: ResourceType,
+        metadata: HashMap<String, String>,
+        access_rules: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
+        mint_params: Option<MintParams>,
+    ) -> &mut Self {
+        let input = ResourceManagerCreateInput {
+            resource_type,
+            metadata,
+            access_rules,
+            mint_params,
+        };
+
+        self.add_instruction(Instruction::CallFunction {
+            fn_identifier: FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
+                ResourceManagerFnIdentifier::Create,
+            )),
+            args: scrypto_encode(&input),
+        });
+
+        self
+    }
+
     /// Calls a function where the arguments should be an array of encoded Scrypto value.
     pub fn call_function(
         &mut self,
@@ -307,9 +335,11 @@ impl ManifestBuilder {
         args: Vec<u8>,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {
-            package_address,
-            blueprint_name: blueprint_name.to_owned(),
-            method_name: method_name.to_string(),
+            fn_identifier: FnIdentifier::Scrypto {
+                package_address,
+                blueprint_name: blueprint_name.to_string(),
+                ident: method_name.to_string(),
+            },
             args,
         });
         self
@@ -351,9 +381,11 @@ impl ManifestBuilder {
 
         Ok(self
             .add_instruction(Instruction::CallFunction {
-                package_address,
-                blueprint_name: blueprint_name.to_owned(),
-                method_name: function.to_string(),
+                fn_identifier: FnIdentifier::Scrypto {
+                    package_address,
+                    blueprint_name: blueprint_name.to_string(),
+                    ident: function.to_string(),
+                },
                 args: bytes,
             })
             .0)
@@ -447,11 +479,10 @@ impl ManifestBuilder {
         );
 
         let mint_params: Option<MintParams> = Option::None;
-
         self.add_instruction(Instruction::CallFunction {
-            package_address: SYS_UTILS_PACKAGE,
-            blueprint_name: "SysUtils".to_owned(),
-            method_name: "new_resource".to_string(),
+            fn_identifier: FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
+                ResourceManagerFnIdentifier::Create,
+            )),
             args: args!(
                 ResourceType::Fungible { divisibility: 18 },
                 metadata,
@@ -472,9 +503,9 @@ impl ManifestBuilder {
         resource_auth.insert(Withdraw, (rule!(allow_all), LOCKED));
 
         self.add_instruction(Instruction::CallFunction {
-            package_address: SYS_UTILS_PACKAGE,
-            blueprint_name: "SysUtils".to_owned(),
-            method_name: "new_resource".to_string(),
+            fn_identifier: FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
+                ResourceManagerFnIdentifier::Create,
+            )),
             args: args!(
                 ResourceType::Fungible { divisibility: 18 },
                 metadata,
@@ -507,9 +538,9 @@ impl ManifestBuilder {
         let mint_params: Option<MintParams> = Option::None;
 
         self.add_instruction(Instruction::CallFunction {
-            package_address: SYS_UTILS_PACKAGE,
-            blueprint_name: "SysUtils".to_owned(),
-            method_name: "new_resource".to_string(),
+            fn_identifier: FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
+                ResourceManagerFnIdentifier::Create,
+            )),
             args: args!(
                 ResourceType::Fungible { divisibility: 0 },
                 metadata,
@@ -530,9 +561,9 @@ impl ManifestBuilder {
         resource_auth.insert(Withdraw, (rule!(allow_all), LOCKED));
 
         self.add_instruction(Instruction::CallFunction {
-            package_address: SYS_UTILS_PACKAGE,
-            blueprint_name: "SysUtils".to_owned(),
-            method_name: "new_resource".to_string(),
+            fn_identifier: FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
+                ResourceManagerFnIdentifier::Create,
+            )),
             args: args!(
                 ResourceType::Fungible { divisibility: 0 },
                 metadata,
@@ -548,9 +579,11 @@ impl ManifestBuilder {
     /// Mints resource.
     pub fn mint(&mut self, amount: Decimal, resource_address: ResourceAddress) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {
-            package_address: SYS_UTILS_PACKAGE,
-            blueprint_name: "SysUtils".to_owned(),
-            method_name: "mint".to_string(),
+            fn_identifier: FnIdentifier::Scrypto {
+                package_address: SYS_UTILS_PACKAGE,
+                blueprint_name: "SysUtils".to_owned(),
+                ident: "mint".to_string(),
+            },
             args: args!(amount, resource_address),
         });
         self
@@ -561,9 +594,11 @@ impl ManifestBuilder {
         self.take_from_worktop_by_amount(amount, resource_address, |builder, bucket_id| {
             builder
                 .add_instruction(Instruction::CallFunction {
-                    package_address: SYS_UTILS_PACKAGE,
-                    blueprint_name: "SysUtils".to_owned(),
-                    method_name: "burn".to_string(),
+                    fn_identifier: FnIdentifier::Scrypto {
+                        package_address: SYS_UTILS_PACKAGE,
+                        blueprint_name: "SysUtils".to_owned(),
+                        ident: "burn".to_string(),
+                    },
                     args: args!(scrypto::resource::Bucket(bucket_id)),
                 })
                 .0
@@ -579,9 +614,11 @@ impl ManifestBuilder {
             |builder, bucket_id| {
                 builder
                     .add_instruction(Instruction::CallFunction {
-                        package_address: SYS_UTILS_PACKAGE,
-                        blueprint_name: "SysUtils".to_owned(),
-                        method_name: "burn".to_string(),
+                        fn_identifier: FnIdentifier::Scrypto {
+                            package_address: SYS_UTILS_PACKAGE,
+                            blueprint_name: "SysUtils".to_owned(),
+                            ident: "burn".to_string(),
+                        },
                         args: args!(scrypto::resource::Bucket(bucket_id)),
                     })
                     .0
@@ -592,9 +629,11 @@ impl ManifestBuilder {
     /// Creates an account.
     pub fn new_account(&mut self, withdraw_auth: &AccessRuleNode) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {
-            package_address: ACCOUNT_PACKAGE,
-            blueprint_name: "Account".to_owned(),
-            method_name: "new".to_string(),
+            fn_identifier: FnIdentifier::Scrypto {
+                package_address: ACCOUNT_PACKAGE,
+                blueprint_name: "Account".to_owned(),
+                ident: "new".to_string(),
+            },
             args: args!(withdraw_auth.clone()),
         })
         .0
@@ -607,9 +646,11 @@ impl ManifestBuilder {
         bucket_id: BucketId,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {
-            package_address: ACCOUNT_PACKAGE,
-            blueprint_name: "Account".to_owned(),
-            method_name: "new_with_resource".to_string(),
+            fn_identifier: FnIdentifier::Scrypto {
+                package_address: ACCOUNT_PACKAGE,
+                blueprint_name: "Account".to_owned(),
+                ident: "new_with_resource".to_string(),
+            },
             args: args!(withdraw_auth.clone(), scrypto::resource::Bucket(bucket_id)),
         })
         .0

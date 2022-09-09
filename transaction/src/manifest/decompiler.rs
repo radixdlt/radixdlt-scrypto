@@ -1,7 +1,10 @@
 use sbor::rust::collections::*;
 use sbor::{encode_any, DecodeError, Value};
 use scrypto::address::{AddressError, Bech32Encoder};
+use scrypto::buffer::scrypto_decode;
+use scrypto::core::{FnIdentifier, NativeFnIdentifier, ResourceManagerFnIdentifier};
 use scrypto::engine::types::*;
+use scrypto::resource::ResourceManagerCreateInput;
 use scrypto::values::*;
 
 use crate::errors::*;
@@ -13,6 +16,7 @@ pub enum DecompileError {
     IdValidationError(IdValidationError),
     DecodeError(DecodeError),
     AddressError(AddressError),
+    Unsupported,
 }
 
 pub fn decompile(
@@ -226,36 +230,67 @@ pub fn decompile(
                 buf.push_str("DROP_ALL_PROOFS;\n");
             }
             Instruction::CallFunction {
-                package_address,
-                blueprint_name,
-                method_name,
-                args,
-            } => {
-                buf.push_str(&format!(
-                    "CALL_FUNCTION PackageAddress(\"{}\") \"{}\" \"{}\"",
-                    bech32_encoder.encode_package_address(&package_address),
-                    blueprint_name,
-                    method_name
-                ));
-                let validated_arg =
-                    ScryptoValue::from_slice(&args).map_err(DecompileError::DecodeError)?;
-                if let Value::Struct { fields } = validated_arg.dom {
-                    for field in fields {
-                        let bytes = encode_any(&field);
-                        let validated_arg = ScryptoValue::from_slice(&bytes)
-                            .map_err(DecompileError::DecodeError)?;
-                        id_validator
-                            .move_resources(&validated_arg)
-                            .map_err(DecompileError::IdValidationError)?;
+                fn_identifier,
 
-                        buf.push(' ');
-                        buf.push_str(&validated_arg.to_string_with_context(&buckets, &proofs));
+                args,
+            } => match fn_identifier {
+                FnIdentifier::Scrypto {
+                    package_address,
+                    blueprint_name,
+                    ident,
+                } => {
+                    buf.push_str(&format!(
+                        "CALL_FUNCTION PackageAddress(\"{}\") \"{}\" \"{}\"",
+                        bech32_encoder.encode_package_address(&package_address),
+                        blueprint_name,
+                        ident
+                    ));
+                    let validated_arg =
+                        ScryptoValue::from_slice(&args).map_err(DecompileError::DecodeError)?;
+                    if let Value::Struct { fields } = validated_arg.dom {
+                        for field in fields {
+                            let bytes = encode_any(&field);
+                            let validated_arg = ScryptoValue::from_slice(&bytes)
+                                .map_err(DecompileError::DecodeError)?;
+                            id_validator
+                                .move_resources(&validated_arg)
+                                .map_err(DecompileError::IdValidationError)?;
+
+                            buf.push(' ');
+                            buf.push_str(&validated_arg.to_string_with_context(&buckets, &proofs));
+                        }
+                    } else {
+                        panic!("Should not get here.");
                     }
-                } else {
-                    panic!("Should not get here.");
+                    buf.push_str(";\n");
                 }
-                buf.push_str(";\n");
-            }
+                FnIdentifier::Native(native_fn_identifier) => match native_fn_identifier {
+                    NativeFnIdentifier::ResourceManager(ResourceManagerFnIdentifier::Create) => {
+                        buf.push_str("CREATE_RESOURCE");
+                        let input: ResourceManagerCreateInput =
+                            scrypto_decode(&args).map_err(DecompileError::DecodeError)?;
+
+                        let resource_type = ScryptoValue::from_typed(&input.resource_type);
+                        buf.push(' ');
+                        buf.push_str(&resource_type.to_string());
+
+                        let metadata = ScryptoValue::from_typed(&input.metadata);
+                        buf.push(' ');
+                        buf.push_str(&metadata.to_string());
+
+                        let access_rules = ScryptoValue::from_typed(&input.access_rules);
+                        buf.push(' ');
+                        buf.push_str(&access_rules.to_string());
+
+                        let mint_params = ScryptoValue::from_typed(&input.mint_params);
+                        buf.push(' ');
+                        buf.push_str(&mint_params.to_string());
+
+                        buf.push_str(";\n");
+                    }
+                    _ => return Err(DecompileError::Unsupported),
+                },
+            },
             Instruction::CallMethod {
                 component_address,
                 method_name,

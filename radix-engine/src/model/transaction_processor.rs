@@ -543,9 +543,7 @@ impl TransactionProcessor {
                                 .map_err(InvokeError::Downstream)
                         }
                         ExecutableInstruction::CallFunction {
-                            package_address,
-                            blueprint_name,
-                            method_name,
+                            fn_identifier,
                             args,
                         } => {
                             Self::replace_ids(
@@ -557,14 +555,7 @@ impl TransactionProcessor {
                             .and_then(|call_data| Self::process_expressions(call_data, system_api))
                             .and_then(|call_data| {
                                 system_api
-                                    .invoke_function(
-                                        FnIdentifier::Scrypto {
-                                            package_address: *package_address,
-                                            blueprint_name: blueprint_name.to_string(),
-                                            ident: method_name.to_string(),
-                                        },
-                                        call_data,
-                                    )
+                                    .invoke_function(fn_identifier.clone(), call_data)
                                     .map_err(InvokeError::Downstream)
                             })
                             .and_then(|result| {

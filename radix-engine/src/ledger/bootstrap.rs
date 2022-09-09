@@ -91,9 +91,7 @@ pub fn execute_genesis<'s, R: FeeReserve>(
 
         // TODO: Remove nasty circular dependency on SYS_UTILS_PACKAGE
         ExecutableInstruction::CallFunction {
-            package_address: SYS_UTILS_PACKAGE,
-            blueprint_name: "SysUtils".to_string(),
-            method_name: "new_resource".to_string(),
+            fn_identifier: FnIdentifier::Native(NativeFnIdentifier::ResourceManager(ResourceManagerFnIdentifier::Create)),
             args: args!(
                 ResourceType::NonFungible,
                 metadata,
@@ -113,9 +111,7 @@ pub fn execute_genesis<'s, R: FeeReserve>(
 
         // TODO: Remove nasty circular dependency on SYS_UTILS_PACKAGE
         ExecutableInstruction::CallFunction {
-            package_address: SYS_UTILS_PACKAGE,
-            blueprint_name: "SysUtils".to_string(),
-            method_name: "new_resource".to_string(),
+            fn_identifier: FnIdentifier::Native(NativeFnIdentifier::ResourceManager(ResourceManagerFnIdentifier::Create)),
             args: args!(
                 ResourceType::NonFungible,
                 metadata,
@@ -140,9 +136,7 @@ pub fn execute_genesis<'s, R: FeeReserve>(
         });
 
         ExecutableInstruction::CallFunction {
-            package_address: SYS_UTILS_PACKAGE,
-            blueprint_name: "SysUtils".to_string(),
-            method_name: "new_resource".to_string(),
+            fn_identifier: FnIdentifier::Native(NativeFnIdentifier::ResourceManager(ResourceManagerFnIdentifier::Create)),
             args: args!(
                 ResourceType::Fungible { divisibility: 18 },
                 metadata,
@@ -159,9 +153,11 @@ pub fn execute_genesis<'s, R: FeeReserve>(
     let create_xrd_faucet = {
         let bucket = Bucket(id_allocator.new_bucket_id().unwrap());
         ExecutableInstruction::CallFunction {
-            package_address: SYS_FAUCET_PACKAGE,
-            blueprint_name: "Faucet".to_string(),
-            method_name: "new".to_string(),
+            fn_identifier: FnIdentifier::Scrypto {
+                package_address: SYS_FAUCET_PACKAGE,
+                blueprint_name: "Faucet".to_string(),
+                ident: "new".to_string(),
+            },
             args: args!(bucket),
         }
     };
