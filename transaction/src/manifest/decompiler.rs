@@ -266,7 +266,7 @@ pub fn decompile(
                 }
                 FnIdentifier::Native(native_fn_identifier) => match native_fn_identifier {
                     NativeFnIdentifier::ResourceManager(ResourceManagerFnIdentifier::Create) => {
-                        buf.push_str("CREATE_RESOURCE ;");
+                        buf.push_str("CREATE_RESOURCE");
                         let input: ResourceManagerCreateInput =
                             scrypto_decode(&args).map_err(DecompileError::DecodeError)?;
 

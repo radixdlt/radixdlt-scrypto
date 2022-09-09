@@ -727,7 +727,10 @@ mod tests {
                     Value::Enum("Fungible".to_string(), vec![Value::U8(0)]),
                     Value::Map(Type::String, Type::String, vec![]),
                     Value::Map(Type::Enum, Type::Tuple, vec![]),
-                    Value::Option(Box::new(Option::Some(Value::Enum("Fungible".to_string(), vec![Value::Decimal(Value::String("1.0".into()).into())])))),
+                    Value::Option(Box::new(Option::Some(Value::Enum(
+                        "Fungible".to_string(),
+                        vec![Value::Decimal(Value::String("1.0".into()).into())]
+                    )))),
                 ]
             }
         );
