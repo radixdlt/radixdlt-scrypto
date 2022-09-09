@@ -161,6 +161,15 @@ impl Parser {
                 code: self.parse_value()?,
                 abi: self.parse_value()?,
             },
+            TokenKind::CreateResource => Instruction::CreateResource {
+                args: {
+                    let mut values = vec![];
+                    while self.peek()?.kind != TokenKind::Semicolon {
+                        values.push(self.parse_value()?);
+                    }
+                    values
+                },
+            },
             _ => {
                 return Err(ParserError::UnexpectedToken(token));
             }
@@ -704,6 +713,21 @@ mod tests {
                 args: vec![
                     Value::NonFungibleId(Value::String("00".into()).into()),
                     Value::Proof(Value::String("admin_auth".into()).into())
+                ]
+            }
+        );
+    }
+
+    #[test]
+    fn test_create_resource() {
+        parse_instruction_ok!(
+            r#"CREATE_RESOURCE Enum("Fungible", 0u8) Map<String, String>() Map<Enum, Tuple>() Some(Enum("Fungible", Decimal("1.0")));"#,
+            Instruction::CreateResource {
+                args: vec![
+                    Value::Enum("Fungible".to_string(), vec![Value::U8(0)]),
+                    Value::Map(Type::String, Type::String, vec![]),
+                    Value::Map(Type::Enum, Type::Tuple, vec![]),
+                    Value::Option(Box::new(Option::Some(Value::Enum("Fungible".to_string(), vec![Value::Decimal(Value::String("1.0".into()).into())])))),
                 ]
             }
         );
