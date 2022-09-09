@@ -857,6 +857,9 @@ mod tests {
     use scrypto::address::Bech32Decoder;
     use scrypto::buffer::scrypto_encode;
     use scrypto::core::NetworkDefinition;
+    use scrypto::resource::{
+        AccessRule, MintParams, Mutability, ResourceMethodAuthKey, ResourceType,
+    };
     use scrypto::{args, pdec};
 
     #[macro_export]
@@ -1239,6 +1242,19 @@ mod tests {
                         "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag"
                     )
                     .unwrap()
+                },
+                Instruction::CallFunction {
+                    fn_identifier: FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
+                        ResourceManagerFnIdentifier::Create
+                    )),
+                    args: args!(
+                        ResourceType::Fungible { divisibility: 0 },
+                        HashMap::<String, String>::new(),
+                        HashMap::<ResourceMethodAuthKey, (AccessRule, Mutability)>::new(),
+                        Some(MintParams::Fungible {
+                            amount: "1.0".into()
+                        })
+                    ),
                 },
                 Instruction::CallMethod {
                     component_address: component1,
