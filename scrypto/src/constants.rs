@@ -124,6 +124,36 @@ pub const SYS_FAUCET_COMPONENT: ComponentAddress = construct_address!(
     86,
     194
 );
+
+pub const SYS_SYSTEM_COMPONENT: ComponentAddress = construct_address!(
+    EntityType::SystemComponent,
+    173,
+    130,
+    50,
+    141,
+    112,
+    34,
+    61,
+    91,
+    174,
+    38,
+    130,
+    96,
+    179,
+    4,
+    93,
+    204,
+    113,
+    220,
+    243,
+    95,
+    55,
+    167,
+    67,
+    74,
+    9,
+    105
+);
 // TODO Add other system components
 
 /// The system token which allows access to system resources (e.g. setting epoch)

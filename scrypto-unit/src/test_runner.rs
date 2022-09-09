@@ -3,7 +3,9 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use radix_engine::constants::*;
-use radix_engine::engine::{ExecutionPrivilege, ExecutionTrace, Kernel, KernelError, ModuleError, SystemApi};
+use radix_engine::engine::{
+    ExecutionPrivilege, ExecutionTrace, Kernel, KernelError, ModuleError, SystemApi,
+};
 use radix_engine::engine::{RuntimeError, Track};
 use radix_engine::fee::SystemLoanFeeReserve;
 use radix_engine::ledger::*;
@@ -216,6 +218,19 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         receipts.pop().unwrap()
     }
 
+    pub fn execute_manifest_with_privilege(
+        &mut self,
+        manifest: TransactionManifest,
+        signer_public_keys: Vec<EcdsaPublicKey>,
+        execution_privilege: ExecutionPrivilege,
+    ) -> TransactionReceipt {
+        let mut receipts = self.execute_batch_with_privilege(
+            vec![(manifest, signer_public_keys)],
+            execution_privilege,
+        );
+        receipts.pop().unwrap()
+    }
+
     pub fn execute_manifest_ignoring_fee(
         &mut self,
         mut manifest: TransactionManifest,
@@ -270,8 +285,17 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         &mut self,
         manifests: Vec<(TransactionManifest, Vec<EcdsaPublicKey>)>,
     ) -> Vec<TransactionReceipt> {
+        self.execute_batch_with_privilege(manifests, ExecutionPrivilege::User)
+    }
+
+    pub fn execute_batch_with_privilege(
+        &mut self,
+        manifests: Vec<(TransactionManifest, Vec<EcdsaPublicKey>)>,
+        execution_privilege: ExecutionPrivilege,
+    ) -> Vec<TransactionReceipt> {
         let node_id = self.create_child_node(0);
-        let receipts = self.execute_batch_on_node(node_id, manifests);
+        let receipts =
+            self.execute_batch_on_node_with_privilege(node_id, manifests, execution_privilege);
         self.merge_node(node_id);
         receipts
     }
@@ -284,6 +308,15 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         &mut self,
         node_id: u64,
         manifests: Vec<(TransactionManifest, Vec<EcdsaPublicKey>)>,
+    ) -> Vec<TransactionReceipt> {
+        self.execute_batch_on_node_with_privilege(node_id, manifests, ExecutionPrivilege::User)
+    }
+
+    pub fn execute_batch_on_node_with_privilege(
+        &mut self,
+        node_id: u64,
+        manifests: Vec<(TransactionManifest, Vec<EcdsaPublicKey>)>,
+        execution_privilege: ExecutionPrivilege,
     ) -> Vec<TransactionReceipt> {
         let mut store = self.execution_stores.get_output_store(node_id);
         let mut receipts = Vec::new();
@@ -302,7 +335,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
                     cost_unit_price: DEFAULT_COST_UNIT_PRICE.parse().unwrap(),
                     max_call_depth: DEFAULT_MAX_CALL_DEPTH,
                     system_loan: DEFAULT_SYSTEM_LOAN,
-                    execution_privilege: ExecutionPrivilege::User,
+                    execution_privilege,
                     trace: self.trace,
                 },
             );
@@ -612,7 +645,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         self.kernel_call(ExecutionPrivilege::Supervisor, |kernel| {
             kernel
                 .invoke_method(
-                    Receiver::Ref(RENodeId::System),
+                    Receiver::Ref(RENodeId::System(SYS_SYSTEM_COMPONENT)),
                     FnIdentifier::Native(NativeFnIdentifier::System(SystemFnIdentifier::SetEpoch)),
                     ScryptoValue::from_typed(&SystemSetEpochInput { epoch }),
                 )
@@ -624,7 +657,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         let current_epoch: ScryptoValue = self.kernel_call(ExecutionPrivilege::User, |kernel| {
             kernel
                 .invoke_method(
-                    Receiver::Ref(RENodeId::System),
+                    Receiver::Ref(RENodeId::System(SYS_SYSTEM_COMPONENT)),
                     FnIdentifier::Native(NativeFnIdentifier::System(
                         SystemFnIdentifier::GetCurrentEpoch,
                     )),

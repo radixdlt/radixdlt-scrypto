@@ -5,7 +5,7 @@ use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
 #[test]
-fn test_get_epoch() {
+fn get_epoch_should_succeed() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
@@ -25,7 +25,7 @@ fn test_get_epoch() {
 }
 
 #[test]
-fn test_set_epoch_without_system_auth_fails() {
+fn set_epoch_without_supervisor_auth_fails() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);

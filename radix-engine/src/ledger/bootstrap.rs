@@ -1,4 +1,3 @@
-use scrypto::resource::Bucket;
 use crate::constants::DEFAULT_MAX_CALL_DEPTH;
 use crate::engine::{ExecutionPrivilege, Track};
 use crate::engine::{ExecutionTrace, Kernel, SystemApi, TrackReceipt};
@@ -8,6 +7,7 @@ use crate::ledger::{ReadableSubstateStore, TypedInMemorySubstateStore, Writeable
 use crate::transaction::TransactionResult;
 use crate::types::ResourceMethodAuthKey::Withdraw;
 use crate::types::*;
+use scrypto::resource::Bucket;
 use transaction::model::ExecutableInstruction;
 use transaction::validation::{IdAllocator, IdSpace};
 
@@ -33,6 +33,7 @@ pub struct GenesisReceipt {
     pub system_token: ResourceAddress,
     pub xrd_token: ResourceAddress,
     pub faucet_component: ComponentAddress,
+    pub system_component: ComponentAddress,
 }
 
 // TODO: This would be much better handled if bootstrap was implemented as an executed transaction
@@ -47,14 +48,14 @@ pub fn execute_genesis<'s, R: FeeReserve>(
     let mut kernel = Kernel::new(
         Hash([0u8; Hash::LENGTH]),
         vec![],
-        ExecutionPrivilege::Supervisor,
+        ExecutionPrivilege::System,
         DEFAULT_MAX_CALL_DEPTH,
         &mut track,
         &mut wasm_engine,
         &mut wasm_instrumenter,
         WasmMeteringParams::new(InstructionCostRules::tiered(1, 5, 10, 5000), 512),
         &mut execution_trace,
-        vec![]
+        vec![],
     );
 
     let mut id_allocator = IdAllocator::new(IdSpace::Transaction);
@@ -91,7 +92,9 @@ pub fn execute_genesis<'s, R: FeeReserve>(
 
         // TODO: Remove nasty circular dependency on SYS_UTILS_PACKAGE
         ExecutableInstruction::CallFunction {
-            fn_identifier: FnIdentifier::Native(NativeFnIdentifier::ResourceManager(ResourceManagerFnIdentifier::Create)),
+            fn_identifier: FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
+                ResourceManagerFnIdentifier::Create,
+            )),
             args: args!(
                 ResourceType::NonFungible,
                 metadata,
@@ -111,7 +114,9 @@ pub fn execute_genesis<'s, R: FeeReserve>(
 
         // TODO: Remove nasty circular dependency on SYS_UTILS_PACKAGE
         ExecutableInstruction::CallFunction {
-            fn_identifier: FnIdentifier::Native(NativeFnIdentifier::ResourceManager(ResourceManagerFnIdentifier::Create)),
+            fn_identifier: FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
+                ResourceManagerFnIdentifier::Create,
+            )),
             args: args!(
                 ResourceType::NonFungible,
                 metadata,
@@ -136,7 +141,9 @@ pub fn execute_genesis<'s, R: FeeReserve>(
         });
 
         ExecutableInstruction::CallFunction {
-            fn_identifier: FnIdentifier::Native(NativeFnIdentifier::ResourceManager(ResourceManagerFnIdentifier::Create)),
+            fn_identifier: FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
+                ResourceManagerFnIdentifier::Create,
+            )),
             args: args!(
                 ResourceType::Fungible { divisibility: 18 },
                 metadata,
@@ -162,6 +169,15 @@ pub fn execute_genesis<'s, R: FeeReserve>(
         }
     };
 
+    let create_system_component = {
+        ExecutableInstruction::CallFunction {
+            fn_identifier: FnIdentifier::Native(NativeFnIdentifier::System(
+                SystemFnIdentifier::Create,
+            )),
+            args: args!(),
+        }
+    };
+
     let result = kernel
         .invoke_function(
             FnIdentifier::Native(NativeFnIdentifier::TransactionProcessor(
@@ -177,6 +193,7 @@ pub fn execute_genesis<'s, R: FeeReserve>(
                     create_xrd_token,
                     take_xrd,
                     create_xrd_faucet,
+                    create_system_component,
                 ],
             }),
         )
@@ -193,11 +210,10 @@ pub fn execute_genesis<'s, R: FeeReserve>(
     let (xrd_token, _bucket): (ResourceAddress, Option<Bucket>) =
         scrypto_decode(&invoke_result[5]).unwrap();
     let faucet_component: ComponentAddress = scrypto_decode(&invoke_result[7]).unwrap();
-
-    track.create_uuid_substate(SubstateId::System, System { epoch: 0 }, true);
+    let system_component_id: RENodeId = scrypto_decode(&invoke_result[8]).unwrap();
+    let system_component: ComponentAddress = system_component_id.into();
 
     let resource_changes = execution_trace.to_receipt().resource_changes;
-
     let track_receipt = track.finalize(Ok(invoke_result), resource_changes);
 
     (
@@ -210,6 +226,7 @@ pub fn execute_genesis<'s, R: FeeReserve>(
             system_token,
             xrd_token,
             faucet_component,
+            system_component,
         },
     )
 }
@@ -264,5 +281,6 @@ mod tests {
         assert_eq!(bootstrap_receipt.system_token, SYSTEM_TOKEN);
         assert_eq!(bootstrap_receipt.xrd_token, RADIX_TOKEN);
         assert_eq!(bootstrap_receipt.faucet_component, SYS_FAUCET_COMPONENT);
+        assert_eq!(bootstrap_receipt.system_component, SYS_SYSTEM_COMPONENT);
     }
 }
