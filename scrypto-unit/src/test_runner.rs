@@ -503,14 +503,31 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     }
 
     pub fn create_non_fungible_resource(&mut self, account: ComponentAddress) -> ResourceAddress {
-        let package = self.compile_and_publish("./tests/resource_creator");
+        let mut access_rules = HashMap::new();
+        access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
+        access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
+
+        let mut entries = HashMap::new();
+        entries.insert(
+            NonFungibleId::from_u32(1),
+            (scrypto_encode(&()), scrypto_encode(&())),
+        );
+        entries.insert(
+            NonFungibleId::from_u32(2),
+            (scrypto_encode(&()), scrypto_encode(&())),
+        );
+        entries.insert(
+            NonFungibleId::from_u32(3),
+            (scrypto_encode(&()), scrypto_encode(&())),
+        );
+
         let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
             .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
-            .call_function(
-                package,
-                "ResourceCreator",
-                "create_non_fungible_fixed",
-                args!(),
+            .create_resource(
+                ResourceType::NonFungible,
+                HashMap::new(),
+                access_rules,
+                Some(MintParams::NonFungible { entries }),
             )
             .call_method(
                 account,
