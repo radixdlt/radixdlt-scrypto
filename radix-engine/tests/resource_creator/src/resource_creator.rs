@@ -11,13 +11,6 @@ blueprint! {
     struct ResourceCreator {}
 
     impl ResourceCreator {
-        pub fn create_restricted_transfer(badge_resource_address: ResourceAddress) -> Bucket {
-            ResourceBuilder::new_fungible()
-                .divisibility(0)
-                .restrict_withdraw(rule!(require(badge_resource_address)), LOCKED)
-                .initial_supply(5)
-        }
-
         pub fn create_restricted_burn(badge_resource_address: ResourceAddress) -> Bucket {
             ResourceBuilder::new_fungible()
                 .divisibility(0)
