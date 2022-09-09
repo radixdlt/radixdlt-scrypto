@@ -11,13 +11,6 @@ blueprint! {
     struct ResourceCreator {}
 
     impl ResourceCreator {
-        pub fn create_restricted_burn(badge_resource_address: ResourceAddress) -> Bucket {
-            ResourceBuilder::new_fungible()
-                .divisibility(0)
-                .burnable(rule!(require(badge_resource_address)), LOCKED)
-                .initial_supply(5)
-        }
-
         pub fn set_mintable(resource_address: ResourceAddress, auth_address: ResourceAddress) {
             borrow_resource_manager!(resource_address).set_mintable(rule!(require(auth_address)));
         }

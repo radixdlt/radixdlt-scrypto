@@ -430,14 +430,22 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         account: ComponentAddress,
     ) -> (ResourceAddress, ResourceAddress) {
         let auth_resource_address = self.create_non_fungible_resource(account);
-        let package = self.compile_and_publish("./tests/resource_creator");
+
+        let mut access_rules = HashMap::new();
+        access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
+        access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
+        access_rules.insert(
+            ResourceMethodAuthKey::Burn,
+            (rule!(require(auth_resource_address)), LOCKED),
+        );
+
         let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
             .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
-            .call_function(
-                package,
-                "ResourceCreator",
-                "create_restricted_burn",
-                args!(auth_resource_address),
+            .create_resource(
+                ResourceType::Fungible { divisibility: 0 },
+                HashMap::new(),
+                access_rules,
+                Some(MintParams::Fungible { amount: 5.into() }),
             )
             .call_method(
                 account,
