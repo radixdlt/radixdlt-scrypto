@@ -369,14 +369,40 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         let withdraw_auth = self.create_non_fungible_resource(account);
         let admin_auth = self.create_non_fungible_resource(account);
 
-        let package = self.compile_and_publish("./tests/resource_creator");
+        let mut access_rules = HashMap::new();
+        access_rules.insert(
+            ResourceMethodAuthKey::Mint,
+            (
+                rule!(require(mint_auth)),
+                MUTABLE(rule!(require(admin_auth))),
+            ),
+        );
+        access_rules.insert(
+            ResourceMethodAuthKey::Burn,
+            (
+                rule!(require(burn_auth)),
+                MUTABLE(rule!(require(admin_auth))),
+            ),
+        );
+        access_rules.insert(
+            ResourceMethodAuthKey::Withdraw,
+            (
+                rule!(require(withdraw_auth)),
+                MUTABLE(rule!(require(admin_auth))),
+            ),
+        );
+        access_rules.insert(
+            ResourceMethodAuthKey::Deposit,
+            (rule!(allow_all), MUTABLE(rule!(require(admin_auth)))),
+        );
+
         let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
             .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
-            .call_function(
-                package,
-                "ResourceCreator",
-                "create_restricted_token",
-                args!(mint_auth, burn_auth, withdraw_auth, admin_auth),
+            .create_resource(
+                ResourceType::Fungible { divisibility: 0 },
+                HashMap::new(),
+                access_rules,
+                Some(MintParams::Fungible { amount: 5.into() }),
             )
             .call_method(
                 account,

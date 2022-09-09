@@ -18,30 +18,6 @@ blueprint! {
                 .initial_supply(5)
         }
 
-        pub fn create_restricted_token(
-            mint_auth: ResourceAddress,
-            burn_auth: ResourceAddress,
-            withdraw_auth: ResourceAddress,
-            admin_auth: ResourceAddress,
-        ) -> Bucket {
-            ResourceBuilder::new_fungible()
-                .divisibility(0)
-                .mintable(
-                    rule!(require(mint_auth)),
-                    MUTABLE(rule!(require(admin_auth))),
-                )
-                .burnable(
-                    rule!(require(burn_auth)),
-                    MUTABLE(rule!(require(admin_auth))),
-                )
-                .restrict_withdraw(
-                    rule!(require(withdraw_auth)),
-                    MUTABLE(rule!(require(admin_auth))),
-                )
-                .restrict_deposit(rule!(allow_all), MUTABLE(rule!(require(admin_auth))))
-                .initial_supply(5)
-        }
-
         pub fn create_restricted_burn(badge_resource_address: ResourceAddress) -> Bucket {
             ResourceBuilder::new_fungible()
                 .divisibility(0)

@@ -13,14 +13,18 @@ use scrypto::address::Bech32Decoder;
 use scrypto::buffer::*;
 use scrypto::component::{ComponentAddress, PackageAddress};
 use scrypto::constants::*;
-use scrypto::core::{FnIdentifier, NetworkDefinition};
+use scrypto::core::{
+    FnIdentifier, NativeFnIdentifier, NetworkDefinition, ResourceManagerFnIdentifier,
+};
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
 use scrypto::math::*;
-use scrypto::resource::MintParams;
 use scrypto::resource::ResourceType;
 use scrypto::resource::{require, LOCKED};
 use scrypto::resource::{AccessRule, AccessRuleNode, Burn, Mint, Withdraw};
+use scrypto::resource::{
+    MintParams, Mutability, ResourceManagerCreateInput, ResourceMethodAuthKey,
+};
 use scrypto::resource::{NonFungibleAddress, NonFungibleId, ResourceAddress};
 use scrypto::values::*;
 use scrypto::*;
@@ -296,6 +300,30 @@ impl ManifestBuilder {
     /// Drops all proofs.
     pub fn drop_all_proofs(&mut self) -> &mut Self {
         self.add_instruction(Instruction::DropAllProofs).0
+    }
+
+    pub fn create_resource(
+        &mut self,
+        resource_type: ResourceType,
+        metadata: HashMap<String, String>,
+        access_rules: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
+        mint_params: Option<MintParams>,
+    ) -> &mut Self {
+        let input = ResourceManagerCreateInput {
+            resource_type,
+            metadata,
+            access_rules,
+            mint_params,
+        };
+
+        self.add_instruction(Instruction::CallFunction {
+            fn_identifier: FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
+                ResourceManagerFnIdentifier::Create,
+            )),
+            args: scrypto_encode(&input),
+        });
+
+        self
     }
 
     /// Calls a function where the arguments should be an array of encoded Scrypto value.
