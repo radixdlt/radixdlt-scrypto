@@ -376,7 +376,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
             .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
             .create_proof_from_account(auth, account)
-            .call_function(package, "ResourceCreator", function, args!(token, set_auth))
+            .call_scrypto_function(package, "ResourceCreator", function, args!(token, set_auth))
             .call_method(
                 account,
                 "deposit_batch",

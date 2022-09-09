@@ -11,7 +11,7 @@ fn should_not_be_able_call_owned_components_directly() {
     let package_address = test_runner.compile_and_publish("./tests/local_component");
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(
+        .call_scrypto_function(
             package_address,
             "StoredSecret",
             "new_global",
@@ -46,7 +46,7 @@ fn should_be_able_to_call_read_method_on_a_stored_component_in_owned_component()
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(
+        .call_scrypto_function(
             package_address,
             "StoredSecret",
             "call_read_on_stored_component_in_owned_component",
@@ -69,7 +69,7 @@ fn should_be_able_to_call_write_method_on_a_stored_component_in_owned_component(
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(
+        .call_scrypto_function(
             package_address,
             "StoredSecret",
             "call_write_on_stored_component_in_owned_component",
@@ -90,7 +90,7 @@ fn should_be_able_to_call_read_method_on_a_stored_component_in_global_component(
     let package_address = test_runner.compile_and_publish("./tests/local_component");
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(
+        .call_scrypto_function(
             package_address,
             "StoredSecret",
             "new_global",
@@ -125,7 +125,7 @@ fn should_be_able_to_call_write_method_on_a_stored_component_in_global_component
     let package_address = test_runner.compile_and_publish("./tests/local_component");
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(
+        .call_scrypto_function(
             package_address,
             "StoredSecret",
             "new_global",
@@ -163,7 +163,7 @@ fn should_be_able_to_call_read_method_on_a_kv_stored_component_in_owned_componen
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(
+        .call_scrypto_function(
             package_address,
             "StoredKVLocal",
             "call_read_on_stored_component_in_owned_component",
@@ -186,7 +186,7 @@ fn should_be_able_to_call_write_method_on_a_kv_stored_component_in_owned_compone
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(
+        .call_scrypto_function(
             package_address,
             "StoredKVLocal",
             "call_write_on_stored_component_in_owned_component",
@@ -207,7 +207,7 @@ fn should_be_able_to_call_read_method_on_a_kv_stored_component_in_global_compone
     let package_address = test_runner.compile_and_publish("./tests/local_component");
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(
+        .call_scrypto_function(
             package_address,
             "StoredKVLocal",
             "new_global",
@@ -242,7 +242,7 @@ fn should_be_able_to_call_write_method_on_a_kv_stored_component_in_global_compon
     let package_address = test_runner.compile_and_publish("./tests/local_component");
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(
+        .call_scrypto_function(
             package_address,
             "StoredKVLocal",
             "new_global",

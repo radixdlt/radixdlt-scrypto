@@ -15,7 +15,7 @@ fn test_loop() {
     let package_address = test_runner.publish_package(code, test_abi_any_in_void_out("Test", "f"));
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(package_address, "Test", "f", args!())
+        .call_scrypto_function(package_address, "Test", "f", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -34,7 +34,7 @@ fn test_loop_out_of_cost_unit() {
     let package_address = test_runner.publish_package(code, test_abi_any_in_void_out("Test", "f"));
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(45.into(), SYS_FAUCET_COMPONENT)
-        .call_function(package_address, "Test", "f", args!())
+        .call_scrypto_function(package_address, "Test", "f", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -54,7 +54,7 @@ fn test_recursion() {
     let package_address = test_runner.publish_package(code, test_abi_any_in_void_out("Test", "f"));
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(package_address, "Test", "f", args!())
+        .call_scrypto_function(package_address, "Test", "f", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -73,7 +73,7 @@ fn test_recursion_stack_overflow() {
     let package_address = test_runner.publish_package(code, test_abi_any_in_void_out("Test", "f"));
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(package_address, "Test", "f", args!())
+        .call_scrypto_function(package_address, "Test", "f", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -92,7 +92,7 @@ fn test_grow_memory() {
     let package_address = test_runner.publish_package(code, test_abi_any_in_void_out("Test", "f"));
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(package_address, "Test", "f", args!())
+        .call_scrypto_function(package_address, "Test", "f", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -111,7 +111,7 @@ fn test_grow_memory_out_of_cost_unit() {
     let package_address = test_runner.publish_package(code, test_abi_any_in_void_out("Test", "f"));
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(package_address, "Test", "f", args!())
+        .call_scrypto_function(package_address, "Test", "f", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 

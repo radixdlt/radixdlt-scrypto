@@ -15,7 +15,7 @@ fn test_publish_package_from_scrypto() {
 
     let manifest1 = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(package, "PackageTest", "publish", args!())
+        .call_scrypto_function(package, "PackageTest", "publish", args!())
         .build();
     let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
     receipt1.expect_commit_success();
@@ -66,7 +66,7 @@ fn large_return_len_should_cause_memory_access_error() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(package, "LargeReturnSize", "f", args!())
+        .call_scrypto_function(package, "LargeReturnSize", "f", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -90,7 +90,7 @@ fn overflow_return_len_should_cause_memory_access_error() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(package, "MaxReturnSize", "f", args!())
+        .call_scrypto_function(package, "MaxReturnSize", "f", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -114,7 +114,7 @@ fn zero_return_len_should_cause_data_validation_error() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(package, "ZeroReturnSize", "f", args!())
+        .call_scrypto_function(package, "ZeroReturnSize", "f", args!())
         .build();
 
     let receipt = test_runner.execute_manifest(manifest, vec![]);

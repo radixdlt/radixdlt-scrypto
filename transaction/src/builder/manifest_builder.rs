@@ -326,8 +326,20 @@ impl ManifestBuilder {
         self
     }
 
+    pub fn call_native_function(
+        &mut self,
+        native_fn_identifier: NativeFnIdentifier,
+        args: Vec<u8>,
+    ) -> &mut Self {
+        self.add_instruction(Instruction::CallFunction {
+            fn_identifier: FnIdentifier::Native(native_fn_identifier),
+            args,
+        });
+        self
+    }
+
     /// Calls a function where the arguments should be an array of encoded Scrypto value.
-    pub fn call_function(
+    pub fn call_scrypto_function(
         &mut self,
         package_address: PackageAddress,
         blueprint_name: &str,

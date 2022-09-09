@@ -14,7 +14,7 @@ fn can_insert_in_child_nodes() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(package_address, "SuperKeyValueStore", "new", args!())
+        .call_scrypto_function(package_address, "SuperKeyValueStore", "new", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -32,7 +32,7 @@ fn create_mutable_key_value_store_into_map_and_referencing_before_storing() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(
+        .call_scrypto_function(
             package_address,
             "KeyValueStoreTest",
             "new_key_value_store_into_map_then_get",
@@ -55,7 +55,7 @@ fn cyclic_map_fails_execution() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(package_address, "CyclicMap", "new", args!())
+        .call_scrypto_function(package_address, "CyclicMap", "new", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -78,7 +78,7 @@ fn self_cyclic_map_fails_execution() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(package_address, "CyclicMap", "new_self_cyclic", args!())
+        .call_scrypto_function(package_address, "CyclicMap", "new_self_cyclic", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -99,7 +99,7 @@ fn cannot_remove_key_value_stores() {
     let package_address = test_runner.compile_and_publish("./tests/kv_store");
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(
+        .call_scrypto_function(
             package_address,
             "KeyValueStoreTest",
             "new_key_value_store_into_vector",
@@ -136,7 +136,7 @@ fn cannot_overwrite_key_value_stores() {
     let package_address = test_runner.compile_and_publish("./tests/kv_store");
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(
+        .call_scrypto_function(
             package_address,
             "KeyValueStoreTest",
             "new_key_value_store_into_key_value_store",
@@ -175,7 +175,7 @@ fn create_key_value_store_and_get() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(
+        .call_scrypto_function(
             package_address,
             "KeyValueStoreTest",
             "new_key_value_store_with_get",
@@ -198,7 +198,7 @@ fn create_key_value_store_and_put() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(
+        .call_scrypto_function(
             package_address,
             "KeyValueStoreTest",
             "new_key_value_store_with_put",
@@ -221,7 +221,7 @@ fn can_reference_in_memory_vault() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(
+        .call_scrypto_function(
             package_address,
             "Precommitted",
             "can_reference_precommitted_vault",
@@ -244,7 +244,7 @@ fn can_reference_deep_in_memory_value() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(
+        .call_scrypto_function(
             package_address,
             "Precommitted",
             "can_reference_deep_precommitted_value",
@@ -267,7 +267,7 @@ fn can_reference_deep_in_memory_vault() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(
+        .call_scrypto_function(
             package_address,
             "Precommitted",
             "can_reference_deep_precommitted_vault",
@@ -290,7 +290,7 @@ fn cannot_directly_reference_inserted_vault() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(
+        .call_scrypto_function(
             package_address,
             "RefCheck",
             "cannot_directly_reference_inserted_vault",
@@ -318,7 +318,7 @@ fn cannot_directly_reference_vault_after_container_moved() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(
+        .call_scrypto_function(
             package_address,
             "RefCheck",
             "cannot_directly_reference_vault_after_container_moved",
@@ -346,7 +346,7 @@ fn cannot_directly_reference_vault_after_container_stored() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(
+        .call_scrypto_function(
             package_address,
             "RefCheck",
             "cannot_directly_reference_vault_after_container_stored",
@@ -374,7 +374,7 @@ fn multiple_reads_should_work() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(package_address, "MultipleReads", "multiple_reads", args!())
+        .call_scrypto_function(package_address, "MultipleReads", "multiple_reads", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 

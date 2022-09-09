@@ -15,7 +15,7 @@ fn test_bucket_internal(method_name: &str) {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), account)
-        .call_function(package_address, "BucketTest", method_name, args!())
+        .call_scrypto_function(package_address, "BucketTest", method_name, args!())
         .call_method(
             account,
             "deposit_batch",
@@ -82,10 +82,10 @@ fn test_bucket_of_badges() {
 
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), account)
-        .call_function(package_address, "BadgeTest", "combine", args!())
-        .call_function(package_address, "BadgeTest", "split", args!())
-        .call_function(package_address, "BadgeTest", "borrow", args!())
-        .call_function(package_address, "BadgeTest", "query", args!())
+        .call_scrypto_function(package_address, "BadgeTest", "combine", args!())
+        .call_scrypto_function(package_address, "BadgeTest", "split", args!())
+        .call_scrypto_function(package_address, "BadgeTest", "borrow", args!())
+        .call_scrypto_function(package_address, "BadgeTest", "query", args!())
         .call_method(
             account,
             "deposit_batch",

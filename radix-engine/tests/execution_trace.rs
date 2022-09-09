@@ -15,7 +15,7 @@ fn test_trace_resource_transfers() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), account)
-        .call_function(
+        .call_scrypto_function(
             package_address,
             "ExecutionTraceTest",
             "transfer_resource_between_two_components",

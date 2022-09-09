@@ -36,30 +36,8 @@ pub struct GenesisReceipt {
     pub system_component: ComponentAddress,
 }
 
-// TODO: This would be much better handled if bootstrap was implemented as an executed transaction
-// TODO: rather than a state snapshot.
-pub fn execute_genesis<'s, R: FeeReserve>(
-    mut track: Track<'s, R>,
-) -> (TrackReceipt, GenesisReceipt) {
-    let mut wasm_engine = DefaultWasmEngine::new();
-    let mut wasm_instrumenter = WasmInstrumenter::new();
-    let mut execution_trace = ExecutionTrace::new();
-
-    let mut kernel = Kernel::new(
-        Hash([0u8; Hash::LENGTH]),
-        vec![],
-        ExecutionPrivilege::System,
-        DEFAULT_MAX_CALL_DEPTH,
-        &mut track,
-        &mut wasm_engine,
-        &mut wasm_instrumenter,
-        WasmMeteringParams::new(InstructionCostRules::tiered(1, 5, 10, 5000), 512),
-        &mut execution_trace,
-        vec![],
-    );
-
+pub fn create_genesis() -> Vec<ExecutableInstruction> {
     let mut id_allocator = IdAllocator::new(IdSpace::Transaction);
-
     let create_sys_faucet_package = {
         let sys_faucet_code = include_bytes!("../../../assets/sys_faucet.wasm").to_vec();
         let sys_faucet_abi = include_bytes!("../../../assets/sys_faucet.abi").to_vec();
@@ -178,24 +156,48 @@ pub fn execute_genesis<'s, R: FeeReserve>(
         }
     };
 
+    vec![
+        create_sys_faucet_package,
+        create_sys_utils_package,
+        create_account_package,
+        create_ecdsa_token,
+        create_system_token,
+        create_xrd_token,
+        take_xrd,
+        create_xrd_faucet,
+        create_system_component,
+    ]
+}
+
+pub fn execute_genesis<'s, R: FeeReserve>(
+    mut track: Track<'s, R>,
+) -> (TrackReceipt, GenesisReceipt) {
+    let mut wasm_engine = DefaultWasmEngine::new();
+    let mut wasm_instrumenter = WasmInstrumenter::new();
+    let mut execution_trace = ExecutionTrace::new();
+
+    let mut kernel = Kernel::new(
+        Hash([0u8; Hash::LENGTH]),
+        vec![],
+        ExecutionPrivilege::System,
+        DEFAULT_MAX_CALL_DEPTH,
+        &mut track,
+        &mut wasm_engine,
+        &mut wasm_instrumenter,
+        WasmMeteringParams::new(InstructionCostRules::tiered(1, 5, 10, 5000), 512),
+        &mut execution_trace,
+        vec![],
+    );
+
+    let instructions = create_genesis();
+    let input = TransactionProcessorRunInput { instructions };
+
     let result = kernel
         .invoke_function(
             FnIdentifier::Native(NativeFnIdentifier::TransactionProcessor(
                 TransactionProcessorFnIdentifier::Run,
             )),
-            ScryptoValue::from_typed(&TransactionProcessorRunInput {
-                instructions: vec![
-                    create_sys_faucet_package,
-                    create_sys_utils_package,
-                    create_account_package,
-                    create_ecdsa_token,
-                    create_system_token,
-                    create_xrd_token,
-                    take_xrd,
-                    create_xrd_faucet,
-                    create_system_component,
-                ],
-            }),
+            ScryptoValue::from_typed(&input),
         )
         .unwrap();
 

@@ -15,7 +15,7 @@ fn non_existent_vault_in_component_creation_should_fail() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(
+        .call_scrypto_function(
             package_address,
             "NonExistentVault",
             "create_component_with_non_existent_vault",
@@ -41,7 +41,7 @@ fn non_existent_vault_in_committed_component_should_fail() {
     let package_address = test_runner.compile_and_publish("./tests/vault");
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(package_address, "NonExistentVault", "new", args!())
+        .call_scrypto_function(package_address, "NonExistentVault", "new", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     let component_address = receipt
@@ -75,7 +75,7 @@ fn non_existent_vault_in_key_value_store_creation_should_fail() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(
+        .call_scrypto_function(
             package_address,
             "NonExistentVault",
             "create_key_value_store_with_non_existent_vault",
@@ -101,7 +101,7 @@ fn non_existent_vault_in_committed_key_value_store_should_fail() {
     let package_address = test_runner.compile_and_publish("./tests/vault");
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(package_address, "NonExistentVault", "new", args!())
+        .call_scrypto_function(package_address, "NonExistentVault", "new", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     let component_address = receipt
@@ -139,7 +139,7 @@ fn create_mutable_vault_into_map() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(package_address, "VaultTest", "new_vault_into_map", args!())
+        .call_scrypto_function(package_address, "VaultTest", "new_vault_into_map", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -157,7 +157,7 @@ fn invalid_double_ownership_of_vault() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(
+        .call_scrypto_function(
             package_address,
             "VaultTest",
             "invalid_double_ownership_of_vault",
@@ -185,7 +185,7 @@ fn create_mutable_vault_into_map_and_referencing_before_storing() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(
+        .call_scrypto_function(
             package_address,
             "VaultTest",
             "new_vault_into_map_then_get",
@@ -206,7 +206,7 @@ fn cannot_overwrite_vault_in_map() {
     let package_address = test_runner.compile_and_publish("./tests/vault");
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(package_address, "VaultTest", "new_vault_into_map", args!())
+        .call_scrypto_function(package_address, "VaultTest", "new_vault_into_map", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     let component_address = receipt
@@ -240,7 +240,7 @@ fn create_mutable_vault_into_vector() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(
+        .call_scrypto_function(
             package_address,
             "VaultTest",
             "new_vault_into_vector",
@@ -261,7 +261,7 @@ fn cannot_remove_vaults() {
     let package_address = test_runner.compile_and_publish("./tests/vault");
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(
+        .call_scrypto_function(
             package_address,
             "VaultTest",
             "new_vault_into_vector",
@@ -298,7 +298,7 @@ fn can_push_vault_into_vector() {
     let package_address = test_runner.compile_and_publish("./tests/vault");
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(
+        .call_scrypto_function(
             package_address,
             "VaultTest",
             "new_vault_into_vector",
@@ -332,7 +332,7 @@ fn create_mutable_vault_with_take() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(package_address, "VaultTest", "new_vault_with_take", args!())
+        .call_scrypto_function(package_address, "VaultTest", "new_vault_with_take", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -350,7 +350,7 @@ fn create_mutable_vault_with_take_non_fungible() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(
+        .call_scrypto_function(
             package_address,
             "VaultTest",
             "new_vault_with_take_non_fungible",
@@ -373,7 +373,7 @@ fn create_mutable_vault_with_get_nonfungible_ids() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(
+        .call_scrypto_function(
             package_address,
             "VaultTest",
             "new_vault_with_get_non_fungible_ids",
@@ -396,7 +396,7 @@ fn create_mutable_vault_with_get_nonfungible_id() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(
+        .call_scrypto_function(
             package_address,
             "VaultTest",
             "new_vault_with_get_non_fungible_id",
@@ -419,7 +419,7 @@ fn create_mutable_vault_with_get_amount() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(
+        .call_scrypto_function(
             package_address,
             "VaultTest",
             "new_vault_with_get_amount",
@@ -442,7 +442,7 @@ fn create_mutable_vault_with_get_resource_manager() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(
+        .call_scrypto_function(
             package_address,
             "VaultTest",
             "new_vault_with_get_resource_manager",

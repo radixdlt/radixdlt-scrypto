@@ -19,7 +19,7 @@ fn test_hello() {
 
     // Test the `instantiate_hello` function.
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
-        .call_function(package_address, "Hello", "instantiate_hello", args!())
+        .call_scrypto_function(package_address, "Hello", "instantiate_hello", args!())
         .build();
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![public_key]);
     println!("{:?}\n", receipt);

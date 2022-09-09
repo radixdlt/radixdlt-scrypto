@@ -11,7 +11,7 @@ fn test_process_and_transaction() {
 
     let manifest1 = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(package_address, "CoreTest", "query", args![])
+        .call_scrypto_function(package_address, "CoreTest", "query", args![])
         .build();
     let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
     receipt1.expect_commit_success();
@@ -26,8 +26,8 @@ fn test_call() {
 
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(package_address, "MoveTest", "move_bucket", args![])
-        .call_function(package_address, "MoveTest", "move_proof", args![])
+        .call_scrypto_function(package_address, "MoveTest", "move_bucket", args![])
+        .call_scrypto_function(package_address, "MoveTest", "move_proof", args![])
         .call_method(
             account,
             "deposit_batch",
