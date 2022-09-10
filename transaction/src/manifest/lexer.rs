@@ -106,6 +106,7 @@ pub enum TokenKind {
     PublishPackage,
     CreateResource,
     BurnBucket,
+    MintFungible,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -429,6 +430,7 @@ impl Lexer {
             "PUBLISH_PACKAGE" => Ok(TokenKind::PublishPackage),
             "CREATE_RESOURCE" => Ok(TokenKind::CreateResource),
             "BURN_BUCKET" => Ok(TokenKind::BurnBucket),
+            "MINT_FUNGIBLE" => Ok(TokenKind::MintFungible),
 
             s @ _ => Err(LexerError::UnknownIdentifier(s.into())),
         }

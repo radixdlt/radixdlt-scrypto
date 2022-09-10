@@ -173,6 +173,10 @@ impl Parser {
             TokenKind::BurnBucket => Instruction::BurnBucket {
                 bucket: self.parse_value()?,
             },
+            TokenKind::MintFungible => Instruction::MintFungible {
+                resource_address: self.parse_value()?,
+                amount: self.parse_value()?,
+            },
             _ => {
                 return Err(ParserError::UnexpectedToken(token));
             }

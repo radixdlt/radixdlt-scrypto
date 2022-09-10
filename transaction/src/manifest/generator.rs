@@ -14,7 +14,9 @@ use scrypto::core::{
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
 use scrypto::math::*;
-use scrypto::resource::{NonFungibleAddress, NonFungibleId, ResourceAddress};
+use scrypto::resource::{
+    MintParams, NonFungibleAddress, NonFungibleId, ResourceAddress, ResourceManagerMintInput,
+};
 use scrypto::values::*;
 use scrypto::{args, args_from_value_vec};
 
@@ -384,6 +386,27 @@ pub fn generate_instruction(
                     native_fn_identifier: NativeFnIdentifier::Bucket(BucketFnIdentifier::Burn),
                 },
                 args: args!(),
+            }
+        }
+        ast::Instruction::MintFungible {
+            resource_address,
+            amount,
+        } => {
+            let resource_address = generate_resource_address(resource_address, bech32_decoder)?;
+            let input = ResourceManagerMintInput {
+                mint_params: MintParams::Fungible {
+                    amount: generate_decimal(amount)?,
+                },
+            };
+
+            Instruction::CallMethod {
+                method_identifier: MethodIdentifier::Native {
+                    receiver: Receiver::Ref(RENodeId::ResourceManager(resource_address)),
+                    native_fn_identifier: NativeFnIdentifier::ResourceManager(
+                        ResourceManagerFnIdentifier::Mint,
+                    ),
+                },
+                args: args!(input),
             }
         }
     })

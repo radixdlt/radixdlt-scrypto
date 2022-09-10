@@ -6,7 +6,9 @@ use scrypto::core::{
     BucketFnIdentifier, FnIdentifier, NativeFnIdentifier, Receiver, ResourceManagerFnIdentifier,
 };
 use scrypto::engine::types::*;
-use scrypto::resource::ResourceManagerCreateInput;
+use scrypto::resource::{
+    ConsumingBucketBurnInput, MintParams, ResourceManagerCreateInput, ResourceManagerMintInput,
+};
 use scrypto::values::*;
 
 use crate::errors::*;
@@ -335,6 +337,9 @@ pub fn decompile(
                         NativeFnIdentifier::Bucket(BucketFnIdentifier::Burn),
                         Receiver::Consumed(RENodeId::Bucket(bucket_id)),
                     ) => {
+                        let _input: ConsumingBucketBurnInput =
+                            scrypto_decode(&args).map_err(DecompileError::DecodeError)?;
+
                         buf.push_str(&format!(
                             "BURN_BUCKET Bucket({});\n",
                             buckets
@@ -342,6 +347,23 @@ pub fn decompile(
                                 .map(|name| format!("\"{}\"", name))
                                 .unwrap_or(format!("{}u32", bucket_id)),
                         ));
+                    }
+                    (
+                        NativeFnIdentifier::ResourceManager(ResourceManagerFnIdentifier::Mint),
+                        Receiver::Ref(RENodeId::ResourceManager(resource_address)),
+                    ) => {
+                        let input: ResourceManagerMintInput =
+                            scrypto_decode(&args).map_err(DecompileError::DecodeError)?;
+                        match input.mint_params {
+                            MintParams::Fungible { amount } => {
+                                buf.push_str(&format!(
+                                    "MINT_FUNGIBLE ResourceAddress(\"{}\") Decimal(\"{}\") ;\n",
+                                    bech32_encoder.encode_resource_address(&resource_address),
+                                    amount,
+                                ));
+                            }
+                            _ => return Err(DecompileError::Unsupported),
+                        }
                     }
                     _ => return Err(DecompileError::Unsupported),
                 },

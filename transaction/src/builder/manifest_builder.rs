@@ -20,7 +20,7 @@ use scrypto::core::{
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
 use scrypto::math::*;
-use scrypto::resource::ResourceType;
+use scrypto::resource::{ResourceManagerMintInput, ResourceType};
 use scrypto::resource::{require, LOCKED};
 use scrypto::resource::{AccessRule, AccessRuleNode, Burn, Mint, Withdraw};
 use scrypto::resource::{
@@ -583,13 +583,16 @@ impl ManifestBuilder {
 
     /// Mints resource.
     pub fn mint(&mut self, amount: Decimal, resource_address: ResourceAddress) -> &mut Self {
-        self.add_instruction(Instruction::CallFunction {
-            fn_identifier: FnIdentifier::Scrypto {
-                package_address: SYS_UTILS_PACKAGE,
-                blueprint_name: "SysUtils".to_owned(),
-                ident: "mint".to_string(),
+        self.add_instruction(Instruction::CallMethod {
+            method_identifier: MethodIdentifier::Native {
+                receiver: Receiver::Ref(RENodeId::ResourceManager(resource_address)),
+                native_fn_identifier: NativeFnIdentifier::ResourceManager(ResourceManagerFnIdentifier::Mint),
             },
-            args: args!(amount, resource_address),
+            args: scrypto_encode(&ResourceManagerMintInput {
+                mint_params: MintParams::Fungible {
+                    amount
+                }
+            }),
         });
         self
     }
