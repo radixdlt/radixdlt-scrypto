@@ -618,6 +618,7 @@ impl TransactionProcessor {
                                                 String,
                                             ) = scrypto_decode(&s.raw)
                                                 .expect("Failed to decode ComponentInfo substate");
+
                                             system_api
                                                 .invoke_method(
                                                     Receiver::Ref(RENodeId::Component(
@@ -632,6 +633,16 @@ impl TransactionProcessor {
                                                 )
                                                 .map_err(InvokeError::Downstream)
                                         }),
+                                    MethodIdentifier::Native {
+                                        node_id,
+                                        native_fn_identifier,
+                                    } => system_api
+                                        .invoke_method(
+                                            Receiver::Ref(node_id.clone()),
+                                            FnIdentifier::Native(native_fn_identifier.clone()),
+                                            call_data,
+                                        )
+                                        .map_err(InvokeError::Downstream),
                                 }
                             })
                             .and_then(|result| {

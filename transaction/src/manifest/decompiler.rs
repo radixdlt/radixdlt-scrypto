@@ -325,6 +325,9 @@ pub fn decompile(
 
                     buf.push_str(";\n");
                 }
+                MethodIdentifier::Native { .. } => {
+                    return Err(DecompileError::Unsupported);
+                }
             },
             Instruction::PublishPackage { code, abi } => {
                 buf.push_str(&format!(
