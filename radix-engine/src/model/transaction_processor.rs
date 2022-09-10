@@ -591,8 +591,7 @@ impl TransactionProcessor {
                             })
                         }
                         ExecutableInstruction::CallMethod {
-                            component_address,
-                            method_name,
+                            method_identifier,
                             args,
                         } => {
                             Self::replace_ids(
@@ -604,29 +603,36 @@ impl TransactionProcessor {
                             .and_then(|call_data| Self::process_expressions(call_data, system_api))
                             .and_then(|call_data| {
                                 // TODO: Move this into preprocessor step
-                                system_api
-                                    .substate_read(SubstateId::ComponentInfo(*component_address))
-                                    .map_err(InvokeError::Downstream)
-                                    .and_then(|s| {
-                                        let (package_address, blueprint_name): (
-                                            PackageAddress,
-                                            String,
-                                        ) = scrypto_decode(&s.raw)
-                                            .expect("Failed to decode ComponentInfo substate");
-                                        system_api
-                                            .invoke_method(
-                                                Receiver::Ref(RENodeId::Component(
-                                                    *component_address,
-                                                )),
-                                                FnIdentifier::Scrypto {
-                                                    ident: method_name.to_string(),
-                                                    package_address,
-                                                    blueprint_name,
-                                                },
-                                                call_data,
-                                            )
-                                            .map_err(InvokeError::Downstream)
-                                    })
+                                match method_identifier {
+                                    MethodIdentifier::Scrypto {
+                                        component_address,
+                                        ident,
+                                    } => system_api
+                                        .substate_read(SubstateId::ComponentInfo(
+                                            *component_address,
+                                        ))
+                                        .map_err(InvokeError::Downstream)
+                                        .and_then(|s| {
+                                            let (package_address, blueprint_name): (
+                                                PackageAddress,
+                                                String,
+                                            ) = scrypto_decode(&s.raw)
+                                                .expect("Failed to decode ComponentInfo substate");
+                                            system_api
+                                                .invoke_method(
+                                                    Receiver::Ref(RENodeId::Component(
+                                                        *component_address,
+                                                    )),
+                                                    FnIdentifier::Scrypto {
+                                                        ident: ident.to_string(),
+                                                        package_address,
+                                                        blueprint_name,
+                                                    },
+                                                    call_data,
+                                                )
+                                                .map_err(InvokeError::Downstream)
+                                        }),
+                                }
                             })
                             .and_then(|result| {
                                 // Auto move into auth_zone

@@ -242,13 +242,15 @@ impl fmt::Debug for TransactionReceipt {
                         ScryptoValue::from_slice(&args).expect("Failed parse call data")
                     ),
                     ExecutableInstruction::CallMethod {
-                        component_address,
-                        method_name,
+                        method_identifier: MethodIdentifier::Scrypto {
+                            component_address,
+                            ident
+                        },
                         args,
                     } => format!(
                         "CallMethod {{ component_address: {}, method_name: {:?}, call_data: {:?} }}",
                         bech32_encoder.encode_component_address(&component_address),
-                        method_name,
+                        ident,
                         ScryptoValue::from_slice(&args).expect("Failed to parse call data")
                     ),
                     ExecutableInstruction::PublishPackage { .. } => "PublishPackage {..}".to_owned(),

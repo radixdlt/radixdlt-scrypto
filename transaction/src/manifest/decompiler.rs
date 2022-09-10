@@ -292,36 +292,40 @@ pub fn decompile(
                 },
             },
             Instruction::CallMethod {
-                component_address,
-                method_name,
+                method_identifier,
                 args,
-            } => {
-                buf.push_str(&format!(
-                    "CALL_METHOD ComponentAddress(\"{}\") \"{}\"",
-                    bech32_encoder.encode_component_address(&component_address),
-                    method_name
-                ));
+            } => match method_identifier {
+                MethodIdentifier::Scrypto {
+                    component_address,
+                    ident,
+                } => {
+                    buf.push_str(&format!(
+                        "CALL_METHOD ComponentAddress(\"{}\") \"{}\"",
+                        bech32_encoder.encode_component_address(&component_address),
+                        ident
+                    ));
 
-                let validated_arg =
-                    ScryptoValue::from_slice(&args).map_err(DecompileError::DecodeError)?;
-                if let Value::Struct { fields } = validated_arg.dom {
-                    for field in fields {
-                        let bytes = encode_any(&field);
-                        let validated_arg = ScryptoValue::from_slice(&bytes)
-                            .map_err(DecompileError::DecodeError)?;
-                        id_validator
-                            .move_resources(&validated_arg)
-                            .map_err(DecompileError::IdValidationError)?;
+                    let validated_arg =
+                        ScryptoValue::from_slice(&args).map_err(DecompileError::DecodeError)?;
+                    if let Value::Struct { fields } = validated_arg.dom {
+                        for field in fields {
+                            let bytes = encode_any(&field);
+                            let validated_arg = ScryptoValue::from_slice(&bytes)
+                                .map_err(DecompileError::DecodeError)?;
+                            id_validator
+                                .move_resources(&validated_arg)
+                                .map_err(DecompileError::IdValidationError)?;
 
-                        buf.push(' ');
-                        buf.push_str(&validated_arg.to_string_with_context(&buckets, &proofs));
+                            buf.push(' ');
+                            buf.push_str(&validated_arg.to_string_with_context(&buckets, &proofs));
+                        }
+                    } else {
+                        panic!("Should not get here.");
                     }
-                } else {
-                    panic!("Should not get here.");
-                }
 
-                buf.push_str(";\n");
-            }
+                    buf.push_str(";\n");
+                }
+            },
             Instruction::PublishPackage { code, abi } => {
                 buf.push_str(&format!(
                     "PUBLISH_PACKAGE Bytes(\"{}\") Bytes(\"{}\");\n",

@@ -399,8 +399,10 @@ impl ManifestBuilder {
         args: Vec<u8>,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
-            component_address,
-            method_name: method_name.to_owned(),
+            method_identifier: MethodIdentifier::Scrypto {
+                component_address,
+                ident: method_name.to_owned(),
+            },
             args,
         });
         self
@@ -434,8 +436,10 @@ impl ManifestBuilder {
 
         Ok(self
             .add_instruction(Instruction::CallMethod {
-                component_address,
-                method_name: method.to_owned(),
+                method_identifier: MethodIdentifier::Scrypto {
+                    component_address,
+                    ident: method.to_owned(),
+                },
                 args: args_from_bytes_vec!(arguments),
             })
             .0)
@@ -659,8 +663,10 @@ impl ManifestBuilder {
     /// Locks a fee from the XRD vault of an account.
     pub fn lock_fee(&mut self, amount: Decimal, account: ComponentAddress) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
-            component_address: account,
-            method_name: "lock_fee".to_string(),
+            method_identifier: MethodIdentifier::Scrypto {
+                component_address: account,
+                ident: "lock_fee".to_string(),
+            },
             args: args!(amount),
         })
         .0
@@ -668,8 +674,10 @@ impl ManifestBuilder {
 
     pub fn lock_contingent_fee(&mut self, amount: Decimal, account: ComponentAddress) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
-            component_address: account,
-            method_name: "lock_contingent_fee".to_string(),
+            method_identifier: MethodIdentifier::Scrypto {
+                component_address: account,
+                ident: "lock_contingent_fee".to_string(),
+            },
             args: args!(amount),
         })
         .0
@@ -682,8 +690,10 @@ impl ManifestBuilder {
         account: ComponentAddress,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
-            component_address: account,
-            method_name: "withdraw".to_string(),
+            method_identifier: MethodIdentifier::Scrypto {
+                component_address: account,
+                ident: "withdraw".to_string(),
+            },
             args: args!(resource_address),
         })
         .0
@@ -697,8 +707,10 @@ impl ManifestBuilder {
         account: ComponentAddress,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
-            component_address: account,
-            method_name: "withdraw_by_amount".to_string(),
+            method_identifier: MethodIdentifier::Scrypto {
+                component_address: account,
+                ident: "withdraw_by_amount".to_string(),
+            },
             args: args!(amount, resource_address),
         })
         .0
@@ -712,8 +724,10 @@ impl ManifestBuilder {
         account: ComponentAddress,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
-            component_address: account,
-            method_name: "withdraw_by_ids".to_string(),
+            method_identifier: MethodIdentifier::Scrypto {
+                component_address: account,
+                ident: "withdraw_by_ids".to_string(),
+            },
             args: args!(ids.clone(), resource_address),
         })
         .0
@@ -726,8 +740,10 @@ impl ManifestBuilder {
         account: ComponentAddress,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
-            component_address: account,
-            method_name: "create_proof".to_string(),
+            method_identifier: MethodIdentifier::Scrypto {
+                component_address: account,
+                ident: "create_proof".to_string(),
+            },
             args: args!(resource_address),
         })
         .0
@@ -741,8 +757,10 @@ impl ManifestBuilder {
         account: ComponentAddress,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
-            component_address: account,
-            method_name: "create_proof_by_amount".to_string(),
+            method_identifier: MethodIdentifier::Scrypto {
+                component_address: account,
+                ident: "create_proof_by_amount".to_string(),
+            },
             args: args!(amount, resource_address),
         })
         .0
@@ -756,8 +774,10 @@ impl ManifestBuilder {
         account: ComponentAddress,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
-            component_address: account,
-            method_name: "create_proof_by_ids".to_string(),
+            method_identifier: MethodIdentifier::Scrypto {
+                component_address: account,
+                ident: "create_proof_by_ids".to_string(),
+            },
             args: args!(ids.clone(), resource_address),
         })
         .0

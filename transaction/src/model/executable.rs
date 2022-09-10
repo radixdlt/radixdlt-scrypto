@@ -9,6 +9,14 @@ use scrypto::engine::types::*;
 use scrypto::math::*;
 use scrypto::resource::{NonFungibleId, ResourceAddress};
 
+#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
+pub enum MethodIdentifier {
+    Scrypto {
+        component_address: ComponentAddress,
+        ident: String,
+    },
+}
+
 /// Represents an instruction that can be executed by Radix Engine.
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
 pub enum ExecutableInstruction {
@@ -68,8 +76,7 @@ pub enum ExecutableInstruction {
         args: Vec<u8>,
     },
     CallMethod {
-        component_address: ComponentAddress,
-        method_name: String,
+        method_identifier: MethodIdentifier,
         args: Vec<u8>,
     },
     PublishPackage {
