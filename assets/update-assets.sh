@@ -29,13 +29,4 @@ cp \
   ./sys-faucet/target/wasm32-unknown-unknown/release/sys_faucet.abi \
   ./sys_faucet.abi
 
-wasm-opt \
-  -Os -g \
-  --strip-debug --strip-dwarf --strip-producers \
-  -o ./sys_utils.wasm \
-  ./sys-utils/target/wasm32-unknown-unknown/release/sys_utils.wasm
-cp \
-  ./sys-utils/target/wasm32-unknown-unknown/release/sys_utils.abi \
-  ./sys_utils.abi
-
 echo "Done!"
