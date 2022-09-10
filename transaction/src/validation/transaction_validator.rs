@@ -92,7 +92,7 @@ impl TransactionValidator {
         })
     }
 
-    fn validate_intent<I: IntentHashManager>(
+    pub fn validate_intent<I: IntentHashManager>(
         intent: &TransactionIntent,
         intent_hash_manager: &I,
         config: &ValidationConfig,
@@ -291,7 +291,7 @@ impl TransactionValidator {
         return Ok(instructions);
     }
 
-    fn validate_header(
+    pub fn validate_header(
         intent: &TransactionIntent,
         config: &ValidationConfig,
     ) -> Result<(), HeaderValidationError> {
@@ -331,7 +331,7 @@ impl TransactionValidator {
         Ok(())
     }
 
-    fn validate_signatures(
+    pub fn validate_signatures(
         transaction: &NotarizedTransaction,
     ) -> Result<(), SignatureValidationError> {
         // TODO: split into static validation part and runtime validation part to support more signatures
@@ -364,7 +364,7 @@ impl TransactionValidator {
         Ok(())
     }
 
-    fn validate_call_data(
+    pub fn validate_call_data(
         call_data: &[u8],
         id_validator: &mut IdValidator,
     ) -> Result<(), CallDataValidationError> {
