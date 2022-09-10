@@ -6,7 +6,6 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::abi::*;
-use crate::address::EntityType;
 use crate::constants::ECDSA_TOKEN;
 use crate::crypto::EcdsaPublicKey;
 use crate::resource::*;

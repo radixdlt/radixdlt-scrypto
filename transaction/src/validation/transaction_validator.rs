@@ -2,7 +2,6 @@ use std::collections::HashSet;
 
 use sbor::rust::vec;
 use scrypto::buffer::scrypto_decode;
-use scrypto::core::NetworkDefinition;
 use scrypto::crypto::*;
 use scrypto::values::*;
 
@@ -10,8 +9,8 @@ use crate::errors::{SignatureValidationError, *};
 use crate::model::*;
 use crate::validation::*;
 
-pub struct ValidationConfig<'n> {
-    pub network: &'n NetworkDefinition,
+pub struct ValidationConfig {
+    pub network_id: u8,
     pub current_epoch: u64,
     pub max_cost_unit_limit: u32,
     pub min_tip_percentage: u32,
@@ -303,7 +302,7 @@ impl TransactionValidator {
         }
 
         // network
-        if header.network_id != config.network.id {
+        if header.network_id != config.network_id {
             return Err(HeaderValidationError::InvalidNetwork);
         }
 
@@ -396,7 +395,7 @@ mod tests {
         ($result: expr, ($version: expr, $start_epoch: expr, $end_epoch: expr, $nonce: expr, $signers: expr, $notary: expr)) => {{
             let mut intent_hash_manager: TestIntentHashManager = TestIntentHashManager::new();
             let config: ValidationConfig = ValidationConfig {
-                network: &NetworkDefinition::local_simulator(),
+                network_id: NetworkDefinition::local_simulator().id,
                 current_epoch: 1,
                 max_cost_unit_limit: 10_000_000,
                 min_tip_percentage: 0,
@@ -467,7 +466,7 @@ mod tests {
     fn test_valid_preview() {
         let mut intent_hash_manager: TestIntentHashManager = TestIntentHashManager::new();
         let config: ValidationConfig = ValidationConfig {
-            network: &NetworkDefinition::local_simulator(),
+            network_id: NetworkDefinition::local_simulator().id,
             current_epoch: 1,
             max_cost_unit_limit: 10_000_000,
             min_tip_percentage: 0,

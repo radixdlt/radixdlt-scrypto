@@ -17,7 +17,7 @@ fn test_transaction_preview_cost_estimate() {
     let mut test_runner = TestRunner::new(true, &mut substate_store);
     let network = NetworkDefinition::local_simulator();
     let (validated_transaction, preview_intent) =
-        prepare_test_tx_and_preview_intent(&test_runner, &network);
+        prepare_test_tx_and_preview_intent(&test_runner, network.id);
 
     // Act & Assert: Execute the preview, followed by a normal execution.
     // Ensure that both succeed and that the preview result provides an accurate cost estimate
@@ -37,7 +37,7 @@ fn test_transaction_preview_cost_estimate() {
 
 fn prepare_test_tx_and_preview_intent(
     test_runner: &TestRunner<TypedInMemorySubstateStore>,
-    network: &NetworkDefinition,
+    network_id: u8,
 ) -> (ValidatedTransaction, PreviewIntent) {
     let notary_priv_key = EcdsaPrivateKey::from_u64(2).unwrap();
     let tx_signer_priv_key = EcdsaPrivateKey::from_u64(3).unwrap();
@@ -45,7 +45,7 @@ fn prepare_test_tx_and_preview_intent(
     let notarized_transaction = TransactionBuilder::new()
         .header(TransactionHeader {
             version: 1,
-            network_id: network.id,
+            network_id,
             start_epoch_inclusive: 0,
             end_epoch_exclusive: 99,
             nonce: test_runner.next_transaction_nonce(),
@@ -68,7 +68,7 @@ fn prepare_test_tx_and_preview_intent(
         notarized_transaction.clone(),
         &TestIntentHashManager::new(),
         &ValidationConfig {
-            network: &network,
+            network_id: network_id,
             current_epoch: 1,
             max_cost_unit_limit: 10_000_000,
             min_tip_percentage: 0,
