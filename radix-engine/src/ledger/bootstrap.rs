@@ -1,15 +1,11 @@
-use crate::constants::DEFAULT_MAX_CALL_DEPTH;
-use crate::engine::{ExecutionPrivilege, Track};
-use crate::engine::{ExecutionTrace, Kernel, SystemApi, TrackReceipt};
-use crate::fee::FeeReserve;
-use crate::fee::UnlimitedLoanFeeReserve;
-use crate::ledger::{ReadableSubstateStore, TypedInMemorySubstateStore, WriteableSubstateStore};
-use crate::transaction::TransactionResult;
+use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
+use crate::transaction::TransactionExecutor;
 use crate::types::ResourceMethodAuthKey::Withdraw;
 use crate::types::*;
+use crate::wasm::{DefaultWasmEngine, WasmInstrumenter};
 use scrypto::resource::Bucket;
 use transaction::model::{Instruction, SystemTransaction, TransactionManifest};
-use transaction::validation::{IdAllocator, IdSpace, TransactionValidator};
+use transaction::validation::{IdAllocator, IdSpace};
 
 #[derive(TypeId, Encode, Decode)]
 struct SystemComponentState {
@@ -21,9 +17,6 @@ const XRD_NAME: &str = "Radix";
 const XRD_DESCRIPTION: &str = "The Radix Public Network's native token, used to pay the network's required transaction fees and to secure the network through staking to its validator nodes.";
 const XRD_URL: &str = "https://tokens.radixdlt.com";
 const XRD_MAX_SUPPLY: i128 = 24_000_000_000i128;
-
-use crate::model::*;
-use crate::wasm::{DefaultWasmEngine, InstructionCostRules, WasmInstrumenter, WasmMeteringParams};
 
 pub struct GenesisReceipt {
     pub sys_faucet_package: PackageAddress,
@@ -198,52 +191,7 @@ pub fn genesis_result(invoke_result: &Vec<Vec<u8>>) -> GenesisReceipt {
     }
 }
 
-pub fn execute_genesis<'s, R: FeeReserve>(
-    mut track: Track<'s, R>,
-) -> (TrackReceipt, GenesisReceipt) {
-    let mut wasm_engine = DefaultWasmEngine::new();
-    let mut wasm_instrumenter = WasmInstrumenter::new();
-    let mut execution_trace = ExecutionTrace::new();
-
-
-    let mut kernel = Kernel::new(
-        Hash([0u8; Hash::LENGTH]),
-        vec![],
-        ExecutionPrivilege::System,
-        DEFAULT_MAX_CALL_DEPTH,
-        &mut track,
-        &mut wasm_engine,
-        &mut wasm_instrumenter,
-        WasmMeteringParams::new(InstructionCostRules::tiered(1, 5, 10, 5000), 512),
-        &mut execution_trace,
-        vec![],
-    );
-
-    let transaction = create_genesis();
-    let instructions = TransactionValidator::validate_manifest(&transaction.manifest).unwrap();
-    let input = TransactionProcessorRunInput { instructions };
-
-    let result = kernel
-        .invoke_function(
-            FnIdentifier::Native(NativeFnIdentifier::TransactionProcessor(
-                TransactionProcessorFnIdentifier::Run,
-            )),
-            ScryptoValue::from_typed(&input),
-        )
-        .unwrap();
-
-    let invoke_result: Vec<Vec<u8>> = scrypto_decode(&result.raw).unwrap();
-    let genesis_result = genesis_result(&invoke_result);
-    let resource_changes = execution_trace.to_receipt().resource_changes;
-    let track_receipt = track.finalize(Ok(invoke_result), resource_changes);
-
-    (
-        track_receipt,
-        genesis_result,
-    )
-}
-
-pub fn bootstrap<S>(substate_store: &mut S) -> GenesisReceipt
+pub fn bootstrap<S>(substate_store: &mut S)
 where
     S: ReadableSubstateStore + WriteableSubstateStore,
 {
@@ -251,48 +199,49 @@ where
         .get_substate(&SubstateId::ResourceManager(RADIX_TOKEN))
         .is_none()
     {
-        let track = Track::new(substate_store, UnlimitedLoanFeeReserve::default());
-        let (track_receipt, bootstrap_receipt) = execute_genesis(track);
-        if let TransactionResult::Commit(c) = track_receipt.result {
-            c.state_updates.commit(substate_store);
-        } else {
-            panic!("Failed to bootstrap")
-        }
-        bootstrap_receipt
-    } else {
-        let mut temporary_substate_store = TypedInMemorySubstateStore::new();
-        let track = Track::new(
-            &mut temporary_substate_store,
-            UnlimitedLoanFeeReserve::default(),
-        );
-        let (_track_receipt, bootstrap_receipt) = execute_genesis(track);
-        bootstrap_receipt
+        let mut wasm_engine = DefaultWasmEngine::new();
+        let mut wasm_instrumenter = WasmInstrumenter::new();
+        let mut executor =
+            TransactionExecutor::new(substate_store, &mut wasm_engine, &mut wasm_instrumenter);
+        let genesis_transaction = create_genesis();
+        let transaction_receipt = executor.execute_system_transaction(genesis_transaction);
+        let commit_result = transaction_receipt.result.expect_commit();
+        commit_result.outcome.expect_success();
+        commit_result.state_updates.commit(substate_store);
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::engine::Track;
-    use crate::fee::UnlimitedLoanFeeReserve;
-    use crate::ledger::{execute_genesis, TypedInMemorySubstateStore};
+    use crate::ledger::bootstrap::{create_genesis, genesis_result};
+    use crate::ledger::TypedInMemorySubstateStore;
+    use crate::transaction::TransactionExecutor;
+    use crate::wasm::{DefaultWasmEngine, WasmInstrumenter};
     use scrypto::constants::*;
 
     #[test]
     fn bootstrap_receipt_should_match_constants() {
-        let mut temporary_substate_store = TypedInMemorySubstateStore::new();
-        let track = Track::new(
-            &mut temporary_substate_store,
-            UnlimitedLoanFeeReserve::default(),
+        let mut wasm_engine = DefaultWasmEngine::new();
+        let mut wasm_instrumenter = WasmInstrumenter::new();
+        let mut substate_store = TypedInMemorySubstateStore::new();
+        let genesis_transaction = create_genesis();
+        let mut executor = TransactionExecutor::new(
+            &mut substate_store,
+            &mut wasm_engine,
+            &mut wasm_instrumenter,
         );
-        let (_track_receipt, bootstrap_receipt) = execute_genesis(track);
+        let transaction_receipt = executor.execute_system_transaction(genesis_transaction);
+        let commit_result = transaction_receipt.result.expect_commit();
+        let invoke_result = commit_result.outcome.expect_success();
+        let genesis_receipt = genesis_result(&invoke_result);
 
-        assert_eq!(bootstrap_receipt.sys_faucet_package, SYS_FAUCET_PACKAGE);
-        assert_eq!(bootstrap_receipt.sys_utils_package, SYS_UTILS_PACKAGE);
-        assert_eq!(bootstrap_receipt.account_package, ACCOUNT_PACKAGE);
-        assert_eq!(bootstrap_receipt.ecdsa_token, ECDSA_TOKEN);
-        assert_eq!(bootstrap_receipt.system_token, SYSTEM_TOKEN);
-        assert_eq!(bootstrap_receipt.xrd_token, RADIX_TOKEN);
-        assert_eq!(bootstrap_receipt.faucet_component, SYS_FAUCET_COMPONENT);
-        assert_eq!(bootstrap_receipt.system_component, SYS_SYSTEM_COMPONENT);
+        assert_eq!(genesis_receipt.sys_faucet_package, SYS_FAUCET_PACKAGE);
+        assert_eq!(genesis_receipt.sys_utils_package, SYS_UTILS_PACKAGE);
+        assert_eq!(genesis_receipt.account_package, ACCOUNT_PACKAGE);
+        assert_eq!(genesis_receipt.ecdsa_token, ECDSA_TOKEN);
+        assert_eq!(genesis_receipt.system_token, SYSTEM_TOKEN);
+        assert_eq!(genesis_receipt.xrd_token, RADIX_TOKEN);
+        assert_eq!(genesis_receipt.faucet_component, SYS_FAUCET_COMPONENT);
+        assert_eq!(genesis_receipt.system_component, SYS_SYSTEM_COMPONENT);
     }
 }
