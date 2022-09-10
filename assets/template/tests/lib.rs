@@ -1,5 +1,4 @@
 use radix_engine::ledger::*;
-use radix_engine::model::extract_abi;
 use scrypto::core::NetworkDefinition;
 use scrypto::prelude::*;
 use scrypto_unit::*;

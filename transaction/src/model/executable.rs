@@ -3,7 +3,7 @@ use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::component::ComponentAddress;
-use scrypto::core::{FnIdentifier, NativeFnIdentifier};
+use scrypto::core::{FnIdentifier, NativeFnIdentifier, Receiver};
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
 use scrypto::math::*;
@@ -16,7 +16,7 @@ pub enum MethodIdentifier {
         ident: String,
     },
     Native {
-        node_id: RENodeId,
+        receiver: Receiver,
         native_fn_identifier: NativeFnIdentifier,
     },
 }

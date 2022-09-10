@@ -2,7 +2,9 @@ use sbor::rust::collections::*;
 use sbor::{encode_any, DecodeError, Value};
 use scrypto::address::{AddressError, Bech32Encoder};
 use scrypto::buffer::scrypto_decode;
-use scrypto::core::{FnIdentifier, NativeFnIdentifier, ResourceManagerFnIdentifier};
+use scrypto::core::{
+    BucketFnIdentifier, FnIdentifier, NativeFnIdentifier, Receiver, ResourceManagerFnIdentifier,
+};
 use scrypto::engine::types::*;
 use scrypto::resource::ResourceManagerCreateInput;
 use scrypto::values::*;
@@ -325,9 +327,24 @@ pub fn decompile(
 
                     buf.push_str(";\n");
                 }
-                MethodIdentifier::Native { .. } => {
-                    return Err(DecompileError::Unsupported);
-                }
+                MethodIdentifier::Native {
+                    native_fn_identifier,
+                    receiver,
+                } => match (native_fn_identifier, receiver) {
+                    (
+                        NativeFnIdentifier::Bucket(BucketFnIdentifier::Burn),
+                        Receiver::Consumed(RENodeId::Bucket(bucket_id)),
+                    ) => {
+                        buf.push_str(&format!(
+                            "BURN_BUCKET Bucket({});\n",
+                            buckets
+                                .get(&bucket_id)
+                                .map(|name| format!("\"{}\"", name))
+                                .unwrap_or(format!("{}u32", bucket_id)),
+                        ));
+                    }
+                    _ => return Err(DecompileError::Unsupported),
+                },
             },
             Instruction::PublishPackage { code, abi } => {
                 buf.push_str(&format!(

@@ -10,12 +10,5 @@ blueprint! {
         pub fn mint(amount: Decimal, resource_address: ResourceAddress) -> Bucket {
             borrow_resource_manager!(resource_address).mint(amount)
         }
-
-        /// Burns bucket.
-        ///
-        /// TODO: Remove if manifest natively supports this
-        pub fn burn(bucket: Bucket) {
-            bucket.burn()
-        }
     }
 }

@@ -5,15 +5,18 @@ use sbor::rust::str::FromStr;
 use sbor::type_id::*;
 use scrypto::abi::*;
 use scrypto::address::Bech32Decoder;
-use scrypto::args_from_value_vec;
 use scrypto::component::ComponentAddress;
 use scrypto::component::PackageAddress;
-use scrypto::core::{Expression, FnIdentifier, NativeFnIdentifier, ResourceManagerFnIdentifier};
+use scrypto::core::{
+    BucketFnIdentifier, Expression, FnIdentifier, NativeFnIdentifier, Receiver,
+    ResourceManagerFnIdentifier,
+};
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
 use scrypto::math::*;
 use scrypto::resource::{NonFungibleAddress, NonFungibleId, ResourceAddress};
 use scrypto::values::*;
+use scrypto::{args, args_from_value_vec};
 
 use crate::errors::*;
 use crate::manifest::ast;
@@ -371,6 +374,16 @@ pub fn generate_instruction(
                     ResourceManagerFnIdentifier::Create,
                 )),
                 args: args_from_value_vec!(fields),
+            }
+        }
+        ast::Instruction::BurnBucket { bucket } => {
+            let bucket_id = generate_bucket(bucket, resolver)?;
+            Instruction::CallMethod {
+                method_identifier: MethodIdentifier::Native {
+                    receiver: Receiver::Consumed(RENodeId::Bucket(bucket_id)),
+                    native_fn_identifier: NativeFnIdentifier::Bucket(BucketFnIdentifier::Burn),
+                },
+                args: args!(),
             }
         }
     })

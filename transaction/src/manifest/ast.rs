@@ -99,6 +99,10 @@ pub enum Instruction {
     CreateResource {
         args: Vec<Value>,
     },
+
+    BurnBucket {
+        bucket: Value,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

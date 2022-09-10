@@ -33,6 +33,52 @@ pub enum TransactionProcessorError {
 pub struct TransactionProcessor {}
 
 impl TransactionProcessor {
+    fn replace_node_id(
+        node_id: RENodeId,
+        proof_id_mapping: &mut HashMap<ProofId, ProofId>,
+        bucket_id_mapping: &mut HashMap<BucketId, BucketId>,
+    ) -> Result<RENodeId, InvokeError<TransactionProcessorError>> {
+        match node_id {
+            RENodeId::Bucket(bucket_id) => bucket_id_mapping
+                .get(&bucket_id)
+                .cloned()
+                .map(RENodeId::Bucket)
+                .ok_or(InvokeError::Error(
+                    TransactionProcessorError::BucketNotFound(bucket_id),
+                )),
+            RENodeId::Proof(proof_id) => proof_id_mapping
+                .get(&proof_id)
+                .cloned()
+                .map(RENodeId::Proof)
+                .ok_or(InvokeError::Error(
+                    TransactionProcessorError::ProofNotFound(proof_id),
+                )),
+            _ => Ok(node_id),
+        }
+    }
+
+    fn replace_receiver(
+        receiver: Receiver,
+        proof_id_mapping: &mut HashMap<ProofId, ProofId>,
+        bucket_id_mapping: &mut HashMap<BucketId, BucketId>,
+    ) -> Result<Receiver, InvokeError<TransactionProcessorError>> {
+        let receiver = match receiver {
+            Receiver::Ref(node_id) => Receiver::Ref(Self::replace_node_id(
+                node_id,
+                proof_id_mapping,
+                bucket_id_mapping,
+            )?),
+            Receiver::Consumed(node_id) => Receiver::Consumed(Self::replace_node_id(
+                node_id,
+                proof_id_mapping,
+                bucket_id_mapping,
+            )?),
+            Receiver::CurrentAuthZone => Receiver::CurrentAuthZone,
+        };
+
+        Ok(receiver)
+    }
+
     fn replace_ids(
         proof_id_mapping: &mut HashMap<ProofId, ProofId>,
         bucket_id_mapping: &mut HashMap<BucketId, BucketId>,
@@ -634,15 +680,22 @@ impl TransactionProcessor {
                                                 .map_err(InvokeError::Downstream)
                                         }),
                                     MethodIdentifier::Native {
-                                        node_id,
+                                        receiver,
                                         native_fn_identifier,
-                                    } => system_api
-                                        .invoke_method(
-                                            Receiver::Ref(node_id.clone()),
-                                            FnIdentifier::Native(native_fn_identifier.clone()),
-                                            call_data,
-                                        )
-                                        .map_err(InvokeError::Downstream),
+                                    } => Self::replace_receiver(
+                                        receiver.clone(),
+                                        &mut proof_id_mapping,
+                                        &mut bucket_id_mapping,
+                                    )
+                                    .and_then(|receiver| {
+                                        system_api
+                                            .invoke_method(
+                                                receiver,
+                                                FnIdentifier::Native(native_fn_identifier.clone()),
+                                                call_data,
+                                            )
+                                            .map_err(InvokeError::Downstream)
+                                    }),
                                 }
                             })
                             .and_then(|result| {

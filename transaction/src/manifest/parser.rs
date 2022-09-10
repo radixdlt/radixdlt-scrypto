@@ -170,6 +170,9 @@ impl Parser {
                     values
                 },
             },
+            TokenKind::BurnBucket => Instruction::BurnBucket {
+                bucket: self.parse_value()?,
+            },
             _ => {
                 return Err(ParserError::UnexpectedToken(token));
             }

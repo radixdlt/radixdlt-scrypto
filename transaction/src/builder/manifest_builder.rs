@@ -14,7 +14,8 @@ use scrypto::buffer::*;
 use scrypto::component::{ComponentAddress, PackageAddress};
 use scrypto::constants::*;
 use scrypto::core::{
-    FnIdentifier, NativeFnIdentifier, NetworkDefinition, ResourceManagerFnIdentifier,
+    BucketFnIdentifier, FnIdentifier, NativeFnIdentifier, NetworkDefinition, Receiver,
+    ResourceManagerFnIdentifier,
 };
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
@@ -597,13 +598,12 @@ impl ManifestBuilder {
     pub fn burn(&mut self, amount: Decimal, resource_address: ResourceAddress) -> &mut Self {
         self.take_from_worktop_by_amount(amount, resource_address, |builder, bucket_id| {
             builder
-                .add_instruction(Instruction::CallFunction {
-                    fn_identifier: FnIdentifier::Scrypto {
-                        package_address: SYS_UTILS_PACKAGE,
-                        blueprint_name: "SysUtils".to_owned(),
-                        ident: "burn".to_string(),
+                .add_instruction(Instruction::CallMethod {
+                    method_identifier: MethodIdentifier::Native {
+                        native_fn_identifier: NativeFnIdentifier::Bucket(BucketFnIdentifier::Burn),
+                        receiver: Receiver::Consumed(RENodeId::Bucket(bucket_id)),
                     },
-                    args: args!(scrypto::resource::Bucket(bucket_id)),
+                    args: args!(),
                 })
                 .0
         })
@@ -617,13 +617,14 @@ impl ManifestBuilder {
             non_fungible_address.resource_address(),
             |builder, bucket_id| {
                 builder
-                    .add_instruction(Instruction::CallFunction {
-                        fn_identifier: FnIdentifier::Scrypto {
-                            package_address: SYS_UTILS_PACKAGE,
-                            blueprint_name: "SysUtils".to_owned(),
-                            ident: "burn".to_string(),
+                    .add_instruction(Instruction::CallMethod {
+                        method_identifier: MethodIdentifier::Native {
+                            native_fn_identifier: NativeFnIdentifier::Bucket(
+                                BucketFnIdentifier::Burn,
+                            ),
+                            receiver: Receiver::Consumed(RENodeId::Bucket(bucket_id)),
                         },
-                        args: args!(scrypto::resource::Bucket(bucket_id)),
+                        args: args!(),
                     })
                     .0
             },
