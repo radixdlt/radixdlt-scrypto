@@ -18,6 +18,14 @@ impl ExecutableTransaction for ValidatedTransaction {
         self.transaction_hash
     }
 
+    fn instructions(&self) -> &[ExecutableInstruction] {
+        &self.instructions
+    }
+
+    fn signer_public_keys(&self) -> &[EcdsaPublicKey] {
+        &self.signer_public_keys
+    }
+
     fn transaction_payload_size(&self) -> u32 {
         self.transaction.to_bytes().len() as u32
     }
@@ -28,13 +36,5 @@ impl ExecutableTransaction for ValidatedTransaction {
 
     fn tip_percentage(&self) -> u32 {
         self.transaction.signed_intent.intent.header.tip_percentage
-    }
-
-    fn instructions(&self) -> &[ExecutableInstruction] {
-        &self.instructions
-    }
-
-    fn signer_public_keys(&self) -> &[EcdsaPublicKey] {
-        &self.signer_public_keys
     }
 }

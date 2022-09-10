@@ -5,7 +5,7 @@ use crate::types::*;
 use crate::wasm::{DefaultWasmEngine, WasmInstrumenter};
 use scrypto::resource::Bucket;
 use transaction::model::{Instruction, SystemTransaction, TransactionManifest};
-use transaction::validation::{IdAllocator, IdSpace};
+use transaction::validation::{IdAllocator, IdSpace, TransactionValidator};
 
 #[derive(TypeId, Encode, Decode)]
 struct SystemComponentState {
@@ -204,6 +204,9 @@ where
         let mut executor =
             TransactionExecutor::new(substate_store, &mut wasm_engine, &mut wasm_instrumenter);
         let genesis_transaction = create_genesis();
+        let genesis_transaction =
+            TransactionValidator::validate_system_transaction(genesis_transaction)
+                .expect("Genesis txn failed validation");
         let transaction_receipt = executor.execute_system_transaction(genesis_transaction);
         let commit_result = transaction_receipt.result.expect_commit();
         commit_result.outcome.expect_success();
@@ -218,6 +221,7 @@ mod tests {
     use crate::transaction::TransactionExecutor;
     use crate::wasm::{DefaultWasmEngine, WasmInstrumenter};
     use scrypto::constants::*;
+    use transaction::validation::TransactionValidator;
 
     #[test]
     fn bootstrap_receipt_should_match_constants() {
@@ -230,6 +234,9 @@ mod tests {
             &mut wasm_engine,
             &mut wasm_instrumenter,
         );
+        let genesis_transaction =
+            TransactionValidator::validate_system_transaction(genesis_transaction)
+                .expect("Genesis txn failed validation");
         let transaction_receipt = executor.execute_system_transaction(genesis_transaction);
         let commit_result = transaction_receipt.result.expect_commit();
         let invoke_result = commit_result.outcome.expect_success();

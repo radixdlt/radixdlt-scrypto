@@ -47,6 +47,7 @@ pub struct NotarizedTransaction {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct SystemTransaction {
+    // TODO: Add header
     pub manifest: TransactionManifest,
 }
 

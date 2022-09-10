@@ -78,6 +78,11 @@ pub enum ExecutableInstruction {
     },
 }
 
+// TODO: Combine with ExecutableTransaction
+pub struct ExecutableSystemTransaction {
+    pub instructions: Vec<ExecutableInstruction>,
+}
+
 /// A common trait for all transactions that can be executed by Radix Engine.
 pub trait ExecutableTransaction {
     /// Returns the transaction hash, which must be globally unique.

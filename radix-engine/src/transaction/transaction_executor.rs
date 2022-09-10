@@ -1,6 +1,3 @@
-use transaction::model::*;
-use transaction::validation::TransactionValidator;
-
 use crate::constants::{DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN};
 use crate::engine::Track;
 use crate::engine::*;
@@ -10,6 +7,7 @@ use crate::model::*;
 use crate::transaction::*;
 use crate::types::*;
 use crate::wasm::*;
+use transaction::model::*;
 
 pub struct ExecutionConfig {
     pub cost_unit_price: Decimal,
@@ -85,7 +83,7 @@ where
 
     pub fn execute_system_transaction(
         &mut self,
-        transaction: SystemTransaction,
+        transaction: ExecutableSystemTransaction,
     ) -> TransactionReceipt {
         let mut execution_trace = ExecutionTrace::new();
         let mut track = Track::new(self.substate_store, UnlimitedLoanFeeReserve::default());
@@ -103,7 +101,7 @@ where
             vec![],
         );
 
-        let instructions = TransactionValidator::validate_manifest(&transaction.manifest).unwrap();
+        let instructions = transaction.instructions;
 
         let invoke_result = {
             let result = kernel.invoke_function(
@@ -244,17 +242,6 @@ where
     W: WasmEngine<I>,
     I: WasmInstance,
 {
-    pub fn execute_system_transaction_and_commit<T: ExecutableTransaction>(
-        &mut self,
-        system_transaction: SystemTransaction,
-    ) -> TransactionReceipt {
-        let receipt = self.execute_system_transaction(system_transaction);
-        if let TransactionResult::Commit(commit) = &receipt.result {
-            commit.state_updates.commit(self.substate_store);
-        }
-        receipt
-    }
-
     pub fn execute_and_commit<T: ExecutableTransaction>(
         &mut self,
         transaction: &T,

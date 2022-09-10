@@ -22,6 +22,27 @@ pub struct TransactionValidator;
 impl TransactionValidator {
     pub const MAX_PAYLOAD_SIZE: usize = 4 * 1024 * 1024;
 
+    pub fn validate_system_transaction_from_slice(
+        transaction: &[u8],
+    ) -> Result<ExecutableSystemTransaction, TransactionValidationError> {
+        if transaction.len() > Self::MAX_PAYLOAD_SIZE {
+            return Err(TransactionValidationError::TransactionTooLarge);
+        }
+
+        let transaction: SystemTransaction = scrypto_decode(transaction)
+            .map_err(TransactionValidationError::DeserializationError)?;
+
+        Self::validate_system_transaction(transaction)
+    }
+
+    pub fn validate_system_transaction(
+        transaction: SystemTransaction,
+    ) -> Result<ExecutableSystemTransaction, TransactionValidationError> {
+        let instructions = Self::validate_manifest(&transaction.manifest)?;
+        let transaction = ExecutableSystemTransaction { instructions };
+        Ok(transaction)
+    }
+
     pub fn validate_from_slice<I: IntentHashManager>(
         transaction: &[u8],
         intent_hash_manager: &I,
