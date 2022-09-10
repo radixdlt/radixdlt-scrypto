@@ -244,6 +244,17 @@ where
     W: WasmEngine<I>,
     I: WasmInstance,
 {
+    pub fn execute_system_transaction_and_commit<T: ExecutableTransaction>(
+        &mut self,
+        system_transaction: SystemTransaction,
+    ) -> TransactionReceipt {
+        let receipt = self.execute_system_transaction(system_transaction);
+        if let TransactionResult::Commit(commit) = &receipt.result {
+            commit.state_updates.commit(self.substate_store);
+        }
+        receipt
+    }
+
     pub fn execute_and_commit<T: ExecutableTransaction>(
         &mut self,
         transaction: &T,

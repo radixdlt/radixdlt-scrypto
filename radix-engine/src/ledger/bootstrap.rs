@@ -173,12 +173,38 @@ pub fn create_genesis() -> SystemTransaction {
     SystemTransaction { manifest }
 }
 
+pub fn genesis_result(invoke_result: &Vec<Vec<u8>>) -> GenesisReceipt {
+    let sys_faucet_package: PackageAddress = scrypto_decode(&invoke_result[0]).unwrap();
+    let sys_utils_package: PackageAddress = scrypto_decode(&invoke_result[1]).unwrap();
+    let account_package: PackageAddress = scrypto_decode(&invoke_result[2]).unwrap();
+    let (ecdsa_token, _bucket): (ResourceAddress, Option<Bucket>) =
+        scrypto_decode(&invoke_result[3]).unwrap();
+    let (system_token, _bucket): (ResourceAddress, Option<Bucket>) =
+        scrypto_decode(&invoke_result[4]).unwrap();
+    let (xrd_token, _bucket): (ResourceAddress, Option<Bucket>) =
+        scrypto_decode(&invoke_result[5]).unwrap();
+    let faucet_component: ComponentAddress = scrypto_decode(&invoke_result[7]).unwrap();
+    let system_component_id: RENodeId = scrypto_decode(&invoke_result[8]).unwrap();
+    let system_component: ComponentAddress = system_component_id.into();
+    GenesisReceipt {
+        sys_faucet_package,
+        sys_utils_package,
+        account_package,
+        ecdsa_token,
+        system_token,
+        xrd_token,
+        faucet_component,
+        system_component,
+    }
+}
+
 pub fn execute_genesis<'s, R: FeeReserve>(
     mut track: Track<'s, R>,
 ) -> (TrackReceipt, GenesisReceipt) {
     let mut wasm_engine = DefaultWasmEngine::new();
     let mut wasm_instrumenter = WasmInstrumenter::new();
     let mut execution_trace = ExecutionTrace::new();
+
 
     let mut kernel = Kernel::new(
         Hash([0u8; Hash::LENGTH]),
@@ -193,7 +219,8 @@ pub fn execute_genesis<'s, R: FeeReserve>(
         vec![],
     );
 
-    let instructions = create_genesis();
+    let transaction = create_genesis();
+    let instructions = TransactionValidator::validate_manifest(&transaction.manifest).unwrap();
     let input = TransactionProcessorRunInput { instructions };
 
     let result = kernel
@@ -206,34 +233,13 @@ pub fn execute_genesis<'s, R: FeeReserve>(
         .unwrap();
 
     let invoke_result: Vec<Vec<u8>> = scrypto_decode(&result.raw).unwrap();
-    let sys_faucet_package: PackageAddress = scrypto_decode(&invoke_result[0]).unwrap();
-    let sys_utils_package: PackageAddress = scrypto_decode(&invoke_result[1]).unwrap();
-    let account_package: PackageAddress = scrypto_decode(&invoke_result[2]).unwrap();
-    let (ecdsa_token, _bucket): (ResourceAddress, Option<Bucket>) =
-        scrypto_decode(&invoke_result[3]).unwrap();
-    let (system_token, _bucket): (ResourceAddress, Option<Bucket>) =
-        scrypto_decode(&invoke_result[4]).unwrap();
-    let (xrd_token, _bucket): (ResourceAddress, Option<Bucket>) =
-        scrypto_decode(&invoke_result[5]).unwrap();
-    let faucet_component: ComponentAddress = scrypto_decode(&invoke_result[7]).unwrap();
-    let system_component_id: RENodeId = scrypto_decode(&invoke_result[8]).unwrap();
-    let system_component: ComponentAddress = system_component_id.into();
-
+    let genesis_result = genesis_result(&invoke_result);
     let resource_changes = execution_trace.to_receipt().resource_changes;
     let track_receipt = track.finalize(Ok(invoke_result), resource_changes);
 
     (
         track_receipt,
-        GenesisReceipt {
-            sys_faucet_package,
-            sys_utils_package,
-            account_package,
-            ecdsa_token,
-            system_token,
-            xrd_token,
-            faucet_component,
-            system_component,
-        },
+        genesis_result,
     )
 }
 
