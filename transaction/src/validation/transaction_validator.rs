@@ -106,11 +106,19 @@ impl TransactionValidator {
         Self::validate_header(&intent, config)
             .map_err(TransactionValidationError::HeaderValidationError)?;
 
+        let instructions = Self::validate_manifest(&intent.manifest)?;
+
+        return Ok(instructions);
+    }
+
+    pub fn validate_manifest(
+        manifest: &TransactionManifest,
+    ) -> Result<Vec<ExecutableInstruction>, TransactionValidationError> {
         let mut instructions = vec![];
 
         // semantic analysis
         let mut id_validator = IdValidator::new();
-        for inst in &intent.manifest.instructions {
+        for inst in &manifest.instructions {
             match inst.clone() {
                 Instruction::TakeFromWorktop { resource_address } => {
                     id_validator
@@ -272,7 +280,7 @@ impl TransactionValidator {
             }
         }
 
-        return Ok(instructions);
+        Ok(instructions)
     }
 
     fn validate_header(

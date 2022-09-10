@@ -1,9 +1,10 @@
 use transaction::model::*;
+use transaction::validation::TransactionValidator;
 
 use crate::constants::{DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN};
 use crate::engine::Track;
 use crate::engine::*;
-use crate::fee::{FeeReserve, FeeTable, SystemLoanFeeReserve};
+use crate::fee::{FeeReserve, FeeTable, SystemLoanFeeReserve, UnlimitedLoanFeeReserve};
 use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
 use crate::model::*;
 use crate::transaction::*;
@@ -12,8 +13,8 @@ use crate::wasm::*;
 
 pub struct ExecutionConfig {
     pub cost_unit_price: Decimal,
-    pub max_call_depth: usize,
     pub system_loan: u32,
+    pub max_call_depth: usize,
     pub execution_privilege: ExecutionPrivilege,
     pub trace: bool,
 }
@@ -30,8 +31,8 @@ impl ExecutionConfig {
             cost_unit_price: DEFAULT_COST_UNIT_PRICE
                 .parse()
                 .expect("Invalid cost unit price"),
-            max_call_depth: DEFAULT_MAX_CALL_DEPTH,
             system_loan: DEFAULT_SYSTEM_LOAN,
+            max_call_depth: DEFAULT_MAX_CALL_DEPTH,
             execution_privilege: ExecutionPrivilege::User,
             trace: false,
         }
@@ -42,8 +43,8 @@ impl ExecutionConfig {
             cost_unit_price: DEFAULT_COST_UNIT_PRICE
                 .parse()
                 .expect("Invalid cost unit price"),
-            max_call_depth: DEFAULT_MAX_CALL_DEPTH,
             system_loan: DEFAULT_SYSTEM_LOAN,
+            max_call_depth: DEFAULT_MAX_CALL_DEPTH,
             execution_privilege: ExecutionPrivilege::User,
             trace: true,
         }
@@ -82,25 +83,76 @@ where
         }
     }
 
+    pub fn execute_system_transaction(
+        &mut self,
+        transaction: SystemTransaction,
+    ) -> TransactionReceipt {
+        let mut execution_trace = ExecutionTrace::new();
+        let mut track = Track::new(self.substate_store, UnlimitedLoanFeeReserve::default());
+
+        let mut kernel = Kernel::new(
+            Hash([0u8; Hash::LENGTH]),
+            vec![],
+            ExecutionPrivilege::System,
+            DEFAULT_MAX_CALL_DEPTH,
+            &mut track,
+            self.wasm_engine,
+            self.wasm_instrumenter,
+            WasmMeteringParams::new(InstructionCostRules::tiered(1, 5, 10, 5000), 512),
+            &mut execution_trace,
+            vec![],
+        );
+
+        let instructions = TransactionValidator::validate_manifest(&transaction.manifest).unwrap();
+
+        let invoke_result = {
+            let result = kernel.invoke_function(
+                FnIdentifier::Native(NativeFnIdentifier::TransactionProcessor(
+                    TransactionProcessorFnIdentifier::Run,
+                )),
+                ScryptoValue::from_typed(&TransactionProcessorRunInput {
+                    instructions: instructions.clone(),
+                }),
+            );
+            result.map(|o| {
+                scrypto_decode::<Vec<Vec<u8>>>(&o.raw)
+                    .expect("TransactionProcessor returned data of unexpected type")
+            })
+        };
+
+        let execution_trace_receipt = execution_trace.to_receipt();
+        let track_receipt = track.finalize(invoke_result, execution_trace_receipt.resource_changes);
+        let receipt = TransactionReceipt {
+            contents: TransactionContents { instructions },
+            execution: TransactionExecution {
+                fee_summary: track_receipt.fee_summary,
+                application_logs: track_receipt.application_logs,
+            },
+            result: track_receipt.result,
+        };
+
+        receipt
+    }
+
     pub fn execute<T: ExecutableTransaction>(
         &mut self,
         transaction: &T,
-        params: &ExecutionConfig,
+        execution_config: &ExecutionConfig,
     ) -> TransactionReceipt {
         let fee_reserve = SystemLoanFeeReserve::new(
             transaction.cost_unit_limit(),
             transaction.tip_percentage(),
-            params.cost_unit_price,
-            params.system_loan,
+            execution_config.cost_unit_price,
+            execution_config.system_loan,
         );
 
-        self.execute_with_fee_reserve(transaction, params, fee_reserve)
+        self.execute_with_fee_reserve(transaction, execution_config, fee_reserve)
     }
 
     pub fn execute_with_fee_reserve<T: ExecutableTransaction, R: FeeReserve>(
         &mut self,
         transaction: &T,
-        params: &ExecutionConfig,
+        execution_config: &ExecutionConfig,
         mut fee_reserve: R,
     ) -> TransactionReceipt {
         let transaction_hash = transaction.transaction_hash();
@@ -108,7 +160,7 @@ where
         let instructions = transaction.instructions().to_vec();
 
         #[cfg(not(feature = "alloc"))]
-        if params.trace {
+        if execution_config.trace {
             println!("{:-^80}", "Transaction Metadata");
             println!("Transaction hash: {}", transaction_hash);
             println!("Transaction signers: {:?}", signer_public_keys);
@@ -125,7 +177,7 @@ where
         // Invoke the function/method
         let invoke_result = {
             let mut modules = Vec::<Box<dyn Module<R>>>::new();
-            if params.trace {
+            if execution_config.trace {
                 modules.push(Box::new(LoggerModule::new()));
             }
             modules.push(Box::new(CostingModule::new(fee_table)));
@@ -133,8 +185,8 @@ where
             let mut kernel = Kernel::new(
                 transaction_hash,
                 signer_public_keys,
-                params.execution_privilege,
-                params.max_call_depth,
+                execution_config.execution_privilege,
+                execution_config.max_call_depth,
                 &mut track,
                 self.wasm_engine,
                 self.wasm_instrumenter,
@@ -168,7 +220,7 @@ where
             result: track_receipt.result,
         };
         #[cfg(not(feature = "alloc"))]
-        if params.trace {
+        if execution_config.trace {
             println!("{:-^80}", "Cost Analysis");
             for (k, v) in &receipt.execution.fee_summary.cost_breakdown {
                 println!("{:<30}: {:>8}", k, v);
@@ -195,9 +247,9 @@ where
     pub fn execute_and_commit<T: ExecutableTransaction>(
         &mut self,
         transaction: &T,
-        params: &ExecutionConfig,
+        execution_config: &ExecutionConfig,
     ) -> TransactionReceipt {
-        let receipt = self.execute(transaction, params);
+        let receipt = self.execute(transaction, execution_config);
         if let TransactionResult::Commit(commit) = &receipt.result {
             commit.state_updates.commit(self.substate_store);
         }

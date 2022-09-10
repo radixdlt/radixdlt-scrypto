@@ -45,6 +45,11 @@ pub struct NotarizedTransaction {
     pub notary_signature: EcdsaSignature,
 }
 
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
+pub struct SystemTransaction {
+    pub manifest: TransactionManifest,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum IntentCreationError {
     CompileErr(CompileError),

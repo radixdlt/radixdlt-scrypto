@@ -8,8 +8,8 @@ use crate::transaction::TransactionResult;
 use crate::types::ResourceMethodAuthKey::Withdraw;
 use crate::types::*;
 use scrypto::resource::Bucket;
-use transaction::model::ExecutableInstruction;
-use transaction::validation::{IdAllocator, IdSpace};
+use transaction::model::{Instruction, SystemTransaction, TransactionManifest};
+use transaction::validation::{IdAllocator, IdSpace, TransactionValidator};
 
 #[derive(TypeId, Encode, Decode)]
 struct SystemComponentState {
@@ -36,12 +36,12 @@ pub struct GenesisReceipt {
     pub system_component: ComponentAddress,
 }
 
-pub fn create_genesis() -> Vec<ExecutableInstruction> {
+pub fn create_genesis() -> SystemTransaction {
     let mut id_allocator = IdAllocator::new(IdSpace::Transaction);
     let create_sys_faucet_package = {
         let sys_faucet_code = include_bytes!("../../../assets/sys_faucet.wasm").to_vec();
         let sys_faucet_abi = include_bytes!("../../../assets/sys_faucet.abi").to_vec();
-        ExecutableInstruction::PublishPackage {
+        Instruction::PublishPackage {
             code: sys_faucet_code,
             abi: sys_faucet_abi,
         }
@@ -49,7 +49,7 @@ pub fn create_genesis() -> Vec<ExecutableInstruction> {
     let create_sys_utils_package = {
         let sys_utils_code = include_bytes!("../../../assets/sys_utils.wasm").to_vec();
         let sys_utils_abi = include_bytes!("../../../assets/sys_utils.abi").to_vec();
-        ExecutableInstruction::PublishPackage {
+        Instruction::PublishPackage {
             code: sys_utils_code,
             abi: sys_utils_abi,
         }
@@ -57,7 +57,7 @@ pub fn create_genesis() -> Vec<ExecutableInstruction> {
     let create_account_package = {
         let account_code = include_bytes!("../../../assets/account.wasm").to_vec();
         let account_abi = include_bytes!("../../../assets/account.abi").to_vec();
-        ExecutableInstruction::PublishPackage {
+        Instruction::PublishPackage {
             code: account_code,
             abi: account_abi,
         }
@@ -69,7 +69,7 @@ pub fn create_genesis() -> Vec<ExecutableInstruction> {
         let initial_supply: Option<MintParams> = None;
 
         // TODO: Remove nasty circular dependency on SYS_UTILS_PACKAGE
-        ExecutableInstruction::CallFunction {
+        Instruction::CallFunction {
             fn_identifier: FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
                 ResourceManagerFnIdentifier::Create,
             )),
@@ -91,7 +91,7 @@ pub fn create_genesis() -> Vec<ExecutableInstruction> {
         let initial_supply: Option<MintParams> = None;
 
         // TODO: Remove nasty circular dependency on SYS_UTILS_PACKAGE
-        ExecutableInstruction::CallFunction {
+        Instruction::CallFunction {
             fn_identifier: FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
                 ResourceManagerFnIdentifier::Create,
             )),
@@ -118,7 +118,7 @@ pub fn create_genesis() -> Vec<ExecutableInstruction> {
             amount: XRD_MAX_SUPPLY.into(),
         });
 
-        ExecutableInstruction::CallFunction {
+        Instruction::CallFunction {
             fn_identifier: FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
                 ResourceManagerFnIdentifier::Create,
             )),
@@ -131,13 +131,13 @@ pub fn create_genesis() -> Vec<ExecutableInstruction> {
         }
     };
 
-    let take_xrd = ExecutableInstruction::TakeFromWorktop {
+    let take_xrd = Instruction::TakeFromWorktop {
         resource_address: RADIX_TOKEN,
     };
 
     let create_xrd_faucet = {
         let bucket = Bucket(id_allocator.new_bucket_id().unwrap());
-        ExecutableInstruction::CallFunction {
+        Instruction::CallFunction {
             fn_identifier: FnIdentifier::Scrypto {
                 package_address: SYS_FAUCET_PACKAGE,
                 blueprint_name: "Faucet".to_string(),
@@ -148,7 +148,7 @@ pub fn create_genesis() -> Vec<ExecutableInstruction> {
     };
 
     let create_system_component = {
-        ExecutableInstruction::CallFunction {
+        Instruction::CallFunction {
             fn_identifier: FnIdentifier::Native(NativeFnIdentifier::System(
                 SystemFnIdentifier::Create,
             )),
@@ -156,17 +156,21 @@ pub fn create_genesis() -> Vec<ExecutableInstruction> {
         }
     };
 
-    vec![
-        create_sys_faucet_package,
-        create_sys_utils_package,
-        create_account_package,
-        create_ecdsa_token,
-        create_system_token,
-        create_xrd_token,
-        take_xrd,
-        create_xrd_faucet,
-        create_system_component,
-    ]
+    let manifest = TransactionManifest {
+        instructions: vec![
+            create_sys_faucet_package,
+            create_sys_utils_package,
+            create_account_package,
+            create_ecdsa_token,
+            create_system_token,
+            create_xrd_token,
+            take_xrd,
+            create_xrd_faucet,
+            create_system_component,
+        ],
+    };
+
+    SystemTransaction { manifest }
 }
 
 pub fn execute_genesis<'s, R: FeeReserve>(
