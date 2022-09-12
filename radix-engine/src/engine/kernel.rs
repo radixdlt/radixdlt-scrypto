@@ -31,6 +31,8 @@ pub struct Kernel<
 {
     /// The transaction hash
     transaction_hash: Hash,
+    /// Blobs attached to the transaction
+    blobs: &'g HashMap<Hash, Vec<u8>>,
     /// The max call depth
     max_depth: usize,
 
@@ -68,6 +70,7 @@ where
     pub fn new(
         transaction_hash: Hash,
         transaction_signers: Vec<EcdsaPublicKey>,
+        blobs: &'g HashMap<Hash, Vec<u8>>,
         is_system: bool,
         max_depth: usize,
         track: &'g mut Track<'s, R>,
@@ -80,6 +83,7 @@ where
         let frame = CallFrame::new_root(transaction_signers);
         let mut kernel = Self {
             transaction_hash,
+            blobs,
             max_depth,
             track,
             wasm_engine,
@@ -1534,6 +1538,34 @@ where
         }
 
         Ok(())
+    }
+
+    fn read_blob(&mut self, blob_hash: &Hash) -> Result<&[u8], RuntimeError> {
+        for m in &mut self.modules {
+            m.pre_sys_call(
+                &mut self.track,
+                &mut self.call_frames,
+                SysCallInput::ReadBlob { blob_hash },
+            )
+            .map_err(RuntimeError::ModuleError)?;
+        }
+
+        let blob = self
+            .blobs
+            .get(blob_hash)
+            .ok_or(KernelError::BlobNotFound(blob_hash.clone()))
+            .map_err(RuntimeError::KernelError)?;
+
+        for m in &mut self.modules {
+            m.post_sys_call(
+                &mut self.track,
+                &mut self.call_frames,
+                SysCallOutput::ReadBlob { blob: &blob },
+            )
+            .map_err(RuntimeError::ModuleError)?;
+        }
+
+        Ok(blob)
     }
 
     fn transaction_hash(&mut self) -> Result<Hash, RuntimeError> {

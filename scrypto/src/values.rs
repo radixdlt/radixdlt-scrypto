@@ -275,6 +275,7 @@ pub enum ScryptoCustomValueCheckError {
     InvalidNonFungibleId(ParseNonFungibleIdError),
     InvalidNonFungibleAddress(ParseNonFungibleAddressError),
     InvalidExpression(ParseExpressionError),
+    InvalidBlob(ParseBlobError),
     DuplicateIds,
 }
 
@@ -401,6 +402,9 @@ impl CustomValueVisitor for ScryptoCustomValueChecker {
                     .map_err(ScryptoCustomValueCheckError::InvalidExpression)?;
                 self.expressions.push((expression, path.clone().into()));
             }
+            ScryptoType::Blob => {
+                Blob::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidBlob)?;
+            }
         }
         Ok(())
     }
@@ -471,22 +475,11 @@ impl ScryptoValueFormatter {
                 element_type_id,
                 elements,
             } => {
-                if *element_type_id == TYPE_U8 {
-                    let bytes = elements
-                        .iter()
-                        .map(|e| match e {
-                            Value::U8 { value } => *value,
-                            _ => panic!("Unexpected element value"),
-                        })
-                        .collect::<Vec<u8>>();
-                    format!("Bytes(\"{}\")", hex::encode(bytes))
-                } else {
-                    format!(
-                        "Vec<{}>({})",
-                        Self::format_type_id(*element_type_id),
-                        Self::format_elements(elements, bucket_ids, proof_ids)
-                    )
-                }
+                format!(
+                    "Vec<{}>({})",
+                    Self::format_type_id(*element_type_id),
+                    Self::format_elements(elements, bucket_ids, proof_ids)
+                )
             }
             Value::Set {
                 element_type_id,
@@ -654,6 +647,9 @@ impl ScryptoValueFormatter {
             ),
             ScryptoType::Expression => {
                 format!("Expression(\"{}\")", Expression::try_from(data).unwrap())
+            }
+            ScryptoType::Blob => {
+                format!("Blob(\"{}\")", Blob::try_from(data).unwrap())
             }
         }
     }

@@ -3,6 +3,7 @@ use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::component::{ComponentAddress, PackageAddress};
+use scrypto::core::Blob;
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
 use scrypto::math::*;
@@ -74,8 +75,8 @@ pub enum ExecutableInstruction {
         args: Vec<u8>,
     },
     PublishPackage {
-        code: Vec<u8>,
-        abi: Vec<u8>,
+        code: Blob,
+        abi: Blob,
     },
 }
 
@@ -84,8 +85,8 @@ pub trait ExecutableTransaction {
     /// Returns the transaction hash, which must be globally unique.
     fn transaction_hash(&self) -> Hash;
 
-    /// Returns the transaction payload size.
-    fn transaction_payload_size(&self) -> u32;
+    /// Returns the manifest size.
+    fn manifest_instructions_size(&self) -> u32;
 
     /// Returns the limit of cost units consumable
     fn cost_unit_limit(&self) -> u32;
@@ -98,4 +99,6 @@ pub trait ExecutableTransaction {
 
     /// Returns the public key of signers.
     fn signer_public_keys(&self) -> &[EcdsaPublicKey];
+
+    fn blobs(&self) -> &[Vec<u8>];
 }

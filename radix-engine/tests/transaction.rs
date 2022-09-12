@@ -1,13 +1,17 @@
 use radix_engine::constants::*;
+use radix_engine::engine::KernelError;
+use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::transaction::ExecutionConfig;
 use radix_engine::transaction::TransactionExecutor;
 use radix_engine::types::*;
 use radix_engine::wasm::DefaultWasmEngine;
 use radix_engine::wasm::WasmInstrumenter;
+use scrypto::core::Blob;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::builder::TransactionBuilder;
+use transaction::model::Instruction;
 use transaction::model::TransactionHeader;
 use transaction::signing::EcdsaPrivateKey;
 use transaction::validation::ValidationConfig;
@@ -108,6 +112,31 @@ fn test_transaction_can_end_with_proofs_remaining_in_auth_zone() {
 
     // Assert
     receipt.expect_commit_success();
+}
+
+#[test]
+fn test_non_existent_blob_hash() {
+    // Arrange
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
+    let (public_key, _, account) = test_runner.new_account();
+
+    // Act
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+        .lock_fee(dec!("10"), account)
+        .add_instruction(Instruction::PublishPackage {
+            code: Blob(Hash([0; 32])),
+            abi: Blob(Hash([0; 32])),
+        })
+        .0
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+    println!("{:?}", receipt);
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(e, RuntimeError::KernelError(KernelError::BlobNotFound(_)))
+    });
 }
 
 #[test]

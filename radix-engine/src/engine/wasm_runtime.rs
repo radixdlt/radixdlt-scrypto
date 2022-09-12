@@ -33,6 +33,12 @@ where
     I: WasmInstance,
     R: FeeReserve,
 {
+    // TODO: expose API for reading blobs
+
+    // TODO: do we want to allow dynamic creation of blobs?
+
+    // TODO: do we check existence of blobs when being passed as arguments/return?
+
     pub fn new(actor: ScryptoActor, system_api: &'y mut Y) -> Self {
         RadixEngineWasmRuntime {
             actor,
@@ -245,7 +251,7 @@ impl WasmRuntime for NopWasmRuntime {
 
     fn consume_cost_units(&mut self, n: u32) -> Result<(), InvokeError<WasmError>> {
         self.fee_reserve
-            .consume(n, "run_wasm")
+            .consume(n, "run_wasm", false)
             .map_err(|e| InvokeError::Error(WasmError::CostingError(e)))
     }
 }

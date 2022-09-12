@@ -6,8 +6,8 @@ use transaction::validation::TransactionValidator;
 use transaction::validation::ValidationConfig;
 
 use crate::constants::DEFAULT_MAX_COST_UNIT_LIMIT;
+use crate::constants::PREVIEW_CREDIT;
 use crate::fee::SystemLoanFeeReserve;
-use crate::fee::UnlimitedLoanFeeReserve;
 use crate::ledger::*;
 use crate::transaction::TransactionReceipt;
 use crate::transaction::*;
@@ -90,23 +90,19 @@ where
             self.wasm_instrumenter,
         );
 
-        let receipt = if preview_intent.flags.unlimited_loan {
-            transaction_executor.execute_with_fee_reserve(
-                &validated_preview_transaction,
-                &execution_params,
-                UnlimitedLoanFeeReserve::default(),
-            )
-        } else {
-            transaction_executor.execute_with_fee_reserve(
-                &validated_preview_transaction,
-                &execution_params,
-                SystemLoanFeeReserve::default(),
-            )
-        };
+        let mut fee_reserve = SystemLoanFeeReserve::default();
+        if preview_intent.flags.unlimited_loan {
+            fee_reserve.credit(PREVIEW_CREDIT);
+        }
+        let receipt = transaction_executor.execute_with_fee_reserve(
+            &validated_preview_transaction,
+            &execution_params,
+            SystemLoanFeeReserve::default(),
+        );
 
         Ok(PreviewResult {
             intent: preview_intent,
-            receipt: receipt,
+            receipt,
         })
     }
 }
