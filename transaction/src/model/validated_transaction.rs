@@ -1,5 +1,6 @@
 use sbor::rust::vec::Vec;
 use sbor::*;
+use scrypto::buffer::scrypto_encode;
 use scrypto::crypto::*;
 
 use crate::model::*;
@@ -10,7 +11,7 @@ pub struct ValidatedTransaction {
     pub transaction: NotarizedTransaction,
     pub transaction_hash: Hash,
     pub instructions: Vec<ExecutableInstruction>,
-    pub signer_public_keys: Vec<EcdsaPublicKey>,
+    pub signer_public_keys: Vec<PublicKey>,
 }
 
 impl ExecutableTransaction for ValidatedTransaction {
@@ -18,8 +19,8 @@ impl ExecutableTransaction for ValidatedTransaction {
         self.transaction_hash
     }
 
-    fn transaction_payload_size(&self) -> u32 {
-        self.transaction.to_bytes().len() as u32
+    fn manifest_instructions_size(&self) -> u32 {
+        scrypto_encode(&self.transaction.signed_intent.intent.manifest.instructions).len() as u32
     }
 
     fn cost_unit_limit(&self) -> u32 {
@@ -34,7 +35,11 @@ impl ExecutableTransaction for ValidatedTransaction {
         &self.instructions
     }
 
-    fn signer_public_keys(&self) -> &[EcdsaPublicKey] {
+    fn signer_public_keys(&self) -> &[PublicKey] {
         &self.signer_public_keys
+    }
+
+    fn blobs(&self) -> &[Vec<u8>] {
+        &self.transaction.signed_intent.intent.manifest.blobs
     }
 }

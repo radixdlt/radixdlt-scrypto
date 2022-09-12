@@ -22,7 +22,7 @@ fn test_state_track_success() {
             args!(Expression::entire_worktop()),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
 
     // Assert
     receipt.expect_commit_success();
@@ -52,7 +52,7 @@ fn test_state_track_failure() {
         )
         .assert_worktop_contains_by_amount(Decimal::from(5), RADIX_TOKEN)
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
 
     // Assert
     receipt.expect_specific_failure(|e| {

@@ -71,13 +71,8 @@ impl Into<ResourceAddress> for RENodeId {
 }
 
 /// TODO: separate space addresses?
-///
-/// FIXME: RESIM listing is broken ATM.
-/// By using scrypto codec, we lose sorting capability of the address space.
-/// Can also be resolved by A) using prefix search instead of range search or B) use special codec as before
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum SubstateId {
-    // TODO: Remove this bool which represents globalization
     ComponentInfo(ComponentAddress),
     Package(PackageAddress),
     ResourceManager(ResourceAddress),

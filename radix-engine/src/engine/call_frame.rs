@@ -28,28 +28,45 @@ pub struct CallFrame {
 }
 
 impl CallFrame {
-    pub fn new_root(signer_public_keys: Vec<EcdsaPublicKey>) -> Self {
+    pub fn new_root(signer_public_keys: Vec<PublicKey>) -> Self {
         // TODO: Cleanup initialization of authzone
-        let signer_non_fungible_ids: BTreeSet<NonFungibleId> = signer_public_keys
-            .clone()
-            .into_iter()
-            .map(|public_key| NonFungibleId::from_bytes(public_key.to_vec()))
-            .collect();
+
+        let mut ecdsa_non_fungible_ids = BTreeSet::new();
+        let mut ed25519_non_fungible_ids = BTreeSet::new();
+        for pk in signer_public_keys {
+            match pk {
+                PublicKey::Ecdsa(pk) => {
+                    ecdsa_non_fungible_ids.insert(NonFungibleId::from_bytes(pk.to_vec()))
+                }
+                PublicKey::Ed25519(pk) => {
+                    ed25519_non_fungible_ids.insert(NonFungibleId::from_bytes(pk.to_vec()))
+                }
+            };
+        }
 
         let mut initial_auth_zone_proofs = Vec::new();
-        if !signer_non_fungible_ids.is_empty() {
+        if !ecdsa_non_fungible_ids.is_empty() {
             // Proofs can't be zero amount
             let mut ecdsa_bucket = Bucket::new(ResourceContainer::new_non_fungible(
                 ECDSA_TOKEN,
-                signer_non_fungible_ids,
+                ecdsa_non_fungible_ids,
             ));
             let ecdsa_proof = ecdsa_bucket
                 .create_proof(ECDSA_TOKEN_BUCKET_ID)
-                .expect("Failed to construct signature proof");
+                .expect("Failed to construct ECDSA signature proof");
             initial_auth_zone_proofs.push(ecdsa_proof);
         }
-
-        let auth_zone = AuthZone::new_with_proofs(initial_auth_zone_proofs);
+        if !ed25519_non_fungible_ids.is_empty() {
+            // Proofs can't be zero amount
+            let mut ed25519_bucket = Bucket::new(ResourceContainer::new_non_fungible(
+                ED25519_TOKEN,
+                ed25519_non_fungible_ids,
+            ));
+            let ed25519_proof = ed25519_bucket
+                .create_proof(ED25519_TOKEN_BUCKET_ID)
+                .expect("Failed to construct ED25519 signature proof");
+            initial_auth_zone_proofs.push(ed25519_proof);
+        }
 
         Self {
             depth: 0,
@@ -62,7 +79,7 @@ impl CallFrame {
             },
             node_refs: HashMap::new(),
             owned_heap_nodes: HashMap::new(),
-            auth_zone,
+            auth_zone: AuthZone::new_with_proofs(initial_auth_zone_proofs),
         }
     }
 

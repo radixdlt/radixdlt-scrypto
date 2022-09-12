@@ -14,6 +14,7 @@
         "transaction/Cargo.toml",
     ],
     "cSpell.words": [
+        "decompile",
         "instantiatable",
         "Instrumenter",
         "Scrypto",

@@ -1,9 +1,11 @@
+mod any;
 mod ecdsa;
 mod ed25519;
 mod hash;
 mod sha2;
 mod sha3;
 
+pub use self::any::*;
 pub use self::ecdsa::*;
 pub use self::ed25519::*;
 pub use self::hash::*;

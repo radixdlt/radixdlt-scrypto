@@ -48,7 +48,7 @@ fn prepare_test_tx_and_preview_intent(
             start_epoch_inclusive: 0,
             end_epoch_exclusive: 99,
             nonce: test_runner.next_transaction_nonce(),
-            notary_public_key: notary_priv_key.public_key(),
+            notary_public_key: notary_priv_key.public_key().into(),
             notary_as_signatory: false,
             cost_unit_limit: 10_000_000,
             tip_percentage: 0,
@@ -77,12 +77,7 @@ fn prepare_test_tx_and_preview_intent(
 
     let preview_intent = PreviewIntent {
         intent: notarized_transaction.signed_intent.intent.clone(),
-        signer_public_keys: notarized_transaction
-            .signed_intent
-            .intent_signatures
-            .iter()
-            .map(|p| p.0)
-            .collect(),
+        signer_public_keys: vec![tx_signer_priv_key.public_key().into()],
         flags: PreviewFlags {
             unlimited_loan: true,
         },

@@ -17,9 +17,8 @@ impl AuthModule {
                 .expect("Current call frame does not exist")
                 .auth_zone,
         ];
-        // FIXME: This is wrong as it allows extern component
-        // FIXME: calls to use caller's auth zone
-        // FIXME: Need to add a test for this
+        // FIXME: This is wrong as it allows extern component calls to use caller's auth zone
+        // Also, need to add a test for this
         if let Some(frame) = call_frames.iter().rev().nth(1) {
             auth_zones.push(&frame.auth_zone);
         }

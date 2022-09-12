@@ -44,7 +44,7 @@ fn test_component() {
             args!(Expression::entire_worktop()),
         )
         .build();
-    let receipt2 = test_runner.execute_manifest(manifest2, vec![public_key]);
+    let receipt2 = test_runner.execute_manifest(manifest2, vec![public_key.into()]);
     receipt2.expect_commit_success();
 }
 

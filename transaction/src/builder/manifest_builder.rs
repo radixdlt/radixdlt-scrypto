@@ -1,6 +1,5 @@
 use sbor::describe::*;
 use sbor::rust::borrow::ToOwned;
-use sbor::rust::collections::BTreeSet;
 use sbor::rust::collections::*;
 use sbor::rust::fmt;
 use sbor::rust::str::FromStr;
@@ -14,7 +13,7 @@ use scrypto::buffer::*;
 use scrypto::component::{ComponentAddress, PackageAddress};
 use scrypto::constants::*;
 use scrypto::core::{
-    FnIdentifier, NativeFnIdentifier, NetworkDefinition, ResourceManagerFnIdentifier,
+    Blob, FnIdentifier, NativeFnIdentifier, NetworkDefinition, ResourceManagerFnIdentifier,
 };
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
@@ -41,6 +40,8 @@ pub struct ManifestBuilder {
     id_validator: IdValidator,
     /// Instructions generated.
     instructions: Vec<Instruction>,
+    /// Blobs
+    blobs: HashMap<Hash, Vec<u8>>,
 }
 
 impl ManifestBuilder {
@@ -50,6 +51,7 @@ impl ManifestBuilder {
             decoder: Bech32Decoder::new(network),
             id_validator: IdValidator::new(),
             instructions: Vec::new(),
+            blobs: HashMap::default(),
         }
     }
 
@@ -447,17 +449,26 @@ impl ManifestBuilder {
         code: Vec<u8>,
         abi: HashMap<String, BlueprintAbi>,
     ) -> &mut Self {
+        let code_hash = hash(&code);
+        self.blobs.insert(code_hash, code);
+
+        let abi = scrypto_encode(&abi);
+        let abi_hash = hash(&abi);
+        self.blobs.insert(abi_hash, abi);
+
         self.add_instruction(Instruction::PublishPackage {
-            code,
-            abi: scrypto_encode(&abi),
+            code: Blob(code_hash),
+            abi: Blob(abi_hash),
         })
         .0
     }
 
     /// Builds a transaction manifest.
+    /// TODO: consider using self
     pub fn build(&self) -> TransactionManifest {
         TransactionManifest {
             instructions: self.instructions.clone(),
+            blobs: self.blobs.values().cloned().collect(),
         }
     }
 

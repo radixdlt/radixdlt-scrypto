@@ -329,6 +329,7 @@ fn get_native_type(ty: &des::Type) -> Result<(Type, Vec<Item>)> {
                 ScryptoType::NonFungibleAddress => "::scrypto::resource::NonFungibleAddress",
                 ScryptoType::ResourceAddress => "::scrypto::resource::ResourceAddress",
                 ScryptoType::Expression => "::scrypto::core::Expression",
+                ScryptoType::Blob => "::scrypto::core::Blob",
             };
 
             let ty: Type = parse_str(canonical_name).unwrap();
