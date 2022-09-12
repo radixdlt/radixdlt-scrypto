@@ -96,7 +96,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
     };
 
     let manifest = builder.build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
 
     // Assert
     if expect_err {

@@ -137,7 +137,7 @@ fn test_basic_transfer() {
             args!(Expression::entire_worktop()),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key1]);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key1.into()]);
     receipt.expect_commit_success();
 
     // Assert

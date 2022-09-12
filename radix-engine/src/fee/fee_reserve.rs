@@ -12,7 +12,6 @@ pub enum FeeReserveError {
     SystemLoanNotCleared,
 }
 
-// TODO: rename to `FeeReserve`
 pub trait FeeReserve {
     fn consume<T: ToString>(
         &mut self,

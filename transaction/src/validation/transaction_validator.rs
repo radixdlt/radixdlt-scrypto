@@ -50,27 +50,20 @@ impl TransactionValidator {
         )?;
 
         // verify signatures
-        Self::validate_signatures(&transaction)
+        let mut signers = Self::validate_signatures(&transaction)
             .map_err(TransactionValidationError::SignatureValidationError)?;
+        if transaction.signed_intent.intent.header.notary_as_signatory {
+            signers.insert(transaction.signed_intent.intent.header.notary_public_key);
+        }
 
         // TODO: whether to use intent hash or transaction hash
         let transaction_hash = transaction.hash();
-
-        let mut signer_public_keys: Vec<EcdsaPublicKey> = transaction
-            .signed_intent
-            .intent_signatures
-            .iter()
-            .map(|e| e.0)
-            .collect();
-        if transaction.signed_intent.intent.header.notary_as_signatory {
-            signer_public_keys.push(transaction.signed_intent.intent.header.notary_public_key);
-        }
 
         Ok(ValidatedTransaction {
             transaction,
             transaction_hash,
             instructions,
-            signer_public_keys,
+            signer_public_keys: signers.into_iter().collect(),
         })
     }
 
@@ -321,7 +314,7 @@ impl TransactionValidator {
 
     fn validate_signatures(
         transaction: &NotarizedTransaction,
-    ) -> Result<(), SignatureValidationError> {
+    ) -> Result<HashSet<PublicKey>, SignatureValidationError> {
         // TODO: split into static validation part and runtime validation part to support more signatures
         if transaction.signed_intent.intent_signatures.len() > MAX_NUMBER_OF_INTENT_SIGNATURES {
             return Err(SignatureValidationError::TooManySignatures);
@@ -331,17 +324,21 @@ impl TransactionValidator {
         let intent_payload = transaction.signed_intent.intent.to_bytes();
         let mut signers = HashSet::new();
         for sig in &transaction.signed_intent.intent_signatures {
-            if !verify_ecdsa(&intent_payload, &sig.0, &sig.1) {
+            let public_key = recover(&intent_payload, sig)
+                .ok_or(SignatureValidationError::InvalidIntentSignature)?;
+
+            if !verify(&intent_payload, &public_key, &sig.signature()) {
                 return Err(SignatureValidationError::InvalidIntentSignature);
             }
-            if !signers.insert(sig.0.to_vec()) {
+
+            if !signers.insert(public_key) {
                 return Err(SignatureValidationError::DuplicateSigner);
             }
         }
 
         // verify notary signature
         let signed_intent_payload = transaction.signed_intent.to_bytes();
-        if !verify_ecdsa(
+        if !verify(
             &signed_intent_payload,
             &transaction.signed_intent.intent.header.notary_public_key,
             &transaction.notary_signature,
@@ -349,7 +346,7 @@ impl TransactionValidator {
             return Err(SignatureValidationError::InvalidNotarySignature);
         }
 
-        Ok(())
+        Ok(signers)
     }
 
     fn validate_call_data(
@@ -463,17 +460,11 @@ mod tests {
 
         // Build the whole transaction but only really care about the intent
         let tx = create_transaction(1, 0, 100, 5, vec![1, 2], 2);
-        let signer_public_keys = tx
-            .signed_intent
-            .intent_signatures
-            .into_iter()
-            .map(|p| p.0)
-            .collect();
 
         let result = TransactionValidator::validate_preview_intent(
             PreviewIntent {
                 intent: tx.signed_intent.intent,
-                signer_public_keys: signer_public_keys,
+                signer_public_keys: Vec::new(),
                 flags: PreviewFlags {
                     unlimited_loan: true,
                 },
@@ -502,7 +493,7 @@ mod tests {
                 start_epoch_inclusive: start_epoch,
                 end_epoch_exclusive: end_epoch,
                 nonce,
-                notary_public_key: sk_notary.public_key(),
+                notary_public_key: sk_notary.public_key().into(),
                 notary_as_signatory: false,
                 cost_unit_limit: 1_000_000,
                 tip_percentage: 5,

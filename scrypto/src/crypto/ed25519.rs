@@ -9,7 +9,7 @@ use crate::abi::{scrypto_type, ScryptoType};
 use crate::misc::copy_u8_array;
 
 /// Represents an ED25519 public key.
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Ed25519PublicKey(pub [u8; Self::LENGTH]);
 
 /// Represents an ED25519 signature.

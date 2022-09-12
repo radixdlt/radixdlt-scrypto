@@ -26,7 +26,7 @@ fn create_non_fungible_mutable() {
             args!(Expression::entire_worktop()),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
 
     // Assert
     receipt.expect_commit_success();
@@ -81,7 +81,7 @@ fn can_burn_non_fungible() {
             args!(Expression::entire_worktop()),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
 
     // Assert
     receipt.expect_commit_success();
@@ -144,7 +144,7 @@ fn test_non_fungible() {
             args!(Expression::entire_worktop()),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
     receipt.expect_commit_success();
 }
 
@@ -169,6 +169,6 @@ fn test_singleton_non_fungible() {
             args!(Expression::entire_worktop()),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
     receipt.expect_commit_success();
 }

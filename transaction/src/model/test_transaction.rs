@@ -10,14 +10,14 @@ use crate::model::*;
 pub struct TestTransaction {
     pub transaction: NotarizedTransaction,
     pub executable_instructions: Vec<ExecutableInstruction>,
-    pub signer_public_keys: Vec<EcdsaPublicKey>,
+    pub signer_public_keys: Vec<PublicKey>,
 }
 
 impl TestTransaction {
     pub fn new(
         manifest: TransactionManifest,
         nonce: u64,
-        signer_public_keys: Vec<EcdsaPublicKey>,
+        signer_public_keys: Vec<PublicKey>,
     ) -> Self {
         let transaction = TransactionBuilder::new()
             .header(TransactionHeader {
@@ -26,9 +26,9 @@ impl TestTransaction {
                 start_epoch_inclusive: 0,
                 end_epoch_exclusive: 100,
                 nonce,
-                notary_public_key: EcdsaPublicKey([0u8; 33]),
+                notary_public_key: EcdsaPublicKey([0u8; 33]).into(),
                 notary_as_signatory: false,
-                cost_unit_limit: u32::MAX, // TODO: Temporary fix to be able to publish large packages
+                cost_unit_limit: 10_000_000,
                 tip_percentage: 5,
             })
             .manifest(manifest)
@@ -36,10 +36,13 @@ impl TestTransaction {
                 signer_public_keys
                     .iter()
                     .cloned()
-                    .map(|pk| (pk, EcdsaSignature([0u8; 64])))
+                    .map(|pk| match pk {
+                        PublicKey::Ecdsa(_) => EcdsaSignature([0u8; 65]).into(),
+                        PublicKey::Ed25519(pk) => (pk, Ed25519Signature([0u8; 64])).into(),
+                    })
                     .collect(),
             )
-            .notary_signature(EcdsaSignature([0u8; 64]))
+            .notary_signature(EcdsaSignature([0u8; 65]).into())
             .build();
 
         let executable_instructions = transaction
@@ -174,7 +177,7 @@ impl ExecutableTransaction for TestTransaction {
         &self.executable_instructions
     }
 
-    fn signer_public_keys(&self) -> &[EcdsaPublicKey] {
+    fn signer_public_keys(&self) -> &[PublicKey] {
         &self.signer_public_keys
     }
 

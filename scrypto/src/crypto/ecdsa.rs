@@ -9,7 +9,7 @@ use crate::abi::{scrypto_type, ScryptoType};
 use crate::misc::copy_u8_array;
 
 /// Represents an ECDSA public key.
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub struct EcdsaPublicKey(pub [u8; Self::LENGTH]);
 
 /// Represents an ECDSA signature.
@@ -28,7 +28,7 @@ impl EcdsaPublicKey {
 }
 
 impl EcdsaSignature {
-    pub const LENGTH: usize = 64;
+    pub const LENGTH: usize = 65; // recovery id + signature
 }
 
 //======

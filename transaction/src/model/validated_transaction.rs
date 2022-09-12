@@ -11,7 +11,7 @@ pub struct ValidatedTransaction {
     pub transaction: NotarizedTransaction,
     pub transaction_hash: Hash,
     pub instructions: Vec<ExecutableInstruction>,
-    pub signer_public_keys: Vec<EcdsaPublicKey>,
+    pub signer_public_keys: Vec<PublicKey>,
 }
 
 impl ExecutableTransaction for ValidatedTransaction {
@@ -35,7 +35,7 @@ impl ExecutableTransaction for ValidatedTransaction {
         &self.instructions
     }
 
-    fn signer_public_keys(&self) -> &[EcdsaPublicKey] {
+    fn signer_public_keys(&self) -> &[PublicKey] {
         &self.signer_public_keys
     }
 

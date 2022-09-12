@@ -210,16 +210,19 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     pub fn execute_manifest(
         &mut self,
         manifest: TransactionManifest,
-        signer_public_keys: Vec<EcdsaPublicKey>,
+        signer_public_keys: Vec<PublicKey>,
     ) -> TransactionReceipt {
-        let mut receipts = self.execute_batch(vec![(manifest, signer_public_keys)]);
+        let mut receipts = self.execute_batch(vec![(
+            manifest,
+            signer_public_keys.into_iter().map(Into::into).collect(),
+        )]);
         receipts.pop().unwrap()
     }
 
     pub fn execute_manifest_ignoring_fee(
         &mut self,
         mut manifest: TransactionManifest,
-        signer_public_keys: Vec<EcdsaPublicKey>,
+        signer_public_keys: Vec<PublicKey>,
     ) -> TransactionReceipt {
         manifest.instructions.insert(
             0,
@@ -268,7 +271,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
 
     pub fn execute_batch(
         &mut self,
-        manifests: Vec<(TransactionManifest, Vec<EcdsaPublicKey>)>,
+        manifests: Vec<(TransactionManifest, Vec<PublicKey>)>,
     ) -> Vec<TransactionReceipt> {
         let node_id = self.create_child_node(0);
         let receipts = self.execute_batch_on_node(node_id, manifests);
@@ -283,7 +286,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     pub fn execute_batch_on_node(
         &mut self,
         node_id: u64,
-        manifests: Vec<(TransactionManifest, Vec<EcdsaPublicKey>)>,
+        manifests: Vec<(TransactionManifest, Vec<PublicKey>)>,
     ) -> Vec<TransactionReceipt> {
         let mut store = self.execution_stores.get_output_store(node_id);
         let mut receipts = Vec::new();
@@ -350,7 +353,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
                 args!(Expression::entire_worktop()),
             )
             .build();
-        self.execute_manifest(manifest, vec![signer_public_key])
+        self.execute_manifest(manifest, vec![signer_public_key.into()])
             .expect_commit_success();
     }
 
@@ -541,7 +544,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
                 args!(Expression::entire_worktop()),
             )
             .build();
-        let receipt = self.execute_manifest(manifest, vec![signer_public_key]);
+        let receipt = self.execute_manifest(manifest, vec![signer_public_key.into()]);
         receipt.expect_commit_success();
         receipt
             .expect_commit()
