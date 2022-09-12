@@ -15,6 +15,7 @@ pub struct Package {
 #[derive(Debug, TypeId, Encode, Decode)]
 pub enum PackageError {
     InvalidRequestData(DecodeError),
+    InvalidAbi(DecodeError),
     InvalidWasm(PrepareError),
     BlueprintNotFound,
     MethodNotFound(String),
@@ -53,7 +54,18 @@ impl Package {
             PackageFnIdentifier::Publish => {
                 let input: PackagePublishInput = scrypto_decode(&call_data.raw)
                     .map_err(|e| InvokeError::Error(PackageError::InvalidRequestData(e)))?;
-                let package = Package::new(input.code, input.abi)
+                let code = system_api
+                    .read_blob(&input.code.0)
+                    .map_err(InvokeError::Downstream)?
+                    .to_vec();
+                let abi = system_api
+                    .read_blob(&input.abi.0)
+                    .map_err(InvokeError::Downstream)
+                    .and_then(|blob| {
+                        scrypto_decode::<HashMap<String, BlueprintAbi>>(blob)
+                            .map_err(|e| InvokeError::Error(PackageError::InvalidAbi(e)))
+                    })?;
+                let package = Package::new(code, abi)
                     .map_err(|e| InvokeError::Error(PackageError::InvalidWasm(e)))?;
                 let node_id = system_api
                     .node_create(HeapRENode::Package(package))

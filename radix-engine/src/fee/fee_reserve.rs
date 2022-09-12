@@ -2,6 +2,7 @@ use crate::constants::{DEFAULT_COST_UNIT_LIMIT, DEFAULT_COST_UNIT_PRICE, DEFAULT
 use crate::fee::FeeSummary;
 use crate::model::ResourceContainer;
 use crate::types::*;
+use sbor::rust::cmp::min;
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
 pub enum FeeReserveError {
@@ -11,9 +12,13 @@ pub enum FeeReserveError {
     SystemLoanNotCleared,
 }
 
-// TODO: rename to `FeeReserve`
 pub trait FeeReserve {
-    fn consume<T: ToString>(&mut self, n: u32, reason: T) -> Result<(), FeeReserveError>;
+    fn consume<T: ToString>(
+        &mut self,
+        n: u32,
+        reason: T,
+        deferred: bool,
+    ) -> Result<(), FeeReserveError>;
 
     fn repay(
         &mut self,
@@ -26,7 +31,9 @@ pub trait FeeReserve {
 
     fn limit(&self) -> u32;
 
-    fn consumed(&self) -> u32;
+    fn consumed_instant(&self) -> u32;
+
+    fn consumed_deferred(&self) -> u32;
 
     fn balance(&self) -> u32;
 
@@ -44,14 +51,16 @@ pub struct SystemLoanFeeReserve {
     balance: u32,
     /// The number of cost units owed to the system
     owed: u32,
-    /// The total cost units consumed so far
-    consumed: u32,
+    /// The total cost units consumed so far, instant
+    consumed_instant: u32,
+    /// The total cost units consumed so far, deferred
+    consumed_deferred: u32,
     /// The max number of cost units that can be consumed
     limit: u32,
     /// At which point the system loan repayment is checked
     check_point: u32,
     /// Cost breakdown
-    cost_breakdown: BTreeMap<String, u32>,
+    cost_breakdown: HashMap<String, u32>,
 }
 
 impl SystemLoanFeeReserve {
@@ -67,34 +76,66 @@ impl SystemLoanFeeReserve {
             payments: Vec::new(),
             balance: system_loan,
             owed: system_loan,
-            consumed: 0,
+            consumed_instant: 0,
+            consumed_deferred: 0,
             limit: cost_unit_limit,
             check_point: system_loan,
-            cost_breakdown: BTreeMap::new(),
+            cost_breakdown: HashMap::new(),
         }
+    }
+
+    /// Adds free credit.
+    ///
+    /// Note that overflow is not checked.
+    pub fn credit(&mut self, n: u32) {
+        let repay = min(n, self.owed);
+        self.owed = self.owed - repay;
+        self.balance = self.balance + (n - repay);
     }
 }
 
 impl FeeReserve for SystemLoanFeeReserve {
-    fn consume<T: ToString>(&mut self, n: u32, reason: T) -> Result<(), FeeReserveError> {
-        self.balance = self
-            .balance
-            .checked_sub(n)
-            .ok_or(FeeReserveError::OutOfCostUnit)?;
-        self.consumed = self
-            .consumed
-            .checked_add(n)
-            .ok_or(FeeReserveError::Overflow)?;
+    fn consume<T: ToString>(
+        &mut self,
+        n: u32,
+        reason: T,
+        deferred: bool,
+    ) -> Result<(), FeeReserveError> {
+        // update consumed
+        if !deferred {
+            self.consumed_instant = self
+                .consumed_instant
+                .checked_add(n)
+                .ok_or(FeeReserveError::Overflow)?;
+        } else {
+            self.consumed_deferred = self
+                .consumed_deferred
+                .checked_add(n)
+                .ok_or(FeeReserveError::Overflow)?;
+        }
+        if self.consumed_instant + self.consumed_deferred > self.limit {
+            return Err(FeeReserveError::LimitExceeded);
+        }
 
+        // update cost breakdown
         self.cost_breakdown
             .entry(reason.to_string())
             .or_default()
             .add_assign(n);
 
-        if self.consumed > self.limit {
-            return Err(FeeReserveError::LimitExceeded);
+        // update balance or owed
+        if !deferred {
+            self.balance = self
+                .balance
+                .checked_sub(n)
+                .ok_or(FeeReserveError::OutOfCostUnit)?;
+        } else {
+            assert!(self.consumed_instant < self.check_point);
+            self.owed = self.owed.checked_add(n).ok_or(FeeReserveError::Overflow)?;
         }
-        if self.consumed >= self.check_point && self.owed > 0 {
+
+        // check system loan
+        if self.consumed_instant >= self.check_point && self.owed > 0 {
             return Err(FeeReserveError::SystemLoanNotCleared);
         }
         Ok(())
@@ -148,14 +189,15 @@ impl FeeReserve for SystemLoanFeeReserve {
             self.balance -= n;
         }
 
+        let consumed = self.consumed_instant + self.consumed_deferred;
         FeeSummary {
             loan_fully_repaid: self.owed == 0,
             cost_unit_limit: self.limit,
-            cost_unit_consumed: self.consumed,
+            cost_unit_consumed: consumed,
             cost_unit_price: self.cost_unit_price,
             tip_percentage: self.tip_percentage,
-            burned: self.cost_unit_price * self.consumed,
-            tipped: self.cost_unit_price * self.tip_percentage / 100 * self.consumed,
+            burned: self.cost_unit_price * consumed,
+            tipped: self.cost_unit_price * self.tip_percentage / 100 * consumed,
             payments: self.payments,
             cost_breakdown: self.cost_breakdown,
         }
@@ -165,8 +207,12 @@ impl FeeReserve for SystemLoanFeeReserve {
         self.limit
     }
 
-    fn consumed(&self) -> u32 {
-        self.consumed
+    fn consumed_instant(&self) -> u32 {
+        self.consumed_instant
+    }
+
+    fn consumed_deferred(&self) -> u32 {
+        self.consumed_deferred
     }
 
     fn balance(&self) -> u32 {
@@ -191,98 +237,6 @@ impl Default for SystemLoanFeeReserve {
     }
 }
 
-pub struct UnlimitedLoanFeeReserve {
-    /// The price of cost unit
-    cost_unit_price: Decimal,
-    /// The tip percentage
-    tip_percentage: u32,
-    /// The total cost units consumed so far
-    consumed: u32,
-    /// The max number of cost units that can be consumed
-    limit: u32,
-    /// The cost breakdown
-    cost_breakdown: BTreeMap<String, u32>,
-}
-
-impl UnlimitedLoanFeeReserve {
-    pub fn new(limit: u32, tip_percentage: u32, cost_unit_price: Decimal) -> Self {
-        Self {
-            cost_unit_price,
-            tip_percentage,
-            consumed: 0,
-            limit: limit,
-            cost_breakdown: BTreeMap::new(),
-        }
-    }
-}
-
-impl FeeReserve for UnlimitedLoanFeeReserve {
-    fn consume<T: ToString>(&mut self, n: u32, reason: T) -> Result<(), FeeReserveError> {
-        self.consumed = self
-            .consumed
-            .checked_add(n)
-            .ok_or(FeeReserveError::Overflow)?;
-
-        self.cost_breakdown
-            .entry(reason.to_string())
-            .or_default()
-            .add_assign(n);
-
-        Ok(())
-    }
-
-    fn repay(
-        &mut self,
-        _vault_id: VaultId,
-        fee: ResourceContainer,
-        _contingent: bool,
-    ) -> Result<ResourceContainer, FeeReserveError> {
-        Ok(fee) // No-op
-    }
-
-    fn finalize(self) -> FeeSummary {
-        FeeSummary {
-            loan_fully_repaid: true,
-            cost_unit_limit: self.limit,
-            cost_unit_consumed: self.consumed,
-            cost_unit_price: self.cost_unit_price,
-            tip_percentage: self.tip_percentage,
-            burned: self.cost_unit_price * self.consumed,
-            tipped: self.cost_unit_price * self.tip_percentage / 100 * self.consumed,
-            payments: Vec::new(),
-            cost_breakdown: self.cost_breakdown,
-        }
-    }
-
-    fn limit(&self) -> u32 {
-        self.limit
-    }
-
-    fn consumed(&self) -> u32 {
-        self.consumed
-    }
-
-    fn balance(&self) -> u32 {
-        u32::MAX
-    }
-
-    fn owed(&self) -> u32 {
-        0
-    }
-}
-
-impl Default for UnlimitedLoanFeeReserve {
-    fn default() -> UnlimitedLoanFeeReserve {
-        UnlimitedLoanFeeReserve::new(
-            DEFAULT_COST_UNIT_LIMIT,
-            0,
-            DEFAULT_COST_UNIT_PRICE
-                .parse()
-                .expect("Invalid DEFAULT_COST_UNIT_PRICE"),
-        )
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -297,10 +251,10 @@ mod tests {
     #[test]
     fn test_consume_and_repay() {
         let mut fee_reserve = SystemLoanFeeReserve::new(100, 0, 1.into(), 5);
-        fee_reserve.consume(2, "test").unwrap();
+        fee_reserve.consume(2, "test", false).unwrap();
         fee_reserve.repay(TEST_VAULT_ID, xrd(3), false).unwrap();
         assert_eq!(3, fee_reserve.balance());
-        assert_eq!(2, fee_reserve.consumed());
+        assert_eq!(2, fee_reserve.consumed_instant());
         assert_eq!(2, fee_reserve.owed());
     }
 
@@ -309,7 +263,7 @@ mod tests {
         let mut fee_reserve = SystemLoanFeeReserve::new(100, 0, 1.into(), 5);
         assert_eq!(
             Err(FeeReserveError::OutOfCostUnit),
-            fee_reserve.consume(6, "test")
+            fee_reserve.consume(6, "test", false)
         );
     }
 

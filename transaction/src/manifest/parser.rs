@@ -217,8 +217,8 @@ impl Parser {
             | TokenKind::Proof
             | TokenKind::NonFungibleId
             | TokenKind::NonFungibleAddress
-            | TokenKind::Expression => self.parse_scrypto_types(),
-            TokenKind::Bytes => self.parse_bytes(),
+            | TokenKind::Expression
+            | TokenKind::Blob => self.parse_scrypto_types(),
             _ => Err(ParserError::UnexpectedToken(token)),
         }
     }
@@ -287,20 +287,6 @@ impl Parser {
         ))
     }
 
-    pub fn parse_bytes(&mut self) -> Result<Value, ParserError> {
-        advance_match!(self, TokenKind::Bytes);
-        advance_match!(self, TokenKind::OpenParenthesis);
-        let token = self.advance()?;
-        let bytes = match token.kind {
-            TokenKind::StringLiteral(s) => {
-                hex::decode(&s).map_err(|_| ParserError::InvalidHex(s.to_owned()))
-            }
-            _ => Err(ParserError::UnexpectedToken(token)),
-        };
-        advance_match!(self, TokenKind::CloseParenthesis);
-        Ok(Value::Bytes(bytes?))
-    }
-
     pub fn parse_set(&mut self) -> Result<Value, ParserError> {
         advance_match!(self, TokenKind::Set);
         let generics = self.parse_generics(1)?;
@@ -340,6 +326,7 @@ impl Parser {
                 Ok(Value::NonFungibleAddress(self.parse_values_one()?.into()))
             }
             TokenKind::Expression => Ok(Value::Expression(self.parse_values_one()?.into())),
+            TokenKind::Blob => Ok(Value::Blob(self.parse_values_one()?.into())),
             _ => Err(ParserError::UnexpectedToken(token)),
         }
     }
@@ -430,6 +417,7 @@ impl Parser {
             TokenKind::Proof => Ok(Type::Proof),
             TokenKind::NonFungibleId => Ok(Type::NonFungibleId),
             TokenKind::Expression => Ok(Type::Expression),
+            TokenKind::Blob => Ok(Type::Blob),
             _ => Err(ParserError::UnexpectedToken(token)),
         }
     }

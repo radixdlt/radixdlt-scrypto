@@ -3,6 +3,7 @@ use crate::transaction::TransactionExecutor;
 use crate::types::ResourceMethodAuthKey::Withdraw;
 use crate::types::*;
 use crate::wasm::{DefaultWasmEngine, WasmInstrumenter};
+use scrypto::core::Blob;
 use scrypto::resource::Bucket;
 use transaction::model::{Instruction, SystemTransaction, TransactionManifest};
 use transaction::validation::{IdAllocator, IdSpace, TransactionValidator};
@@ -30,30 +31,46 @@ pub struct GenesisReceipt {
 }
 
 pub fn create_genesis() -> SystemTransaction {
+    let mut blobs = Vec::new();
     let mut id_allocator = IdAllocator::new(IdSpace::Transaction);
     let create_sys_faucet_package = {
         let sys_faucet_code = include_bytes!("../../../assets/sys_faucet.wasm").to_vec();
         let sys_faucet_abi = include_bytes!("../../../assets/sys_faucet.abi").to_vec();
-        Instruction::PublishPackage {
-            code: sys_faucet_code,
-            abi: sys_faucet_abi,
-        }
+        let inst = Instruction::PublishPackage {
+            code: Blob(hash(&sys_faucet_code)),
+            abi: Blob(hash(&sys_faucet_abi)),
+        };
+
+        blobs.push(sys_faucet_code);
+        blobs.push(sys_faucet_abi);
+
+        inst
     };
     let create_sys_utils_package = {
         let sys_utils_code = include_bytes!("../../../assets/sys_utils.wasm").to_vec();
         let sys_utils_abi = include_bytes!("../../../assets/sys_utils.abi").to_vec();
-        Instruction::PublishPackage {
-            code: sys_utils_code,
-            abi: sys_utils_abi,
-        }
+        let inst = Instruction::PublishPackage {
+            code: Blob(hash(&sys_utils_code)),
+            abi: Blob(hash(&sys_utils_abi)),
+        };
+
+        blobs.push(sys_utils_code);
+        blobs.push(sys_utils_abi);
+
+        inst
     };
     let create_account_package = {
         let account_code = include_bytes!("../../../assets/account.wasm").to_vec();
         let account_abi = include_bytes!("../../../assets/account.abi").to_vec();
-        Instruction::PublishPackage {
-            code: account_code,
-            abi: account_abi,
-        }
+        let inst = Instruction::PublishPackage {
+            code: Blob(hash(&account_code)),
+            abi: Blob(hash(&account_abi)),
+        };
+
+        blobs.push(account_code);
+        blobs.push(account_abi);
+
+        inst
     };
     let create_ecdsa_token = {
         let metadata: HashMap<String, String> = HashMap::new();
@@ -161,6 +178,7 @@ pub fn create_genesis() -> SystemTransaction {
             create_xrd_faucet,
             create_system_component,
         ],
+        blobs,
     };
 
     SystemTransaction { manifest }

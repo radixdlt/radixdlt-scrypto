@@ -1,19 +1,19 @@
-use scrypto::crypto::{EcdsaPublicKey, EcdsaSignature};
+use scrypto::crypto::SignatureWithPublicKey;
 
-use super::EcdsaPrivateKey;
+use super::{EcdsaPrivateKey, Ed25519PrivateKey};
 
 pub trait Signer {
-    fn public_key(&self) -> EcdsaPublicKey;
-
-    fn sign(&self, message: &[u8]) -> EcdsaSignature;
+    fn sign(&self, message: &[u8]) -> SignatureWithPublicKey;
 }
 
 impl Signer for EcdsaPrivateKey {
-    fn public_key(&self) -> EcdsaPublicKey {
-        self.public_key()
+    fn sign(&self, message: &[u8]) -> SignatureWithPublicKey {
+        self.sign(message).into()
     }
+}
 
-    fn sign(&self, message: &[u8]) -> EcdsaSignature {
-        self.sign(message)
+impl Signer for Ed25519PrivateKey {
+    fn sign(&self, message: &[u8]) -> SignatureWithPublicKey {
+        (self.public_key(), self.sign(message)).into()
     }
 }

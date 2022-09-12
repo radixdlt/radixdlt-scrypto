@@ -1,8 +1,8 @@
 use crate::abi::BlueprintAbi;
 use crate::buffer::*;
 use crate::component::*;
+use crate::core::Runtime;
 use crate::core::ScryptoRENode;
-use crate::core::{FnIdentifier, NativeFnIdentifier, PackageFnIdentifier, Runtime};
 use crate::engine::types::RENodeId;
 use crate::engine::{api::*, call_engine};
 use sbor::rust::borrow::ToOwned;
@@ -49,14 +49,10 @@ impl ComponentSystem {
     /// Publishes a package.
     pub fn publish_package(
         &mut self,
-        code: Vec<u8>,
-        abi: HashMap<String, BlueprintAbi>,
+        _code: Vec<u8>,
+        _abi: HashMap<String, BlueprintAbi>,
     ) -> PackageAddress {
-        let input = RadixEngineInput::InvokeFunction(
-            FnIdentifier::Native(NativeFnIdentifier::Package(PackageFnIdentifier::Publish)),
-            scrypto_encode(&PackagePublishInput { code, abi }),
-        );
-        call_engine(input)
+        todo!("Not supported yet due to lack of dynamic blob creation")
     }
 
     /// Instantiates a component.

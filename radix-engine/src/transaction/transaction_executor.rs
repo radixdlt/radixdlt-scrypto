@@ -1,7 +1,9 @@
-use crate::constants::{DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN};
+use crate::constants::{
+    DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN, GENESIS_CREATION_CREDIT,
+};
 use crate::engine::Track;
 use crate::engine::*;
-use crate::fee::{FeeReserve, FeeTable, SystemLoanFeeReserve, UnlimitedLoanFeeReserve};
+use crate::fee::{FeeReserve, FeeTable, SystemLoanFeeReserve};
 use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
 use crate::model::*;
 use crate::transaction::*;
@@ -86,11 +88,19 @@ where
         transaction: ExecutableSystemTransaction,
     ) -> TransactionReceipt {
         let mut execution_trace = ExecutionTrace::new();
-        let mut track = Track::new(self.substate_store, UnlimitedLoanFeeReserve::default());
+        let mut fee_reserve = SystemLoanFeeReserve::default();
+        fee_reserve.credit(GENESIS_CREATION_CREDIT);
+        let mut track = Track::new(self.substate_store, fee_reserve, FeeTable::new());
+        let blobs: HashMap<Hash, Vec<u8>> = transaction
+            .blobs
+            .into_iter()
+            .map(|b| (hash(&b), b))
+            .collect();
 
         let mut kernel = Kernel::new(
             Hash([0u8; Hash::LENGTH]),
             vec![],
+            &blobs,
             ExecutionPrivilege::System,
             DEFAULT_MAX_CALL_DEPTH,
             &mut track,
@@ -151,25 +161,29 @@ where
         &mut self,
         transaction: &T,
         execution_config: &ExecutionConfig,
-        mut fee_reserve: R,
+        fee_reserve: R,
     ) -> TransactionReceipt {
         let transaction_hash = transaction.transaction_hash();
         let signer_public_keys = transaction.signer_public_keys().to_vec();
         let instructions = transaction.instructions().to_vec();
+        let blobs: HashMap<Hash, Vec<u8>> = transaction
+            .blobs()
+            .iter()
+            .map(|b| (hash(b), b.clone()))
+            .collect();
 
         #[cfg(not(feature = "alloc"))]
         if execution_config.trace {
             println!("{:-^80}", "Transaction Metadata");
             println!("Transaction hash: {}", transaction_hash);
             println!("Transaction signers: {:?}", signer_public_keys);
+            println!("Number of unique blobs: {}", blobs.len());
 
             println!("{:-^80}", "Engine Execution Log");
         }
 
         // Prepare state track and execution trace
-        let fee_table = FeeTable::new();
-        CostingModule::apply_static_fees(&mut fee_reserve, &fee_table, transaction);
-        let mut track = Track::new(self.substate_store, fee_reserve);
+        let mut track = Track::new(self.substate_store, fee_reserve, FeeTable::new());
         let mut execution_trace = ExecutionTrace::new();
 
         // Invoke the function/method
@@ -178,11 +192,15 @@ where
             if execution_config.trace {
                 modules.push(Box::new(LoggerModule::new()));
             }
-            modules.push(Box::new(CostingModule::new(fee_table)));
+            modules.push(Box::new(CostingModule::default()));
 
+            track
+                .apply_pre_execution_costs(transaction)
+                .expect("Not enough to cover pre-execution cost");
             let mut kernel = Kernel::new(
                 transaction_hash,
                 signer_public_keys,
+                &blobs,
                 execution_config.execution_privilege,
                 execution_config.max_call_depth,
                 &mut track,
@@ -192,18 +210,19 @@ where
                 &mut execution_trace,
                 modules,
             );
-            let result = kernel.invoke_function(
-                FnIdentifier::Native(NativeFnIdentifier::TransactionProcessor(
-                    TransactionProcessorFnIdentifier::Run,
-                )),
-                ScryptoValue::from_typed(&TransactionProcessorRunInput {
-                    instructions: instructions.clone(),
-                }),
-            );
-            result.map(|o| {
-                scrypto_decode::<Vec<Vec<u8>>>(&o.raw)
-                    .expect("TransactionProcessor returned data of unexpected type")
-            })
+            kernel
+                .invoke_function(
+                    FnIdentifier::Native(NativeFnIdentifier::TransactionProcessor(
+                        TransactionProcessorFnIdentifier::Run,
+                    )),
+                    ScryptoValue::from_typed(&TransactionProcessorRunInput {
+                        instructions: instructions.clone(),
+                    }),
+                )
+                .map(|o| {
+                    scrypto_decode::<Vec<Vec<u8>>>(&o.raw)
+                        .expect("TransactionProcessor returned data of unexpected type")
+                })
         };
 
         // Produce the final transaction receipt
@@ -220,7 +239,13 @@ where
         #[cfg(not(feature = "alloc"))]
         if execution_config.trace {
             println!("{:-^80}", "Cost Analysis");
-            for (k, v) in &receipt.execution.fee_summary.cost_breakdown {
+            let break_down = receipt
+                .execution
+                .fee_summary
+                .cost_breakdown
+                .iter()
+                .collect::<BTreeMap<&String, &u32>>();
+            for (k, v) in break_down {
                 println!("{:<30}: {:>8}", k, v);
             }
 

@@ -1,13 +1,17 @@
 use radix_engine::constants::*;
+use radix_engine::engine::KernelError;
+use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::transaction::ExecutionConfig;
 use radix_engine::transaction::TransactionExecutor;
 use radix_engine::types::*;
 use radix_engine::wasm::DefaultWasmEngine;
 use radix_engine::wasm::WasmInstrumenter;
+use scrypto::core::Blob;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::builder::TransactionBuilder;
+use transaction::model::Instruction;
 use transaction::model::TransactionHeader;
 use transaction::signing::EcdsaPrivateKey;
 use transaction::validation::ValidationConfig;
@@ -81,7 +85,7 @@ fn test_call_method_with_all_resources_doesnt_drop_auth_zone_proofs() {
             args!(Expression::entire_worktop()),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
     println!("{:?}", receipt);
 
     // Assert
@@ -103,11 +107,36 @@ fn test_transaction_can_end_with_proofs_remaining_in_auth_zone() {
         .create_proof_from_account_by_amount(dec!("1"), RADIX_TOKEN, account)
         .create_proof_from_account_by_amount(dec!("1"), RADIX_TOKEN, account)
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
     println!("{:?}", receipt);
 
     // Assert
     receipt.expect_commit_success();
+}
+
+#[test]
+fn test_non_existent_blob_hash() {
+    // Arrange
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
+    let (public_key, _, account) = test_runner.new_account();
+
+    // Act
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+        .lock_fee(dec!("10"), account)
+        .add_instruction(Instruction::PublishPackage {
+            code: Blob(Hash([0; 32])),
+            abi: Blob(Hash([0; 32])),
+        })
+        .0
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
+    println!("{:?}", receipt);
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(e, RuntimeError::KernelError(KernelError::BlobNotFound(_)))
+    });
 }
 
 #[test]
@@ -129,7 +158,7 @@ fn test_entire_auth_zone() {
             args!(Expression::entire_auth_zone(), dec!("1"), RADIX_TOKEN),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
     println!("{:?}", receipt);
 
     // Assert
@@ -149,7 +178,7 @@ fn create_transaction() -> Vec<u8> {
             start_epoch_inclusive: 0,
             end_epoch_exclusive: 100,
             nonce: 5,
-            notary_public_key: sk_notary.public_key(),
+            notary_public_key: sk_notary.public_key().into(),
             notary_as_signatory: false,
             cost_unit_limit: 1_000_000,
             tip_percentage: 5,

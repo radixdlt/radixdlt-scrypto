@@ -22,9 +22,9 @@ fn test_dynamic_auth(
         .iter()
         .map(|(_, _, addr)| addr.clone())
         .collect();
-    let public_keys: Vec<EcdsaPublicKey> = signer_public_keys
+    let public_keys: Vec<PublicKey> = signer_public_keys
         .iter()
-        .map(|index| key_and_addresses.get(*index).unwrap().0)
+        .map(|index| key_and_addresses.get(*index).unwrap().0.into())
         .collect();
 
     let package = test_runner.compile_and_publish("./tests/component");
@@ -89,9 +89,9 @@ fn test_dynamic_authlist(
         .iter()
         .map(|(_, _, addr)| addr.clone())
         .collect();
-    let public_keys: Vec<EcdsaPublicKey> = signer_public_keys
+    let public_keys: Vec<PublicKey> = signer_public_keys
         .iter()
-        .map(|index| key_and_addresses.get(*index).unwrap().0)
+        .map(|index| key_and_addresses.get(*index).unwrap().0.into())
         .collect();
     let authorization = AccessRules::new().method("get_secret", auth_rule);
 
@@ -118,7 +118,7 @@ fn test_dynamic_authlist(
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_method(component, "get_secret", args!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest2, public_keys.to_vec());
+    let receipt = test_runner.execute_manifest(manifest2, public_keys);
 
     // Assert
     if should_succeed {
@@ -243,7 +243,7 @@ fn chess_should_not_allow_second_player_to_move_if_first_player_didnt_move() {
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_method(component, "make_move", args!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest2, vec![other_public_key]);
+    let receipt = test_runner.execute_manifest(manifest2, vec![other_public_key.into()]);
 
     // Assert
     receipt.expect_specific_failure(is_auth_error);
@@ -275,7 +275,7 @@ fn chess_should_allow_second_player_to_move_after_first_player() {
         .call_method(component, "make_move", args!())
         .build();
     test_runner
-        .execute_manifest(manifest2, vec![public_key])
+        .execute_manifest(manifest2, vec![public_key.into()])
         .expect_commit_success();
 
     // Act
@@ -283,7 +283,7 @@ fn chess_should_allow_second_player_to_move_after_first_player() {
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_method(component, "make_move", args!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest3, vec![other_public_key]);
+    let receipt = test_runner.execute_manifest(manifest3, vec![other_public_key.into()]);
 
     // Assert
     receipt.expect_commit_success();

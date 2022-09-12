@@ -21,7 +21,7 @@ fn test_hello() {
     let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
         .call_scrypto_function(package_address, "Hello", "instantiate_hello", args!())
         .build();
-    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![public_key]);
+    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![public_key.into()]);
     println!("{:?}\n", receipt);
     receipt.expect_commit_success();
     let component = receipt
@@ -38,7 +38,7 @@ fn test_hello() {
             args!(Expression::entire_worktop()),
         )
         .build();
-    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![public_key]);
+    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![public_key.into()]);
     println!("{:?}\n", receipt);
     receipt.expect_commit_success();
 }

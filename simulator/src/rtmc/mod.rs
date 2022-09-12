@@ -3,7 +3,7 @@ use scrypto::buffer::scrypto_encode;
 use scrypto::core::{NetworkDefinition, NetworkError};
 use std::path::PathBuf;
 use std::str::FromStr;
-use transaction::manifest::compile;
+use transaction::manifest::{compile, FileBlobLoader};
 
 /// Radix transaction manifest compiler
 #[derive(Parser, Debug)]
@@ -32,9 +32,14 @@ pub enum Error {
 pub fn run() -> Result<(), Error> {
     let args = Args::parse();
 
-    let content = std::fs::read_to_string(args.input).map_err(Error::IoError)?;
+    let content = std::fs::read_to_string(&args.input).map_err(Error::IoError)?;
     let network = NetworkDefinition::from_str(&args.network).map_err(Error::NetworkError)?;
-    let transaction = compile(&content, &network).map_err(Error::CompileError)?;
+    let transaction = compile(
+        &content,
+        &network,
+        &FileBlobLoader::new(&args.input.parent().expect("Manifest file parent not found")),
+    )
+    .map_err(Error::CompileError)?;
     std::fs::write(args.output, scrypto_encode(&transaction)).map_err(Error::IoError)?;
 
     Ok(())

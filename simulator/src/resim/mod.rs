@@ -145,11 +145,18 @@ pub fn handle_manifest<O: std::io::Write>(
     match manifest_path {
         Some(path) => {
             if !env::var(ENV_DISABLE_MANIFEST_OUTPUT).is_ok() {
-                let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::local_simulator());
-
-                let manifest =
-                    decompile(&manifest, &bech32_encoder).map_err(Error::DecompileError)?;
-                fs::write(path, manifest).map_err(Error::IOError)?;
+                let manifest_body = decompile(&manifest, &NetworkDefinition::local_simulator())
+                    .map_err(Error::DecompileError)?;
+                fs::write(path, manifest_body).map_err(Error::IOError)?;
+                for blob in manifest.blobs {
+                    let blob_hash = hash(&blob);
+                    let mut blob_path = path
+                        .parent()
+                        .expect("Manifest file parent not found")
+                        .to_owned();
+                    blob_path.push(format!("{}.data", blob_hash));
+                    fs::write(blob_path, blob).map_err(Error::IOError)?;
+                }
             }
             Ok(None)
         }
@@ -166,8 +173,8 @@ pub fn handle_manifest<O: std::io::Write>(
             let sks = get_signing_keys(signing_keys)?;
             let pks = sks
                 .iter()
-                .map(|e| e.public_key())
-                .collect::<Vec<EcdsaPublicKey>>();
+                .map(|e| e.public_key().into())
+                .collect::<Vec<PublicKey>>();
             let nonce = get_nonce()?;
             let transaction = TestTransaction::new(manifest, nonce, pks);
 

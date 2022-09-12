@@ -2,6 +2,7 @@ use std::io;
 
 use radix_engine::engine::*;
 use radix_engine::model::ExtractAbiError;
+use radix_engine::wasm::PrepareError;
 use sbor::*;
 use scrypto::address::AddressError;
 use transaction::errors::*;
@@ -28,9 +29,9 @@ pub enum Error {
 
     PackageAddressNotFound,
 
-    InvalidPackageError,
-
     ExtractAbiError(ExtractAbiError),
+
+    InvalidPackage(PrepareError),
 
     TransactionConstructionError(BuildCallWithAbiError),
 

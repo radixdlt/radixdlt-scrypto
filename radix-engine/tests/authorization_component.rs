@@ -117,7 +117,7 @@ fn can_make_cross_component_call_with_authorization() {
             args!(Expression::entire_worktop()),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
     receipt.expect_commit_success();
 
     // Act
