@@ -340,7 +340,7 @@ impl Proof {
         let mut node_ref = system_api
             .substate_borrow_mut(&substate_id)
             .map_err(InvokeError::Downstream)?;
-        let proof = node_ref.proof();
+        let proof = node_ref.proof_mut();
 
         let rtn = match proof_fn {
             ProofFnIdentifier::GetAmount => {

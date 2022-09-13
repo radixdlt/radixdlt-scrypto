@@ -31,7 +31,7 @@ impl ExecutionTrace {
     pub fn trace_invoke_method<'s, R: FeeReserve>(
         &mut self,
         call_frames: &Vec<CallFrame>,
-        track: &Track<'s, R>,
+        track: &mut Track<'s, R>,
         actor: &REActor,
         fn_identifier: &FnIdentifier,
         node_id: &RENodeId,
@@ -72,7 +72,7 @@ impl ExecutionTrace {
                             ))
                         })?;
 
-                        let vault_node_ref = node_pointer.to_ref(call_frames, track);
+                        let mut vault_node_ref = node_pointer.to_ref(call_frames, track);
 
                         let resource_address = vault_node_ref.vault().resource_address();
 

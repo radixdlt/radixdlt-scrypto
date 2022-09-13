@@ -217,7 +217,7 @@ impl Worktop {
         let mut node_ref = system_api
             .substate_borrow_mut(&SubstateId::Worktop)
             .map_err(InvokeError::downstream)?;
-        let worktop = node_ref.worktop();
+        let worktop = node_ref.worktop_mut();
 
         let rtn = match worktop_fn {
             WorktopFnIdentifier::Put => {

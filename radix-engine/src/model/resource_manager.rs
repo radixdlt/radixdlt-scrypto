@@ -500,7 +500,7 @@ impl ResourceManager {
         let mut ref_mut = system_api
             .substate_borrow_mut(&substate_id)
             .map_err(InvokeError::Downstream)?;
-        let resource_manager = ref_mut.resource_manager();
+        let resource_manager = ref_mut.resource_manager_mut();
 
         let rtn = match resource_manager_fn {
             ResourceManagerFnIdentifier::UpdateAuth => {

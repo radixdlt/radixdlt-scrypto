@@ -112,7 +112,7 @@ where
             let mut node_ref = kernel
                 .substate_borrow_mut(&substate_id)
                 .expect("Failed to borrow SYSTEM_TOKEN bucket substate");
-            let bucket = node_ref.bucket();
+            let bucket = node_ref.bucket_mut();
             let system_proof = bucket
                 .create_proof(bucket_id)
                 .expect("Failed to create SYSTEM_TOKEN proof");
@@ -266,6 +266,7 @@ where
                         let package = self
                             .track
                             .read_substate(SubstateId::Package(package_address))
+                            .raw()
                             .package()
                             .clone();
                         for m in &mut self.modules {
@@ -324,6 +325,7 @@ where
                     let package = self
                         .track
                         .read_substate(SubstateId::Package(package_address))
+                        .raw()
                         .package();
                     let blueprint_abi = package
                         .blueprint_abi(&blueprint_name)
@@ -495,7 +497,7 @@ where
                         TrackError::NotFound => RuntimeError::KernelError(
                             KernelError::PackageNotFound(*package_address),
                         ),
-                        TrackError::Reentrancy => {
+                        TrackError::NotAvailable => {
                             panic!("Package reentrancy error should never occur.")
                         }
                         TrackError::StateTrackError(..) => panic!("Unexpected"),
@@ -504,6 +506,7 @@ where
                 let package = self
                     .track
                     .read_substate(SubstateId::Package(package_address.clone()))
+                    .raw()
                     .package();
                 let abi =
                     package
@@ -718,6 +721,7 @@ where
                         }
                     }
                 };
+                drop(current_frame);
 
                 // Lock Primary Substate
                 let substate_id =
@@ -784,7 +788,7 @@ where
                 match node_id {
                     RENodeId::Component(..) => {
                         let package_address = {
-                            let node_ref = node_pointer.to_ref(&self.call_frames, &self.track);
+                            let node_ref = node_pointer.to_ref(&self.call_frames, &mut self.track);
                             node_ref.component_info().package_address()
                         };
                         let package_substate_id = SubstateId::Package(package_address);
@@ -807,7 +811,7 @@ where
                     }
                     RENodeId::Bucket(..) => {
                         let resource_address = {
-                            let node_ref = node_pointer.to_ref(&self.call_frames, &self.track);
+                            let node_ref = node_pointer.to_ref(&self.call_frames, &mut self.track);
                             node_ref.bucket().resource_address()
                         };
                         let resource_substate_id = SubstateId::ResourceManager(resource_address);
@@ -826,7 +830,8 @@ where
                     }
                     RENodeId::Vault(..) => {
                         let resource_address = {
-                            let node_ref = node_pointer.to_ref(&self.call_frames, &self.track);
+                            let mut node_ref =
+                                node_pointer.to_ref(&self.call_frames, &mut self.track);
                             node_ref.vault().resource_address()
                         };
                         let resource_substate_id = SubstateId::ResourceManager(resource_address);
@@ -884,7 +889,7 @@ where
 
                 self.execution_trace.trace_invoke_method(
                     &self.call_frames,
-                    &self.track,
+                    &mut self.track,
                     &current_frame.actor,
                     &fn_identifier,
                     node_id,
@@ -1040,7 +1045,7 @@ where
             .map_err(RuntimeError::ModuleError)?;
         }
 
-        Ok(node_pointer.to_ref(&self.call_frames, &self.track))
+        Ok(node_pointer.to_ref(&self.call_frames, &mut self.track))
     }
 
     fn substate_borrow_mut(

@@ -167,7 +167,7 @@ impl Bucket {
         let mut node_ref = system_api
             .substate_borrow_mut(&substate_id)
             .map_err(InvokeError::Downstream)?;
-        let bucket0 = node_ref.bucket();
+        let bucket0 = node_ref.bucket_mut();
 
         let rtn = match bucket_fn {
             BucketFnIdentifier::Take => {
@@ -280,7 +280,7 @@ impl Bucket {
                 let mut value = system_api
                     .substate_borrow_mut(&resource_substate_id)
                     .map_err(InvokeError::Downstream)?;
-                let resource_manager = value.resource_manager();
+                let resource_manager = value.resource_manager_mut();
                 resource_manager.burn(bucket.total_amount());
                 if matches!(resource_manager.resource_type(), ResourceType::NonFungible) {
                     for id in bucket

@@ -1,4 +1,4 @@
-use crate::engine::{HeapRENode, SystemApi, VaultMutRef};
+use crate::engine::{HeapRENode, SystemApi};
 use crate::fee::{FeeReserve, FeeReserveError};
 use crate::model::{
     Bucket, InvokeError, LockableResource, Proof, ProofError, Resource, ResourceContainerId,
@@ -175,13 +175,7 @@ impl Vault {
         let mut ref_mut = system_api
             .substate_borrow_mut(&substate_id)
             .map_err(InvokeError::Downstream)?;
-        let vault = ref_mut.vault();
-        if let VaultMutRef::Track(substate) = vault {
-            system_api
-                .substate_return_mut(ref_mut)
-                .map_err(InvokeError::Downstream)?;
-        }
-
+        let vault = ref_mut.vault_mut();
         let rtn = match vault_fn {
             VaultFnIdentifier::Put => {
                 let input: VaultPutInput = scrypto_decode(&args.raw)

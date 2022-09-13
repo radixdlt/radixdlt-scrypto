@@ -40,7 +40,7 @@ impl RENodePointer {
                         }
                         // TODO: Remove when references cleaned up
                         TrackError::NotFound => KernelError::RENodeNotFound(self.node_id()),
-                        TrackError::Reentrancy => KernelError::Reentrancy(substate_id.clone()),
+                        TrackError::NotAvailable => KernelError::Reentrancy(substate_id.clone()),
                     })
             }
             RENodePointer::Heap { .. } => Ok(()),
@@ -92,7 +92,7 @@ impl RENodePointer {
     pub fn to_ref<'f, 'p, 's, R: FeeReserve>(
         &self,
         call_frames: &'f Vec<CallFrame>,
-        track: &'f Track<'s, R>,
+        track: &'f mut Track<'s, R>,
     ) -> RENodeRef<'f, 's, R> {
         match self {
             RENodePointer::Heap { frame_id, root, id } => {
@@ -121,11 +121,11 @@ impl RENodePointer {
 #[derive(Debug)]
 pub enum NativeSubstateRef {
     Stack(HeapRootRENode, usize, RENodeId, Option<RENodeId>),
-    Track(SubstateId, Substate),
+    Track(SubstateId, BorrowedSubstate),
 }
 
 impl NativeSubstateRef {
-    pub fn bucket(&mut self) -> &mut Bucket {
+    pub fn bucket_mut(&mut self) -> &mut Bucket {
         match self {
             NativeSubstateRef::Stack(root, _frame_id, _root_id, maybe_child) => {
                 match root.get_node_mut(maybe_child.as_ref()) {
@@ -137,7 +137,7 @@ impl NativeSubstateRef {
         }
     }
 
-    pub fn proof(&mut self) -> &mut Proof {
+    pub fn proof_mut(&mut self) -> &mut Proof {
         match self {
             NativeSubstateRef::Stack(ref mut root, _frame_id, _root_id, maybe_child) => {
                 match root.get_node_mut(maybe_child.as_ref()) {
@@ -149,7 +149,7 @@ impl NativeSubstateRef {
         }
     }
 
-    pub fn worktop(&mut self) -> &mut Worktop {
+    pub fn worktop_mut(&mut self) -> &mut Worktop {
         match self {
             NativeSubstateRef::Stack(ref mut root, _frame_id, _root_id, maybe_child) => {
                 match root.get_node_mut(maybe_child.as_ref()) {
@@ -161,26 +161,26 @@ impl NativeSubstateRef {
         }
     }
 
-    pub fn vault(&mut self) -> VaultMutRef {
+    pub fn vault_mut(&mut self) -> &mut Vault {
         match self {
             NativeSubstateRef::Stack(root, _frame_id, _root_id, maybe_child) => {
-                VaultMutRef::Stack(root.get_node_mut(maybe_child.as_ref()).vault_mut())
+                root.get_node_mut(maybe_child.as_ref()).vault_mut()
             }
-            NativeSubstateRef::Track(_address, value) => match value {
-                Substate::Vault(substate) => VaultMutRef::Track(substate),
-                s @ _ => panic!("Expected vault but found {:?}", s),
-            },
+            NativeSubstateRef::Track(_address, value) => {
+                value.substate.convert();
+                value.substate.vault_mut()
+            }
         }
     }
 
-    pub fn system(&mut self) -> &mut System {
+    pub fn system_mut(&mut self) -> &mut System {
         match self {
-            NativeSubstateRef::Track(_address, value) => value.system_mut(),
+            NativeSubstateRef::Track(_address, value) => value.substate.raw_mut().system_mut(),
             _ => panic!("Expecting to be system"),
         }
     }
 
-    pub fn component_info(&mut self) -> &mut ComponentInfo {
+    pub fn component_info_mut(&mut self) -> &mut ComponentInfo {
         match self {
             NativeSubstateRef::Stack(root, _frame_id, _root_id, maybe_child) => {
                 root.get_node_mut(maybe_child.as_ref()).component_info_mut()
@@ -189,19 +189,21 @@ impl NativeSubstateRef {
         }
     }
 
-    pub fn package(&mut self) -> &Package {
+    pub fn package_mut(&mut self) -> &Package {
         match self {
-            NativeSubstateRef::Track(_address, value) => value.package(),
+            NativeSubstateRef::Track(_address, value) => value.substate.raw().package(),
             _ => panic!("Expecting to be tracked"),
         }
     }
 
-    pub fn resource_manager(&mut self) -> &mut ResourceManager {
+    pub fn resource_manager_mut(&mut self) -> &mut ResourceManager {
         match self {
             NativeSubstateRef::Stack(value, _frame_id, _root_id, maybe_child) => value
                 .get_node_mut(maybe_child.as_ref())
                 .resource_manager_mut(),
-            NativeSubstateRef::Track(_address, value) => value.resource_manager_mut(),
+            NativeSubstateRef::Track(_address, value) => {
+                value.substate.raw_mut().resource_manager_mut()
+            }
         }
     }
 
@@ -215,35 +217,15 @@ impl NativeSubstateRef {
                 let frame = call_frames.get_mut(frame_id).unwrap();
                 frame.owned_heap_nodes.insert(node_id, owned);
             }
-            NativeSubstateRef::Track(substate_id, value) => {
-                track.write_substate(substate_id, value)
+            NativeSubstateRef::Track(substate_id, substate) => {
+                track.return_substate(substate_id, substate)
             }
         }
     }
 }
-
-pub enum VaultMutRef<'a, 'b> {
-    Stack(&'a mut Vault),
-    Track(&'b mut VaultSubstate),
-}
-
-pub enum VaultRef<'a, 'b> {
-    Stack(&'a Vault),
-    Track(&'b VaultSubstate),
-}
-
-impl<'a, 'b> VaultRef<'a, 'b> {
-    pub fn resource_address(&self) -> ResourceAddress {
-        match self {
-            VaultRef::Stack(v) => v.resource_address(),
-            VaultRef::Track(v) => v.0.resource_address(),
-        }
-    }
-}
-
 pub enum RENodeRef<'f, 's, R: FeeReserve> {
     Stack(&'f HeapRootRENode, Option<RENodeId>),
-    Track(&'f Track<'s, R>, RENodeId),
+    Track(&'f mut Track<'s, R>, RENodeId),
 }
 
 impl<'f, 's, R: FeeReserve> RENodeRef<'f, 's, R> {
@@ -259,20 +241,21 @@ impl<'f, 's, R: FeeReserve> RENodeRef<'f, 's, R> {
         }
     }
 
-    pub fn vault(&self) -> VaultRef {
+    pub fn vault(&mut self) -> &Vault {
         match self {
-            RENodeRef::Stack(value, id) => VaultRef::Stack(
-                id.as_ref()
-                    .map_or(value.root(), |v| value.non_root(v))
-                    .vault(),
-            ),
+            RENodeRef::Stack(value, id) => id
+                .as_ref()
+                .map_or(value.root(), |v| value.non_root(v))
+                .vault(),
+
             RENodeRef::Track(track, node_id) => {
                 let substate_id = match node_id {
                     RENodeId::Vault(vault_id) => SubstateId::Vault(*vault_id),
                     _ => panic!("Unexpected"),
                 };
-                let vault_substate = track.read_substate(substate_id).vault();
-                VaultRef::Track(vault_substate)
+                let substate = track.write_substate(substate_id);
+                substate.convert();
+                substate.vault()
             }
         }
     }
@@ -288,7 +271,7 @@ impl<'f, 's, R: FeeReserve> RENodeRef<'f, 's, R> {
                     RENodeId::System => SubstateId::System,
                     _ => panic!("Unexpected"),
                 };
-                track.read_substate(substate_id).system()
+                track.read_substate(substate_id).raw().system()
             }
         }
     }
@@ -306,7 +289,7 @@ impl<'f, 's, R: FeeReserve> RENodeRef<'f, 's, R> {
                     }
                     _ => panic!("Unexpected"),
                 };
-                track.read_substate(substate_id).resource_manager()
+                track.read_substate(substate_id).raw().resource_manager()
             }
         }
     }
@@ -324,7 +307,7 @@ impl<'f, 's, R: FeeReserve> RENodeRef<'f, 's, R> {
                     }
                     _ => panic!("Unexpected"),
                 };
-                track.read_substate(substate_id).component_state()
+                track.read_substate(substate_id).raw().component_state()
             }
         }
     }
@@ -342,7 +325,7 @@ impl<'f, 's, R: FeeReserve> RENodeRef<'f, 's, R> {
                     }
                     _ => panic!("Unexpected"),
                 };
-                track.read_substate(substate_id).component_info()
+                track.read_substate(substate_id).raw().component_info()
             }
         }
     }
@@ -358,7 +341,7 @@ impl<'f, 's, R: FeeReserve> RENodeRef<'f, 's, R> {
                     RENodeId::Package(package_address) => SubstateId::Package(*package_address),
                     _ => panic!("Unexpected"),
                 };
-                track.read_substate(substate_id).package()
+                track.read_substate(substate_id).raw().package()
             }
         }
     }
@@ -639,7 +622,8 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
                     }
                     _ => panic!("Unexpeceted"),
                 };
-                track.write_substate(substate_id, ComponentState::new(value.raw));
+                *track.write_substate(substate_id) =
+                    SubstateCache::Raw(ComponentState::new(value.raw).into());
                 for (id, val) in to_store {
                     insert_non_root_nodes(track, val.to_nodes(id));
                 }
@@ -659,8 +643,7 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
                     }
                     _ => panic!("Unexpeceted"),
                 };
-                let component_val = track.read_substate(substate_id);
-                component_val.component_info()
+                track.read_substate(substate_id).raw().component_info()
             }
         }
     }
@@ -677,8 +660,22 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
                     }
                     _ => panic!("Unexpeceted"),
                 };
-                let component_val = track.read_substate(substate_id);
-                component_val.component_state()
+                track.read_substate(substate_id).raw().component_state()
+            }
+        }
+    }
+
+    pub fn vault_mut(&mut self) -> &mut Vault {
+        match self {
+            RENodeRefMut::Stack(re_value, id) => re_value.get_node_mut(id.as_ref()).vault_mut(),
+            RENodeRefMut::Track(track, node_id) => {
+                let substate_id = match node_id {
+                    RENodeId::Vault(vault_id) => SubstateId::Vault(*vault_id),
+                    _ => panic!("Unexpeceted"),
+                };
+                let substate = track.write_substate(substate_id);
+                substate.convert();
+                substate.vault_mut()
             }
         }
     }
