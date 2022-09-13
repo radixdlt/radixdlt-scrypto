@@ -83,6 +83,8 @@ pub enum KernelError {
     CantMoveWorktop,
     CantMoveAuthZone,
     DropFailure(DropFailure),
+
+    BlobNotFound(Hash),
 }
 
 #[derive(Debug, Encode, Decode, TypeId)]

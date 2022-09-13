@@ -19,6 +19,5 @@ cd "$(dirname "$0")"
 echo "Building assets and examples..."
 (cd assets/account; scrypto build)
 (cd assets/sys-faucet; scrypto build)
-(cd assets/sys-utils; scrypto build)
 (cd examples/hello-world; scrypto build)
 (cd examples/no-std; scrypto build)

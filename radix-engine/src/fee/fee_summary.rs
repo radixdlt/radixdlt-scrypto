@@ -20,5 +20,5 @@ pub struct FeeSummary {
     /// The fee payments
     pub payments: Vec<(VaultId, ResourceContainer, bool)>,
     /// The cost breakdown
-    pub cost_breakdown: BTreeMap<String, u32>,
+    pub cost_breakdown: HashMap<String, u32>,
 }

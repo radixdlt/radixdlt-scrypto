@@ -5,6 +5,7 @@ use transaction::builder::TransactionBuilder;
 use transaction::model::TransactionHeader;
 use transaction::signing::EcdsaPrivateKey;
 use transaction::signing::Ed25519PrivateKey;
+use transaction::validation::recover_ecdsa;
 use transaction::validation::verify_ecdsa;
 use transaction::validation::verify_ed25519;
 use transaction::validation::TestIntentHashManager;
@@ -14,11 +15,11 @@ use transaction::validation::ValidationConfig;
 fn bench_ecdsa_validation(c: &mut Criterion) {
     let message = "This is a long message".repeat(100);
     let signer = EcdsaPrivateKey::from_u64(123123123123).unwrap();
-    let public_key = signer.public_key();
     let signature = signer.sign(message.as_bytes());
 
     c.bench_function("ECDSA signature validation", |b| {
         b.iter(|| {
+            let public_key = recover_ecdsa(message.as_bytes(), &signature).unwrap();
             verify_ecdsa(message.as_bytes(), &public_key, &signature);
         })
     });
@@ -59,7 +60,7 @@ fn bench_transaction_validation(c: &mut Criterion) {
             start_epoch_inclusive: 0,
             end_epoch_exclusive: 100,
             nonce: 1,
-            notary_public_key: signer.public_key(),
+            notary_public_key: signer.public_key().into(),
             notary_as_signatory: true,
             cost_unit_limit: 1_000_000,
             tip_percentage: 5,

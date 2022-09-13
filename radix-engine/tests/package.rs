@@ -7,6 +7,7 @@ use sbor::Type;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
+#[ignore] // TODO: enable this after allowing dynamic creation of blobs
 #[test]
 fn test_publish_package_from_scrypto() {
     let mut store = TypedInMemorySubstateStore::with_bootstrap();

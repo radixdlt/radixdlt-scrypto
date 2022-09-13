@@ -5,7 +5,7 @@ use std::process::Command;
 use radix_engine::constants::*;
 use radix_engine::engine::{ExecutionTrace, Kernel, KernelError, ModuleError, SystemApi};
 use radix_engine::engine::{RuntimeError, Track};
-use radix_engine::fee::SystemLoanFeeReserve;
+use radix_engine::fee::{FeeTable, SystemLoanFeeReserve};
 use radix_engine::ledger::*;
 use radix_engine::model::{export_abi, export_abi_by_component, extract_abi};
 use radix_engine::state_manager::StagedSubstateStoreManager;
@@ -210,16 +210,19 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     pub fn execute_manifest(
         &mut self,
         manifest: TransactionManifest,
-        signer_public_keys: Vec<EcdsaPublicKey>,
+        signer_public_keys: Vec<PublicKey>,
     ) -> TransactionReceipt {
-        let mut receipts = self.execute_batch(vec![(manifest, signer_public_keys)]);
+        let mut receipts = self.execute_batch(vec![(
+            manifest,
+            signer_public_keys.into_iter().map(Into::into).collect(),
+        )]);
         receipts.pop().unwrap()
     }
 
     pub fn execute_manifest_ignoring_fee(
         &mut self,
         mut manifest: TransactionManifest,
-        signer_public_keys: Vec<EcdsaPublicKey>,
+        signer_public_keys: Vec<PublicKey>,
     ) -> TransactionReceipt {
         manifest.instructions.insert(
             0,
@@ -270,7 +273,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
 
     pub fn execute_batch(
         &mut self,
-        manifests: Vec<(TransactionManifest, Vec<EcdsaPublicKey>)>,
+        manifests: Vec<(TransactionManifest, Vec<PublicKey>)>,
     ) -> Vec<TransactionReceipt> {
         let node_id = self.create_child_node(0);
         let receipts = self.execute_batch_on_node(node_id, manifests);
@@ -285,7 +288,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     pub fn execute_batch_on_node(
         &mut self,
         node_id: u64,
-        manifests: Vec<(TransactionManifest, Vec<EcdsaPublicKey>)>,
+        manifests: Vec<(TransactionManifest, Vec<PublicKey>)>,
     ) -> Vec<TransactionReceipt> {
         let mut store = self.execution_stores.get_output_store(node_id);
         let mut receipts = Vec::new();
@@ -352,7 +355,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
                 args!(Expression::entire_worktop()),
             )
             .build();
-        self.execute_manifest(manifest, vec![signer_public_key])
+        self.execute_manifest(manifest, vec![signer_public_key.into()])
             .expect_commit_success();
     }
 
@@ -602,7 +605,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
                 args!(Expression::entire_worktop()),
             )
             .build();
-        let receipt = self.execute_manifest(manifest, vec![signer_public_key]);
+        let receipt = self.execute_manifest(manifest, vec![signer_public_key.into()]);
         receipt.expect_commit_success();
         receipt
             .expect_commit()
@@ -645,13 +648,19 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         ) -> ScryptoValue,
     {
         let tx_hash = hash(self.next_transaction_nonce.to_string());
+        let blobs = HashMap::new();
         let substate_store = self.execution_stores.get_root_store();
-        let mut track = Track::new(substate_store, SystemLoanFeeReserve::default());
+        let mut track = Track::new(
+            substate_store,
+            SystemLoanFeeReserve::default(),
+            FeeTable::new(),
+        );
         let mut execution_trace = ExecutionTrace::new();
 
         let mut kernel = Kernel::new(
             tx_hash,
             Vec::new(),
+            &blobs,
             is_system,
             DEFAULT_MAX_CALL_DEPTH,
             &mut track,

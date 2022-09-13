@@ -27,7 +27,9 @@ pub use scrypto::core::{
     SystemGetCurrentEpochInput, SystemGetTransactionHashInput, SystemSetEpochInput,
     TransactionProcessorFnIdentifier, VaultFnIdentifier, WorktopFnIdentifier,
 };
-pub use scrypto::crypto::{EcdsaPublicKey, EcdsaSignature, Hash};
+pub use scrypto::crypto::{
+    EcdsaPublicKey, EcdsaSignature, Ed25519PublicKey, Ed25519Signature, Hash, PublicKey, Signature,
+};
 pub use scrypto::engine::{api::RadixEngineInput, types::*};
 pub use scrypto::math::{Decimal, RoundingMode, I256};
 pub use scrypto::resource::{

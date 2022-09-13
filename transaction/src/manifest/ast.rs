@@ -154,9 +154,7 @@ pub enum Type {
     NonFungibleId,
     NonFungibleAddress,
     Expression,
-
-    /* Bytes is a convenient way of producing `Vec<u8>` */
-    Bytes,
+    Blob,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -198,8 +196,7 @@ pub enum Value {
     NonFungibleId(Box<Value>),
     NonFungibleAddress(Box<Value>),
     Expression(Box<Value>),
-
-    Bytes(Vec<u8>),
+    Blob(Box<Value>),
 }
 
 impl Value {
@@ -238,7 +235,7 @@ impl Value {
             Value::NonFungibleId(_) => Type::NonFungibleId,
             Value::NonFungibleAddress(_) => Type::NonFungibleAddress,
             Value::Expression(_) => Type::Expression,
-            Value::Bytes(_) => Type::List,
+            Value::Blob(_) => Type::Blob,
         }
     }
 }

@@ -2,7 +2,7 @@ use crate::model::MethodIdentifier;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto::core::FnIdentifier;
+use scrypto::core::{Blob, FnIdentifier};
 use scrypto::engine::types::*;
 use scrypto::math::*;
 use scrypto::resource::{NonFungibleId, ResourceAddress};
@@ -96,5 +96,5 @@ pub enum Instruction {
     },
 
     /// Publishes a package.
-    PublishPackage { code: Vec<u8>, abi: Vec<u8> },
+    PublishPackage { code: Blob, abi: Blob },
 }

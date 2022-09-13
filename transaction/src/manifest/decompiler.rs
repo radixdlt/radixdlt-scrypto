@@ -3,7 +3,8 @@ use sbor::{encode_any, DecodeError, Value};
 use scrypto::address::{AddressError, Bech32Encoder};
 use scrypto::buffer::scrypto_decode;
 use scrypto::core::{
-    BucketFnIdentifier, FnIdentifier, NativeFnIdentifier, Receiver, ResourceManagerFnIdentifier,
+    BucketFnIdentifier, FnIdentifier, NativeFnIdentifier, NetworkDefinition, Receiver,
+    ResourceManagerFnIdentifier,
 };
 use scrypto::engine::types::*;
 use scrypto::resource::{
@@ -25,8 +26,9 @@ pub enum DecompileError {
 
 pub fn decompile(
     manifest: &TransactionManifest,
-    bech32_encoder: &Bech32Encoder,
+    network: &NetworkDefinition,
 ) -> Result<String, DecompileError> {
+    let bech32_encoder = Bech32Encoder::new(network);
     let mut buf = String::new();
     let mut id_validator = IdValidator::new();
     let mut buckets = HashMap::<BucketId, String>::new();
@@ -370,9 +372,8 @@ pub fn decompile(
             },
             Instruction::PublishPackage { code, abi } => {
                 buf.push_str(&format!(
-                    "PUBLISH_PACKAGE Bytes(\"{}\") Bytes(\"{}\");\n",
-                    hex::encode(&code),
-                    hex::encode(&abi)
+                    "PUBLISH_PACKAGE Blob(\"{}.data\") Blob(\"{}.data\");\n",
+                    code, abi
                 ));
             }
         }
@@ -384,24 +385,41 @@ pub fn decompile(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::manifest::compile;
+    use crate::manifest::*;
     use scrypto::core::NetworkDefinition;
 
+    #[cfg(not(feature = "alloc"))]
     #[test]
     fn test_decompile() {
-        let tx = compile(
-            include_str!("../../examples/complex.rtm"),
-            &NetworkDefinition::local_simulator(),
-        )
-        .unwrap();
+        let network = NetworkDefinition::local_simulator();
+        let mut blob_loader = FileBlobLoader::new("./examples/");
+        let manifest_str = include_str!("../../examples/complex.rtm");
+        let manifest = compile(manifest_str, &network, &mut blob_loader).unwrap();
 
-        let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::local_simulator());
-        let manifest = &decompile(&tx, &bech32_encoder).unwrap();
-        println!("{}", manifest);
-
+        let manifest2 = decompile(&manifest, &network).unwrap();
         assert_eq!(
-            compile(manifest, &NetworkDefinition::local_simulator()).unwrap(),
-            tx
-        );
+            manifest2,
+            r#"CALL_METHOD ComponentAddress("account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qgsy064") "withdraw_by_amount" Decimal("5") ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag");
+TAKE_FROM_WORKTOP_BY_AMOUNT Decimal("2") ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag") Bucket("bucket1");
+CALL_METHOD ComponentAddress("component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum") "buy_gumball" Bucket("bucket1");
+ASSERT_WORKTOP_CONTAINS_BY_AMOUNT Decimal("3") ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag");
+ASSERT_WORKTOP_CONTAINS ResourceAddress("resource_sim1qzhdk7tq68u8msj38r6v6yqa5myc64ejx3ud20zlh9gseqtux6");
+TAKE_FROM_WORKTOP ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag") Bucket("bucket2");
+CREATE_PROOF_FROM_BUCKET Bucket("bucket2") Proof("proof1");
+CLONE_PROOF Proof("proof1") Proof("proof2");
+DROP_PROOF Proof("proof1");
+DROP_PROOF Proof("proof2");
+CALL_METHOD ComponentAddress("account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qgsy064") "create_proof_by_amount" Decimal("5") ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag");
+POP_FROM_AUTH_ZONE Proof("proof3");
+DROP_PROOF Proof("proof3");
+RETURN_TO_WORKTOP Bucket("bucket2");
+TAKE_FROM_WORKTOP_BY_IDS Set<NonFungibleId>(NonFungibleId("0905000000"), NonFungibleId("0907000000")) ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag") Bucket("bucket3");
+CREATE_RESOURCE Enum("Fungible", 0u8) Map<String, String>() Map<Enum, Tuple>() Some(Enum("Fungible", Decimal("1")));
+CALL_METHOD ComponentAddress("account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qgsy064") "deposit_batch" Expression("ENTIRE_WORKTOP");
+DROP_ALL_PROOFS;
+CALL_METHOD ComponentAddress("component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum") "complicated_method" Decimal("1") PreciseDecimal("2");
+PUBLISH_PACKAGE Blob("36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618.data") Blob("15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d.data");
+"#
+        )
     }
 }
