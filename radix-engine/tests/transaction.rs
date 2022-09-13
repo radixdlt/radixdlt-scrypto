@@ -2,8 +2,8 @@ use radix_engine::constants::*;
 use radix_engine::engine::KernelError;
 use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::TypedInMemorySubstateStore;
-use radix_engine::transaction::ExecutionConfig;
 use radix_engine::transaction::TransactionExecutor;
+use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
 use radix_engine::types::*;
 use radix_engine::wasm::DefaultWasmEngine;
 use radix_engine::wasm::WasmInstrumenter;
@@ -29,7 +29,8 @@ fn test_normal_transaction_flow() {
         max_cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,
         min_tip_percentage: 0,
     };
-    let execution_params = ExecutionConfig::debug();
+    let fee_reserve_config = FeeReserveConfig::standard();
+    let execution_config = ExecutionConfig::debug();
 
     let raw_transaction = create_transaction();
     let validated_transaction = TransactionValidator::validate_from_slice(
@@ -44,7 +45,11 @@ fn test_normal_transaction_flow() {
         &mut wasm_engine,
         &mut wasm_instrumenter,
     );
-    let receipt = executor.execute_and_commit(&validated_transaction, &execution_params);
+    let receipt = executor.execute_and_commit(
+        &validated_transaction,
+        &fee_reserve_config,
+        &execution_config,
+    );
 
     receipt.expect_commit_success();
 }
