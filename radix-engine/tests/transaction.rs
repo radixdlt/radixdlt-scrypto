@@ -1,58 +1,11 @@
-use radix_engine::constants::*;
 use radix_engine::engine::KernelError;
 use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::TypedInMemorySubstateStore;
-use radix_engine::transaction::TransactionExecutor;
-use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
 use radix_engine::types::*;
-use radix_engine::wasm::DefaultWasmEngine;
-use radix_engine::wasm::WasmInstrumenter;
 use scrypto::core::Blob;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
-use transaction::builder::TransactionBuilder;
 use transaction::model::Instruction;
-use transaction::model::TransactionHeader;
-use transaction::signing::EcdsaPrivateKey;
-use transaction::validation::ValidationConfig;
-use transaction::validation::{TestIntentHashManager, TransactionValidator};
-
-#[test]
-fn test_normal_transaction_flow() {
-    let mut substate_store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut wasm_engine = DefaultWasmEngine::new();
-    let mut wasm_instrumenter = WasmInstrumenter::new();
-    let intent_hash_manager = TestIntentHashManager::new();
-    let validation_params = ValidationConfig {
-        network: &NetworkDefinition::local_simulator(),
-        current_epoch: 1,
-        max_cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,
-        min_tip_percentage: 0,
-    };
-    let fee_reserve_config = FeeReserveConfig::standard();
-    let execution_config = ExecutionConfig::debug();
-
-    let raw_transaction = create_transaction();
-    let validated_transaction = TransactionValidator::validate_from_slice(
-        &raw_transaction,
-        &intent_hash_manager,
-        &validation_params,
-    )
-    .expect("Invalid transaction");
-
-    let mut executor = TransactionExecutor::new(
-        &mut substate_store,
-        &mut wasm_engine,
-        &mut wasm_instrumenter,
-    );
-    let receipt = executor.execute_and_commit(
-        &validated_transaction,
-        &fee_reserve_config,
-        &execution_config,
-    );
-
-    receipt.expect_commit_success();
-}
 
 #[test]
 fn test_call_method_with_all_resources_doesnt_drop_auth_zone_proofs() {
@@ -168,36 +121,4 @@ fn test_entire_auth_zone() {
 
     // Assert
     receipt.expect_commit_success();
-}
-
-fn create_transaction() -> Vec<u8> {
-    // create key pairs
-    let sk1 = EcdsaPrivateKey::from_u64(1).unwrap();
-    let sk2 = EcdsaPrivateKey::from_u64(2).unwrap();
-    let sk_notary = EcdsaPrivateKey::from_u64(3).unwrap();
-
-    let transaction = TransactionBuilder::new()
-        .header(TransactionHeader {
-            version: 1,
-            network_id: NetworkDefinition::local_simulator().id,
-            start_epoch_inclusive: 0,
-            end_epoch_exclusive: 100,
-            nonce: 5,
-            notary_public_key: sk_notary.public_key().into(),
-            notary_as_signatory: false,
-            cost_unit_limit: 1_000_000,
-            tip_percentage: 5,
-        })
-        .manifest(
-            ManifestBuilder::new(&NetworkDefinition::local_simulator())
-                .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-                .clear_auth_zone()
-                .build(),
-        )
-        .sign(&sk1)
-        .sign(&sk2)
-        .notarize(&sk_notary)
-        .build();
-
-    transaction.to_bytes()
 }
