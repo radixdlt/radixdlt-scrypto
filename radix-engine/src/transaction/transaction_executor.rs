@@ -130,20 +130,36 @@ where
         }
 
         // Prepare state track and execution trace
-        let mut track = Track::new(self.substate_store, fee_reserve, FeeTable::new());
-        let mut execution_trace = ExecutionTrace::new();
+        let track = Track::new(self.substate_store, fee_reserve, FeeTable::new());
+
+        // Apply pre execution costing
+        let pre_execution_result = track.apply_pre_execution_costs(transaction);
+        let mut track = match pre_execution_result {
+            Ok(track) => track,
+            Err(err) => {
+                return TransactionReceipt {
+                    contents: TransactionContents { instructions },
+                    execution: TransactionExecution {
+                        fee_summary: err.fee_summary,
+                        application_logs: vec![],
+                    },
+                    result: TransactionResult::Reject(RejectResult {
+                        error: RejectionError::ErrorBeforeFeeLoanRepaid(RuntimeError::ModuleError(
+                            ModuleError::CostingError(err.error),
+                        )),
+                    }),
+                };
+            }
+        };
 
         // Invoke the function/method
+        let mut execution_trace = ExecutionTrace::new();
         let invoke_result = {
             let mut modules = Vec::<Box<dyn Module<R>>>::new();
             if execution_config.trace {
                 modules.push(Box::new(LoggerModule::new()));
             }
             modules.push(Box::new(CostingModule::default()));
-
-            track
-                .apply_pre_execution_costs(transaction)
-                .expect("Not enough to cover pre-execution cost");
             let mut kernel = Kernel::new(
                 transaction_hash,
                 signer_public_keys,
@@ -175,6 +191,7 @@ where
         // Produce the final transaction receipt
         let execution_trace_receipt = execution_trace.to_receipt();
         let track_receipt = track.finalize(invoke_result, execution_trace_receipt.resource_changes);
+
         let receipt = TransactionReceipt {
             contents: TransactionContents { instructions },
             execution: TransactionExecution {
