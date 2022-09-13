@@ -10,10 +10,24 @@ use crate::transaction::*;
 use crate::types::*;
 use crate::wasm::*;
 
-pub struct ExecutionConfig {
+pub struct FeeReserveConfig {
     pub cost_unit_price: Decimal,
-    pub max_call_depth: usize,
     pub system_loan: u32,
+}
+
+impl FeeReserveConfig {
+    pub fn standard() -> Self {
+        Self {
+            cost_unit_price: DEFAULT_COST_UNIT_PRICE
+                .parse()
+                .expect("Invalid cost unit price"),
+            system_loan: DEFAULT_SYSTEM_LOAN,
+        }
+    }
+}
+
+pub struct ExecutionConfig {
+    pub max_call_depth: usize,
     pub is_system: bool,
     pub trace: bool,
 }
@@ -27,11 +41,7 @@ impl Default for ExecutionConfig {
 impl ExecutionConfig {
     pub fn standard() -> Self {
         Self {
-            cost_unit_price: DEFAULT_COST_UNIT_PRICE
-                .parse()
-                .expect("Invalid cost unit price"),
             max_call_depth: DEFAULT_MAX_CALL_DEPTH,
-            system_loan: DEFAULT_SYSTEM_LOAN,
             is_system: false,
             trace: false,
         }
@@ -39,11 +49,7 @@ impl ExecutionConfig {
 
     pub fn debug() -> Self {
         Self {
-            cost_unit_price: DEFAULT_COST_UNIT_PRICE
-                .parse()
-                .expect("Invalid cost unit price"),
             max_call_depth: DEFAULT_MAX_CALL_DEPTH,
-            system_loan: DEFAULT_SYSTEM_LOAN,
             is_system: false,
             trace: true,
         }
@@ -85,22 +91,23 @@ where
     pub fn execute<T: ExecutableTransaction>(
         &mut self,
         transaction: &T,
-        params: &ExecutionConfig,
+        fee_reserve_config: &FeeReserveConfig,
+        execution_config: &ExecutionConfig,
     ) -> TransactionReceipt {
         let fee_reserve = SystemLoanFeeReserve::new(
             transaction.cost_unit_limit(),
             transaction.tip_percentage(),
-            params.cost_unit_price,
-            params.system_loan,
+            fee_reserve_config.cost_unit_price,
+            fee_reserve_config.system_loan,
         );
 
-        self.execute_with_fee_reserve(transaction, params, fee_reserve)
+        self.execute_with_fee_reserve(transaction, execution_config, fee_reserve)
     }
 
     pub fn execute_with_fee_reserve<T: ExecutableTransaction, R: FeeReserve>(
         &mut self,
         transaction: &T,
-        params: &ExecutionConfig,
+        execution_config: &ExecutionConfig,
         fee_reserve: R,
     ) -> TransactionReceipt {
         let transaction_hash = transaction.transaction_hash();
@@ -113,7 +120,7 @@ where
             .collect();
 
         #[cfg(not(feature = "alloc"))]
-        if params.trace {
+        if execution_config.trace {
             println!("{:-^80}", "Transaction Metadata");
             println!("Transaction hash: {}", transaction_hash);
             println!("Transaction signers: {:?}", signer_public_keys);
@@ -123,26 +130,42 @@ where
         }
 
         // Prepare state track and execution trace
-        let mut track = Track::new(self.substate_store, fee_reserve, FeeTable::new());
-        let mut execution_trace = ExecutionTrace::new();
+        let track = Track::new(self.substate_store, fee_reserve, FeeTable::new());
+
+        // Apply pre execution costing
+        let pre_execution_result = track.apply_pre_execution_costs(transaction);
+        let mut track = match pre_execution_result {
+            Ok(track) => track,
+            Err(err) => {
+                return TransactionReceipt {
+                    contents: TransactionContents { instructions },
+                    execution: TransactionExecution {
+                        fee_summary: err.fee_summary,
+                        application_logs: vec![],
+                    },
+                    result: TransactionResult::Reject(RejectResult {
+                        error: RejectionError::ErrorBeforeFeeLoanRepaid(RuntimeError::ModuleError(
+                            ModuleError::CostingError(err.error),
+                        )),
+                    }),
+                };
+            }
+        };
 
         // Invoke the function/method
+        let mut execution_trace = ExecutionTrace::new();
         let invoke_result = {
             let mut modules = Vec::<Box<dyn Module<R>>>::new();
-            if params.trace {
+            if execution_config.trace {
                 modules.push(Box::new(LoggerModule::new()));
             }
             modules.push(Box::new(CostingModule::default()));
-
-            track
-                .apply_pre_execution_costs(transaction)
-                .expect("Not enough to cover pre-execution cost");
             let mut kernel = Kernel::new(
                 transaction_hash,
                 signer_public_keys,
                 &blobs,
-                params.is_system,
-                params.max_call_depth,
+                execution_config.is_system,
+                execution_config.max_call_depth,
                 &mut track,
                 self.wasm_engine,
                 self.wasm_instrumenter,
@@ -168,6 +191,7 @@ where
         // Produce the final transaction receipt
         let execution_trace_receipt = execution_trace.to_receipt();
         let track_receipt = track.finalize(invoke_result, execution_trace_receipt.resource_changes);
+
         let receipt = TransactionReceipt {
             contents: TransactionContents { instructions },
             execution: TransactionExecution {
@@ -177,7 +201,7 @@ where
             result: track_receipt.result,
         };
         #[cfg(not(feature = "alloc"))]
-        if params.trace {
+        if execution_config.trace {
             println!("{:-^80}", "Cost Analysis");
             let break_down = receipt
                 .execution
@@ -210,9 +234,10 @@ where
     pub fn execute_and_commit<T: ExecutableTransaction>(
         &mut self,
         transaction: &T,
-        params: &ExecutionConfig,
+        fee_reserve_config: &FeeReserveConfig,
+        execution_config: &ExecutionConfig,
     ) -> TransactionReceipt {
-        let receipt = self.execute(transaction, params);
+        let receipt = self.execute(transaction, fee_reserve_config, execution_config);
         if let TransactionResult::Commit(commit) = &receipt.result {
             commit.state_updates.commit(self.substate_store);
         }
