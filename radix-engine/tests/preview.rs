@@ -70,7 +70,7 @@ fn prepare_test_tx_and_preview_intent(
         notarized_transaction.clone(),
         &TestIntentHashManager::new(),
         &ValidationConfig {
-            network: &network,
+            network_id: network.id,
             current_epoch: 1,
             max_cost_unit_limit: 10_000_000,
             min_tip_percentage: 0,
