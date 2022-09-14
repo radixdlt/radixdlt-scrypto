@@ -5,6 +5,7 @@ use radix_engine::model::ExtractAbiError;
 use radix_engine::wasm::PrepareError;
 use sbor::*;
 use scrypto::address::AddressError;
+use scrypto::prelude::ParseNetworkError;
 use transaction::errors::*;
 
 use crate::ledger::*;
@@ -56,4 +57,6 @@ pub enum Error {
     AddressError(AddressError),
 
     FailedToBuildArgs(BuildArgsError),
+
+    ParseNetworkError(ParseNetworkError),
 }

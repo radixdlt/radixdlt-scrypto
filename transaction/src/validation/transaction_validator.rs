@@ -377,7 +377,7 @@ mod tests {
         ($result: expr, ($version: expr, $start_epoch: expr, $end_epoch: expr, $nonce: expr, $signers: expr, $notary: expr)) => {{
             let mut intent_hash_manager: TestIntentHashManager = TestIntentHashManager::new();
             let config: ValidationConfig = ValidationConfig {
-                network: &NetworkDefinition::local_simulator(),
+                network: &NetworkDefinition::simulator(),
                 current_epoch: 1,
                 max_cost_unit_limit: 10_000_000,
                 min_tip_percentage: 0,
@@ -448,7 +448,7 @@ mod tests {
     fn test_valid_preview() {
         let mut intent_hash_manager: TestIntentHashManager = TestIntentHashManager::new();
         let config: ValidationConfig = ValidationConfig {
-            network: &NetworkDefinition::local_simulator(),
+            network: &NetworkDefinition::simulator(),
             current_epoch: 1,
             max_cost_unit_limit: 10_000_000,
             min_tip_percentage: 0,
@@ -485,7 +485,7 @@ mod tests {
         let mut builder = TransactionBuilder::new()
             .header(TransactionHeader {
                 version,
-                network_id: NetworkDefinition::local_simulator().id,
+                network_id: NetworkDefinition::simulator().id,
                 start_epoch_inclusive: start_epoch,
                 end_epoch_exclusive: end_epoch,
                 nonce,
@@ -495,7 +495,7 @@ mod tests {
                 tip_percentage: 5,
             })
             .manifest(
-                ManifestBuilder::new(&NetworkDefinition::local_simulator())
+                ManifestBuilder::new(&NetworkDefinition::simulator())
                     .clear_auth_zone()
                     .build(),
             );

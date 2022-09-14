@@ -1,7 +1,7 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use radix_engine::ledger::*;
-use radix_engine::transaction::ExecutionConfig;
 use radix_engine::transaction::TransactionExecutor;
+use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
 use radix_engine::types::*;
 use radix_engine::wasm::DefaultWasmEngine;
 use radix_engine::wasm::WasmInstrumenter;
@@ -25,7 +25,7 @@ fn bench_transfer(c: &mut Criterion) {
     let public_key = private_key.public_key();
 
     // Create two accounts
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_method(SYS_FAUCET_COMPONENT, "free_xrd", args!())
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
@@ -38,6 +38,7 @@ fn bench_transfer(c: &mut Criterion) {
     let account1 = executor
         .execute_and_commit(
             &TestTransaction::new(manifest.clone(), 1, vec![public_key.into()]),
+            &FeeReserveConfig::standard(),
             &ExecutionConfig::default(),
         )
         .expect_commit()
@@ -46,6 +47,7 @@ fn bench_transfer(c: &mut Criterion) {
     let account2 = executor
         .execute_and_commit(
             &TestTransaction::new(manifest, 2, vec![public_key.into()]),
+            &FeeReserveConfig::standard(),
             &ExecutionConfig::default(),
         )
         .expect_commit()
@@ -53,7 +55,7 @@ fn bench_transfer(c: &mut Criterion) {
         .new_component_addresses[0];
 
     // Create a transfer manifest
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), account1)
         .withdraw_from_account_by_amount(1.into(), RADIX_TOKEN, account1)
         .call_method(
@@ -69,6 +71,7 @@ fn bench_transfer(c: &mut Criterion) {
         b.iter(|| {
             let receipt = executor.execute_and_commit(
                 &TestTransaction::new(manifest.clone(), nonce, vec![public_key.into()]),
+                &FeeReserveConfig::standard(),
                 &ExecutionConfig::default(),
             );
             receipt.expect_commit_success();

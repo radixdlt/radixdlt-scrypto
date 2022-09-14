@@ -14,11 +14,27 @@ pub struct NetworkDefinition {
 // NOTE: Most Network Definitions live in the node codebase
 // Some are duplicated here so that they can be easily used by scrypto and resim
 impl NetworkDefinition {
-    pub fn local_simulator() -> NetworkDefinition {
+    pub fn simulator() -> NetworkDefinition {
         NetworkDefinition {
             id: 242,
             logical_name: String::from("simulator"),
             hrp_suffix: String::from("sim"),
+        }
+    }
+
+    pub fn adapanet() -> NetworkDefinition {
+        NetworkDefinition {
+            id: 0x0a,
+            logical_name: String::from("adapanet"),
+            hrp_suffix: String::from("tdx_a_"),
+        }
+    }
+
+    pub fn nebunet() -> NetworkDefinition {
+        NetworkDefinition {
+            id: 0x0b,
+            logical_name: String::from("nebunet"),
+            hrp_suffix: String::from("tdx_b_"),
         }
     }
 
@@ -32,20 +48,20 @@ impl NetworkDefinition {
 }
 
 impl FromStr for NetworkDefinition {
-    type Err = NetworkError;
+    type Err = ParseNetworkError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
-            "localsimulator" => Ok(NetworkDefinition::local_simulator()),
-            "local_simulator" => Ok(NetworkDefinition::local_simulator()),
-            "simulator" => Ok(NetworkDefinition::local_simulator()),
+            "simulator" => Ok(NetworkDefinition::simulator()),
+            "adapanet" => Ok(NetworkDefinition::adapanet()),
+            "nebunet" => Ok(NetworkDefinition::nebunet()),
             "mainnet" => Ok(NetworkDefinition::mainnet()),
-            _ => Err(NetworkError::InvalidNetworkString),
+            _ => Err(ParseNetworkError::InvalidNetworkString),
         }
     }
 }
 
 #[derive(Debug)]
-pub enum NetworkError {
+pub enum ParseNetworkError {
     InvalidNetworkString,
 }
