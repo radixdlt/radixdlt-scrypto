@@ -6,10 +6,6 @@ use scrypto::core::Blob;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::model::Instruction;
-use transaction::model::TransactionHeader;
-use transaction::signing::EcdsaPrivateKey;
-use transaction::validation::ValidationConfig;
-use transaction::validation::{TestIntentHashManager, TransactionValidator};
 
 #[test]
 fn test_call_method_with_all_resources_doesnt_drop_auth_zone_proofs() {
