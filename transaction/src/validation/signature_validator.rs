@@ -2,12 +2,17 @@ use scrypto::crypto::*;
 
 pub fn recover(message: &[u8], signature: &SignatureWithPublicKey) -> Option<PublicKey> {
     match signature {
-        SignatureWithPublicKey::Ecdsa(sig) => recover_ecdsa(message, sig).map(Into::into),
-        SignatureWithPublicKey::Ed25519(pk, _) => Some(pk.clone().into()),
+        SignatureWithPublicKey::EcdsaSecp256k1(sig) => {
+            recover_ecdsa_secp256k1(message, sig).map(Into::into)
+        }
+        SignatureWithPublicKey::EddsaEd25519(pk, _) => Some(pk.clone().into()),
     }
 }
 
-pub fn recover_ecdsa(message: &[u8], signature: &EcdsaSignature) -> Option<EcdsaPublicKey> {
+pub fn recover_ecdsa_secp256k1(
+    message: &[u8],
+    signature: &EcdsaSecp256k1Signature,
+) -> Option<EcdsaSecp256k1PublicKey> {
     let recovery_id = signature.0[0];
     let signature_data = &signature.0[1..];
     if let Ok(id) = secp256k1::ecdsa::RecoveryId::from_i32(recovery_id.into()) {
@@ -16,7 +21,7 @@ pub fn recover_ecdsa(message: &[u8], signature: &EcdsaSignature) -> Option<Ecdsa
             let msg =
                 secp256k1::Message::from_slice(&hash.0).expect("Hash is always a valid message");
             if let Ok(pk) = sig.recover(&msg) {
-                return Some(EcdsaPublicKey(pk.serialize()));
+                return Some(EcdsaSecp256k1PublicKey(pk.serialize()));
             }
         }
     }
@@ -25,16 +30,20 @@ pub fn recover_ecdsa(message: &[u8], signature: &EcdsaSignature) -> Option<Ecdsa
 
 pub fn verify(message: &[u8], public_key: &PublicKey, signature: &Signature) -> bool {
     match (public_key, signature) {
-        (PublicKey::Ecdsa(pk), Signature::Ecdsa(sig)) => verify_ecdsa(message, pk, sig),
-        (PublicKey::Ed25519(pk), Signature::Ed25519(sig)) => verify_ed25519(message, pk, sig),
+        (PublicKey::EcdsaSecp256k1(pk), Signature::EcdsaSecp256k1(sig)) => {
+            verify_ecdsa_secp256k1(message, pk, sig)
+        }
+        (PublicKey::EddsaEd25519(pk), Signature::EddsaEd25519(sig)) => {
+            verify_eddsa_ed25519(message, pk, sig)
+        }
         _ => false,
     }
 }
 
-pub fn verify_ecdsa(
+pub fn verify_ecdsa_secp256k1(
     message: &[u8],
-    public_key: &EcdsaPublicKey,
-    signature: &EcdsaSignature,
+    public_key: &EcdsaSecp256k1PublicKey,
+    signature: &EcdsaSecp256k1Signature,
 ) -> bool {
     let recovery_id = signature.0[0];
     let signature_data = &signature.0[1..];
@@ -52,10 +61,10 @@ pub fn verify_ecdsa(
     false
 }
 
-pub fn verify_ed25519(
+pub fn verify_eddsa_ed25519(
     message: &[u8],
-    public_key: &Ed25519PublicKey,
-    signature: &Ed25519Signature,
+    public_key: &EddsaEd25519PublicKey,
+    signature: &EddsaEd25519Signature,
 ) -> bool {
     if let Ok(sig) = ed25519_dalek::Signature::from_bytes(&signature.0) {
         if let Ok(pk) = ed25519_dalek::PublicKey::from_bytes(&public_key.0) {

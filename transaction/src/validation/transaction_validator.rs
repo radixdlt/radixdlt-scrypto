@@ -375,7 +375,9 @@ mod tests {
     use scrypto::core::NetworkDefinition;
 
     use super::*;
-    use crate::{builder::ManifestBuilder, builder::TransactionBuilder, signing::EcdsaPrivateKey};
+    use crate::{
+        builder::ManifestBuilder, builder::TransactionBuilder, signing::EcdsaSecp256k1PrivateKey,
+    };
 
     macro_rules! assert_invalid_tx {
         ($result: expr, ($version: expr, $start_epoch: expr, $end_epoch: expr, $nonce: expr, $signers: expr, $notary: expr)) => {{
@@ -484,7 +486,7 @@ mod tests {
         signers: Vec<u64>,
         notary: u64,
     ) -> NotarizedTransaction {
-        let sk_notary = EcdsaPrivateKey::from_u64(notary).unwrap();
+        let sk_notary = EcdsaSecp256k1PrivateKey::from_u64(notary).unwrap();
 
         let mut builder = TransactionBuilder::new()
             .header(TransactionHeader {
@@ -505,7 +507,7 @@ mod tests {
             );
 
         for signer in signers {
-            builder = builder.sign(&EcdsaPrivateKey::from_u64(signer).unwrap());
+            builder = builder.sign(&EcdsaSecp256k1PrivateKey::from_u64(signer).unwrap());
         }
         builder = builder.notarize(&sk_notary);
 

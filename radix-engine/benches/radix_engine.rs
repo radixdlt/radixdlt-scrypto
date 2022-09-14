@@ -7,7 +7,7 @@ use radix_engine::wasm::DefaultWasmEngine;
 use radix_engine::wasm::WasmInstrumenter;
 use transaction::builder::ManifestBuilder;
 use transaction::model::TestTransaction;
-use transaction::signing::EcdsaPrivateKey;
+use transaction::signing::EcdsaSecp256k1PrivateKey;
 
 fn bench_transfer(c: &mut Criterion) {
     // Set up environment.
@@ -21,7 +21,7 @@ fn bench_transfer(c: &mut Criterion) {
     );
 
     // Create a key pair
-    let private_key = EcdsaPrivateKey::from_u64(1).unwrap();
+    let private_key = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap();
     let public_key = private_key.public_key();
 
     // Create two accounts

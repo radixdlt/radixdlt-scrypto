@@ -134,11 +134,11 @@ mod tests {
     use scrypto::core::NetworkDefinition;
 
     #[test]
-    fn construct_sign_and_notarize_ecdsa() {
+    fn construct_sign_and_notarize_ecdsa_secp256k1() {
         // create a key pair
-        let sk1 = EcdsaPrivateKey::from_u64(1).unwrap();
-        let sk2 = EcdsaPrivateKey::from_u64(2).unwrap();
-        let sk_notary = EcdsaPrivateKey::from_u64(3).unwrap();
+        let sk1 = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap();
+        let sk2 = EcdsaSecp256k1PrivateKey::from_u64(2).unwrap();
+        let sk_notary = EcdsaSecp256k1PrivateKey::from_u64(3).unwrap();
 
         // construct
         let intent = TransactionIntent::new(
@@ -190,11 +190,11 @@ mod tests {
     }
 
     #[test]
-    fn construct_sign_and_notarize_ed25519() {
+    fn construct_sign_and_notarize_eddsa_ed25519() {
         // create a key pair
-        let sk1 = Ed25519PrivateKey::from_u64(1).unwrap();
-        let sk2 = Ed25519PrivateKey::from_u64(2).unwrap();
-        let sk_notary = Ed25519PrivateKey::from_u64(3).unwrap();
+        let sk1 = EddsaEd25519PrivateKey::from_u64(1).unwrap();
+        let sk2 = EddsaEd25519PrivateKey::from_u64(2).unwrap();
+        let sk_notary = EddsaEd25519PrivateKey::from_u64(3).unwrap();
 
         // construct
         let intent = TransactionIntent::new(
