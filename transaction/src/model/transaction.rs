@@ -2,8 +2,6 @@ use sbor::*;
 use scrypto::buffer::{scrypto_decode, scrypto_encode};
 use scrypto::core::NetworkDefinition;
 use scrypto::crypto::{hash, Hash, PublicKey, Signature, SignatureWithPublicKey};
-#[cfg(feature = "serde")]
-use serde_with::{serde_as, DisplayFromStr};
 
 use crate::manifest::{compile, CompileError};
 use crate::model::Instruction;
@@ -12,7 +10,6 @@ use crate::model::Instruction;
 
 #[cfg_attr(
     feature = "serde",
-    serde_as,
     derive(serde::Serialize, serde::Deserialize),
     serde(tag = "type")
 )]
@@ -20,17 +17,12 @@ use crate::model::Instruction;
 pub struct TransactionHeader {
     pub version: u8,
     pub network_id: u8,
-    #[cfg_attr(feature = "serde", serde_as(as = "serde_with::DisplayFromStr"))]
     pub start_epoch_inclusive: u64,
-    #[cfg_attr(feature = "serde", serde_as(as = "serde_with::DisplayFromStr"))]
     pub end_epoch_exclusive: u64,
-    #[cfg_attr(feature = "serde", serde_as(as = "serde_with::DisplayFromStr"))]
     pub nonce: u64,
     pub notary_public_key: PublicKey,
     pub notary_as_signatory: bool,
-    #[cfg_attr(feature = "serde", serde_as(as = "serde_with::DisplayFromStr"))]
     pub cost_unit_limit: u32,
-    #[cfg_attr(feature = "serde", serde_as(as = "serde_with::DisplayFromStr"))]
     pub tip_percentage: u32,
 }
 

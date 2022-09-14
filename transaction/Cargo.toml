@@ -18,4 +18,4 @@ serde_with = { version = "2.0.1" }
 default = ["std"]
 std = ["sbor/std", "scrypto/std", "hex/std", "ed25519-dalek/std", "secp256k1/std"]
 alloc = ["sbor/alloc", "scrypto/alloc", "hex/alloc", "ed25519-dalek/alloc", "secp256k1/alloc"]
-serde = ["serde/derive"]
+serde = ["serde/derive", "scrypto/serde"]
