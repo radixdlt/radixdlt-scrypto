@@ -234,18 +234,14 @@ impl TransactionValidator {
                     instructions.push(ExecutableInstruction::DropAllProofs);
                 }
                 Instruction::CallFunction {
-                    package_address,
-                    blueprint_name,
-                    method_name,
+                    fn_identifier,
                     args,
                 } => {
                     // TODO: decode into Value
                     Self::validate_call_data(&args, &mut id_validator)
                         .map_err(TransactionValidationError::CallDataValidationError)?;
                     instructions.push(ExecutableInstruction::CallFunction {
-                        package_address,
-                        blueprint_name,
-                        method_name,
+                        fn_identifier,
                         args,
                     });
                 }

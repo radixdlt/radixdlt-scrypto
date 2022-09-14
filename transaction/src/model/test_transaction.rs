@@ -122,14 +122,10 @@ impl TestTransaction {
                 }
                 Instruction::DropAllProofs => ExecutableInstruction::DropAllProofs,
                 Instruction::CallFunction {
-                    package_address,
-                    blueprint_name,
-                    method_name,
+                    fn_identifier,
                     args,
                 } => ExecutableInstruction::CallFunction {
-                    package_address,
-                    blueprint_name,
-                    method_name,
+                    fn_identifier,
                     args,
                 },
                 Instruction::CallMethod {
