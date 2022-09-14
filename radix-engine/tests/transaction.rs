@@ -18,38 +18,6 @@ use transaction::validation::ValidationConfig;
 use transaction::validation::{TestIntentHashManager, TransactionValidator};
 
 #[test]
-fn test_normal_transaction_flow() {
-    let mut substate_store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut wasm_engine = DefaultWasmEngine::new();
-    let mut wasm_instrumenter = WasmInstrumenter::new();
-    let intent_hash_manager = TestIntentHashManager::new();
-    let validation_params = ValidationConfig {
-        network_id: NetworkDefinition::local_simulator().id,
-        current_epoch: 1,
-        max_cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,
-        min_tip_percentage: 0,
-    };
-    let execution_params = ExecutionConfig::debug();
-
-    let raw_transaction = create_transaction();
-    let validated_transaction = TransactionValidator::validate_from_slice(
-        &raw_transaction,
-        &intent_hash_manager,
-        &validation_params,
-    )
-    .expect("Invalid transaction");
-
-    let mut executor = TransactionExecutor::new(
-        &mut substate_store,
-        &mut wasm_engine,
-        &mut wasm_instrumenter,
-    );
-    let receipt = executor.execute_and_commit(&validated_transaction, &execution_params);
-
-    receipt.expect_commit_success();
-}
-
-#[test]
 fn test_call_method_with_all_resources_doesnt_drop_auth_zone_proofs() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
