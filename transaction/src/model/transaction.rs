@@ -2,6 +2,8 @@ use sbor::*;
 use scrypto::buffer::{scrypto_decode, scrypto_encode};
 use scrypto::core::NetworkDefinition;
 use scrypto::crypto::{hash, Hash, PublicKey, Signature, SignatureWithPublicKey};
+#[cfg(feature = "serde")]
+use serde_with::{serde_as, DisplayFromStr};
 
 use crate::manifest::{compile, CompileError};
 use crate::model::Instruction;
@@ -10,7 +12,7 @@ use crate::model::Instruction;
 
 #[cfg_attr(
     feature = "serde",
-    serde_with::serde_as,
+    serde_as,
     derive(serde::Serialize, serde::Deserialize),
     serde(tag = "type")
 )]
