@@ -243,7 +243,7 @@ impl fmt::Debug for TransactionReceipt {
         }
 
         // TODO - Need to fix the hardcoding of local simulator HRPs for transaction receipts, and for address formatting
-        let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::local_simulator());
+        let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
 
         write!(f, "\n{}", "Instructions:".bold().green())?;
         for (i, inst) in contents.instructions.iter().enumerate() {

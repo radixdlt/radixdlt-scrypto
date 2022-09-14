@@ -15,7 +15,7 @@ pub use expression::*;
 pub use invocation::*;
 pub use level::Level;
 pub use logger::Logger;
-pub use network::{NetworkDefinition, NetworkError};
+pub use network::{NetworkDefinition, ParseNetworkError};
 pub use runtime::{
     Runtime, SystemCreateInput, SystemGetCurrentEpochInput, SystemGetTransactionHashInput,
     SystemSetEpochInput,

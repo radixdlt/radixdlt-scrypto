@@ -13,7 +13,7 @@ fn should_not_be_able_to_globalize_key_value_store() {
     let package_address = test_runner.compile_and_publish("./tests/kernel");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_scrypto_function(package_address, "Globalize", "globalize_kv_store", args!())
         .build();
@@ -38,7 +38,7 @@ fn should_not_be_able_to_globalize_bucket() {
     let package_address = test_runner.compile_and_publish("./tests/kernel");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_scrypto_function(package_address, "Globalize", "globalize_bucket", args!())
         .build();
@@ -63,7 +63,7 @@ fn should_not_be_able_to_globalize_proof() {
     let package_address = test_runner.compile_and_publish("./tests/kernel");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_scrypto_function(package_address, "Globalize", "globalize_proof", args!())
         .build();
@@ -88,7 +88,7 @@ fn should_not_be_able_to_globalize_vault() {
     let package_address = test_runner.compile_and_publish("./tests/kernel");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_scrypto_function(package_address, "Globalize", "globalize_vault", args!())
         .build();

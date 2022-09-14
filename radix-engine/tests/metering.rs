@@ -13,7 +13,7 @@ fn test_loop() {
     // Act
     let code = wat2wasm(&include_str!("wasm/loop.wat").replace("${n}", "2000"));
     let package_address = test_runner.publish_package(code, test_abi_any_in_void_out("Test", "f"));
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_scrypto_function(package_address, "Test", "f", args!())
         .build();
@@ -32,7 +32,7 @@ fn test_loop_out_of_cost_unit() {
     // Act
     let code = wat2wasm(&include_str!("wasm/loop.wat").replace("${n}", "7000000"));
     let package_address = test_runner.publish_package(code, test_abi_any_in_void_out("Test", "f"));
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(45.into(), SYS_FAUCET_COMPONENT)
         .call_scrypto_function(package_address, "Test", "f", args!())
         .build();
@@ -52,7 +52,7 @@ fn test_recursion() {
     // In this test case, each call frame costs 4 stack units
     let code = wat2wasm(&include_str!("wasm/recursion.wat").replace("${n}", "128"));
     let package_address = test_runner.publish_package(code, test_abi_any_in_void_out("Test", "f"));
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_scrypto_function(package_address, "Test", "f", args!())
         .build();
@@ -71,7 +71,7 @@ fn test_recursion_stack_overflow() {
     // Act
     let code = wat2wasm(&include_str!("wasm/recursion.wat").replace("${n}", "129"));
     let package_address = test_runner.publish_package(code, test_abi_any_in_void_out("Test", "f"));
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_scrypto_function(package_address, "Test", "f", args!())
         .build();
@@ -90,7 +90,7 @@ fn test_grow_memory() {
     // Act
     let code = wat2wasm(&include_str!("wasm/memory.wat").replace("${n}", "100"));
     let package_address = test_runner.publish_package(code, test_abi_any_in_void_out("Test", "f"));
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_scrypto_function(package_address, "Test", "f", args!())
         .build();
@@ -109,7 +109,7 @@ fn test_grow_memory_out_of_cost_unit() {
     // Act
     let code = wat2wasm(&include_str!("wasm/memory.wat").replace("${n}", "100000"));
     let package_address = test_runner.publish_package(code, test_abi_any_in_void_out("Test", "f"));
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_scrypto_function(package_address, "Test", "f", args!())
         .build();
@@ -128,7 +128,7 @@ fn test_basic_transfer() {
     let (_, _, account2) = test_runner.new_account();
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), account1)
         .withdraw_from_account_by_amount(100.into(), RADIX_TOKEN, account1)
         .call_method(
@@ -185,7 +185,7 @@ fn test_publish_large_package() {
         "i".repeat(4 * 1024 * 1024)
     ));
     assert_eq!(4194343, code.len());
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
         .publish_package(code, HashMap::new())
         .build();

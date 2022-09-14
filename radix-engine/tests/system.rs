@@ -12,7 +12,7 @@ fn get_epoch_should_succeed() {
     let package_address = test_runner.compile_and_publish("./tests/system");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_scrypto_function(package_address, "SystemTest", "get_epoch", args![])
         .build();
@@ -33,7 +33,7 @@ fn set_epoch_without_supervisor_auth_fails() {
 
     // Act
     let epoch = 9876u64;
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_scrypto_function(package_address, "SystemTest", "set_epoch", args!(epoch))
         .call_scrypto_function(package_address, "SystemTest", "get_epoch", args!())
@@ -56,7 +56,7 @@ fn system_create_should_fail_with_supervisor_privilege() {
     let mut test_runner = TestRunner::new(true, &mut store);
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_native_function(
             NativeFnIdentifier::System(SystemFnIdentifier::Create),
@@ -85,7 +85,7 @@ fn system_create_should_succeed_with_system_privilege() {
     let mut test_runner = TestRunner::new(true, &mut store);
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_native_function(
             NativeFnIdentifier::System(SystemFnIdentifier::Create),

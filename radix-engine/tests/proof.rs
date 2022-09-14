@@ -15,7 +15,7 @@ fn can_create_clone_and_drop_bucket_proof() {
     let package_address = test_runner.compile_and_publish("./tests/proof");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function_with_abi(
             package_address,
@@ -57,7 +57,7 @@ fn can_create_clone_and_drop_vault_proof() {
     );
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_method(
             component_address,
@@ -91,7 +91,7 @@ fn can_create_clone_and_drop_vault_proof_by_amount() {
     );
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_method_with_abi(
             component_address,
@@ -133,7 +133,7 @@ fn can_create_clone_and_drop_vault_proof_by_ids() {
         NonFungibleId::from_u32(3),
     ]);
     let proof_ids = BTreeSet::from([NonFungibleId::from_u32(2)]);
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_method(
             component_address,
@@ -158,7 +158,7 @@ fn can_use_bucket_for_authorization() {
     let package_address = test_runner.compile_and_publish("./tests/proof");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function_with_abi(
             package_address,
@@ -203,7 +203,7 @@ fn can_use_vault_for_authorization() {
     );
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_method_with_abi(
             component_address,
@@ -231,7 +231,7 @@ fn can_create_proof_from_account_and_pass_on() {
     let package_address = test_runner.compile_and_publish("./tests/proof");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function_with_abi(
             package_address,
@@ -260,7 +260,7 @@ fn cant_move_restricted_proof() {
     let package_address = test_runner.compile_and_publish("./tests/proof");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function_with_abi(
             package_address,
@@ -294,7 +294,7 @@ fn cant_move_locked_bucket() {
     let package_address = test_runner.compile_and_publish("./tests/proof");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function_with_abi(
             package_address,
@@ -336,7 +336,7 @@ fn can_compose_bucket_and_vault_proof() {
     );
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .withdraw_from_account_by_amount(99.into(), resource_address, account)
         .take_from_worktop_by_amount(99.into(), resource_address, |builder, bucket_id| {
@@ -372,7 +372,7 @@ fn can_compose_bucket_and_vault_proof_by_amount() {
     );
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .withdraw_from_account_by_amount(99.into(), resource_address, account)
         .take_from_worktop_by_amount(99.into(), resource_address, |builder, bucket_id| {
@@ -407,7 +407,7 @@ fn can_compose_bucket_and_vault_proof_by_ids() {
     );
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .withdraw_from_account_by_ids(
             &BTreeSet::from([NonFungibleId::from_u32(2), NonFungibleId::from_u32(3)]),
@@ -453,7 +453,7 @@ fn can_create_vault_proof_by_amount_from_non_fungibles() {
     );
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_method(
             component_address,
@@ -477,7 +477,7 @@ fn can_create_auth_zone_proof_by_amount_from_non_fungibles() {
     let package_address = test_runner.compile_and_publish("./tests/proof");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .create_proof_from_account_by_ids(
             &BTreeSet::from([NonFungibleId::from_u32(1), NonFungibleId::from_u32(2)]),

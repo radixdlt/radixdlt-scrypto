@@ -12,7 +12,7 @@ fn dangling_component_should_fail() {
     let package_address = test_runner.compile_and_publish("./tests/leaks");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_scrypto_function(package_address, "Leaks", "dangling_component", args!())
         .build();
@@ -35,7 +35,7 @@ fn dangling_bucket_should_fail() {
     let package_address = test_runner.compile_and_publish("./tests/leaks");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_scrypto_function(package_address, "Leaks", "dangling_bucket", args!())
         .build();
@@ -58,7 +58,7 @@ fn dangling_vault_should_fail() {
     let package_address = test_runner.compile_and_publish("./tests/leaks");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_scrypto_function(package_address, "Leaks", "dangling_vault", args!())
         .build();
@@ -81,7 +81,7 @@ fn dangling_worktop_should_fail() {
     let package_address = test_runner.compile_and_publish("./tests/leaks");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_scrypto_function(package_address, "Leaks", "get_bucket", args!())
         .build();
@@ -104,7 +104,7 @@ fn dangling_kv_store_should_fail() {
     let package_address = test_runner.compile_and_publish("./tests/leaks");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_scrypto_function(package_address, "Leaks", "dangling_kv_store", args!())
         .build();
@@ -127,7 +127,7 @@ fn dangling_bucket_with_proof_should_fail() {
     let package_address = test_runner.compile_and_publish("./tests/leaks");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_scrypto_function(
             package_address,

@@ -12,7 +12,7 @@ fn stored_bucket_in_committed_component_should_fail() {
     let package_address = test_runner.compile_and_publish("./tests/stored_values");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_scrypto_function(
             package_address,
@@ -37,7 +37,7 @@ fn stored_bucket_in_owned_component_should_fail() {
     let package_address = test_runner.compile_and_publish("./tests/stored_values");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_scrypto_function(
             package_address,

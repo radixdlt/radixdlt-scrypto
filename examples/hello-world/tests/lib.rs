@@ -1,5 +1,4 @@
 use radix_engine::ledger::*;
-use radix_engine::model::extract_abi;
 use scrypto::core::NetworkDefinition;
 use scrypto::prelude::*;
 use scrypto_unit::*;
@@ -18,7 +17,7 @@ fn test_hello() {
     let package_address = test_runner.compile_and_publish(this_package!());
 
     // Test the `instantiate_hello` function.
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .call_scrypto_function(package_address, "Hello", "instantiate_hello", args!())
         .build();
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![public_key.into()]);
@@ -30,7 +29,7 @@ fn test_hello() {
         .new_component_addresses[0];
 
     // Test the `free_token` method.
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .call_method(component, "free_token", args!())
         .call_method(
             account_component,

@@ -14,7 +14,7 @@ fn test_invalid_access_rule_methods() {
     let package_address = test_runner.compile_and_publish("./tests/abi");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_scrypto_function(
             package_address,
@@ -49,7 +49,7 @@ fn test_arg(method_name: &str, args: Vec<u8>, expected_result: ExpectedResult) {
     let package_address = test_runner.compile_and_publish("./tests/abi");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_scrypto_function(package_address, "AbiComponent2", method_name, args)
         .build();
