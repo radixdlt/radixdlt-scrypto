@@ -151,11 +151,11 @@ impl Vault {
             .map(Into::into)
     }
 
-    fn borrow_resource(&self) -> Ref<LockableResource> {
+    pub fn borrow_resource(&self) -> Ref<LockableResource> {
         self.resource.borrow()
     }
 
-    fn borrow_resource_mut(&mut self) -> RefMut<LockableResource> {
+    pub fn borrow_resource_mut(&mut self) -> RefMut<LockableResource> {
         self.resource.borrow_mut()
     }
 

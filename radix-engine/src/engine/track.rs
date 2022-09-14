@@ -135,6 +135,11 @@ pub struct TrackReceipt {
     pub result: TransactionResult,
 }
 
+pub struct PreExecutionError {
+    pub fee_summary: FeeSummary,
+    pub error: FeeReserveError,
+}
+
 impl<'s, R: FeeReserve> Track<'s, R> {
     pub fn new(
         substate_store: &'s dyn ReadableSubstateStore,
@@ -348,41 +353,52 @@ impl<'s, R: FeeReserve> Track<'s, R> {
     }
 
     pub fn apply_pre_execution_costs<T: ExecutableTransaction>(
-        &mut self,
+        mut self,
         transaction: &T,
-    ) -> Result<(), FeeReserveError> {
-        self.fee_reserve
-            .consume(self.fee_table.tx_base_fee(), "base_fee", false)?;
+    ) -> Result<Self, PreExecutionError> {
+        let result = self
+            .fee_reserve
+            .consume(self.fee_table.tx_base_fee(), "base_fee", false)
+            .and_then(|()| {
+                self.fee_reserve.consume(
+                    self.fee_table.tx_manifest_decoding_per_byte()
+                        * transaction.manifest_instructions_size() as u32,
+                    "decode_manifest",
+                    false,
+                )
+            })
+            .and_then(|()| {
+                self.fee_reserve.consume(
+                    self.fee_table.tx_manifest_verification_per_byte()
+                        * transaction.manifest_instructions_size() as u32,
+                    "verify_manifest",
+                    false,
+                )
+            })
+            .and_then(|()| {
+                self.fee_reserve.consume(
+                    self.fee_table.tx_signature_verification_per_sig()
+                        * transaction.signer_public_keys().len() as u32,
+                    "verify_signatures",
+                    false,
+                )
+            })
+            .and_then(|()| {
+                self.fee_reserve.consume(
+                    transaction.blobs().iter().map(|b| b.len()).sum::<usize>() as u32
+                        * self.fee_table.tx_blob_price_per_byte(),
+                    "blobs",
+                    true,
+                )
+            });
 
-        self.fee_reserve.consume(
-            self.fee_table.tx_manifest_decoding_per_byte()
-                * transaction.manifest_instructions_size() as u32,
-            "decode_manifest",
-            false,
-        )?;
-
-        self.fee_reserve.consume(
-            self.fee_table.tx_manifest_verification_per_byte()
-                * transaction.manifest_instructions_size() as u32,
-            "verify_manifest",
-            false,
-        )?;
-
-        self.fee_reserve.consume(
-            self.fee_table.tx_signature_verification_per_sig()
-                * transaction.signer_public_keys().len() as u32,
-            "verify_signatures",
-            false,
-        )?;
-
-        self.fee_reserve.consume(
-            transaction.blobs().iter().map(|b| b.len()).sum::<usize>() as u32
-                * self.fee_table.tx_blob_price_per_byte(),
-            "blobs",
-            true,
-        )?;
-
-        Ok(())
+        match result {
+            Ok(()) => Ok(self),
+            Err(error) => Err(PreExecutionError {
+                fee_summary: self.fee_reserve.finalize(),
+                error,
+            }),
+        }
     }
 
     pub fn finalize(
