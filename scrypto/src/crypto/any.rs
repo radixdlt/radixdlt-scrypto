@@ -10,14 +10,14 @@ pub enum PublicKey {
 }
 
 /// Represents any natively supported signature.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, TypeId, Encode, Decode, Hash)]
 pub enum Signature {
     Ecdsa(EcdsaSignature),
     Ed25519(Ed25519Signature),
 }
 
 /// Represents any natively supported signature, including public key.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, TypeId, Encode, Decode, Hash)]
 pub enum SignatureWithPublicKey {
     Ecdsa(EcdsaSignature),
     Ed25519(Ed25519PublicKey, Ed25519Signature),
