@@ -13,7 +13,7 @@ fn test_state_track_success() {
     let (_, _, other_account) = test_runner.new_account();
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), account)
         .withdraw_from_account(RADIX_TOKEN, account)
         .call_method(
@@ -42,7 +42,7 @@ fn test_state_track_failure() {
     let (_, _, other_account) = test_runner.new_account();
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), account)
         .withdraw_from_account(RADIX_TOKEN, account)
         .call_method(

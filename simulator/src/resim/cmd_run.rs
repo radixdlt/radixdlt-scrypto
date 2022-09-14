@@ -3,7 +3,6 @@ use regex::{Captures, Regex};
 use scrypto::core::NetworkDefinition;
 use std::env;
 use std::path::PathBuf;
-use transaction::manifest::FileBlobLoader;
 
 use crate::resim::*;
 
@@ -12,6 +11,14 @@ use crate::resim::*;
 pub struct Run {
     /// The path to a transaction manifest file
     path: PathBuf,
+
+    /// The network to use when outputting manifest, [simulator | adapanet | nebunet | mainnet]
+    #[clap(short, long)]
+    network: Option<String>,
+
+    /// Comma separated paths to blob files
+    #[clap(short, long)]
+    blobs: Option<String>,
 
     /// The private keys used for signing, separated by comma
     #[clap(short, long)]
@@ -34,15 +41,23 @@ impl Run {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
         let manifest = std::fs::read_to_string(&self.path).map_err(Error::IOError)?;
         let pre_processed_manifest = Self::pre_process_manifest(&manifest);
-        let compiled_manifest = transaction::manifest::compile(
-            &pre_processed_manifest,
-            &NetworkDefinition::local_simulator(),
-            &FileBlobLoader::new(self.path.parent().expect("Manifest path parent not found")),
-        )
-        .map_err(Error::CompileError)?;
+        let network = match &self.network {
+            Some(n) => NetworkDefinition::from_str(&n).map_err(Error::ParseNetworkError)?,
+            None => NetworkDefinition::simulator(),
+        };
+        let mut blobs = Vec::new();
+        if let Some(paths) = &self.blobs {
+            for path in paths.split(",") {
+                blobs.push(std::fs::read(path).map_err(Error::IOError)?);
+            }
+        }
+        let compiled_manifest =
+            transaction::manifest::compile(&pre_processed_manifest, &network, blobs)
+                .map_err(Error::CompileError)?;
         handle_manifest(
             compiled_manifest,
             &self.signing_keys,
+            &self.network,
             &None,
             false,
             self.trace,

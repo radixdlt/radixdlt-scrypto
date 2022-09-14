@@ -39,7 +39,7 @@ fn bench_ed25519_validation(c: &mut Criterion) {
 }
 
 fn bench_transaction_validation(c: &mut Criterion) {
-    let bech32_decoder: Bech32Decoder = Bech32Decoder::new(&NetworkDefinition::local_simulator());
+    let bech32_decoder: Bech32Decoder = Bech32Decoder::new(&NetworkDefinition::simulator());
 
     let account1 = bech32_decoder
         .validate_and_decode_component_address(
@@ -56,7 +56,7 @@ fn bench_transaction_validation(c: &mut Criterion) {
     let transaction = TransactionBuilder::new()
         .header(TransactionHeader {
             version: 1,
-            network_id: NetworkDefinition::local_simulator().id,
+            network_id: NetworkDefinition::simulator().id,
             start_epoch_inclusive: 0,
             end_epoch_exclusive: 100,
             nonce: 1,
@@ -66,7 +66,7 @@ fn bench_transaction_validation(c: &mut Criterion) {
             tip_percentage: 5,
         })
         .manifest(
-            ManifestBuilder::new(&NetworkDefinition::local_simulator())
+            ManifestBuilder::new(&NetworkDefinition::simulator())
                 .withdraw_from_account_by_amount(1u32.into(), RADIX_TOKEN, account1)
                 .call_method(
                     account2,
@@ -84,7 +84,7 @@ fn bench_transaction_validation(c: &mut Criterion) {
         b.iter(|| {
             let intent_hash_manager = TestIntentHashManager::new();
             let config: ValidationConfig = ValidationConfig {
-                network_id: NetworkDefinition::local_simulator().id,
+                network_id: NetworkDefinition::simulator().id,
                 current_epoch: 1,
                 max_cost_unit_limit: 10_000_000,
                 min_tip_percentage: 0,

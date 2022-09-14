@@ -13,7 +13,7 @@ fn non_existent_vault_in_component_creation_should_fail() {
     let package_address = test_runner.compile_and_publish("./tests/vault");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(
             package_address,
@@ -39,7 +39,7 @@ fn non_existent_vault_in_committed_component_should_fail() {
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.compile_and_publish("./tests/vault");
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(package_address, "NonExistentVault", "new", args!())
         .build();
@@ -50,7 +50,7 @@ fn non_existent_vault_in_committed_component_should_fail() {
         .new_component_addresses[0];
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_method(component_address, "create_non_existent_vault", args!())
         .build();
@@ -73,7 +73,7 @@ fn non_existent_vault_in_key_value_store_creation_should_fail() {
     let package_address = test_runner.compile_and_publish("./tests/vault");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(
             package_address,
@@ -99,7 +99,7 @@ fn non_existent_vault_in_committed_key_value_store_should_fail() {
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.compile_and_publish("./tests/vault");
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(package_address, "NonExistentVault", "new", args!())
         .build();
@@ -110,7 +110,7 @@ fn non_existent_vault_in_committed_key_value_store_should_fail() {
         .new_component_addresses[0];
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_method(
             component_address,
@@ -137,7 +137,7 @@ fn create_mutable_vault_into_map() {
     let package_address = test_runner.compile_and_publish("./tests/vault");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(package_address, "VaultTest", "new_vault_into_map", args!())
         .build();
@@ -155,7 +155,7 @@ fn invalid_double_ownership_of_vault() {
     let package_address = test_runner.compile_and_publish("./tests/vault");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(
             package_address,
@@ -183,7 +183,7 @@ fn create_mutable_vault_into_map_and_referencing_before_storing() {
     let package_address = test_runner.compile_and_publish("./tests/vault");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(
             package_address,
@@ -204,7 +204,7 @@ fn cannot_overwrite_vault_in_map() {
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.compile_and_publish("./tests/vault");
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(package_address, "VaultTest", "new_vault_into_map", args!())
         .build();
@@ -215,7 +215,7 @@ fn cannot_overwrite_vault_in_map() {
         .new_component_addresses[0];
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_method(component_address, "overwrite_vault_in_map", args!())
         .build();
@@ -238,7 +238,7 @@ fn create_mutable_vault_into_vector() {
     let package_address = test_runner.compile_and_publish("./tests/vault");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(
             package_address,
@@ -259,7 +259,7 @@ fn cannot_remove_vaults() {
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.compile_and_publish("./tests/vault");
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(
             package_address,
@@ -275,7 +275,7 @@ fn cannot_remove_vaults() {
         .new_component_addresses[0];
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_method(component_address, "clear_vector", args!())
         .build();
@@ -296,7 +296,7 @@ fn can_push_vault_into_vector() {
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.compile_and_publish("./tests/vault");
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(
             package_address,
@@ -312,7 +312,7 @@ fn can_push_vault_into_vector() {
         .new_component_addresses[0];
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_method(component_address, "push_vault_into_vector", args!())
         .build();
@@ -330,7 +330,7 @@ fn create_mutable_vault_with_take() {
     let package_address = test_runner.compile_and_publish("./tests/vault");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(package_address, "VaultTest", "new_vault_with_take", args!())
         .build();
@@ -348,7 +348,7 @@ fn create_mutable_vault_with_take_non_fungible() {
     let package_address = test_runner.compile_and_publish("./tests/vault");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(
             package_address,
@@ -371,7 +371,7 @@ fn create_mutable_vault_with_get_nonfungible_ids() {
     let package_address = test_runner.compile_and_publish("./tests/vault");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(
             package_address,
@@ -394,7 +394,7 @@ fn create_mutable_vault_with_get_nonfungible_id() {
     let package_address = test_runner.compile_and_publish("./tests/vault");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(
             package_address,
@@ -417,7 +417,7 @@ fn create_mutable_vault_with_get_amount() {
     let package_address = test_runner.compile_and_publish("./tests/vault");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(
             package_address,
@@ -440,7 +440,7 @@ fn create_mutable_vault_with_get_resource_manager() {
     let package_address = test_runner.compile_and_publish("./tests/vault");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(
             package_address,
