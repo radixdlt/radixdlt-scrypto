@@ -332,7 +332,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                             .system_api_cost(SystemApiCostingEntry::ReadSubstate {
                                 size: 0, // TODO: get size of the value
                             }),
-                        "borrow_substate",
+                        "read_substate",
                         false,
                     )
                     .map_err(ModuleError::CostingError)?;
@@ -347,7 +347,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                             .system_api_cost(SystemApiCostingEntry::WriteSubstate {
                                 size: 0, // TODO: get size of the value
                             }),
-                        "borrow_substate_mut",
+                        "write_substate",
                         false,
                     )
                     .map_err(ModuleError::CostingError)?;
@@ -362,7 +362,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                             .system_api_cost(SystemApiCostingEntry::TakeSubstate {
                                 size: 0, // TODO: get size of the value
                             }),
-                        "borrow_substate",
+                        "take_substate",
                         false,
                     )
                     .map_err(ModuleError::CostingError)?;

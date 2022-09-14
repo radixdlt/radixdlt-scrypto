@@ -155,14 +155,14 @@ fn test_basic_transfer() {
         + 580869 /* instantiate_wasm */
         + 1965 /* invoke_function */
         + 2215 /* invoke_method */
-        + 5000 /* borrow_substate */
+        + 5000 /* read_substate */
         + 600 /* return_substate */
         + 1000 /* run_function */
         + 5200 /* run_method */
         + 275043 /* run_wasm */
         + 368 /* verify_manifest */
         + 3750 /* verify_signatures */
-        + 3000, /* borrow_substate_mut */
+        + 3000, /* write_substate */
         receipt.execution.fee_summary.cost_unit_consumed
     );
 }

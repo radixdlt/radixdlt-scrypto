@@ -32,7 +32,7 @@ impl LockState {
         Self::Read(0)
     }
 
-    pub fn is_no_lock(&self) -> bool {
+    pub fn is_free(&self) -> bool {
         matches!(self, LockState::Read(0))
     }
 }
@@ -193,7 +193,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         &mut self,
         substate_id: SubstateId,
         mutable: bool,
-        write_through: bool, // TODO: use a different interface
+        write_through: bool,
     ) -> Result<(), TrackError> {
         if write_through && self.borrowed_substates.contains_key(&substate_id) {
             return Err(TrackError::AlreadyLoaded(substate_id));
@@ -258,7 +258,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             LockState::Write => borrowed.lock_state = LockState::no_lock(),
         }
 
-        if write_through && borrowed.lock_state.is_no_lock() {
+        if write_through && borrowed.lock_state.is_free() {
             self.state_track.put_substate_to_base(
                 substate_id,
                 borrowed
