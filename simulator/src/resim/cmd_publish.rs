@@ -21,6 +21,10 @@ pub struct Publish {
     #[clap(long)]
     package_address: Option<PackageAddress>,
 
+    /// The network to use when outputting manifest, [simulator | adapanet | nebunet | mainnet]
+    #[clap(short, long)]
+    network: Option<String>,
+
     /// Output a transaction manifest without execution
     #[clap(short, long)]
     manifest: Option<PathBuf>,
@@ -64,7 +68,7 @@ impl Publish {
             substate_store.put_substate(SubstateId::Package(package_address), output_value);
             writeln!(out, "Package updated!").map_err(Error::IOError)?;
         } else {
-            let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+            let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
                 .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
                 .publish_package(code, abi)
                 .build();
@@ -72,6 +76,7 @@ impl Publish {
             let receipt = handle_manifest(
                 manifest,
                 &None,
+                &self.network,
                 &self.manifest,
                 false,
                 self.trace,
