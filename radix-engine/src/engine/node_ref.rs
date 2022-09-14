@@ -253,7 +253,7 @@ impl<'f, 's, R: FeeReserve> RENodeRef<'f, 's, R> {
                     RENodeId::Vault(vault_id) => SubstateId::Vault(*vault_id),
                     _ => panic!("Unexpected"),
                 };
-                let substate = track.write_substate(substate_id);
+                let substate = track.borrow_substate_mut(substate_id);
                 substate.convert();
                 substate.vault()
             }
@@ -271,7 +271,7 @@ impl<'f, 's, R: FeeReserve> RENodeRef<'f, 's, R> {
                     RENodeId::System => SubstateId::System,
                     _ => panic!("Unexpected"),
                 };
-                track.read_substate(substate_id).raw().system()
+                track.borrow_substate(substate_id).raw().system()
             }
         }
     }
@@ -289,7 +289,7 @@ impl<'f, 's, R: FeeReserve> RENodeRef<'f, 's, R> {
                     }
                     _ => panic!("Unexpected"),
                 };
-                track.read_substate(substate_id).raw().resource_manager()
+                track.borrow_substate(substate_id).raw().resource_manager()
             }
         }
     }
@@ -307,7 +307,7 @@ impl<'f, 's, R: FeeReserve> RENodeRef<'f, 's, R> {
                     }
                     _ => panic!("Unexpected"),
                 };
-                track.read_substate(substate_id).raw().component_state()
+                track.borrow_substate(substate_id).raw().component_state()
             }
         }
     }
@@ -325,7 +325,7 @@ impl<'f, 's, R: FeeReserve> RENodeRef<'f, 's, R> {
                     }
                     _ => panic!("Unexpected"),
                 };
-                track.read_substate(substate_id).raw().component_info()
+                track.borrow_substate(substate_id).raw().component_info()
             }
         }
     }
@@ -341,7 +341,7 @@ impl<'f, 's, R: FeeReserve> RENodeRef<'f, 's, R> {
                     RENodeId::Package(package_address) => SubstateId::Package(*package_address),
                     _ => panic!("Unexpected"),
                 };
-                track.read_substate(substate_id).raw().package()
+                track.borrow_substate(substate_id).raw().package()
             }
         }
     }
@@ -622,7 +622,7 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
                     }
                     _ => panic!("Unexpeceted"),
                 };
-                *track.write_substate(substate_id) =
+                *track.borrow_substate_mut(substate_id) =
                     SubstateCache::Raw(ComponentState::new(value.raw).into());
                 for (id, val) in to_store {
                     insert_non_root_nodes(track, val.to_nodes(id));
@@ -643,7 +643,7 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
                     }
                     _ => panic!("Unexpeceted"),
                 };
-                track.read_substate(substate_id).raw().component_info()
+                track.borrow_substate(substate_id).raw().component_info()
             }
         }
     }
@@ -660,7 +660,7 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
                     }
                     _ => panic!("Unexpeceted"),
                 };
-                track.read_substate(substate_id).raw().component_state()
+                track.borrow_substate(substate_id).raw().component_state()
             }
         }
     }
@@ -673,7 +673,7 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
                     RENodeId::Vault(vault_id) => SubstateId::Vault(*vault_id),
                     _ => panic!("Unexpeceted"),
                 };
-                let substate = track.write_substate(substate_id);
+                let substate = track.borrow_substate_mut(substate_id);
                 substate.convert();
                 substate.vault_mut()
             }

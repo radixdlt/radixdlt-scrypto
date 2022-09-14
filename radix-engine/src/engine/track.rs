@@ -224,7 +224,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         }
     }
 
-    pub fn read_substate(&self, substate_id: SubstateId) -> &SubstateCache {
+    pub fn borrow_substate(&self, substate_id: SubstateId) -> &SubstateCache {
         &self
             .borrowed_substates
             .get(&substate_id)
@@ -232,7 +232,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             .substate
     }
 
-    pub fn write_substate(&mut self, substate_id: SubstateId) -> &mut SubstateCache {
+    pub fn borrow_substate_mut(&mut self, substate_id: SubstateId) -> &mut SubstateCache {
         &mut self
             .borrowed_substates
             .get_mut(&substate_id)
@@ -250,14 +250,14 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         self.borrowed_substates.insert(substate_id, substate);
     }
 
-    pub fn read_substate_from_base(
+    pub fn borrow_substate_from_base(
         &self,
         substate_id: SubstateId,
     ) -> Result<Substate, StateTrackError> {
         todo!()
     }
 
-    pub fn write_substate_to_base(
+    pub fn borrow_substate_mut_to_base(
         &self,
         substate_id: SubstateId,
         substate: Substate,

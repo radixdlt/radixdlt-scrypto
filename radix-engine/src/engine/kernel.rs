@@ -265,7 +265,7 @@ where
                     let output = {
                         let package = self
                             .track
-                            .read_substate(SubstateId::Package(package_address))
+                            .borrow_substate(SubstateId::Package(package_address))
                             .raw()
                             .package()
                             .clone();
@@ -324,7 +324,7 @@ where
 
                     let package = self
                         .track
-                        .read_substate(SubstateId::Package(package_address))
+                        .borrow_substate(SubstateId::Package(package_address))
                         .raw()
                         .package();
                     let blueprint_abi = package
@@ -505,7 +505,7 @@ where
                 locked_values.insert(SubstateId::Package(package_address.clone()));
                 let package = self
                     .track
-                    .read_substate(SubstateId::Package(package_address.clone()))
+                    .borrow_substate(SubstateId::Package(package_address.clone()))
                     .raw()
                     .package();
                 let abi =

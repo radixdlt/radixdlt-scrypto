@@ -57,7 +57,7 @@ impl AuthModule {
                     node_ref.bucket().resource_address()
                 };
                 let resource_manager = track
-                    .read_substate(SubstateId::ResourceManager(resource_address))
+                    .borrow_substate(SubstateId::ResourceManager(resource_address))
                     .raw()
                     .resource_manager();
                 let method_auth = resource_manager.get_bucket_auth(*bucket_fn);
@@ -69,7 +69,7 @@ impl AuthModule {
             ) => {
                 let substate_id = SubstateId::ResourceManager(resource_address);
                 let resource_manager = track
-                    .read_substate(substate_id.clone())
+                    .borrow_substate(substate_id.clone())
                     .raw()
                     .resource_manager();
                 let method_auth = resource_manager.get_auth(*fn_ident, &input).clone();
@@ -102,7 +102,7 @@ impl AuthModule {
 
                 let package_substate_id = SubstateId::Package(*package_address);
                 let package = track
-                    .read_substate(package_substate_id.clone())
+                    .borrow_substate(package_substate_id.clone())
                     .raw()
                     .package()
                     .clone();
@@ -134,7 +134,7 @@ impl AuthModule {
                     node_ref.vault().resource_address()
                 };
                 let resource_manager = track
-                    .read_substate(SubstateId::ResourceManager(resource_address))
+                    .borrow_substate(SubstateId::ResourceManager(resource_address))
                     .raw()
                     .resource_manager();
                 vec![resource_manager.get_vault_auth(*vault_fn).clone()]
