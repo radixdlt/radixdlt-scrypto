@@ -10,8 +10,8 @@ use radix_engine::ledger::*;
 use radix_engine::model::{export_abi, export_abi_by_component, extract_abi};
 use radix_engine::state_manager::StagedSubstateStoreManager;
 use radix_engine::transaction::{
-    ExecutionConfig, PreviewError, PreviewExecutor, PreviewResult, TransactionExecutor,
-    TransactionReceipt, TransactionResult,
+    ExecutionConfig, FeeReserveConfig, PreviewError, PreviewExecutor, PreviewResult,
+    TransactionExecutor, TransactionReceipt, TransactionResult,
 };
 use radix_engine::types::*;
 use radix_engine::wasm::{
@@ -238,7 +238,8 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     pub fn execute_transaction<T: ExecutableTransaction>(
         &mut self,
         transaction: &T,
-        params: &ExecutionConfig,
+        fee_reserve_config: &FeeReserveConfig,
+        execution_config: &ExecutionConfig,
     ) -> TransactionReceipt {
         let node_id = self.create_child_node(0);
         let substate_store = &mut self.execution_stores.get_output_store(node_id);
@@ -248,7 +249,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             &mut self.wasm_engine,
             &mut self.wasm_instrumenter,
         )
-        .execute(transaction, params)
+        .execute(transaction, fee_reserve_config, execution_config)
     }
 
     pub fn execute_preview(
@@ -301,10 +302,12 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             )
             .execute_and_commit(
                 &transaction,
-                &ExecutionConfig {
+                &FeeReserveConfig {
                     cost_unit_price: DEFAULT_COST_UNIT_PRICE.parse().unwrap(),
-                    max_call_depth: DEFAULT_MAX_CALL_DEPTH,
                     system_loan: DEFAULT_SYSTEM_LOAN,
+                },
+                &ExecutionConfig {
+                    max_call_depth: DEFAULT_MAX_CALL_DEPTH,
                     is_system: false,
                     trace: self.trace,
                 },
