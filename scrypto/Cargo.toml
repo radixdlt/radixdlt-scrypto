@@ -16,7 +16,7 @@ scrypto-abi = { path = "../scrypto-abi", default-features = false }
 scrypto-derive = { path = "../scrypto-derive", default-features = false }
 forward_ref = { version = "1.0.0"}
 paste = { version = "1.0.7"}
-serde = { version = "1.0.144", features = ["serde_derive"] }
+serde = { version = "1.0.144", default-features = false, optional = true }
 
 [features]
 # You should enable either `std` or `alloc`
@@ -28,7 +28,7 @@ alloc = ["hex/alloc", "sbor/alloc", "scrypto-abi/alloc", "scrypto-derive/alloc"]
 trace = ["scrypto-derive/trace"]
 
 # Enable serde derives
-serde = ["sbor/serde", "scrypto-abi/serde"]
+serde = ["sbor/serde", "scrypto-abi/serde", "serde/derive"]
 
 # Enable prelude.
 # Note that prelude introduces duplicated symbols which may confuse rustc suggestions.

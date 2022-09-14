@@ -9,6 +9,11 @@ use crate::model::Instruction;
 
 // TODO: add versioning of transaction schema
 
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(tag = "type")
+)]
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct TransactionHeader {
     pub version: u8,
