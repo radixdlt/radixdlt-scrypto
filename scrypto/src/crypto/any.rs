@@ -6,7 +6,7 @@ use super::{EcdsaPublicKey, EcdsaSignature, Ed25519PublicKey, Ed25519Signature};
 #[cfg_attr(
     feature = "serde",
     derive(serde::Serialize, serde::Deserialize),
-    serde(tag = "type")
+    serde(tag = "type", content = "public_key")
 )]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
 pub enum PublicKey {
@@ -18,7 +18,7 @@ pub enum PublicKey {
 #[cfg_attr(
     feature = "serde",
     derive(serde::Serialize, serde::Deserialize),
-    serde(tag = "type")
+    serde(tag = "type", content = "signature")
 )]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, TypeId, Encode, Decode, Hash)]
 pub enum Signature {
