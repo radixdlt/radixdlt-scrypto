@@ -173,7 +173,7 @@ where
                 let kv_entry_value = ScryptoValue::from_slice(&value).unwrap();
                 let vault_id = kv_entry_value.vault_ids.iter().next().unwrap();
                 let vault = test_runner.inspect_vault(vault_id.clone()).unwrap();
-                return vault.total_amount();
+                return vault.0.amount();
             }
         }
     }

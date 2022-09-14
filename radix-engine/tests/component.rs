@@ -1,4 +1,4 @@
-use radix_engine::engine::{KernelError, RuntimeError};
+use radix_engine::engine::{KernelError, RuntimeError, TrackError};
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
 use scrypto::address::Bech32Decoder;
@@ -103,11 +103,11 @@ fn reentrancy_should_not_be_possible() {
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        if let RuntimeError::KernelError(KernelError::Reentrancy(SubstateId::ComponentState(
-            address,
+        if let RuntimeError::KernelError(KernelError::SubstateError(TrackError::NotAvailable(
+            substate_id,
         ))) = e
         {
-            address.eq(&component_address)
+            substate_id.eq(&SubstateId::ComponentInfo(component_address))
         } else {
             false
         }

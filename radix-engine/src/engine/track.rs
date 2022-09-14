@@ -123,9 +123,9 @@ pub struct Track<'s, R: FeeReserve> {
 
 #[derive(Debug, Encode, Decode, TypeId)]
 pub enum TrackError {
-    NotFound,
-    NotAvailable,
-    AlreadyLoaded,
+    NotFound(SubstateId),
+    NotAvailable(SubstateId),
+    AlreadyLoaded(SubstateId),
     NodeToSubstateFailure(NodeToSubstateFailure),
 }
 
@@ -196,7 +196,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         write_through: bool, // TODO: use a different interface
     ) -> Result<(), TrackError> {
         if write_through && self.borrowed_substates.contains_key(&substate_id) {
-            return Err(TrackError::AlreadyLoaded);
+            return Err(TrackError::AlreadyLoaded(substate_id));
         }
 
         // Load the substate from state track
@@ -216,7 +216,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                     },
                 );
             } else {
-                return Err(TrackError::NotFound);
+                return Err(TrackError::NotFound(substate_id));
             }
         }
 
@@ -228,7 +228,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             LockState::Read(n) => {
                 if mutable {
                     if n != 0 {
-                        return Err(TrackError::NotAvailable);
+                        return Err(TrackError::NotAvailable(substate_id));
                     }
                     borrowed.lock_state = LockState::Write;
                 } else {
@@ -236,7 +236,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                 }
             }
             LockState::Write => {
-                return Err(TrackError::NotAvailable);
+                return Err(TrackError::NotAvailable(substate_id));
             }
         }
 
@@ -392,10 +392,19 @@ impl<'s, R: FeeReserve> Track<'s, R> {
     ) -> TrackReceipt {
         let is_success = invoke_result.is_ok();
 
+        // Flush all borrowed substates to state track
+        if is_success {
+            for (substate_id, borrowed) in self.borrowed_substates.drain() {
+                let substate = borrowed.substate.convert_to_substate().expect(
+                    "Invariant: at the end of transaction, all borrowed substate should be ready for persisting"
+                );
+                self.state_track.put_substate(substate_id, substate);
+            }
+        }
+
         // Commit/rollback application state changes
         if is_success {
             self.state_track.commit();
-            assert!(self.borrowed_substates.is_empty())
         } else {
             self.state_track.rollback();
             self.borrowed_substates.clear();

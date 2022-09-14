@@ -495,17 +495,7 @@ where
             } => {
                 self.track
                     .acquire_lock(SubstateId::Package(package_address.clone()), false, false)
-                    .map_err(|e| match e {
-                        TrackError::NotFound => RuntimeError::KernelError(
-                            KernelError::PackageNotFound(*package_address),
-                        ),
-                        TrackError::NotAvailable => {
-                            panic!("Package reentrancy error should never occur.")
-                        }
-                        TrackError::AlreadyLoaded | TrackError::NodeToSubstateFailure(_) => {
-                            panic!("Unexpected")
-                        }
-                    })?;
+                    .map_err(|e| RuntimeError::KernelError(KernelError::SubstateError(e)))?;
                 locked_values.insert(SubstateId::Package(package_address.clone()));
                 let package = self
                     .track
