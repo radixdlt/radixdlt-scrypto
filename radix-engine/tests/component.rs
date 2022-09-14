@@ -14,7 +14,7 @@ fn test_component() {
     let package = test_runner.compile_and_publish("./tests/component");
 
     // Create component
-    let manifest1 = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest1 = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(package, "ComponentTest", "create_component", args!())
         .build();
@@ -28,7 +28,7 @@ fn test_component() {
         .new_component_addresses[0];
 
     // Call functions & methods
-    let manifest2 = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest2 = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(
             package,
@@ -56,7 +56,7 @@ fn invalid_blueprint_name_should_cause_error() {
     let package_address = test_runner.compile_and_publish("./tests/component");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(
             package_address,
@@ -83,7 +83,7 @@ fn reentrancy_should_not_be_possible() {
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.compile_and_publish("./tests/component");
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(package_address, "ReentrantComponent", "new", args!())
         .build();
@@ -95,7 +95,7 @@ fn reentrancy_should_not_be_possible() {
         .new_component_addresses[0];
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_method(component_address, "call_self", args!())
         .build();
@@ -120,14 +120,14 @@ fn missing_component_address_in_manifest_should_cause_rejection() {
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let _ = test_runner.compile_and_publish("./tests/component");
-    let component_address = Bech32Decoder::new(&NetworkDefinition::local_simulator())
+    let component_address = Bech32Decoder::new(&NetworkDefinition::simulator())
         .validate_and_decode_component_address(
             "component_sim1qgqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqph4dhmhs42ee03",
         )
         .unwrap();
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_method(component_address, "get_component_state", args!())
         .build();

@@ -12,7 +12,7 @@ fn test_integer_basic_ops() {
     let package_address = test_runner.compile_and_publish("./tests/math-ops-check");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function_with_abi(
             package_address,
@@ -39,7 +39,7 @@ fn test_native_and_safe_integer_interop() {
     let package_address = test_runner.compile_and_publish("./tests/math-ops-check");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(
             package_address,

@@ -13,7 +13,7 @@ fn test_bucket_internal(method_name: &str) {
     let package_address = test_runner.compile_and_publish("./tests/bucket");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), account)
         .call_function(package_address, "BucketTest", method_name, args!())
         .call_method(
@@ -80,7 +80,7 @@ fn test_bucket_of_badges() {
     let (public_key, _, account) = test_runner.new_account();
     let package_address = test_runner.compile_and_publish("./tests/bucket");
 
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), account)
         .call_function(package_address, "BadgeTest", "combine", args!())
         .call_function(package_address, "BadgeTest", "split", args!())
@@ -106,7 +106,7 @@ fn test_take_with_invalid_granularity() {
     let package_address = test_runner.compile_and_publish("./tests/bucket");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), account)
         .call_function_with_abi(
             package_address,
@@ -146,7 +146,7 @@ fn test_take_with_negative_amount() {
     let package_address = test_runner.compile_and_publish("./tests/bucket");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), account)
         .call_function_with_abi(
             package_address,
@@ -185,7 +185,7 @@ fn create_empty_bucket() {
     let non_fungible_resource = test_runner.create_non_fungible_resource(account);
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), account)
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.return_to_worktop(bucket_id)

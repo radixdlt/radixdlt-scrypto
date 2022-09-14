@@ -1,5 +1,7 @@
+use sbor::rust::collections::HashMap;
 use scrypto::address::Bech32Decoder;
 use scrypto::core::NetworkDefinition;
+use scrypto::crypto::hash;
 
 use crate::manifest::*;
 use crate::model::TransactionManifest;
@@ -11,10 +13,10 @@ pub enum CompileError {
     GeneratorError(generator::GeneratorError),
 }
 
-pub fn compile<T: BlobLoader>(
+pub fn compile(
     s: &str,
     network: &NetworkDefinition,
-    blob_loader: &T,
+    blobs: Vec<Vec<u8>>,
 ) -> Result<TransactionManifest, CompileError> {
     let bech32_decoder = Bech32Decoder::new(network);
 
@@ -22,7 +24,11 @@ pub fn compile<T: BlobLoader>(
     let instructions = parser::Parser::new(tokens)
         .parse_manifest()
         .map_err(CompileError::ParserError)?;
-    generator::generate_manifest(&instructions, &bech32_decoder, blob_loader)
+    let mut blobs_by_hash = HashMap::new();
+    for blob in blobs {
+        blobs_by_hash.insert(hash(&blob), blob);
+    }
+    generator::generate_manifest(&instructions, &bech32_decoder, blobs_by_hash)
         .map_err(CompileError::GeneratorError)
 }
 
@@ -36,7 +42,6 @@ mod tests {
     use scrypto::args;
     use scrypto::core::NetworkDefinition;
     use scrypto::core::{Blob, FnIdentifier, NativeFnIdentifier, ResourceManagerFnIdentifier};
-    use scrypto::crypto::*;
     use scrypto::math::*;
     use scrypto::resource::{
         AccessRule, MintParams, Mutability, ResourceAddress, ResourceMethodAuthKey, ResourceType,
@@ -46,11 +51,14 @@ mod tests {
     #[cfg(not(feature = "alloc"))]
     #[test]
     fn test_compile() {
-        let bech32_decoder = Bech32Decoder::new(&NetworkDefinition::local_simulator());
-        let mut blob_loader = FileBlobLoader::new("./examples/");
+        let bech32_decoder = Bech32Decoder::new(&NetworkDefinition::simulator());
         let manifest = include_str!("../../examples/complex.rtm");
-        let code_hash = hash(include_bytes!("../../examples/code.data"));
-        let abi_hash = hash(include_bytes!("../../examples/abi.data"));
+        let blobs = vec![
+            include_bytes!("../../examples/code.blob").to_vec(),
+            include_bytes!("../../examples/abi.blob").to_vec(),
+        ];
+        let code_hash = hash(&blobs[0]);
+        let abi_hash = hash(&blobs[1]);
 
         let component1 = bech32_decoder
             .validate_and_decode_component_address(
@@ -64,13 +72,9 @@ mod tests {
             .unwrap();
 
         assert_eq!(
-            crate::manifest::compile(
-                manifest,
-                &NetworkDefinition::local_simulator(),
-                &mut blob_loader
-            )
-            .unwrap()
-            .instructions,
+            crate::manifest::compile(manifest, &NetworkDefinition::simulator(), blobs)
+                .unwrap()
+                .instructions,
             vec![
                 Instruction::CallMethod {
                     method_identifier: MethodIdentifier::Scrypto {

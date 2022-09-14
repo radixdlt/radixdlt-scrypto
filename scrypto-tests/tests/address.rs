@@ -135,8 +135,8 @@ fn decode_invalid_bech32_variant_fails() {
 #[test]
 fn decode_matching_package_address_entity_id_succeeds() {
     // Arrange
-    let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::local_simulator());
-    let bech32_decoder = Bech32Decoder::new(&NetworkDefinition::local_simulator());
+    let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
+    let bech32_decoder = Bech32Decoder::new(&NetworkDefinition::simulator());
 
     // Act
     let encoded_package_address = bech32::encode(
@@ -156,8 +156,8 @@ fn decode_matching_package_address_entity_id_succeeds() {
 #[test]
 fn decode_matching_account_address_entity_id_succeeds() {
     // Arrange
-    let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::local_simulator());
-    let bech32_decoder = Bech32Decoder::new(&NetworkDefinition::local_simulator());
+    let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
+    let bech32_decoder = Bech32Decoder::new(&NetworkDefinition::simulator());
 
     // Act
     let encoded_account_address = bech32::encode(
@@ -179,8 +179,8 @@ fn decode_matching_account_address_entity_id_succeeds() {
 #[test]
 fn decode_matching_system_address_entity_id_succeeds() {
     // Arrange
-    let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::local_simulator());
-    let bech32_decoder = Bech32Decoder::new(&NetworkDefinition::local_simulator());
+    let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
+    let bech32_decoder = Bech32Decoder::new(&NetworkDefinition::simulator());
 
     // Act
     let encoded_system_address = bech32::encode(
@@ -202,8 +202,8 @@ fn decode_matching_system_address_entity_id_succeeds() {
 #[test]
 fn decode_matching_component_address_entity_id_succeeds() {
     // Arrange
-    let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::local_simulator());
-    let bech32_decoder = Bech32Decoder::new(&NetworkDefinition::local_simulator());
+    let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
+    let bech32_decoder = Bech32Decoder::new(&NetworkDefinition::simulator());
 
     // Act
     let encoded_component_address = bech32::encode(
@@ -225,8 +225,8 @@ fn decode_matching_component_address_entity_id_succeeds() {
 #[test]
 fn decode_mismatched_package_address_entity_id_fails() {
     // Arrange
-    let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::local_simulator());
-    let bech32_decoder = Bech32Decoder::new(&NetworkDefinition::local_simulator());
+    let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
+    let bech32_decoder = Bech32Decoder::new(&NetworkDefinition::simulator());
 
     // Act
     let encoded_package_address = bech32::encode(
@@ -249,8 +249,8 @@ fn decode_mismatched_package_address_entity_id_fails() {
 #[test]
 fn decode_matching_resource_address_entity_id_succeeds() {
     // Arrange
-    let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::local_simulator());
-    let bech32_decoder = Bech32Decoder::new(&NetworkDefinition::local_simulator());
+    let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
+    let bech32_decoder = Bech32Decoder::new(&NetworkDefinition::simulator());
 
     // Act
     let encoded_resource_address = bech32::encode(
@@ -270,8 +270,8 @@ fn decode_matching_resource_address_entity_id_succeeds() {
 #[test]
 fn decode_mismatched_resource_address_entity_id_fails() {
     // Arrange
-    let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::local_simulator());
-    let bech32_decoder = Bech32Decoder::new(&NetworkDefinition::local_simulator());
+    let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
+    let bech32_decoder = Bech32Decoder::new(&NetworkDefinition::simulator());
 
     // Act
     let encoded_resource_address = bech32::encode(
@@ -294,8 +294,8 @@ fn decode_mismatched_resource_address_entity_id_fails() {
 #[test]
 fn decode_invalid_entity_specifier_fails() {
     // Arrange
-    let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::local_simulator());
-    let bech32_decoder = Bech32Decoder::new(&NetworkDefinition::local_simulator());
+    let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
+    let bech32_decoder = Bech32Decoder::new(&NetworkDefinition::simulator());
 
     // Act
     let encoded_resource_address = bech32::encode(
@@ -316,7 +316,7 @@ fn decode_invalid_entity_specifier_fails() {
 fn decode_invalid_network_specifier_fails() {
     // Arrange
     let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::mainnet());
-    let bech32_decoder = Bech32Decoder::new(&NetworkDefinition::local_simulator());
+    let bech32_decoder = Bech32Decoder::new(&NetworkDefinition::simulator());
 
     // Act
     let encoded_resource_address = bech32::encode(

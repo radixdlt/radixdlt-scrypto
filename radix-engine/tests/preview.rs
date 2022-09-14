@@ -1,5 +1,5 @@
 use radix_engine::ledger::TypedInMemorySubstateStore;
-use radix_engine::transaction::ExecutionConfig;
+use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
 use radix_engine::types::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -14,7 +14,7 @@ fn test_transaction_preview_cost_estimate() {
     // Arrange
     let mut substate_store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut substate_store);
-    let network = NetworkDefinition::local_simulator();
+    let network = NetworkDefinition::simulator();
     let (validated_transaction, preview_intent) =
         prepare_test_tx_and_preview_intent(&test_runner, &network);
 
@@ -24,8 +24,11 @@ fn test_transaction_preview_cost_estimate() {
     let preview_receipt = preview_result.unwrap().receipt;
     preview_receipt.expect_commit_success();
 
-    let receipt =
-        test_runner.execute_transaction(&validated_transaction, &ExecutionConfig::standard());
+    let receipt = test_runner.execute_transaction(
+        &validated_transaction,
+        &FeeReserveConfig::standard(),
+        &ExecutionConfig::standard(),
+    );
     receipt.expect_commit_success();
 
     assert_eq!(
@@ -54,7 +57,7 @@ fn prepare_test_tx_and_preview_intent(
             tip_percentage: 0,
         })
         .manifest(
-            ManifestBuilder::new(&NetworkDefinition::local_simulator())
+            ManifestBuilder::new(&NetworkDefinition::simulator())
                 .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
                 .clear_auth_zone()
                 .build(),

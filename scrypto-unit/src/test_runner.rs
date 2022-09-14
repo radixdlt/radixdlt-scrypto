@@ -10,8 +10,8 @@ use radix_engine::ledger::*;
 use radix_engine::model::{export_abi, export_abi_by_component, extract_abi};
 use radix_engine::state_manager::StagedSubstateStoreManager;
 use radix_engine::transaction::{
-    ExecutionConfig, PreviewError, PreviewExecutor, PreviewResult, TransactionExecutor,
-    TransactionReceipt, TransactionResult,
+    ExecutionConfig, FeeReserveConfig, PreviewError, PreviewExecutor, PreviewResult,
+    TransactionExecutor, TransactionReceipt, TransactionResult,
 };
 use radix_engine::types::*;
 use radix_engine::wasm::{
@@ -112,7 +112,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     }
 
     pub fn new_account_with_auth_rule(&mut self, withdraw_auth: &AccessRule) -> ComponentAddress {
-        let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
             .call_method(SYS_FAUCET_COMPONENT, "free_xrd", args!())
             .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
@@ -141,7 +141,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         code: Vec<u8>,
         abi: HashMap<String, BlueprintAbi>,
     ) -> PackageAddress {
-        let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
             .publish_package(code, abi)
             .build();
@@ -240,7 +240,8 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     pub fn execute_transaction<T: ExecutableTransaction>(
         &mut self,
         transaction: &T,
-        params: &ExecutionConfig,
+        fee_reserve_config: &FeeReserveConfig,
+        execution_config: &ExecutionConfig,
     ) -> TransactionReceipt {
         let node_id = self.create_child_node(0);
         let substate_store = &mut self.execution_stores.get_output_store(node_id);
@@ -250,7 +251,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             &mut self.wasm_engine,
             &mut self.wasm_instrumenter,
         )
-        .execute(transaction, params)
+        .execute(transaction, fee_reserve_config, execution_config)
     }
 
     pub fn execute_preview(
@@ -303,10 +304,12 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             )
             .execute_and_commit(
                 &transaction,
-                &ExecutionConfig {
+                &FeeReserveConfig {
                     cost_unit_price: DEFAULT_COST_UNIT_PRICE.parse().unwrap(),
-                    max_call_depth: DEFAULT_MAX_CALL_DEPTH,
                     system_loan: DEFAULT_SYSTEM_LOAN,
+                },
+                &ExecutionConfig {
+                    max_call_depth: DEFAULT_MAX_CALL_DEPTH,
                     is_system: false,
                     trace: self.trace,
                 },
@@ -345,7 +348,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         signer_public_key: EcdsaPublicKey,
     ) {
         let package = self.compile_and_publish("./tests/resource_creator");
-        let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
             .create_proof_from_account(auth, account)
             .call_function(package, "ResourceCreator", function, args!(token, set_auth))
@@ -401,7 +404,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             (rule!(allow_all), MUTABLE(rule!(require(admin_auth)))),
         );
 
-        let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
             .create_resource(
                 ResourceType::Fungible { divisibility: 0 },
@@ -444,7 +447,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             (rule!(require(auth_resource_address)), LOCKED),
         );
 
-        let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
             .create_resource(
                 ResourceType::Fungible { divisibility: 0 },
@@ -482,7 +485,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         );
         access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
 
-        let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
             .create_resource(
                 ResourceType::Fungible { divisibility: 0 },
@@ -526,7 +529,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             (scrypto_encode(&()), scrypto_encode(&())),
         );
 
-        let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
             .create_resource(
                 ResourceType::NonFungible,
@@ -557,7 +560,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         let mut access_rules = HashMap::new();
         access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
         access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
-        let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
             .create_resource(
                 ResourceType::Fungible { divisibility },
@@ -588,7 +591,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         account: ComponentAddress,
         signer_public_key: EcdsaPublicKey,
     ) -> ComponentAddress {
-        let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
             .call_function_with_abi(
                 package_address,
