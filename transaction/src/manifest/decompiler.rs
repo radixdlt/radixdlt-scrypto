@@ -17,7 +17,7 @@ pub enum DecompileError {
 }
 
 pub fn decompile(
-    manifest: &TransactionManifest,
+    instructions: &[Instruction],
     network: &NetworkDefinition,
 ) -> Result<String, DecompileError> {
     let bech32_encoder = Bech32Encoder::new(network);
@@ -25,7 +25,7 @@ pub fn decompile(
     let mut id_validator = IdValidator::new();
     let mut buckets = HashMap::<BucketId, String>::new();
     let mut proofs = HashMap::<ProofId, String>::new();
-    for inst in &manifest.instructions {
+    for inst in instructions {
         match inst.clone() {
             Instruction::TakeFromWorktop { resource_address } => {
                 let bucket_id = id_validator
@@ -315,7 +315,7 @@ mod tests {
         let manifest_str = include_str!("../../examples/complex.rtm");
         let manifest = compile(manifest_str, &network, &mut blob_loader).unwrap();
 
-        let manifest2 = decompile(&manifest, &network).unwrap();
+        let manifest2 = decompile(&manifest.instructions, &network).unwrap();
         assert_eq!(
             manifest2,
             r#"CALL_METHOD ComponentAddress("account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qgsy064") "withdraw_by_amount" Decimal("5") ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag");
