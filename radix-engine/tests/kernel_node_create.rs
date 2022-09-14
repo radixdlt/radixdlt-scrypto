@@ -12,7 +12,7 @@ fn should_not_be_able_to_node_create_with_invalid_blueprint() {
     let package_address = test_runner.compile_and_publish("./tests/kernel");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(
             package_address,
@@ -40,7 +40,7 @@ fn should_not_be_able_to_node_create_with_invalid_package() {
     let package_address = test_runner.compile_and_publish("./tests/kernel");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(
             package_address,

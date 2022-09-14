@@ -310,7 +310,7 @@ mod tests {
     #[cfg(not(feature = "alloc"))]
     #[test]
     fn test_decompile() {
-        let network = NetworkDefinition::local_simulator();
+        let network = NetworkDefinition::simulator();
         let manifest_str = include_str!("../../examples/complex.rtm");
         let blobs = vec![
             include_bytes!("../../examples/code.blob").to_vec(),

@@ -31,6 +31,10 @@ pub struct NewTokenFixed {
     #[clap(long)]
     icon_url: Option<String>,
 
+    /// The network to use when outputting manifest
+    #[clap(short, long)]
+    network: Option<String>,
+
     /// Output a transaction manifest without execution
     #[clap(short, long)]
     manifest: Option<PathBuf>,
@@ -64,7 +68,7 @@ impl NewTokenFixed {
             metadata.insert("icon_url".to_string(), icon_url);
         };
 
-        let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
             .new_token_fixed(metadata, self.total_supply)
             .call_method(
@@ -76,6 +80,7 @@ impl NewTokenFixed {
         handle_manifest(
             manifest,
             &self.signing_keys,
+            &self.network,
             &self.manifest,
             false,
             self.trace,

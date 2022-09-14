@@ -49,7 +49,7 @@ mod tests {
     #[cfg(not(feature = "alloc"))]
     #[test]
     fn test_compile() {
-        let bech32_decoder = Bech32Decoder::new(&NetworkDefinition::local_simulator());
+        let bech32_decoder = Bech32Decoder::new(&NetworkDefinition::simulator());
         let manifest = include_str!("../../examples/complex.rtm");
         let blobs = vec![
             include_bytes!("../../examples/code.blob").to_vec(),
@@ -70,7 +70,7 @@ mod tests {
             .unwrap();
 
         assert_eq!(
-            crate::manifest::compile(manifest, &NetworkDefinition::local_simulator(), blobs)
+            crate::manifest::compile(manifest, &NetworkDefinition::simulator(), blobs)
                 .unwrap()
                 .instructions,
             vec![

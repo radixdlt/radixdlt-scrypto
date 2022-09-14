@@ -140,10 +140,10 @@ mod tests {
 
         // construct
         let intent = TransactionIntent::new(
-            &NetworkDefinition::local_simulator(),
+            &NetworkDefinition::simulator(),
             TransactionHeader {
                 version: 1,
-                network_id: NetworkDefinition::local_simulator().id,
+                network_id: NetworkDefinition::simulator().id,
                 start_epoch_inclusive: 0,
                 end_epoch_exclusive: 100,
                 nonce: 5,
@@ -196,10 +196,10 @@ mod tests {
 
         // construct
         let intent = TransactionIntent::new(
-            &NetworkDefinition::local_simulator(),
+            &NetworkDefinition::simulator(),
             TransactionHeader {
                 version: 1,
-                network_id: NetworkDefinition::local_simulator().id,
+                network_id: NetworkDefinition::simulator().id,
                 start_epoch_inclusive: 0,
                 end_epoch_exclusive: 100,
                 nonce: 5,

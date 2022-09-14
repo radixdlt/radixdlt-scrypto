@@ -891,7 +891,7 @@ mod tests {
                     &value,
                     None,
                     &mut resolver,
-                    &Bech32Decoder::new(&NetworkDefinition::local_simulator()),
+                    &Bech32Decoder::new(&NetworkDefinition::simulator()),
                     &mut HashMap::new()
                 ),
                 Ok($expected)
@@ -912,7 +912,7 @@ mod tests {
                     &instruction,
                     &mut id_validator,
                     &mut resolver,
-                    &Bech32Decoder::new(&NetworkDefinition::local_simulator()),
+                    &Bech32Decoder::new(&NetworkDefinition::simulator()),
                     &mut HashMap::new()
                 ),
                 Ok($expected)
@@ -928,7 +928,7 @@ mod tests {
                 &value,
                 None,
                 &mut NameResolver::new(),
-                &Bech32Decoder::new(&NetworkDefinition::local_simulator()),
+                &Bech32Decoder::new(&NetworkDefinition::simulator()),
                 &mut HashMap::new(),
             ) {
                 Ok(_) => {
@@ -1097,7 +1097,7 @@ mod tests {
 
     #[test]
     fn test_instructions() {
-        let bech32_decoder = Bech32Decoder::new(&NetworkDefinition::local_simulator());
+        let bech32_decoder = Bech32Decoder::new(&NetworkDefinition::simulator());
         let component1 = bech32_decoder
             .validate_and_decode_component_address(
                 "component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum",
