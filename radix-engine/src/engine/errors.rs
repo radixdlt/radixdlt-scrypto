@@ -7,6 +7,8 @@ use crate::types::*;
 use crate::wasm::WasmError;
 use sbor::*;
 
+use super::TrackError;
+
 /// Represents an error which causes a tranasction to be rejected.
 #[derive(Debug, TypeId, Encode, Decode)]
 pub enum RejectionError {
@@ -67,7 +69,7 @@ pub enum KernelError {
     RENodeNotInTrack,
 
     // Substate
-    Reentrancy(SubstateId),
+    SubstateError(TrackError),
     SubstateReadNotReadable(REActor, SubstateId),
     SubstateWriteNotWriteable(REActor, SubstateId),
     SubstateReadSubstateNotFound(SubstateId),

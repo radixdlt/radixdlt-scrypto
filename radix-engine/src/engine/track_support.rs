@@ -190,17 +190,15 @@ impl<'s> AppStateTrack<'s> {
             })
     }
 
-    /// Returns a copy of the substate associated with the given address from the base track
-    pub fn get_substate_from_base(
-        &mut self,
-        substate_id: &SubstateId,
-    ) -> Result<Option<Substate>, StateTrackError> {
-        if self.substates.contains_key(substate_id) {
-            return Err(StateTrackError::RENodeAlreadyTouched);
-        }
+    /// Creates a new substate and updates an existing one
+    pub fn put_substate(&mut self, substate_id: SubstateId, substate: Substate) {
+        self.substates
+            .insert(substate_id, Some(scrypto_encode(&substate)));
+    }
 
-        Ok(self
-            .base_state_track
+    /// Returns a copy of the substate associated with the given address from the base track
+    pub fn get_substate_from_base(&mut self, substate_id: &SubstateId) -> Option<Substate> {
+        self.base_state_track
             .substates
             .entry(substate_id.clone())
             .or_insert_with(|| {
@@ -213,13 +211,7 @@ impl<'s> AppStateTrack<'s> {
             .as_ref()
             .map(|x| {
                 scrypto_decode(x).expect(&format!("Failed to decode substate {:?}", substate_id))
-            }))
-    }
-
-    /// Creates a new substate and updates an existing one
-    pub fn put_substate(&mut self, substate_id: SubstateId, substate: Substate) {
-        self.substates
-            .insert(substate_id, Some(scrypto_encode(&substate)));
+            })
     }
 
     /// Creates a new substate and updates an existing one to the base track

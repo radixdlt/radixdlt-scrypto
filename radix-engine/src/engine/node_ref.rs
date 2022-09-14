@@ -16,13 +16,6 @@ pub enum RENodePointer {
 }
 
 impl RENodePointer {
-    fn node_id(&self) -> RENodeId {
-        match self {
-            RENodePointer::Heap { root, id, .. } => id.unwrap_or(*root),
-            RENodePointer::Store(node_id) => *node_id,
-        }
-    }
-
     pub fn acquire_lock<'s, R: FeeReserve>(
         &self,
         substate_id: SubstateId,
@@ -31,18 +24,9 @@ impl RENodePointer {
         track: &mut Track<'s, R>,
     ) -> Result<(), KernelError> {
         match self {
-            RENodePointer::Store(..) => {
-                track
-                    .acquire_lock(substate_id.clone(), mutable, write_through)
-                    .map_err(|e| match e {
-                        TrackError::StateTrackError(StateTrackError::RENodeAlreadyTouched) => {
-                            KernelError::RENodeAlreadyTouched
-                        }
-                        // TODO: Remove when references cleaned up
-                        TrackError::NotFound => KernelError::RENodeNotFound(self.node_id()),
-                        TrackError::NotAvailable => KernelError::Reentrancy(substate_id.clone()),
-                    })
-            }
+            RENodePointer::Store(..) => track
+                .acquire_lock(substate_id.clone(), mutable, write_through)
+                .map_err(KernelError::SubstateError),
             RENodePointer::Heap { .. } => Ok(()),
         }
     }
@@ -52,10 +36,12 @@ impl RENodePointer {
         substate_id: SubstateId,
         write_through: bool,
         track: &mut Track<'s, R>,
-    ) {
+    ) -> Result<(), KernelError> {
         match self {
-            RENodePointer::Store(..) => track.release_lock(substate_id, write_through),
-            RENodePointer::Heap { .. } => {}
+            RENodePointer::Store(..) => track
+                .release_lock(substate_id, write_through)
+                .map_err(KernelError::SubstateError),
+            RENodePointer::Heap { .. } => Ok(()),
         }
     }
 
@@ -167,7 +153,7 @@ impl NativeSubstateRef {
                 root.get_node_mut(maybe_child.as_ref()).vault_mut()
             }
             NativeSubstateRef::Track(_address, value) => {
-                value.substate.convert();
+                value.substate.convert_to_node();
                 value.substate.vault_mut()
             }
         }
@@ -254,7 +240,7 @@ impl<'f, 's, R: FeeReserve> RENodeRef<'f, 's, R> {
                     _ => panic!("Unexpected"),
                 };
                 let substate = track.borrow_substate_mut(substate_id);
-                substate.convert();
+                substate.convert_to_node();
                 substate.vault()
             }
         }
@@ -674,7 +660,7 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
                     _ => panic!("Unexpeceted"),
                 };
                 let substate = track.borrow_substate_mut(substate_id);
-                substate.convert();
+                substate.convert_to_node();
                 substate.vault_mut()
             }
         }

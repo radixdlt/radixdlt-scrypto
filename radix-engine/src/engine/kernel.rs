@@ -183,7 +183,9 @@ where
 
         // TODO: Remove, integrate with substate borrow mechanism
         if matches!(substate_id, SubstateId::ComponentInfo(..)) {
-            node_pointer.release_lock(substate_id.clone(), false, track);
+            node_pointer
+                .release_lock(substate_id.clone(), false, track)
+                .map_err(RuntimeError::KernelError)?;
         }
 
         Ok((node_pointer.clone(), current_value))
@@ -500,7 +502,9 @@ where
                         TrackError::NotAvailable => {
                             panic!("Package reentrancy error should never occur.")
                         }
-                        TrackError::StateTrackError(..) => panic!("Unexpected"),
+                        TrackError::AlreadyLoaded | TrackError::NodeToSubstateFailure(_) => {
+                            panic!("Unexpected")
+                        }
                     })?;
                 locked_values.insert(SubstateId::Package(package_address.clone()));
                 let package = self
@@ -565,7 +569,9 @@ where
                 node_pointer
                     .acquire_lock(substate_id.clone(), false, false, &mut self.track)
                     .map_err(RuntimeError::KernelError)?;
-                node_pointer.release_lock(substate_id, false, &mut self.track);
+                node_pointer
+                    .release_lock(substate_id, false, &mut self.track)
+                    .map_err(RuntimeError::KernelError)?;
                 next_frame_node_refs.insert(node_id, node_pointer);
             }
         } else {
@@ -609,7 +615,10 @@ where
         // Release locked addresses
         for l in locked_values {
             // TODO: refactor after introducing `Lock` representation.
-            self.track.release_lock(l.clone(), false);
+            self.track
+                .release_lock(l.clone(), false)
+                .map_err(KernelError::SubstateError)
+                .map_err(RuntimeError::KernelError)?;
         }
 
         // move buckets and proofs to this process.
@@ -922,7 +931,9 @@ where
                 }
 
                 for (node_pointer, substate_id, write_through) in temporary_locks {
-                    node_pointer.release_lock(substate_id, write_through, &mut self.track);
+                    node_pointer
+                        .release_lock(substate_id, write_through, &mut self.track)
+                        .map_err(RuntimeError::KernelError)?;
                 }
 
                 next_frame_node_refs.insert(node_id.clone(), node_pointer.clone());
@@ -983,7 +994,9 @@ where
         // Release locked addresses
         for (node_pointer, substate_id, write_through) in locked_pointers {
             // TODO: refactor after introducing `Lock` representation.
-            node_pointer.release_lock(substate_id, write_through, &mut self.track);
+            node_pointer
+                .release_lock(substate_id, write_through, &mut self.track)
+                .map_err(RuntimeError::KernelError)?;
         }
 
         // move buckets and proofs to this process.
