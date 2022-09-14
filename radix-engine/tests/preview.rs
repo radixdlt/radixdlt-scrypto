@@ -1,5 +1,5 @@
 use radix_engine::ledger::TypedInMemorySubstateStore;
-use radix_engine::transaction::ExecutionConfig;
+use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
 use radix_engine::types::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -24,8 +24,11 @@ fn test_transaction_preview_cost_estimate() {
     let preview_receipt = preview_result.unwrap().receipt;
     preview_receipt.expect_commit_success();
 
-    let receipt =
-        test_runner.execute_transaction(&validated_transaction, &ExecutionConfig::standard());
+    let receipt = test_runner.execute_transaction(
+        &validated_transaction,
+        &FeeReserveConfig::standard(),
+        &ExecutionConfig::standard(),
+    );
     receipt.expect_commit_success();
 
     assert_eq!(
