@@ -43,7 +43,7 @@ $resim new-badge-fixed 1 --name 'MintBadge' --manifest ./target/temp.rtm
 cat ./target/temp.rtm
 $resim publish ../examples/hello-world --manifest ./target/temp2.rtm
 files=`ls target/*.blob`
-blobs=`echo $files | sed 's/ /,/g'`
+blobs=`echo $files | sed 's/ / --blobs /g'`
 $resim run ./target/temp2.rtm --blobs $blobs
 $resim new-account --manifest ./target/temp3.rtm
 $resim run ./target/temp3.rtm
