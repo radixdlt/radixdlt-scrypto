@@ -16,6 +16,7 @@ scrypto-abi = { path = "../scrypto-abi", default-features = false }
 scrypto-derive = { path = "../scrypto-derive", default-features = false }
 forward_ref = { version = "1.0.0"}
 paste = { version = "1.0.7"}
+serde = { version = "1.0.144", features = ["serde_derive"] }
 
 [features]
 # You should enable either `std` or `alloc`

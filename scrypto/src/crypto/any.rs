@@ -3,6 +3,11 @@ use sbor::*;
 use super::{EcdsaPublicKey, EcdsaSignature, Ed25519PublicKey, Ed25519Signature};
 
 /// Represents any natively supported public key.
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(tag = "type")
+)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
 pub enum PublicKey {
     Ecdsa(EcdsaPublicKey),
@@ -10,6 +15,11 @@ pub enum PublicKey {
 }
 
 /// Represents any natively supported signature.
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(tag = "type")
+)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, TypeId, Encode, Decode, Hash)]
 pub enum Signature {
     Ecdsa(EcdsaSignature),
@@ -17,17 +27,27 @@ pub enum Signature {
 }
 
 /// Represents any natively supported signature, including public key.
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(tag = "type", content = "value")
+)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, TypeId, Encode, Decode, Hash)]
 pub enum SignatureWithPublicKey {
-    Ecdsa(EcdsaSignature),
-    Ed25519(Ed25519PublicKey, Ed25519Signature),
+    Ecdsa {
+        signature: EcdsaSignature,
+    },
+    Ed25519 {
+        public_key: Ed25519PublicKey,
+        signature: Ed25519Signature,
+    },
 }
 
 impl SignatureWithPublicKey {
     pub fn signature(&self) -> Signature {
         match &self {
-            SignatureWithPublicKey::Ecdsa(sig) => sig.clone().into(),
-            SignatureWithPublicKey::Ed25519(_, sig) => sig.clone().into(),
+            SignatureWithPublicKey::Ecdsa { signature } => signature.clone().into(),
+            SignatureWithPublicKey::Ed25519 { signature, .. } => signature.clone().into(),
         }
     }
 }
@@ -58,12 +78,15 @@ impl From<Ed25519Signature> for Signature {
 
 impl From<EcdsaSignature> for SignatureWithPublicKey {
     fn from(signature: EcdsaSignature) -> Self {
-        Self::Ecdsa(signature)
+        Self::Ecdsa { signature }
     }
 }
 
 impl From<(Ed25519PublicKey, Ed25519Signature)> for SignatureWithPublicKey {
-    fn from(combo: (Ed25519PublicKey, Ed25519Signature)) -> Self {
-        Self::Ed25519(combo.0, combo.1)
+    fn from((public_key, signature): (Ed25519PublicKey, Ed25519Signature)) -> Self {
+        Self::Ed25519 {
+            public_key,
+            signature,
+        }
     }
 }

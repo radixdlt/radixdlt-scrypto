@@ -9,12 +9,18 @@ use crate::abi::{scrypto_type, ScryptoType};
 use crate::misc::copy_u8_array;
 
 /// Represents an ECDSA public key.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
-pub struct EcdsaPublicKey(pub [u8; Self::LENGTH]);
+pub struct EcdsaPublicKey(
+    #[cfg_attr(feature = "serde", serde(with = "hex::serde"))] pub [u8; Self::LENGTH],
+);
 
 /// Represents an ECDSA signature.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
-pub struct EcdsaSignature(pub [u8; Self::LENGTH]);
+pub struct EcdsaSignature(
+    #[cfg_attr(feature = "serde", serde(with = "hex::serde"))] pub [u8; Self::LENGTH],
+);
 
 /// Represents an error ocurred when validating a signature.
 #[derive(Debug, Clone, PartialEq, Eq)]

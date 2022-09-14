@@ -2,8 +2,10 @@ use scrypto::crypto::*;
 
 pub fn recover(message: &[u8], signature: &SignatureWithPublicKey) -> Option<PublicKey> {
     match signature {
-        SignatureWithPublicKey::Ecdsa(sig) => recover_ecdsa(message, sig).map(Into::into),
-        SignatureWithPublicKey::Ed25519(pk, _) => Some(pk.clone().into()),
+        SignatureWithPublicKey::Ecdsa { signature } => {
+            recover_ecdsa(message, signature).map(Into::into)
+        }
+        SignatureWithPublicKey::Ed25519 { public_key, .. } => Some(public_key.clone().into()),
     }
 }
 
