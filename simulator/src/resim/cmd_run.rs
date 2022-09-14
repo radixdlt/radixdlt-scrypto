@@ -12,7 +12,7 @@ pub struct Run {
     /// The path to a transaction manifest file
     path: PathBuf,
 
-    /// The network to use when outputting manifest
+    /// The network to use when outputting manifest, [simulator | adapanet | nebunet | mainnet]
     #[clap(short, long)]
     network: Option<String>,
 

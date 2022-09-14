@@ -18,7 +18,7 @@ pub struct Mint {
     #[clap(short, long, multiple = true)]
     proofs: Option<Vec<String>>,
 
-    /// The network to use when outputting manifest
+    /// The network to use when outputting manifest, [simulator | adapanet | nebunet | mainnet]
     #[clap(short, long)]
     network: Option<String>,
 

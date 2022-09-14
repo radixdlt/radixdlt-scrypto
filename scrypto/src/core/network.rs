@@ -24,9 +24,17 @@ impl NetworkDefinition {
 
     pub fn adapanet() -> NetworkDefinition {
         NetworkDefinition {
-            id: 0x0A,
+            id: 0x0a,
             logical_name: String::from("adapanet"),
-            hrp_suffix: format!("tdx_{:x}_", 0x0A),
+            hrp_suffix: String::from("tdx_a_"),
+        }
+    }
+
+    pub fn nebunet() -> NetworkDefinition {
+        NetworkDefinition {
+            id: 0x0b,
+            logical_name: String::from("nebunet"),
+            hrp_suffix: String::from("tdx_b_"),
         }
     }
 
@@ -46,6 +54,7 @@ impl FromStr for NetworkDefinition {
         match s.to_lowercase().as_str() {
             "simulator" => Ok(NetworkDefinition::simulator()),
             "adapanet" => Ok(NetworkDefinition::adapanet()),
+            "nebunet" => Ok(NetworkDefinition::nebunet()),
             "mainnet" => Ok(NetworkDefinition::mainnet()),
             _ => Err(ParseNetworkError::InvalidNetworkString),
         }

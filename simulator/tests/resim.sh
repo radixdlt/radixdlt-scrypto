@@ -42,13 +42,13 @@ $resim show $token_address
 $resim new-badge-fixed 1 --name 'MintBadge' --manifest ./target/temp.rtm
 cat ./target/temp.rtm
 $resim publish ../examples/hello-world --manifest ./target/temp2.rtm
-$resim run ./target/temp2.rtm
+$resim run ./target/temp2.rtm --blobs ./target/b41692bc1466e76a27160a3952645d1b1400ce2f89ae371d8b1cdcbef23f64f5.blob,./target/c9a618e66e1322ebb7383929c059a7ffad6b2e051f77de5ae114ca3f578c13ce.blob
 $resim new-account --manifest ./target/temp3.rtm
 $resim run ./target/temp3.rtm
 
 # Test - run manifest with a given set of signing keys
 $resim generate-key-pair
-$resim run ./target/temp2.rtm --signing-keys 4fc0db017bf9b80743b7151fee3f04bad817f2d8d7e34ae96c022fe7451b0ea3,329a27258d7e9496c42a110571e6ba0d47f2bda8bd610e9777d16853ab145b0c
+$resim run ./target/temp2.rtm --blobs ./target/b41692bc1466e76a27160a3952645d1b1400ce2f89ae371d8b1cdcbef23f64f5.blob,./target/c9a618e66e1322ebb7383929c059a7ffad6b2e051f77de5ae114ca3f578c13ce.blob --signing-keys 4fc0db017bf9b80743b7151fee3f04bad817f2d8d7e34ae96c022fe7451b0ea3,329a27258d7e9496c42a110571e6ba0d47f2bda8bd610e9777d16853ab145b0c
 
 # Test - nft
 package=`$resim publish ./tests/blueprints | awk '/Package:/ {print $NF}'`

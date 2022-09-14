@@ -8,7 +8,7 @@ use crate::resim::*;
 /// Create an account
 #[derive(Parser, Debug)]
 pub struct NewAccount {
-    /// The network to use when outputting manifest
+    /// The network to use when outputting manifest, [simulator | adapanet | nebunet | mainnet]
     #[clap(short, long)]
     network: Option<String>,
 

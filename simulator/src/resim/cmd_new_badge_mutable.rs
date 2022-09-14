@@ -30,7 +30,7 @@ pub struct NewBadgeMutable {
     #[clap(long)]
     icon_url: Option<String>,
 
-    /// The network to use when outputting manifest
+    /// The network to use when outputting manifest, [simulator | adapanet | nebunet | mainnet]
     #[clap(short, long)]
     network: Option<String>,
 

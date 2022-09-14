@@ -21,7 +21,7 @@ pub struct Publish {
     #[clap(long)]
     package_address: Option<PackageAddress>,
 
-    /// The network to use when outputting manifest
+    /// The network to use when outputting manifest, [simulator | adapanet | nebunet | mainnet]
     #[clap(short, long)]
     network: Option<String>,
 
