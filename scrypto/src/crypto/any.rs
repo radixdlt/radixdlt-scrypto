@@ -30,7 +30,7 @@ pub enum Signature {
 #[cfg_attr(
     feature = "serde",
     derive(serde::Serialize, serde::Deserialize),
-    serde(tag = "type", content = "value")
+    serde(tag = "type")
 )]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, TypeId, Encode, Decode, Hash)]
 pub enum SignatureWithPublicKey {
