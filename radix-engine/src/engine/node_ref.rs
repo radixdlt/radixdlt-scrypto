@@ -392,19 +392,19 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
         substate_id: SubstateId,
         value: ScryptoValue,
         child_nodes: HashMap<RENodeId, HeapRootRENode>,
-    ) {
+    ) -> Result<(), NodeToSubstateFailure> {
         match substate_id {
             SubstateId::ComponentInfo(..) => {
                 panic!("Should not get here");
             }
             SubstateId::ComponentState(..) => {
-                self.component_state_set(value, child_nodes);
+                self.component_state_set(value, child_nodes)?;
             }
             SubstateId::KeyValueStoreSpace(..) => {
                 panic!("Should not get here");
             }
             SubstateId::KeyValueStoreEntry(.., key) => {
-                self.kv_store_put(key, value, child_nodes);
+                self.kv_store_put(key, value, child_nodes)?;
             }
             SubstateId::NonFungibleSpace(..) => {
                 panic!("Should not get here");
@@ -432,6 +432,7 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
                 panic!("Should not get here");
             }
         }
+        Ok(())
     }
 
     pub fn kv_store_put(
@@ -439,7 +440,7 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
         key: Vec<u8>,
         value: ScryptoValue,
         to_store: HashMap<RENodeId, HeapRootRENode>,
-    ) {
+    ) -> Result<(), NodeToSubstateFailure> {
         match self {
             RENodeRefMut::Stack(re_value, id) => {
                 re_value
@@ -463,10 +464,12 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
                     Substate::KeyValueStoreEntry(KeyValueStoreEntrySubstate(Some(value.raw))),
                 );
                 for (id, val) in to_store {
-                    insert_non_root_nodes(track, val.to_nodes(id));
+                    insert_non_root_nodes(track, val.to_nodes(id))?;
                 }
             }
         }
+
+        Ok(())
     }
 
     pub fn kv_store_get(&mut self, key: &[u8]) -> ScryptoValue {
@@ -592,7 +595,7 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
         &mut self,
         value: ScryptoValue,
         to_store: HashMap<RENodeId, HeapRootRENode>,
-    ) {
+    ) -> Result<(), NodeToSubstateFailure> {
         match self {
             RENodeRefMut::Stack(re_value, id) => {
                 let component_state = re_value.get_node_mut(id.as_ref()).component_state_mut();
@@ -611,10 +614,11 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
                 *track.borrow_substate_mut(substate_id) =
                     SubstateCache::Raw(ComponentState::new(value.raw).into());
                 for (id, val) in to_store {
-                    insert_non_root_nodes(track, val.to_nodes(id));
+                    insert_non_root_nodes(track, val.to_nodes(id))?;
                 }
             }
         }
+        Ok(())
     }
 
     pub fn component_info(&mut self) -> &ComponentInfo {
@@ -694,13 +698,13 @@ pub fn verify_stored_value_update(
 pub fn insert_non_root_nodes<'s, R: FeeReserve>(
     track: &mut Track<'s, R>,
     values: HashMap<RENodeId, HeapRENode>,
-) {
+) -> Result<(), NodeToSubstateFailure> {
     for (id, node) in values {
         match node {
             HeapRENode::Vault(vault) => {
                 let resource = vault
                     .resource()
-                    .expect("TODO: make sure engine has checked the vault status");
+                    .map_err(|_| NodeToSubstateFailure::VaultPartiallyLocked)?;
                 track.create_uuid_substate(
                     SubstateId::Vault(id.into()),
                     VaultSubstate(resource),
@@ -734,4 +738,5 @@ pub fn insert_non_root_nodes<'s, R: FeeReserve>(
             _ => panic!("Invalid node being persisted: {:?}", node),
         }
     }
+    Ok(())
 }

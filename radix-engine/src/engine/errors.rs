@@ -7,6 +7,7 @@ use crate::types::*;
 use crate::wasm::WasmError;
 use sbor::*;
 
+use super::NodeToSubstateFailure;
 use super::TrackError;
 
 /// Represents an error which causes a tranasction to be rejected.
@@ -69,6 +70,7 @@ pub enum KernelError {
     RENodeNotInTrack,
 
     // Substate
+    NodeToSubstateFailure(NodeToSubstateFailure),
     SubstateError(TrackError),
     SubstateReadNotReadable(REActor, SubstateId),
     SubstateWriteNotWriteable(REActor, SubstateId),

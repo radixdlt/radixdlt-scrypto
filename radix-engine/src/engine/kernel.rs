@@ -1331,7 +1331,8 @@ where
         for (id, value) in root_node.child_nodes.into_iter() {
             to_store_values.insert(id, value);
         }
-        insert_non_root_nodes(self.track, to_store_values);
+        insert_non_root_nodes(self.track, to_store_values)
+            .map_err(|e| RuntimeError::KernelError(KernelError::NodeToSubstateFailure(e)))?;
 
         if let Some(non_fungibles) = maybe_non_fungibles {
             let resource_address: ResourceAddress = node_id.into();
@@ -1535,7 +1536,9 @@ where
 
         // Write values
         let mut node_ref = pointer.to_ref_mut(&mut self.call_frames, &mut self.track);
-        node_ref.write_value(substate_id, value, taken_nodes);
+        node_ref
+            .write_value(substate_id, value, taken_nodes)
+            .map_err(|e| RuntimeError::KernelError(KernelError::NodeToSubstateFailure(e)))?;
 
         for m in &mut self.modules {
             m.post_sys_call(
