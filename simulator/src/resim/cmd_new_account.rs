@@ -20,7 +20,7 @@ pub struct NewAccount {
 impl NewAccount {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
         let secret = rand::thread_rng().gen::<[u8; 32]>();
-        let private_key = EcdsaPrivateKey::from_bytes(&secret).unwrap();
+        let private_key = EcdsaSecp256k1PrivateKey::from_bytes(&secret).unwrap();
         let public_key = private_key.public_key();
         let auth_address = NonFungibleAddress::from_public_key(&public_key);
         let withdraw_auth = rule!(require(auth_address));

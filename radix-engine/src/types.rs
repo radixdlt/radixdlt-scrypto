@@ -28,7 +28,8 @@ pub use scrypto::core::{
     TransactionProcessorFnIdentifier, VaultFnIdentifier, WorktopFnIdentifier,
 };
 pub use scrypto::crypto::{
-    EcdsaPublicKey, EcdsaSignature, Ed25519PublicKey, Ed25519Signature, Hash, PublicKey, Signature,
+    EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey, EddsaEd25519Signature,
+    Hash, PublicKey, Signature,
 };
 pub use scrypto::engine::{api::RadixEngineInput, types::*};
 pub use scrypto::math::{Decimal, RoundingMode, I256};
