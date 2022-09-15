@@ -61,6 +61,19 @@ impl ModuleImportResolver for WasmiEnvModule {
     }
 }
 
+impl From<Error> for InvokeError<WasmError> {
+    fn from(error: Error) -> Self {
+        let e_str = format!("{:?}", error);
+        match error.into_host_error() {
+            // Pass-through invoke errors
+            Some(host_error) => *host_error
+                .downcast::<InvokeError<WasmError>>()
+                .expect("Failed to downcast error into InvokeError<WasmError>"),
+            None => InvokeError::Error(WasmError::WasmError(e_str)),
+        }
+    }
+}
+
 impl WasmiModule {
     fn instantiate(&self) -> WasmiInstance {
         // link with env module
@@ -85,25 +98,35 @@ impl WasmiModule {
 }
 
 impl<'a, 'b, 'r> WasmiExternals<'a, 'b, 'r> {
-    pub fn send_value(&mut self, value: &ScryptoValue) -> Result<RuntimeValue, WasmError> {
+    pub fn send_value(
+        &mut self,
+        value: &ScryptoValue,
+    ) -> Result<RuntimeValue, InvokeError<WasmError>> {
         let result = self.instance.module_ref.clone().invoke_export(
             EXPORT_SCRYPTO_ALLOC,
             &[RuntimeValue::I32((value.raw.len()) as i32)],
             self,
         );
 
-        if let Ok(Some(RuntimeValue::I32(ptr))) = result {
-            if self
-                .instance
-                .memory_ref
-                .set((ptr + 4) as u32, &value.raw)
-                .is_ok()
-            {
-                return Ok(RuntimeValue::I32(ptr));
+        match result {
+            Ok(rtn) => {
+                if let Some(RuntimeValue::I32(ptr)) = rtn {
+                    if self
+                        .instance
+                        .memory_ref
+                        .set((ptr + 4) as u32, &value.raw)
+                        .is_ok()
+                    {
+                        return Ok(RuntimeValue::I32(ptr));
+                    }
+                }
+
+                return Err(InvokeError::Error(WasmError::MemoryAllocError));
+            }
+            Err(e) => {
+                return Err(e.into());
             }
         }
-
-        Err(WasmError::MemoryAllocError)
     }
 
     pub fn read_value(&self, ptr: usize) -> Result<ScryptoValue, WasmError> {
@@ -165,7 +188,7 @@ impl WasmInstance for WasmiInstance {
             runtime,
         };
 
-        let pointer = externals.send_value(args).map_err(InvokeError::Error)?;
+        let pointer = externals.send_value(args)?;
         let result = self
             .module_ref
             .clone()
@@ -173,14 +196,8 @@ impl WasmInstance for WasmiInstance {
 
         let rtn = result
             .map_err(|e| {
-                let e_str = format!("{:?}", e);
-                match e.into_host_error() {
-                    // Pass-through invoke errors
-                    Some(host_error) => *host_error
-                        .downcast::<InvokeError<WasmError>>()
-                        .expect("Failed to downcast error into WasmInvokeError"),
-                    None => InvokeError::Error(WasmError::WasmError(e_str)),
-                }
+                let err: InvokeError<WasmError> = e.into();
+                err
             })?
             .ok_or(InvokeError::Error(WasmError::MissingReturnData))?;
         match rtn {
