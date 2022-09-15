@@ -25,7 +25,7 @@ fn bench_transfer(c: &mut Criterion) {
     let public_key = private_key.public_key();
 
     // Create two accounts
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_method(SYS_FAUCET_COMPONENT, "free_xrd", args!())
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
@@ -55,7 +55,7 @@ fn bench_transfer(c: &mut Criterion) {
         .new_component_addresses[0];
 
     // Create a transfer manifest
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), account1)
         .withdraw_from_account_by_amount(1.into(), RADIX_TOKEN, account1)
         .call_method(

@@ -8,6 +8,10 @@ use crate::resim::*;
 /// Create an account
 #[derive(Parser, Debug)]
 pub struct NewAccount {
+    /// The network to use when outputting manifest, [simulator | adapanet | nebunet | mainnet]
+    #[clap(short, long)]
+    network: Option<String>,
+
     /// Output a transaction manifest without execution
     #[clap(short, long)]
     manifest: Option<PathBuf>,
@@ -24,7 +28,7 @@ impl NewAccount {
         let public_key = private_key.public_key();
         let auth_address = NonFungibleAddress::from_public_key(&public_key);
         let withdraw_auth = rule!(require(auth_address));
-        let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
             .call_method(SYS_FAUCET_COMPONENT, "free_xrd", args!())
             .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
@@ -35,6 +39,7 @@ impl NewAccount {
         let receipt = handle_manifest(
             manifest,
             &Some("".to_string()), // explicit empty signer public keys
+            &self.network,
             &self.manifest,
             false,
             self.trace,
@@ -42,7 +47,7 @@ impl NewAccount {
             out,
         )?;
 
-        let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::local_simulator());
+        let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
 
         if let Some(receipt) = receipt {
             let account = receipt

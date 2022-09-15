@@ -17,18 +17,25 @@ fn test_hello() {
     let package_address = test_runner.compile_and_publish(this_package!());
 
     // Test the `instantiate_hello` function.
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .call_function(package_address, "Hello", "instantiate_hello", args!())
         .build();
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![public_key.into()]);
     println!("{:?}\n", receipt);
     receipt.expect_commit_success();
-    let component = receipt.expect_commit().entity_changes.new_component_addresses[0];
+    let component = receipt
+        .expect_commit()
+        .entity_changes
+        .new_component_addresses[0];
 
     // Test the `free_token` method.
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .call_method(component, "free_token", args!())
-        .call_method(account_component, "deposit_batch", args!(Expression::entire_worktop()))
+        .call_method(
+            account_component,
+            "deposit_batch",
+            args!(Expression::entire_worktop()),
+        )
         .build();
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![public_key.into()]);
     println!("{:?}\n", receipt);

@@ -18,7 +18,7 @@ pub struct Bech32Decoder {
 
 impl Bech32Decoder {
     pub fn for_simulator() -> Self {
-        Self::new(&NetworkDefinition::local_simulator())
+        Self::new(&NetworkDefinition::simulator())
     }
 
     /// Instantiates a new Bech32Decoder with the HRP corresponding to the passed network.
@@ -98,4 +98,4 @@ impl Bech32Decoder {
 }
 
 pub const BECH32_DECODER: Lazy<Bech32Decoder> =
-    Lazy::new(|| Bech32Decoder::new(&NetworkDefinition::local_simulator()));
+    Lazy::new(|| Bech32Decoder::new(&NetworkDefinition::simulator()));

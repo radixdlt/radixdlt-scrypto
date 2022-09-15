@@ -9,7 +9,7 @@ fn test_process_and_transaction() {
     let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.compile_and_publish("./tests/core");
 
-    let manifest1 = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest1 = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(package_address, "CoreTest", "query", args![])
         .build();
@@ -24,7 +24,7 @@ fn test_call() {
     let (public_key, _, account) = test_runner.new_account();
     let package_address = test_runner.compile_and_publish("./tests/core");
 
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(package_address, "MoveTest", "move_bucket", args![])
         .call_function(package_address, "MoveTest", "move_proof", args![])
