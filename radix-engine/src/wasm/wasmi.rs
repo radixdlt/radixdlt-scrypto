@@ -68,7 +68,7 @@ impl From<Error> for InvokeError<WasmError> {
             // Pass-through invoke errors
             Some(host_error) => *host_error
                 .downcast::<InvokeError<WasmError>>()
-                .expect("Failed to downcast error into WasmInvokeError"),
+                .expect("Failed to downcast error into InvokeError<WasmError>"),
             None => InvokeError::Error(WasmError::WasmError(e_str)),
         }
     }
