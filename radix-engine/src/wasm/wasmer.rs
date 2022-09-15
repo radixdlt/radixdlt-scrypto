@@ -35,23 +35,29 @@ pub struct WasmerEngine {
     modules: HashMap<Hash, WasmerModule>,
 }
 
-pub fn send_value(instance: &Instance, value: &ScryptoValue) -> Result<usize, WasmError> {
+pub fn send_value(
+    instance: &Instance,
+    value: &ScryptoValue,
+) -> Result<usize, InvokeError<WasmError>> {
     let slice = &value.raw;
     let n = slice.len();
 
     let result = instance
         .exports
         .get_function(EXPORT_SCRYPTO_ALLOC)
-        .map_err(|_| WasmError::MemoryAllocError)?
+        .expect("ScryptoAlloc not found")
         .call(&[Val::I32(n as i32)])
-        .map_err(|_| WasmError::MemoryAllocError)?;
+        .map_err(|e| {
+            let error: InvokeError<WasmError> = e.into();
+            error
+        })?;
 
     if let Some(wasmer::Value::I32(ptr)) = result.as_ref().get(0) {
         let ptr = *ptr as usize;
         let memory = instance
             .exports
             .get_memory(EXPORT_MEMORY)
-            .map_err(|_| WasmError::MemoryAllocError)?;
+            .map_err(|_| InvokeError::Error(WasmError::MemoryAllocError))?;
         let size = memory.size().bytes().0;
         if size > ptr && size - ptr >= n {
             unsafe {
@@ -62,7 +68,7 @@ pub fn send_value(instance: &Instance, value: &ScryptoValue) -> Result<usize, Wa
         }
     }
 
-    Err(WasmError::MemoryAllocError)
+    Err(InvokeError::Error(WasmError::MemoryAllocError))
 }
 
 pub fn read_value(instance: &Instance, ptr: usize) -> Result<ScryptoValue, WasmError> {
@@ -164,6 +170,16 @@ impl WasmerModule {
     }
 }
 
+impl From<RuntimeError> for InvokeError<WasmError> {
+    fn from(error: RuntimeError) -> Self {
+        let e_str = format!("{:?}", error);
+        match error.downcast::<InvokeError<WasmError>>() {
+            Ok(e) => e,
+            _ => InvokeError::Error(WasmError::WasmError(e_str)),
+        }
+    }
+}
+
 impl WasmInstance for WasmerInstance {
     fn invoke_export<'r>(
         &mut self,
@@ -180,7 +196,7 @@ impl WasmInstance for WasmerInstance {
             *guard = runtime as *mut _ as usize;
         }
 
-        let pointer = send_value(&self.instance, args).map_err(InvokeError::Error)?;
+        let pointer = send_value(&self.instance, args)?;
         let result = self
             .instance
             .exports
@@ -198,13 +214,7 @@ impl WasmInstance for WasmerInstance {
                     .ok_or(InvokeError::Error(WasmError::InvalidReturnData))?;
                 read_value(&self.instance, ptr as usize).map_err(InvokeError::Error)
             }
-            Err(e) => {
-                let e_str = format!("{:?}", e);
-                match e.downcast::<InvokeError<WasmError>>() {
-                    Ok(e) => Err(e),
-                    _ => Err(InvokeError::Error(WasmError::WasmError(e_str))),
-                }
-            }
+            Err(e) => Err(e.into()),
         }
     }
 }
