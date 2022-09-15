@@ -316,10 +316,14 @@ fn get_native_type(ty: &des::Type) -> Result<(Type, Vec<Item>)> {
                 ScryptoType::Component => "::scrypto::component::Component",
                 ScryptoType::KeyValueStore => "::scrypto::component::KeyValueStore",
                 ScryptoType::Hash => "::scrypto::crypto::Hash",
-                ScryptoType::EcdsaPublicKey => "::scrypto::crypto::EcdsaPublicKey",
-                ScryptoType::EcdsaSignature => "::scrypto::crypto::EcdsaSignature",
-                ScryptoType::Ed25519PublicKey => "::scrypto::crypto::Ed25519PublicKey",
-                ScryptoType::Ed25519Signature => "::scrypto::crypto::Ed25519Signature",
+                ScryptoType::EcdsaSecp256k1PublicKey => {
+                    "::scrypto::crypto::EcdsaSecp256k1PublicKey"
+                }
+                ScryptoType::EcdsaSecp256k1Signature => {
+                    "::scrypto::crypto::EcdsaSecp256k1Signature"
+                }
+                ScryptoType::EddsaEd25519PublicKey => "::scrypto::crypto::EddsaEd25519PublicKey",
+                ScryptoType::EddsaEd25519Signature => "::scrypto::crypto::EddsaEd25519Signature",
                 ScryptoType::Decimal => "::scrypto::math::Decimal",
                 ScryptoType::PreciseDecimal => "::scrypto::math::PreciseDecimal",
                 ScryptoType::Bucket => "::scrypto::resource::Bucket",

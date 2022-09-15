@@ -2,7 +2,7 @@ use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
-use transaction::signing::EcdsaPrivateKey;
+use transaction::signing::EcdsaSecp256k1PrivateKey;
 
 fn test_dynamic_auth(
     num_keys: usize,
@@ -14,8 +14,11 @@ fn test_dynamic_auth(
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let key_and_addresses: Vec<(EcdsaPublicKey, EcdsaPrivateKey, NonFungibleAddress)> = (0
-        ..num_keys)
+    let key_and_addresses: Vec<(
+        EcdsaSecp256k1PublicKey,
+        EcdsaSecp256k1PrivateKey,
+        NonFungibleAddress,
+    )> = (0..num_keys)
         .map(|_| test_runner.new_key_pair_with_auth_address())
         .collect();
     let addresses: Vec<NonFungibleAddress> = key_and_addresses
@@ -81,8 +84,11 @@ fn test_dynamic_authlist(
 ) {
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let key_and_addresses: Vec<(EcdsaPublicKey, EcdsaPrivateKey, NonFungibleAddress)> = (0
-        ..list_size)
+    let key_and_addresses: Vec<(
+        EcdsaSecp256k1PublicKey,
+        EcdsaSecp256k1PrivateKey,
+        NonFungibleAddress,
+    )> = (0..list_size)
         .map(|_| test_runner.new_key_pair_with_auth_address())
         .collect();
     let list: Vec<NonFungibleAddress> = key_and_addresses
