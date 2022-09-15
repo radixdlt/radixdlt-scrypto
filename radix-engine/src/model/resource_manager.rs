@@ -283,9 +283,9 @@ impl ResourceManager {
             // check amount
             self.check_amount(amount)?;
 
-            // It takes `1,701,411,835` mint operations to reach `Decimal::MAX`,
+            // It takes `57896044618658097711785492504343953` mint operations to reach `Decimal::MAX`,
             // which will be impossible with metering.
-            if amount > 100_000_000_000i128.into() {
+            if amount > Decimal::from_str("1000000000000000000000000").unwrap() {
                 return Err(InvokeError::Error(
                     ResourceManagerError::MaxMintAmountExceeded,
                 ));
