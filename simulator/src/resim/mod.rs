@@ -149,7 +149,8 @@ pub fn handle_manifest<O: std::io::Write>(
                     Some(n) => NetworkDefinition::from_str(&n).map_err(Error::ParseNetworkError)?,
                     None => NetworkDefinition::simulator(),
                 };
-                let manifest_str = decompile(&manifest, &network).map_err(Error::DecompileError)?;
+                let manifest_str =
+                    decompile(&manifest.instructions, &network).map_err(Error::DecompileError)?;
                 fs::write(path, manifest_str).map_err(Error::IOError)?;
                 for blob in manifest.blobs {
                     let blob_hash = hash(&blob);
