@@ -131,7 +131,7 @@ fn test_faucet_drain_attempt_should_fail() {
     let (public_key, _, account) = test_runner.new_account();
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(dec!("10"), account)
         .call_method(SYS_FAUCET_COMPONENT, "free_xrd", args!())
         .call_method(SYS_FAUCET_COMPONENT, "free_xrd", args!())

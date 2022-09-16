@@ -13,7 +13,7 @@ use rand_chacha::ChaCha8Rng;
 use rayon::prelude::*;
 use transaction::builder::{ManifestBuilder, TransactionBuilder};
 use transaction::model::{NotarizedTransaction, TransactionHeader};
-use transaction::signing::EcdsaPrivateKey;
+use transaction::signing::EcdsaSecp256k1PrivateKey;
 use transaction::validation::{TestIntentHashManager, TransactionValidator, ValidationConfig};
 
 fn execute_single_transaction(transaction: NotarizedTransaction) {
@@ -21,7 +21,7 @@ fn execute_single_transaction(transaction: NotarizedTransaction) {
         transaction,
         &TestIntentHashManager::new(),
         &ValidationConfig {
-            network: &NetworkDefinition::local_simulator(),
+            network: &NetworkDefinition::simulator(),
             current_epoch: 1,
             max_cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,
             min_tip_percentage: 0,
@@ -62,7 +62,7 @@ impl TransactionFuzzer {
     }
 
     fn next_transaction(&mut self) -> NotarizedTransaction {
-        let mut builder = ManifestBuilder::new(&NetworkDefinition::local_simulator());
+        let mut builder = ManifestBuilder::new(&NetworkDefinition::simulator());
         let instruction_count = self.rng.gen_range(0u32..20u32);
         for _ in 0..instruction_count {
             let next = self.rng.gen_range(0u32..4u32);
@@ -103,10 +103,10 @@ impl TransactionFuzzer {
         }
 
         let manifest = builder.build();
-        let private_key = EcdsaPrivateKey::from_u64(1).unwrap();
+        let private_key = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap();
         let header = TransactionHeader {
             version: 1,
-            network_id: NetworkDefinition::local_simulator().id,
+            network_id: NetworkDefinition::simulator().id,
             start_epoch_inclusive: 0,
             end_epoch_exclusive: 100,
             nonce: 5,
