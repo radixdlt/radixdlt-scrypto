@@ -24,7 +24,7 @@ where
     let receipt1 = test_runner.execute_manifest(
         ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(10.into(), account)
-            .withdraw_from_account_by_amount(1000.into(), RADIX_TOKEN, account)
+            .withdraw_from_account_by_amount(10.into(), RADIX_TOKEN, account)
             .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
                 builder.call_function(
                     package_address,
