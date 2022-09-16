@@ -13,7 +13,7 @@ use rand_chacha::ChaCha8Rng;
 use rayon::prelude::*;
 use transaction::builder::{ManifestBuilder, TransactionBuilder};
 use transaction::model::{NotarizedTransaction, TransactionHeader};
-use transaction::signing::{EcdsaSecp256k1PrivateKey};
+use transaction::signing::EcdsaSecp256k1PrivateKey;
 use transaction::validation::{TestIntentHashManager, TransactionValidator, ValidationConfig};
 
 fn execute_single_transaction(transaction: NotarizedTransaction) {
@@ -21,7 +21,7 @@ fn execute_single_transaction(transaction: NotarizedTransaction) {
         transaction,
         &TestIntentHashManager::new(),
         &ValidationConfig {
-            network: &NetworkDefinition::simulator(),
+            network_id: NetworkDefinition::simulator().id,
             current_epoch: 1,
             max_cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,
             min_tip_percentage: 0,

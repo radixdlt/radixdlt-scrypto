@@ -9,12 +9,18 @@ use crate::abi::{scrypto_type, ScryptoType};
 use crate::misc::copy_u8_array;
 
 /// Represents an ED25519 public key.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
-pub struct EddsaEd25519PublicKey(pub [u8; Self::LENGTH]);
+pub struct EddsaEd25519PublicKey(
+    #[cfg_attr(feature = "serde", serde(with = "hex::serde"))] pub [u8; Self::LENGTH],
+);
 
 /// Represents an ED25519 signature.
-#[derive(Clone, Copy, PartialEq, Eq)]
-pub struct EddsaEd25519Signature(pub [u8; Self::LENGTH]);
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+pub struct EddsaEd25519Signature(
+    #[cfg_attr(feature = "serde", serde(with = "hex::serde"))] pub [u8; Self::LENGTH],
+);
 
 /// Represents an error ocurred when validating a signature.
 #[derive(Debug, Clone, PartialEq, Eq)]

@@ -48,7 +48,7 @@ fn test_normal_transaction_flow() {
     let mut wasm_instrumenter = WasmInstrumenter::new();
     let intent_hash_manager = TestIntentHashManager::new();
     let validation_params = ValidationConfig {
-        network: &NetworkDefinition::simulator(),
+        network_id: NetworkDefinition::simulator().id,
         current_epoch: 1,
         max_cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,
         min_tip_percentage: 0,
@@ -85,7 +85,7 @@ fn create_executable_transaction(cost_unit_limit: u32) -> ValidatedTransaction {
         notarized_transaction,
         &TestIntentHashManager::new(),
         &ValidationConfig {
-            network: &NetworkDefinition::simulator(),
+            network_id: NetworkDefinition::simulator().id,
             current_epoch: 1,
             max_cost_unit_limit: 10_000_000,
             min_tip_percentage: 0,

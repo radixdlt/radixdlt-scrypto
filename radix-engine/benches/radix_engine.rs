@@ -57,7 +57,7 @@ fn bench_transfer(c: &mut Criterion) {
     // Create a transfer manifest
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), account1)
-        .withdraw_from_account_by_amount(1.into(), RADIX_TOKEN, account1)
+        .withdraw_from_account_by_amount(dec!("0.000001"), RADIX_TOKEN, account1)
         .call_method(
             account2,
             "deposit_batch",
