@@ -12,7 +12,7 @@ fn test_get_epoch() {
     let package_address = test_runner.compile_and_publish("./tests/system");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(package_address, "SystemTest", "get_epoch", args![])
         .build();
@@ -33,7 +33,7 @@ fn test_set_epoch_without_system_auth_fails() {
 
     // Act
     let epoch = 9876u64;
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(package_address, "SystemTest", "set_epoch", args!(epoch))
         .call_function(package_address, "SystemTest", "get_epoch", args!())

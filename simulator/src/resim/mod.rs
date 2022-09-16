@@ -65,7 +65,7 @@ use transaction::builder::ManifestBuilder;
 use transaction::manifest::decompile;
 use transaction::model::TestTransaction;
 use transaction::model::TransactionManifest;
-use transaction::signing::EcdsaPrivateKey;
+use transaction::signing::EcdsaSecp256k1PrivateKey;
 
 /// Build fast, reward everyone, and scale without friction
 #[derive(Parser, Debug)]
@@ -135,6 +135,7 @@ pub fn run() -> Result<(), Error> {
 pub fn handle_manifest<O: std::io::Write>(
     manifest: TransactionManifest,
     signing_keys: &Option<String>,
+    network: &Option<String>,
     manifest_path: &Option<PathBuf>,
     is_system: bool,
     trace: bool,
@@ -144,16 +145,19 @@ pub fn handle_manifest<O: std::io::Write>(
     match manifest_path {
         Some(path) => {
             if !env::var(ENV_DISABLE_MANIFEST_OUTPUT).is_ok() {
-                let manifest_body = decompile(&manifest, &NetworkDefinition::local_simulator())
-                    .map_err(Error::DecompileError)?;
-                fs::write(path, manifest_body).map_err(Error::IOError)?;
+                let network = match network {
+                    Some(n) => NetworkDefinition::from_str(&n).map_err(Error::ParseNetworkError)?,
+                    None => NetworkDefinition::simulator(),
+                };
+                let manifest_str = decompile(&manifest, &network).map_err(Error::DecompileError)?;
+                fs::write(path, manifest_str).map_err(Error::IOError)?;
                 for blob in manifest.blobs {
                     let blob_hash = hash(&blob);
                     let mut blob_path = path
                         .parent()
                         .expect("Manifest file parent not found")
                         .to_owned();
-                    blob_path.push(format!("{}.data", blob_hash));
+                    blob_path.push(format!("{}.blob", blob_hash));
                     fs::write(blob_path, blob).map_err(Error::IOError)?;
                 }
             }
@@ -218,7 +222,9 @@ pub fn handle_manifest<O: std::io::Write>(
     }
 }
 
-pub fn get_signing_keys(signing_keys: &Option<String>) -> Result<Vec<EcdsaPrivateKey>, Error> {
+pub fn get_signing_keys(
+    signing_keys: &Option<String>,
+) -> Result<Vec<EcdsaSecp256k1PrivateKey>, Error> {
     let private_keys = if let Some(keys) = signing_keys {
         keys.split(",")
             .map(str::trim)
@@ -227,10 +233,11 @@ pub fn get_signing_keys(signing_keys: &Option<String>) -> Result<Vec<EcdsaPrivat
                 hex::decode(key)
                     .map_err(|_| Error::InvalidPrivateKey)
                     .and_then(|bytes| {
-                        EcdsaPrivateKey::from_bytes(&bytes).map_err(|_| Error::InvalidPrivateKey)
+                        EcdsaSecp256k1PrivateKey::from_bytes(&bytes)
+                            .map_err(|_| Error::InvalidPrivateKey)
                     })
             })
-            .collect::<Result<Vec<EcdsaPrivateKey>, Error>>()?
+            .collect::<Result<Vec<EcdsaSecp256k1PrivateKey>, Error>>()?
     } else {
         vec![get_default_private_key()?]
     };
