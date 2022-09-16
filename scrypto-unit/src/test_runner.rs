@@ -24,7 +24,7 @@ use scrypto::math::Decimal;
 use transaction::builder::ManifestBuilder;
 use transaction::model::{ExecutableTransaction, TransactionManifest};
 use transaction::model::{PreviewIntent, TestTransaction};
-use transaction::signing::EcdsaPrivateKey;
+use transaction::signing::EcdsaSecp256k1PrivateKey;
 use transaction::validation::TestIntentHashManager;
 
 pub struct TestRunner<'s, S: ReadableSubstateStore + WriteableSubstateStore> {
@@ -54,8 +54,8 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         self.next_transaction_nonce
     }
 
-    pub fn new_key_pair(&mut self) -> (EcdsaPublicKey, EcdsaPrivateKey) {
-        let private_key = EcdsaPrivateKey::from_u64(self.next_private_key).unwrap();
+    pub fn new_key_pair(&mut self) -> (EcdsaSecp256k1PublicKey, EcdsaSecp256k1PrivateKey) {
+        let private_key = EcdsaSecp256k1PrivateKey::from_u64(self.next_private_key).unwrap();
         let public_key = private_key.public_key();
 
         self.next_private_key += 1;
@@ -64,7 +64,11 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
 
     pub fn new_key_pair_with_auth_address(
         &mut self,
-    ) -> (EcdsaPublicKey, EcdsaPrivateKey, NonFungibleAddress) {
+    ) -> (
+        EcdsaSecp256k1PublicKey,
+        EcdsaSecp256k1PrivateKey,
+        NonFungibleAddress,
+    ) {
         let key_pair = self.new_account();
         (
             key_pair.0,
@@ -115,7 +119,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     }
 
     pub fn new_account_with_auth_rule(&mut self, withdraw_auth: &AccessRule) -> ComponentAddress {
-        let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
             .call_method(SYS_FAUCET_COMPONENT, "free_xrd", args!())
             .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
@@ -132,7 +136,13 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             .new_component_addresses[0]
     }
 
-    pub fn new_account(&mut self) -> (EcdsaPublicKey, EcdsaPrivateKey, ComponentAddress) {
+    pub fn new_account(
+        &mut self,
+    ) -> (
+        EcdsaSecp256k1PublicKey,
+        EcdsaSecp256k1PrivateKey,
+        ComponentAddress,
+    ) {
         let key_pair = self.new_key_pair();
         let withdraw_auth = rule!(require(NonFungibleAddress::from_public_key(&key_pair.0)));
         let account = self.new_account_with_auth_rule(&withdraw_auth);
@@ -144,7 +154,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         code: Vec<u8>,
         abi: HashMap<String, BlueprintAbi>,
     ) -> PackageAddress {
-        let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
             .publish_package(code, abi)
             .build();
@@ -346,10 +356,10 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         token: ResourceAddress,
         set_auth: ResourceAddress,
         account: ComponentAddress,
-        signer_public_key: EcdsaPublicKey,
+        signer_public_key: EcdsaSecp256k1PublicKey,
     ) {
         let package = self.compile_and_publish("./tests/resource_creator");
-        let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
             .create_proof_from_account(auth, account)
             .call_function(package, "ResourceCreator", function, args!(token, set_auth))
@@ -378,14 +388,40 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         let withdraw_auth = self.create_non_fungible_resource(account);
         let admin_auth = self.create_non_fungible_resource(account);
 
-        let package = self.compile_and_publish("./tests/resource_creator");
-        let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+        let mut access_rules = HashMap::new();
+        access_rules.insert(
+            ResourceMethodAuthKey::Mint,
+            (
+                rule!(require(mint_auth)),
+                MUTABLE(rule!(require(admin_auth))),
+            ),
+        );
+        access_rules.insert(
+            ResourceMethodAuthKey::Burn,
+            (
+                rule!(require(burn_auth)),
+                MUTABLE(rule!(require(admin_auth))),
+            ),
+        );
+        access_rules.insert(
+            ResourceMethodAuthKey::Withdraw,
+            (
+                rule!(require(withdraw_auth)),
+                MUTABLE(rule!(require(admin_auth))),
+            ),
+        );
+        access_rules.insert(
+            ResourceMethodAuthKey::Deposit,
+            (rule!(allow_all), MUTABLE(rule!(require(admin_auth)))),
+        );
+
+        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
-            .call_function(
-                package,
-                "ResourceCreator",
-                "create_restricted_token",
-                args!(mint_auth, burn_auth, withdraw_auth, admin_auth),
+            .create_resource(
+                ResourceType::Fungible { divisibility: 0 },
+                HashMap::new(),
+                access_rules,
+                Some(MintParams::Fungible { amount: 5.into() }),
             )
             .call_method(
                 account,
@@ -413,14 +449,22 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         account: ComponentAddress,
     ) -> (ResourceAddress, ResourceAddress) {
         let auth_resource_address = self.create_non_fungible_resource(account);
-        let package = self.compile_and_publish("./tests/resource_creator");
-        let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+
+        let mut access_rules = HashMap::new();
+        access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
+        access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
+        access_rules.insert(
+            ResourceMethodAuthKey::Burn,
+            (rule!(require(auth_resource_address)), LOCKED),
+        );
+
+        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
-            .call_function(
-                package,
-                "ResourceCreator",
-                "create_restricted_burn",
-                args!(auth_resource_address),
+            .create_resource(
+                ResourceType::Fungible { divisibility: 0 },
+                HashMap::new(),
+                access_rules,
+                Some(MintParams::Fungible { amount: 5.into() }),
             )
             .call_method(
                 account,
@@ -445,14 +489,20 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     ) -> (ResourceAddress, ResourceAddress) {
         let auth_resource_address = self.create_non_fungible_resource(account);
 
-        let package = self.compile_and_publish("./tests/resource_creator");
-        let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+        let mut access_rules = HashMap::new();
+        access_rules.insert(
+            ResourceMethodAuthKey::Withdraw,
+            (rule!(require(auth_resource_address)), LOCKED),
+        );
+        access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
+
+        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
-            .call_function(
-                package,
-                "ResourceCreator",
-                "create_restricted_transfer",
-                args![auth_resource_address],
+            .create_resource(
+                ResourceType::Fungible { divisibility: 0 },
+                HashMap::new(),
+                access_rules,
+                Some(MintParams::Fungible { amount: 5.into() }),
             )
             .call_method(
                 account,
@@ -472,14 +522,31 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     }
 
     pub fn create_non_fungible_resource(&mut self, account: ComponentAddress) -> ResourceAddress {
-        let package = self.compile_and_publish("./tests/resource_creator");
-        let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+        let mut access_rules = HashMap::new();
+        access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
+        access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
+
+        let mut entries = HashMap::new();
+        entries.insert(
+            NonFungibleId::from_u32(1),
+            (scrypto_encode(&()), scrypto_encode(&())),
+        );
+        entries.insert(
+            NonFungibleId::from_u32(2),
+            (scrypto_encode(&()), scrypto_encode(&())),
+        );
+        entries.insert(
+            NonFungibleId::from_u32(3),
+            (scrypto_encode(&()), scrypto_encode(&())),
+        );
+
+        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
-            .call_function(
-                package,
-                "ResourceCreator",
-                "create_non_fungible_fixed",
-                args!(),
+            .create_resource(
+                ResourceType::NonFungible,
+                HashMap::new(),
+                access_rules,
+                Some(MintParams::NonFungible { entries }),
             )
             .call_method(
                 account,
@@ -501,14 +568,16 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         divisibility: u8,
         account: ComponentAddress,
     ) -> ResourceAddress {
-        let package = self.compile_and_publish("./tests/resource_creator");
-        let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+        let mut access_rules = HashMap::new();
+        access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
+        access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
+        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
-            .call_function(
-                package,
-                "ResourceCreator",
-                "create_fungible_fixed",
-                args!(amount, divisibility),
+            .create_resource(
+                ResourceType::Fungible { divisibility },
+                HashMap::new(),
+                access_rules,
+                Some(MintParams::Fungible { amount }),
             )
             .call_method(
                 account,
@@ -531,9 +600,9 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         function_name: &str,
         args: Vec<String>,
         account: ComponentAddress,
-        signer_public_key: EcdsaPublicKey,
+        signer_public_key: EcdsaSecp256k1PublicKey,
     ) -> ComponentAddress {
-        let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
             .call_function_with_abi(
                 package_address,

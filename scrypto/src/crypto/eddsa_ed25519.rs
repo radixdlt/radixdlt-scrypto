@@ -10,24 +10,24 @@ use crate::misc::copy_u8_array;
 
 /// Represents an ED25519 public key.
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
-pub struct Ed25519PublicKey(pub [u8; Self::LENGTH]);
+pub struct EddsaEd25519PublicKey(pub [u8; Self::LENGTH]);
 
 /// Represents an ED25519 signature.
 #[derive(Clone, Copy, PartialEq, Eq)]
-pub struct Ed25519Signature(pub [u8; Self::LENGTH]);
+pub struct EddsaEd25519Signature(pub [u8; Self::LENGTH]);
 
 /// Represents an error ocurred when validating a signature.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SignatureValidationError {}
 
-/// Ed25519 signature verifier.
-pub struct Ed25519Verifier;
+/// EddsaEd25519 signature verifier.
+pub struct EddsaEd25519Verifier;
 
-impl Ed25519PublicKey {
+impl EddsaEd25519PublicKey {
     pub const LENGTH: usize = 32;
 }
 
-impl Ed25519Signature {
+impl EddsaEd25519Signature {
     pub const LENGTH: usize = 64;
 }
 
@@ -37,33 +37,33 @@ impl Ed25519Signature {
 
 /// Represents an error when parsing ED25519 public key from hex.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ParseEd25519PublicKeyError {
+pub enum ParseEddsaEd25519PublicKeyError {
     InvalidHex(String),
     InvalidLength(usize),
 }
 
 #[cfg(not(feature = "alloc"))]
-impl std::error::Error for ParseEd25519PublicKeyError {}
+impl std::error::Error for ParseEddsaEd25519PublicKeyError {}
 
 #[cfg(not(feature = "alloc"))]
-impl fmt::Display for ParseEd25519PublicKeyError {
+impl fmt::Display for ParseEddsaEd25519PublicKeyError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ParseEd25519SignatureError {
+pub enum ParseEddsaEd25519SignatureError {
     InvalidHex(String),
     InvalidLength(usize),
 }
 
 /// Represents an error when parsing ED25519 signature from hex.
 #[cfg(not(feature = "alloc"))]
-impl std::error::Error for ParseEd25519SignatureError {}
+impl std::error::Error for ParseEddsaEd25519SignatureError {}
 
 #[cfg(not(feature = "alloc"))]
-impl fmt::Display for ParseEd25519SignatureError {
+impl fmt::Display for ParseEddsaEd25519SignatureError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
     }
@@ -73,89 +73,97 @@ impl fmt::Display for ParseEd25519SignatureError {
 // binary
 //======
 
-impl TryFrom<&[u8]> for Ed25519PublicKey {
-    type Error = ParseEd25519PublicKeyError;
+impl TryFrom<&[u8]> for EddsaEd25519PublicKey {
+    type Error = ParseEddsaEd25519PublicKeyError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-        if slice.len() != Ed25519PublicKey::LENGTH {
-            return Err(ParseEd25519PublicKeyError::InvalidLength(slice.len()));
+        if slice.len() != EddsaEd25519PublicKey::LENGTH {
+            return Err(ParseEddsaEd25519PublicKeyError::InvalidLength(slice.len()));
         }
 
-        Ok(Ed25519PublicKey(copy_u8_array(slice)))
+        Ok(EddsaEd25519PublicKey(copy_u8_array(slice)))
     }
 }
 
-impl Ed25519PublicKey {
+impl EddsaEd25519PublicKey {
     pub fn to_vec(&self) -> Vec<u8> {
         self.0.to_vec()
     }
 }
 
-scrypto_type!(Ed25519PublicKey, ScryptoType::Ed25519PublicKey, Vec::new());
+scrypto_type!(
+    EddsaEd25519PublicKey,
+    ScryptoType::EddsaEd25519PublicKey,
+    Vec::new()
+);
 
-impl TryFrom<&[u8]> for Ed25519Signature {
-    type Error = ParseEd25519SignatureError;
+impl TryFrom<&[u8]> for EddsaEd25519Signature {
+    type Error = ParseEddsaEd25519SignatureError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-        if slice.len() != Ed25519Signature::LENGTH {
-            return Err(ParseEd25519SignatureError::InvalidLength(slice.len()));
+        if slice.len() != EddsaEd25519Signature::LENGTH {
+            return Err(ParseEddsaEd25519SignatureError::InvalidLength(slice.len()));
         }
 
-        Ok(Ed25519Signature(copy_u8_array(slice)))
+        Ok(EddsaEd25519Signature(copy_u8_array(slice)))
     }
 }
 
-impl Ed25519Signature {
+impl EddsaEd25519Signature {
     pub fn to_vec(&self) -> Vec<u8> {
         self.0.to_vec()
     }
 }
 
-scrypto_type!(Ed25519Signature, ScryptoType::Ed25519Signature, Vec::new());
+scrypto_type!(
+    EddsaEd25519Signature,
+    ScryptoType::EddsaEd25519Signature,
+    Vec::new()
+);
 
 //======
 // text
 //======
 
-impl FromStr for Ed25519PublicKey {
-    type Err = ParseEd25519PublicKeyError;
+impl FromStr for EddsaEd25519PublicKey {
+    type Err = ParseEddsaEd25519PublicKeyError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let bytes =
-            hex::decode(s).map_err(|_| ParseEd25519PublicKeyError::InvalidHex(s.to_owned()))?;
+        let bytes = hex::decode(s)
+            .map_err(|_| ParseEddsaEd25519PublicKeyError::InvalidHex(s.to_owned()))?;
         Self::try_from(bytes.as_slice())
     }
 }
 
-impl fmt::Display for Ed25519PublicKey {
+impl fmt::Display for EddsaEd25519PublicKey {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(f, "{}", hex::encode(self.to_vec()))
     }
 }
 
-impl fmt::Debug for Ed25519PublicKey {
+impl fmt::Debug for EddsaEd25519PublicKey {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(f, "{}", self)
     }
 }
 
-impl FromStr for Ed25519Signature {
-    type Err = ParseEd25519SignatureError;
+impl FromStr for EddsaEd25519Signature {
+    type Err = ParseEddsaEd25519SignatureError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let bytes =
-            hex::decode(s).map_err(|_| ParseEd25519SignatureError::InvalidHex(s.to_owned()))?;
+        let bytes = hex::decode(s)
+            .map_err(|_| ParseEddsaEd25519SignatureError::InvalidHex(s.to_owned()))?;
         Self::try_from(bytes.as_slice())
     }
 }
 
-impl fmt::Display for Ed25519Signature {
+impl fmt::Display for EddsaEd25519Signature {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(f, "{}", hex::encode(self.to_vec()))
     }
 }
 
-impl fmt::Debug for Ed25519Signature {
+impl fmt::Debug for EddsaEd25519Signature {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(f, "{}", self)
     }

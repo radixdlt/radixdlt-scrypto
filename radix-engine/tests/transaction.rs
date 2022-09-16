@@ -15,7 +15,7 @@ fn test_call_method_with_all_resources_doesnt_drop_auth_zone_proofs() {
     let (public_key, _, account) = test_runner.new_account();
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(dec!("10"), account)
         .create_proof_from_account(RADIX_TOKEN, account)
         .create_proof_from_auth_zone(RADIX_TOKEN, |builder, proof_id| {
@@ -58,7 +58,7 @@ fn test_transaction_can_end_with_proofs_remaining_in_auth_zone() {
     let (public_key, _, account) = test_runner.new_account();
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(dec!("10"), account)
         .create_proof_from_account_by_amount(dec!("1"), RADIX_TOKEN, account)
         .create_proof_from_account_by_amount(dec!("1"), RADIX_TOKEN, account)
@@ -80,7 +80,7 @@ fn test_non_existent_blob_hash() {
     let (public_key, _, account) = test_runner.new_account();
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(dec!("10"), account)
         .add_instruction(Instruction::PublishPackage {
             code: Blob(Hash([0; 32])),
@@ -106,7 +106,7 @@ fn test_entire_auth_zone() {
     let package_address = test_runner.compile_and_publish("./tests/proof");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(dec!("10"), account)
         .create_proof_from_account_by_amount(dec!("1"), RADIX_TOKEN, account)
         .call_function(

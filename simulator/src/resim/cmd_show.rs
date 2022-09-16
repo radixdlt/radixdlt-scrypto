@@ -18,7 +18,7 @@ impl Show {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
         let ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
 
-        let bech32_decoder = Bech32Decoder::new(&NetworkDefinition::local_simulator());
+        let bech32_decoder = Bech32Decoder::new(&NetworkDefinition::simulator());
 
         if let Ok(package_address) =
             bech32_decoder.validate_and_decode_package_address(&self.address)

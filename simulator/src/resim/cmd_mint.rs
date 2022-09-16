@@ -18,6 +18,10 @@ pub struct Mint {
     #[clap(short, long, multiple = true)]
     proofs: Option<Vec<String>>,
 
+    /// The network to use when outputting manifest, [simulator | adapanet | nebunet | mainnet]
+    #[clap(short, long)]
+    network: Option<String>,
+
     /// Output a transaction manifest without execution
     #[clap(short, long)]
     manifest: Option<PathBuf>,
@@ -36,7 +40,7 @@ impl Mint {
         let default_account = get_default_account()?;
         let proofs = self.proofs.clone().unwrap_or_default();
 
-        let mut manifest_builder = &mut ManifestBuilder::new(&NetworkDefinition::local_simulator());
+        let mut manifest_builder = &mut ManifestBuilder::new(&NetworkDefinition::simulator());
         for resource_specifier in proofs {
             manifest_builder = manifest_builder
                 .create_proof_from_account_by_resource_specifier(
@@ -58,6 +62,7 @@ impl Mint {
         handle_manifest(
             manifest,
             &self.signing_keys,
+            &self.network,
             &self.manifest,
             false,
             self.trace,

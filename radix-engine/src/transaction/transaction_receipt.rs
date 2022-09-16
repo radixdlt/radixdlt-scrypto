@@ -218,7 +218,7 @@ impl fmt::Debug for TransactionReceipt {
         }
 
         // TODO - Need to fix the hardcoding of local simulator HRPs for transaction receipts, and for address formatting
-        let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::local_simulator());
+        let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
 
         write!(f, "\n{}", "Instructions:".bold().green())?;
         for (i, inst) in contents.instructions.iter().enumerate() {
@@ -228,15 +228,17 @@ impl fmt::Debug for TransactionReceipt {
                 prefix!(i, contents.instructions),
                 match inst {
                     ExecutableInstruction::CallFunction {
-                        package_address,
-                        blueprint_name,
-                        method_name,
+                        fn_identifier: FnIdentifier::Scrypto {
+                            package_address,
+                            blueprint_name,
+                            ident,
+                        },
                         args,
                     } => format!(
                         "CallFunction {{ package_address: {}, blueprint_name: {:?}, method_name: {:?}, args: {:?} }}",
                         bech32_encoder.encode_package_address(&package_address),
                         blueprint_name,
-                        method_name,
+                        ident,
                         ScryptoValue::from_slice(&args).expect("Failed parse call data")
                     ),
                     ExecutableInstruction::CallMethod {

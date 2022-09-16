@@ -95,6 +95,10 @@ pub enum Instruction {
         code: Value,
         abi: Value,
     },
+
+    CreateResource {
+        args: Vec<Value>,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

@@ -11,7 +11,7 @@ use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::builder::TransactionBuilder;
 use transaction::model::{NotarizedTransaction, TransactionHeader, ValidatedTransaction};
-use transaction::signing::EcdsaPrivateKey;
+use transaction::signing::EcdsaSecp256k1PrivateKey;
 use transaction::validation::{TestIntentHashManager, TransactionValidator, ValidationConfig};
 
 #[test]
@@ -48,7 +48,7 @@ fn test_normal_transaction_flow() {
     let mut wasm_instrumenter = WasmInstrumenter::new();
     let intent_hash_manager = TestIntentHashManager::new();
     let validation_params = ValidationConfig {
-        network: &NetworkDefinition::local_simulator(),
+        network: &NetworkDefinition::simulator(),
         current_epoch: 1,
         max_cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,
         min_tip_percentage: 0,
@@ -85,7 +85,7 @@ fn create_executable_transaction(cost_unit_limit: u32) -> ValidatedTransaction {
         notarized_transaction,
         &TestIntentHashManager::new(),
         &ValidationConfig {
-            network: &NetworkDefinition::local_simulator(),
+            network: &NetworkDefinition::simulator(),
             current_epoch: 1,
             max_cost_unit_limit: 10_000_000,
             min_tip_percentage: 0,
@@ -96,14 +96,14 @@ fn create_executable_transaction(cost_unit_limit: u32) -> ValidatedTransaction {
 
 fn create_notarized_transaction(cost_unit_limit: u32) -> NotarizedTransaction {
     // create key pairs
-    let sk1 = EcdsaPrivateKey::from_u64(1).unwrap();
-    let sk2 = EcdsaPrivateKey::from_u64(2).unwrap();
-    let sk_notary = EcdsaPrivateKey::from_u64(3).unwrap();
+    let sk1 = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap();
+    let sk2 = EcdsaSecp256k1PrivateKey::from_u64(2).unwrap();
+    let sk_notary = EcdsaSecp256k1PrivateKey::from_u64(3).unwrap();
 
     TransactionBuilder::new()
         .header(TransactionHeader {
             version: 1,
-            network_id: NetworkDefinition::local_simulator().id,
+            network_id: NetworkDefinition::simulator().id,
             start_epoch_inclusive: 0,
             end_epoch_exclusive: 100,
             nonce: 5,
@@ -113,7 +113,7 @@ fn create_notarized_transaction(cost_unit_limit: u32) -> NotarizedTransaction {
             tip_percentage: 5,
         })
         .manifest(
-            ManifestBuilder::new(&NetworkDefinition::local_simulator())
+            ManifestBuilder::new(&NetworkDefinition::simulator())
                 .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
                 .clear_auth_zone()
                 .build(),

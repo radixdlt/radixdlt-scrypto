@@ -1,10 +1,9 @@
-use blob_loader::BlobLoader;
 use sbor::*;
 use scrypto::buffer::{scrypto_decode, scrypto_encode};
 use scrypto::core::NetworkDefinition;
 use scrypto::crypto::{hash, Hash, PublicKey, Signature, SignatureWithPublicKey};
 
-use crate::manifest::{blob_loader, compile, CompileError};
+use crate::manifest::{compile, CompileError};
 use crate::model::Instruction;
 
 // TODO: add versioning of transaction schema
@@ -64,11 +63,11 @@ pub enum IntentConfigError {
 }
 
 impl TransactionIntent {
-    pub fn new<T: BlobLoader>(
+    pub fn new(
         network: &NetworkDefinition,
         header: TransactionHeader,
         manifest: &str,
-        blob_loader: &T,
+        blobs: Vec<Vec<u8>>,
     ) -> Result<Self, IntentCreationError> {
         if network.id != header.network_id {
             return Err(IntentCreationError::ConfigErr(
@@ -80,7 +79,7 @@ impl TransactionIntent {
         }
         Ok(Self {
             header,
-            manifest: compile(manifest, &network, blob_loader)?,
+            manifest: compile(manifest, &network, blobs)?,
         })
     }
 
@@ -129,23 +128,22 @@ impl NotarizedTransaction {
 mod tests {
     use super::*;
     use crate::signing::*;
-    use blob_loader::InMemoryBlobLoader;
     use scrypto::buffer::scrypto_encode;
     use scrypto::core::NetworkDefinition;
 
     #[test]
-    fn construct_sign_and_notarize_ecdsa() {
+    fn construct_sign_and_notarize_ecdsa_secp256k1() {
         // create a key pair
-        let sk1 = EcdsaPrivateKey::from_u64(1).unwrap();
-        let sk2 = EcdsaPrivateKey::from_u64(2).unwrap();
-        let sk_notary = EcdsaPrivateKey::from_u64(3).unwrap();
+        let sk1 = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap();
+        let sk2 = EcdsaSecp256k1PrivateKey::from_u64(2).unwrap();
+        let sk_notary = EcdsaSecp256k1PrivateKey::from_u64(3).unwrap();
 
         // construct
         let intent = TransactionIntent::new(
-            &NetworkDefinition::local_simulator(),
+            &NetworkDefinition::simulator(),
             TransactionHeader {
                 version: 1,
-                network_id: NetworkDefinition::local_simulator().id,
+                network_id: NetworkDefinition::simulator().id,
                 start_epoch_inclusive: 0,
                 end_epoch_exclusive: 100,
                 nonce: 5,
@@ -155,7 +153,7 @@ mod tests {
                 tip_percentage: 5,
             },
             "CLEAR_AUTH_ZONE;",
-            &InMemoryBlobLoader::default(),
+            Vec::new(),
         )
         .unwrap();
 
@@ -175,33 +173,33 @@ mod tests {
         };
 
         assert_eq!(
-            "a9785847e3d454452fba1a5eef56682ad46e92e9b830fa4efd19930808b41d32",
+            "671a87cacf3f359ed6f368c50684fe963567a345eea7382ad931dd8a09d30e5a",
             transaction.signed_intent.intent.hash().to_string()
         );
         assert_eq!(
-            "019b9cbecff5a33735b4e866d363e8173a0ff17bbd88608935c9c43bd2839ee1",
+            "95299e1b74664150ae319ccade62cc0ed605548c65115f25272c6e4269182f21",
             transaction.signed_intent.hash().to_string()
         );
         assert_eq!(
-            "a0cd1dc05398294918e50c4a3df6020d51f09e72c1edfb715c23ac3f60d2f25f",
+            "bcfc92958a504627cfa04b8b1dc9804c5e3a039e5231759258b3be4c6d6e740a",
             transaction.hash().to_string()
         );
-        assert_eq!("1002000000100200000010020000001009000000070107f20a00000000000000000a64000000000000000a05000000000000001105000000456364736101000000912100000002f9308a019258c31049344f85f89d5229b531c845836f99b08601f113bce036f901000940420f00090500000010020000003011010000000d000000436c656172417574685a6f6e65000000003030000000003011020000000500000045636473610100000092410000000017c228442a5b312fd580d4c2936a6b044dcc363734becc74473dff6f799387ca0901054dc526a21a4eb779f5fdaa82fea3cf214913c5b69fd63c087e61d6154905000000456364736101000000924100000001aff7b2bffa056704776f6e27a36a14f2e5f357004fbdd1d649bc99c7c3d66ba273b6e63fa4239e87f048ca61f510655302ab5231e36d7c994f2180956a588b771105000000456364736101000000924100000000a335aeb9b8ed658c6945441fbcaca6557adb3181285ccdb44ceb0d76627ec3994912277d7637e2d2c51c27b6b9519cb272646ee4a3721054e57c7414c12b47a8", hex::encode(scrypto_encode(&transaction)));
+        assert_eq!("1002000000100200000010020000001009000000070107f20a00000000000000000a64000000000000000a0500000000000000110e0000004563647361536563703235366b3101000000912100000002f9308a019258c31049344f85f89d5229b531c845836f99b08601f113bce036f901000940420f00090500000010020000003011010000000d000000436c656172417574685a6f6e65000000003030000000003011020000000e0000004563647361536563703235366b310100000092410000000132e68b38e908177113142e58aee6453c34615d1e6d8c48530d5748f6367e27925c55a01c7735fdeda44928a7d015a0e48203f4a39834e73412d150dff092abe70e0000004563647361536563703235366b3101000000924100000000144cbd023cc482c4a39dca0e2d3f2a61bc765c9bbd72e75cf10484a7a3ddf1457fc8bebef15f703cb67e9818e40954a6081f0338e34f17730133050149d93468110e0000004563647361536563703235366b3101000000924100000000245d5ac8983efbf1f4aaf9f369a571d8bdfaf07f1173299998d043252183a1ac7ab0428724dd94e195bdf0092c3e34f78814a7300cbf2ab41131f9c4da69b8ab", hex::encode(scrypto_encode(&transaction)));
     }
 
     #[test]
-    fn construct_sign_and_notarize_ed25519() {
+    fn construct_sign_and_notarize_eddsa_ed25519() {
         // create a key pair
-        let sk1 = Ed25519PrivateKey::from_u64(1).unwrap();
-        let sk2 = Ed25519PrivateKey::from_u64(2).unwrap();
-        let sk_notary = Ed25519PrivateKey::from_u64(3).unwrap();
+        let sk1 = EddsaEd25519PrivateKey::from_u64(1).unwrap();
+        let sk2 = EddsaEd25519PrivateKey::from_u64(2).unwrap();
+        let sk_notary = EddsaEd25519PrivateKey::from_u64(3).unwrap();
 
         // construct
         let intent = TransactionIntent::new(
-            &NetworkDefinition::local_simulator(),
+            &NetworkDefinition::simulator(),
             TransactionHeader {
                 version: 1,
-                network_id: NetworkDefinition::local_simulator().id,
+                network_id: NetworkDefinition::simulator().id,
                 start_epoch_inclusive: 0,
                 end_epoch_exclusive: 100,
                 nonce: 5,
@@ -211,7 +209,7 @@ mod tests {
                 tip_percentage: 5,
             },
             "CLEAR_AUTH_ZONE;",
-            &InMemoryBlobLoader::default(),
+            Vec::new(),
         )
         .unwrap();
 
@@ -231,17 +229,17 @@ mod tests {
         };
 
         assert_eq!(
-            "938e5062ad7d881a7143154690a2db0ee831e10fbc0ca3f9080ec207c49a1e29",
+            "08e1fc53bc3542c9e641bb6335c375bffcbc7bf86c96feecff7b6689568c9d1a",
             transaction.signed_intent.intent.hash().to_string()
         );
         assert_eq!(
-            "3da3d6ecc2b1217e1a30244f762ec5ae0b0c9670597d08e786fb26f5247909fa",
+            "d96f9285e8001ebb38cf676aee8009ec471afd7660f1229e512d30790d6e2b06",
             transaction.signed_intent.hash().to_string()
         );
         assert_eq!(
-            "9c2308b119cac8193a7959027e3f532365f68fdff97141d4627048507e339764",
+            "5c4bae2e3713a711c513a096c45a06d695d39188c77d0f2d0d1283cfa6a026a7",
             transaction.hash().to_string()
         );
-        assert_eq!("1002000000100200000010020000001009000000070107f20a00000000000000000a64000000000000000a0500000000000000110700000045643235353139010000009320000000f381626e41e7027ea431bfe3009e94bdd25a746beec468948d6c3c7c5dc9a54b01000940420f00090500000010020000003011010000000d000000436c656172417574685a6f6e650000000030300000000030110200000007000000456432353531390200000093200000004cb5abf6ad79fbf5abbccafcc269d85cd2651ed4b885b5869f241aedf0a5ba299440000000495ee3df6061866b80f02e247b60960072eaa15c78fad375032831e4244e73a4ccf14b216c6b75b616a1a0745a933c7d0b910a3f2462e6fc5789b7a8f017b70e07000000456432353531390200000093200000007422b9887598068e32c4448a949adb290d0f4e35b9e01b0ee5f1a1e600fe2674944000000047a0fea579b22e5c04786d80ae275cce09ef2408bf8a5190fe607cd68f78498640ef570b263143ba16afe93dbad0dc6e69b7977087c7bbe8a76f023c86d13007110700000045643235353139010000009440000000fdf5c189ad7a7f751c5cde08a050d3e846189f27037cf9eebab612da965c4278e5d4071586c968c78c0ca4c05c32a8449e7046cbed25a9a3ba3997b17dae4c0c", hex::encode(scrypto_encode(&transaction)));
+        assert_eq!("1002000000100200000010020000001009000000070107f20a00000000000000000a64000000000000000a0500000000000000110c000000456464736145643235353139010000009320000000f381626e41e7027ea431bfe3009e94bdd25a746beec468948d6c3c7c5dc9a54b01000940420f00090500000010020000003011010000000d000000436c656172417574685a6f6e65000000003030000000003011020000000c0000004564647361456432353531390200000093200000004cb5abf6ad79fbf5abbccafcc269d85cd2651ed4b885b5869f241aedf0a5ba299440000000c5a8fc87ec5d839b6b9914aeb320a8f6d758e25de9a8ae737f526a9d79df9b179e991fdf877f54ca38ad6177c34ea7cca04b4ffac627d3a224ef095121b7f0070c0000004564647361456432353531390200000093200000007422b9887598068e32c4448a949adb290d0f4e35b9e01b0ee5f1a1e600fe2674944000000079ffb153e8b19103725e2897dabf6214b5b0c189d285d9dcf4c3785bcc952540966821b07ce5cc4972c47148d4dd26087f6161054a8dd600ba933ea789b3d808110c000000456464736145643235353139010000009440000000b17f1ddea31beeb62266f450a4cdb7d8f2810941bddcf6270cad1b23208160e5c12e2952e9fa5f810d57c1b6a9c15bb9413aeb6f21bfb803c70fc15bef488e02", hex::encode(scrypto_encode(&transaction)));
     }
 }

@@ -66,10 +66,10 @@ pub enum ScryptoType {
 
     // crypto
     Hash,
-    EcdsaPublicKey,
-    EcdsaSignature,
-    Ed25519PublicKey,
-    Ed25519Signature,
+    EcdsaSecp256k1PublicKey,
+    EcdsaSecp256k1Signature,
+    EddsaEd25519PublicKey,
+    EddsaEd25519Signature,
 
     // math
     Decimal,
@@ -94,10 +94,26 @@ const MAPPING: [(ScryptoType, u8, &str); 19] = [
     (ScryptoType::Component, 0x82, "ComponentAddress"),    // 130
     (ScryptoType::KeyValueStore, 0x83, "KeyValueStore"),   // 131
     (ScryptoType::Hash, 0x90, "Hash"),                     // 144
-    (ScryptoType::EcdsaPublicKey, 0x91, "EcdsaPublicKey"), // 145
-    (ScryptoType::EcdsaSignature, 0x92, "EcdsaSignature"), // 146
-    (ScryptoType::Ed25519PublicKey, 0x93, "Ed25519PublicKey"), // 147
-    (ScryptoType::Ed25519Signature, 0x94, "Ed25519Signature"), // 148
+    (
+        ScryptoType::EcdsaSecp256k1PublicKey,
+        0x91,
+        "EcdsaSecp256k1PublicKey",
+    ), // 145
+    (
+        ScryptoType::EcdsaSecp256k1Signature,
+        0x92,
+        "EcdsaSecp256k1Signature",
+    ), // 146
+    (
+        ScryptoType::EddsaEd25519PublicKey,
+        0x93,
+        "EddsaEd25519PublicKey",
+    ), // 147
+    (
+        ScryptoType::EddsaEd25519Signature,
+        0x94,
+        "EddsaEd25519Signature",
+    ), // 148
     (ScryptoType::Decimal, 0xa1, "Decimal"),               // 161
     (ScryptoType::PreciseDecimal, 0xa2, "PreciseDecimal"), // 162
     (ScryptoType::Bucket, 0xb1, "Bucket"),                 // 177

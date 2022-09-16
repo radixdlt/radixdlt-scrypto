@@ -81,15 +81,19 @@ pub fn execute_genesis<'s, R: FeeReserve>(mut track: Track<'s, R>) -> TrackRecei
         true,
     );
 
-    let mut ecdsa_resource_auth = HashMap::new();
-    ecdsa_resource_auth.insert(Withdraw, (rule!(allow_all), LOCKED));
-    let ecdsa_token = ResourceManager::new(
+    let mut ecdsa_secp256k1_resource_auth = HashMap::new();
+    ecdsa_secp256k1_resource_auth.insert(Withdraw, (rule!(allow_all), LOCKED));
+    let ecdsa_secp256k1_token = ResourceManager::new(
         ResourceType::NonFungible,
         HashMap::new(),
-        ecdsa_resource_auth,
+        ecdsa_secp256k1_resource_auth,
     )
     .expect("Failed to construct ECDSA resource manager");
-    track.create_uuid_substate(SubstateId::ResourceManager(ECDSA_TOKEN), ecdsa_token, true);
+    track.create_uuid_substate(
+        SubstateId::ResourceManager(ECDSA_TOKEN),
+        ecdsa_secp256k1_token,
+        true,
+    );
 
     let system_token =
         ResourceManager::new(ResourceType::NonFungible, HashMap::new(), HashMap::new())

@@ -31,41 +31,41 @@ impl CallFrame {
     pub fn new_root(signer_public_keys: Vec<PublicKey>) -> Self {
         // TODO: Cleanup initialization of authzone
 
-        let mut ecdsa_non_fungible_ids = BTreeSet::new();
-        let mut ed25519_non_fungible_ids = BTreeSet::new();
+        let mut ecdsa_secp256k1_non_fungible_ids = BTreeSet::new();
+        let mut eddsa_ed25519_non_fungible_ids = BTreeSet::new();
         for pk in signer_public_keys {
             match pk {
-                PublicKey::Ecdsa(pk) => {
-                    ecdsa_non_fungible_ids.insert(NonFungibleId::from_bytes(pk.to_vec()))
+                PublicKey::EcdsaSecp256k1(pk) => {
+                    ecdsa_secp256k1_non_fungible_ids.insert(NonFungibleId::from_bytes(pk.to_vec()))
                 }
-                PublicKey::Ed25519(pk) => {
-                    ed25519_non_fungible_ids.insert(NonFungibleId::from_bytes(pk.to_vec()))
+                PublicKey::EddsaEd25519(pk) => {
+                    eddsa_ed25519_non_fungible_ids.insert(NonFungibleId::from_bytes(pk.to_vec()))
                 }
             };
         }
 
         let mut initial_auth_zone_proofs = Vec::new();
-        if !ecdsa_non_fungible_ids.is_empty() {
+        if !ecdsa_secp256k1_non_fungible_ids.is_empty() {
             // Proofs can't be zero amount
-            let mut ecdsa_bucket = Bucket::new(Resource::new_non_fungible(
+            let mut ecdsa_secp256k1_bucket = Bucket::new(Resource::new_non_fungible(
                 ECDSA_TOKEN,
-                ecdsa_non_fungible_ids,
+                ecdsa_secp256k1_non_fungible_ids,
             ));
-            let ecdsa_proof = ecdsa_bucket
+            let ecdsa_secp256k1_proof = ecdsa_secp256k1_bucket
                 .create_proof(ECDSA_TOKEN_BUCKET_ID)
                 .expect("Failed to construct ECDSA signature proof");
-            initial_auth_zone_proofs.push(ecdsa_proof);
+            initial_auth_zone_proofs.push(ecdsa_secp256k1_proof);
         }
-        if !ed25519_non_fungible_ids.is_empty() {
+        if !eddsa_ed25519_non_fungible_ids.is_empty() {
             // Proofs can't be zero amount
-            let mut ed25519_bucket = Bucket::new(Resource::new_non_fungible(
+            let mut eddsa_ed25519_bucket = Bucket::new(Resource::new_non_fungible(
                 ED25519_TOKEN,
-                ed25519_non_fungible_ids,
+                eddsa_ed25519_non_fungible_ids,
             ));
-            let ed25519_proof = ed25519_bucket
+            let eddsa_ed25519_proof = eddsa_ed25519_bucket
                 .create_proof(ED25519_TOKEN_BUCKET_ID)
                 .expect("Failed to construct ED25519 signature proof");
-            initial_auth_zone_proofs.push(ed25519_proof);
+            initial_auth_zone_proofs.push(eddsa_ed25519_proof);
         }
 
         Self {

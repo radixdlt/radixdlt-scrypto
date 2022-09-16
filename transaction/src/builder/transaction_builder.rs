@@ -86,12 +86,12 @@ mod tests {
 
     #[test]
     fn notary_as_signatory() {
-        let private_key = EcdsaPrivateKey::from_u64(1).unwrap();
+        let private_key = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap();
 
         let transaction = TransactionBuilder::new()
             .header(TransactionHeader {
                 version: 1,
-                network_id: NetworkDefinition::local_simulator().id,
+                network_id: NetworkDefinition::simulator().id,
                 start_epoch_inclusive: 0,
                 end_epoch_exclusive: 100,
                 nonce: 5,
@@ -101,7 +101,7 @@ mod tests {
                 tip_percentage: 5,
             })
             .manifest(
-                ManifestBuilder::new(&NetworkDefinition::local_simulator())
+                ManifestBuilder::new(&NetworkDefinition::simulator())
                     .clear_auth_zone()
                     .build(),
             )

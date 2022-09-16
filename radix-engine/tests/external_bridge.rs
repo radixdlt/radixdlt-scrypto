@@ -22,7 +22,7 @@ fn test_external_bridges() {
         test_runner.compile_and_publish("./tests/external_blueprint_caller");
 
     // Part 2 - Get a target component address
-    let manifest1 = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest1 = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(
             target_package_address,
@@ -40,7 +40,7 @@ fn test_external_bridges() {
         .new_component_addresses[0];
 
     // Part 3 - Get the caller component address
-    let manifest2 = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest2 = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(
             caller_package_address,
@@ -58,7 +58,7 @@ fn test_external_bridges() {
         .new_component_addresses[0];
 
     // ACT
-    let manifest3 = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest3 = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_method(
             caller_component_address,
@@ -72,7 +72,7 @@ fn test_external_bridges() {
     receipt3.expect_commit_success();
 
     // ACT
-    let manifest4 = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+    let manifest4 = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_method(
             caller_component_address,
@@ -95,7 +95,7 @@ fn fill_in_package_name_template(
     use std::io::{Read, Write};
     use std::path::Path;
 
-    let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::local_simulator());
+    let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
 
     let package_address_string = bech32_encoder.encode_package_address(&package_address);
 
