@@ -10,14 +10,15 @@ use transaction::validation::{IdAllocator, IdSpace, TransactionValidator};
 
 #[derive(TypeId, Encode, Decode)]
 struct SystemComponentState {
-    xrd: scrypto::resource::Vault,
+    vault: scrypto::resource::Vault,
+    transactions: scrypto::component::KeyValueStore<Hash, u64>,
 }
 
 const XRD_SYMBOL: &str = "XRD";
 const XRD_NAME: &str = "Radix";
 const XRD_DESCRIPTION: &str = "The Radix Public Network's native token, used to pay the network's required transaction fees and to secure the network through staking to its validator nodes.";
 const XRD_URL: &str = "https://tokens.radixdlt.com";
-const XRD_MAX_SUPPLY: i128 = 24_000_000_000i128;
+const XRD_MAX_SUPPLY: i128 = 1_000_000_000_000i128;
 
 pub struct GenesisReceipt {
     pub sys_faucet_package: PackageAddress,

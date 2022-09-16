@@ -159,7 +159,7 @@ fn test_basic_transfer() {
         + 600 /* return_substate */
         + 1000 /* run_function */
         + 5200 /* run_method */
-        + 275049 /* run_wasm */
+        + 275043 /* run_wasm */
         + 368 /* verify_manifest */
         + 3750 /* verify_signatures */
         + 3000, /* write_substate */

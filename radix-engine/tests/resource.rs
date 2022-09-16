@@ -114,7 +114,7 @@ fn mint_too_much_should_fail() {
             package_address,
             "ResourceTest",
             "create_fungible_and_mint",
-            args!(0u8, dec!(100_000_000_001i128)),
+            args!(0u8, dec!("1000000000000000001")),
         )
         .call_method(
             account,

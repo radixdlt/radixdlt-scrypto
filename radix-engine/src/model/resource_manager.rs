@@ -283,9 +283,8 @@ impl ResourceManager {
             // check amount
             self.check_amount(amount)?;
 
-            // It takes `1,701,411,835` mint operations to reach `Decimal::MAX`,
-            // which will be impossible with metering.
-            if amount > 100_000_000_000i128.into() {
+            // Practically impossible to overflow the Decimal type with this limit in place.
+            if amount > dec!("1000000000000000000") {
                 return Err(InvokeError::Error(
                     ResourceManagerError::MaxMintAmountExceeded,
                 ));
@@ -327,14 +326,6 @@ impl ResourceManager {
         // check amount
         let amount: Decimal = entries.len().into();
         self.check_amount(amount)?;
-
-        // It takes `1,701,411,835` mint operations to reach `Decimal::MAX`,
-        // which will be impossible with metering.
-        if amount > 100_000_000_000i128.into() {
-            return Err(InvokeError::Error(
-                ResourceManagerError::MaxMintAmountExceeded,
-            ));
-        }
 
         self.total_supply += amount;
 
@@ -437,9 +428,8 @@ impl ResourceManager {
                     if let Some(mint_params) = &input.mint_params {
                         if let MintParams::Fungible { amount } = mint_params {
                             resource_manager.check_amount(*amount)?;
-                            // It takes `1,701,411,835` mint operations to reach `Decimal::MAX`,
-                            // which will be impossible with metering.
-                            if *amount > 100_000_000_000i128.into() {
+                            // TODO: refactor this into mint function
+                            if *amount > dec!("1000000000000000000") {
                                 return Err(InvokeError::Error(
                                     ResourceManagerError::MaxMintAmountExceeded,
                                 ));
