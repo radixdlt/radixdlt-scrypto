@@ -16,9 +16,9 @@ pub struct Run {
     #[clap(short, long)]
     network: Option<String>,
 
-    /// Comma separated paths to blob files
-    #[clap(short, long)]
-    blobs: Option<String>,
+    /// The paths to blobs
+    #[clap(short, long, multiple = true)]
+    blobs: Option<Vec<String>>,
 
     /// The private keys used for signing, separated by comma
     #[clap(short, long)]
@@ -47,7 +47,7 @@ impl Run {
         };
         let mut blobs = Vec::new();
         if let Some(paths) = &self.blobs {
-            for path in paths.split(",") {
+            for path in paths {
                 blobs.push(std::fs::read(path).map_err(Error::IOError)?);
             }
         }

@@ -2,16 +2,16 @@ use sbor::rust::vec::Vec;
 use scrypto::crypto::*;
 use secp256k1::{Message, PublicKey, SecretKey};
 
-pub struct EcdsaPrivateKey(SecretKey);
+pub struct EcdsaSecp256k1PrivateKey(SecretKey);
 
-impl EcdsaPrivateKey {
+impl EcdsaSecp256k1PrivateKey {
     pub const LENGTH: usize = 32;
 
-    pub fn public_key(&self) -> EcdsaPublicKey {
-        EcdsaPublicKey(PublicKey::from_secret_key_global(&self.0).serialize())
+    pub fn public_key(&self) -> EcdsaSecp256k1PublicKey {
+        EcdsaSecp256k1PublicKey(PublicKey::from_secret_key_global(&self.0).serialize())
     }
 
-    pub fn sign(&self, msg: &[u8]) -> EcdsaSignature {
+    pub fn sign(&self, msg: &[u8]) -> EcdsaSecp256k1Signature {
         let h = sha256(sha256(msg));
         let m = Message::from_slice(&h.0).expect("Hash is always a valid message");
         let signature = secp256k1::SECP256K1.sign_ecdsa_recoverable(&m, &self.0);
@@ -20,7 +20,7 @@ impl EcdsaPrivateKey {
         let mut buf = [0u8; 65];
         buf[0] = recovery_id.to_i32() as u8;
         buf[1..].copy_from_slice(&signature_data);
-        EcdsaSignature(buf)
+        EcdsaSecp256k1Signature(buf)
     }
 
     pub fn to_bytes(&self) -> Vec<u8> {
@@ -28,15 +28,15 @@ impl EcdsaPrivateKey {
     }
 
     pub fn from_bytes(slice: &[u8]) -> Result<Self, ()> {
-        if slice.len() != EcdsaPrivateKey::LENGTH {
+        if slice.len() != EcdsaSecp256k1PrivateKey::LENGTH {
             return Err(());
         }
         Ok(Self(SecretKey::from_slice(slice).map_err(|_| ())?))
     }
 
     pub fn from_u64(n: u64) -> Result<Self, ()> {
-        let mut bytes = [0u8; EcdsaPrivateKey::LENGTH];
-        (&mut bytes[EcdsaPrivateKey::LENGTH - 8..EcdsaPrivateKey::LENGTH])
+        let mut bytes = [0u8; EcdsaSecp256k1PrivateKey::LENGTH];
+        (&mut bytes[EcdsaSecp256k1PrivateKey::LENGTH - 8..EcdsaSecp256k1PrivateKey::LENGTH])
             .copy_from_slice(&n.to_be_bytes());
 
         Ok(Self(SecretKey::from_slice(&bytes).map_err(|_| ())?))
@@ -46,7 +46,7 @@ impl EcdsaPrivateKey {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::validation::verify_ecdsa;
+    use crate::validation::verify_ecdsa_secp256k1;
     use sbor::rust::str::FromStr;
     use scrypto::{
         constants::ECDSA_TOKEN,
@@ -59,19 +59,19 @@ mod tests {
         let test_pk = "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798";
         let test_message = "Test";
         let test_signature = "0079224ea514206706298d8d620f660828f7987068d6d02757e6f3cbbf4a51ab133395db69db1bc9b2726dd99e34efc252d8258dcb003ebaba42be349f50f7765e";
-        let sk = EcdsaPrivateKey::from_bytes(&hex::decode(test_sk).unwrap()).unwrap();
-        let pk = EcdsaPublicKey::from_str(test_pk).unwrap();
-        let sig = EcdsaSignature::from_str(test_signature).unwrap();
+        let sk = EcdsaSecp256k1PrivateKey::from_bytes(&hex::decode(test_sk).unwrap()).unwrap();
+        let pk = EcdsaSecp256k1PublicKey::from_str(test_pk).unwrap();
+        let sig = EcdsaSecp256k1Signature::from_str(test_signature).unwrap();
 
         assert_eq!(sk.public_key(), pk);
         assert_eq!(sk.sign(test_message.as_bytes()), sig);
-        assert!(verify_ecdsa(test_message.as_bytes(), &pk, &sig));
+        assert!(verify_ecdsa_secp256k1(test_message.as_bytes(), &pk, &sig));
     }
 
     #[test]
     fn test_non_fungible_address_codec() {
         let expected = "000000000000000000000000000000000000000000000000000002300721000000031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f";
-        let private_key = EcdsaPrivateKey::from_bytes(&[1u8; 32]).unwrap();
+        let private_key = EcdsaSecp256k1PrivateKey::from_bytes(&[1u8; 32]).unwrap();
         let public_key = private_key.public_key();
         let auth_address =
             NonFungibleAddress::new(ECDSA_TOKEN, NonFungibleId::from_bytes(public_key.to_vec()));

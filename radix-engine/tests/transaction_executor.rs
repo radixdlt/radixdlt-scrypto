@@ -11,7 +11,7 @@ use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::builder::TransactionBuilder;
 use transaction::model::{NotarizedTransaction, TransactionHeader, ValidatedTransaction};
-use transaction::signing::EcdsaPrivateKey;
+use transaction::signing::EcdsaSecp256k1PrivateKey;
 use transaction::validation::{TestIntentHashManager, TransactionValidator, ValidationConfig};
 
 #[test]
@@ -96,9 +96,9 @@ fn create_executable_transaction(cost_unit_limit: u32) -> ValidatedTransaction {
 
 fn create_notarized_transaction(cost_unit_limit: u32) -> NotarizedTransaction {
     // create key pairs
-    let sk1 = EcdsaPrivateKey::from_u64(1).unwrap();
-    let sk2 = EcdsaPrivateKey::from_u64(2).unwrap();
-    let sk_notary = EcdsaPrivateKey::from_u64(3).unwrap();
+    let sk1 = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap();
+    let sk2 = EcdsaSecp256k1PrivateKey::from_u64(2).unwrap();
+    let sk_notary = EcdsaSecp256k1PrivateKey::from_u64(3).unwrap();
 
     TransactionBuilder::new()
         .header(TransactionHeader {

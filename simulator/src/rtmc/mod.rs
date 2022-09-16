@@ -17,9 +17,9 @@ pub struct Args {
     #[clap(short, long)]
     network: Option<String>,
 
-    /// Comma separated paths to blob files
-    #[clap(short, long)]
-    blobs: Option<String>,
+    /// The paths to blobs
+    #[clap(short, long, multiple = true)]
+    blobs: Option<Vec<String>>,
 
     /// Input file
     #[clap(required = true)]
@@ -43,7 +43,7 @@ pub fn run() -> Result<(), Error> {
     };
     let mut blobs = Vec::new();
     if let Some(paths) = args.blobs {
-        for path in paths.split(",") {
+        for path in paths {
             blobs.push(std::fs::read(path).map_err(Error::IoError)?);
         }
     }
