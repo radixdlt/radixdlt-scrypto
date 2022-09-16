@@ -97,62 +97,12 @@ pub const ACCOUNT_PACKAGE: PackageAddress = construct_address!(
 /// The address of the SysFaucet component
 pub const SYS_FAUCET_COMPONENT: ComponentAddress = construct_address!(
     EntityType::NormalComponent,
-    8,
-    176,
-    243,
-    225,
-    122,
-    72,
-    73,
-    246,
-    165,
-    39,
-    153,
-    157,
-    162,
-    22,
-    192,
-    89,
-    71,
-    248,
-    164,
-    205,
-    128,
-    162,
-    219,
-    72,
-    86,
-    194
+    173, 130, 50, 141, 112, 34, 61, 91, 174, 38, 130, 96, 179, 4, 93, 204, 113, 220, 243, 95, 55, 167, 67, 74, 9, 105
 );
 
 pub const SYS_SYSTEM_COMPONENT: ComponentAddress = construct_address!(
     EntityType::SystemComponent,
-    173,
-    130,
-    50,
-    141,
-    112,
-    34,
-    61,
-    91,
-    174,
-    38,
-    130,
-    96,
-    179,
-    4,
-    93,
-    204,
-    113,
-    220,
-    243,
-    95,
-    55,
-    167,
-    67,
-    74,
-    9,
-    105
+    141, 129, 247, 20, 46, 8, 166, 23, 225, 192, 118, 147, 168, 25, 252, 113, 41, 42, 140, 141, 169, 183, 148, 102, 224, 208
 );
 // TODO Add other system components
 

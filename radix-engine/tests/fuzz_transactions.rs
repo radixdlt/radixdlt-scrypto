@@ -15,6 +15,7 @@ use transaction::builder::{ManifestBuilder, TransactionBuilder};
 use transaction::model::{NotarizedTransaction, TransactionHeader};
 use transaction::signing::EcdsaSecp256k1PrivateKey;
 use transaction::validation::{TestIntentHashManager, TransactionValidator, ValidationConfig};
+use radix_engine::engine::ExecutionPrivilege;
 
 fn execute_single_transaction(transaction: NotarizedTransaction) {
     let transaction = TransactionValidator::validate(
@@ -34,7 +35,7 @@ fn execute_single_transaction(transaction: NotarizedTransaction) {
     let mut wasm_instrumenter = WasmInstrumenter::new();
     let execution_config = ExecutionConfig {
         max_call_depth: DEFAULT_MAX_CALL_DEPTH,
-        is_system: false,
+        execution_privilege: ExecutionPrivilege::User,
         trace: false,
     };
     let fee_reserve_config = FeeReserveConfig {
@@ -69,7 +70,7 @@ impl TransactionFuzzer {
             match next {
                 0 => {
                     builder.take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
-                        builder.call_function(
+                        builder.call_scrypto_function(
                             ACCOUNT_PACKAGE,
                             "Account",
                             "new_with_resource",
@@ -78,7 +79,7 @@ impl TransactionFuzzer {
                     });
                 }
                 1 => {
-                    builder.call_function(
+                    builder.call_scrypto_function(
                         ACCOUNT_PACKAGE,
                         "Account",
                         "new",
@@ -87,7 +88,7 @@ impl TransactionFuzzer {
                 }
                 2 => {
                     builder.take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
-                        builder.call_function(
+                        builder.call_scrypto_function(
                             ACCOUNT_PACKAGE,
                             "Account",
                             "new_with_resource",
