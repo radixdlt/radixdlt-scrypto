@@ -122,3 +122,28 @@ fn test_entire_auth_zone() {
     // Assert
     receipt.expect_commit_success();
 }
+
+#[test]
+fn test_faucet_drain_attempt_should_fail() {
+    // Arrange
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
+    let (public_key, _, account) = test_runner.new_account();
+
+    // Act
+    let manifest = ManifestBuilder::new(&NetworkDefinition::local_simulator())
+        .lock_fee(dec!("10"), account)
+        .call_method(SYS_FAUCET_COMPONENT, "free_xrd", args!())
+        .call_method(SYS_FAUCET_COMPONENT, "free_xrd", args!())
+        .call_method(
+            account,
+            "deposit_batch",
+            args!(Expression::entire_worktop()),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
+    println!("{:?}", receipt);
+
+    // Assert
+    receipt.expect_commit_failure();
+}
