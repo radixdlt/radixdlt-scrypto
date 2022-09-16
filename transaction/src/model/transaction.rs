@@ -5,27 +5,20 @@ use scrypto::crypto::{hash, Hash, PublicKey, Signature, SignatureWithPublicKey};
 
 use crate::manifest::{compile, CompileError};
 use crate::model::Instruction;
-use serde_with::{serde_as, DisplayFromStr};
 
 // TODO: add versioning of transaction schema
 
-#[serde_as]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct TransactionHeader {
     pub version: u8,
     pub network_id: u8,
-    #[serde_as(as = "DisplayFromStr")]
     pub start_epoch_inclusive: u64,
-    #[serde_as(as = "DisplayFromStr")]
     pub end_epoch_exclusive: u64,
-    #[serde_as(as = "DisplayFromStr")]
     pub nonce: u64,
     pub notary_public_key: PublicKey,
     pub notary_as_signatory: bool,
-    #[serde_as(as = "DisplayFromStr")]
     pub cost_unit_limit: u32,
-    #[serde_as(as = "DisplayFromStr")]
     pub tip_percentage: u32,
 }
 
