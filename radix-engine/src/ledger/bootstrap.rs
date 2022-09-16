@@ -78,7 +78,7 @@ pub fn create_genesis() -> SystemTransaction {
         ecdsa_resource_auth.insert(Withdraw, (rule!(allow_all), LOCKED));
         let initial_supply: Option<MintParams> = None;
 
-        // TODO: Remove nasty circular dependency on SYS_UTILS_PACKAGE
+        // TODO: Create token at a specific address
         Instruction::CallFunction {
             fn_identifier: FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
                 ResourceManagerFnIdentifier::Create,
@@ -100,7 +100,7 @@ pub fn create_genesis() -> SystemTransaction {
         access_rules.insert(Withdraw, (rule!(allow_all), LOCKED));
         let initial_supply: Option<MintParams> = None;
 
-        // TODO: Remove nasty circular dependency on SYS_UTILS_PACKAGE
+        // TODO: Create token at a specific address
         Instruction::CallFunction {
             fn_identifier: FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
                 ResourceManagerFnIdentifier::Create,
