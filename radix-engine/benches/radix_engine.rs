@@ -26,7 +26,7 @@ fn bench_transfer(c: &mut Criterion) {
 
     // Create two accounts
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(1000.into(), SYS_FAUCET_COMPONENT)
         .call_method(SYS_FAUCET_COMPONENT, "free_xrd", args!())
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.new_account_with_resource(
@@ -54,9 +54,29 @@ fn bench_transfer(c: &mut Criterion) {
         .entity_changes
         .new_component_addresses[0];
 
+    // Fill first account
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        .lock_fee(1000.into(), SYS_FAUCET_COMPONENT)
+        .call_method(SYS_FAUCET_COMPONENT, "free_xrd", args!())
+        .call_method(
+            account1,
+            "deposit_batch",
+            args!(Expression::entire_worktop()),
+        )
+        .build();
+    for nonce in 0..1000 {
+        executor
+            .execute_and_commit(
+                &TestTransaction::new(manifest.clone(), nonce, vec![public_key.into()]),
+                &FeeReserveConfig::standard(),
+                &ExecutionConfig::default(),
+            )
+            .expect_commit();
+    }
+
     // Create a transfer manifest
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), account1)
+        .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
         .withdraw_from_account_by_amount(dec!("0.000001"), RADIX_TOKEN, account1)
         .call_method(
             account2,
