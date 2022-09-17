@@ -1,6 +1,7 @@
 use radix_engine::constants::{
     DEFAULT_COST_UNIT_LIMIT, DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN,
 };
+use radix_engine::engine::ExecutionPrivilege;
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::state_manager::StagedSubstateStoreManager;
 use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig, TransactionExecutor};
@@ -15,7 +16,6 @@ use transaction::builder::{ManifestBuilder, TransactionBuilder};
 use transaction::model::{NotarizedTransaction, TransactionHeader};
 use transaction::signing::EcdsaSecp256k1PrivateKey;
 use transaction::validation::{TestIntentHashManager, TransactionValidator, ValidationConfig};
-use radix_engine::engine::ExecutionPrivilege;
 
 fn execute_single_transaction(transaction: NotarizedTransaction) {
     let transaction = TransactionValidator::validate(
