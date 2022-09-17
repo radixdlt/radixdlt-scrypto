@@ -116,7 +116,7 @@ impl TransactionReceipt {
                     panic!("Expected success but was failed:\n{:?}", err)
                 }
             },
-            TransactionResult::Reject(e) => panic!("Transaction was rejected\n:{:?}", e),
+            TransactionResult::Reject(err) => panic!("Transaction was rejected:\n{:?}", err),
         }
     }
 
