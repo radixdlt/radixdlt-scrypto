@@ -394,7 +394,7 @@ impl ManifestBuilder {
             .0)
     }
 
-    /// Calls a method where the arguments should be an array of encoded Scrypto value.
+    /// Calls a scrypto method where the arguments should be an array of encoded Scrypto value.
     pub fn call_method(
         &mut self,
         component_address: ComponentAddress,
@@ -405,6 +405,23 @@ impl ManifestBuilder {
             method_identifier: MethodIdentifier::Scrypto {
                 component_address,
                 ident: method_name.to_owned(),
+            },
+            args,
+        });
+        self
+    }
+
+    /// Calls a native method where the arguments should be an array of encoded Scrypto value.
+    pub fn call_native_method(
+        &mut self,
+        receiver: Receiver,
+        native_fn_identifier: NativeFnIdentifier,
+        args: Vec<u8>,
+    ) -> &mut Self {
+        self.add_instruction(Instruction::CallMethod {
+            method_identifier: MethodIdentifier::Native {
+                receiver,
+                native_fn_identifier,
             },
             args,
         });
