@@ -102,6 +102,7 @@ pub enum TokenKind {
     CallFunction,
     CallMethod,
     PublishPackage,
+    CreateResource,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -422,6 +423,7 @@ impl Lexer {
             "CALL_FUNCTION" => Ok(TokenKind::CallFunction),
             "CALL_METHOD" => Ok(TokenKind::CallMethod),
             "PUBLISH_PACKAGE" => Ok(TokenKind::PublishPackage),
+            "CREATE_RESOURCE" => Ok(TokenKind::CreateResource),
 
             s @ _ => Err(LexerError::UnknownIdentifier(s.into())),
         }
