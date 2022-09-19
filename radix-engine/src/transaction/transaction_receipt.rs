@@ -228,15 +228,17 @@ impl fmt::Debug for TransactionReceipt {
                 prefix!(i, contents.instructions),
                 match inst {
                     ExecutableInstruction::CallFunction {
-                        package_address,
-                        blueprint_name,
-                        method_name,
+                        fn_identifier: FnIdentifier::Scrypto {
+                            package_address,
+                            blueprint_name,
+                            ident,
+                        },
                         args,
                     } => format!(
                         "CallFunction {{ package_address: {}, blueprint_name: {:?}, method_name: {:?}, args: {:?} }}",
                         bech32_encoder.encode_package_address(&package_address),
                         blueprint_name,
-                        method_name,
+                        ident,
                         ScryptoValue::from_slice(&args).expect("Failed parse call data")
                     ),
                     ExecutableInstruction::CallMethod {

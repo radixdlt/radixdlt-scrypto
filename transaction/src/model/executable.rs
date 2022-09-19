@@ -2,8 +2,8 @@ use sbor::rust::collections::BTreeSet;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto::component::{ComponentAddress, PackageAddress};
-use scrypto::core::Blob;
+use scrypto::component::ComponentAddress;
+use scrypto::core::{Blob, FnIdentifier};
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
 use scrypto::math::*;
@@ -64,9 +64,7 @@ pub enum ExecutableInstruction {
     },
     DropAllProofs,
     CallFunction {
-        package_address: PackageAddress,
-        blueprint_name: String,
-        method_name: String,
+        fn_identifier: FnIdentifier,
         args: Vec<u8>,
     },
     CallMethod {

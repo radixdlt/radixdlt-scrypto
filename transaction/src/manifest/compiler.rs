@@ -40,10 +40,12 @@ mod tests {
     use sbor::rust::str::FromStr;
     use scrypto::address::Bech32Decoder;
     use scrypto::args;
-    use scrypto::core::Blob;
     use scrypto::core::NetworkDefinition;
+    use scrypto::core::{Blob, FnIdentifier, NativeFnIdentifier, ResourceManagerFnIdentifier};
     use scrypto::math::*;
-    use scrypto::resource::ResourceAddress;
+    use scrypto::resource::{
+        AccessRule, MintParams, Mutability, ResourceAddress, ResourceMethodAuthKey, ResourceType,
+    };
     use scrypto::{core::Expression, resource::NonFungibleId};
 
     #[cfg(not(feature = "alloc"))]
@@ -143,6 +145,19 @@ mod tests {
                         "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag"
                     )
                     .unwrap()
+                },
+                Instruction::CallFunction {
+                    fn_identifier: FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
+                        ResourceManagerFnIdentifier::Create
+                    )),
+                    args: args!(
+                        ResourceType::Fungible { divisibility: 0 },
+                        HashMap::<String, String>::new(),
+                        HashMap::<ResourceMethodAuthKey, (AccessRule, Mutability)>::new(),
+                        Some(MintParams::Fungible {
+                            amount: "1.0".into()
+                        })
+                    ),
                 },
                 Instruction::CallMethod {
                     component_address: component1,
