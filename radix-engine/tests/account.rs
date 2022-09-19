@@ -30,7 +30,7 @@ fn can_withdraw_from_my_account() {
     // Assert
     let outputs = receipt.expect_commit_success();
     let other_account_balance: Decimal = scrypto_decode(&outputs[3]).unwrap();
-    let transfer_amount = other_account_balance - 1_000_000 /* initial balance */;
+    let transfer_amount = other_account_balance - 1000 /* initial balance */;
     assert_resource_changes_for_transfer(
         &receipt.expect_commit().resource_changes,
         RADIX_TOKEN,
@@ -139,7 +139,7 @@ fn test_account_balance() {
     assert!(receipt.expect_commit().resource_changes.is_empty());
     assert_eq!(
         outputs[1],
-        ScryptoValue::from_typed(&Decimal::from(1000000)).raw
+        ScryptoValue::from_typed(&Decimal::from(1000)).raw
     );
 }
 

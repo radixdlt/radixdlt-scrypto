@@ -2,7 +2,6 @@ use std::collections::HashSet;
 
 use sbor::rust::vec;
 use scrypto::buffer::scrypto_decode;
-use scrypto::core::NetworkDefinition;
 use scrypto::crypto::*;
 use scrypto::values::*;
 
@@ -10,8 +9,8 @@ use crate::errors::{SignatureValidationError, *};
 use crate::model::*;
 use crate::validation::*;
 
-pub struct ValidationConfig<'n> {
-    pub network: &'n NetworkDefinition,
+pub struct ValidationConfig {
+    pub network_id: u8,
     pub current_epoch: u64,
     pub max_cost_unit_limit: u32,
     pub min_tip_percentage: u32,
@@ -85,7 +84,7 @@ impl TransactionValidator {
         })
     }
 
-    fn validate_intent<I: IntentHashManager>(
+    pub fn validate_intent<I: IntentHashManager>(
         intent: &TransactionIntent,
         intent_hash_manager: &I,
         config: &ValidationConfig,
@@ -266,7 +265,7 @@ impl TransactionValidator {
         return Ok(instructions);
     }
 
-    fn validate_header(
+    pub fn validate_header(
         intent: &TransactionIntent,
         config: &ValidationConfig,
     ) -> Result<(), HeaderValidationError> {
@@ -278,7 +277,7 @@ impl TransactionValidator {
         }
 
         // network
-        if header.network_id != config.network.id {
+        if header.network_id != config.network_id {
             return Err(HeaderValidationError::InvalidNetwork);
         }
 
@@ -306,7 +305,7 @@ impl TransactionValidator {
         Ok(())
     }
 
-    fn validate_signatures(
+    pub fn validate_signatures(
         transaction: &NotarizedTransaction,
     ) -> Result<HashSet<PublicKey>, SignatureValidationError> {
         // TODO: split into static validation part and runtime validation part to support more signatures
@@ -343,7 +342,7 @@ impl TransactionValidator {
         Ok(signers)
     }
 
-    fn validate_call_data(
+    pub fn validate_call_data(
         call_data: &[u8],
         id_validator: &mut IdValidator,
     ) -> Result<(), CallDataValidationError> {
@@ -369,13 +368,15 @@ mod tests {
     use scrypto::core::NetworkDefinition;
 
     use super::*;
-    use crate::{builder::ManifestBuilder, builder::TransactionBuilder, signing::EcdsaPrivateKey};
+    use crate::{
+        builder::ManifestBuilder, builder::TransactionBuilder, signing::EcdsaSecp256k1PrivateKey,
+    };
 
     macro_rules! assert_invalid_tx {
         ($result: expr, ($version: expr, $start_epoch: expr, $end_epoch: expr, $nonce: expr, $signers: expr, $notary: expr)) => {{
             let mut intent_hash_manager: TestIntentHashManager = TestIntentHashManager::new();
             let config: ValidationConfig = ValidationConfig {
-                network: &NetworkDefinition::simulator(),
+                network_id: NetworkDefinition::simulator().id,
                 current_epoch: 1,
                 max_cost_unit_limit: 10_000_000,
                 min_tip_percentage: 0,
@@ -446,7 +447,7 @@ mod tests {
     fn test_valid_preview() {
         let mut intent_hash_manager: TestIntentHashManager = TestIntentHashManager::new();
         let config: ValidationConfig = ValidationConfig {
-            network: &NetworkDefinition::simulator(),
+            network_id: NetworkDefinition::simulator().id,
             current_epoch: 1,
             max_cost_unit_limit: 10_000_000,
             min_tip_percentage: 0,
@@ -478,7 +479,7 @@ mod tests {
         signers: Vec<u64>,
         notary: u64,
     ) -> NotarizedTransaction {
-        let sk_notary = EcdsaPrivateKey::from_u64(notary).unwrap();
+        let sk_notary = EcdsaSecp256k1PrivateKey::from_u64(notary).unwrap();
 
         let mut builder = TransactionBuilder::new()
             .header(TransactionHeader {
@@ -499,7 +500,7 @@ mod tests {
             );
 
         for signer in signers {
-            builder = builder.sign(&EcdsaPrivateKey::from_u64(signer).unwrap());
+            builder = builder.sign(&EcdsaSecp256k1PrivateKey::from_u64(signer).unwrap());
         }
         builder = builder.notarize(&sk_notary);
 

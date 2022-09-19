@@ -3,37 +3,37 @@ use radix_engine::types::*;
 use transaction::builder::ManifestBuilder;
 use transaction::builder::TransactionBuilder;
 use transaction::model::TransactionHeader;
-use transaction::signing::EcdsaPrivateKey;
-use transaction::signing::Ed25519PrivateKey;
-use transaction::validation::recover_ecdsa;
-use transaction::validation::verify_ecdsa;
-use transaction::validation::verify_ed25519;
+use transaction::signing::EcdsaSecp256k1PrivateKey;
+use transaction::signing::EddsaEd25519PrivateKey;
+use transaction::validation::recover_ecdsa_secp256k1;
+use transaction::validation::verify_ecdsa_secp256k1;
+use transaction::validation::verify_eddsa_ed25519;
 use transaction::validation::TestIntentHashManager;
 use transaction::validation::TransactionValidator;
 use transaction::validation::ValidationConfig;
 
-fn bench_ecdsa_validation(c: &mut Criterion) {
+fn bench_ecdsa_secp256k1_validation(c: &mut Criterion) {
     let message = "This is a long message".repeat(100);
-    let signer = EcdsaPrivateKey::from_u64(123123123123).unwrap();
+    let signer = EcdsaSecp256k1PrivateKey::from_u64(123123123123).unwrap();
     let signature = signer.sign(message.as_bytes());
 
     c.bench_function("ECDSA signature validation", |b| {
         b.iter(|| {
-            let public_key = recover_ecdsa(message.as_bytes(), &signature).unwrap();
-            verify_ecdsa(message.as_bytes(), &public_key, &signature);
+            let public_key = recover_ecdsa_secp256k1(message.as_bytes(), &signature).unwrap();
+            verify_ecdsa_secp256k1(message.as_bytes(), &public_key, &signature);
         })
     });
 }
 
-fn bench_ed25519_validation(c: &mut Criterion) {
+fn bench_eddsa_ed25519_validation(c: &mut Criterion) {
     let message = "This is a long message".repeat(100);
-    let signer = Ed25519PrivateKey::from_u64(123123123123).unwrap();
+    let signer = EddsaEd25519PrivateKey::from_u64(123123123123).unwrap();
     let public_key = signer.public_key();
     let signature = signer.sign(message.as_bytes());
 
     c.bench_function("ED25519 signature validation", |b| {
         b.iter(|| {
-            verify_ed25519(message.as_bytes(), &public_key, &signature);
+            verify_eddsa_ed25519(message.as_bytes(), &public_key, &signature);
         })
     });
 }
@@ -51,7 +51,7 @@ fn bench_transaction_validation(c: &mut Criterion) {
             "account_sim1qdugngtu8y0e54zwe5j54mdwv3wnkse68u9840407zws6fzpn7",
         )
         .unwrap();
-    let signer = EcdsaPrivateKey::from_u64(1).unwrap();
+    let signer = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap();
 
     let transaction = TransactionBuilder::new()
         .header(TransactionHeader {
@@ -84,7 +84,7 @@ fn bench_transaction_validation(c: &mut Criterion) {
         b.iter(|| {
             let intent_hash_manager = TestIntentHashManager::new();
             let config: ValidationConfig = ValidationConfig {
-                network: &NetworkDefinition::simulator(),
+                network_id: NetworkDefinition::simulator().id,
                 current_epoch: 1,
                 max_cost_unit_limit: 10_000_000,
                 min_tip_percentage: 0,
@@ -102,8 +102,8 @@ fn bench_transaction_validation(c: &mut Criterion) {
 
 criterion_group!(
     transaction,
-    bench_ecdsa_validation,
-    bench_ed25519_validation,
+    bench_ecdsa_secp256k1_validation,
+    bench_eddsa_ed25519_validation,
     bench_transaction_validation,
 );
 criterion_main!(transaction);

@@ -70,7 +70,7 @@ where
     ) -> Result<PreviewResult, PreviewError> {
         // TODO: construct validation config based on current world state
         let validation_params = ValidationConfig {
-            network: self.network,
+            network_id: self.network.id,
             current_epoch: 1,
             max_cost_unit_limit: DEFAULT_MAX_COST_UNIT_LIMIT,
             min_tip_percentage: 0,

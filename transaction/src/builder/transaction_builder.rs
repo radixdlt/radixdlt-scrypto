@@ -86,7 +86,7 @@ mod tests {
 
     #[test]
     fn notary_as_signatory() {
-        let private_key = EcdsaPrivateKey::from_u64(1).unwrap();
+        let private_key = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap();
 
         let transaction = TransactionBuilder::new()
             .header(TransactionHeader {

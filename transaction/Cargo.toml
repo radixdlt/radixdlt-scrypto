@@ -10,9 +10,12 @@ clap = { version = "3.1.17", features = ["derive", "cargo"] }
 hex = { version = "0.4.3", default-features = false }
 ed25519-dalek = { version = "1.0.1", default-features = false, features = ["u64_backend"]}
 secp256k1 = { version = "0.24.0", default-features = false, features = ["global-context", "recovery"]}
+serde = { version = "1.0.144", default-features = false, optional = true }
+serde_with = { version = "2.0.1" }
 
 [features]
 # You should enable either `std` or `alloc`
 default = ["std"]
 std = ["sbor/std", "scrypto/std", "hex/std", "ed25519-dalek/std", "secp256k1/std"]
 alloc = ["sbor/alloc", "scrypto/alloc", "hex/alloc", "ed25519-dalek/alloc", "secp256k1/alloc"]
+serde = ["serde/derive", "scrypto/serde"]

@@ -26,7 +26,7 @@ impl TestTransaction {
                 start_epoch_inclusive: 0,
                 end_epoch_exclusive: 100,
                 nonce,
-                notary_public_key: EcdsaPublicKey([0u8; 33]).into(),
+                notary_public_key: EcdsaSecp256k1PublicKey([0u8; 33]).into(),
                 notary_as_signatory: false,
                 cost_unit_limit: 10_000_000,
                 tip_percentage: 5,
@@ -37,12 +37,14 @@ impl TestTransaction {
                     .iter()
                     .cloned()
                     .map(|pk| match pk {
-                        PublicKey::Ecdsa(_) => EcdsaSignature([0u8; 65]).into(),
-                        PublicKey::Ed25519(pk) => (pk, Ed25519Signature([0u8; 64])).into(),
+                        PublicKey::EcdsaSecp256k1(_) => EcdsaSecp256k1Signature([0u8; 65]).into(),
+                        PublicKey::EddsaEd25519(pk) => {
+                            (pk, EddsaEd25519Signature([0u8; 64])).into()
+                        }
                     })
                     .collect(),
             )
-            .notary_signature(EcdsaSignature([0u8; 65]).into())
+            .notary_signature(EcdsaSecp256k1Signature([0u8; 65]).into())
             .build();
 
         let executable_instructions = transaction

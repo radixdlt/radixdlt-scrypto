@@ -5,7 +5,7 @@ use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::builder::TransactionBuilder;
 use transaction::model::*;
-use transaction::signing::EcdsaPrivateKey;
+use transaction::signing::EcdsaSecp256k1PrivateKey;
 use transaction::validation::ValidationConfig;
 use transaction::validation::{TestIntentHashManager, TransactionValidator};
 
@@ -41,8 +41,8 @@ fn prepare_test_tx_and_preview_intent(
     test_runner: &TestRunner<TypedInMemorySubstateStore>,
     network: &NetworkDefinition,
 ) -> (ValidatedTransaction, PreviewIntent) {
-    let notary_priv_key = EcdsaPrivateKey::from_u64(2).unwrap();
-    let tx_signer_priv_key = EcdsaPrivateKey::from_u64(3).unwrap();
+    let notary_priv_key = EcdsaSecp256k1PrivateKey::from_u64(2).unwrap();
+    let tx_signer_priv_key = EcdsaSecp256k1PrivateKey::from_u64(3).unwrap();
 
     let notarized_transaction = TransactionBuilder::new()
         .header(TransactionHeader {
@@ -70,7 +70,7 @@ fn prepare_test_tx_and_preview_intent(
         notarized_transaction.clone(),
         &TestIntentHashManager::new(),
         &ValidationConfig {
-            network: &network,
+            network_id: network.id,
             current_epoch: 1,
             max_cost_unit_limit: 10_000_000,
             min_tip_percentage: 0,

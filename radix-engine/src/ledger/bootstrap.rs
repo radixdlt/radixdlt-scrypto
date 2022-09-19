@@ -13,18 +13,19 @@ use crate::types::*;
 
 #[derive(TypeId, Encode, Decode)]
 struct SystemComponentState {
-    xrd: scrypto::resource::Vault,
+    vault: scrypto::resource::Vault,
+    transactions: scrypto::component::KeyValueStore<Hash, u64>,
 }
 
 const XRD_SYMBOL: &str = "XRD";
 const XRD_NAME: &str = "Radix";
 const XRD_DESCRIPTION: &str = "The Radix Public Network's native token, used to pay the network's required transaction fees and to secure the network through staking to its validator nodes.";
 const XRD_URL: &str = "https://tokens.radixdlt.com";
-const XRD_MAX_SUPPLY: i128 = 24_000_000_000i128;
+const XRD_MAX_SUPPLY: i128 = 1_000_000_000_000i128;
 const XRD_VAULT_ID: VaultId = (Hash([0u8; 32]), 0);
-const XRD_VAULT: scrypto::resource::Vault = scrypto::resource::Vault(XRD_VAULT_ID);
 
 const SYS_FAUCET_COMPONENT_NAME: &str = "SysFaucet";
+const SYS_FAUCET_KEY_VALUE_STORE_ID: KeyValueStoreId = (Hash([0u8; 32]), 1);
 
 use crate::model::*;
 
@@ -73,15 +74,19 @@ pub fn execute_genesis<'s, R: FeeReserve>(mut track: Track<'s, R>) -> TrackRecei
         true,
     );
 
-    let mut ecdsa_resource_auth = HashMap::new();
-    ecdsa_resource_auth.insert(Withdraw, (rule!(allow_all), LOCKED));
-    let ecdsa_token = ResourceManager::new(
+    let mut ecdsa_secp256k1_resource_auth = HashMap::new();
+    ecdsa_secp256k1_resource_auth.insert(Withdraw, (rule!(allow_all), LOCKED));
+    let ecdsa_secp256k1_token = ResourceManager::new(
         ResourceType::NonFungible,
         HashMap::new(),
-        ecdsa_resource_auth,
+        ecdsa_secp256k1_resource_auth,
     )
     .expect("Failed to construct ECDSA resource manager");
-    track.create_uuid_substate(SubstateId::ResourceManager(ECDSA_TOKEN), ecdsa_token, true);
+    track.create_uuid_substate(
+        SubstateId::ResourceManager(ECDSA_TOKEN),
+        ecdsa_secp256k1_token,
+        true,
+    );
 
     let system_token =
         ResourceManager::new(ResourceType::NonFungible, HashMap::new(), HashMap::new())
@@ -107,8 +112,14 @@ pub fn execute_genesis<'s, R: FeeReserve>(mut track: Track<'s, R>) -> TrackRecei
         SYS_FAUCET_COMPONENT_NAME.to_owned(),
         vec![],
     );
-    let sys_faucet_component_state =
-        ComponentState::new(scrypto_encode(&SystemComponentState { xrd: XRD_VAULT }));
+    let sys_faucet_component_state = ComponentState::new(scrypto_encode(&SystemComponentState {
+        vault: scrypto::resource::Vault(XRD_VAULT_ID),
+        transactions: scrypto::component::KeyValueStore {
+            id: SYS_FAUCET_KEY_VALUE_STORE_ID,
+            key: PhantomData,
+            value: PhantomData,
+        },
+    }));
     track.create_uuid_substate(
         SubstateId::ComponentInfo(SYS_FAUCET_COMPONENT),
         sys_faucet_component_info,
@@ -119,6 +130,7 @@ pub fn execute_genesis<'s, R: FeeReserve>(mut track: Track<'s, R>) -> TrackRecei
         sys_faucet_component_state,
         true,
     );
+
     track.create_uuid_substate(SubstateId::System, System { epoch: 0 }, true);
 
     track.finalize(Ok(Vec::new()), vec![initial_xrd])
