@@ -8,7 +8,6 @@ cd "$(dirname "$0")"
 echo "Building packages..."
 (cd account; scrypto build)
 (cd sys-faucet; scrypto build)
-(cd sys-utils; scrypto build)
 
 echo "Publishing artifacts..."
 wasm-opt \
