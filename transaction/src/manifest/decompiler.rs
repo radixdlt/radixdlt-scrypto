@@ -21,7 +21,7 @@ pub enum DecompileError {
     IdValidationError(IdValidationError),
     DecodeError(DecodeError),
     AddressError(AddressError),
-    Unsupported,
+    UnrecognizedNativeFunction,
 }
 
 pub fn decompile(
@@ -294,7 +294,7 @@ pub fn decompile(
 
                         buf.push_str(";\n");
                     }
-                    _ => return Err(DecompileError::Unsupported),
+                    _ => return Err(DecompileError::UnrecognizedNativeFunction),
                 },
             },
             Instruction::CallMethod {
@@ -364,10 +364,10 @@ pub fn decompile(
                                     amount,
                                 ));
                             }
-                            _ => return Err(DecompileError::Unsupported),
+                            _ => return Err(DecompileError::UnrecognizedNativeFunction),
                         }
                     }
-                    _ => return Err(DecompileError::Unsupported),
+                    _ => return Err(DecompileError::UnrecognizedNativeFunction),
                 },
             },
             Instruction::PublishPackage { code, abi } => {
