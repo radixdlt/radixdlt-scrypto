@@ -1,10 +1,8 @@
 use crate::engine::{DropFailure, HeapRENode, InvokeError, SystemApi};
 use crate::fee::FeeReserve;
-use crate::model::{Bucket, LockableResource, ResourceOperationError};
+use crate::model::{Bucket, LockableResource, Resource, ResourceOperationError};
 use crate::types::*;
 use crate::wasm::*;
-
-use super::Resource;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct WorktopPutInput {

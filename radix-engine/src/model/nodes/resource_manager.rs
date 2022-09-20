@@ -1,7 +1,5 @@
 use crate::engine::{HeapRENode, SystemApi};
 use crate::fee::FeeReserve;
-use crate::model::resource_manager::ResourceMethodRule::{Protected, Public};
-use crate::model::ResourceManagerError::InvalidMethod;
 use crate::model::{convert, MethodAuthorization};
 use crate::model::{Bucket, NonFungible, Resource, Vault};
 use crate::model::{InvokeError, NonFungibleSubstate};
@@ -9,6 +7,11 @@ use crate::types::AccessRule::*;
 use crate::types::ResourceMethodAuthKey::*;
 use crate::types::*;
 use crate::wasm::*;
+
+use self::{
+    ResourceManagerError::InvalidMethod,
+    ResourceMethodRule::{Protected, Public},
+};
 
 /// Converts soft authorization rule to a hard authorization rule.
 /// Currently required as all auth is defined by soft authorization rules.
