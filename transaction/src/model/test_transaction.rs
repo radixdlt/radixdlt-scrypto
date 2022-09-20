@@ -131,12 +131,10 @@ impl TestTransaction {
                     args,
                 },
                 Instruction::CallMethod {
-                    component_address,
-                    method_name,
+                    method_identifier,
                     args,
                 } => ExecutableInstruction::CallMethod {
-                    component_address,
-                    method_name,
+                    method_identifier,
                     args,
                 },
 

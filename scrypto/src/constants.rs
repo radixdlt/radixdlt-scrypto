@@ -5,9 +5,6 @@ use crate::resource::*;
 /// The address of the sys-faucet package.
 pub const SYS_FAUCET_PACKAGE: PackageAddress = address!(EntityType::Package, 1u8);
 
-/// The address of the sys-utils package.
-pub const SYS_UTILS_PACKAGE: PackageAddress = address!(EntityType::Package, 2u8);
-
 /// The address of the account package.
 pub const ACCOUNT_PACKAGE: PackageAddress = address!(EntityType::Package, 3u8);
 

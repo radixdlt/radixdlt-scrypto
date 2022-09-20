@@ -242,15 +242,31 @@ impl fmt::Debug for TransactionReceipt {
                         ScryptoValue::from_slice(&args).expect("Failed parse call data")
                     ),
                     ExecutableInstruction::CallMethod {
-                        component_address,
-                        method_name,
+                        method_identifier,
                         args,
-                    } => format!(
-                        "CallMethod {{ component_address: {}, method_name: {:?}, call_data: {:?} }}",
-                        bech32_encoder.encode_component_address(&component_address),
-                        method_name,
-                        ScryptoValue::from_slice(&args).expect("Failed to parse call data")
-                    ),
+                    } => {
+                        match method_identifier {
+                            MethodIdentifier::Scrypto {
+                                component_address,
+                                ident
+                            } => {
+                                format!(
+                                    "CallMethod {{ component_address: {}, method_name: {:?}, args: {:?} }}",
+                                    bech32_encoder.encode_component_address(&component_address),
+                                    ident,
+                                    ScryptoValue::from_slice(&args).expect("Failed to parse call data")
+                                )
+                            },
+                            MethodIdentifier::Native { receiver, native_fn_identifier } => {
+                                format!(
+                                    "CallNativeMethod {{ receiver: {:?}, ident: {:?}, args: {:?} }}",
+                                    receiver,
+                                    native_fn_identifier,
+                                    ScryptoValue::from_slice(&args).expect("Failed to parse call data")
+                                )
+                            }
+                        }
+                    },
                     ExecutableInstruction::PublishPackage { .. } => "PublishPackage {..}".to_owned(),
                     i @ _ => format!("{:?}", i),
                 }

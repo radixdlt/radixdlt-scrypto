@@ -40,14 +40,6 @@ pub fn execute_genesis<'s, R: FeeReserve>(mut track: Track<'s, R>) -> TrackRecei
         Package::new(sys_faucet_code, sys_faucet_abi).expect("Invalid sys-faucet package"),
         true,
     );
-    let sys_utils_code = include_bytes!("../../../assets/sys_utils.wasm").to_vec();
-    let sys_utils_abi = scrypto_decode(include_bytes!("../../../assets/sys_utils.abi"))
-        .expect("Failed to construct sys-utils package");
-    track.create_uuid_substate(
-        SubstateId::Package(SYS_UTILS_PACKAGE),
-        Package::new(sys_utils_code, sys_utils_abi).expect("Invalid sys-utils package"),
-        true,
-    );
     let account_code = include_bytes!("../../../assets/account.wasm").to_vec();
     let account_abi = scrypto_decode(include_bytes!("../../../assets/account.abi"))
         .expect("Failed to construct account package");

@@ -32,6 +32,52 @@ pub enum TransactionProcessorError {
 pub struct TransactionProcessor {}
 
 impl TransactionProcessor {
+    fn replace_node_id(
+        node_id: RENodeId,
+        proof_id_mapping: &mut HashMap<ProofId, ProofId>,
+        bucket_id_mapping: &mut HashMap<BucketId, BucketId>,
+    ) -> Result<RENodeId, InvokeError<TransactionProcessorError>> {
+        match node_id {
+            RENodeId::Bucket(bucket_id) => bucket_id_mapping
+                .get(&bucket_id)
+                .cloned()
+                .map(RENodeId::Bucket)
+                .ok_or(InvokeError::Error(
+                    TransactionProcessorError::BucketNotFound(bucket_id),
+                )),
+            RENodeId::Proof(proof_id) => proof_id_mapping
+                .get(&proof_id)
+                .cloned()
+                .map(RENodeId::Proof)
+                .ok_or(InvokeError::Error(
+                    TransactionProcessorError::ProofNotFound(proof_id),
+                )),
+            _ => Ok(node_id),
+        }
+    }
+
+    fn replace_receiver(
+        receiver: Receiver,
+        proof_id_mapping: &mut HashMap<ProofId, ProofId>,
+        bucket_id_mapping: &mut HashMap<BucketId, BucketId>,
+    ) -> Result<Receiver, InvokeError<TransactionProcessorError>> {
+        let receiver = match receiver {
+            Receiver::Ref(node_id) => Receiver::Ref(Self::replace_node_id(
+                node_id,
+                proof_id_mapping,
+                bucket_id_mapping,
+            )?),
+            Receiver::Consumed(node_id) => Receiver::Consumed(Self::replace_node_id(
+                node_id,
+                proof_id_mapping,
+                bucket_id_mapping,
+            )?),
+            Receiver::CurrentAuthZone => Receiver::CurrentAuthZone,
+        };
+
+        Ok(receiver)
+    }
+
     fn replace_ids(
         proof_id_mapping: &mut HashMap<ProofId, ProofId>,
         bucket_id_mapping: &mut HashMap<BucketId, BucketId>,
@@ -590,8 +636,7 @@ impl TransactionProcessor {
                             })
                         }
                         ExecutableInstruction::CallMethod {
-                            component_address,
-                            method_name,
+                            method_identifier,
                             args,
                         } => {
                             Self::replace_ids(
@@ -603,29 +648,54 @@ impl TransactionProcessor {
                             .and_then(|call_data| Self::process_expressions(call_data, system_api))
                             .and_then(|call_data| {
                                 // TODO: Move this into preprocessor step
-                                system_api
-                                    .substate_read(SubstateId::ComponentInfo(*component_address))
-                                    .map_err(InvokeError::Downstream)
-                                    .and_then(|s| {
-                                        let (package_address, blueprint_name): (
-                                            PackageAddress,
-                                            String,
-                                        ) = scrypto_decode(&s.raw)
-                                            .expect("Failed to decode ComponentInfo substate");
+                                match method_identifier {
+                                    MethodIdentifier::Scrypto {
+                                        component_address,
+                                        ident,
+                                    } => system_api
+                                        .substate_read(SubstateId::ComponentInfo(
+                                            *component_address,
+                                        ))
+                                        .map_err(InvokeError::Downstream)
+                                        .and_then(|s| {
+                                            let (package_address, blueprint_name): (
+                                                PackageAddress,
+                                                String,
+                                            ) = scrypto_decode(&s.raw)
+                                                .expect("Failed to decode ComponentInfo substate");
+
+                                            system_api
+                                                .invoke_method(
+                                                    Receiver::Ref(RENodeId::Component(
+                                                        *component_address,
+                                                    )),
+                                                    FnIdentifier::Scrypto {
+                                                        ident: ident.to_string(),
+                                                        package_address,
+                                                        blueprint_name,
+                                                    },
+                                                    call_data,
+                                                )
+                                                .map_err(InvokeError::Downstream)
+                                        }),
+                                    MethodIdentifier::Native {
+                                        receiver,
+                                        native_fn_identifier,
+                                    } => Self::replace_receiver(
+                                        receiver.clone(),
+                                        &mut proof_id_mapping,
+                                        &mut bucket_id_mapping,
+                                    )
+                                    .and_then(|receiver| {
                                         system_api
                                             .invoke_method(
-                                                Receiver::Ref(RENodeId::Component(
-                                                    *component_address,
-                                                )),
-                                                FnIdentifier::Scrypto {
-                                                    ident: method_name.to_string(),
-                                                    package_address,
-                                                    blueprint_name,
-                                                },
+                                                receiver,
+                                                FnIdentifier::Native(native_fn_identifier.clone()),
                                                 call_data,
                                             )
                                             .map_err(InvokeError::Downstream)
-                                    })
+                                    }),
+                                }
                             })
                             .and_then(|result| {
                                 // Auto move into auth_zone
