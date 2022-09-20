@@ -5,17 +5,20 @@ use sbor::rust::str::FromStr;
 use sbor::type_id::*;
 use scrypto::abi::*;
 use scrypto::address::Bech32Decoder;
-use scrypto::args_from_value_vec;
 use scrypto::component::ComponentAddress;
 use scrypto::component::PackageAddress;
 use scrypto::core::{
-    Blob, Expression, FnIdentifier, NativeFnIdentifier, ResourceManagerFnIdentifier,
+    Blob, BucketFnIdentifier, Expression, FnIdentifier, NativeFnIdentifier, Receiver,
+    ResourceManagerFnIdentifier,
 };
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
 use scrypto::math::*;
-use scrypto::resource::{NonFungibleAddress, NonFungibleId, ResourceAddress};
+use scrypto::resource::{
+    MintParams, NonFungibleAddress, NonFungibleId, ResourceAddress, ResourceManagerMintInput,
+};
 use scrypto::values::*;
+use scrypto::{args, args_from_value_vec};
 
 use crate::errors::*;
 use crate::manifest::ast;
@@ -348,8 +351,13 @@ pub fn generate_instruction(
             }
 
             Instruction::CallMethod {
-                component_address: generate_component_address(component_address, bech32_decoder)?,
-                method_name: generate_string(method)?,
+                method_identifier: MethodIdentifier::Scrypto {
+                    component_address: generate_component_address(
+                        component_address,
+                        bech32_decoder,
+                    )?,
+                    ident: generate_string(method)?,
+                },
                 args: args_from_value_vec!(fields),
             }
         }
@@ -374,6 +382,37 @@ pub fn generate_instruction(
                     ResourceManagerFnIdentifier::Create,
                 )),
                 args: args_from_value_vec!(fields),
+            }
+        }
+        ast::Instruction::BurnBucket { bucket } => {
+            let bucket_id = generate_bucket(bucket, resolver)?;
+            Instruction::CallMethod {
+                method_identifier: MethodIdentifier::Native {
+                    receiver: Receiver::Consumed(RENodeId::Bucket(bucket_id)),
+                    native_fn_identifier: NativeFnIdentifier::Bucket(BucketFnIdentifier::Burn),
+                },
+                args: args!(),
+            }
+        }
+        ast::Instruction::MintFungible {
+            resource_address,
+            amount,
+        } => {
+            let resource_address = generate_resource_address(resource_address, bech32_decoder)?;
+            let input = ResourceManagerMintInput {
+                mint_params: MintParams::Fungible {
+                    amount: generate_decimal(amount)?,
+                },
+            };
+
+            Instruction::CallMethod {
+                method_identifier: MethodIdentifier::Native {
+                    receiver: Receiver::Ref(RENodeId::ResourceManager(resource_address)),
+                    native_fn_identifier: NativeFnIdentifier::ResourceManager(
+                        ResourceManagerFnIdentifier::Mint,
+                    ),
+                },
+                args: args!(input),
             }
         }
     })
@@ -1172,8 +1211,10 @@ mod tests {
         generate_instruction_ok!(
             r#"CALL_METHOD  ComponentAddress("component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum")  "refill";"#,
             Instruction::CallMethod {
-                component_address: component1,
-                method_name: "refill".to_string(),
+                method_identifier: MethodIdentifier::Scrypto {
+                    component_address: component1,
+                    ident: "refill".to_string(),
+                },
                 args: args!()
             }
         );

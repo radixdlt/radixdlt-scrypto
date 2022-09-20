@@ -245,16 +245,14 @@ impl TransactionValidator {
                     });
                 }
                 Instruction::CallMethod {
-                    component_address,
-                    method_name,
+                    method_identifier,
                     args,
                 } => {
                     // TODO: decode into Value
                     Self::validate_call_data(&args, &mut id_validator)
                         .map_err(TransactionValidationError::CallDataValidationError)?;
                     instructions.push(ExecutableInstruction::CallMethod {
-                        component_address,
-                        method_name,
+                        method_identifier,
                         args,
                     });
                 }

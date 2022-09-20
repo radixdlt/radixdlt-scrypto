@@ -35,7 +35,7 @@ pub fn compile(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::model::Instruction;
+    use crate::model::{Instruction, MethodIdentifier};
     use sbor::rust::collections::*;
     use sbor::rust::str::FromStr;
     use scrypto::address::Bech32Decoder;
@@ -77,8 +77,10 @@ mod tests {
                 .instructions,
             vec![
                 Instruction::CallMethod {
-                    component_address: component1,
-                    method_name: "withdraw_by_amount".to_string(),
+                    method_identifier: MethodIdentifier::Scrypto {
+                        component_address: component1,
+                        ident: "withdraw_by_amount".to_string(),
+                    },
                     args: args!(
                         Decimal::from(5u32),
                         ResourceAddress::from_str(
@@ -95,8 +97,10 @@ mod tests {
                     .unwrap(),
                 },
                 Instruction::CallMethod {
-                    component_address: component2,
-                    method_name: "buy_gumball".to_string(),
+                    method_identifier: MethodIdentifier::Scrypto {
+                        component_address: component2,
+                        ident: "buy_gumball".to_string(),
+                    },
                     args: args!(scrypto::resource::Bucket(512))
                 },
                 Instruction::AssertWorktopContainsByAmount {
@@ -123,8 +127,10 @@ mod tests {
                 Instruction::DropProof { proof_id: 514 },
                 Instruction::DropProof { proof_id: 515 },
                 Instruction::CallMethod {
-                    component_address: component1,
-                    method_name: "create_proof_by_amount".to_string(),
+                    method_identifier: MethodIdentifier::Scrypto {
+                        component_address: component1,
+                        ident: "create_proof_by_amount".to_string(),
+                    },
                     args: args!(
                         Decimal::from(5u32),
                         ResourceAddress::from_str(
@@ -160,14 +166,18 @@ mod tests {
                     ),
                 },
                 Instruction::CallMethod {
-                    component_address: component1,
-                    method_name: "deposit_batch".into(),
+                    method_identifier: MethodIdentifier::Scrypto {
+                        component_address: component1,
+                        ident: "deposit_batch".into(),
+                    },
                     args: args!(Expression("ENTIRE_WORKTOP".to_owned()))
                 },
                 Instruction::DropAllProofs,
                 Instruction::CallMethod {
-                    component_address: component2,
-                    method_name: "complicated_method".to_string(),
+                    method_identifier: MethodIdentifier::Scrypto {
+                        component_address: component2,
+                        ident: "complicated_method".to_string(),
+                    },
                     args: args!(Decimal::from(1u32), PreciseDecimal::from(2u32))
                 },
                 Instruction::PublishPackage {

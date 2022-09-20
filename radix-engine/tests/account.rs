@@ -101,8 +101,10 @@ fn account_to_bucket_to_account() {
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder
                 .add_instruction(Instruction::CallMethod {
-                    component_address: account,
-                    method_name: "deposit".to_string(),
+                    method_identifier: MethodIdentifier::Scrypto {
+                        component_address: account,
+                        ident: "deposit".to_string(),
+                    },
                     args: args!(scrypto::resource::Bucket(bucket_id)),
                 })
                 .0
