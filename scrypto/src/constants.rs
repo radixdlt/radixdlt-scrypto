@@ -32,36 +32,6 @@ pub const SYS_FAUCET_PACKAGE: PackageAddress = construct_address!(
     103,
     240
 );
-/// The address of the sys-utils package.
-pub const SYS_UTILS_PACKAGE: PackageAddress = construct_address!(
-    EntityType::Package,
-    0,
-    44,
-    100,
-    204,
-    153,
-    17,
-    167,
-    139,
-    223,
-    159,
-    221,
-    222,
-    95,
-    90,
-    157,
-    196,
-    136,
-    236,
-    235,
-    197,
-    213,
-    35,
-    187,
-    15,
-    207,
-    158
-);
 
 /// The address of the account package.
 pub const ACCOUNT_PACKAGE: PackageAddress = construct_address!(

@@ -24,7 +24,7 @@ use sbor::describe::*;
 use scrypto::dec;
 use scrypto::math::Decimal;
 use transaction::builder::ManifestBuilder;
-use transaction::model::{ExecutableTransaction, TransactionManifest};
+use transaction::model::{ExecutableTransaction, MethodIdentifier, TransactionManifest};
 use transaction::model::{PreviewIntent, TestTransaction};
 use transaction::signing::EcdsaSecp256k1PrivateKey;
 use transaction::validation::TestIntentHashManager;
@@ -252,8 +252,10 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         manifest.instructions.insert(
             0,
             transaction::model::Instruction::CallMethod {
-                component_address: SYS_FAUCET_COMPONENT,
-                method_name: "lock_fee".to_string(),
+                method_identifier: MethodIdentifier::Scrypto {
+                    component_address: SYS_FAUCET_COMPONENT,
+                    ident: "lock_fee".to_string(),
+                },
                 args: args!(dec!("1000")),
             },
         );

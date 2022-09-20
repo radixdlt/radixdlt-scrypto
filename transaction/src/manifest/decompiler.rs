@@ -3,10 +3,13 @@ use sbor::{encode_any, DecodeError, Value};
 use scrypto::address::{AddressError, Bech32Encoder};
 use scrypto::buffer::scrypto_decode;
 use scrypto::core::{
-    FnIdentifier, NativeFnIdentifier, NetworkDefinition, ResourceManagerFnIdentifier,
+    BucketFnIdentifier, FnIdentifier, NativeFnIdentifier, NetworkDefinition, Receiver,
+    ResourceManagerFnIdentifier,
 };
 use scrypto::engine::types::*;
-use scrypto::resource::ResourceManagerCreateInput;
+use scrypto::resource::{
+    ConsumingBucketBurnInput, MintParams, ResourceManagerCreateInput, ResourceManagerMintInput,
+};
 use scrypto::values::*;
 
 use crate::errors::*;
@@ -18,7 +21,7 @@ pub enum DecompileError {
     IdValidationError(IdValidationError),
     DecodeError(DecodeError),
     AddressError(AddressError),
-    Unsupported,
+    UnrecognizedNativeFunction,
 }
 
 pub fn decompile(
@@ -291,40 +294,82 @@ pub fn decompile(
 
                         buf.push_str(";\n");
                     }
-                    _ => return Err(DecompileError::Unsupported),
+                    _ => return Err(DecompileError::UnrecognizedNativeFunction),
                 },
             },
             Instruction::CallMethod {
-                component_address,
-                method_name,
+                method_identifier,
                 args,
-            } => {
-                buf.push_str(&format!(
-                    "CALL_METHOD ComponentAddress(\"{}\") \"{}\"",
-                    bech32_encoder.encode_component_address(&component_address),
-                    method_name
-                ));
+            } => match method_identifier {
+                MethodIdentifier::Scrypto {
+                    component_address,
+                    ident,
+                } => {
+                    buf.push_str(&format!(
+                        "CALL_METHOD ComponentAddress(\"{}\") \"{}\"",
+                        bech32_encoder.encode_component_address(&component_address),
+                        ident
+                    ));
 
-                let validated_arg =
-                    ScryptoValue::from_slice(&args).map_err(DecompileError::DecodeError)?;
-                if let Value::Struct { fields } = validated_arg.dom {
-                    for field in fields {
-                        let bytes = encode_any(&field);
-                        let validated_arg = ScryptoValue::from_slice(&bytes)
-                            .map_err(DecompileError::DecodeError)?;
-                        id_validator
-                            .move_resources(&validated_arg)
-                            .map_err(DecompileError::IdValidationError)?;
+                    let validated_arg =
+                        ScryptoValue::from_slice(&args).map_err(DecompileError::DecodeError)?;
+                    if let Value::Struct { fields } = validated_arg.dom {
+                        for field in fields {
+                            let bytes = encode_any(&field);
+                            let validated_arg = ScryptoValue::from_slice(&bytes)
+                                .map_err(DecompileError::DecodeError)?;
+                            id_validator
+                                .move_resources(&validated_arg)
+                                .map_err(DecompileError::IdValidationError)?;
 
-                        buf.push(' ');
-                        buf.push_str(&validated_arg.to_string_with_context(&buckets, &proofs));
+                            buf.push(' ');
+                            buf.push_str(&validated_arg.to_string_with_context(&buckets, &proofs));
+                        }
+                    } else {
+                        panic!("Should not get here.");
                     }
-                } else {
-                    panic!("Should not get here.");
-                }
 
-                buf.push_str(";\n");
-            }
+                    buf.push_str(";\n");
+                }
+                MethodIdentifier::Native {
+                    native_fn_identifier,
+                    receiver,
+                } => match (native_fn_identifier, receiver) {
+                    (
+                        NativeFnIdentifier::Bucket(BucketFnIdentifier::Burn),
+                        Receiver::Consumed(RENodeId::Bucket(bucket_id)),
+                    ) => {
+                        let _input: ConsumingBucketBurnInput =
+                            scrypto_decode(&args).map_err(DecompileError::DecodeError)?;
+
+                        buf.push_str(&format!(
+                            "BURN_BUCKET Bucket({});\n",
+                            buckets
+                                .get(&bucket_id)
+                                .map(|name| format!("\"{}\"", name))
+                                .unwrap_or(format!("{}u32", bucket_id)),
+                        ));
+                    }
+                    (
+                        NativeFnIdentifier::ResourceManager(ResourceManagerFnIdentifier::Mint),
+                        Receiver::Ref(RENodeId::ResourceManager(resource_address)),
+                    ) => {
+                        let input: ResourceManagerMintInput =
+                            scrypto_decode(&args).map_err(DecompileError::DecodeError)?;
+                        match input.mint_params {
+                            MintParams::Fungible { amount } => {
+                                buf.push_str(&format!(
+                                    "MINT_FUNGIBLE ResourceAddress(\"{}\") Decimal(\"{}\") ;\n",
+                                    bech32_encoder.encode_resource_address(&resource_address),
+                                    amount,
+                                ));
+                            }
+                            _ => return Err(DecompileError::UnrecognizedNativeFunction),
+                        }
+                    }
+                    _ => return Err(DecompileError::UnrecognizedNativeFunction),
+                },
+            },
             Instruction::PublishPackage { code, abi } => {
                 buf.push_str(&format!(
                     "PUBLISH_PACKAGE Blob(\"{}\") Blob(\"{}\");\n",

@@ -22,7 +22,6 @@ const XRD_MAX_SUPPLY: i128 = 1_000_000_000_000i128;
 
 pub struct GenesisReceipt {
     pub sys_faucet_package: PackageAddress,
-    pub sys_utils_package: PackageAddress,
     pub account_package: PackageAddress,
     pub ecdsa_token: ResourceAddress,
     pub system_token: ResourceAddress,
@@ -44,19 +43,6 @@ pub fn create_genesis() -> SystemTransaction {
 
         blobs.push(sys_faucet_code);
         blobs.push(sys_faucet_abi);
-
-        inst
-    };
-    let create_sys_utils_package = {
-        let sys_utils_code = include_bytes!("../../../assets/sys_utils.wasm").to_vec();
-        let sys_utils_abi = include_bytes!("../../../assets/sys_utils.abi").to_vec();
-        let inst = Instruction::PublishPackage {
-            code: Blob(hash(&sys_utils_code)),
-            abi: Blob(hash(&sys_utils_abi)),
-        };
-
-        blobs.push(sys_utils_code);
-        blobs.push(sys_utils_abi);
 
         inst
     };
@@ -170,7 +156,6 @@ pub fn create_genesis() -> SystemTransaction {
     let manifest = TransactionManifest {
         instructions: vec![
             create_sys_faucet_package,
-            create_sys_utils_package,
             create_account_package,
             create_ecdsa_token,
             create_system_token,
@@ -187,20 +172,18 @@ pub fn create_genesis() -> SystemTransaction {
 
 pub fn genesis_result(invoke_result: &Vec<Vec<u8>>) -> GenesisReceipt {
     let sys_faucet_package: PackageAddress = scrypto_decode(&invoke_result[0]).unwrap();
-    let sys_utils_package: PackageAddress = scrypto_decode(&invoke_result[1]).unwrap();
-    let account_package: PackageAddress = scrypto_decode(&invoke_result[2]).unwrap();
+    let account_package: PackageAddress = scrypto_decode(&invoke_result[1]).unwrap();
     let (ecdsa_token, _bucket): (ResourceAddress, Option<Bucket>) =
-        scrypto_decode(&invoke_result[3]).unwrap();
+        scrypto_decode(&invoke_result[2]).unwrap();
     let (system_token, _bucket): (ResourceAddress, Option<Bucket>) =
-        scrypto_decode(&invoke_result[4]).unwrap();
+        scrypto_decode(&invoke_result[3]).unwrap();
     let (xrd_token, _bucket): (ResourceAddress, Option<Bucket>) =
-        scrypto_decode(&invoke_result[5]).unwrap();
-    let faucet_component: ComponentAddress = scrypto_decode(&invoke_result[7]).unwrap();
-    let system_component_id: RENodeId = scrypto_decode(&invoke_result[8]).unwrap();
+        scrypto_decode(&invoke_result[4]).unwrap();
+    let faucet_component: ComponentAddress = scrypto_decode(&invoke_result[6]).unwrap();
+    let system_component_id: RENodeId = scrypto_decode(&invoke_result[7]).unwrap();
     let system_component: ComponentAddress = system_component_id.into();
     GenesisReceipt {
         sys_faucet_package,
-        sys_utils_package,
         account_package,
         ecdsa_token,
         system_token,
@@ -262,7 +245,6 @@ mod tests {
         let genesis_receipt = genesis_result(&invoke_result);
 
         assert_eq!(genesis_receipt.sys_faucet_package, SYS_FAUCET_PACKAGE);
-        assert_eq!(genesis_receipt.sys_utils_package, SYS_UTILS_PACKAGE);
         assert_eq!(genesis_receipt.account_package, ACCOUNT_PACKAGE);
         assert_eq!(genesis_receipt.ecdsa_token, ECDSA_TOKEN);
         assert_eq!(genesis_receipt.system_token, SYSTEM_TOKEN);

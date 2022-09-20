@@ -13,18 +13,19 @@ use scrypto::buffer::*;
 use scrypto::component::{ComponentAddress, PackageAddress};
 use scrypto::constants::*;
 use scrypto::core::{
-    Blob, FnIdentifier, NativeFnIdentifier, NetworkDefinition, ResourceManagerFnIdentifier,
+    Blob, BucketFnIdentifier, FnIdentifier, NativeFnIdentifier, NetworkDefinition, Receiver,
+    ResourceManagerFnIdentifier,
 };
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
 use scrypto::math::*;
-use scrypto::resource::ResourceType;
 use scrypto::resource::{require, LOCKED};
 use scrypto::resource::{AccessRule, AccessRuleNode, Burn, Mint, Withdraw};
 use scrypto::resource::{
     MintParams, Mutability, ResourceManagerCreateInput, ResourceMethodAuthKey,
 };
 use scrypto::resource::{NonFungibleAddress, NonFungibleId, ResourceAddress};
+use scrypto::resource::{ResourceManagerMintInput, ResourceType};
 use scrypto::values::*;
 use scrypto::*;
 
@@ -405,7 +406,7 @@ impl ManifestBuilder {
             .0)
     }
 
-    /// Calls a method where the arguments should be an array of encoded Scrypto value.
+    /// Calls a scrypto method where the arguments should be an array of encoded Scrypto value.
     pub fn call_method(
         &mut self,
         component_address: ComponentAddress,
@@ -413,8 +414,27 @@ impl ManifestBuilder {
         args: Vec<u8>,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
-            component_address,
-            method_name: method_name.to_owned(),
+            method_identifier: MethodIdentifier::Scrypto {
+                component_address,
+                ident: method_name.to_owned(),
+            },
+            args,
+        });
+        self
+    }
+
+    /// Calls a native method where the arguments should be an array of encoded Scrypto value.
+    pub fn call_native_method(
+        &mut self,
+        receiver: Receiver,
+        native_fn_identifier: NativeFnIdentifier,
+        args: Vec<u8>,
+    ) -> &mut Self {
+        self.add_instruction(Instruction::CallMethod {
+            method_identifier: MethodIdentifier::Native {
+                receiver,
+                native_fn_identifier,
+            },
             args,
         });
         self
@@ -448,8 +468,10 @@ impl ManifestBuilder {
 
         Ok(self
             .add_instruction(Instruction::CallMethod {
-                component_address,
-                method_name: method.to_owned(),
+                method_identifier: MethodIdentifier::Scrypto {
+                    component_address,
+                    ident: method.to_owned(),
+                },
                 args: args_from_bytes_vec!(arguments),
             })
             .0)
@@ -601,13 +623,16 @@ impl ManifestBuilder {
 
     /// Mints resource.
     pub fn mint(&mut self, amount: Decimal, resource_address: ResourceAddress) -> &mut Self {
-        self.add_instruction(Instruction::CallFunction {
-            fn_identifier: FnIdentifier::Scrypto {
-                package_address: SYS_UTILS_PACKAGE,
-                blueprint_name: "SysUtils".to_owned(),
-                ident: "mint".to_string(),
+        self.add_instruction(Instruction::CallMethod {
+            method_identifier: MethodIdentifier::Native {
+                receiver: Receiver::Ref(RENodeId::ResourceManager(resource_address)),
+                native_fn_identifier: NativeFnIdentifier::ResourceManager(
+                    ResourceManagerFnIdentifier::Mint,
+                ),
             },
-            args: args!(amount, resource_address),
+            args: scrypto_encode(&ResourceManagerMintInput {
+                mint_params: MintParams::Fungible { amount },
+            }),
         });
         self
     }
@@ -616,13 +641,12 @@ impl ManifestBuilder {
     pub fn burn(&mut self, amount: Decimal, resource_address: ResourceAddress) -> &mut Self {
         self.take_from_worktop_by_amount(amount, resource_address, |builder, bucket_id| {
             builder
-                .add_instruction(Instruction::CallFunction {
-                    fn_identifier: FnIdentifier::Scrypto {
-                        package_address: SYS_UTILS_PACKAGE,
-                        blueprint_name: "SysUtils".to_owned(),
-                        ident: "burn".to_string(),
+                .add_instruction(Instruction::CallMethod {
+                    method_identifier: MethodIdentifier::Native {
+                        native_fn_identifier: NativeFnIdentifier::Bucket(BucketFnIdentifier::Burn),
+                        receiver: Receiver::Consumed(RENodeId::Bucket(bucket_id)),
                     },
-                    args: args!(scrypto::resource::Bucket(bucket_id)),
+                    args: args!(),
                 })
                 .0
         })
@@ -636,13 +660,14 @@ impl ManifestBuilder {
             non_fungible_address.resource_address(),
             |builder, bucket_id| {
                 builder
-                    .add_instruction(Instruction::CallFunction {
-                        fn_identifier: FnIdentifier::Scrypto {
-                            package_address: SYS_UTILS_PACKAGE,
-                            blueprint_name: "SysUtils".to_owned(),
-                            ident: "burn".to_string(),
+                    .add_instruction(Instruction::CallMethod {
+                        method_identifier: MethodIdentifier::Native {
+                            native_fn_identifier: NativeFnIdentifier::Bucket(
+                                BucketFnIdentifier::Burn,
+                            ),
+                            receiver: Receiver::Consumed(RENodeId::Bucket(bucket_id)),
                         },
-                        args: args!(scrypto::resource::Bucket(bucket_id)),
+                        args: args!(),
                     })
                     .0
             },
@@ -682,8 +707,10 @@ impl ManifestBuilder {
     /// Locks a fee from the XRD vault of an account.
     pub fn lock_fee(&mut self, amount: Decimal, account: ComponentAddress) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
-            component_address: account,
-            method_name: "lock_fee".to_string(),
+            method_identifier: MethodIdentifier::Scrypto {
+                component_address: account,
+                ident: "lock_fee".to_string(),
+            },
             args: args!(amount),
         })
         .0
@@ -691,8 +718,10 @@ impl ManifestBuilder {
 
     pub fn lock_contingent_fee(&mut self, amount: Decimal, account: ComponentAddress) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
-            component_address: account,
-            method_name: "lock_contingent_fee".to_string(),
+            method_identifier: MethodIdentifier::Scrypto {
+                component_address: account,
+                ident: "lock_contingent_fee".to_string(),
+            },
             args: args!(amount),
         })
         .0
@@ -705,8 +734,10 @@ impl ManifestBuilder {
         account: ComponentAddress,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
-            component_address: account,
-            method_name: "withdraw".to_string(),
+            method_identifier: MethodIdentifier::Scrypto {
+                component_address: account,
+                ident: "withdraw".to_string(),
+            },
             args: args!(resource_address),
         })
         .0
@@ -720,8 +751,10 @@ impl ManifestBuilder {
         account: ComponentAddress,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
-            component_address: account,
-            method_name: "withdraw_by_amount".to_string(),
+            method_identifier: MethodIdentifier::Scrypto {
+                component_address: account,
+                ident: "withdraw_by_amount".to_string(),
+            },
             args: args!(amount, resource_address),
         })
         .0
@@ -735,8 +768,10 @@ impl ManifestBuilder {
         account: ComponentAddress,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
-            component_address: account,
-            method_name: "withdraw_by_ids".to_string(),
+            method_identifier: MethodIdentifier::Scrypto {
+                component_address: account,
+                ident: "withdraw_by_ids".to_string(),
+            },
             args: args!(ids.clone(), resource_address),
         })
         .0
@@ -749,8 +784,10 @@ impl ManifestBuilder {
         account: ComponentAddress,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
-            component_address: account,
-            method_name: "create_proof".to_string(),
+            method_identifier: MethodIdentifier::Scrypto {
+                component_address: account,
+                ident: "create_proof".to_string(),
+            },
             args: args!(resource_address),
         })
         .0
@@ -764,8 +801,10 @@ impl ManifestBuilder {
         account: ComponentAddress,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
-            component_address: account,
-            method_name: "create_proof_by_amount".to_string(),
+            method_identifier: MethodIdentifier::Scrypto {
+                component_address: account,
+                ident: "create_proof_by_amount".to_string(),
+            },
             args: args!(amount, resource_address),
         })
         .0
@@ -779,8 +818,10 @@ impl ManifestBuilder {
         account: ComponentAddress,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
-            component_address: account,
-            method_name: "create_proof_by_ids".to_string(),
+            method_identifier: MethodIdentifier::Scrypto {
+                component_address: account,
+                ident: "create_proof_by_ids".to_string(),
+            },
             args: args!(ids.clone(), resource_address),
         })
         .0
