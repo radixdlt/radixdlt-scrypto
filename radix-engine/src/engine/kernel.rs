@@ -493,9 +493,16 @@ where
                 blueprint_name,
                 ident,
             } => {
-                self.track
-                    .acquire_lock(SubstateId::Package(package_address.clone()), false, false)
-                    .map_err(|e| RuntimeError::KernelError(KernelError::SubstateError(e)))?;
+                let node_pointer = RENodePointer::Store(RENodeId::Package(package_address.clone()));
+                node_pointer
+                    .acquire_lock(
+                        SubstateId::Package(package_address.clone()),
+                        false,
+                        false,
+                        &mut self.track,
+                    )
+                    .map_err(RuntimeError::KernelError)?;
+
                 locked_values.insert(SubstateId::Package(package_address.clone()));
                 let package = self
                     .track
