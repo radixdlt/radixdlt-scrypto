@@ -1,12 +1,6 @@
 use crate::model::{convert, MethodAuthorization};
 use crate::types::*;
 
-#[derive(Debug, TypeId, Encode, Decode)]
-pub enum ComponentError {
-    InvalidRequestData(DecodeError),
-    BlueprintFunctionNotFound(String),
-}
-
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct ComponentState {
     pub state: Vec<u8>,

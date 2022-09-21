@@ -56,11 +56,11 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
 ) -> Result<(), DisplayError> {
     let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
 
-    let component: Option<ComponentInfo> = substate_store
+    let component_info: Option<ComponentInfo> = substate_store
         .get_substate(&SubstateId::ComponentInfo(component_address))
         .map(|s| s.substate)
         .map(|s| s.into());
-    match component {
+    match component_info {
         Some(c) => {
             writeln!(
                 output,
@@ -73,15 +73,16 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
                 output,
                 "{}: {{ package_address: {}, blueprint_name: \"{}\" }}",
                 "Blueprint".green().bold(),
-                c.package_address(),
-                c.blueprint_name()
+                c.package_address,
+                c.blueprint_name
             );
 
-            writeln!(output, "{}", "Authorization".green().bold());
-            for (_, auth) in c.authorization().iter().identify_last() {
+            writeln!(output, "{}", "Access Rules".green().bold());
+            for (_, auth) in c.access_rules.iter().identify_last() {
                 for (last, (k, v)) in auth.iter().identify_last() {
                     writeln!(output, "{} {:?} => {:?}", list_item_prefix(last), k, v);
                 }
+                writeln!(output, "Default: {:?}", auth.get_default());
             }
 
             let state: ComponentState = substate_store
