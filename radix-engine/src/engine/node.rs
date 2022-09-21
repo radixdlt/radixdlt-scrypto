@@ -73,19 +73,27 @@ impl Substate {
         }
     }
 
-    pub fn component_info(&self) -> &ComponentInfo {
-        if let Substate::ComponentInfo(component) = self {
+    pub fn component_state_mut(&mut self) -> &mut ComponentState {
+        if let Substate::ComponentState(component) = self {
             component
+        } else {
+            panic!("Not a component state");
+        }
+    }
+
+    pub fn component_info(&self) -> &ComponentInfo {
+        if let Substate::ComponentInfo(info) = self {
+            info
         } else {
             panic!("Not a component info");
         }
     }
 
-    pub fn component_mut(&mut self) -> &mut ComponentInfo {
+    pub fn component_info_mut(&mut self) -> &mut ComponentInfo {
         if let Substate::ComponentInfo(component) = self {
             component
         } else {
-            panic!("Not a component");
+            panic!("Not a component info");
         }
     }
 
@@ -238,7 +246,7 @@ pub enum HeapRENode {
     Proof(Proof),
     Vault(Vault),
     KeyValueStore(HeapKeyValueStore),
-    Component(ComponentInfo, ComponentState),
+    Component(Component),
     Worktop(Worktop),
     Package(Package),
     Resource(ResourceManager, Option<HashMap<NonFungibleId, NonFungible>>),
@@ -248,8 +256,8 @@ pub enum HeapRENode {
 impl HeapRENode {
     pub fn get_child_nodes(&self) -> Result<HashSet<RENodeId>, RuntimeError> {
         match self {
-            HeapRENode::Component(_, component_state) => {
-                let value = ScryptoValue::from_slice(component_state.state())
+            HeapRENode::Component(component) => {
+                let value = ScryptoValue::from_slice(&component.state.state)
                     .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                 Ok(value.node_ids())
             }
@@ -319,30 +327,16 @@ impl HeapRENode {
         }
     }
 
-    pub fn component_info(&self) -> &ComponentInfo {
+    pub fn component(&self) -> &Component {
         match self {
-            HeapRENode::Component(component_info, ..) => component_info,
+            HeapRENode::Component(component, ..) => component,
             _ => panic!("Expected to be a store"),
         }
     }
 
-    pub fn component_info_mut(&mut self) -> &mut ComponentInfo {
+    pub fn component_mut(&mut self) -> &mut Component {
         match self {
-            HeapRENode::Component(component_info, ..) => component_info,
-            _ => panic!("Expected to be a store"),
-        }
-    }
-
-    pub fn component_state(&self) -> &ComponentState {
-        match self {
-            HeapRENode::Component(_, component_state) => component_state,
-            _ => panic!("Expected to be a store"),
-        }
-    }
-
-    pub fn component_state_mut(&mut self) -> &mut ComponentState {
-        match self {
-            HeapRENode::Component(_, component_state) => component_state,
+            HeapRENode::Component(component, ..) => component,
             _ => panic!("Expected to be a store"),
         }
     }

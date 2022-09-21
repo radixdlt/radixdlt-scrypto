@@ -230,11 +230,11 @@ where
                 let resource_address = id_allocator.new_resource_address(transaction_hash)?;
                 Ok(RENodeId::ResourceManager(resource_address))
             }
-            HeapRENode::Component(ref component, ..) => {
+            HeapRENode::Component(ref component) => {
                 let component_address = id_allocator.new_component_address(
                     transaction_hash,
-                    &component.package_address(),
-                    component.blueprint_name(),
+                    &component.info.package_address,
+                    &component.info.blueprint_name,
                 )?;
                 Ok(RENodeId::Component(component_address))
             }
@@ -762,16 +762,17 @@ where
                                 .map_err(RuntimeError::KernelError)?;
                             temporary_locks.push((node_pointer, temporary_substate_id, false));
 
-                            let node_ref = node_pointer.to_ref(&self.call_frames, &mut self.track);
-                            let component = node_ref.component_info();
+                            let mut node_ref =
+                                node_pointer.to_ref(&self.call_frames, &mut self.track);
+                            let component = node_ref.component();
 
                             // Don't support traits yet
-                            if !package_address.eq(&component.package_address()) {
+                            if !package_address.eq(&component.info.package_address) {
                                 return Err(RuntimeError::KernelError(
                                     KernelError::MethodNotFound(fn_identifier),
                                 ));
                             }
-                            if !blueprint_name.eq(component.blueprint_name()) {
+                            if !blueprint_name.eq(&component.info.blueprint_name) {
                                 return Err(RuntimeError::KernelError(
                                     KernelError::MethodNotFound(fn_identifier),
                                 ));
@@ -787,8 +788,9 @@ where
                 match node_id {
                     RENodeId::Component(..) => {
                         let package_address = {
-                            let node_ref = node_pointer.to_ref(&self.call_frames, &mut self.track);
-                            node_ref.component_info().package_address()
+                            let mut node_ref =
+                                node_pointer.to_ref(&self.call_frames, &mut self.track);
+                            node_ref.component().info.package_address
                         };
                         let package_substate_id = SubstateId::Package(package_address);
                         let package_node_id = RENodeId::Package(package_address);
@@ -1286,16 +1288,16 @@ where
         let root_node = taken_nodes.into_values().nth(0).unwrap();
 
         let (substates, maybe_non_fungibles) = match root_node.root {
-            HeapRENode::Component(component, component_state) => {
+            HeapRENode::Component(component) => {
                 let mut substates = HashMap::new();
                 let component_address = node_id.into();
                 substates.insert(
                     SubstateId::ComponentInfo(component_address),
-                    Substate::ComponentInfo(component),
+                    Substate::ComponentInfo(component.info),
                 );
                 substates.insert(
                     SubstateId::ComponentState(component_address),
-                    Substate::ComponentState(component_state),
+                    Substate::ComponentState(component.state),
                 );
                 let mut visible_substates = HashSet::new();
                 visible_substates.insert(SubstateId::ComponentInfo(component_address));

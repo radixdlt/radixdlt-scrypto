@@ -8,6 +8,7 @@ use crate::fee::FeeReserveError;
 use crate::fee::FeeSummary;
 use crate::fee::FeeTable;
 use crate::ledger::*;
+use crate::model::Component;
 use crate::model::KeyValueStoreEntrySubstate;
 use crate::model::LockableResource;
 use crate::model::NonFungibleSubstate;
@@ -102,6 +103,14 @@ impl SubstateCache {
             Self::Raw(_) => panic!("Attempted to read a raw substate as a node"),
             Self::Converted(vault) => vault,
         }
+    }
+
+    pub fn component(&mut self) -> &Component {
+        todo!()
+    }
+
+    pub fn component_mut(&mut self) -> &mut Component {
+        todo!()
     }
 }
 

@@ -1,7 +1,7 @@
 use crate::engine::RuntimeError;
 use crate::engine::{HeapRENode, SystemApi};
 use crate::fee::*;
-use crate::model::{ComponentInfo, ComponentState, HeapKeyValueStore, InvokeError};
+use crate::model::{Component, ComponentInfo, ComponentState, HeapKeyValueStore, InvokeError};
 use crate::types::*;
 use crate::wasm::*;
 
@@ -95,10 +95,10 @@ where
                 // TODO: Check state against blueprint schema
 
                 // Create component
-                let component_info =
-                    ComponentInfo::new(package_address, blueprint_name, Vec::new());
-                let component_state = ComponentState::new(state);
-                HeapRENode::Component(component_info, component_state)
+                HeapRENode::Component(Component {
+                    info: ComponentInfo::new(package_address, blueprint_name, Vec::new()),
+                    state: ComponentState::new(state),
+                })
             }
             ScryptoRENode::KeyValueStore => HeapRENode::KeyValueStore(HeapKeyValueStore::new()),
         };

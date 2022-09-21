@@ -40,7 +40,7 @@ pub fn export_abi_by_component<S: ReadableSubstateStore>(
     let component_info = component_value.component_info();
     export_abi(
         substate_store,
-        component_info.package_address(),
-        component_info.blueprint_name(),
+        component_info.package_address,
+        &component_info.blueprint_name,
     )
 }

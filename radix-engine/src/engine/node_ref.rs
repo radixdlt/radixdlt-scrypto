@@ -166,10 +166,10 @@ impl NativeSubstateRef {
         }
     }
 
-    pub fn component_info_mut(&mut self) -> &mut ComponentInfo {
+    pub fn component_mut(&mut self) -> &mut Component {
         match self {
             NativeSubstateRef::Stack(root, _frame_id, _root_id, maybe_child) => {
-                root.get_node_mut(maybe_child.as_ref()).component_info_mut()
+                root.get_node_mut(maybe_child.as_ref()).component_mut()
             }
             _ => panic!("Expecting to be a component"),
         }
@@ -280,30 +280,12 @@ impl<'f, 's, R: FeeReserve> RENodeRef<'f, 's, R> {
         }
     }
 
-    pub fn component_state(&self) -> &ComponentState {
+    pub fn component(&mut self) -> &Component {
         match self {
             RENodeRef::Stack(value, id) => id
                 .as_ref()
                 .map_or(value.root(), |v| value.non_root(v))
-                .component_state(),
-            RENodeRef::Track(track, node_id) => {
-                let substate_id = match node_id {
-                    RENodeId::Component(component_address) => {
-                        SubstateId::ComponentState(*component_address)
-                    }
-                    _ => panic!("Unexpected"),
-                };
-                track.borrow_substate(substate_id).raw().component_state()
-            }
-        }
-    }
-
-    pub fn component_info(&self) -> &ComponentInfo {
-        match self {
-            RENodeRef::Stack(value, id) => id
-                .as_ref()
-                .map_or(value.root(), |v| value.non_root(v))
-                .component_info(),
+                .component(),
             RENodeRef::Track(track, node_id) => {
                 let substate_id = match node_id {
                     RENodeId::Component(component_address) => {
@@ -311,7 +293,9 @@ impl<'f, 's, R: FeeReserve> RENodeRef<'f, 's, R> {
                     }
                     _ => panic!("Unexpected"),
                 };
-                track.borrow_substate(substate_id).raw().component_info()
+                let substate = track.borrow_substate_mut(substate_id);
+                substate.convert_to_node();
+                substate.component()
             }
         }
     }
@@ -345,10 +329,10 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
     ) -> Result<ScryptoValue, RuntimeError> {
         match substate_id {
             SubstateId::ComponentInfo(..) => {
-                Ok(ScryptoValue::from_typed(&self.component_info().info()))
+                Ok(ScryptoValue::from_typed(&self.component_mut().info))
             }
             SubstateId::ComponentState(..) => {
-                Ok(ScryptoValue::from_slice(self.component_state().state())
+                Ok(ScryptoValue::from_slice(&self.component_mut().state.state)
                     .expect("Failed to decode component state"))
             }
             SubstateId::NonFungible(.., id) => Ok(self.non_fungible_get(id)),
@@ -598,8 +582,8 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
     ) -> Result<(), NodeToSubstateFailure> {
         match self {
             RENodeRefMut::Stack(re_value, id) => {
-                let component_state = re_value.get_node_mut(id.as_ref()).component_state_mut();
-                component_state.set_state(value.raw);
+                let component = re_value.get_node_mut(id.as_ref()).component_mut();
+                component.state.set_state(value.raw);
                 for (id, val) in to_store {
                     re_value.insert_non_root_nodes(val.to_nodes(id));
                 }
@@ -621,40 +605,6 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
         Ok(())
     }
 
-    pub fn component_info(&mut self) -> &ComponentInfo {
-        match self {
-            RENodeRefMut::Stack(re_value, id) => {
-                re_value.get_node_mut(id.as_ref()).component_info()
-            }
-            RENodeRefMut::Track(track, node_id) => {
-                let substate_id = match node_id {
-                    RENodeId::Component(component_address) => {
-                        SubstateId::ComponentInfo(*component_address)
-                    }
-                    _ => panic!("Unexpeceted"),
-                };
-                track.borrow_substate(substate_id).raw().component_info()
-            }
-        }
-    }
-
-    pub fn component_state(&mut self) -> &ComponentState {
-        match self {
-            RENodeRefMut::Stack(re_value, id) => {
-                re_value.get_node_mut(id.as_ref()).component_state()
-            }
-            RENodeRefMut::Track(track, node_id) => {
-                let substate_id = match node_id {
-                    RENodeId::Component(component_address) => {
-                        SubstateId::ComponentState(*component_address)
-                    }
-                    _ => panic!("Unexpeceted"),
-                };
-                track.borrow_substate(substate_id).raw().component_state()
-            }
-        }
-    }
-
     pub fn vault_mut(&mut self) -> &mut Vault {
         match self {
             RENodeRefMut::Stack(re_value, id) => re_value.get_node_mut(id.as_ref()).vault_mut(),
@@ -666,6 +616,21 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
                 let substate = track.borrow_substate_mut(substate_id);
                 substate.convert_to_node();
                 substate.vault_mut()
+            }
+        }
+    }
+
+    pub fn component_mut(&mut self) -> &mut Component {
+        match self {
+            RENodeRefMut::Stack(re_value, id) => re_value.get_node_mut(id.as_ref()).component_mut(),
+            RENodeRefMut::Track(track, node_id) => {
+                let substate_id = match node_id {
+                    RENodeId::Component(component_id) => SubstateId::ComponentInfo(*component_id),
+                    _ => panic!("Unexpeceted"),
+                };
+                let substate = track.borrow_substate_mut(substate_id);
+                substate.convert_to_node();
+                substate.component_mut()
             }
         }
     }
@@ -711,16 +676,16 @@ pub fn insert_non_root_nodes<'s, R: FeeReserve>(
                     false,
                 );
             }
-            HeapRENode::Component(component, component_state) => {
+            HeapRENode::Component(component) => {
                 let component_address = id.into();
                 track.create_uuid_substate(
                     SubstateId::ComponentInfo(component_address),
-                    component,
+                    component.info,
                     false,
                 );
                 track.create_uuid_substate(
                     SubstateId::ComponentState(component_address),
-                    component_state,
+                    component.state,
                     false,
                 );
             }
