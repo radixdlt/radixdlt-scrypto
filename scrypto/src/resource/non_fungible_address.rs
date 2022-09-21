@@ -6,8 +6,8 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::abi::*;
-use crate::constants::ECDSA_TOKEN;
-use crate::crypto::EcdsaSecp256k1PublicKey;
+use crate::constants::{ECDSA_TOKEN, ED25519_TOKEN};
+use crate::crypto::PublicKey;
 use crate::resource::*;
 
 /// Identifier for a non-fungible unit.
@@ -25,8 +25,17 @@ impl NonFungibleAddress {
         }
     }
 
-    pub fn from_public_key(public_key: &EcdsaSecp256k1PublicKey) -> Self {
-        NonFungibleAddress::new(ECDSA_TOKEN, NonFungibleId::from_bytes(public_key.to_vec()))
+    pub fn from_public_key<P: Into<PublicKey> + Clone>(public_key: &P) -> Self {
+        let public_key: PublicKey = public_key.clone().into();
+        match public_key {
+            PublicKey::EcdsaSecp256k1(public_key) => {
+                NonFungibleAddress::new(ECDSA_TOKEN, NonFungibleId::from_bytes(public_key.to_vec()))
+            }
+            PublicKey::EddsaEd25519(public_key) => NonFungibleAddress::new(
+                ED25519_TOKEN,
+                NonFungibleId::from_bytes(public_key.to_vec()),
+            ),
+        }
     }
 
     /// Returns the resource address.
