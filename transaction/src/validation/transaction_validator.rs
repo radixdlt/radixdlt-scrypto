@@ -308,24 +308,29 @@ impl TransactionValidator {
     pub fn validate_signatures(
         transaction: &NotarizedTransaction,
     ) -> Result<HashSet<PublicKey>, SignatureValidationError> {
-        // TODO: split into static validation part and runtime validation part to support more signatures
-        if transaction.signed_intent.intent_signatures.len() > MAX_NUMBER_OF_INTENT_SIGNATURES {
-            return Err(SignatureValidationError::TooManySignatures);
-        }
-
-        // verify intent signature
-        let intent_payload = transaction.signed_intent.intent.to_bytes();
         let mut signers = HashSet::new();
-        for sig in &transaction.signed_intent.intent_signatures {
-            let public_key = recover(&intent_payload, sig)
-                .ok_or(SignatureValidationError::InvalidIntentSignature)?;
 
-            if !verify(&intent_payload, &public_key, &sig.signature()) {
-                return Err(SignatureValidationError::InvalidIntentSignature);
+        if let IntentActorProof::User(intent_signatures) =
+            &transaction.signed_intent.intent_actor_proof
+        {
+            // TODO: split into static validation part and runtime validation part to support more signatures
+            if intent_signatures.len() > MAX_NUMBER_OF_INTENT_SIGNATURES {
+                return Err(SignatureValidationError::TooManySignatures);
             }
 
-            if !signers.insert(public_key) {
-                return Err(SignatureValidationError::DuplicateSigner);
+            // verify intent signature
+            let intent_payload = transaction.signed_intent.intent.to_bytes();
+            for sig in intent_signatures {
+                let public_key = recover(&intent_payload, sig)
+                    .ok_or(SignatureValidationError::InvalidIntentSignature)?;
+
+                if !verify(&intent_payload, &public_key, &sig.signature()) {
+                    return Err(SignatureValidationError::InvalidIntentSignature);
+                }
+
+                if !signers.insert(public_key) {
+                    return Err(SignatureValidationError::DuplicateSigner);
+                }
             }
         }
 

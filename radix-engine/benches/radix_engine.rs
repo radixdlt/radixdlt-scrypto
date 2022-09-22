@@ -6,7 +6,7 @@ use radix_engine::types::*;
 use radix_engine::wasm::DefaultWasmEngine;
 use radix_engine::wasm::WasmInstrumenter;
 use transaction::builder::ManifestBuilder;
-use transaction::model::TestTransaction;
+use transaction::model::{TestTransaction, TestTransactionActor};
 use transaction::signing::EcdsaSecp256k1PrivateKey;
 
 fn bench_transfer(c: &mut Criterion) {
@@ -37,7 +37,11 @@ fn bench_transfer(c: &mut Criterion) {
         .build();
     let account1 = executor
         .execute_and_commit(
-            &TestTransaction::new(manifest.clone(), 1, vec![public_key.into()], false),
+            &TestTransaction::new(
+                manifest.clone(),
+                1,
+                TestTransactionActor::User(vec![public_key.into()]),
+            ),
             &FeeReserveConfig::standard(),
             &ExecutionConfig::default(),
         )
@@ -46,7 +50,11 @@ fn bench_transfer(c: &mut Criterion) {
         .new_component_addresses[0];
     let account2 = executor
         .execute_and_commit(
-            &TestTransaction::new(manifest, 2, vec![public_key.into()], false),
+            &TestTransaction::new(
+                manifest,
+                2,
+                TestTransactionActor::User(vec![public_key.into()]),
+            ),
             &FeeReserveConfig::standard(),
             &ExecutionConfig::default(),
         )
@@ -67,7 +75,11 @@ fn bench_transfer(c: &mut Criterion) {
     for nonce in 0..1000 {
         executor
             .execute_and_commit(
-                &TestTransaction::new(manifest.clone(), nonce, vec![public_key.into()], false),
+                &TestTransaction::new(
+                    manifest.clone(),
+                    nonce,
+                    TestTransactionActor::User(vec![public_key.into()]),
+                ),
                 &FeeReserveConfig::standard(),
                 &ExecutionConfig::default(),
             )
@@ -90,7 +102,11 @@ fn bench_transfer(c: &mut Criterion) {
     c.bench_function("Transfer", |b| {
         b.iter(|| {
             let receipt = executor.execute_and_commit(
-                &TestTransaction::new(manifest.clone(), nonce, vec![public_key.into()], false),
+                &TestTransaction::new(
+                    manifest.clone(),
+                    nonce,
+                    TestTransactionActor::User(vec![public_key.into()]),
+                ),
                 &FeeReserveConfig::standard(),
                 &ExecutionConfig::default(),
             );

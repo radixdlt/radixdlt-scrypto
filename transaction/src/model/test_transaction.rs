@@ -8,22 +8,21 @@ use scrypto::resource::{NonFungibleAddress, NonFungibleId};
 use crate::builder::TransactionBuilder;
 use crate::model::*;
 
+pub enum TestTransactionActor {
+    User(Vec<PublicKey>),
+    System,
+}
+
 /// Represents a test transaction, for testing/simulation purpose only.
 pub struct TestTransaction {
     pub transaction: NotarizedTransaction,
     pub executable_instructions: Vec<ExecutableInstruction>,
-    pub signer_public_keys: Vec<PublicKey>,
-    pub is_system: bool,
+    pub actor: TestTransactionActor,
 }
 
 impl TestTransaction {
-    pub fn new(
-        manifest: TransactionManifest,
-        nonce: u64,
-        signer_public_keys: Vec<PublicKey>,
-        is_system: bool,
-    ) -> Self {
-        let transaction = TransactionBuilder::new()
+    pub fn new(manifest: TransactionManifest, nonce: u64, actor: TestTransactionActor) -> Self {
+        let builder = TransactionBuilder::new()
             .header(TransactionHeader {
                 version: TRANSACTION_VERSION_V1,
                 network_id: NetworkDefinition::simulator().id,
@@ -35,8 +34,9 @@ impl TestTransaction {
                 cost_unit_limit: 10_000_000,
                 tip_percentage: 5,
             })
-            .manifest(manifest)
-            .signer_signatures(
+            .manifest(manifest);
+        let builder = match &actor {
+            TestTransactionActor::User(signer_public_keys) => builder.signer_signatures(
                 signer_public_keys
                     .iter()
                     .cloned()
@@ -47,7 +47,10 @@ impl TestTransaction {
                         }
                     })
                     .collect(),
-            )
+            ),
+            TestTransactionActor::System => builder.as_supervisor(),
+        };
+        let transaction = builder
             .notary_signature(EcdsaSecp256k1Signature([0u8; 65]).into())
             .build();
 
@@ -151,8 +154,7 @@ impl TestTransaction {
         Self {
             transaction,
             executable_instructions,
-            signer_public_keys,
-            is_system,
+            actor,
         }
     }
 }
@@ -179,27 +181,26 @@ impl ExecutableTransaction for TestTransaction {
     }
 
     fn initial_proofs(&self) -> Vec<NonFungibleAddress> {
-        let mut non_fungible_addresses: Vec<NonFungibleAddress> = self
-            .signer_public_keys
-            .iter()
-            .map(|k| match k {
-                PublicKey::EddsaEd25519(pk) => {
-                    NonFungibleAddress::new(ED25519_TOKEN, NonFungibleId::from_bytes(pk.to_vec()))
-                }
-                PublicKey::EcdsaSecp256k1(pk) => {
-                    NonFungibleAddress::new(ECDSA_TOKEN, NonFungibleId::from_bytes(pk.to_vec()))
-                }
-            })
-            .collect();
-
-        if self.is_system {
-            non_fungible_addresses.push(NonFungibleAddress::new(
-                SYSTEM_TOKEN,
-                NonFungibleId::from_u32(0),
-            ));
+        match &self.actor {
+            TestTransactionActor::User(signer_public_keys) => signer_public_keys
+                .iter()
+                .map(|k| match k {
+                    PublicKey::EddsaEd25519(pk) => NonFungibleAddress::new(
+                        ED25519_TOKEN,
+                        NonFungibleId::from_bytes(pk.to_vec()),
+                    ),
+                    PublicKey::EcdsaSecp256k1(pk) => {
+                        NonFungibleAddress::new(ECDSA_TOKEN, NonFungibleId::from_bytes(pk.to_vec()))
+                    }
+                })
+                .collect(),
+            TestTransactionActor::System => {
+                vec![NonFungibleAddress::new(
+                    SYSTEM_TOKEN,
+                    NonFungibleId::from_u32(0),
+                )]
+            }
         }
-
-        non_fungible_addresses
     }
 
     fn blobs(&self) -> &[Vec<u8>] {

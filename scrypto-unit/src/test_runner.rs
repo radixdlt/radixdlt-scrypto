@@ -22,7 +22,9 @@ use sbor::describe::*;
 use scrypto::dec;
 use scrypto::math::Decimal;
 use transaction::builder::ManifestBuilder;
-use transaction::model::{ExecutableTransaction, MethodIdentifier, TransactionManifest};
+use transaction::model::{
+    ExecutableTransaction, MethodIdentifier, TestTransactionActor, TransactionManifest,
+};
 use transaction::model::{PreviewIntent, TestTransaction};
 use transaction::signing::EcdsaSecp256k1PrivateKey;
 use transaction::validation::TestIntentHashManager;
@@ -307,8 +309,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             let transaction = TestTransaction::new(
                 manifest,
                 self.next_transaction_nonce,
-                signer_public_keys,
-                false,
+                TestTransactionActor::User(signer_public_keys),
             );
             self.next_transaction_nonce += 1;
             let receipt = TransactionExecutor::new(

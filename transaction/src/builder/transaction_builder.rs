@@ -5,7 +5,7 @@ use crate::{model::*, signing::Signer};
 pub struct TransactionBuilder {
     manifest: Option<TransactionManifest>,
     header: Option<TransactionHeader>,
-    intent_signatures: Vec<SignatureWithPublicKey>,
+    intent_actor_proof: IntentActorProof,
     notary_signature: Option<Signature>,
 }
 
@@ -14,7 +14,7 @@ impl TransactionBuilder {
         Self {
             manifest: None,
             header: None,
-            intent_signatures: Vec::new(),
+            intent_actor_proof: IntentActorProof::User(vec![]),
             notary_signature: None,
         }
     }
@@ -29,15 +29,30 @@ impl TransactionBuilder {
         self
     }
 
-    pub fn sign<S: Signer>(mut self, signer: &S) -> Self {
-        let intent = self.transaction_intent();
-        let intent_payload = scrypto_encode(&intent);
-        self.intent_signatures.push(signer.sign(&intent_payload));
+    pub fn as_supervisor(mut self) -> Self {
+        self.intent_actor_proof = IntentActorProof::Supervisor;
         self
     }
 
-    pub fn signer_signatures(mut self, signatures: Vec<SignatureWithPublicKey>) -> Self {
-        self.intent_signatures.extend(signatures);
+    pub fn sign<S: Signer>(mut self, signer: &S) -> Self {
+        let intent = self.transaction_intent();
+        let intent_payload = scrypto_encode(&intent);
+        match self.intent_actor_proof {
+            IntentActorProof::User(ref mut signatures) => {
+                signatures.push(signer.sign(&intent_payload));
+            }
+            IntentActorProof::Supervisor => panic!("Cannot sign supervisor transaction"),
+        }
+        self
+    }
+
+    pub fn signer_signatures(mut self, sigs: Vec<SignatureWithPublicKey>) -> Self {
+        match self.intent_actor_proof {
+            IntentActorProof::User(ref mut signatures) => {
+                signatures.extend(sigs);
+            }
+            IntentActorProof::Supervisor => panic!("Cannot sign supervisor transaction"),
+        }
         self
     }
 
@@ -71,7 +86,7 @@ impl TransactionBuilder {
         let intent = self.transaction_intent();
         SignedTransactionIntent {
             intent,
-            intent_signatures: self.intent_signatures.clone(),
+            intent_actor_proof: self.intent_actor_proof.clone(),
         }
     }
 }

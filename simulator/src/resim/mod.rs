@@ -63,8 +63,8 @@ use std::fs;
 use std::path::PathBuf;
 use transaction::builder::ManifestBuilder;
 use transaction::manifest::decompile;
-use transaction::model::TestTransaction;
 use transaction::model::TransactionManifest;
+use transaction::model::{TestTransaction, TestTransactionActor};
 use transaction::signing::EcdsaSecp256k1PrivateKey;
 
 /// Build fast, reward everyone, and scale without friction
@@ -137,7 +137,6 @@ pub fn handle_manifest<O: std::io::Write>(
     signing_keys: &Option<String>,
     network: &Option<String>,
     manifest_path: &Option<PathBuf>,
-    is_system: bool,
     trace: bool,
     output_receipt: bool,
     out: &mut O,
@@ -180,7 +179,8 @@ pub fn handle_manifest<O: std::io::Write>(
                 .map(|e| e.public_key().into())
                 .collect::<Vec<PublicKey>>();
             let nonce = get_nonce()?;
-            let transaction = TestTransaction::new(manifest, nonce, pks, is_system);
+            let transaction =
+                TestTransaction::new(manifest, nonce, TestTransactionActor::User(pks));
 
             let receipt = executor.execute_and_commit(
                 &transaction,
