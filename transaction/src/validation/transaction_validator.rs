@@ -2,7 +2,6 @@ use std::collections::HashSet;
 
 use sbor::rust::vec;
 use scrypto::buffer::scrypto_decode;
-use scrypto::crypto::*;
 use scrypto::values::*;
 
 use crate::errors::{SignatureValidationError, *};
@@ -49,11 +48,8 @@ impl TransactionValidator {
         )?;
 
         // verify signatures
-        let mut signers = Self::validate_signatures(&transaction)
+        let actor = Self::validate_signatures(&transaction)
             .map_err(TransactionValidationError::SignatureValidationError)?;
-        if transaction.signed_intent.intent.header.notary_as_signatory {
-            signers.insert(transaction.signed_intent.intent.header.notary_public_key);
-        }
 
         // TODO: whether to use intent hash or transaction hash
         let transaction_hash = transaction.hash();
@@ -62,7 +58,7 @@ impl TransactionValidator {
             transaction,
             transaction_hash,
             instructions,
-            signer_public_keys: signers.into_iter().collect(),
+            actor,
         })
     }
 
@@ -307,44 +303,64 @@ impl TransactionValidator {
 
     pub fn validate_signatures(
         transaction: &NotarizedTransaction,
-    ) -> Result<HashSet<PublicKey>, SignatureValidationError> {
-        let mut signers = HashSet::new();
-
-        if let IntentActorProof::User(intent_signatures) =
-            &transaction.signed_intent.intent_actor_proof
-        {
-            // TODO: split into static validation part and runtime validation part to support more signatures
-            if intent_signatures.len() > MAX_NUMBER_OF_INTENT_SIGNATURES {
-                return Err(SignatureValidationError::TooManySignatures);
-            }
-
-            // verify intent signature
-            let intent_payload = transaction.signed_intent.intent.to_bytes();
-            for sig in intent_signatures {
-                let public_key = recover(&intent_payload, sig)
-                    .ok_or(SignatureValidationError::InvalidIntentSignature)?;
-
-                if !verify(&intent_payload, &public_key, &sig.signature()) {
-                    return Err(SignatureValidationError::InvalidIntentSignature);
+    ) -> Result<ValidatedTransactionActor, SignatureValidationError> {
+        match &transaction.signed_intent.intent_actor_proof {
+            IntentActorProof::User(intent_signatures) => {
+                // TODO: split into static validation part and runtime validation part to support more signatures
+                if intent_signatures.len() > MAX_NUMBER_OF_INTENT_SIGNATURES {
+                    return Err(SignatureValidationError::TooManySignatures);
                 }
 
-                if !signers.insert(public_key) {
-                    return Err(SignatureValidationError::DuplicateSigner);
+                // verify intent signature
+                let mut signers = HashSet::new();
+                let intent_payload = transaction.signed_intent.intent.to_bytes();
+                for sig in intent_signatures {
+                    let public_key = recover(&intent_payload, sig)
+                        .ok_or(SignatureValidationError::InvalidIntentSignature)?;
+
+                    if !verify(&intent_payload, &public_key, &sig.signature()) {
+                        return Err(SignatureValidationError::InvalidIntentSignature);
+                    }
+
+                    if !signers.insert(public_key) {
+                        return Err(SignatureValidationError::DuplicateSigner);
+                    }
                 }
+
+                if transaction.signed_intent.intent.header.notary_as_signatory {
+                    signers.insert(transaction.signed_intent.intent.header.notary_public_key);
+                }
+
+                // verify notary signature
+                let signed_intent_payload = transaction.signed_intent.to_bytes();
+                if !verify(
+                    &signed_intent_payload,
+                    &transaction.signed_intent.intent.header.notary_public_key,
+                    &transaction.notary_signature,
+                ) {
+                    return Err(SignatureValidationError::InvalidNotarySignature);
+                }
+
+                Ok(ValidatedTransactionActor::User(
+                    signers.into_iter().collect(),
+                ))
+            }
+
+            IntentActorProof::Supervisor => {
+                // verify notary signature
+                // TODO: Remove notary from supervisor actor
+                let signed_intent_payload = transaction.signed_intent.to_bytes();
+                if !verify(
+                    &signed_intent_payload,
+                    &transaction.signed_intent.intent.header.notary_public_key,
+                    &transaction.notary_signature,
+                ) {
+                    return Err(SignatureValidationError::InvalidNotarySignature);
+                }
+
+                Ok(ValidatedTransactionActor::Supervisor)
             }
         }
-
-        // verify notary signature
-        let signed_intent_payload = transaction.signed_intent.to_bytes();
-        if !verify(
-            &signed_intent_payload,
-            &transaction.signed_intent.intent.header.notary_public_key,
-            &transaction.notary_signature,
-        ) {
-            return Err(SignatureValidationError::InvalidNotarySignature);
-        }
-
-        Ok(signers)
     }
 
     pub fn validate_call_data(
