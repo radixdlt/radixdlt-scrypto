@@ -80,8 +80,8 @@ where
         execution_trace: &'g mut ExecutionTrace,
         modules: Vec<Box<dyn Module<R>>>,
     ) -> Self {
-        let frame = CallFrame::new_root(transaction_signers);
-        let mut kernel = Self {
+        let frame = CallFrame::new_root(transaction_signers, is_system);
+        Self {
             transaction_hash,
             blobs,
             max_depth,
@@ -94,33 +94,7 @@ where
             call_frames: vec![frame],
             modules,
             phantom: PhantomData,
-        };
-
-        if is_system {
-            let non_fungible_ids = [NonFungibleId::from_u32(0)].into_iter().collect();
-            let bucket_id = match kernel
-                .node_create(HeapRENode::Bucket(Bucket::new(
-                    ResourceContainer::new_non_fungible(SYSTEM_TOKEN, non_fungible_ids),
-                )))
-                .expect("Failed to create SYSTEM_TOKEN bucket")
-            {
-                RENodeId::Bucket(bucket_id) => bucket_id,
-                _ => panic!("Expected Bucket RENodeId but received something else"),
-            };
-            let substate_id = SubstateId::Bucket(bucket_id);
-            let mut node_ref = kernel
-                .substate_borrow_mut(&substate_id)
-                .expect("Failed to borrow SYSTEM_TOKEN bucket substate");
-            let bucket = node_ref.bucket();
-            let system_proof = bucket
-                .create_proof(bucket_id)
-                .expect("Failed to create SYSTEM_TOKEN proof");
-            Self::current_frame_mut(&mut kernel.call_frames)
-                .auth_zone
-                .proofs
-                .push(system_proof);
         }
-        kernel
     }
 
     fn process_call_data(validated: &ScryptoValue) -> Result<(), RuntimeError> {

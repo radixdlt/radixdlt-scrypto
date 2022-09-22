@@ -28,7 +28,7 @@ pub struct CallFrame {
 }
 
 impl CallFrame {
-    pub fn new_root(signer_public_keys: Vec<PublicKey>) -> Self {
+    pub fn new_root(signer_public_keys: Vec<PublicKey>, is_system: bool) -> Self {
         // TODO: Cleanup initialization of authzone
 
         let mut ecdsa_secp256k1_non_fungible_ids = BTreeSet::new();
@@ -66,6 +66,17 @@ impl CallFrame {
                 .create_proof(ED25519_TOKEN_BUCKET_ID)
                 .expect("Failed to construct ED25519 signature proof");
             initial_auth_zone_proofs.push(eddsa_ed25519_proof);
+        }
+
+        if is_system {
+            let non_fungible_ids = [NonFungibleId::from_u32(0)].into_iter().collect();
+            let mut system_bucket = Bucket::new(
+                ResourceContainer::new_non_fungible(SYSTEM_TOKEN, non_fungible_ids),
+            );
+            let system_proof = system_bucket
+                .create_proof(SYSTEM_BUCKET_ID)
+                .expect("Failed to create SYSTEM_TOKEN proof");
+            initial_auth_zone_proofs.push(system_proof);
         }
 
         Self {
