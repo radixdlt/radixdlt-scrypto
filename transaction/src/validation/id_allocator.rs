@@ -7,10 +7,6 @@ use scrypto::resource::ResourceAddress;
 
 use crate::errors::*;
 
-pub const ECDSA_TOKEN_BUCKET_ID: BucketId = 0;
-pub const ED25519_TOKEN_BUCKET_ID: BucketId = 1;
-pub const SYSTEM_BUCKET_ID: BucketId = 2;
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum IdSpace {
     System,

@@ -1,10 +1,10 @@
 use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::buffer::scrypto_encode;
-use scrypto::constants::{ECDSA_TOKEN, ED25519_TOKEN, SYSTEM_TOKEN};
 use scrypto::crypto::*;
-use scrypto::resource::{NonFungibleAddress, NonFungibleId};
+use scrypto::resource::NonFungibleAddress;
 
+use auth_module::AuthModule;
 use crate::model::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
@@ -45,22 +45,8 @@ impl ExecutableTransaction for ValidatedTransaction {
 
     fn initial_proofs(&self) -> Vec<NonFungibleAddress> {
         match &self.actor {
-            ValidatedTransactionActor::User(signer_public_keys) => signer_public_keys
-                .iter()
-                .map(|k| match k {
-                    PublicKey::EddsaEd25519(pk) => NonFungibleAddress::new(
-                        ED25519_TOKEN,
-                        NonFungibleId::from_bytes(pk.to_vec()),
-                    ),
-                    PublicKey::EcdsaSecp256k1(pk) => {
-                        NonFungibleAddress::new(ECDSA_TOKEN, NonFungibleId::from_bytes(pk.to_vec()))
-                    }
-                })
-                .collect(),
-            ValidatedTransactionActor::Supervisor => vec![NonFungibleAddress::new(
-                SYSTEM_TOKEN,
-                NonFungibleId::from_u32(0),
-            )],
+            ValidatedTransactionActor::User(signer_public_keys) => AuthModule::signer_keys_to_non_fungibles(signer_public_keys),
+            ValidatedTransactionActor::Supervisor => vec![AuthModule::supervisor_address()],
         }
     }
 

@@ -1,4 +1,5 @@
 use clap::Parser;
+use transaction::model::AuthModule;
 use radix_engine::constants::*;
 use radix_engine::engine::Track;
 use radix_engine::engine::{ExecutionTrace, Kernel, SystemApi};
@@ -33,10 +34,7 @@ impl SetCurrentEpoch {
 
         let mut kernel = Kernel::new(
             tx_hash,
-            vec![NonFungibleAddress::new(
-                SYSTEM_TOKEN,
-                NonFungibleId::from_u32(0),
-            )],
+            vec![AuthModule::supervisor_address()],
             &blobs,
             DEFAULT_MAX_CALL_DEPTH,
             &mut track,
