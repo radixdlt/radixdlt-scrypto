@@ -76,7 +76,7 @@ where
             min_tip_percentage: 0,
         };
         let execution_params = ExecutionConfig::default();
-        let validator = TransactionValidator::new(validation_config);
+        let validator = TransactionValidator::new(validation_config, false);
 
         let validated_preview_transaction = validator
             .validate_preview_intent(preview_intent.clone(), self.intent_hash_manager)

@@ -17,12 +17,15 @@ use transaction::signing::EcdsaSecp256k1PrivateKey;
 use transaction::validation::{TestIntentHashManager, TransactionValidator, ValidationConfig};
 
 fn execute_single_transaction(transaction: NotarizedTransaction) {
-    let validator = TransactionValidator::new(ValidationConfig {
-        network_id: NetworkDefinition::simulator().id,
-        current_epoch: 1,
-        max_cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,
-        min_tip_percentage: 0,
-    });
+    let validator = TransactionValidator::new(
+        ValidationConfig {
+            network_id: NetworkDefinition::simulator().id,
+            current_epoch: 1,
+            max_cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,
+            min_tip_percentage: 0,
+        },
+        false,
+    );
 
     let transaction = validator
         .validate(transaction, &TestIntentHashManager::new())

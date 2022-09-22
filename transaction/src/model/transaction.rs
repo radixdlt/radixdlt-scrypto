@@ -37,7 +37,7 @@ pub struct TransactionIntent {
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub enum IntentActorProof {
     User(Vec<SignatureWithPublicKey>),
-    Supervisor,
+    Superuser,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]

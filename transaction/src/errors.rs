@@ -21,6 +21,7 @@ pub enum SignatureValidationError {
     InvalidIntentSignature,
     InvalidNotarySignature,
     DuplicateSigner,
+    InvalidSuperuserPermission,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]

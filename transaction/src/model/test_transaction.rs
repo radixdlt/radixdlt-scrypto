@@ -9,7 +9,7 @@ use crate::model::*;
 
 pub enum TestTransactionActor {
     User(Vec<PublicKey>),
-    System,
+    Superuser,
 }
 
 /// Represents a test transaction, for testing/simulation purpose only.
@@ -47,7 +47,7 @@ impl TestTransaction {
                     })
                     .collect(),
             ),
-            TestTransactionActor::System => builder.as_supervisor(),
+            TestTransactionActor::Superuser => builder.as_supervisor(),
         };
         let transaction = builder
             .notary_signature(EcdsaSecp256k1Signature([0u8; 65]).into())
@@ -184,7 +184,7 @@ impl ExecutableTransaction for TestTransaction {
             TestTransactionActor::User(signer_public_keys) => {
                 AuthModule::signer_keys_to_non_fungibles(signer_public_keys)
             }
-            TestTransactionActor::System => vec![AuthModule::supervisor_address()],
+            TestTransactionActor::Superuser => vec![AuthModule::supervisor_address()],
         }
     }
 

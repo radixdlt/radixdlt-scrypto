@@ -30,7 +30,7 @@ impl TransactionBuilder {
     }
 
     pub fn as_supervisor(mut self) -> Self {
-        self.intent_actor_proof = IntentActorProof::Supervisor;
+        self.intent_actor_proof = IntentActorProof::Superuser;
         self
     }
 
@@ -41,7 +41,7 @@ impl TransactionBuilder {
             IntentActorProof::User(ref mut signatures) => {
                 signatures.push(signer.sign(&intent_payload));
             }
-            IntentActorProof::Supervisor => panic!("Cannot sign supervisor transaction"),
+            IntentActorProof::Superuser => panic!("Cannot sign supervisor transaction"),
         }
         self
     }
@@ -51,7 +51,7 @@ impl TransactionBuilder {
             IntentActorProof::User(ref mut signatures) => {
                 signatures.extend(sigs);
             }
-            IntentActorProof::Supervisor => panic!("Cannot sign supervisor transaction"),
+            IntentActorProof::Superuser => panic!("Cannot sign supervisor transaction"),
         }
         self
     }
