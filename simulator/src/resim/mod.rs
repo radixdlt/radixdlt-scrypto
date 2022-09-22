@@ -63,8 +63,8 @@ use std::fs;
 use std::path::PathBuf;
 use transaction::builder::ManifestBuilder;
 use transaction::manifest::decompile;
+use transaction::model::TestTransaction;
 use transaction::model::TransactionManifest;
-use transaction::model::{TestTransaction, TestTransactionActor};
 use transaction::signing::EcdsaSecp256k1PrivateKey;
 
 /// Build fast, reward everyone, and scale without friction
@@ -179,8 +179,7 @@ pub fn handle_manifest<O: std::io::Write>(
                 .map(|e| e.public_key().into())
                 .collect::<Vec<PublicKey>>();
             let nonce = get_nonce()?;
-            let transaction =
-                TestTransaction::new(manifest, nonce, TestTransactionActor::User(pks));
+            let transaction = TestTransaction::new(manifest, nonce, pks);
 
             let receipt = executor.execute_and_commit(
                 &transaction,

@@ -51,15 +51,12 @@ fn test_normal_transaction_flow() {
     let execution_config = ExecutionConfig::debug();
     let raw_transaction = create_notarized_transaction(1_000_000).to_bytes();
 
-    let validator = TransactionValidator::new(
-        ValidationConfig {
-            network_id: NetworkDefinition::simulator().id,
-            current_epoch: 1,
-            max_cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,
-            min_tip_percentage: 0,
-        },
-        false,
-    );
+    let validator = TransactionValidator::new(ValidationConfig {
+        network_id: NetworkDefinition::simulator().id,
+        current_epoch: 1,
+        max_cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,
+        min_tip_percentage: 0,
+    });
 
     let validated_transaction = validator
         .validate_from_slice(&raw_transaction, &intent_hash_manager)
@@ -84,15 +81,12 @@ fn test_normal_transaction_flow() {
 fn create_executable_transaction(cost_unit_limit: u32) -> ValidatedTransaction {
     let notarized_transaction = create_notarized_transaction(cost_unit_limit);
 
-    let validator = TransactionValidator::new(
-        ValidationConfig {
-            network_id: NetworkDefinition::simulator().id,
-            current_epoch: 1,
-            max_cost_unit_limit: 10_000_000,
-            min_tip_percentage: 0,
-        },
-        false,
-    );
+    let validator = TransactionValidator::new(ValidationConfig {
+        network_id: NetworkDefinition::simulator().id,
+        current_epoch: 1,
+        max_cost_unit_limit: 10_000_000,
+        min_tip_percentage: 0,
+    });
 
     validator
         .validate(notarized_transaction, &TestIntentHashManager::new())

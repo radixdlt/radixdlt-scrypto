@@ -35,21 +35,21 @@ pub struct TransactionIntent {
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
-pub enum IntentActorProof {
-    User(Vec<SignatureWithPublicKey>),
-    Superuser,
-}
-
-#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct SignedTransactionIntent {
     pub intent: TransactionIntent,
-    pub intent_actor_proof: IntentActorProof,
+    pub intent_signatures: Vec<SignatureWithPublicKey>,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct NotarizedTransaction {
     pub signed_intent: SignedTransactionIntent,
     pub notary_signature: Signature,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
+pub enum Transaction {
+    User(NotarizedTransaction),
+    EpochUpdate(u64),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -169,7 +169,7 @@ mod tests {
         let signature2 = sk2.sign(&intent.to_bytes());
         let signed_intent = SignedTransactionIntent {
             intent,
-            intent_actor_proof: IntentActorProof::User(vec![signature1.into(), signature2.into()]),
+            intent_signatures: vec![signature1.into(), signature2.into()],
         };
 
         // notarize
@@ -225,7 +225,7 @@ mod tests {
         let signature2 = (sk2.public_key(), sk2.sign(&intent.to_bytes()));
         let signed_intent = SignedTransactionIntent {
             intent,
-            intent_actor_proof: IntentActorProof::User(vec![signature1.into(), signature2.into()]),
+            intent_signatures: vec![signature1.into(), signature2.into()],
         };
 
         // notarize

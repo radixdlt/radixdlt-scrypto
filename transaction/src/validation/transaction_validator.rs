@@ -1,6 +1,7 @@
 use std::collections::HashSet;
 
 use scrypto::buffer::scrypto_decode;
+use scrypto::crypto::PublicKey;
 use scrypto::values::*;
 
 use crate::errors::{SignatureValidationError, *};
@@ -18,14 +19,13 @@ pub struct ValidationConfig {
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct TransactionValidator {
     config: ValidationConfig,
-    is_sudo: bool,
 }
 
 impl TransactionValidator {
     pub const MAX_PAYLOAD_SIZE: usize = 4 * 1024 * 1024;
 
-    pub fn new(config: ValidationConfig, is_sudo: bool) -> Self {
-        Self { config, is_sudo }
+    pub fn new(config: ValidationConfig) -> Self {
+        Self { config }
     }
 
     pub fn validate_from_slice<I: IntentHashManager>(
@@ -53,7 +53,7 @@ impl TransactionValidator {
             self.validate_intent(&transaction.signed_intent.intent, intent_hash_manager)?;
 
         // verify signatures
-        let actor = self
+        let keys = self
             .validate_signatures(&transaction)
             .map_err(TransactionValidationError::SignatureValidationError)?;
 
@@ -64,7 +64,7 @@ impl TransactionValidator {
             transaction,
             transaction_hash,
             instructions,
-            actor,
+            initial_proofs: AuthModule::signer_keys_to_non_fungibles(&keys),
         })
     }
 
@@ -230,68 +230,43 @@ impl TransactionValidator {
     pub fn validate_signatures(
         &self,
         transaction: &NotarizedTransaction,
-    ) -> Result<ValidatedTransactionActor, SignatureValidationError> {
-        match &transaction.signed_intent.intent_actor_proof {
-            IntentActorProof::User(intent_signatures) => {
-                // TODO: split into static validation part and runtime validation part to support more signatures
-                if intent_signatures.len() > MAX_NUMBER_OF_INTENT_SIGNATURES {
-                    return Err(SignatureValidationError::TooManySignatures);
-                }
+    ) -> Result<Vec<PublicKey>, SignatureValidationError> {
+        // TODO: split into static validation part and runtime validation part to support more signatures
+        if transaction.signed_intent.intent_signatures.len() > MAX_NUMBER_OF_INTENT_SIGNATURES {
+            return Err(SignatureValidationError::TooManySignatures);
+        }
 
-                // verify intent signature
-                let mut signers = HashSet::new();
-                let intent_payload = transaction.signed_intent.intent.to_bytes();
-                for sig in intent_signatures {
-                    let public_key = recover(&intent_payload, sig)
-                        .ok_or(SignatureValidationError::InvalidIntentSignature)?;
+        // verify intent signature
+        let mut signers = HashSet::new();
+        let intent_payload = transaction.signed_intent.intent.to_bytes();
+        for sig in &transaction.signed_intent.intent_signatures {
+            let public_key = recover(&intent_payload, sig)
+                .ok_or(SignatureValidationError::InvalidIntentSignature)?;
 
-                    if !verify(&intent_payload, &public_key, &sig.signature()) {
-                        return Err(SignatureValidationError::InvalidIntentSignature);
-                    }
-
-                    if !signers.insert(public_key) {
-                        return Err(SignatureValidationError::DuplicateSigner);
-                    }
-                }
-
-                if transaction.signed_intent.intent.header.notary_as_signatory {
-                    signers.insert(transaction.signed_intent.intent.header.notary_public_key);
-                }
-
-                // verify notary signature
-                let signed_intent_payload = transaction.signed_intent.to_bytes();
-                if !verify(
-                    &signed_intent_payload,
-                    &transaction.signed_intent.intent.header.notary_public_key,
-                    &transaction.notary_signature,
-                ) {
-                    return Err(SignatureValidationError::InvalidNotarySignature);
-                }
-
-                Ok(ValidatedTransactionActor::User(
-                    signers.into_iter().collect(),
-                ))
+            if !verify(&intent_payload, &public_key, &sig.signature()) {
+                return Err(SignatureValidationError::InvalidIntentSignature);
             }
 
-            IntentActorProof::Superuser => {
-                if !self.is_sudo {
-                    return Err(SignatureValidationError::InvalidSuperuserPermission);
-                }
-
-                // verify notary signature
-                // TODO: Remove notary from supervisor actor
-                let signed_intent_payload = transaction.signed_intent.to_bytes();
-                if !verify(
-                    &signed_intent_payload,
-                    &transaction.signed_intent.intent.header.notary_public_key,
-                    &transaction.notary_signature,
-                ) {
-                    return Err(SignatureValidationError::InvalidNotarySignature);
-                }
-
-                Ok(ValidatedTransactionActor::Supervisor)
+            if !signers.insert(public_key) {
+                return Err(SignatureValidationError::DuplicateSigner);
             }
         }
+
+        if transaction.signed_intent.intent.header.notary_as_signatory {
+            signers.insert(transaction.signed_intent.intent.header.notary_public_key);
+        }
+
+        // verify notary signature
+        let signed_intent_payload = transaction.signed_intent.to_bytes();
+        if !verify(
+            &signed_intent_payload,
+            &transaction.signed_intent.intent.header.notary_public_key,
+            &transaction.notary_signature,
+        ) {
+            return Err(SignatureValidationError::InvalidNotarySignature);
+        }
+
+        Ok(signers.into_iter().collect())
     }
 
     pub fn validate_call_data(
@@ -333,7 +308,7 @@ mod tests {
                 max_cost_unit_limit: 10_000_000,
                 min_tip_percentage: 0,
             };
-            let validator = TransactionValidator::new(config, false);
+            let validator = TransactionValidator::new(config);
             assert_eq!(
                 Err($result),
                 validator.validate(
@@ -402,15 +377,12 @@ mod tests {
         // Build the whole transaction but only really care about the intent
         let tx = create_transaction(1, 0, 100, 5, vec![1, 2], 2);
 
-        let validator = TransactionValidator::new(
-            ValidationConfig {
-                network_id: NetworkDefinition::simulator().id,
-                current_epoch: 1,
-                max_cost_unit_limit: 10_000_000,
-                min_tip_percentage: 0,
-            },
-            false,
-        );
+        let validator = TransactionValidator::new(ValidationConfig {
+            network_id: NetworkDefinition::simulator().id,
+            current_epoch: 1,
+            max_cost_unit_limit: 10_000_000,
+            min_tip_percentage: 0,
+        });
 
         let result = validator.validate_preview_intent(
             PreviewIntent {

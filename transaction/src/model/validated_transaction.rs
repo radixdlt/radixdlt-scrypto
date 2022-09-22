@@ -5,13 +5,6 @@ use scrypto::crypto::*;
 use scrypto::resource::NonFungibleAddress;
 
 use crate::model::*;
-use auth_module::AuthModule;
-
-#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
-pub enum ValidatedTransactionActor {
-    User(Vec<PublicKey>),
-    Supervisor,
-}
 
 /// Represents a validated transaction
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
@@ -19,7 +12,7 @@ pub struct ValidatedTransaction {
     pub transaction: NotarizedTransaction,
     pub transaction_hash: Hash,
     pub instructions: Vec<Instruction>,
-    pub actor: ValidatedTransactionActor,
+    pub initial_proofs: Vec<NonFungibleAddress>,
 }
 
 impl ExecutableTransaction for ValidatedTransaction {
@@ -44,12 +37,7 @@ impl ExecutableTransaction for ValidatedTransaction {
     }
 
     fn initial_proofs(&self) -> Vec<NonFungibleAddress> {
-        match &self.actor {
-            ValidatedTransactionActor::User(signer_public_keys) => {
-                AuthModule::signer_keys_to_non_fungibles(signer_public_keys)
-            }
-            ValidatedTransactionActor::Supervisor => vec![AuthModule::supervisor_address()],
-        }
+        self.initial_proofs.clone()
     }
 
     fn blobs(&self) -> &[Vec<u8>] {

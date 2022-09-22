@@ -5,7 +5,7 @@ use crate::{model::*, signing::Signer};
 pub struct TransactionBuilder {
     manifest: Option<TransactionManifest>,
     header: Option<TransactionHeader>,
-    intent_actor_proof: IntentActorProof,
+    intent_signatures: Vec<SignatureWithPublicKey>,
     notary_signature: Option<Signature>,
 }
 
@@ -14,7 +14,7 @@ impl TransactionBuilder {
         Self {
             manifest: None,
             header: None,
-            intent_actor_proof: IntentActorProof::User(vec![]),
+            intent_signatures: vec![],
             notary_signature: None,
         }
     }
@@ -29,30 +29,15 @@ impl TransactionBuilder {
         self
     }
 
-    pub fn as_supervisor(mut self) -> Self {
-        self.intent_actor_proof = IntentActorProof::Superuser;
-        self
-    }
-
     pub fn sign<S: Signer>(mut self, signer: &S) -> Self {
         let intent = self.transaction_intent();
         let intent_payload = scrypto_encode(&intent);
-        match self.intent_actor_proof {
-            IntentActorProof::User(ref mut signatures) => {
-                signatures.push(signer.sign(&intent_payload));
-            }
-            IntentActorProof::Superuser => panic!("Cannot sign supervisor transaction"),
-        }
+        self.intent_signatures.push(signer.sign(&intent_payload));
         self
     }
 
     pub fn signer_signatures(mut self, sigs: Vec<SignatureWithPublicKey>) -> Self {
-        match self.intent_actor_proof {
-            IntentActorProof::User(ref mut signatures) => {
-                signatures.extend(sigs);
-            }
-            IntentActorProof::Superuser => panic!("Cannot sign supervisor transaction"),
-        }
+        self.intent_signatures.extend(sigs);
         self
     }
 
@@ -86,7 +71,7 @@ impl TransactionBuilder {
         let intent = self.transaction_intent();
         SignedTransactionIntent {
             intent,
-            intent_actor_proof: self.intent_actor_proof.clone(),
+            intent_signatures: self.intent_signatures.clone(),
         }
     }
 }
