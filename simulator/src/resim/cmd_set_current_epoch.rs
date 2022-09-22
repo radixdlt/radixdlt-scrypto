@@ -33,9 +33,11 @@ impl SetCurrentEpoch {
 
         let mut kernel = Kernel::new(
             tx_hash,
-            Vec::new(),
+            vec![NonFungibleAddress::new(
+                SYSTEM_TOKEN,
+                NonFungibleId::from_u32(0),
+            )],
             &blobs,
-            true,
             DEFAULT_MAX_CALL_DEPTH,
             &mut track,
             &mut wasm_engine,

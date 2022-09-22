@@ -28,7 +28,6 @@ impl FeeReserveConfig {
 
 pub struct ExecutionConfig {
     pub max_call_depth: usize,
-    pub is_system: bool,
     pub trace: bool,
 }
 
@@ -42,7 +41,6 @@ impl ExecutionConfig {
     pub fn standard() -> Self {
         Self {
             max_call_depth: DEFAULT_MAX_CALL_DEPTH,
-            is_system: false,
             trace: false,
         }
     }
@@ -50,7 +48,6 @@ impl ExecutionConfig {
     pub fn debug() -> Self {
         Self {
             max_call_depth: DEFAULT_MAX_CALL_DEPTH,
-            is_system: false,
             trace: true,
         }
     }
@@ -164,7 +161,6 @@ where
                 transaction_hash,
                 initial_proofs,
                 &blobs,
-                execution_config.is_system,
                 execution_config.max_call_depth,
                 &mut track,
                 self.wasm_engine,

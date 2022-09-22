@@ -69,9 +69,8 @@ where
 {
     pub fn new(
         transaction_hash: Hash,
-        mut initial_proofs: Vec<NonFungibleAddress>,
+        initial_proofs: Vec<NonFungibleAddress>,
         blobs: &'g HashMap<Hash, Vec<u8>>,
-        is_system: bool,
         max_depth: usize,
         track: &'g mut Track<'s, R>,
         wasm_engine: &'g mut W,
@@ -95,13 +94,6 @@ where
             modules,
             phantom: PhantomData,
         };
-
-        if is_system {
-            initial_proofs.push(NonFungibleAddress::new(
-                SYSTEM_TOKEN,
-                NonFungibleId::from_u32(0),
-            ));
-        }
 
         // Initial authzone
         // TODO: Move into module initialization

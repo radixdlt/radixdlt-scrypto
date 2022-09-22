@@ -34,7 +34,6 @@ fn execute_single_transaction(transaction: NotarizedTransaction) {
     let mut wasm_instrumenter = WasmInstrumenter::new();
     let execution_config = ExecutionConfig {
         max_call_depth: DEFAULT_MAX_CALL_DEPTH,
-        is_system: false,
         trace: false,
     };
     let fee_reserve_config = FeeReserveConfig {

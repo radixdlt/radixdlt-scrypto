@@ -37,7 +37,7 @@ fn bench_transfer(c: &mut Criterion) {
         .build();
     let account1 = executor
         .execute_and_commit(
-            &TestTransaction::new(manifest.clone(), 1, vec![public_key.into()]),
+            &TestTransaction::new(manifest.clone(), 1, vec![public_key.into()], false),
             &FeeReserveConfig::standard(),
             &ExecutionConfig::default(),
         )
@@ -46,7 +46,7 @@ fn bench_transfer(c: &mut Criterion) {
         .new_component_addresses[0];
     let account2 = executor
         .execute_and_commit(
-            &TestTransaction::new(manifest, 2, vec![public_key.into()]),
+            &TestTransaction::new(manifest, 2, vec![public_key.into()], false),
             &FeeReserveConfig::standard(),
             &ExecutionConfig::default(),
         )
@@ -67,7 +67,7 @@ fn bench_transfer(c: &mut Criterion) {
     for nonce in 0..1000 {
         executor
             .execute_and_commit(
-                &TestTransaction::new(manifest.clone(), nonce, vec![public_key.into()]),
+                &TestTransaction::new(manifest.clone(), nonce, vec![public_key.into()], false),
                 &FeeReserveConfig::standard(),
                 &ExecutionConfig::default(),
             )
@@ -90,7 +90,7 @@ fn bench_transfer(c: &mut Criterion) {
     c.bench_function("Transfer", |b| {
         b.iter(|| {
             let receipt = executor.execute_and_commit(
-                &TestTransaction::new(manifest.clone(), nonce, vec![public_key.into()]),
+                &TestTransaction::new(manifest.clone(), nonce, vec![public_key.into()], false),
                 &FeeReserveConfig::standard(),
                 &ExecutionConfig::default(),
             );

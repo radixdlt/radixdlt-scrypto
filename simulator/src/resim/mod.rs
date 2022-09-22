@@ -180,7 +180,7 @@ pub fn handle_manifest<O: std::io::Write>(
                 .map(|e| e.public_key().into())
                 .collect::<Vec<PublicKey>>();
             let nonce = get_nonce()?;
-            let transaction = TestTransaction::new(manifest, nonce, pks);
+            let transaction = TestTransaction::new(manifest, nonce, pks, is_system);
 
             let receipt = executor.execute_and_commit(
                 &transaction,
@@ -190,7 +190,6 @@ pub fn handle_manifest<O: std::io::Write>(
                 },
                 &ExecutionConfig {
                     max_call_depth: DEFAULT_MAX_CALL_DEPTH,
-                    is_system,
                     trace,
                 },
             );

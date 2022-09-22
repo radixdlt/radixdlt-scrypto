@@ -1,6 +1,6 @@
 use sbor::rust::vec::Vec;
 use scrypto::buffer::scrypto_encode;
-use scrypto::constants::{ECDSA_TOKEN, ED25519_TOKEN};
+use scrypto::constants::{ECDSA_TOKEN, ED25519_TOKEN, SYSTEM_TOKEN};
 use scrypto::core::NetworkDefinition;
 use scrypto::crypto::*;
 use scrypto::resource::{NonFungibleAddress, NonFungibleId};
@@ -13,6 +13,7 @@ pub struct TestTransaction {
     pub transaction: NotarizedTransaction,
     pub executable_instructions: Vec<ExecutableInstruction>,
     pub signer_public_keys: Vec<PublicKey>,
+    pub is_system: bool,
 }
 
 impl TestTransaction {
@@ -20,6 +21,7 @@ impl TestTransaction {
         manifest: TransactionManifest,
         nonce: u64,
         signer_public_keys: Vec<PublicKey>,
+        is_system: bool,
     ) -> Self {
         let transaction = TransactionBuilder::new()
             .header(TransactionHeader {
@@ -150,6 +152,7 @@ impl TestTransaction {
             transaction,
             executable_instructions,
             signer_public_keys,
+            is_system,
         }
     }
 }
@@ -176,7 +179,8 @@ impl ExecutableTransaction for TestTransaction {
     }
 
     fn initial_proofs(&self) -> Vec<NonFungibleAddress> {
-        self.signer_public_keys
+        let mut non_fungible_addresses: Vec<NonFungibleAddress> = self
+            .signer_public_keys
             .iter()
             .map(|k| match k {
                 PublicKey::EddsaEd25519(pk) => {
@@ -186,7 +190,16 @@ impl ExecutableTransaction for TestTransaction {
                     NonFungibleAddress::new(ECDSA_TOKEN, NonFungibleId::from_bytes(pk.to_vec()))
                 }
             })
-            .collect()
+            .collect();
+
+        if self.is_system {
+            non_fungible_addresses.push(NonFungibleAddress::new(
+                SYSTEM_TOKEN,
+                NonFungibleId::from_u32(0),
+            ));
+        }
+
+        non_fungible_addresses
     }
 
     fn blobs(&self) -> &[Vec<u8>] {
