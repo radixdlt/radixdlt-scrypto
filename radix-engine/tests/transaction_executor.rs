@@ -47,21 +47,20 @@ fn test_normal_transaction_flow() {
     let mut wasm_engine = DefaultWasmEngine::new();
     let mut wasm_instrumenter = WasmInstrumenter::new();
     let intent_hash_manager = TestIntentHashManager::new();
-    let validation_params = ValidationConfig {
+    let fee_reserve_config = FeeReserveConfig::standard();
+    let execution_config = ExecutionConfig::debug();
+    let raw_transaction = create_notarized_transaction(1_000_000).to_bytes();
+
+    let validator = TransactionValidator::new(ValidationConfig {
         network_id: NetworkDefinition::simulator().id,
         current_epoch: 1,
         max_cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,
         min_tip_percentage: 0,
-    };
-    let fee_reserve_config = FeeReserveConfig::standard();
-    let execution_config = ExecutionConfig::debug();
-    let raw_transaction = create_notarized_transaction(1_000_000).to_bytes();
-    let validated_transaction = TransactionValidator::validate_from_slice(
-        &raw_transaction,
-        &intent_hash_manager,
-        &validation_params,
-    )
-    .expect("Invalid transaction");
+    });
+
+    let validated_transaction = validator
+        .validate_from_slice(&raw_transaction, &intent_hash_manager)
+        .expect("Invalid transaction");
     let mut executor = TransactionExecutor::new(
         &mut substate_store,
         &mut wasm_engine,
@@ -81,17 +80,17 @@ fn test_normal_transaction_flow() {
 
 fn create_executable_transaction(cost_unit_limit: u32) -> ValidatedTransaction {
     let notarized_transaction = create_notarized_transaction(cost_unit_limit);
-    TransactionValidator::validate(
-        notarized_transaction,
-        &TestIntentHashManager::new(),
-        &ValidationConfig {
-            network_id: NetworkDefinition::simulator().id,
-            current_epoch: 1,
-            max_cost_unit_limit: 10_000_000,
-            min_tip_percentage: 0,
-        },
-    )
-    .unwrap()
+
+    let validator = TransactionValidator::new(ValidationConfig {
+        network_id: NetworkDefinition::simulator().id,
+        current_epoch: 1,
+        max_cost_unit_limit: 10_000_000,
+        min_tip_percentage: 0,
+    });
+
+    validator
+        .validate(notarized_transaction, &TestIntentHashManager::new())
+        .unwrap()
 }
 
 fn create_notarized_transaction(cost_unit_limit: u32) -> NotarizedTransaction {

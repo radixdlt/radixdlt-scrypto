@@ -4,8 +4,8 @@ use scrypto::buffer::scrypto_encode;
 use scrypto::crypto::*;
 use scrypto::resource::NonFungibleAddress;
 
-use auth_module::AuthModule;
 use crate::model::*;
+use auth_module::AuthModule;
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
 pub enum ValidatedTransactionActor {
@@ -45,7 +45,9 @@ impl ExecutableTransaction for ValidatedTransaction {
 
     fn initial_proofs(&self) -> Vec<NonFungibleAddress> {
         match &self.actor {
-            ValidatedTransactionActor::User(signer_public_keys) => AuthModule::signer_keys_to_non_fungibles(signer_public_keys),
+            ValidatedTransactionActor::User(signer_public_keys) => {
+                AuthModule::signer_keys_to_non_fungibles(signer_public_keys)
+            }
             ValidatedTransactionActor::Supervisor => vec![AuthModule::supervisor_address()],
         }
     }

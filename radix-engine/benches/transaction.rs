@@ -80,22 +80,20 @@ fn bench_transaction_validation(c: &mut Criterion) {
     let transaction_bytes = transaction.to_bytes();
     println!("Transaction size: {} bytes", transaction_bytes.len());
 
+    let validator = TransactionValidator::new(ValidationConfig {
+        network_id: NetworkDefinition::simulator().id,
+        current_epoch: 1,
+        max_cost_unit_limit: 10_000_000,
+        min_tip_percentage: 0,
+    });
+
     c.bench_function("Transaction validation", |b| {
         b.iter(|| {
             let intent_hash_manager = TestIntentHashManager::new();
-            let config: ValidationConfig = ValidationConfig {
-                network_id: NetworkDefinition::simulator().id,
-                current_epoch: 1,
-                max_cost_unit_limit: 10_000_000,
-                min_tip_percentage: 0,
-            };
 
-            TransactionValidator::validate_from_slice(
-                &transaction_bytes,
-                &intent_hash_manager,
-                &config,
-            )
-            .unwrap();
+            validator
+                .validate_from_slice(&transaction_bytes, &intent_hash_manager)
+                .unwrap();
         })
     });
 }

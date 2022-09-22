@@ -66,17 +66,16 @@ fn prepare_test_tx_and_preview_intent(
         .notarize(&notary_priv_key)
         .build();
 
-    let validated_transaction = TransactionValidator::validate(
-        notarized_transaction.clone(),
-        &TestIntentHashManager::new(),
-        &ValidationConfig {
-            network_id: network.id,
-            current_epoch: 1,
-            max_cost_unit_limit: 10_000_000,
-            min_tip_percentage: 0,
-        },
-    )
-    .unwrap();
+    let validator = TransactionValidator::new(ValidationConfig {
+        network_id: network.id,
+        current_epoch: 1,
+        max_cost_unit_limit: 10_000_000,
+        min_tip_percentage: 0,
+    });
+
+    let validated_transaction = validator
+        .validate(notarized_transaction.clone(), &TestIntentHashManager::new())
+        .unwrap();
 
     let preview_intent = PreviewIntent {
         intent: notarized_transaction.signed_intent.intent.clone(),

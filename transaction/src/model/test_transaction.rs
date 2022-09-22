@@ -181,8 +181,10 @@ impl ExecutableTransaction for TestTransaction {
 
     fn initial_proofs(&self) -> Vec<NonFungibleAddress> {
         match &self.actor {
-            TestTransactionActor::User(signer_public_keys) => AuthModule::signer_keys_to_non_fungibles(signer_public_keys),
-            TestTransactionActor::System => vec![AuthModule::supervisor_address()]
+            TestTransactionActor::User(signer_public_keys) => {
+                AuthModule::signer_keys_to_non_fungibles(signer_public_keys)
+            }
+            TestTransactionActor::System => vec![AuthModule::supervisor_address()],
         }
     }
 
