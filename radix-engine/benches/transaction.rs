@@ -2,15 +2,15 @@ use criterion::{criterion_group, criterion_main, Criterion};
 use radix_engine::types::*;
 use transaction::builder::ManifestBuilder;
 use transaction::builder::TransactionBuilder;
-use transaction::model::TransactionHeader;
+use transaction::model::{NotarizedTransaction, TransactionHeader};
 use transaction::signing::EcdsaSecp256k1PrivateKey;
 use transaction::signing::EddsaEd25519PrivateKey;
-use transaction::validation::recover_ecdsa_secp256k1;
 use transaction::validation::verify_ecdsa_secp256k1;
 use transaction::validation::verify_eddsa_ed25519;
+use transaction::validation::NetworkTransactionValidator;
 use transaction::validation::TestIntentHashManager;
-use transaction::validation::TransactionValidator;
 use transaction::validation::ValidationConfig;
+use transaction::validation::{recover_ecdsa_secp256k1, TransactionValidator};
 
 fn bench_ecdsa_secp256k1_validation(c: &mut Criterion) {
     let message = "This is a long message".repeat(100);
@@ -80,7 +80,7 @@ fn bench_transaction_validation(c: &mut Criterion) {
     let transaction_bytes = transaction.to_bytes();
     println!("Transaction size: {} bytes", transaction_bytes.len());
 
-    let validator = TransactionValidator::new(ValidationConfig {
+    let validator = NetworkTransactionValidator::new(ValidationConfig {
         network_id: NetworkDefinition::simulator().id,
         current_epoch: 1,
         max_cost_unit_limit: 10_000_000,
@@ -91,9 +91,12 @@ fn bench_transaction_validation(c: &mut Criterion) {
         b.iter(|| {
             let intent_hash_manager = TestIntentHashManager::new();
 
-            validator
-                .validate_from_slice(&transaction_bytes, &intent_hash_manager)
-                .unwrap();
+            TransactionValidator::<NotarizedTransaction>::validate_from_slice(
+                &validator,
+                &transaction_bytes,
+                &intent_hash_manager,
+            )
+            .unwrap();
         })
     });
 }

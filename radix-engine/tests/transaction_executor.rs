@@ -12,7 +12,9 @@ use transaction::builder::ManifestBuilder;
 use transaction::builder::TransactionBuilder;
 use transaction::model::{NotarizedTransaction, TransactionHeader, Validated};
 use transaction::signing::EcdsaSecp256k1PrivateKey;
-use transaction::validation::{TestIntentHashManager, TransactionValidator, ValidationConfig};
+use transaction::validation::{
+    NetworkTransactionValidator, TestIntentHashManager, TransactionValidator, ValidationConfig,
+};
 
 #[test]
 fn pre_execution_rejection_should_return_rejected_receipt() {
@@ -51,14 +53,14 @@ fn test_normal_transaction_flow() {
     let execution_config = ExecutionConfig::debug();
     let raw_transaction = create_notarized_transaction(1_000_000).to_bytes();
 
-    let validator = TransactionValidator::new(ValidationConfig {
+    let validator = NetworkTransactionValidator::new(ValidationConfig {
         network_id: NetworkDefinition::simulator().id,
         current_epoch: 1,
         max_cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,
         min_tip_percentage: 0,
     });
 
-    let validated_transaction = validator
+    let validated_transaction: Validated<NotarizedTransaction> = validator
         .validate_from_slice(&raw_transaction, &intent_hash_manager)
         .expect("Invalid transaction");
     let mut executor = TransactionExecutor::new(
@@ -81,7 +83,7 @@ fn test_normal_transaction_flow() {
 fn create_executable_transaction(cost_unit_limit: u32) -> Validated<NotarizedTransaction> {
     let notarized_transaction = create_notarized_transaction(cost_unit_limit);
 
-    let validator = TransactionValidator::new(ValidationConfig {
+    let validator = NetworkTransactionValidator::new(ValidationConfig {
         network_id: NetworkDefinition::simulator().id,
         current_epoch: 1,
         max_cost_unit_limit: 10_000_000,

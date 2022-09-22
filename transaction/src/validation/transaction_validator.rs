@@ -1,12 +1,41 @@
+use sbor::Decode;
+use scrypto::args;
 use std::collections::HashSet;
 
-use scrypto::buffer::scrypto_decode;
-use scrypto::crypto::PublicKey;
+use scrypto::buffer::{scrypto_decode, scrypto_encode};
+use scrypto::core::{NativeFnIdentifier, Receiver, SystemFnIdentifier};
+use scrypto::crypto::{hash, PublicKey};
+use scrypto::engine::types::RENodeId;
 use scrypto::values::*;
 
 use crate::errors::{SignatureValidationError, *};
 use crate::model::*;
 use crate::validation::*;
+
+pub const MAX_PAYLOAD_SIZE: usize = 4 * 1024 * 1024;
+
+pub trait TransactionValidator<T: Decode> {
+    fn validate_from_slice<I: IntentHashManager>(
+        &self,
+        transaction: &[u8],
+        intent_hash_manager: &I,
+    ) -> Result<Validated<T>, TransactionValidationError> {
+        if transaction.len() > MAX_PAYLOAD_SIZE {
+            return Err(TransactionValidationError::TransactionTooLarge);
+        }
+
+        let transaction: T = scrypto_decode(transaction)
+            .map_err(TransactionValidationError::DeserializationError)?;
+
+        self.validate(transaction, intent_hash_manager)
+    }
+
+    fn validate<I: IntentHashManager>(
+        &self,
+        transaction: T,
+        intent_hash_manager: &I,
+    ) -> Result<Validated<T>, TransactionValidationError>;
+}
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct ValidationConfig {
@@ -17,33 +46,54 @@ pub struct ValidationConfig {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub struct TransactionValidator {
+pub struct NetworkTransactionValidator {
     config: ValidationConfig,
 }
 
-impl TransactionValidator {
-    pub const MAX_PAYLOAD_SIZE: usize = 4 * 1024 * 1024;
-
-    pub fn new(config: ValidationConfig) -> Self {
-        Self { config }
+impl From<NotarizedTransaction> for Transaction {
+    fn from(notarized_transaction: NotarizedTransaction) -> Self {
+        Transaction::User(notarized_transaction)
     }
+}
 
-    pub fn validate_from_slice<I: IntentHashManager>(
+impl TransactionValidator<Transaction> for NetworkTransactionValidator {
+    fn validate<I: IntentHashManager>(
         &self,
-        transaction: &[u8],
+        transaction: Transaction,
         intent_hash_manager: &I,
-    ) -> Result<Validated<NotarizedTransaction>, TransactionValidationError> {
-        if transaction.len() > Self::MAX_PAYLOAD_SIZE {
-            return Err(TransactionValidationError::TransactionTooLarge);
+    ) -> Result<Validated<Transaction>, TransactionValidationError> {
+        match transaction {
+            Transaction::User(notarized_transaction) => self
+                .validate(notarized_transaction, intent_hash_manager)
+                .map(|e| e.into()),
+            Transaction::EpochUpdate(epoch) => {
+                let transaction_hash = hash(scrypto_encode(&epoch)); // TODO: Figure out better way to do this or if we even do need it
+                let instructions = vec![Instruction::CallMethod {
+                    method_identifier: MethodIdentifier::Native {
+                        receiver: Receiver::Ref(RENodeId::System),
+                        native_fn_identifier: NativeFnIdentifier::System(
+                            SystemFnIdentifier::SetEpoch,
+                        ),
+                    },
+                    args: args!(epoch),
+                }];
+                let validated = Validated::new(
+                    transaction,
+                    transaction_hash,
+                    instructions,
+                    vec![AuthModule::supervisor_address()],
+                    0,
+                    0,
+                    vec![],
+                );
+                Ok(validated)
+            }
         }
-
-        let transaction: NotarizedTransaction = scrypto_decode(transaction)
-            .map_err(TransactionValidationError::DeserializationError)?;
-
-        self.validate(transaction, intent_hash_manager)
     }
+}
 
-    pub fn validate<I: IntentHashManager>(
+impl TransactionValidator<NotarizedTransaction> for NetworkTransactionValidator {
+    fn validate<I: IntentHashManager>(
         &self,
         transaction: NotarizedTransaction,
         intent_hash_manager: &I,
@@ -70,8 +120,14 @@ impl TransactionValidator {
             AuthModule::signer_keys_to_non_fungibles(&keys),
             cost_unit_limit,
             tip_percentage,
-            blobs
+            blobs,
         ))
+    }
+}
+
+impl NetworkTransactionValidator {
+    pub fn new(config: ValidationConfig) -> Self {
+        Self { config }
     }
 
     pub fn validate_preview_intent<I: IntentHashManager>(
@@ -314,7 +370,7 @@ mod tests {
                 max_cost_unit_limit: 10_000_000,
                 min_tip_percentage: 0,
             };
-            let validator = TransactionValidator::new(config);
+            let validator = NetworkTransactionValidator::new(config);
             assert_eq!(
                 Err($result),
                 validator.validate(
@@ -383,7 +439,7 @@ mod tests {
         // Build the whole transaction but only really care about the intent
         let tx = create_transaction(1, 0, 100, 5, vec![1, 2], 2);
 
-        let validator = TransactionValidator::new(ValidationConfig {
+        let validator = NetworkTransactionValidator::new(ValidationConfig {
             network_id: NetworkDefinition::simulator().id,
             current_epoch: 1,
             max_cost_unit_limit: 10_000_000,

@@ -6,8 +6,8 @@ use transaction::builder::ManifestBuilder;
 use transaction::builder::TransactionBuilder;
 use transaction::model::*;
 use transaction::signing::EcdsaSecp256k1PrivateKey;
-use transaction::validation::ValidationConfig;
-use transaction::validation::{TestIntentHashManager, TransactionValidator};
+use transaction::validation::{NetworkTransactionValidator, TestIntentHashManager};
+use transaction::validation::{TransactionValidator, ValidationConfig};
 
 #[test]
 fn test_transaction_preview_cost_estimate() {
@@ -66,7 +66,7 @@ fn prepare_test_tx_and_preview_intent(
         .notarize(&notary_priv_key)
         .build();
 
-    let validator = TransactionValidator::new(ValidationConfig {
+    let validator = NetworkTransactionValidator::new(ValidationConfig {
         network_id: network.id,
         current_epoch: 1,
         max_cost_unit_limit: 10_000_000,

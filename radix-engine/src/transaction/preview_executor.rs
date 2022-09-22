@@ -2,7 +2,7 @@ use scrypto::core::NetworkDefinition;
 use transaction::errors::TransactionValidationError;
 use transaction::model::PreviewIntent;
 use transaction::validation::IntentHashManager;
-use transaction::validation::TransactionValidator;
+use transaction::validation::NetworkTransactionValidator;
 use transaction::validation::ValidationConfig;
 
 use crate::constants::DEFAULT_MAX_COST_UNIT_LIMIT;
@@ -76,7 +76,7 @@ where
             min_tip_percentage: 0,
         };
         let execution_params = ExecutionConfig::default();
-        let validator = TransactionValidator::new(validation_config);
+        let validator = NetworkTransactionValidator::new(validation_config);
 
         let validated_preview_transaction = validator
             .validate_preview_intent(preview_intent.clone(), self.intent_hash_manager)
