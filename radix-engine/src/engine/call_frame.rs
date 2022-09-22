@@ -1,5 +1,3 @@
-use transaction::validation::*;
-
 use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::*;
@@ -28,57 +26,7 @@ pub struct CallFrame {
 }
 
 impl CallFrame {
-    pub fn new_root(signer_public_keys: Vec<PublicKey>, is_system: bool) -> Self {
-        // TODO: Cleanup initialization of authzone
-
-        let mut ecdsa_secp256k1_non_fungible_ids = BTreeSet::new();
-        let mut eddsa_ed25519_non_fungible_ids = BTreeSet::new();
-        for pk in signer_public_keys {
-            match pk {
-                PublicKey::EcdsaSecp256k1(pk) => {
-                    ecdsa_secp256k1_non_fungible_ids.insert(NonFungibleId::from_bytes(pk.to_vec()))
-                }
-                PublicKey::EddsaEd25519(pk) => {
-                    eddsa_ed25519_non_fungible_ids.insert(NonFungibleId::from_bytes(pk.to_vec()))
-                }
-            };
-        }
-
-        let mut initial_auth_zone_proofs = Vec::new();
-        if !ecdsa_secp256k1_non_fungible_ids.is_empty() {
-            // Proofs can't be zero amount
-            let mut ecdsa_secp256k1_bucket = Bucket::new(ResourceContainer::new_non_fungible(
-                ECDSA_TOKEN,
-                ecdsa_secp256k1_non_fungible_ids,
-            ));
-            let ecdsa_secp256k1_proof = ecdsa_secp256k1_bucket
-                .create_proof(ECDSA_TOKEN_BUCKET_ID)
-                .expect("Failed to construct ECDSA signature proof");
-            initial_auth_zone_proofs.push(ecdsa_secp256k1_proof);
-        }
-        if !eddsa_ed25519_non_fungible_ids.is_empty() {
-            // Proofs can't be zero amount
-            let mut eddsa_ed25519_bucket = Bucket::new(ResourceContainer::new_non_fungible(
-                ED25519_TOKEN,
-                eddsa_ed25519_non_fungible_ids,
-            ));
-            let eddsa_ed25519_proof = eddsa_ed25519_bucket
-                .create_proof(ED25519_TOKEN_BUCKET_ID)
-                .expect("Failed to construct ED25519 signature proof");
-            initial_auth_zone_proofs.push(eddsa_ed25519_proof);
-        }
-
-        if is_system {
-            let non_fungible_ids = [NonFungibleId::from_u32(0)].into_iter().collect();
-            let mut system_bucket = Bucket::new(
-                ResourceContainer::new_non_fungible(SYSTEM_TOKEN, non_fungible_ids),
-            );
-            let system_proof = system_bucket
-                .create_proof(SYSTEM_BUCKET_ID)
-                .expect("Failed to create SYSTEM_TOKEN proof");
-            initial_auth_zone_proofs.push(system_proof);
-        }
-
+    pub fn new_root() -> Self {
         Self {
             depth: 0,
             actor: REActor {
@@ -90,7 +38,7 @@ impl CallFrame {
             },
             node_refs: HashMap::new(),
             owned_heap_nodes: HashMap::new(),
-            auth_zone: AuthZone::new_with_proofs(initial_auth_zone_proofs),
+            auth_zone: AuthZone::new(),
         }
     }
 

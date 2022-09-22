@@ -1,6 +1,8 @@
 use sbor::*;
 use scrypto::buffer::scrypto_encode;
+use scrypto::constants::{ECDSA_TOKEN, ED25519_TOKEN};
 use scrypto::crypto::{hash, Hash, PublicKey};
+use scrypto::resource::{NonFungibleAddress, NonFungibleId};
 
 use crate::model::{ExecutableInstruction, ExecutableTransaction, TransactionIntent};
 
@@ -33,12 +35,6 @@ pub struct ValidatedPreviewTransaction {
     pub instructions: Vec<ExecutableInstruction>,
 }
 
-impl ValidatedPreviewTransaction {
-    pub fn signer_public_keys(&self) -> &[PublicKey] {
-        &self.preview_intent.signer_public_keys
-    }
-}
-
 impl ExecutableTransaction for ValidatedPreviewTransaction {
     fn transaction_hash(&self) -> Hash {
         self.transaction_hash
@@ -52,8 +48,19 @@ impl ExecutableTransaction for ValidatedPreviewTransaction {
         &self.instructions
     }
 
-    fn signer_public_keys(&self) -> &[PublicKey] {
-        &self.signer_public_keys()
+    fn initial_proofs(&self) -> Vec<NonFungibleAddress> {
+        self.preview_intent
+            .signer_public_keys
+            .iter()
+            .map(|k| match k {
+                PublicKey::EddsaEd25519(pk) => {
+                    NonFungibleAddress::new(ED25519_TOKEN, NonFungibleId::from_bytes(pk.to_vec()))
+                }
+                PublicKey::EcdsaSecp256k1(pk) => {
+                    NonFungibleAddress::new(ECDSA_TOKEN, NonFungibleId::from_bytes(pk.to_vec()))
+                }
+            })
+            .collect()
     }
 
     fn cost_unit_limit(&self) -> u32 {

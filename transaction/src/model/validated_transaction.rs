@@ -1,7 +1,9 @@
 use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::buffer::scrypto_encode;
+use scrypto::constants::{ECDSA_TOKEN, ED25519_TOKEN};
 use scrypto::crypto::*;
+use scrypto::resource::{NonFungibleAddress, NonFungibleId};
 
 use crate::model::*;
 
@@ -35,8 +37,18 @@ impl ExecutableTransaction for ValidatedTransaction {
         &self.instructions
     }
 
-    fn signer_public_keys(&self) -> &[PublicKey] {
-        &self.signer_public_keys
+    fn initial_proofs(&self) -> Vec<NonFungibleAddress> {
+        self.signer_public_keys
+            .iter()
+            .map(|k| match k {
+                PublicKey::EddsaEd25519(pk) => {
+                    NonFungibleAddress::new(ED25519_TOKEN, NonFungibleId::from_bytes(pk.to_vec()))
+                }
+                PublicKey::EcdsaSecp256k1(pk) => {
+                    NonFungibleAddress::new(ECDSA_TOKEN, NonFungibleId::from_bytes(pk.to_vec()))
+                }
+            })
+            .collect()
     }
 
     fn blobs(&self) -> &[Vec<u8>] {

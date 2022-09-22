@@ -7,7 +7,7 @@ use scrypto::core::{Blob, FnIdentifier, NativeFnIdentifier, Receiver};
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
 use scrypto::math::*;
-use scrypto::resource::{NonFungibleId, ResourceAddress};
+use scrypto::resource::{NonFungibleAddress, NonFungibleId, ResourceAddress};
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
 pub enum MethodIdentifier {
@@ -106,8 +106,7 @@ pub trait ExecutableTransaction {
     /// Returns the instructions to execute.
     fn instructions(&self) -> &[ExecutableInstruction];
 
-    /// Returns the public key of signers.
-    fn signer_public_keys(&self) -> &[PublicKey];
+    fn initial_proofs(&self) -> Vec<NonFungibleAddress>;
 
     fn blobs(&self) -> &[Vec<u8>];
 }

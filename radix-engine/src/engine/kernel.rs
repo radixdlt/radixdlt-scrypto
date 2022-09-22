@@ -69,7 +69,7 @@ where
 {
     pub fn new(
         transaction_hash: Hash,
-        transaction_signers: Vec<PublicKey>,
+        mut initial_proofs: Vec<NonFungibleAddress>,
         blobs: &'g HashMap<Hash, Vec<u8>>,
         is_system: bool,
         max_depth: usize,
@@ -80,8 +80,8 @@ where
         execution_trace: &'g mut ExecutionTrace,
         modules: Vec<Box<dyn Module<R>>>,
     ) -> Self {
-        let frame = CallFrame::new_root(transaction_signers, is_system);
-        Self {
+        let frame = CallFrame::new_root();
+        let mut kernel = Self {
             transaction_hash,
             blobs,
             max_depth,
@@ -94,7 +94,49 @@ where
             call_frames: vec![frame],
             modules,
             phantom: PhantomData,
+        };
+
+        if is_system {
+            initial_proofs.push(NonFungibleAddress::new(
+                SYSTEM_TOKEN,
+                NonFungibleId::from_u32(0),
+            ));
         }
+
+        // Initial authzone
+        // TODO: Move into module initialization
+        let mut proofs_to_create = BTreeMap::<ResourceAddress, BTreeSet<NonFungibleId>>::new();
+        for non_fungible in initial_proofs {
+            proofs_to_create
+                .entry(non_fungible.resource_address())
+                .or_insert(BTreeSet::new())
+                .insert(non_fungible.non_fungible_id());
+        }
+        for (resource_address, non_fungible_ids) in proofs_to_create {
+            let bucket_id = match kernel
+                .node_create(HeapRENode::Bucket(Bucket::new(
+                    ResourceContainer::new_non_fungible(resource_address, non_fungible_ids),
+                )))
+                .expect("Failed to create bucket")
+            {
+                RENodeId::Bucket(bucket_id) => bucket_id,
+                _ => panic!("Expected Bucket RENodeId but received something else"),
+            };
+            let substate_id = SubstateId::Bucket(bucket_id);
+            let mut node_ref = kernel
+                .substate_borrow_mut(&substate_id)
+                .expect("Failed to borrow bucket substate");
+            let bucket = node_ref.bucket();
+            let proof = bucket
+                .create_proof(bucket_id)
+                .expect("Failed to create proof");
+            Self::current_frame_mut(&mut kernel.call_frames)
+                .auth_zone
+                .proofs
+                .push(proof);
+        }
+
+        kernel
     }
 
     fn process_call_data(validated: &ScryptoValue) -> Result<(), RuntimeError> {
