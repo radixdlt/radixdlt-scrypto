@@ -32,7 +32,7 @@ impl TransactionValidator {
         &self,
         transaction: &[u8],
         intent_hash_manager: &I,
-    ) -> Result<ValidatedTransaction, TransactionValidationError> {
+    ) -> Result<Validated<NotarizedTransaction>, TransactionValidationError> {
         if transaction.len() > Self::MAX_PAYLOAD_SIZE {
             return Err(TransactionValidationError::TransactionTooLarge);
         }
@@ -47,7 +47,7 @@ impl TransactionValidator {
         &self,
         transaction: NotarizedTransaction,
         intent_hash_manager: &I,
-    ) -> Result<ValidatedTransaction, TransactionValidationError> {
+    ) -> Result<Validated<NotarizedTransaction>, TransactionValidationError> {
         // verify the intent
         let instructions =
             self.validate_intent(&transaction.signed_intent.intent, intent_hash_manager)?;
@@ -57,15 +57,21 @@ impl TransactionValidator {
             .validate_signatures(&transaction)
             .map_err(TransactionValidationError::SignatureValidationError)?;
 
-        // TODO: whether to use intent hash or transaction hash
         let transaction_hash = transaction.hash();
 
-        Ok(ValidatedTransaction {
+        let cost_unit_limit = transaction.signed_intent.intent.header.cost_unit_limit;
+        let tip_percentage = transaction.signed_intent.intent.header.tip_percentage;
+        let blobs = transaction.signed_intent.intent.manifest.blobs.clone();
+
+        Ok(Validated::new(
             transaction,
             transaction_hash,
             instructions,
-            initial_proofs: AuthModule::signer_keys_to_non_fungibles(&keys),
-        })
+            AuthModule::signer_keys_to_non_fungibles(&keys),
+            cost_unit_limit,
+            tip_percentage,
+            blobs
+        ))
     }
 
     pub fn validate_preview_intent<I: IntentHashManager>(
