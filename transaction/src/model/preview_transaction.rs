@@ -4,7 +4,7 @@ use scrypto::constants::{ECDSA_TOKEN, ED25519_TOKEN};
 use scrypto::crypto::{hash, Hash, PublicKey};
 use scrypto::resource::{NonFungibleAddress, NonFungibleId};
 
-use crate::model::{ExecutableInstruction, ExecutableTransaction, TransactionIntent};
+use crate::model::{ExecutableTransaction, Instruction, TransactionIntent};
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct PreviewFlags {
@@ -32,7 +32,7 @@ impl PreviewIntent {
 pub struct ValidatedPreviewTransaction {
     pub preview_intent: PreviewIntent,
     pub transaction_hash: Hash,
-    pub instructions: Vec<ExecutableInstruction>,
+    pub instructions: Vec<Instruction>,
 }
 
 impl ExecutableTransaction for ValidatedPreviewTransaction {
@@ -44,7 +44,7 @@ impl ExecutableTransaction for ValidatedPreviewTransaction {
         scrypto_encode(&self.preview_intent.intent.manifest.instructions).len() as u32
     }
 
-    fn instructions(&self) -> &[ExecutableInstruction] {
+    fn instructions(&self) -> &[Instruction] {
         &self.instructions
     }
 

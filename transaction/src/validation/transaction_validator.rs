@@ -1,6 +1,5 @@
 use std::collections::HashSet;
 
-use sbor::rust::vec;
 use scrypto::buffer::scrypto_decode;
 use scrypto::values::*;
 
@@ -91,7 +90,7 @@ impl TransactionValidator {
         &self,
         intent: &TransactionIntent,
         intent_hash_manager: &I,
-    ) -> Result<Vec<ExecutableInstruction>, TransactionValidationError> {
+    ) -> Result<Vec<Instruction>, TransactionValidationError> {
         // verify intent hash
         if !intent_hash_manager.allows(&intent.hash()) {
             return Err(TransactionValidationError::IntentHashRejected);
@@ -101,171 +100,94 @@ impl TransactionValidator {
         self.validate_header(&intent)
             .map_err(TransactionValidationError::HeaderValidationError)?;
 
-        let mut instructions = vec![];
-
         // semantic analysis
         let mut id_validator = IdValidator::new();
         for inst in &intent.manifest.instructions {
             match inst.clone() {
-                Instruction::TakeFromWorktop { resource_address } => {
+                Instruction::TakeFromWorktop { .. } => {
                     id_validator
                         .new_bucket()
                         .map_err(TransactionValidationError::IdValidationError)?;
-                    instructions.push(ExecutableInstruction::TakeFromWorktop { resource_address });
                 }
-                Instruction::TakeFromWorktopByAmount {
-                    amount,
-                    resource_address,
-                } => {
+                Instruction::TakeFromWorktopByAmount { .. } => {
                     id_validator
                         .new_bucket()
                         .map_err(TransactionValidationError::IdValidationError)?;
-                    instructions.push(ExecutableInstruction::TakeFromWorktopByAmount {
-                        amount,
-                        resource_address,
-                    });
                 }
-                Instruction::TakeFromWorktopByIds {
-                    ids,
-                    resource_address,
-                } => {
+                Instruction::TakeFromWorktopByIds { .. } => {
                     id_validator
                         .new_bucket()
                         .map_err(TransactionValidationError::IdValidationError)?;
-                    instructions.push(ExecutableInstruction::TakeFromWorktopByIds {
-                        ids,
-                        resource_address,
-                    });
                 }
                 Instruction::ReturnToWorktop { bucket_id } => {
                     id_validator
                         .drop_bucket(bucket_id)
                         .map_err(TransactionValidationError::IdValidationError)?;
-                    instructions.push(ExecutableInstruction::ReturnToWorktop { bucket_id });
                 }
-                Instruction::AssertWorktopContains { resource_address } => {
-                    instructions
-                        .push(ExecutableInstruction::AssertWorktopContains { resource_address });
-                }
-                Instruction::AssertWorktopContainsByAmount {
-                    amount,
-                    resource_address,
-                } => {
-                    instructions.push(ExecutableInstruction::AssertWorktopContainsByAmount {
-                        amount,
-                        resource_address,
-                    });
-                }
-                Instruction::AssertWorktopContainsByIds {
-                    ids,
-                    resource_address,
-                } => {
-                    instructions.push(ExecutableInstruction::AssertWorktopContainsByIds {
-                        ids,
-                        resource_address,
-                    });
-                }
+                Instruction::AssertWorktopContains { .. } => {}
+                Instruction::AssertWorktopContainsByAmount { .. } => {}
+                Instruction::AssertWorktopContainsByIds { .. } => {}
                 Instruction::PopFromAuthZone => {
                     id_validator
                         .new_proof(ProofKind::AuthZoneProof)
                         .map_err(TransactionValidationError::IdValidationError)?;
-                    instructions.push(ExecutableInstruction::PopFromAuthZone);
                 }
                 Instruction::PushToAuthZone { proof_id } => {
                     id_validator
                         .drop_proof(proof_id)
                         .map_err(TransactionValidationError::IdValidationError)?;
-                    instructions.push(ExecutableInstruction::PushToAuthZone { proof_id });
                 }
-                Instruction::ClearAuthZone => {
-                    instructions.push(ExecutableInstruction::ClearAuthZone);
-                }
-                Instruction::CreateProofFromAuthZone { resource_address } => {
+                Instruction::ClearAuthZone => {}
+                Instruction::CreateProofFromAuthZone { .. } => {
                     id_validator
                         .new_proof(ProofKind::AuthZoneProof)
                         .map_err(TransactionValidationError::IdValidationError)?;
-                    instructions
-                        .push(ExecutableInstruction::CreateProofFromAuthZone { resource_address });
                 }
-                Instruction::CreateProofFromAuthZoneByAmount {
-                    amount,
-                    resource_address,
-                } => {
+                Instruction::CreateProofFromAuthZoneByAmount { .. } => {
                     id_validator
                         .new_proof(ProofKind::AuthZoneProof)
                         .map_err(TransactionValidationError::IdValidationError)?;
-                    instructions.push(ExecutableInstruction::CreateProofFromAuthZoneByAmount {
-                        amount,
-                        resource_address,
-                    });
                 }
-                Instruction::CreateProofFromAuthZoneByIds {
-                    ids,
-                    resource_address,
-                } => {
+                Instruction::CreateProofFromAuthZoneByIds { .. } => {
                     id_validator
                         .new_proof(ProofKind::AuthZoneProof)
                         .map_err(TransactionValidationError::IdValidationError)?;
-                    instructions.push(ExecutableInstruction::CreateProofFromAuthZoneByIds {
-                        ids,
-                        resource_address,
-                    });
                 }
                 Instruction::CreateProofFromBucket { bucket_id } => {
                     id_validator
                         .new_proof(ProofKind::BucketProof(bucket_id))
                         .map_err(TransactionValidationError::IdValidationError)?;
-                    instructions.push(ExecutableInstruction::CreateProofFromBucket { bucket_id });
                 }
                 Instruction::CloneProof { proof_id } => {
                     id_validator
                         .clone_proof(proof_id)
                         .map_err(TransactionValidationError::IdValidationError)?;
-                    instructions.push(ExecutableInstruction::CloneProof { proof_id });
                 }
                 Instruction::DropProof { proof_id } => {
                     id_validator
                         .drop_proof(proof_id)
                         .map_err(TransactionValidationError::IdValidationError)?;
-                    instructions.push(ExecutableInstruction::DropProof { proof_id });
                 }
                 Instruction::DropAllProofs => {
                     id_validator
                         .drop_all_proofs()
                         .map_err(TransactionValidationError::IdValidationError)?;
-                    instructions.push(ExecutableInstruction::DropAllProofs);
                 }
-                Instruction::CallFunction {
-                    fn_identifier,
-                    args,
-                } => {
+                Instruction::CallFunction { args, .. } => {
                     // TODO: decode into Value
                     Self::validate_call_data(&args, &mut id_validator)
                         .map_err(TransactionValidationError::CallDataValidationError)?;
-                    instructions.push(ExecutableInstruction::CallFunction {
-                        fn_identifier,
-                        args,
-                    });
                 }
-                Instruction::CallMethod {
-                    method_identifier,
-                    args,
-                } => {
+                Instruction::CallMethod { args, .. } => {
                     // TODO: decode into Value
                     Self::validate_call_data(&args, &mut id_validator)
                         .map_err(TransactionValidationError::CallDataValidationError)?;
-                    instructions.push(ExecutableInstruction::CallMethod {
-                        method_identifier,
-                        args,
-                    });
                 }
-                Instruction::PublishPackage { code, abi } => {
-                    instructions.push(ExecutableInstruction::PublishPackage { code, abi });
-                }
+                Instruction::PublishPackage { .. } => {}
             }
         }
 
-        return Ok(instructions);
+        return Ok(intent.manifest.instructions.clone());
     }
 
     pub fn validate_header(&self, intent: &TransactionIntent) -> Result<(), HeaderValidationError> {

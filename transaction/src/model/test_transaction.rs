@@ -15,7 +15,6 @@ pub enum TestTransactionActor {
 /// Represents a test transaction, for testing/simulation purpose only.
 pub struct TestTransaction {
     pub transaction: NotarizedTransaction,
-    pub executable_instructions: Vec<ExecutableInstruction>,
     pub actor: TestTransactionActor,
 }
 
@@ -53,108 +52,7 @@ impl TestTransaction {
             .notary_signature(EcdsaSecp256k1Signature([0u8; 65]).into())
             .build();
 
-        let executable_instructions = transaction
-            .signed_intent
-            .intent
-            .manifest
-            .instructions
-            .iter()
-            .map(|i| match i.clone() {
-                Instruction::TakeFromWorktop { resource_address } => {
-                    ExecutableInstruction::TakeFromWorktop { resource_address }
-                }
-                Instruction::TakeFromWorktopByAmount {
-                    amount,
-                    resource_address,
-                } => ExecutableInstruction::TakeFromWorktopByAmount {
-                    amount,
-                    resource_address,
-                },
-                Instruction::TakeFromWorktopByIds {
-                    ids,
-                    resource_address,
-                } => ExecutableInstruction::TakeFromWorktopByIds {
-                    ids,
-                    resource_address,
-                },
-                Instruction::ReturnToWorktop { bucket_id } => {
-                    ExecutableInstruction::ReturnToWorktop { bucket_id }
-                }
-                Instruction::AssertWorktopContains { resource_address } => {
-                    ExecutableInstruction::AssertWorktopContains { resource_address }
-                }
-                Instruction::AssertWorktopContainsByAmount {
-                    amount,
-                    resource_address,
-                } => ExecutableInstruction::AssertWorktopContainsByAmount {
-                    amount,
-                    resource_address,
-                },
-                Instruction::AssertWorktopContainsByIds {
-                    ids,
-                    resource_address,
-                } => ExecutableInstruction::AssertWorktopContainsByIds {
-                    ids,
-                    resource_address,
-                },
-                Instruction::PopFromAuthZone => ExecutableInstruction::PopFromAuthZone,
-                Instruction::PushToAuthZone { proof_id } => {
-                    ExecutableInstruction::PushToAuthZone { proof_id }
-                }
-                Instruction::ClearAuthZone => ExecutableInstruction::ClearAuthZone,
-                Instruction::CreateProofFromAuthZone { resource_address } => {
-                    ExecutableInstruction::CreateProofFromAuthZone { resource_address }
-                }
-                Instruction::CreateProofFromAuthZoneByAmount {
-                    amount,
-                    resource_address,
-                } => ExecutableInstruction::CreateProofFromAuthZoneByAmount {
-                    amount,
-                    resource_address,
-                },
-                Instruction::CreateProofFromAuthZoneByIds {
-                    ids,
-                    resource_address,
-                } => ExecutableInstruction::CreateProofFromAuthZoneByIds {
-                    ids,
-                    resource_address,
-                },
-                Instruction::CreateProofFromBucket { bucket_id } => {
-                    ExecutableInstruction::CreateProofFromBucket { bucket_id }
-                }
-                Instruction::CloneProof { proof_id } => {
-                    ExecutableInstruction::CloneProof { proof_id }
-                }
-                Instruction::DropProof { proof_id } => {
-                    ExecutableInstruction::DropProof { proof_id }
-                }
-                Instruction::DropAllProofs => ExecutableInstruction::DropAllProofs,
-                Instruction::CallFunction {
-                    fn_identifier,
-                    args,
-                } => ExecutableInstruction::CallFunction {
-                    fn_identifier,
-                    args,
-                },
-                Instruction::CallMethod {
-                    method_identifier,
-                    args,
-                } => ExecutableInstruction::CallMethod {
-                    method_identifier,
-                    args,
-                },
-
-                Instruction::PublishPackage { code, abi } => {
-                    ExecutableInstruction::PublishPackage { code, abi }
-                }
-            })
-            .collect();
-
-        Self {
-            transaction,
-            executable_instructions,
-            actor,
-        }
+        Self { transaction, actor }
     }
 }
 
@@ -175,8 +73,8 @@ impl ExecutableTransaction for TestTransaction {
         self.transaction.signed_intent.intent.header.tip_percentage
     }
 
-    fn instructions(&self) -> &[ExecutableInstruction] {
-        &self.executable_instructions
+    fn instructions(&self) -> &[Instruction] {
+        &self.transaction.signed_intent.intent.manifest.instructions
     }
 
     fn initial_proofs(&self) -> Vec<NonFungibleAddress> {

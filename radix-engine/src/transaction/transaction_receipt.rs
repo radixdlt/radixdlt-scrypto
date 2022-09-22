@@ -9,7 +9,7 @@ use crate::types::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct TransactionContents {
-    pub instructions: Vec<ExecutableInstruction>,
+    pub instructions: Vec<Instruction>,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -227,7 +227,7 @@ impl fmt::Debug for TransactionReceipt {
                 "\n{} {}",
                 prefix!(i, contents.instructions),
                 match inst {
-                    ExecutableInstruction::CallFunction {
+                    Instruction::CallFunction {
                         fn_identifier: FnIdentifier::Scrypto {
                             package_address,
                             blueprint_name,
@@ -241,7 +241,7 @@ impl fmt::Debug for TransactionReceipt {
                         ident,
                         ScryptoValue::from_slice(&args).expect("Failed parse call data")
                     ),
-                    ExecutableInstruction::CallMethod {
+                    Instruction::CallMethod {
                         method_identifier,
                         args,
                     } => {
@@ -267,7 +267,7 @@ impl fmt::Debug for TransactionReceipt {
                             }
                         }
                     },
-                    ExecutableInstruction::PublishPackage { .. } => "PublishPackage {..}".to_owned(),
+                    Instruction::PublishPackage { .. } => "PublishPackage {..}".to_owned(),
                     i @ _ => format!("{:?}", i),
                 }
             )?;

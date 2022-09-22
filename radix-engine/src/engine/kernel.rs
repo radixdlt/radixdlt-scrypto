@@ -1,5 +1,5 @@
 use transaction::errors::IdAllocationError;
-use transaction::model::ExecutableInstruction;
+use transaction::model::Instruction;
 use transaction::validation::*;
 
 use crate::engine::*;
@@ -544,8 +544,8 @@ where
                 scrypto_decode(&input.raw).expect("Transaction processor received invalid input");
             for instruction in &input.instructions {
                 match instruction {
-                    ExecutableInstruction::CallFunction { args, .. }
-                    | ExecutableInstruction::CallMethod { args, .. } => {
+                    Instruction::CallFunction { args, .. }
+                    | Instruction::CallMethod { args, .. } => {
                         let scrypto_value =
                             ScryptoValue::from_slice(&args).expect("Invalid CALL arguments");
                         component_addresses.extend(scrypto_value.refed_component_addresses);

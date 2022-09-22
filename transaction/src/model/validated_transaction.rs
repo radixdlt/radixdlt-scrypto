@@ -18,7 +18,7 @@ pub enum ValidatedTransactionActor {
 pub struct ValidatedTransaction {
     pub transaction: NotarizedTransaction,
     pub transaction_hash: Hash,
-    pub instructions: Vec<ExecutableInstruction>,
+    pub instructions: Vec<Instruction>,
     pub actor: ValidatedTransactionActor,
 }
 
@@ -39,7 +39,7 @@ impl ExecutableTransaction for ValidatedTransaction {
         self.transaction.signed_intent.intent.header.tip_percentage
     }
 
-    fn instructions(&self) -> &[ExecutableInstruction] {
+    fn instructions(&self) -> &[Instruction] {
         &self.instructions
     }
 
