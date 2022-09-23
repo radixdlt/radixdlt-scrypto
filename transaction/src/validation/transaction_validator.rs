@@ -12,15 +12,16 @@ use crate::errors::{SignatureValidationError, *};
 use crate::model::*;
 use crate::validation::*;
 
-pub const MAX_PAYLOAD_SIZE: usize = 4 * 1024 * 1024;
 
 pub trait TransactionValidator<T: Decode> {
+    const MAX_PAYLOAD_SIZE: usize = 4 * 1024 * 1024;
+
     fn validate_from_slice<I: IntentHashManager>(
         &self,
         transaction: &[u8],
         intent_hash_manager: &I,
     ) -> Result<Validated<T>, TransactionValidationError> {
-        if transaction.len() > MAX_PAYLOAD_SIZE {
+        if transaction.len() > Self::MAX_PAYLOAD_SIZE {
             return Err(TransactionValidationError::TransactionTooLarge);
         }
 
