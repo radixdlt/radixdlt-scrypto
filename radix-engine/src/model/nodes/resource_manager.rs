@@ -45,12 +45,6 @@ enum MethodAccessRuleMethod {
     Update(AccessRule),
 }
 
-#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
-struct MethodAccessRule {
-    auth: MethodAuthorization,
-    update_auth: MethodAuthorization,
-}
-
 impl MethodAccessRule {
     pub fn new(entry: (AccessRule, Mutability)) -> Self {
         MethodAccessRule {
@@ -93,12 +87,6 @@ impl MethodAccessRule {
     fn lock(&mut self) {
         self.update_auth = MethodAuthorization::DenyAll;
     }
-}
-
-#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
-enum ResourceMethodRule {
-    Public,
-    Protected(ResourceMethodAuthKey),
 }
 
 /// The definition of a resource.

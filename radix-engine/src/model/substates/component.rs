@@ -2,13 +2,13 @@ use crate::model::{convert, MethodAuthorization};
 use crate::types::*;
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
-pub struct ComponentState {
+pub struct ComponentStateSubstate {
     pub state: Vec<u8>,
 }
 
-impl ComponentState {
+impl ComponentStateSubstate {
     pub fn new(state: Vec<u8>) -> Self {
-        ComponentState { state }
+        ComponentStateSubstate { state }
     }
 
     pub fn state(&self) -> &[u8] {
@@ -21,13 +21,13 @@ impl ComponentState {
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
-pub struct ComponentInfo {
+pub struct ComponentInfoSubstate {
     pub package_address: PackageAddress,
     pub blueprint_name: String,
     pub access_rules: Vec<AccessRules>,
 }
 
-impl ComponentInfo {
+impl ComponentInfoSubstate {
     pub fn new(
         package_address: PackageAddress,
         blueprint_name: String,
@@ -42,7 +42,7 @@ impl ComponentInfo {
 
     pub fn method_authorization(
         &self,
-        component_state: &ComponentState,
+        component_state: &ComponentStateSubstate,
         schema: &Type,
         method_name: &str,
     ) -> Vec<MethodAuthorization> {
