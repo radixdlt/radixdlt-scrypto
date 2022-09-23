@@ -275,16 +275,17 @@ where
                             m.on_wasm_instantiation(
                                 &mut self.track,
                                 &mut self.call_frames,
-                                package.code(),
+                                &package.code,
                             )
                             .map_err(RuntimeError::ModuleError)?;
                         }
                         let instrumented_code = self
                             .wasm_instrumenter
-                            .instrument(package.code(), &self.wasm_metering_params);
+                            .instrument(&package.code, &self.wasm_metering_params);
                         let mut instance = self.wasm_engine.instantiate(instrumented_code);
                         let blueprint_abi = package
-                            .blueprint_abi(&blueprint_name)
+                            .blueprint_abis
+                            .get(&blueprint_name)
                             .expect("Blueprint not found"); // TODO: assumption will break if auth module is optional
                         let export_name = &blueprint_abi
                             .get_fn_abi(&ident)
@@ -330,7 +331,8 @@ where
                         .raw()
                         .package();
                     let blueprint_abi = package
-                        .blueprint_abi(&blueprint_name)
+                        .blueprint_abis
+                        .get(&blueprint_name)
                         .expect("Blueprint not found"); // TODO: assumption will break if auth module is optional
                     let fn_abi = blueprint_abi
                         .get_fn_abi(&ident)
@@ -511,7 +513,8 @@ where
                     .package();
                 let abi =
                     package
-                        .blueprint_abi(blueprint_name)
+                        .blueprint_abis
+                        .get(blueprint_name)
                         .ok_or(RuntimeError::KernelError(KernelError::BlueprintNotFound(
                             package_address.clone(),
                             blueprint_name.clone(),
@@ -1315,7 +1318,7 @@ where
                 let package_address = node_id.into();
                 substates.insert(
                     SubstateId::Package(package_address),
-                    Substate::Package(package),
+                    package.try_into_substates().unwrap()[0],
                 );
                 (substates, None)
             }
@@ -1324,7 +1327,7 @@ where
                 let resource_address: ResourceAddress = node_id.into();
                 substates.insert(
                     SubstateId::ResourceManager(resource_address),
-                    Substate::ResourceManager(resource_manager),
+                    resource_manager.try_into_substates().unwrap()[0],
                 );
                 (substates, non_fungibles)
             }
