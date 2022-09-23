@@ -82,7 +82,7 @@ impl TransactionValidator<Transaction> for NetworkTransactionValidator {
                     transaction_hash,
                     instructions,
                     vec![AuthModule::supervisor_address()],
-                    0,
+                    10_000_000,
                     0,
                     vec![],
                 );
