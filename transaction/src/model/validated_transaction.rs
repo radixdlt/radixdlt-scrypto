@@ -51,6 +51,14 @@ impl<T> Validated<T> {
             blobs,
         }
     }
+
+    pub fn into_transaction(self) -> T {
+        self.transaction
+    }
+
+    pub fn transaction(&self) -> &T {
+        &self.transaction
+    }
 }
 
 impl<T> ExecutableTransaction for Validated<T> {
