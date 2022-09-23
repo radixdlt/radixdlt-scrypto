@@ -13,7 +13,7 @@ use transaction::builder::TransactionBuilder;
 use transaction::model::{NotarizedTransaction, TransactionHeader, Validated};
 use transaction::signing::EcdsaSecp256k1PrivateKey;
 use transaction::validation::{
-    NetworkTransactionValidator, TestIntentHashManager, TransactionValidator, ValidationConfig,
+    NotarizedTransactionValidator, TestIntentHashManager, TransactionValidator, ValidationConfig,
 };
 
 #[test]
@@ -53,7 +53,7 @@ fn test_normal_transaction_flow() {
     let execution_config = ExecutionConfig::debug();
     let raw_transaction = create_notarized_transaction(1_000_000).to_bytes();
 
-    let validator = NetworkTransactionValidator::new(ValidationConfig {
+    let validator = NotarizedTransactionValidator::new(ValidationConfig {
         network_id: NetworkDefinition::simulator().id,
         current_epoch: 1,
         max_cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,
@@ -83,7 +83,7 @@ fn test_normal_transaction_flow() {
 fn create_executable_transaction(cost_unit_limit: u32) -> Validated<NotarizedTransaction> {
     let notarized_transaction = create_notarized_transaction(cost_unit_limit);
 
-    let validator = NetworkTransactionValidator::new(ValidationConfig {
+    let validator = NotarizedTransactionValidator::new(ValidationConfig {
         network_id: NetworkDefinition::simulator().id,
         current_epoch: 1,
         max_cost_unit_limit: 10_000_000,

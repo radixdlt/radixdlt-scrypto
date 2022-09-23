@@ -17,20 +17,6 @@ pub struct Validated<T> {
     blobs: Vec<Vec<u8>>,
 }
 
-impl Into<Validated<Transaction>> for Validated<NotarizedTransaction> {
-    fn into(self) -> Validated<Transaction> {
-        Validated::<Transaction> {
-            transaction: self.transaction.into(),
-            transaction_hash: self.transaction_hash,
-            instructions: self.instructions,
-            initial_proofs: self.initial_proofs,
-            cost_unit_limit: self.cost_unit_limit,
-            tip_percentage: self.tip_percentage,
-            blobs: self.blobs,
-        }
-    }
-}
-
 impl<T> Validated<T> {
     pub fn new(
         transaction: T,

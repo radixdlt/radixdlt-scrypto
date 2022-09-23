@@ -46,12 +46,6 @@ pub struct NotarizedTransaction {
     pub notary_signature: Signature,
 }
 
-#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
-pub enum Transaction {
-    User(NotarizedTransaction),
-    EpochUpdate(u64),
-}
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum IntentCreationError {
     CompileErr(CompileError),

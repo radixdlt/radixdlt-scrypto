@@ -7,7 +7,7 @@ use transaction::signing::EcdsaSecp256k1PrivateKey;
 use transaction::signing::EddsaEd25519PrivateKey;
 use transaction::validation::verify_ecdsa_secp256k1;
 use transaction::validation::verify_eddsa_ed25519;
-use transaction::validation::NetworkTransactionValidator;
+use transaction::validation::NotarizedTransactionValidator;
 use transaction::validation::TestIntentHashManager;
 use transaction::validation::ValidationConfig;
 use transaction::validation::{recover_ecdsa_secp256k1, TransactionValidator};
@@ -80,7 +80,7 @@ fn bench_transaction_validation(c: &mut Criterion) {
     let transaction_bytes = transaction.to_bytes();
     println!("Transaction size: {} bytes", transaction_bytes.len());
 
-    let validator = NetworkTransactionValidator::new(ValidationConfig {
+    let validator = NotarizedTransactionValidator::new(ValidationConfig {
         network_id: NetworkDefinition::simulator().id,
         current_epoch: 1,
         max_cost_unit_limit: 10_000_000,

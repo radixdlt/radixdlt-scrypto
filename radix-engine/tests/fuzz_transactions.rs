@@ -15,11 +15,11 @@ use transaction::builder::{ManifestBuilder, TransactionBuilder};
 use transaction::model::{NotarizedTransaction, TransactionHeader};
 use transaction::signing::EcdsaSecp256k1PrivateKey;
 use transaction::validation::{
-    NetworkTransactionValidator, TestIntentHashManager, TransactionValidator, ValidationConfig,
+    NotarizedTransactionValidator, TestIntentHashManager, TransactionValidator, ValidationConfig,
 };
 
 fn execute_single_transaction(transaction: NotarizedTransaction) {
-    let validator = NetworkTransactionValidator::new(ValidationConfig {
+    let validator = NotarizedTransactionValidator::new(ValidationConfig {
         network_id: NetworkDefinition::simulator().id,
         current_epoch: 1,
         max_cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,

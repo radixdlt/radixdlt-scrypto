@@ -1,13 +1,8 @@
 use sbor::Decode;
-use scrypto::args;
 use std::collections::HashSet;
 
-use scrypto::buffer::{scrypto_decode, scrypto_encode};
-use scrypto::constants::SYS_FAUCET_COMPONENT;
-use scrypto::core::{NativeFnIdentifier, Receiver, SystemFnIdentifier};
-use scrypto::crypto::{hash, PublicKey};
-use scrypto::engine::types::RENodeId;
-use scrypto::math::Decimal;
+use scrypto::buffer::scrypto_decode;
+use scrypto::crypto::PublicKey;
 use scrypto::values::*;
 
 use crate::errors::{SignatureValidationError, *};
@@ -48,63 +43,11 @@ pub struct ValidationConfig {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub struct NetworkTransactionValidator {
+pub struct NotarizedTransactionValidator {
     config: ValidationConfig,
 }
 
-impl From<NotarizedTransaction> for Transaction {
-    fn from(notarized_transaction: NotarizedTransaction) -> Self {
-        Transaction::User(notarized_transaction)
-    }
-}
-
-impl TransactionValidator<Transaction> for NetworkTransactionValidator {
-    fn validate<I: IntentHashManager>(
-        &self,
-        transaction: Transaction,
-        intent_hash_manager: &I,
-    ) -> Result<Validated<Transaction>, TransactionValidationError> {
-        match transaction {
-            Transaction::User(notarized_transaction) => self
-                .validate(notarized_transaction, intent_hash_manager)
-                .map(|e| e.into()),
-            Transaction::EpochUpdate(epoch) => {
-                let transaction_hash = hash(scrypto_encode(&epoch)); // TODO: Figure out better way to do this or if we even do need it
-                let instructions = vec![
-                    // TODO: Remove lock fee requirement
-                    Instruction::CallMethod {
-                        method_identifier: MethodIdentifier::Scrypto {
-                            component_address: SYS_FAUCET_COMPONENT,
-                            ident: "lock_fee".to_string(),
-                        },
-                        args: args!(Decimal::from(1000)),
-                    },
-                    Instruction::CallMethod {
-                        method_identifier: MethodIdentifier::Native {
-                            receiver: Receiver::Ref(RENodeId::System),
-                            native_fn_identifier: NativeFnIdentifier::System(
-                                SystemFnIdentifier::SetEpoch,
-                            ),
-                        },
-                        args: args!(epoch),
-                    },
-                ];
-                let validated = Validated::new(
-                    transaction,
-                    transaction_hash,
-                    instructions,
-                    vec![AuthModule::validator_role_nf_address()],
-                    10_000_000,
-                    0,
-                    vec![],
-                );
-                Ok(validated)
-            }
-        }
-    }
-}
-
-impl TransactionValidator<NotarizedTransaction> for NetworkTransactionValidator {
+impl TransactionValidator<NotarizedTransaction> for NotarizedTransactionValidator {
     fn validate<I: IntentHashManager>(
         &self,
         transaction: NotarizedTransaction,
@@ -137,7 +80,7 @@ impl TransactionValidator<NotarizedTransaction> for NetworkTransactionValidator 
     }
 }
 
-impl NetworkTransactionValidator {
+impl NotarizedTransactionValidator {
     pub fn new(config: ValidationConfig) -> Self {
         Self { config }
     }
@@ -382,7 +325,7 @@ mod tests {
                 max_cost_unit_limit: 10_000_000,
                 min_tip_percentage: 0,
             };
-            let validator = NetworkTransactionValidator::new(config);
+            let validator = NotarizedTransactionValidator::new(config);
             assert_eq!(
                 Err($result),
                 validator.validate(
@@ -451,7 +394,7 @@ mod tests {
         // Build the whole transaction but only really care about the intent
         let tx = create_transaction(1, 0, 100, 5, vec![1, 2], 2);
 
-        let validator = NetworkTransactionValidator::new(ValidationConfig {
+        let validator = NotarizedTransactionValidator::new(ValidationConfig {
             network_id: NetworkDefinition::simulator().id,
             current_epoch: 1,
             max_cost_unit_limit: 10_000_000,
