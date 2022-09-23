@@ -1,6 +1,6 @@
 use crate::engine::SystemApi;
 use crate::fee::FeeReserve;
-use crate::model::{ComponentInfo, ComponentState, InvokeError};
+use crate::model::{ComponentInfoSubstate, ComponentStateSubstate, InvokeError};
 use crate::types::*;
 use crate::wasm::{WasmEngine, WasmInstance};
 
@@ -12,8 +12,8 @@ pub enum ComponentError {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct Component {
-    pub info: ComponentInfo,
-    pub state: ComponentState, // TODO: lazily loaded substate
+    pub info: ComponentInfoSubstate,
+    pub state: ComponentStateSubstate, // TODO: lazily loaded substate
 }
 
 impl Component {
@@ -24,12 +24,12 @@ impl Component {
         state: Vec<u8>,
     ) -> Self {
         Self {
-            info: ComponentInfo {
+            info: ComponentInfoSubstate {
                 package_address,
                 blueprint_name,
                 access_rules,
             },
-            state: ComponentState { state },
+            state: ComponentStateSubstate { state },
         }
     }
 

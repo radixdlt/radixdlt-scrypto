@@ -115,19 +115,20 @@ pub fn execute_genesis<'s, R: FeeReserve>(mut track: Track<'s, R>) -> TrackRecei
     let system_vault = VaultSubstate(minted_xrd);
     track.create_uuid_substate(SubstateId::Vault(XRD_VAULT_ID), system_vault, false);
 
-    let sys_faucet_component_info = ComponentInfo::new(
+    let sys_faucet_component_info = ComponentInfoSubstate::new(
         SYS_FAUCET_PACKAGE,
         SYS_FAUCET_COMPONENT_NAME.to_owned(),
         vec![],
     );
-    let sys_faucet_component_state = ComponentState::new(scrypto_encode(&SystemComponentState {
-        vault: scrypto::resource::Vault(XRD_VAULT_ID),
-        transactions: scrypto::component::KeyValueStore {
-            id: SYS_FAUCET_KEY_VALUE_STORE_ID,
-            key: PhantomData,
-            value: PhantomData,
-        },
-    }));
+    let sys_faucet_component_state =
+        ComponentStateSubstate::new(scrypto_encode(&SystemComponentState {
+            vault: scrypto::resource::Vault(XRD_VAULT_ID),
+            transactions: scrypto::component::KeyValueStore {
+                id: SYS_FAUCET_KEY_VALUE_STORE_ID,
+                key: PhantomData,
+                value: PhantomData,
+            },
+        }));
     track.create_uuid_substate(
         SubstateId::ComponentInfo(SYS_FAUCET_COMPONENT),
         sys_faucet_component_info,

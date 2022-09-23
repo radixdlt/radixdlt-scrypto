@@ -1,25 +1,17 @@
 use crate::engine::{HeapRENode, SystemApi};
 use crate::fee::FeeReserve;
-use crate::model::{convert, MethodAuthorization};
-use crate::model::{Bucket, NonFungible, Resource, Vault};
-use crate::model::{InvokeError, NonFungibleSubstate};
+use crate::model::{
+    Bucket, InvokeError, MethodAuthorization, NonFungible, NonFungibleSubstate, Resource,
+    ResourceMethodRule::{Protected, Public},
+    Vault,
+};
+use crate::model::{MethodAccessRule, MethodAccessRuleMethod, ResourceMethodRule};
 use crate::types::AccessRule::*;
 use crate::types::ResourceMethodAuthKey::*;
 use crate::types::*;
 use crate::wasm::*;
 
-use self::{
-    ResourceManagerError::InvalidMethod,
-    ResourceMethodRule::{Protected, Public},
-};
-
-/// Converts soft authorization rule to a hard authorization rule.
-/// Currently required as all auth is defined by soft authorization rules.
-macro_rules! convert_auth {
-    ($auth:expr) => {
-        convert(&Type::Unit, &ScryptoValue::unit(), &$auth)
-    };
-}
+use self::ResourceManagerError::InvalidMethod;
 
 /// Represents an error when accessing a bucket.
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -38,55 +30,6 @@ pub enum ResourceManagerError {
     CouldNotCreateBucket,
     CouldNotCreateVault,
     InvalidMethod,
-}
-
-enum MethodAccessRuleMethod {
-    Lock(),
-    Update(AccessRule),
-}
-
-impl MethodAccessRule {
-    pub fn new(entry: (AccessRule, Mutability)) -> Self {
-        MethodAccessRule {
-            auth: convert_auth!(entry.0),
-            update_auth: match entry.1 {
-                Mutability::LOCKED => MethodAuthorization::DenyAll,
-                Mutability::MUTABLE(method_auth) => convert_auth!(method_auth),
-            },
-        }
-    }
-
-    pub fn get_method_auth(&self) -> &MethodAuthorization {
-        &self.auth
-    }
-
-    pub fn get_update_auth(&self, method: MethodAccessRuleMethod) -> &MethodAuthorization {
-        match method {
-            MethodAccessRuleMethod::Lock() | MethodAccessRuleMethod::Update(_) => &self.update_auth,
-        }
-    }
-
-    pub fn main(
-        &mut self,
-        method: MethodAccessRuleMethod,
-    ) -> Result<ScryptoValue, InvokeError<ResourceManagerError>> {
-        match method {
-            MethodAccessRuleMethod::Lock() => self.lock(),
-            MethodAccessRuleMethod::Update(method_auth) => {
-                self.update(method_auth);
-            }
-        }
-
-        Ok(ScryptoValue::from_typed(&()))
-    }
-
-    fn update(&mut self, method_auth: AccessRule) {
-        self.auth = convert_auth!(method_auth)
-    }
-
-    fn lock(&mut self) {
-        self.update_auth = MethodAuthorization::DenyAll;
-    }
 }
 
 /// The definition of a resource.

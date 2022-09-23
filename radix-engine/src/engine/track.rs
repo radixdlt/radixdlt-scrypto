@@ -13,6 +13,7 @@ use crate::model::KeyValueStoreEntrySubstate;
 use crate::model::LockableResource;
 use crate::model::NonFungibleSubstate;
 use crate::model::Resource;
+use crate::model::Substate;
 use crate::model::Vault;
 use crate::model::VaultSubstate;
 use crate::transaction::CommitResult;

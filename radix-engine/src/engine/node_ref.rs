@@ -596,7 +596,7 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
                     _ => panic!("Unexpeceted"),
                 };
                 *track.borrow_substate_mut(substate_id) =
-                    SubstateCache::Raw(ComponentState::new(value.raw).into());
+                    SubstateCache::Raw(ComponentStateSubstate::new(value.raw).into());
                 for (id, val) in to_store {
                     insert_non_root_nodes(track, val.to_nodes(id))?;
                 }

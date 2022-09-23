@@ -1,6 +1,6 @@
 use clap::Parser;
 use colored::*;
-use radix_engine::engine::Substate;
+use radix_engine::model::Substate;
 use radix_engine::ledger::{OutputValue, ReadableSubstateStore, WriteableSubstateStore};
 use radix_engine::types::*;
 use std::ffi::OsStr;

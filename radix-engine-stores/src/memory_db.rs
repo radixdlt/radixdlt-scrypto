@@ -1,4 +1,4 @@
-use radix_engine::engine::Substate;
+use radix_engine::model::Substate;
 use radix_engine::ledger::{
     bootstrap, OutputValue, QueryableSubstateStore, ReadableSubstateStore, WriteableSubstateStore,
 };
