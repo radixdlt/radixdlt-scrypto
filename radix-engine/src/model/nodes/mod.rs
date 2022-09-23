@@ -23,3 +23,9 @@ pub use system::*;
 pub use transaction_processor::*;
 pub use vault::*;
 pub use worktop::*;
+
+pub trait TryIntoSubstates {
+    type Error;
+
+    fn try_into_substates(self) -> Result<Vec<crate::model::Substate>, Self::Error>;
+}

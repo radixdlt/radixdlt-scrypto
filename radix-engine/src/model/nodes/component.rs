@@ -4,6 +4,8 @@ use crate::model::{ComponentInfoSubstate, ComponentStateSubstate, InvokeError};
 use crate::types::*;
 use crate::wasm::{WasmEngine, WasmInstance};
 
+use super::TryIntoSubstates;
+
 #[derive(Debug, TypeId, Encode, Decode)]
 pub enum ComponentError {
     InvalidRequestData(DecodeError),
@@ -14,6 +16,14 @@ pub enum ComponentError {
 pub struct Component {
     pub info: ComponentInfoSubstate,
     pub state: ComponentStateSubstate, // TODO: lazily loaded substate
+}
+
+impl TryIntoSubstates for Component {
+    type Error = ();
+
+    fn try_into_substates(self) -> Result<Vec<crate::model::Substate>, Self::Error> {
+        Ok(vec![self.info.into(), self.state.into()])
+    }
 }
 
 impl Component {

@@ -1,8 +1,11 @@
 use crate::engine::SystemApi;
 use crate::fee::FeeReserve;
 use crate::model::InvokeError;
+use crate::model::SystemSubstate;
 use crate::types::*;
 use crate::wasm::*;
+
+use super::TryIntoSubstates;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub enum SystemError {
@@ -57,5 +60,13 @@ impl System {
                 ))
             }
         }
+    }
+}
+
+impl TryIntoSubstates for System {
+    type Error = ();
+
+    fn try_into_substates(self) -> Result<Vec<crate::model::Substate>, Self::Error> {
+        Ok(vec![SystemSubstate { epoch: self.epoch }.into()])
     }
 }
