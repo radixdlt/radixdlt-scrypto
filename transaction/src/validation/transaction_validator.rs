@@ -3,6 +3,7 @@ use scrypto::args;
 use std::collections::HashSet;
 
 use scrypto::buffer::{scrypto_decode, scrypto_encode};
+use scrypto::constants::SYS_FAUCET_COMPONENT;
 use scrypto::core::{NativeFnIdentifier, Receiver, SystemFnIdentifier};
 use scrypto::crypto::{hash, PublicKey};
 use scrypto::engine::types::RENodeId;
@@ -68,15 +69,25 @@ impl TransactionValidator<Transaction> for NetworkTransactionValidator {
                 .map(|e| e.into()),
             Transaction::EpochUpdate(epoch) => {
                 let transaction_hash = hash(scrypto_encode(&epoch)); // TODO: Figure out better way to do this or if we even do need it
-                let instructions = vec![Instruction::CallMethod {
-                    method_identifier: MethodIdentifier::Native {
-                        receiver: Receiver::Ref(RENodeId::System),
-                        native_fn_identifier: NativeFnIdentifier::System(
-                            SystemFnIdentifier::SetEpoch,
-                        ),
+                let instructions = vec![
+                    // TODO: Remove lock fee requirement
+                    Instruction::CallMethod {
+                        method_identifier: MethodIdentifier::Scrypto {
+                            component_address: SYS_FAUCET_COMPONENT,
+                            ident: "lock_fee".to_string(),
+                        },
+                        args: args!(Decimal::from(1000)),
                     },
-                    args: args!(epoch),
-                }];
+                    Instruction::CallMethod {
+                        method_identifier: MethodIdentifier::Native {
+                            receiver: Receiver::Ref(RENodeId::System),
+                            native_fn_identifier: NativeFnIdentifier::System(
+                                SystemFnIdentifier::SetEpoch,
+                            ),
+                        },
+                        args: args!(epoch),
+                    },
+                ];
                 let validated = Validated::new(
                     transaction,
                     transaction_hash,
