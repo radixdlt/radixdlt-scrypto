@@ -1,13 +1,11 @@
-use sbor::rust::collections::BTreeSet;
+use crate::model::Instruction;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::component::ComponentAddress;
-use scrypto::core::{Blob, FnIdentifier, NativeFnIdentifier, Receiver};
+use scrypto::core::{NativeFnIdentifier, Receiver};
 use scrypto::crypto::*;
-use scrypto::engine::types::*;
-use scrypto::math::*;
-use scrypto::resource::{NonFungibleId, ResourceAddress};
+use scrypto::resource::NonFungibleAddress;
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
 pub enum MethodIdentifier {
@@ -18,74 +16,6 @@ pub enum MethodIdentifier {
     Native {
         receiver: Receiver,
         native_fn_identifier: NativeFnIdentifier,
-    },
-}
-
-/// Represents an instruction that can be executed by Radix Engine.
-#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
-pub enum ExecutableInstruction {
-    TakeFromWorktop {
-        resource_address: ResourceAddress,
-    },
-    TakeFromWorktopByAmount {
-        amount: Decimal,
-        resource_address: ResourceAddress,
-    },
-    TakeFromWorktopByIds {
-        ids: BTreeSet<NonFungibleId>,
-        resource_address: ResourceAddress,
-    },
-    ReturnToWorktop {
-        bucket_id: BucketId,
-    },
-    AssertWorktopContains {
-        resource_address: ResourceAddress,
-    },
-    AssertWorktopContainsByAmount {
-        amount: Decimal,
-        resource_address: ResourceAddress,
-    },
-    AssertWorktopContainsByIds {
-        ids: BTreeSet<NonFungibleId>,
-        resource_address: ResourceAddress,
-    },
-    PopFromAuthZone,
-    PushToAuthZone {
-        proof_id: ProofId,
-    },
-    ClearAuthZone,
-    CreateProofFromAuthZone {
-        resource_address: ResourceAddress,
-    },
-    CreateProofFromAuthZoneByAmount {
-        amount: Decimal,
-        resource_address: ResourceAddress,
-    },
-    CreateProofFromAuthZoneByIds {
-        ids: BTreeSet<NonFungibleId>,
-        resource_address: ResourceAddress,
-    },
-    CreateProofFromBucket {
-        bucket_id: BucketId,
-    },
-    CloneProof {
-        proof_id: ProofId,
-    },
-    DropProof {
-        proof_id: ProofId,
-    },
-    DropAllProofs,
-    CallFunction {
-        fn_identifier: FnIdentifier,
-        args: Vec<u8>,
-    },
-    CallMethod {
-        method_identifier: MethodIdentifier,
-        args: Vec<u8>,
-    },
-    PublishPackage {
-        code: Blob,
-        abi: Blob,
     },
 }
 
@@ -104,10 +34,9 @@ pub trait ExecutableTransaction {
     fn tip_percentage(&self) -> u32;
 
     /// Returns the instructions to execute.
-    fn instructions(&self) -> &[ExecutableInstruction];
+    fn instructions(&self) -> &[Instruction];
 
-    /// Returns the public key of signers.
-    fn signer_public_keys(&self) -> &[PublicKey];
+    fn initial_proofs(&self) -> Vec<NonFungibleAddress>;
 
     fn blobs(&self) -> &[Vec<u8>];
 }

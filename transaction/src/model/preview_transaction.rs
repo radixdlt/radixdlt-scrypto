@@ -1,8 +1,10 @@
 use sbor::*;
 use scrypto::buffer::scrypto_encode;
+use scrypto::constants::{ECDSA_TOKEN, ED25519_TOKEN};
 use scrypto::crypto::{hash, Hash, PublicKey};
+use scrypto::resource::{NonFungibleAddress, NonFungibleId};
 
-use crate::model::{ExecutableInstruction, ExecutableTransaction, TransactionIntent};
+use crate::model::{ExecutableTransaction, Instruction, TransactionIntent};
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct PreviewFlags {
@@ -30,13 +32,7 @@ impl PreviewIntent {
 pub struct ValidatedPreviewTransaction {
     pub preview_intent: PreviewIntent,
     pub transaction_hash: Hash,
-    pub instructions: Vec<ExecutableInstruction>,
-}
-
-impl ValidatedPreviewTransaction {
-    pub fn signer_public_keys(&self) -> &[PublicKey] {
-        &self.preview_intent.signer_public_keys
-    }
+    pub instructions: Vec<Instruction>,
 }
 
 impl ExecutableTransaction for ValidatedPreviewTransaction {
@@ -48,12 +44,23 @@ impl ExecutableTransaction for ValidatedPreviewTransaction {
         scrypto_encode(&self.preview_intent.intent.manifest.instructions).len() as u32
     }
 
-    fn instructions(&self) -> &[ExecutableInstruction] {
+    fn instructions(&self) -> &[Instruction] {
         &self.instructions
     }
 
-    fn signer_public_keys(&self) -> &[PublicKey] {
-        &self.signer_public_keys()
+    fn initial_proofs(&self) -> Vec<NonFungibleAddress> {
+        self.preview_intent
+            .signer_public_keys
+            .iter()
+            .map(|k| match k {
+                PublicKey::EddsaEd25519(pk) => {
+                    NonFungibleAddress::new(ED25519_TOKEN, NonFungibleId::from_bytes(pk.to_vec()))
+                }
+                PublicKey::EcdsaSecp256k1(pk) => {
+                    NonFungibleAddress::new(ECDSA_TOKEN, NonFungibleId::from_bytes(pk.to_vec()))
+                }
+            })
+            .collect()
     }
 
     fn cost_unit_limit(&self) -> u32 {

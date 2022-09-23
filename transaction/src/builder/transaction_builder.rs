@@ -14,7 +14,7 @@ impl TransactionBuilder {
         Self {
             manifest: None,
             header: None,
-            intent_signatures: Vec::new(),
+            intent_signatures: vec![],
             notary_signature: None,
         }
     }
@@ -36,8 +36,8 @@ impl TransactionBuilder {
         self
     }
 
-    pub fn signer_signatures(mut self, signatures: Vec<SignatureWithPublicKey>) -> Self {
-        self.intent_signatures.extend(signatures);
+    pub fn signer_signatures(mut self, sigs: Vec<SignatureWithPublicKey>) -> Self {
+        self.intent_signatures.extend(sigs);
         self
     }
 

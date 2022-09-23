@@ -78,7 +78,6 @@ impl CallFunction {
             &self.signing_keys,
             &self.network,
             &self.manifest,
-            false,
             self.trace,
             true,
             out,

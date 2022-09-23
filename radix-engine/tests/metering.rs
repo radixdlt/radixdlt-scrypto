@@ -148,8 +148,8 @@ fn test_basic_transfer() {
     assert_eq!(
         10000 /* base_fee */
         + 0 /* blobs */
-        + 3300 /* borrow_substate */
-        + 1500 /* create_node */
+        + 4300 /* borrow_substate */
+        + 2000 /* create_node */
         + 1248 /* decode_manifest */
         + 1000 /* drop_node */
         + 578328 /* instantiate_wasm */

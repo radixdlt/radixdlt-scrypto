@@ -320,7 +320,6 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
                 },
                 &ExecutionConfig {
                     max_call_depth: DEFAULT_MAX_CALL_DEPTH,
-                    is_system: false,
                     trace: self.trace,
                 },
             );
@@ -627,19 +626,27 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     }
 
     pub fn set_current_epoch(&mut self, epoch: u64) {
-        self.kernel_call(true, |kernel| {
-            kernel
-                .invoke_method(
-                    Receiver::Ref(RENodeId::System),
-                    FnIdentifier::Native(NativeFnIdentifier::System(SystemFnIdentifier::SetEpoch)),
-                    ScryptoValue::from_typed(&SystemSetEpochInput { epoch }),
-                )
-                .unwrap()
-        });
+        self.kernel_call(
+            vec![NonFungibleAddress::new(
+                SYSTEM_TOKEN,
+                NonFungibleId::from_u32(0),
+            )],
+            |kernel| {
+                kernel
+                    .invoke_method(
+                        Receiver::Ref(RENodeId::System),
+                        FnIdentifier::Native(NativeFnIdentifier::System(
+                            SystemFnIdentifier::SetEpoch,
+                        )),
+                        ScryptoValue::from_typed(&SystemSetEpochInput { epoch }),
+                    )
+                    .unwrap()
+            },
+        );
     }
 
     pub fn get_current_epoch(&mut self) -> u64 {
-        let current_epoch: ScryptoValue = self.kernel_call(false, |kernel| {
+        let current_epoch: ScryptoValue = self.kernel_call(vec![], |kernel| {
             kernel
                 .invoke_method(
                     Receiver::Ref(RENodeId::System),
@@ -654,7 +661,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     }
 
     /// Performs a kernel call through a kernel with `is_system = true`.
-    fn kernel_call<F>(&mut self, is_system: bool, fun: F) -> ScryptoValue
+    fn kernel_call<F>(&mut self, initial_proofs: Vec<NonFungibleAddress>, fun: F) -> ScryptoValue
     where
         F: FnOnce(
             &mut Kernel<DefaultWasmEngine, DefaultWasmInstance, SystemLoanFeeReserve>,
@@ -672,9 +679,8 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
 
         let mut kernel = Kernel::new(
             tx_hash,
-            Vec::new(),
+            initial_proofs,
             &blobs,
-            is_system,
             DEFAULT_MAX_CALL_DEPTH,
             &mut track,
             &mut self.wasm_engine,

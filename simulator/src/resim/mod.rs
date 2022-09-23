@@ -137,7 +137,6 @@ pub fn handle_manifest<O: std::io::Write>(
     signing_keys: &Option<String>,
     network: &Option<String>,
     manifest_path: &Option<PathBuf>,
-    is_system: bool,
     trace: bool,
     output_receipt: bool,
     out: &mut O,
@@ -190,7 +189,6 @@ pub fn handle_manifest<O: std::io::Write>(
                 },
                 &ExecutionConfig {
                     max_call_depth: DEFAULT_MAX_CALL_DEPTH,
-                    is_system,
                     trace,
                 },
             );

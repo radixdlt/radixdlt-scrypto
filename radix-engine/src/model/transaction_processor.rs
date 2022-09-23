@@ -17,7 +17,7 @@ use super::Worktop;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct TransactionProcessorRunInput {
-    pub instructions: Vec<ExecutableInstruction>,
+    pub instructions: Vec<Instruction>,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -213,7 +213,7 @@ impl TransactionProcessor {
 
                 for inst in &input.instructions.clone() {
                     let result = match inst {
-                        ExecutableInstruction::TakeFromWorktop { resource_address } => id_allocator
+                        Instruction::TakeFromWorktop { resource_address } => id_allocator
                             .new_bucket_id()
                             .map_err(|e| {
                                 InvokeError::Error(TransactionProcessorError::IdAllocationError(e))
@@ -236,7 +236,7 @@ impl TransactionProcessor {
                                         ScryptoValue::from_typed(&scrypto::resource::Bucket(new_id))
                                     })
                             }),
-                        ExecutableInstruction::TakeFromWorktopByAmount {
+                        Instruction::TakeFromWorktopByAmount {
                             amount,
                             resource_address,
                         } => id_allocator
@@ -263,7 +263,7 @@ impl TransactionProcessor {
                                         ScryptoValue::from_typed(&scrypto::resource::Bucket(new_id))
                                     })
                             }),
-                        ExecutableInstruction::TakeFromWorktopByIds {
+                        Instruction::TakeFromWorktopByIds {
                             ids,
                             resource_address,
                         } => id_allocator
@@ -290,7 +290,7 @@ impl TransactionProcessor {
                                         ScryptoValue::from_typed(&scrypto::resource::Bucket(new_id))
                                     })
                             }),
-                        ExecutableInstruction::ReturnToWorktop { bucket_id } => bucket_id_mapping
+                        Instruction::ReturnToWorktop { bucket_id } => bucket_id_mapping
                             .remove(bucket_id)
                             .map(|real_id| {
                                 system_api
@@ -308,20 +308,18 @@ impl TransactionProcessor {
                             .unwrap_or(Err(InvokeError::Error(
                                 TransactionProcessorError::BucketNotFound(*bucket_id),
                             ))),
-                        ExecutableInstruction::AssertWorktopContains { resource_address } => {
-                            system_api
-                                .invoke_method(
-                                    Receiver::Ref(RENodeId::Worktop),
-                                    FnIdentifier::Native(NativeFnIdentifier::Worktop(
-                                        WorktopFnIdentifier::AssertContains,
-                                    )),
-                                    ScryptoValue::from_typed(&WorktopAssertContainsInput {
-                                        resource_address: *resource_address,
-                                    }),
-                                )
-                                .map_err(InvokeError::Downstream)
-                        }
-                        ExecutableInstruction::AssertWorktopContainsByAmount {
+                        Instruction::AssertWorktopContains { resource_address } => system_api
+                            .invoke_method(
+                                Receiver::Ref(RENodeId::Worktop),
+                                FnIdentifier::Native(NativeFnIdentifier::Worktop(
+                                    WorktopFnIdentifier::AssertContains,
+                                )),
+                                ScryptoValue::from_typed(&WorktopAssertContainsInput {
+                                    resource_address: *resource_address,
+                                }),
+                            )
+                            .map_err(InvokeError::Downstream),
+                        Instruction::AssertWorktopContainsByAmount {
                             amount,
                             resource_address,
                         } => system_api
@@ -336,7 +334,7 @@ impl TransactionProcessor {
                                 }),
                             )
                             .map_err(InvokeError::Downstream),
-                        ExecutableInstruction::AssertWorktopContainsByIds {
+                        Instruction::AssertWorktopContainsByIds {
                             ids,
                             resource_address,
                         } => system_api
@@ -352,7 +350,7 @@ impl TransactionProcessor {
                             )
                             .map_err(InvokeError::Downstream),
 
-                        ExecutableInstruction::PopFromAuthZone {} => id_allocator
+                        Instruction::PopFromAuthZone {} => id_allocator
                             .new_proof_id()
                             .map_err(|e| {
                                 InvokeError::Error(TransactionProcessorError::IdAllocationError(e))
@@ -373,7 +371,7 @@ impl TransactionProcessor {
                                         ScryptoValue::from_typed(&scrypto::resource::Proof(new_id))
                                     })
                             }),
-                        ExecutableInstruction::ClearAuthZone => {
+                        Instruction::ClearAuthZone => {
                             proof_id_mapping.clear();
                             system_api
                                 .invoke_method(
@@ -385,7 +383,7 @@ impl TransactionProcessor {
                                 )
                                 .map_err(InvokeError::Downstream)
                         }
-                        ExecutableInstruction::PushToAuthZone { proof_id } => proof_id_mapping
+                        Instruction::PushToAuthZone { proof_id } => proof_id_mapping
                             .remove(proof_id)
                             .ok_or(InvokeError::Error(
                                 TransactionProcessorError::ProofNotFound(*proof_id),
@@ -403,36 +401,30 @@ impl TransactionProcessor {
                                     )
                                     .map_err(InvokeError::Downstream)
                             }),
-                        ExecutableInstruction::CreateProofFromAuthZone { resource_address } => {
-                            id_allocator
-                                .new_proof_id()
-                                .map_err(|e| {
-                                    InvokeError::Error(
-                                        TransactionProcessorError::IdAllocationError(e),
+                        Instruction::CreateProofFromAuthZone { resource_address } => id_allocator
+                            .new_proof_id()
+                            .map_err(|e| {
+                                InvokeError::Error(TransactionProcessorError::IdAllocationError(e))
+                            })
+                            .and_then(|new_id| {
+                                system_api
+                                    .invoke_method(
+                                        Receiver::CurrentAuthZone,
+                                        FnIdentifier::Native(NativeFnIdentifier::AuthZone(
+                                            AuthZoneFnIdentifier::CreateProof,
+                                        )),
+                                        ScryptoValue::from_typed(&AuthZoneCreateProofInput {
+                                            resource_address: *resource_address,
+                                        }),
                                     )
-                                })
-                                .and_then(|new_id| {
-                                    system_api
-                                        .invoke_method(
-                                            Receiver::CurrentAuthZone,
-                                            FnIdentifier::Native(NativeFnIdentifier::AuthZone(
-                                                AuthZoneFnIdentifier::CreateProof,
-                                            )),
-                                            ScryptoValue::from_typed(&AuthZoneCreateProofInput {
-                                                resource_address: *resource_address,
-                                            }),
-                                        )
-                                        .map_err(InvokeError::Downstream)
-                                        .map(|rtn| {
-                                            let proof_id = Self::first_proof(&rtn);
-                                            proof_id_mapping.insert(new_id, proof_id);
-                                            ScryptoValue::from_typed(&scrypto::resource::Proof(
-                                                new_id,
-                                            ))
-                                        })
-                                })
-                        }
-                        ExecutableInstruction::CreateProofFromAuthZoneByAmount {
+                                    .map_err(InvokeError::Downstream)
+                                    .map(|rtn| {
+                                        let proof_id = Self::first_proof(&rtn);
+                                        proof_id_mapping.insert(new_id, proof_id);
+                                        ScryptoValue::from_typed(&scrypto::resource::Proof(new_id))
+                                    })
+                            }),
+                        Instruction::CreateProofFromAuthZoneByAmount {
                             amount,
                             resource_address,
                         } => id_allocator
@@ -461,7 +453,7 @@ impl TransactionProcessor {
                                         ScryptoValue::from_typed(&scrypto::resource::Proof(new_id))
                                     })
                             }),
-                        ExecutableInstruction::CreateProofFromAuthZoneByIds {
+                        Instruction::CreateProofFromAuthZoneByIds {
                             ids,
                             resource_address,
                         } => id_allocator
@@ -488,7 +480,7 @@ impl TransactionProcessor {
                                         ScryptoValue::from_typed(&scrypto::resource::Proof(new_id))
                                     })
                             }),
-                        ExecutableInstruction::CreateProofFromBucket { bucket_id } => id_allocator
+                        Instruction::CreateProofFromBucket { bucket_id } => id_allocator
                             .new_proof_id()
                             .map_err(|e| {
                                 InvokeError::Error(TransactionProcessorError::IdAllocationError(e))
@@ -518,7 +510,7 @@ impl TransactionProcessor {
                                         ScryptoValue::from_typed(&scrypto::resource::Proof(new_id))
                                     })
                             }),
-                        ExecutableInstruction::CloneProof { proof_id } => id_allocator
+                        Instruction::CloneProof { proof_id } => id_allocator
                             .new_proof_id()
                             .map_err(|e| {
                                 InvokeError::Error(TransactionProcessorError::IdAllocationError(e))
@@ -549,7 +541,7 @@ impl TransactionProcessor {
                                         TransactionProcessorError::ProofNotFound(*proof_id),
                                     )))
                             }),
-                        ExecutableInstruction::DropProof { proof_id } => proof_id_mapping
+                        Instruction::DropProof { proof_id } => proof_id_mapping
                             .remove(proof_id)
                             .map(|real_id| {
                                 system_api
@@ -565,7 +557,7 @@ impl TransactionProcessor {
                             .unwrap_or(Err(InvokeError::Error(
                                 TransactionProcessorError::ProofNotFound(*proof_id),
                             ))),
-                        ExecutableInstruction::DropAllProofs => {
+                        Instruction::DropAllProofs => {
                             for (_, real_id) in proof_id_mapping.drain() {
                                 system_api
                                     .invoke_method(
@@ -587,7 +579,7 @@ impl TransactionProcessor {
                                 )
                                 .map_err(InvokeError::Downstream)
                         }
-                        ExecutableInstruction::CallFunction {
+                        Instruction::CallFunction {
                             fn_identifier,
                             args,
                         } => {
@@ -635,7 +627,7 @@ impl TransactionProcessor {
                                 Ok(result)
                             })
                         }
-                        ExecutableInstruction::CallMethod {
+                        Instruction::CallMethod {
                             method_identifier,
                             args,
                         } => {
@@ -729,7 +721,7 @@ impl TransactionProcessor {
                                 Ok(result)
                             })
                         }
-                        ExecutableInstruction::PublishPackage { code, abi } => system_api
+                        Instruction::PublishPackage { code, abi } => system_api
                             .invoke_function(
                                 FnIdentifier::Native(NativeFnIdentifier::Package(
                                     PackageFnIdentifier::Publish,
