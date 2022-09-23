@@ -8,13 +8,13 @@ use crate::model::*;
 /// Represents a validated transaction
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Validated<T> {
-    transaction: T,
-    transaction_hash: Hash,
-    instructions: Vec<Instruction>,
-    initial_proofs: Vec<NonFungibleAddress>,
-    cost_unit_limit: u32,
-    tip_percentage: u32,
-    blobs: Vec<Vec<u8>>,
+    pub transaction: T,
+    pub transaction_hash: Hash,
+    pub instructions: Vec<Instruction>,
+    pub initial_proofs: Vec<NonFungibleAddress>,
+    pub cost_unit_limit: u32,
+    pub tip_percentage: u32,
+    pub blobs: Vec<Vec<u8>>,
 }
 
 impl<T> Validated<T> {
