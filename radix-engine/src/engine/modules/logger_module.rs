@@ -71,16 +71,6 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
             SysCallInput::GlobalizeNode { node_id } => {
                 log!(self, "Globalizing node: node_id = {:?}", node_id);
             }
-            SysCallInput::BorrowSubstateMut { substate_id } => {
-                log!(self, "Borrowing substate: substate_id = {:?}", substate_id);
-            }
-            SysCallInput::ReturnSubstateMut { substate_ref } => {
-                log!(
-                    self,
-                    "Returning substate: substate_ref = {:?}",
-                    substate_ref
-                );
-            }
             SysCallInput::ReadSubstate { substate_id } => {
                 log!(self, "Reading substate: substate_id = {:?}", substate_id);
             }
@@ -134,8 +124,6 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
             SysCallOutput::DropNode { .. } => {}
             SysCallOutput::CreateNode { .. } => {}
             SysCallOutput::GlobalizeNode { .. } => {}
-            SysCallOutput::BorrowSubstateMut { .. } => {}
-            SysCallOutput::ReturnSubstateMut { .. } => {}
             SysCallOutput::ReadSubstate { .. } => {}
             SysCallOutput::WriteSubstate { .. } => {}
             SysCallOutput::TakeSubstate { .. } => {}

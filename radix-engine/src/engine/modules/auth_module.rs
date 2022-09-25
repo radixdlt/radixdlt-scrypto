@@ -57,8 +57,7 @@ impl AuthModule {
                     node_ref.bucket().resource_address()
                 };
                 let resource_manager = track
-                    .borrow_substate(SubstateId::ResourceManager(resource_address))
-                    .raw()
+                    .read_node(&RENodeId::ResourceManager(resource_address))
                     .resource_manager();
                 let method_auth = resource_manager.get_bucket_auth(*bucket_fn);
                 vec![method_auth.clone()]
@@ -67,10 +66,8 @@ impl AuthModule {
                 Receiver::Ref(RENodeId::ResourceManager(resource_address)),
                 FnIdentifier::Native(NativeFnIdentifier::ResourceManager(fn_ident)),
             ) => {
-                let substate_id = SubstateId::ResourceManager(resource_address);
                 let resource_manager = track
-                    .borrow_substate(substate_id.clone())
-                    .raw()
+                    .read_node(&RENodeId::ResourceManager(resource_address))
                     .resource_manager();
                 let method_auth = resource_manager.get_auth(*fn_ident, &input).clone();
                 vec![method_auth]
@@ -100,10 +97,8 @@ impl AuthModule {
                 // Assume that package_address/blueprint is the original impl of Component for now
                 // TODO: Remove this assumption
 
-                let package_substate_id = SubstateId::Package(*package_address);
                 let package = track
-                    .borrow_substate(package_substate_id.clone())
-                    .raw()
+                    .read_node(&RENodeId::Package(*package_address))
                     .package()
                     .clone();
                 let abi = package
@@ -135,8 +130,7 @@ impl AuthModule {
                     node_ref.vault().resource_address()
                 };
                 let resource_manager = track
-                    .borrow_substate(SubstateId::ResourceManager(resource_address))
-                    .raw()
+                    .read_node(&RENodeId::ResourceManager(resource_address))
                     .resource_manager();
                 vec![resource_manager.get_vault_auth(*vault_fn).clone()]
             }
