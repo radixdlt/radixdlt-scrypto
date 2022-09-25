@@ -1,8 +1,9 @@
-use radix_engine::engine::{ExecutionPrivilege, ModuleError, RuntimeError};
+use radix_engine::engine::{ModuleError, RuntimeError};
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
+use transaction::model::AuthModule;
 
 #[test]
 fn get_epoch_should_succeed() {
@@ -57,17 +58,14 @@ fn system_create_should_fail_with_supervisor_privilege() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(10u32.into(), SYS_FAUCET_COMPONENT)
         .call_native_function(
             NativeFnIdentifier::System(SystemFnIdentifier::Create),
             args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest_with_privilege(
-        manifest,
-        vec![],
-        ExecutionPrivilege::Supervisor,
-    );
+    let receipt =
+        test_runner.execute_manifest(manifest, vec![AuthModule::validator_role_nf_address()]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -93,7 +91,7 @@ fn system_create_should_succeed_with_system_privilege() {
         )
         .build();
     let receipt =
-        test_runner.execute_manifest_with_privilege(manifest, vec![], ExecutionPrivilege::System);
+        test_runner.execute_manifest(manifest, vec![AuthModule::system_role_nf_address()]);
 
     // Assert
     receipt.expect_commit_success();

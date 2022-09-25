@@ -48,7 +48,6 @@ pub const ENV_DISABLE_MANIFEST_OUTPUT: &'static str = "DISABLE_MANIFEST_OUTPUT";
 
 use clap::{Parser, Subcommand};
 use radix_engine::constants::*;
-use radix_engine::engine::ExecutionPrivilege;
 use radix_engine::model::*;
 use radix_engine::transaction::TransactionExecutor;
 use radix_engine::transaction::TransactionOutcome;
@@ -138,7 +137,6 @@ pub fn handle_manifest<O: std::io::Write>(
     signing_keys: &Option<String>,
     network: &Option<String>,
     manifest_path: &Option<PathBuf>,
-    execution_privilege: ExecutionPrivilege,
     trace: bool,
     output_receipt: bool,
     out: &mut O,
@@ -176,12 +174,12 @@ pub fn handle_manifest<O: std::io::Write>(
             );
 
             let sks = get_signing_keys(signing_keys)?;
-            let pks = sks
-                .iter()
-                .map(|e| e.public_key().into())
-                .collect::<Vec<PublicKey>>();
+            let initial_proofs = sks
+                .into_iter()
+                .map(|e| NonFungibleAddress::from_public_key(&e.public_key()))
+                .collect::<Vec<NonFungibleAddress>>();
             let nonce = get_nonce()?;
-            let transaction = TestTransaction::new(manifest, nonce, pks);
+            let transaction = TestTransaction::new(manifest, nonce, initial_proofs);
 
             let receipt = executor.execute_and_commit(
                 &transaction,
@@ -191,7 +189,6 @@ pub fn handle_manifest<O: std::io::Write>(
                 },
                 &ExecutionConfig {
                     max_call_depth: DEFAULT_MAX_CALL_DEPTH,
-                    execution_privilege,
                     trace,
                 },
             );

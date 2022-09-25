@@ -1,7 +1,6 @@
 use radix_engine::constants::{
     DEFAULT_COST_UNIT_LIMIT, DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN,
 };
-use radix_engine::engine::ExecutionPrivilege;
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::state_manager::StagedSubstateStoreManager;
 use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig, TransactionExecutor};
@@ -15,27 +14,27 @@ use rayon::prelude::*;
 use transaction::builder::{ManifestBuilder, TransactionBuilder};
 use transaction::model::{NotarizedTransaction, TransactionHeader};
 use transaction::signing::EcdsaSecp256k1PrivateKey;
-use transaction::validation::{TestIntentHashManager, TransactionValidator, ValidationConfig};
+use transaction::validation::{
+    NotarizedTransactionValidator, TestIntentHashManager, TransactionValidator, ValidationConfig,
+};
 
 fn execute_single_transaction(transaction: NotarizedTransaction) {
-    let transaction = TransactionValidator::validate(
-        transaction,
-        &TestIntentHashManager::new(),
-        &ValidationConfig {
-            network_id: NetworkDefinition::simulator().id,
-            current_epoch: 1,
-            max_cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,
-            min_tip_percentage: 0,
-        },
-    )
-    .unwrap();
+    let validator = NotarizedTransactionValidator::new(ValidationConfig {
+        network_id: NetworkDefinition::simulator().id,
+        current_epoch: 1,
+        max_cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,
+        min_tip_percentage: 0,
+    });
+
+    let transaction = validator
+        .validate(transaction, &TestIntentHashManager::new())
+        .unwrap();
 
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = DefaultWasmEngine::new();
     let mut wasm_instrumenter = WasmInstrumenter::new();
     let execution_config = ExecutionConfig {
         max_call_depth: DEFAULT_MAX_CALL_DEPTH,
-        execution_privilege: ExecutionPrivilege::User,
         trace: false,
     };
     let fee_reserve_config = FeeReserveConfig {

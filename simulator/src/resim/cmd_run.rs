@@ -59,7 +59,6 @@ impl Run {
             &self.signing_keys,
             &self.network,
             &None,
-            ExecutionPrivilege::User,
             self.trace,
             true,
             out,

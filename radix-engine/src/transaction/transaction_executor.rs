@@ -1,6 +1,4 @@
-use crate::constants::{
-    DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN, GENESIS_CREATION_CREDIT,
-};
+use crate::constants::{DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN};
 use crate::engine::Track;
 use crate::engine::*;
 use crate::fee::{FeeReserve, FeeTable, SystemLoanFeeReserve};
@@ -29,7 +27,6 @@ impl FeeReserveConfig {
 
 pub struct ExecutionConfig {
     pub max_call_depth: usize,
-    pub execution_privilege: ExecutionPrivilege,
     pub trace: bool,
 }
 
@@ -43,7 +40,6 @@ impl ExecutionConfig {
     pub fn standard() -> Self {
         Self {
             max_call_depth: DEFAULT_MAX_CALL_DEPTH,
-            execution_privilege: ExecutionPrivilege::User,
             trace: false,
         }
     }
@@ -51,7 +47,6 @@ impl ExecutionConfig {
     pub fn debug() -> Self {
         Self {
             max_call_depth: DEFAULT_MAX_CALL_DEPTH,
-            execution_privilege: ExecutionPrivilege::User,
             trace: true,
         }
     }
@@ -89,65 +84,6 @@ where
         }
     }
 
-    pub fn execute_system_transaction(
-        &mut self,
-        transaction: ExecutableSystemTransaction,
-    ) -> TransactionReceipt {
-        let mut execution_trace = ExecutionTrace::new();
-        let mut fee_reserve = SystemLoanFeeReserve::default();
-        fee_reserve.credit(GENESIS_CREATION_CREDIT);
-        let mut track = Track::new(self.substate_store, fee_reserve, FeeTable::new());
-        let blobs: HashMap<Hash, Vec<u8>> = transaction
-            .blobs
-            .into_iter()
-            .map(|b| (hash(&b), b))
-            .collect();
-
-        let mut kernel = Kernel::new(
-            Hash([0u8; Hash::LENGTH]),
-            vec![],
-            &blobs,
-            ExecutionPrivilege::System,
-            DEFAULT_MAX_CALL_DEPTH,
-            &mut track,
-            self.wasm_engine,
-            self.wasm_instrumenter,
-            WasmMeteringParams::new(InstructionCostRules::tiered(1, 5, 10, 5000), 512),
-            &mut execution_trace,
-            vec![],
-        );
-
-        let instructions = transaction.instructions;
-
-        let invoke_result = {
-            let result = kernel.invoke_function(
-                FnIdentifier::Native(NativeFnIdentifier::TransactionProcessor(
-                    TransactionProcessorFnIdentifier::Run,
-                )),
-                ScryptoValue::from_typed(&TransactionProcessorRunInput {
-                    instructions: instructions.clone(),
-                }),
-            );
-            result.map(|o| {
-                scrypto_decode::<Vec<Vec<u8>>>(&o.raw)
-                    .expect("TransactionProcessor returned data of unexpected type")
-            })
-        };
-
-        let execution_trace_receipt = execution_trace.to_receipt();
-        let track_receipt = track.finalize(invoke_result, execution_trace_receipt.resource_changes);
-        let receipt = TransactionReceipt {
-            contents: TransactionContents { instructions },
-            execution: TransactionExecution {
-                fee_summary: track_receipt.fee_summary,
-                application_logs: track_receipt.application_logs,
-            },
-            result: track_receipt.result,
-        };
-
-        receipt
-    }
-
     pub fn execute<T: ExecutableTransaction>(
         &mut self,
         transaction: &T,
@@ -171,7 +107,7 @@ where
         fee_reserve: R,
     ) -> TransactionReceipt {
         let transaction_hash = transaction.transaction_hash();
-        let signer_public_keys = transaction.signer_public_keys().to_vec();
+        let initial_proofs = transaction.initial_proofs();
         let instructions = transaction.instructions().to_vec();
         let blobs: HashMap<Hash, Vec<u8>> = transaction
             .blobs()
@@ -183,7 +119,7 @@ where
         if execution_config.trace {
             println!("{:-^80}", "Transaction Metadata");
             println!("Transaction hash: {}", transaction_hash);
-            println!("Transaction signers: {:?}", signer_public_keys);
+            println!("Transaction proofs: {:?}", initial_proofs);
             println!("Number of unique blobs: {}", blobs.len());
 
             println!("{:-^80}", "Engine Execution Log");
@@ -222,9 +158,8 @@ where
             modules.push(Box::new(CostingModule::default()));
             let mut kernel = Kernel::new(
                 transaction_hash,
-                signer_public_keys,
+                initial_proofs,
                 &blobs,
-                execution_config.execution_privilege,
                 execution_config.max_call_depth,
                 &mut track,
                 self.wasm_engine,

@@ -82,7 +82,6 @@ impl NewBadgeFixed {
             &self.signing_keys,
             &self.network,
             &self.manifest,
-            ExecutionPrivilege::User,
             self.trace,
             true,
             out,

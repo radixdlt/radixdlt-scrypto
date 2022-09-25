@@ -78,7 +78,6 @@ impl Publish {
                 &None,
                 &self.network,
                 &self.manifest,
-                ExecutionPrivilege::User,
                 self.trace,
                 false,
                 out,

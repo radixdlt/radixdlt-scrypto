@@ -22,7 +22,10 @@ fn test_trace_resource_transfers() {
             args!(transfer_amount),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
 
     // Assert
     let output = receipt.expect_commit_success();

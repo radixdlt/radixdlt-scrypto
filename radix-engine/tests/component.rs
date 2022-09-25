@@ -44,7 +44,10 @@ fn test_component() {
             args!(Expression::entire_worktop()),
         )
         .build();
-    let receipt2 = test_runner.execute_manifest(manifest2, vec![public_key.into()]);
+    let receipt2 = test_runner.execute_manifest(
+        manifest2,
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
     receipt2.expect_commit_success();
 }
 

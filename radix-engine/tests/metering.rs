@@ -129,15 +129,18 @@ fn test_basic_transfer() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), account1)
-        .withdraw_from_account_by_amount(100.into(), RADIX_TOKEN, account1)
+        .lock_fee(10u32.into(), account1)
+        .withdraw_from_account_by_amount(100u32.into(), RADIX_TOKEN, account1)
         .call_method(
             account2,
             "deposit_batch",
             args!(Expression::entire_worktop()),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key1.into()]);
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&public_key1)],
+    );
     receipt.expect_commit_success();
 
     // Assert
@@ -148,11 +151,11 @@ fn test_basic_transfer() {
     assert_eq!(
         10000 /* base_fee */
         + 0 /* blobs */
-        + 3300 /* borrow_substate */
-        + 1500 /* create_node */
+        + 4300 /* borrow_substate */
+        + 2000 /* create_node */
         + 1248 /* decode_manifest */
         + 1000 /* drop_node */
-        + 578328 /* instantiate_wasm */
+        + 580443 /* instantiate_wasm */
         + 2205 /* invoke_function */
         + 2215 /* invoke_method */
         + 5000 /* read_substate */
@@ -193,5 +196,5 @@ fn test_publish_large_package() {
     receipt.expect_commit_success();
 
     // Assert
-    assert_eq!(4401348, receipt.execution.fee_summary.cost_unit_consumed);
+    assert_eq!(4413584, receipt.execution.fee_summary.cost_unit_consumed);
 }

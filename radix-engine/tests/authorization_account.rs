@@ -6,6 +6,7 @@ use radix_engine::ledger::{
 use radix_engine::types::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
+use transaction::model::AuthModule;
 
 fn test_auth_rule<'s, S: ReadableSubstateStore + WriteableSubstateStore>(
     test_runner: &mut TestRunner<'s, S>,
@@ -27,7 +28,8 @@ fn test_auth_rule<'s, S: ReadableSubstateStore + WriteableSubstateStore>(
             args!(Expression::entire_worktop()),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, signer_public_keys.to_vec());
+    let receipt =
+        test_runner.execute_manifest(manifest, AuthModule::pk_non_fungibles(signer_public_keys));
 
     // Assert
     if should_succeed {

@@ -1,12 +1,14 @@
+use crate::constants::GENESIS_CREATION_CREDIT;
+use crate::fee::SystemLoanFeeReserve;
 use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
-use crate::transaction::TransactionExecutor;
+use crate::transaction::{ExecutionConfig, TransactionExecutor};
 use crate::types::ResourceMethodAuthKey::Withdraw;
 use crate::types::*;
 use crate::wasm::{DefaultWasmEngine, WasmInstrumenter};
 use scrypto::core::Blob;
 use scrypto::resource::Bucket;
-use transaction::model::{Instruction, SystemTransaction, TransactionManifest};
-use transaction::validation::{IdAllocator, IdSpace, TransactionValidator};
+use transaction::model::{Instruction, SystemTransaction, TransactionManifest, Validated};
+use transaction::validation::{IdAllocator, IdSpace};
 
 #[derive(TypeId, Encode, Decode)]
 struct SystemComponentState {
@@ -206,10 +208,14 @@ where
         let mut executor =
             TransactionExecutor::new(substate_store, &mut wasm_engine, &mut wasm_instrumenter);
         let genesis_transaction = create_genesis();
-        let genesis_transaction =
-            TransactionValidator::validate_system_transaction(genesis_transaction)
-                .expect("Genesis txn failed validation");
-        let transaction_receipt = executor.execute_system_transaction(genesis_transaction);
+        let executable: Validated<SystemTransaction> = genesis_transaction.into();
+        let mut fee_reserve = SystemLoanFeeReserve::default();
+        fee_reserve.credit(GENESIS_CREATION_CREDIT);
+        let transaction_receipt = executor.execute_with_fee_reserve(
+            &executable,
+            &ExecutionConfig::standard(),
+            fee_reserve,
+        );
         let commit_result = transaction_receipt.result.expect_commit();
         commit_result.outcome.expect_success();
         commit_result.state_updates.commit(substate_store);
@@ -218,12 +224,14 @@ where
 
 #[cfg(test)]
 mod tests {
+    use crate::constants::GENESIS_CREATION_CREDIT;
+    use crate::fee::SystemLoanFeeReserve;
     use crate::ledger::bootstrap::{create_genesis, genesis_result};
     use crate::ledger::TypedInMemorySubstateStore;
-    use crate::transaction::TransactionExecutor;
+    use crate::transaction::{ExecutionConfig, TransactionExecutor};
     use crate::wasm::{DefaultWasmEngine, WasmInstrumenter};
     use scrypto::constants::*;
-    use transaction::validation::TransactionValidator;
+    use transaction::model::{SystemTransaction, Validated};
 
     #[test]
     fn bootstrap_receipt_should_match_constants() {
@@ -236,10 +244,16 @@ mod tests {
             &mut wasm_engine,
             &mut wasm_instrumenter,
         );
-        let genesis_transaction =
-            TransactionValidator::validate_system_transaction(genesis_transaction)
-                .expect("Genesis txn failed validation");
-        let transaction_receipt = executor.execute_system_transaction(genesis_transaction);
+        let executable: Validated<SystemTransaction> = genesis_transaction.into();
+        let mut fee_reserve = SystemLoanFeeReserve::default();
+        fee_reserve.credit(GENESIS_CREATION_CREDIT);
+
+        let transaction_receipt = executor.execute_with_fee_reserve(
+            &executable,
+            &ExecutionConfig::standard(),
+            fee_reserve,
+        );
+
         let commit_result = transaction_receipt.result.expect_commit();
         let invoke_result = commit_result.outcome.expect_success();
         let genesis_receipt = genesis_result(&invoke_result);

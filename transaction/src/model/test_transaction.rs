@@ -2,6 +2,7 @@ use sbor::rust::vec::Vec;
 use scrypto::buffer::scrypto_encode;
 use scrypto::core::NetworkDefinition;
 use scrypto::crypto::*;
+use scrypto::resource::NonFungibleAddress;
 
 use crate::builder::TransactionBuilder;
 use crate::model::*;
@@ -9,15 +10,14 @@ use crate::model::*;
 /// Represents a test transaction, for testing/simulation purpose only.
 pub struct TestTransaction {
     pub transaction: NotarizedTransaction,
-    pub executable_instructions: Vec<ExecutableInstruction>,
-    pub signer_public_keys: Vec<PublicKey>,
+    pub initial_proofs: Vec<NonFungibleAddress>,
 }
 
 impl TestTransaction {
     pub fn new(
         manifest: TransactionManifest,
         nonce: u64,
-        signer_public_keys: Vec<PublicKey>,
+        initial_proofs: Vec<NonFungibleAddress>,
     ) -> Self {
         let transaction = TransactionBuilder::new()
             .header(TransactionHeader {
@@ -32,122 +32,12 @@ impl TestTransaction {
                 tip_percentage: 5,
             })
             .manifest(manifest)
-            .signer_signatures(
-                signer_public_keys
-                    .iter()
-                    .cloned()
-                    .map(|pk| match pk {
-                        PublicKey::EcdsaSecp256k1(_) => EcdsaSecp256k1Signature([0u8; 65]).into(),
-                        PublicKey::EddsaEd25519(pk) => {
-                            (pk, EddsaEd25519Signature([0u8; 64])).into()
-                        }
-                    })
-                    .collect(),
-            )
             .notary_signature(EcdsaSecp256k1Signature([0u8; 65]).into())
             .build();
 
-        let executable_instructions = transaction
-            .signed_intent
-            .intent
-            .manifest
-            .instructions
-            .iter()
-            .map(|i| match i.clone() {
-                Instruction::TakeFromWorktop { resource_address } => {
-                    ExecutableInstruction::TakeFromWorktop { resource_address }
-                }
-                Instruction::TakeFromWorktopByAmount {
-                    amount,
-                    resource_address,
-                } => ExecutableInstruction::TakeFromWorktopByAmount {
-                    amount,
-                    resource_address,
-                },
-                Instruction::TakeFromWorktopByIds {
-                    ids,
-                    resource_address,
-                } => ExecutableInstruction::TakeFromWorktopByIds {
-                    ids,
-                    resource_address,
-                },
-                Instruction::ReturnToWorktop { bucket_id } => {
-                    ExecutableInstruction::ReturnToWorktop { bucket_id }
-                }
-                Instruction::AssertWorktopContains { resource_address } => {
-                    ExecutableInstruction::AssertWorktopContains { resource_address }
-                }
-                Instruction::AssertWorktopContainsByAmount {
-                    amount,
-                    resource_address,
-                } => ExecutableInstruction::AssertWorktopContainsByAmount {
-                    amount,
-                    resource_address,
-                },
-                Instruction::AssertWorktopContainsByIds {
-                    ids,
-                    resource_address,
-                } => ExecutableInstruction::AssertWorktopContainsByIds {
-                    ids,
-                    resource_address,
-                },
-                Instruction::PopFromAuthZone => ExecutableInstruction::PopFromAuthZone,
-                Instruction::PushToAuthZone { proof_id } => {
-                    ExecutableInstruction::PushToAuthZone { proof_id }
-                }
-                Instruction::ClearAuthZone => ExecutableInstruction::ClearAuthZone,
-                Instruction::CreateProofFromAuthZone { resource_address } => {
-                    ExecutableInstruction::CreateProofFromAuthZone { resource_address }
-                }
-                Instruction::CreateProofFromAuthZoneByAmount {
-                    amount,
-                    resource_address,
-                } => ExecutableInstruction::CreateProofFromAuthZoneByAmount {
-                    amount,
-                    resource_address,
-                },
-                Instruction::CreateProofFromAuthZoneByIds {
-                    ids,
-                    resource_address,
-                } => ExecutableInstruction::CreateProofFromAuthZoneByIds {
-                    ids,
-                    resource_address,
-                },
-                Instruction::CreateProofFromBucket { bucket_id } => {
-                    ExecutableInstruction::CreateProofFromBucket { bucket_id }
-                }
-                Instruction::CloneProof { proof_id } => {
-                    ExecutableInstruction::CloneProof { proof_id }
-                }
-                Instruction::DropProof { proof_id } => {
-                    ExecutableInstruction::DropProof { proof_id }
-                }
-                Instruction::DropAllProofs => ExecutableInstruction::DropAllProofs,
-                Instruction::CallFunction {
-                    fn_identifier,
-                    args,
-                } => ExecutableInstruction::CallFunction {
-                    fn_identifier,
-                    args,
-                },
-                Instruction::CallMethod {
-                    method_identifier,
-                    args,
-                } => ExecutableInstruction::CallMethod {
-                    method_identifier,
-                    args,
-                },
-
-                Instruction::PublishPackage { code, abi } => {
-                    ExecutableInstruction::PublishPackage { code, abi }
-                }
-            })
-            .collect();
-
         Self {
             transaction,
-            executable_instructions,
-            signer_public_keys,
+            initial_proofs,
         }
     }
 }
@@ -169,12 +59,12 @@ impl ExecutableTransaction for TestTransaction {
         self.transaction.signed_intent.intent.header.tip_percentage
     }
 
-    fn instructions(&self) -> &[ExecutableInstruction] {
-        &self.executable_instructions
+    fn instructions(&self) -> &[Instruction] {
+        &self.transaction.signed_intent.intent.manifest.instructions
     }
 
-    fn signer_public_keys(&self) -> &[PublicKey] {
-        &self.signer_public_keys
+    fn initial_proofs(&self) -> Vec<NonFungibleAddress> {
+        self.initial_proofs.clone()
     }
 
     fn blobs(&self) -> &[Vec<u8>] {
