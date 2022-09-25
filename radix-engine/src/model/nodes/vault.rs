@@ -173,9 +173,8 @@ impl Vault {
         I: WasmInstance,
         R: FeeReserve,
     {
-        let substate_id = SubstateId::Vault(vault_id.clone());
         let mut ref_mut = system_api
-            .substate_borrow_mut(&substate_id)
+            .borrow_node_mut(&RENodeId::Vault(vault_id.clone()))
             .map_err(InvokeError::Downstream)?;
         let vault = ref_mut.vault_mut();
         let rtn = match vault_fn {
@@ -309,10 +308,6 @@ impl Vault {
                 )))
             }
         }?;
-
-        system_api
-            .substate_return_mut(ref_mut)
-            .map_err(InvokeError::Downstream)?;
 
         Ok(rtn)
     }

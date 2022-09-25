@@ -449,6 +449,26 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
         }
     }
 
+    pub fn bucket_mut(&mut self) -> &mut Bucket {
+        todo!()
+    }
+
+    pub fn proof_mut(&mut self) -> &mut Proof {
+        todo!()
+    }
+
+    pub fn resource_manager_mut(&mut self) -> &mut ResourceManager {
+        todo!()
+    }
+
+    pub fn system_mut(&mut self) -> &mut System {
+        todo!()
+    }
+
+    pub fn worktop_mut(&mut self) -> &mut Worktop {
+        todo!()
+    }
+
     pub fn vault_mut(&mut self) -> &mut Vault {
         match self {
             RENodeRefMut::Stack(re_value, id) => re_value.get_node_mut(id.as_ref()).vault_mut(),

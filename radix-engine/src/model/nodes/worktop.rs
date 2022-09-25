@@ -213,7 +213,7 @@ impl Worktop {
         R: FeeReserve,
     {
         let mut node_ref = system_api
-            .substate_borrow_mut(&SubstateId::Worktop)
+            .borrow_node_mut(&RENodeId::Worktop)
             .map_err(InvokeError::downstream)?;
         let worktop = node_ref.worktop_mut();
 
@@ -364,10 +364,6 @@ impl Worktop {
                 Ok(ScryptoValue::from_typed(&buckets))
             }
         }?;
-
-        system_api
-            .substate_return_mut(node_ref)
-            .map_err(|e| InvokeError::Downstream(e))?;
 
         Ok(rtn)
     }

@@ -336,9 +336,9 @@ impl Proof {
         I: WasmInstance,
         R: FeeReserve,
     {
-        let substate_id = SubstateId::Proof(proof_id);
+        let node_id = RENodeId::Proof(proof_id);
         let mut node_ref = system_api
-            .substate_borrow_mut(&substate_id)
+            .borrow_node_mut(&node_id)
             .map_err(InvokeError::Downstream)?;
         let proof = node_ref.proof_mut();
 
@@ -374,9 +374,6 @@ impl Proof {
             _ => return Err(InvokeError::Error(ProofError::UnknownMethod)),
         }?;
 
-        system_api
-            .substate_return_mut(node_ref)
-            .map_err(InvokeError::Downstream)?;
         Ok(rtn)
     }
 

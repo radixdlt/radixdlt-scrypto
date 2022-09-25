@@ -40,6 +40,11 @@ where
     // TODO: Convert to substate_borrow
     fn borrow_node(&mut self, node_id: &RENodeId) -> Result<RENodeRef<'_, 's, R>, RuntimeError>;
 
+    fn borrow_node_mut(
+        &mut self,
+        node_id: &RENodeId,
+    ) -> Result<RENodeRefMut<'_, 's, R>, RuntimeError>;
+
     /// Removes an RENode and all of it's children from the Heap
     fn node_drop(&mut self, node_id: &RENodeId) -> Result<HeapRootRENode, RuntimeError>;
 
@@ -49,22 +54,15 @@ where
     /// Moves an RENode from Heap to Store
     fn node_globalize(&mut self, node_id: RENodeId) -> Result<(), RuntimeError>;
 
-    /// Borrow a mutable substate
-    fn substate_borrow_mut(
-        &mut self,
-        substate_id: &SubstateId,
-    ) -> Result<NativeSubstateRef, RuntimeError>;
-
-    /// Return a mutable substate
-    fn substate_return_mut(&mut self, val_ref: NativeSubstateRef) -> Result<(), RuntimeError>;
-
     // TODO: Convert use substate_borrow interface
     fn substate_read(&mut self, substate_id: SubstateId) -> Result<ScryptoValue, RuntimeError>;
+
     fn substate_write(
         &mut self,
         substate_id: SubstateId,
         value: ScryptoValue,
     ) -> Result<(), RuntimeError>;
+
     fn substate_take(&mut self, substate_id: SubstateId) -> Result<ScryptoValue, RuntimeError>;
 
     fn transaction_hash(&mut self) -> Result<Hash, RuntimeError>;

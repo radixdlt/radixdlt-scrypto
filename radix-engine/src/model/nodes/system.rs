@@ -42,12 +42,9 @@ impl System {
                 let SystemSetEpochInput { epoch } = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(SystemError::InvalidRequestData(e)))?;
                 let mut system_node_ref = system_api
-                    .substate_borrow_mut(&SubstateId::System)
+                    .borrow_node_mut(&RENodeId::System)
                     .map_err(InvokeError::Downstream)?;
                 system_node_ref.system_mut().epoch = epoch;
-                system_api
-                    .substate_return_mut(system_node_ref)
-                    .map_err(InvokeError::Downstream)?;
                 Ok(ScryptoValue::from_typed(&()))
             }
             SystemFnIdentifier::GetTransactionHash => {

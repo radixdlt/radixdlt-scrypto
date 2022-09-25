@@ -55,7 +55,6 @@ impl Component {
         I: WasmInstance,
         R: FeeReserve,
     {
-        let substate_id = SubstateId::ComponentInfo(component_address);
         let node_id = RENodeId::Component(component_address);
 
         let rtn = match component_fn {
@@ -94,14 +93,11 @@ impl Component {
                     }
                 }
 
-                let mut ref_mut = system_api
-                    .substate_borrow_mut(&substate_id)
+                let mut node = system_api
+                    .borrow_node_mut(&node_id)
                     .map_err(InvokeError::Downstream)?;
-                let component = ref_mut.component_mut();
+                let component = node.component_mut();
                 component.info.access_rules.push(input.access_rules);
-                system_api
-                    .substate_return_mut(ref_mut)
-                    .map_err(InvokeError::Downstream)?;
 
                 Ok(ScryptoValue::from_typed(&()))
             }

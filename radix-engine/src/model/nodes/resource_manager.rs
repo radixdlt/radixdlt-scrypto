@@ -424,9 +424,9 @@ impl ResourceManager {
         I: WasmInstance,
         R: FeeReserve,
     {
-        let substate_id = SubstateId::ResourceManager(resource_address);
+        let node_id = RENodeId::ResourceManager(resource_address);
         let mut ref_mut = system_api
-            .substate_borrow_mut(&substate_id)
+            .borrow_node_mut(&node_id)
             .map_err(InvokeError::Downstream)?;
         let resource_manager = ref_mut.resource_manager_mut();
 
@@ -579,10 +579,6 @@ impl ResourceManager {
             }
             _ => Err(InvokeError::Error(InvalidMethod)),
         }?;
-
-        system_api
-            .substate_return_mut(ref_mut)
-            .map_err(InvokeError::Downstream)?;
 
         Ok(rtn)
     }
