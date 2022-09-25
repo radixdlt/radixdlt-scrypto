@@ -28,7 +28,6 @@ impl FeeReserveConfig {
 
 pub struct ExecutionConfig {
     pub max_call_depth: usize,
-    pub is_system: bool,
     pub trace: bool,
 }
 
@@ -42,7 +41,6 @@ impl ExecutionConfig {
     pub fn standard() -> Self {
         Self {
             max_call_depth: DEFAULT_MAX_CALL_DEPTH,
-            is_system: false,
             trace: false,
         }
     }
@@ -50,7 +48,6 @@ impl ExecutionConfig {
     pub fn debug() -> Self {
         Self {
             max_call_depth: DEFAULT_MAX_CALL_DEPTH,
-            is_system: false,
             trace: true,
         }
     }
@@ -111,7 +108,7 @@ where
         fee_reserve: R,
     ) -> TransactionReceipt {
         let transaction_hash = transaction.transaction_hash();
-        let signer_public_keys = transaction.signer_public_keys().to_vec();
+        let initial_proofs = transaction.initial_proofs();
         let instructions = transaction.instructions().to_vec();
         let blobs: HashMap<Hash, Vec<u8>> = transaction
             .blobs()
@@ -123,7 +120,7 @@ where
         if execution_config.trace {
             println!("{:-^80}", "Transaction Metadata");
             println!("Transaction hash: {}", transaction_hash);
-            println!("Transaction signers: {:?}", signer_public_keys);
+            println!("Transaction proofs: {:?}", initial_proofs);
             println!("Number of unique blobs: {}", blobs.len());
 
             println!("{:-^80}", "Engine Execution Log");
@@ -162,9 +159,8 @@ where
             modules.push(Box::new(CostingModule::default()));
             let mut kernel = Kernel::new(
                 transaction_hash,
-                signer_public_keys,
+                initial_proofs,
                 &blobs,
-                execution_config.is_system,
                 execution_config.max_call_depth,
                 &mut track,
                 self.wasm_engine,

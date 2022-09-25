@@ -59,7 +59,6 @@ impl Run {
             &self.signing_keys,
             &self.network,
             &None,
-            false,
             self.trace,
             true,
             out,

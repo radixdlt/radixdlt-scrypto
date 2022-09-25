@@ -41,7 +41,6 @@ impl NewAccount {
             &Some("".to_string()), // explicit empty signer public keys
             &self.network,
             &self.manifest,
-            false,
             self.trace,
             false,
             out,
