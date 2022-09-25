@@ -287,7 +287,15 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         Ok(())
     }
 
-    pub fn borrow_substate(&self, substate_id: SubstateId) -> &SubstateCache {
+    pub fn read_node(&self, node_id: &RENodeId) -> &HeapRENode {
+        todo!()
+    }
+
+    pub fn write_node(&mut self, node_id: &RENodeId) -> &mut HeapRENode {
+        todo!()
+    }
+
+    pub fn read_substate(&self, substate_id: SubstateId) -> &SubstateCache {
         &self
             .borrowed_substates
             .get(&substate_id)
@@ -295,22 +303,12 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             .substate
     }
 
-    pub fn borrow_substate_mut(&mut self, substate_id: SubstateId) -> &mut SubstateCache {
+    pub fn write_substate(&mut self, substate_id: SubstateId) -> &mut SubstateCache {
         &mut self
             .borrowed_substates
             .get_mut(&substate_id)
             .expect(&format!("Substate {:?} was never locked", substate_id))
             .substate
-    }
-
-    pub fn take_substate(&mut self, substate_id: SubstateId) -> BorrowedSubstate {
-        self.borrowed_substates
-            .remove(&substate_id)
-            .expect(&format!("Substate {:?} was never locked", substate_id))
-    }
-
-    pub fn return_substate(&mut self, substate_id: SubstateId, substate: BorrowedSubstate) {
-        self.borrowed_substates.insert(substate_id, substate);
     }
 
     /// Returns the value of a key value pair
