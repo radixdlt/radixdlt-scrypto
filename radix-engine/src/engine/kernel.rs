@@ -107,10 +107,9 @@ where
             {
                 RENodeId::Bucket(bucket_id) => bucket_id,
                 _ => panic!("Expected Bucket RENodeId but received something else"),
-            };
-            let substate_id = SubstateId::Bucket(bucket_id);
+            }; 
             let mut node_ref = kernel
-                .substate_borrow_mut(&substate_id)
+                .borrow_node_mut(&RENodeId::Bucket(bucket_id))
                 .expect("Failed to borrow SYSTEM_TOKEN bucket substate");
             let bucket = node_ref.bucket_mut();
             let system_proof = bucket
@@ -267,25 +266,23 @@ where
                     let output = {
                         let package = self
                             .track
-                            .borrow_substate(SubstateId::Package(package_address))
-                            .raw()
+                            .read_node(&RENodeId::Package(package_address))
                             .package()
                             .clone();
                         for m in &mut self.modules {
                             m.on_wasm_instantiation(
                                 &mut self.track,
                                 &mut self.call_frames,
-                                &package.code,
+                                package.code(),
                             )
                             .map_err(RuntimeError::ModuleError)?;
                         }
                         let instrumented_code = self
                             .wasm_instrumenter
-                            .instrument(&package.code, &self.wasm_metering_params);
+                            .instrument(package.code(), &self.wasm_metering_params);
                         let mut instance = self.wasm_engine.instantiate(instrumented_code);
                         let blueprint_abi = package
-                            .blueprint_abis
-                            .get(&blueprint_name)
+                            .blueprint_abi(&blueprint_name)
                             .expect("Blueprint not found"); // TODO: assumption will break if auth module is optional
                         let export_name = &blueprint_abi
                             .get_fn_abi(&ident)
@@ -327,12 +324,11 @@ where
 
                     let package = self
                         .track
-                        .borrow_substate(SubstateId::Package(package_address))
-                        .raw()
+                        .read_node(&RENodeId::Package(package_address))
+                         
                         .package();
                     let blueprint_abi = package
-                        .blueprint_abis
-                        .get(&blueprint_name)
+                        .blueprint_abi(&blueprint_name)
                         .expect("Blueprint not found"); // TODO: assumption will break if auth module is optional
                     let fn_abi = blueprint_abi
                         .get_fn_abi(&ident)
@@ -508,13 +504,11 @@ where
                 locked_values.insert(SubstateId::Package(package_address.clone()));
                 let package = self
                     .track
-                    .borrow_substate(SubstateId::Package(package_address.clone()))
-                    .raw()
-                    .package();
+                    .read_node(&RENodeId::Package(package_address.clone()))
+                     .package();
                 let abi =
                     package
-                        .blueprint_abis
-                        .get(blueprint_name)
+                        .blueprint_abi( blueprint_name)
                         .ok_or(RuntimeError::KernelError(KernelError::BlueprintNotFound(
                             package_address.clone(),
                             blueprint_name.clone(),
@@ -1063,94 +1057,11 @@ where
         Ok(node_pointer.to_ref(&self.call_frames, &mut self.track))
     }
 
-    fn substate_borrow_mut(
+    fn borrow_node_mut(
         &mut self,
-        substate_id: &SubstateId,
-    ) -> Result<NativeSubstateRef, RuntimeError> {
-        for m in &mut self.modules {
-            m.pre_sys_call(
-                &mut self.track,
-                &mut self.call_frames,
-                SysCallInput::BorrowSubstateMut {
-                    substate_id: substate_id,
-                },
-            )
-            .map_err(RuntimeError::ModuleError)?;
-        }
-
-        // Authorization
-        if !Self::current_frame(&self.call_frames)
-            .actor
-            .is_substate_readable(substate_id)
-        {
-            panic!("Trying to read substate which is not visible.")
-        }
-
-        let node_id = SubstateProperties::get_node_id(substate_id);
-
-        // TODO: Clean this up
-        let frame = Self::current_frame(&self.call_frames);
-        let node_pointer = if frame.owned_heap_nodes.contains_key(&node_id) {
-            RENodePointer::Heap {
-                frame_id: frame.depth,
-                root: node_id.clone(),
-                id: None,
-            }
-        } else {
-            Self::current_frame(&self.call_frames)
-                .node_refs
-                .get(&node_id)
-                .cloned()
-                .expect(&format!(
-                    "Attempt to borrow node {:?}, which is not visible in current frame",
-                    node_id
-                )) // TODO: Assumption will break if auth is optional
-        };
-
-        let substate_ref = node_pointer.borrow_native_ref(
-            substate_id.clone(),
-            &mut self.call_frames,
-            &mut self.track,
-        );
-
-        for m in &mut self.modules {
-            m.post_sys_call(
-                &mut self.track,
-                &mut self.call_frames,
-                SysCallOutput::BorrowSubstateMut {
-                    substate_ref: &substate_ref,
-                },
-            )
-            .map_err(RuntimeError::ModuleError)?;
-        }
-
-        Ok(substate_ref)
-    }
-
-    fn substate_return_mut(&mut self, substate_ref: NativeSubstateRef) -> Result<(), RuntimeError> {
-        for m in &mut self.modules {
-            m.pre_sys_call(
-                &mut self.track,
-                &mut self.call_frames,
-                SysCallInput::ReturnSubstateMut {
-                    substate_ref: &substate_ref,
-                },
-            )
-            .map_err(RuntimeError::ModuleError)?;
-        }
-
-        substate_ref.return_to_location(&mut self.call_frames, &mut self.track);
-
-        for m in &mut self.modules {
-            m.post_sys_call(
-                &mut self.track,
-                &mut self.call_frames,
-                SysCallOutput::ReturnSubstateMut,
-            )
-            .map_err(RuntimeError::ModuleError)?;
-        }
-
-        Ok(())
+        node_id: &RENodeId,
+    ) -> Result<RENodeRefMut<'_, 's, R>, RuntimeError> {
+        todo!()
     }
 
     fn node_drop(&mut self, node_id: &RENodeId) -> Result<HeapRootRENode, RuntimeError> {

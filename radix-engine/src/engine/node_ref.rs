@@ -111,10 +111,6 @@ impl<'f, 's, R: FeeReserve> RENodeRef<'f, 's, R> {
                 .vault(),
 
             RENodeRef::Track(track, node_id) => {
-                let substate_id = match node_id {
-                    RENodeId::Vault(vault_id) => SubstateId::Vault(*vault_id),
-                    _ => panic!("Unexpected"),
-                };
                 track.read_node(node_id).vault()
             }
         }
@@ -127,10 +123,6 @@ impl<'f, 's, R: FeeReserve> RENodeRef<'f, 's, R> {
                 .map_or(value.root(), |v| value.non_root(v))
                 .system(),
             RENodeRef::Track(track, node_id) => {
-                let substate_id = match node_id {
-                    RENodeId::System => SubstateId::System,
-                    _ => panic!("Unexpected"),
-                };
                 track.read_node(node_id).system()
             }
         }
@@ -143,12 +135,6 @@ impl<'f, 's, R: FeeReserve> RENodeRef<'f, 's, R> {
                 .map_or(value.root(), |v| value.non_root(v))
                 .resource_manager(),
             RENodeRef::Track(track, node_id) => {
-                let substate_id = match node_id {
-                    RENodeId::ResourceManager(resource_address) => {
-                        SubstateId::ResourceManager(*resource_address)
-                    }
-                    _ => panic!("Unexpected"),
-                };
                 track.read_node(node_id).resource_manager()
             }
         }
@@ -161,12 +147,6 @@ impl<'f, 's, R: FeeReserve> RENodeRef<'f, 's, R> {
                 .map_or(value.root(), |v| value.non_root(v))
                 .component(),
             RENodeRef::Track(track, node_id) => {
-                let substate_id = match node_id {
-                    RENodeId::Component(component_address) => {
-                        SubstateId::ComponentInfo(*component_address)
-                    }
-                    _ => panic!("Unexpected"),
-                };
                 track.read_node(node_id).component()
             }
         }
@@ -179,10 +159,6 @@ impl<'f, 's, R: FeeReserve> RENodeRef<'f, 's, R> {
                 .map_or(value.root(), |v| value.non_root(v))
                 .package(),
             RENodeRef::Track(track, node_id) => {
-                let substate_id = match node_id {
-                    RENodeId::Package(package_address) => SubstateId::Package(*package_address),
-                    _ => panic!("Unexpected"),
-                };
                 track.read_node(node_id).package()
             }
         }
@@ -472,26 +448,14 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
     pub fn vault_mut(&mut self) -> &mut Vault {
         match self {
             RENodeRefMut::Stack(re_value, id) => re_value.get_node_mut(id.as_ref()).vault_mut(),
-            RENodeRefMut::Track(track, node_id) => {
-                let substate_id = match node_id {
-                    RENodeId::Vault(vault_id) => SubstateId::Vault(*vault_id),
-                    _ => panic!("Unexpeceted"),
-                };
-                track.read_node(node_id).vault_mut()
-            }
+            RENodeRefMut::Track(track, node_id) => track.write_node(node_id).vault_mut(),
         }
     }
 
     pub fn component_mut(&mut self) -> &mut Component {
         match self {
             RENodeRefMut::Stack(re_value, id) => re_value.get_node_mut(id.as_ref()).component_mut(),
-            RENodeRefMut::Track(track, node_id) => {
-                let substate_id = match node_id {
-                    RENodeId::Component(component_id) => SubstateId::ComponentInfo(*component_id),
-                    _ => panic!("Unexpeceted"),
-                };
-                track.read_node(node_id).component_mut()
-            }
+            RENodeRefMut::Track(track, node_id) => track.write_node(node_id).component_mut(),
         }
     }
 }
