@@ -1,5 +1,4 @@
 use sbor::rust::vec::Vec;
-use scrypto::buffer::scrypto_encode;
 use scrypto::core::NetworkDefinition;
 use scrypto::crypto::*;
 use scrypto::resource::NonFungibleAddress;

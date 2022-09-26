@@ -88,17 +88,19 @@ impl NotarizedTransactionValidator {
         &self,
         preview_intent: PreviewIntent,
         intent_hash_manager: &I,
-    ) -> Result<ValidatedPreviewTransaction, TransactionValidationError> {
-        let intent = &preview_intent.intent;
-
+    ) -> Result<Validated, TransactionValidationError> {
         let transaction_hash = preview_intent.hash();
-
+        let intent = preview_intent.intent;
         let instructions = self.validate_intent(&intent, intent_hash_manager)?;
+        let initial_proofs = AuthModule::pk_non_fungibles(&preview_intent.signer_public_keys);
 
-        Ok(ValidatedPreviewTransaction {
-            preview_intent,
+        Ok(Validated {
             transaction_hash,
             instructions,
+            initial_proofs,
+            cost_unit_limit: intent.header.cost_unit_limit,
+            tip_percentage: intent.header.tip_percentage,
+            blobs: intent.manifest.blobs
         })
     }
 

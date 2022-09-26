@@ -84,9 +84,9 @@ where
         }
     }
 
-    pub fn execute<T: ExecutableTransaction>(
+    pub fn execute(
         &mut self,
-        transaction: &T,
+        transaction: &Validated,
         fee_reserve_config: &FeeReserveConfig,
         execution_config: &ExecutionConfig,
     ) -> TransactionReceipt {
@@ -100,9 +100,9 @@ where
         self.execute_with_fee_reserve(transaction, execution_config, fee_reserve)
     }
 
-    pub fn execute_with_fee_reserve<T: ExecutableTransaction, R: FeeReserve>(
+    pub fn execute_with_fee_reserve<R: FeeReserve>(
         &mut self,
-        transaction: &T,
+        transaction: &Validated,
         execution_config: &ExecutionConfig,
         fee_reserve: R,
     ) -> TransactionReceipt {
@@ -226,9 +226,9 @@ where
     W: WasmEngine<I>,
     I: WasmInstance,
 {
-    pub fn execute_and_commit<T: ExecutableTransaction>(
+    pub fn execute_and_commit(
         &mut self,
-        transaction: &T,
+        transaction: &Validated,
         fee_reserve_config: &FeeReserveConfig,
         execution_config: &ExecutionConfig,
     ) -> TransactionReceipt {

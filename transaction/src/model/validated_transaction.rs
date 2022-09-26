@@ -35,61 +35,31 @@ impl Validated {
         }
     }
 
-    fn transaction_hash(&self) -> Hash {
+    pub fn transaction_hash(&self) -> Hash {
         self.transaction_hash
     }
 
-    fn manifest_instructions_size(&self) -> u32 {
+    pub fn manifest_instructions_size(&self) -> u32 {
         scrypto_encode(&self.instructions).len() as u32
     }
 
-    fn cost_unit_limit(&self) -> u32 {
+    pub fn cost_unit_limit(&self) -> u32 {
         self.cost_unit_limit
     }
 
-    fn tip_percentage(&self) -> u32 {
+    pub fn tip_percentage(&self) -> u32 {
         self.tip_percentage
     }
 
-    fn instructions(&self) -> &[Instruction] {
+    pub fn instructions(&self) -> &[Instruction] {
         &self.instructions
     }
 
-    fn initial_proofs(&self) -> Vec<NonFungibleAddress> {
+    pub fn initial_proofs(&self) -> Vec<NonFungibleAddress> {
         self.initial_proofs.clone()
     }
 
-    fn blobs(&self) -> &[Vec<u8>] {
-        &self.blobs
-    }
-}
-
-impl ExecutableTransaction for Validated {
-    fn transaction_hash(&self) -> Hash {
-        self.transaction_hash
-    }
-
-    fn manifest_instructions_size(&self) -> u32 {
-        scrypto_encode(&self.instructions).len() as u32
-    }
-
-    fn cost_unit_limit(&self) -> u32 {
-        self.cost_unit_limit
-    }
-
-    fn tip_percentage(&self) -> u32 {
-        self.tip_percentage
-    }
-
-    fn instructions(&self) -> &[Instruction] {
-        &self.instructions
-    }
-
-    fn initial_proofs(&self) -> Vec<NonFungibleAddress> {
-        self.initial_proofs.clone()
-    }
-
-    fn blobs(&self) -> &[Vec<u8>] {
+    pub fn blobs(&self) -> &[Vec<u8>] {
         &self.blobs
     }
 }
