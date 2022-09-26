@@ -4,7 +4,6 @@ use sbor::{Decode, Encode, TypeId};
 
 use crate::core::{FnIdentifier, Level, Receiver, ScryptoRENode};
 use crate::engine::types::*;
-use crate::resource::AccessRule;
 
 #[cfg(target_arch = "wasm32")]
 extern "C" {
@@ -39,5 +38,4 @@ pub enum RadixEngineInput {
     GetActor(),
     EmitLog(Level, String),
     GenerateUuid(),
-    CheckAccessRule(AccessRule, Vec<ProofId>),
 }
