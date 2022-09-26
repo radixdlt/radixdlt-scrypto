@@ -19,8 +19,9 @@ impl TypedInMemorySubstateStore {
     }
 
     pub fn with_bootstrap() -> Self {
-        let substate_store = Self::new();
-        bootstrap(substate_store)
+        let mut substate_store = Self::new();
+        bootstrap(&mut substate_store);
+        substate_store
     }
 }
 

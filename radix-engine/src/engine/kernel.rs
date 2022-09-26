@@ -244,7 +244,9 @@ where
                 Ok(RENodeId::Component(component_address))
             }
             HeapRENode::System(..) => {
-                panic!("Attempted to create System RENodeId");
+                let system_component_address =
+                    id_allocator.new_system_component_address(transaction_hash)?;
+                Ok(RENodeId::System(system_component_address))
             }
         }
     }
@@ -378,9 +380,15 @@ where
             {
                 // Only allow passing back global references
             } else {
-                return Err(RuntimeError::KernelError(
-                    KernelError::InvokeMethodInvalidReferencePass(node_id),
-                ));
+                let node_id = RENodeId::System(refed_component_address.clone());
+                if !Self::current_frame(&self.call_frames)
+                    .node_refs
+                    .contains_key(&node_id)
+                {
+                    return Err(RuntimeError::KernelError(
+                        KernelError::InvokeMethodInvalidReferencePass(node_id),
+                    ));
+                }
             }
         }
 
@@ -584,12 +592,20 @@ where
                     visible.insert(SubstateId::ComponentInfo(*refed_component_address));
                     next_frame_node_refs.insert(node_id.clone(), pointer.clone());
                 } else {
-                    return Err(RuntimeError::KernelError(
-                        KernelError::InvokeMethodInvalidReferencePass(node_id),
-                    ));
+                    let node_id = RENodeId::System(refed_component_address.clone());
+                    if !Self::current_frame(&self.call_frames)
+                        .node_refs
+                        .contains_key(&node_id)
+                    {
+                        return Err(RuntimeError::KernelError(
+                            KernelError::InvokeMethodInvalidReferencePass(node_id),
+                        ));
+                    }
                 }
             }
         }
+
+        AuthModule::function_auth(&fn_identifier, &mut self.call_frames)?;
 
         // start a new frame and run
         let (output, received_values) = {
@@ -715,7 +731,7 @@ where
                     match node_id {
                         // Let these be globally accessible for now
                         // TODO: Remove when references cleaned up
-                        RENodeId::ResourceManager(..) | RENodeId::System => {
+                        RENodeId::ResourceManager(..) | RENodeId::System(..) => {
                             RENodePointer::Store(*node_id)
                         }
                         _ => {
@@ -946,6 +962,7 @@ where
             }
         };
 
+        // TODO: Cleanup
         // Pass argument references
         for refed_component_address in &input.refed_component_addresses {
             let node_id = RENodeId::Component(refed_component_address.clone());
@@ -957,9 +974,15 @@ where
                 visible.insert(SubstateId::ComponentInfo(*refed_component_address));
                 next_frame_node_refs.insert(node_id.clone(), pointer.clone());
             } else {
-                return Err(RuntimeError::KernelError(
-                    KernelError::InvokeMethodInvalidReferencePass(node_id),
-                ));
+                let node_id = RENodeId::System(refed_component_address.clone());
+                if !Self::current_frame(&self.call_frames)
+                    .node_refs
+                    .contains_key(&node_id)
+                {
+                    return Err(RuntimeError::KernelError(
+                        KernelError::InvokeMethodInvalidReferencePass(node_id),
+                    ));
+                }
             }
         }
 
@@ -1317,6 +1340,16 @@ where
                     Substate::Resource(resource_manager),
                 );
                 (substates, non_fungibles)
+            }
+            HeapRENode::System(system) => {
+                let mut substates = HashMap::new();
+
+                let component_address: ComponentAddress = node_id.into();
+                substates.insert(
+                    SubstateId::System(component_address),
+                    Substate::System(system),
+                );
+                (substates, None)
             }
             _ => panic!("Not expected"),
         };

@@ -11,7 +11,7 @@ blueprint! {
 
         pub fn set_epoch(epoch: u64) {
             let input = RadixEngineInput::InvokeMethod(
-                Receiver::Ref(RENodeId::System),
+                Receiver::Ref(RENodeId::System(SYS_SYSTEM_COMPONENT)),
                 FnIdentifier::Native(NativeFnIdentifier::System(SystemFnIdentifier::SetEpoch)),
                 scrypto_encode(&SystemSetEpochInput { epoch }),
             );

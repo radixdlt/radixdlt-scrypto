@@ -16,14 +16,17 @@ fn test_set_mintable_with_self_resource_address() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(
+        .call_scrypto_function(
             package_address,
             "ResourceTest",
             "set_mintable_with_self_resource_address",
             args!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
 
     // Assert
     receipt.expect_commit_success();
@@ -40,10 +43,10 @@ fn test_resource_manager() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(package_address, "ResourceTest", "create_fungible", args!())
-        .call_function(package_address, "ResourceTest", "query", args!())
-        .call_function(package_address, "ResourceTest", "burn", args!())
-        .call_function(
+        .call_scrypto_function(package_address, "ResourceTest", "create_fungible", args!())
+        .call_scrypto_function(package_address, "ResourceTest", "query", args!())
+        .call_scrypto_function(package_address, "ResourceTest", "burn", args!())
+        .call_scrypto_function(
             package_address,
             "ResourceTest",
             "update_resource_metadata",
@@ -55,7 +58,10 @@ fn test_resource_manager() {
             args!(Expression::entire_worktop()),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
 
     // Assert
     receipt.expect_commit_success();
@@ -72,7 +78,7 @@ fn mint_with_bad_granularity_should_fail() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(
+        .call_scrypto_function(
             package_address,
             "ResourceTest",
             "create_fungible_and_mint",
@@ -84,7 +90,10 @@ fn mint_with_bad_granularity_should_fail() {
             args!(Expression::entire_worktop()),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -110,7 +119,7 @@ fn mint_too_much_should_fail() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(
+        .call_scrypto_function(
             package_address,
             "ResourceTest",
             "create_fungible_and_mint",
@@ -122,7 +131,10 @@ fn mint_too_much_should_fail() {
             args!(Expression::entire_worktop()),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
 
     // Assert
     receipt.expect_specific_failure(|e| {

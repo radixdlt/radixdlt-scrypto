@@ -20,7 +20,7 @@ pub enum RENodeId {
     Vault(VaultId),
     ResourceManager(ResourceAddress),
     Package(PackageAddress),
-    System,
+    System(ComponentAddress),
 }
 
 impl Into<(Hash, u32)> for RENodeId {
@@ -47,6 +47,7 @@ impl Into<ComponentAddress> for RENodeId {
     fn into(self) -> ComponentAddress {
         match self {
             RENodeId::Component(component_address) => component_address,
+            RENodeId::System(component_address) => component_address,
             _ => panic!("Not a component address"),
         }
     }
@@ -82,7 +83,7 @@ pub enum SubstateId {
     KeyValueStoreEntry(KeyValueStoreId, Vec<u8>),
     Vault(VaultId),
     ComponentState(ComponentAddress),
-    System,
+    System(ComponentAddress),
     Bucket(BucketId),
     Proof(ProofId),
     Worktop,

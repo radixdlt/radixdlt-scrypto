@@ -6,6 +6,7 @@ use radix_engine::ledger::{
 use radix_engine::types::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
+use transaction::model::AuthModule;
 
 fn test_auth_rule<'s, S: ReadableSubstateStore + WriteableSubstateStore>(
     test_runner: &mut TestRunner<'s, S>,
@@ -27,7 +28,8 @@ fn test_auth_rule<'s, S: ReadableSubstateStore + WriteableSubstateStore>(
             args!(Expression::entire_worktop()),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, signer_public_keys.to_vec());
+    let receipt =
+        test_runner.execute_manifest(manifest, AuthModule::pk_non_fungibles(signer_public_keys));
 
     // Assert
     if should_succeed {
@@ -243,7 +245,7 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_no_signature() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_method(SYS_FAUCET_COMPONENT, "free_xrd", args!())
+        .call_method(SYS_FAUCET_COMPONENT, "free", args!())
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.create_proof_from_bucket(bucket_id, |builder, proof_id| {
                 builder.push_to_auth_zone(proof_id);
@@ -278,7 +280,7 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_right_amount_of_proof() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_method(SYS_FAUCET_COMPONENT, "free_xrd", args!())
+        .call_method(SYS_FAUCET_COMPONENT, "free", args!())
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.create_proof_from_bucket(bucket_id, |builder, proof_id| {
                 builder.push_to_auth_zone(proof_id);
@@ -313,7 +315,7 @@ fn cannot_withdraw_from_my_any_xrd_auth_account_with_less_than_amount_of_proof()
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_method(SYS_FAUCET_COMPONENT, "free_xrd", args!())
+        .call_method(SYS_FAUCET_COMPONENT, "free", args!())
         .take_from_worktop_by_amount(Decimal::from("0.9"), RADIX_TOKEN, |builder, bucket_id| {
             builder.create_proof_from_bucket(bucket_id, |builder, proof_id| {
                 builder.push_to_auth_zone(proof_id);

@@ -6,7 +6,15 @@ use crate::types::*;
 pub struct AuthModule;
 
 impl AuthModule {
-    fn auth(
+    pub fn supervisor_id() -> NonFungibleId {
+        NonFungibleId::from_u32(0)
+    }
+
+    pub fn system_id() -> NonFungibleId {
+        NonFungibleId::from_u32(1)
+    }
+
+    fn check_auth(
         function: &FnIdentifier,
         method_auths: Vec<MethodAuthorization>,
         call_frames: &mut Vec<CallFrame>, // TODO remove this once heap is implemented
@@ -37,6 +45,17 @@ impl AuthModule {
         }
 
         Ok(())
+    }
+
+    pub fn function_auth(
+        fn_identifier: &FnIdentifier,
+        call_frames: &mut Vec<CallFrame>,
+    ) -> Result<(), RuntimeError> {
+        let auth = match fn_identifier {
+            FnIdentifier::Native(NativeFnIdentifier::System(system_fn)) => System::auth(system_fn),
+            _ => vec![],
+        };
+        Self::check_auth(fn_identifier, auth, call_frames)
     }
 
     pub fn receiver_auth<'s, R: FeeReserve>(
@@ -72,13 +91,9 @@ impl AuthModule {
                 vec![method_auth]
             }
             (
-                Receiver::Ref(RENodeId::System),
-                FnIdentifier::Native(NativeFnIdentifier::System(SystemFnIdentifier::SetEpoch)),
-            ) => {
-                vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(
-                    HardProofRule::Require(HardResourceOrNonFungible::Resource(SYSTEM_TOKEN)),
-                ))]
-            }
+                Receiver::Ref(RENodeId::System(..)),
+                FnIdentifier::Native(NativeFnIdentifier::System(system_fn)),
+            ) => System::auth(system_fn),
             (Receiver::Ref(RENodeId::Component(..)), FnIdentifier::Native(..)) => {
                 match node_pointer {
                     RENodePointer::Store(..) => vec![MethodAuthorization::DenyAll],
@@ -133,6 +148,6 @@ impl AuthModule {
             _ => vec![],
         };
 
-        Self::auth(function, auth, call_frames)
+        Self::check_auth(function, auth, call_frames)
     }
 }

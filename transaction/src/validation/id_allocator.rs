@@ -74,6 +74,15 @@ impl IdAllocator {
         }
     }
 
+    pub fn new_system_component_address(
+        &mut self,
+        transaction_hash: Hash,
+    ) -> Result<ComponentAddress, IdAllocationError> {
+        let mut data = transaction_hash.to_vec();
+        data.extend(self.next()?.to_le_bytes());
+        Ok(ComponentAddress::System(hash(data).lower_26_bytes()))
+    }
+
     /// Creates a new resource address.
     pub fn new_resource_address(
         &mut self,

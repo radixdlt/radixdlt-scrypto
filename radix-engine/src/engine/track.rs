@@ -158,7 +158,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                     | SubstateId::Vault(..)
                     | SubstateId::Package(..)
                     | SubstateId::ComponentState(..)
-                    | SubstateId::System => substate,
+                    | SubstateId::System(..) => substate,
                     _ => panic!(
                         "Attempting to borrow unsupported substate {:?}",
                         substate_id

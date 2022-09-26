@@ -20,7 +20,7 @@ fn test_max_call_depth_success() {
     // ============================
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(package_address, "Caller", "recursive", args!(15u32))
+        .call_scrypto_function(package_address, "Caller", "recursive", args!(15u32))
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -38,7 +38,7 @@ fn test_max_call_depth_failure() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(package_address, "Caller", "recursive", args!(16u32))
+        .call_scrypto_function(package_address, "Caller", "recursive", args!(16u32))
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 

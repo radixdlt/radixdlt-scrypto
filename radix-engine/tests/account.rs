@@ -25,7 +25,10 @@ fn can_withdraw_from_my_account() {
         )
         .call_method(other_account, "balance", args!(RADIX_TOKEN))
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
 
     // Assert
     let outputs = receipt.expect_commit_success();
@@ -59,7 +62,10 @@ fn can_withdraw_non_fungible_from_my_account() {
             args!(Expression::entire_worktop()),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
 
     // Assert
     receipt.expect_commit_success();
@@ -73,7 +79,7 @@ fn cannot_withdraw_from_other_account() {
     let (public_key, _, account) = test_runner.new_account();
     let (_, _, other_account) = test_runner.new_account();
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), account)
+        .lock_fee(10u32.into(), account)
         .withdraw_from_account(RADIX_TOKEN, other_account)
         .call_method(
             account,
@@ -83,7 +89,10 @@ fn cannot_withdraw_from_other_account() {
         .build();
 
     // Act
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
 
     // Assert
     receipt.expect_specific_failure(is_auth_error);
@@ -112,7 +121,10 @@ fn account_to_bucket_to_account() {
         .build();
 
     // Act
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
 
     // Assert
     receipt.expect_commit_success();
@@ -132,7 +144,10 @@ fn test_account_balance() {
         .build();
 
     // Act
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
     let outputs = receipt.expect_commit_success();
 
     // Assert

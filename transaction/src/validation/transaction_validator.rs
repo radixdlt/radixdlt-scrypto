@@ -72,7 +72,7 @@ impl TransactionValidator<NotarizedTransaction> for NotarizedTransactionValidato
             transaction,
             transaction_hash,
             instructions,
-            AuthModule::signer_keys_to_non_fungibles(&keys),
+            AuthModule::pk_non_fungibles(&keys),
             cost_unit_limit,
             tip_percentage,
             blobs,
@@ -117,9 +117,17 @@ impl NotarizedTransactionValidator {
         self.validate_header(&intent)
             .map_err(TransactionValidationError::HeaderValidationError)?;
 
+        let instructions = Self::validate_manifest(&intent.manifest)?;
+
+        return Ok(instructions);
+    }
+
+    pub fn validate_manifest(
+        manifest: &TransactionManifest,
+    ) -> Result<Vec<Instruction>, TransactionValidationError> {
         // semantic analysis
         let mut id_validator = IdValidator::new();
-        for inst in &intent.manifest.instructions {
+        for inst in &manifest.instructions {
             match inst.clone() {
                 Instruction::TakeFromWorktop { .. } => {
                     id_validator
@@ -204,7 +212,7 @@ impl NotarizedTransactionValidator {
             }
         }
 
-        return Ok(intent.manifest.instructions.clone());
+        Ok(manifest.instructions.clone())
     }
 
     pub fn validate_header(&self, intent: &TransactionIntent) -> Result<(), HeaderValidationError> {

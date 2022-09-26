@@ -15,7 +15,7 @@ impl RENodeProperties {
             RENodeId::Vault(..) => false,
             RENodeId::ResourceManager(..) => true,
             RENodeId::Package(..) => true,
-            RENodeId::System => true,
+            RENodeId::System(..) => true,
         }
     }
 
@@ -30,7 +30,7 @@ impl RENodeProperties {
                 RENodeId::ResourceManager(resource_address) => {
                     SubstateId::ResourceManager(resource_address)
                 }
-                RENodeId::System => SubstateId::System,
+                RENodeId::System(component_address) => SubstateId::System(component_address),
                 RENodeId::Worktop => SubstateId::Worktop,
                 RENodeId::Component(component_address) => {
                     SubstateId::ComponentInfo(component_address)
@@ -84,7 +84,7 @@ impl SubstateProperties {
             SubstateId::ResourceManager(resource_address) => {
                 RENodeId::ResourceManager(*resource_address)
             }
-            SubstateId::System => RENodeId::System,
+            SubstateId::System(component_address) => RENodeId::System(*component_address),
             SubstateId::Bucket(bucket_id) => RENodeId::Bucket(*bucket_id),
             SubstateId::Proof(proof_id) => RENodeId::Proof(*proof_id),
             SubstateId::Worktop => RENodeId::Worktop,
@@ -102,7 +102,7 @@ impl SubstateProperties {
             SubstateId::Vault(..) => false,
             SubstateId::Package(..) => false,
             SubstateId::ResourceManager(..) => false,
-            SubstateId::System => false,
+            SubstateId::System(..) => false,
             SubstateId::Bucket(..) => false,
             SubstateId::Proof(..) => false,
             SubstateId::Worktop => false, // TODO: Fix

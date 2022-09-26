@@ -1,5 +1,3 @@
-use transaction::model::*;
-
 use crate::constants::{DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN};
 use crate::engine::Track;
 use crate::engine::*;
@@ -9,6 +7,7 @@ use crate::model::*;
 use crate::transaction::*;
 use crate::types::*;
 use crate::wasm::*;
+use transaction::model::*;
 
 pub struct FeeReserveConfig {
     pub cost_unit_price: Decimal,

@@ -10,14 +10,14 @@ use crate::model::*;
 /// Represents a test transaction, for testing/simulation purpose only.
 pub struct TestTransaction {
     pub transaction: NotarizedTransaction,
-    pub signer_public_keys: Vec<PublicKey>,
+    pub initial_proofs: Vec<NonFungibleAddress>,
 }
 
 impl TestTransaction {
     pub fn new(
         manifest: TransactionManifest,
         nonce: u64,
-        signer_public_keys: Vec<PublicKey>,
+        initial_proofs: Vec<NonFungibleAddress>,
     ) -> Self {
         let transaction = TransactionBuilder::new()
             .header(TransactionHeader {
@@ -37,7 +37,7 @@ impl TestTransaction {
 
         Self {
             transaction,
-            signer_public_keys,
+            initial_proofs,
         }
     }
 }
@@ -64,7 +64,7 @@ impl ExecutableTransaction for TestTransaction {
     }
 
     fn initial_proofs(&self) -> Vec<NonFungibleAddress> {
-        AuthModule::signer_keys_to_non_fungibles(&self.signer_public_keys)
+        self.initial_proofs.clone()
     }
 
     fn blobs(&self) -> &[Vec<u8>] {

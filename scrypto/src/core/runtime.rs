@@ -2,6 +2,7 @@ use sbor::rust::borrow::ToOwned;
 use sbor::rust::string::*;
 use sbor::rust::vec::Vec;
 use sbor::*;
+use scrypto::constants::SYS_SYSTEM_COMPONENT;
 
 use crate::buffer::scrypto_encode;
 use crate::component::*;
@@ -9,6 +10,9 @@ use crate::core::*;
 use crate::crypto::*;
 use crate::engine::types::{RENodeId, SubstateId};
 use crate::engine::{api::*, call_engine};
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct SystemCreateInput {}
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct SystemGetCurrentEpochInput {}
@@ -91,7 +95,7 @@ impl Runtime {
     /// Returns the transaction hash.
     pub fn transaction_hash() -> Hash {
         let input = RadixEngineInput::InvokeMethod(
-            Receiver::Ref(RENodeId::System),
+            Receiver::Ref(RENodeId::System(SYS_SYSTEM_COMPONENT)),
             FnIdentifier::Native(NativeFnIdentifier::System(
                 SystemFnIdentifier::GetTransactionHash,
             )),
@@ -103,7 +107,7 @@ impl Runtime {
     /// Returns the current epoch number.
     pub fn current_epoch() -> u64 {
         let input = RadixEngineInput::InvokeMethod(
-            Receiver::Ref(RENodeId::System),
+            Receiver::Ref(RENodeId::System(SYS_SYSTEM_COMPONENT)),
             FnIdentifier::Native(NativeFnIdentifier::System(
                 SystemFnIdentifier::GetCurrentEpoch,
             )),

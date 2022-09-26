@@ -2,14 +2,23 @@ use scrypto::prelude::*;
 
 // Faucet - TestNet only
 blueprint! {
-    struct SysFaucet {
+    struct Faucet {
         vault: Vault,
         transactions: KeyValueStore<Hash, u64>,
     }
 
-    impl SysFaucet {
-        /// Gives away XRD tokens.
-        pub fn free_xrd(&mut self) -> Bucket {
+    impl Faucet {
+        pub fn new(bucket: Bucket) -> ComponentAddress {
+            Self {
+                vault: Vault::with_bucket(bucket),
+                transactions: KeyValueStore::new(),
+            }
+            .instantiate()
+            .globalize()
+        }
+
+        /// Gives away tokens.
+        pub fn free(&mut self) -> Bucket {
             let transaction_hash = Runtime::transaction_hash();
             let epoch = Runtime::current_epoch();
             assert!(self.transactions.get(&transaction_hash).is_none());

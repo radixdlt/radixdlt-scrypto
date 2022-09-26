@@ -101,6 +101,9 @@ impl NativeInterpreter {
                 ResourceManager::static_main(resource_manager_fn, input, system_api)
                     .map_err(|e| e.into())
             }
+            (None, NativeFnIdentifier::System(system_fn)) => {
+                System::static_main(system_fn, input, system_api).map_err(|e| e.into())
+            }
             (Some(Receiver::Consumed(node_id)), NativeFnIdentifier::Bucket(bucket_fn)) => {
                 Bucket::consuming_main(node_id, bucket_fn, input, system_api).map_err(|e| e.into())
             }
@@ -141,8 +144,11 @@ impl NativeInterpreter {
                 NativeFnIdentifier::ResourceManager(resource_manager_fn),
             ) => ResourceManager::main(resource_address, resource_manager_fn, input, system_api)
                 .map_err(|e| e.into()),
-            (Some(Receiver::Ref(RENodeId::System)), NativeFnIdentifier::System(system_fn)) => {
-                System::main(system_fn, input, system_api).map_err(|e| e.into())
+            (
+                Some(Receiver::Ref(RENodeId::System(component_address))),
+                NativeFnIdentifier::System(system_fn),
+            ) => {
+                System::main(component_address, system_fn, input, system_api).map_err(|e| e.into())
             }
             _ => {
                 return Err(RuntimeError::KernelError(KernelError::MethodNotFound(

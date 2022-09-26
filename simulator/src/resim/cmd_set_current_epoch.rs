@@ -48,7 +48,7 @@ impl SetCurrentEpoch {
         // Invoke the system
         kernel
             .invoke_method(
-                Receiver::Ref(RENodeId::System),
+                Receiver::Ref(RENodeId::System(SYS_SYSTEM_COMPONENT)),
                 FnIdentifier::Native(NativeFnIdentifier::System(SystemFnIdentifier::SetEpoch)),
                 ScryptoValue::from_typed(&SystemSetEpochInput { epoch: self.epoch }),
             )

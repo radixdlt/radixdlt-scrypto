@@ -25,6 +25,15 @@ pub enum TransactionResult {
     Reject(RejectResult),
 }
 
+impl TransactionResult {
+    pub fn expect_commit(self) -> CommitResult {
+        match self {
+            TransactionResult::Commit(c) => c,
+            TransactionResult::Reject(_) => panic!("Transaction was rejected"),
+        }
+    }
+}
+
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct CommitResult {
     pub outcome: TransactionOutcome,
@@ -38,6 +47,22 @@ pub struct CommitResult {
 pub enum TransactionOutcome {
     Success(Vec<Vec<u8>>),
     Failure(RuntimeError),
+}
+
+impl TransactionOutcome {
+    pub fn expect_success(self) -> Vec<Vec<u8>> {
+        match self {
+            TransactionOutcome::Success(results) => results,
+            TransactionOutcome::Failure(error) => panic!("Outcome was a failure: {}", error),
+        }
+    }
+
+    pub fn success_or_else<E, F: FnOnce(RuntimeError) -> E>(self, f: F) -> Result<Vec<Vec<u8>>, E> {
+        match self {
+            TransactionOutcome::Success(results) => Ok(results),
+            TransactionOutcome::Failure(error) => Err(f(error)),
+        }
+    }
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]

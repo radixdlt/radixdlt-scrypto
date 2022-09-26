@@ -49,6 +49,7 @@ pub enum ComponentFnIdentifier {
     Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe, PartialOrd, Ord,
 )]
 pub enum SystemFnIdentifier {
+    Create,
     GetTransactionHash,
     GetCurrentEpoch,
     SetEpoch,
