@@ -17,7 +17,7 @@ impl AuthModule {
     fn check_auth(
         function: &FnIdentifier,
         method_auths: Vec<MethodAuthorization>,
-        call_frames: &mut Vec<CallFrame>, // TODO remove this once heap is implemented
+        call_frames: &Vec<CallFrame>, // TODO remove this once heap is implemented
     ) -> Result<(), RuntimeError> {
         let mut auth_zones = vec![
             &call_frames
@@ -63,7 +63,7 @@ impl AuthModule {
         receiver: Receiver,
         input: &ScryptoValue,
         node_pointer: RENodePointer,
-        call_frames: &mut Vec<CallFrame>,
+        call_frames: &Vec<CallFrame>,
         track: &mut Track<'s, R>,
     ) -> Result<(), RuntimeError> {
         let auth = match (receiver, function) {
@@ -76,7 +76,8 @@ impl AuthModule {
                     node_ref.bucket().resource_address()
                 };
                 let resource_manager = track
-                    .read_substate(SubstateId::ResourceManager(resource_address))
+                    .borrow_substate(SubstateId::ResourceManager(resource_address))
+                    .raw()
                     .resource_manager();
                 let method_auth = resource_manager.get_bucket_auth(*bucket_fn);
                 vec![method_auth.clone()]
@@ -86,7 +87,10 @@ impl AuthModule {
                 FnIdentifier::Native(NativeFnIdentifier::ResourceManager(fn_ident)),
             ) => {
                 let substate_id = SubstateId::ResourceManager(resource_address);
-                let resource_manager = track.read_substate(substate_id.clone()).resource_manager();
+                let resource_manager = track
+                    .borrow_substate(substate_id.clone())
+                    .raw()
+                    .resource_manager();
                 let method_auth = resource_manager.get_auth(*fn_ident, &input).clone();
                 vec![method_auth]
             }
@@ -112,7 +116,11 @@ impl AuthModule {
                 // TODO: Remove this assumption
 
                 let package_substate_id = SubstateId::Package(*package_address);
-                let package = track.read_substate(package_substate_id.clone()).package();
+                let package = track
+                    .borrow_substate(package_substate_id.clone())
+                    .raw()
+                    .package()
+                    .clone();
                 let abi = package
                     .blueprint_abi(blueprint_name)
                     .expect("Blueprint not found for existing component");
@@ -137,11 +145,12 @@ impl AuthModule {
                 FnIdentifier::Native(NativeFnIdentifier::Vault(vault_fn)),
             ) => {
                 let resource_address = {
-                    let node_ref = node_pointer.to_ref(call_frames, track);
+                    let mut node_ref = node_pointer.to_ref(call_frames, track);
                     node_ref.vault().resource_address()
                 };
                 let resource_manager = track
-                    .read_substate(SubstateId::ResourceManager(resource_address))
+                    .borrow_substate(SubstateId::ResourceManager(resource_address))
+                    .raw()
                     .resource_manager();
                 vec![resource_manager.get_vault_auth(*vault_fn).clone()]
             }

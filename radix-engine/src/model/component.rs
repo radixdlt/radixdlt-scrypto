@@ -139,7 +139,7 @@ impl ComponentInfo {
                 let mut ref_mut = system_api
                     .substate_borrow_mut(&substate_id)
                     .map_err(InvokeError::Downstream)?;
-                let component_info = ref_mut.component_info();
+                let component_info = ref_mut.component_info_mut();
                 component_info.access_rules.push(input.access_rules);
                 system_api
                     .substate_return_mut(ref_mut)

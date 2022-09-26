@@ -7,17 +7,17 @@ use crate::types::*;
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub enum Substate {
     System(System),
-    Resource(ResourceManager),
+    ResourceManager(ResourceManager),
     ComponentInfo(ComponentInfo),
     ComponentState(ComponentState),
     Package(Package),
-    Vault(Vault),
-    NonFungible(NonFungibleWrapper),
-    KeyValueStoreEntry(KeyValueStoreEntryWrapper),
+    Vault(VaultSubstate),
+    NonFungible(NonFungibleSubstate),
+    KeyValueStoreEntry(KeyValueStoreEntrySubstate),
 }
 
 impl Substate {
-    pub fn vault_mut(&mut self) -> &mut Vault {
+    pub fn vault_mut(&mut self) -> &mut VaultSubstate {
         if let Substate::Vault(vault) = self {
             vault
         } else {
@@ -25,7 +25,7 @@ impl Substate {
         }
     }
 
-    pub fn vault(&self) -> &Vault {
+    pub fn vault(&self) -> &VaultSubstate {
         if let Substate::Vault(vault) = self {
             vault
         } else {
@@ -34,7 +34,7 @@ impl Substate {
     }
 
     pub fn resource_manager_mut(&mut self) -> &mut ResourceManager {
-        if let Substate::Resource(resource_manager) = self {
+        if let Substate::ResourceManager(resource_manager) = self {
             resource_manager
         } else {
             panic!("Not a resource manager");
@@ -58,7 +58,7 @@ impl Substate {
     }
 
     pub fn resource_manager(&self) -> &ResourceManager {
-        if let Substate::Resource(resource_manager) = self {
+        if let Substate::ResourceManager(resource_manager) = self {
             resource_manager
         } else {
             panic!("Not a resource manager");
@@ -97,7 +97,7 @@ impl Substate {
         }
     }
 
-    pub fn non_fungible(&self) -> &NonFungibleWrapper {
+    pub fn non_fungible(&self) -> &NonFungibleSubstate {
         if let Substate::NonFungible(non_fungible) = self {
             non_fungible
         } else {
@@ -105,7 +105,7 @@ impl Substate {
         }
     }
 
-    pub fn kv_entry(&self) -> &KeyValueStoreEntryWrapper {
+    pub fn kv_entry(&self) -> &KeyValueStoreEntrySubstate {
         if let Substate::KeyValueStoreEntry(kv_entry) = self {
             kv_entry
         } else {
@@ -140,23 +140,23 @@ impl Into<Substate> for ComponentState {
 
 impl Into<Substate> for ResourceManager {
     fn into(self) -> Substate {
-        Substate::Resource(self)
+        Substate::ResourceManager(self)
     }
 }
 
-impl Into<Substate> for Vault {
+impl Into<Substate> for VaultSubstate {
     fn into(self) -> Substate {
         Substate::Vault(self)
     }
 }
 
-impl Into<Substate> for NonFungibleWrapper {
+impl Into<Substate> for NonFungibleSubstate {
     fn into(self) -> Substate {
         Substate::NonFungible(self)
     }
 }
 
-impl Into<Substate> for KeyValueStoreEntryWrapper {
+impl Into<Substate> for KeyValueStoreEntrySubstate {
     fn into(self) -> Substate {
         Substate::KeyValueStoreEntry(self)
     }
@@ -184,7 +184,7 @@ impl Into<ComponentState> for Substate {
 
 impl Into<ResourceManager> for Substate {
     fn into(self) -> ResourceManager {
-        if let Substate::Resource(resource_manager) = self {
+        if let Substate::ResourceManager(resource_manager) = self {
             resource_manager
         } else {
             panic!("Not a resource manager");
@@ -202,8 +202,8 @@ impl Into<Package> for Substate {
     }
 }
 
-impl Into<NonFungibleWrapper> for Substate {
-    fn into(self) -> NonFungibleWrapper {
+impl Into<NonFungibleSubstate> for Substate {
+    fn into(self) -> NonFungibleSubstate {
         if let Substate::NonFungible(non_fungible) = self {
             non_fungible
         } else {
@@ -212,8 +212,8 @@ impl Into<NonFungibleWrapper> for Substate {
     }
 }
 
-impl Into<KeyValueStoreEntryWrapper> for Substate {
-    fn into(self) -> KeyValueStoreEntryWrapper {
+impl Into<KeyValueStoreEntrySubstate> for Substate {
+    fn into(self) -> KeyValueStoreEntrySubstate {
         if let Substate::KeyValueStoreEntry(kv_entry) = self {
             kv_entry
         } else {
@@ -222,8 +222,8 @@ impl Into<KeyValueStoreEntryWrapper> for Substate {
     }
 }
 
-impl Into<Vault> for Substate {
-    fn into(self) -> Vault {
+impl Into<VaultSubstate> for Substate {
+    fn into(self) -> VaultSubstate {
         if let Substate::Vault(vault) = self {
             vault
         } else {

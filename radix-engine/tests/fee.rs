@@ -2,7 +2,7 @@ use radix_engine::engine::ApplicationError;
 use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::ledger::WriteableSubstateStore;
-use radix_engine::model::KeyValueStoreEntryWrapper;
+use radix_engine::model::KeyValueStoreEntrySubstate;
 use radix_engine::model::WorktopError;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
@@ -166,13 +166,13 @@ where
     if let Some(account_comp) = test_runner.inspect_component_state(account_address) {
         let account_comp_state = ScryptoValue::from_slice(account_comp.state()).unwrap();
         if let Some(kv_store_id) = account_comp_state.kv_store_ids.iter().next() {
-            if let Some(KeyValueStoreEntryWrapper(Some(value))) = test_runner
+            if let Some(KeyValueStoreEntrySubstate(Some(value))) = test_runner
                 .inspect_key_value_entry(kv_store_id.clone(), scrypto_encode(&resource_address))
             {
                 let kv_entry_value = ScryptoValue::from_slice(&value).unwrap();
                 let vault_id = kv_entry_value.vault_ids.iter().next().unwrap();
                 let vault = test_runner.inspect_vault(vault_id.clone()).unwrap();
-                return vault.total_amount();
+                return vault.0.amount();
             }
         }
     }

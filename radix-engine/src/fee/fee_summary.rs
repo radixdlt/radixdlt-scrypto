@@ -1,4 +1,4 @@
-use crate::model::ResourceContainer;
+use crate::model::Resource;
 use crate::types::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -18,7 +18,7 @@ pub struct FeeSummary {
     /// The total amount of XRD tipped to validators.
     pub tipped: Decimal,
     /// The fee payments
-    pub payments: Vec<(VaultId, ResourceContainer, bool)>,
+    pub payments: Vec<(VaultId, Resource, bool)>,
     /// The cost breakdown
     pub cost_breakdown: HashMap<String, u32>,
 }

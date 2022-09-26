@@ -2,7 +2,7 @@ use crate::engine::node::*;
 use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::AuthZone;
-use crate::model::ResourceContainer;
+use crate::model::Resource;
 use crate::types::*;
 use crate::wasm::*;
 
@@ -20,9 +20,9 @@ where
     fn lock_fee(
         &mut self,
         vault_id: VaultId,
-        fee: ResourceContainer,
+        fee: Resource,
         contingent: bool,
-    ) -> Result<ResourceContainer, RuntimeError>;
+    ) -> Result<Resource, RuntimeError>;
 
     fn invoke_function(
         &mut self,

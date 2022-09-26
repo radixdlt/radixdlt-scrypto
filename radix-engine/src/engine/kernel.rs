@@ -106,9 +106,10 @@ where
         }
         for (resource_address, non_fungible_ids) in proofs_to_create {
             let bucket_id = match kernel
-                .node_create(HeapRENode::Bucket(Bucket::new(
-                    ResourceContainer::new_non_fungible(resource_address, non_fungible_ids),
-                )))
+                .node_create(HeapRENode::Bucket(Bucket::new(Resource::new_non_fungible(
+                    resource_address,
+                    non_fungible_ids,
+                ))))
                 .expect("Failed to create bucket")
             {
                 RENodeId::Bucket(bucket_id) => bucket_id,
@@ -118,7 +119,7 @@ where
             let mut node_ref = kernel
                 .substate_borrow_mut(&substate_id)
                 .expect("Failed to borrow bucket substate");
-            let bucket = node_ref.bucket();
+            let bucket = node_ref.bucket_mut();
             let proof = bucket
                 .create_proof(bucket_id)
                 .expect("Failed to create proof");
@@ -190,7 +191,9 @@ where
 
         // TODO: Remove, integrate with substate borrow mechanism
         if matches!(substate_id, SubstateId::ComponentInfo(..)) {
-            node_pointer.release_lock(substate_id.clone(), false, track);
+            node_pointer
+                .release_lock(substate_id.clone(), false, track)
+                .map_err(RuntimeError::KernelError)?;
         }
 
         Ok((node_pointer.clone(), current_value))
@@ -274,7 +277,8 @@ where
                     let output = {
                         let package = self
                             .track
-                            .read_substate(SubstateId::Package(package_address))
+                            .borrow_substate(SubstateId::Package(package_address))
+                            .raw()
                             .package()
                             .clone();
                         for m in &mut self.modules {
@@ -332,7 +336,8 @@ where
 
                     let package = self
                         .track
-                        .read_substate(SubstateId::Package(package_address))
+                        .borrow_substate(SubstateId::Package(package_address))
+                        .raw()
                         .package();
                     let blueprint_abi = package
                         .blueprint_abi(&blueprint_name)
@@ -428,9 +433,9 @@ where
     fn lock_fee(
         &mut self,
         vault_id: VaultId,
-        mut fee: ResourceContainer,
+        mut fee: Resource,
         contingent: bool,
-    ) -> Result<ResourceContainer, RuntimeError> {
+    ) -> Result<Resource, RuntimeError> {
         for m in &mut self.modules {
             fee = m
                 .on_lock_fee(
@@ -506,19 +511,12 @@ where
             } => {
                 self.track
                     .acquire_lock(SubstateId::Package(package_address.clone()), false, false)
-                    .map_err(|e| match e {
-                        TrackError::NotFound => RuntimeError::KernelError(
-                            KernelError::PackageNotFound(*package_address),
-                        ),
-                        TrackError::Reentrancy => {
-                            panic!("Package reentrancy error should never occur.")
-                        }
-                        TrackError::StateTrackError(..) => panic!("Unexpected"),
-                    })?;
+                    .map_err(|e| RuntimeError::KernelError(KernelError::SubstateError(e)))?;
                 locked_values.insert(SubstateId::Package(package_address.clone()));
                 let package = self
                     .track
-                    .read_substate(SubstateId::Package(package_address.clone()))
+                    .borrow_substate(SubstateId::Package(package_address.clone()))
+                    .raw()
                     .package();
                 let abi =
                     package
@@ -577,7 +575,9 @@ where
                 node_pointer
                     .acquire_lock(substate_id.clone(), false, false, &mut self.track)
                     .map_err(RuntimeError::KernelError)?;
-                node_pointer.release_lock(substate_id, false, &mut self.track);
+                node_pointer
+                    .release_lock(substate_id, false, &mut self.track)
+                    .map_err(RuntimeError::KernelError)?;
                 next_frame_node_refs.insert(node_id, node_pointer);
             }
         } else {
@@ -629,7 +629,10 @@ where
         // Release locked addresses
         for l in locked_values {
             // TODO: refactor after introducing `Lock` representation.
-            self.track.release_lock(l.clone(), false);
+            self.track
+                .release_lock(l.clone(), false)
+                .map_err(KernelError::SubstateError)
+                .map_err(RuntimeError::KernelError)?;
         }
 
         // move buckets and proofs to this process.
@@ -718,26 +721,28 @@ where
         let auth_zone_frame_id = match &receiver {
             Receiver::Ref(node_id) | Receiver::Consumed(node_id) => {
                 // Find node
-                let current_frame = Self::current_frame(&self.call_frames);
-                let node_pointer = if current_frame.owned_heap_nodes.contains_key(&node_id) {
-                    RENodePointer::Heap {
-                        frame_id: current_frame.depth,
-                        root: node_id.clone(),
-                        id: None,
-                    }
-                } else if let Some(pointer) = current_frame.node_refs.get(&node_id) {
-                    pointer.clone()
-                } else {
-                    match node_id {
-                        // Let these be globally accessible for now
-                        // TODO: Remove when references cleaned up
-                        RENodeId::ResourceManager(..) | RENodeId::System(..) => {
-                            RENodePointer::Store(*node_id)
+                let node_pointer = {
+                    let current_frame = Self::current_frame(&self.call_frames);
+                    if current_frame.owned_heap_nodes.contains_key(&node_id) {
+                        RENodePointer::Heap {
+                            frame_id: current_frame.depth,
+                            root: node_id.clone(),
+                            id: None,
                         }
-                        _ => {
-                            return Err(RuntimeError::KernelError(
-                                KernelError::InvokeMethodInvalidReceiver(*node_id),
-                            ))
+                    } else if let Some(pointer) = current_frame.node_refs.get(&node_id) {
+                        pointer.clone()
+                    } else {
+                        match node_id {
+                            // Let these be globally accessible for now
+                            // TODO: Remove when references cleaned up
+                            RENodeId::ResourceManager(..) | RENodeId::System(..) => {
+                                RENodePointer::Store(*node_id)
+                            }
+                            _ => {
+                                return Err(RuntimeError::KernelError(
+                                    KernelError::InvokeMethodInvalidReceiver(*node_id),
+                                ))
+                            }
                         }
                     }
                 };
@@ -807,7 +812,7 @@ where
                 match node_id {
                     RENodeId::Component(..) => {
                         let package_address = {
-                            let node_ref = node_pointer.to_ref(&self.call_frames, &self.track);
+                            let node_ref = node_pointer.to_ref(&self.call_frames, &mut self.track);
                             node_ref.component_info().package_address()
                         };
                         let package_substate_id = SubstateId::Package(package_address);
@@ -830,7 +835,7 @@ where
                     }
                     RENodeId::Bucket(..) => {
                         let resource_address = {
-                            let node_ref = node_pointer.to_ref(&self.call_frames, &self.track);
+                            let node_ref = node_pointer.to_ref(&self.call_frames, &mut self.track);
                             node_ref.bucket().resource_address()
                         };
                         let resource_substate_id = SubstateId::ResourceManager(resource_address);
@@ -849,7 +854,8 @@ where
                     }
                     RENodeId::Vault(..) => {
                         let resource_address = {
-                            let node_ref = node_pointer.to_ref(&self.call_frames, &self.track);
+                            let mut node_ref =
+                                node_pointer.to_ref(&self.call_frames, &mut self.track);
                             node_ref.vault().resource_address()
                         };
                         let resource_substate_id = SubstateId::ResourceManager(resource_address);
@@ -905,9 +911,10 @@ where
                     }
                 }
 
+                let current_frame = Self::current_frame(&self.call_frames);
                 self.execution_trace.trace_invoke_method(
                     &self.call_frames,
-                    &self.track,
+                    &mut self.track,
                     &current_frame.actor,
                     &fn_identifier,
                     node_id,
@@ -940,7 +947,9 @@ where
                 }
 
                 for (node_pointer, substate_id, write_through) in temporary_locks {
-                    node_pointer.release_lock(substate_id, write_through, &mut self.track);
+                    node_pointer
+                        .release_lock(substate_id, write_through, &mut self.track)
+                        .map_err(RuntimeError::KernelError)?;
                 }
 
                 next_frame_node_refs.insert(node_id.clone(), node_pointer.clone());
@@ -1008,7 +1017,9 @@ where
         // Release locked addresses
         for (node_pointer, substate_id, write_through) in locked_pointers {
             // TODO: refactor after introducing `Lock` representation.
-            node_pointer.release_lock(substate_id, write_through, &mut self.track);
+            node_pointer
+                .release_lock(substate_id, write_through, &mut self.track)
+                .map_err(RuntimeError::KernelError)?;
         }
 
         // move buckets and proofs to this process.
@@ -1070,7 +1081,7 @@ where
             .map_err(RuntimeError::ModuleError)?;
         }
 
-        Ok(node_pointer.to_ref(&self.call_frames, &self.track))
+        Ok(node_pointer.to_ref(&self.call_frames, &mut self.track))
     }
 
     fn substate_borrow_mut(
@@ -1337,7 +1348,7 @@ where
                 let resource_address: ResourceAddress = node_id.into();
                 substates.insert(
                     SubstateId::ResourceManager(resource_address),
-                    Substate::Resource(resource_manager),
+                    Substate::ResourceManager(resource_manager),
                 );
                 (substates, non_fungibles)
             }
@@ -1363,7 +1374,8 @@ where
         for (id, value) in root_node.child_nodes.into_iter() {
             to_store_values.insert(id, value);
         }
-        insert_non_root_nodes(self.track, to_store_values);
+        insert_non_root_nodes(self.track, to_store_values)
+            .map_err(|e| RuntimeError::KernelError(KernelError::NodeToSubstateFailure(e)))?;
 
         if let Some(non_fungibles) = maybe_non_fungibles {
             let resource_address: ResourceAddress = node_id.into();
@@ -1372,7 +1384,7 @@ where
                 self.track.set_key_value(
                     parent_address.clone(),
                     id.to_vec(),
-                    Substate::NonFungible(NonFungibleWrapper(Some(non_fungible))),
+                    Substate::NonFungible(NonFungibleSubstate(Some(non_fungible))),
                 );
             }
         }
@@ -1567,7 +1579,9 @@ where
 
         // Write values
         let mut node_ref = pointer.to_ref_mut(&mut self.call_frames, &mut self.track);
-        node_ref.write_value(substate_id, value, taken_nodes);
+        node_ref
+            .write_value(substate_id, value, taken_nodes)
+            .map_err(|e| RuntimeError::KernelError(KernelError::NodeToSubstateFailure(e)))?;
 
         for m in &mut self.modules {
             m.post_sys_call(

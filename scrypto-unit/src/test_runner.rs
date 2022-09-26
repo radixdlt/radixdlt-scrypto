@@ -101,14 +101,17 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         &mut self,
         kv_store_id: KeyValueStoreId,
         key: Vec<u8>,
-    ) -> Option<radix_engine::model::KeyValueStoreEntryWrapper> {
+    ) -> Option<radix_engine::model::KeyValueStoreEntrySubstate> {
         self.execution_stores
             .get_root_store()
             .get_substate(&SubstateId::KeyValueStoreEntry(kv_store_id, key))
             .map(|output| output.substate.into())
     }
 
-    pub fn inspect_vault(&mut self, vault_id: VaultId) -> Option<radix_engine::model::Vault> {
+    pub fn inspect_vault(
+        &mut self,
+        vault_id: VaultId,
+    ) -> Option<radix_engine::model::VaultSubstate> {
         self.execution_stores
             .get_root_store()
             .get_substate(&SubstateId::Vault(vault_id))

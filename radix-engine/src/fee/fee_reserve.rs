@@ -1,6 +1,6 @@
 use crate::constants::{DEFAULT_COST_UNIT_LIMIT, DEFAULT_COST_UNIT_PRICE, DEFAULT_SYSTEM_LOAN};
 use crate::fee::FeeSummary;
-use crate::model::ResourceContainer;
+use crate::model::Resource;
 use crate::types::*;
 use sbor::rust::cmp::min;
 
@@ -23,9 +23,9 @@ pub trait FeeReserve {
     fn repay(
         &mut self,
         vault_id: VaultId,
-        fee: ResourceContainer,
+        fee: Resource,
         contingent: bool,
-    ) -> Result<ResourceContainer, FeeReserveError>;
+    ) -> Result<Resource, FeeReserveError>;
 
     fn finalize(self) -> FeeSummary;
 
@@ -46,7 +46,7 @@ pub struct SystemLoanFeeReserve {
     /// The tip percentage
     tip_percentage: u32,
     /// Payments made during the execution of a transaction.
-    payments: Vec<(VaultId, ResourceContainer, bool)>,
+    payments: Vec<(VaultId, Resource, bool)>,
     /// The balance cost units
     balance: u32,
     /// The number of cost units owed to the system
@@ -144,15 +144,15 @@ impl FeeReserve for SystemLoanFeeReserve {
     fn repay(
         &mut self,
         vault_id: VaultId,
-        mut fee: ResourceContainer,
+        mut fee: Resource,
         contingent: bool,
-    ) -> Result<ResourceContainer, FeeReserveError> {
+    ) -> Result<Resource, FeeReserveError> {
         let effective_cost_unit_price =
             self.cost_unit_price + self.cost_unit_price * self.tip_percentage / 100;
 
         // TODO: Add `TryInto` implementation once the new decimal types are in place
         let n = u32::from_str(
-            (fee.liquid_amount() / effective_cost_unit_price)
+            (fee.amount() / effective_cost_unit_price)
                 .round(0, RoundingMode::TowardsZero)
                 .to_string()
                 .as_str(),
@@ -244,8 +244,8 @@ mod tests {
 
     const TEST_VAULT_ID: VaultId = (Hash([0u8; 32]), 1);
 
-    fn xrd<T: Into<Decimal>>(amount: T) -> ResourceContainer {
-        ResourceContainer::new_fungible(RADIX_TOKEN, 18, amount.into())
+    fn xrd<T: Into<Decimal>>(amount: T) -> Resource {
+        Resource::new_fungible(RADIX_TOKEN, 18, amount.into())
     }
 
     #[test]
