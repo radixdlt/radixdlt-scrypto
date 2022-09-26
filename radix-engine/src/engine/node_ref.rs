@@ -254,7 +254,7 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
                     RENodeId::KeyValueStore(kv_store_id) => {
                         SubstateId::KeyValueStoreSpace(*kv_store_id)
                     }
-                    _ => panic!("Unexpeceted"),
+                    _ => panic!("Unexpected"),
                 };
                 track.set_key_value(
                     parent_substate_id,
@@ -284,7 +284,7 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
                     RENodeId::KeyValueStore(kv_store_id) => {
                         SubstateId::KeyValueStoreSpace(*kv_store_id)
                     }
-                    _ => panic!("Unexpeceted"),
+                    _ => panic!("Unexpected"),
                 };
                 let substate_value = track.read_key_value(parent_substate_id, key.to_vec());
                 substate_value.into()
@@ -327,7 +327,7 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
                     RENodeId::ResourceManager(resource_address) => {
                         SubstateId::NonFungibleSpace(*resource_address)
                     }
-                    _ => panic!("Unexpeceted"),
+                    _ => panic!("Unexpected"),
                 };
                 let substate_value = track.read_key_value(parent_substate_id, id.to_vec());
                 substate_value.into()
@@ -347,7 +347,7 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
                     RENodeId::ResourceManager(resource_address) => {
                         SubstateId::NonFungibleSpace(*resource_address)
                     }
-                    _ => panic!("Unexpeceted"),
+                    _ => panic!("Unexpected"),
                 };
                 track.set_key_value(
                     parent_substate_id,
@@ -376,7 +376,7 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
                     RENodeId::ResourceManager(resource_address) => {
                         SubstateId::NonFungibleSpace(*resource_address)
                     }
-                    _ => panic!("Unexpeceted"),
+                    _ => panic!("Unexpected"),
                 };
                 let wrapper: NonFungibleSubstate = scrypto_decode(&value.raw)
                     .expect("Attempted to put non-NonFungibleSubstate for non-fungible.");
@@ -407,7 +407,7 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
                     RENodeId::Component(component_address) => {
                         SubstateId::ComponentState(*component_address)
                     }
-                    _ => panic!("Unexpeceted"),
+                    _ => panic!("Unexpected"),
                 };
                 *track.borrow_substate_mut(substate_id).borrow_mut() =
                     ComponentStateSubstate::new(value.raw).into();
