@@ -697,30 +697,31 @@ where
         let auth_zone_frame_id = match &receiver {
             Receiver::Ref(node_id) | Receiver::Consumed(node_id) => {
                 // Find node
-                let current_frame = Self::current_frame(&self.call_frames);
-                let node_pointer = if current_frame.owned_heap_nodes.contains_key(&node_id) {
-                    RENodePointer::Heap {
-                        frame_id: current_frame.depth,
-                        root: node_id.clone(),
-                        id: None,
-                    }
-                } else if let Some(pointer) = current_frame.node_refs.get(&node_id) {
-                    pointer.clone()
-                } else {
-                    match node_id {
-                        // Let these be globally accessible for now
-                        // TODO: Remove when references cleaned up
-                        RENodeId::ResourceManager(..) | RENodeId::System => {
-                            RENodePointer::Store(*node_id)
+                let node_pointer = {
+                    let current_frame = Self::current_frame(&self.call_frames);
+                    if current_frame.owned_heap_nodes.contains_key(&node_id) {
+                        RENodePointer::Heap {
+                            frame_id: current_frame.depth,
+                            root: node_id.clone(),
+                            id: None,
                         }
-                        _ => {
-                            return Err(RuntimeError::KernelError(
-                                KernelError::InvokeMethodInvalidReceiver(*node_id),
-                            ))
+                    } else if let Some(pointer) = current_frame.node_refs.get(&node_id) {
+                        pointer.clone()
+                    } else {
+                        match node_id {
+                            // Let these be globally accessible for now
+                            // TODO: Remove when references cleaned up
+                            RENodeId::ResourceManager(..) | RENodeId::System => {
+                                RENodePointer::Store(*node_id)
+                            }
+                            _ => {
+                                return Err(RuntimeError::KernelError(
+                                    KernelError::InvokeMethodInvalidReceiver(*node_id),
+                                ))
+                            }
                         }
                     }
                 };
-                drop(current_frame);
 
                 // Lock Primary Substate
                 let substate_id =
@@ -886,6 +887,7 @@ where
                     }
                 }
 
+                let current_frame = Self::current_frame(&self.call_frames);
                 self.execution_trace.trace_invoke_method(
                     &self.call_frames,
                     &mut self.track,

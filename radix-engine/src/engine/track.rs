@@ -43,6 +43,10 @@ pub enum SubstateCache {
     Converted(Vault),
 }
 
+// TODO: explore the following options
+// 1. Make it an invariant that every node must be persistable at the end of a transaction, so no need of this error.
+// 2. Make `Track` more dynamic and allow nodes to define whether it's ready for persistence.
+// 3. Make transient property part of substate rather than node.
 #[derive(Debug, Encode, Decode, TypeId)]
 pub enum NodeToSubstateFailure {
     VaultPartiallyLocked,
