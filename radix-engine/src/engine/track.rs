@@ -2,17 +2,18 @@ use transaction::model::Validated;
 
 use crate::engine::AppStateTrack;
 use crate::engine::BaseStateTrack;
-use crate::engine::StateTrackError;
 use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::fee::FeeReserveError;
 use crate::fee::FeeSummary;
 use crate::fee::FeeTable;
 use crate::ledger::*;
-use crate::model::Bucket;
-use crate::model::KeyValueStoreEntryWrapper;
-use crate::model::NonFungibleWrapper;
-use crate::model::ResourceContainer;
+use crate::model::KeyValueStoreEntrySubstate;
+use crate::model::LockableResource;
+use crate::model::NonFungibleSubstate;
+use crate::model::Resource;
+use crate::model::Vault;
+use crate::model::VaultSubstate;
 use crate::transaction::CommitResult;
 use crate::transaction::EntityChanges;
 use crate::transaction::RejectResult;
@@ -21,20 +22,97 @@ use crate::transaction::TransactionResult;
 use crate::types::*;
 
 #[derive(Debug)]
-pub enum BorrowedSubstate {
-    Loaded(Substate, u32),
-    LoadedMut(Substate),
-    Taken,
+pub enum LockState {
+    Read(usize),
+    Write,
 }
 
-impl BorrowedSubstate {
-    fn loaded(value: Substate, mutable: bool) -> Self {
-        if mutable {
-            BorrowedSubstate::LoadedMut(value)
-        } else {
-            BorrowedSubstate::Loaded(value, 1)
+impl LockState {
+    pub fn no_lock() -> Self {
+        Self::Read(0)
+    }
+
+    pub fn is_free(&self) -> bool {
+        matches!(self, LockState::Read(0))
+    }
+}
+
+#[derive(Debug)]
+pub enum SubstateCache {
+    Raw(Substate),
+    Converted(Vault),
+}
+
+// TODO: explore the following options
+// 1. Make it an invariant that every node must be persistable at the end of a transaction, so no need of this error.
+// 2. Make `Track` more dynamic and allow nodes to define whether it's ready for persistence.
+// 3. Make transient property part of substate rather than node.
+#[derive(Debug, Encode, Decode, TypeId)]
+pub enum NodeToSubstateFailure {
+    VaultPartiallyLocked,
+}
+
+impl SubstateCache {
+    pub fn raw(&self) -> &Substate {
+        match self {
+            Self::Raw(substate) => substate,
+            Self::Converted(_) => {
+                panic!("Attempted to read a raw substate which has been converted into a node")
+            }
         }
     }
+
+    pub fn raw_mut(&mut self) -> &mut Substate {
+        match self {
+            Self::Raw(substate) => substate,
+            Self::Converted(_) => {
+                panic!("Attempted to read a raw substate which has been converted into a node")
+            }
+        }
+    }
+
+    // Turns substate into a node for dynamic behaviors
+    pub fn convert_to_node(&mut self) {
+        match self {
+            SubstateCache::Raw(substate) => {
+                let substate: VaultSubstate = substate.clone().into();
+                *self = Self::Converted(Vault::new(substate.0));
+            }
+            SubstateCache::Converted(_) => {}
+        }
+    }
+
+    pub fn convert_to_substate(self) -> Result<Substate, NodeToSubstateFailure> {
+        match self {
+            SubstateCache::Raw(substate) => Ok(substate),
+            SubstateCache::Converted(vault) => {
+                let resource = vault
+                    .resource()
+                    .map_err(|_| NodeToSubstateFailure::VaultPartiallyLocked)?;
+                Ok(Substate::Vault(VaultSubstate(resource)))
+            }
+        }
+    }
+
+    pub fn vault(&mut self) -> &Vault {
+        match self {
+            Self::Raw(_) => panic!("Attempted to read a raw substate as a node"),
+            Self::Converted(vault) => vault,
+        }
+    }
+
+    pub fn vault_mut(&mut self) -> &mut Vault {
+        match self {
+            Self::Raw(_) => panic!("Attempted to read a raw substate as a node"),
+            Self::Converted(vault) => vault,
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct BorrowedSubstate {
+    pub substate: SubstateCache,
+    pub lock_state: LockState,
 }
 
 /// Transaction-wide states and side effects
@@ -47,11 +125,12 @@ pub struct Track<'s, R: FeeReserve> {
     pub fee_table: FeeTable,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Encode, Decode, TypeId)]
 pub enum TrackError {
-    Reentrancy,
-    NotFound,
-    StateTrackError(StateTrackError),
+    NotFound(SubstateId),
+    NotAvailable(SubstateId),
+    AlreadyLoaded(SubstateId),
+    NodeToSubstateFailure(NodeToSubstateFailure),
 }
 
 pub struct TrackReceipt {
@@ -125,136 +204,107 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         mutable: bool,
         write_through: bool,
     ) -> Result<(), TrackError> {
-        if let Some(current) = self.borrowed_substates.get_mut(&substate_id) {
-            if mutable {
-                return Err(TrackError::Reentrancy);
-            } else {
-                match current {
-                    BorrowedSubstate::Taken | BorrowedSubstate::LoadedMut(..) => {
-                        panic!("Should never get here")
-                    }
-                    BorrowedSubstate::Loaded(_, ref mut count) => *count = *count + 1,
-                }
-                return Ok(());
-            }
+        if write_through && self.borrowed_substates.contains_key(&substate_id) {
+            return Err(TrackError::AlreadyLoaded(substate_id));
         }
 
-        if write_through {
-            let value = self
-                .state_track
-                .get_substate_from_base(&substate_id)
-                .map_err(TrackError::StateTrackError)?
-                .ok_or(TrackError::NotFound)?;
-            self.borrowed_substates.insert(
-                substate_id.clone(),
-                BorrowedSubstate::loaded(value, mutable),
-            );
-            Ok(())
-        } else {
-            if let Some(substate) = self.state_track.get_substate(&substate_id) {
-                let substate = match substate_id {
-                    SubstateId::ComponentInfo(..)
-                    | SubstateId::ResourceManager(..)
-                    | SubstateId::Vault(..)
-                    | SubstateId::Package(..)
-                    | SubstateId::ComponentState(..)
-                    | SubstateId::System(..) => substate,
-                    _ => panic!(
-                        "Attempting to borrow unsupported substate {:?}",
-                        substate_id
-                    ),
-                };
+        // Load the substate from state track
+        if !self.borrowed_substates.contains_key(&substate_id) {
+            let maybe_substate = if write_through {
+                self.state_track.get_substate_from_base(&substate_id)
+            } else {
+                self.state_track.get_substate(&substate_id)
+            };
 
+            if let Some(substate) = maybe_substate {
                 self.borrowed_substates.insert(
                     substate_id.clone(),
-                    BorrowedSubstate::loaded(substate, mutable),
+                    BorrowedSubstate {
+                        substate: SubstateCache::Raw(substate),
+                        lock_state: LockState::no_lock(),
+                    },
                 );
-                Ok(())
             } else {
-                Err(TrackError::NotFound)
+                return Err(TrackError::NotFound(substate_id));
             }
         }
+
+        let borrowed = self
+            .borrowed_substates
+            .get_mut(&substate_id)
+            .expect("Existence checked upfront");
+        match borrowed.lock_state {
+            LockState::Read(n) => {
+                if mutable {
+                    if n != 0 {
+                        return Err(TrackError::NotAvailable(substate_id));
+                    }
+                    borrowed.lock_state = LockState::Write;
+                } else {
+                    borrowed.lock_state = LockState::Read(n + 1);
+                }
+            }
+            LockState::Write => {
+                return Err(TrackError::NotAvailable(substate_id));
+            }
+        }
+
+        Ok(())
     }
 
-    pub fn release_lock(&mut self, substate_id: SubstateId, write_through: bool) {
-        let borrowed = self
+    pub fn release_lock(
+        &mut self,
+        substate_id: SubstateId,
+        write_through: bool,
+    ) -> Result<(), TrackError> {
+        let mut borrowed = self
             .borrowed_substates
             .remove(&substate_id)
             .expect("Attempted to release lock on never borrowed substate");
 
-        if write_through {
-            match borrowed {
-                BorrowedSubstate::Taken => panic!("Value was never returned"),
-                BorrowedSubstate::LoadedMut(value) => {
-                    self.state_track.put_substate_to_base(substate_id, value);
-                }
-                BorrowedSubstate::Loaded(value, mut count) => {
-                    count = count - 1;
-                    if count == 0 {
-                        self.state_track.put_substate_to_base(substate_id, value);
-                    } else {
-                        self.borrowed_substates
-                            .insert(substate_id, BorrowedSubstate::Loaded(value, count));
-                    }
-                }
-            }
+        match &borrowed.lock_state {
+            LockState::Read(n) => borrowed.lock_state = LockState::Read(n - 1),
+            LockState::Write => borrowed.lock_state = LockState::no_lock(),
+        }
+
+        if write_through && borrowed.lock_state.is_free() {
+            self.state_track.put_substate_to_base(
+                substate_id,
+                borrowed
+                    .substate
+                    .convert_to_substate()
+                    .map_err(TrackError::NodeToSubstateFailure)?,
+            );
         } else {
-            match borrowed {
-                BorrowedSubstate::Taken => panic!("Value was never returned"),
-                BorrowedSubstate::LoadedMut(value) => {
-                    self.state_track.put_substate(substate_id, value);
-                }
-                BorrowedSubstate::Loaded(value, mut count) => {
-                    count = count - 1;
-                    if count == 0 {
-                        self.state_track.put_substate(substate_id, value);
-                    } else {
-                        self.borrowed_substates
-                            .insert(substate_id, BorrowedSubstate::Loaded(value, count));
-                    }
-                }
-            }
+            self.borrowed_substates.insert(substate_id, borrowed);
         }
+        Ok(())
     }
 
-    pub fn read_substate(&self, substate_id: SubstateId) -> &Substate {
-        match self
+    pub fn borrow_substate(&self, substate_id: SubstateId) -> &SubstateCache {
+        &self
             .borrowed_substates
             .get(&substate_id)
             .expect(&format!("Substate {:?} was never locked", substate_id))
-        {
-            BorrowedSubstate::LoadedMut(substate) => substate,
-            BorrowedSubstate::Loaded(substate, ..) => substate,
-            BorrowedSubstate::Taken => panic!("Substate was already taken"),
-        }
+            .substate
     }
 
-    pub fn take_substate(&mut self, substate_id: SubstateId) -> Substate {
-        match self
+    pub fn borrow_substate_mut(&mut self, substate_id: SubstateId) -> &mut SubstateCache {
+        &mut self
             .borrowed_substates
-            .insert(substate_id.clone(), BorrowedSubstate::Taken)
+            .get_mut(&substate_id)
             .expect(&format!("Substate {:?} was never locked", substate_id))
-        {
-            BorrowedSubstate::LoadedMut(value) => value,
-            BorrowedSubstate::Loaded(..) => {
-                panic!("Cannot take value on immutable: {:?}", substate_id)
-            }
-            BorrowedSubstate::Taken => panic!("Substate was already taken"),
-        }
+            .substate
     }
 
-    pub fn write_substate<V: Into<Substate>>(&mut self, substate_id: SubstateId, value: V) {
-        let cur_value = self
-            .borrowed_substates
-            .get(&substate_id)
-            .expect(&format!("Substate {:?} was never locked", substate_id));
-        match cur_value {
-            BorrowedSubstate::Loaded(..) => panic!("Cannot write to immutable"),
-            BorrowedSubstate::LoadedMut(..) | BorrowedSubstate::Taken => {}
-        }
-
+    pub fn take_substate(&mut self, substate_id: SubstateId) -> BorrowedSubstate {
         self.borrowed_substates
-            .insert(substate_id, BorrowedSubstate::LoadedMut(value.into()));
+            .remove(&substate_id)
+            .expect(&format!("Substate {:?} was never locked", substate_id))
+    }
+
+    pub fn return_substate(&mut self, substate_id: SubstateId, substate: BorrowedSubstate) {
+        self.borrowed_substates.insert(substate_id, substate);
     }
 
     /// Returns the value of a key value pair
@@ -274,11 +324,11 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             SubstateId::NonFungibleSpace(_) => self
                 .state_track
                 .get_substate(&substate_id)
-                .unwrap_or(Substate::NonFungible(NonFungibleWrapper(None))),
+                .unwrap_or(Substate::NonFungible(NonFungibleSubstate(None))),
             SubstateId::KeyValueStoreSpace(..) => self
                 .state_track
                 .get_substate(&substate_id)
-                .unwrap_or(Substate::KeyValueStoreEntry(KeyValueStoreEntryWrapper(
+                .unwrap_or(Substate::KeyValueStoreEntry(KeyValueStoreEntrySubstate(
                     None,
                 ))),
             _ => panic!("Invalid keyed value address {:?}", parent_address),
@@ -362,10 +412,19 @@ impl<'s, R: FeeReserve> Track<'s, R> {
     ) -> TrackReceipt {
         let is_success = invoke_result.is_ok();
 
+        // Flush all borrowed substates to state track
+        if is_success {
+            for (substate_id, borrowed) in self.borrowed_substates.drain() {
+                let substate = borrowed.substate.convert_to_substate().expect(
+                    "Invariant: at the end of transaction, all borrowed substate should be ready for persisting"
+                );
+                self.state_track.put_substate(substate_id, substate);
+            }
+        }
+
         // Commit/rollback application state changes
         if is_success {
             self.state_track.commit();
-            assert!(self.borrowed_substates.is_empty())
         } else {
             self.state_track.rollback();
             self.borrowed_substates.clear();
@@ -386,19 +445,18 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             })
         } else {
             let mut required = fee_summary.burned + fee_summary.tipped;
-            let mut collector = ResourceContainer::new_empty(
-                RADIX_TOKEN,
-                ResourceType::Fungible { divisibility: 18 },
-            );
+            let mut collector: LockableResource =
+                Resource::new_empty(RADIX_TOKEN, ResourceType::Fungible { divisibility: 18 })
+                    .into();
             for (vault_id, mut locked, contingent) in fee_summary.payments.iter().cloned().rev() {
                 let amount = if contingent {
                     if is_success {
-                        Decimal::min(locked.liquid_amount(), required)
+                        Decimal::min(locked.amount(), required)
                     } else {
                         Decimal::zero()
                     }
                 } else {
-                    Decimal::min(locked.liquid_amount(), required)
+                    Decimal::min(locked.amount(), required)
                 };
 
                 // Deduct fee required
@@ -418,11 +476,11 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                 let mut substate = self
                     .state_track
                     .get_substate_from_base(&substate_id)
-                    .expect("Failed to fetch a fee-locking vault")
-                    .expect("Vault not found");
+                    .expect("Failed to fetch a fee-locking vault");
                 substate
                     .vault_mut()
-                    .put(Bucket::new(locked))
+                    .0
+                    .put(locked)
                     .expect("Failed to put a fee-locking vault");
                 self.state_track.put_substate_to_base(substate_id, substate);
             }

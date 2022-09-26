@@ -34,7 +34,7 @@ pub enum SystemApiCostingEntry<'a> {
     BorrowSubstate { loaded: bool, size: u32 },
     /// Returns a substate.
     ReturnSubstate { size: u32 },
-    /// Reads the data of a Substate
+    /// Takes a substate
     TakeSubstate { size: u32 },
     /// Reads the data of a Substate
     ReadSubstate { size: u32 },

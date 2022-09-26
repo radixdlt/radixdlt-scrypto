@@ -2,7 +2,7 @@ use crate::engine::{HeapRENode, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::ProofError::UnknownMethod;
 use crate::model::{
-    InvokeError, LockedAmountOrIds, ResourceContainer, ResourceContainerError, ResourceContainerId,
+    InvokeError, LockableResource, LockedAmountOrIds, ResourceContainerId, ResourceOperationError,
 };
 use crate::types::*;
 use crate::wasm::*;
@@ -18,13 +18,13 @@ pub struct Proof {
     /// The total locked amount or non-fungible ids.
     total_locked: LockedAmountOrIds,
     /// The supporting containers.
-    evidence: HashMap<ResourceContainerId, (Rc<RefCell<ResourceContainer>>, LockedAmountOrIds)>,
+    evidence: HashMap<ResourceContainerId, (Rc<RefCell<LockableResource>>, LockedAmountOrIds)>,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub enum ProofError {
     /// Error produced by a resource container.
-    ResourceContainerError(ResourceContainerError),
+    ResourceOperationError(ResourceOperationError),
     /// Can't generate zero-amount or empty non-fungible set proofs.
     EmptyProofNotAllowed,
     /// The base proofs are not enough to cover the requested amount or non-fungible ids.
@@ -43,7 +43,7 @@ impl Proof {
         resource_address: ResourceAddress,
         resource_type: ResourceType,
         total_locked: LockedAmountOrIds,
-        evidence: HashMap<ResourceContainerId, (Rc<RefCell<ResourceContainer>>, LockedAmountOrIds)>,
+        evidence: HashMap<ResourceContainerId, (Rc<RefCell<LockableResource>>, LockedAmountOrIds)>,
     ) -> Result<Proof, ProofError> {
         if total_locked.is_empty() {
             return Err(ProofError::EmptyProofNotAllowed);
@@ -172,7 +172,7 @@ impl Proof {
                             container
                                 .borrow_mut()
                                 .lock_by_amount(amount)
-                                .map_err(ProofError::ResourceContainerError)?;
+                                .map_err(ProofError::ResourceOperationError)?;
                             remaining -= amount;
                             evidence.insert(
                                 container_id.clone(),
@@ -240,7 +240,7 @@ impl Proof {
                             container
                                 .borrow_mut()
                                 .lock_by_ids(&ids)
-                                .map_err(ProofError::ResourceContainerError)?;
+                                .map_err(ProofError::ResourceOperationError)?;
                             for id in &ids {
                                 remaining.remove(id);
                             }
@@ -340,7 +340,7 @@ impl Proof {
         let mut node_ref = system_api
             .substate_borrow_mut(&substate_id)
             .map_err(InvokeError::Downstream)?;
-        let proof = node_ref.proof();
+        let proof = node_ref.proof_mut();
 
         let rtn = match proof_fn {
             ProofFnIdentifier::GetAmount => {

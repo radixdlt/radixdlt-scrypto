@@ -229,6 +229,7 @@ blueprint! {
             let proof = vault.create_proof();
             let validated_proof = proof.validate_proof(vault.resource_address()).unwrap();
             let _: Sandwich = validated_proof.non_fungible().data();
+            validated_proof.drop();
 
             // clean up
             vault.put(bucket);

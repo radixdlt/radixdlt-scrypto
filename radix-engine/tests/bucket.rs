@@ -1,6 +1,6 @@
 use radix_engine::engine::*;
 use radix_engine::ledger::TypedInMemorySubstateStore;
-use radix_engine::model::{BucketError, ResourceContainerError};
+use radix_engine::model::{BucketError, ResourceOperationError};
 use radix_engine::types::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -132,7 +132,7 @@ fn test_take_with_invalid_granularity() {
     // Assert
     receipt.expect_specific_failure(|e| {
         if let RuntimeError::ApplicationError(ApplicationError::BucketError(
-            BucketError::ResourceContainerError(ResourceContainerError::InvalidAmount(
+            BucketError::ResourceOperationError(ResourceOperationError::InvalidAmount(
                 amount,
                 granularity,
             )),
@@ -175,7 +175,7 @@ fn test_take_with_negative_amount() {
     // Assert
     receipt.expect_specific_failure(|e| {
         if let RuntimeError::ApplicationError(ApplicationError::BucketError(
-            BucketError::ResourceContainerError(ResourceContainerError::InvalidAmount(
+            BucketError::ResourceOperationError(ResourceOperationError::InvalidAmount(
                 amount,
                 granularity,
             )),
