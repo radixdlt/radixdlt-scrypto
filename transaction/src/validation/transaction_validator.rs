@@ -16,7 +16,7 @@ pub trait TransactionValidator<T: Decode> {
         &self,
         transaction: &[u8],
         intent_hash_manager: &I,
-    ) -> Result<Validated, TransactionValidationError> {
+    ) -> Result<Executable, TransactionValidationError> {
         if transaction.len() > MAX_PAYLOAD_SIZE {
             return Err(TransactionValidationError::TransactionTooLarge);
         }
@@ -31,7 +31,7 @@ pub trait TransactionValidator<T: Decode> {
         &self,
         transaction: T,
         intent_hash_manager: &I,
-    ) -> Result<Validated, TransactionValidationError>;
+    ) -> Result<Executable, TransactionValidationError>;
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -52,7 +52,7 @@ impl TransactionValidator<NotarizedTransaction> for NotarizedTransactionValidato
         &self,
         transaction: NotarizedTransaction,
         intent_hash_manager: &I,
-    ) -> Result<Validated, TransactionValidationError> {
+    ) -> Result<Executable, TransactionValidationError> {
         // verify the intent
         let instructions =
             self.validate_intent(&transaction.signed_intent.intent, intent_hash_manager)?;
@@ -68,7 +68,7 @@ impl TransactionValidator<NotarizedTransaction> for NotarizedTransactionValidato
         let tip_percentage = transaction.signed_intent.intent.header.tip_percentage;
         let blobs = transaction.signed_intent.intent.manifest.blobs.clone();
 
-        Ok(Validated::new(
+        Ok(Executable::new(
             transaction_hash,
             instructions,
             AuthModule::pk_non_fungibles(&keys),
@@ -88,13 +88,13 @@ impl NotarizedTransactionValidator {
         &self,
         preview_intent: PreviewIntent,
         intent_hash_manager: &I,
-    ) -> Result<Validated, TransactionValidationError> {
+    ) -> Result<Executable, TransactionValidationError> {
         let transaction_hash = preview_intent.hash();
         let intent = preview_intent.intent;
         let instructions = self.validate_intent(&intent, intent_hash_manager)?;
         let initial_proofs = AuthModule::pk_non_fungibles(&preview_intent.signer_public_keys);
 
-        Ok(Validated {
+        Ok(Executable {
             transaction_hash,
             instructions,
             initial_proofs,

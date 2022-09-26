@@ -10,7 +10,7 @@ use radix_engine::wasm::WasmInstrumenter;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::builder::TransactionBuilder;
-use transaction::model::{NotarizedTransaction, TransactionHeader, Validated};
+use transaction::model::{Executable, NotarizedTransaction, TransactionHeader};
 use transaction::signing::EcdsaSecp256k1PrivateKey;
 use transaction::validation::{
     NotarizedTransactionValidator, TestIntentHashManager, TransactionValidator, ValidationConfig,
@@ -60,7 +60,7 @@ fn test_normal_transaction_flow() {
         min_tip_percentage: 0,
     });
 
-    let validated_transaction: Validated = validator
+    let validated_transaction: Executable = validator
         .validate_from_slice(&raw_transaction, &intent_hash_manager)
         .expect("Invalid transaction");
     let mut executor = TransactionExecutor::new(
@@ -80,7 +80,7 @@ fn test_normal_transaction_flow() {
     receipt.expect_commit_success();
 }
 
-fn create_executable_transaction(cost_unit_limit: u32) -> Validated {
+fn create_executable_transaction(cost_unit_limit: u32) -> Executable {
     let notarized_transaction = create_notarized_transaction(cost_unit_limit);
 
     let validator = NotarizedTransactionValidator::new(ValidationConfig {

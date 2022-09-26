@@ -7,7 +7,7 @@ use crate::model::*;
 
 /// Represents a validated transaction
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Validated {
+pub struct Executable {
     pub transaction_hash: Hash,
     pub instructions: Vec<Instruction>,
     pub initial_proofs: Vec<NonFungibleAddress>,
@@ -16,7 +16,7 @@ pub struct Validated {
     pub blobs: Vec<Vec<u8>>,
 }
 
-impl Validated {
+impl Executable {
     pub fn new(
         transaction_hash: Hash,
         instructions: Vec<Instruction>,

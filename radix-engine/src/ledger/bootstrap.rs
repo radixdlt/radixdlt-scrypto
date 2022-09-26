@@ -7,7 +7,7 @@ use crate::types::*;
 use crate::wasm::{DefaultWasmEngine, WasmInstrumenter};
 use scrypto::core::Blob;
 use scrypto::resource::Bucket;
-use transaction::model::{Instruction, SystemTransaction, TransactionManifest, Validated};
+use transaction::model::{Executable, Instruction, SystemTransaction, TransactionManifest};
 use transaction::validation::{IdAllocator, IdSpace};
 
 #[derive(TypeId, Encode, Decode)]
@@ -208,7 +208,7 @@ where
         let mut executor =
             TransactionExecutor::new(substate_store, &mut wasm_engine, &mut wasm_instrumenter);
         let genesis_transaction = create_genesis();
-        let executable: Validated = genesis_transaction.into();
+        let executable: Executable = genesis_transaction.into();
         let mut fee_reserve = SystemLoanFeeReserve::default();
         fee_reserve.credit(GENESIS_CREATION_CREDIT);
         let transaction_receipt = executor.execute_with_fee_reserve(
@@ -231,7 +231,7 @@ mod tests {
     use crate::transaction::{ExecutionConfig, TransactionExecutor};
     use crate::wasm::{DefaultWasmEngine, WasmInstrumenter};
     use scrypto::constants::*;
-    use transaction::model::Validated;
+    use transaction::model::Executable;
 
     #[test]
     fn bootstrap_receipt_should_match_constants() {
@@ -244,7 +244,7 @@ mod tests {
             &mut wasm_engine,
             &mut wasm_instrumenter,
         );
-        let executable: Validated = genesis_transaction.into();
+        let executable: Executable = genesis_transaction.into();
         let mut fee_reserve = SystemLoanFeeReserve::default();
         fee_reserve.credit(GENESIS_CREATION_CREDIT);
 

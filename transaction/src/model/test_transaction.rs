@@ -13,7 +13,7 @@ impl TestTransaction {
         manifest: TransactionManifest,
         nonce: u64,
         initial_proofs: Vec<NonFungibleAddress>,
-    ) -> Validated {
+    ) -> Executable {
         let transaction = TransactionBuilder::new()
             .header(TransactionHeader {
                 version: TRANSACTION_VERSION_V1,
@@ -32,12 +32,12 @@ impl TestTransaction {
 
         let transaction_hash = transaction.hash();
 
-        Validated {
+        Executable {
             transaction_hash,
             instructions: transaction.signed_intent.intent.manifest.instructions,
             initial_proofs,
             cost_unit_limit: transaction.signed_intent.intent.header.cost_unit_limit,
-            tip_percentage: transaction.signed_intent.intent.header.cost_unit_limit,
+            tip_percentage: transaction.signed_intent.intent.header.tip_percentage,
             blobs: transaction.signed_intent.intent.manifest.blobs,
         }
     }

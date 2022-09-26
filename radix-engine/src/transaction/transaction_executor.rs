@@ -86,7 +86,7 @@ where
 
     pub fn execute(
         &mut self,
-        transaction: &Validated,
+        transaction: &Executable,
         fee_reserve_config: &FeeReserveConfig,
         execution_config: &ExecutionConfig,
     ) -> TransactionReceipt {
@@ -102,7 +102,7 @@ where
 
     pub fn execute_with_fee_reserve<R: FeeReserve>(
         &mut self,
-        transaction: &Validated,
+        transaction: &Executable,
         execution_config: &ExecutionConfig,
         fee_reserve: R,
     ) -> TransactionReceipt {
@@ -228,7 +228,7 @@ where
 {
     pub fn execute_and_commit(
         &mut self,
-        transaction: &Validated,
+        transaction: &Executable,
         fee_reserve_config: &FeeReserveConfig,
         execution_config: &ExecutionConfig,
     ) -> TransactionReceipt {
