@@ -40,7 +40,9 @@ pub fn execute_genesis<'s, R: FeeReserve>(mut track: Track<'s, R>) -> TrackRecei
         Package::new(sys_faucet_code, sys_faucet_abi)
             .expect("Invalid sys-faucet package")
             .try_into_substates()
-            .unwrap()[0],
+            .unwrap()
+            .pop()
+            .unwrap(),
         true,
     );
     let sys_utils_code = include_bytes!("../../../assets/sys_utils.wasm").to_vec();
@@ -51,7 +53,9 @@ pub fn execute_genesis<'s, R: FeeReserve>(mut track: Track<'s, R>) -> TrackRecei
         Package::new(sys_utils_code, sys_utils_abi)
             .expect("Invalid sys-utils package")
             .try_into_substates()
-            .unwrap()[0],
+            .unwrap()
+            .pop()
+            .unwrap(),
         true,
     );
     let account_code = include_bytes!("../../../assets/account.wasm").to_vec();
@@ -62,7 +66,9 @@ pub fn execute_genesis<'s, R: FeeReserve>(mut track: Track<'s, R>) -> TrackRecei
         Package::new(account_code, account_abi)
             .expect("Invalid account package")
             .try_into_substates()
-            .unwrap()[0],
+            .unwrap()
+            .pop()
+            .unwrap(),
         true,
     );
 
@@ -84,10 +90,15 @@ pub fn execute_genesis<'s, R: FeeReserve>(mut track: Track<'s, R>) -> TrackRecei
     .expect("Failed to construct XRD resource manager");
     let minted_xrd = xrd_resource_manager
         .mint_fungible(XRD_MAX_SUPPLY.into(), RADIX_TOKEN.clone())
-        .expect("Failed to mint XRD");
+        .expect("Failed to mint XRD")
+        .0;
     track.create_uuid_substate(
         SubstateId::ResourceManager(RADIX_TOKEN),
-        xrd_resource_manager.try_into_substates().unwrap()[0],
+        xrd_resource_manager
+            .try_into_substates()
+            .unwrap()
+            .pop()
+            .unwrap(),
         true,
     );
 
@@ -101,7 +112,11 @@ pub fn execute_genesis<'s, R: FeeReserve>(mut track: Track<'s, R>) -> TrackRecei
     .expect("Failed to construct ECDSA resource manager");
     track.create_uuid_substate(
         SubstateId::ResourceManager(ECDSA_TOKEN),
-        ecdsa_secp256k1_token.try_into_substates().unwrap()[0],
+        ecdsa_secp256k1_token
+            .try_into_substates()
+            .unwrap()
+            .pop()
+            .unwrap(),
         true,
     );
 
@@ -110,7 +125,7 @@ pub fn execute_genesis<'s, R: FeeReserve>(mut track: Track<'s, R>) -> TrackRecei
             .expect("Failed to construct SYSTEM_TOKEN resource manager");
     track.create_uuid_substate(
         SubstateId::ResourceManager(SYSTEM_TOKEN),
-        system_token.try_into_substates().unwrap()[0],
+        system_token.try_into_substates().unwrap().pop().unwrap(),
         true,
     );
 

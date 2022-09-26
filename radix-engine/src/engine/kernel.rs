@@ -107,7 +107,7 @@ where
             {
                 RENodeId::Bucket(bucket_id) => bucket_id,
                 _ => panic!("Expected Bucket RENodeId but received something else"),
-            }; 
+            };
             let mut node_ref = kernel
                 .borrow_node_mut(&RENodeId::Bucket(bucket_id))
                 .expect("Failed to borrow SYSTEM_TOKEN bucket substate");
@@ -325,7 +325,6 @@ where
                     let package = self
                         .track
                         .read_node(&RENodeId::Package(package_address))
-                         
                         .package();
                     let blueprint_abi = package
                         .blueprint_abi(&blueprint_name)
@@ -505,10 +504,10 @@ where
                 let package = self
                     .track
                     .read_node(&RENodeId::Package(package_address.clone()))
-                     .package();
+                    .package();
                 let abi =
                     package
-                        .blueprint_abi( blueprint_name)
+                        .blueprint_abi(blueprint_name)
                         .ok_or(RuntimeError::KernelError(KernelError::BlueprintNotFound(
                             package_address.clone(),
                             blueprint_name.clone(),
@@ -1061,7 +1060,37 @@ where
         &mut self,
         node_id: &RENodeId,
     ) -> Result<RENodeRefMut<'_, 's, R>, RuntimeError> {
-        todo!()
+        for m in &mut self.modules {
+            m.pre_sys_call(
+                &mut self.track,
+                &mut self.call_frames,
+                SysCallInput::BorrowNode { node_id: node_id },
+            )
+            .map_err(RuntimeError::ModuleError)?;
+        }
+
+        let node_pointer = Self::current_frame(&self.call_frames)
+            .node_refs
+            .get(node_id)
+            .cloned()
+            .expect(&format!(
+                "Attempt to borrow node {:?}, which is not visible in current frame.",
+                node_id
+            )); // TODO: Assumption will break if auth is optional
+
+        for m in &mut self.modules {
+            m.post_sys_call(
+                &mut self.track,
+                &mut self.call_frames,
+                SysCallOutput::BorrowNode {
+                    // Can't return the NodeRef due to borrow checks on `call_frames`
+                    node_pointer: &node_pointer,
+                },
+            )
+            .map_err(RuntimeError::ModuleError)?;
+        }
+
+        Ok(node_pointer.to_ref_mut(&mut self.call_frames, &mut self.track))
     }
 
     fn node_drop(&mut self, node_id: &RENodeId) -> Result<HeapRootRENode, RuntimeError> {
@@ -1200,6 +1229,8 @@ where
 
         // TODO: Authorization
 
+        // TODO: globalization can be simplified by moving the node from stack to track
+
         let mut nodes_to_take = HashSet::new();
         nodes_to_take.insert(node_id);
         let (taken_nodes, missing_nodes) = Self::current_frame_mut(&mut self.call_frames)
@@ -1208,70 +1239,7 @@ where
         assert!(taken_nodes.len() == 1);
         let root_node = taken_nodes.into_values().nth(0).unwrap();
 
-        let (substates, maybe_non_fungibles) = match root_node.root {
-            HeapRENode::Component(component) => {
-                let mut substates = HashMap::new();
-                let component_address = node_id.into();
-                substates.insert(
-                    SubstateId::ComponentInfo(component_address),
-                    Substate::ComponentInfo(component.info),
-                );
-                substates.insert(
-                    SubstateId::ComponentState(component_address),
-                    Substate::ComponentState(component.state),
-                );
-                let mut visible_substates = HashSet::new();
-                visible_substates.insert(SubstateId::ComponentInfo(component_address));
-                (substates, None)
-            }
-            HeapRENode::Package(package) => {
-                let mut substates = HashMap::new();
-                let package_address = node_id.into();
-                substates.insert(
-                    SubstateId::Package(package_address),
-                    package.try_into_substates().unwrap()[0],
-                );
-                (substates, None)
-            }
-            HeapRENode::Resource(resource_manager, non_fungibles) => {
-                let mut substates = HashMap::new();
-                let resource_address: ResourceAddress = node_id.into();
-                substates.insert(
-                    SubstateId::ResourceManager(resource_address),
-                    resource_manager.try_into_substates().unwrap()[0],
-                );
-                (substates, non_fungibles)
-            }
-            _ => panic!("Not expected"),
-        };
-
-        for (substate_id, substate) in substates {
-            self.track
-                .create_uuid_substate(substate_id.clone(), substate, true);
-        }
-
-        let mut to_store_values = HashMap::new();
-        for (id, value) in root_node.child_nodes.into_iter() {
-            to_store_values.insert(id, value);
-        }
-        insert_non_root_nodes(self.track, to_store_values)
-            .map_err(|e| RuntimeError::KernelError(KernelError::NodeToSubstateFailure(e)))?;
-
-        if let Some(non_fungibles) = maybe_non_fungibles {
-            let resource_address: ResourceAddress = node_id.into();
-            let parent_address = SubstateId::NonFungibleSpace(resource_address.clone());
-            for (id, non_fungible) in non_fungibles {
-                self.track.set_key_value(
-                    parent_address.clone(),
-                    id.to_vec(),
-                    Substate::NonFungible(NonFungibleSubstate(Some(non_fungible))),
-                );
-            }
-        }
-
-        Self::current_frame_mut(&mut self.call_frames)
-            .node_refs
-            .insert(node_id, RENodePointer::Store(node_id));
+        // TODO
 
         for m in &mut self.modules {
             m.post_sys_call(
