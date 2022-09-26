@@ -100,7 +100,7 @@ impl NotarizedTransactionValidator {
             initial_proofs,
             cost_unit_limit: intent.header.cost_unit_limit,
             tip_percentage: intent.header.tip_percentage,
-            blobs: intent.manifest.blobs
+            blobs: intent.manifest.blobs,
         })
     }
 

@@ -2,7 +2,7 @@ use sbor::*;
 use scrypto::buffer::scrypto_encode;
 use scrypto::crypto::{hash, Hash, PublicKey};
 
-use crate::model::{TransactionIntent};
+use crate::model::TransactionIntent;
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct PreviewFlags {

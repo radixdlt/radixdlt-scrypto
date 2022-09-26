@@ -6,8 +6,7 @@ use scrypto::resource::NonFungibleAddress;
 use crate::builder::TransactionBuilder;
 use crate::model::*;
 
-pub struct TestTransaction {
-}
+pub struct TestTransaction {}
 
 impl TestTransaction {
     pub fn new(

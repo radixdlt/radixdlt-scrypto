@@ -1,4 +1,4 @@
-use transaction::model::{Validated};
+use transaction::model::Validated;
 
 use crate::engine::AppStateTrack;
 use crate::engine::BaseStateTrack;
