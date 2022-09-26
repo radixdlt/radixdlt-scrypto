@@ -1,11 +1,23 @@
-use crate::model::MethodIdentifier;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto::core::{Blob, FnIdentifier};
+use scrypto::component::ComponentAddress;
+use scrypto::core::{Blob, FnIdentifier, NativeFnIdentifier, Receiver};
 use scrypto::engine::types::*;
 use scrypto::math::*;
 use scrypto::resource::{NonFungibleId, ResourceAddress};
+
+#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
+pub enum MethodIdentifier {
+    Scrypto {
+        component_address: ComponentAddress,
+        ident: String,
+    },
+    Native {
+        receiver: Receiver,
+        native_fn_identifier: NativeFnIdentifier,
+    },
+}
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub enum Instruction {

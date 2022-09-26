@@ -1,4 +1,4 @@
-use transaction::model::ExecutableTransaction;
+use transaction::model::Executable;
 
 use crate::engine::AppStateTrack;
 use crate::engine::BaseStateTrack;
@@ -356,9 +356,9 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         self.state_track.put_substate(substate_id, value.into());
     }
 
-    pub fn apply_pre_execution_costs<T: ExecutableTransaction>(
+    pub fn apply_pre_execution_costs(
         mut self,
-        transaction: &T,
+        transaction: &Executable,
     ) -> Result<Self, PreExecutionError> {
         let result = self
             .fee_reserve

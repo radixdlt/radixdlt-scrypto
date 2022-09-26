@@ -22,7 +22,7 @@ use sbor::describe::*;
 use scrypto::dec;
 use scrypto::math::Decimal;
 use transaction::builder::ManifestBuilder;
-use transaction::model::{ExecutableTransaction, MethodIdentifier, TransactionManifest};
+use transaction::model::{Executable, MethodIdentifier, TransactionManifest};
 use transaction::model::{PreviewIntent, TestTransaction};
 use transaction::signing::EcdsaSecp256k1PrivateKey;
 use transaction::validation::TestIntentHashManager;
@@ -247,9 +247,9 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         self.execute_manifest(manifest, initial_proofs)
     }
 
-    pub fn execute_transaction<T: ExecutableTransaction>(
+    pub fn execute_transaction(
         &mut self,
-        transaction: &T,
+        transaction: &Executable,
         fee_reserve_config: &FeeReserveConfig,
         execution_config: &ExecutionConfig,
     ) -> TransactionReceipt {
