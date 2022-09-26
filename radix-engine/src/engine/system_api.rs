@@ -37,6 +37,9 @@ where
         input: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError>;
 
+    /// Retrieves all nodes owned by the current frame
+    fn get_owned_node_ids(&mut self) -> Result<Vec<RENodeId>, RuntimeError>;
+
     // TODO: Convert to substate_borrow
     fn borrow_node(&mut self, node_id: &RENodeId) -> Result<RENodeRef<'_, 's, R>, RuntimeError>;
 

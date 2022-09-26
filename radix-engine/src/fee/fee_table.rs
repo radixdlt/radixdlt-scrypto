@@ -18,6 +18,7 @@ pub enum SystemApiCostingEntry<'a> {
     /*
      * RENode
      */
+    ReadOwnedNodes,
     /// Creates a RENode.
     CreateNode { size: u32 },
     /// Drops a RENode
@@ -224,6 +225,7 @@ impl FeeTable {
                 self.fixed_low + (5 * input.raw.len() + 10 * input.value_count()) as u32
             }
 
+            SystemApiCostingEntry::ReadOwnedNodes => self.fixed_low,
             SystemApiCostingEntry::CreateNode { .. } => self.fixed_medium,
             SystemApiCostingEntry::DropNode { .. } => self.fixed_medium,
             SystemApiCostingEntry::GlobalizeNode { size } => self.fixed_high + 200 * size,

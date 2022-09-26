@@ -5,12 +5,13 @@ use crate::component::{ComponentAddress, PackageAddress};
 use crate::crypto::*;
 use crate::resource::{NonFungibleId, ResourceAddress};
 
+pub type AuthZoneId = (Hash, u32);
 pub type KeyValueStoreId = (Hash, u32);
 pub type VaultId = (Hash, u32);
 pub type BucketId = u32;
 pub type ProofId = u32;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Encode, Decode)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Encode, Decode, TypeId, Ord, PartialOrd)]
 pub enum RENodeId {
     Bucket(BucketId),
     Proof(ProofId),

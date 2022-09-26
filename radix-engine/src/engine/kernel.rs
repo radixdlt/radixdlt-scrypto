@@ -1174,6 +1174,21 @@ where
         Ok(())
     }
 
+    fn get_owned_node_ids(&mut self) -> Result<Vec<RENodeId>, RuntimeError> {
+        for m in &mut self.modules {
+            m.pre_sys_call(
+                &mut self.track,
+                &mut self.call_frames,
+                SysCallInput::ReadOwnedNodes,
+            )
+                .map_err(RuntimeError::ModuleError)?;
+        }
+
+        let node_ids = Self::current_frame_mut(&mut self.call_frames)
+            .owned_heap_nodes.keys().cloned().collect();
+        Ok(node_ids)
+    }
+
     fn node_drop(&mut self, node_id: &RENodeId) -> Result<HeapRootRENode, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
