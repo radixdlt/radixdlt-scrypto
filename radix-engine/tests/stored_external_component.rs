@@ -14,7 +14,7 @@ fn stored_component_addresses_in_non_globalized_component_are_invokable() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(package, "ExternalComponent", "create_and_call", args!())
+        .call_scrypto_function(package, "ExternalComponent", "create_and_call", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -30,7 +30,7 @@ fn stored_component_addresses_are_invokable() {
     let package = test_runner.compile_and_publish("./tests/stored_external_component");
     let manifest1 = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(package, "ExternalComponent", "create", args!())
+        .call_scrypto_function(package, "ExternalComponent", "create", args!())
         .build();
     let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
     receipt1.expect_commit_success();
@@ -48,7 +48,10 @@ fn stored_component_addresses_are_invokable() {
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_method(component0, "func", args!())
         .build();
-    let receipt2 = test_runner.execute_manifest(manifest2, vec![public_key.into()]);
+    let receipt2 = test_runner.execute_manifest(
+        manifest2,
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
 
     // Assert
     receipt2.expect_commit_success();
@@ -58,7 +61,10 @@ fn stored_component_addresses_are_invokable() {
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_method(component1, "func", args!())
         .build();
-    let receipt2 = test_runner.execute_manifest(manifest2, vec![public_key.into()]);
+    let receipt2 = test_runner.execute_manifest(
+        manifest2,
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
 
     // Assert
     receipt2.expect_commit_success();

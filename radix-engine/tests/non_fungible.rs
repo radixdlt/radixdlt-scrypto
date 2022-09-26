@@ -14,7 +14,7 @@ fn create_non_fungible_mutable() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(
+        .call_scrypto_function(
             package,
             "NonFungibleTest",
             "create_non_fungible_mutable",
@@ -26,7 +26,10 @@ fn create_non_fungible_mutable() {
             args!(Expression::entire_worktop()),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
 
     // Assert
     receipt.expect_commit_success();
@@ -41,7 +44,7 @@ fn can_burn_non_fungible() {
     let package = test_runner.compile_and_publish("./tests/non_fungible");
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(
+        .call_scrypto_function(
             package,
             "NonFungibleTest",
             "create_burnable_non_fungible",
@@ -69,7 +72,7 @@ fn can_burn_non_fungible() {
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .withdraw_from_account(resource_address, account)
         .burn_non_fungible(non_fungible_address.clone())
-        .call_function(
+        .call_scrypto_function(
             package,
             "NonFungibleTest",
             "verify_does_not_exist",
@@ -81,7 +84,10 @@ fn can_burn_non_fungible() {
             args!(Expression::entire_worktop()),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
 
     // Assert
     receipt.expect_commit_success();
@@ -96,43 +102,43 @@ fn test_non_fungible() {
 
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(
+        .call_scrypto_function(
             package_address,
             "NonFungibleTest",
             "create_non_fungible_fixed",
             args!(),
         )
-        .call_function(
+        .call_scrypto_function(
             package_address,
             "NonFungibleTest",
             "update_and_get_non_fungible",
             args!(),
         )
-        .call_function(
+        .call_scrypto_function(
             package_address,
             "NonFungibleTest",
             "non_fungible_exists",
             args!(),
         )
-        .call_function(
+        .call_scrypto_function(
             package_address,
             "NonFungibleTest",
             "take_and_put_bucket",
             args!(),
         )
-        .call_function(
+        .call_scrypto_function(
             package_address,
             "NonFungibleTest",
             "take_and_put_vault",
             args!(),
         )
-        .call_function(
+        .call_scrypto_function(
             package_address,
             "NonFungibleTest",
             "get_non_fungible_ids_bucket",
             args!(),
         )
-        .call_function(
+        .call_scrypto_function(
             package_address,
             "NonFungibleTest",
             "get_non_fungible_ids_vault",
@@ -144,7 +150,10 @@ fn test_non_fungible() {
             args!(Expression::entire_worktop()),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
     receipt.expect_commit_success();
 }
 
@@ -157,7 +166,7 @@ fn test_singleton_non_fungible() {
 
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(
+        .call_scrypto_function(
             package_address,
             "NonFungibleTest",
             "singleton_non_fungible",
@@ -169,6 +178,9 @@ fn test_singleton_non_fungible() {
             args!(Expression::entire_worktop()),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
     receipt.expect_commit_success();
 }

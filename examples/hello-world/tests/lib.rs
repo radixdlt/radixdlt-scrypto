@@ -18,9 +18,12 @@ fn test_hello() {
 
     // Test the `instantiate_hello` function.
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .call_function(package_address, "Hello", "instantiate_hello", args!())
+        .call_scrypto_function(package_address, "Hello", "instantiate_hello", args!())
         .build();
-    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![public_key.into()]);
+    let receipt = test_runner.execute_manifest_ignoring_fee(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
     println!("{:?}\n", receipt);
     receipt.expect_commit_success();
     let component = receipt
@@ -37,7 +40,10 @@ fn test_hello() {
             args!(Expression::entire_worktop()),
         )
         .build();
-    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![public_key.into()]);
+    let receipt = test_runner.execute_manifest_ignoring_fee(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
     println!("{:?}\n", receipt);
     receipt.expect_commit_success();
 }

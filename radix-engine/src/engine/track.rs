@@ -45,6 +45,10 @@ pub enum SubstateCache {
     Converted(Vault),
 }
 
+// TODO: explore the following options
+// 1. Make it an invariant that every node must be persistable at the end of a transaction, so no need of this error.
+// 2. Make `Track` more dynamic and allow nodes to define whether it's ready for persistence.
+// 3. Make transient property part of substate rather than node.
 #[derive(Debug, Encode, Decode, TypeId)]
 pub enum NodeToSubstateFailure {
     VaultPartiallyLocked,
@@ -386,7 +390,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             .and_then(|()| {
                 self.fee_reserve.consume(
                     self.fee_table.tx_signature_verification_per_sig()
-                        * transaction.signer_public_keys().len() as u32,
+                        * transaction.initial_proofs().len() as u32,
                     "verify_signatures",
                     false,
                 )

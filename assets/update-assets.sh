@@ -8,7 +8,6 @@ cd "$(dirname "$0")"
 echo "Building packages..."
 (cd account; scrypto build)
 (cd sys-faucet; scrypto build)
-(cd sys-utils; scrypto build)
 
 echo "Publishing artifacts..."
 wasm-opt \
@@ -28,14 +27,5 @@ wasm-opt \
 cp \
   ./sys-faucet/target/wasm32-unknown-unknown/release/sys_faucet.abi \
   ./sys_faucet.abi
-
-wasm-opt \
-  -Os -g \
-  --strip-debug --strip-dwarf --strip-producers \
-  -o ./sys_utils.wasm \
-  ./sys-utils/target/wasm32-unknown-unknown/release/sys_utils.wasm
-cp \
-  ./sys-utils/target/wasm32-unknown-unknown/release/sys_utils.abi \
-  ./sys_utils.abi
 
 echo "Done!"

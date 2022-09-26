@@ -9,7 +9,7 @@ use crate::types::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct TransactionContents {
-    pub instructions: Vec<ExecutableInstruction>,
+    pub instructions: Vec<Instruction>,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -25,6 +25,15 @@ pub enum TransactionResult {
     Reject(RejectResult),
 }
 
+impl TransactionResult {
+    pub fn expect_commit(self) -> CommitResult {
+        match self {
+            TransactionResult::Commit(c) => c,
+            TransactionResult::Reject(_) => panic!("Transaction was rejected"),
+        }
+    }
+}
+
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct CommitResult {
     pub outcome: TransactionOutcome,
@@ -38,6 +47,22 @@ pub struct CommitResult {
 pub enum TransactionOutcome {
     Success(Vec<Vec<u8>>),
     Failure(RuntimeError),
+}
+
+impl TransactionOutcome {
+    pub fn expect_success(self) -> Vec<Vec<u8>> {
+        match self {
+            TransactionOutcome::Success(results) => results,
+            TransactionOutcome::Failure(error) => panic!("Outcome was a failure: {}", error),
+        }
+    }
+
+    pub fn success_or_else<E, F: FnOnce(RuntimeError) -> E>(self, f: F) -> Result<Vec<Vec<u8>>, E> {
+        match self {
+            TransactionOutcome::Success(results) => Ok(results),
+            TransactionOutcome::Failure(error) => Err(f(error)),
+        }
+    }
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -227,7 +252,7 @@ impl fmt::Debug for TransactionReceipt {
                 "\n{} {}",
                 prefix!(i, contents.instructions),
                 match inst {
-                    ExecutableInstruction::CallFunction {
+                    Instruction::CallFunction {
                         fn_identifier: FnIdentifier::Scrypto {
                             package_address,
                             blueprint_name,
@@ -241,17 +266,33 @@ impl fmt::Debug for TransactionReceipt {
                         ident,
                         ScryptoValue::from_slice(&args).expect("Failed parse call data")
                     ),
-                    ExecutableInstruction::CallMethod {
-                        component_address,
-                        method_name,
+                    Instruction::CallMethod {
+                        method_identifier,
                         args,
-                    } => format!(
-                        "CallMethod {{ component_address: {}, method_name: {:?}, call_data: {:?} }}",
-                        bech32_encoder.encode_component_address(&component_address),
-                        method_name,
-                        ScryptoValue::from_slice(&args).expect("Failed to parse call data")
-                    ),
-                    ExecutableInstruction::PublishPackage { .. } => "PublishPackage {..}".to_owned(),
+                    } => {
+                        match method_identifier {
+                            MethodIdentifier::Scrypto {
+                                component_address,
+                                ident
+                            } => {
+                                format!(
+                                    "CallMethod {{ component_address: {}, method_name: {:?}, args: {:?} }}",
+                                    bech32_encoder.encode_component_address(&component_address),
+                                    ident,
+                                    ScryptoValue::from_slice(&args).expect("Failed to parse call data")
+                                )
+                            },
+                            MethodIdentifier::Native { receiver, native_fn_identifier } => {
+                                format!(
+                                    "CallNativeMethod {{ receiver: {:?}, ident: {:?}, args: {:?} }}",
+                                    receiver,
+                                    native_fn_identifier,
+                                    ScryptoValue::from_slice(&args).expect("Failed to parse call data")
+                                )
+                            }
+                        }
+                    },
+                    Instruction::PublishPackage { .. } => "PublishPackage {..}".to_owned(),
                     i @ _ => format!("{:?}", i),
                 }
             )?;

@@ -137,6 +137,7 @@ impl FeeTable {
                         }
                     }
                     NativeFnIdentifier::System(system_ident) => match system_ident {
+                        SystemFnIdentifier::Create => self.fixed_low,
                         SystemFnIdentifier::GetCurrentEpoch => self.fixed_low,
                         SystemFnIdentifier::GetTransactionHash => self.fixed_low,
                         SystemFnIdentifier::SetEpoch => self.fixed_low,

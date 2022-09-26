@@ -23,10 +23,13 @@ fn batched_executions_should_result_in_the_same_result() {
     let mut store0 = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner0 = TestRunner::new(true, &mut store0);
     let (public_key, _, account) = test_runner0.new_account();
-    let mut manifests = Vec::<(TransactionManifest, Vec<PublicKey>)>::new();
-    for amount in 0..10 {
+    let mut manifests = Vec::<(TransactionManifest, Vec<NonFungibleAddress>)>::new();
+    for amount in 0u32..10u32 {
         let manifest = self_transfer_txn(account, Decimal::from(amount));
-        manifests.push((manifest, vec![public_key.into()]));
+        manifests.push((
+            manifest,
+            vec![NonFungibleAddress::from_public_key(&public_key)],
+        ));
     }
 
     let mut store1 = TypedInMemorySubstateStore::with_bootstrap();

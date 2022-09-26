@@ -5,7 +5,7 @@ use sbor::*;
 use crate::component::PackageAddress;
 use crate::engine::types::RENodeId;
 
-#[derive(Debug, Clone, Copy, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, Copy, TypeId, Encode, Decode)]
 pub enum Receiver {
     Consumed(RENodeId),
     Ref(RENodeId),
@@ -49,6 +49,7 @@ pub enum ComponentFnIdentifier {
     Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe, PartialOrd, Ord,
 )]
 pub enum SystemFnIdentifier {
+    Create,
     GetTransactionHash,
     GetCurrentEpoch,
     SetEpoch,

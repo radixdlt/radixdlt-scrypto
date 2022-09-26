@@ -81,7 +81,6 @@ impl Publish {
                 &None,
                 &self.network,
                 &self.manifest,
-                false,
                 self.trace,
                 false,
                 out,

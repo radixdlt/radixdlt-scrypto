@@ -183,7 +183,7 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
             | SubstateId::KeyValueStoreSpace(..)
             | SubstateId::Package(..)
             | SubstateId::ResourceManager(..)
-            | SubstateId::System
+            | SubstateId::System(..)
             | SubstateId::Bucket(..)
             | SubstateId::Proof(..)
             | SubstateId::Worktop => {
@@ -202,7 +202,7 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
             | SubstateId::Vault(..)
             | SubstateId::Package(..)
             | SubstateId::ResourceManager(..)
-            | SubstateId::System
+            | SubstateId::System(..)
             | SubstateId::Bucket(..)
             | SubstateId::Proof(..)
             | SubstateId::Worktop => {

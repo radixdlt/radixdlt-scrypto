@@ -6,8 +6,8 @@ use transaction::builder::ManifestBuilder;
 use transaction::builder::TransactionBuilder;
 use transaction::model::*;
 use transaction::signing::EcdsaSecp256k1PrivateKey;
-use transaction::validation::ValidationConfig;
-use transaction::validation::{TestIntentHashManager, TransactionValidator};
+use transaction::validation::{NotarizedTransactionValidator, TestIntentHashManager};
+use transaction::validation::{TransactionValidator, ValidationConfig};
 
 #[test]
 fn test_transaction_preview_cost_estimate() {
@@ -40,7 +40,7 @@ fn test_transaction_preview_cost_estimate() {
 fn prepare_test_tx_and_preview_intent(
     test_runner: &TestRunner<TypedInMemorySubstateStore>,
     network: &NetworkDefinition,
-) -> (ValidatedTransaction, PreviewIntent) {
+) -> (Validated<NotarizedTransaction>, PreviewIntent) {
     let notary_priv_key = EcdsaSecp256k1PrivateKey::from_u64(2).unwrap();
     let tx_signer_priv_key = EcdsaSecp256k1PrivateKey::from_u64(3).unwrap();
 
@@ -66,17 +66,16 @@ fn prepare_test_tx_and_preview_intent(
         .notarize(&notary_priv_key)
         .build();
 
-    let validated_transaction = TransactionValidator::validate(
-        notarized_transaction.clone(),
-        &TestIntentHashManager::new(),
-        &ValidationConfig {
-            network_id: network.id,
-            current_epoch: 1,
-            max_cost_unit_limit: 10_000_000,
-            min_tip_percentage: 0,
-        },
-    )
-    .unwrap();
+    let validator = NotarizedTransactionValidator::new(ValidationConfig {
+        network_id: network.id,
+        current_epoch: 1,
+        max_cost_unit_limit: 10_000_000,
+        min_tip_percentage: 0,
+    });
+
+    let validated_transaction = validator
+        .validate(notarized_transaction.clone(), &TestIntentHashManager::new())
+        .unwrap();
 
     let preview_intent = PreviewIntent {
         intent: notarized_transaction.signed_intent.intent.clone(),

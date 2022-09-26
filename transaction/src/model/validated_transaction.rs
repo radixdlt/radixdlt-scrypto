@@ -1,45 +1,78 @@
 use sbor::rust::vec::Vec;
-use sbor::*;
 use scrypto::buffer::scrypto_encode;
 use scrypto::crypto::*;
+use scrypto::resource::NonFungibleAddress;
 
 use crate::model::*;
 
 /// Represents a validated transaction
-#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
-pub struct ValidatedTransaction {
-    pub transaction: NotarizedTransaction,
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Validated<T> {
+    pub transaction: T,
     pub transaction_hash: Hash,
-    pub instructions: Vec<ExecutableInstruction>,
-    pub signer_public_keys: Vec<PublicKey>,
+    pub instructions: Vec<Instruction>,
+    pub initial_proofs: Vec<NonFungibleAddress>,
+    pub cost_unit_limit: u32,
+    pub tip_percentage: u32,
+    pub blobs: Vec<Vec<u8>>,
 }
 
-impl ExecutableTransaction for ValidatedTransaction {
+impl<T> Validated<T> {
+    pub fn new(
+        transaction: T,
+        transaction_hash: Hash,
+        instructions: Vec<Instruction>,
+        initial_proofs: Vec<NonFungibleAddress>,
+        cost_unit_limit: u32,
+        tip_percentage: u32,
+        blobs: Vec<Vec<u8>>,
+    ) -> Self {
+        Self {
+            transaction,
+            transaction_hash,
+            instructions,
+            initial_proofs,
+            cost_unit_limit,
+            tip_percentage,
+            blobs,
+        }
+    }
+
+    pub fn into_transaction(self) -> T {
+        self.transaction
+    }
+
+    pub fn transaction(&self) -> &T {
+        &self.transaction
+    }
+}
+
+impl<T> ExecutableTransaction for Validated<T> {
     fn transaction_hash(&self) -> Hash {
         self.transaction_hash
     }
 
     fn manifest_instructions_size(&self) -> u32 {
-        scrypto_encode(&self.transaction.signed_intent.intent.manifest.instructions).len() as u32
+        scrypto_encode(&self.instructions).len() as u32
     }
 
     fn cost_unit_limit(&self) -> u32 {
-        self.transaction.signed_intent.intent.header.cost_unit_limit
+        self.cost_unit_limit
     }
 
     fn tip_percentage(&self) -> u32 {
-        self.transaction.signed_intent.intent.header.tip_percentage
+        self.tip_percentage
     }
 
-    fn instructions(&self) -> &[ExecutableInstruction] {
+    fn instructions(&self) -> &[Instruction] {
         &self.instructions
     }
 
-    fn signer_public_keys(&self) -> &[PublicKey] {
-        &self.signer_public_keys
+    fn initial_proofs(&self) -> Vec<NonFungibleAddress> {
+        self.initial_proofs.clone()
     }
 
     fn blobs(&self) -> &[Vec<u8>] {
-        &self.transaction.signed_intent.intent.manifest.blobs
+        &self.blobs
     }
 }

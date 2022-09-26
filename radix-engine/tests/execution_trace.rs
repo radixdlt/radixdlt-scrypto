@@ -15,14 +15,17 @@ fn test_trace_resource_transfers() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), account)
-        .call_function(
+        .call_scrypto_function(
             package_address,
             "ExecutionTraceTest",
             "transfer_resource_between_two_components",
             args!(transfer_amount),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
 
     // Assert
     let output = receipt.expect_commit_success();

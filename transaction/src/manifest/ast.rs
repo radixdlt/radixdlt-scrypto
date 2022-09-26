@@ -99,6 +99,15 @@ pub enum Instruction {
     CreateResource {
         args: Vec<Value>,
     },
+
+    BurnBucket {
+        bucket: Value,
+    },
+
+    MintFungible {
+        resource_address: Value,
+        amount: Value,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
