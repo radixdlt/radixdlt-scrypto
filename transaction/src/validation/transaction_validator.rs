@@ -16,7 +16,7 @@ pub trait TransactionValidator<T: Decode> {
         &self,
         transaction: &[u8],
         intent_hash_manager: &I,
-    ) -> Result<Validated<T>, TransactionValidationError> {
+    ) -> Result<Validated<T, Vec<u8>>, TransactionValidationError> {
         if transaction.len() > MAX_PAYLOAD_SIZE {
             return Err(TransactionValidationError::TransactionTooLarge);
         }
@@ -31,7 +31,7 @@ pub trait TransactionValidator<T: Decode> {
         &self,
         transaction: T,
         intent_hash_manager: &I,
-    ) -> Result<Validated<T>, TransactionValidationError>;
+    ) -> Result<Validated<T, Vec<u8>>, TransactionValidationError>;
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -52,7 +52,7 @@ impl TransactionValidator<NotarizedTransaction> for NotarizedTransactionValidato
         &self,
         transaction: NotarizedTransaction,
         intent_hash_manager: &I,
-    ) -> Result<Validated<NotarizedTransaction>, TransactionValidationError> {
+    ) -> Result<Validated<NotarizedTransaction, Vec<u8>>, TransactionValidationError> {
         // verify the intent
         let instructions =
             self.validate_intent(&transaction.signed_intent.intent, intent_hash_manager)?;

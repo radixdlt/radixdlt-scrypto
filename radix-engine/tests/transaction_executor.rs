@@ -60,7 +60,7 @@ fn test_normal_transaction_flow() {
         min_tip_percentage: 0,
     });
 
-    let validated_transaction: Validated<NotarizedTransaction> = validator
+    let validated_transaction: Validated<NotarizedTransaction, Vec<u8>> = validator
         .validate_from_slice(&raw_transaction, &intent_hash_manager)
         .expect("Invalid transaction");
     let mut executor = TransactionExecutor::new(
@@ -80,7 +80,7 @@ fn test_normal_transaction_flow() {
     receipt.expect_commit_success();
 }
 
-fn create_executable_transaction(cost_unit_limit: u32) -> Validated<NotarizedTransaction> {
+fn create_executable_transaction(cost_unit_limit: u32) -> Validated<NotarizedTransaction, Vec<u8>> {
     let notarized_transaction = create_notarized_transaction(cost_unit_limit);
 
     let validator = NotarizedTransactionValidator::new(ValidationConfig {

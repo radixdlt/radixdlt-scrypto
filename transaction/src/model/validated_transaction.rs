@@ -7,17 +7,17 @@ use crate::model::*;
 
 /// Represents a validated transaction
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Validated<T> {
+pub struct Validated<T, B: AsRef<Vec<u8>>> {
     pub transaction: T,
     pub transaction_hash: Hash,
     pub instructions: Vec<Instruction>,
     pub initial_proofs: Vec<NonFungibleAddress>,
     pub cost_unit_limit: u32,
     pub tip_percentage: u32,
-    pub blobs: Vec<Vec<u8>>,
+    pub blobs: Vec<B>,
 }
 
-impl<T> Validated<T> {
+impl<T> Validated<T, Vec<u8>> {
     pub fn new(
         transaction: T,
         transaction_hash: Hash,
@@ -47,7 +47,7 @@ impl<T> Validated<T> {
     }
 }
 
-impl<T> ExecutableTransaction for Validated<T> {
+impl<T> ExecutableTransaction for Validated<T, Vec<u8>> {
     fn transaction_hash(&self) -> Hash {
         self.transaction_hash
     }

@@ -8,8 +8,8 @@ pub struct SystemTransaction {
     pub manifest: TransactionManifest,
 }
 
-impl Into<Validated<SystemTransaction>> for SystemTransaction {
-    fn into(self) -> Validated<SystemTransaction> {
+impl Into<Validated<SystemTransaction, Vec<u8>>> for SystemTransaction {
+    fn into(self) -> Validated<SystemTransaction, Vec<u8>> {
         let transaction_hash = Hash([0u8; Hash::LENGTH]);
         let instructions = self.manifest.instructions.clone();
         let blobs = self.manifest.blobs.clone();
