@@ -1,7 +1,7 @@
-use radix_engine::model::Substate;
 use radix_engine::ledger::{
     bootstrap, OutputValue, QueryableSubstateStore, ReadableSubstateStore, WriteableSubstateStore,
 };
+use radix_engine::model::Substate;
 use radix_engine::types::*;
 
 /// A substate store that stores all typed substates in host memory.
