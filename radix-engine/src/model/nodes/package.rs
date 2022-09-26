@@ -11,8 +11,8 @@ use super::TryIntoSubstates;
 /// A collection of blueprints, compiled and published as a single unit.
 #[derive(Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct Package {
-    code: Vec<u8>,
-    blueprint_abis: HashMap<String, BlueprintAbi>,
+    pub code: Vec<u8>,
+    pub blueprint_abis: HashMap<String, BlueprintAbi>,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]

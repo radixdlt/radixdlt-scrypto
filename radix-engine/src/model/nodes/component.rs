@@ -15,7 +15,7 @@ pub enum ComponentError {
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct Component {
     pub info: ComponentInfoSubstate,
-    pub state: ComponentStateSubstate, // TODO: lazily loaded substate
+    pub state: ComponentStateSubstate, // TODO: lazy loading of component state
 }
 
 impl TryIntoSubstates for Component {

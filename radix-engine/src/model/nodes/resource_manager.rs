@@ -39,13 +39,13 @@ pub enum ResourceManagerError {
 /// The definition of a resource.
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct ResourceManager {
-    resource_type: ResourceType,
-    metadata: HashMap<String, String>,
-    method_table: HashMap<ResourceManagerFnIdentifier, ResourceMethodRule>,
-    vault_method_table: HashMap<VaultFnIdentifier, ResourceMethodRule>,
-    bucket_method_table: HashMap<BucketFnIdentifier, ResourceMethodRule>,
-    authorization: HashMap<ResourceMethodAuthKey, MethodAccessRule>,
-    total_supply: Decimal,
+    pub resource_type: ResourceType,
+    pub metadata: HashMap<String, String>,
+    pub method_table: HashMap<ResourceManagerFnIdentifier, ResourceMethodRule>,
+    pub vault_method_table: HashMap<VaultFnIdentifier, ResourceMethodRule>,
+    pub bucket_method_table: HashMap<BucketFnIdentifier, ResourceMethodRule>,
+    pub authorization: HashMap<ResourceMethodAuthKey, MethodAccessRule>,
+    pub total_supply: Decimal,
 }
 
 impl ResourceManager {
