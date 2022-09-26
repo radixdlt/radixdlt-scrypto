@@ -113,7 +113,7 @@ impl<'f, 's, R: FeeReserve> RENodeRef<'f, 's, R> {
                 .map_or(value.root(), |v| value.non_root(v))
                 .vault(),
 
-            RENodeRef::Track(track, node_id) => track.read_node(node_id).vault(),
+            RENodeRef::Track(track, node_id) => track.borrow_node(node_id).vault(),
         }
     }
 
@@ -123,7 +123,7 @@ impl<'f, 's, R: FeeReserve> RENodeRef<'f, 's, R> {
                 .as_ref()
                 .map_or(value.root(), |v| value.non_root(v))
                 .system(),
-            RENodeRef::Track(track, node_id) => track.read_node(node_id).system(),
+            RENodeRef::Track(track, node_id) => track.borrow_node(node_id).system(),
         }
     }
 
@@ -133,7 +133,7 @@ impl<'f, 's, R: FeeReserve> RENodeRef<'f, 's, R> {
                 .as_ref()
                 .map_or(value.root(), |v| value.non_root(v))
                 .resource_manager(),
-            RENodeRef::Track(track, node_id) => track.read_node(node_id).resource_manager(),
+            RENodeRef::Track(track, node_id) => track.borrow_node(node_id).resource_manager(),
         }
     }
 
@@ -143,7 +143,7 @@ impl<'f, 's, R: FeeReserve> RENodeRef<'f, 's, R> {
                 .as_ref()
                 .map_or(value.root(), |v| value.non_root(v))
                 .component(),
-            RENodeRef::Track(track, node_id) => track.read_node(node_id).component(),
+            RENodeRef::Track(track, node_id) => track.borrow_node(node_id).component(),
         }
     }
 
@@ -153,7 +153,7 @@ impl<'f, 's, R: FeeReserve> RENodeRef<'f, 's, R> {
                 .as_ref()
                 .map_or(value.root(), |v| value.non_root(v))
                 .package(),
-            RENodeRef::Track(track, node_id) => track.read_node(node_id).package(),
+            RENodeRef::Track(track, node_id) => track.borrow_node(node_id).package(),
         }
     }
 }
@@ -409,7 +409,7 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
                     }
                     _ => panic!("Unexpeceted"),
                 };
-                *track.write_substate(substate_id).raw_mut() =
+                *track.borrow_substate_mut(substate_id).borrow_mut() =
                     ComponentStateSubstate::new(value.raw).into();
                 for (id, val) in to_store {
                     insert_non_root_nodes(track, val.to_nodes(id));
@@ -441,14 +441,14 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
     pub fn vault_mut(&mut self) -> &mut Vault {
         match self {
             RENodeRefMut::Stack(re_value, id) => re_value.get_node_mut(id.as_ref()).vault_mut(),
-            RENodeRefMut::Track(track, node_id) => track.write_node(node_id).vault_mut(),
+            RENodeRefMut::Track(track, node_id) => track.borrow_node_mut(node_id).vault_mut(),
         }
     }
 
     pub fn component_mut(&mut self) -> &mut Component {
         match self {
             RENodeRefMut::Stack(re_value, id) => re_value.get_node_mut(id.as_ref()).component_mut(),
-            RENodeRefMut::Track(track, node_id) => track.write_node(node_id).component_mut(),
+            RENodeRefMut::Track(track, node_id) => track.borrow_node_mut(node_id).component_mut(),
         }
     }
 }

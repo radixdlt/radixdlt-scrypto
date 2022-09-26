@@ -76,7 +76,7 @@ impl AuthModule {
                     node_ref.bucket().resource_address()
                 };
                 let resource_manager = track
-                    .read_node(&RENodeId::ResourceManager(resource_address))
+                    .borrow_node(&RENodeId::ResourceManager(resource_address))
                     .resource_manager();
                 let method_auth = resource_manager.get_bucket_auth(*bucket_fn);
                 vec![method_auth.clone()]
@@ -86,7 +86,7 @@ impl AuthModule {
                 FnIdentifier::Native(NativeFnIdentifier::ResourceManager(fn_ident)),
             ) => {
                 let resource_manager = track
-                    .read_node(&RENodeId::ResourceManager(resource_address))
+                    .borrow_node(&RENodeId::ResourceManager(resource_address))
                     .resource_manager();
                 let method_auth = resource_manager.get_auth(*fn_ident, &input).clone();
                 vec![method_auth]
@@ -113,7 +113,7 @@ impl AuthModule {
                 // TODO: Remove this assumption
 
                 let package = track
-                    .read_node(&RENodeId::Package(*package_address))
+                    .borrow_node(&RENodeId::Package(*package_address))
                     .package()
                     .clone();
                 let abi = package
@@ -145,7 +145,7 @@ impl AuthModule {
                     node_ref.vault().resource_address()
                 };
                 let resource_manager = track
-                    .read_node(&RENodeId::ResourceManager(resource_address))
+                    .borrow_node(&RENodeId::ResourceManager(resource_address))
                     .resource_manager();
                 vec![resource_manager.get_vault_auth(*vault_fn).clone()]
             }

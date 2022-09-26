@@ -117,7 +117,7 @@ where
             };
             let mut node_ref = kernel
                 .borrow_node_mut(&RENodeId::Bucket(bucket_id))
-                .expect("Failed to borrow SYSTEM_TOKEN bucket substate");
+                .expect("Failed to borrow bucket node");
             let bucket = node_ref.bucket_mut();
             let proof = bucket
                 .create_proof(bucket_id)
@@ -276,7 +276,7 @@ where
                     let output = {
                         let package = self
                             .track
-                            .read_node(&RENodeId::Package(package_address))
+                            .borrow_node(&RENodeId::Package(package_address))
                             .package()
                             .clone();
                         for m in &mut self.modules {
@@ -334,7 +334,7 @@ where
 
                     let package = self
                         .track
-                        .read_node(&RENodeId::Package(package_address))
+                        .borrow_node(&RENodeId::Package(package_address))
                         .package();
                     let blueprint_abi = package
                         .blueprint_abi(&blueprint_name)
@@ -519,7 +519,7 @@ where
                 locked_values.insert(SubstateId::Package(package_address.clone()));
                 let package = self
                     .track
-                    .read_node(&RENodeId::Package(package_address.clone()))
+                    .borrow_node(&RENodeId::Package(package_address.clone()))
                     .package();
                 let abi =
                     package

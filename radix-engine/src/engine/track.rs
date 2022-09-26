@@ -41,8 +41,8 @@ impl LockState {
 
 #[derive(Debug)]
 pub enum SubstateCache {
-    Raw(Substate),
-    Converted(Vault),
+    Free(Substate),
+    Taken,
 }
 
 // TODO: explore the following options
@@ -55,67 +55,35 @@ pub enum NodeToSubstateFailure {
 }
 
 impl SubstateCache {
-    pub fn raw(&self) -> &Substate {
+    pub fn borrow(&self) -> &Substate {
         match self {
-            Self::Raw(substate) => substate,
-            Self::Converted(_) => {
-                panic!("Attempted to read a raw substate which has been converted into a node")
+            Self::Free(substate) => substate,
+            Self::Taken => {
+                panic!("Attempted to borrow a already taken substate")
             }
         }
     }
 
-    pub fn raw_mut(&mut self) -> &mut Substate {
+    pub fn borrow_mut(&mut self) -> &mut Substate {
         match self {
-            Self::Raw(substate) => substate,
-            Self::Converted(_) => {
-                panic!("Attempted to read a raw substate which has been converted into a node")
+            Self::Free(substate) => substate,
+            Self::Taken => {
+                panic!("Attempted to borrow a already taken substate")
             }
         }
     }
 
-    // Turns substate into a node for dynamic behaviors
-    pub fn convert_to_node(&mut self) {
-        match self {
-            SubstateCache::Raw(substate) => {
-                let substate: VaultSubstate = substate.clone().into();
-                *self = Self::Converted(Vault::new(substate.0));
-            }
-            SubstateCache::Converted(_) => {}
-        }
-    }
-
-    pub fn convert_to_substate(self) -> Result<Substate, NodeToSubstateFailure> {
-        match self {
-            SubstateCache::Raw(substate) => Ok(substate),
-            SubstateCache::Converted(vault) => {
-                let resource = vault
-                    .resource()
-                    .map_err(|_| NodeToSubstateFailure::VaultPartiallyLocked)?;
-                Ok(Substate::Vault(VaultSubstate(resource)))
+    pub fn take(&mut self) -> Substate {
+        match core::mem::replace(self, SubstateCache::Taken) {
+            Self::Free(substate) => substate,
+            Self::Taken => {
+                panic!("Attempted to take a already taken substate")
             }
         }
     }
 
-    pub fn vault(&mut self) -> &Vault {
-        match self {
-            Self::Raw(_) => panic!("Attempted to read a raw substate as a node"),
-            Self::Converted(vault) => vault,
-        }
-    }
-
-    pub fn vault_mut(&mut self) -> &mut Vault {
-        match self {
-            Self::Raw(_) => panic!("Attempted to read a raw substate as a node"),
-            Self::Converted(vault) => vault,
-        }
-    }
-
-    pub fn component(&mut self) -> &Component {
-        todo!()
-    }
-
-    pub fn component_mut(&mut self) -> &mut Component {
-        todo!()
+    pub fn is_taken(&self) -> bool {
+        matches!(self, SubstateCache::Taken)
     }
 }
 
@@ -230,7 +198,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                 self.borrowed_substates.insert(
                     substate_id.clone(),
                     BorrowedSubstate {
-                        substate: SubstateCache::Raw(substate),
+                        substate: SubstateCache::Free(substate),
                         lock_state: LockState::no_lock(),
                     },
                 );
@@ -259,6 +227,8 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             }
         }
 
+        // Always convert substates into node
+
         Ok(())
     }
 
@@ -277,29 +247,27 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             LockState::Write => borrowed.lock_state = LockState::no_lock(),
         }
 
-        if write_through && borrowed.lock_state.is_free() {
-            self.state_track.put_substate_to_base(
-                substate_id,
-                borrowed
-                    .substate
-                    .convert_to_substate()
-                    .map_err(TrackError::NodeToSubstateFailure)?,
-            );
+        if write_through {
+            self.state_track
+                .put_substate_to_base(substate_id, borrowed.substate.take());
         } else {
             self.borrowed_substates.insert(substate_id, borrowed);
         }
         Ok(())
     }
 
-    pub fn read_node(&self, node_id: &RENodeId) -> &HeapRENode {
+    // TODO: Clean up
+    // Despite being named as borrow_*, borrow rules are not enforced here but within `acquire_lock`.
+
+    pub fn borrow_node(&self, node_id: &RENodeId) -> &HeapRENode {
         todo!()
     }
 
-    pub fn write_node(&mut self, node_id: &RENodeId) -> &mut HeapRENode {
+    pub fn borrow_node_mut(&mut self, node_id: &RENodeId) -> &mut HeapRENode {
         todo!()
     }
 
-    pub fn read_substate(&self, substate_id: SubstateId) -> &SubstateCache {
+    pub fn borrow_substate(&self, substate_id: SubstateId) -> &SubstateCache {
         &self
             .borrowed_substates
             .get(&substate_id)
@@ -307,7 +275,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             .substate
     }
 
-    pub fn write_substate(&mut self, substate_id: SubstateId) -> &mut SubstateCache {
+    pub fn borrow_substate_mut(&mut self, substate_id: SubstateId) -> &mut SubstateCache {
         &mut self
             .borrowed_substates
             .get_mut(&substate_id)
@@ -422,12 +390,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
 
         // Flush all borrowed substates to state track
         if is_success {
-            for (substate_id, borrowed) in self.borrowed_substates.drain() {
-                let substate = borrowed.substate.convert_to_substate().expect(
-                    "Invariant: at the end of transaction, all borrowed substate should be ready for persisting"
-                );
-                self.state_track.put_substate(substate_id, substate);
-            }
+            todo!()
         }
 
         // Commit/rollback application state changes
