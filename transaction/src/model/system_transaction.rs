@@ -8,14 +8,13 @@ pub struct SystemTransaction {
     pub manifest: TransactionManifest,
 }
 
-impl Into<Validated<SystemTransaction, Vec<u8>>> for SystemTransaction {
-    fn into(self) -> Validated<SystemTransaction, Vec<u8>> {
+impl Into<Validated> for SystemTransaction {
+    fn into(self) -> Validated {
         let transaction_hash = Hash([0u8; Hash::LENGTH]);
-        let instructions = self.manifest.instructions.clone();
-        let blobs = self.manifest.blobs.clone();
+        let instructions = self.manifest.instructions;
+        let blobs = self.manifest.blobs;
 
         Validated::new(
-            self,
             transaction_hash,
             instructions,
             vec![AuthModule::system_role_nf_address()],
