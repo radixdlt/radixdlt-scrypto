@@ -3,8 +3,8 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use radix_engine::constants::*;
-use radix_engine::engine::{ExecutionTrace, Kernel, KernelError, ModuleError, SystemApi};
-use radix_engine::engine::{RuntimeError, Track};
+use radix_engine::engine::{ExecutionTrace, Kernel, KernelError, ModuleError};
+use radix_engine::engine::{RuntimeError, SystemApi, Track};
 use radix_engine::fee::{FeeTable, SystemLoanFeeReserve};
 use radix_engine::ledger::*;
 use radix_engine::model::{export_abi, export_abi_by_component, extract_abi};
@@ -22,7 +22,7 @@ use sbor::describe::*;
 use scrypto::dec;
 use scrypto::math::Decimal;
 use transaction::builder::ManifestBuilder;
-use transaction::model::{ExecutableTransaction, TransactionManifest};
+use transaction::model::{ExecutableTransaction, MethodIdentifier, TransactionManifest};
 use transaction::model::{PreviewIntent, TestTransaction};
 use transaction::signing::EcdsaSecp256k1PrivateKey;
 use transaction::validation::TestIntentHashManager;
@@ -120,8 +120,8 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
 
     pub fn new_account_with_auth_rule(&mut self, withdraw_auth: &AccessRule) -> ComponentAddress {
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-            .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
-            .call_method(SYS_FAUCET_COMPONENT, "free_xrd", args!())
+            .lock_fee(100u32.into(), SYS_FAUCET_COMPONENT)
+            .call_method(SYS_FAUCET_COMPONENT, "free", args!())
             .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
                 builder.new_account_with_resource(withdraw_auth, bucket_id)
             })
@@ -155,7 +155,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         abi: HashMap<String, BlueprintAbi>,
     ) -> PackageAddress {
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-            .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
+            .lock_fee(100u32.into(), SYS_FAUCET_COMPONENT)
             .publish_package(code, abi)
             .build();
 
@@ -223,29 +223,28 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     pub fn execute_manifest(
         &mut self,
         manifest: TransactionManifest,
-        signer_public_keys: Vec<PublicKey>,
+        initial_proofs: Vec<NonFungibleAddress>,
     ) -> TransactionReceipt {
-        let mut receipts = self.execute_batch(vec![(
-            manifest,
-            signer_public_keys.into_iter().map(Into::into).collect(),
-        )]);
+        let mut receipts = self.execute_batch(vec![(manifest, initial_proofs)]);
         receipts.pop().unwrap()
     }
 
     pub fn execute_manifest_ignoring_fee(
         &mut self,
         mut manifest: TransactionManifest,
-        signer_public_keys: Vec<PublicKey>,
+        initial_proofs: Vec<NonFungibleAddress>,
     ) -> TransactionReceipt {
         manifest.instructions.insert(
             0,
             transaction::model::Instruction::CallMethod {
-                component_address: SYS_FAUCET_COMPONENT,
-                method_name: "lock_fee".to_string(),
+                method_identifier: MethodIdentifier::Scrypto {
+                    component_address: SYS_FAUCET_COMPONENT,
+                    ident: "lock_fee".to_string(),
+                },
                 args: args!(dec!("1000")),
             },
         );
-        self.execute_manifest(manifest, signer_public_keys)
+        self.execute_manifest(manifest, initial_proofs)
     }
 
     pub fn execute_transaction<T: ExecutableTransaction>(
@@ -285,7 +284,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
 
     pub fn execute_batch(
         &mut self,
-        manifests: Vec<(TransactionManifest, Vec<PublicKey>)>,
+        manifests: Vec<(TransactionManifest, Vec<NonFungibleAddress>)>,
     ) -> Vec<TransactionReceipt> {
         let node_id = self.create_child_node(0);
         let receipts = self.execute_batch_on_node(node_id, manifests);
@@ -300,13 +299,13 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     pub fn execute_batch_on_node(
         &mut self,
         node_id: u64,
-        manifests: Vec<(TransactionManifest, Vec<PublicKey>)>,
+        manifests: Vec<(TransactionManifest, Vec<NonFungibleAddress>)>,
     ) -> Vec<TransactionReceipt> {
         let mut store = self.execution_stores.get_output_store(node_id);
         let mut receipts = Vec::new();
-        for (manifest, signer_public_keys) in manifests {
+        for (manifest, initial_proofs) in manifests {
             let transaction =
-                TestTransaction::new(manifest, self.next_transaction_nonce, signer_public_keys);
+                TestTransaction::new(manifest, self.next_transaction_nonce, initial_proofs);
             self.next_transaction_nonce += 1;
             let receipt = TransactionExecutor::new(
                 &mut store,
@@ -321,7 +320,6 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
                 },
                 &ExecutionConfig {
                     max_call_depth: DEFAULT_MAX_CALL_DEPTH,
-                    is_system: false,
                     trace: self.trace,
                 },
             );
@@ -360,17 +358,20 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     ) {
         let package = self.compile_and_publish("./tests/resource_creator");
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-            .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
+            .lock_fee(100u32.into(), SYS_FAUCET_COMPONENT)
             .create_proof_from_account(auth, account)
-            .call_function(package, "ResourceCreator", function, args!(token, set_auth))
+            .call_scrypto_function(package, "ResourceCreator", function, args!(token, set_auth))
             .call_method(
                 account,
                 "deposit_batch",
                 args!(Expression::entire_worktop()),
             )
             .build();
-        self.execute_manifest(manifest, vec![signer_public_key.into()])
-            .expect_commit_success();
+        self.execute_manifest(
+            manifest,
+            vec![NonFungibleAddress::from_public_key(&signer_public_key)],
+        )
+        .expect_commit_success();
     }
 
     pub fn create_restricted_token(
@@ -416,12 +417,14 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         );
 
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-            .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
+            .lock_fee(100u32.into(), SYS_FAUCET_COMPONENT)
             .create_resource(
                 ResourceType::Fungible { divisibility: 0 },
                 HashMap::new(),
                 access_rules,
-                Some(MintParams::Fungible { amount: 5.into() }),
+                Some(MintParams::Fungible {
+                    amount: 5u32.into(),
+                }),
             )
             .call_method(
                 account,
@@ -459,12 +462,14 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         );
 
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-            .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
+            .lock_fee(100u32.into(), SYS_FAUCET_COMPONENT)
             .create_resource(
                 ResourceType::Fungible { divisibility: 0 },
                 HashMap::new(),
                 access_rules,
-                Some(MintParams::Fungible { amount: 5.into() }),
+                Some(MintParams::Fungible {
+                    amount: 5u32.into(),
+                }),
             )
             .call_method(
                 account,
@@ -497,12 +502,14 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
 
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-            .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
+            .lock_fee(100u32.into(), SYS_FAUCET_COMPONENT)
             .create_resource(
                 ResourceType::Fungible { divisibility: 0 },
                 HashMap::new(),
                 access_rules,
-                Some(MintParams::Fungible { amount: 5.into() }),
+                Some(MintParams::Fungible {
+                    amount: 5u32.into(),
+                }),
             )
             .call_method(
                 account,
@@ -541,7 +548,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         );
 
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-            .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
+            .lock_fee(100u32.into(), SYS_FAUCET_COMPONENT)
             .create_resource(
                 ResourceType::NonFungible,
                 HashMap::new(),
@@ -572,7 +579,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
         access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-            .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
+            .lock_fee(100u32.into(), SYS_FAUCET_COMPONENT)
             .create_resource(
                 ResourceType::Fungible { divisibility },
                 HashMap::new(),
@@ -603,7 +610,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         signer_public_key: EcdsaSecp256k1PublicKey,
     ) -> ComponentAddress {
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-            .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
+            .lock_fee(100u32.into(), SYS_FAUCET_COMPONENT)
             .call_function_with_abi(
                 package_address,
                 blueprint_name,
@@ -619,7 +626,10 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
                 args!(Expression::entire_worktop()),
             )
             .build();
-        let receipt = self.execute_manifest(manifest, vec![signer_public_key.into()]);
+        let receipt = self.execute_manifest(
+            manifest,
+            vec![NonFungibleAddress::from_public_key(&signer_public_key)],
+        );
         receipt.expect_commit_success();
         receipt
             .expect_commit()
@@ -628,22 +638,30 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     }
 
     pub fn set_current_epoch(&mut self, epoch: u64) {
-        self.kernel_call(true, |kernel| {
-            kernel
-                .invoke_method(
-                    Receiver::Ref(RENodeId::System),
-                    FnIdentifier::Native(NativeFnIdentifier::System(SystemFnIdentifier::SetEpoch)),
-                    ScryptoValue::from_typed(&SystemSetEpochInput { epoch }),
-                )
-                .unwrap()
-        });
+        self.kernel_call(
+            vec![NonFungibleAddress::new(
+                SYSTEM_TOKEN,
+                NonFungibleId::from_u32(0),
+            )],
+            |kernel| {
+                kernel
+                    .invoke_method(
+                        Receiver::Ref(RENodeId::System(SYS_SYSTEM_COMPONENT)),
+                        FnIdentifier::Native(NativeFnIdentifier::System(
+                            SystemFnIdentifier::SetEpoch,
+                        )),
+                        ScryptoValue::from_typed(&SystemSetEpochInput { epoch }),
+                    )
+                    .unwrap()
+            },
+        );
     }
 
     pub fn get_current_epoch(&mut self) -> u64 {
-        let current_epoch: ScryptoValue = self.kernel_call(false, |kernel| {
+        let current_epoch: ScryptoValue = self.kernel_call(vec![], |kernel| {
             kernel
                 .invoke_method(
-                    Receiver::Ref(RENodeId::System),
+                    Receiver::Ref(RENodeId::System(SYS_SYSTEM_COMPONENT)),
                     FnIdentifier::Native(NativeFnIdentifier::System(
                         SystemFnIdentifier::GetCurrentEpoch,
                     )),
@@ -655,7 +673,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     }
 
     /// Performs a kernel call through a kernel with `is_system = true`.
-    fn kernel_call<F>(&mut self, is_system: bool, fun: F) -> ScryptoValue
+    fn kernel_call<F>(&mut self, initial_proofs: Vec<NonFungibleAddress>, fun: F) -> ScryptoValue
     where
         F: FnOnce(
             &mut Kernel<DefaultWasmEngine, DefaultWasmInstance, SystemLoanFeeReserve>,
@@ -673,9 +691,8 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
 
         let mut kernel = Kernel::new(
             tx_hash,
-            Vec::new(),
+            initial_proofs,
             &blobs,
-            is_system,
             DEFAULT_MAX_CALL_DEPTH,
             &mut track,
             &mut self.wasm_engine,

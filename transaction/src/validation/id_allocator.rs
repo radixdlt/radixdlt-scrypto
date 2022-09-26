@@ -7,9 +7,6 @@ use scrypto::resource::ResourceAddress;
 
 use crate::errors::*;
 
-pub const ECDSA_TOKEN_BUCKET_ID: BucketId = 0;
-pub const ED25519_TOKEN_BUCKET_ID: BucketId = 1;
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum IdSpace {
     System,
@@ -70,11 +67,20 @@ impl IdAllocator {
             (ACCOUNT_PACKAGE, "Account") => {
                 Ok(ComponentAddress::Account(hash(data).lower_26_bytes()))
             }
-            (SYS_FAUCET_PACKAGE, "SysFaucet") | (SYS_UTILS_PACKAGE, "SysUtils") => {
+            (SYS_FAUCET_PACKAGE, "SysFaucet") => {
                 Ok(ComponentAddress::System(hash(data).lower_26_bytes()))
             }
             _ => Ok(ComponentAddress::Normal(hash(data).lower_26_bytes())),
         }
+    }
+
+    pub fn new_system_component_address(
+        &mut self,
+        transaction_hash: Hash,
+    ) -> Result<ComponentAddress, IdAllocationError> {
+        let mut data = transaction_hash.to_vec();
+        data.extend(self.next()?.to_le_bytes());
+        Ok(ComponentAddress::System(hash(data).lower_26_bytes()))
     }
 
     /// Creates a new resource address.

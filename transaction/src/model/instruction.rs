@@ -1,8 +1,7 @@
+use crate::model::MethodIdentifier;
 use sbor::rust::collections::BTreeSet;
-use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto::component::ComponentAddress;
 use scrypto::core::{Blob, FnIdentifier};
 use scrypto::engine::types::*;
 use scrypto::math::*;
@@ -92,8 +91,7 @@ pub enum Instruction {
     ///
     /// Buckets and proofs in arguments moves from transaction context to the callee.
     CallMethod {
-        component_address: ComponentAddress,
-        method_name: String,
+        method_identifier: MethodIdentifier,
         args: Vec<u8>,
     },
 

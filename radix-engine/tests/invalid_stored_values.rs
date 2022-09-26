@@ -14,7 +14,7 @@ fn stored_bucket_in_committed_component_should_fail() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(
+        .call_scrypto_function(
             package_address,
             "InvalidInitStoredBucket",
             "create",
@@ -39,7 +39,7 @@ fn stored_bucket_in_owned_component_should_fail() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(
+        .call_scrypto_function(
             package_address,
             "InvalidStoredBucketInOwnedComponent",
             "create_bucket_in_owned_component",

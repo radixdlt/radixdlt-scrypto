@@ -16,7 +16,7 @@ fn test_component() {
     // Create component
     let manifest1 = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(package, "ComponentTest", "create_component", args!())
+        .call_scrypto_function(package, "ComponentTest", "create_component", args!())
         .build();
     let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
     receipt1.expect_commit_success();
@@ -30,7 +30,7 @@ fn test_component() {
     // Call functions & methods
     let manifest2 = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(
+        .call_scrypto_function(
             package,
             "ComponentTest",
             "get_component_info",
@@ -44,7 +44,10 @@ fn test_component() {
             args!(Expression::entire_worktop()),
         )
         .build();
-    let receipt2 = test_runner.execute_manifest(manifest2, vec![public_key.into()]);
+    let receipt2 = test_runner.execute_manifest(
+        manifest2,
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
     receipt2.expect_commit_success();
 }
 
@@ -58,7 +61,7 @@ fn invalid_blueprint_name_should_cause_error() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(
+        .call_scrypto_function(
             package_address,
             "NonExistentBlueprint",
             "create_component",
@@ -85,7 +88,7 @@ fn reentrancy_should_not_be_possible() {
     let package_address = test_runner.compile_and_publish("./tests/component");
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(package_address, "ReentrantComponent", "new", args!())
+        .call_scrypto_function(package_address, "ReentrantComponent", "new", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();

@@ -24,7 +24,10 @@ fn test_integer_basic_ops() {
         )
         .unwrap()
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
     println!("{:?}", receipt);
 
     // Assert
@@ -41,7 +44,7 @@ fn test_native_and_safe_integer_interop() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(
+        .call_scrypto_function(
             package_address,
             "Hello",
             "native_and_safe_integer_interop",

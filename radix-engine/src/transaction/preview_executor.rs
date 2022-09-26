@@ -2,7 +2,7 @@ use scrypto::core::NetworkDefinition;
 use transaction::errors::TransactionValidationError;
 use transaction::model::PreviewIntent;
 use transaction::validation::IntentHashManager;
-use transaction::validation::TransactionValidator;
+use transaction::validation::NotarizedTransactionValidator;
 use transaction::validation::ValidationConfig;
 
 use crate::constants::DEFAULT_MAX_COST_UNIT_LIMIT;
@@ -69,20 +69,18 @@ where
         preview_intent: PreviewIntent,
     ) -> Result<PreviewResult, PreviewError> {
         // TODO: construct validation config based on current world state
-        let validation_params = ValidationConfig {
+        let validation_config = ValidationConfig {
             network_id: self.network.id,
             current_epoch: 1,
             max_cost_unit_limit: DEFAULT_MAX_COST_UNIT_LIMIT,
             min_tip_percentage: 0,
         };
         let execution_params = ExecutionConfig::default();
+        let validator = NotarizedTransactionValidator::new(validation_config);
 
-        let validated_preview_transaction = TransactionValidator::validate_preview_intent(
-            preview_intent.clone(),
-            self.intent_hash_manager,
-            &validation_params,
-        )
-        .map_err(PreviewError::TransactionValidationError)?;
+        let validated_preview_transaction = validator
+            .validate_preview_intent(preview_intent.clone(), self.intent_hash_manager)
+            .map_err(PreviewError::TransactionValidationError)?;
 
         let mut transaction_executor = TransactionExecutor::new(
             self.substate_store,

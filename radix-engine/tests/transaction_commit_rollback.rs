@@ -14,7 +14,7 @@ fn test_state_track_success() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), account)
+        .lock_fee(10u32.into(), account)
         .withdraw_from_account(RADIX_TOKEN, account)
         .call_method(
             other_account,
@@ -22,7 +22,10 @@ fn test_state_track_success() {
             args!(Expression::entire_worktop()),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
 
     // Assert
     receipt.expect_commit_success();
@@ -43,16 +46,19 @@ fn test_state_track_failure() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), account)
+        .lock_fee(10u32.into(), account)
         .withdraw_from_account(RADIX_TOKEN, account)
         .call_method(
             other_account,
             "deposit_batch",
             args!(Expression::entire_worktop()),
         )
-        .assert_worktop_contains_by_amount(Decimal::from(5), RADIX_TOKEN)
+        .assert_worktop_contains_by_amount(Decimal::from(5u32), RADIX_TOKEN)
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
 
     // Assert
     receipt.expect_specific_failure(|e| {

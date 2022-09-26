@@ -16,7 +16,7 @@ fn vector_of_buckets_argument_should_succeed() {
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id1| {
             builder.take_from_worktop(RADIX_TOKEN, |builder, bucket_id2| {
-                builder.call_function(
+                builder.call_scrypto_function(
                     package_address,
                     "Arguments",
                     "vector_argument",
@@ -43,7 +43,7 @@ fn tuple_of_buckets_argument_should_succeed() {
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id1| {
             builder.take_from_worktop(RADIX_TOKEN, |builder, bucket_id2| {
-                builder.call_function(
+                builder.call_scrypto_function(
                     package_address,
                     "Arguments",
                     "tuple_argument",
@@ -74,7 +74,12 @@ fn treemap_of_strings_and_buckets_argument_should_succeed() {
                 map.insert("first".to_string(), Bucket(bucket_id1));
                 map.insert("second".to_string(), Bucket(bucket_id2));
 
-                builder.call_function(package_address, "Arguments", "treemap_argument", args!(map))
+                builder.call_scrypto_function(
+                    package_address,
+                    "Arguments",
+                    "treemap_argument",
+                    args!(map),
+                )
             })
         })
         .build();
@@ -100,7 +105,12 @@ fn hashmap_of_strings_and_buckets_argument_should_succeed() {
                 map.insert("first".to_string(), Bucket(bucket_id1));
                 map.insert("second".to_string(), Bucket(bucket_id2));
 
-                builder.call_function(package_address, "Arguments", "hashmap_argument", args!(map))
+                builder.call_scrypto_function(
+                    package_address,
+                    "Arguments",
+                    "hashmap_argument",
+                    args!(map),
+                )
             })
         })
         .build();
@@ -121,7 +131,7 @@ fn some_optional_bucket_argument_should_succeed() {
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
-            builder.call_function(
+            builder.call_scrypto_function(
                 package_address,
                 "Arguments",
                 "option_argument",
@@ -145,7 +155,7 @@ fn none_optional_bucket_argument_should_succeed() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(
+        .call_scrypto_function(
             package_address,
             "Arguments",
             "option_argument",

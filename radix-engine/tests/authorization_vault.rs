@@ -22,7 +22,10 @@ fn cannot_withdraw_restricted_transfer_from_my_account_with_no_auth() {
             args!(Expression::entire_worktop()),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
 
     // Assert
     receipt.expect_specific_failure(is_auth_error);
@@ -40,7 +43,7 @@ fn can_withdraw_restricted_transfer_from_my_account_with_auth() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), account)
+        .lock_fee(10u32.into(), account)
         .withdraw_from_account_by_ids(
             &BTreeSet::from([NonFungibleId::from_u32(1)]),
             auth_resource_address,
@@ -69,7 +72,10 @@ fn can_withdraw_restricted_transfer_from_my_account_with_auth() {
             args!(Expression::entire_worktop()),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
 
     // Assert
     receipt.expect_commit_success();

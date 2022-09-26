@@ -14,27 +14,27 @@ use rayon::prelude::*;
 use transaction::builder::{ManifestBuilder, TransactionBuilder};
 use transaction::model::{NotarizedTransaction, TransactionHeader};
 use transaction::signing::EcdsaSecp256k1PrivateKey;
-use transaction::validation::{TestIntentHashManager, TransactionValidator, ValidationConfig};
+use transaction::validation::{
+    NotarizedTransactionValidator, TestIntentHashManager, TransactionValidator, ValidationConfig,
+};
 
 fn execute_single_transaction(transaction: NotarizedTransaction) {
-    let transaction = TransactionValidator::validate(
-        transaction,
-        &TestIntentHashManager::new(),
-        &ValidationConfig {
-            network_id: NetworkDefinition::simulator().id,
-            current_epoch: 1,
-            max_cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,
-            min_tip_percentage: 0,
-        },
-    )
-    .unwrap();
+    let validator = NotarizedTransactionValidator::new(ValidationConfig {
+        network_id: NetworkDefinition::simulator().id,
+        current_epoch: 1,
+        max_cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,
+        min_tip_percentage: 0,
+    });
+
+    let transaction = validator
+        .validate(transaction, &TestIntentHashManager::new())
+        .unwrap();
 
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = DefaultWasmEngine::new();
     let mut wasm_instrumenter = WasmInstrumenter::new();
     let execution_config = ExecutionConfig {
         max_call_depth: DEFAULT_MAX_CALL_DEPTH,
-        is_system: false,
         trace: false,
     };
     let fee_reserve_config = FeeReserveConfig {
@@ -69,7 +69,7 @@ impl TransactionFuzzer {
             match next {
                 0 => {
                     builder.take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
-                        builder.call_function(
+                        builder.call_scrypto_function(
                             ACCOUNT_PACKAGE,
                             "Account",
                             "new_with_resource",
@@ -78,7 +78,7 @@ impl TransactionFuzzer {
                     });
                 }
                 1 => {
-                    builder.call_function(
+                    builder.call_scrypto_function(
                         ACCOUNT_PACKAGE,
                         "Account",
                         "new",
@@ -87,7 +87,7 @@ impl TransactionFuzzer {
                 }
                 2 => {
                     builder.take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
-                        builder.call_function(
+                        builder.call_scrypto_function(
                             ACCOUNT_PACKAGE,
                             "Account",
                             "new_with_resource",

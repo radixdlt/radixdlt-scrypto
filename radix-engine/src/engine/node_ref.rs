@@ -254,7 +254,7 @@ impl<'f, 's, R: FeeReserve> RENodeRef<'f, 's, R> {
                 .system(),
             RENodeRef::Track(track, node_id) => {
                 let substate_id = match node_id {
-                    RENodeId::System => SubstateId::System,
+                    RENodeId::System(component_address) => SubstateId::System(*component_address),
                     _ => panic!("Unexpected"),
                 };
                 track.borrow_substate(substate_id).raw().system()
@@ -358,7 +358,7 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
             | SubstateId::KeyValueStoreSpace(..)
             | SubstateId::Package(..)
             | SubstateId::ResourceManager(..)
-            | SubstateId::System
+            | SubstateId::System(..)
             | SubstateId::Bucket(..)
             | SubstateId::Proof(..)
             | SubstateId::Worktop => {
@@ -377,7 +377,7 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
             | SubstateId::Vault(..)
             | SubstateId::Package(..)
             | SubstateId::ResourceManager(..)
-            | SubstateId::System
+            | SubstateId::System(..)
             | SubstateId::Bucket(..)
             | SubstateId::Proof(..)
             | SubstateId::Worktop => {
@@ -419,7 +419,7 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
             SubstateId::ResourceManager(..) => {
                 panic!("Should not get here");
             }
-            SubstateId::System => {
+            SubstateId::System(..) => {
                 panic!("Should not get here");
             }
             SubstateId::Bucket(..) => {

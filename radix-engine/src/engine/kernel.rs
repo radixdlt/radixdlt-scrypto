@@ -1,5 +1,5 @@
 use transaction::errors::IdAllocationError;
-use transaction::model::ExecutableInstruction;
+use transaction::model::Instruction;
 use transaction::validation::*;
 
 use crate::engine::*;
@@ -69,9 +69,8 @@ where
 {
     pub fn new(
         transaction_hash: Hash,
-        transaction_signers: Vec<PublicKey>,
+        initial_proofs: Vec<NonFungibleAddress>,
         blobs: &'g HashMap<Hash, Vec<u8>>,
-        is_system: bool,
         max_depth: usize,
         track: &'g mut Track<'s, R>,
         wasm_engine: &'g mut W,
@@ -80,7 +79,7 @@ where
         execution_trace: &'g mut ExecutionTrace,
         modules: Vec<Box<dyn Module<R>>>,
     ) -> Self {
-        let frame = CallFrame::new_root(transaction_signers);
+        let frame = CallFrame::new_root();
         let mut kernel = Self {
             transaction_hash,
             blobs,
@@ -96,14 +95,22 @@ where
             phantom: PhantomData,
         };
 
-        if is_system {
-            let non_fungible_ids = [NonFungibleId::from_u32(0)].into_iter().collect();
+        // Initial authzone
+        // TODO: Move into module initialization
+        let mut proofs_to_create = BTreeMap::<ResourceAddress, BTreeSet<NonFungibleId>>::new();
+        for non_fungible in initial_proofs {
+            proofs_to_create
+                .entry(non_fungible.resource_address())
+                .or_insert(BTreeSet::new())
+                .insert(non_fungible.non_fungible_id());
+        }
+        for (resource_address, non_fungible_ids) in proofs_to_create {
             let bucket_id = match kernel
                 .node_create(HeapRENode::Bucket(Bucket::new(Resource::new_non_fungible(
-                    SYSTEM_TOKEN,
+                    resource_address,
                     non_fungible_ids,
                 ))))
-                .expect("Failed to create SYSTEM_TOKEN bucket")
+                .expect("Failed to create bucket")
             {
                 RENodeId::Bucket(bucket_id) => bucket_id,
                 _ => panic!("Expected Bucket RENodeId but received something else"),
@@ -111,16 +118,17 @@ where
             let substate_id = SubstateId::Bucket(bucket_id);
             let mut node_ref = kernel
                 .substate_borrow_mut(&substate_id)
-                .expect("Failed to borrow SYSTEM_TOKEN bucket substate");
+                .expect("Failed to borrow bucket substate");
             let bucket = node_ref.bucket_mut();
-            let system_proof = bucket
+            let proof = bucket
                 .create_proof(bucket_id)
-                .expect("Failed to create SYSTEM_TOKEN proof");
+                .expect("Failed to create proof");
             Self::current_frame_mut(&mut kernel.call_frames)
                 .auth_zone
                 .proofs
-                .push(system_proof);
+                .push(proof);
         }
+
         kernel
     }
 
@@ -239,7 +247,9 @@ where
                 Ok(RENodeId::Component(component_address))
             }
             HeapRENode::System(..) => {
-                panic!("Attempted to create System RENodeId");
+                let system_component_address =
+                    id_allocator.new_system_component_address(transaction_hash)?;
+                Ok(RENodeId::System(system_component_address))
             }
         }
     }
@@ -375,9 +385,15 @@ where
             {
                 // Only allow passing back global references
             } else {
-                return Err(RuntimeError::KernelError(
-                    KernelError::InvokeMethodInvalidReferencePass(node_id),
-                ));
+                let node_id = RENodeId::System(refed_component_address.clone());
+                if !Self::current_frame(&self.call_frames)
+                    .node_refs
+                    .contains_key(&node_id)
+                {
+                    return Err(RuntimeError::KernelError(
+                        KernelError::InvokeMethodInvalidReferencePass(node_id),
+                    ));
+                }
             }
         }
 
@@ -534,8 +550,8 @@ where
                 scrypto_decode(&input.raw).expect("Transaction processor received invalid input");
             for instruction in &input.instructions {
                 match instruction {
-                    ExecutableInstruction::CallFunction { args, .. }
-                    | ExecutableInstruction::CallMethod { args, .. } => {
+                    Instruction::CallFunction { args, .. }
+                    | Instruction::CallMethod { args, .. } => {
                         let scrypto_value =
                             ScryptoValue::from_slice(&args).expect("Invalid CALL arguments");
                         component_addresses.extend(scrypto_value.refed_component_addresses);
@@ -576,12 +592,20 @@ where
                     visible.insert(SubstateId::ComponentInfo(*refed_component_address));
                     next_frame_node_refs.insert(node_id.clone(), pointer.clone());
                 } else {
-                    return Err(RuntimeError::KernelError(
-                        KernelError::InvokeMethodInvalidReferencePass(node_id),
-                    ));
+                    let node_id = RENodeId::System(refed_component_address.clone());
+                    if !Self::current_frame(&self.call_frames)
+                        .node_refs
+                        .contains_key(&node_id)
+                    {
+                        return Err(RuntimeError::KernelError(
+                            KernelError::InvokeMethodInvalidReferencePass(node_id),
+                        ));
+                    }
                 }
             }
         }
+
+        AuthModule::function_auth(&fn_identifier, &mut self.call_frames)?;
 
         // start a new frame and run
         let (output, received_values) = {
@@ -711,7 +735,7 @@ where
                         match node_id {
                             // Let these be globally accessible for now
                             // TODO: Remove when references cleaned up
-                            RENodeId::ResourceManager(..) | RENodeId::System => {
+                            RENodeId::ResourceManager(..) | RENodeId::System(..) => {
                                 RENodePointer::Store(*node_id)
                             }
                             _ => {
@@ -947,6 +971,7 @@ where
             }
         };
 
+        // TODO: Cleanup
         // Pass argument references
         for refed_component_address in &input.refed_component_addresses {
             let node_id = RENodeId::Component(refed_component_address.clone());
@@ -958,9 +983,15 @@ where
                 visible.insert(SubstateId::ComponentInfo(*refed_component_address));
                 next_frame_node_refs.insert(node_id.clone(), pointer.clone());
             } else {
-                return Err(RuntimeError::KernelError(
-                    KernelError::InvokeMethodInvalidReferencePass(node_id),
-                ));
+                let node_id = RENodeId::System(refed_component_address.clone());
+                if !Self::current_frame(&self.call_frames)
+                    .node_refs
+                    .contains_key(&node_id)
+                {
+                    return Err(RuntimeError::KernelError(
+                        KernelError::InvokeMethodInvalidReferencePass(node_id),
+                    ));
+                }
             }
         }
 
@@ -1320,6 +1351,16 @@ where
                     Substate::ResourceManager(resource_manager),
                 );
                 (substates, non_fungibles)
+            }
+            HeapRENode::System(system) => {
+                let mut substates = HashMap::new();
+
+                let component_address: ComponentAddress = node_id.into();
+                substates.insert(
+                    SubstateId::System(component_address),
+                    Substate::System(system),
+                );
+                (substates, None)
             }
             _ => panic!("Not expected"),
         };

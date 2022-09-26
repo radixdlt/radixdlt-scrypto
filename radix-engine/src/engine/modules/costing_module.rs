@@ -118,7 +118,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                                     loaded: false,
                                     size: 0,
                                 },
-                                RENodeId::System => SystemApiCostingEntry::BorrowNode {
+                                RENodeId::System(..) => SystemApiCostingEntry::BorrowNode {
                                     // TODO: figure out loaded state and size
                                     loaded: false,
                                     size: 0,
@@ -253,7 +253,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                                     loaded: false,
                                     size: 0,
                                 },
-                                SubstateId::System => SystemApiCostingEntry::BorrowSubstate {
+                                SubstateId::System(..) => SystemApiCostingEntry::BorrowSubstate {
                                     // TODO: figure out loaded state and size
                                     loaded: false,
                                     size: 0,
@@ -302,7 +302,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                                     SubstateId::ComponentState(_) => {
                                         SystemApiCostingEntry::ReturnSubstate { size: 0 }
                                     }
-                                    SubstateId::System => {
+                                    SubstateId::System(..) => {
                                         SystemApiCostingEntry::ReturnSubstate { size: 0 }
                                     }
                                     SubstateId::Bucket(..) => {

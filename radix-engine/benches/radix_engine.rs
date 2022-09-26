@@ -27,7 +27,7 @@ fn bench_transfer(c: &mut Criterion) {
     // Create two accounts
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(1000.into(), SYS_FAUCET_COMPONENT)
-        .call_method(SYS_FAUCET_COMPONENT, "free_xrd", args!())
+        .call_method(SYS_FAUCET_COMPONENT, "free", args!())
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.new_account_with_resource(
                 &rule!(require(NonFungibleAddress::from_public_key(&public_key))),
@@ -37,7 +37,11 @@ fn bench_transfer(c: &mut Criterion) {
         .build();
     let account1 = executor
         .execute_and_commit(
-            &TestTransaction::new(manifest.clone(), 1, vec![public_key.into()]),
+            &TestTransaction::new(
+                manifest.clone(),
+                1,
+                vec![NonFungibleAddress::from_public_key(&public_key)],
+            ),
             &FeeReserveConfig::standard(),
             &ExecutionConfig::default(),
         )
@@ -46,7 +50,11 @@ fn bench_transfer(c: &mut Criterion) {
         .new_component_addresses[0];
     let account2 = executor
         .execute_and_commit(
-            &TestTransaction::new(manifest, 2, vec![public_key.into()]),
+            &TestTransaction::new(
+                manifest.clone(),
+                2,
+                vec![NonFungibleAddress::from_public_key(&public_key)],
+            ),
             &FeeReserveConfig::standard(),
             &ExecutionConfig::default(),
         )
@@ -67,7 +75,11 @@ fn bench_transfer(c: &mut Criterion) {
     for nonce in 0..1000 {
         executor
             .execute_and_commit(
-                &TestTransaction::new(manifest.clone(), nonce, vec![public_key.into()]),
+                &TestTransaction::new(
+                    manifest.clone(),
+                    nonce,
+                    vec![NonFungibleAddress::from_public_key(&public_key)],
+                ),
                 &FeeReserveConfig::standard(),
                 &ExecutionConfig::default(),
             )
@@ -90,7 +102,11 @@ fn bench_transfer(c: &mut Criterion) {
     c.bench_function("Transfer", |b| {
         b.iter(|| {
             let receipt = executor.execute_and_commit(
-                &TestTransaction::new(manifest.clone(), nonce, vec![public_key.into()]),
+                &TestTransaction::new(
+                    manifest.clone(),
+                    nonce,
+                    vec![NonFungibleAddress::from_public_key(&public_key)],
+                ),
                 &FeeReserveConfig::standard(),
                 &ExecutionConfig::default(),
             );
