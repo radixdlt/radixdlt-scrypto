@@ -1262,8 +1262,6 @@ where
 
         // TODO: Authorization
 
-        // TODO: globalization can be simplified by moving the node from stack to track
-
         let mut nodes_to_take = HashSet::new();
         nodes_to_take.insert(node_id);
         let (taken_nodes, missing_nodes) = Self::current_frame_mut(&mut self.call_frames)
@@ -1272,7 +1270,7 @@ where
         assert!(taken_nodes.len() == 1);
         let root_node = taken_nodes.into_values().nth(0).unwrap();
 
-        // TODO
+        // TODO: globalization can be simplified by moving the node from stack to track
 
         for m in &mut self.modules {
             m.post_sys_call(

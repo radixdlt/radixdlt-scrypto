@@ -37,7 +37,9 @@ where
         input: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError>;
 
-    // TODO: Convert to substate_borrow
+    // TODO: again, despite being named as `borrow_*`, borrows rules are through `acquire_lock`
+    // As a s result, the following two methods should not be exposed to Scrypto.
+
     fn borrow_node(&mut self, node_id: &RENodeId) -> Result<RENodeRef<'_, 's, R>, RuntimeError>;
 
     fn borrow_node_mut(
@@ -54,7 +56,6 @@ where
     /// Moves an RENode from Heap to Store
     fn node_globalize(&mut self, node_id: RENodeId) -> Result<(), RuntimeError>;
 
-    // TODO: Convert use substate_borrow interface
     fn substate_read(&mut self, substate_id: SubstateId) -> Result<ScryptoValue, RuntimeError>;
 
     fn substate_write(

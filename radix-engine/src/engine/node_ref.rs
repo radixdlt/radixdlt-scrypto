@@ -409,7 +409,7 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
                     }
                     _ => panic!("Unexpected"),
                 };
-                *track.borrow_substate_mut(substate_id).borrow_mut() =
+                *track.borrow_substate_mut(substate_id) =
                     ComponentStateSubstate::new(value.raw).into();
                 for (id, val) in to_store {
                     insert_non_root_nodes(track, val.to_nodes(id));

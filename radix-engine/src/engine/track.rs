@@ -356,20 +356,20 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         todo!()
     }
 
-    pub fn borrow_substate(&self, substate_id: SubstateId) -> &SubstateCache {
-        &self
-            .loaded_substates
+    pub fn borrow_substate(&self, substate_id: SubstateId) -> &Substate {
+        self.loaded_substates
             .get(&substate_id)
             .expect(&format!("Substate {:?} was never locked", substate_id))
             .substate
+            .borrow()
     }
 
-    pub fn borrow_substate_mut(&mut self, substate_id: SubstateId) -> &mut SubstateCache {
-        &mut self
-            .loaded_substates
+    pub fn borrow_substate_mut(&mut self, substate_id: SubstateId) -> &mut Substate {
+        self.loaded_substates
             .get_mut(&substate_id)
             .expect(&format!("Substate {:?} was never locked", substate_id))
             .substate
+            .borrow_mut()
     }
 
     /// Returns the value of a key value pair
