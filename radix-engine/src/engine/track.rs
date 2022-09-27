@@ -8,20 +8,17 @@ use crate::fee::FeeReserveError;
 use crate::fee::FeeSummary;
 use crate::fee::FeeTable;
 use crate::ledger::*;
+use crate::model::node_to_substates;
 use crate::model::Component;
 use crate::model::KeyValueStoreEntrySubstate;
 use crate::model::LockableResource;
 use crate::model::NonFungibleSubstate;
 use crate::model::Package;
-use crate::model::PackageSubstate;
 use crate::model::Resource;
 use crate::model::ResourceManager;
-use crate::model::ResourceManagerSubstate;
 use crate::model::Substate;
 use crate::model::System;
-use crate::model::SystemSubstate;
 use crate::model::Vault;
-use crate::model::VaultSubstate;
 use crate::transaction::CommitResult;
 use crate::transaction::EntityChanges;
 use crate::transaction::RejectResult;
@@ -393,6 +390,17 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             .borrow_mut()
     }
 
+    pub fn put_substate(&mut self, substate_id: SubstateId, substate: Substate) {
+        assert!(!self.loaded_substates.contains_key(&substate_id));
+        self.loaded_substates.insert(
+            substate_id,
+            BorrowedSubstate {
+                substate: SubstateCache::Free(substate),
+                lock_state: LockState::no_lock(),
+            },
+        );
+    }
+
     /// Returns the value of a key value pair
     pub fn read_key_value(&mut self, parent_address: SubstateId, key: Vec<u8>) -> Substate {
         // TODO: consider using a single address as function input
@@ -506,80 +514,8 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                 }
             }
 
-            for (id, node) in self.loaded_nodes {
-                match node {
-                    HeapRENode::Bucket(_) => panic!("Unexpected"),
-                    HeapRENode::Proof(_) => panic!("Unexpected"),
-                    HeapRENode::Vault(vault) => {
-                        let resource = vault
-                            .resource()
-                            .expect("Vault should be liquid at end of successful transaction");
-                        let substate = VaultSubstate(resource);
-                        let substate_id = match id {
-                            RENodeId::Vault(vault_id) => SubstateId::Vault(vault_id),
-                            _ => panic!("Unexpected"),
-                        };
-                        self.state_track.put_substate(substate_id, substate.into());
-                    }
-                    HeapRENode::KeyValueStore(_) => panic!("Unexpected"),
-                    HeapRENode::Component(component) => {
-                        let address = match id {
-                            RENodeId::Component(address) => address,
-                            _ => panic!("Unexpected"),
-                        };
-                        self.state_track.put_substate(
-                            SubstateId::ComponentInfo(address),
-                            component.info.into(),
-                        );
-                        self.state_track.put_substate(
-                            SubstateId::ComponentState(address),
-                            component.state.into(),
-                        );
-                    }
-                    HeapRENode::Worktop(_) => panic!("Unexpected"),
-                    HeapRENode::Package(package) => {
-                        let address = match id {
-                            RENodeId::Package(address) => address,
-                            _ => panic!("Unexpected"),
-                        };
-                        let substate = PackageSubstate {
-                            code: package.code,
-                            blueprint_abis: package.blueprint_abis,
-                        };
-                        self.state_track
-                            .put_substate(SubstateId::Package(address), substate.into());
-                    }
-                    HeapRENode::Resource(resource_manager, _) => {
-                        let address = match id {
-                            RENodeId::ResourceManager(address) => address,
-                            _ => panic!("Unexpected"),
-                        };
-                        let substate = ResourceManagerSubstate {
-                            resource_type: resource_manager.resource_type,
-                            metadata: resource_manager.metadata,
-                            method_table: resource_manager.method_table,
-                            vault_method_table: resource_manager.vault_method_table,
-                            bucket_method_table: resource_manager.bucket_method_table,
-                            authorization: resource_manager.authorization,
-                            total_supply: resource_manager.total_supply,
-                        };
-                        self.state_track
-                            .put_substate(SubstateId::ResourceManager(address), substate.into());
-                    }
-                    HeapRENode::System(system) => {
-                        let address = match id {
-                            RENodeId::System(address) => address,
-                            _ => panic!("Unexpected"),
-                        };
-                        self.state_track.put_substate(
-                            SubstateId::System(address),
-                            SystemSubstate {
-                                epoch: system.epoch,
-                            }
-                            .into(),
-                        );
-                    }
-                }
+            for (id, substate) in node_to_substates(self.loaded_nodes) {
+                self.state_track.put_substate(id, substate);
             }
 
             self.state_track.commit();
