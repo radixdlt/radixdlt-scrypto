@@ -90,6 +90,11 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                     .consume(
                         track.fee_table.system_api_cost({
                             match node_id {
+                                RENodeId::Global(_) => SystemApiCostingEntry::BorrowNode {
+                                    // TODO: figure out loaded state and size
+                                    loaded: true,
+                                    size: 0,
+                                },
                                 RENodeId::AuthZone(_) => SystemApiCostingEntry::BorrowNode {
                                     // TODO: figure out loaded state and size
                                     loaded: true,
@@ -196,6 +201,11 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                     .consume(
                         track.fee_table.system_api_cost({
                             match substate_id {
+                                SubstateId::Global(_) => SystemApiCostingEntry::BorrowSubstate {
+                                    // TODO: figure out loaded state and size
+                                    loaded: true,
+                                    size: 0,
+                                },
                                 SubstateId::AuthZone(_) => SystemApiCostingEntry::BorrowSubstate {
                                     // TODO: figure out loaded state and size
                                     loaded: true,
@@ -297,6 +307,9 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                                     SystemApiCostingEntry::ReturnSubstate { size: 0 }
                                 }
                                 NativeSubstateRef::Track(substate_id, _) => match substate_id {
+                                    SubstateId::Global(_) => {
+                                        SystemApiCostingEntry::ReturnSubstate { size: 0 }
+                                    }
                                     SubstateId::AuthZone(_) => {
                                         SystemApiCostingEntry::ReturnSubstate { size: 0 }
                                     }

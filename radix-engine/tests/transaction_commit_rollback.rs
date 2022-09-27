@@ -30,10 +30,10 @@ fn test_state_track_success() {
     // Assert
     receipt.expect_commit_success();
     assert_eq!(
-        10,
+        12,
         receipt.expect_commit().state_updates.down_substates.len()
     );
-    assert_eq!(10, receipt.expect_commit().state_updates.up_substates.len());
+    assert_eq!(12, receipt.expect_commit().state_updates.up_substates.len());
 }
 
 #[test]

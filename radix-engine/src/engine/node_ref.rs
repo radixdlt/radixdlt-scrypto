@@ -365,6 +365,7 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
             SubstateId::NonFungible(.., id) => Ok(self.non_fungible_get(id)),
             SubstateId::KeyValueStoreEntry(.., key) => Ok(self.kv_store_get(key)),
             SubstateId::NonFungibleSpace(..)
+            | SubstateId::Global(..)
             | SubstateId::Vault(..)
             | SubstateId::KeyValueStoreSpace(..)
             | SubstateId::Package(..)
@@ -381,7 +382,8 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
 
     pub fn replace_value_with_default(&mut self, substate_id: &SubstateId) {
         match substate_id {
-            SubstateId::ComponentInfo(..)
+            SubstateId::Global(..)
+            | SubstateId::ComponentInfo(..)
             | SubstateId::ComponentState(..)
             | SubstateId::NonFungibleSpace(..)
             | SubstateId::KeyValueStoreSpace(..)
@@ -407,6 +409,9 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
         child_nodes: HashMap<RENodeId, HeapRootRENode>,
     ) -> Result<(), NodeToSubstateFailure> {
         match substate_id {
+            SubstateId::Global(..) => {
+                panic!("Should not get here");
+            }
             SubstateId::ComponentInfo(..) => {
                 panic!("Should not get here");
             }
@@ -721,23 +726,14 @@ pub fn insert_non_root_nodes<'s, R: FeeReserve>(
                 let resource = vault
                     .resource()
                     .map_err(|_| NodeToSubstateFailure::VaultPartiallyLocked)?;
-                track.create_uuid_substate(
-                    SubstateId::Vault(id.into()),
-                    VaultSubstate(resource),
-                    false,
-                );
+                track.create_uuid_substate(SubstateId::Vault(id.into()), VaultSubstate(resource));
             }
             HeapRENode::Component(component, component_state) => {
                 let component_address = id.into();
-                track.create_uuid_substate(
-                    SubstateId::ComponentInfo(component_address),
-                    component,
-                    false,
-                );
+                track.create_uuid_substate(SubstateId::ComponentInfo(component_address), component);
                 track.create_uuid_substate(
                     SubstateId::ComponentState(component_address),
                     component_state,
-                    false,
                 );
             }
             HeapRENode::KeyValueStore(store) => {

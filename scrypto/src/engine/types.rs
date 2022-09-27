@@ -23,6 +23,7 @@ pub enum RENodeId {
     ResourceManager(ResourceAddress),
     Package(PackageAddress),
     System(ComponentAddress),
+    Global(GlobalAddress),
 }
 
 impl Into<(Hash, u32)> for RENodeId {
@@ -73,9 +74,18 @@ impl Into<ResourceAddress> for RENodeId {
     }
 }
 
+#[derive(Debug, Clone, Copy, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum GlobalAddress {
+    Component(ComponentAddress),
+    Package(PackageAddress),
+    Resource(ResourceAddress),
+}
+
 /// TODO: separate space addresses?
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum SubstateId {
+    Global(GlobalAddress),
+
     AuthZone(AuthZoneId),
     ComponentInfo(ComponentAddress),
     Package(PackageAddress),

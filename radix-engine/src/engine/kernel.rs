@@ -571,22 +571,18 @@ where
 
             // Make components visible
             for component_address in component_addresses {
-                let node_id = RENodeId::Component(component_address);
-                let substate_id = SubstateId::ComponentInfo(component_address);
+                let substate_id = SubstateId::Global(GlobalAddress::Component(component_address));
 
                 // Check if component exists as root
-                if !self.track.is_root(&substate_id) {
-                    return Err(RuntimeError::KernelError(KernelError::RENodeNotFound(
-                        node_id,
-                    )));
-                }
+                self.track
+                    .acquire_lock(substate_id.clone(), false, false)
+                    .map_err(|e| RuntimeError::KernelError(KernelError::SubstateError(e)))?;
+                self.track
+                    .release_lock(substate_id.clone(), false)
+                    .map_err(|e| RuntimeError::KernelError(KernelError::SubstateError(e)))?;
+
+                let node_id = RENodeId::Component(component_address);
                 let node_pointer = RENodePointer::Store(node_id);
-                node_pointer
-                    .acquire_lock(substate_id.clone(), false, false, &mut self.track)
-                    .map_err(RuntimeError::KernelError)?;
-                node_pointer
-                    .release_lock(substate_id, false, &mut self.track)
-                    .map_err(RuntimeError::KernelError)?;
                 next_frame_node_refs.insert(node_id, node_pointer);
             }
         } else {
@@ -1331,7 +1327,8 @@ where
         assert!(taken_nodes.len() == 1);
         let root_node = taken_nodes.into_values().nth(0).unwrap();
 
-        let (substates, maybe_non_fungibles) = match root_node.root {
+        let (global_address, global_substate, substates, maybe_non_fungibles) = match root_node.root
+        {
             HeapRENode::Component(component, component_state) => {
                 let mut substates = HashMap::new();
                 let component_address = node_id.into();
@@ -1345,7 +1342,12 @@ where
                 );
                 let mut visible_substates = HashSet::new();
                 visible_substates.insert(SubstateId::ComponentInfo(component_address));
-                (substates, None)
+                (
+                    GlobalAddress::Component(component_address),
+                    GlobalRENode::Component(component_address),
+                    substates,
+                    None,
+                )
             }
             HeapRENode::Package(package) => {
                 let mut substates = HashMap::new();
@@ -1354,7 +1356,12 @@ where
                     SubstateId::Package(package_address),
                     Substate::Package(package),
                 );
-                (substates, None)
+                (
+                    GlobalAddress::Package(package_address),
+                    GlobalRENode::Package(package_address),
+                    substates,
+                    None,
+                )
             }
             HeapRENode::Resource(resource_manager, non_fungibles) => {
                 let mut substates = HashMap::new();
@@ -1363,7 +1370,12 @@ where
                     SubstateId::ResourceManager(resource_address),
                     Substate::ResourceManager(resource_manager),
                 );
-                (substates, non_fungibles)
+                (
+                    GlobalAddress::Resource(resource_address),
+                    GlobalRENode::Resource(resource_address),
+                    substates,
+                    non_fungibles,
+                )
             }
             HeapRENode::System(system) => {
                 let mut substates = HashMap::new();
@@ -1373,14 +1385,23 @@ where
                     SubstateId::System(component_address),
                     Substate::System(system),
                 );
-                (substates, None)
+                (
+                    GlobalAddress::Component(component_address),
+                    GlobalRENode::Component(component_address),
+                    substates,
+                    None,
+                )
             }
             _ => panic!("Not expected"),
         };
 
+        self.track.create_uuid_substate(
+            SubstateId::Global(global_address),
+            Substate::GlobalRENode(global_substate),
+        );
         for (substate_id, substate) in substates {
             self.track
-                .create_uuid_substate(substate_id.clone(), substate, true);
+                .create_uuid_substate(substate_id.clone(), substate);
         }
 
         let mut to_store_values = HashMap::new();
@@ -1558,12 +1579,13 @@ where
 
         // TODO: Do this in a better way once references cleaned up
         for component_address in &value.refed_component_addresses {
-            if !self
-                .track
-                .is_root(&SubstateId::ComponentInfo(*component_address))
-            {
-                return Err(RuntimeError::KernelError(KernelError::ValueNotAllowed));
-            }
+            let substate_id = SubstateId::Global(GlobalAddress::Component(*component_address));
+            self.track
+                .acquire_lock(substate_id.clone(), false, false)
+                .map_err(|e| RuntimeError::KernelError(KernelError::SubstateError(e)))?;
+            self.track
+                .release_lock(substate_id.clone(), false)
+                .map_err(|e| RuntimeError::KernelError(KernelError::SubstateError(e)))?;
         }
 
         // Take values from current frame

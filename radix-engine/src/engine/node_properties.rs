@@ -7,6 +7,7 @@ impl RENodeProperties {
     /// Specifies whether an RENode may globalize as the root node or not
     pub fn can_globalize(node_id: RENodeId) -> bool {
         match node_id {
+            RENodeId::Global(..) => false,
             RENodeId::AuthZone(..) => false,
             RENodeId::Bucket(..) => false,
             RENodeId::Proof(..) => false,
@@ -65,6 +66,7 @@ pub struct SubstateProperties;
 impl SubstateProperties {
     pub fn get_node_id(substate_id: &SubstateId) -> RENodeId {
         match substate_id {
+            SubstateId::Global(global_address) => RENodeId::Global(*global_address),
             SubstateId::ComponentInfo(component_address, ..) => {
                 RENodeId::Component(*component_address)
             }
@@ -96,6 +98,7 @@ impl SubstateProperties {
 
     pub fn can_own_nodes(substate_id: &SubstateId) -> bool {
         match substate_id {
+            SubstateId::Global(..) => true,
             SubstateId::AuthZone(..) => false,
             SubstateId::KeyValueStoreEntry(..) => true,
             SubstateId::ComponentState(..) => true,

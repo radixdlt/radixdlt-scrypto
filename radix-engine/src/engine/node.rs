@@ -2,10 +2,18 @@ use crate::engine::*;
 use crate::model::*;
 use crate::types::*;
 
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
+pub enum GlobalRENode {
+    Component(ComponentAddress),
+    Package(PackageAddress),
+    Resource(ResourceAddress),
+}
+
 // TODO: still lots of unwraps
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub enum Substate {
+    GlobalRENode(GlobalRENode),
     System(System),
     ResourceManager(ResourceManager),
     ComponentInfo(ComponentInfo),
