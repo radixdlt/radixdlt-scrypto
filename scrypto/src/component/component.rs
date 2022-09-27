@@ -33,8 +33,8 @@ pub trait LocalComponent {
 }
 
 /// Represents an instantiated component.
-#[derive(PartialEq, Eq, Hash)]
-pub struct Component(pub(crate) ComponentAddress);
+#[derive(PartialEq, Eq, Hash, Clone)]
+pub struct Component(pub ComponentAddress);
 
 impl Component {
     /// Invokes a method on this component.

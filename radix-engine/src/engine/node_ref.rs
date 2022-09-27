@@ -204,6 +204,17 @@ impl NativeSubstateRef {
         }
     }
 
+    pub fn global_re_node(&mut self) -> &GlobalRENode {
+        match self {
+            NativeSubstateRef::Stack(..) => {
+                panic!("Expecting not to be on stack.");
+            }
+            NativeSubstateRef::Track(_address, value) => {
+                value.substate.raw().global_re_node()
+            }
+        }
+    }
+
     pub fn return_to_location<'a, 'p, 's, R: FeeReserve>(
         self,
         call_frames: &mut Vec<CallFrame>,

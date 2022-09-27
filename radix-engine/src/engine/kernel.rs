@@ -1345,7 +1345,7 @@ where
                 visible_substates.insert(SubstateId::ComponentInfo(component_address));
                 (
                     GlobalAddress::Component(component_address),
-                    GlobalRENode::Component(component_address),
+                    GlobalRENode::Component(scrypto::component::Component(component_address)),
                     substates,
                     None,
                 )
@@ -1388,7 +1388,7 @@ where
                 );
                 (
                     GlobalAddress::Component(component_address),
-                    GlobalRENode::Component(component_address),
+                    GlobalRENode::Component(scrypto::component::Component(component_address)),
                     substates,
                     None,
                 )
