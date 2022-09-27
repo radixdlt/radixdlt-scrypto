@@ -5,7 +5,7 @@ use crate::component::{ComponentAddress, PackageAddress};
 use crate::crypto::*;
 use crate::resource::{NonFungibleId, ResourceAddress};
 
-pub type AuthZoneId = (Hash, u32);
+pub type AuthZoneId = u32;
 pub type KeyValueStoreId = (Hash, u32);
 pub type VaultId = (Hash, u32);
 pub type BucketId = u32;
@@ -13,6 +13,7 @@ pub type ProofId = u32;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Encode, Decode, TypeId, Ord, PartialOrd)]
 pub enum RENodeId {
+    AuthZone(AuthZoneId),
     Bucket(BucketId),
     Proof(ProofId),
     KeyValueStore(KeyValueStoreId),
@@ -75,6 +76,7 @@ impl Into<ResourceAddress> for RENodeId {
 /// TODO: separate space addresses?
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum SubstateId {
+    AuthZone(AuthZoneId),
     ComponentInfo(ComponentAddress),
     Package(PackageAddress),
     ResourceManager(ResourceAddress),

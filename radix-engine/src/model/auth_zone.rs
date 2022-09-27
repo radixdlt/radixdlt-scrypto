@@ -3,6 +3,7 @@ use crate::fee::FeeReserve;
 use crate::model::{InvokeError, Proof, ProofError};
 use crate::types::*;
 use crate::wasm::*;
+use scrypto::resource::AuthZoneDrainInput;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub enum AuthZoneError {
@@ -86,7 +87,7 @@ impl AuthZone {
     }
 
     pub fn main<'s, Y, W, I, R>(
-        auth_zone_frame_id: usize,
+        auth_zone_id: AuthZoneId,
         auth_zone_fn: AuthZoneFnIdentifier,
         args: ScryptoValue,
         system_api: &mut Y,
@@ -97,11 +98,16 @@ impl AuthZone {
         I: WasmInstance,
         R: FeeReserve,
     {
-        match auth_zone_fn {
+        let substate_id = SubstateId::AuthZone(auth_zone_id);
+        let mut ref_mut = system_api
+            .substate_borrow_mut(&substate_id)
+            .map_err(InvokeError::Downstream)?;
+        let auth_zone = ref_mut.auth_zone_mut();
+
+        let rtn = match auth_zone_fn {
             AuthZoneFnIdentifier::Pop => {
                 let _: AuthZonePopInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(AuthZoneError::InvalidRequestData(e)))?;
-                let auth_zone = system_api.auth_zone(auth_zone_frame_id);
                 let proof = auth_zone.pop()?;
                 let proof_id = system_api
                     .node_create(HeapRENode::Proof(proof))
@@ -120,7 +126,6 @@ impl AuthZone {
                     .into();
                 proof.change_to_unrestricted();
 
-                let auth_zone = system_api.auth_zone(auth_zone_frame_id);
                 auth_zone.push(proof);
                 Ok(ScryptoValue::from_typed(&()))
             }
@@ -134,7 +139,6 @@ impl AuthZone {
                     let resource_manager = value.resource_manager();
                     resource_manager.resource_type()
                 };
-                let auth_zone = system_api.auth_zone(auth_zone_frame_id);
                 let proof = auth_zone.create_proof(input.resource_address, resource_type)?;
                 let proof_id = system_api
                     .node_create(HeapRENode::Proof(proof))
@@ -154,7 +158,6 @@ impl AuthZone {
                     let resource_manager = value.resource_manager();
                     resource_manager.resource_type()
                 };
-                let auth_zone = system_api.auth_zone(auth_zone_frame_id);
                 let proof = auth_zone.create_proof_by_amount(
                     input.amount,
                     input.resource_address,
@@ -178,7 +181,6 @@ impl AuthZone {
                     let resource_manager = value.resource_manager();
                     resource_manager.resource_type()
                 };
-                let auth_zone = system_api.auth_zone(auth_zone_frame_id);
                 let proof = auth_zone.create_proof_by_ids(
                     &input.ids,
                     input.resource_address,
@@ -195,10 +197,30 @@ impl AuthZone {
             AuthZoneFnIdentifier::Clear => {
                 let _: AuthZoneClearInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(AuthZoneError::InvalidRequestData(e)))?;
-                let auth_zone = system_api.auth_zone(auth_zone_frame_id);
                 auth_zone.clear();
                 Ok(ScryptoValue::from_typed(&()))
             }
-        }
+            AuthZoneFnIdentifier::Drain => {
+                let _: AuthZoneDrainInput = scrypto_decode(&args.raw)
+                    .map_err(|e| InvokeError::Error(AuthZoneError::InvalidRequestData(e)))?;
+                let proofs = auth_zone.drain();
+                let mut proof_ids: Vec<scrypto::resource::Proof> = Vec::new();
+                for proof in proofs {
+                    let proof_id: ProofId = system_api
+                        .node_create(HeapRENode::Proof(proof))
+                        .map_err(InvokeError::Downstream)?
+                        .into();
+                    proof_ids.push(scrypto::resource::Proof(proof_id));
+                }
+
+                Ok(ScryptoValue::from_typed(&proof_ids))
+            }
+        }?;
+
+        system_api
+            .substate_return_mut(ref_mut)
+            .map_err(InvokeError::Downstream)?;
+
+        Ok(rtn)
     }
 }

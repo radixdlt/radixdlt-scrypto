@@ -242,6 +242,7 @@ pub enum HeapRENode {
     Worktop(Worktop),
     Package(Package),
     Resource(ResourceManager, Option<HashMap<NonFungibleId, NonFungible>>),
+    AuthZone(AuthZone),
     System(System),
 }
 
@@ -253,6 +254,7 @@ impl HeapRENode {
                     .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                 Ok(value.node_ids())
             }
+            HeapRENode::AuthZone(..) => Ok(HashSet::new()),
             HeapRENode::Resource(..) => Ok(HashSet::new()),
             HeapRENode::Package(..) => Ok(HashSet::new()),
             HeapRENode::Bucket(..) => Ok(HashSet::new()),
@@ -287,6 +289,20 @@ impl HeapRENode {
     pub fn resource_manager_mut(&mut self) -> &mut ResourceManager {
         match self {
             HeapRENode::Resource(resource_manager, ..) => resource_manager,
+            _ => panic!("Expected to be a resource manager"),
+        }
+    }
+
+    pub fn auth_zone(&self) -> &AuthZone {
+        match self {
+            HeapRENode::AuthZone(auth_zone, ..) => auth_zone,
+            _ => panic!("Expected to be a resource manager"),
+        }
+    }
+
+    pub fn auth_zone_mut(&mut self) -> &mut AuthZone {
+        match self {
+            HeapRENode::AuthZone(auth_zone, ..) => auth_zone,
             _ => panic!("Expected to be a resource manager"),
         }
     }
@@ -377,6 +393,9 @@ impl HeapRENode {
 
     pub fn verify_can_move(&self) -> Result<(), RuntimeError> {
         match self {
+            HeapRENode::AuthZone(..) => {
+                Err(RuntimeError::KernelError(KernelError::CantMoveAuthZone))
+            }
             HeapRENode::Bucket(bucket) => {
                 if bucket.is_locked() {
                     Err(RuntimeError::KernelError(KernelError::CantMoveLockedBucket))
@@ -411,6 +430,9 @@ impl HeapRENode {
             HeapRENode::Resource(..) => {
                 Err(RuntimeError::KernelError(KernelError::ValueNotAllowed))
             }
+            HeapRENode::AuthZone(..) => {
+                Err(RuntimeError::KernelError(KernelError::ValueNotAllowed))
+            }
             HeapRENode::Package(..) => Err(RuntimeError::KernelError(KernelError::ValueNotAllowed)),
             HeapRENode::Bucket(..) => Err(RuntimeError::KernelError(KernelError::ValueNotAllowed)),
             HeapRENode::Proof(..) => Err(RuntimeError::KernelError(KernelError::ValueNotAllowed)),
@@ -421,6 +443,10 @@ impl HeapRENode {
 
     pub fn try_drop(self) -> Result<(), DropFailure> {
         match self {
+            HeapRENode::AuthZone(mut auth_zone) => {
+                auth_zone.clear();
+                Ok(())
+            }
             HeapRENode::Package(..) => Err(DropFailure::Package),
             HeapRENode::Vault(..) => Err(DropFailure::Vault),
             HeapRENode::KeyValueStore(..) => Err(DropFailure::KeyValueStore),

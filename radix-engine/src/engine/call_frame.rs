@@ -1,6 +1,5 @@
 use crate::engine::*;
 use crate::fee::FeeReserve;
-use crate::model::*;
 use crate::types::*;
 use crate::wasm::*;
 
@@ -21,8 +20,6 @@ pub struct CallFrame {
 
     /// Owned Values
     pub owned_heap_nodes: HashMap<RENodeId, HeapRootRENode>,
-
-    pub auth_zone: AuthZone,
 }
 
 impl CallFrame {
@@ -38,7 +35,6 @@ impl CallFrame {
             },
             node_refs: HashMap::new(),
             owned_heap_nodes: HashMap::new(),
-            auth_zone: AuthZone::new(),
         }
     }
 
@@ -55,14 +51,11 @@ impl CallFrame {
         I: WasmInstance,
         R: FeeReserve,
     {
-        let auth_zone = AuthZone::new();
-
         Self {
             depth,
             actor,
             node_refs,
             owned_heap_nodes,
-            auth_zone,
         }
     }
 

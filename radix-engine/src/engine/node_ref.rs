@@ -193,6 +193,17 @@ impl NativeSubstateRef {
         }
     }
 
+    pub fn auth_zone_mut(&mut self) -> &mut AuthZone {
+        match self {
+            NativeSubstateRef::Stack(value, _frame_id, _root_id, maybe_child) => {
+                value.get_node_mut(maybe_child.as_ref()).auth_zone_mut()
+            }
+            NativeSubstateRef::Track(..) => {
+                panic!("Expecting not to be tracked.");
+            }
+        }
+    }
+
     pub fn return_to_location<'a, 'p, 's, R: FeeReserve>(
         self,
         call_frames: &mut Vec<CallFrame>,
@@ -361,6 +372,7 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
             | SubstateId::System(..)
             | SubstateId::Bucket(..)
             | SubstateId::Proof(..)
+            | SubstateId::AuthZone(..)
             | SubstateId::Worktop => {
                 panic!("Should never have received permissions to read this native type.");
             }
@@ -380,6 +392,7 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
             | SubstateId::System(..)
             | SubstateId::Bucket(..)
             | SubstateId::Proof(..)
+            | SubstateId::AuthZone(..)
             | SubstateId::Worktop => {
                 panic!("Should not get here");
             }
@@ -429,6 +442,9 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
                 panic!("Should not get here");
             }
             SubstateId::Worktop => {
+                panic!("Should not get here");
+            }
+            SubstateId::AuthZone(..) => {
                 panic!("Should not get here");
             }
         }

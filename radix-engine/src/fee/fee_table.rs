@@ -20,27 +20,47 @@ pub enum SystemApiCostingEntry<'a> {
      */
     ReadOwnedNodes,
     /// Creates a RENode.
-    CreateNode { size: u32 },
+    CreateNode {
+        size: u32,
+    },
     /// Drops a RENode
-    DropNode { size: u32 },
+    DropNode {
+        size: u32,
+    },
     /// Globalizes a RENode.
-    GlobalizeNode { size: u32 },
+    GlobalizeNode {
+        size: u32,
+    },
     /// Borrows a RENode.
-    BorrowNode { loaded: bool, size: u32 },
+    BorrowNode {
+        loaded: bool,
+        size: u32,
+    },
 
     /*
      * Substate
      */
     /// Borrows a substate
-    BorrowSubstate { loaded: bool, size: u32 },
+    BorrowSubstate {
+        loaded: bool,
+        size: u32,
+    },
     /// Returns a substate.
-    ReturnSubstate { size: u32 },
+    ReturnSubstate {
+        size: u32,
+    },
     /// Takes a substate
-    TakeSubstate { size: u32 },
+    TakeSubstate {
+        size: u32,
+    },
     /// Reads the data of a Substate
-    ReadSubstate { size: u32 },
+    ReadSubstate {
+        size: u32,
+    },
     /// Updates the data of a Substate
-    WriteSubstate { size: u32 },
+    WriteSubstate {
+        size: u32,
+    },
 
     /*
      * Misc
@@ -50,13 +70,19 @@ pub enum SystemApiCostingEntry<'a> {
     /// Reads the transaction hash.
     ReadTransactionHash,
     /// Reads blob in transaction
-    ReadBlob { size: u32 },
+    ReadBlob {
+        size: u32,
+    },
     /// Generates a UUID.
     GenerateUuid,
     /// Emits a log.
-    EmitLog { size: u32 },
+    EmitLog {
+        size: u32,
+    },
     /// Checks if an access rule can be satisfied by the given proofs.
-    CheckAccessRule { size: u32 },
+    CheckAccessRule {
+        size: u32,
+    },
 }
 
 pub struct FeeTable {
@@ -135,6 +161,7 @@ impl FeeTable {
                             AuthZoneFnIdentifier::CreateProofByAmount => self.fixed_high,
                             AuthZoneFnIdentifier::CreateProofByIds => self.fixed_high,
                             AuthZoneFnIdentifier::Clear => self.fixed_high,
+                            AuthZoneFnIdentifier::Drain => self.fixed_high,
                         }
                     }
                     NativeFnIdentifier::System(system_ident) => match system_ident {

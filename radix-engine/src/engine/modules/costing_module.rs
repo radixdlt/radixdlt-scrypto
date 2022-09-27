@@ -73,7 +73,15 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                     .map_err(ModuleError::CostingError)?;
             }
             SysCallInput::ReadOwnedNodes => {
-                track.fee_reserve.consume(track.fee_table.system_api_cost(SystemApiCostingEntry::ReadOwnedNodes), "read_owned_nodes", false)
+                track
+                    .fee_reserve
+                    .consume(
+                        track
+                            .fee_table
+                            .system_api_cost(SystemApiCostingEntry::ReadOwnedNodes),
+                        "read_owned_nodes",
+                        false,
+                    )
                     .map_err(ModuleError::CostingError)?;
             }
             SysCallInput::BorrowNode { node_id } => {
@@ -82,6 +90,11 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                     .consume(
                         track.fee_table.system_api_cost({
                             match node_id {
+                                RENodeId::AuthZone(_) => SystemApiCostingEntry::BorrowNode {
+                                    // TODO: figure out loaded state and size
+                                    loaded: true,
+                                    size: 0,
+                                },
                                 RENodeId::Bucket(_) => SystemApiCostingEntry::BorrowNode {
                                     // TODO: figure out loaded state and size
                                     loaded: true,
@@ -183,6 +196,11 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                     .consume(
                         track.fee_table.system_api_cost({
                             match substate_id {
+                                SubstateId::AuthZone(_) => SystemApiCostingEntry::BorrowSubstate {
+                                    // TODO: figure out loaded state and size
+                                    loaded: true,
+                                    size: 0,
+                                },
                                 SubstateId::Bucket(_) => SystemApiCostingEntry::BorrowSubstate {
                                     // TODO: figure out loaded state and size
                                     loaded: true,
@@ -279,6 +297,9 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                                     SystemApiCostingEntry::ReturnSubstate { size: 0 }
                                 }
                                 NativeSubstateRef::Track(substate_id, _) => match substate_id {
+                                    SubstateId::AuthZone(_) => {
+                                        SystemApiCostingEntry::ReturnSubstate { size: 0 }
+                                    }
                                     SubstateId::Vault(_) => {
                                         SystemApiCostingEntry::ReturnSubstate { size: 0 }
                                     }
