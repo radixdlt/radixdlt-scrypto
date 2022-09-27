@@ -73,10 +73,4 @@ where
     fn generate_uuid(&mut self) -> Result<u128, RuntimeError>;
 
     fn emit_log(&mut self, level: Level, message: String) -> Result<(), RuntimeError>;
-
-    fn check_access_rule(
-        &mut self,
-        access_rule: AccessRule,
-        proof_ids: Vec<ProofId>,
-    ) -> Result<bool, RuntimeError>;
 }

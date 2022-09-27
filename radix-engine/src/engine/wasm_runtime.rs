@@ -182,14 +182,6 @@ where
     fn handle_emit_log(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
         self.system_api.emit_log(level, message)
     }
-
-    fn handle_check_access_rule(
-        &mut self,
-        access_rule: AccessRule,
-        proof_ids: Vec<ProofId>,
-    ) -> Result<bool, RuntimeError> {
-        self.system_api.check_access_rule(access_rule, proof_ids)
-    }
 }
 
 fn encode<T: Encode>(output: T) -> ScryptoValue {
@@ -226,9 +218,6 @@ where
             RadixEngineInput::GenerateUuid() => self.handle_generate_uuid().map(encode),
             RadixEngineInput::EmitLog(level, message) => {
                 self.handle_emit_log(level, message).map(encode)
-            }
-            RadixEngineInput::CheckAccessRule(rule, proof_ids) => {
-                self.handle_check_access_rule(rule, proof_ids).map(encode)
             }
         }
         .map_err(InvokeError::downstream)

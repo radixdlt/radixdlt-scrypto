@@ -110,9 +110,6 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
             SysCallInput::EmitLog { .. } => {
                 log!(self, "Emitting application log");
             }
-            SysCallInput::CheckAccessRule { .. } => {
-                log!(self, "Checking access rule");
-            }
         }
 
         Ok(())
@@ -146,7 +143,6 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
             SysCallOutput::ReadBlob { .. } => {}
             SysCallOutput::GenerateUuid { .. } => {}
             SysCallOutput::EmitLog { .. } => {}
-            SysCallOutput::CheckAccessRule { .. } => {}
         }
 
         Ok(())

@@ -442,21 +442,6 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                     )
                     .map_err(ModuleError::CostingError)?;
             }
-            SysCallInput::CheckAccessRule { proof_ids, .. } => {
-                // Costing
-                track
-                    .fee_reserve
-                    .consume(
-                        track
-                            .fee_table
-                            .system_api_cost(SystemApiCostingEntry::CheckAccessRule {
-                                size: proof_ids.len() as u32,
-                            }),
-                        "check_access_rule",
-                        false,
-                    )
-                    .map_err(ModuleError::CostingError)?;
-            }
         }
 
         Ok(())

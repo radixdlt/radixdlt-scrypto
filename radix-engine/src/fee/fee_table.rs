@@ -79,10 +79,6 @@ pub enum SystemApiCostingEntry<'a> {
     EmitLog {
         size: u32,
     },
-    /// Checks if an access rule can be satisfied by the given proofs.
-    CheckAccessRule {
-        size: u32,
-    },
 }
 
 pub struct FeeTable {
@@ -281,7 +277,6 @@ impl FeeTable {
             SystemApiCostingEntry::ReadBlob { size } => self.fixed_low + size,
             SystemApiCostingEntry::GenerateUuid => self.fixed_low,
             SystemApiCostingEntry::EmitLog { size } => self.fixed_low + 10 * size,
-            SystemApiCostingEntry::CheckAccessRule { .. } => self.fixed_medium,
         }
     }
 }
