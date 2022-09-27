@@ -1065,14 +1065,23 @@ where
             .map_err(RuntimeError::ModuleError)?;
         }
 
-        let node_pointer = Self::current_frame(&self.call_frames)
-            .node_refs
-            .get(node_id)
-            .cloned()
-            .expect(&format!(
-                "Attempt to borrow node {:?}, which is not visible in current frame.",
-                node_id
-            )); // TODO: Assumption will break if auth is optional
+        let current_frame = Self::current_frame(&self.call_frames);
+        let node_pointer = if current_frame.owned_heap_nodes.get(node_id).is_some() {
+            RENodePointer::Heap {
+                frame_id: current_frame.depth,
+                root: node_id.clone(),
+                id: None,
+            } // TODO: can I borrow  non-root node?
+        } else {
+            current_frame
+                .node_refs
+                .get(node_id)
+                .cloned()
+                .expect(&format!(
+                    "Attempt to borrow node {:?}, which is not visible in current frame.",
+                    node_id
+                )) // TODO: Assumption will break if auth is optional
+        };
 
         for m in &mut self.modules {
             m.post_sys_call(
@@ -1102,14 +1111,23 @@ where
             .map_err(RuntimeError::ModuleError)?;
         }
 
-        let node_pointer = Self::current_frame(&self.call_frames)
-            .node_refs
-            .get(node_id)
-            .cloned()
-            .expect(&format!(
-                "Attempt to borrow node {:?}, which is not visible in current frame.",
-                node_id
-            )); // TODO: Assumption will break if auth is optional
+        let current_frame = Self::current_frame(&self.call_frames);
+        let node_pointer = if current_frame.owned_heap_nodes.get(node_id).is_some() {
+            RENodePointer::Heap {
+                frame_id: current_frame.depth,
+                root: node_id.clone(),
+                id: None,
+            } // TODO: can I borrow  non-root node?
+        } else {
+            current_frame
+                .node_refs
+                .get(node_id)
+                .cloned()
+                .expect(&format!(
+                    "Attempt to borrow node {:?}, which is not visible in current frame.",
+                    node_id
+                )) // TODO: Assumption will break if auth is optional
+        };
 
         for m in &mut self.modules {
             m.post_sys_call(
