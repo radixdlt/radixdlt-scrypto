@@ -577,12 +577,13 @@ where
                 self.track
                     .acquire_lock(substate_id.clone(), false, false)
                     .map_err(|e| RuntimeError::KernelError(KernelError::SubstateError(e)))?;
+                let substate = self.track.borrow_substate(substate_id.clone());
+                let node_id = substate.raw().global_re_node().node_id();
+                let node_pointer = RENodePointer::Store(node_id);
                 self.track
                     .release_lock(substate_id.clone(), false)
                     .map_err(|e| RuntimeError::KernelError(KernelError::SubstateError(e)))?;
 
-                let node_id = RENodeId::Component(component_address);
-                let node_pointer = RENodePointer::Store(node_id);
                 next_frame_node_refs.insert(node_id, node_pointer);
             }
         } else {

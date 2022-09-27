@@ -6,10 +6,11 @@ use crate::crypto::*;
 use crate::resource::{NonFungibleId, ResourceAddress};
 
 pub type AuthZoneId = u32;
-pub type KeyValueStoreId = (Hash, u32);
-pub type VaultId = (Hash, u32);
 pub type BucketId = u32;
 pub type ProofId = u32;
+
+pub type KeyValueStoreId = (Hash, u32);
+pub type VaultId = (Hash, u32);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Encode, Decode, TypeId, Ord, PartialOrd)]
 pub enum RENodeId {
@@ -88,6 +89,8 @@ pub enum SubstateId {
 
     AuthZone(AuthZoneId),
     ComponentInfo(ComponentAddress),
+    ComponentState(ComponentAddress),
+
     Package(PackageAddress),
     ResourceManager(ResourceAddress),
     NonFungibleSpace(ResourceAddress),
@@ -95,7 +98,6 @@ pub enum SubstateId {
     KeyValueStoreSpace(KeyValueStoreId),
     KeyValueStoreEntry(KeyValueStoreId, Vec<u8>),
     Vault(VaultId),
-    ComponentState(ComponentAddress),
     System(ComponentAddress),
     Bucket(BucketId),
     Proof(ProofId),

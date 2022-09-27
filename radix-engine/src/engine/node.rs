@@ -9,6 +9,16 @@ pub enum GlobalRENode {
     Resource(ResourceAddress),
 }
 
+impl GlobalRENode {
+    pub fn node_id(&self) -> RENodeId {
+        match self {
+            GlobalRENode::Package(package_address) => RENodeId::Package(*package_address),
+            GlobalRENode::Component(component_address) => RENodeId::Component(*component_address),
+            GlobalRENode::Resource(resource_address) => RENodeId::ResourceManager(*resource_address),
+        }
+    }
+}
+
 // TODO: still lots of unwraps
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
@@ -25,6 +35,14 @@ pub enum Substate {
 }
 
 impl Substate {
+    pub fn global_re_node(&self) -> &GlobalRENode {
+        if let Substate::GlobalRENode(global_re_node) = self {
+            global_re_node
+        } else {
+            panic!("Not a global RENode");
+        }
+    }
+
     pub fn vault_mut(&mut self) -> &mut VaultSubstate {
         if let Substate::Vault(vault) = self {
             vault
