@@ -1270,7 +1270,9 @@ where
         assert!(taken_nodes.len() == 1);
         let root_node = taken_nodes.into_values().nth(0).unwrap();
 
-        // TODO: globalization can be simplified by moving the node from stack to track
+        for (id, node) in root_node.to_nodes(node_id) {
+            self.track.put_node(id, node);
+        }
 
         for m in &mut self.modules {
             m.post_sys_call(

@@ -47,6 +47,13 @@ impl HeapRENode {
         }
     }
 
+    pub fn system_mut(&mut self) -> &mut System {
+        match self {
+            HeapRENode::System(system) => system,
+            _ => panic!("Expected to be system"),
+        }
+    }
+
     pub fn resource_manager(&self) -> &ResourceManager {
         match self {
             HeapRENode::Resource(resource_manager, ..) => resource_manager,
@@ -81,11 +88,36 @@ impl HeapRENode {
             _ => panic!("Expected to be a package"),
         }
     }
+    pub fn package_mut(&mut self) -> &Package {
+        match self {
+            HeapRENode::Package(package) => package,
+            _ => panic!("Expected to be a package"),
+        }
+    }
 
     pub fn bucket(&self) -> &Bucket {
         match self {
             HeapRENode::Bucket(bucket) => bucket,
             _ => panic!("Expected to be a bucket"),
+        }
+    }
+    pub fn bucket_mut(&mut self) -> &mut Bucket {
+        match self {
+            HeapRENode::Bucket(bucket) => bucket,
+            _ => panic!("Expected to be a bucket"),
+        }
+    }
+
+    pub fn proof(&self) -> &Proof {
+        match self {
+            HeapRENode::Proof(proof) => proof,
+            _ => panic!("Expected to be a proof"),
+        }
+    }
+    pub fn proof_mut(&mut self) -> &mut Proof {
+        match self {
+            HeapRENode::Proof(proof) => proof,
+            _ => panic!("Expected to be a proof"),
         }
     }
 
@@ -128,6 +160,20 @@ impl HeapRENode {
         match self {
             HeapRENode::Vault(vault) => vault,
             _ => panic!("Expected to be a vault"),
+        }
+    }
+
+    pub fn worktop(&self) -> &Worktop {
+        match self {
+            HeapRENode::Worktop(worktop) => worktop,
+            _ => panic!("Expected to be a worktop"),
+        }
+    }
+
+    pub fn worktop_mut(&mut self) -> &mut Worktop {
+        match self {
+            HeapRENode::Worktop(worktop) => worktop,
+            _ => panic!("Expected to be a worktop"),
         }
     }
 

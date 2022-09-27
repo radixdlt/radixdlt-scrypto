@@ -271,9 +271,20 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                     );
                 }
                 Substate::ComponentInfo(substate) => {
+                    let address = match &substate_id {
+                        SubstateId::ComponentInfo(address) => *address,
+                        _ => panic!("Unexpected substate id type"),
+                    };
+
+                    let component_state = self.loaded_substates
+                        .get_mut(&SubstateId::ComponentState(address))
+                        .expect("Lock ComponentState before ComponentInfo before lazily loading is supported")
+                        .substate
+                        .take();
+
                     let node = HeapRENode::Component(Component {
                         info: substate,
-                        state: todo!(),
+                        state: component_state.into(),
                     });
                     self.loaded_nodes.insert(
                         match &substate_id {
@@ -283,7 +294,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                         node,
                     );
                 }
-                Substate::ComponentState(substate) => {
+                Substate::ComponentState(_) => {
                     // no op
                 }
                 Substate::Package(substate) => {
@@ -309,10 +320,10 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                         node,
                     );
                 }
-                Substate::NonFungible(substate) => {
+                Substate::NonFungible(_) => {
                     // no op
                 }
-                Substate::KeyValueStoreEntry(substate) => {
+                Substate::KeyValueStoreEntry(_) => {
                     // no op
                 }
             };
@@ -349,11 +360,17 @@ impl<'s, R: FeeReserve> Track<'s, R> {
     // Despite being named as borrow_*, borrow rules are not enforced here but within `acquire_lock`.
 
     pub fn borrow_node(&self, node_id: &RENodeId) -> &HeapRENode {
-        todo!()
+        self.loaded_nodes.get(node_id).expect("Node not available")
     }
 
     pub fn borrow_node_mut(&mut self, node_id: &RENodeId) -> &mut HeapRENode {
-        todo!()
+        self.loaded_nodes
+            .get_mut(node_id)
+            .expect("Node not available")
+    }
+
+    pub fn put_node(&mut self, node_id: RENodeId, node: HeapRENode) {
+        self.loaded_nodes.insert(node_id, node);
     }
 
     pub fn borrow_substate(&self, substate_id: SubstateId) -> &Substate {

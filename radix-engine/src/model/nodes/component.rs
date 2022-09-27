@@ -15,14 +15,20 @@ pub enum ComponentError {
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct Component {
     pub info: ComponentInfoSubstate,
-    pub state: ComponentStateSubstate, // TODO: lazy loading of component state
+    // TODO: lazily loading of component state
+    // We use the state to look up children nodes of a component.
+    // Changing to lazily loading at this moment requires an even larger refactoring to the code base.
+    pub state: ComponentStateSubstate,
 }
 
 impl TryIntoSubstates for Component {
     type Error = ();
 
     fn try_into_substates(self) -> Result<Vec<crate::model::Substate>, Self::Error> {
-        Ok(vec![self.info.into(), self.state.into()])
+        let mut substates = Vec::new();
+        substates.push(self.info.into());
+        substates.push(self.state.into());
+        Ok(substates)
     }
 }
 
