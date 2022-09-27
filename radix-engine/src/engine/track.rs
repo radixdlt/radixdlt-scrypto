@@ -297,9 +297,6 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                         node,
                     );
                 }
-                Substate::ComponentState(_) => {
-                    // no op
-                }
                 Substate::Package(substate) => {
                     let node = HeapRENode::Package(Package {
                         code: substate.code,
@@ -323,11 +320,10 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                         node,
                     );
                 }
-                Substate::NonFungible(_) => {
-                    // no op
-                }
-                Substate::KeyValueStoreEntry(_) => {
-                    // no op
+                s @ Substate::ComponentState(_)
+                | s @ Substate::NonFungible(_)
+                | s @ Substate::KeyValueStoreEntry(_) => {
+                    self.put_substate(substate_id, s);
                 }
             };
         }
@@ -392,15 +388,23 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             .borrow_mut()
     }
 
+    // TODO remove
+    // Currently used by node globalization
     pub fn put_substate(&mut self, substate_id: SubstateId, substate: Substate) {
-        assert!(!self.loaded_substates.contains_key(&substate_id));
-        self.loaded_substates.insert(
-            substate_id,
-            BorrowedSubstate {
-                substate: SubstateCache::Free(substate),
-                lock_state: LockState::no_lock(),
-            },
-        );
+        if !self.loaded_substates.contains_key(&substate_id) {
+            self.loaded_substates.insert(
+                substate_id,
+                BorrowedSubstate {
+                    substate: SubstateCache::Free(substate),
+                    lock_state: LockState::no_lock(),
+                },
+            );
+        } else {
+            self.loaded_substates
+                .get_mut(&substate_id)
+                .unwrap()
+                .substate = SubstateCache::Free(substate);
+        }
     }
 
     /// Returns the value of a key value pair

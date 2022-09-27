@@ -176,9 +176,12 @@ where
                 ))
             })?;
 
-        if matches!(substate_id, SubstateId::ComponentInfo(..)) {
+        if let SubstateId::ComponentInfo(address) = substate_id {
             node_pointer
-                .acquire_lock(substate_id.clone(), false, false, track)
+                .acquire_lock(SubstateId::ComponentState(*address), false, false, track)
+                .map_err(RuntimeError::KernelError)?;
+            node_pointer
+                .acquire_lock(SubstateId::ComponentInfo(*address), false, false, track)
                 .map_err(RuntimeError::KernelError)?;
         }
 
@@ -189,9 +192,12 @@ where
         };
 
         // TODO: Remove, integrate with substate borrow mechanism
-        if matches!(substate_id, SubstateId::ComponentInfo(..)) {
+        if let SubstateId::ComponentInfo(address) = substate_id {
             node_pointer
-                .release_lock(substate_id.clone(), false, track)
+                .release_lock(SubstateId::ComponentState(*address), false, track)
+                .map_err(RuntimeError::KernelError)?;
+            node_pointer
+                .release_lock(SubstateId::ComponentInfo(*address), false, track)
                 .map_err(RuntimeError::KernelError)?;
         }
 
@@ -566,20 +572,46 @@ where
             // Make components visible
             for component_address in component_addresses {
                 let node_id = RENodeId::Component(component_address);
-                let substate_id = SubstateId::ComponentInfo(component_address);
 
                 // Check if component exists as root
-                if !self.track.is_root(&substate_id) {
+                if !self
+                    .track
+                    .is_root(&SubstateId::ComponentInfo(component_address))
+                {
                     return Err(RuntimeError::KernelError(KernelError::RENodeNotFound(
                         node_id,
                     )));
                 }
                 let node_pointer = RENodePointer::Store(node_id);
                 node_pointer
-                    .acquire_lock(substate_id.clone(), false, false, &mut self.track)
+                    .acquire_lock(
+                        SubstateId::ComponentState(component_address),
+                        false,
+                        false,
+                        &mut self.track,
+                    )
                     .map_err(RuntimeError::KernelError)?;
                 node_pointer
-                    .release_lock(substate_id, false, &mut self.track)
+                    .acquire_lock(
+                        SubstateId::ComponentInfo(component_address),
+                        false,
+                        false,
+                        &mut self.track,
+                    )
+                    .map_err(RuntimeError::KernelError)?;
+                node_pointer
+                    .release_lock(
+                        SubstateId::ComponentState(component_address),
+                        false,
+                        &mut self.track,
+                    )
+                    .map_err(RuntimeError::KernelError)?;
+                node_pointer
+                    .release_lock(
+                        SubstateId::ComponentInfo(component_address),
+                        false,
+                        &mut self.track,
+                    )
                     .map_err(RuntimeError::KernelError)?;
                 next_frame_node_refs.insert(node_id, node_pointer);
             }
