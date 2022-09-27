@@ -171,8 +171,10 @@ impl<'s, R: FeeReserve> Track<'s, R> {
     }
 
     // TODO: Clean this up
-    pub fn is_root(&mut self, substate_id: &SubstateId) -> bool {
-        self.state_track.is_root(substate_id)
+    pub fn is_root(&mut self, _substate_id: &SubstateId) -> bool {
+        // self.state_track.is_root(substate_id)
+        // FIXME: root-ness is not stored in the track when globalizing a node. Add it back!
+        true
     }
 
     // TODO: to read/write a value owned by track requires three coordinated steps:

@@ -124,14 +124,14 @@ impl HeapRENode {
     pub fn component(&self) -> &Component {
         match self {
             HeapRENode::Component(component, ..) => component,
-            _ => panic!("Expected to be a store"),
+            _ => panic!("Expected to be a component"),
         }
     }
 
     pub fn component_mut(&mut self) -> &mut Component {
         match self {
             HeapRENode::Component(component, ..) => component,
-            _ => panic!("Expected to be a store"),
+            _ => panic!("Expected to be a component"),
         }
     }
 

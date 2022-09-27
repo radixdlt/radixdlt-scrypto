@@ -256,7 +256,9 @@ pub fn node_to_substates(nodes: HashMap<RENodeId, HeapRENode>) -> HashMap<Substa
                 };
                 substates.insert(substate_id, substate.into());
             }
-            HeapRENode::KeyValueStore(_) => panic!("Unexpected"),
+            HeapRENode::KeyValueStore(_) => {
+                // TODO: do we need a substate for key-value store?
+            }
             HeapRENode::Component(component) => {
                 let address = match id {
                     RENodeId::Component(address) => address,
@@ -277,7 +279,7 @@ pub fn node_to_substates(nodes: HashMap<RENodeId, HeapRENode>) -> HashMap<Substa
                 };
                 substates.insert(SubstateId::Package(address), substate.into());
             }
-            HeapRENode::Resource(resource_manager, _) => {
+            HeapRENode::Resource(resource_manager, maybe_non_fungibles) => {
                 let address = match id {
                     RENodeId::ResourceManager(address) => address,
                     _ => panic!("Unexpected"),
@@ -292,6 +294,15 @@ pub fn node_to_substates(nodes: HashMap<RENodeId, HeapRENode>) -> HashMap<Substa
                     total_supply: resource_manager.total_supply,
                 };
                 substates.insert(SubstateId::ResourceManager(address), substate.into());
+
+                if let Some(non_fungibles) = maybe_non_fungibles {
+                    for (id, non_fungible) in non_fungibles {
+                        let substate_id = SubstateId::NonFungible(address.clone(), id);
+                        let substate =
+                            Substate::NonFungible(NonFungibleSubstate(Some(non_fungible)));
+                        substates.insert(substate_id, substate);
+                    }
+                }
             }
             HeapRENode::System(system) => {
                 let address = match id {

@@ -1292,6 +1292,10 @@ where
             self.track.put_substate(id, substate);
         }
 
+        Self::current_frame_mut(&mut self.call_frames)
+            .node_refs
+            .insert(node_id, RENodePointer::Store(node_id));
+
         for m in &mut self.modules {
             m.post_sys_call(
                 &mut self.track,
