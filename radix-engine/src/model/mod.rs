@@ -16,6 +16,7 @@ mod system;
 mod transaction_processor;
 mod vault;
 mod worktop;
+mod global;
 
 pub use crate::engine::InvokeError;
 pub use abi_extractor::*;
@@ -41,3 +42,4 @@ pub use transaction_processor::{
 };
 pub use vault::{Vault, VaultError};
 pub use worktop::{Worktop, WorktopError};
+pub use global::*;
