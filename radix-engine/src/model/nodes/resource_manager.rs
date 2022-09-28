@@ -5,17 +5,13 @@ use crate::model::{
     ResourceMethodRule::{Protected, Public},
     Vault,
 };
-use crate::model::{
-    MethodAccessRule, MethodAccessRuleMethod, ResourceManagerSubstate, ResourceMethodRule,
-};
+use crate::model::{MethodAccessRule, MethodAccessRuleMethod, ResourceMethodRule};
 use crate::types::AccessRule::*;
 use crate::types::ResourceMethodAuthKey::*;
 use crate::types::*;
 use crate::wasm::*;
 
 use self::ResourceManagerError::InvalidMethod;
-
-use super::TryIntoSubstates;
 
 /// Represents an error when accessing a bucket.
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -616,22 +612,5 @@ impl ResourceManager {
         }?;
 
         Ok(rtn)
-    }
-}
-
-impl TryIntoSubstates for ResourceManager {
-    type Error = ();
-
-    fn try_into_substates(self) -> Result<Vec<crate::model::Substate>, Self::Error> {
-        Ok(vec![ResourceManagerSubstate {
-            resource_type: self.resource_type,
-            metadata: self.metadata,
-            method_table: self.method_table,
-            vault_method_table: self.vault_method_table,
-            bucket_method_table: self.bucket_method_table,
-            authorization: self.authorization,
-            total_supply: self.total_supply,
-        }
-        .into()])
     }
 }

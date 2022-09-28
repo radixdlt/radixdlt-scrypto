@@ -2,12 +2,10 @@ use crate::engine::{HeapRENode, SystemApi};
 use crate::fee::{FeeReserve, FeeReserveError};
 use crate::model::{
     Bucket, InvokeError, LockableResource, Proof, ProofError, Resource, ResourceContainerId,
-    ResourceOperationError, VaultSubstate,
+    ResourceOperationError,
 };
 use crate::types::*;
 use crate::wasm::*;
-
-use super::TryIntoSubstates;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub enum VaultError {
@@ -351,13 +349,5 @@ impl Vault {
         }?;
 
         Ok(rtn)
-    }
-}
-
-impl TryIntoSubstates for Vault {
-    type Error = ResourceOperationError;
-
-    fn try_into_substates(self) -> Result<Vec<crate::model::Substate>, Self::Error> {
-        Ok(vec![VaultSubstate(self.resource()?).into()])
     }
 }

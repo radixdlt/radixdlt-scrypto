@@ -2,11 +2,8 @@ use core::fmt::Debug;
 
 use crate::engine::*;
 use crate::fee::FeeReserve;
-use crate::model::PackageSubstate;
 use crate::types::*;
 use crate::wasm::*;
-
-use super::TryIntoSubstates;
 
 /// A collection of blueprints, compiled and published as a single unit.
 #[derive(Clone, TypeId, Encode, Decode, PartialEq, Eq)]
@@ -89,17 +86,5 @@ impl Debug for Package {
             .field("code_len", &self.code.len())
             .field("blueprint_abis", &self.blueprint_abis)
             .finish()
-    }
-}
-
-impl TryIntoSubstates for Package {
-    type Error = ();
-
-    fn try_into_substates(self) -> Result<Vec<crate::model::Substate>, Self::Error> {
-        Ok(vec![PackageSubstate {
-            code: self.code,
-            blueprint_abis: self.blueprint_abis,
-        }
-        .into()])
     }
 }

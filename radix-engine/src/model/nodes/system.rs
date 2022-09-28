@@ -1,14 +1,11 @@
 use crate::engine::{AuthModule, HeapRENode, SystemApi};
 use crate::fee::FeeReserve;
-use crate::model::SystemSubstate;
 use crate::model::{
     HardAuthRule, HardProofRule, HardResourceOrNonFungible, InvokeError, MethodAuthorization,
 };
 use crate::types::*;
 use crate::wasm::*;
 use scrypto::core::SystemCreateInput;
-
-use super::TryIntoSubstates;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub enum SystemError {
@@ -115,13 +112,5 @@ impl System {
             }
             _ => Err(InvokeError::Error(SystemError::InvalidMethod)),
         }
-    }
-}
-
-impl TryIntoSubstates for System {
-    type Error = ();
-
-    fn try_into_substates(self) -> Result<Vec<crate::model::Substate>, Self::Error> {
-        Ok(vec![SystemSubstate { epoch: self.epoch }.into()])
     }
 }
