@@ -38,7 +38,7 @@ where
     ) -> Result<ScryptoValue, RuntimeError>;
 
     // TODO: again, despite being named as `borrow_*`, borrows rules are through `acquire_lock`
-    // As a s result, the following two methods should not be exposed to Scrypto.
+    // As a result, the following two methods should not be exposed to Scrypto.
 
     fn borrow_node(&mut self, node_id: &RENodeId) -> Result<RENodeRef<'_, 's, R>, RuntimeError>;
 

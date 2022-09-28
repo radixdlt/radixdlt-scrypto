@@ -256,8 +256,17 @@ pub fn node_to_substates(node_id: RENodeId, node: HeapRENode) -> HashMap<Substat
             };
             substates.insert(substate_id, substate.into());
         }
-        HeapRENode::KeyValueStore(_) => {
-            // TODO: do we need a substate for key-value store?
+        HeapRENode::KeyValueStore(store) => {
+            let store_id = match node_id {
+                RENodeId::KeyValueStore(store_id) => store_id,
+                _ => panic!("Unexpected"),
+            };
+            for (k, v) in store.store {
+                substates.insert(
+                    SubstateId::KeyValueStoreEntry(store_id, k),
+                    Substate::KeyValueStoreEntry(KeyValueStoreEntrySubstate(Some(v.raw))),
+                );
+            }
         }
         HeapRENode::Component(component) => {
             let address = match node_id {
