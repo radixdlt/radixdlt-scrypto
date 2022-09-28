@@ -1,12 +1,12 @@
 use crate::types::*;
-use scrypto::core::FunctionIdentifier;
+use scrypto::core::FnIdent;
 
 pub enum SystemApiCostingEntry<'a> {
     /*
      * Invocation
      */
     Invoke {
-        function_identifier: FunctionIdentifier,
+        function_identifier: FnIdent,
         input: &'a ScryptoValue,
     },
 
@@ -102,9 +102,9 @@ impl FeeTable {
         self.wasm_instantiation_per_byte
     }
 
-    pub fn run_fn_cost(&self, function: &FunctionIdentifier, input: &ScryptoValue) -> u32 {
+    pub fn run_fn_cost(&self, function: &FnIdent, input: &ScryptoValue) -> u32 {
         match function.fn_identifier().clone() {
-            FnIdentifier::Native(native_identifier) => {
+            FunctionIdent::Native(native_identifier) => {
                 match native_identifier {
                     NativeFnIdentifier::TransactionProcessor(transaction_processor_fn) => {
                         match transaction_processor_fn {
@@ -194,10 +194,10 @@ impl FeeTable {
                     }
                 }
             }
-            FnIdentifier::Scrypto { .. } => {
+            FunctionIdent::Scrypto { .. } => {
                 match function {
-                    FunctionIdentifier::Function(_) => 0, // Costing is through instrumentation // TODO: Josh question, why only through instrumentation?
-                    FunctionIdentifier::Method(..) => self.fixed_high,
+                    FnIdent::Function(_) => 0, // Costing is through instrumentation // TODO: Josh question, why only through instrumentation?
+                    FnIdent::Method(..) => self.fixed_high,
                 }
             }
         }
@@ -206,11 +206,11 @@ impl FeeTable {
     pub fn run_method_cost(
         &self,
         receiver: Option<&Receiver>,
-        fn_identifier: &FnIdentifier,
+        fn_identifier: &FunctionIdent,
         input: &ScryptoValue,
     ) -> u32 {
         match fn_identifier {
-            FnIdentifier::Native(native_identifier) => {
+            FunctionIdent::Native(native_identifier) => {
                 match native_identifier {
                     NativeFnIdentifier::TransactionProcessor(transaction_processor_fn) => {
                         match transaction_processor_fn {
@@ -300,7 +300,7 @@ impl FeeTable {
                     }
                 }
             }
-            FnIdentifier::Scrypto { .. } => {
+            FunctionIdent::Scrypto { .. } => {
                 match receiver {
                     Some(..) => self.fixed_high,
                     None => 0, // Costing is through instrumentation // TODO: Josh question, why only through instrumentation?

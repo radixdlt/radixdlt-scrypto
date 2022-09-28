@@ -7,7 +7,7 @@ use sbor::*;
 use crate::abi::*;
 use crate::buffer::scrypto_encode;
 use crate::core::{
-    BucketFnIdentifier, FnIdentifier, NativeFnIdentifier, Receiver, ResourceManagerFnIdentifier,
+    BucketFnIdentifier, FunctionIdent, NativeFnIdentifier, Receiver, ResourceManagerFnIdentifier,
 };
 use crate::engine::types::RENodeId;
 use crate::engine::{api::*, call_engine, types::BucketId};
@@ -55,7 +55,7 @@ impl Bucket {
     pub fn new(resource_address: ResourceAddress) -> Self {
         let input = RadixEngineInput::InvokeMethod(
             Receiver::Ref(RENodeId::ResourceManager(resource_address)),
-            FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
+            FunctionIdent::Native(NativeFnIdentifier::ResourceManager(
                 ResourceManagerFnIdentifier::CreateBucket,
             )),
             scrypto_encode(&ResourceManagerCreateBucketInput {}),
@@ -75,7 +75,7 @@ impl Bucket {
     fn take_internal(&mut self, amount: Decimal) -> Self {
         let input = RadixEngineInput::InvokeMethod(
             Receiver::Ref(RENodeId::Bucket(self.0)),
-            FnIdentifier::Native(NativeFnIdentifier::Bucket(BucketFnIdentifier::Take)),
+            FunctionIdent::Native(NativeFnIdentifier::Bucket(BucketFnIdentifier::Take)),
             scrypto_encode(&BucketTakeInput { amount }),
         );
         call_engine(input)

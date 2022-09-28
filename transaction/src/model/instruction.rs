@@ -2,7 +2,7 @@ use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::component::ComponentAddress;
-use scrypto::core::{Blob, FnIdentifier, NativeFnIdentifier, Receiver};
+use scrypto::core::{Blob, FunctionIdent, NativeFnIdentifier, Receiver};
 use scrypto::engine::types::*;
 use scrypto::math::*;
 use scrypto::resource::{NonFungibleId, ResourceAddress};
@@ -95,7 +95,7 @@ pub enum Instruction {
     ///
     /// Buckets and proofs in arguments moves from transaction context to the callee.
     CallFunction {
-        fn_identifier: FnIdentifier,
+        fn_identifier: FunctionIdent,
         args: Vec<u8>,
     },
 

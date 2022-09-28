@@ -21,7 +21,7 @@ pub use scrypto::component::{
 };
 pub use scrypto::constants::*;
 pub use scrypto::core::{
-    AuthZoneFnIdentifier, BucketFnIdentifier, ComponentFnIdentifier, Expression, FnIdentifier,
+    AuthZoneFnIdentifier, BucketFnIdentifier, ComponentFnIdentifier, Expression, FunctionIdent,
     Level, NativeFnIdentifier, NetworkDefinition, PackageFnIdentifier, ProofFnIdentifier, Receiver,
     ResourceManagerFnIdentifier, ScryptoActor, ScryptoRENode, SystemFnIdentifier,
     SystemGetCurrentEpochInput, SystemGetTransactionHashInput, SystemSetEpochInput,

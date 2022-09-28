@@ -8,7 +8,7 @@ use scrypto::address::Bech32Decoder;
 use scrypto::component::ComponentAddress;
 use scrypto::component::PackageAddress;
 use scrypto::core::{
-    Blob, BucketFnIdentifier, Expression, FnIdentifier, NativeFnIdentifier, Receiver,
+    Blob, BucketFnIdentifier, Expression, FunctionIdent, NativeFnIdentifier, Receiver,
     ResourceManagerFnIdentifier,
 };
 use scrypto::crypto::*;
@@ -327,7 +327,7 @@ pub fn generate_instruction(
             }
 
             Instruction::CallFunction {
-                fn_identifier: FnIdentifier::Scrypto {
+                fn_identifier: FunctionIdent::Scrypto {
                     package_address: generate_package_address(package_address, bech32_decoder)?,
                     blueprint_name: generate_string(blueprint_name)?,
                     ident: generate_string(function)?,
@@ -378,7 +378,7 @@ pub fn generate_instruction(
             }
 
             Instruction::CallFunction {
-                fn_identifier: FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
+                fn_identifier: FunctionIdent::Native(NativeFnIdentifier::ResourceManager(
                     ResourceManagerFnIdentifier::Create,
                 )),
                 args: args_from_value_vec!(fields),
@@ -1197,7 +1197,7 @@ mod tests {
         generate_instruction_ok!(
             r#"CALL_FUNCTION  PackageAddress("package_sim1q8gl2qqsusgzmz92es68wy2fr7zjc523xj57eanm597qrz3dx7")  "Airdrop"  "new"  500u32  Map<String, U8>("key", 1u8)  PreciseDecimal("120");"#,
             Instruction::CallFunction {
-                fn_identifier: FnIdentifier::Scrypto {
+                fn_identifier: FunctionIdent::Scrypto {
                     package_address: PackageAddress::from_str(
                         "package_sim1q8gl2qqsusgzmz92es68wy2fr7zjc523xj57eanm597qrz3dx7".into()
                     )

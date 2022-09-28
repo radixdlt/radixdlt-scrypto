@@ -41,7 +41,7 @@ mod tests {
     use scrypto::address::Bech32Decoder;
     use scrypto::args;
     use scrypto::core::NetworkDefinition;
-    use scrypto::core::{Blob, FnIdentifier, NativeFnIdentifier, ResourceManagerFnIdentifier};
+    use scrypto::core::{Blob, FunctionIdent, NativeFnIdentifier, ResourceManagerFnIdentifier};
     use scrypto::math::*;
     use scrypto::resource::{
         AccessRule, MintParams, Mutability, ResourceAddress, ResourceMethodAuthKey, ResourceType,
@@ -153,7 +153,7 @@ mod tests {
                     .unwrap()
                 },
                 Instruction::CallFunction {
-                    fn_identifier: FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
+                    fn_identifier: FunctionIdent::Native(NativeFnIdentifier::ResourceManager(
                         ResourceManagerFnIdentifier::Create
                     )),
                     args: args!(

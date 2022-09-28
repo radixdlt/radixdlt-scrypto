@@ -253,7 +253,7 @@ impl fmt::Debug for TransactionReceipt {
                 prefix!(i, contents.instructions),
                 match inst {
                     Instruction::CallFunction {
-                        fn_identifier: FnIdentifier::Scrypto {
+                        fn_identifier: FunctionIdent::Scrypto {
                             package_address,
                             blueprint_name,
                             ident,

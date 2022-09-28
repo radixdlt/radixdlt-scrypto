@@ -3,7 +3,7 @@ use crate::fee::FeeReserve;
 use crate::model::*;
 use crate::types::*;
 use crate::wasm::*;
-use scrypto::core::FunctionIdentifier;
+use scrypto::core::FnIdent;
 
 // TODO: reduce fields visibility
 
@@ -31,7 +31,7 @@ impl CallFrame {
         Self {
             depth: 0,
             actor: REActor {
-                function_identifier: FunctionIdentifier::Function(FnIdentifier::Native(
+                function_identifier: FnIdent::Function(FunctionIdent::Native(
                     NativeFnIdentifier::TransactionProcessor(TransactionProcessorFnIdentifier::Run),
                 )),
             },

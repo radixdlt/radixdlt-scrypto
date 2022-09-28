@@ -9,7 +9,7 @@ use scrypto::core::ResourceManagerFnIdentifier;
 
 use crate::abi::*;
 use crate::buffer::scrypto_encode;
-use crate::core::{FnIdentifier, NativeFnIdentifier, Receiver, VaultFnIdentifier};
+use crate::core::{FunctionIdent, NativeFnIdentifier, Receiver, VaultFnIdentifier};
 use crate::crypto::*;
 use crate::engine::types::RENodeId;
 use crate::engine::{api::*, call_engine, types::VaultId};
@@ -69,7 +69,7 @@ impl Vault {
     pub fn new(resource_address: ResourceAddress) -> Self {
         let input = RadixEngineInput::InvokeMethod(
             Receiver::Ref(RENodeId::ResourceManager(resource_address)),
-            FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
+            FunctionIdent::Native(NativeFnIdentifier::ResourceManager(
                 ResourceManagerFnIdentifier::CreateVault,
             )),
             scrypto_encode(&ResourceManagerCreateVaultInput {}),
@@ -87,7 +87,7 @@ impl Vault {
     fn take_internal(&mut self, amount: Decimal) -> Bucket {
         let input = RadixEngineInput::InvokeMethod(
             Receiver::Ref(RENodeId::Vault(self.0)),
-            FnIdentifier::Native(NativeFnIdentifier::Vault(VaultFnIdentifier::Take)),
+            FunctionIdent::Native(NativeFnIdentifier::Vault(VaultFnIdentifier::Take)),
             scrypto_encode(&VaultTakeInput { amount }),
         );
         call_engine(input)
@@ -96,7 +96,7 @@ impl Vault {
     fn lock_fee_internal(&mut self, amount: Decimal) {
         let input = RadixEngineInput::InvokeMethod(
             Receiver::Ref(RENodeId::Vault(self.0)),
-            FnIdentifier::Native(NativeFnIdentifier::Vault(VaultFnIdentifier::LockFee)),
+            FunctionIdent::Native(NativeFnIdentifier::Vault(VaultFnIdentifier::LockFee)),
             scrypto_encode(&VaultTakeInput { amount }),
         );
         call_engine(input)
@@ -105,7 +105,7 @@ impl Vault {
     fn lock_contingent_fee_internal(&mut self, amount: Decimal) {
         let input = RadixEngineInput::InvokeMethod(
             Receiver::Ref(RENodeId::Vault(self.0)),
-            FnIdentifier::Native(NativeFnIdentifier::Vault(
+            FunctionIdent::Native(NativeFnIdentifier::Vault(
                 VaultFnIdentifier::LockContingentFee,
             )),
             scrypto_encode(&VaultTakeInput { amount }),

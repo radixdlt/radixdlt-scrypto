@@ -15,7 +15,7 @@ impl AuthModule {
     }
 
     fn check_auth(
-        function: &FnIdentifier,
+        function: &FunctionIdent,
         method_auths: Vec<MethodAuthorization>,
         call_frames: &Vec<CallFrame>, // TODO remove this once heap is implemented
     ) -> Result<(), RuntimeError> {
@@ -48,18 +48,18 @@ impl AuthModule {
     }
 
     pub fn function_auth(
-        fn_identifier: &FnIdentifier,
+        fn_identifier: &FunctionIdent,
         call_frames: &mut Vec<CallFrame>,
     ) -> Result<(), RuntimeError> {
         let auth = match fn_identifier {
-            FnIdentifier::Native(NativeFnIdentifier::System(system_fn)) => System::auth(system_fn),
+            FunctionIdent::Native(NativeFnIdentifier::System(system_fn)) => System::auth(system_fn),
             _ => vec![],
         };
         Self::check_auth(fn_identifier, auth, call_frames)
     }
 
     pub fn receiver_auth<'s, R: FeeReserve>(
-        function: &FnIdentifier,
+        function: &FunctionIdent,
         receiver: Receiver,
         input: &ScryptoValue,
         node_pointer: RENodePointer,
@@ -69,7 +69,7 @@ impl AuthModule {
         let auth = match (receiver, function) {
             (
                 Receiver::Consumed(RENodeId::Bucket(..)),
-                FnIdentifier::Native(NativeFnIdentifier::Bucket(bucket_fn)),
+                FunctionIdent::Native(NativeFnIdentifier::Bucket(bucket_fn)),
             ) => {
                 let resource_address = {
                     let node_ref = node_pointer.to_ref(call_frames, track);
@@ -84,7 +84,7 @@ impl AuthModule {
             }
             (
                 Receiver::Ref(RENodeId::ResourceManager(resource_address)),
-                FnIdentifier::Native(NativeFnIdentifier::ResourceManager(fn_ident)),
+                FunctionIdent::Native(NativeFnIdentifier::ResourceManager(fn_ident)),
             ) => {
                 let substate_id = SubstateId::ResourceManager(resource_address);
                 let resource_manager = track
@@ -96,9 +96,9 @@ impl AuthModule {
             }
             (
                 Receiver::Ref(RENodeId::System(..)),
-                FnIdentifier::Native(NativeFnIdentifier::System(system_fn)),
+                FunctionIdent::Native(NativeFnIdentifier::System(system_fn)),
             ) => System::auth(system_fn),
-            (Receiver::Ref(RENodeId::Component(..)), FnIdentifier::Native(..)) => {
+            (Receiver::Ref(RENodeId::Component(..)), FunctionIdent::Native(..)) => {
                 match node_pointer {
                     RENodePointer::Store(..) => vec![MethodAuthorization::DenyAll],
                     RENodePointer::Heap { .. } => vec![],
@@ -106,7 +106,7 @@ impl AuthModule {
             }
             (
                 Receiver::Ref(RENodeId::Component(..)),
-                FnIdentifier::Scrypto {
+                FunctionIdent::Scrypto {
                     package_address,
                     blueprint_name,
                     ident,
@@ -142,7 +142,7 @@ impl AuthModule {
             }
             (
                 Receiver::Ref(RENodeId::Vault(..)),
-                FnIdentifier::Native(NativeFnIdentifier::Vault(vault_fn)),
+                FunctionIdent::Native(NativeFnIdentifier::Vault(vault_fn)),
             ) => {
                 let resource_address = {
                     let mut node_ref = node_pointer.to_ref(call_frames, track);

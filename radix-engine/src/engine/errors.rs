@@ -44,9 +44,9 @@ pub enum KernelError {
     InvokeMethodInvalidReferencePass(RENodeId),
     InvokeMethodInvalidReferenceReturn(RENodeId),
     MaxCallDepthLimitReached,
-    MethodNotFound(FnIdentifier),
-    InvalidFnInput { fn_identifier: FnIdentifier },
-    InvalidFnOutput { fn_identifier: FnIdentifier },
+    MethodNotFound(FunctionIdent),
+    InvalidFnInput { fn_identifier: FunctionIdent },
+    InvalidFnOutput { fn_identifier: FunctionIdent },
 
     // ID allocation
     IdAllocationError(IdAllocationError),
@@ -94,7 +94,7 @@ pub enum KernelError {
 #[derive(Debug, Encode, Decode, TypeId)]
 pub enum ModuleError {
     AuthorizationError {
-        function: FnIdentifier,
+        function: FunctionIdent,
         authorization: MethodAuthorization,
         error: MethodAuthorizationError,
     },

@@ -2,7 +2,7 @@ use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::*;
 use crate::types::*;
-use scrypto::core::{FunctionIdentifier, MethodIdent};
+use scrypto::core::{FnIdent, MethodIdent};
 
 #[derive(Debug, Clone, PartialEq, TypeId, Encode, Decode)]
 pub struct ResourceChange {
@@ -36,7 +36,7 @@ impl ExecutionTrace {
         actor: &REActor,
         node_id: &RENodeId,
         node_pointer: RENodePointer,
-        fn_identifier: FnIdentifier,
+        fn_identifier: FunctionIdent,
         input: &ScryptoValue,
         next_owned_values: &HashMap<RENodeId, HeapRootRENode>,
     ) -> Result<(), RuntimeError> {
@@ -50,13 +50,13 @@ impl ExecutionTrace {
             2. Hook up to when the component is globalized and convert
                blueprint-parented vaults (if any) to regular
                trace entries with component parents. */
-            if let FunctionIdentifier::Method(MethodIdent {
+            if let FnIdent::Method(MethodIdent {
                 receiver: Receiver::Ref(RENodeId::Component(component_address)),
                 ..
             }) = &actor.function_identifier
             {
                 match fn_identifier {
-                    FnIdentifier::Native(NativeFnIdentifier::Vault(VaultFnIdentifier::Put)) => {
+                    FunctionIdent::Native(NativeFnIdentifier::Vault(VaultFnIdentifier::Put)) => {
                         let decoded_input = scrypto_decode(&input.raw).map_err(|e| {
                             RuntimeError::ApplicationError(ApplicationError::VaultError(
                                 VaultError::InvalidRequestData(e),
@@ -70,7 +70,7 @@ impl ExecutionTrace {
                             next_owned_values,
                         )?;
                     }
-                    FnIdentifier::Native(NativeFnIdentifier::Vault(VaultFnIdentifier::Take)) => {
+                    FunctionIdent::Native(NativeFnIdentifier::Vault(VaultFnIdentifier::Take)) => {
                         let decoded_input = scrypto_decode(&input.raw).map_err(|e| {
                             RuntimeError::ApplicationError(ApplicationError::VaultError(
                                 VaultError::InvalidRequestData(e),

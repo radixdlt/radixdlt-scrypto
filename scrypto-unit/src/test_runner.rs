@@ -19,7 +19,7 @@ use radix_engine::wasm::{
     WasmMeteringParams,
 };
 use sbor::describe::*;
-use scrypto::core::{FunctionIdentifier, MethodIdent};
+use scrypto::core::{FnIdent, MethodIdent};
 use scrypto::dec;
 use scrypto::math::Decimal;
 use transaction::builder::ManifestBuilder;
@@ -647,9 +647,9 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             |kernel| {
                 kernel
                     .invoke(
-                        FunctionIdentifier::Method(MethodIdent {
+                        FnIdent::Method(MethodIdent {
                             receiver: Receiver::Ref(RENodeId::System(SYS_SYSTEM_COMPONENT)),
-                            fn_identifier: FnIdentifier::Native(NativeFnIdentifier::System(
+                            fn_ident: FunctionIdent::Native(NativeFnIdentifier::System(
                                 SystemFnIdentifier::SetEpoch,
                             )),
                         }),
@@ -664,9 +664,9 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         let current_epoch: ScryptoValue = self.kernel_call(vec![], |kernel| {
             kernel
                 .invoke(
-                    FunctionIdentifier::Method(MethodIdent {
+                    FnIdent::Method(MethodIdent {
                         receiver: Receiver::Ref(RENodeId::System(SYS_SYSTEM_COMPONENT)),
-                        fn_identifier: FnIdentifier::Native(NativeFnIdentifier::System(
+                        fn_ident: FunctionIdent::Native(NativeFnIdentifier::System(
                             SystemFnIdentifier::GetCurrentEpoch,
                         )),
                     }),

@@ -69,7 +69,7 @@ pub fn create_genesis() -> SystemTransaction {
 
         // TODO: Create token at a specific address
         Instruction::CallFunction {
-            fn_identifier: FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
+            fn_identifier: FunctionIdent::Native(NativeFnIdentifier::ResourceManager(
                 ResourceManagerFnIdentifier::Create,
             )),
             args: args!(
@@ -91,7 +91,7 @@ pub fn create_genesis() -> SystemTransaction {
 
         // TODO: Create token at a specific address
         Instruction::CallFunction {
-            fn_identifier: FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
+            fn_identifier: FunctionIdent::Native(NativeFnIdentifier::ResourceManager(
                 ResourceManagerFnIdentifier::Create,
             )),
             args: args!(
@@ -118,7 +118,7 @@ pub fn create_genesis() -> SystemTransaction {
         });
 
         Instruction::CallFunction {
-            fn_identifier: FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
+            fn_identifier: FunctionIdent::Native(NativeFnIdentifier::ResourceManager(
                 ResourceManagerFnIdentifier::Create,
             )),
             args: args!(
@@ -137,7 +137,7 @@ pub fn create_genesis() -> SystemTransaction {
     let create_xrd_faucet = {
         let bucket = Bucket(id_allocator.new_bucket_id().unwrap());
         Instruction::CallFunction {
-            fn_identifier: FnIdentifier::Scrypto {
+            fn_identifier: FunctionIdent::Scrypto {
                 package_address: SYS_FAUCET_PACKAGE,
                 blueprint_name: "Faucet".to_string(),
                 ident: "new".to_string(),
@@ -148,7 +148,7 @@ pub fn create_genesis() -> SystemTransaction {
 
     let create_system_component = {
         Instruction::CallFunction {
-            fn_identifier: FnIdentifier::Native(NativeFnIdentifier::System(
+            fn_identifier: FunctionIdent::Native(NativeFnIdentifier::System(
                 SystemFnIdentifier::Create,
             )),
             args: args!(),

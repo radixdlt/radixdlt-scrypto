@@ -2,11 +2,11 @@ use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::Resource;
 use crate::types::*;
-use scrypto::core::FunctionIdentifier;
+use scrypto::core::FnIdent;
 
 pub enum SysCallInput<'a> {
     Invoke {
-        function_identifier: &'a FunctionIdentifier,
+        function_identifier: &'a FnIdent,
         input: &'a ScryptoValue,
     },
     BorrowNode {

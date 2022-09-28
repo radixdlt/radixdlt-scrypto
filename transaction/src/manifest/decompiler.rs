@@ -3,7 +3,7 @@ use sbor::{encode_any, DecodeError, Value};
 use scrypto::address::{AddressError, Bech32Encoder};
 use scrypto::buffer::scrypto_decode;
 use scrypto::core::{
-    BucketFnIdentifier, FnIdentifier, NativeFnIdentifier, NetworkDefinition, Receiver,
+    BucketFnIdentifier, FunctionIdent, NativeFnIdentifier, NetworkDefinition, Receiver,
     ResourceManagerFnIdentifier,
 };
 use scrypto::engine::types::*;
@@ -240,7 +240,7 @@ pub fn decompile(
 
                 args,
             } => match fn_identifier {
-                FnIdentifier::Scrypto {
+                FunctionIdent::Scrypto {
                     package_address,
                     blueprint_name,
                     ident,
@@ -270,7 +270,7 @@ pub fn decompile(
                     }
                     buf.push_str(";\n");
                 }
-                FnIdentifier::Native(native_fn_identifier) => match native_fn_identifier {
+                FunctionIdent::Native(native_fn_identifier) => match native_fn_identifier {
                     NativeFnIdentifier::ResourceManager(ResourceManagerFnIdentifier::Create) => {
                         buf.push_str("CREATE_RESOURCE");
                         let input: ResourceManagerCreateInput =

@@ -2,7 +2,7 @@ use sbor::rust::collections::HashMap;
 use sbor::rust::string::String;
 
 use crate::buffer::scrypto_encode;
-use crate::core::{FnIdentifier, NativeFnIdentifier, ResourceManagerFnIdentifier};
+use crate::core::{FunctionIdent, NativeFnIdentifier, ResourceManagerFnIdentifier};
 use crate::engine::{api::*, call_engine};
 use crate::resource::*;
 
@@ -48,7 +48,7 @@ impl ResourceSystem {
         mint_params: Option<MintParams>,
     ) -> (ResourceAddress, Option<Bucket>) {
         let input = RadixEngineInput::InvokeFunction(
-            FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
+            FunctionIdent::Native(NativeFnIdentifier::ResourceManager(
                 ResourceManagerFnIdentifier::Create,
             )),
             scrypto_encode(&ResourceManagerCreateInput {

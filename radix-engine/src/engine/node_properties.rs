@@ -20,11 +20,11 @@ impl RENodeProperties {
     }
 
     pub fn to_primary_substate_id(
-        function: &FnIdentifier,
+        function: &FunctionIdent,
         node_id: RENodeId,
     ) -> Result<SubstateId, RuntimeError> {
         let substate_id = match function {
-            FnIdentifier::Native(..) => match node_id {
+            FunctionIdent::Native(..) => match node_id {
                 RENodeId::Bucket(bucket_id) => SubstateId::Bucket(bucket_id),
                 RENodeId::Proof(proof_id) => SubstateId::Proof(proof_id),
                 RENodeId::ResourceManager(resource_address) => {
@@ -42,7 +42,7 @@ impl RENodeProperties {
                     )))
                 }
             },
-            FnIdentifier::Scrypto { .. } => match node_id {
+            FunctionIdent::Scrypto { .. } => match node_id {
                 RENodeId::Component(component_address) => {
                     SubstateId::ComponentState(component_address)
                 }

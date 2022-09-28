@@ -1,27 +1,27 @@
 use crate::types::*;
-use scrypto::core::{FunctionIdentifier, MethodIdent};
+use scrypto::core::{FnIdent, MethodIdent};
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct REActor {
-    pub function_identifier: FunctionIdentifier,
+    pub function_identifier: FnIdent,
 }
 
 impl REActor {
     pub fn is_substate_readable(&self, substate_id: &SubstateId) -> bool {
         match &self.function_identifier {
-            FunctionIdentifier::Function(FnIdentifier::Native(..))
-            | FunctionIdentifier::Method(MethodIdent {
-                fn_identifier: FnIdentifier::Native(..),
+            FnIdent::Function(FunctionIdent::Native(..))
+            | FnIdent::Method(MethodIdent {
+                fn_ident: FunctionIdent::Native(..),
                 ..
             }) => true,
-            FunctionIdentifier::Function(FnIdentifier::Scrypto { .. }) => match substate_id {
+            FnIdent::Function(FunctionIdent::Scrypto { .. }) => match substate_id {
                 SubstateId::KeyValueStoreEntry(..) => true,
                 SubstateId::ComponentInfo(..) => true,
                 _ => false,
             },
-            FunctionIdentifier::Method(MethodIdent {
+            FnIdent::Method(MethodIdent {
                 receiver: Receiver::Ref(RENodeId::Component(component_address)),
-                fn_identifier: FnIdentifier::Scrypto { .. },
+                fn_ident: FunctionIdent::Scrypto { .. },
             }) => match substate_id {
                 SubstateId::KeyValueStoreEntry(..) => true,
                 SubstateId::ComponentInfo(..) => true,
@@ -34,18 +34,18 @@ impl REActor {
 
     pub fn is_substate_writeable(&self, substate_id: &SubstateId) -> bool {
         match &self.function_identifier {
-            FunctionIdentifier::Function(FnIdentifier::Native(..))
-            | FunctionIdentifier::Method(MethodIdent {
-                fn_identifier: FnIdentifier::Native(..),
+            FnIdent::Function(FunctionIdent::Native(..))
+            | FnIdent::Method(MethodIdent {
+                fn_ident: FunctionIdent::Native(..),
                 ..
             }) => true,
-            FunctionIdentifier::Function(FnIdentifier::Scrypto { .. }) => match substate_id {
+            FnIdent::Function(FunctionIdent::Scrypto { .. }) => match substate_id {
                 SubstateId::KeyValueStoreEntry(..) => true,
                 _ => false,
             },
-            FunctionIdentifier::Method(MethodIdent {
+            FnIdent::Method(MethodIdent {
                 receiver: Receiver::Ref(RENodeId::Component(component_address)),
-                fn_identifier: FnIdentifier::Scrypto { .. },
+                fn_ident: FunctionIdent::Scrypto { .. },
             }) => match substate_id {
                 SubstateId::KeyValueStoreEntry(..) => true,
                 SubstateId::ComponentState(addr) => addr.eq(component_address),

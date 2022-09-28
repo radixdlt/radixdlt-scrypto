@@ -6,22 +6,16 @@ use crate::component::PackageAddress;
 use crate::engine::types::RENodeId;
 
 #[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
-pub struct MethodIdent {
-    pub receiver: Receiver,
-    pub fn_identifier: FnIdentifier,
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
-pub enum FunctionIdentifier {
-    Function(FnIdentifier),
+pub enum FnIdent {
+    Function(FunctionIdent),
     Method(MethodIdent),
 }
 
-impl FunctionIdentifier {
-    pub fn fn_identifier(&self) -> &FnIdentifier {
+impl FnIdent {
+    pub fn fn_identifier(&self) -> &FunctionIdent {
         match self {
-            FunctionIdentifier::Function(fn_identifier) => &fn_identifier,
-            FunctionIdentifier::Method(MethodIdent { fn_identifier, .. }) => &fn_identifier,
+            FnIdent::Function(fn_identifier) => &fn_identifier,
+            FnIdent::Method(MethodIdent { fn_ident: fn_identifier, .. }) => &fn_identifier,
         }
     }
 }
@@ -34,13 +28,31 @@ pub enum Receiver {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, TypeId, Encode, Decode)]
-pub enum FnIdentifier {
+pub enum FunctionIdent {
     Scrypto {
         package_address: PackageAddress,
         blueprint_name: String,
         ident: String,
     },
     Native(NativeFnIdentifier),
+}
+
+/*
+#[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
+pub enum MethodFnIdent {
+    Scrypto {
+        package_address: PackageAddress,
+        blueprint_name: String,
+        ident: String,
+    },
+    Native(NativeFnIdentifier),
+}
+ */
+
+#[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
+pub struct MethodIdent {
+    pub receiver: Receiver,
+    pub fn_ident: FunctionIdent,
 }
 
 #[derive(

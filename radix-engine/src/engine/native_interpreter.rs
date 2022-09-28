@@ -152,7 +152,7 @@ impl NativeInterpreter {
             }
             _ => {
                 return Err(RuntimeError::KernelError(KernelError::MethodNotFound(
-                    FnIdentifier::Native(fn_identifier.clone()),
+                    FunctionIdent::Native(fn_identifier.clone()),
                 )))
             }
         }

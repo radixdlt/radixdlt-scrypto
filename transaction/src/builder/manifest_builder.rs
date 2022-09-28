@@ -13,7 +13,7 @@ use scrypto::buffer::*;
 use scrypto::component::{ComponentAddress, PackageAddress};
 use scrypto::constants::*;
 use scrypto::core::{
-    Blob, BucketFnIdentifier, FnIdentifier, NativeFnIdentifier, NetworkDefinition, Receiver,
+    Blob, BucketFnIdentifier, FunctionIdent, NativeFnIdentifier, NetworkDefinition, Receiver,
     ResourceManagerFnIdentifier,
 };
 use scrypto::crypto::*;
@@ -320,7 +320,7 @@ impl ManifestBuilder {
         };
 
         self.add_instruction(Instruction::CallFunction {
-            fn_identifier: FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
+            fn_identifier: FunctionIdent::Native(NativeFnIdentifier::ResourceManager(
                 ResourceManagerFnIdentifier::Create,
             )),
             args: scrypto_encode(&input),
@@ -335,7 +335,7 @@ impl ManifestBuilder {
         args: Vec<u8>,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {
-            fn_identifier: FnIdentifier::Native(native_fn_identifier),
+            fn_identifier: FunctionIdent::Native(native_fn_identifier),
             args,
         });
         self
@@ -350,7 +350,7 @@ impl ManifestBuilder {
         args: Vec<u8>,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {
-            fn_identifier: FnIdentifier::Scrypto {
+            fn_identifier: FunctionIdent::Scrypto {
                 package_address,
                 blueprint_name: blueprint_name.to_string(),
                 ident: method_name.to_string(),
@@ -396,7 +396,7 @@ impl ManifestBuilder {
 
         Ok(self
             .add_instruction(Instruction::CallFunction {
-                fn_identifier: FnIdentifier::Scrypto {
+                fn_identifier: FunctionIdent::Scrypto {
                     package_address,
                     blueprint_name: blueprint_name.to_string(),
                     ident: function.to_string(),
@@ -525,7 +525,7 @@ impl ManifestBuilder {
 
         let mint_params: Option<MintParams> = Option::None;
         self.add_instruction(Instruction::CallFunction {
-            fn_identifier: FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
+            fn_identifier: FunctionIdent::Native(NativeFnIdentifier::ResourceManager(
                 ResourceManagerFnIdentifier::Create,
             )),
             args: args!(
@@ -548,7 +548,7 @@ impl ManifestBuilder {
         resource_auth.insert(Withdraw, (rule!(allow_all), LOCKED));
 
         self.add_instruction(Instruction::CallFunction {
-            fn_identifier: FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
+            fn_identifier: FunctionIdent::Native(NativeFnIdentifier::ResourceManager(
                 ResourceManagerFnIdentifier::Create,
             )),
             args: args!(
@@ -583,7 +583,7 @@ impl ManifestBuilder {
         let mint_params: Option<MintParams> = Option::None;
 
         self.add_instruction(Instruction::CallFunction {
-            fn_identifier: FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
+            fn_identifier: FunctionIdent::Native(NativeFnIdentifier::ResourceManager(
                 ResourceManagerFnIdentifier::Create,
             )),
             args: args!(
@@ -606,7 +606,7 @@ impl ManifestBuilder {
         resource_auth.insert(Withdraw, (rule!(allow_all), LOCKED));
 
         self.add_instruction(Instruction::CallFunction {
-            fn_identifier: FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
+            fn_identifier: FunctionIdent::Native(NativeFnIdentifier::ResourceManager(
                 ResourceManagerFnIdentifier::Create,
             )),
             args: args!(
@@ -677,7 +677,7 @@ impl ManifestBuilder {
     /// Creates an account.
     pub fn new_account(&mut self, withdraw_auth: &AccessRuleNode) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {
-            fn_identifier: FnIdentifier::Scrypto {
+            fn_identifier: FunctionIdent::Scrypto {
                 package_address: ACCOUNT_PACKAGE,
                 blueprint_name: "Account".to_owned(),
                 ident: "new".to_string(),
@@ -694,7 +694,7 @@ impl ManifestBuilder {
         bucket_id: BucketId,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {
-            fn_identifier: FnIdentifier::Scrypto {
+            fn_identifier: FunctionIdent::Scrypto {
                 package_address: ACCOUNT_PACKAGE,
                 blueprint_name: "Account".to_owned(),
                 ident: "new_with_resource".to_string(),
