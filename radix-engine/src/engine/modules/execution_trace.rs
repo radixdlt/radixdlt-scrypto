@@ -2,7 +2,7 @@ use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::*;
 use crate::types::*;
-use scrypto::core::FunctionIdentifier;
+use scrypto::core::{FunctionIdentifier, MethodIdent};
 
 #[derive(Debug, Clone, PartialEq, TypeId, Encode, Decode)]
 pub struct ResourceChange {
@@ -50,10 +50,10 @@ impl ExecutionTrace {
             2. Hook up to when the component is globalized and convert
                blueprint-parented vaults (if any) to regular
                trace entries with component parents. */
-            if let FunctionIdentifier::Method(
-                Receiver::Ref(RENodeId::Component(component_address)),
-                ..,
-            ) = &actor.function_identifier
+            if let FunctionIdentifier::Method(MethodIdent {
+                receiver: Receiver::Ref(RENodeId::Component(component_address)),
+                ..
+            }) = &actor.function_identifier
             {
                 match fn_identifier {
                     FnIdentifier::Native(NativeFnIdentifier::Vault(VaultFnIdentifier::Put)) => {

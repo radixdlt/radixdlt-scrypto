@@ -6,16 +6,22 @@ use crate::component::PackageAddress;
 use crate::engine::types::RENodeId;
 
 #[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
+pub struct MethodIdent {
+    pub receiver: Receiver,
+    pub fn_identifier: FnIdentifier,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
 pub enum FunctionIdentifier {
     Function(FnIdentifier),
-    Method(Receiver, FnIdentifier),
+    Method(MethodIdent),
 }
 
 impl FunctionIdentifier {
     pub fn fn_identifier(&self) -> &FnIdentifier {
         match self {
             FunctionIdentifier::Function(fn_identifier) => &fn_identifier,
-            FunctionIdentifier::Method(_, fn_identifier) => &fn_identifier,
+            FunctionIdentifier::Method(MethodIdent { fn_identifier, .. }) => &fn_identifier,
         }
     }
 }

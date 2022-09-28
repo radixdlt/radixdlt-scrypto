@@ -1,4 +1,4 @@
-use scrypto::core::FunctionIdentifier;
+use scrypto::core::{FunctionIdentifier, MethodIdent};
 use transaction::errors::IdAllocationError;
 use transaction::model::Instruction;
 use transaction::validation::*;
@@ -268,7 +268,10 @@ where
                 } => NativeInterpreter::run(None, auth_zone_frame_id, native_fn, input, self),
                 REActor {
                     function_identifier:
-                        FunctionIdentifier::Method(receiver, FnIdentifier::Native(native_fn)),
+                        FunctionIdentifier::Method(MethodIdent {
+                            receiver,
+                            fn_identifier: FnIdentifier::Native(native_fn),
+                        }),
                 } => NativeInterpreter::run(
                     Some(receiver),
                     auth_zone_frame_id,
@@ -286,14 +289,15 @@ where
                 }
                 | REActor {
                     function_identifier:
-                        FunctionIdentifier::Method(
-                            _,
-                            FnIdentifier::Scrypto {
-                                package_address,
-                                blueprint_name,
-                                ident,
-                            },
-                        ),
+                        FunctionIdentifier::Method(MethodIdent {
+                            receiver: _,
+                            fn_identifier:
+                                FnIdentifier::Scrypto {
+                                    package_address,
+                                    blueprint_name,
+                                    ident,
+                                },
+                        }),
                 } => {
                     let output = {
                         let package = self
@@ -324,7 +328,8 @@ where
                             .to_string();
                         let scrypto_actor = match &Self::current_frame(&self.call_frames).actor {
                             REActor {
-                                function_identifier: FunctionIdentifier::Method(receiver, _),
+                                function_identifier:
+                                    FunctionIdentifier::Method(MethodIdent { receiver, .. }),
                             } => match receiver {
                                 Receiver::Ref(RENodeId::Component(component_address)) => {
                                     ScryptoActor::Component(
@@ -443,28 +448,6 @@ where
         function_identifier: FunctionIdentifier,
         input: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError> {
-        for m in &mut self.modules {
-            m.pre_sys_call(
-                &mut self.track,
-                &mut self.call_frames,
-                SysCallInput::Invoke {
-                    function_identifier: &function_identifier,
-                    input: &input,
-                },
-            )
-            .map_err(RuntimeError::ModuleError)?;
-        }
-
-        // check call depth
-        if Self::current_frame(&self.call_frames).depth == self.max_depth {
-            return Err(RuntimeError::KernelError(
-                KernelError::MaxCallDepthLimitReached,
-            ));
-        }
-
-        // Prevent vaults/kvstores from being moved
-        Self::process_call_data(&input)?;
-
         // Figure out what buckets and proofs to move from this process
         let values_to_take = input.node_ids();
         let (taken_values, mut missing) = Self::current_frame_mut(&mut self.call_frames)
@@ -493,8 +476,14 @@ where
         // Authorization and state load
         let auth_zone_frame_id = match &function_identifier {
             FunctionIdentifier::Function(..) => panic!("Should not get here"),
-            FunctionIdentifier::Method(Receiver::Ref(node_id), fn_identifier)
-            | FunctionIdentifier::Method(Receiver::Consumed(node_id), fn_identifier) => {
+            FunctionIdentifier::Method(MethodIdent {
+                receiver: Receiver::Ref(node_id),
+                fn_identifier,
+            })
+            | FunctionIdentifier::Method(MethodIdent {
+                receiver: Receiver::Consumed(node_id),
+                fn_identifier,
+            }) => {
                 // Find node
                 let node_pointer = {
                     let current_frame = Self::current_frame(&self.call_frames);
@@ -703,7 +692,10 @@ where
                 )?;
 
                 match &function_identifier {
-                    FunctionIdentifier::Method(receiver, fn_identifier) => {
+                    FunctionIdentifier::Method(MethodIdent {
+                        receiver,
+                        fn_identifier,
+                    }) => {
                         // Check method authorization
                         AuthModule::receiver_auth(
                             &fn_identifier,
@@ -739,7 +731,10 @@ where
                 next_frame_node_refs.insert(node_id.clone(), node_pointer.clone());
                 None
             }
-            FunctionIdentifier::Method(Receiver::CurrentAuthZone, ..) => {
+            FunctionIdentifier::Method(MethodIdent {
+                receiver: Receiver::CurrentAuthZone,
+                ..
+            }) => {
                 for resource_address in &input.resource_addresses {
                     let resource_substate_id =
                         SubstateId::ResourceManager(resource_address.clone());
@@ -875,10 +870,6 @@ where
         function_identifier: FunctionIdentifier,
         input: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError> {
-        if let FunctionIdentifier::Method(..) = function_identifier {
-            return self.invoke_method(function_identifier, input);
-        }
-
         for m in &mut self.modules {
             m.pre_sys_call(
                 &mut self.track,
@@ -900,6 +891,10 @@ where
 
         // Prevent vaults/kvstores from being moved
         Self::process_call_data(&input)?;
+
+        if let FunctionIdentifier::Method(..) = function_identifier {
+            return self.invoke_method(function_identifier, input);
+        }
 
         // Figure out what buckets and proofs to move from this process
         let values_to_take = input.node_ids();

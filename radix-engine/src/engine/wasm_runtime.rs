@@ -4,7 +4,7 @@ use crate::fee::*;
 use crate::model::{ComponentInfo, ComponentState, HeapKeyValueStore, InvokeError};
 use crate::types::*;
 use crate::wasm::*;
-use scrypto::core::FunctionIdentifier;
+use scrypto::core::{FunctionIdentifier, MethodIdent};
 
 use super::KernelError;
 
@@ -73,7 +73,10 @@ where
         let call_data = ScryptoValue::from_slice(&input)
             .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
         self.system_api.invoke(
-            FunctionIdentifier::Method(receiver, fn_identifier),
+            FunctionIdentifier::Method(MethodIdent {
+                receiver,
+                fn_identifier,
+            }),
             call_data,
         )
     }

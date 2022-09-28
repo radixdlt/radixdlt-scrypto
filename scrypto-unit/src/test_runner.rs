@@ -19,7 +19,7 @@ use radix_engine::wasm::{
     WasmMeteringParams,
 };
 use sbor::describe::*;
-use scrypto::core::FunctionIdentifier;
+use scrypto::core::{FunctionIdentifier, MethodIdent};
 use scrypto::dec;
 use scrypto::math::Decimal;
 use transaction::builder::ManifestBuilder;
@@ -647,12 +647,12 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             |kernel| {
                 kernel
                     .invoke(
-                        FunctionIdentifier::Method(
-                            Receiver::Ref(RENodeId::System(SYS_SYSTEM_COMPONENT)),
-                            FnIdentifier::Native(NativeFnIdentifier::System(
+                        FunctionIdentifier::Method(MethodIdent {
+                            receiver: Receiver::Ref(RENodeId::System(SYS_SYSTEM_COMPONENT)),
+                            fn_identifier: FnIdentifier::Native(NativeFnIdentifier::System(
                                 SystemFnIdentifier::SetEpoch,
                             )),
-                        ),
+                        }),
                         ScryptoValue::from_typed(&SystemSetEpochInput { epoch }),
                     )
                     .unwrap()
@@ -664,12 +664,12 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         let current_epoch: ScryptoValue = self.kernel_call(vec![], |kernel| {
             kernel
                 .invoke(
-                    FunctionIdentifier::Method(
-                        Receiver::Ref(RENodeId::System(SYS_SYSTEM_COMPONENT)),
-                        FnIdentifier::Native(NativeFnIdentifier::System(
+                    FunctionIdentifier::Method(MethodIdent {
+                        receiver: Receiver::Ref(RENodeId::System(SYS_SYSTEM_COMPONENT)),
+                        fn_identifier: FnIdentifier::Native(NativeFnIdentifier::System(
                             SystemFnIdentifier::GetCurrentEpoch,
                         )),
-                    ),
+                    }),
                     ScryptoValue::from_typed(&SystemGetCurrentEpochInput {}),
                 )
                 .unwrap()
