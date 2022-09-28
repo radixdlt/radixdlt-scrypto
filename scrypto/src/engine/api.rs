@@ -2,7 +2,7 @@ use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::{Decode, Encode, TypeId};
 
-use crate::core::{FunctionIdent, Level, Receiver, ScryptoRENode};
+use crate::core::{FnIdent, Level, ScryptoRENode};
 use crate::engine::types::*;
 
 #[cfg(target_arch = "wasm32")]
@@ -16,9 +16,11 @@ macro_rules! native_functions {
     ($receiver:expr, $type_ident:expr => { $($vis:vis $fn:ident $method_name:ident $s:tt -> $rtn:ty { $fn_ident:expr, $arg:expr })* } ) => {
         $(
             $vis $fn $method_name $s -> $rtn {
-                let input = RadixEngineInput::InvokeMethod(
-                    $receiver,
-                    scrypto::core::FunctionIdent::Native($type_ident($fn_ident)),
+                let input = RadixEngineInput::Invoke(
+                    scrypto::core::FnIdent::Method(scrypto::core::MethodIdent {
+                        receiver: $receiver,
+                        fn_ident: scrypto::core::FunctionIdent::Native($type_ident($fn_ident)),
+                    }),
                     scrypto::buffer::scrypto_encode(&$arg)
                 );
                 call_engine(input)
@@ -29,8 +31,7 @@ macro_rules! native_functions {
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub enum RadixEngineInput {
-    InvokeFunction(FunctionIdent, Vec<u8>),
-    InvokeMethod(Receiver, FunctionIdent, Vec<u8>),
+    Invoke(FnIdent, Vec<u8>),
     RENodeCreate(ScryptoRENode),
     RENodeGlobalize(RENodeId),
     SubstateRead(SubstateId),

@@ -4,7 +4,7 @@ use crate::fee::*;
 use crate::model::{ComponentInfo, ComponentState, HeapKeyValueStore, InvokeError};
 use crate::types::*;
 use crate::wasm::*;
-use scrypto::core::{FnIdent, MethodIdent};
+use scrypto::core::FnIdent;
 
 use super::KernelError;
 
@@ -52,33 +52,14 @@ where
     }
 
     // FIXME: limit access to the API
-
-    fn handle_invoke_function(
+    fn handle_invoke(
         &mut self,
-        fn_identifier: FunctionIdent,
+        fn_ident: FnIdent,
         input: Vec<u8>,
     ) -> Result<ScryptoValue, RuntimeError> {
         let call_data = ScryptoValue::from_slice(&input)
             .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
-        self.system_api
-            .invoke(FnIdent::Function(fn_identifier), call_data)
-    }
-
-    fn handle_invoke_method(
-        &mut self,
-        receiver: Receiver,
-        fn_identifier: FunctionIdent,
-        input: Vec<u8>,
-    ) -> Result<ScryptoValue, RuntimeError> {
-        let call_data = ScryptoValue::from_slice(&input)
-            .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
-        self.system_api.invoke(
-            FnIdent::Method(MethodIdent {
-                receiver,
-                fn_ident: fn_identifier,
-            }),
-            call_data,
-        )
+        self.system_api.invoke(fn_ident, call_data)
     }
 
     fn handle_node_create(
@@ -201,12 +182,7 @@ where
         let input: RadixEngineInput = scrypto_decode(&input.raw)
             .map_err(|_| InvokeError::Error(WasmError::InvalidRadixEngineInput))?;
         match input {
-            RadixEngineInput::InvokeFunction(fn_identifier, input_bytes) => {
-                self.handle_invoke_function(fn_identifier, input_bytes)
-            }
-            RadixEngineInput::InvokeMethod(receiver, fn_identifier, input_bytes) => {
-                self.handle_invoke_method(receiver, fn_identifier, input_bytes)
-            }
+            RadixEngineInput::Invoke(fn_ident, input_bytes) => self.handle_invoke(fn_ident, input_bytes),
             RadixEngineInput::RENodeGlobalize(node_id) => self.handle_node_globalize(node_id),
             RadixEngineInput::RENodeCreate(node) => self.handle_node_create(node),
             RadixEngineInput::SubstateRead(substate_id) => self.handle_substate_read(substate_id),

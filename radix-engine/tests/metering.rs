@@ -155,12 +155,12 @@ fn test_basic_transfer() {
         + 2000 /* create_node */
         + 1248 /* decode_manifest */
         + 1000 /* drop_node */
-        + 578358 /* instantiate_wasm */
+        + 578256 /* instantiate_wasm */
         + 4420 /* invoke_function */
         + 5000 /* read_substate */
         + 600 /* return_substate */
         + 6200 /* run_function */
-        + 275039 /* run_wasm */
+        + 277366 /* run_wasm */
         + 416 /* verify_manifest */
         + 3750 /* verify_signatures */
         + 3000, /* write_substate */
@@ -194,5 +194,5 @@ fn test_publish_large_package() {
     receipt.expect_commit_success();
 
     // Assert
-    assert_eq!(4408429, receipt.execution.fee_summary.cost_unit_consumed);
+    assert_eq!(4409555, receipt.execution.fee_summary.cost_unit_consumed);
 }
