@@ -112,7 +112,7 @@ impl TransactionProcessor {
             match expression.0.as_str() {
                 "ENTIRE_WORKTOP" => {
                     let buckets = system_api
-                        .invoke_method(
+                        .invoke(
                             FunctionIdentifier::Method(
                                 Receiver::Ref(RENodeId::Worktop),
                                 FnIdentifier::Native(NativeFnIdentifier::Worktop(
@@ -223,7 +223,7 @@ impl TransactionProcessor {
                             })
                             .and_then(|new_id| {
                                 system_api
-                                    .invoke_method(
+                                    .invoke(
                                         FunctionIdentifier::Method(
                                             Receiver::Ref(RENodeId::Worktop),
                                             FnIdentifier::Native(NativeFnIdentifier::Worktop(
@@ -251,7 +251,7 @@ impl TransactionProcessor {
                             })
                             .and_then(|new_id| {
                                 system_api
-                                    .invoke_method(
+                                    .invoke(
                                         FunctionIdentifier::Method(
                                             Receiver::Ref(RENodeId::Worktop),
                                             FnIdentifier::Native(NativeFnIdentifier::Worktop(
@@ -280,7 +280,7 @@ impl TransactionProcessor {
                             })
                             .and_then(|new_id| {
                                 system_api
-                                    .invoke_method(
+                                    .invoke(
                                         FunctionIdentifier::Method(
                                             Receiver::Ref(RENodeId::Worktop),
                                             FnIdentifier::Native(NativeFnIdentifier::Worktop(
@@ -303,7 +303,7 @@ impl TransactionProcessor {
                             .remove(bucket_id)
                             .map(|real_id| {
                                 system_api
-                                    .invoke_method(
+                                    .invoke(
                                         FunctionIdentifier::Method(
                                             Receiver::Ref(RENodeId::Worktop),
                                             FnIdentifier::Native(NativeFnIdentifier::Worktop(
@@ -320,7 +320,7 @@ impl TransactionProcessor {
                                 TransactionProcessorError::BucketNotFound(*bucket_id),
                             ))),
                         Instruction::AssertWorktopContains { resource_address } => system_api
-                            .invoke_method(
+                            .invoke(
                                 FunctionIdentifier::Method(
                                     Receiver::Ref(RENodeId::Worktop),
                                     FnIdentifier::Native(NativeFnIdentifier::Worktop(
@@ -336,7 +336,7 @@ impl TransactionProcessor {
                             amount,
                             resource_address,
                         } => system_api
-                            .invoke_method(
+                            .invoke(
                                 FunctionIdentifier::Method(
                                     Receiver::Ref(RENodeId::Worktop),
                                     FnIdentifier::Native(NativeFnIdentifier::Worktop(
@@ -353,7 +353,7 @@ impl TransactionProcessor {
                             ids,
                             resource_address,
                         } => system_api
-                            .invoke_method(
+                            .invoke(
                                 FunctionIdentifier::Method(
                                     Receiver::Ref(RENodeId::Worktop),
                                     FnIdentifier::Native(NativeFnIdentifier::Worktop(
@@ -374,7 +374,7 @@ impl TransactionProcessor {
                             })
                             .and_then(|new_id| {
                                 system_api
-                                    .invoke_method(
+                                    .invoke(
                                         FunctionIdentifier::Method(
                                             Receiver::CurrentAuthZone,
                                             FnIdentifier::Native(NativeFnIdentifier::AuthZone(
@@ -393,7 +393,7 @@ impl TransactionProcessor {
                         Instruction::ClearAuthZone => {
                             proof_id_mapping.clear();
                             system_api
-                                .invoke_method(
+                                .invoke(
                                     FunctionIdentifier::Method(
                                         Receiver::CurrentAuthZone,
                                         FnIdentifier::Native(NativeFnIdentifier::AuthZone(
@@ -411,7 +411,7 @@ impl TransactionProcessor {
                             ))
                             .and_then(|real_id| {
                                 system_api
-                                    .invoke_method(
+                                    .invoke(
                                         FunctionIdentifier::Method(
                                             Receiver::CurrentAuthZone,
                                             FnIdentifier::Native(NativeFnIdentifier::AuthZone(
@@ -431,7 +431,7 @@ impl TransactionProcessor {
                             })
                             .and_then(|new_id| {
                                 system_api
-                                    .invoke_method(
+                                    .invoke(
                                         FunctionIdentifier::Method(
                                             Receiver::CurrentAuthZone,
                                             FnIdentifier::Native(NativeFnIdentifier::AuthZone(
@@ -459,7 +459,7 @@ impl TransactionProcessor {
                             })
                             .and_then(|new_id| {
                                 system_api
-                                    .invoke_method(
+                                    .invoke(
                                         FunctionIdentifier::Method(
                                             Receiver::CurrentAuthZone,
                                             FnIdentifier::Native(NativeFnIdentifier::AuthZone(
@@ -490,7 +490,7 @@ impl TransactionProcessor {
                             })
                             .and_then(|new_id| {
                                 system_api
-                                    .invoke_method(
+                                    .invoke(
                                         FunctionIdentifier::Method(
                                             Receiver::CurrentAuthZone,
                                             FnIdentifier::Native(NativeFnIdentifier::AuthZone(
@@ -525,7 +525,7 @@ impl TransactionProcessor {
                             })
                             .and_then(|(new_id, real_bucket_id)| {
                                 system_api
-                                    .invoke_method(
+                                    .invoke(
                                         FunctionIdentifier::Method(
                                             Receiver::Ref(RENodeId::Bucket(real_bucket_id)),
                                             FnIdentifier::Native(NativeFnIdentifier::Bucket(
@@ -552,7 +552,7 @@ impl TransactionProcessor {
                                     .cloned()
                                     .map(|real_id| {
                                         system_api
-                                            .invoke_method(
+                                            .invoke(
                                                 FunctionIdentifier::Method(
                                                     Receiver::Ref(RENodeId::Proof(real_id)),
                                                     FnIdentifier::Native(
@@ -580,7 +580,7 @@ impl TransactionProcessor {
                             .remove(proof_id)
                             .map(|real_id| {
                                 system_api
-                                    .invoke_method(
+                                    .invoke(
                                         FunctionIdentifier::Method(
                                             Receiver::Consumed(RENodeId::Proof(real_id)),
                                             FnIdentifier::Native(NativeFnIdentifier::Proof(
@@ -597,7 +597,7 @@ impl TransactionProcessor {
                         Instruction::DropAllProofs => {
                             for (_, real_id) in proof_id_mapping.drain() {
                                 system_api
-                                    .invoke_method(
+                                    .invoke(
                                         FunctionIdentifier::Method(
                                             Receiver::Consumed(RENodeId::Proof(real_id)),
                                             FnIdentifier::Native(NativeFnIdentifier::Proof(
@@ -609,7 +609,7 @@ impl TransactionProcessor {
                                     .map_err(InvokeError::Downstream)?;
                             }
                             system_api
-                                .invoke_method(
+                                .invoke(
                                     FunctionIdentifier::Method(
                                         Receiver::CurrentAuthZone,
                                         FnIdentifier::Native(NativeFnIdentifier::AuthZone(
@@ -643,7 +643,7 @@ impl TransactionProcessor {
                                 // Auto move into auth_zone
                                 for (proof_id, _) in &result.proof_ids {
                                     system_api
-                                        .invoke_method(
+                                        .invoke(
                                             FunctionIdentifier::Method(
                                                 Receiver::CurrentAuthZone,
                                                 FnIdentifier::Native(NativeFnIdentifier::AuthZone(
@@ -659,7 +659,7 @@ impl TransactionProcessor {
                                 // Auto move into worktop
                                 for (bucket_id, _) in &result.bucket_ids {
                                     system_api
-                                        .invoke_method(
+                                        .invoke(
                                             FunctionIdentifier::Method(
                                                 Receiver::Ref(RENodeId::Worktop),
                                                 FnIdentifier::Native(NativeFnIdentifier::Worktop(
@@ -705,7 +705,7 @@ impl TransactionProcessor {
                                                 .expect("Failed to decode ComponentInfo substate");
 
                                             system_api
-                                                .invoke_method(
+                                                .invoke(
                                                     FunctionIdentifier::Method(
                                                         Receiver::Ref(RENodeId::Component(
                                                             *component_address,
@@ -730,7 +730,7 @@ impl TransactionProcessor {
                                     )
                                     .and_then(|receiver| {
                                         system_api
-                                            .invoke_method(
+                                            .invoke(
                                                 FunctionIdentifier::Method(
                                                     receiver,
                                                     FnIdentifier::Native(
@@ -747,7 +747,7 @@ impl TransactionProcessor {
                                 // Auto move into auth_zone
                                 for (proof_id, _) in &result.proof_ids {
                                     system_api
-                                        .invoke_method(
+                                        .invoke(
                                             FunctionIdentifier::Method(
                                                 Receiver::CurrentAuthZone,
                                                 FnIdentifier::Native(NativeFnIdentifier::AuthZone(
@@ -763,7 +763,7 @@ impl TransactionProcessor {
                                 // Auto move into worktop
                                 for (bucket_id, _) in &result.bucket_ids {
                                     system_api
-                                        .invoke_method(
+                                        .invoke(
                                             FunctionIdentifier::Method(
                                                 Receiver::Ref(RENodeId::Worktop),
                                                 FnIdentifier::Native(NativeFnIdentifier::Worktop(

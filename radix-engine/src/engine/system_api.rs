@@ -31,12 +31,6 @@ where
         input: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError>;
 
-    fn invoke_method(
-        &mut self,
-        function_identifier: FunctionIdentifier,
-        input: ScryptoValue,
-    ) -> Result<ScryptoValue, RuntimeError>;
-
     // TODO: Convert to substate_borrow
     fn borrow_node(&mut self, node_id: &RENodeId) -> Result<RENodeRef<'_, 's, R>, RuntimeError>;
 

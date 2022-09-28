@@ -646,7 +646,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             )],
             |kernel| {
                 kernel
-                    .invoke_method(
+                    .invoke(
                         FunctionIdentifier::Method(
                             Receiver::Ref(RENodeId::System(SYS_SYSTEM_COMPONENT)),
                             FnIdentifier::Native(NativeFnIdentifier::System(
@@ -663,7 +663,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     pub fn get_current_epoch(&mut self) -> u64 {
         let current_epoch: ScryptoValue = self.kernel_call(vec![], |kernel| {
             kernel
-                .invoke_method(
+                .invoke(
                     FunctionIdentifier::Method(
                         Receiver::Ref(RENodeId::System(SYS_SYSTEM_COMPONENT)),
                         FnIdentifier::Native(NativeFnIdentifier::System(

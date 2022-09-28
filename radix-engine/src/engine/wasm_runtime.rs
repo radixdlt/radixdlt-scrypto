@@ -72,7 +72,7 @@ where
     ) -> Result<ScryptoValue, RuntimeError> {
         let call_data = ScryptoValue::from_slice(&input)
             .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
-        self.system_api.invoke_method(
+        self.system_api.invoke(
             FunctionIdentifier::Method(receiver, fn_identifier),
             call_data,
         )
