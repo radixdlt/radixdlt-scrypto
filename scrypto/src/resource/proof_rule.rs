@@ -7,9 +7,6 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::math::Decimal;
 
-use crate::engine::api::RadixEngineInput;
-use crate::engine::call_engine;
-use crate::engine::types::ProofId;
 use crate::resource::AccessRuleNode::{AllOf, AnyOf};
 use crate::resource::*;
 
@@ -368,17 +365,6 @@ pub enum AccessRule {
     Protected(AccessRuleNode),
 }
 
-impl AccessRule {
-    pub fn check<'p, P: Into<AccessRuleCheckInput<'p>>>(&self, proofs: P) -> bool {
-        let access_rule_check_input: AccessRuleCheckInput = proofs.into();
-        let input =
-            RadixEngineInput::CheckAccessRule(self.clone(), access_rule_check_input.proof_ids());
-        let output: bool = call_engine(input);
-
-        output
-    }
-}
-
 #[macro_export]
 macro_rules! rule {
     (allow_all) => {{
@@ -395,15 +381,6 @@ macro_rules! rule {
 pub enum AccessRuleCheckInput<'p> {
     Proofs(&'p [Proof]),
     ValidatedProofs(&'p [ValidatedProof]),
-}
-
-impl<'p> AccessRuleCheckInput<'p> {
-    pub(crate) fn proof_ids(&self) -> Vec<ProofId> {
-        match self {
-            Self::Proofs(proofs) => proofs.iter().map(|proof| proof.0).collect(),
-            Self::ValidatedProofs(proofs) => proofs.iter().map(|proof| proof.0 .0).collect(),
-        }
-    }
 }
 
 impl<'p> From<&'p [Proof]> for AccessRuleCheckInput<'p> {

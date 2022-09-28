@@ -1,5 +1,4 @@
 use sbor::rust::vec::Vec;
-use scrypto::buffer::scrypto_encode;
 use scrypto::core::NetworkDefinition;
 use scrypto::crypto::*;
 use scrypto::resource::NonFungibleAddress;
@@ -7,18 +6,14 @@ use scrypto::resource::NonFungibleAddress;
 use crate::builder::TransactionBuilder;
 use crate::model::*;
 
-/// Represents a test transaction, for testing/simulation purpose only.
-pub struct TestTransaction {
-    pub transaction: NotarizedTransaction,
-    pub initial_proofs: Vec<NonFungibleAddress>,
-}
+pub struct TestTransaction {}
 
 impl TestTransaction {
     pub fn new(
         manifest: TransactionManifest,
         nonce: u64,
         initial_proofs: Vec<NonFungibleAddress>,
-    ) -> Self {
+    ) -> Executable {
         let transaction = TransactionBuilder::new()
             .header(TransactionHeader {
                 version: TRANSACTION_VERSION_V1,
@@ -35,39 +30,15 @@ impl TestTransaction {
             .notary_signature(EcdsaSecp256k1Signature([0u8; 65]).into())
             .build();
 
-        Self {
-            transaction,
+        let transaction_hash = transaction.hash();
+
+        Executable {
+            transaction_hash,
+            instructions: transaction.signed_intent.intent.manifest.instructions,
             initial_proofs,
+            cost_unit_limit: transaction.signed_intent.intent.header.cost_unit_limit,
+            tip_percentage: transaction.signed_intent.intent.header.tip_percentage,
+            blobs: transaction.signed_intent.intent.manifest.blobs,
         }
-    }
-}
-
-impl ExecutableTransaction for TestTransaction {
-    fn transaction_hash(&self) -> Hash {
-        self.transaction.hash()
-    }
-
-    fn manifest_instructions_size(&self) -> u32 {
-        scrypto_encode(&self.transaction.signed_intent.intent.manifest.instructions).len() as u32
-    }
-
-    fn cost_unit_limit(&self) -> u32 {
-        self.transaction.signed_intent.intent.header.cost_unit_limit
-    }
-
-    fn tip_percentage(&self) -> u32 {
-        self.transaction.signed_intent.intent.header.tip_percentage
-    }
-
-    fn instructions(&self) -> &[Instruction] {
-        &self.transaction.signed_intent.intent.manifest.instructions
-    }
-
-    fn initial_proofs(&self) -> Vec<NonFungibleAddress> {
-        self.initial_proofs.clone()
-    }
-
-    fn blobs(&self) -> &[Vec<u8>] {
-        &self.transaction.signed_intent.intent.manifest.blobs
     }
 }

@@ -1,4 +1,4 @@
-use crate::model::{AuthModule, TransactionManifest, Validated};
+use crate::model::{AuthModule, Executable, TransactionManifest};
 use sbor::*;
 use scrypto::crypto::Hash;
 
@@ -8,14 +8,13 @@ pub struct SystemTransaction {
     pub manifest: TransactionManifest,
 }
 
-impl Into<Validated<SystemTransaction>> for SystemTransaction {
-    fn into(self) -> Validated<SystemTransaction> {
+impl Into<Executable> for SystemTransaction {
+    fn into(self) -> Executable {
         let transaction_hash = Hash([0u8; Hash::LENGTH]);
-        let instructions = self.manifest.instructions.clone();
-        let blobs = self.manifest.blobs.clone();
+        let instructions = self.manifest.instructions;
+        let blobs = self.manifest.blobs;
 
-        Validated::new(
-            self,
+        Executable::new(
             transaction_hash,
             instructions,
             vec![AuthModule::system_role_nf_address()],

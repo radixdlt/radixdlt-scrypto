@@ -44,10 +44,6 @@ pub enum SysCallInput<'a> {
         level: &'a Level,
         message: &'a String,
     },
-    CheckAccessRule {
-        access_rule: &'a AccessRule,
-        proof_ids: &'a Vec<ProofId>,
-    },
 }
 
 pub enum SysCallOutput<'a> {
@@ -64,7 +60,6 @@ pub enum SysCallOutput<'a> {
     ReadBlob { blob: &'a [u8] },
     GenerateUuid { uuid: u128 },
     EmitLog,
-    CheckAccessRule { result: bool },
 }
 
 pub trait Module<R: FeeReserve> {

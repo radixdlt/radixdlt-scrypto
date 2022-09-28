@@ -40,7 +40,7 @@ fn test_transaction_preview_cost_estimate() {
 fn prepare_test_tx_and_preview_intent(
     test_runner: &TestRunner<TypedInMemorySubstateStore>,
     network: &NetworkDefinition,
-) -> (Validated<NotarizedTransaction>, PreviewIntent) {
+) -> (Executable, PreviewIntent) {
     let notary_priv_key = EcdsaSecp256k1PrivateKey::from_u64(2).unwrap();
     let tx_signer_priv_key = EcdsaSecp256k1PrivateKey::from_u64(3).unwrap();
 
