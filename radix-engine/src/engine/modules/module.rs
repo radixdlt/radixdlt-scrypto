@@ -9,11 +9,6 @@ pub enum SysCallInput<'a> {
         function_identifier: &'a FunctionIdentifier,
         input: &'a ScryptoValue,
     },
-    InvokeMethod {
-        receiver: &'a Receiver,
-        fn_identifier: &'a FnIdentifier,
-        input: &'a ScryptoValue,
-    },
     BorrowNode {
         node_id: &'a RENodeId,
     },

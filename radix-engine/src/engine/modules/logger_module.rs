@@ -36,23 +36,8 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
             } => {
                 log!(
                     self,
-                    "Invoking function: fn = {:?}, buckets = {:?}, proofs = {:?}",
+                    "Invoking: fn = {:?}, buckets = {:?}, proofs = {:?}",
                     function_identifier,
-                    input.bucket_ids,
-                    input.proof_ids
-                );
-
-                self.depth = self.depth + 1;
-            }
-            SysCallInput::InvokeMethod {
-                fn_identifier,
-                input,
-                ..
-            } => {
-                log!(
-                    self,
-                    "Invoking method: fn = {:?}, buckets = {:?}, proofs = {:?}",
-                    fn_identifier,
                     input.bucket_ids,
                     input.proof_ids
                 );

@@ -693,17 +693,15 @@ where
 
     fn invoke_method(
         &mut self,
-        receiver: Receiver,
-        fn_identifier: FnIdentifier,
+        function_identifier: FunctionIdentifier,
         input: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
                 &mut self.track,
                 &mut self.call_frames,
-                SysCallInput::InvokeMethod {
-                    receiver: &receiver,
-                    fn_identifier: &fn_identifier,
+                SysCallInput::Invoke {
+                    function_identifier: &function_identifier,
                     input: &input,
                 },
             )
@@ -746,8 +744,10 @@ where
         let mut next_frame_node_refs = HashMap::new();
 
         // Authorization and state load
-        let auth_zone_frame_id = match &receiver {
-            Receiver::Ref(node_id) | Receiver::Consumed(node_id) => {
+        let auth_zone_frame_id = match &function_identifier {
+            FunctionIdentifier::Function(..) => panic!("Should not get here"),
+            FunctionIdentifier::Method(Receiver::Ref(node_id), fn_identifier)
+            | FunctionIdentifier::Method(Receiver::Consumed(node_id), fn_identifier) => {
                 // Find node
                 let node_pointer = {
                     let current_frame = Self::current_frame(&self.call_frames);
@@ -796,7 +796,7 @@ where
                 let mut temporary_locks = Vec::new();
 
                 // Load actor
-                match &fn_identifier {
+                match &function_identifier.fn_identifier() {
                     FnIdentifier::Scrypto {
                         package_address,
                         blueprint_name,
@@ -821,12 +821,16 @@ where
                             // Don't support traits yet
                             if !package_address.eq(&component.package_address()) {
                                 return Err(RuntimeError::KernelError(
-                                    KernelError::MethodNotFound(fn_identifier),
+                                    KernelError::MethodNotFound(
+                                        function_identifier.fn_identifier().clone(),
+                                    ),
                                 ));
                             }
                             if !blueprint_name.eq(component.blueprint_name()) {
                                 return Err(RuntimeError::KernelError(
-                                    KernelError::MethodNotFound(fn_identifier),
+                                    KernelError::MethodNotFound(
+                                        function_identifier.fn_identifier().clone(),
+                                    ),
                                 ));
                             }
                         }
@@ -905,7 +909,7 @@ where
 
                 // Lock Resource Managers in request
                 // TODO: Remove when references cleaned up
-                if let FnIdentifier::Native(..) = &fn_identifier {
+                if let FnIdentifier::Native(..) = function_identifier.fn_identifier() {
                     for resource_address in &input.resource_addresses {
                         let resource_substate_id =
                             SubstateId::ResourceManager(resource_address.clone());
@@ -946,30 +950,35 @@ where
                     &current_frame.actor,
                     node_id,
                     node_pointer,
-                    fn_identifier.clone(),
+                    function_identifier.fn_identifier().clone(),
                     &input,
                     &next_owned_values,
                 )?;
 
-                // Check method authorization
-                AuthModule::receiver_auth(
-                    &fn_identifier,
-                    receiver.clone(),
-                    &input,
-                    node_pointer.clone(),
-                    &mut self.call_frames,
-                    &mut self.track,
-                )?;
+                match &function_identifier {
+                    FunctionIdentifier::Method(receiver, fn_identifier) => {
+                        // Check method authorization
+                        AuthModule::receiver_auth(
+                            &fn_identifier,
+                            receiver.clone(),
+                            &input,
+                            node_pointer.clone(),
+                            &mut self.call_frames,
+                            &mut self.track,
+                        )?;
 
-                match &receiver {
-                    Receiver::Consumed(..) => {
-                        let heap_node = Self::current_frame_mut(&mut self.call_frames)
-                            .owned_heap_nodes
-                            .remove(node_id)
-                            .ok_or(RuntimeError::KernelError(
-                                KernelError::InvokeMethodInvalidReceiver(*node_id),
-                            ))?;
-                        next_owned_values.insert(*node_id, heap_node);
+                        match &receiver {
+                            Receiver::Consumed(..) => {
+                                let heap_node = Self::current_frame_mut(&mut self.call_frames)
+                                    .owned_heap_nodes
+                                    .remove(node_id)
+                                    .ok_or(RuntimeError::KernelError(
+                                        KernelError::InvokeMethodInvalidReceiver(*node_id),
+                                    ))?;
+                                next_owned_values.insert(*node_id, heap_node);
+                            }
+                            _ => {}
+                        }
                     }
                     _ => {}
                 }
@@ -983,7 +992,7 @@ where
                 next_frame_node_refs.insert(node_id.clone(), node_pointer.clone());
                 None
             }
-            Receiver::CurrentAuthZone => {
+            FunctionIdentifier::Method(Receiver::CurrentAuthZone, ..) => {
                 for resource_address in &input.resource_addresses {
                     let resource_substate_id =
                         SubstateId::ResourceManager(resource_address.clone());
@@ -1028,10 +1037,7 @@ where
             let frame = CallFrame::new_child(
                 Self::current_frame(&self.call_frames).depth + 1,
                 REActor {
-                    function_identifier: FunctionIdentifier::Method(
-                        receiver.clone(),
-                        fn_identifier.clone(),
-                    ),
+                    function_identifier: function_identifier.clone(),
                 },
                 next_owned_values,
                 next_frame_node_refs,

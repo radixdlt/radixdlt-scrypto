@@ -33,8 +33,7 @@ where
 
     fn invoke_method(
         &mut self,
-        receiver: Receiver,
-        function: FnIdentifier,
+        function_identifier: FunctionIdentifier,
         input: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError>;
 

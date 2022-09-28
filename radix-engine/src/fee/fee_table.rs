@@ -10,12 +10,6 @@ pub enum SystemApiCostingEntry<'a> {
         input: &'a ScryptoValue,
     },
 
-    /// Invokes a method, native or wasm.
-    InvokeMethod {
-        receiver: Receiver,
-        input: &'a ScryptoValue,
-    },
-
     /*
      * RENode
      */
@@ -108,7 +102,7 @@ impl FeeTable {
         self.wasm_instantiation_per_byte
     }
 
-    pub fn run_function_cost(&self, function: &FunctionIdentifier, input: &ScryptoValue) -> u32 {
+    pub fn run_fn_cost(&self, function: &FunctionIdentifier, input: &ScryptoValue) -> u32 {
         match function.fn_identifier().clone() {
             FnIdentifier::Native(native_identifier) => {
                 match native_identifier {
@@ -318,9 +312,6 @@ impl FeeTable {
     pub fn system_api_cost(&self, entry: SystemApiCostingEntry) -> u32 {
         match entry {
             SystemApiCostingEntry::Invoke { input, .. } => {
-                self.fixed_low + (5 * input.raw.len() + 10 * input.value_count()) as u32
-            }
-            SystemApiCostingEntry::InvokeMethod { input, .. } => {
                 self.fixed_low + (5 * input.raw.len() + 10 * input.value_count()) as u32
             }
 

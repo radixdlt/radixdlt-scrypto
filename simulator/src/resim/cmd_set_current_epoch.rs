@@ -5,6 +5,7 @@ use radix_engine::engine::{ExecutionTrace, Kernel, SystemApi};
 use radix_engine::fee::{FeeTable, SystemLoanFeeReserve};
 use radix_engine::types::*;
 use radix_engine_stores::rocks_db::RadixEngineDB;
+use scrypto::core::FunctionIdentifier;
 use transaction::model::AuthModule;
 
 use crate::resim::*;
@@ -48,8 +49,10 @@ impl SetCurrentEpoch {
         // Invoke the system
         kernel
             .invoke_method(
-                Receiver::Ref(RENodeId::System(SYS_SYSTEM_COMPONENT)),
-                FnIdentifier::Native(NativeFnIdentifier::System(SystemFnIdentifier::SetEpoch)),
+                FunctionIdentifier::Method(
+                    Receiver::Ref(RENodeId::System(SYS_SYSTEM_COMPONENT)),
+                    FnIdentifier::Native(NativeFnIdentifier::System(SystemFnIdentifier::SetEpoch)),
+                ),
                 ScryptoValue::from_typed(&SystemSetEpochInput { epoch: self.epoch }),
             )
             .map(|_| ())

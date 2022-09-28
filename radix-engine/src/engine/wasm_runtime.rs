@@ -72,8 +72,10 @@ where
     ) -> Result<ScryptoValue, RuntimeError> {
         let call_data = ScryptoValue::from_slice(&input)
             .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
-        self.system_api
-            .invoke_method(receiver, fn_identifier, call_data)
+        self.system_api.invoke_method(
+            FunctionIdentifier::Method(receiver, fn_identifier),
+            call_data,
+        )
     }
 
     fn handle_node_create(

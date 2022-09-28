@@ -34,40 +34,8 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                 track
                     .fee_reserve
                     .consume(
-                        track
-                            .fee_table
-                            .run_function_cost(&function_identifier, &input),
+                        track.fee_table.run_fn_cost(&function_identifier, &input),
                         "run_function",
-                        false,
-                    )
-                    .map_err(ModuleError::CostingError)?;
-            }
-            SysCallInput::InvokeMethod {
-                receiver,
-                fn_identifier,
-                input,
-            } => {
-                track
-                    .fee_reserve
-                    .consume(
-                        track
-                            .fee_table
-                            .system_api_cost(SystemApiCostingEntry::InvokeMethod {
-                                receiver: receiver.clone(),
-                                input: &input,
-                            }),
-                        "invoke_method",
-                        false,
-                    )
-                    .map_err(ModuleError::CostingError)?;
-
-                track
-                    .fee_reserve
-                    .consume(
-                        track
-                            .fee_table
-                            .run_method_cost(Some(receiver), &fn_identifier, &input),
-                        "run_method",
                         false,
                     )
                     .map_err(ModuleError::CostingError)?;
