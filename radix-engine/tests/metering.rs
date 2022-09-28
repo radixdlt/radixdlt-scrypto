@@ -141,7 +141,6 @@ fn test_basic_transfer() {
         manifest,
         vec![NonFungibleAddress::from_public_key(&public_key1)],
     );
-    println!("{:?}", receipt);
     receipt.expect_commit_success();
 
     // Assert
@@ -152,7 +151,7 @@ fn test_basic_transfer() {
     assert_eq!(
         10000 /* base_fee */
         + 0 /* blobs */
-        + 4400 /* borrow_substate */
+        + 4400 /* borrow_node */
         + 2000 /* create_node */
         + 1248 /* decode_manifest */
         + 1000 /* drop_node */
