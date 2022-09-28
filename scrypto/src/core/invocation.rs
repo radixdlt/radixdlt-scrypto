@@ -5,6 +5,21 @@ use sbor::*;
 use crate::component::PackageAddress;
 use crate::engine::types::RENodeId;
 
+#[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
+pub enum FunctionIdentifier {
+    Function(FnIdentifier),
+    Method(Receiver, FnIdentifier),
+}
+
+impl FunctionIdentifier {
+    pub fn fn_identifier(&self) -> &FnIdentifier {
+        match self {
+            FunctionIdentifier::Function(fn_identifier) => &fn_identifier,
+            FunctionIdentifier::Method(_, fn_identifier) => &fn_identifier,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Eq, PartialEq, Copy, TypeId, Encode, Decode)]
 pub enum Receiver {
     Consumed(RENodeId),

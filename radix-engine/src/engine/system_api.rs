@@ -5,6 +5,7 @@ use crate::model::AuthZone;
 use crate::model::Resource;
 use crate::types::*;
 use crate::wasm::*;
+use scrypto::core::FunctionIdentifier;
 
 pub trait SystemApi<'s, W, I, R>
 where
@@ -24,9 +25,9 @@ where
         contingent: bool,
     ) -> Result<Resource, RuntimeError>;
 
-    fn invoke_function(
+    fn invoke(
         &mut self,
-        fn_identifier: FnIdentifier,
+        function_identifier: FunctionIdentifier,
         input: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError>;
 

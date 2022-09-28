@@ -1,3 +1,4 @@
+use scrypto::core::FunctionIdentifier;
 use transaction::errors::IdAllocationError;
 use transaction::model::Instruction;
 use transaction::validation::*;
@@ -262,17 +263,37 @@ where
         let output = {
             let rtn = match Self::current_frame(&self.call_frames).actor.clone() {
                 REActor {
-                    receiver,
-                    fn_identifier: FnIdentifier::Native(native_fn),
-                } => NativeInterpreter::run(receiver, auth_zone_frame_id, native_fn, input, self),
+                    function_identifier:
+                        FunctionIdentifier::Function(FnIdentifier::Native(native_fn)),
+                } => NativeInterpreter::run(None, auth_zone_frame_id, native_fn, input, self),
                 REActor {
-                    receiver,
-                    fn_identifier:
-                        FnIdentifier::Scrypto {
+                    function_identifier:
+                        FunctionIdentifier::Method(receiver, FnIdentifier::Native(native_fn)),
+                } => NativeInterpreter::run(
+                    Some(receiver),
+                    auth_zone_frame_id,
+                    native_fn,
+                    input,
+                    self,
+                ),
+                REActor {
+                    function_identifier:
+                        FunctionIdentifier::Function(FnIdentifier::Scrypto {
                             package_address,
                             blueprint_name,
                             ident,
-                        },
+                        }),
+                }
+                | REActor {
+                    function_identifier:
+                        FunctionIdentifier::Method(
+                            _,
+                            FnIdentifier::Scrypto {
+                                package_address,
+                                blueprint_name,
+                                ident,
+                            },
+                        ),
                 } => {
                     let output = {
                         let package = self
@@ -301,27 +322,30 @@ where
                             .expect("Function not found")
                             .export_name
                             .to_string();
-                        let scrypto_actor = match receiver {
-                            Some(Receiver::Ref(RENodeId::Component(component_address))) => {
-                                ScryptoActor::Component(
-                                    component_address,
-                                    package_address.clone(),
-                                    blueprint_name.clone(),
-                                )
-                            }
-                            None => {
-                                ScryptoActor::blueprint(package_address, blueprint_name.clone())
-                            }
-                            _ => {
-                                return Err(RuntimeError::KernelError(KernelError::MethodNotFound(
-                                    FnIdentifier::Scrypto {
-                                        package_address,
-                                        blueprint_name,
-                                        ident,
-                                    },
-                                )))
-                            }
+                        let scrypto_actor = match &Self::current_frame(&self.call_frames).actor {
+                            REActor {
+                                function_identifier: FunctionIdentifier::Method(receiver, _),
+                            } => match receiver {
+                                Receiver::Ref(RENodeId::Component(component_address)) => {
+                                    ScryptoActor::Component(
+                                        *component_address,
+                                        package_address.clone(),
+                                        blueprint_name.clone(),
+                                    )
+                                }
+                                _ => {
+                                    return Err(RuntimeError::KernelError(
+                                        KernelError::MethodNotFound(FnIdentifier::Scrypto {
+                                            package_address,
+                                            blueprint_name,
+                                            ident,
+                                        }),
+                                    ))
+                                }
+                            },
+                            _ => ScryptoActor::blueprint(package_address, blueprint_name.clone()),
                         };
+
                         let mut runtime: Box<dyn WasmRuntime> =
                             Box::new(RadixEngineWasmRuntime::new(scrypto_actor, self));
                         instance
@@ -451,17 +475,17 @@ where
         Ok(fee)
     }
 
-    fn invoke_function(
+    fn invoke(
         &mut self,
-        fn_identifier: FnIdentifier,
+        function_identifier: FunctionIdentifier,
         input: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
                 &mut self.track,
                 &mut self.call_frames,
-                SysCallInput::InvokeFunction {
-                    fn_identifier: &fn_identifier,
+                SysCallInput::Invoke {
+                    function_identifier: &function_identifier,
                     input: &input,
                 },
             )
@@ -503,12 +527,12 @@ where
         let mut locked_values = HashSet::<SubstateId>::new();
 
         // No authorization but state load
-        match &fn_identifier {
-            FnIdentifier::Scrypto {
+        match &function_identifier {
+            FunctionIdentifier::Function(FnIdentifier::Scrypto {
                 package_address,
                 blueprint_name,
                 ident,
-            } => {
+            }) => {
                 self.track
                     .acquire_lock(SubstateId::Package(package_address.clone()), false, false)
                     .map_err(|e| RuntimeError::KernelError(KernelError::SubstateError(e)))?;
@@ -526,11 +550,11 @@ where
                             blueprint_name.clone(),
                         )))?;
                 let fn_abi = abi.get_fn_abi(ident).ok_or(RuntimeError::KernelError(
-                    KernelError::MethodNotFound(fn_identifier.clone()),
+                    KernelError::MethodNotFound(function_identifier.fn_identifier().clone()),
                 ))?;
                 if !fn_abi.input.matches(&input.dom) {
                     return Err(RuntimeError::KernelError(KernelError::InvalidFnInput {
-                        fn_identifier,
+                        fn_identifier: function_identifier.fn_identifier().clone(),
                     }));
                 }
             }
@@ -605,15 +629,19 @@ where
             }
         }
 
-        AuthModule::function_auth(&fn_identifier, &mut self.call_frames)?;
+        match &function_identifier {
+            FunctionIdentifier::Function(fn_identifier) => {
+                AuthModule::function_auth(&fn_identifier, &mut self.call_frames)?;
+            }
+            _ => {}
+        }
 
         // start a new frame and run
         let (output, received_values) = {
             let frame = CallFrame::new_child(
                 Self::current_frame(&self.call_frames).depth + 1,
                 REActor {
-                    fn_identifier: fn_identifier.clone(),
-                    receiver: None,
+                    function_identifier: function_identifier.clone(),
                 },
                 next_owned_values,
                 next_frame_node_refs,
@@ -916,9 +944,9 @@ where
                     &self.call_frames,
                     &mut self.track,
                     &current_frame.actor,
-                    &fn_identifier,
                     node_id,
                     node_pointer,
+                    fn_identifier.clone(),
                     &input,
                     &next_owned_values,
                 )?;
@@ -1000,8 +1028,10 @@ where
             let frame = CallFrame::new_child(
                 Self::current_frame(&self.call_frames).depth + 1,
                 REActor {
-                    fn_identifier: fn_identifier.clone(),
-                    receiver: Some(receiver.clone()),
+                    function_identifier: FunctionIdentifier::Method(
+                        receiver.clone(),
+                        fn_identifier.clone(),
+                    ),
                 },
                 next_owned_values,
                 next_frame_node_refs,

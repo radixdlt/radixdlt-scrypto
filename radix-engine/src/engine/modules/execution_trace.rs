@@ -2,6 +2,7 @@ use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::*;
 use crate::types::*;
+use scrypto::core::FunctionIdentifier;
 
 #[derive(Debug, Clone, PartialEq, TypeId, Encode, Decode)]
 pub struct ResourceChange {
@@ -33,9 +34,9 @@ impl ExecutionTrace {
         call_frames: &Vec<CallFrame>,
         track: &mut Track<'s, R>,
         actor: &REActor,
-        fn_identifier: &FnIdentifier,
         node_id: &RENodeId,
         node_pointer: RENodePointer,
+        fn_identifier: FnIdentifier,
         input: &ScryptoValue,
         next_owned_values: &HashMap<RENodeId, HeapRootRENode>,
     ) -> Result<(), RuntimeError> {
@@ -49,7 +50,11 @@ impl ExecutionTrace {
             2. Hook up to when the component is globalized and convert
                blueprint-parented vaults (if any) to regular
                trace entries with component parents. */
-            if let Some(Receiver::Ref(RENodeId::Component(component_address))) = &actor.receiver {
+            if let FunctionIdentifier::Method(
+                Receiver::Ref(RENodeId::Component(component_address)),
+                ..,
+            ) = &actor.function_identifier
+            {
                 match fn_identifier {
                     FnIdentifier::Native(NativeFnIdentifier::Vault(VaultFnIdentifier::Put)) => {
                         let decoded_input = scrypto_decode(&input.raw).map_err(|e| {

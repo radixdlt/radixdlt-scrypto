@@ -7,6 +7,7 @@ use crate::model::*;
 use crate::transaction::*;
 use crate::types::*;
 use crate::wasm::*;
+use scrypto::core::FunctionIdentifier;
 use transaction::model::*;
 
 pub struct FeeReserveConfig {
@@ -169,9 +170,11 @@ where
                 modules,
             );
             kernel
-                .invoke_function(
-                    FnIdentifier::Native(NativeFnIdentifier::TransactionProcessor(
-                        TransactionProcessorFnIdentifier::Run,
+                .invoke(
+                    FunctionIdentifier::Function(FnIdentifier::Native(
+                        NativeFnIdentifier::TransactionProcessor(
+                            TransactionProcessorFnIdentifier::Run,
+                        ),
                     )),
                     ScryptoValue::from_typed(&TransactionProcessorRunInput {
                         instructions: instructions.clone(),

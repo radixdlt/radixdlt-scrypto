@@ -1,3 +1,4 @@
+use scrypto::core::FunctionIdentifier;
 use transaction::errors::IdAllocationError;
 use transaction::model::*;
 use transaction::validation::*;
@@ -592,7 +593,10 @@ impl TransactionProcessor {
                             .and_then(|call_data| Self::process_expressions(call_data, system_api))
                             .and_then(|call_data| {
                                 system_api
-                                    .invoke_function(fn_identifier.clone(), call_data)
+                                    .invoke(
+                                        FunctionIdentifier::Function(fn_identifier.clone()),
+                                        call_data,
+                                    )
                                     .map_err(InvokeError::Downstream)
                             })
                             .and_then(|result| {
@@ -722,9 +726,9 @@ impl TransactionProcessor {
                             })
                         }
                         Instruction::PublishPackage { code, abi } => system_api
-                            .invoke_function(
-                                FnIdentifier::Native(NativeFnIdentifier::Package(
-                                    PackageFnIdentifier::Publish,
+                            .invoke(
+                                FunctionIdentifier::Function(FnIdentifier::Native(
+                                    NativeFnIdentifier::Package(PackageFnIdentifier::Publish),
                                 )),
                                 ScryptoValue::from_typed(&PackagePublishInput {
                                     code: code.clone(),
