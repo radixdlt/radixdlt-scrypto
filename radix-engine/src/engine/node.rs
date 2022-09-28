@@ -11,7 +11,9 @@ pub enum HeapRENode {
     Component(Component),
     Worktop(Worktop),
     Package(Package),
-    Resource(ResourceManager, Option<HashMap<NonFungibleId, NonFungible>>),
+    // TODO: Use the same representation for both key value store entry and non-fungible.
+    // Also, do we want to make non-fungible a node?
+    ResourceManager(ResourceManager, Option<HashMap<NonFungibleId, NonFungible>>),
     System(System),
 }
 
@@ -23,7 +25,7 @@ impl HeapRENode {
                     .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                 Ok(value.node_ids())
             }
-            HeapRENode::Resource(..) => Ok(HashSet::new()),
+            HeapRENode::ResourceManager(..) => Ok(HashSet::new()),
             HeapRENode::Package(..) => Ok(HashSet::new()),
             HeapRENode::Bucket(..) => Ok(HashSet::new()),
             HeapRENode::Proof(..) => Ok(HashSet::new()),
@@ -56,28 +58,28 @@ impl HeapRENode {
 
     pub fn resource_manager(&self) -> &ResourceManager {
         match self {
-            HeapRENode::Resource(resource_manager, ..) => resource_manager,
+            HeapRENode::ResourceManager(resource_manager, ..) => resource_manager,
             _ => panic!("Expected to be a resource manager"),
         }
     }
 
     pub fn resource_manager_mut(&mut self) -> &mut ResourceManager {
         match self {
-            HeapRENode::Resource(resource_manager, ..) => resource_manager,
+            HeapRENode::ResourceManager(resource_manager, ..) => resource_manager,
             _ => panic!("Expected to be a resource manager"),
         }
     }
 
     pub fn non_fungibles(&self) -> &HashMap<NonFungibleId, NonFungible> {
         match self {
-            HeapRENode::Resource(_, non_fungibles) => non_fungibles.as_ref().unwrap(),
+            HeapRENode::ResourceManager(_, non_fungibles) => non_fungibles.as_ref().unwrap(),
             _ => panic!("Expected to be non fungibles"),
         }
     }
 
     pub fn non_fungibles_mut(&mut self) -> &mut HashMap<NonFungibleId, NonFungible> {
         match self {
-            HeapRENode::Resource(_, non_fungibles) => non_fungibles.as_mut().unwrap(),
+            HeapRENode::ResourceManager(_, non_fungibles) => non_fungibles.as_mut().unwrap(),
             _ => panic!("Expected to be non fungibles"),
         }
     }
@@ -198,7 +200,7 @@ impl HeapRENode {
             HeapRENode::KeyValueStore(..) => Ok(()),
             HeapRENode::Component(..) => Ok(()),
             HeapRENode::Vault(..) => Ok(()),
-            HeapRENode::Resource(..) => Ok(()),
+            HeapRENode::ResourceManager(..) => Ok(()),
             HeapRENode::Package(..) => Ok(()),
             HeapRENode::Worktop(..) => Err(RuntimeError::KernelError(KernelError::CantMoveWorktop)),
             HeapRENode::System(..) => Ok(()),
@@ -210,7 +212,7 @@ impl HeapRENode {
             HeapRENode::KeyValueStore { .. } => Ok(()),
             HeapRENode::Component { .. } => Ok(()),
             HeapRENode::Vault(..) => Ok(()),
-            HeapRENode::Resource(..) => {
+            HeapRENode::ResourceManager(..) => {
                 Err(RuntimeError::KernelError(KernelError::ValueNotAllowed))
             }
             HeapRENode::Package(..) => Err(RuntimeError::KernelError(KernelError::ValueNotAllowed)),
@@ -228,7 +230,7 @@ impl HeapRENode {
             HeapRENode::KeyValueStore(..) => Err(DropFailure::KeyValueStore),
             HeapRENode::Component(..) => Err(DropFailure::Component),
             HeapRENode::Bucket(..) => Err(DropFailure::Bucket),
-            HeapRENode::Resource(..) => Err(DropFailure::Resource),
+            HeapRENode::ResourceManager(..) => Err(DropFailure::Resource),
             HeapRENode::System(..) => Err(DropFailure::System),
             HeapRENode::Proof(proof) => {
                 proof.drop();

@@ -129,8 +129,8 @@ impl AuthModule {
                 }
 
                 {
-                    let mut value_ref = node_pointer.to_ref(call_frames, track);
-                    let component = value_ref.component();
+                    let mut node_ref = node_pointer.to_ref(call_frames, track);
+                    let component = node_ref.component();
                     component
                         .info
                         .method_authorization(&component.state, &abi.structure, ident)

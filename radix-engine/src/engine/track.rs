@@ -238,7 +238,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                         .insert(RENodeId::System(SYS_SYSTEM_COMPONENT), node);
                 }
                 Substate::ResourceManager(substate) => {
-                    let node = HeapRENode::Resource(
+                    let node = HeapRENode::ResourceManager(
                         ResourceManager {
                             resource_type: substate.resource_type,
                             metadata: substate.metadata,

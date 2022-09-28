@@ -239,7 +239,7 @@ where
                 let package_address = id_allocator.new_package_address(transaction_hash)?;
                 Ok(RENodeId::Package(package_address))
             }
-            HeapRENode::Resource(..) => {
+            HeapRENode::ResourceManager(..) => {
                 let resource_address = id_allocator.new_resource_address(transaction_hash)?;
                 Ok(RENodeId::ResourceManager(resource_address))
             }
