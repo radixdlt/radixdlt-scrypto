@@ -445,7 +445,7 @@ where
 
     fn invoke_method(
         &mut self,
-        function_identifier: FnIdent,
+        fn_ident: FnIdent,
         input: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError> {
         // Figure out what buckets and proofs to move from this process
@@ -474,7 +474,7 @@ where
         let mut next_frame_node_refs = HashMap::new();
 
         // Authorization and state load
-        let auth_zone_frame_id = match &function_identifier {
+        let auth_zone_frame_id = match &fn_ident {
             FnIdent::Function(..) => panic!("Should not get here"),
             FnIdent::Method(MethodIdent {
                 receiver: Receiver::Ref(node_id),
@@ -532,12 +532,14 @@ where
                 let mut temporary_locks = Vec::new();
 
                 // Load actor
-                match &function_identifier.fn_identifier() {
-                    FunctionIdent::Scrypto {
-                        package_address,
-                        blueprint_name,
-                        ..
-                    } => match node_id {
+                match &fn_ident {
+                    FnIdent::Method(MethodIdent {
+                        fn_ident: FunctionIdent::Scrypto {
+                            package_address,
+                            blueprint_name,
+                            ..
+                        }, ..
+                    }) => match node_id {
                         RENodeId::Component(component_address) => {
                             let temporary_substate_id =
                                 SubstateId::ComponentInfo(*component_address);
@@ -557,16 +559,12 @@ where
                             // Don't support traits yet
                             if !package_address.eq(&component.package_address()) {
                                 return Err(RuntimeError::KernelError(
-                                    KernelError::MethodNotFound(
-                                        function_identifier.fn_identifier().clone(),
-                                    ),
+                                    KernelError::FnIdentNotFound(fn_ident.clone()),
                                 ));
                             }
                             if !blueprint_name.eq(component.blueprint_name()) {
                                 return Err(RuntimeError::KernelError(
-                                    KernelError::MethodNotFound(
-                                        function_identifier.fn_identifier().clone(),
-                                    ),
+                                    KernelError::FnIdentNotFound(fn_ident.clone()),
                                 ));
                             }
                         }
@@ -645,7 +643,7 @@ where
 
                 // Lock Resource Managers in request
                 // TODO: Remove when references cleaned up
-                if let FunctionIdent::Native(..) = function_identifier.fn_identifier() {
+                if let FnIdent::Method(MethodIdent { fn_ident: FunctionIdent::Native(..), .. }) = fn_ident {
                     for resource_address in &input.resource_addresses {
                         let resource_substate_id =
                             SubstateId::ResourceManager(resource_address.clone());
@@ -686,12 +684,12 @@ where
                     &current_frame.actor,
                     node_id,
                     node_pointer,
-                    function_identifier.fn_identifier().clone(),
+                    fn_ident.clone(),
                     &input,
                     &next_owned_values,
                 )?;
 
-                match &function_identifier {
+                match &fn_ident {
                     FnIdent::Method(MethodIdent {
                         receiver,
                                                    fn_ident: fn_identifier,
@@ -779,7 +777,7 @@ where
             let frame = CallFrame::new_child(
                 Self::current_frame(&self.call_frames).depth + 1,
                 REActor {
-                    function_identifier: function_identifier.clone(),
+                    function_identifier: fn_ident.clone(),
                 },
                 next_owned_values,
                 next_frame_node_refs,
@@ -867,7 +865,7 @@ where
 
     fn invoke(
         &mut self,
-        function_identifier: FnIdent,
+        fn_ident: FnIdent,
         input: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError> {
         for m in &mut self.modules {
@@ -875,7 +873,7 @@ where
                 &mut self.track,
                 &mut self.call_frames,
                 SysCallInput::Invoke {
-                    function_identifier: &function_identifier,
+                    function_identifier: &fn_ident,
                     input: &input,
                 },
             )
@@ -892,8 +890,8 @@ where
         // Prevent vaults/kvstores from being moved
         Self::process_call_data(&input)?;
 
-        if let FnIdent::Method(..) = function_identifier {
-            return self.invoke_method(function_identifier, input);
+        if let FnIdent::Method(..) = fn_ident {
+            return self.invoke_method(fn_ident, input);
         }
 
         // Figure out what buckets and proofs to move from this process
@@ -921,7 +919,7 @@ where
         let mut locked_values = HashSet::<SubstateId>::new();
 
         // No authorization but state load
-        match &function_identifier {
+        match &fn_ident {
             FnIdent::Function(FunctionIdent::Scrypto {
                 package_address,
                 blueprint_name,
@@ -944,12 +942,10 @@ where
                             blueprint_name.clone(),
                         )))?;
                 let fn_abi = abi.get_fn_abi(ident).ok_or(RuntimeError::KernelError(
-                    KernelError::MethodNotFound(function_identifier.fn_identifier().clone()),
+                    KernelError::FnIdentNotFound(fn_ident.clone()),
                 ))?;
                 if !fn_abi.input.matches(&input.dom) {
-                    return Err(RuntimeError::KernelError(KernelError::InvalidFnInput {
-                        fn_identifier: function_identifier.fn_identifier().clone(),
-                    }));
+                    return Err(RuntimeError::KernelError(KernelError::InvalidFnInput2(fn_ident.clone())));
                 }
             }
             _ => {}
@@ -1023,7 +1019,7 @@ where
             }
         }
 
-        match &function_identifier {
+        match &fn_ident {
             FnIdent::Function(fn_identifier) => {
                 AuthModule::function_auth(&fn_identifier, &mut self.call_frames)?;
             }
@@ -1035,7 +1031,7 @@ where
             let frame = CallFrame::new_child(
                 Self::current_frame(&self.call_frames).depth + 1,
                 REActor {
-                    function_identifier: function_identifier.clone(),
+                    function_identifier: fn_ident.clone(),
                 },
                 next_owned_values,
                 next_frame_node_refs,

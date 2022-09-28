@@ -36,10 +36,15 @@ impl ExecutionTrace {
         actor: &REActor,
         node_id: &RENodeId,
         node_pointer: RENodePointer,
-        fn_identifier: FunctionIdent,
+        fn_ident: FnIdent,
         input: &ScryptoValue,
         next_owned_values: &HashMap<RENodeId, HeapRootRENode>,
     ) -> Result<(), RuntimeError> {
+        let method_ident = match fn_ident {
+            FnIdent::Method(MethodIdent { fn_ident, ..}) => fn_ident,
+            _ => return Ok(()),
+        };
+
         if let RENodeId::Vault(vault_id) = node_id {
             /* TODO: Warning: depends on call frame's actor being the vault's parent component!
             This isn't always the case! For example, when vault is instantiated in a blueprint
@@ -55,7 +60,7 @@ impl ExecutionTrace {
                 ..
             }) = &actor.function_identifier
             {
-                match fn_identifier {
+                match method_ident {
                     FunctionIdent::Native(NativeFnIdentifier::Vault(VaultFnIdentifier::Put)) => {
                         let decoded_input = scrypto_decode(&input.raw).map_err(|e| {
                             RuntimeError::ApplicationError(ApplicationError::VaultError(
