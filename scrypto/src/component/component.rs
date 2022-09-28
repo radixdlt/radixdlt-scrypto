@@ -36,7 +36,7 @@ pub trait LocalComponent {
 #[derive(PartialEq, Eq, Hash)]
 pub struct Component(pub(crate) ComponentAddress);
 
-#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
+#[derive(Debug, Clone, TypeId, Encode, Decode, Describe, PartialEq, Eq)]
 pub struct ComponentInfoSubstate {
     pub package_address: PackageAddress,
     pub blueprint_name: String,
