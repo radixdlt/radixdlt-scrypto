@@ -4,6 +4,7 @@ use transaction::validation::*;
 
 use crate::engine::{HeapRENode, SystemApi};
 use crate::fee::FeeReserve;
+use crate::model::ComponentInfoSubstate;
 use crate::model::InvokeError;
 use crate::model::{
     WorktopAssertContainsAmountInput, WorktopAssertContainsInput,
@@ -650,11 +651,10 @@ impl TransactionProcessor {
                                         ))
                                         .map_err(InvokeError::Downstream)
                                         .and_then(|s| {
-                                            let (package_address, blueprint_name): (
-                                                PackageAddress,
-                                                String,
-                                            ) = scrypto_decode(&s.raw)
-                                                .expect("Failed to decode ComponentInfo substate");
+                                            let component_info: ComponentInfoSubstate =
+                                                scrypto_decode(&s.raw).expect(
+                                                    "Failed to decode ComponentInfo substate",
+                                                );
 
                                             system_api
                                                 .invoke_method(
@@ -663,8 +663,10 @@ impl TransactionProcessor {
                                                     )),
                                                     FnIdentifier::Scrypto {
                                                         ident: ident.to_string(),
-                                                        package_address,
-                                                        blueprint_name,
+                                                        package_address: component_info
+                                                            .package_address,
+                                                        blueprint_name: component_info
+                                                            .blueprint_name,
                                                     },
                                                     call_data,
                                                 )

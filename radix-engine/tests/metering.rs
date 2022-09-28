@@ -141,6 +141,7 @@ fn test_basic_transfer() {
         manifest,
         vec![NonFungibleAddress::from_public_key(&public_key1)],
     );
+    println!("{:?}", receipt);
     receipt.expect_commit_success();
 
     // Assert

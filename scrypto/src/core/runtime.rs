@@ -78,13 +78,13 @@ impl Runtime {
         args: Vec<u8>,
     ) -> T {
         let input = RadixEngineInput::SubstateRead(SubstateId::ComponentInfo(component_address));
-        let (package_address, blueprint_name): (PackageAddress, String) = call_engine(input);
+        let info: ComponentInfoSubstate = call_engine(input);
 
         let input = RadixEngineInput::InvokeMethod(
             Receiver::Ref(RENodeId::Component(component_address)),
             FnIdentifier::Scrypto {
-                package_address,
-                blueprint_name,
+                package_address: info.package_address,
+                blueprint_name: info.blueprint_name,
                 ident: method.as_ref().to_string(),
             },
             args,

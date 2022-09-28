@@ -1,3 +1,4 @@
+use indexmap::IndexMap;
 use transaction::model::ExecutableTransaction;
 
 use crate::engine::AppStateTrack;
@@ -9,6 +10,7 @@ use crate::fee::FeeSummary;
 use crate::fee::FeeTable;
 use crate::ledger::*;
 use crate::model::node_to_substates;
+use crate::model::nodes_to_substates;
 use crate::model::Component;
 use crate::model::KeyValueStoreEntrySubstate;
 use crate::model::LockableResource;
@@ -105,8 +107,8 @@ pub struct Track<'s, R: FeeReserve> {
     application_logs: Vec<(Level, String)>,
     new_substates: Vec<SubstateId>,
     state_track: AppStateTrack<'s>,
-    loaded_substates: HashMap<SubstateId, BorrowedSubstate>,
-    loaded_nodes: HashMap<RENodeId, HeapRENode>,
+    loaded_substates: IndexMap<SubstateId, BorrowedSubstate>,
+    loaded_nodes: IndexMap<RENodeId, HeapRENode>,
     pub fee_reserve: R,
     pub fee_table: FeeTable,
 }
@@ -143,8 +145,8 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             application_logs: Vec::new(),
             new_substates: Vec::new(),
             state_track,
-            loaded_substates: HashMap::new(),
-            loaded_nodes: HashMap::new(),
+            loaded_substates: IndexMap::new(),
+            loaded_nodes: IndexMap::new(),
             fee_reserve,
             fee_table,
         }
@@ -153,21 +155,6 @@ impl<'s, R: FeeReserve> Track<'s, R> {
     /// Adds a log message.
     pub fn add_log(&mut self, level: Level, message: String) {
         self.application_logs.push((level, message));
-    }
-
-    /// Creates a row with the given key/value
-    pub fn create_uuid_substate<V: Into<Substate>>(
-        &mut self,
-        substate_id: SubstateId,
-        value: V,
-        is_root: bool,
-    ) {
-        self.new_substates.push(substate_id.clone());
-        self.state_track
-            .put_substate(substate_id.clone(), value.into());
-        if is_root {
-            self.state_track.set_substate_root(substate_id);
-        }
     }
 
     // TODO: Clean this up
@@ -240,7 +227,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
 
         // Converts the main substate into corresponding node
         // TODO: make all node types use substate types in fields
-        if !write_through && !substate_cache.substate.is_taken() {
+        if !substate_cache.substate.is_taken() {
             let substate = substate_cache.substate.take();
             match substate {
                 Substate::System(substate) => {
@@ -347,8 +334,14 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         }
 
         if write_through {
-            self.state_track
-                .put_substate_to_base(substate_id, substate_cache.substate.take());
+            let node_id = match substate_id {
+                SubstateId::Vault(vault_id) => RENodeId::Vault(vault_id),
+                _ => panic!("Not supported yet"),
+            };
+            let node = self.loaded_nodes.remove(&node_id).unwrap();
+            for (substate_id, substate) in node_to_substates(node_id, node) {
+                self.state_track.put_substate_to_base(substate_id, substate);
+            }
         } else {
             self.loaded_substates.insert(substate_id, substate_cache);
         }
@@ -393,12 +386,13 @@ impl<'s, R: FeeReserve> Track<'s, R> {
     pub fn put_substate(&mut self, substate_id: SubstateId, substate: Substate) {
         if !self.loaded_substates.contains_key(&substate_id) {
             self.loaded_substates.insert(
-                substate_id,
+                substate_id.clone(),
                 BorrowedSubstate {
                     substate: SubstateCache::Free(substate),
                     lock_state: LockState::no_lock(),
                 },
             );
+            self.new_substates.push(substate_id);
         } else {
             self.loaded_substates
                 .get_mut(&substate_id)
@@ -520,7 +514,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                 }
             }
 
-            for (id, substate) in node_to_substates(self.loaded_nodes) {
+            for (id, substate) in nodes_to_substates(self.loaded_nodes.into_iter().collect()) {
                 self.state_track.put_substate(id, substate);
             }
 

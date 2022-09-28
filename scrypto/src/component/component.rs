@@ -36,6 +36,13 @@ pub trait LocalComponent {
 #[derive(PartialEq, Eq, Hash)]
 pub struct Component(pub(crate) ComponentAddress);
 
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
+pub struct ComponentInfoSubstate {
+    pub package_address: PackageAddress,
+    pub blueprint_name: String,
+    pub access_rules: Vec<AccessRules>,
+}
+
 impl Component {
     /// Invokes a method on this component.
     pub fn call<T: Decode>(&self, method: &str, args: Vec<u8>) -> T {
@@ -46,16 +53,16 @@ impl Component {
     pub fn package_address(&self) -> PackageAddress {
         let substate_id = SubstateId::ComponentInfo(self.0);
         let input = RadixEngineInput::SubstateRead(substate_id);
-        let output: (PackageAddress, String) = call_engine(input);
-        output.0
+        let output: ComponentInfoSubstate = call_engine(input);
+        output.package_address
     }
 
     /// Returns the blueprint name of this component.
     pub fn blueprint_name(&self) -> String {
         let substate_id = SubstateId::ComponentInfo(self.0);
         let input = RadixEngineInput::SubstateRead(substate_id);
-        let output: (PackageAddress, String) = call_engine(input);
-        output.1
+        let output: ComponentInfoSubstate = call_engine(input);
+        output.blueprint_name
     }
 
     pub fn add_access_check(&mut self, access_rules: AccessRules) -> &mut Self {

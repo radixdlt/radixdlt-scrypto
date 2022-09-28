@@ -1320,7 +1320,7 @@ where
         assert!(taken_nodes.len() == 1);
         let root_node = taken_nodes.into_values().nth(0).unwrap();
 
-        for (id, substate) in node_to_substates(root_node.to_nodes(node_id)) {
+        for (id, substate) in nodes_to_substates(root_node.to_nodes(node_id)) {
             self.track.put_substate(id, substate);
         }
 
