@@ -416,15 +416,23 @@ impl<'s, R: FeeReserve> Track<'s, R> {
 
         match parent_address {
             SubstateId::NonFungibleSpace(_) => self
-                .state_track
-                .get_substate(&substate_id)
-                .unwrap_or(Substate::NonFungible(NonFungibleSubstate(None))),
+                .loaded_substates
+                .get(&substate_id)
+                .map(|s| s.substate.borrow().clone())
+                .unwrap_or_else(|| {
+                    self.state_track
+                        .get_substate(&substate_id)
+                        .unwrap_or(Substate::NonFungible(NonFungibleSubstate(None)))
+                }),
             SubstateId::KeyValueStoreSpace(..) => self
-                .state_track
-                .get_substate(&substate_id)
-                .unwrap_or(Substate::KeyValueStoreEntry(KeyValueStoreEntrySubstate(
-                    None,
-                ))),
+                .loaded_substates
+                .get(&substate_id)
+                .map(|s| s.substate.borrow().clone())
+                .unwrap_or_else(|| {
+                    self.state_track.get_substate(&substate_id).unwrap_or(
+                        Substate::KeyValueStoreEntry(KeyValueStoreEntrySubstate(None)),
+                    )
+                }),
             _ => panic!("Invalid keyed value address {:?}", parent_address),
         }
     }
@@ -447,7 +455,11 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             _ => panic!("Unsupported key value"),
         };
 
-        self.state_track.put_substate(substate_id, value.into());
+        if let Some(loaded) = self.loaded_substates.get_mut(&substate_id) {
+            loaded.substate = SubstateCache::Free(value.into());
+        } else {
+            self.state_track.put_substate(substate_id, value.into());
+        }
     }
 
     pub fn apply_pre_execution_costs<T: ExecutableTransaction>(

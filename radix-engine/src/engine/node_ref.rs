@@ -289,6 +289,7 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
                     _ => panic!("Unexpected"),
                 };
                 let substate_value = track.read_key_value(parent_substate_id, key.to_vec());
+                eprintln!("Read substate value from track: {:?}", substate_value);
                 substate_value.into()
             }
         };
