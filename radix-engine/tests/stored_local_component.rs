@@ -103,7 +103,7 @@ fn should_be_able_to_call_read_method_on_a_stored_component_in_global_component(
     let component_address = receipt
         .expect_commit()
         .entity_changes
-        .new_component_addresses[0];
+        .new_component_addresses[1];
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -138,7 +138,7 @@ fn should_be_able_to_call_write_method_on_a_stored_component_in_global_component
     let component_address = receipt
         .expect_commit()
         .entity_changes
-        .new_component_addresses[0];
+        .new_component_addresses[1];
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -220,7 +220,7 @@ fn should_be_able_to_call_read_method_on_a_kv_stored_component_in_global_compone
     let component_address = receipt
         .expect_commit()
         .entity_changes
-        .new_component_addresses[0];
+        .new_component_addresses[1];
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -255,7 +255,7 @@ fn should_be_able_to_call_write_method_on_a_kv_stored_component_in_global_compon
     let component_address = receipt
         .expect_commit()
         .entity_changes
-        .new_component_addresses[0];
+        .new_component_addresses[1];
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())

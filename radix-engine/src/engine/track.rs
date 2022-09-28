@@ -105,10 +105,10 @@ pub struct BorrowedSubstate {
 /// Transaction-wide states and side effects
 pub struct Track<'s, R: FeeReserve> {
     application_logs: Vec<(Level, String)>,
-    new_substates: Vec<SubstateId>,
     state_track: AppStateTrack<'s>,
     loaded_substates: IndexMap<SubstateId, BorrowedSubstate>,
     loaded_nodes: IndexMap<RENodeId, HeapRENode>,
+    pub new_node_ids: Vec<RENodeId>,
     pub fee_reserve: R,
     pub fee_table: FeeTable,
 }
@@ -143,10 +143,10 @@ impl<'s, R: FeeReserve> Track<'s, R> {
 
         Self {
             application_logs: Vec::new(),
-            new_substates: Vec::new(),
             state_track,
             loaded_substates: IndexMap::new(),
             loaded_nodes: IndexMap::new(),
+            new_node_ids: Vec::new(),
             fee_reserve,
             fee_table,
         }
@@ -392,7 +392,6 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                     lock_state: LockState::no_lock(),
                 },
             );
-            self.new_substates.push(substate_id);
         } else {
             self.loaded_substates
                 .get_mut(&substate_id)
@@ -534,7 +533,6 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         } else {
             self.state_track.rollback();
             self.loaded_substates.clear();
-            self.new_substates.clear();
         }
 
         // Close fee reserve
@@ -597,15 +595,15 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             let mut new_component_addresses = Vec::new();
             let mut new_resource_addresses = Vec::new();
             let mut new_package_addresses = Vec::new();
-            for substate_id in self.new_substates {
+            for substate_id in self.new_node_ids {
                 match substate_id {
-                    SubstateId::ComponentInfo(component_address) => {
+                    RENodeId::Component(component_address) => {
                         new_component_addresses.push(component_address)
                     }
-                    SubstateId::ResourceManager(resource_address) => {
+                    RENodeId::ResourceManager(resource_address) => {
                         new_resource_addresses.push(resource_address)
                     }
-                    SubstateId::Package(package_address) => {
+                    RENodeId::Package(package_address) => {
                         new_package_addresses.push(package_address)
                     }
                     _ => {}

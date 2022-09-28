@@ -1238,6 +1238,7 @@ where
         // Insert node into heap
         let node_id = Self::new_node_id(&mut self.id_allocator, self.transaction_hash, &re_node)
             .map_err(|e| RuntimeError::KernelError(KernelError::IdAllocationError(e)))?;
+        self.track.new_node_ids.push(node_id.clone());
         let heap_root_node = HeapRootRENode {
             root: re_node,
             child_nodes,
@@ -1321,7 +1322,6 @@ where
         let root_node = taken_nodes.into_values().nth(0).unwrap();
 
         for (id, substate) in nodes_to_substates(root_node.to_nodes(node_id)) {
-            eprintln!("Globalizing substate: {:?}", id);
             self.track.put_substate(id, substate);
         }
 
