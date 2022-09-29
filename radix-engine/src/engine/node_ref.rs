@@ -239,14 +239,15 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
         value: ScryptoValue,
         to_store: HashMap<RENodeId, HeapRootRENode>,
     ) -> Result<(), NodeToSubstateFailure> {
+        let substate = KeyValueStoreEntrySubstate(Some(value.raw));
         match self {
-            RENodeRefMut::Stack(re_value, id) => {
-                re_value
-                    .get_node_mut(id.as_ref())
+            RENodeRefMut::Stack(root_node, node_id) => {
+                root_node
+                    .get_node_mut(node_id.as_ref())
                     .kv_store_mut()
-                    .put(key, value);
+                    .put(key, substate);
                 for (id, val) in to_store {
-                    re_value.insert_non_root_nodes(val.to_nodes(id));
+                    root_node.insert_non_root_nodes(val.to_nodes(id));
                 }
             }
             RENodeRefMut::Track(track, node_id) => {
@@ -256,11 +257,7 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
                     }
                     _ => panic!("Unexpected"),
                 };
-                track.set_key_value(
-                    parent_substate_id,
-                    key,
-                    Substate::KeyValueStoreEntry(KeyValueStoreEntrySubstate(Some(value.raw))),
-                );
+                track.set_key_value(parent_substate_id, key, substate);
                 for (id, val) in to_store {
                     for (id, node) in val.to_nodes(id) {
                         track.put_node(id, node);
@@ -272,16 +269,15 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
         Ok(())
     }
 
-    pub fn kv_store_get(&mut self, key: &[u8]) -> ScryptoValue {
-        let wrapper = match self {
-            RENodeRefMut::Stack(re_value, id) => {
-                let store = re_value.get_node_mut(id.as_ref()).kv_store_mut();
-                store
-                    .get(key)
-                    .map(|v| KeyValueStoreEntrySubstate(Some(v.raw)))
-                    .unwrap_or(KeyValueStoreEntrySubstate(None))
+    pub fn kv_store_get(&mut self, key: &[u8]) -> Option<ScryptoValue> {
+        let substate = match self {
+            RENodeRefMut::Stack(root_node, node_id) => {
+                let kv_store = root_node.get_node_mut(node_id.as_ref()).kv_store_mut();
+                kv_store.get_loaded(key)
             }
             RENodeRefMut::Track(track, node_id) => {
+                // TODO: use `KeyValueStore::get`
+
                 let parent_substate_id = match node_id {
                     RENodeId::KeyValueStore(kv_store_id) => {
                         SubstateId::KeyValueStoreSpace(*kv_store_id)
@@ -293,35 +289,22 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
             }
         };
 
-        // TODO: Cleanup after adding polymorphism support for SBOR
-        // For now, we have to use `Vec<u8>` within `KeyValueStoreEntrySubstate`
-        // and apply the following ugly conversion.
-        let value = wrapper.0.map_or(
-            Value::Option {
-                value: Box::new(Option::None),
-            },
-            |v| Value::Option {
-                value: Box::new(Some(
-                    decode_any(&v).expect("Failed to decode the value in NonFungibleSubstate"),
-                )),
-            },
-        );
-
-        ScryptoValue::from_value(value)
-            .expect("Failed to convert non-fungible value to Scrypto value")
+        substate.0.map(|raw| {
+            ScryptoValue::from_slice(&raw).expect("Failed to decode KeyValueStoreEntrySubstate")
+        })
     }
 
-    pub fn non_fungible_get(&mut self, id: &NonFungibleId) -> ScryptoValue {
-        let wrapper = match self {
+    pub fn non_fungible_get(&mut self, id: &NonFungibleId) -> Option<NonFungible> {
+        let substate = match self {
             RENodeRefMut::Stack(value, re_id) => {
-                let non_fungible_set = re_id
+                let resource_manager = re_id
                     .as_ref()
                     .map_or(value.root(), |v| value.non_root(v))
-                    .non_fungibles();
-                non_fungible_set
+                    .resource_manager();
+                resource_manager
+                    .loaded_non_fungibles
                     .get(id)
                     .cloned()
-                    .map(|v| NonFungibleSubstate(Some(v)))
                     .unwrap_or(NonFungibleSubstate(None))
             }
             RENodeRefMut::Track(track, node_id) => {
@@ -331,18 +314,26 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
                     }
                     _ => panic!("Unexpected"),
                 };
-                let substate_value = track.read_key_value(parent_substate_id, id.to_vec());
-                substate_value.into()
+                let substate = track.read_key_value(parent_substate_id, id.to_vec());
+                substate.into()
             }
         };
 
-        ScryptoValue::from_typed(&wrapper)
+        substate.0
     }
 
     pub fn non_fungible_remove(&mut self, id: &NonFungibleId) {
+        let substate = NonFungibleSubstate(None);
+
         match self {
-            RENodeRefMut::Stack(..) => {
-                panic!("Not supported");
+            RENodeRefMut::Stack(root_node, node_id) => {
+                let resource_manager = node_id
+                    .as_ref()
+                    .map_or(root_node.root(), |v| root_node.non_root(v))
+                    .resource_manager();
+                resource_manager
+                    .loaded_non_fungibles
+                    .insert(id.clone(), substate);
             }
             RENodeRefMut::Track(track, node_id) => {
                 let parent_substate_id = match node_id {
@@ -351,27 +342,23 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
                     }
                     _ => panic!("Unexpected"),
                 };
-                track.set_key_value(
-                    parent_substate_id,
-                    id.to_vec(),
-                    Substate::NonFungible(NonFungibleSubstate(None)),
-                );
+                track.set_key_value(parent_substate_id, id.to_vec(), substate);
             }
         }
     }
 
-    pub fn non_fungible_put(&mut self, id: NonFungibleId, value: ScryptoValue) {
-        match self {
-            RENodeRefMut::Stack(re_value, re_id) => {
-                let wrapper: NonFungibleSubstate = scrypto_decode(&value.raw)
-                    .expect("Attempted to put non-NonFungibleSubstate for non-fungible.");
+    pub fn non_fungible_put(&mut self, id: NonFungibleId, non_fungible: NonFungible) {
+        let substate = NonFungibleSubstate(Some(non_fungible));
 
-                let non_fungible_set = re_value.get_node_mut(re_id.as_ref()).non_fungibles_mut();
-                if let Some(non_fungible) = wrapper.0 {
-                    non_fungible_set.insert(id, non_fungible);
-                } else {
-                    panic!("TODO: invalidate this code path and possibly consolidate `non_fungible_remove` and `non_fungible_put`")
-                }
+        match self {
+            RENodeRefMut::Stack(root_node, node_id) => {
+                let resource_manager = node_id
+                    .as_ref()
+                    .map_or(root_node.root(), |v| root_node.non_root(v))
+                    .resource_manager();
+                resource_manager
+                    .loaded_non_fungibles
+                    .insert(id.clone(), substate);
             }
             RENodeRefMut::Track(track, node_id) => {
                 let parent_substate_id = match node_id {
@@ -380,13 +367,7 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
                     }
                     _ => panic!("Unexpected"),
                 };
-                let wrapper: NonFungibleSubstate = scrypto_decode(&value.raw)
-                    .expect("Attempted to put non-NonFungibleSubstate for non-fungible.");
-                track.set_key_value(
-                    parent_substate_id,
-                    id.to_vec(),
-                    Substate::NonFungible(wrapper),
-                );
+                track.set_key_value(parent_substate_id, id.to_vec(), substate);
             }
         }
     }

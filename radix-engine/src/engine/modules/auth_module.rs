@@ -102,7 +102,7 @@ impl AuthModule {
                 }
             }
             (
-                Receiver::Ref(RENodeId::Component(..)),
+                Receiver::Ref(RENodeId::Component(component_address)),
                 FnIdentifier::Scrypto {
                     package_address,
                     blueprint_name,
@@ -131,9 +131,14 @@ impl AuthModule {
                 {
                     let mut node_ref = node_pointer.to_ref(call_frames, track);
                     let component = node_ref.component();
-                    component
-                        .info
-                        .method_authorization(&component.state, &abi.structure, ident)
+                    component.info.method_authorization(
+                        component
+                            .state(component_address, track)
+                            .map_err(ModuleError::TrackError)
+                            .map_err(RuntimeError::ModuleError)?,
+                        &abi.structure,
+                        ident,
+                    )
                 }
             }
             (

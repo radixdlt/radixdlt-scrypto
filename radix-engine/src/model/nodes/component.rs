@@ -1,4 +1,4 @@
-use crate::engine::SystemApi;
+use crate::engine::{SystemApi, Track, TrackError};
 use crate::fee::FeeReserve;
 use crate::model::{ComponentInfoSubstate, ComponentStateSubstate, InvokeError};
 use crate::types::*;
@@ -31,6 +31,22 @@ impl Component {
             },
             state: Some(ComponentStateSubstate { raw: state }),
         }
+    }
+
+    pub fn state<'s, R: FeeReserve>(
+        &mut self,
+        component_address: ComponentAddress,
+        track: &mut Track<'s, R>,
+    ) -> Result<&ComponentStateSubstate, TrackError> {
+        if self.state.is_none() {
+            let substate_id = SubstateId::ComponentState(component_address);
+            track.acquire_lock(substate_id, false, false)?;
+            let substate = track.take_substate(substate_id);
+            track.release_lock(substate_id, false)?;
+            self.state = Some(substate.into())
+        }
+
+        Ok(self.state.as_ref().unwrap())
     }
 
     pub fn main<'s, Y, W, I, R>(

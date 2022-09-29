@@ -366,6 +366,14 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             .borrow_mut()
     }
 
+    pub fn take_substate(&mut self, substate_id: SubstateId) -> Substate {
+        self.loaded_substates
+            .get_mut(&substate_id)
+            .expect(&format!("Substate {:?} was never locked", substate_id))
+            .substate
+            .take()
+    }
+
     // TODO remove
     // Currently used by node globalization
     pub fn put_substate(&mut self, substate_id: SubstateId, substate: Substate) {

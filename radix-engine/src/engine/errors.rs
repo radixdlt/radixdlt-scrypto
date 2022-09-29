@@ -100,6 +100,8 @@ pub enum ModuleError {
     },
 
     CostingError(FeeReserveError),
+
+    TrackError(TrackError),
 }
 
 #[derive(Debug)]
