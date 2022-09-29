@@ -5,8 +5,8 @@ use crate::{engine::Track, fee::FeeReserve, model::KeyValueStoreEntrySubstate};
 
 #[derive(Debug)]
 pub struct KeyValueStore {
-    store_id: KeyValueStoreId,
-    loaded_entries: HashMap<Vec<u8>, KeyValueStoreEntrySubstate>,
+    pub store_id: KeyValueStoreId,
+    pub loaded_entries: HashMap<Vec<u8>, KeyValueStoreEntrySubstate>,
 }
 
 impl KeyValueStore {

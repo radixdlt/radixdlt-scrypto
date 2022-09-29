@@ -1,5 +1,4 @@
 use crate::engine::*;
-use crate::fee::FeeReserve;
 use crate::model::*;
 use crate::types::*;
 
@@ -17,10 +16,7 @@ pub enum HeapRENode {
 }
 
 impl HeapRENode {
-    pub fn get_child_nodes<'s, R: FeeReserve>(
-        &self,
-        track: &mut Track<'s, R>,
-    ) -> Result<HashSet<RENodeId>, RuntimeError> {
+    pub fn get_loaded_child_nodes(&self) -> Result<HashSet<RENodeId>, RuntimeError> {
         match self {
             HeapRENode::Component(component) => {
                 let value = ScryptoValue::from_slice(&component.state.state)
@@ -33,8 +29,12 @@ impl HeapRENode {
             HeapRENode::Proof(..) => Ok(HashSet::new()),
             HeapRENode::KeyValueStore(store) => {
                 let mut child_nodes = HashSet::new();
-                for (_id, value) in store {
-                    child_nodes.extend(value.node_ids());
+                for (_id, substate) in store.loaded_entries {
+                    if let Some(v) = substate.0 {
+                        let value = ScryptoValue::from_slice(&v)
+                            .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
+                        child_nodes.extend(value.node_ids());
+                    }
                 }
                 Ok(child_nodes)
             }
