@@ -264,12 +264,7 @@ where
         input: ScryptoValue,
     ) -> Result<(ScryptoValue, HashMap<RENodeId, HeapRootRENode>), RuntimeError> {
         // TODO: Move to a better spot
-        if !matches!(
-            Self::current_frame(&self.call_frames).actor.receiver,
-            Some(Receiver::Ref(RENodeId::AuthZone(..)))
-        ) {
-            self.node_create(HeapRENode::AuthZone(AuthZone::new()))?;
-        }
+        self.node_create(HeapRENode::AuthZone(AuthZone::new()))?;
 
         let output = {
             let rtn = match Self::current_frame(&self.call_frames).actor.clone() {

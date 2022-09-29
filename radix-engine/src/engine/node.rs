@@ -303,7 +303,7 @@ impl HeapRENode {
     pub fn auth_zone_mut(&mut self) -> &mut AuthZone {
         match self {
             HeapRENode::AuthZone(auth_zone, ..) => auth_zone,
-            _ => panic!("Expected to be a resource manager"),
+            _ => panic!("Expected to be an auth zone"),
         }
     }
 
