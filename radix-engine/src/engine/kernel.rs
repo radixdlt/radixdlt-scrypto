@@ -639,11 +639,11 @@ where
             FnIdent::Function(..) => panic!("Should not get here"),
             FnIdent::Method(MethodIdent {
                 receiver: Receiver::Ref(node_id),
-                fn_ident: fn_identifier,
+                method_fn_ident,
             })
             | FnIdent::Method(MethodIdent {
                 receiver: Receiver::Consumed(node_id),
-                fn_ident: fn_identifier,
+                method_fn_ident,
             }) => {
                 // Find node
                 let node_pointer = {
@@ -674,11 +674,11 @@ where
 
                 // Lock Primary Substate
                 let substate_id =
-                    RENodeProperties::to_primary_substate_id(&fn_identifier, *node_id)?;
+                    RENodeProperties::to_primary_substate_id(&method_fn_ident, *node_id)?;
                 let is_lock_fee = matches!(node_id, RENodeId::Vault(..))
-                    && (fn_identifier.eq(&MethodFnIdent::Native(NativeMethodFnIdent::Vault(
+                    && (method_fn_ident.eq(&MethodFnIdent::Native(NativeMethodFnIdent::Vault(
                         VaultMethodFnIdent::LockFee,
-                    ))) || fn_identifier.eq(&MethodFnIdent::Native(
+                    ))) || method_fn_ident.eq(&MethodFnIdent::Native(
                         NativeMethodFnIdent::Vault(VaultMethodFnIdent::LockContingentFee),
                     )));
                 if is_lock_fee && matches!(node_pointer, RENodePointer::Heap { .. }) {
@@ -695,7 +695,7 @@ where
                 // Load actor
                 let re_actor = match &fn_ident {
                     FnIdent::Method(MethodIdent {
-                        fn_ident: MethodFnIdent::Scrypto(ident),
+                        method_fn_ident: MethodFnIdent::Scrypto(ident),
                         receiver,
                     }) => match node_id {
                         RENodeId::Component(component_address) => {
@@ -726,7 +726,7 @@ where
                         _ => panic!("Should not get here."),
                     },
                     FnIdent::Method(MethodIdent {
-                        fn_ident: MethodFnIdent::Native(native_fn),
+                        method_fn_ident: MethodFnIdent::Native(native_fn),
                         receiver,
                     }) => REActor::Method(FullyQualifiedMethod {
                         receiver: receiver.clone(),
@@ -806,7 +806,7 @@ where
                 // Lock Resource Managers in request
                 // TODO: Remove when references cleaned up
                 if let FnIdent::Method(MethodIdent {
-                    fn_ident: MethodFnIdent::Native(..),
+                    method_fn_ident: MethodFnIdent::Native(..),
                     ..
                 }) = fn_ident
                 {

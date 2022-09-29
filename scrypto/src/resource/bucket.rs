@@ -57,7 +57,7 @@ impl Bucket {
         let input = RadixEngineInput::Invoke(
             FnIdent::Method(MethodIdent {
                 receiver: Receiver::Ref(RENodeId::ResourceManager(resource_address)),
-                fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::ResourceManager(
+                method_fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::ResourceManager(
                     ResourceManagerMethodFnIdent::CreateBucket,
                 )),
             }),
@@ -79,7 +79,7 @@ impl Bucket {
         let input = RadixEngineInput::Invoke(
             FnIdent::Method(MethodIdent {
                 receiver: Receiver::Ref(RENodeId::Bucket(self.0)),
-                fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::Bucket(
+                method_fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::Bucket(
                     BucketMethodFnIdent::Take,
                 )),
             }),

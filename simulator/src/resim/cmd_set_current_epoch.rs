@@ -51,7 +51,7 @@ impl SetCurrentEpoch {
             .invoke(
                 FnIdent::Method(MethodIdent {
                     receiver: Receiver::Ref(RENodeId::System(SYS_SYSTEM_COMPONENT)),
-                    fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::System(
+                    method_fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::System(
                         SystemMethodFnIdent::SetEpoch,
                     )),
                 }),

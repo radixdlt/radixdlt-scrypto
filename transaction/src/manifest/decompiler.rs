@@ -303,7 +303,7 @@ pub fn decompile(
             Instruction::CallMethod { method_ident, args } => match method_ident {
                 MethodIdent {
                     receiver: Receiver::Ref(RENodeId::Component(component_address)),
-                    fn_ident: MethodFnIdent::Scrypto(ident),
+                    method_fn_ident: MethodFnIdent::Scrypto(ident),
                 } => {
                     buf.push_str(&format!(
                         "CALL_METHOD ComponentAddress(\"{}\") \"{}\"",
@@ -333,7 +333,7 @@ pub fn decompile(
                 }
                 MethodIdent {
                     receiver,
-                    fn_ident: MethodFnIdent::Native(native_fn_identifier),
+                    method_fn_ident: MethodFnIdent::Native(native_fn_identifier),
                 } => match (receiver, native_fn_identifier) {
                     (
                         Receiver::Consumed(RENodeId::Bucket(bucket_id)),

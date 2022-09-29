@@ -417,7 +417,7 @@ impl ManifestBuilder {
         self.add_instruction(Instruction::CallMethod {
             method_ident: MethodIdent {
                 receiver: Receiver::Ref(RENodeId::Component(component_address)),
-                fn_ident: MethodFnIdent::Scrypto(method_name.to_owned()),
+                method_fn_ident: MethodFnIdent::Scrypto(method_name.to_owned()),
             },
             args,
         });
@@ -434,7 +434,7 @@ impl ManifestBuilder {
         self.add_instruction(Instruction::CallMethod {
             method_ident: MethodIdent {
                 receiver,
-                fn_ident: MethodFnIdent::Native(native_fn_identifier),
+                method_fn_ident: MethodFnIdent::Native(native_fn_identifier),
             },
             args,
         });
@@ -471,7 +471,7 @@ impl ManifestBuilder {
             .add_instruction(Instruction::CallMethod {
                 method_ident: MethodIdent {
                     receiver: Receiver::Ref(RENodeId::Component(component_address)),
-                    fn_ident: MethodFnIdent::Scrypto(method.to_owned()),
+                    method_fn_ident: MethodFnIdent::Scrypto(method.to_owned()),
                 },
                 args: args_from_bytes_vec!(arguments),
             })
@@ -627,7 +627,7 @@ impl ManifestBuilder {
         self.add_instruction(Instruction::CallMethod {
             method_ident: MethodIdent {
                 receiver: Receiver::Ref(RENodeId::ResourceManager(resource_address)),
-                fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::ResourceManager(
+                method_fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::ResourceManager(
                     ResourceManagerMethodFnIdent::Mint,
                 )),
             },
@@ -645,7 +645,7 @@ impl ManifestBuilder {
                 .add_instruction(Instruction::CallMethod {
                     method_ident: MethodIdent {
                         receiver: Receiver::Consumed(RENodeId::Bucket(bucket_id)),
-                        fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::Bucket(
+                        method_fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::Bucket(
                             BucketMethodFnIdent::Burn,
                         )),
                     },
@@ -666,7 +666,7 @@ impl ManifestBuilder {
                     .add_instruction(Instruction::CallMethod {
                         method_ident: MethodIdent {
                             receiver: Receiver::Consumed(RENodeId::Bucket(bucket_id)),
-                            fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::Bucket(
+                            method_fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::Bucket(
                                 BucketMethodFnIdent::Burn,
                             )),
                         },
@@ -712,7 +712,7 @@ impl ManifestBuilder {
         self.add_instruction(Instruction::CallMethod {
             method_ident: MethodIdent {
                 receiver: Receiver::Ref(RENodeId::Component(account)),
-                fn_ident: MethodFnIdent::Scrypto("lock_fee".to_string()),
+                method_fn_ident: MethodFnIdent::Scrypto("lock_fee".to_string()),
             },
             args: args!(amount),
         })
@@ -723,7 +723,7 @@ impl ManifestBuilder {
         self.add_instruction(Instruction::CallMethod {
             method_ident: MethodIdent {
                 receiver: Receiver::Ref(RENodeId::Component(account)),
-                fn_ident: MethodFnIdent::Scrypto("lock_contingent_fee".to_string()),
+                method_fn_ident: MethodFnIdent::Scrypto("lock_contingent_fee".to_string()),
             },
             args: args!(amount),
         })
@@ -739,7 +739,7 @@ impl ManifestBuilder {
         self.add_instruction(Instruction::CallMethod {
             method_ident: MethodIdent {
                 receiver: Receiver::Ref(RENodeId::Component(account)),
-                fn_ident: MethodFnIdent::Scrypto("withdraw".to_string()),
+                method_fn_ident: MethodFnIdent::Scrypto("withdraw".to_string()),
             },
             args: args!(resource_address),
         })
@@ -756,7 +756,7 @@ impl ManifestBuilder {
         self.add_instruction(Instruction::CallMethod {
             method_ident: MethodIdent {
                 receiver: Receiver::Ref(RENodeId::Component(account)),
-                fn_ident: MethodFnIdent::Scrypto("withdraw_by_amount".to_string()),
+                method_fn_ident: MethodFnIdent::Scrypto("withdraw_by_amount".to_string()),
             },
             args: args!(amount, resource_address),
         })
@@ -773,7 +773,7 @@ impl ManifestBuilder {
         self.add_instruction(Instruction::CallMethod {
             method_ident: MethodIdent {
                 receiver: Receiver::Ref(RENodeId::Component(account)),
-                fn_ident: MethodFnIdent::Scrypto("withdraw_by_ids".to_string()),
+                method_fn_ident: MethodFnIdent::Scrypto("withdraw_by_ids".to_string()),
             },
             args: args!(ids.clone(), resource_address),
         })
@@ -789,7 +789,7 @@ impl ManifestBuilder {
         self.add_instruction(Instruction::CallMethod {
             method_ident: MethodIdent {
                 receiver: Receiver::Ref(RENodeId::Component(account)),
-                fn_ident: MethodFnIdent::Scrypto("create_proof".to_string()),
+                method_fn_ident: MethodFnIdent::Scrypto("create_proof".to_string()),
             },
             args: args!(resource_address),
         })
@@ -806,7 +806,7 @@ impl ManifestBuilder {
         self.add_instruction(Instruction::CallMethod {
             method_ident: MethodIdent {
                 receiver: Receiver::Ref(RENodeId::Component(account)),
-                fn_ident: MethodFnIdent::Scrypto("create_proof_by_amount".to_string()),
+                method_fn_ident: MethodFnIdent::Scrypto("create_proof_by_amount".to_string()),
             },
             args: args!(amount, resource_address),
         })
@@ -823,7 +823,7 @@ impl ManifestBuilder {
         self.add_instruction(Instruction::CallMethod {
             method_ident: MethodIdent {
                 receiver: Receiver::Ref(RENodeId::Component(account)),
-                fn_ident: MethodFnIdent::Scrypto("create_proof_by_ids".to_string()),
+                method_fn_ident: MethodFnIdent::Scrypto("create_proof_by_ids".to_string()),
             },
             args: args!(ids.clone(), resource_address),
         })

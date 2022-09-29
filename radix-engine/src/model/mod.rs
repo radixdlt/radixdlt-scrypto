@@ -3,6 +3,7 @@ mod auth_converter;
 mod auth_zone;
 mod bucket;
 mod component;
+mod global;
 mod key_value_store;
 mod method_authorization;
 mod non_fungible;
@@ -16,7 +17,6 @@ mod system;
 mod transaction_processor;
 mod vault;
 mod worktop;
-mod global;
 
 pub use crate::engine::InvokeError;
 pub use abi_extractor::*;
@@ -24,6 +24,7 @@ pub use auth_converter::convert;
 pub use auth_zone::{AuthZone, AuthZoneError};
 pub use bucket::{Bucket, BucketError};
 pub use component::{ComponentError, ComponentInfo, ComponentState};
+pub use global::*;
 pub use key_value_store::HeapKeyValueStore;
 pub use method_authorization::{
     HardAuthRule, HardProofRule, HardResourceOrNonFungible, MethodAuthorization,
@@ -42,4 +43,3 @@ pub use transaction_processor::{
 };
 pub use vault::{Vault, VaultError};
 pub use worktop::{Worktop, WorktopError};
-pub use global::*;

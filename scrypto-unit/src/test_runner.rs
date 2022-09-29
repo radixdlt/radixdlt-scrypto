@@ -240,7 +240,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             transaction::model::Instruction::CallMethod {
                 method_ident: MethodIdent {
                     receiver: Receiver::Ref(RENodeId::Component(SYS_FAUCET_COMPONENT)),
-                    fn_ident: MethodFnIdent::Scrypto("lock_fee".to_string()),
+                    method_fn_ident: MethodFnIdent::Scrypto("lock_fee".to_string()),
                 },
                 args: args!(dec!("1000")),
             },
@@ -649,7 +649,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
                     .invoke(
                         FnIdent::Method(MethodIdent {
                             receiver: Receiver::Ref(RENodeId::System(SYS_SYSTEM_COMPONENT)),
-                            fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::System(
+                            method_fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::System(
                                 SystemMethodFnIdent::SetEpoch,
                             )),
                         }),
@@ -666,7 +666,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
                 .invoke(
                     FnIdent::Method(MethodIdent {
                         receiver: Receiver::Ref(RENodeId::System(SYS_SYSTEM_COMPONENT)),
-                        fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::System(
+                        method_fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::System(
                             SystemMethodFnIdent::GetCurrentEpoch,
                         )),
                     }),

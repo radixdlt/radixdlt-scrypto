@@ -164,7 +164,7 @@ impl NativeInterpreter {
                 return Err(RuntimeError::KernelError(KernelError::FnIdentNotFound(
                     FnIdent::Method(MethodIdent {
                         receiver,
-                        fn_ident: MethodFnIdent::Native(fn_identifier),
+                        method_fn_ident: MethodFnIdent::Native(fn_identifier),
                     }),
                 )))
             }

@@ -272,7 +272,7 @@ impl fmt::Debug for TransactionReceipt {
                     } => format!(
                         "CallMethod {{ receiver: {:?}, ident: {:?}, args: {:?} }}",
                         method_ident.receiver,
-                        method_ident.fn_ident,
+                        method_ident.method_fn_ident,
                         ScryptoValue::from_slice(&args).expect("Failed to parse call data")
                     ),
                     Instruction::PublishPackage { .. } => "PublishPackage {..}".to_owned(),

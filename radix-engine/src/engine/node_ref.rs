@@ -209,9 +209,7 @@ impl NativeSubstateRef {
             NativeSubstateRef::Stack(..) => {
                 panic!("Expecting not to be on stack.");
             }
-            NativeSubstateRef::Track(_address, value) => {
-                value.substate.raw().global_re_node()
-            }
+            NativeSubstateRef::Track(_address, value) => value.substate.raw().global_re_node(),
         }
     }
 

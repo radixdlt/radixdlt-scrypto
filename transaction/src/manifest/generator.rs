@@ -357,7 +357,7 @@ pub fn generate_instruction(
                         component_address,
                         bech32_decoder,
                     )?)),
-                    fn_ident: MethodFnIdent::Scrypto(generate_string(method)?),
+                    method_fn_ident: MethodFnIdent::Scrypto(generate_string(method)?),
                 },
                 args: args_from_value_vec!(fields),
             }
@@ -390,7 +390,7 @@ pub fn generate_instruction(
             Instruction::CallMethod {
                 method_ident: MethodIdent {
                     receiver: Receiver::Consumed(RENodeId::Bucket(bucket_id)),
-                    fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::Bucket(
+                    method_fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::Bucket(
                         BucketMethodFnIdent::Burn,
                     )),
                 },
@@ -411,7 +411,7 @@ pub fn generate_instruction(
             Instruction::CallMethod {
                 method_ident: MethodIdent {
                     receiver: Receiver::Ref(RENodeId::ResourceManager(resource_address)),
-                    fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::ResourceManager(
+                    method_fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::ResourceManager(
                         ResourceManagerMethodFnIdent::Mint,
                     )),
                 },
@@ -1216,7 +1216,7 @@ mod tests {
             Instruction::CallMethod {
                 method_ident: MethodIdent {
                     receiver: Receiver::Ref(RENodeId::Component(component1)),
-                    fn_ident: MethodFnIdent::Scrypto("refill".to_string()),
+                    method_fn_ident: MethodFnIdent::Scrypto("refill".to_string()),
                 },
                 args: args!()
             }

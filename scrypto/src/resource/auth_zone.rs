@@ -97,7 +97,7 @@ impl ComponentAuthZone {
         let input = RadixEngineInput::Invoke(
             FnIdent::Method(MethodIdent {
                 receiver: Receiver::Ref(node_id),
-                fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::AuthZone(
+                method_fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::AuthZone(
                     AuthZoneMethodFnIdent::Push,
                 )),
             }),

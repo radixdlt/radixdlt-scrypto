@@ -162,8 +162,7 @@ impl FeeTable {
                 }
             }
             FnIdent::Method(MethodIdent {
-                fn_ident: method_fn_ident,
-                ..
+                method_fn_ident, ..
             }) => {
                 match method_fn_ident {
                     MethodFnIdent::Native(NativeMethodFnIdent::AuthZone(auth_zone_ident)) => {

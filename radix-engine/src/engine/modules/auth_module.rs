@@ -102,7 +102,7 @@ impl AuthModule {
         let auth = match &method_ident {
             MethodIdent {
                 receiver: Receiver::Consumed(RENodeId::Bucket(..)),
-                fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::Bucket(ref bucket_fn)),
+                method_fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::Bucket(ref bucket_fn)),
             } => {
                 let resource_address = {
                     let node_ref = node_pointer.to_ref(call_frames, track);
@@ -117,7 +117,8 @@ impl AuthModule {
             }
             MethodIdent {
                 receiver: Receiver::Ref(RENodeId::ResourceManager(resource_address)),
-                fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::ResourceManager(ref fn_ident)),
+                method_fn_ident:
+                    MethodFnIdent::Native(NativeMethodFnIdent::ResourceManager(ref fn_ident)),
             } => {
                 let substate_id = SubstateId::ResourceManager(*resource_address);
                 let resource_manager = track
@@ -129,18 +130,18 @@ impl AuthModule {
             }
             MethodIdent {
                 receiver: Receiver::Ref(RENodeId::System(..)),
-                fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::System(ref system_fn)),
+                method_fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::System(ref system_fn)),
             } => System::method_auth(system_fn),
             MethodIdent {
                 receiver: Receiver::Ref(RENodeId::Component(..)),
-                fn_ident: MethodFnIdent::Native(..),
+                method_fn_ident: MethodFnIdent::Native(..),
             } => match node_pointer {
                 RENodePointer::Store(..) => vec![MethodAuthorization::DenyAll],
                 RENodePointer::Heap { .. } => vec![],
             },
             MethodIdent {
                 receiver: Receiver::Ref(RENodeId::Component(..)),
-                fn_ident: MethodFnIdent::Scrypto(ref ident),
+                method_fn_ident: MethodFnIdent::Scrypto(ref ident),
             } => {
                 let (package_address, blueprint_name) = {
                     let value_ref = node_pointer.to_ref(call_frames, track);
@@ -180,7 +181,7 @@ impl AuthModule {
             }
             MethodIdent {
                 receiver: Receiver::Ref(RENodeId::Vault(..)),
-                fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::Vault(ref vault_fn)),
+                method_fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::Vault(ref vault_fn)),
             } => {
                 let resource_address = {
                     let mut node_ref = node_pointer.to_ref(call_frames, track);

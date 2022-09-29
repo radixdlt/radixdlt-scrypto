@@ -36,7 +36,7 @@ pub enum MethodFnIdent {
 #[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
 pub struct MethodIdent {
     pub receiver: Receiver,
-    pub fn_ident: MethodFnIdent,
+    pub method_fn_ident: MethodFnIdent,
 }
 
 #[derive(

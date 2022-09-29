@@ -80,7 +80,7 @@ mod tests {
                 Instruction::CallMethod {
                     method_ident: MethodIdent {
                         receiver: Receiver::Ref(RENodeId::Component(component1)),
-                        fn_ident: MethodFnIdent::Scrypto("withdraw_by_amount".to_string()),
+                        method_fn_ident: MethodFnIdent::Scrypto("withdraw_by_amount".to_string()),
                     },
                     args: args!(
                         Decimal::from(5u32),
@@ -100,7 +100,7 @@ mod tests {
                 Instruction::CallMethod {
                     method_ident: MethodIdent {
                         receiver: Receiver::Ref(RENodeId::Component(component2)),
-                        fn_ident: MethodFnIdent::Scrypto("buy_gumball".to_string()),
+                        method_fn_ident: MethodFnIdent::Scrypto("buy_gumball".to_string()),
                     },
                     args: args!(scrypto::resource::Bucket(512))
                 },
@@ -130,7 +130,9 @@ mod tests {
                 Instruction::CallMethod {
                     method_ident: MethodIdent {
                         receiver: Receiver::Ref(RENodeId::Component(component1)),
-                        fn_ident: MethodFnIdent::Scrypto("create_proof_by_amount".to_string()),
+                        method_fn_ident: MethodFnIdent::Scrypto(
+                            "create_proof_by_amount".to_string()
+                        ),
                     },
                     args: args!(
                         Decimal::from(5u32),
@@ -169,7 +171,7 @@ mod tests {
                 Instruction::CallMethod {
                     method_ident: MethodIdent {
                         receiver: Receiver::Ref(RENodeId::Component(component1)),
-                        fn_ident: MethodFnIdent::Scrypto("deposit_batch".to_string()),
+                        method_fn_ident: MethodFnIdent::Scrypto("deposit_batch".to_string()),
                     },
                     args: args!(Expression("ENTIRE_WORKTOP".to_owned()))
                 },
@@ -177,7 +179,7 @@ mod tests {
                 Instruction::CallMethod {
                     method_ident: MethodIdent {
                         receiver: Receiver::Ref(RENodeId::Component(component2)),
-                        fn_ident: MethodFnIdent::Scrypto("complicated_method".to_string()),
+                        method_fn_ident: MethodFnIdent::Scrypto("complicated_method".to_string()),
                     },
                     args: args!(Decimal::from(1u32), PreciseDecimal::from(2u32))
                 },

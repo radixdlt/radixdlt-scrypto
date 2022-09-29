@@ -41,7 +41,10 @@ impl ExecutionTrace {
         next_owned_values: &HashMap<RENodeId, HeapRootRENode>,
     ) -> Result<(), RuntimeError> {
         let method_ident = match fn_ident {
-            FnIdent::Method(MethodIdent { fn_ident, .. }) => fn_ident,
+            FnIdent::Method(MethodIdent {
+                method_fn_ident: fn_ident,
+                ..
+            }) => fn_ident,
             _ => return Ok(()),
         };
 

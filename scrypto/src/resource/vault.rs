@@ -70,7 +70,7 @@ impl Vault {
         let input = RadixEngineInput::Invoke(
             FnIdent::Method(MethodIdent {
                 receiver: Receiver::Ref(RENodeId::ResourceManager(resource_address)),
-                fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::ResourceManager(
+                method_fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::ResourceManager(
                     ResourceManagerMethodFnIdent::CreateVault,
                 )),
             }),
@@ -90,7 +90,7 @@ impl Vault {
         let input = RadixEngineInput::Invoke(
             FnIdent::Method(MethodIdent {
                 receiver: Receiver::Ref(RENodeId::Vault(self.0)),
-                fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::Vault(
+                method_fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::Vault(
                     VaultMethodFnIdent::Take,
                 )),
             }),
@@ -103,7 +103,7 @@ impl Vault {
         let input = RadixEngineInput::Invoke(
             FnIdent::Method(MethodIdent {
                 receiver: Receiver::Ref(RENodeId::Vault(self.0)),
-                fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::Vault(
+                method_fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::Vault(
                     VaultMethodFnIdent::LockFee,
                 )),
             }),
@@ -116,7 +116,7 @@ impl Vault {
         let input = RadixEngineInput::Invoke(
             FnIdent::Method(MethodIdent {
                 receiver: Receiver::Ref(RENodeId::Vault(self.0)),
-                fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::Vault(
+                method_fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::Vault(
                     VaultMethodFnIdent::LockContingentFee,
                 )),
             }),

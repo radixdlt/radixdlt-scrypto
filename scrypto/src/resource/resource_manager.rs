@@ -113,7 +113,7 @@ impl ResourceManager {
         let input = RadixEngineInput::Invoke(
             FnIdent::Method(MethodIdent {
                 receiver: Receiver::Ref(RENodeId::ResourceManager(self.0)),
-                fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::ResourceManager(
+                method_fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::ResourceManager(
                     ResourceManagerMethodFnIdent::UpdateAuth,
                 )),
             }),
@@ -129,7 +129,7 @@ impl ResourceManager {
         let input = RadixEngineInput::Invoke(
             FnIdent::Method(MethodIdent {
                 receiver: Receiver::Ref(RENodeId::ResourceManager(self.0)),
-                fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::ResourceManager(
+                method_fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::ResourceManager(
                     ResourceManagerMethodFnIdent::UpdateAuth,
                 )),
             }),
@@ -145,7 +145,7 @@ impl ResourceManager {
         let input = RadixEngineInput::Invoke(
             FnIdent::Method(MethodIdent {
                 receiver: Receiver::Ref(RENodeId::ResourceManager(self.0)),
-                fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::ResourceManager(
+                method_fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::ResourceManager(
                     ResourceManagerMethodFnIdent::UpdateAuth,
                 )),
             }),
@@ -161,7 +161,7 @@ impl ResourceManager {
         let input = RadixEngineInput::Invoke(
             FnIdent::Method(MethodIdent {
                 receiver: Receiver::Ref(RENodeId::ResourceManager(self.0)),
-                fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::ResourceManager(
+                method_fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::ResourceManager(
                     ResourceManagerMethodFnIdent::UpdateAuth,
                 )),
             }),
@@ -177,7 +177,7 @@ impl ResourceManager {
         let input = RadixEngineInput::Invoke(
             FnIdent::Method(MethodIdent {
                 receiver: Receiver::Ref(RENodeId::ResourceManager(self.0)),
-                fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::ResourceManager(
+                method_fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::ResourceManager(
                     ResourceManagerMethodFnIdent::UpdateAuth,
                 )),
             }),
@@ -193,7 +193,7 @@ impl ResourceManager {
         let input = RadixEngineInput::Invoke(
             FnIdent::Method(MethodIdent {
                 receiver: Receiver::Ref(RENodeId::ResourceManager(self.0)),
-                fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::ResourceManager(
+                method_fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::ResourceManager(
                     ResourceManagerMethodFnIdent::UpdateAuth,
                 )),
             }),
@@ -209,7 +209,7 @@ impl ResourceManager {
         let input = RadixEngineInput::Invoke(
             FnIdent::Method(MethodIdent {
                 receiver: Receiver::Ref(RENodeId::ResourceManager(self.0)),
-                fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::ResourceManager(
+                method_fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::ResourceManager(
                     ResourceManagerMethodFnIdent::LockAuth,
                 )),
             }),
@@ -224,7 +224,7 @@ impl ResourceManager {
         let input = RadixEngineInput::Invoke(
             FnIdent::Method(MethodIdent {
                 receiver: Receiver::Ref(RENodeId::ResourceManager(self.0)),
-                fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::ResourceManager(
+                method_fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::ResourceManager(
                     ResourceManagerMethodFnIdent::LockAuth,
                 )),
             }),
@@ -239,7 +239,7 @@ impl ResourceManager {
         let input = RadixEngineInput::Invoke(
             FnIdent::Method(MethodIdent {
                 receiver: Receiver::Ref(RENodeId::ResourceManager(self.0)),
-                fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::ResourceManager(
+                method_fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::ResourceManager(
                     ResourceManagerMethodFnIdent::LockAuth,
                 )),
             }),
@@ -254,7 +254,7 @@ impl ResourceManager {
         let input = RadixEngineInput::Invoke(
             FnIdent::Method(MethodIdent {
                 receiver: Receiver::Ref(RENodeId::ResourceManager(self.0)),
-                fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::ResourceManager(
+                method_fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::ResourceManager(
                     ResourceManagerMethodFnIdent::LockAuth,
                 )),
             }),
@@ -269,7 +269,7 @@ impl ResourceManager {
         let input = RadixEngineInput::Invoke(
             FnIdent::Method(MethodIdent {
                 receiver: Receiver::Ref(RENodeId::ResourceManager(self.0)),
-                fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::ResourceManager(
+                method_fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::ResourceManager(
                     ResourceManagerMethodFnIdent::LockAuth,
                 )),
             }),
@@ -284,7 +284,7 @@ impl ResourceManager {
         let input = RadixEngineInput::Invoke(
             FnIdent::Method(MethodIdent {
                 receiver: Receiver::Ref(RENodeId::ResourceManager(self.0)),
-                fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::ResourceManager(
+                method_fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::ResourceManager(
                     ResourceManagerMethodFnIdent::LockAuth,
                 )),
             }),
@@ -299,7 +299,7 @@ impl ResourceManager {
         let input = RadixEngineInput::Invoke(
             FnIdent::Method(MethodIdent {
                 receiver: Receiver::Ref(RENodeId::ResourceManager(self.0)),
-                fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::ResourceManager(
+                method_fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::ResourceManager(
                     ResourceManagerMethodFnIdent::Mint,
                 )),
             }),
@@ -312,7 +312,7 @@ impl ResourceManager {
         let input = RadixEngineInput::Invoke(
             FnIdent::Method(MethodIdent {
                 receiver: Receiver::Ref(RENodeId::ResourceManager(self.0)),
-                fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::ResourceManager(
+                method_fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::ResourceManager(
                     ResourceManagerMethodFnIdent::UpdateNonFungibleData,
                 )),
             }),
@@ -325,7 +325,7 @@ impl ResourceManager {
         let input = RadixEngineInput::Invoke(
             FnIdent::Method(MethodIdent {
                 receiver: Receiver::Ref(RENodeId::ResourceManager(self.0)),
-                fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::ResourceManager(
+                method_fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::ResourceManager(
                     ResourceManagerMethodFnIdent::GetNonFungible,
                 )),
             }),
