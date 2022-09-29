@@ -275,12 +275,7 @@ where
                 REActor::Method(FullyQualifiedMethod {
                     receiver,
                     fn_ident: FullyQualifiedMethodFn::Native(native_fn),
-                }) => NativeInterpreter::run_method(
-                    receiver,
-                    native_fn,
-                    input,
-                    self,
-                ),
+                }) => NativeInterpreter::run_method(receiver, native_fn, input, self),
                 REActor::Function(FunctionIdent::Scrypto {
                     package_address,
                     blueprint_name,
@@ -433,6 +428,183 @@ where
 
     fn current_frame(call_frames: &Vec<CallFrame>) -> &CallFrame {
         call_frames.last().expect("Current frame always exists")
+    }
+
+    fn invoke_function(
+        &mut self,
+        fn_ident: FnIdent,
+        input: ScryptoValue,
+    ) -> Result<ScryptoValue, RuntimeError> {
+        // Figure out what buckets and proofs to move from this process
+        let values_to_take = input.node_ids();
+        let (taken_values, mut missing) = Self::current_frame_mut(&mut self.call_frames)
+            .take_available_values(values_to_take, false)?;
+        let first_missing_value = missing.drain().nth(0);
+        if let Some(missing_value) = first_missing_value {
+            return Err(RuntimeError::KernelError(KernelError::RENodeNotFound(
+                missing_value,
+            )));
+        }
+
+        let mut next_owned_values = HashMap::new();
+
+        // Internal state update to taken values
+        for (id, mut value) in taken_values {
+            match &mut value.root_mut() {
+                HeapRENode::Proof(proof) => proof.change_to_restricted(),
+                _ => {}
+            }
+            next_owned_values.insert(id, value);
+        }
+
+        let mut locked_values = HashSet::<SubstateId>::new();
+
+        // No authorization but state load
+        match &fn_ident {
+            FnIdent::Function(FunctionIdent::Scrypto {
+                package_address,
+                blueprint_name,
+                ident,
+            }) => {
+                self.track
+                    .acquire_lock(SubstateId::Package(package_address.clone()), false, false)
+                    .map_err(|e| RuntimeError::KernelError(KernelError::SubstateError(e)))?;
+                locked_values.insert(SubstateId::Package(package_address.clone()));
+                let package = self
+                    .track
+                    .borrow_substate(SubstateId::Package(package_address.clone()))
+                    .raw()
+                    .package();
+                let abi =
+                    package
+                        .blueprint_abi(blueprint_name)
+                        .ok_or(RuntimeError::KernelError(KernelError::BlueprintNotFound(
+                            package_address.clone(),
+                            blueprint_name.clone(),
+                        )))?;
+                let fn_abi = abi.get_fn_abi(ident).ok_or(RuntimeError::KernelError(
+                    KernelError::FnIdentNotFound(fn_ident.clone()),
+                ))?;
+                if !fn_abi.input.matches(&input.dom) {
+                    return Err(RuntimeError::KernelError(KernelError::InvalidFnInput2(
+                        fn_ident.clone(),
+                    )));
+                }
+            }
+            _ => {}
+        };
+
+        // Move this into higher layer, e.g. transaction processor
+        let mut next_frame_node_refs = HashMap::new();
+        if Self::current_frame(&self.call_frames).depth == 0 {
+            let mut component_addresses = HashSet::new();
+
+            // Collect component addresses
+            for component_address in &input.refed_component_addresses {
+                component_addresses.insert(*component_address);
+            }
+            let input: TransactionProcessorRunInput =
+                scrypto_decode(&input.raw).expect("Transaction processor received invalid input");
+            for instruction in &input.instructions {
+                match instruction {
+                    Instruction::CallFunction { args, .. }
+                    | Instruction::CallMethod { args, .. } => {
+                        let scrypto_value =
+                            ScryptoValue::from_slice(&args).expect("Invalid CALL arguments");
+                        component_addresses.extend(scrypto_value.refed_component_addresses);
+                    }
+                    _ => {}
+                }
+            }
+
+            // Make components visible
+            for component_address in component_addresses {
+                let node_id = RENodeId::Component(component_address);
+                let substate_id = SubstateId::ComponentInfo(component_address);
+
+                // Check if component exists as root
+                if !self.track.is_root(&substate_id) {
+                    return Err(RuntimeError::KernelError(KernelError::RENodeNotFound(
+                        node_id,
+                    )));
+                }
+                let node_pointer = RENodePointer::Store(node_id);
+                node_pointer
+                    .acquire_lock(substate_id.clone(), false, false, &mut self.track)
+                    .map_err(RuntimeError::KernelError)?;
+                node_pointer
+                    .release_lock(substate_id, false, &mut self.track)
+                    .map_err(RuntimeError::KernelError)?;
+                next_frame_node_refs.insert(node_id, node_pointer);
+            }
+        } else {
+            // Pass argument references
+            for refed_component_address in &input.refed_component_addresses {
+                let node_id = RENodeId::Component(refed_component_address.clone());
+                if let Some(pointer) = Self::current_frame_mut(&mut self.call_frames)
+                    .node_refs
+                    .get(&node_id)
+                {
+                    let mut visible = HashSet::new();
+                    visible.insert(SubstateId::ComponentInfo(*refed_component_address));
+                    next_frame_node_refs.insert(node_id.clone(), pointer.clone());
+                } else {
+                    let node_id = RENodeId::System(refed_component_address.clone());
+                    if !Self::current_frame(&self.call_frames)
+                        .node_refs
+                        .contains_key(&node_id)
+                    {
+                        return Err(RuntimeError::KernelError(
+                            KernelError::InvokeMethodInvalidReferencePass(node_id),
+                        ));
+                    }
+                }
+            }
+        }
+
+        match &fn_ident {
+            FnIdent::Function(fn_identifier) => {
+                AuthModule::function_auth(fn_identifier.clone(), &mut self.call_frames)?;
+            }
+            _ => {}
+        }
+
+        // start a new frame and run
+        let (output, received_values) = {
+            let frame = CallFrame::new_child(
+                Self::current_frame(&self.call_frames).depth + 1,
+                match &fn_ident {
+                    FnIdent::Function(function_ident) => REActor::Function(function_ident.clone()),
+                    _ => panic!("Unexpected"),
+                },
+                next_owned_values,
+                next_frame_node_refs,
+                self,
+            );
+            self.call_frames.push(frame);
+            self.run(input)?
+        };
+
+        // Remove the last after clean-up
+        self.call_frames.pop();
+
+        // Release locked addresses
+        for l in locked_values {
+            // TODO: refactor after introducing `Lock` representation.
+            self.track
+                .release_lock(l.clone(), false)
+                .map_err(KernelError::SubstateError)
+                .map_err(RuntimeError::KernelError)?;
+        }
+
+        // move buckets and proofs to this process.
+        for (id, value) in received_values {
+            Self::current_frame_mut(&mut self.call_frames)
+                .owned_heap_nodes
+                .insert(id, value);
+        }
+
+        Ok(output)
     }
 
     fn invoke_method(
@@ -779,24 +951,6 @@ where
                 .insert(id, value);
         }
 
-        // Accept component references
-        for refed_component_address in &output.refed_component_addresses {
-            let node_id = RENodeId::Component(*refed_component_address);
-            let mut visible = HashSet::new();
-            visible.insert(SubstateId::ComponentInfo(*refed_component_address));
-            Self::current_frame_mut(&mut self.call_frames)
-                .node_refs
-                .insert(node_id, RENodePointer::Store(node_id));
-        }
-
-        for m in &mut self.modules {
-            m.post_sys_call(
-                &mut self.track,
-                &mut self.call_frames,
-                SysCallOutput::InvokeMethod { output: &output },
-            )
-            .map_err(RuntimeError::ModuleError)?;
-        }
         Ok(output)
     }
 }
@@ -864,178 +1018,11 @@ where
         // Prevent vaults/kvstores from being moved
         Self::process_call_data(&input)?;
 
-        if let FnIdent::Method(..) = fn_ident {
-            return self.invoke_method(fn_ident, input);
-        }
-
-        // Figure out what buckets and proofs to move from this process
-        let values_to_take = input.node_ids();
-        let (taken_values, mut missing) = Self::current_frame_mut(&mut self.call_frames)
-            .take_available_values(values_to_take, false)?;
-        let first_missing_value = missing.drain().nth(0);
-        if let Some(missing_value) = first_missing_value {
-            return Err(RuntimeError::KernelError(KernelError::RENodeNotFound(
-                missing_value,
-            )));
-        }
-
-        let mut next_owned_values = HashMap::new();
-
-        // Internal state update to taken values
-        for (id, mut value) in taken_values {
-            match &mut value.root_mut() {
-                HeapRENode::Proof(proof) => proof.change_to_restricted(),
-                _ => {}
-            }
-            next_owned_values.insert(id, value);
-        }
-
-        let mut locked_values = HashSet::<SubstateId>::new();
-
-        // No authorization but state load
-        match &fn_ident {
-            FnIdent::Function(FunctionIdent::Scrypto {
-                package_address,
-                blueprint_name,
-                ident,
-            }) => {
-                self.track
-                    .acquire_lock(SubstateId::Package(package_address.clone()), false, false)
-                    .map_err(|e| RuntimeError::KernelError(KernelError::SubstateError(e)))?;
-                locked_values.insert(SubstateId::Package(package_address.clone()));
-                let package = self
-                    .track
-                    .borrow_substate(SubstateId::Package(package_address.clone()))
-                    .raw()
-                    .package();
-                let abi =
-                    package
-                        .blueprint_abi(blueprint_name)
-                        .ok_or(RuntimeError::KernelError(KernelError::BlueprintNotFound(
-                            package_address.clone(),
-                            blueprint_name.clone(),
-                        )))?;
-                let fn_abi = abi.get_fn_abi(ident).ok_or(RuntimeError::KernelError(
-                    KernelError::FnIdentNotFound(fn_ident.clone()),
-                ))?;
-                if !fn_abi.input.matches(&input.dom) {
-                    return Err(RuntimeError::KernelError(KernelError::InvalidFnInput2(
-                        fn_ident.clone(),
-                    )));
-                }
-            }
-            _ => {}
+        // TODO: Slowly unify these two
+        let output = match fn_ident {
+            FnIdent::Method(..) => self.invoke_method(fn_ident, input)?,
+            FnIdent::Function(..) => self.invoke_function(fn_ident, input)?,
         };
-
-        // Move this into higher layer, e.g. transaction processor
-        let mut next_frame_node_refs = HashMap::new();
-        if Self::current_frame(&self.call_frames).depth == 0 {
-            let mut component_addresses = HashSet::new();
-
-            // Collect component addresses
-            for component_address in &input.refed_component_addresses {
-                component_addresses.insert(*component_address);
-            }
-            let input: TransactionProcessorRunInput =
-                scrypto_decode(&input.raw).expect("Transaction processor received invalid input");
-            for instruction in &input.instructions {
-                match instruction {
-                    Instruction::CallFunction { args, .. }
-                    | Instruction::CallMethod { args, .. } => {
-                        let scrypto_value =
-                            ScryptoValue::from_slice(&args).expect("Invalid CALL arguments");
-                        component_addresses.extend(scrypto_value.refed_component_addresses);
-                    }
-                    _ => {}
-                }
-            }
-
-            // Make components visible
-            for component_address in component_addresses {
-                let node_id = RENodeId::Component(component_address);
-                let substate_id = SubstateId::ComponentInfo(component_address);
-
-                // Check if component exists as root
-                if !self.track.is_root(&substate_id) {
-                    return Err(RuntimeError::KernelError(KernelError::RENodeNotFound(
-                        node_id,
-                    )));
-                }
-                let node_pointer = RENodePointer::Store(node_id);
-                node_pointer
-                    .acquire_lock(substate_id.clone(), false, false, &mut self.track)
-                    .map_err(RuntimeError::KernelError)?;
-                node_pointer
-                    .release_lock(substate_id, false, &mut self.track)
-                    .map_err(RuntimeError::KernelError)?;
-                next_frame_node_refs.insert(node_id, node_pointer);
-            }
-        } else {
-            // Pass argument references
-            for refed_component_address in &input.refed_component_addresses {
-                let node_id = RENodeId::Component(refed_component_address.clone());
-                if let Some(pointer) = Self::current_frame_mut(&mut self.call_frames)
-                    .node_refs
-                    .get(&node_id)
-                {
-                    let mut visible = HashSet::new();
-                    visible.insert(SubstateId::ComponentInfo(*refed_component_address));
-                    next_frame_node_refs.insert(node_id.clone(), pointer.clone());
-                } else {
-                    let node_id = RENodeId::System(refed_component_address.clone());
-                    if !Self::current_frame(&self.call_frames)
-                        .node_refs
-                        .contains_key(&node_id)
-                    {
-                        return Err(RuntimeError::KernelError(
-                            KernelError::InvokeMethodInvalidReferencePass(node_id),
-                        ));
-                    }
-                }
-            }
-        }
-
-        match &fn_ident {
-            FnIdent::Function(fn_identifier) => {
-                AuthModule::function_auth(fn_identifier.clone(), &mut self.call_frames)?;
-            }
-            _ => {}
-        }
-
-        // start a new frame and run
-        let (output, received_values) = {
-            let frame = CallFrame::new_child(
-                Self::current_frame(&self.call_frames).depth + 1,
-                match &fn_ident {
-                    FnIdent::Function(function_ident) => REActor::Function(function_ident.clone()),
-                    _ => panic!("Unexpected"),
-                },
-                next_owned_values,
-                next_frame_node_refs,
-                self,
-            );
-            self.call_frames.push(frame);
-            self.run(input)?
-        };
-
-        // Remove the last after clean-up
-        self.call_frames.pop();
-
-        // Release locked addresses
-        for l in locked_values {
-            // TODO: refactor after introducing `Lock` representation.
-            self.track
-                .release_lock(l.clone(), false)
-                .map_err(KernelError::SubstateError)
-                .map_err(RuntimeError::KernelError)?;
-        }
-
-        // move buckets and proofs to this process.
-        for (id, value) in received_values {
-            Self::current_frame_mut(&mut self.call_frames)
-                .owned_heap_nodes
-                .insert(id, value);
-        }
 
         // Accept component references
         for refed_component_address in &output.refed_component_addresses {
@@ -1051,10 +1038,11 @@ where
             m.post_sys_call(
                 &mut self.track,
                 &mut self.call_frames,
-                SysCallOutput::InvokeFunction { output: &output },
+                SysCallOutput::Invoke { output: &output },
             )
             .map_err(RuntimeError::ModuleError)?;
         }
+
         Ok(output)
     }
 

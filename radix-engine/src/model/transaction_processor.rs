@@ -149,7 +149,9 @@ impl TransactionProcessor {
                         .invoke(
                             FnIdent::Method(MethodIdent {
                                 receiver: Receiver::Ref(auth_zone_node_id),
-                                fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::AuthZone(AuthZoneMethodFnIdent::Drain)),
+                                fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::AuthZone(
+                                    AuthZoneMethodFnIdent::Drain,
+                                )),
                             }),
                             ScryptoValue::from_typed(&AuthZoneDrainInput {}),
                         )

@@ -107,13 +107,9 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
         output: SysCallOutput,
     ) -> Result<(), ModuleError> {
         match output {
-            SysCallOutput::InvokeFunction { output, .. } => {
+            SysCallOutput::Invoke { output, .. } => {
                 self.depth = self.depth - 1;
-                log!(self, "Exiting function: output = {:?}", output);
-            }
-            SysCallOutput::InvokeMethod { output, .. } => {
-                self.depth = self.depth - 1;
-                log!(self, "Exiting method: output = {:?}", output);
+                log!(self, "Exiting invoke: output = {:?}", output);
             }
             SysCallOutput::BorrowNode { .. } => {}
             SysCallOutput::DropNode { .. } => {}
