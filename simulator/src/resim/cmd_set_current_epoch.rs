@@ -51,8 +51,8 @@ impl SetCurrentEpoch {
             .invoke(
                 FnIdent::Method(MethodIdent {
                     receiver: Receiver::Ref(RENodeId::System(SYS_SYSTEM_COMPONENT)),
-                    fn_ident: MethodFnIdent::Native(NativeFnIdentifier::System(
-                        SystemFnIdentifier::SetEpoch,
+                    fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::System(
+                        SystemMethodFnIdent::SetEpoch,
                     )),
                 }),
                 ScryptoValue::from_typed(&SystemSetEpochInput { epoch: self.epoch }),

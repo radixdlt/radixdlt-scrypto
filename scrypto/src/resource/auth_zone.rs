@@ -1,8 +1,8 @@
 use sbor::rust::collections::BTreeSet;
 use sbor::*;
-use scrypto::core::{FnIdent, MethodFnIdent, MethodIdent, NativeFnIdentifier};
+use scrypto::core::{FnIdent, MethodFnIdent, MethodIdent, NativeMethodFnIdent};
 
-use crate::core::{AuthZoneFnIdentifier, Receiver};
+use crate::core::{AuthZoneMethodFnIdent, Receiver};
 use crate::engine::{api::*, call_engine};
 use crate::math::Decimal;
 use crate::native_functions;
@@ -45,28 +45,28 @@ pub struct ComponentAuthZone {}
 
 impl ComponentAuthZone {
     native_functions! {
-        Receiver::CurrentAuthZone, NativeFnIdentifier::AuthZone => {
+        Receiver::CurrentAuthZone, NativeMethodFnIdent::AuthZone => {
             pub fn pop() -> Proof {
-                AuthZoneFnIdentifier::Pop,
+                AuthZoneMethodFnIdent::Pop,
                 AuthZonePopInput {}
             }
 
             pub fn create_proof(resource_address: ResourceAddress) -> Proof {
-                AuthZoneFnIdentifier::CreateProof,
+                AuthZoneMethodFnIdent::CreateProof,
                 AuthZoneCreateProofInput {
                     resource_address
                 }
             }
 
             pub fn create_proof_by_amount(amount: Decimal, resource_address: ResourceAddress) -> Proof {
-                AuthZoneFnIdentifier::CreateProofByAmount,
+                AuthZoneMethodFnIdent::CreateProofByAmount,
                 AuthZoneCreateProofByAmountInput {
                     amount, resource_address
                 }
             }
 
             pub fn create_proof_by_ids(ids: &BTreeSet<NonFungibleId>, resource_address: ResourceAddress) -> Proof {
-                AuthZoneFnIdentifier::CreateProofByIds,
+                AuthZoneMethodFnIdent::CreateProofByIds,
                 AuthZoneCreateProofByIdsInput {
                     ids: ids.clone(),
                     resource_address
@@ -80,8 +80,8 @@ impl ComponentAuthZone {
         let input = RadixEngineInput::Invoke(
             FnIdent::Method(MethodIdent {
                 receiver: Receiver::CurrentAuthZone,
-                fn_ident: MethodFnIdent::Native(NativeFnIdentifier::AuthZone(
-                    AuthZoneFnIdentifier::Push,
+                fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::AuthZone(
+                    AuthZoneMethodFnIdent::Push,
                 )),
             }),
             scrypto::buffer::scrypto_encode(&(AuthZonePushInput { proof })),

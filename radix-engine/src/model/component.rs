@@ -87,7 +87,7 @@ impl ComponentInfo {
 
     pub fn main<'s, Y, W, I, R>(
         component_address: ComponentAddress,
-        component_fn: ComponentFnIdentifier,
+        component_fn: ComponentMethodFnIdent,
         args: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, InvokeError<ComponentError>>
@@ -101,7 +101,7 @@ impl ComponentInfo {
         let node_id = RENodeId::Component(component_address);
 
         let rtn = match component_fn {
-            ComponentFnIdentifier::AddAccessCheck => {
+            ComponentMethodFnIdent::AddAccessCheck => {
                 let input: ComponentAddAccessCheckInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(ComponentError::InvalidRequestData(e)))?;
 

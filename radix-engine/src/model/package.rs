@@ -40,7 +40,7 @@ impl Package {
     }
 
     pub fn static_main<'s, Y, W, I, R>(
-        package_fn: PackageFnIdentifier,
+        package_fn: PackageFunctionFnIdent,
         call_data: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, InvokeError<PackageError>>
@@ -51,7 +51,7 @@ impl Package {
         R: FeeReserve,
     {
         match package_fn {
-            PackageFnIdentifier::Publish => {
+            PackageFunctionFnIdent::Publish => {
                 let input: PackagePublishInput = scrypto_decode(&call_data.raw)
                     .map_err(|e| InvokeError::Error(PackageError::InvalidRequestData(e)))?;
                 let code = system_api

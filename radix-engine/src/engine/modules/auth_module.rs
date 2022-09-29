@@ -2,7 +2,7 @@ use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::*;
 use crate::types::*;
-use scrypto::core::{FnIdent, MethodFnIdent, MethodIdent};
+use scrypto::core::{FnIdent, MethodFnIdent, MethodIdent, NativeFunctionFnIdent};
 
 pub struct AuthModule;
 
@@ -53,7 +53,9 @@ impl AuthModule {
         call_frames: &mut Vec<CallFrame>,
     ) -> Result<(), RuntimeError> {
         let auth = match &function_ident {
-            FunctionIdent::Native(NativeFnIdentifier::System(system_fn)) => System::auth(system_fn),
+            FunctionIdent::Native(NativeFunctionFnIdent::System(system_fn)) => {
+                System::function_auth(system_fn)
+            }
             _ => vec![],
         };
         Self::check_auth(FnIdent::Function(function_ident), auth, call_frames)
@@ -69,7 +71,7 @@ impl AuthModule {
         let auth = match &method_ident {
             MethodIdent {
                 receiver: Receiver::Consumed(RENodeId::Bucket(..)),
-                fn_ident: MethodFnIdent::Native(NativeFnIdentifier::Bucket(ref bucket_fn)),
+                fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::Bucket(ref bucket_fn)),
             } => {
                 let resource_address = {
                     let node_ref = node_pointer.to_ref(call_frames, track);
@@ -84,7 +86,7 @@ impl AuthModule {
             }
             MethodIdent {
                 receiver: Receiver::Ref(RENodeId::ResourceManager(resource_address)),
-                fn_ident: MethodFnIdent::Native(NativeFnIdentifier::ResourceManager(ref fn_ident)),
+                fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::ResourceManager(ref fn_ident)),
             } => {
                 let substate_id = SubstateId::ResourceManager(*resource_address);
                 let resource_manager = track
@@ -96,8 +98,8 @@ impl AuthModule {
             }
             MethodIdent {
                 receiver: Receiver::Ref(RENodeId::System(..)),
-                fn_ident: MethodFnIdent::Native(NativeFnIdentifier::System(ref system_fn)),
-            } => System::auth(system_fn),
+                fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::System(ref system_fn)),
+            } => System::method_auth(system_fn),
             MethodIdent {
                 receiver: Receiver::Ref(RENodeId::Component(..)),
                 fn_ident: MethodFnIdent::Native(..),
@@ -144,7 +146,7 @@ impl AuthModule {
             }
             MethodIdent {
                 receiver: Receiver::Ref(RENodeId::Vault(..)),
-                fn_ident: MethodFnIdent::Native(NativeFnIdentifier::Vault(ref vault_fn)),
+                fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::Vault(ref vault_fn)),
             } => {
                 let resource_address = {
                     let mut node_ref = node_pointer.to_ref(call_frames, track);

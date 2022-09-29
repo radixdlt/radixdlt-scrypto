@@ -3,8 +3,8 @@ use sbor::{encode_any, DecodeError, Value};
 use scrypto::address::{AddressError, Bech32Encoder};
 use scrypto::buffer::scrypto_decode;
 use scrypto::core::{
-    BucketFnIdentifier, FunctionIdent, NativeFnIdentifier, NetworkDefinition, Receiver,
-    ResourceManagerFnIdentifier,
+    BucketMethodFnIdent, FunctionIdent, NativeFunctionFnIdent, NativeMethodFnIdent,
+    NetworkDefinition, Receiver, ResourceManagerFunctionFnIdent, ResourceManagerMethodFnIdent,
 };
 use scrypto::engine::types::*;
 use scrypto::resource::{
@@ -271,7 +271,9 @@ pub fn decompile(
                     buf.push_str(";\n");
                 }
                 FunctionIdent::Native(native_fn_identifier) => match native_fn_identifier {
-                    NativeFnIdentifier::ResourceManager(ResourceManagerFnIdentifier::Create) => {
+                    NativeFunctionFnIdent::ResourceManager(
+                        ResourceManagerFunctionFnIdent::Create,
+                    ) => {
                         buf.push_str("CREATE_RESOURCE");
                         let input: ResourceManagerCreateInput =
                             scrypto_decode(&args).map_err(DecompileError::DecodeError)?;
@@ -336,7 +338,7 @@ pub fn decompile(
                     receiver,
                 } => match (native_fn_identifier, receiver) {
                     (
-                        NativeFnIdentifier::Bucket(BucketFnIdentifier::Burn),
+                        NativeMethodFnIdent::Bucket(BucketMethodFnIdent::Burn),
                         Receiver::Consumed(RENodeId::Bucket(bucket_id)),
                     ) => {
                         let _input: ConsumingBucketBurnInput =
@@ -351,7 +353,7 @@ pub fn decompile(
                         ));
                     }
                     (
-                        NativeFnIdentifier::ResourceManager(ResourceManagerFnIdentifier::Mint),
+                        NativeMethodFnIdent::ResourceManager(ResourceManagerMethodFnIdent::Mint),
                         Receiver::Ref(RENodeId::ResourceManager(resource_address)),
                     ) => {
                         let input: ResourceManagerMintInput =

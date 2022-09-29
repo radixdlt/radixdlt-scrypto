@@ -8,8 +8,8 @@ use scrypto::address::Bech32Decoder;
 use scrypto::component::ComponentAddress;
 use scrypto::component::PackageAddress;
 use scrypto::core::{
-    Blob, BucketFnIdentifier, Expression, FunctionIdent, NativeFnIdentifier, Receiver,
-    ResourceManagerFnIdentifier,
+    Blob, BucketMethodFnIdent, Expression, FunctionIdent, NativeFunctionFnIdent,
+    NativeMethodFnIdent, Receiver, ResourceManagerFunctionFnIdent, ResourceManagerMethodFnIdent,
 };
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
@@ -378,8 +378,8 @@ pub fn generate_instruction(
             }
 
             Instruction::CallFunction {
-                fn_identifier: FunctionIdent::Native(NativeFnIdentifier::ResourceManager(
-                    ResourceManagerFnIdentifier::Create,
+                fn_identifier: FunctionIdent::Native(NativeFunctionFnIdent::ResourceManager(
+                    ResourceManagerFunctionFnIdent::Create,
                 )),
                 args: args_from_value_vec!(fields),
             }
@@ -389,7 +389,7 @@ pub fn generate_instruction(
             Instruction::CallMethod {
                 method_identifier: MethodIdentifier::Native {
                     receiver: Receiver::Consumed(RENodeId::Bucket(bucket_id)),
-                    native_fn_identifier: NativeFnIdentifier::Bucket(BucketFnIdentifier::Burn),
+                    native_fn_identifier: NativeMethodFnIdent::Bucket(BucketMethodFnIdent::Burn),
                 },
                 args: args!(),
             }
@@ -408,8 +408,8 @@ pub fn generate_instruction(
             Instruction::CallMethod {
                 method_identifier: MethodIdentifier::Native {
                     receiver: Receiver::Ref(RENodeId::ResourceManager(resource_address)),
-                    native_fn_identifier: NativeFnIdentifier::ResourceManager(
-                        ResourceManagerFnIdentifier::Mint,
+                    native_fn_identifier: NativeMethodFnIdent::ResourceManager(
+                        ResourceManagerMethodFnIdent::Mint,
                     ),
                 },
                 args: args!(input),

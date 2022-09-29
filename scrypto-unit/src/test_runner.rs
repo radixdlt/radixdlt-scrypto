@@ -649,8 +649,8 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
                     .invoke(
                         FnIdent::Method(MethodIdent {
                             receiver: Receiver::Ref(RENodeId::System(SYS_SYSTEM_COMPONENT)),
-                            fn_ident: MethodFnIdent::Native(NativeFnIdentifier::System(
-                                SystemFnIdentifier::SetEpoch,
+                            fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::System(
+                                SystemMethodFnIdent::SetEpoch,
                             )),
                         }),
                         ScryptoValue::from_typed(&SystemSetEpochInput { epoch }),
@@ -666,8 +666,8 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
                 .invoke(
                     FnIdent::Method(MethodIdent {
                         receiver: Receiver::Ref(RENodeId::System(SYS_SYSTEM_COMPONENT)),
-                        fn_ident: MethodFnIdent::Native(NativeFnIdentifier::System(
-                            SystemFnIdentifier::GetCurrentEpoch,
+                        fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::System(
+                            SystemMethodFnIdent::GetCurrentEpoch,
                         )),
                     }),
                     ScryptoValue::from_typed(&SystemGetCurrentEpochInput {}),
@@ -724,9 +724,9 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
 pub fn is_auth_error(e: &RuntimeError) -> bool {
     matches!(
         e,
-        RuntimeError::ModuleError(ModuleError::AuthorizationError {
+        RuntimeError::ModuleError(ModuleError::AuthError {
             authorization: _,
-            function: _,
+            fn_ident: _,
             error: ::radix_engine::model::MethodAuthorizationError::NotAuthorized
         })
     )

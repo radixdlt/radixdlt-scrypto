@@ -2,7 +2,7 @@ use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::component::ComponentAddress;
-use scrypto::core::{Blob, FunctionIdent, NativeFnIdentifier, Receiver};
+use scrypto::core::{Blob, FunctionIdent, NativeMethodFnIdent, Receiver};
 use scrypto::engine::types::*;
 use scrypto::math::*;
 use scrypto::resource::{NonFungibleId, ResourceAddress};
@@ -15,7 +15,7 @@ pub enum MethodIdentifier {
     },
     Native {
         receiver: Receiver,
-        native_fn_identifier: NativeFnIdentifier,
+        native_fn_identifier: NativeMethodFnIdent,
     },
 }
 

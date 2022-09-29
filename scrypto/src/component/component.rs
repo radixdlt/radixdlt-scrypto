@@ -62,8 +62,8 @@ impl Component {
         let input = RadixEngineInput::Invoke(
             FnIdent::Method(MethodIdent {
                 receiver: Receiver::Ref(RENodeId::Component(self.0)),
-                fn_ident: MethodFnIdent::Native(NativeFnIdentifier::Component(
-                    ComponentFnIdentifier::AddAccessCheck,
+                fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::Component(
+                    ComponentMethodFnIdent::AddAccessCheck,
                 )),
             }),
             scrypto_encode(&ComponentAddAccessCheckInput { access_rules }),

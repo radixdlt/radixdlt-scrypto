@@ -40,8 +40,8 @@ mod tests {
     use sbor::rust::str::FromStr;
     use scrypto::address::Bech32Decoder;
     use scrypto::args;
-    use scrypto::core::NetworkDefinition;
-    use scrypto::core::{Blob, FunctionIdent, NativeFnIdentifier, ResourceManagerFnIdentifier};
+    use scrypto::core::{Blob, FunctionIdent};
+    use scrypto::core::{NativeFunctionFnIdent, NetworkDefinition, ResourceManagerFunctionFnIdent};
     use scrypto::math::*;
     use scrypto::resource::{
         AccessRule, MintParams, Mutability, ResourceAddress, ResourceMethodAuthKey, ResourceType,
@@ -153,8 +153,8 @@ mod tests {
                     .unwrap()
                 },
                 Instruction::CallFunction {
-                    fn_identifier: FunctionIdent::Native(NativeFnIdentifier::ResourceManager(
-                        ResourceManagerFnIdentifier::Create
+                    fn_identifier: FunctionIdent::Native(NativeFunctionFnIdent::ResourceManager(
+                        ResourceManagerFunctionFnIdent::Create
                     )),
                     args: args!(
                         ResourceType::Fungible { divisibility: 0 },

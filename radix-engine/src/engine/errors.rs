@@ -97,11 +97,6 @@ pub enum KernelError {
 
 #[derive(Debug, Encode, Decode, TypeId)]
 pub enum ModuleError {
-    AuthorizationError {
-        function: FunctionIdent,
-        authorization: MethodAuthorization,
-        error: MethodAuthorizationError,
-    },
     AuthError {
         fn_ident: FnIdent,
         authorization: MethodAuthorization,

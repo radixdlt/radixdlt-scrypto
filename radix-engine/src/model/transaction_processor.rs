@@ -1,4 +1,4 @@
-use scrypto::core::{FnIdent, MethodFnIdent, MethodIdent};
+use scrypto::core::{FnIdent, MethodFnIdent, MethodIdent, NativeFunctionFnIdent};
 use transaction::errors::IdAllocationError;
 use transaction::model::*;
 use transaction::validation::*;
@@ -115,8 +115,8 @@ impl TransactionProcessor {
                         .invoke(
                             FnIdent::Method(MethodIdent {
                                 receiver: Receiver::Ref(RENodeId::Worktop),
-                                fn_ident: MethodFnIdent::Native(NativeFnIdentifier::Worktop(
-                                    WorktopFnIdentifier::Drain,
+                                fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::Worktop(
+                                    WorktopMethodFnIdent::Drain,
                                 )),
                             }),
                             ScryptoValue::from_typed(&WorktopDrainInput {}),
@@ -188,7 +188,7 @@ impl TransactionProcessor {
     }
 
     pub fn static_main<'s, Y, W, I, R>(
-        transaction_processor_fn: TransactionProcessorFnIdentifier,
+        transaction_processor_fn: TransactionProcessorFunctionFnIdent,
         call_data: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, InvokeError<TransactionProcessorError>>
@@ -199,7 +199,7 @@ impl TransactionProcessor {
         R: FeeReserve,
     {
         match transaction_processor_fn {
-            TransactionProcessorFnIdentifier::Run => {
+            TransactionProcessorFunctionFnIdent::Run => {
                 let input: TransactionProcessorRunInput =
                     scrypto_decode(&call_data.raw).map_err(|e| {
                         InvokeError::Error(TransactionProcessorError::InvalidRequestData(e))
@@ -227,8 +227,8 @@ impl TransactionProcessor {
                                         FnIdent::Method(MethodIdent {
                                             receiver: Receiver::Ref(RENodeId::Worktop),
                                             fn_ident: MethodFnIdent::Native(
-                                                NativeFnIdentifier::Worktop(
-                                                    WorktopFnIdentifier::TakeAll,
+                                                NativeMethodFnIdent::Worktop(
+                                                    WorktopMethodFnIdent::TakeAll,
                                                 ),
                                             ),
                                         }),
@@ -257,8 +257,8 @@ impl TransactionProcessor {
                                         FnIdent::Method(MethodIdent {
                                             receiver: Receiver::Ref(RENodeId::Worktop),
                                             fn_ident: MethodFnIdent::Native(
-                                                NativeFnIdentifier::Worktop(
-                                                    WorktopFnIdentifier::TakeAmount,
+                                                NativeMethodFnIdent::Worktop(
+                                                    WorktopMethodFnIdent::TakeAmount,
                                                 ),
                                             ),
                                         }),
@@ -288,8 +288,8 @@ impl TransactionProcessor {
                                         FnIdent::Method(MethodIdent {
                                             receiver: Receiver::Ref(RENodeId::Worktop),
                                             fn_ident: MethodFnIdent::Native(
-                                                NativeFnIdentifier::Worktop(
-                                                    WorktopFnIdentifier::TakeNonFungibles,
+                                                NativeMethodFnIdent::Worktop(
+                                                    WorktopMethodFnIdent::TakeNonFungibles,
                                                 ),
                                             ),
                                         }),
@@ -313,8 +313,8 @@ impl TransactionProcessor {
                                         FnIdent::Method(MethodIdent {
                                             receiver: Receiver::Ref(RENodeId::Worktop),
                                             fn_ident: MethodFnIdent::Native(
-                                                NativeFnIdentifier::Worktop(
-                                                    WorktopFnIdentifier::Put,
+                                                NativeMethodFnIdent::Worktop(
+                                                    WorktopMethodFnIdent::Put,
                                                 ),
                                             ),
                                         }),
@@ -331,8 +331,8 @@ impl TransactionProcessor {
                             .invoke(
                                 FnIdent::Method(MethodIdent {
                                     receiver: Receiver::Ref(RENodeId::Worktop),
-                                    fn_ident: MethodFnIdent::Native(NativeFnIdentifier::Worktop(
-                                        WorktopFnIdentifier::AssertContains,
+                                    fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::Worktop(
+                                        WorktopMethodFnIdent::AssertContains,
                                     )),
                                 }),
                                 ScryptoValue::from_typed(&WorktopAssertContainsInput {
@@ -347,8 +347,8 @@ impl TransactionProcessor {
                             .invoke(
                                 FnIdent::Method(MethodIdent {
                                     receiver: Receiver::Ref(RENodeId::Worktop),
-                                    fn_ident: MethodFnIdent::Native(NativeFnIdentifier::Worktop(
-                                        WorktopFnIdentifier::AssertContainsAmount,
+                                    fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::Worktop(
+                                        WorktopMethodFnIdent::AssertContainsAmount,
                                     )),
                                 }),
                                 ScryptoValue::from_typed(&WorktopAssertContainsAmountInput {
@@ -364,8 +364,8 @@ impl TransactionProcessor {
                             .invoke(
                                 FnIdent::Method(MethodIdent {
                                     receiver: Receiver::Ref(RENodeId::Worktop),
-                                    fn_ident: MethodFnIdent::Native(NativeFnIdentifier::Worktop(
-                                        WorktopFnIdentifier::AssertContainsNonFungibles,
+                                    fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::Worktop(
+                                        WorktopMethodFnIdent::AssertContainsNonFungibles,
                                     )),
                                 }),
                                 ScryptoValue::from_typed(&WorktopAssertContainsNonFungiblesInput {
@@ -386,8 +386,8 @@ impl TransactionProcessor {
                                         FnIdent::Method(MethodIdent {
                                             receiver: Receiver::CurrentAuthZone,
                                             fn_ident: MethodFnIdent::Native(
-                                                NativeFnIdentifier::AuthZone(
-                                                    AuthZoneFnIdentifier::Pop,
+                                                NativeMethodFnIdent::AuthZone(
+                                                    AuthZoneMethodFnIdent::Pop,
                                                 ),
                                             ),
                                         }),
@@ -407,8 +407,8 @@ impl TransactionProcessor {
                                     FnIdent::Method(MethodIdent {
                                         receiver: Receiver::CurrentAuthZone,
                                         fn_ident: MethodFnIdent::Native(
-                                            NativeFnIdentifier::AuthZone(
-                                                AuthZoneFnIdentifier::Clear,
+                                            NativeMethodFnIdent::AuthZone(
+                                                AuthZoneMethodFnIdent::Clear,
                                             ),
                                         ),
                                     }),
@@ -427,8 +427,8 @@ impl TransactionProcessor {
                                         FnIdent::Method(MethodIdent {
                                             receiver: Receiver::CurrentAuthZone,
                                             fn_ident: MethodFnIdent::Native(
-                                                NativeFnIdentifier::AuthZone(
-                                                    AuthZoneFnIdentifier::Push,
+                                                NativeMethodFnIdent::AuthZone(
+                                                    AuthZoneMethodFnIdent::Push,
                                                 ),
                                             ),
                                         }),
@@ -449,8 +449,8 @@ impl TransactionProcessor {
                                         FnIdent::Method(MethodIdent {
                                             receiver: Receiver::CurrentAuthZone,
                                             fn_ident: MethodFnIdent::Native(
-                                                NativeFnIdentifier::AuthZone(
-                                                    AuthZoneFnIdentifier::CreateProof,
+                                                NativeMethodFnIdent::AuthZone(
+                                                    AuthZoneMethodFnIdent::CreateProof,
                                                 ),
                                             ),
                                         }),
@@ -479,8 +479,8 @@ impl TransactionProcessor {
                                         FnIdent::Method(MethodIdent {
                                             receiver: Receiver::CurrentAuthZone,
                                             fn_ident: MethodFnIdent::Native(
-                                                NativeFnIdentifier::AuthZone(
-                                                    AuthZoneFnIdentifier::CreateProofByAmount,
+                                                NativeMethodFnIdent::AuthZone(
+                                                    AuthZoneMethodFnIdent::CreateProofByAmount,
                                                 ),
                                             ),
                                         }),
@@ -512,8 +512,8 @@ impl TransactionProcessor {
                                         FnIdent::Method(MethodIdent {
                                             receiver: Receiver::CurrentAuthZone,
                                             fn_ident: MethodFnIdent::Native(
-                                                NativeFnIdentifier::AuthZone(
-                                                    AuthZoneFnIdentifier::CreateProofByIds,
+                                                NativeMethodFnIdent::AuthZone(
+                                                    AuthZoneMethodFnIdent::CreateProofByIds,
                                                 ),
                                             ),
                                         }),
@@ -551,8 +551,8 @@ impl TransactionProcessor {
                                                 real_bucket_id,
                                             )),
                                             fn_ident: MethodFnIdent::Native(
-                                                NativeFnIdentifier::Bucket(
-                                                    BucketFnIdentifier::CreateProof,
+                                                NativeMethodFnIdent::Bucket(
+                                                    BucketMethodFnIdent::CreateProof,
                                                 ),
                                             ),
                                         }),
@@ -582,8 +582,8 @@ impl TransactionProcessor {
                                                         real_id,
                                                     )),
                                                     fn_ident: MethodFnIdent::Native(
-                                                        NativeFnIdentifier::Proof(
-                                                            ProofFnIdentifier::Clone,
+                                                        NativeMethodFnIdent::Proof(
+                                                            ProofMethodFnIdent::Clone,
                                                         ),
                                                     ),
                                                 }),
@@ -610,7 +610,9 @@ impl TransactionProcessor {
                                         FnIdent::Method(MethodIdent {
                                             receiver: Receiver::Consumed(RENodeId::Proof(real_id)),
                                             fn_ident: MethodFnIdent::Native(
-                                                NativeFnIdentifier::Proof(ProofFnIdentifier::Drop),
+                                                NativeMethodFnIdent::Proof(
+                                                    ProofMethodFnIdent::Drop,
+                                                ),
                                             ),
                                         }),
                                         ScryptoValue::from_typed(&ConsumingProofDropInput {}),
@@ -627,7 +629,9 @@ impl TransactionProcessor {
                                         FnIdent::Method(MethodIdent {
                                             receiver: Receiver::Consumed(RENodeId::Proof(real_id)),
                                             fn_ident: MethodFnIdent::Native(
-                                                NativeFnIdentifier::Proof(ProofFnIdentifier::Drop),
+                                                NativeMethodFnIdent::Proof(
+                                                    ProofMethodFnIdent::Drop,
+                                                ),
                                             ),
                                         }),
                                         ScryptoValue::from_typed(&ConsumingProofDropInput {}),
@@ -639,8 +643,8 @@ impl TransactionProcessor {
                                     FnIdent::Method(MethodIdent {
                                         receiver: Receiver::CurrentAuthZone,
                                         fn_ident: MethodFnIdent::Native(
-                                            NativeFnIdentifier::AuthZone(
-                                                AuthZoneFnIdentifier::Clear,
+                                            NativeMethodFnIdent::AuthZone(
+                                                AuthZoneMethodFnIdent::Clear,
                                             ),
                                         ),
                                     }),
@@ -672,8 +676,8 @@ impl TransactionProcessor {
                                             FnIdent::Method(MethodIdent {
                                                 receiver: Receiver::CurrentAuthZone,
                                                 fn_ident: MethodFnIdent::Native(
-                                                    NativeFnIdentifier::AuthZone(
-                                                        AuthZoneFnIdentifier::Push,
+                                                    NativeMethodFnIdent::AuthZone(
+                                                        AuthZoneMethodFnIdent::Push,
                                                     ),
                                                 ),
                                             }),
@@ -690,8 +694,8 @@ impl TransactionProcessor {
                                             FnIdent::Method(MethodIdent {
                                                 receiver: Receiver::Ref(RENodeId::Worktop),
                                                 fn_ident: MethodFnIdent::Native(
-                                                    NativeFnIdentifier::Worktop(
-                                                        WorktopFnIdentifier::Put,
+                                                    NativeMethodFnIdent::Worktop(
+                                                        WorktopMethodFnIdent::Put,
                                                     ),
                                                 ),
                                             }),
@@ -780,8 +784,8 @@ impl TransactionProcessor {
                                             FnIdent::Method(MethodIdent {
                                                 receiver: Receiver::CurrentAuthZone,
                                                 fn_ident: MethodFnIdent::Native(
-                                                    NativeFnIdentifier::AuthZone(
-                                                        AuthZoneFnIdentifier::Push,
+                                                    NativeMethodFnIdent::AuthZone(
+                                                        AuthZoneMethodFnIdent::Push,
                                                     ),
                                                 ),
                                             }),
@@ -798,8 +802,8 @@ impl TransactionProcessor {
                                             FnIdent::Method(MethodIdent {
                                                 receiver: Receiver::Ref(RENodeId::Worktop),
                                                 fn_ident: MethodFnIdent::Native(
-                                                    NativeFnIdentifier::Worktop(
-                                                        WorktopFnIdentifier::Put,
+                                                    NativeMethodFnIdent::Worktop(
+                                                        WorktopMethodFnIdent::Put,
                                                     ),
                                                 ),
                                             }),
@@ -815,7 +819,7 @@ impl TransactionProcessor {
                         Instruction::PublishPackage { code, abi } => system_api
                             .invoke(
                                 FnIdent::Function(FunctionIdent::Native(
-                                    NativeFnIdentifier::Package(PackageFnIdentifier::Publish),
+                                    NativeFunctionFnIdent::Package(PackageFunctionFnIdent::Publish),
                                 )),
                                 ScryptoValue::from_typed(&PackagePublishInput {
                                     code: code.clone(),

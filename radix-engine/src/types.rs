@@ -21,11 +21,12 @@ pub use scrypto::component::{
 };
 pub use scrypto::constants::*;
 pub use scrypto::core::{
-    AuthZoneFnIdentifier, BucketFnIdentifier, ComponentFnIdentifier, Expression, FunctionIdent,
-    Level, NativeFnIdentifier, NetworkDefinition, PackageFnIdentifier, ProofFnIdentifier, Receiver,
-    ResourceManagerFnIdentifier, ScryptoActor, ScryptoRENode, SystemFnIdentifier,
-    SystemGetCurrentEpochInput, SystemGetTransactionHashInput, SystemSetEpochInput,
-    TransactionProcessorFnIdentifier, VaultFnIdentifier, WorktopFnIdentifier,
+    AuthZoneMethodFnIdent, BucketMethodFnIdent, ComponentMethodFnIdent, Expression, FunctionIdent,
+    Level, NativeMethodFnIdent, NetworkDefinition, PackageFunctionFnIdent, ProofMethodFnIdent,
+    Receiver, ResourceManagerMethodFnIdent, ScryptoActor, ScryptoRENode,
+    SystemGetCurrentEpochInput, SystemGetTransactionHashInput, SystemMethodFnIdent,
+    SystemSetEpochInput, TransactionProcessorFunctionFnIdent, VaultMethodFnIdent,
+    WorktopMethodFnIdent,
 };
 pub use scrypto::crypto::{
     EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey, EddsaEd25519Signature,

@@ -264,15 +264,15 @@ where
             let rtn = match Self::current_frame(&self.call_frames).actor.clone() {
                 REActor {
                     function_identifier: FnIdent::Function(FunctionIdent::Native(native_fn)),
-                } => NativeInterpreter::run(None, auth_zone_frame_id, native_fn, input, self),
+                } => NativeInterpreter::run_function(native_fn, input, self),
                 REActor {
                     function_identifier:
                         FnIdent::Method(MethodIdent {
                             receiver,
                             fn_ident: MethodFnIdent::Native(native_fn),
                         }),
-                } => NativeInterpreter::run(
-                    Some(receiver),
+                } => NativeInterpreter::run_method(
+                    receiver,
                     auth_zone_frame_id,
                     native_fn,
                     input,
@@ -513,10 +513,10 @@ where
                 let substate_id =
                     RENodeProperties::to_primary_substate_id(&fn_identifier, *node_id)?;
                 let is_lock_fee = matches!(node_id, RENodeId::Vault(..))
-                    && (fn_identifier.eq(&MethodFnIdent::Native(NativeFnIdentifier::Vault(
-                        VaultFnIdentifier::LockFee,
+                    && (fn_identifier.eq(&MethodFnIdent::Native(NativeMethodFnIdent::Vault(
+                        VaultMethodFnIdent::LockFee,
                     ))) || fn_identifier.eq(&MethodFnIdent::Native(
-                        NativeFnIdentifier::Vault(VaultFnIdentifier::LockContingentFee),
+                        NativeMethodFnIdent::Vault(VaultMethodFnIdent::LockContingentFee),
                     )));
                 if is_lock_fee && matches!(node_pointer, RENodePointer::Heap { .. }) {
                     return Err(RuntimeError::KernelError(KernelError::RENodeNotInTrack));

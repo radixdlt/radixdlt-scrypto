@@ -99,8 +99,8 @@ impl Runtime {
         let input = RadixEngineInput::Invoke(
             FnIdent::Method(MethodIdent {
                 receiver: Receiver::Ref(RENodeId::System(SYS_SYSTEM_COMPONENT)),
-                fn_ident: MethodFnIdent::Native(NativeFnIdentifier::System(
-                    SystemFnIdentifier::GetTransactionHash,
+                fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::System(
+                    SystemMethodFnIdent::GetTransactionHash,
                 )),
             }),
             scrypto_encode(&SystemGetTransactionHashInput {}),
@@ -113,8 +113,8 @@ impl Runtime {
         let input = RadixEngineInput::Invoke(
             FnIdent::Method(MethodIdent {
                 receiver: Receiver::Ref(RENodeId::System(SYS_SYSTEM_COMPONENT)),
-                fn_ident: MethodFnIdent::Native(NativeFnIdentifier::System(
-                    SystemFnIdentifier::GetCurrentEpoch,
+                fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::System(
+                    SystemMethodFnIdent::GetCurrentEpoch,
                 )),
             }),
             scrypto_encode(&SystemGetCurrentEpochInput {}),

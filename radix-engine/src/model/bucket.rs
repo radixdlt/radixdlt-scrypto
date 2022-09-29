@@ -16,7 +16,7 @@ pub enum BucketError {
     ResourceOperationError(ResourceOperationError),
     ProofError(ProofError),
     CouldNotCreateProof,
-    MethodNotFound(BucketFnIdentifier),
+    MethodNotFound(BucketMethodFnIdent),
 }
 
 /// A transient resource container.
@@ -153,7 +153,7 @@ impl Bucket {
 
     pub fn main<'s, Y, W, I, R>(
         bucket_id: BucketId,
-        bucket_fn: BucketFnIdentifier,
+        bucket_fn: BucketMethodFnIdent,
         args: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, InvokeError<BucketError>>
@@ -170,7 +170,7 @@ impl Bucket {
         let bucket0 = node_ref.bucket_mut();
 
         let rtn = match bucket_fn {
-            BucketFnIdentifier::Take => {
+            BucketMethodFnIdent::Take => {
                 let input: BucketTakeInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(BucketError::InvalidRequestData(e)))?;
                 let container = bucket0
@@ -184,7 +184,7 @@ impl Bucket {
                     bucket_id,
                 )))
             }
-            BucketFnIdentifier::TakeNonFungibles => {
+            BucketMethodFnIdent::TakeNonFungibles => {
                 let input: BucketTakeNonFungiblesInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(BucketError::InvalidRequestData(e)))?;
                 let container = bucket0
@@ -198,7 +198,7 @@ impl Bucket {
                     bucket_id,
                 )))
             }
-            BucketFnIdentifier::GetNonFungibleIds => {
+            BucketMethodFnIdent::GetNonFungibleIds => {
                 let _: BucketGetNonFungibleIdsInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(BucketError::InvalidRequestData(e)))?;
                 let ids = bucket0
@@ -206,7 +206,7 @@ impl Bucket {
                     .map_err(|e| InvokeError::Error(BucketError::ResourceOperationError(e)))?;
                 Ok(ScryptoValue::from_typed(&ids))
             }
-            BucketFnIdentifier::Put => {
+            BucketMethodFnIdent::Put => {
                 let input: BucketPutInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(BucketError::InvalidRequestData(e)))?;
                 let other_bucket = system_api
@@ -218,17 +218,17 @@ impl Bucket {
                     .map_err(|e| InvokeError::Error(BucketError::ResourceOperationError(e)))?;
                 Ok(ScryptoValue::from_typed(&()))
             }
-            BucketFnIdentifier::GetAmount => {
+            BucketMethodFnIdent::GetAmount => {
                 let _: BucketGetAmountInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(BucketError::InvalidRequestData(e)))?;
                 Ok(ScryptoValue::from_typed(&bucket0.total_amount()))
             }
-            BucketFnIdentifier::GetResourceAddress => {
+            BucketMethodFnIdent::GetResourceAddress => {
                 let _: BucketGetResourceAddressInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(BucketError::InvalidRequestData(e)))?;
                 Ok(ScryptoValue::from_typed(&bucket0.resource_address()))
             }
-            BucketFnIdentifier::CreateProof => {
+            BucketMethodFnIdent::CreateProof => {
                 let _: BucketCreateProofInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(BucketError::InvalidRequestData(e)))?;
                 let proof = bucket0
@@ -254,7 +254,7 @@ impl Bucket {
 
     pub fn consuming_main<'s, Y, W, I, R>(
         node_id: RENodeId,
-        bucket_fn: BucketFnIdentifier,
+        bucket_fn: BucketMethodFnIdent,
         args: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, InvokeError<BucketError>>
@@ -265,7 +265,7 @@ impl Bucket {
         R: FeeReserve,
     {
         match bucket_fn {
-            BucketFnIdentifier::Burn => {
+            BucketMethodFnIdent::Burn => {
                 let _: ConsumingBucketBurnInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(BucketError::InvalidRequestData(e)))?;
 

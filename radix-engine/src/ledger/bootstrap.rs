@@ -5,7 +5,9 @@ use crate::transaction::{ExecutionConfig, TransactionExecutor};
 use crate::types::ResourceMethodAuthKey::Withdraw;
 use crate::types::*;
 use crate::wasm::{DefaultWasmEngine, WasmInstrumenter};
-use scrypto::core::Blob;
+use scrypto::core::{
+    Blob, NativeFunctionFnIdent, ResourceManagerFunctionFnIdent, SystemFunctionFnIdent,
+};
 use scrypto::resource::Bucket;
 use transaction::model::{Executable, Instruction, SystemTransaction, TransactionManifest};
 use transaction::validation::{IdAllocator, IdSpace};
@@ -69,8 +71,8 @@ pub fn create_genesis() -> SystemTransaction {
 
         // TODO: Create token at a specific address
         Instruction::CallFunction {
-            fn_identifier: FunctionIdent::Native(NativeFnIdentifier::ResourceManager(
-                ResourceManagerFnIdentifier::Create,
+            fn_identifier: FunctionIdent::Native(NativeFunctionFnIdent::ResourceManager(
+                ResourceManagerFunctionFnIdent::Create,
             )),
             args: args!(
                 ResourceType::NonFungible,
@@ -91,8 +93,8 @@ pub fn create_genesis() -> SystemTransaction {
 
         // TODO: Create token at a specific address
         Instruction::CallFunction {
-            fn_identifier: FunctionIdent::Native(NativeFnIdentifier::ResourceManager(
-                ResourceManagerFnIdentifier::Create,
+            fn_identifier: FunctionIdent::Native(NativeFunctionFnIdent::ResourceManager(
+                ResourceManagerFunctionFnIdent::Create,
             )),
             args: args!(
                 ResourceType::NonFungible,
@@ -118,8 +120,8 @@ pub fn create_genesis() -> SystemTransaction {
         });
 
         Instruction::CallFunction {
-            fn_identifier: FunctionIdent::Native(NativeFnIdentifier::ResourceManager(
-                ResourceManagerFnIdentifier::Create,
+            fn_identifier: FunctionIdent::Native(NativeFunctionFnIdent::ResourceManager(
+                ResourceManagerFunctionFnIdent::Create,
             )),
             args: args!(
                 ResourceType::Fungible { divisibility: 18 },
@@ -148,8 +150,8 @@ pub fn create_genesis() -> SystemTransaction {
 
     let create_system_component = {
         Instruction::CallFunction {
-            fn_identifier: FunctionIdent::Native(NativeFnIdentifier::System(
-                SystemFnIdentifier::Create,
+            fn_identifier: FunctionIdent::Native(NativeFunctionFnIdent::System(
+                SystemFunctionFnIdent::Create,
             )),
             args: args!(),
         }

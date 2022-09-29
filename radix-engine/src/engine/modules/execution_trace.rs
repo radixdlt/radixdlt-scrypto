@@ -61,7 +61,7 @@ impl ExecutionTrace {
             }) = &actor.function_identifier
             {
                 match method_ident {
-                    MethodFnIdent::Native(NativeFnIdentifier::Vault(VaultFnIdentifier::Put)) => {
+                    MethodFnIdent::Native(NativeMethodFnIdent::Vault(VaultMethodFnIdent::Put)) => {
                         let decoded_input = scrypto_decode(&input.raw).map_err(|e| {
                             RuntimeError::ApplicationError(ApplicationError::VaultError(
                                 VaultError::InvalidRequestData(e),
@@ -75,7 +75,7 @@ impl ExecutionTrace {
                             next_owned_values,
                         )?;
                     }
-                    MethodFnIdent::Native(NativeFnIdentifier::Vault(VaultFnIdentifier::Take)) => {
+                    MethodFnIdent::Native(NativeMethodFnIdent::Vault(VaultMethodFnIdent::Take)) => {
                         let decoded_input = scrypto_decode(&input.raw).map_err(|e| {
                             RuntimeError::ApplicationError(ApplicationError::VaultError(
                                 VaultError::InvalidRequestData(e),

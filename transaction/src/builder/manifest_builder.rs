@@ -13,8 +13,8 @@ use scrypto::buffer::*;
 use scrypto::component::{ComponentAddress, PackageAddress};
 use scrypto::constants::*;
 use scrypto::core::{
-    Blob, BucketFnIdentifier, FunctionIdent, NativeFnIdentifier, NetworkDefinition, Receiver,
-    ResourceManagerFnIdentifier,
+    Blob, BucketMethodFnIdent, FunctionIdent, NativeFunctionFnIdent, NativeMethodFnIdent,
+    NetworkDefinition, Receiver, ResourceManagerFunctionFnIdent, ResourceManagerMethodFnIdent,
 };
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
@@ -320,8 +320,8 @@ impl ManifestBuilder {
         };
 
         self.add_instruction(Instruction::CallFunction {
-            fn_identifier: FunctionIdent::Native(NativeFnIdentifier::ResourceManager(
-                ResourceManagerFnIdentifier::Create,
+            fn_identifier: FunctionIdent::Native(NativeFunctionFnIdent::ResourceManager(
+                ResourceManagerFunctionFnIdent::Create,
             )),
             args: scrypto_encode(&input),
         });
@@ -331,7 +331,7 @@ impl ManifestBuilder {
 
     pub fn call_native_function(
         &mut self,
-        native_fn_identifier: NativeFnIdentifier,
+        native_fn_identifier: NativeFunctionFnIdent,
         args: Vec<u8>,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {
@@ -427,7 +427,7 @@ impl ManifestBuilder {
     pub fn call_native_method(
         &mut self,
         receiver: Receiver,
-        native_fn_identifier: NativeFnIdentifier,
+        native_fn_identifier: NativeMethodFnIdent,
         args: Vec<u8>,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
@@ -525,8 +525,8 @@ impl ManifestBuilder {
 
         let mint_params: Option<MintParams> = Option::None;
         self.add_instruction(Instruction::CallFunction {
-            fn_identifier: FunctionIdent::Native(NativeFnIdentifier::ResourceManager(
-                ResourceManagerFnIdentifier::Create,
+            fn_identifier: FunctionIdent::Native(NativeFunctionFnIdent::ResourceManager(
+                ResourceManagerFunctionFnIdent::Create,
             )),
             args: args!(
                 ResourceType::Fungible { divisibility: 18 },
@@ -548,8 +548,8 @@ impl ManifestBuilder {
         resource_auth.insert(Withdraw, (rule!(allow_all), LOCKED));
 
         self.add_instruction(Instruction::CallFunction {
-            fn_identifier: FunctionIdent::Native(NativeFnIdentifier::ResourceManager(
-                ResourceManagerFnIdentifier::Create,
+            fn_identifier: FunctionIdent::Native(NativeFunctionFnIdent::ResourceManager(
+                ResourceManagerFunctionFnIdent::Create,
             )),
             args: args!(
                 ResourceType::Fungible { divisibility: 18 },
@@ -583,8 +583,8 @@ impl ManifestBuilder {
         let mint_params: Option<MintParams> = Option::None;
 
         self.add_instruction(Instruction::CallFunction {
-            fn_identifier: FunctionIdent::Native(NativeFnIdentifier::ResourceManager(
-                ResourceManagerFnIdentifier::Create,
+            fn_identifier: FunctionIdent::Native(NativeFunctionFnIdent::ResourceManager(
+                ResourceManagerFunctionFnIdent::Create,
             )),
             args: args!(
                 ResourceType::Fungible { divisibility: 0 },
@@ -606,8 +606,8 @@ impl ManifestBuilder {
         resource_auth.insert(Withdraw, (rule!(allow_all), LOCKED));
 
         self.add_instruction(Instruction::CallFunction {
-            fn_identifier: FunctionIdent::Native(NativeFnIdentifier::ResourceManager(
-                ResourceManagerFnIdentifier::Create,
+            fn_identifier: FunctionIdent::Native(NativeFunctionFnIdent::ResourceManager(
+                ResourceManagerFunctionFnIdent::Create,
             )),
             args: args!(
                 ResourceType::Fungible { divisibility: 0 },
@@ -626,8 +626,8 @@ impl ManifestBuilder {
         self.add_instruction(Instruction::CallMethod {
             method_identifier: MethodIdentifier::Native {
                 receiver: Receiver::Ref(RENodeId::ResourceManager(resource_address)),
-                native_fn_identifier: NativeFnIdentifier::ResourceManager(
-                    ResourceManagerFnIdentifier::Mint,
+                native_fn_identifier: NativeMethodFnIdent::ResourceManager(
+                    ResourceManagerMethodFnIdent::Mint,
                 ),
             },
             args: scrypto_encode(&ResourceManagerMintInput {
@@ -643,7 +643,9 @@ impl ManifestBuilder {
             builder
                 .add_instruction(Instruction::CallMethod {
                     method_identifier: MethodIdentifier::Native {
-                        native_fn_identifier: NativeFnIdentifier::Bucket(BucketFnIdentifier::Burn),
+                        native_fn_identifier: NativeMethodFnIdent::Bucket(
+                            BucketMethodFnIdent::Burn,
+                        ),
                         receiver: Receiver::Consumed(RENodeId::Bucket(bucket_id)),
                     },
                     args: args!(),
@@ -662,8 +664,8 @@ impl ManifestBuilder {
                 builder
                     .add_instruction(Instruction::CallMethod {
                         method_identifier: MethodIdentifier::Native {
-                            native_fn_identifier: NativeFnIdentifier::Bucket(
-                                BucketFnIdentifier::Burn,
+                            native_fn_identifier: NativeMethodFnIdent::Bucket(
+                                BucketMethodFnIdent::Burn,
                             ),
                             receiver: Receiver::Consumed(RENodeId::Bucket(bucket_id)),
                         },
