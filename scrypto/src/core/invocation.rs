@@ -17,6 +17,14 @@ pub enum Receiver {
     Ref(RENodeId),
 }
 
+impl Receiver {
+    pub fn node_id(&self) -> RENodeId {
+        match self {
+            Receiver::Consumed(node_id) | Receiver::Ref(node_id) => *node_id
+        }
+    }
+}
+
 #[derive(Debug, Clone, Eq, PartialEq, Hash, TypeId, Encode, Decode)]
 pub enum FunctionIdent {
     Scrypto {
