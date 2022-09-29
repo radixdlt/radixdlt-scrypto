@@ -328,7 +328,7 @@ impl ResourceManager {
                     system_api
                         .node_create(HeapRENode::ResourceManager(
                             resource_manager,
-                            Some(non_fungibles),
+                             non_fungibles,
                         ))
                         .map_err(InvokeError::Downstream)?
                 } else {
@@ -349,7 +349,7 @@ impl ResourceManager {
                         }
                     }
                     system_api
-                        .node_create(HeapRENode::ResourceManager(resource_manager, None))
+                        .node_create(HeapRENode::ResourceManager(resource_manager, HashMap::new()))
                         .map_err(InvokeError::Downstream)?
                 };
                 let resource_address = resource_node_id.clone().into();

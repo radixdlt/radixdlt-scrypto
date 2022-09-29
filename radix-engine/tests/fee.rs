@@ -169,8 +169,8 @@ where
             if let Some(KeyValueStoreEntrySubstate(Some(value))) = test_runner
                 .inspect_key_value_entry(kv_store_id.clone(), scrypto_encode(&resource_address))
             {
-                let kv_entry_value = ScryptoValue::from_slice(&value).unwrap();
-                let vault_id = kv_entry_value.vault_ids.iter().next().unwrap();
+                let key_value_store_entry_value = ScryptoValue::from_slice(&value).unwrap();
+                let vault_id = key_value_store_entry_value.vault_ids.iter().next().unwrap();
                 let vault = test_runner.inspect_vault(vault_id.clone()).unwrap();
                 return vault.0.amount();
             }
