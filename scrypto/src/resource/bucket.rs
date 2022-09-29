@@ -3,11 +3,13 @@ use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto::core::MethodIdent;
+use scrypto::core::{MethodFnIdent, MethodIdent};
 
 use crate::abi::*;
 use crate::buffer::scrypto_encode;
-use crate::core::{BucketFnIdentifier, FnIdent, FunctionIdent, NativeFnIdentifier, Receiver, ResourceManagerFnIdentifier};
+use crate::core::{
+    BucketFnIdentifier, FnIdent, NativeFnIdentifier, Receiver, ResourceManagerFnIdentifier,
+};
 use crate::engine::types::RENodeId;
 use crate::engine::{api::*, call_engine, types::BucketId};
 use crate::math::*;
@@ -52,13 +54,13 @@ pub struct Bucket(pub BucketId);
 impl Bucket {
     /// Creates a new bucket to hold resources of the given definition.
     pub fn new(resource_address: ResourceAddress) -> Self {
-        let input = RadixEngineInput::Invoke(FnIdent::Method(MethodIdent {
-            receiver: Receiver::Ref(RENodeId::ResourceManager(resource_address)),
-            fn_ident: FunctionIdent::Native(NativeFnIdentifier::ResourceManager(
-            ResourceManagerFnIdentifier::CreateBucket,
-            )),
-        }),
-
+        let input = RadixEngineInput::Invoke(
+            FnIdent::Method(MethodIdent {
+                receiver: Receiver::Ref(RENodeId::ResourceManager(resource_address)),
+                fn_ident: MethodFnIdent::Native(NativeFnIdentifier::ResourceManager(
+                    ResourceManagerFnIdentifier::CreateBucket,
+                )),
+            }),
             scrypto_encode(&ResourceManagerCreateBucketInput {}),
         );
         call_engine(input)
@@ -74,11 +76,13 @@ impl Bucket {
     }
 
     fn take_internal(&mut self, amount: Decimal) -> Self {
-        let input = RadixEngineInput::Invoke(FnIdent::Method(MethodIdent {
-            receiver: Receiver::Ref(RENodeId::Bucket(self.0)),
-            fn_ident: FunctionIdent::Native(NativeFnIdentifier::Bucket(BucketFnIdentifier::Take)),
-        }),
-
+        let input = RadixEngineInput::Invoke(
+            FnIdent::Method(MethodIdent {
+                receiver: Receiver::Ref(RENodeId::Bucket(self.0)),
+                fn_ident: MethodFnIdent::Native(NativeFnIdentifier::Bucket(
+                    BucketFnIdentifier::Take,
+                )),
+            }),
             scrypto_encode(&BucketTakeInput { amount }),
         );
         call_engine(input)

@@ -60,13 +60,12 @@ impl Runtime {
         function: S,
         args: Vec<u8>,
     ) -> T {
-        let input = RadixEngineInput::Invoke(FnIdent::Function(
-            FunctionIdent::Scrypto {
+        let input = RadixEngineInput::Invoke(
+            FnIdent::Function(FunctionIdent::Scrypto {
                 package_address,
                 blueprint_name: blueprint_name.as_ref().to_owned(),
                 ident: function.as_ref().to_string(),
-            }
-        ),
+            }),
             args,
         );
         call_engine(input)
@@ -81,15 +80,15 @@ impl Runtime {
         let input = RadixEngineInput::SubstateRead(SubstateId::ComponentInfo(component_address));
         let (package_address, blueprint_name): (PackageAddress, String) = call_engine(input);
 
-        let input = RadixEngineInput::Invoke(FnIdent::Method(MethodIdent {
-            receiver: Receiver::Ref(RENodeId::Component(component_address)),
-            fn_ident: FunctionIdent::Scrypto {
-            package_address,
-            blueprint_name,
-            ident: method.as_ref().to_string(),
-        },
-        }),
-
+        let input = RadixEngineInput::Invoke(
+            FnIdent::Method(MethodIdent {
+                receiver: Receiver::Ref(RENodeId::Component(component_address)),
+                fn_ident: MethodFnIdent::Scrypto {
+                    package_address,
+                    blueprint_name,
+                    ident: method.as_ref().to_string(),
+                },
+            }),
             args,
         );
         call_engine(input)
@@ -97,13 +96,13 @@ impl Runtime {
 
     /// Returns the transaction hash.
     pub fn transaction_hash() -> Hash {
-        let input = RadixEngineInput::Invoke(FnIdent::Method(MethodIdent {
-            receiver: Receiver::Ref(RENodeId::System(SYS_SYSTEM_COMPONENT)),
-            fn_ident: FunctionIdent::Native(NativeFnIdentifier::System(
-            SystemFnIdentifier::GetTransactionHash,
-            )),
-        }),
-
+        let input = RadixEngineInput::Invoke(
+            FnIdent::Method(MethodIdent {
+                receiver: Receiver::Ref(RENodeId::System(SYS_SYSTEM_COMPONENT)),
+                fn_ident: MethodFnIdent::Native(NativeFnIdentifier::System(
+                    SystemFnIdentifier::GetTransactionHash,
+                )),
+            }),
             scrypto_encode(&SystemGetTransactionHashInput {}),
         );
         call_engine(input)
@@ -111,13 +110,13 @@ impl Runtime {
 
     /// Returns the current epoch number.
     pub fn current_epoch() -> u64 {
-        let input = RadixEngineInput::Invoke(FnIdent::Method(MethodIdent {
-            receiver: Receiver::Ref(RENodeId::System(SYS_SYSTEM_COMPONENT)),
-            fn_ident: FunctionIdent::Native(NativeFnIdentifier::System(
-            SystemFnIdentifier::GetCurrentEpoch,
-            )),
-        }),
-
+        let input = RadixEngineInput::Invoke(
+            FnIdent::Method(MethodIdent {
+                receiver: Receiver::Ref(RENodeId::System(SYS_SYSTEM_COMPONENT)),
+                fn_ident: MethodFnIdent::Native(NativeFnIdentifier::System(
+                    SystemFnIdentifier::GetCurrentEpoch,
+                )),
+            }),
             scrypto_encode(&SystemGetCurrentEpochInput {}),
         );
         call_engine(input)

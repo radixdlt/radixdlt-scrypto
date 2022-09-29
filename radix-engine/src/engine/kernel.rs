@@ -1,4 +1,4 @@
-use scrypto::core::{FnIdent, MethodIdent};
+use scrypto::core::{FnIdent, MethodFnIdent, MethodIdent};
 use transaction::errors::IdAllocationError;
 use transaction::model::Instruction;
 use transaction::validation::*;
@@ -263,14 +263,13 @@ where
         let output = {
             let rtn = match Self::current_frame(&self.call_frames).actor.clone() {
                 REActor {
-                    function_identifier:
-                        FnIdent::Function(FunctionIdent::Native(native_fn)),
+                    function_identifier: FnIdent::Function(FunctionIdent::Native(native_fn)),
                 } => NativeInterpreter::run(None, auth_zone_frame_id, native_fn, input, self),
                 REActor {
                     function_identifier:
                         FnIdent::Method(MethodIdent {
                             receiver,
-                            fn_ident: FunctionIdent::Native(native_fn),
+                            fn_ident: MethodFnIdent::Native(native_fn),
                         }),
                 } => NativeInterpreter::run(
                     Some(receiver),
@@ -292,7 +291,7 @@ where
                         FnIdent::Method(MethodIdent {
                             receiver: _,
                             fn_ident:
-                                FunctionIdent::Scrypto {
+                                MethodFnIdent::Scrypto {
                                     package_address,
                                     blueprint_name,
                                     ident,
@@ -328,8 +327,7 @@ where
                             .to_string();
                         let scrypto_actor = match &Self::current_frame(&self.call_frames).actor {
                             REActor {
-                                function_identifier:
-                                    FnIdent::Method(MethodIdent { receiver, .. }),
+                                function_identifier: FnIdent::Method(MethodIdent { receiver, .. }),
                             } => match receiver {
                                 Receiver::Ref(RENodeId::Component(component_address)) => {
                                     ScryptoActor::Component(
@@ -478,11 +476,11 @@ where
             FnIdent::Function(..) => panic!("Should not get here"),
             FnIdent::Method(MethodIdent {
                 receiver: Receiver::Ref(node_id),
-                                           fn_ident: fn_identifier,
+                fn_ident: fn_identifier,
             })
             | FnIdent::Method(MethodIdent {
                 receiver: Receiver::Consumed(node_id),
-                                             fn_ident: fn_identifier,
+                fn_ident: fn_identifier,
             }) => {
                 // Find node
                 let node_pointer = {
@@ -515,11 +513,11 @@ where
                 let substate_id =
                     RENodeProperties::to_primary_substate_id(&fn_identifier, *node_id)?;
                 let is_lock_fee = matches!(node_id, RENodeId::Vault(..))
-                    && (fn_identifier.eq(&FunctionIdent::Native(NativeFnIdentifier::Vault(
+                    && (fn_identifier.eq(&MethodFnIdent::Native(NativeFnIdentifier::Vault(
                         VaultFnIdentifier::LockFee,
-                    ))) || fn_identifier.eq(&FunctionIdent::Native(NativeFnIdentifier::Vault(
-                        VaultFnIdentifier::LockContingentFee,
-                    ))));
+                    ))) || fn_identifier.eq(&MethodFnIdent::Native(
+                        NativeFnIdentifier::Vault(VaultFnIdentifier::LockContingentFee),
+                    )));
                 if is_lock_fee && matches!(node_pointer, RENodePointer::Heap { .. }) {
                     return Err(RuntimeError::KernelError(KernelError::RENodeNotInTrack));
                 }
@@ -534,11 +532,13 @@ where
                 // Load actor
                 match &fn_ident {
                     FnIdent::Method(MethodIdent {
-                        fn_ident: FunctionIdent::Scrypto {
-                            package_address,
-                            blueprint_name,
-                            ..
-                        }, ..
+                        fn_ident:
+                            MethodFnIdent::Scrypto {
+                                package_address,
+                                blueprint_name,
+                                ..
+                            },
+                        ..
                     }) => match node_id {
                         RENodeId::Component(component_address) => {
                             let temporary_substate_id =
@@ -643,7 +643,11 @@ where
 
                 // Lock Resource Managers in request
                 // TODO: Remove when references cleaned up
-                if let FnIdent::Method(MethodIdent { fn_ident: FunctionIdent::Native(..), .. }) = fn_ident {
+                if let FnIdent::Method(MethodIdent {
+                    fn_ident: MethodFnIdent::Native(..),
+                    ..
+                }) = fn_ident
+                {
                     for resource_address in &input.resource_addresses {
                         let resource_substate_id =
                             SubstateId::ResourceManager(resource_address.clone());
@@ -690,21 +694,17 @@ where
                 )?;
 
                 match &fn_ident {
-                    FnIdent::Method(MethodIdent {
-                        receiver,
-                                                   fn_ident: fn_identifier,
-                    }) => {
+                    FnIdent::Method(method_ident) => {
                         // Check method authorization
                         AuthModule::receiver_auth(
-                            &fn_identifier,
-                            receiver.clone(),
+                            method_ident.clone(),
                             &input,
                             node_pointer.clone(),
                             &mut self.call_frames,
                             &mut self.track,
                         )?;
 
-                        match &receiver {
+                        match &method_ident.receiver {
                             Receiver::Consumed(..) => {
                                 let heap_node = Self::current_frame_mut(&mut self.call_frames)
                                     .owned_heap_nodes
@@ -945,7 +945,9 @@ where
                     KernelError::FnIdentNotFound(fn_ident.clone()),
                 ))?;
                 if !fn_abi.input.matches(&input.dom) {
-                    return Err(RuntimeError::KernelError(KernelError::InvalidFnInput2(fn_ident.clone())));
+                    return Err(RuntimeError::KernelError(KernelError::InvalidFnInput2(
+                        fn_ident.clone(),
+                    )));
                 }
             }
             _ => {}
@@ -1021,7 +1023,7 @@ where
 
         match &fn_ident {
             FnIdent::Function(fn_identifier) => {
-                AuthModule::function_auth(&fn_identifier, &mut self.call_frames)?;
+                AuthModule::function_auth(fn_identifier.clone(), &mut self.call_frames)?;
             }
             _ => {}
         }

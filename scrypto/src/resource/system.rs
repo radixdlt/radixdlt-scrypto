@@ -47,10 +47,10 @@ impl ResourceSystem {
         access_rules: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
         mint_params: Option<MintParams>,
     ) -> (ResourceAddress, Option<Bucket>) {
-        let input = RadixEngineInput::Invoke(FnIdent::Function(FunctionIdent::Native(NativeFnIdentifier::ResourceManager(
-            ResourceManagerFnIdentifier::Create,
-        ))),
-
+        let input = RadixEngineInput::Invoke(
+            FnIdent::Function(FunctionIdent::Native(NativeFnIdentifier::ResourceManager(
+                ResourceManagerFnIdentifier::Create,
+            ))),
             scrypto_encode(&ResourceManagerCreateInput {
                 resource_type,
                 metadata,

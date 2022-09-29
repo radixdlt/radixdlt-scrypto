@@ -1,5 +1,5 @@
 use crate::types::*;
-use scrypto::core::{FnIdent, MethodIdent};
+use scrypto::core::{FnIdent, MethodFnIdent, MethodIdent};
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct REActor {
@@ -11,7 +11,7 @@ impl REActor {
         match &self.function_identifier {
             FnIdent::Function(FunctionIdent::Native(..))
             | FnIdent::Method(MethodIdent {
-                fn_ident: FunctionIdent::Native(..),
+                fn_ident: MethodFnIdent::Native(..),
                 ..
             }) => true,
             FnIdent::Function(FunctionIdent::Scrypto { .. }) => match substate_id {
@@ -21,7 +21,7 @@ impl REActor {
             },
             FnIdent::Method(MethodIdent {
                 receiver: Receiver::Ref(RENodeId::Component(component_address)),
-                fn_ident: FunctionIdent::Scrypto { .. },
+                fn_ident: MethodFnIdent::Scrypto { .. },
             }) => match substate_id {
                 SubstateId::KeyValueStoreEntry(..) => true,
                 SubstateId::ComponentInfo(..) => true,
@@ -36,7 +36,7 @@ impl REActor {
         match &self.function_identifier {
             FnIdent::Function(FunctionIdent::Native(..))
             | FnIdent::Method(MethodIdent {
-                fn_ident: FunctionIdent::Native(..),
+                fn_ident: MethodFnIdent::Native(..),
                 ..
             }) => true,
             FnIdent::Function(FunctionIdent::Scrypto { .. }) => match substate_id {
@@ -45,7 +45,7 @@ impl REActor {
             },
             FnIdent::Method(MethodIdent {
                 receiver: Receiver::Ref(RENodeId::Component(component_address)),
-                fn_ident: FunctionIdent::Scrypto { .. },
+                fn_ident: MethodFnIdent::Scrypto { .. },
             }) => match substate_id {
                 SubstateId::KeyValueStoreEntry(..) => true,
                 SubstateId::ComponentState(addr) => addr.eq(component_address),

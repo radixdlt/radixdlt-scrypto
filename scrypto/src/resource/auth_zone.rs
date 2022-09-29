@@ -1,8 +1,8 @@
 use sbor::rust::collections::BTreeSet;
 use sbor::*;
-use scrypto::core::{MethodIdent, NativeFnIdentifier, FnIdent};
+use scrypto::core::{FnIdent, MethodFnIdent, MethodIdent, NativeFnIdentifier};
 
-use crate::core::{AuthZoneFnIdentifier, FunctionIdent, Receiver};
+use crate::core::{AuthZoneFnIdentifier, Receiver};
 use crate::engine::{api::*, call_engine};
 use crate::math::Decimal;
 use crate::native_functions;
@@ -77,10 +77,13 @@ impl ComponentAuthZone {
 
     pub fn push<P: Into<Proof>>(proof: P) {
         let proof: Proof = proof.into();
-        let input = RadixEngineInput::Invoke(FnIdent::Method(MethodIdent {
-            receiver: Receiver::CurrentAuthZone,
-            fn_ident: FunctionIdent::Native(NativeFnIdentifier::AuthZone(AuthZoneFnIdentifier::Push)),
-        }),
+        let input = RadixEngineInput::Invoke(
+            FnIdent::Method(MethodIdent {
+                receiver: Receiver::CurrentAuthZone,
+                fn_ident: MethodFnIdent::Native(NativeFnIdentifier::AuthZone(
+                    AuthZoneFnIdentifier::Push,
+                )),
+            }),
             scrypto::buffer::scrypto_encode(&(AuthZonePushInput { proof })),
         );
         call_engine(input)

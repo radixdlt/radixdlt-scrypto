@@ -19,7 +19,7 @@ use radix_engine::wasm::{
     WasmMeteringParams,
 };
 use sbor::describe::*;
-use scrypto::core::{FnIdent, MethodIdent};
+use scrypto::core::{FnIdent, MethodFnIdent, MethodIdent};
 use scrypto::dec;
 use scrypto::math::Decimal;
 use transaction::builder::ManifestBuilder;
@@ -649,7 +649,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
                     .invoke(
                         FnIdent::Method(MethodIdent {
                             receiver: Receiver::Ref(RENodeId::System(SYS_SYSTEM_COMPONENT)),
-                            fn_ident: FunctionIdent::Native(NativeFnIdentifier::System(
+                            fn_ident: MethodFnIdent::Native(NativeFnIdentifier::System(
                                 SystemFnIdentifier::SetEpoch,
                             )),
                         }),
@@ -666,7 +666,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
                 .invoke(
                     FnIdent::Method(MethodIdent {
                         receiver: Receiver::Ref(RENodeId::System(SYS_SYSTEM_COMPONENT)),
-                        fn_ident: FunctionIdent::Native(NativeFnIdentifier::System(
+                        fn_ident: MethodFnIdent::Native(NativeFnIdentifier::System(
                             SystemFnIdentifier::GetCurrentEpoch,
                         )),
                     }),

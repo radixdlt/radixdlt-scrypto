@@ -13,10 +13,7 @@ pub enum FnIdent {
 
 impl FnIdent {
     pub fn fn_identifier(&self) -> &FunctionIdent {
-        match self {
-            FnIdent::Function(fn_identifier) => &fn_identifier,
-            FnIdent::Method(MethodIdent { fn_ident: fn_identifier, .. }) => &fn_identifier,
-        }
+        panic!("");
     }
 }
 
@@ -37,7 +34,6 @@ pub enum FunctionIdent {
     Native(NativeFnIdentifier),
 }
 
-/*
 #[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
 pub enum MethodFnIdent {
     Scrypto {
@@ -47,12 +43,11 @@ pub enum MethodFnIdent {
     },
     Native(NativeFnIdentifier),
 }
- */
 
 #[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
 pub struct MethodIdent {
     pub receiver: Receiver,
-    pub fn_ident: FunctionIdent,
+    pub fn_ident: MethodFnIdent,
 }
 
 #[derive(

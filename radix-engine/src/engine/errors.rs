@@ -6,7 +6,7 @@ use crate::model::*;
 use crate::types::*;
 use crate::wasm::WasmError;
 use sbor::*;
-use scrypto::core::FnIdent;
+use scrypto::core::{FnIdent, MethodFnIdent};
 
 use super::NodeToSubstateFailure;
 use super::TrackError;
@@ -46,6 +46,7 @@ pub enum KernelError {
     InvokeMethodInvalidReferenceReturn(RENodeId),
     MaxCallDepthLimitReached,
     FnIdentNotFound(FnIdent),
+    MethodFnNotFound(MethodFnIdent),
     MethodNotFound(FunctionIdent),
     InvalidFnInput2(FnIdent),
     InvalidFnInput { fn_identifier: FunctionIdent },
@@ -101,7 +102,11 @@ pub enum ModuleError {
         authorization: MethodAuthorization,
         error: MethodAuthorizationError,
     },
-
+    AuthError {
+        fn_ident: FnIdent,
+        authorization: MethodAuthorization,
+        error: MethodAuthorizationError,
+    },
     CostingError(FeeReserveError),
 }
 

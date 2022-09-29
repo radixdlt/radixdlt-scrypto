@@ -182,7 +182,9 @@ where
         let input: RadixEngineInput = scrypto_decode(&input.raw)
             .map_err(|_| InvokeError::Error(WasmError::InvalidRadixEngineInput))?;
         match input {
-            RadixEngineInput::Invoke(fn_ident, input_bytes) => self.handle_invoke(fn_ident, input_bytes),
+            RadixEngineInput::Invoke(fn_ident, input_bytes) => {
+                self.handle_invoke(fn_ident, input_bytes)
+            }
             RadixEngineInput::RENodeGlobalize(node_id) => self.handle_node_globalize(node_id),
             RadixEngineInput::RENodeCreate(node) => self.handle_node_create(node),
             RadixEngineInput::SubstateRead(substate_id) => self.handle_substate_read(substate_id),

@@ -2,7 +2,7 @@ use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::*;
 use crate::types::*;
-use scrypto::core::{FnIdent, MethodIdent};
+use scrypto::core::{FnIdent, MethodFnIdent, MethodIdent};
 
 #[derive(Debug, Clone, PartialEq, TypeId, Encode, Decode)]
 pub struct ResourceChange {
@@ -41,7 +41,7 @@ impl ExecutionTrace {
         next_owned_values: &HashMap<RENodeId, HeapRootRENode>,
     ) -> Result<(), RuntimeError> {
         let method_ident = match fn_ident {
-            FnIdent::Method(MethodIdent { fn_ident, ..}) => fn_ident,
+            FnIdent::Method(MethodIdent { fn_ident, .. }) => fn_ident,
             _ => return Ok(()),
         };
 
@@ -61,7 +61,7 @@ impl ExecutionTrace {
             }) = &actor.function_identifier
             {
                 match method_ident {
-                    FunctionIdent::Native(NativeFnIdentifier::Vault(VaultFnIdentifier::Put)) => {
+                    MethodFnIdent::Native(NativeFnIdentifier::Vault(VaultFnIdentifier::Put)) => {
                         let decoded_input = scrypto_decode(&input.raw).map_err(|e| {
                             RuntimeError::ApplicationError(ApplicationError::VaultError(
                                 VaultError::InvalidRequestData(e),
@@ -75,7 +75,7 @@ impl ExecutionTrace {
                             next_owned_values,
                         )?;
                     }
-                    FunctionIdent::Native(NativeFnIdentifier::Vault(VaultFnIdentifier::Take)) => {
+                    MethodFnIdent::Native(NativeFnIdentifier::Vault(VaultFnIdentifier::Take)) => {
                         let decoded_input = scrypto_decode(&input.raw).map_err(|e| {
                             RuntimeError::ApplicationError(ApplicationError::VaultError(
                                 VaultError::InvalidRequestData(e),
