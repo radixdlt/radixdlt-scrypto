@@ -1,4 +1,4 @@
-use crate::engine::{HeapRENode, SystemApi};
+use crate::engine::{HeapRENode, SystemApi, Track};
 use crate::fee::FeeReserve;
 use crate::model::{
     Bucket, InvokeError, MethodAuthorization, NonFungible, NonFungibleSubstate, Resource,
@@ -42,6 +42,29 @@ pub struct ResourceManager {
 }
 
 impl ResourceManager {
+    pub fn get_non_fungible(&mut self, id: &NonFungibleId) -> NonFungibleSubstate {
+        self.loaded_non_fungibles
+            .get(id)
+            .cloned()
+            .unwrap_or(NonFungibleSubstate(None)) // virtualization
+    }
+
+    pub fn get_non_fungible_with_track<'s, R: FeeReserve>(
+        &self,
+        id: &NonFungibleId,
+        resource_address: ResourceAddress,
+        track: &mut Track<'s, R>,
+    ) -> NonFungibleSubstate {
+        if !self.loaded_non_fungibles.contains_key(id) {
+            let substate =
+                track.read_key_value(SubstateId::NonFungibleSpace(resource_address), id.to_vec());
+            self.loaded_non_fungibles
+                .insert(id.clone(), substate.into());
+        }
+
+        self.loaded_non_fungibles.get(id).unwrap().clone()
+    }
+
     pub fn new(
         resource_type: ResourceType,
         metadata: HashMap<String, String>,
