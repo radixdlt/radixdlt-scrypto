@@ -8,6 +8,7 @@ impl RENodeProperties {
     /// Specifies whether an RENode may globalize as the root node or not
     pub fn can_globalize(node_id: RENodeId) -> bool {
         match node_id {
+            RENodeId::AuthZone(..) => false,
             RENodeId::Bucket(..) => false,
             RENodeId::Proof(..) => false,
             RENodeId::KeyValueStore(..) => false,
@@ -26,6 +27,7 @@ impl RENodeProperties {
     ) -> Result<SubstateId, RuntimeError> {
         let substate_id = match &method_ident {
             MethodFnIdent::Native(..) => match node_id {
+                RENodeId::AuthZone(auth_zone_id) => SubstateId::AuthZone(auth_zone_id),
                 RENodeId::Bucket(bucket_id) => SubstateId::Bucket(bucket_id),
                 RENodeId::Proof(proof_id) => SubstateId::Proof(proof_id),
                 RENodeId::ResourceManager(resource_address) => {
@@ -89,11 +91,13 @@ impl SubstateProperties {
             SubstateId::Bucket(bucket_id) => RENodeId::Bucket(*bucket_id),
             SubstateId::Proof(proof_id) => RENodeId::Proof(*proof_id),
             SubstateId::Worktop => RENodeId::Worktop,
+            SubstateId::AuthZone(auth_zone_id) => RENodeId::AuthZone(*auth_zone_id),
         }
     }
 
     pub fn can_own_nodes(substate_id: &SubstateId) -> bool {
         match substate_id {
+            SubstateId::AuthZone(..) => false,
             SubstateId::KeyValueStoreEntry(..) => true,
             SubstateId::ComponentState(..) => true,
             SubstateId::ComponentInfo(..) => false,

@@ -15,7 +15,6 @@ pub enum FnIdent {
 pub enum Receiver {
     Consumed(RENodeId),
     Ref(RENodeId),
-    CurrentAuthZone,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, TypeId, Encode, Decode)]
@@ -97,6 +96,7 @@ pub enum AuthZoneMethodFnIdent {
     CreateProofByAmount,
     CreateProofByIds,
     Clear,
+    Drain,
 }
 
 #[derive(

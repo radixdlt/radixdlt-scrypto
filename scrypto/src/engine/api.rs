@@ -32,10 +32,14 @@ macro_rules! native_functions {
 #[derive(Debug, TypeId, Encode, Decode)]
 pub enum RadixEngineInput {
     Invoke(FnIdent, Vec<u8>),
+
     RENodeCreate(ScryptoRENode),
     RENodeGlobalize(RENodeId),
+    GetOwnedRENodeIds(),
+
     SubstateRead(SubstateId),
     SubstateWrite(SubstateId, Vec<u8>),
+
     GetActor(),
     EmitLog(Level, String),
     GenerateUuid(),
