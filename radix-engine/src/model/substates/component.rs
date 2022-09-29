@@ -3,20 +3,12 @@ use crate::types::*;
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct ComponentStateSubstate {
-    pub state: Vec<u8>,
+    pub raw: Vec<u8>,
 }
 
 impl ComponentStateSubstate {
-    pub fn new(state: Vec<u8>) -> Self {
-        ComponentStateSubstate { state }
-    }
-
-    pub fn state(&self) -> &[u8] {
-        &self.state
-    }
-
-    pub fn set_state(&mut self, new_state: Vec<u8>) {
-        self.state = new_state;
+    pub fn new(raw: Vec<u8>) -> Self {
+        ComponentStateSubstate { raw }
     }
 }
 
@@ -46,7 +38,7 @@ impl ComponentInfoSubstate {
         schema: &Type,
         method_name: &str,
     ) -> Vec<MethodAuthorization> {
-        let data = ScryptoValue::from_slice(&component_state.state)
+        let data = ScryptoValue::from_slice(&component_state.raw)
             .expect("Failed to decode component state");
 
         let mut authorizations = Vec::new();

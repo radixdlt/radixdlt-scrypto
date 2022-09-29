@@ -399,14 +399,14 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
         match self {
             RENodeRefMut::Stack(re_value, id) => {
                 let component = re_value.get_node_mut(id.as_ref()).component_mut();
-                component.state = ComponentStateSubstate { state: value.raw };
+                component.state = Some(ComponentStateSubstate { raw: value.raw });
                 for (id, val) in to_store {
                     re_value.insert_non_root_nodes(val.to_nodes(id));
                 }
             }
             RENodeRefMut::Track(track, node_id) => {
                 let component = track.borrow_node_mut(node_id).component_mut();
-                component.state = ComponentStateSubstate { state: value.raw };
+                component.state = Some(ComponentStateSubstate { raw: value.raw });
                 for (id, val) in to_store {
                     for (id, node) in val.to_nodes(id) {
                         track.put_node(id, node);

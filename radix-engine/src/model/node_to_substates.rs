@@ -24,11 +24,8 @@ pub fn node_to_substates(node_id: RENodeId, node: HeapRENode) -> HashMap<Substat
                 RENodeId::KeyValueStore(store_id) => store_id,
                 _ => panic!("Unexpected"),
             };
-            for (k, v) in store.store {
-                substates.insert(
-                    SubstateId::KeyValueStoreEntry(store_id, k),
-                    Substate::KeyValueStoreEntry(KeyValueStoreEntrySubstate(Some(v.raw))),
-                );
+            for (k, v) in store.loaded_entries {
+                substates.insert(SubstateId::KeyValueStoreEntry(store_id, k), v.into());
             }
         }
         HeapRENode::Component(component) => {
@@ -37,7 +34,9 @@ pub fn node_to_substates(node_id: RENodeId, node: HeapRENode) -> HashMap<Substat
                 _ => panic!("Unexpected"),
             };
             substates.insert(SubstateId::ComponentInfo(address), component.info.into());
-            substates.insert(SubstateId::ComponentState(address), component.state.into());
+            if let Some(state) = component.state {
+                substates.insert(SubstateId::ComponentState(address), state.into());
+            }
         }
         HeapRENode::Worktop(_) => panic!("Unexpected"),
         HeapRENode::Package(package) => {
@@ -48,7 +47,7 @@ pub fn node_to_substates(node_id: RENodeId, node: HeapRENode) -> HashMap<Substat
             let substate = package.info;
             substates.insert(SubstateId::Package(address), substate.into());
         }
-        HeapRENode::ResourceManager(resource_manager, maybe_non_fungibles) => {
+        HeapRENode::ResourceManager(resource_manager) => {
             let address = match node_id {
                 RENodeId::ResourceManager(address) => address,
                 _ => panic!("Unexpected"),
@@ -56,12 +55,9 @@ pub fn node_to_substates(node_id: RENodeId, node: HeapRENode) -> HashMap<Substat
             let substate = resource_manager.info;
             substates.insert(SubstateId::ResourceManager(address), substate.into());
 
-            if let Some(non_fungibles) = maybe_non_fungibles {
-                for (id, non_fungible) in non_fungibles {
-                    let substate_id = SubstateId::NonFungible(address.clone(), id);
-                    let substate = Substate::NonFungible(NonFungibleSubstate(Some(non_fungible)));
-                    substates.insert(substate_id, substate);
-                }
+            for (id, non_fungible) in resource_manager.loaded_non_fungibles {
+                let substate_id = SubstateId::NonFungible(address.clone(), id);
+                substates.insert(substate_id, non_fungible.into());
             }
         }
         HeapRENode::System(system) => {

@@ -238,12 +238,10 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                         .insert(RENodeId::System(SYS_SYSTEM_COMPONENT), node);
                 }
                 Substate::ResourceManager(substate) => {
-                    let node = HeapRENode::ResourceManager(
-                        ResourceManager {
-                            info: substate.into(),
-                        },
-                        None,
-                    );
+                    let node = HeapRENode::ResourceManager(ResourceManager {
+                        info: substate.into(),
+                        loaded_non_fungibles: HashMap::new(),
+                    });
                     self.loaded_nodes.insert(
                         match &substate_id {
                             SubstateId::ResourceManager(address) => {
@@ -260,15 +258,9 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                         _ => panic!("Unexpected substate id type"),
                     };
 
-                    let component_state = self.loaded_substates
-                        .get_mut(&SubstateId::ComponentState(address))
-                        .expect("Lock ComponentState before ComponentInfo before lazily loading is supported")
-                        .substate
-                        .take();
-
                     let node = HeapRENode::Component(Component {
                         info: substate,
-                        state: component_state.into(),
+                        state: None,
                     });
                     self.loaded_nodes.insert(
                         match &substate_id {

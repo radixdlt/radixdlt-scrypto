@@ -19,9 +19,13 @@ impl HeapRENode {
     pub fn get_loaded_child_nodes(&self) -> Result<HashSet<RENodeId>, RuntimeError> {
         match self {
             HeapRENode::Component(component) => {
-                let value = ScryptoValue::from_slice(&component.state.state)
-                    .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
-                Ok(value.node_ids())
+                if let Some(state) = &component.state {
+                    let value = ScryptoValue::from_slice(&state.raw)
+                        .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
+                    Ok(value.node_ids())
+                } else {
+                    Ok(HashSet::new())
+                }
             }
             HeapRENode::ResourceManager(..) => Ok(HashSet::new()),
             HeapRENode::Package(..) => Ok(HashSet::new()),
@@ -69,20 +73,6 @@ impl HeapRENode {
         match self {
             HeapRENode::ResourceManager(resource_manager, ..) => resource_manager,
             _ => panic!("Expected to be a resource manager"),
-        }
-    }
-
-    pub fn non_fungibles(&self) -> &HashMap<NonFungibleId, NonFungible> {
-        match self {
-            HeapRENode::ResourceManager(_, non_fungibles) => non_fungibles.as_ref().unwrap(),
-            _ => panic!("Expected to be non fungibles"),
-        }
-    }
-
-    pub fn non_fungibles_mut(&mut self) -> &mut HashMap<NonFungibleId, NonFungible> {
-        match self {
-            HeapRENode::ResourceManager(_, non_fungibles) => non_fungibles.as_mut().unwrap(),
-            _ => panic!("Expected to be non fungibles"),
         }
     }
 

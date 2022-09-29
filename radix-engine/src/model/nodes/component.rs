@@ -13,10 +13,7 @@ pub enum ComponentError {
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct Component {
     pub info: ComponentInfoSubstate,
-    // TODO: lazily loading of component state
-    // We use the state to look up children nodes of a component.
-    // Changing to lazily loading at this moment requires an even larger refactoring to the code base.
-    pub state: ComponentStateSubstate,
+    pub state: Option<ComponentStateSubstate>,
 }
 
 impl Component {
@@ -32,7 +29,7 @@ impl Component {
                 blueprint_name,
                 access_rules,
             },
-            state: ComponentStateSubstate { state },
+            state: Some(ComponentStateSubstate { raw: state }),
         }
     }
 
