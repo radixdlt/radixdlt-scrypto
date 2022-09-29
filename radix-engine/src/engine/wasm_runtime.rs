@@ -2,7 +2,7 @@ use crate::engine::RuntimeError;
 use crate::engine::{HeapRENode, SystemApi};
 use crate::fee::*;
 use crate::model::{
-    Component, ComponentInfoSubstate, ComponentStateSubstate, HeapKeyValueStore, InvokeError,
+    Component, ComponentInfoSubstate, ComponentStateSubstate, KeyValueStore, InvokeError,
 };
 use crate::types::*;
 use crate::wasm::*;
@@ -102,7 +102,7 @@ where
                     state: ComponentStateSubstate::new(state),
                 })
             }
-            ScryptoRENode::KeyValueStore => HeapRENode::KeyValueStore(HeapKeyValueStore::new()),
+            ScryptoRENode::KeyValueStore => HeapRENode::KeyValueStore(KeyValueStore::new()),
         };
 
         let id = self.system_api.node_create(node)?;

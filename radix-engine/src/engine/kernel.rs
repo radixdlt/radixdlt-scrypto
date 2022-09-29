@@ -1221,7 +1221,7 @@ where
         // TODO: Authorization
 
         // Take any required child nodes
-        let children = re_node.get_child_nodes()?;
+        let children = re_node.get_child_nodes(&mut self.track)?;
         let (taken_root_nodes, mut missing) =
             Self::current_frame_mut(&mut self.call_frames).take_available_values(children, true)?;
         let first_missing_node = missing.drain().nth(0);

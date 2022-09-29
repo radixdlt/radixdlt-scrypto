@@ -1,22 +1,17 @@
-use crate::types::*;
+ 
+use sbor::rust::collections::HashMap;
+
+use crate::model::KeyValueStoreEntrySubstate;
 
 #[derive(Debug)]
-pub struct HeapKeyValueStore {
-    pub store: HashMap<Vec<u8>, ScryptoValue>,
+pub struct KeyValueStore {
+    loaded_entries: HashMap<Vec<u8>, KeyValueStoreEntrySubstate>
 }
 
-impl HeapKeyValueStore {
+impl KeyValueStore {
     pub fn new() -> Self {
-        HeapKeyValueStore {
-            store: HashMap::new(),
+        Self {
+            loaded_entries: HashMap::new()
         }
-    }
-
-    pub fn put(&mut self, key: Vec<u8>, value: ScryptoValue) {
-        self.store.insert(key, value);
-    }
-
-    pub fn get(&self, key: &[u8]) -> Option<ScryptoValue> {
-        self.store.get(key).cloned()
     }
 }
