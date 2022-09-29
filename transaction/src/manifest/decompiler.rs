@@ -3,8 +3,9 @@ use sbor::{encode_any, DecodeError, Value};
 use scrypto::address::{AddressError, Bech32Encoder};
 use scrypto::buffer::scrypto_decode;
 use scrypto::core::{
-    BucketMethodFnIdent, FunctionIdent, NativeFunctionFnIdent, NativeMethodFnIdent,
-    NetworkDefinition, Receiver, ResourceManagerFunctionFnIdent, ResourceManagerMethodFnIdent,
+    BucketMethodFnIdent, FunctionIdent, MethodFnIdent, MethodIdent, NativeFunctionFnIdent,
+    NativeMethodFnIdent, NetworkDefinition, Receiver, ResourceManagerFunctionFnIdent,
+    ResourceManagerMethodFnIdent,
 };
 use scrypto::engine::types::*;
 use scrypto::resource::{
@@ -299,13 +300,10 @@ pub fn decompile(
                     _ => return Err(DecompileError::UnrecognizedNativeFunction),
                 },
             },
-            Instruction::CallMethod {
-                method_identifier,
-                args,
-            } => match method_identifier {
-                MethodIdentifier::Scrypto {
-                    component_address,
-                    ident,
+            Instruction::CallMethod { method_ident, args } => match method_ident {
+                MethodIdent {
+                    receiver: Receiver::Ref(RENodeId::Component(component_address)),
+                    fn_ident: MethodFnIdent::Scrypto(ident),
                 } => {
                     buf.push_str(&format!(
                         "CALL_METHOD ComponentAddress(\"{}\") \"{}\"",
@@ -333,13 +331,13 @@ pub fn decompile(
 
                     buf.push_str(";\n");
                 }
-                MethodIdentifier::Native {
-                    native_fn_identifier,
+                MethodIdent {
                     receiver,
-                } => match (native_fn_identifier, receiver) {
+                    fn_ident: MethodFnIdent::Native(native_fn_identifier),
+                } => match (receiver, native_fn_identifier) {
                     (
-                        NativeMethodFnIdent::Bucket(BucketMethodFnIdent::Burn),
                         Receiver::Consumed(RENodeId::Bucket(bucket_id)),
+                        NativeMethodFnIdent::Bucket(BucketMethodFnIdent::Burn),
                     ) => {
                         let _input: ConsumingBucketBurnInput =
                             scrypto_decode(&args).map_err(DecompileError::DecodeError)?;
@@ -353,8 +351,8 @@ pub fn decompile(
                         ));
                     }
                     (
-                        NativeMethodFnIdent::ResourceManager(ResourceManagerMethodFnIdent::Mint),
                         Receiver::Ref(RENodeId::ResourceManager(resource_address)),
+                        NativeMethodFnIdent::ResourceManager(ResourceManagerMethodFnIdent::Mint),
                     ) => {
                         let input: ResourceManagerMintInput =
                             scrypto_decode(&args).map_err(DecompileError::DecodeError)?;
@@ -371,6 +369,7 @@ pub fn decompile(
                     }
                     _ => return Err(DecompileError::UnrecognizedNativeFunction),
                 },
+                _ => return Err(DecompileError::UnrecognizedNativeFunction),
             },
             Instruction::PublishPackage { code, abi } => {
                 buf.push_str(&format!(

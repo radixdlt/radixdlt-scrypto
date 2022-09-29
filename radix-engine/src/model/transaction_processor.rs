@@ -709,7 +709,7 @@ impl TransactionProcessor {
                             })
                         }
                         Instruction::CallMethod {
-                            method_identifier,
+                            method_ident: MethodIdent { receiver, fn_ident },
                             args,
                         } => {
                             Self::replace_ids(
@@ -720,44 +720,19 @@ impl TransactionProcessor {
                             )
                             .and_then(|call_data| Self::process_expressions(call_data, system_api))
                             .and_then(|call_data| {
-                                // TODO: Move this into preprocessor step
-                                match method_identifier {
-                                    MethodIdentifier::Scrypto {
-                                        component_address,
-                                        ident,
-                                    } => system_api
-                                        .invoke(
-                                            FnIdent::Method(MethodIdent {
-                                                receiver: Receiver::Ref(RENodeId::Component(
-                                                    *component_address,
-                                                )),
-                                                fn_ident: MethodFnIdent::Scrypto(ident.to_string()),
-                                            }),
-                                            call_data,
-                                        )
-                                        .map_err(InvokeError::Downstream),
-                                    MethodIdentifier::Native {
-                                        receiver,
-                                        native_fn_identifier,
-                                    } => Self::replace_receiver(
-                                        receiver.clone(),
-                                        &mut proof_id_mapping,
-                                        &mut bucket_id_mapping,
+                                system_api
+                                    .invoke(
+                                        FnIdent::Method(MethodIdent {
+                                            receiver: Self::replace_receiver(
+                                                receiver.clone(),
+                                                &mut proof_id_mapping,
+                                                &mut bucket_id_mapping,
+                                            )?,
+                                            fn_ident: fn_ident.clone(),
+                                        }),
+                                        call_data,
                                     )
-                                    .and_then(|receiver| {
-                                        system_api
-                                            .invoke(
-                                                FnIdent::Method(MethodIdent {
-                                                    receiver,
-                                                    fn_ident: MethodFnIdent::Native(
-                                                        native_fn_identifier.clone(),
-                                                    ),
-                                                }),
-                                                call_data,
-                                            )
-                                            .map_err(InvokeError::Downstream)
-                                    }),
-                                }
+                                    .map_err(InvokeError::Downstream)
                             })
                             .and_then(|result| {
                                 // Auto move into auth_zone

@@ -23,7 +23,7 @@ use scrypto::core::{FnIdent, MethodFnIdent, MethodIdent};
 use scrypto::dec;
 use scrypto::math::Decimal;
 use transaction::builder::ManifestBuilder;
-use transaction::model::{Executable, MethodIdentifier, TransactionManifest};
+use transaction::model::{Executable, TransactionManifest};
 use transaction::model::{PreviewIntent, TestTransaction};
 use transaction::signing::EcdsaSecp256k1PrivateKey;
 use transaction::validation::TestIntentHashManager;
@@ -238,9 +238,9 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         manifest.instructions.insert(
             0,
             transaction::model::Instruction::CallMethod {
-                method_identifier: MethodIdentifier::Scrypto {
-                    component_address: SYS_FAUCET_COMPONENT,
-                    ident: "lock_fee".to_string(),
+                method_ident: MethodIdent {
+                    receiver: Receiver::Ref(RENodeId::Component(SYS_FAUCET_COMPONENT)),
+                    fn_ident: MethodFnIdent::Scrypto("lock_fee".to_string()),
                 },
                 args: args!(dec!("1000")),
             },
