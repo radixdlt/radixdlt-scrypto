@@ -227,13 +227,12 @@ impl<'s, R: FeeReserve> Track<'s, R> {
 
         // Converts the main substate into corresponding node.
         // This model requires a primary substate per node.
-        // TODO: Update all node types to use substate types in fields to simplify nodification.
         if !loaded_substate.substate.is_taken() {
             let substate = loaded_substate.substate.take();
             match substate {
                 Substate::System(substate) => {
                     let node = HeapRENode::System(System {
-                        epoch: substate.epoch,
+                        info: substate.into(),
                     });
                     self.loaded_nodes
                         .insert(RENodeId::System(SYS_SYSTEM_COMPONENT), node);
@@ -241,13 +240,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                 Substate::ResourceManager(substate) => {
                     let node = HeapRENode::ResourceManager(
                         ResourceManager {
-                            resource_type: substate.resource_type,
-                            metadata: substate.metadata,
-                            method_table: substate.method_table,
-                            vault_method_table: substate.vault_method_table,
-                            bucket_method_table: substate.bucket_method_table,
-                            authorization: substate.authorization,
-                            total_supply: substate.total_supply,
+                            info: substate.into(),
                         },
                         None,
                     );
@@ -287,8 +280,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                 }
                 Substate::Package(substate) => {
                     let node = HeapRENode::Package(Package {
-                        code: substate.code,
-                        blueprint_abis: substate.blueprint_abis,
+                        info: substate.into(),
                     });
                     self.loaded_nodes.insert(
                         match &substate_id {

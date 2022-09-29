@@ -2,14 +2,14 @@ use core::fmt::Debug;
 
 use crate::engine::*;
 use crate::fee::FeeReserve;
+use crate::model::PackageSubstate;
 use crate::types::*;
 use crate::wasm::*;
 
 /// A collection of blueprints, compiled and published as a single unit.
 #[derive(Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct Package {
-    pub code: Vec<u8>,
-    pub blueprint_abis: HashMap<String, BlueprintAbi>,
+    pub info: PackageSubstate,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -26,17 +26,19 @@ impl Package {
         WasmValidator::default().validate(&code, &abi)?;
 
         Ok(Self {
-            code: code,
-            blueprint_abis: abi,
+            info: PackageSubstate {
+                code: code,
+                blueprint_abis: abi,
+            },
         })
     }
 
     pub fn code(&self) -> &[u8] {
-        &self.code
+        &self.info.code
     }
 
     pub fn blueprint_abi(&self, blueprint_name: &str) -> Option<&BlueprintAbi> {
-        self.blueprint_abis.get(blueprint_name)
+        self.info.blueprint_abis.get(blueprint_name)
     }
 
     pub fn static_main<'s, Y, W, I, R>(
@@ -83,8 +85,8 @@ impl Package {
 impl Debug for Package {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Package")
-            .field("code_len", &self.code.len())
-            .field("blueprint_abis", &self.blueprint_abis)
+            .field("code_len", &self.info.code.len())
+            .field("blueprint_abis", &self.info.blueprint_abis)
             .finish()
     }
 }

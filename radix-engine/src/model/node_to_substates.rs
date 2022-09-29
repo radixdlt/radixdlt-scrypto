@@ -45,10 +45,7 @@ pub fn node_to_substates(node_id: RENodeId, node: HeapRENode) -> HashMap<Substat
                 RENodeId::Package(address) => address,
                 _ => panic!("Unexpected"),
             };
-            let substate = PackageSubstate {
-                code: package.code,
-                blueprint_abis: package.blueprint_abis,
-            };
+            let substate = package.info;
             substates.insert(SubstateId::Package(address), substate.into());
         }
         HeapRENode::ResourceManager(resource_manager, maybe_non_fungibles) => {
@@ -56,15 +53,7 @@ pub fn node_to_substates(node_id: RENodeId, node: HeapRENode) -> HashMap<Substat
                 RENodeId::ResourceManager(address) => address,
                 _ => panic!("Unexpected"),
             };
-            let substate = ResourceManagerSubstate {
-                resource_type: resource_manager.resource_type,
-                metadata: resource_manager.metadata,
-                method_table: resource_manager.method_table,
-                vault_method_table: resource_manager.vault_method_table,
-                bucket_method_table: resource_manager.bucket_method_table,
-                authorization: resource_manager.authorization,
-                total_supply: resource_manager.total_supply,
-            };
+            let substate = resource_manager.info;
             substates.insert(SubstateId::ResourceManager(address), substate.into());
 
             if let Some(non_fungibles) = maybe_non_fungibles {
@@ -80,13 +69,7 @@ pub fn node_to_substates(node_id: RENodeId, node: HeapRENode) -> HashMap<Substat
                 RENodeId::System(address) => address,
                 _ => panic!("Unexpected"),
             };
-            substates.insert(
-                SubstateId::System(address),
-                SystemSubstate {
-                    epoch: system.epoch,
-                }
-                .into(),
-            );
+            substates.insert(SubstateId::System(address), system.info.into());
         }
     }
     substates

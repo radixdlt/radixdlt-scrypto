@@ -5,7 +5,9 @@ use crate::model::{
     ResourceMethodRule::{Protected, Public},
     Vault,
 };
-use crate::model::{MethodAccessRule, MethodAccessRuleMethod, ResourceMethodRule};
+use crate::model::{
+    MethodAccessRule, MethodAccessRuleMethod, ResourceManagerSubstate, ResourceMethodRule,
+};
 use crate::types::AccessRule::*;
 use crate::types::ResourceMethodAuthKey::*;
 use crate::types::*;
@@ -35,13 +37,7 @@ pub enum ResourceManagerError {
 /// The definition of a resource.
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct ResourceManager {
-    pub resource_type: ResourceType,
-    pub metadata: HashMap<String, String>,
-    pub method_table: HashMap<ResourceManagerFnIdentifier, ResourceMethodRule>,
-    pub vault_method_table: HashMap<VaultFnIdentifier, ResourceMethodRule>,
-    pub bucket_method_table: HashMap<BucketFnIdentifier, ResourceMethodRule>,
-    pub authorization: HashMap<ResourceMethodAuthKey, MethodAccessRule>,
-    pub total_supply: Decimal,
+    pub info: ResourceManagerSubstate,
 }
 
 impl ResourceManager {
@@ -102,23 +98,26 @@ impl ResourceManager {
         }
 
         let resource_manager = Self {
-            resource_type,
-            metadata,
-            method_table,
-            vault_method_table,
-            bucket_method_table,
-            authorization,
-            total_supply: 0.into(),
+            info: ResourceManagerSubstate {
+                resource_type,
+                metadata,
+                method_table,
+                vault_method_table,
+                bucket_method_table,
+                authorization,
+                total_supply: 0.into(),
+            },
         };
 
         Ok(resource_manager)
     }
 
     pub fn get_vault_auth(&self, vault_fn: VaultFnIdentifier) -> &MethodAuthorization {
-        match self.vault_method_table.get(&vault_fn) {
+        match self.info.vault_method_table.get(&vault_fn) {
             None => &MethodAuthorization::Unsupported,
             Some(Public) => &MethodAuthorization::AllowAll,
             Some(Protected(auth_key)) => self
+                .info
                 .authorization
                 .get(auth_key)
                 .expect(&format!("Authorization for {:?} not specified", vault_fn))
@@ -127,10 +126,11 @@ impl ResourceManager {
     }
 
     pub fn get_bucket_auth(&self, bucket_fn: BucketFnIdentifier) -> &MethodAuthorization {
-        match self.bucket_method_table.get(&bucket_fn) {
+        match self.info.bucket_method_table.get(&bucket_fn) {
             None => &MethodAuthorization::Unsupported,
             Some(Public) => &MethodAuthorization::AllowAll,
             Some(Protected(method)) => self
+                .info
                 .authorization
                 .get(method)
                 .expect(&format!("Authorization for {:?} not specified", bucket_fn))
@@ -148,7 +148,7 @@ impl ResourceManager {
                 // FIXME we can't assume the input always match the function identifier
                 // especially for the auth module code path
                 let input: ResourceManagerUpdateAuthInput = scrypto_decode(&args.raw).unwrap();
-                match self.authorization.get(&input.method) {
+                match self.info.authorization.get(&input.method) {
                     None => &MethodAuthorization::Unsupported,
                     Some(entry) => {
                         entry.get_update_auth(MethodAccessRuleMethod::Update(input.access_rule))
@@ -159,15 +159,16 @@ impl ResourceManager {
                 // FIXME we can't assume the input always match the function identifier
                 // especially for the auth module code path
                 let input: ResourceManagerLockAuthInput = scrypto_decode(&args.raw).unwrap();
-                match self.authorization.get(&input.method) {
+                match self.info.authorization.get(&input.method) {
                     None => &MethodAuthorization::Unsupported,
                     Some(entry) => entry.get_update_auth(MethodAccessRuleMethod::Lock()),
                 }
             }
-            _ => match self.method_table.get(&fn_identifier) {
+            _ => match self.info.method_table.get(&fn_identifier) {
                 None => &MethodAuthorization::Unsupported,
                 Some(Public) => &MethodAuthorization::AllowAll,
                 Some(Protected(method)) => self
+                    .info
                     .authorization
                     .get(method)
                     .expect(&format!("Authorization for {:?} not specified", method))
@@ -177,15 +178,15 @@ impl ResourceManager {
     }
 
     pub fn resource_type(&self) -> ResourceType {
-        self.resource_type
+        self.info.resource_type
     }
 
     pub fn metadata(&self) -> &HashMap<String, String> {
-        &self.metadata
+        &self.info.metadata
     }
 
     pub fn total_supply(&self) -> Decimal {
-        self.total_supply
+        self.info.total_supply
     }
 
     pub fn mint(
@@ -206,7 +207,7 @@ impl ResourceManager {
         self_address: ResourceAddress,
     ) -> Result<(Resource, HashMap<NonFungibleId, NonFungible>), InvokeError<ResourceManagerError>>
     {
-        if let ResourceType::Fungible { divisibility } = self.resource_type {
+        if let ResourceType::Fungible { divisibility } = self.info.resource_type {
             // check amount
             self.check_amount(amount)?;
 
@@ -217,7 +218,7 @@ impl ResourceManager {
                 ));
             }
 
-            self.total_supply += amount;
+            self.info.total_supply += amount;
 
             Ok((
                 Resource::new_fungible(self_address, divisibility, amount),
@@ -237,7 +238,7 @@ impl ResourceManager {
     ) -> Result<(Resource, HashMap<NonFungibleId, NonFungible>), InvokeError<ResourceManagerError>>
     {
         // check resource type
-        if !matches!(self.resource_type, ResourceType::NonFungible) {
+        if !matches!(self.info.resource_type, ResourceType::NonFungible) {
             return Err(InvokeError::Error(
                 ResourceManagerError::ResourceTypeDoesNotMatch,
             ));
@@ -247,7 +248,7 @@ impl ResourceManager {
         let amount: Decimal = entries.len().into();
         self.check_amount(amount)?;
 
-        self.total_supply += amount;
+        self.info.total_supply += amount;
 
         // Allocate non-fungibles
         let mut ids = BTreeSet::new();
@@ -262,20 +263,20 @@ impl ResourceManager {
     }
 
     pub fn burn(&mut self, amount: Decimal) {
-        self.total_supply -= amount;
+        self.info.total_supply -= amount;
     }
 
     fn update_metadata(
         &mut self,
         new_metadata: HashMap<String, String>,
     ) -> Result<(), InvokeError<ResourceManagerError>> {
-        self.metadata = new_metadata;
+        self.info.metadata = new_metadata;
 
         Ok(())
     }
 
     fn check_amount(&self, amount: Decimal) -> Result<(), InvokeError<ResourceManagerError>> {
-        let divisibility = self.resource_type.divisibility();
+        let divisibility = self.info.resource_type.divisibility();
 
         if amount.is_negative()
             || amount.0 % I256::from(10i128.pow((18 - divisibility).into())) != I256::from(0)
@@ -316,7 +317,7 @@ impl ResourceManager {
                                 let non_fungible = NonFungible::new(data.0.clone(), data.1.clone());
                                 non_fungibles.insert(non_fungible_id.clone(), non_fungible);
                             }
-                            resource_manager.total_supply = entries.len().into();
+                            resource_manager.info.total_supply = entries.len().into();
                         } else {
                             return Err(InvokeError::Error(
                                 ResourceManagerError::ResourceTypeDoesNotMatch,
@@ -339,7 +340,7 @@ impl ResourceManager {
                                     ResourceManagerError::MaxMintAmountExceeded,
                                 ));
                             }
-                            resource_manager.total_supply = amount.clone();
+                            resource_manager.info.total_supply = amount.clone();
                         } else {
                             return Err(InvokeError::Error(
                                 ResourceManagerError::ResourceTypeDoesNotMatch,
@@ -405,6 +406,7 @@ impl ResourceManager {
                 let resource_manager = node_ref.resource_manager_mut();
 
                 let method_entry = resource_manager
+                    .info
                     .authorization
                     .get_mut(&input.method)
                     .expect(&format!(
@@ -422,6 +424,7 @@ impl ResourceManager {
                 let resource_manager = node_ref.resource_manager_mut();
 
                 let method_entry = resource_manager
+                    .info
                     .authorization
                     .get_mut(&input.method)
                     .expect(&format!(
@@ -515,7 +518,7 @@ impl ResourceManager {
                     .map_err(InvokeError::Downstream)?;
                 let resource_manager = node_ref.resource_manager_mut();
 
-                Ok(ScryptoValue::from_typed(&resource_manager.metadata))
+                Ok(ScryptoValue::from_typed(&resource_manager.info.metadata))
             }
             ResourceManagerFnIdentifier::GetResourceType => {
                 let _: ResourceManagerGetResourceTypeInput = scrypto_decode(&args.raw)
@@ -525,7 +528,9 @@ impl ResourceManager {
                     .map_err(InvokeError::Downstream)?;
                 let resource_manager = node_ref.resource_manager_mut();
 
-                Ok(ScryptoValue::from_typed(&resource_manager.resource_type))
+                Ok(ScryptoValue::from_typed(
+                    &resource_manager.info.resource_type,
+                ))
             }
             ResourceManagerFnIdentifier::GetTotalSupply => {
                 let _: ResourceManagerGetTotalSupplyInput = scrypto_decode(&args.raw)
@@ -535,7 +540,9 @@ impl ResourceManager {
                     .map_err(InvokeError::Downstream)?;
                 let resource_manager = node_ref.resource_manager_mut();
 
-                Ok(ScryptoValue::from_typed(&resource_manager.total_supply))
+                Ok(ScryptoValue::from_typed(
+                    &resource_manager.info.total_supply,
+                ))
             }
             ResourceManagerFnIdentifier::UpdateMetadata => {
                 let input: ResourceManagerUpdateMetadataInput = scrypto_decode(&args.raw)
