@@ -1,3 +1,4 @@
+use scrypto::resource::AuthZoneDrainInput;
 use transaction::errors::IdAllocationError;
 use transaction::model::*;
 use transaction::validation::*;
@@ -72,7 +73,6 @@ impl TransactionProcessor {
                 proof_id_mapping,
                 bucket_id_mapping,
             )?),
-            Receiver::CurrentAuthZone => Receiver::CurrentAuthZone,
         };
 
         Ok(receiver)
@@ -134,23 +134,30 @@ impl TransactionProcessor {
                         decode_any(&scrypto_encode(&buckets)).expect("Failed to decode Vec<Bucket>")
                 }
                 "ENTIRE_AUTH_ZONE" => {
-                    let auth_zone = system_api.auth_zone(1);
-                    let proofs = auth_zone.drain();
-                    let node_ids: Result<Vec<RENodeId>, InvokeError<TransactionProcessorError>> =
-                        proofs
-                            .into_iter()
-                            .map(|proof| {
-                                system_api
-                                    .node_create(HeapRENode::Proof(proof))
-                                    .map_err(InvokeError::Downstream)
-                            })
-                            .collect();
+                    let node_ids = system_api
+                        .get_owned_node_ids()
+                        .map_err(InvokeError::Downstream)?;
+                    let auth_zone_node_id = node_ids
+                        .into_iter()
+                        .find(|n| matches!(n, RENodeId::AuthZone(..)))
+                        .expect("AuthZone does not exist");
 
-                    let mut proofs = Vec::new();
-                    for node_id in node_ids? {
-                        let proof_id: ProofId = node_id.into();
-                        proofs.push(scrypto::resource::Proof(proof_id));
-                    }
+                    let proofs = system_api
+                        .invoke_method(
+                            Receiver::Ref(auth_zone_node_id),
+                            FnIdentifier::Native(NativeFnIdentifier::AuthZone(
+                                AuthZoneFnIdentifier::Drain,
+                            )),
+                            ScryptoValue::from_typed(&AuthZoneDrainInput {}),
+                        )
+                        .map_err(InvokeError::Downstream)
+                        .map(|result| {
+                            let mut proofs = Vec::new();
+                            for (proof_id, _) in result.proof_ids {
+                                proofs.push(scrypto::resource::Proof(proof_id));
+                            }
+                            proofs
+                        })?;
 
                     let val = path
                         .get_from_value_mut(&mut value)
@@ -210,6 +217,15 @@ impl TransactionProcessor {
                 let _worktop_id = system_api
                     .node_create(HeapRENode::Worktop(Worktop::new()))
                     .map_err(InvokeError::Downstream)?;
+
+                let owned_node_ids = system_api
+                    .get_owned_node_ids()
+                    .map_err(InvokeError::Downstream)?;
+                let auth_zone_node_id = owned_node_ids
+                    .into_iter()
+                    .find(|n| matches!(n, RENodeId::AuthZone(..)))
+                    .expect("AuthZone does not exist");
+                let auth_zone_ref = Receiver::Ref(auth_zone_node_id);
 
                 for inst in &input.instructions.clone() {
                     let result = match inst {
@@ -358,7 +374,7 @@ impl TransactionProcessor {
                             .and_then(|new_id| {
                                 system_api
                                     .invoke_method(
-                                        Receiver::CurrentAuthZone,
+                                        auth_zone_ref,
                                         FnIdentifier::Native(NativeFnIdentifier::AuthZone(
                                             AuthZoneFnIdentifier::Pop,
                                         )),
@@ -375,7 +391,7 @@ impl TransactionProcessor {
                             proof_id_mapping.clear();
                             system_api
                                 .invoke_method(
-                                    Receiver::CurrentAuthZone,
+                                    auth_zone_ref,
                                     FnIdentifier::Native(NativeFnIdentifier::AuthZone(
                                         AuthZoneFnIdentifier::Clear,
                                     )),
@@ -391,7 +407,7 @@ impl TransactionProcessor {
                             .and_then(|real_id| {
                                 system_api
                                     .invoke_method(
-                                        Receiver::CurrentAuthZone,
+                                        auth_zone_ref,
                                         FnIdentifier::Native(NativeFnIdentifier::AuthZone(
                                             AuthZoneFnIdentifier::Push,
                                         )),
@@ -409,7 +425,7 @@ impl TransactionProcessor {
                             .and_then(|new_id| {
                                 system_api
                                     .invoke_method(
-                                        Receiver::CurrentAuthZone,
+                                        auth_zone_ref,
                                         FnIdentifier::Native(NativeFnIdentifier::AuthZone(
                                             AuthZoneFnIdentifier::CreateProof,
                                         )),
@@ -435,7 +451,7 @@ impl TransactionProcessor {
                             .and_then(|new_id| {
                                 system_api
                                     .invoke_method(
-                                        Receiver::CurrentAuthZone,
+                                        auth_zone_ref,
                                         FnIdentifier::Native(NativeFnIdentifier::AuthZone(
                                             AuthZoneFnIdentifier::CreateProofByAmount,
                                         )),
@@ -464,7 +480,7 @@ impl TransactionProcessor {
                             .and_then(|new_id| {
                                 system_api
                                     .invoke_method(
-                                        Receiver::CurrentAuthZone,
+                                        auth_zone_ref,
                                         FnIdentifier::Native(NativeFnIdentifier::AuthZone(
                                             AuthZoneFnIdentifier::CreateProofByIds,
                                         )),
@@ -571,7 +587,7 @@ impl TransactionProcessor {
                             }
                             system_api
                                 .invoke_method(
-                                    Receiver::CurrentAuthZone,
+                                    auth_zone_ref,
                                     FnIdentifier::Native(NativeFnIdentifier::AuthZone(
                                         AuthZoneFnIdentifier::Clear,
                                     )),
@@ -600,7 +616,7 @@ impl TransactionProcessor {
                                 for (proof_id, _) in &result.proof_ids {
                                     system_api
                                         .invoke_method(
-                                            Receiver::CurrentAuthZone,
+                                            auth_zone_ref,
                                             FnIdentifier::Native(NativeFnIdentifier::AuthZone(
                                                 AuthZoneFnIdentifier::Push,
                                             )),
@@ -694,7 +710,7 @@ impl TransactionProcessor {
                                 for (proof_id, _) in &result.proof_ids {
                                     system_api
                                         .invoke_method(
-                                            Receiver::CurrentAuthZone,
+                                            auth_zone_ref,
                                             FnIdentifier::Native(NativeFnIdentifier::AuthZone(
                                                 AuthZoneFnIdentifier::Push,
                                             )),

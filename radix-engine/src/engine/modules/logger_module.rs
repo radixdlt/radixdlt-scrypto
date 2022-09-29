@@ -59,6 +59,9 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
 
                 self.depth = self.depth + 1;
             }
+            SysCallInput::ReadOwnedNodes => {
+                log!(self, "Reading owned nodes");
+            }
             SysCallInput::BorrowNode { node_id } => {
                 log!(self, "Borrowing node: node_id = {:?}", node_id);
             }

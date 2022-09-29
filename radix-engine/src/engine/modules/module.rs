@@ -13,6 +13,7 @@ pub enum SysCallInput<'a> {
         fn_identifier: &'a FnIdentifier,
         input: &'a ScryptoValue,
     },
+    ReadOwnedNodes,
     BorrowNode {
         node_id: &'a RENodeId,
     },

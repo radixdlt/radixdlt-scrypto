@@ -9,7 +9,6 @@ use crate::engine::types::RENodeId;
 pub enum Receiver {
     Consumed(RENodeId),
     Ref(RENodeId),
-    CurrentAuthZone,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, TypeId, Encode, Decode)]
@@ -65,6 +64,7 @@ pub enum AuthZoneFnIdentifier {
     CreateProofByAmount,
     CreateProofByIds,
     Clear,
+    Drain,
 }
 
 #[derive(

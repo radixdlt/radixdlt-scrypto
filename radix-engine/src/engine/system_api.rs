@@ -1,7 +1,6 @@
 use crate::engine::node::*;
 use crate::engine::*;
 use crate::fee::FeeReserve;
-use crate::model::AuthZone;
 use crate::model::Resource;
 use crate::types::*;
 use crate::wasm::*;
@@ -12,9 +11,6 @@ where
     I: WasmInstance,
     R: FeeReserve,
 {
-    // TODO: possible to consider AuthZone as a RENode?
-    fn auth_zone(&mut self, frame_id: usize) -> &mut AuthZone;
-
     fn consume_cost_units(&mut self, units: u32) -> Result<(), RuntimeError>;
 
     fn lock_fee(
@@ -36,6 +32,9 @@ where
         function: FnIdentifier,
         input: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError>;
+
+    /// Retrieves all nodes owned by the current frame
+    fn get_owned_node_ids(&mut self) -> Result<Vec<RENodeId>, RuntimeError>;
 
     // TODO: Convert to substate_borrow
     fn borrow_node(&mut self, node_id: &RENodeId) -> Result<RENodeRef<'_, 's, R>, RuntimeError>;

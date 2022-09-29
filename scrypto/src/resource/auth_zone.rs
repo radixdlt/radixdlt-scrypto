@@ -1,8 +1,10 @@
 use sbor::rust::collections::BTreeSet;
+use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::core::NativeFnIdentifier;
 
 use crate::core::{AuthZoneFnIdentifier, FnIdentifier, Receiver};
+use crate::engine::types::RENodeId;
 use crate::engine::{api::*, call_engine};
 use crate::math::Decimal;
 use crate::native_functions;
@@ -36,6 +38,9 @@ pub struct AuthZoneCreateProofByIdsInput {
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct AuthZoneClearInput {}
 
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct AuthZoneDrainInput {}
+
 /// Represents the auth zone, which is used by system for checking
 /// if this component is allowed to
 ///
@@ -45,7 +50,12 @@ pub struct ComponentAuthZone {}
 
 impl ComponentAuthZone {
     native_functions! {
-        Receiver::CurrentAuthZone, NativeFnIdentifier::AuthZone => {
+        {
+            let input = RadixEngineInput::GetOwnedRENodeIds();
+            let owned_node_ids: Vec<RENodeId> = call_engine(input);
+            let node_id = owned_node_ids.into_iter().find(|n| matches!(n, RENodeId::AuthZone(..))).expect("AuthZone does not exist");
+            Receiver::Ref(node_id)
+        }, NativeFnIdentifier::AuthZone => {
             pub fn pop() -> Proof {
                 AuthZoneFnIdentifier::Pop,
                 AuthZonePopInput {}
@@ -76,9 +86,16 @@ impl ComponentAuthZone {
     }
 
     pub fn push<P: Into<Proof>>(proof: P) {
+        let input = RadixEngineInput::GetOwnedRENodeIds();
+        let owned_node_ids: Vec<RENodeId> = call_engine(input);
+        let node_id = owned_node_ids
+            .into_iter()
+            .find(|n| matches!(n, RENodeId::AuthZone(..)))
+            .expect("AuthZone does not exist");
+
         let proof: Proof = proof.into();
         let input = RadixEngineInput::InvokeMethod(
-            Receiver::CurrentAuthZone,
+            Receiver::Ref(node_id),
             FnIdentifier::Native(NativeFnIdentifier::AuthZone(AuthZoneFnIdentifier::Push)),
             scrypto::buffer::scrypto_encode(&(AuthZonePushInput { proof })),
         );

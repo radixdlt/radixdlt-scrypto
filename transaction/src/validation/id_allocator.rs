@@ -101,6 +101,10 @@ impl IdAllocator {
         Ok(u128::from_le_bytes(hash(data).lower_16_bytes()))
     }
 
+    pub fn new_auth_zone_id(&mut self) -> Result<AuthZoneId, IdAllocationError> {
+        Ok(self.next()?)
+    }
+
     /// Creates a new bucket ID.
     pub fn new_bucket_id(&mut self) -> Result<BucketId, IdAllocationError> {
         Ok(self.next()?)

@@ -78,7 +78,6 @@ impl Into<ApplicationError> for SystemError {
 impl NativeInterpreter {
     pub fn run<'s, Y, W, I, R>(
         receiver: Option<Receiver>,
-        auth_zone_frame_id: Option<usize>,
         fn_identifier: NativeFnIdentifier,
         input: ScryptoValue,
         system_api: &mut Y,
@@ -110,14 +109,11 @@ impl NativeInterpreter {
             (Some(Receiver::Consumed(node_id)), NativeFnIdentifier::Proof(proof_fn)) => {
                 Proof::main_consume(node_id, proof_fn, input, system_api).map_err(|e| e.into())
             }
-            (Some(Receiver::CurrentAuthZone), NativeFnIdentifier::AuthZone(auth_zone_fn)) => {
-                AuthZone::main(
-                    auth_zone_frame_id.expect("AuthZone receiver frame id not specified"),
-                    auth_zone_fn,
-                    input,
-                    system_api,
-                )
-                .map_err(|e| e.into())
+            (
+                Some(Receiver::Ref(RENodeId::AuthZone(auth_zone_id))),
+                NativeFnIdentifier::AuthZone(auth_zone_fn),
+            ) => {
+                AuthZone::main(auth_zone_id, auth_zone_fn, input, system_api).map_err(|e| e.into())
             }
             (
                 Some(Receiver::Ref(RENodeId::Bucket(bucket_id))),
