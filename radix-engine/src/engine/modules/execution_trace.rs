@@ -55,10 +55,10 @@ impl ExecutionTrace {
             2. Hook up to when the component is globalized and convert
                blueprint-parented vaults (if any) to regular
                trace entries with component parents. */
-            if let FnIdent::Method(MethodIdent {
+            if let REActor::Method(FullyQualifiedMethod {
                 receiver: Receiver::Ref(RENodeId::Component(component_address)),
                 ..
-            }) = &actor.function_identifier
+            }) = &actor
             {
                 match method_ident {
                     MethodFnIdent::Native(NativeMethodFnIdent::Vault(VaultMethodFnIdent::Put)) => {

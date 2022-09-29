@@ -262,42 +262,18 @@ where
     ) -> Result<(ScryptoValue, HashMap<RENodeId, HeapRootRENode>), RuntimeError> {
         let output = {
             let rtn = match Self::current_frame(&self.call_frames).actor.clone() {
-                REActor {
-                    function_identifier: FnIdent::Function(FunctionIdent::Native(native_fn)),
-                } => NativeInterpreter::run_function(native_fn, input, self),
-                REActor {
-                    function_identifier:
-                        FnIdent::Method(MethodIdent {
-                            receiver,
-                            fn_ident: MethodFnIdent::Native(native_fn),
-                        }),
-                } => NativeInterpreter::run_method(
+                REActor::Function(FunctionIdent::Native(native_fn)) => NativeInterpreter::run_function(native_fn, input, self),
+                REActor::Method(FullyQualifiedMethod {
+                    receiver, fn_ident: FullyQualifiedMethodFn::Native(native_fn),
+                }) => NativeInterpreter::run_method(
                     receiver,
                     auth_zone_frame_id,
                     native_fn,
                     input,
                     self,
                 ),
-                REActor {
-                    function_identifier:
-                        FnIdent::Function(FunctionIdent::Scrypto {
-                            package_address,
-                            blueprint_name,
-                            ident,
-                        }),
-                }
-                | REActor {
-                    function_identifier:
-                        FnIdent::Method(MethodIdent {
-                            receiver: _,
-                            fn_ident:
-                                MethodFnIdent::Scrypto {
-                                    package_address,
-                                    blueprint_name,
-                                    ident,
-                                },
-                        }),
-                } => {
+                REActor::Function(FunctionIdent::Scrypto { package_address, blueprint_name, ident })
+                | REActor::Method(FullyQualifiedMethod { fn_ident: FullyQualifiedMethodFn::Scrypto { package_address, blueprint_name, ident}, ..}) => {
                     let output = {
                         let package = self
                             .track
@@ -326,9 +302,9 @@ where
                             .export_name
                             .to_string();
                         let scrypto_actor = match &Self::current_frame(&self.call_frames).actor {
-                            REActor {
-                                function_identifier: FnIdent::Method(MethodIdent { receiver, .. }),
-                            } => match receiver {
+                            REActor::Method(FullyQualifiedMethod {
+                                receiver, ..
+                            }) => match receiver {
                                 Receiver::Ref(RENodeId::Component(component_address)) => {
                                     ScryptoActor::Component(
                                         *component_address,
@@ -472,7 +448,7 @@ where
         let mut next_frame_node_refs = HashMap::new();
 
         // Authorization and state load
-        let auth_zone_frame_id = match &fn_ident {
+        let (auth_zone_frame_id, re_actor) = match &fn_ident {
             FnIdent::Function(..) => panic!("Should not get here"),
             FnIdent::Method(MethodIdent {
                 receiver: Receiver::Ref(node_id),
@@ -530,15 +506,14 @@ where
                 let mut temporary_locks = Vec::new();
 
                 // Load actor
-                match &fn_ident {
+                let re_actor = match &fn_ident {
                     FnIdent::Method(MethodIdent {
                         fn_ident:
                             MethodFnIdent::Scrypto {
-                                package_address,
-                                blueprint_name,
+                                ident,
                                 ..
                             },
-                        ..
+                        receiver,
                     }) => match node_id {
                         RENodeId::Component(component_address) => {
                             let temporary_substate_id =
@@ -556,21 +531,27 @@ where
                             let node_ref = node_pointer.to_ref(&self.call_frames, &mut self.track);
                             let component = node_ref.component_info();
 
-                            // Don't support traits yet
-                            if !package_address.eq(&component.package_address()) {
-                                return Err(RuntimeError::KernelError(
-                                    KernelError::FnIdentNotFound(fn_ident.clone()),
-                                ));
-                            }
-                            if !blueprint_name.eq(component.blueprint_name()) {
-                                return Err(RuntimeError::KernelError(
-                                    KernelError::FnIdentNotFound(fn_ident.clone()),
-                                ));
-                            }
+                            REActor::Method(FullyQualifiedMethod {
+                                receiver: receiver.clone(),
+                                fn_ident: FullyQualifiedMethodFn::Scrypto {
+                                    package_address: component.package_address(),
+                                    blueprint_name: component.blueprint_name().to_string(),
+                                    ident: ident.to_string()
+                                }
+                            })
                         }
                         _ => panic!("Should not get here."),
                     },
-                    _ => {}
+                    FnIdent::Method(MethodIdent {
+                        fn_ident: MethodFnIdent::Native(native_fn),
+                        receiver,
+                    }) => {
+                        REActor::Method(FullyQualifiedMethod {
+                            receiver: receiver.clone(),
+                            fn_ident: FullyQualifiedMethodFn::Native(native_fn.clone()),
+                        })
+                    }
+                    _ => panic!("Should not get here."),
                 };
 
                 // Lock Parent Substates
@@ -727,11 +708,11 @@ where
                 }
 
                 next_frame_node_refs.insert(node_id.clone(), node_pointer.clone());
-                None
+                (None, re_actor)
             }
             FnIdent::Method(MethodIdent {
                 receiver: Receiver::CurrentAuthZone,
-                ..
+                fn_ident,
             }) => {
                 for resource_address in &input.resource_addresses {
                     let resource_substate_id =
@@ -744,7 +725,13 @@ where
                     locked_pointers.push((resource_node_pointer, resource_substate_id, false));
                     next_frame_node_refs.insert(resource_node_id, resource_node_pointer);
                 }
-                Some(Self::current_frame(&self.call_frames).depth)
+                (Some(Self::current_frame(&self.call_frames).depth), REActor::Method(FullyQualifiedMethod {
+                    receiver: Receiver::CurrentAuthZone,
+                    fn_ident: match fn_ident {
+                        MethodFnIdent::Native(fn_ident) => FullyQualifiedMethodFn::Native(fn_ident.clone()),
+                        MethodFnIdent::Scrypto {.. } => panic!("Should not get here."), // TODO: Remove panic
+                    }
+                }))
             }
         };
 
@@ -776,9 +763,7 @@ where
         let (output, received_values) = {
             let frame = CallFrame::new_child(
                 Self::current_frame(&self.call_frames).depth + 1,
-                REActor {
-                    function_identifier: fn_ident.clone(),
-                },
+                re_actor,
                 next_owned_values,
                 next_frame_node_refs,
                 self,
@@ -1032,8 +1017,11 @@ where
         let (output, received_values) = {
             let frame = CallFrame::new_child(
                 Self::current_frame(&self.call_frames).depth + 1,
-                REActor {
-                    function_identifier: fn_ident.clone(),
+                match &fn_ident {
+                    FnIdent::Function(function_ident) => {
+                        REActor::Function(function_ident.clone())
+                    }
+                    _ => panic!("Unexpected"),
                 },
                 next_owned_values,
                 next_frame_node_refs,
