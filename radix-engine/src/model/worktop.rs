@@ -204,7 +204,7 @@ impl Worktop {
     }
 
     pub fn main<'s, Y, W, I, R>(
-        worktop_fn: WorktopFnIdentifier,
+        worktop_fn: WorktopMethodFnIdent,
         args: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, InvokeError<WorktopError>>
@@ -220,7 +220,7 @@ impl Worktop {
         let worktop = node_ref.worktop_mut();
 
         let rtn = match worktop_fn {
-            WorktopFnIdentifier::Put => {
+            WorktopMethodFnIdent::Put => {
                 let input: WorktopPutInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(WorktopError::InvalidRequestData(e)))?;
                 let bucket = system_api
@@ -232,7 +232,7 @@ impl Worktop {
                     .map_err(|e| InvokeError::Error(WorktopError::ResourceOperationError(e)))?;
                 Ok(ScryptoValue::from_typed(&()))
             }
-            WorktopFnIdentifier::TakeAmount => {
+            WorktopMethodFnIdent::TakeAmount => {
                 let input: WorktopTakeAmountInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(WorktopError::InvalidRequestData(e)))?;
                 let maybe_container = worktop
@@ -259,7 +259,7 @@ impl Worktop {
                     bucket_id,
                 )))
             }
-            WorktopFnIdentifier::TakeAll => {
+            WorktopMethodFnIdent::TakeAll => {
                 let input: WorktopTakeAllInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(WorktopError::InvalidRequestData(e)))?;
                 let maybe_container = worktop
@@ -287,7 +287,7 @@ impl Worktop {
                     bucket_id,
                 )))
             }
-            WorktopFnIdentifier::TakeNonFungibles => {
+            WorktopMethodFnIdent::TakeNonFungibles => {
                 let input: WorktopTakeNonFungiblesInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(WorktopError::InvalidRequestData(e)))?;
                 let maybe_container = worktop
@@ -315,7 +315,7 @@ impl Worktop {
                     bucket_id,
                 )))
             }
-            WorktopFnIdentifier::AssertContains => {
+            WorktopMethodFnIdent::AssertContains => {
                 let input: WorktopAssertContainsInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(WorktopError::InvalidRequestData(e)))?;
                 if worktop.total_amount(input.resource_address).is_zero() {
@@ -324,7 +324,7 @@ impl Worktop {
                     Ok(ScryptoValue::from_typed(&()))
                 }
             }
-            WorktopFnIdentifier::AssertContainsAmount => {
+            WorktopMethodFnIdent::AssertContainsAmount => {
                 let input: WorktopAssertContainsAmountInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(WorktopError::InvalidRequestData(e)))?;
                 if worktop.total_amount(input.resource_address) < input.amount {
@@ -333,7 +333,7 @@ impl Worktop {
                     Ok(ScryptoValue::from_typed(&()))
                 }
             }
-            WorktopFnIdentifier::AssertContainsNonFungibles => {
+            WorktopMethodFnIdent::AssertContainsNonFungibles => {
                 let input: WorktopAssertContainsNonFungiblesInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(WorktopError::InvalidRequestData(e)))?;
                 if !worktop
@@ -346,7 +346,7 @@ impl Worktop {
                     Ok(ScryptoValue::from_typed(&()))
                 }
             }
-            WorktopFnIdentifier::Drain => {
+            WorktopMethodFnIdent::Drain => {
                 let _: WorktopDrainInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(WorktopError::InvalidRequestData(e)))?;
                 let mut buckets = Vec::new();

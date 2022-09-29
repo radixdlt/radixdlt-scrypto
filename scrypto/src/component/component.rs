@@ -59,11 +59,13 @@ impl Component {
     }
 
     pub fn add_access_check(&mut self, access_rules: AccessRules) -> &mut Self {
-        let input = RadixEngineInput::InvokeMethod(
-            Receiver::Ref(RENodeId::Component(self.0)),
-            FnIdentifier::Native(NativeFnIdentifier::Component(
-                ComponentFnIdentifier::AddAccessCheck,
-            )),
+        let input = RadixEngineInput::Invoke(
+            FnIdent::Method(MethodIdent {
+                receiver: Receiver::Ref(RENodeId::Component(self.0)),
+                fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::Component(
+                    ComponentMethodFnIdent::AddAccessCheck,
+                )),
+            }),
             scrypto_encode(&ComponentAddAccessCheckInput { access_rules }),
         );
         let _: () = call_engine(input);

@@ -253,7 +253,7 @@ impl fmt::Debug for TransactionReceipt {
                 prefix!(i, contents.instructions),
                 match inst {
                     Instruction::CallFunction {
-                        fn_identifier: FnIdentifier::Scrypto {
+                        fn_identifier: FunctionIdent::Scrypto {
                             package_address,
                             blueprint_name,
                             ident,
@@ -267,31 +267,14 @@ impl fmt::Debug for TransactionReceipt {
                         ScryptoValue::from_slice(&args).expect("Failed parse call data")
                     ),
                     Instruction::CallMethod {
-                        method_identifier,
+                        method_ident,
                         args,
-                    } => {
-                        match method_identifier {
-                            MethodIdentifier::Scrypto {
-                                component_address,
-                                ident
-                            } => {
-                                format!(
-                                    "CallMethod {{ component_address: {}, method_name: {:?}, args: {:?} }}",
-                                    bech32_encoder.encode_component_address(&component_address),
-                                    ident,
-                                    ScryptoValue::from_slice(&args).expect("Failed to parse call data")
-                                )
-                            },
-                            MethodIdentifier::Native { receiver, native_fn_identifier } => {
-                                format!(
-                                    "CallNativeMethod {{ receiver: {:?}, ident: {:?}, args: {:?} }}",
-                                    receiver,
-                                    native_fn_identifier,
-                                    ScryptoValue::from_slice(&args).expect("Failed to parse call data")
-                                )
-                            }
-                        }
-                    },
+                    } => format!(
+                        "CallMethod {{ receiver: {:?}, ident: {:?}, args: {:?} }}",
+                        method_ident.receiver,
+                        method_ident.fn_ident,
+                        ScryptoValue::from_slice(&args).expect("Failed to parse call data")
+                    ),
                     Instruction::PublishPackage { .. } => "PublishPackage {..}".to_owned(),
                     i @ _ => format!("{:?}", i),
                 }

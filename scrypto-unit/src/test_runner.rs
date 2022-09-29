@@ -19,10 +19,11 @@ use radix_engine::wasm::{
     WasmMeteringParams,
 };
 use sbor::describe::*;
+use scrypto::core::{FnIdent, MethodFnIdent, MethodIdent};
 use scrypto::dec;
 use scrypto::math::Decimal;
 use transaction::builder::ManifestBuilder;
-use transaction::model::{Executable, MethodIdentifier, TransactionManifest};
+use transaction::model::{Executable, TransactionManifest};
 use transaction::model::{PreviewIntent, TestTransaction};
 use transaction::signing::EcdsaSecp256k1PrivateKey;
 use transaction::validation::TestIntentHashManager;
@@ -237,9 +238,9 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         manifest.instructions.insert(
             0,
             transaction::model::Instruction::CallMethod {
-                method_identifier: MethodIdentifier::Scrypto {
-                    component_address: SYS_FAUCET_COMPONENT,
-                    ident: "lock_fee".to_string(),
+                method_ident: MethodIdent {
+                    receiver: Receiver::Ref(RENodeId::Component(SYS_FAUCET_COMPONENT)),
+                    fn_ident: MethodFnIdent::Scrypto("lock_fee".to_string()),
                 },
                 args: args!(dec!("1000")),
             },
@@ -645,11 +646,13 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             )],
             |kernel| {
                 kernel
-                    .invoke_method(
-                        Receiver::Ref(RENodeId::System(SYS_SYSTEM_COMPONENT)),
-                        FnIdentifier::Native(NativeFnIdentifier::System(
-                            SystemFnIdentifier::SetEpoch,
-                        )),
+                    .invoke(
+                        FnIdent::Method(MethodIdent {
+                            receiver: Receiver::Ref(RENodeId::System(SYS_SYSTEM_COMPONENT)),
+                            fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::System(
+                                SystemMethodFnIdent::SetEpoch,
+                            )),
+                        }),
                         ScryptoValue::from_typed(&SystemSetEpochInput { epoch }),
                     )
                     .unwrap()
@@ -660,11 +663,13 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     pub fn get_current_epoch(&mut self) -> u64 {
         let current_epoch: ScryptoValue = self.kernel_call(vec![], |kernel| {
             kernel
-                .invoke_method(
-                    Receiver::Ref(RENodeId::System(SYS_SYSTEM_COMPONENT)),
-                    FnIdentifier::Native(NativeFnIdentifier::System(
-                        SystemFnIdentifier::GetCurrentEpoch,
-                    )),
+                .invoke(
+                    FnIdent::Method(MethodIdent {
+                        receiver: Receiver::Ref(RENodeId::System(SYS_SYSTEM_COMPONENT)),
+                        fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::System(
+                            SystemMethodFnIdent::GetCurrentEpoch,
+                        )),
+                    }),
                     ScryptoValue::from_typed(&SystemGetCurrentEpochInput {}),
                 )
                 .unwrap()
@@ -719,9 +724,9 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
 pub fn is_auth_error(e: &RuntimeError) -> bool {
     matches!(
         e,
-        RuntimeError::ModuleError(ModuleError::AuthorizationError {
+        RuntimeError::ModuleError(ModuleError::AuthError {
             authorization: _,
-            function: _,
+            fn_ident: _,
             error: ::radix_engine::model::MethodAuthorizationError::NotAuthorized
         })
     )

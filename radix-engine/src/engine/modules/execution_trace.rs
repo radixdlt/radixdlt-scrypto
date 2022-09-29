@@ -2,6 +2,7 @@ use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::*;
 use crate::types::*;
+use scrypto::core::{FnIdent, MethodFnIdent, MethodIdent};
 
 #[derive(Debug, Clone, PartialEq, TypeId, Encode, Decode)]
 pub struct ResourceChange {
@@ -33,12 +34,17 @@ impl ExecutionTrace {
         call_frames: &Vec<CallFrame>,
         track: &mut Track<'s, R>,
         actor: &REActor,
-        fn_identifier: &FnIdentifier,
         node_id: &RENodeId,
         node_pointer: RENodePointer,
+        fn_ident: FnIdent,
         input: &ScryptoValue,
         next_owned_values: &HashMap<RENodeId, HeapRootRENode>,
     ) -> Result<(), RuntimeError> {
+        let method_ident = match fn_ident {
+            FnIdent::Method(MethodIdent { fn_ident, .. }) => fn_ident,
+            _ => return Ok(()),
+        };
+
         if let RENodeId::Vault(vault_id) = node_id {
             /* TODO: Warning: depends on call frame's actor being the vault's parent component!
             This isn't always the case! For example, when vault is instantiated in a blueprint
@@ -49,9 +55,13 @@ impl ExecutionTrace {
             2. Hook up to when the component is globalized and convert
                blueprint-parented vaults (if any) to regular
                trace entries with component parents. */
-            if let Some(Receiver::Ref(RENodeId::Component(component_address))) = &actor.receiver {
-                match fn_identifier {
-                    FnIdentifier::Native(NativeFnIdentifier::Vault(VaultFnIdentifier::Put)) => {
+            if let REActor::Method(FullyQualifiedMethod {
+                receiver: Receiver::Ref(RENodeId::Component(component_address)),
+                ..
+            }) = &actor
+            {
+                match method_ident {
+                    MethodFnIdent::Native(NativeMethodFnIdent::Vault(VaultMethodFnIdent::Put)) => {
                         let decoded_input = scrypto_decode(&input.raw).map_err(|e| {
                             RuntimeError::ApplicationError(ApplicationError::VaultError(
                                 VaultError::InvalidRequestData(e),
@@ -65,7 +75,7 @@ impl ExecutionTrace {
                             next_owned_values,
                         )?;
                     }
-                    FnIdentifier::Native(NativeFnIdentifier::Vault(VaultFnIdentifier::Take)) => {
+                    MethodFnIdent::Native(NativeMethodFnIdent::Vault(VaultMethodFnIdent::Take)) => {
                         let decoded_input = scrypto_decode(&input.raw).map_err(|e| {
                             RuntimeError::ApplicationError(ApplicationError::VaultError(
                                 VaultError::InvalidRequestData(e),

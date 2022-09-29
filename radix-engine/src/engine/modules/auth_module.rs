@@ -2,6 +2,7 @@ use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::*;
 use crate::types::*;
+use scrypto::core::{FnIdent, MethodFnIdent, MethodIdent, NativeFunctionFnIdent};
 
 pub struct AuthModule;
 
@@ -15,7 +16,7 @@ impl AuthModule {
     }
 
     fn check_auth(
-        function: &FnIdentifier,
+        fn_ident: FnIdent,
         method_auths: Vec<MethodAuthorization>,
         call_frames: &Vec<CallFrame>, // TODO remove this once heap is implemented
     ) -> Result<(), RuntimeError> {
@@ -66,8 +67,8 @@ impl AuthModule {
         if !method_auths.is_empty() {
             for method_auth in method_auths {
                 method_auth.check(&auth_zones).map_err(|error| {
-                    RuntimeError::ModuleError(ModuleError::AuthorizationError {
-                        function: function.clone(),
+                    RuntimeError::ModuleError(ModuleError::AuthError {
+                        fn_ident: fn_ident.clone(),
                         authorization: method_auth,
                         error,
                     })
@@ -79,29 +80,30 @@ impl AuthModule {
     }
 
     pub fn function_auth(
-        fn_identifier: &FnIdentifier,
+        function_ident: FunctionIdent,
         call_frames: &mut Vec<CallFrame>,
     ) -> Result<(), RuntimeError> {
-        let auth = match fn_identifier {
-            FnIdentifier::Native(NativeFnIdentifier::System(system_fn)) => System::auth(system_fn),
+        let auth = match &function_ident {
+            FunctionIdent::Native(NativeFunctionFnIdent::System(system_fn)) => {
+                System::function_auth(system_fn)
+            }
             _ => vec![],
         };
-        Self::check_auth(fn_identifier, auth, call_frames)
+        Self::check_auth(FnIdent::Function(function_ident), auth, call_frames)
     }
 
     pub fn receiver_auth<'s, R: FeeReserve>(
-        function: &FnIdentifier,
-        receiver: Receiver,
+        method_ident: MethodIdent,
         input: &ScryptoValue,
         node_pointer: RENodePointer,
         call_frames: &Vec<CallFrame>,
         track: &mut Track<'s, R>,
     ) -> Result<(), RuntimeError> {
-        let auth = match (receiver, function) {
-            (
-                Receiver::Consumed(RENodeId::Bucket(..)),
-                FnIdentifier::Native(NativeFnIdentifier::Bucket(bucket_fn)),
-            ) => {
+        let auth = match &method_ident {
+            MethodIdent {
+                receiver: Receiver::Consumed(RENodeId::Bucket(..)),
+                fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::Bucket(ref bucket_fn)),
+            } => {
                 let resource_address = {
                     let node_ref = node_pointer.to_ref(call_frames, track);
                     node_ref.bucket().resource_address()
@@ -113,11 +115,11 @@ impl AuthModule {
                 let method_auth = resource_manager.get_bucket_auth(*bucket_fn);
                 vec![method_auth.clone()]
             }
-            (
-                Receiver::Ref(RENodeId::ResourceManager(resource_address)),
-                FnIdentifier::Native(NativeFnIdentifier::ResourceManager(fn_ident)),
-            ) => {
-                let substate_id = SubstateId::ResourceManager(resource_address);
+            MethodIdent {
+                receiver: Receiver::Ref(RENodeId::ResourceManager(resource_address)),
+                fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::ResourceManager(ref fn_ident)),
+            } => {
+                let substate_id = SubstateId::ResourceManager(*resource_address);
                 let resource_manager = track
                     .borrow_substate(substate_id.clone())
                     .raw()
@@ -125,43 +127,48 @@ impl AuthModule {
                 let method_auth = resource_manager.get_auth(*fn_ident, &input).clone();
                 vec![method_auth]
             }
-            (
-                Receiver::Ref(RENodeId::System(..)),
-                FnIdentifier::Native(NativeFnIdentifier::System(system_fn)),
-            ) => System::auth(system_fn),
-            (Receiver::Ref(RENodeId::Component(..)), FnIdentifier::Native(..)) => {
-                match node_pointer {
-                    RENodePointer::Store(..) => vec![MethodAuthorization::DenyAll],
-                    RENodePointer::Heap { .. } => vec![],
-                }
-            }
-            (
-                Receiver::Ref(RENodeId::Component(..)),
-                FnIdentifier::Scrypto {
-                    package_address,
-                    blueprint_name,
-                    ident,
-                },
-            ) => {
+            MethodIdent {
+                receiver: Receiver::Ref(RENodeId::System(..)),
+                fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::System(ref system_fn)),
+            } => System::method_auth(system_fn),
+            MethodIdent {
+                receiver: Receiver::Ref(RENodeId::Component(..)),
+                fn_ident: MethodFnIdent::Native(..),
+            } => match node_pointer {
+                RENodePointer::Store(..) => vec![MethodAuthorization::DenyAll],
+                RENodePointer::Heap { .. } => vec![],
+            },
+            MethodIdent {
+                receiver: Receiver::Ref(RENodeId::Component(..)),
+                fn_ident: MethodFnIdent::Scrypto(ref ident),
+            } => {
+                let (package_address, blueprint_name) = {
+                    let value_ref = node_pointer.to_ref(call_frames, track);
+                    let component = value_ref.component_info();
+                    (
+                        component.package_address(),
+                        component.blueprint_name().to_string(),
+                    )
+                };
+
                 // Assume that package_address/blueprint is the original impl of Component for now
                 // TODO: Remove this assumption
-
-                let package_substate_id = SubstateId::Package(*package_address);
+                let package_substate_id = SubstateId::Package(package_address);
                 let package = track
                     .borrow_substate(package_substate_id.clone())
                     .raw()
                     .package()
                     .clone();
                 let abi = package
-                    .blueprint_abi(blueprint_name)
+                    .blueprint_abi(&blueprint_name)
                     .expect("Blueprint not found for existing component");
                 let fn_abi = abi.get_fn_abi(ident).ok_or(RuntimeError::KernelError(
-                    KernelError::MethodNotFound(function.clone()),
+                    KernelError::FnIdentNotFound(FnIdent::Method(method_ident.clone())),
                 ))?; // TODO: Move this check into kernel
                 if !fn_abi.input.matches(&input.dom) {
-                    return Err(RuntimeError::KernelError(KernelError::InvalidFnInput {
-                        fn_identifier: function.clone(),
-                    }));
+                    return Err(RuntimeError::KernelError(KernelError::InvalidFnInput2(
+                        FnIdent::Method(method_ident),
+                    )));
                 }
 
                 {
@@ -171,10 +178,10 @@ impl AuthModule {
                     component.method_authorization(component_state, &abi.structure, ident)
                 }
             }
-            (
-                Receiver::Ref(RENodeId::Vault(..)),
-                FnIdentifier::Native(NativeFnIdentifier::Vault(vault_fn)),
-            ) => {
+            MethodIdent {
+                receiver: Receiver::Ref(RENodeId::Vault(..)),
+                fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::Vault(ref vault_fn)),
+            } => {
                 let resource_address = {
                     let mut node_ref = node_pointer.to_ref(call_frames, track);
                     node_ref.vault().resource_address()
@@ -188,6 +195,6 @@ impl AuthModule {
             _ => vec![],
         };
 
-        Self::check_auth(function, auth, call_frames)
+        Self::check_auth(FnIdent::Method(method_ident), auth, call_frames)
     }
 }

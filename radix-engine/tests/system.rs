@@ -1,6 +1,7 @@
 use radix_engine::engine::{ModuleError, RuntimeError};
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
+use scrypto::core::{NativeFunctionFnIdent, SystemFunctionFnIdent};
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::model::AuthModule;
@@ -43,10 +44,7 @@ fn set_epoch_without_supervisor_auth_fails() {
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        matches!(
-            e,
-            RuntimeError::ModuleError(ModuleError::AuthorizationError { .. })
-        )
+        matches!(e, RuntimeError::ModuleError(ModuleError::AuthError { .. }))
     });
 }
 
@@ -60,7 +58,7 @@ fn system_create_should_fail_with_supervisor_privilege() {
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10u32.into(), SYS_FAUCET_COMPONENT)
         .call_native_function(
-            NativeFnIdentifier::System(SystemFnIdentifier::Create),
+            NativeFunctionFnIdent::System(SystemFunctionFnIdent::Create),
             args!(),
         )
         .build();
@@ -69,10 +67,7 @@ fn system_create_should_fail_with_supervisor_privilege() {
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        matches!(
-            e,
-            RuntimeError::ModuleError(ModuleError::AuthorizationError { .. })
-        )
+        matches!(e, RuntimeError::ModuleError(ModuleError::AuthError { .. }))
     });
 }
 
@@ -86,7 +81,7 @@ fn system_create_should_succeed_with_system_privilege() {
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_native_function(
-            NativeFnIdentifier::System(SystemFnIdentifier::Create),
+            NativeFunctionFnIdent::System(SystemFunctionFnIdent::Create),
             args!(),
         )
         .build();

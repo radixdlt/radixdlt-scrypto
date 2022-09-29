@@ -1,5 +1,6 @@
 use super::{KernelError, RuntimeError};
 use crate::types::*;
+use scrypto::core::MethodFnIdent;
 
 pub struct RENodeProperties;
 
@@ -22,11 +23,11 @@ impl RENodeProperties {
     }
 
     pub fn to_primary_substate_id(
-        function: &FnIdentifier,
+        method_ident: &MethodFnIdent,
         node_id: RENodeId,
     ) -> Result<SubstateId, RuntimeError> {
-        let substate_id = match function {
-            FnIdentifier::Native(..) => match node_id {
+        let substate_id = match &method_ident {
+            MethodFnIdent::Native(..) => match node_id {
                 RENodeId::AuthZone(auth_zone_id) => SubstateId::AuthZone(auth_zone_id),
                 RENodeId::Bucket(bucket_id) => SubstateId::Bucket(bucket_id),
                 RENodeId::Proof(proof_id) => SubstateId::Proof(proof_id),
@@ -40,18 +41,18 @@ impl RENodeProperties {
                 }
                 RENodeId::Vault(vault_id) => SubstateId::Vault(vault_id),
                 _ => {
-                    return Err(RuntimeError::KernelError(KernelError::MethodNotFound(
-                        function.clone(),
+                    return Err(RuntimeError::KernelError(KernelError::MethodFnNotFound(
+                        method_ident.clone(),
                     )))
                 }
             },
-            FnIdentifier::Scrypto { .. } => match node_id {
+            MethodFnIdent::Scrypto { .. } => match node_id {
                 RENodeId::Component(component_address) => {
                     SubstateId::ComponentState(component_address)
                 }
                 _ => {
-                    return Err(RuntimeError::KernelError(KernelError::MethodNotFound(
-                        function.clone(),
+                    return Err(RuntimeError::KernelError(KernelError::MethodFnNotFound(
+                        method_ident.clone(),
                     )))
                 }
             },

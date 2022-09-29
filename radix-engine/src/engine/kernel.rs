@@ -1,3 +1,4 @@
+use scrypto::core::{FnIdent, MethodFnIdent, MethodIdent};
 use transaction::errors::IdAllocationError;
 use transaction::model::Instruction;
 use transaction::validation::*;
@@ -268,19 +269,27 @@ where
 
         let output = {
             let rtn = match Self::current_frame(&self.call_frames).actor.clone() {
-                REActor {
+                REActor::Function(FunctionIdent::Native(native_fn)) => {
+                    NativeInterpreter::run_function(native_fn, input, self)
+                }
+                REActor::Method(FullyQualifiedMethod {
                     receiver,
-                    fn_identifier: FnIdentifier::Native(native_fn),
-                } => NativeInterpreter::run(receiver, native_fn, input, self),
-                REActor {
-                    receiver,
-                    fn_identifier:
-                        FnIdentifier::Scrypto {
+                    fn_ident: FullyQualifiedMethodFn::Native(native_fn),
+                }) => NativeInterpreter::run_method(receiver, native_fn, input, self),
+                REActor::Function(FunctionIdent::Scrypto {
+                    package_address,
+                    blueprint_name,
+                    ident,
+                })
+                | REActor::Method(FullyQualifiedMethod {
+                    fn_ident:
+                        FullyQualifiedMethodFn::Scrypto {
                             package_address,
                             blueprint_name,
                             ident,
                         },
-                } => {
+                    ..
+                }) => {
                     let output = {
                         let package = self
                             .track
@@ -308,27 +317,30 @@ where
                             .expect("Function not found")
                             .export_name
                             .to_string();
-                        let scrypto_actor = match receiver {
-                            Some(Receiver::Ref(RENodeId::Component(component_address))) => {
-                                ScryptoActor::Component(
-                                    component_address,
-                                    package_address.clone(),
-                                    blueprint_name.clone(),
-                                )
+                        let scrypto_actor = match &Self::current_frame(&self.call_frames).actor {
+                            REActor::Method(FullyQualifiedMethod { receiver, .. }) => {
+                                match receiver {
+                                    Receiver::Ref(RENodeId::Component(component_address)) => {
+                                        ScryptoActor::Component(
+                                            *component_address,
+                                            package_address.clone(),
+                                            blueprint_name.clone(),
+                                        )
+                                    }
+                                    _ => {
+                                        return Err(RuntimeError::KernelError(
+                                            KernelError::MethodNotFound(FunctionIdent::Scrypto {
+                                                package_address,
+                                                blueprint_name,
+                                                ident,
+                                            }),
+                                        ))
+                                    }
+                                }
                             }
-                            None => {
-                                ScryptoActor::blueprint(package_address, blueprint_name.clone())
-                            }
-                            _ => {
-                                return Err(RuntimeError::KernelError(KernelError::MethodNotFound(
-                                    FnIdentifier::Scrypto {
-                                        package_address,
-                                        blueprint_name,
-                                        ident,
-                                    },
-                                )))
-                            }
+                            _ => ScryptoActor::blueprint(package_address, blueprint_name.clone()),
                         };
+
                         let mut runtime: Box<dyn WasmRuntime> =
                             Box::new(RadixEngineWasmRuntime::new(scrypto_actor, self));
                         instance
@@ -354,7 +366,7 @@ where
                         .expect("Function not found");
                     if !fn_abi.output.matches(&output.dom) {
                         Err(RuntimeError::KernelError(KernelError::InvalidFnOutput {
-                            fn_identifier: FnIdentifier::Scrypto {
+                            fn_identifier: FunctionIdent::Scrypto {
                                 package_address,
                                 blueprint_name,
                                 ident,
@@ -417,71 +429,12 @@ where
     fn current_frame(call_frames: &Vec<CallFrame>) -> &CallFrame {
         call_frames.last().expect("Current frame always exists")
     }
-}
-
-impl<'g, 's, W, I, R> SystemApi<'s, W, I, R> for Kernel<'g, 's, W, I, R>
-where
-    W: WasmEngine<I>,
-    I: WasmInstance,
-    R: FeeReserve,
-{
-    fn consume_cost_units(&mut self, units: u32) -> Result<(), RuntimeError> {
-        for m in &mut self.modules {
-            m.on_wasm_costing(&mut self.track, &mut self.call_frames, units)
-                .map_err(RuntimeError::ModuleError)?;
-        }
-
-        Ok(())
-    }
-
-    fn lock_fee(
-        &mut self,
-        vault_id: VaultId,
-        mut fee: Resource,
-        contingent: bool,
-    ) -> Result<Resource, RuntimeError> {
-        for m in &mut self.modules {
-            fee = m
-                .on_lock_fee(
-                    &mut self.track,
-                    &mut self.call_frames,
-                    vault_id,
-                    fee,
-                    contingent,
-                )
-                .map_err(RuntimeError::ModuleError)?;
-        }
-
-        Ok(fee)
-    }
 
     fn invoke_function(
         &mut self,
-        fn_identifier: FnIdentifier,
+        fn_ident: FnIdent,
         input: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError> {
-        for m in &mut self.modules {
-            m.pre_sys_call(
-                &mut self.track,
-                &mut self.call_frames,
-                SysCallInput::InvokeFunction {
-                    fn_identifier: &fn_identifier,
-                    input: &input,
-                },
-            )
-            .map_err(RuntimeError::ModuleError)?;
-        }
-
-        // Check call depth
-        if Self::current_frame(&self.call_frames).depth == self.max_depth {
-            return Err(RuntimeError::KernelError(
-                KernelError::MaxCallDepthLimitReached,
-            ));
-        }
-
-        // Prevent vaults/kvstores from being moved
-        Self::process_call_data(&input)?;
-
         // Figure out what buckets and proofs to move from this process
         let values_to_take = input.node_ids();
         let (taken_values, mut missing) = Self::current_frame_mut(&mut self.call_frames)
@@ -507,12 +460,12 @@ where
         let mut locked_values = HashSet::<SubstateId>::new();
 
         // No authorization but state load
-        match &fn_identifier {
-            FnIdentifier::Scrypto {
+        match &fn_ident {
+            FnIdent::Function(FunctionIdent::Scrypto {
                 package_address,
                 blueprint_name,
                 ident,
-            } => {
+            }) => {
                 self.track
                     .acquire_lock(SubstateId::Package(package_address.clone()), false, false)
                     .map_err(|e| RuntimeError::KernelError(KernelError::SubstateError(e)))?;
@@ -530,12 +483,12 @@ where
                             blueprint_name.clone(),
                         )))?;
                 let fn_abi = abi.get_fn_abi(ident).ok_or(RuntimeError::KernelError(
-                    KernelError::MethodNotFound(fn_identifier.clone()),
+                    KernelError::FnIdentNotFound(fn_ident.clone()),
                 ))?;
                 if !fn_abi.input.matches(&input.dom) {
-                    return Err(RuntimeError::KernelError(KernelError::InvalidFnInput {
-                        fn_identifier,
-                    }));
+                    return Err(RuntimeError::KernelError(KernelError::InvalidFnInput2(
+                        fn_ident.clone(),
+                    )));
                 }
             }
             _ => {}
@@ -606,21 +559,25 @@ where
             }
         }
 
-        AuthModule::function_auth(&fn_identifier, &mut self.call_frames)?;
+        match &fn_ident {
+            FnIdent::Function(fn_identifier) => {
+                AuthModule::function_auth(fn_identifier.clone(), &mut self.call_frames)?;
+            }
+            _ => {}
+        }
 
         // start a new frame and run
         let (output, received_values) = {
             let frame = CallFrame::new_child(
                 Self::current_frame(&self.call_frames).depth + 1,
-                REActor {
-                    fn_identifier: fn_identifier.clone(),
-                    receiver: None,
+                match &fn_ident {
+                    FnIdent::Function(function_ident) => REActor::Function(function_ident.clone()),
+                    _ => panic!("Unexpected"),
                 },
                 next_owned_values,
                 next_frame_node_refs,
                 self,
             );
-
             self.call_frames.push(frame);
             self.run(input)?
         };
@@ -644,56 +601,14 @@ where
                 .insert(id, value);
         }
 
-        // Accept component references
-        for refed_component_address in &output.refed_component_addresses {
-            let node_id = RENodeId::Component(*refed_component_address);
-            let mut visible = HashSet::new();
-            visible.insert(SubstateId::ComponentInfo(*refed_component_address));
-            Self::current_frame_mut(&mut self.call_frames)
-                .node_refs
-                .insert(node_id, RENodePointer::Store(node_id));
-        }
-
-        for m in &mut self.modules {
-            m.post_sys_call(
-                &mut self.track,
-                &mut self.call_frames,
-                SysCallOutput::InvokeFunction { output: &output },
-            )
-            .map_err(RuntimeError::ModuleError)?;
-        }
         Ok(output)
     }
 
     fn invoke_method(
         &mut self,
-        receiver: Receiver,
-        fn_identifier: FnIdentifier,
+        fn_ident: FnIdent,
         input: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError> {
-        for m in &mut self.modules {
-            m.pre_sys_call(
-                &mut self.track,
-                &mut self.call_frames,
-                SysCallInput::InvokeMethod {
-                    receiver: &receiver,
-                    fn_identifier: &fn_identifier,
-                    input: &input,
-                },
-            )
-            .map_err(RuntimeError::ModuleError)?;
-        }
-
-        // check call depth
-        if Self::current_frame(&self.call_frames).depth == self.max_depth {
-            return Err(RuntimeError::KernelError(
-                KernelError::MaxCallDepthLimitReached,
-            ));
-        }
-
-        // Prevent vaults/kvstores from being moved
-        Self::process_call_data(&input)?;
-
         // Figure out what buckets and proofs to move from this process
         let values_to_take = input.node_ids();
         let (taken_values, mut missing) = Self::current_frame_mut(&mut self.call_frames)
@@ -720,8 +635,16 @@ where
         let mut next_frame_node_refs = HashMap::new();
 
         // Authorization and state load
-        match &receiver {
-            Receiver::Ref(node_id) | Receiver::Consumed(node_id) => {
+        let re_actor = match &fn_ident {
+            FnIdent::Function(..) => panic!("Should not get here"),
+            FnIdent::Method(MethodIdent {
+                receiver: Receiver::Ref(node_id),
+                fn_ident: fn_identifier,
+            })
+            | FnIdent::Method(MethodIdent {
+                receiver: Receiver::Consumed(node_id),
+                fn_ident: fn_identifier,
+            }) => {
                 // Find node
                 let node_pointer = {
                     let current_frame = Self::current_frame(&self.call_frames);
@@ -753,11 +676,11 @@ where
                 let substate_id =
                     RENodeProperties::to_primary_substate_id(&fn_identifier, *node_id)?;
                 let is_lock_fee = matches!(node_id, RENodeId::Vault(..))
-                    && (fn_identifier.eq(&FnIdentifier::Native(NativeFnIdentifier::Vault(
-                        VaultFnIdentifier::LockFee,
-                    ))) || fn_identifier.eq(&FnIdentifier::Native(NativeFnIdentifier::Vault(
-                        VaultFnIdentifier::LockContingentFee,
-                    ))));
+                    && (fn_identifier.eq(&MethodFnIdent::Native(NativeMethodFnIdent::Vault(
+                        VaultMethodFnIdent::LockFee,
+                    ))) || fn_identifier.eq(&MethodFnIdent::Native(
+                        NativeMethodFnIdent::Vault(VaultMethodFnIdent::LockContingentFee),
+                    )));
                 if is_lock_fee && matches!(node_pointer, RENodePointer::Heap { .. }) {
                     return Err(RuntimeError::KernelError(KernelError::RENodeNotInTrack));
                 }
@@ -770,12 +693,11 @@ where
                 let mut temporary_locks = Vec::new();
 
                 // Load actor
-                match &fn_identifier {
-                    FnIdentifier::Scrypto {
-                        package_address,
-                        blueprint_name,
-                        ..
-                    } => match node_id {
+                let re_actor = match &fn_ident {
+                    FnIdent::Method(MethodIdent {
+                        fn_ident: MethodFnIdent::Scrypto(ident),
+                        receiver,
+                    }) => match node_id {
                         RENodeId::Component(component_address) => {
                             let temporary_substate_id =
                                 SubstateId::ComponentInfo(*component_address);
@@ -792,21 +714,25 @@ where
                             let node_ref = node_pointer.to_ref(&self.call_frames, &mut self.track);
                             let component = node_ref.component_info();
 
-                            // Don't support traits yet
-                            if !package_address.eq(&component.package_address()) {
-                                return Err(RuntimeError::KernelError(
-                                    KernelError::MethodNotFound(fn_identifier),
-                                ));
-                            }
-                            if !blueprint_name.eq(component.blueprint_name()) {
-                                return Err(RuntimeError::KernelError(
-                                    KernelError::MethodNotFound(fn_identifier),
-                                ));
-                            }
+                            REActor::Method(FullyQualifiedMethod {
+                                receiver: receiver.clone(),
+                                fn_ident: FullyQualifiedMethodFn::Scrypto {
+                                    package_address: component.package_address(),
+                                    blueprint_name: component.blueprint_name().to_string(),
+                                    ident: ident.to_string(),
+                                },
+                            })
                         }
                         _ => panic!("Should not get here."),
                     },
-                    _ => {}
+                    FnIdent::Method(MethodIdent {
+                        fn_ident: MethodFnIdent::Native(native_fn),
+                        receiver,
+                    }) => REActor::Method(FullyQualifiedMethod {
+                        receiver: receiver.clone(),
+                        fn_ident: FullyQualifiedMethodFn::Native(native_fn.clone()),
+                    }),
+                    _ => panic!("Should not get here."),
                 };
 
                 // Lock Parent Substates
@@ -879,7 +805,11 @@ where
 
                 // Lock Resource Managers in request
                 // TODO: Remove when references cleaned up
-                if let FnIdentifier::Native(..) = &fn_identifier {
+                if let FnIdent::Method(MethodIdent {
+                    fn_ident: MethodFnIdent::Native(..),
+                    ..
+                }) = fn_ident
+                {
                     for resource_address in &input.resource_addresses {
                         let resource_substate_id =
                             SubstateId::ResourceManager(resource_address.clone());
@@ -918,32 +848,36 @@ where
                     &self.call_frames,
                     &mut self.track,
                     &current_frame.actor,
-                    &fn_identifier,
                     node_id,
                     node_pointer,
+                    fn_ident.clone(),
                     &input,
                     &next_owned_values,
                 )?;
 
-                // Check method authorization
-                AuthModule::receiver_auth(
-                    &fn_identifier,
-                    receiver.clone(),
-                    &input,
-                    node_pointer.clone(),
-                    &mut self.call_frames,
-                    &mut self.track,
-                )?;
+                match &fn_ident {
+                    FnIdent::Method(method_ident) => {
+                        // Check method authorization
+                        AuthModule::receiver_auth(
+                            method_ident.clone(),
+                            &input,
+                            node_pointer.clone(),
+                            &mut self.call_frames,
+                            &mut self.track,
+                        )?;
 
-                match &receiver {
-                    Receiver::Consumed(..) => {
-                        let heap_node = Self::current_frame_mut(&mut self.call_frames)
-                            .owned_heap_nodes
-                            .remove(node_id)
-                            .ok_or(RuntimeError::KernelError(
-                                KernelError::InvokeMethodInvalidReceiver(*node_id),
-                            ))?;
-                        next_owned_values.insert(*node_id, heap_node);
+                        match &method_ident.receiver {
+                            Receiver::Consumed(..) => {
+                                let heap_node = Self::current_frame_mut(&mut self.call_frames)
+                                    .owned_heap_nodes
+                                    .remove(node_id)
+                                    .ok_or(RuntimeError::KernelError(
+                                        KernelError::InvokeMethodInvalidReceiver(*node_id),
+                                    ))?;
+                                next_owned_values.insert(*node_id, heap_node);
+                            }
+                            _ => {}
+                        }
                     }
                     _ => {}
                 }
@@ -955,8 +889,9 @@ where
                 }
 
                 next_frame_node_refs.insert(node_id.clone(), node_pointer.clone());
+                re_actor
             }
-        }
+        };
 
         // TODO: Cleanup
         // Pass argument references
@@ -986,10 +921,7 @@ where
         let (output, received_values) = {
             let frame = CallFrame::new_child(
                 Self::current_frame(&self.call_frames).depth + 1,
-                REActor {
-                    fn_identifier: fn_identifier.clone(),
-                    receiver: Some(receiver.clone()),
-                },
+                re_actor,
                 next_owned_values,
                 next_frame_node_refs,
                 self,
@@ -1016,6 +948,79 @@ where
                 .insert(id, value);
         }
 
+        Ok(output)
+    }
+}
+
+impl<'g, 's, W, I, R> SystemApi<'s, W, I, R> for Kernel<'g, 's, W, I, R>
+where
+    W: WasmEngine<I>,
+    I: WasmInstance,
+    R: FeeReserve,
+{
+    fn consume_cost_units(&mut self, units: u32) -> Result<(), RuntimeError> {
+        for m in &mut self.modules {
+            m.on_wasm_costing(&mut self.track, &mut self.call_frames, units)
+                .map_err(RuntimeError::ModuleError)?;
+        }
+
+        Ok(())
+    }
+
+    fn lock_fee(
+        &mut self,
+        vault_id: VaultId,
+        mut fee: Resource,
+        contingent: bool,
+    ) -> Result<Resource, RuntimeError> {
+        for m in &mut self.modules {
+            fee = m
+                .on_lock_fee(
+                    &mut self.track,
+                    &mut self.call_frames,
+                    vault_id,
+                    fee,
+                    contingent,
+                )
+                .map_err(RuntimeError::ModuleError)?;
+        }
+
+        Ok(fee)
+    }
+
+    fn invoke(
+        &mut self,
+        fn_ident: FnIdent,
+        input: ScryptoValue,
+    ) -> Result<ScryptoValue, RuntimeError> {
+        for m in &mut self.modules {
+            m.pre_sys_call(
+                &mut self.track,
+                &mut self.call_frames,
+                SysCallInput::Invoke {
+                    function_identifier: &fn_ident,
+                    input: &input,
+                },
+            )
+            .map_err(RuntimeError::ModuleError)?;
+        }
+
+        // Check call depth
+        if Self::current_frame(&self.call_frames).depth == self.max_depth {
+            return Err(RuntimeError::KernelError(
+                KernelError::MaxCallDepthLimitReached,
+            ));
+        }
+
+        // Prevent vaults/kvstores from being moved
+        Self::process_call_data(&input)?;
+
+        // TODO: Slowly unify these two
+        let output = match fn_ident {
+            FnIdent::Method(..) => self.invoke_method(fn_ident, input)?,
+            FnIdent::Function(..) => self.invoke_function(fn_ident, input)?,
+        };
+
         // Accept component references
         for refed_component_address in &output.refed_component_addresses {
             let node_id = RENodeId::Component(*refed_component_address);
@@ -1030,10 +1035,11 @@ where
             m.post_sys_call(
                 &mut self.track,
                 &mut self.call_frames,
-                SysCallOutput::InvokeMethod { output: &output },
+                SysCallOutput::Invoke { output: &output },
             )
             .map_err(RuntimeError::ModuleError)?;
         }
+
         Ok(output)
     }
 

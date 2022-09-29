@@ -3,11 +3,12 @@ use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt;
 use sbor::rust::vec::Vec;
 use sbor::*;
+use scrypto::core::{MethodFnIdent, MethodIdent};
 
 use crate::abi::*;
 use crate::buffer::scrypto_encode;
 use crate::core::{
-    BucketFnIdentifier, FnIdentifier, NativeFnIdentifier, Receiver, ResourceManagerFnIdentifier,
+    BucketMethodFnIdent, FnIdent, NativeMethodFnIdent, Receiver, ResourceManagerMethodFnIdent,
 };
 use crate::engine::types::RENodeId;
 use crate::engine::{api::*, call_engine, types::BucketId};
@@ -53,65 +54,71 @@ pub struct Bucket(pub BucketId);
 impl Bucket {
     /// Creates a new bucket to hold resources of the given definition.
     pub fn new(resource_address: ResourceAddress) -> Self {
-        let input = RadixEngineInput::InvokeMethod(
-            Receiver::Ref(RENodeId::ResourceManager(resource_address)),
-            FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
-                ResourceManagerFnIdentifier::CreateBucket,
-            )),
+        let input = RadixEngineInput::Invoke(
+            FnIdent::Method(MethodIdent {
+                receiver: Receiver::Ref(RENodeId::ResourceManager(resource_address)),
+                fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::ResourceManager(
+                    ResourceManagerMethodFnIdent::CreateBucket,
+                )),
+            }),
             scrypto_encode(&ResourceManagerCreateBucketInput {}),
         );
         call_engine(input)
     }
 
     native_functions! {
-        Receiver::Consumed(RENodeId::Bucket(self.0)), NativeFnIdentifier::Bucket => {
+        Receiver::Consumed(RENodeId::Bucket(self.0)), NativeMethodFnIdent::Bucket => {
            pub fn burn(self) -> () {
-                BucketFnIdentifier::Burn,
+                BucketMethodFnIdent::Burn,
                 ConsumingBucketBurnInput {}
             }
         }
     }
 
     fn take_internal(&mut self, amount: Decimal) -> Self {
-        let input = RadixEngineInput::InvokeMethod(
-            Receiver::Ref(RENodeId::Bucket(self.0)),
-            FnIdentifier::Native(NativeFnIdentifier::Bucket(BucketFnIdentifier::Take)),
+        let input = RadixEngineInput::Invoke(
+            FnIdent::Method(MethodIdent {
+                receiver: Receiver::Ref(RENodeId::Bucket(self.0)),
+                fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::Bucket(
+                    BucketMethodFnIdent::Take,
+                )),
+            }),
             scrypto_encode(&BucketTakeInput { amount }),
         );
         call_engine(input)
     }
 
     native_functions! {
-        Receiver::Ref(RENodeId::Bucket(self.0)), NativeFnIdentifier::Bucket => {
+        Receiver::Ref(RENodeId::Bucket(self.0)), NativeMethodFnIdent::Bucket => {
             pub fn take_non_fungibles(&mut self, non_fungible_ids: &BTreeSet<NonFungibleId>) -> Self {
-                BucketFnIdentifier::TakeNonFungibles,
+                BucketMethodFnIdent::TakeNonFungibles,
                 BucketTakeNonFungiblesInput {
                     ids: non_fungible_ids.clone()
                 }
             }
             pub fn put(&mut self, other: Self) -> () {
-                BucketFnIdentifier::Put,
+                BucketMethodFnIdent::Put,
                 BucketPutInput {
                     bucket: other
                 }
             }
             pub fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId> {
-                BucketFnIdentifier::GetNonFungibleIds,
+                BucketMethodFnIdent::GetNonFungibleIds,
                 BucketGetNonFungibleIdsInput {
                 }
             }
             pub fn amount(&self) -> Decimal {
-                BucketFnIdentifier::GetAmount,
+                BucketMethodFnIdent::GetAmount,
                 BucketGetAmountInput {
                 }
             }
             pub fn resource_address(&self) -> ResourceAddress {
-                BucketFnIdentifier::GetResourceAddress,
+                BucketMethodFnIdent::GetResourceAddress,
                 BucketGetResourceAddressInput {
                 }
             }
             pub fn create_proof(&self) -> scrypto::resource::Proof {
-                BucketFnIdentifier::CreateProof,
+                BucketMethodFnIdent::CreateProof,
                 BucketCreateProofInput {
                 }
             }
