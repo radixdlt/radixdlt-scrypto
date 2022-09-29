@@ -19,7 +19,7 @@ pub struct FullyQualifiedMethod {
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub enum REActor {
     Function(FunctionIdent),
-    Method(FullyQualifiedMethod)
+    Method(FullyQualifiedMethod),
 }
 
 impl REActor {

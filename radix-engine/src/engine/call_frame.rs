@@ -30,13 +30,11 @@ impl CallFrame {
     pub fn new_root() -> Self {
         Self {
             depth: 0,
-            actor: REActor::Function(
-                FunctionIdent::Native(
-                    NativeFunctionFnIdent::TransactionProcessor(
-                        TransactionProcessorFunctionFnIdent::Run,
-                    ),
+            actor: REActor::Function(FunctionIdent::Native(
+                NativeFunctionFnIdent::TransactionProcessor(
+                    TransactionProcessorFunctionFnIdent::Run,
                 ),
-            ),
+            )),
             node_refs: HashMap::new(),
             owned_heap_nodes: HashMap::new(),
             auth_zone: AuthZone::new(),

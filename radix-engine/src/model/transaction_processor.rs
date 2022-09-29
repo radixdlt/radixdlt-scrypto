@@ -726,33 +726,16 @@ impl TransactionProcessor {
                                         component_address,
                                         ident,
                                     } => system_api
-                                        .substate_read(SubstateId::ComponentInfo(
-                                            *component_address,
-                                        ))
-                                        .map_err(InvokeError::Downstream)
-                                        .and_then(|s| {
-                                            let (package_address, blueprint_name): (
-                                                PackageAddress,
-                                                String,
-                                            ) = scrypto_decode(&s.raw)
-                                                .expect("Failed to decode ComponentInfo substate");
-
-                                            system_api
-                                                .invoke(
-                                                    FnIdent::Method(MethodIdent {
-                                                        receiver: Receiver::Ref(
-                                                            RENodeId::Component(*component_address),
-                                                        ),
-                                                        fn_ident: MethodFnIdent::Scrypto {
-                                                            ident: ident.to_string(),
-                                                            package_address,
-                                                            blueprint_name,
-                                                        },
-                                                    }),
-                                                    call_data,
-                                                )
-                                                .map_err(InvokeError::Downstream)
-                                        }),
+                                        .invoke(
+                                            FnIdent::Method(MethodIdent {
+                                                receiver: Receiver::Ref(RENodeId::Component(
+                                                    *component_address,
+                                                )),
+                                                fn_ident: MethodFnIdent::Scrypto(ident.to_string()),
+                                            }),
+                                            call_data,
+                                        )
+                                        .map_err(InvokeError::Downstream),
                                     MethodIdentifier::Native {
                                         receiver,
                                         native_fn_identifier,

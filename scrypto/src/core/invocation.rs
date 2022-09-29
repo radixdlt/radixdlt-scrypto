@@ -30,11 +30,7 @@ pub enum FunctionIdent {
 
 #[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
 pub enum MethodFnIdent {
-    Scrypto {
-        package_address: PackageAddress,
-        blueprint_name: String,
-        ident: String,
-    },
+    Scrypto(String),
     Native(NativeMethodFnIdent),
 }
 

@@ -109,24 +109,27 @@ impl AuthModule {
             },
             MethodIdent {
                 receiver: Receiver::Ref(RENodeId::Component(..)),
-                fn_ident:
-                    MethodFnIdent::Scrypto {
-                        ref package_address,
-                        ref blueprint_name,
-                        ref ident,
-                    },
+                fn_ident: MethodFnIdent::Scrypto(ref ident),
             } => {
+                let (package_address, blueprint_name) = {
+                    let value_ref = node_pointer.to_ref(call_frames, track);
+                    let component = value_ref.component_info();
+                    (
+                        component.package_address(),
+                        component.blueprint_name().to_string(),
+                    )
+                };
+
                 // Assume that package_address/blueprint is the original impl of Component for now
                 // TODO: Remove this assumption
-
-                let package_substate_id = SubstateId::Package(*package_address);
+                let package_substate_id = SubstateId::Package(package_address);
                 let package = track
                     .borrow_substate(package_substate_id.clone())
                     .raw()
                     .package()
                     .clone();
                 let abi = package
-                    .blueprint_abi(blueprint_name)
+                    .blueprint_abi(&blueprint_name)
                     .expect("Blueprint not found for existing component");
                 let fn_abi = abi.get_fn_abi(ident).ok_or(RuntimeError::KernelError(
                     KernelError::FnIdentNotFound(FnIdent::Method(method_ident.clone())),

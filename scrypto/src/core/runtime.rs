@@ -8,7 +8,7 @@ use crate::buffer::scrypto_encode;
 use crate::component::*;
 use crate::core::*;
 use crate::crypto::*;
-use crate::engine::types::{RENodeId, SubstateId};
+use crate::engine::types::RENodeId;
 use crate::engine::{api::*, call_engine};
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -77,17 +77,10 @@ impl Runtime {
         method: S,
         args: Vec<u8>,
     ) -> T {
-        let input = RadixEngineInput::SubstateRead(SubstateId::ComponentInfo(component_address));
-        let (package_address, blueprint_name): (PackageAddress, String) = call_engine(input);
-
         let input = RadixEngineInput::Invoke(
             FnIdent::Method(MethodIdent {
                 receiver: Receiver::Ref(RENodeId::Component(component_address)),
-                fn_ident: MethodFnIdent::Scrypto {
-                    package_address,
-                    blueprint_name,
-                    ident: method.as_ref().to_string(),
-                },
+                fn_ident: MethodFnIdent::Scrypto(method.as_ref().to_string()),
             }),
             args,
         );
