@@ -56,25 +56,6 @@ impl RENodePointer {
         }
     }
 
-    pub fn borrow_native_ref<'p, 's, R: FeeReserve>(
-        &self, // TODO: Consider changing this to self
-        substate_id: SubstateId,
-        call_frames: &mut Vec<CallFrame>,
-        track: &mut Track<'s, R>,
-    ) -> NativeSubstateRef {
-        match self {
-            RENodePointer::Heap { frame_id, root, id } => {
-                let frame = call_frames.get_mut(*frame_id).unwrap();
-                let re_value = frame.owned_heap_nodes.remove(root).unwrap();
-                NativeSubstateRef::Stack(re_value, frame_id.clone(), root.clone(), id.clone())
-            }
-            RENodePointer::Store(..) => {
-                let value = track.take_substate(substate_id.clone());
-                NativeSubstateRef::Track(substate_id.clone(), value)
-            }
-        }
-    }
-
     pub fn to_ref<'f, 'p, 's, R: FeeReserve>(
         &self,
         call_frames: &'f Vec<CallFrame>,
@@ -102,133 +83,11 @@ impl RENodePointer {
             RENodePointer::Store(node_id) => RENodeRefMut::Track(track, node_id.clone()),
         }
     }
+
+    // TODO: ref drop mechanism
+    // TODO: concurrent refs and mut refs
 }
 
-#[derive(Debug)]
-pub enum NativeSubstateRef {
-    Stack(HeapRootRENode, usize, RENodeId, Option<RENodeId>),
-    Track(SubstateId, BorrowedSubstate),
-}
-
-impl NativeSubstateRef {
-    pub fn bucket_mut(&mut self) -> &mut Bucket {
-        match self {
-            NativeSubstateRef::Stack(root, _frame_id, _root_id, maybe_child) => {
-                match root.get_node_mut(maybe_child.as_ref()) {
-                    HeapRENode::Bucket(bucket) => bucket,
-                    _ => panic!("Expecting to be a bucket"),
-                }
-            }
-            _ => panic!("Expecting to be a bucket"),
-        }
-    }
-
-    pub fn proof_mut(&mut self) -> &mut Proof {
-        match self {
-            NativeSubstateRef::Stack(ref mut root, _frame_id, _root_id, maybe_child) => {
-                match root.get_node_mut(maybe_child.as_ref()) {
-                    HeapRENode::Proof(proof) => proof,
-                    _ => panic!("Expecting to be a proof"),
-                }
-            }
-            _ => panic!("Expecting to be a proof"),
-        }
-    }
-
-    pub fn worktop_mut(&mut self) -> &mut Worktop {
-        match self {
-            NativeSubstateRef::Stack(ref mut root, _frame_id, _root_id, maybe_child) => {
-                match root.get_node_mut(maybe_child.as_ref()) {
-                    HeapRENode::Worktop(worktop) => worktop,
-                    _ => panic!("Expecting to be a worktop"),
-                }
-            }
-            _ => panic!("Expecting to be a worktop"),
-        }
-    }
-
-    pub fn vault_mut(&mut self) -> &mut Vault {
-        match self {
-            NativeSubstateRef::Stack(root, _frame_id, _root_id, maybe_child) => {
-                root.get_node_mut(maybe_child.as_ref()).vault_mut()
-            }
-            NativeSubstateRef::Track(_address, value) => {
-                value.substate.convert_to_node();
-                value.substate.vault_mut()
-            }
-        }
-    }
-
-    pub fn system_mut(&mut self) -> &mut System {
-        match self {
-            NativeSubstateRef::Track(_address, value) => value.substate.raw_mut().system_mut(),
-            _ => panic!("Expecting to be system"),
-        }
-    }
-
-    pub fn component_info_mut(&mut self) -> &mut ComponentInfo {
-        match self {
-            NativeSubstateRef::Stack(root, _frame_id, _root_id, maybe_child) => {
-                root.get_node_mut(maybe_child.as_ref()).component_info_mut()
-            }
-            _ => panic!("Expecting to be a component"),
-        }
-    }
-
-    pub fn package_mut(&mut self) -> &Package {
-        match self {
-            NativeSubstateRef::Track(_address, value) => value.substate.raw().package(),
-            _ => panic!("Expecting to be tracked"),
-        }
-    }
-
-    pub fn resource_manager_mut(&mut self) -> &mut ResourceManager {
-        match self {
-            NativeSubstateRef::Stack(value, _frame_id, _root_id, maybe_child) => value
-                .get_node_mut(maybe_child.as_ref())
-                .resource_manager_mut(),
-            NativeSubstateRef::Track(_address, value) => {
-                value.substate.raw_mut().resource_manager_mut()
-            }
-        }
-    }
-
-    pub fn auth_zone_mut(&mut self) -> &mut AuthZone {
-        match self {
-            NativeSubstateRef::Stack(value, _frame_id, _root_id, maybe_child) => {
-                value.get_node_mut(maybe_child.as_ref()).auth_zone_mut()
-            }
-            NativeSubstateRef::Track(..) => {
-                panic!("Expecting not to be tracked.");
-            }
-        }
-    }
-
-    pub fn global_re_node(&mut self) -> &GlobalRENode {
-        match self {
-            NativeSubstateRef::Stack(..) => {
-                panic!("Expecting not to be on stack.");
-            }
-            NativeSubstateRef::Track(_address, value) => value.substate.raw().global_re_node(),
-        }
-    }
-
-    pub fn return_to_location<'a, 'p, 's, R: FeeReserve>(
-        self,
-        call_frames: &mut Vec<CallFrame>,
-        track: &mut Track<'s, R>,
-    ) {
-        match self {
-            NativeSubstateRef::Stack(owned, frame_id, node_id, ..) => {
-                let frame = call_frames.get_mut(frame_id).unwrap();
-                frame.owned_heap_nodes.insert(node_id, owned);
-            }
-            NativeSubstateRef::Track(substate_id, substate) => {
-                track.return_substate(substate_id, substate)
-            }
-        }
-    }
-}
 pub enum RENodeRef<'f, 's, R: FeeReserve> {
     Stack(&'f HeapRootRENode, Option<RENodeId>),
     Track(&'f mut Track<'s, R>, RENodeId),
@@ -254,15 +113,7 @@ impl<'f, 's, R: FeeReserve> RENodeRef<'f, 's, R> {
                 .map_or(value.root(), |v| value.non_root(v))
                 .vault(),
 
-            RENodeRef::Track(track, node_id) => {
-                let substate_id = match node_id {
-                    RENodeId::Vault(vault_id) => SubstateId::Vault(*vault_id),
-                    _ => panic!("Unexpected"),
-                };
-                let substate = track.borrow_substate_mut(substate_id);
-                substate.convert_to_node();
-                substate.vault()
-            }
+            RENodeRef::Track(track, node_id) => track.borrow_node(node_id).vault(),
         }
     }
 
@@ -272,13 +123,7 @@ impl<'f, 's, R: FeeReserve> RENodeRef<'f, 's, R> {
                 .as_ref()
                 .map_or(value.root(), |v| value.non_root(v))
                 .system(),
-            RENodeRef::Track(track, node_id) => {
-                let substate_id = match node_id {
-                    RENodeId::System(component_address) => SubstateId::System(*component_address),
-                    _ => panic!("Unexpected"),
-                };
-                track.borrow_substate(substate_id).raw().system()
-            }
+            RENodeRef::Track(track, node_id) => track.borrow_node(node_id).system(),
         }
     }
 
@@ -288,51 +133,26 @@ impl<'f, 's, R: FeeReserve> RENodeRef<'f, 's, R> {
                 .as_ref()
                 .map_or(value.root(), |v| value.non_root(v))
                 .resource_manager(),
-            RENodeRef::Track(track, node_id) => {
-                let substate_id = match node_id {
-                    RENodeId::ResourceManager(resource_address) => {
-                        SubstateId::ResourceManager(*resource_address)
-                    }
-                    _ => panic!("Unexpected"),
-                };
-                track.borrow_substate(substate_id).raw().resource_manager()
-            }
+            RENodeRef::Track(track, node_id) => track.borrow_node(node_id).resource_manager(),
         }
     }
 
-    pub fn component_state(&self) -> &ComponentState {
+    pub fn component(&self) -> &Component {
         match self {
             RENodeRef::Stack(value, id) => id
                 .as_ref()
                 .map_or(value.root(), |v| value.non_root(v))
-                .component_state(),
-            RENodeRef::Track(track, node_id) => {
-                let substate_id = match node_id {
-                    RENodeId::Component(component_address) => {
-                        SubstateId::ComponentState(*component_address)
-                    }
-                    _ => panic!("Unexpected"),
-                };
-                track.borrow_substate(substate_id).raw().component_state()
-            }
+                .component(),
+            RENodeRef::Track(track, node_id) => track.borrow_node(node_id).component(),
         }
     }
 
-    pub fn component_info(&self) -> &ComponentInfo {
+    pub fn global_re_node(&self) -> &GlobalRENode {
         match self {
-            RENodeRef::Stack(value, id) => id
-                .as_ref()
-                .map_or(value.root(), |v| value.non_root(v))
-                .component_info(),
-            RENodeRef::Track(track, node_id) => {
-                let substate_id = match node_id {
-                    RENodeId::Component(component_address) => {
-                        SubstateId::ComponentInfo(*component_address)
-                    }
-                    _ => panic!("Unexpected"),
-                };
-                track.borrow_substate(substate_id).raw().component_info()
+            RENodeRef::Stack(..) => {
+                panic!("Expecting not to be on stack.");
             }
+            RENodeRef::Track(track, node_id) => track.borrow_node(node_id).global_re_node(),
         }
     }
 
@@ -342,13 +162,7 @@ impl<'f, 's, R: FeeReserve> RENodeRef<'f, 's, R> {
                 .as_ref()
                 .map_or(value.root(), |v| value.non_root(v))
                 .package(),
-            RENodeRef::Track(track, node_id) => {
-                let substate_id = match node_id {
-                    RENodeId::Package(package_address) => SubstateId::Package(*package_address),
-                    _ => panic!("Unexpected"),
-                };
-                track.borrow_substate(substate_id).raw().package()
-            }
+            RENodeRef::Track(track, node_id) => track.borrow_node(node_id).package(),
         }
     }
 }
@@ -365,10 +179,10 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
     ) -> Result<ScryptoValue, RuntimeError> {
         match substate_id {
             SubstateId::ComponentInfo(..) => {
-                Ok(ScryptoValue::from_typed(&self.component_info().info()))
+                Ok(ScryptoValue::from_typed(&self.component_mut().info))
             }
             SubstateId::ComponentState(..) => {
-                Ok(ScryptoValue::from_slice(self.component_state().state())
+                Ok(ScryptoValue::from_slice(&self.component_mut().state.state)
                     .expect("Failed to decode component state"))
             }
             SubstateId::NonFungible(.., id) => Ok(self.non_fungible_get(id)),
@@ -421,44 +235,14 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
             SubstateId::Global(..) => {
                 panic!("Should not get here");
             }
-            SubstateId::ComponentInfo(..) => {
-                panic!("Should not get here");
-            }
             SubstateId::ComponentState(..) => {
-                self.component_state_set(value, child_nodes)?;
+                self.component_state_set(value, child_nodes);
             }
-            SubstateId::KeyValueStoreSpace(..) => {
-                panic!("Should not get here");
-            }
+            SubstateId::NonFungible(.., id) => self.non_fungible_put(id, value),
             SubstateId::KeyValueStoreEntry(.., key) => {
                 self.kv_store_put(key, value, child_nodes)?;
             }
-            SubstateId::NonFungibleSpace(..) => {
-                panic!("Should not get here");
-            }
-            SubstateId::NonFungible(.., id) => self.non_fungible_put(id, value),
-            SubstateId::Vault(..) => {
-                panic!("Should not get here");
-            }
-            SubstateId::Package(..) => {
-                panic!("Should not get here");
-            }
-            SubstateId::ResourceManager(..) => {
-                panic!("Should not get here");
-            }
-            SubstateId::System(..) => {
-                panic!("Should not get here");
-            }
-            SubstateId::Bucket(..) => {
-                panic!("Should not get here");
-            }
-            SubstateId::Proof(..) => {
-                panic!("Should not get here");
-            }
-            SubstateId::Worktop => {
-                panic!("Should not get here");
-            }
-            SubstateId::AuthZone(..) => {
+            _ => {
                 panic!("Should not get here");
             }
         }
@@ -486,7 +270,7 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
                     RENodeId::KeyValueStore(kv_store_id) => {
                         SubstateId::KeyValueStoreSpace(*kv_store_id)
                     }
-                    _ => panic!("Unexpeceted"),
+                    _ => panic!("Unexpected"),
                 };
                 track.set_key_value(
                     parent_substate_id,
@@ -494,7 +278,9 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
                     Substate::KeyValueStoreEntry(KeyValueStoreEntrySubstate(Some(value.raw))),
                 );
                 for (id, val) in to_store {
-                    insert_non_root_nodes(track, val.to_nodes(id))?;
+                    for (id, node) in val.to_nodes(id) {
+                        track.put_node(id, node);
+                    }
                 }
             }
         }
@@ -516,7 +302,7 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
                     RENodeId::KeyValueStore(kv_store_id) => {
                         SubstateId::KeyValueStoreSpace(*kv_store_id)
                     }
-                    _ => panic!("Unexpeceted"),
+                    _ => panic!("Unexpected"),
                 };
                 let substate_value = track.read_key_value(parent_substate_id, key.to_vec());
                 substate_value.into()
@@ -559,7 +345,7 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
                     RENodeId::ResourceManager(resource_address) => {
                         SubstateId::NonFungibleSpace(*resource_address)
                     }
-                    _ => panic!("Unexpeceted"),
+                    _ => panic!("Unexpected"),
                 };
                 let substate_value = track.read_key_value(parent_substate_id, id.to_vec());
                 substate_value.into()
@@ -579,7 +365,7 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
                     RENodeId::ResourceManager(resource_address) => {
                         SubstateId::NonFungibleSpace(*resource_address)
                     }
-                    _ => panic!("Unexpeceted"),
+                    _ => panic!("Unexpected"),
                 };
                 track.set_key_value(
                     parent_substate_id,
@@ -608,7 +394,7 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
                     RENodeId::ResourceManager(resource_address) => {
                         SubstateId::NonFungibleSpace(*resource_address)
                     }
-                    _ => panic!("Unexpeceted"),
+                    _ => panic!("Unexpected"),
                 };
                 let wrapper: NonFungibleSubstate = scrypto_decode(&value.raw)
                     .expect("Attempted to put non-NonFungibleSubstate for non-fungible.");
@@ -625,78 +411,84 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
         &mut self,
         value: ScryptoValue,
         to_store: HashMap<RENodeId, HeapRootRENode>,
-    ) -> Result<(), NodeToSubstateFailure> {
+    ) {
         match self {
             RENodeRefMut::Stack(re_value, id) => {
-                let component_state = re_value.get_node_mut(id.as_ref()).component_state_mut();
-                component_state.set_state(value.raw);
+                let component = re_value.get_node_mut(id.as_ref()).component_mut();
+                component.state = ComponentStateSubstate { state: value.raw };
                 for (id, val) in to_store {
                     re_value.insert_non_root_nodes(val.to_nodes(id));
                 }
             }
             RENodeRefMut::Track(track, node_id) => {
-                let substate_id = match node_id {
-                    RENodeId::Component(component_address) => {
-                        SubstateId::ComponentState(*component_address)
-                    }
-                    _ => panic!("Unexpeceted"),
-                };
-                *track.borrow_substate_mut(substate_id) =
-                    SubstateCache::Raw(ComponentState::new(value.raw).into());
+                let component = track.borrow_node_mut(node_id).component_mut();
+                component.state = ComponentStateSubstate { state: value.raw };
                 for (id, val) in to_store {
-                    insert_non_root_nodes(track, val.to_nodes(id))?;
+                    for (id, node) in val.to_nodes(id) {
+                        track.put_node(id, node);
+                    }
                 }
             }
         }
-        Ok(())
     }
 
-    pub fn component_info(&mut self) -> &ComponentInfo {
+    pub fn bucket_mut(&mut self) -> &mut Bucket {
+        match self {
+            RENodeRefMut::Stack(re_value, id) => re_value.get_node_mut(id.as_ref()).bucket_mut(),
+            RENodeRefMut::Track(..) => panic!("Bucket should be in stack"),
+        }
+    }
+
+    pub fn proof_mut(&mut self) -> &mut Proof {
+        match self {
+            RENodeRefMut::Stack(re_value, id) => re_value.get_node_mut(id.as_ref()).proof_mut(),
+            RENodeRefMut::Track(..) => panic!("Proof should be in stack"),
+        }
+    }
+
+    pub fn auth_zone_mut(&mut self) -> &mut AuthZone {
+        match self {
+            RENodeRefMut::Stack(re_value, id) => re_value.get_node_mut(id.as_ref()).auth_zone_mut(),
+            RENodeRefMut::Track(..) => panic!("AuthZone should be in stack"),
+        }
+    }
+
+    pub fn resource_manager_mut(&mut self) -> &mut ResourceManager {
         match self {
             RENodeRefMut::Stack(re_value, id) => {
-                re_value.get_node_mut(id.as_ref()).component_info()
+                re_value.get_node_mut(id.as_ref()).resource_manager_mut()
             }
             RENodeRefMut::Track(track, node_id) => {
-                let substate_id = match node_id {
-                    RENodeId::Component(component_address) => {
-                        SubstateId::ComponentInfo(*component_address)
-                    }
-                    _ => panic!("Unexpeceted"),
-                };
-                track.borrow_substate(substate_id).raw().component_info()
+                track.borrow_node_mut(node_id).resource_manager_mut()
             }
         }
     }
 
-    pub fn component_state(&mut self) -> &ComponentState {
+    pub fn system_mut(&mut self) -> &mut System {
         match self {
-            RENodeRefMut::Stack(re_value, id) => {
-                re_value.get_node_mut(id.as_ref()).component_state()
-            }
-            RENodeRefMut::Track(track, node_id) => {
-                let substate_id = match node_id {
-                    RENodeId::Component(component_address) => {
-                        SubstateId::ComponentState(*component_address)
-                    }
-                    _ => panic!("Unexpeceted"),
-                };
-                track.borrow_substate(substate_id).raw().component_state()
-            }
+            RENodeRefMut::Stack(re_value, id) => re_value.get_node_mut(id.as_ref()).system_mut(),
+            RENodeRefMut::Track(track, node_id) => track.borrow_node_mut(node_id).system_mut(),
+        }
+    }
+
+    pub fn worktop_mut(&mut self) -> &mut Worktop {
+        match self {
+            RENodeRefMut::Stack(re_value, id) => re_value.get_node_mut(id.as_ref()).worktop_mut(),
+            RENodeRefMut::Track(track, node_id) => track.borrow_node_mut(node_id).worktop_mut(),
         }
     }
 
     pub fn vault_mut(&mut self) -> &mut Vault {
         match self {
             RENodeRefMut::Stack(re_value, id) => re_value.get_node_mut(id.as_ref()).vault_mut(),
-            RENodeRefMut::Track(track, node_id) => {
-                let substate_id = match node_id {
-                    RENodeId::Vault(vault_id) => SubstateId::Vault(*vault_id),
-                    _ => panic!("Unexpeceted"),
-                };
-                let substate = track.borrow_substate_mut(substate_id);
-                substate.convert_to_node();
-                substate.vault_mut()
-            }
+            RENodeRefMut::Track(track, node_id) => track.borrow_node_mut(node_id).vault_mut(),
+        }
+    }
+
+    pub fn component_mut(&mut self) -> &mut Component {
+        match self {
+            RENodeRefMut::Stack(re_value, id) => re_value.get_node_mut(id.as_ref()).component_mut(),
+            RENodeRefMut::Track(track, node_id) => track.borrow_node_mut(node_id).component_mut(),
         }
     }
 }
@@ -722,42 +514,5 @@ pub fn verify_stored_value_update(
         }
     }
 
-    Ok(())
-}
-
-pub fn insert_non_root_nodes<'s, R: FeeReserve>(
-    track: &mut Track<'s, R>,
-    values: HashMap<RENodeId, HeapRENode>,
-) -> Result<(), NodeToSubstateFailure> {
-    for (id, node) in values {
-        match node {
-            HeapRENode::Vault(vault) => {
-                let resource = vault
-                    .resource()
-                    .map_err(|_| NodeToSubstateFailure::VaultPartiallyLocked)?;
-                track.create_uuid_substate(SubstateId::Vault(id.into()), VaultSubstate(resource));
-            }
-            HeapRENode::Component(component, component_state) => {
-                let component_address = id.into();
-                track.create_uuid_substate(SubstateId::ComponentInfo(component_address), component);
-                track.create_uuid_substate(
-                    SubstateId::ComponentState(component_address),
-                    component_state,
-                );
-            }
-            HeapRENode::KeyValueStore(store) => {
-                let id = id.into();
-                let substate_id = SubstateId::KeyValueStoreSpace(id);
-                for (k, v) in store.store {
-                    track.set_key_value(
-                        substate_id.clone(),
-                        k,
-                        KeyValueStoreEntrySubstate(Some(v.raw)),
-                    );
-                }
-            }
-            _ => panic!("Invalid node being persisted: {:?}", node),
-        }
-    }
     Ok(())
 }

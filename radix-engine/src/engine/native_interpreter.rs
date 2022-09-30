@@ -147,7 +147,7 @@ impl NativeInterpreter {
             (
                 Receiver::Ref(RENodeId::Component(component_address)),
                 NativeMethodFnIdent::Component(component_fn),
-            ) => ComponentInfo::main(component_address, component_fn, input, system_api)
+            ) => Component::main(component_address, component_fn, input, system_api)
                 .map_err(|e| e.into()),
             (
                 Receiver::Ref(RENodeId::ResourceManager(resource_address)),

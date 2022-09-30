@@ -1,4 +1,4 @@
-use crate::engine::Substate;
+use crate::model::Substate;
 use crate::types::*;
 
 pub trait QueryableSubstateStore {

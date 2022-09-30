@@ -1,6 +1,6 @@
-use crate::engine::Substate;
 use crate::ledger::*;
 use crate::ledger::{OutputValue, WriteableSubstateStore};
+use crate::model::Substate;
 use crate::types::*;
 
 /// A substate store that stores all typed substates in host memory.

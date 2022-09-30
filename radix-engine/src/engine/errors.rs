@@ -89,6 +89,7 @@ pub enum KernelError {
     CantMoveLockedBucket,
     CantMoveRestrictedProof,
     CantMoveWorktop,
+    CantMoveGlobal,
     CantMoveAuthZone,
     DropFailure(DropFailure),
 

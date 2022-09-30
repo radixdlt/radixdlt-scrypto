@@ -22,12 +22,6 @@ pub enum SysCallInput<'a> {
     GlobalizeNode {
         node_id: &'a RENodeId,
     },
-    BorrowSubstateMut {
-        substate_id: &'a SubstateId,
-    },
-    ReturnSubstateMut {
-        substate_ref: &'a NativeSubstateRef,
-    },
     ReadSubstate {
         substate_id: &'a SubstateId,
     },
@@ -55,8 +49,6 @@ pub enum SysCallOutput<'a> {
     DropNode { node: &'a HeapRootRENode },
     CreateNode { node_id: &'a RENodeId },
     GlobalizeNode,
-    BorrowSubstateMut { substate_ref: &'a NativeSubstateRef },
-    ReturnSubstateMut,
     ReadSubstate { value: &'a ScryptoValue },
     WriteSubstate,
     TakeSubstate { value: &'a ScryptoValue },

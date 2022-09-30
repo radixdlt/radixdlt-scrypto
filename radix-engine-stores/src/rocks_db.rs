@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-use radix_engine::engine::Substate;
 use radix_engine::ledger::*;
+use radix_engine::model::Substate;
 use radix_engine::types::*;
 use rocksdb::{DBWithThreadMode, Direction, IteratorMode, SingleThreaded, DB};
 

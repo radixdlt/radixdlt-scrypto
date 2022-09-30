@@ -20,7 +20,7 @@ pub enum Receiver {
 impl Receiver {
     pub fn node_id(&self) -> RENodeId {
         match self {
-            Receiver::Consumed(node_id) | Receiver::Ref(node_id) => *node_id
+            Receiver::Consumed(node_id) | Receiver::Ref(node_id) => *node_id,
         }
     }
 }

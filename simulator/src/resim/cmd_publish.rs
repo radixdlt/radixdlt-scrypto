@@ -1,7 +1,7 @@
 use clap::Parser;
 use colored::*;
-use radix_engine::engine::Substate;
 use radix_engine::ledger::{OutputValue, ReadableSubstateStore, WriteableSubstateStore};
+use radix_engine::model::Substate;
 use radix_engine::types::*;
 use std::ffi::OsStr;
 use std::fs;
@@ -57,7 +57,10 @@ impl Publish {
                 .get_substate(&substate_id)
                 .map(|output| output.version);
 
-            let validated_package = Package::new(code, abi).map_err(Error::InvalidPackage)?;
+            let validated_package = PackageSubstate {
+                code,
+                blueprint_abis: abi,
+            };
             let output_value = OutputValue {
                 substate: Substate::Package(validated_package),
                 version: previous_version.unwrap_or(0),

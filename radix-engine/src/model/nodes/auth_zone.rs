@@ -98,16 +98,14 @@ impl AuthZone {
         I: WasmInstance,
         R: FeeReserve,
     {
-        let substate_id = SubstateId::AuthZone(auth_zone_id);
-        let mut ref_mut = system_api
-            .substate_borrow_mut(&substate_id)
-            .map_err(InvokeError::Downstream)?;
-        let auth_zone = ref_mut.auth_zone_mut();
-
         let rtn = match auth_zone_fn {
             AuthZoneMethodFnIdent::Pop => {
                 let _: AuthZonePopInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(AuthZoneError::InvalidRequestData(e)))?;
+                let mut node_ref = system_api
+                    .borrow_node_mut(&RENodeId::AuthZone(auth_zone_id))
+                    .map_err(InvokeError::Downstream)?;
+                let auth_zone = node_ref.auth_zone_mut();
                 let proof = auth_zone.pop()?;
                 let proof_id = system_api
                     .node_create(HeapRENode::Proof(proof))
@@ -126,6 +124,10 @@ impl AuthZone {
                     .into();
                 proof.change_to_unrestricted();
 
+                let mut node_ref = system_api
+                    .borrow_node_mut(&RENodeId::AuthZone(auth_zone_id))
+                    .map_err(InvokeError::Downstream)?;
+                let auth_zone = node_ref.auth_zone_mut();
                 auth_zone.push(proof);
                 Ok(ScryptoValue::from_typed(&()))
             }
@@ -139,6 +141,10 @@ impl AuthZone {
                     let resource_manager = value.resource_manager();
                     resource_manager.resource_type()
                 };
+                let mut node_ref = system_api
+                    .borrow_node_mut(&RENodeId::AuthZone(auth_zone_id))
+                    .map_err(InvokeError::Downstream)?;
+                let auth_zone = node_ref.auth_zone_mut();
                 let proof = auth_zone.create_proof(input.resource_address, resource_type)?;
                 let proof_id = system_api
                     .node_create(HeapRENode::Proof(proof))
@@ -158,6 +164,10 @@ impl AuthZone {
                     let resource_manager = value.resource_manager();
                     resource_manager.resource_type()
                 };
+                let mut node_ref = system_api
+                    .borrow_node_mut(&RENodeId::AuthZone(auth_zone_id))
+                    .map_err(InvokeError::Downstream)?;
+                let auth_zone = node_ref.auth_zone_mut();
                 let proof = auth_zone.create_proof_by_amount(
                     input.amount,
                     input.resource_address,
@@ -181,6 +191,10 @@ impl AuthZone {
                     let resource_manager = value.resource_manager();
                     resource_manager.resource_type()
                 };
+                let mut node_ref = system_api
+                    .borrow_node_mut(&RENodeId::AuthZone(auth_zone_id))
+                    .map_err(InvokeError::Downstream)?;
+                let auth_zone = node_ref.auth_zone_mut();
                 let proof = auth_zone.create_proof_by_ids(
                     &input.ids,
                     input.resource_address,
@@ -197,12 +211,20 @@ impl AuthZone {
             AuthZoneMethodFnIdent::Clear => {
                 let _: AuthZoneClearInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(AuthZoneError::InvalidRequestData(e)))?;
+                let mut node_ref = system_api
+                    .borrow_node_mut(&RENodeId::AuthZone(auth_zone_id))
+                    .map_err(InvokeError::Downstream)?;
+                let auth_zone = node_ref.auth_zone_mut();
                 auth_zone.clear();
                 Ok(ScryptoValue::from_typed(&()))
             }
             AuthZoneMethodFnIdent::Drain => {
                 let _: AuthZoneDrainInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(AuthZoneError::InvalidRequestData(e)))?;
+                let mut node_ref = system_api
+                    .borrow_node_mut(&RENodeId::AuthZone(auth_zone_id))
+                    .map_err(InvokeError::Downstream)?;
+                let auth_zone = node_ref.auth_zone_mut();
                 let proofs = auth_zone.drain();
                 let mut proof_ids: Vec<scrypto::resource::Proof> = Vec::new();
                 for proof in proofs {
@@ -216,10 +238,6 @@ impl AuthZone {
                 Ok(ScryptoValue::from_typed(&proof_ids))
             }
         }?;
-
-        system_api
-            .substate_return_mut(ref_mut)
-            .map_err(InvokeError::Downstream)?;
 
         Ok(rtn)
     }
