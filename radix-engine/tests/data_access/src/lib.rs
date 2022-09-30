@@ -19,7 +19,7 @@ blueprint! {
             call_engine(input)
         }
 
-        pub fn create_component_and_read_info() -> (PackageAddress, String) {
+        pub fn create_component_and_read_info() -> ComponentInfoSubstate {
             let component_address = Self {}.instantiate().globalize();
             let substate_id = SubstateId::ComponentInfo(component_address);
             let input = RadixEngineInput::SubstateRead(substate_id);

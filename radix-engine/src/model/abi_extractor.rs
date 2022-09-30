@@ -2,6 +2,7 @@ use scrypto::abi;
 
 use crate::engine::*;
 use crate::ledger::*;
+use crate::model::*;
 use crate::types::*;
 
 pub fn export_abi<S: ReadableSubstateStore>(
@@ -18,7 +19,8 @@ pub fn export_abi<S: ReadableSubstateStore>(
 
     let abi = package_value
         .package()
-        .blueprint_abi(blueprint_name)
+        .blueprint_abis
+        .get(blueprint_name)
         .ok_or(RuntimeError::KernelError(KernelError::BlueprintNotFound(
             package_address,
             blueprint_name.to_owned(),
@@ -40,7 +42,7 @@ pub fn export_abi_by_component<S: ReadableSubstateStore>(
     let component_info = component_value.component_info();
     export_abi(
         substate_store,
-        component_info.package_address(),
-        component_info.blueprint_name(),
+        component_info.package_address,
+        &component_info.blueprint_name,
     )
 }

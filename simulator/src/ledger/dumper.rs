@@ -24,7 +24,7 @@ pub fn dump_package<T: ReadableSubstateStore, O: std::io::Write>(
 ) -> Result<(), DisplayError> {
     let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
 
-    let package: Option<Package> = substate_store
+    let package: Option<PackageSubstate> = substate_store
         .get_substate(&SubstateId::Package(package_address))
         .map(|s| s.substate)
         .map(|s| s.into());
@@ -40,7 +40,7 @@ pub fn dump_package<T: ReadableSubstateStore, O: std::io::Write>(
                 output,
                 "{}: {} bytes",
                 "Code size".green().bold(),
-                b.code().len()
+                b.code.len()
             );
             Ok(())
         }
@@ -56,11 +56,11 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
 ) -> Result<(), DisplayError> {
     let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
 
-    let component: Option<ComponentInfo> = substate_store
+    let component_info: Option<ComponentInfoSubstate> = substate_store
         .get_substate(&SubstateId::ComponentInfo(component_address))
         .map(|s| s.substate)
         .map(|s| s.into());
-    match component {
+    match component_info {
         Some(c) => {
             writeln!(
                 output,
@@ -73,18 +73,19 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
                 output,
                 "{}: {{ package_address: {}, blueprint_name: \"{}\" }}",
                 "Blueprint".green().bold(),
-                c.package_address(),
-                c.blueprint_name()
+                c.package_address,
+                c.blueprint_name
             );
 
-            writeln!(output, "{}", "Authorization".green().bold());
-            for (_, auth) in c.authorization().iter().identify_last() {
+            writeln!(output, "{}", "Access Rules".green().bold());
+            for (_, auth) in c.access_rules.iter().identify_last() {
                 for (last, (k, v)) in auth.iter().identify_last() {
                     writeln!(output, "{} {:?} => {:?}", list_item_prefix(last), k, v);
                 }
+                writeln!(output, "Default: {:?}", auth.get_default());
             }
 
-            let state: ComponentState = substate_store
+            let state: ComponentStateSubstate = substate_store
                 .get_substate(&SubstateId::ComponentState(component_address))
                 .map(|s| s.substate)
                 .map(|s| s.into())
@@ -156,7 +157,7 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
             .unwrap();
         let amount = vault.0.amount();
         let resource_address = vault.0.resource_address();
-        let resource_manager: ResourceManager = substate_store
+        let resource_manager: ResourceManagerSubstate = substate_store
             .get_substate(&SubstateId::ResourceManager(resource_address))
             .map(|s| s.substate)
             .map(|s| s.into())
@@ -168,17 +169,17 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
             amount,
             bech32_encoder.encode_resource_address(&resource_address),
             resource_manager
-                .metadata()
+                .metadata
                 .get("name")
                 .map(|name| format!(", name: \"{}\"", name))
                 .unwrap_or(String::new()),
             resource_manager
-                .metadata()
+                .metadata
                 .get("symbol")
                 .map(|symbol| format!(", symbol: \"{}\"", symbol))
                 .unwrap_or(String::new()),
         );
-        if matches!(resource_manager.resource_type(), ResourceType::NonFungible) {
+        if matches!(resource_manager.resource_type, ResourceType::NonFungible) {
             let ids = vault.0.ids();
             for (inner_last, id) in ids.iter().identify_last() {
                 let non_fungible: NonFungibleSubstate = substate_store
@@ -214,7 +215,7 @@ pub fn dump_resource_manager<T: ReadableSubstateStore, O: std::io::Write>(
     substate_store: &T,
     output: &mut O,
 ) -> Result<(), DisplayError> {
-    let resource_manager: Option<ResourceManager> = substate_store
+    let resource_manager: Option<ResourceManagerSubstate> = substate_store
         .get_substate(&SubstateId::ResourceManager(resource_address))
         .map(|s| s.substate)
         .map(|s| s.into());
@@ -224,15 +225,15 @@ pub fn dump_resource_manager<T: ReadableSubstateStore, O: std::io::Write>(
                 output,
                 "{}: {:?}",
                 "Resource Type".green().bold(),
-                r.resource_type()
+                r.resource_type
             );
             writeln!(
                 output,
                 "{}: {}",
                 "Metadata".green().bold(),
-                r.metadata().len()
+                r.metadata.len()
             );
-            for (last, e) in r.metadata().iter().identify_last() {
+            for (last, e) in r.metadata.iter().identify_last() {
                 writeln!(
                     output,
                     "{} {}: {}",
@@ -245,7 +246,7 @@ pub fn dump_resource_manager<T: ReadableSubstateStore, O: std::io::Write>(
                 output,
                 "{}: {}",
                 "Total Supply".green().bold(),
-                r.total_supply()
+                r.total_supply
             );
             Ok(())
         }

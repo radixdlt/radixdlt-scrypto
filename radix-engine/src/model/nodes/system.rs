@@ -2,6 +2,7 @@ use crate::engine::{AuthModule, HeapRENode, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::{
     HardAuthRule, HardProofRule, HardResourceOrNonFungible, InvokeError, MethodAuthorization,
+    SystemSubstate,
 };
 use crate::types::*;
 use crate::wasm::*;
@@ -14,7 +15,7 @@ pub enum SystemError {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct System {
-    pub epoch: u64,
+    pub info: SystemSubstate,
 }
 
 impl System {
@@ -60,7 +61,9 @@ impl System {
                     .map_err(|e| InvokeError::Error(SystemError::InvalidRequestData(e)))?;
 
                 let node_id = system_api
-                    .node_create(HeapRENode::System(System { epoch: 0 }))
+                    .node_create(HeapRENode::System(System {
+                        info: SystemSubstate { epoch: 0 },
+                    }))
                     .map_err(InvokeError::Downstream)?;
 
                 let system_node_id = node_id.clone();
@@ -93,18 +96,15 @@ impl System {
                 let node_ref = system_api
                     .borrow_node(&RENodeId::System(component_address))
                     .map_err(InvokeError::Downstream)?;
-                Ok(ScryptoValue::from_typed(&node_ref.system().epoch))
+                Ok(ScryptoValue::from_typed(&node_ref.system().info.epoch))
             }
             SystemMethodFnIdent::SetEpoch => {
                 let SystemSetEpochInput { epoch } = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(SystemError::InvalidRequestData(e)))?;
                 let mut system_node_ref = system_api
-                    .substate_borrow_mut(&SubstateId::System(component_address))
+                    .borrow_node_mut(&RENodeId::System(SYS_SYSTEM_COMPONENT))
                     .map_err(InvokeError::Downstream)?;
-                system_node_ref.system_mut().epoch = epoch;
-                system_api
-                    .substate_return_mut(system_node_ref)
-                    .map_err(InvokeError::Downstream)?;
+                system_node_ref.system_mut().info.epoch = epoch;
                 Ok(ScryptoValue::from_typed(&()))
             }
             SystemMethodFnIdent::GetTransactionHash => {

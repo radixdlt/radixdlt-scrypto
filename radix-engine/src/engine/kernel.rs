@@ -117,10 +117,9 @@ where
                 RENodeId::Bucket(bucket_id) => bucket_id,
                 _ => panic!("Expected Bucket RENodeId but received something else"),
             };
-            let substate_id = SubstateId::Bucket(bucket_id);
             let mut node_ref = kernel
-                .substate_borrow_mut(&substate_id)
-                .expect("Failed to borrow bucket substate");
+                .borrow_node_mut(&RENodeId::Bucket(bucket_id))
+                .expect("Failed to borrow bucket node");
             let bucket = node_ref.bucket_mut();
             let proof = bucket
                 .create_proof(bucket_id)
@@ -179,9 +178,12 @@ where
                 ))
             })?;
 
-        if matches!(substate_id, SubstateId::ComponentInfo(..)) {
+        if let SubstateId::ComponentInfo(address) = substate_id {
             node_pointer
-                .acquire_lock(substate_id.clone(), false, false, track)
+                .acquire_lock(SubstateId::ComponentState(*address), false, false, track)
+                .map_err(RuntimeError::KernelError)?;
+            node_pointer
+                .acquire_lock(SubstateId::ComponentInfo(*address), false, false, track)
                 .map_err(RuntimeError::KernelError)?;
         }
 
@@ -192,9 +194,12 @@ where
         };
 
         // TODO: Remove, integrate with substate borrow mechanism
-        if matches!(substate_id, SubstateId::ComponentInfo(..)) {
+        if let SubstateId::ComponentInfo(address) = substate_id {
             node_pointer
-                .release_lock(substate_id.clone(), false, track)
+                .release_lock(SubstateId::ComponentState(*address), false, track)
+                .map_err(RuntimeError::KernelError)?;
+            node_pointer
+                .release_lock(SubstateId::ComponentInfo(*address), false, track)
                 .map_err(RuntimeError::KernelError)?;
         }
 
@@ -240,15 +245,15 @@ where
                 let package_address = id_allocator.new_package_address(transaction_hash)?;
                 Ok(RENodeId::Package(package_address))
             }
-            HeapRENode::Resource(..) => {
+            HeapRENode::ResourceManager(..) => {
                 let resource_address = id_allocator.new_resource_address(transaction_hash)?;
                 Ok(RENodeId::ResourceManager(resource_address))
             }
-            HeapRENode::Component(ref component, ..) => {
+            HeapRENode::Component(ref component) => {
                 let component_address = id_allocator.new_component_address(
                     transaction_hash,
-                    &component.package_address(),
-                    component.blueprint_name(),
+                    &component.info.package_address,
+                    &component.info.blueprint_name,
                 )?;
                 Ok(RENodeId::Component(component_address))
             }
@@ -293,8 +298,7 @@ where
                     let output = {
                         let package = self
                             .track
-                            .borrow_substate(SubstateId::Package(package_address))
-                            .raw()
+                            .borrow_node(&RENodeId::Package(package_address))
                             .package()
                             .clone();
                         for m in &mut self.modules {
@@ -355,8 +359,7 @@ where
 
                     let package = self
                         .track
-                        .borrow_substate(SubstateId::Package(package_address))
-                        .raw()
+                        .borrow_node(&RENodeId::Package(package_address))
                         .package();
                     let blueprint_abi = package
                         .blueprint_abi(&blueprint_name)
@@ -466,14 +469,20 @@ where
                 blueprint_name,
                 ident,
             }) => {
-                self.track
-                    .acquire_lock(SubstateId::Package(package_address.clone()), false, false)
-                    .map_err(|e| RuntimeError::KernelError(KernelError::SubstateError(e)))?;
+                let node_pointer = RENodePointer::Store(RENodeId::Package(package_address.clone()));
+                node_pointer
+                    .acquire_lock(
+                        SubstateId::Package(package_address.clone()),
+                        false,
+                        false,
+                        &mut self.track,
+                    )
+                    .map_err(RuntimeError::KernelError)?;
+
                 locked_values.insert(SubstateId::Package(package_address.clone()));
                 let package = self
                     .track
-                    .borrow_substate(SubstateId::Package(package_address.clone()))
-                    .raw()
+                    .borrow_node(&RENodeId::Package(package_address.clone()))
                     .package();
                 let abi =
                     package
@@ -520,20 +529,46 @@ where
             // Make components visible
             for component_address in component_addresses {
                 let node_id = RENodeId::Component(component_address);
-                let substate_id = SubstateId::ComponentInfo(component_address);
 
                 // Check if component exists as root
-                if !self.track.is_root(&substate_id) {
+                if !self
+                    .track
+                    .is_root(&SubstateId::ComponentInfo(component_address))
+                {
                     return Err(RuntimeError::KernelError(KernelError::RENodeNotFound(
                         node_id,
                     )));
                 }
                 let node_pointer = RENodePointer::Store(node_id);
                 node_pointer
-                    .acquire_lock(substate_id.clone(), false, false, &mut self.track)
+                    .acquire_lock(
+                        SubstateId::ComponentState(component_address),
+                        false,
+                        false,
+                        &mut self.track,
+                    )
                     .map_err(RuntimeError::KernelError)?;
                 node_pointer
-                    .release_lock(substate_id, false, &mut self.track)
+                    .acquire_lock(
+                        SubstateId::ComponentInfo(component_address),
+                        false,
+                        false,
+                        &mut self.track,
+                    )
+                    .map_err(RuntimeError::KernelError)?;
+                node_pointer
+                    .release_lock(
+                        SubstateId::ComponentState(component_address),
+                        false,
+                        &mut self.track,
+                    )
+                    .map_err(RuntimeError::KernelError)?;
+                node_pointer
+                    .release_lock(
+                        SubstateId::ComponentInfo(component_address),
+                        false,
+                        &mut self.track,
+                    )
                     .map_err(RuntimeError::KernelError)?;
                 next_frame_node_refs.insert(node_id, node_pointer);
             }
@@ -715,13 +750,13 @@ where
                             temporary_locks.push((node_pointer, temporary_substate_id, false));
 
                             let node_ref = node_pointer.to_ref(&self.call_frames, &mut self.track);
-                            let component = node_ref.component_info();
+                            let component = node_ref.component();
 
                             REActor::Method(FullyQualifiedMethod {
                                 receiver: receiver.clone(),
                                 fn_ident: FullyQualifiedMethodFn::Scrypto {
-                                    package_address: component.package_address(),
-                                    blueprint_name: component.blueprint_name().to_string(),
+                                    package_address: component.info.package_address.clone(),
+                                    blueprint_name: component.info.blueprint_name.clone(),
                                     ident: ident.to_string(),
                                 },
                             })
@@ -744,7 +779,7 @@ where
                     RENodeId::Component(..) => {
                         let package_address = {
                             let node_ref = node_pointer.to_ref(&self.call_frames, &mut self.track);
-                            node_ref.component_info().package_address()
+                            node_ref.component().info.package_address
                         };
                         let package_substate_id = SubstateId::Package(package_address);
                         let package_node_id = RENodeId::Package(package_address);
@@ -1056,14 +1091,23 @@ where
             .map_err(RuntimeError::ModuleError)?;
         }
 
-        let node_pointer = Self::current_frame(&self.call_frames)
-            .node_refs
-            .get(node_id)
-            .cloned()
-            .expect(&format!(
-                "Attempt to borrow node {:?}, which is not visible in current frame.",
-                node_id
-            )); // TODO: Assumption will break if auth is optional
+        let current_frame = Self::current_frame(&self.call_frames);
+        let node_pointer = if current_frame.owned_heap_nodes.get(node_id).is_some() {
+            RENodePointer::Heap {
+                frame_id: current_frame.depth,
+                root: node_id.clone(),
+                id: None,
+            } // TODO: can I borrow  non-root node?
+        } else {
+            current_frame
+                .node_refs
+                .get(node_id)
+                .cloned()
+                .expect(&format!(
+                    "Attempt to borrow node {:?}, which is not visible in current frame.",
+                    node_id
+                )) // TODO: Assumption will break if auth is optional
+        };
 
         for m in &mut self.modules {
             m.post_sys_call(
@@ -1080,94 +1124,50 @@ where
         Ok(node_pointer.to_ref(&self.call_frames, &mut self.track))
     }
 
-    fn substate_borrow_mut(
+    fn borrow_node_mut(
         &mut self,
-        substate_id: &SubstateId,
-    ) -> Result<NativeSubstateRef, RuntimeError> {
+        node_id: &RENodeId,
+    ) -> Result<RENodeRefMut<'_, 's, R>, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
                 &mut self.track,
                 &mut self.call_frames,
-                SysCallInput::BorrowSubstateMut {
-                    substate_id: substate_id,
-                },
+                SysCallInput::BorrowNode { node_id: node_id },
             )
             .map_err(RuntimeError::ModuleError)?;
         }
 
-        // Authorization
-        if !Self::current_frame(&self.call_frames)
-            .actor
-            .is_substate_readable(substate_id)
-        {
-            panic!("Trying to read substate which is not visible.")
-        }
-
-        let node_id = SubstateProperties::get_node_id(substate_id);
-
-        // TODO: Clean this up
-        let frame = Self::current_frame(&self.call_frames);
-        let node_pointer = if frame.owned_heap_nodes.contains_key(&node_id) {
+        let current_frame = Self::current_frame(&self.call_frames);
+        let node_pointer = if current_frame.owned_heap_nodes.get(node_id).is_some() {
             RENodePointer::Heap {
-                frame_id: frame.depth,
+                frame_id: current_frame.depth,
                 root: node_id.clone(),
                 id: None,
-            }
+            } // TODO: can I borrow  non-root node?
         } else {
-            Self::current_frame(&self.call_frames)
+            current_frame
                 .node_refs
-                .get(&node_id)
+                .get(node_id)
                 .cloned()
                 .expect(&format!(
-                    "Attempt to borrow node {:?}, which is not visible in current frame",
+                    "Attempt to borrow node {:?}, which is not visible in current frame.",
                     node_id
                 )) // TODO: Assumption will break if auth is optional
         };
 
-        let substate_ref = node_pointer.borrow_native_ref(
-            substate_id.clone(),
-            &mut self.call_frames,
-            &mut self.track,
-        );
-
         for m in &mut self.modules {
             m.post_sys_call(
                 &mut self.track,
                 &mut self.call_frames,
-                SysCallOutput::BorrowSubstateMut {
-                    substate_ref: &substate_ref,
+                SysCallOutput::BorrowNode {
+                    // Can't return the NodeRef due to borrow checks on `call_frames`
+                    node_pointer: &node_pointer,
                 },
             )
             .map_err(RuntimeError::ModuleError)?;
         }
 
-        Ok(substate_ref)
-    }
-
-    fn substate_return_mut(&mut self, substate_ref: NativeSubstateRef) -> Result<(), RuntimeError> {
-        for m in &mut self.modules {
-            m.pre_sys_call(
-                &mut self.track,
-                &mut self.call_frames,
-                SysCallInput::ReturnSubstateMut {
-                    substate_ref: &substate_ref,
-                },
-            )
-            .map_err(RuntimeError::ModuleError)?;
-        }
-
-        substate_ref.return_to_location(&mut self.call_frames, &mut self.track);
-
-        for m in &mut self.modules {
-            m.post_sys_call(
-                &mut self.track,
-                &mut self.call_frames,
-                SysCallOutput::ReturnSubstateMut,
-            )
-            .map_err(RuntimeError::ModuleError)?;
-        }
-
-        Ok(())
+        Ok(node_pointer.to_ref_mut(&mut self.call_frames, &mut self.track))
     }
 
     fn get_owned_node_ids(&mut self) -> Result<Vec<RENodeId>, RuntimeError> {
@@ -1250,6 +1250,7 @@ where
         // Insert node into heap
         let node_id = Self::new_node_id(&mut self.id_allocator, self.transaction_hash, &re_node)
             .map_err(|e| RuntimeError::KernelError(KernelError::IdAllocationError(e)))?;
+        self.track.new_node_ids.push(node_id.clone());
         let heap_root_node = HeapRootRENode {
             root: re_node,
             child_nodes,
@@ -1332,75 +1333,8 @@ where
         assert!(taken_nodes.len() == 1);
         let root_node = taken_nodes.into_values().nth(0).unwrap();
 
-        let (substates, maybe_non_fungibles) = match root_node.root {
-            HeapRENode::Component(component, component_state) => {
-                let mut substates = HashMap::new();
-                let component_address = node_id.into();
-                substates.insert(
-                    SubstateId::ComponentInfo(component_address),
-                    Substate::ComponentInfo(component),
-                );
-                substates.insert(
-                    SubstateId::ComponentState(component_address),
-                    Substate::ComponentState(component_state),
-                );
-                let mut visible_substates = HashSet::new();
-                visible_substates.insert(SubstateId::ComponentInfo(component_address));
-                (substates, None)
-            }
-            HeapRENode::Package(package) => {
-                let mut substates = HashMap::new();
-                let package_address = node_id.into();
-                substates.insert(
-                    SubstateId::Package(package_address),
-                    Substate::Package(package),
-                );
-                (substates, None)
-            }
-            HeapRENode::Resource(resource_manager, non_fungibles) => {
-                let mut substates = HashMap::new();
-                let resource_address: ResourceAddress = node_id.into();
-                substates.insert(
-                    SubstateId::ResourceManager(resource_address),
-                    Substate::ResourceManager(resource_manager),
-                );
-                (substates, non_fungibles)
-            }
-            HeapRENode::System(system) => {
-                let mut substates = HashMap::new();
-
-                let component_address: ComponentAddress = node_id.into();
-                substates.insert(
-                    SubstateId::System(component_address),
-                    Substate::System(system),
-                );
-                (substates, None)
-            }
-            _ => panic!("Not expected"),
-        };
-
-        for (substate_id, substate) in substates {
-            self.track
-                .create_uuid_substate(substate_id.clone(), substate, true);
-        }
-
-        let mut to_store_values = HashMap::new();
-        for (id, value) in root_node.child_nodes.into_iter() {
-            to_store_values.insert(id, value);
-        }
-        insert_non_root_nodes(self.track, to_store_values)
-            .map_err(|e| RuntimeError::KernelError(KernelError::NodeToSubstateFailure(e)))?;
-
-        if let Some(non_fungibles) = maybe_non_fungibles {
-            let resource_address: ResourceAddress = node_id.into();
-            let parent_address = SubstateId::NonFungibleSpace(resource_address.clone());
-            for (id, non_fungible) in non_fungibles {
-                self.track.set_key_value(
-                    parent_address.clone(),
-                    id.to_vec(),
-                    Substate::NonFungible(NonFungibleSubstate(Some(non_fungible))),
-                );
-            }
+        for (id, substate) in nodes_to_substates(root_node.to_nodes(node_id)) {
+            self.track.put_substate(id, substate);
         }
 
         Self::current_frame_mut(&mut self.call_frames)
