@@ -8,7 +8,7 @@ pub enum GlobalRENode {
 }
 
 impl GlobalRENode {
-    pub fn node_id(&self) -> RENodeId {
+    pub fn node_deref(&self) -> RENodeId {
         match self {
             GlobalRENode::Package(package_address) => RENodeId::Package(*package_address),
             GlobalRENode::Component(component) => RENodeId::Component(component.0),

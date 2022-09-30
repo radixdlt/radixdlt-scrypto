@@ -112,7 +112,9 @@ fn account_to_bucket_to_account() {
             builder
                 .add_instruction(Instruction::CallMethod {
                     method_ident: MethodIdent {
-                        receiver: Receiver::Ref(RENodeId::Component(account)),
+                        receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Component(
+                            account,
+                        ))),
                         method_fn_ident: MethodFnIdent::Scrypto("deposit".to_string()),
                     },
                     args: args!(scrypto::resource::Bucket(bucket_id)),

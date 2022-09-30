@@ -5,9 +5,9 @@ use crate::core::Runtime;
 use crate::core::ScryptoRENode;
 use crate::engine::types::RENodeId;
 use crate::engine::{api::*, call_engine};
-use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::*;
 use sbor::rust::string::String;
+use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 
 /// Represents the Radix Engine component subsystem.
@@ -20,7 +20,7 @@ use sbor::rust::vec::Vec;
 /// TODO: add mutex/lock for non-WebAssembly target
 pub struct ComponentSystem {
     packages: HashMap<PackageAddress, BorrowedPackage>,
-    components: HashMap<ComponentAddress, Component>,
+    components: HashMap<ComponentAddress, BorrowedGlobalComponent>,
 }
 
 impl ComponentSystem {
@@ -40,10 +40,13 @@ impl ComponentSystem {
     }
 
     /// Returns a reference to a component.
-    pub fn get_component(&mut self, component_address: ComponentAddress) -> &Component {
+    pub fn get_component(
+        &mut self,
+        component_address: ComponentAddress,
+    ) -> &BorrowedGlobalComponent {
         self.components
             .entry(component_address)
-            .or_insert(Component(component_address))
+            .or_insert(BorrowedGlobalComponent(component_address))
     }
 
     /// Publishes a package.
@@ -63,7 +66,7 @@ impl ComponentSystem {
     ) -> Component {
         let input = RadixEngineInput::RENodeCreate(ScryptoRENode::Component(
             Runtime::package_address(),
-            blueprint_name.to_owned(),
+            blueprint_name.to_string(),
             scrypto_encode(&state),
         ));
         let node_id: RENodeId = call_engine(input);

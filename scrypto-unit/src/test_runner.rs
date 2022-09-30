@@ -239,7 +239,9 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             0,
             transaction::model::Instruction::CallMethod {
                 method_ident: MethodIdent {
-                    receiver: Receiver::Ref(RENodeId::Component(SYS_FAUCET_COMPONENT)),
+                    receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Component(
+                        SYS_FAUCET_COMPONENT,
+                    ))),
                     method_fn_ident: MethodFnIdent::Scrypto("lock_fee".to_string()),
                 },
                 args: args!(dec!("1000")),

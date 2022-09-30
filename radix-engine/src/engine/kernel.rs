@@ -401,22 +401,16 @@ where
 
         // Check we have valid references to pass back
         for refed_component_address in &output.refed_component_addresses {
-            let node_id = RENodeId::Component(*refed_component_address);
+            let node_id = RENodeId::Global(GlobalAddress::Component(*refed_component_address));
             if let Some(RENodePointer::Store(..)) = Self::current_frame_mut(&mut self.call_frames)
                 .node_refs
                 .get(&node_id)
             {
                 // Only allow passing back global references
             } else {
-                let node_id = RENodeId::System(refed_component_address.clone());
-                if !Self::current_frame(&self.call_frames)
-                    .node_refs
-                    .contains_key(&node_id)
-                {
-                    return Err(RuntimeError::KernelError(
-                        KernelError::InvokeMethodInvalidReferencePass(node_id),
-                    ));
-                }
+                return Err(RuntimeError::KernelError(
+                    KernelError::InvokeInvalidReferenceReturn(node_id),
+                ));
             }
         }
 
@@ -440,7 +434,6 @@ where
         input: ScryptoValue,
         next_owned_values: HashMap<RENodeId, HeapRootRENode>,
     ) -> Result<ScryptoValue, RuntimeError> {
-
         let mut locked_values = HashSet::<SubstateId>::new();
 
         // No authorization but state load
@@ -520,37 +513,30 @@ where
                         &mut self.track,
                     )
                     .map_err(RuntimeError::KernelError)?;
-                /*
-                let node_ref = node_pointer.to_ref(&self.call_frames, &mut self.track);
-                let derefed_node_id = node_ref.global_re_node().node_id();
-                 */
                 node_pointer
                     .release_lock(SubstateId::Global(global_address), false, &mut self.track)
                     .map_err(RuntimeError::KernelError)?;
-
-                //let node_pointer = RENodePointer::Store(derefed_node_id);
 
                 next_frame_node_refs.insert(node_id, node_pointer);
             }
         } else {
             // Pass argument references
             for refed_component_address in &input.refed_component_addresses {
-                let node_id = RENodeId::Component(refed_component_address.clone());
+                let node_id =
+                    RENodeId::Global(GlobalAddress::Component(refed_component_address.clone()));
                 if let Some(pointer) = Self::current_frame_mut(&mut self.call_frames)
                     .node_refs
                     .get(&node_id)
                 {
                     next_frame_node_refs.insert(node_id.clone(), pointer.clone());
+                    next_frame_node_refs.insert(
+                        RENodeId::Component(*refed_component_address),
+                        RENodePointer::Store(RENodeId::Component(*refed_component_address)),
+                    );
                 } else {
-                    let node_id = RENodeId::System(refed_component_address.clone());
-                    if !Self::current_frame(&self.call_frames)
-                        .node_refs
-                        .contains_key(&node_id)
-                    {
-                        return Err(RuntimeError::KernelError(
-                            KernelError::InvokeMethodInvalidReferencePass(node_id),
-                        ));
-                    }
+                    return Err(RuntimeError::KernelError(
+                        KernelError::InvokeInvalidReferencePass(node_id),
+                    ));
                 }
             }
         }
@@ -602,7 +588,7 @@ where
 
     fn invoke_method(
         &mut self,
-        fn_ident: MethodIdent,
+        mut fn_ident: MethodIdent,
         input: ScryptoValue,
         mut next_owned_values: HashMap<RENodeId, HeapRootRENode>,
     ) -> Result<ScryptoValue, RuntimeError> {
@@ -611,11 +597,10 @@ where
 
         // Authorization and state load
         let re_actor = {
-            let node_id = fn_ident.receiver.node_id();
-            let method_fn_ident = fn_ident.method_fn_ident.clone();
+            let mut node_id = fn_ident.receiver.node_id();
 
             // Find node
-            let node_pointer = {
+            let mut node_pointer = {
                 let current_frame = Self::current_frame(&self.call_frames);
                 if current_frame.owned_heap_nodes.contains_key(&node_id) {
                     RENodePointer::Heap {
@@ -641,14 +626,33 @@ where
                 }
             };
 
+            // Deref
+            if let Receiver::Ref(RENodeId::Global(global_address)) = fn_ident.receiver {
+                let substate_id = SubstateId::Global(global_address);
+                node_pointer
+                    .acquire_lock(substate_id.clone(), false, false, &mut self.track)
+                    .map_err(RuntimeError::KernelError)?;
+                let node_ref = node_pointer.to_ref(&self.call_frames, &mut self.track);
+                node_id = node_ref.global_re_node().node_deref();
+                node_pointer
+                    .release_lock(substate_id, false, &mut self.track)
+                    .map_err(RuntimeError::KernelError)?;
+
+                node_pointer = RENodePointer::Store(node_id);
+                fn_ident = MethodIdent {
+                    receiver: Receiver::Ref(node_id),
+                    method_fn_ident: fn_ident.method_fn_ident,
+                }
+            }
+
             // Lock Primary Substate
             let substate_id = RENodeProperties::to_primary_substate_id(&fn_ident)?;
             let is_lock_fee = matches!(node_id, RENodeId::Vault(..))
-                && (method_fn_ident.eq(&MethodFnIdent::Native(NativeMethodFnIdent::Vault(
-                    VaultMethodFnIdent::LockFee,
-                ))) || method_fn_ident.eq(&MethodFnIdent::Native(NativeMethodFnIdent::Vault(
-                    VaultMethodFnIdent::LockContingentFee,
-                ))));
+                && (fn_ident.method_fn_ident.eq(&MethodFnIdent::Native(
+                    NativeMethodFnIdent::Vault(VaultMethodFnIdent::LockFee),
+                )) || fn_ident.method_fn_ident.eq(&MethodFnIdent::Native(
+                    NativeMethodFnIdent::Vault(VaultMethodFnIdent::LockContingentFee),
+                )));
             if is_lock_fee && matches!(node_pointer, RENodePointer::Heap { .. }) {
                 return Err(RuntimeError::KernelError(KernelError::RENodeNotInTrack));
             }
@@ -756,7 +760,7 @@ where
 
             // Lock Resource Managers in request
             // TODO: Remove when references cleaned up
-            if let MethodFnIdent::Native(..) = method_fn_ident {
+            if let MethodFnIdent::Native(..) = fn_ident.method_fn_ident {
                 for resource_address in &input.resource_addresses {
                     let resource_substate_id =
                         SubstateId::ResourceManager(resource_address.clone());
@@ -833,22 +837,21 @@ where
         // TODO: Cleanup
         // Pass argument references
         for refed_component_address in &input.refed_component_addresses {
-            let node_id = RENodeId::Component(refed_component_address.clone());
+            let node_id =
+                RENodeId::Global(GlobalAddress::Component(refed_component_address.clone()));
             if let Some(pointer) = Self::current_frame(&self.call_frames)
                 .node_refs
                 .get(&node_id)
             {
                 next_frame_node_refs.insert(node_id.clone(), pointer.clone());
+                next_frame_node_refs.insert(
+                    RENodeId::Component(*refed_component_address),
+                    RENodePointer::Store(RENodeId::Component(*refed_component_address)),
+                );
             } else {
-                let node_id = RENodeId::System(refed_component_address.clone());
-                if !Self::current_frame(&self.call_frames)
-                    .node_refs
-                    .contains_key(&node_id)
-                {
-                    return Err(RuntimeError::KernelError(
-                        KernelError::InvokeMethodInvalidReferencePass(node_id),
-                    ));
-                }
+                return Err(RuntimeError::KernelError(
+                    KernelError::InvokeInvalidReferencePass(node_id),
+                ));
             }
         }
 
@@ -972,13 +975,15 @@ where
 
         // TODO: Slowly unify these two
         let output = match fn_ident {
-            FnIdent::Method(method_ident) => self.invoke_method(method_ident, input, next_owned_values)?,
+            FnIdent::Method(method_ident) => {
+                self.invoke_method(method_ident, input, next_owned_values)?
+            }
             FnIdent::Function(..) => self.invoke_function(fn_ident, input, next_owned_values)?,
         };
 
         // Accept component references
         for refed_component_address in &output.refed_component_addresses {
-            let node_id = RENodeId::Component(*refed_component_address);
+            let node_id = RENodeId::Global(GlobalAddress::Component(*refed_component_address));
             Self::current_frame_mut(&mut self.call_frames)
                 .node_refs
                 .insert(node_id, RENodePointer::Store(node_id));
@@ -1275,6 +1280,14 @@ where
 
         Self::current_frame_mut(&mut self.call_frames)
             .node_refs
+            .insert(
+                RENodeId::Global(global_address),
+                RENodePointer::Store(RENodeId::Global(global_address)),
+            );
+
+        // TODO: Remove
+        Self::current_frame_mut(&mut self.call_frames)
+            .node_refs
             .insert(node_id, RENodePointer::Store(node_id));
 
         for m in &mut self.modules {
@@ -1319,7 +1332,7 @@ where
 
         // TODO: Clean the following referencing up
         for component_address in &current_value.refed_component_addresses {
-            let node_id = RENodeId::Component(*component_address);
+            let node_id = RENodeId::Global(GlobalAddress::Component(*component_address));
             Self::current_frame_mut(&mut self.call_frames)
                 .node_refs
                 .insert(node_id, RENodePointer::Store(node_id));
