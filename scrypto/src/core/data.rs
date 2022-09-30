@@ -53,11 +53,12 @@ impl<V: Encode> DataRefMut<V> {
 impl<V: Encode> Drop for DataRefMut<V> {
     fn drop(&mut self) {
         let bytes = scrypto_encode(&self.value);
-        let substate = match self.substate_id {
-            SubstateId::KeyValueStoreEntry(..) => KeyValueStoreEntrySubstate(Some(bytes)),
-            _ => panic!("Unsupported"),
+        let substate = match &self.substate_id {
+            SubstateId::KeyValueStoreEntry(..) => scrypto_encode(&KeyValueStoreEntrySubstate(Some(bytes))),
+            SubstateId::ComponentState(..) => scrypto_encode(&ComponentStateSubstate {raw: bytes}),
+            s @ _ => panic!("Unsupported substate: {:?}", s),
         };
-        let input = SubstateWrite(self.substate_id.clone(), scrypto_encode(&substate));
+        let input = SubstateWrite(self.substate_id.clone(), substate);
         let _: () = call_engine(input);
     }
 }
@@ -91,7 +92,7 @@ impl<V: 'static + Encode + Decode> DataPointer<V> {
 
     pub fn get_mut(&mut self) -> DataRefMut<V> {
         let input = RadixEngineInput::SubstateRead(self.substate_id.clone());
-        match self.substate_id {
+        match &self.substate_id {
             SubstateId::KeyValueStoreEntry(..) => {
                 let substate: KeyValueStoreEntrySubstate = call_engine(input);
                 DataRefMut {
@@ -106,13 +107,13 @@ impl<V: 'static + Encode + Decode> DataPointer<V> {
                     value: scrypto_decode(&substate.raw).unwrap(),
                 }
             }
-            _ => panic!("Unsupported"),
+            s @ _ => panic!("Unsupported substate: {:?}", s),
         }
     }
 
     pub fn get(&self) -> DataRef<V> {
         let input = RadixEngineInput::SubstateRead(self.substate_id.clone());
-        match self.substate_id {
+        match &self.substate_id {
             SubstateId::KeyValueStoreEntry(..) => {
                 let substate: KeyValueStoreEntrySubstate = call_engine(input);
                 DataRef {
@@ -125,7 +126,7 @@ impl<V: 'static + Encode + Decode> DataPointer<V> {
                     value: scrypto_decode(&substate.raw).unwrap(),
                 }
             }
-            _ => panic!("Unsupported"),
+            s @ _ => panic!("Unsupported substate: {:?}", s),
         }
     }
 }

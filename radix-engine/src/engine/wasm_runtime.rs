@@ -131,14 +131,13 @@ where
         substate_id: SubstateId,
         value: Vec<u8>,
     ) -> Result<ScryptoValue, RuntimeError> {
-        // FIXME: check if the value include NOT allowed values.
+        // FIXME: check if the value contains NOT allowed values.
 
         self.system_api.substate_write(
             substate_id,
             ScryptoValue::from_slice(&value)
                 .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?,
-        )?;
-        Ok(ScryptoValue::unit())
+        )
     }
 
     fn handle_get_actor(&mut self) -> Result<ScryptoActor, RuntimeError> {

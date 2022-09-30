@@ -156,11 +156,11 @@ where
         Ok(())
     }
 
-    fn read_value_internal(
+    fn read_substate_internal(
         call_frames: &mut Vec<CallFrame>,
         track: &mut Track<'s, R>,
         substate_id: &SubstateId,
-    ) -> Result<(RENodePointer, ScryptoValue), RuntimeError> {
+    ) -> Result<(RENodePointer, ScryptoValue, Option<ScryptoValue>), RuntimeError> {
         let node_id = SubstateProperties::get_node_id(substate_id);
 
         // TODO: verify if this breaks if reading substate of heap nodes.
@@ -180,13 +180,32 @@ where
             })?;
 
         // Read current value
-        let current_value = {
+        let substate = {
             let mut node_ref = node_pointer.to_ref_mut(call_frames, track);
             node_ref.read_substate(&substate_id)?
         };
 
+        // Parse contained value (for reference management and children detection)
+        // TODO: introduce trait/enum for readable substates.
+        let contained_value = match &substate_id {
+            SubstateId::ComponentState(..) => {
+                let substate: ComponentStateSubstate = scrypto_decode(&substate.raw).unwrap();
+                Some(ScryptoValue::from_slice(&substate.raw).unwrap())
+            }
+            SubstateId::KeyValueStoreEntry(..) => {
+                let substate: KeyValueStoreEntrySubstate = scrypto_decode(&substate.raw).unwrap();
+                substate
+                    .0
+                    .map(|raw| ScryptoValue::from_slice(&raw).unwrap())
+            }
+            SubstateId::NonFungible(..) => {
+                let substate: NonFungibleSubstate = scrypto_decode(&substate.raw).unwrap();
+                substate.0.map(|v| ScryptoValue::from_typed(&v))
+            }
+            _ => None,
+        };
 
-        Ok((node_pointer.clone(), current_value))
+        Ok((node_pointer.clone(), substate, contained_value))
     }
 
     fn new_uuid(
@@ -741,6 +760,8 @@ where
                     } else if let Some(pointer) = current_frame.node_refs.get(&node_id) {
                         pointer.clone()
                     } else {
+                        eprintln!("!!!! {:?}", current_frame.node_refs);
+                        eprintln!("!!!! {:?}", node_id);
                         match node_id {
                             // Let these be globally accessible for now
                             // TODO: Remove when references cleaned up
@@ -1322,44 +1343,44 @@ where
             ));
         }
 
-        let (parent_pointer, current_value) =
-            Self::read_value_internal(&mut self.call_frames, self.track, &substate_id)?;
+        let (parent_pointer, substate, contained_value) =
+            Self::read_substate_internal(&mut self.call_frames, self.track, &substate_id)?;
 
         // TODO: Clean the following referencing up
-        for component_address in &current_value.refed_component_addresses {
-            let node_id = RENodeId::Component(*component_address);
-            Self::current_frame_mut(&mut self.call_frames)
-                .node_refs
-                .insert(node_id, RENodePointer::Store(node_id));
-        }
+        if let Some(value) = contained_value {
+            for component_address in &value.refed_component_addresses {
+                let node_id = RENodeId::Component(*component_address);
+                Self::current_frame_mut(&mut self.call_frames)
+                    .node_refs
+                    .insert(node_id, RENodePointer::Store(node_id));
+            }
 
-        let cur_children = current_value.node_ids();
-        for child_id in cur_children {
-            let child_pointer = parent_pointer.child(child_id);
-            Self::current_frame_mut(&mut self.call_frames)
-                .node_refs
-                .insert(child_id, child_pointer);
+            let cur_children = value.node_ids();
+            for child_id in cur_children {
+                let child_pointer = parent_pointer.child(child_id);
+                Self::current_frame_mut(&mut self.call_frames)
+                    .node_refs
+                    .insert(child_id, child_pointer);
+            }
         }
 
         for m in &mut self.modules {
             m.post_sys_call(
                 &mut self.track,
                 &mut self.call_frames,
-                SysCallOutput::ReadSubstate {
-                    value: &current_value,
-                },
+                SysCallOutput::ReadSubstate { value: &substate },
             )
             .map_err(RuntimeError::ModuleError)?;
         }
 
-        Ok(current_value)
+        Ok(substate)
     }
 
     fn substate_write(
         &mut self,
         substate_id: SubstateId,
-        value: ScryptoValue, // TODO: use substate
-    ) -> Result<(), RuntimeError> {
+        value: ScryptoValue, // TODO: use substate?
+    ) -> Result<ScryptoValue, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
                 &mut self.track,
@@ -1410,11 +1431,11 @@ where
             }
         };
 
-        let (pointer, current_value) =
-            Self::read_value_internal(&mut self.call_frames, self.track, &substate_id)?;
-        let cur_children = current_value.node_ids();
+        let (pointer, substate, contained_value) =
+            Self::read_substate_internal(&mut self.call_frames, self.track, &substate_id)?;
 
         // Fulfill method
+        let cur_children = contained_value.map(|v| v.node_ids()).unwrap_or_default();
         verify_stored_value_update(&cur_children, &missing_nodes)?;
 
         // TODO: verify against some schema
@@ -1432,7 +1453,7 @@ where
             .map_err(RuntimeError::ModuleError)?;
         }
 
-        Ok(())
+        Ok(substate)
     }
 
     fn read_blob(&mut self, blob_hash: &Hash) -> Result<&[u8], RuntimeError> {

@@ -45,14 +45,18 @@ impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> KeyValueStore<K,
         let substate_id = SubstateId::KeyValueStoreEntry(self.id, scrypto_encode(key));
         let input = RadixEngineInput::SubstateRead(substate_id.clone());
         let value: KeyValueStoreEntrySubstate = call_engine(input);
-        value.0.map(|raw| DataRef::new(scrypto_decode(&raw).unwrap()))
+        value
+            .0
+            .map(|raw| DataRef::new(scrypto_decode(&raw).unwrap()))
     }
 
     pub fn get_mut(&mut self, key: &K) -> Option<DataRefMut<V>> {
         let substate_id = SubstateId::KeyValueStoreEntry(self.id, scrypto_encode(key));
         let input = RadixEngineInput::SubstateRead(substate_id.clone());
         let value: KeyValueStoreEntrySubstate = call_engine(input);
-        value.0.map(|raw| DataRefMut::new(substate_id, scrypto_decode(&raw).unwrap()))
+        value
+            .0
+            .map(|raw| DataRefMut::new(substate_id, scrypto_decode(&raw).unwrap()))
     }
 
     /// Inserts a new key-value pair into this map.
