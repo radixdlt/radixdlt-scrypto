@@ -70,8 +70,8 @@ pub enum KernelError {
     RENodeNotInTrack,
 
     // Substate
+    TrackError(TrackError),
     NodeToSubstateFailure(NodeToSubstateFailure),
-    SubstateError(TrackError),
     SubstateReadNotReadable(REActor, SubstateId),
     SubstateWriteNotWriteable(REActor, SubstateId),
     SubstateReadSubstateNotFound(SubstateId),

@@ -106,7 +106,7 @@ fn reentrancy_should_not_be_possible() {
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        if let RuntimeError::KernelError(KernelError::SubstateError(TrackError::NotAvailable(
+        if let RuntimeError::KernelError(KernelError::TrackError(TrackError::NotAvailable(
             substate_id,
         ))) = e
         {

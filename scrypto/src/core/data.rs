@@ -1,4 +1,5 @@
 use crate::buffer::*;
+use crate::component::{ComponentStateSubstate, KeyValueStoreEntrySubstate};
 use crate::engine::api::RadixEngineInput;
 use crate::engine::api::RadixEngineInput::SubstateWrite;
 use crate::engine::call_engine;
@@ -52,7 +53,11 @@ impl<V: Encode> DataRefMut<V> {
 impl<V: Encode> Drop for DataRefMut<V> {
     fn drop(&mut self) {
         let bytes = scrypto_encode(&self.value);
-        let input = SubstateWrite(self.substate_id.clone(), bytes);
+        let substate = match self.substate_id {
+            SubstateId::KeyValueStoreEntry(..) => KeyValueStoreEntrySubstate(Some(bytes)),
+            _ => panic!("Unsupported"),
+        };
+        let input = SubstateWrite(self.substate_id.clone(), scrypto_encode(&substate));
         let _: () = call_engine(input);
     }
 }
@@ -86,16 +91,41 @@ impl<V: 'static + Encode + Decode> DataPointer<V> {
 
     pub fn get_mut(&mut self) -> DataRefMut<V> {
         let input = RadixEngineInput::SubstateRead(self.substate_id.clone());
-        let value: V = call_engine(input);
-        DataRefMut {
-            substate_id: self.substate_id.clone(),
-            value,
+        match self.substate_id {
+            SubstateId::KeyValueStoreEntry(..) => {
+                let substate: KeyValueStoreEntrySubstate = call_engine(input);
+                DataRefMut {
+                    substate_id: self.substate_id.clone(),
+                    value: scrypto_decode(&substate.0.unwrap()).unwrap(),
+                }
+            }
+            SubstateId::ComponentState(..) => {
+                let substate: ComponentStateSubstate = call_engine(input);
+                DataRefMut {
+                    substate_id: self.substate_id.clone(),
+                    value: scrypto_decode(&substate.raw).unwrap(),
+                }
+            }
+            _ => panic!("Unsupported"),
         }
     }
 
     pub fn get(&self) -> DataRef<V> {
         let input = RadixEngineInput::SubstateRead(self.substate_id.clone());
-        let value: V = call_engine(input);
-        DataRef { value }
+        match self.substate_id {
+            SubstateId::KeyValueStoreEntry(..) => {
+                let substate: KeyValueStoreEntrySubstate = call_engine(input);
+                DataRef {
+                    value: scrypto_decode(&substate.0.unwrap()).unwrap(),
+                }
+            }
+            SubstateId::ComponentState(..) => {
+                let substate: ComponentStateSubstate = call_engine(input);
+                DataRef {
+                    value: scrypto_decode(&substate.raw).unwrap(),
+                }
+            }
+            _ => panic!("Unsupported"),
+        }
     }
 }

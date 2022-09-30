@@ -163,6 +163,8 @@ where
     ) -> Result<(RENodePointer, ScryptoValue), RuntimeError> {
         let node_id = SubstateProperties::get_node_id(substate_id);
 
+        // TODO: verify if this breaks if reading substate of heap nodes.
+
         // Get location
         // Note this must be run AFTER values are taken, otherwise there would be inconsistent readable_values state
         let node_pointer = call_frames
@@ -177,24 +179,12 @@ where
                 ))
             })?;
 
-        if let SubstateId::ComponentInfo(address) = substate_id {
-            node_pointer
-                .acquire_lock(SubstateId::ComponentInfo(*address), false, false, track)
-                .map_err(RuntimeError::KernelError)?;
-        }
-
         // Read current value
         let current_value = {
             let mut node_ref = node_pointer.to_ref_mut(call_frames, track);
             node_ref.read_substate(&substate_id)?
         };
 
-        // TODO: Remove, integrate with substate borrow mechanism
-        if let SubstateId::ComponentInfo(address) = substate_id {
-            node_pointer
-                .release_lock(SubstateId::ComponentInfo(*address), false, track)
-                .map_err(RuntimeError::KernelError)?;
-        }
 
         Ok((node_pointer.clone(), current_value))
     }
@@ -650,7 +640,7 @@ where
             // TODO: refactor after introducing `Lock` representation.
             self.track
                 .release_lock(l.clone(), false)
-                .map_err(KernelError::SubstateError)
+                .map_err(KernelError::TrackError)
                 .map_err(RuntimeError::KernelError)?;
         }
 

@@ -26,7 +26,7 @@ impl RENodePointer {
         match self {
             RENodePointer::Store(..) => track
                 .acquire_lock(substate_id.clone(), mutable, write_through)
-                .map_err(KernelError::SubstateError),
+                .map_err(KernelError::TrackError),
             RENodePointer::Heap { .. } => Ok(()),
         }
     }
@@ -40,7 +40,7 @@ impl RENodePointer {
         match self {
             RENodePointer::Store(..) => track
                 .release_lock(substate_id, write_through)
-                .map_err(KernelError::SubstateError),
+                .map_err(KernelError::TrackError),
             RENodePointer::Heap { .. } => Ok(()),
         }
     }
@@ -173,9 +173,11 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
             SubstateId::ComponentInfo(..) => {
                 Ok(ScryptoValue::from_typed(&self.component_mut().info))
             }
-            SubstateId::ComponentState(..) => {
-                Ok(ScryptoValue::from_typed(&self.component_state_get()))
-            }
+            SubstateId::ComponentState(..) => Ok(ScryptoValue::from_typed(
+                &self
+                    .component_state_get()
+                    .map_err(|e| RuntimeError::KernelError(KernelError::TrackError(e)))?,
+            )),
             SubstateId::NonFungible(.., id) => {
                 Ok(ScryptoValue::from_typed(&self.non_fungible_get(id)))
             }
