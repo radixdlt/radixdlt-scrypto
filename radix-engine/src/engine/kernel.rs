@@ -783,9 +783,6 @@ where
                     .map_err(RuntimeError::KernelError)?;
                 locked_pointers.push((node_pointer, substate_id.clone(), is_lock_fee));
 
-                // TODO: Refactor when locking model finalized
-                let mut temporary_locks = Vec::new();
-
                 // Load actor
                 match &fn_identifier {
                     FnIdentifier::Scrypto {
@@ -793,19 +790,7 @@ where
                         blueprint_name,
                         ..
                     } => match node_id {
-                        RENodeId::Component(component_address) => {
-                            let temporary_substate_id =
-                                SubstateId::ComponentInfo(*component_address);
-                            node_pointer
-                                .acquire_lock(
-                                    temporary_substate_id.clone(),
-                                    false,
-                                    false,
-                                    &mut self.track,
-                                )
-                                .map_err(RuntimeError::KernelError)?;
-                            temporary_locks.push((node_pointer, temporary_substate_id, false));
-
+                        RENodeId::Component(..) => {
                             let mut node_ref =
                                 node_pointer.to_ref(&self.call_frames, &mut self.track);
                             let component = node_ref.component();
@@ -965,12 +950,6 @@ where
                         next_owned_values.insert(*node_id, heap_node);
                     }
                     _ => {}
-                }
-
-                for (node_pointer, substate_id, write_through) in temporary_locks {
-                    node_pointer
-                        .release_lock(substate_id, write_through, &mut self.track)
-                        .map_err(RuntimeError::KernelError)?;
                 }
 
                 next_frame_node_refs.insert(node_id.clone(), node_pointer.clone());

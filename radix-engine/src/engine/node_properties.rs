@@ -46,7 +46,7 @@ impl RENodeProperties {
             },
             FnIdentifier::Scrypto { .. } => match node_id {
                 RENodeId::Component(component_address) => {
-                    SubstateId::ComponentState(component_address)
+                    SubstateId::ComponentInfo(component_address)
                 }
                 _ => {
                     return Err(RuntimeError::KernelError(KernelError::MethodNotFound(

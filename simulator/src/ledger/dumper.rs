@@ -91,7 +91,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
                 .map(|s| s.into())
                 .unwrap();
 
-            let state_data = ScryptoValue::from_slice(state.state()).unwrap();
+            let state_data = ScryptoValue::from_slice(&state.raw).unwrap();
             writeln!(output, "{}: {}", "State".green().bold(), state_data);
 
             // Find all vaults owned by the component, assuming a tree structure.
