@@ -8,6 +8,7 @@ pub fn node_to_substates(node_id: RENodeId, node: HeapRENode) -> HashMap<Substat
     match node {
         HeapRENode::Bucket(_) => panic!("Unexpected"),
         HeapRENode::Proof(_) => panic!("Unexpected"),
+        HeapRENode::AuthZone(_) => panic!("Unexpected"),
         HeapRENode::Vault(vault) => {
             let resource = vault
                 .resource()

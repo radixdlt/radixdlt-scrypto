@@ -104,6 +104,7 @@ where
                 .or_insert(BTreeSet::new())
                 .insert(non_fungible.non_fungible_id());
         }
+        let mut proofs = Vec::new();
         for (resource_address, non_fungible_ids) in proofs_to_create {
             let bucket_id = match kernel
                 .node_create(HeapRENode::Bucket(Bucket::new(Resource::new_non_fungible(
@@ -122,11 +123,11 @@ where
             let proof = bucket
                 .create_proof(bucket_id)
                 .expect("Failed to create proof");
-            Self::current_frame_mut(&mut kernel.call_frames)
-                .auth_zone
-                .proofs
-                .push(proof);
+            proofs.push(proof);
         }
+        kernel
+            .node_create(HeapRENode::AuthZone(AuthZone::new_with_proofs(proofs)))
+            .expect("Failed to create AuthZone");
 
         kernel
     }
@@ -217,6 +218,10 @@ where
         re_node: &HeapRENode,
     ) -> Result<RENodeId, IdAllocationError> {
         match re_node {
+            HeapRENode::AuthZone(..) => {
+                let auth_zone_id = id_allocator.new_auth_zone_id()?;
+                Ok(RENodeId::AuthZone(auth_zone_id))
+            }
             HeapRENode::Bucket(..) => {
                 let bucket_id = id_allocator.new_bucket_id()?;
                 Ok(RENodeId::Bucket(bucket_id))
@@ -261,15 +266,17 @@ where
 
     fn run(
         &mut self,
-        auth_zone_frame_id: Option<usize>,
         input: ScryptoValue,
     ) -> Result<(ScryptoValue, HashMap<RENodeId, HeapRootRENode>), RuntimeError> {
+        // TODO: Move to a better spot
+        self.node_create(HeapRENode::AuthZone(AuthZone::new()))?;
+
         let output = {
             let rtn = match Self::current_frame(&self.call_frames).actor.clone() {
                 REActor {
                     receiver,
                     fn_identifier: FnIdentifier::Native(native_fn),
-                } => NativeInterpreter::run(receiver, auth_zone_frame_id, native_fn, input, self),
+                } => NativeInterpreter::run(receiver, native_fn, input, self),
                 REActor {
                     receiver,
                     fn_identifier:
@@ -401,9 +408,6 @@ where
         }
 
         // drop proofs and check resource leak
-        Self::current_frame_mut(&mut self.call_frames)
-            .auth_zone
-            .clear();
         Self::current_frame_mut(&mut self.call_frames).drop_owned_values()?;
 
         Ok((output, received_values))
@@ -654,8 +658,9 @@ where
                 next_frame_node_refs,
                 self,
             );
+
             self.call_frames.push(frame);
-            self.run(None, input)?
+            self.run(input)?
         };
 
         // Remove the last after clean-up
@@ -753,7 +758,7 @@ where
         let mut next_frame_node_refs = HashMap::new();
 
         // Authorization and state load
-        let auth_zone_frame_id = match &receiver {
+        match &receiver {
             Receiver::Ref(node_id) | Receiver::Consumed(node_id) => {
                 // Find node
                 let node_pointer = {
@@ -990,23 +995,8 @@ where
                 }
 
                 next_frame_node_refs.insert(node_id.clone(), node_pointer.clone());
-                None
             }
-            Receiver::CurrentAuthZone => {
-                for resource_address in &input.resource_addresses {
-                    let resource_substate_id =
-                        SubstateId::ResourceManager(resource_address.clone());
-                    let resource_node_id = RENodeId::ResourceManager(resource_address.clone());
-                    let resource_node_pointer = RENodePointer::Store(resource_node_id);
-                    resource_node_pointer
-                        .acquire_lock(resource_substate_id.clone(), false, false, &mut self.track)
-                        .map_err(RuntimeError::KernelError)?;
-                    locked_pointers.push((resource_node_pointer, resource_substate_id, false));
-                    next_frame_node_refs.insert(resource_node_id, resource_node_pointer);
-                }
-                Some(Self::current_frame(&self.call_frames).depth)
-            }
-        };
+        }
 
         // TODO: Cleanup
         // Pass argument references
@@ -1045,7 +1035,7 @@ where
                 self,
             );
             self.call_frames.push(frame);
-            self.run(auth_zone_frame_id, input)?
+            self.run(input)?
         };
 
         // Remove the last after clean-up
@@ -1174,6 +1164,24 @@ where
         }
 
         Ok(node_pointer.to_ref_mut(&mut self.call_frames, &mut self.track))
+    }
+
+    fn get_owned_node_ids(&mut self) -> Result<Vec<RENodeId>, RuntimeError> {
+        for m in &mut self.modules {
+            m.pre_sys_call(
+                &mut self.track,
+                &mut self.call_frames,
+                SysCallInput::ReadOwnedNodes,
+            )
+            .map_err(RuntimeError::ModuleError)?;
+        }
+
+        let node_ids = Self::current_frame_mut(&mut self.call_frames)
+            .owned_heap_nodes
+            .keys()
+            .cloned()
+            .collect();
+        Ok(node_ids)
     }
 
     fn node_drop(&mut self, node_id: &RENodeId) -> Result<HeapRootRENode, RuntimeError> {
@@ -1633,13 +1641,5 @@ where
         }
 
         Ok(())
-    }
-
-    fn auth_zone(&mut self, frame_id: usize) -> &mut AuthZone {
-        &mut self
-            .call_frames
-            .get_mut(frame_id)
-            .expect(&format!("CallFrame #{} not found", frame_id))
-            .auth_zone
     }
 }
