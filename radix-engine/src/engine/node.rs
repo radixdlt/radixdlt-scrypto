@@ -30,8 +30,8 @@ impl HeapRENode {
             }
             HeapRENode::KeyValueStore(store) => {
                 let mut child_nodes = HashSet::new();
-                for (_id, substate) in store.loaded_entries {
-                    if let Some(v) = substate.0 {
+                for (_id, substate) in &store.loaded_entries {
+                    if let Some(v) = &substate.0 {
                         let value = ScryptoValue::from_slice(&v)
                             .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                         child_nodes.extend(value.node_ids());
@@ -98,6 +98,7 @@ impl HeapRENode {
             _ => panic!("Expected to be a package"),
         }
     }
+
     pub fn package_mut(&mut self) -> &Package {
         match self {
             HeapRENode::Package(package) => package,

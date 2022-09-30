@@ -189,7 +189,7 @@ where
         // Read current value
         let current_value = {
             let mut node_ref = node_pointer.to_ref_mut(call_frames, track);
-            node_ref.read_scrypto_value(&substate_id)?
+            node_ref.read_substate(&substate_id)?
         };
 
         // TODO: Remove, integrate with substate borrow mechanism
@@ -1473,9 +1473,7 @@ where
 
         // Write values
         let mut node_ref = pointer.to_ref_mut(&mut self.call_frames, &mut self.track);
-        node_ref
-            .write_value(substate_id, value, taken_nodes)
-            .map_err(|e| RuntimeError::KernelError(KernelError::NodeToSubstateFailure(e)))?;
+        node_ref.write_substate(substate_id, value, taken_nodes);
 
         for m in &mut self.modules {
             m.post_sys_call(

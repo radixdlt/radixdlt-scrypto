@@ -1,8 +1,6 @@
 use sbor::rust::collections::HashMap;
-use scrypto::engine::types::SubstateId;
 
-use crate::types::KeyValueStoreId;
-use crate::{engine::Track, fee::FeeReserve, model::KeyValueStoreEntrySubstate};
+use crate::model::KeyValueStoreEntrySubstate;
 
 #[derive(Debug)]
 pub struct KeyValueStore {
@@ -20,25 +18,7 @@ impl KeyValueStore {
         self.loaded_entries.insert(key, value);
     }
 
-    pub fn get(&mut self, key: &[u8]) -> KeyValueStoreEntrySubstate {
-        self.loaded_entries
-            .get(key)
-            .cloned()
-            .unwrap_or(KeyValueStoreEntrySubstate(None)) // virtualization
-    }
-
-    pub fn get_with_track<'s, R: FeeReserve>(
-        &self,
-        key: &[u8],
-        store_id: KeyValueStoreId,
-        track: &mut Track<'s, R>,
-    ) -> KeyValueStoreEntrySubstate {
-        if !self.loaded_entries.contains_key(key) {
-            let substate =
-                track.read_key_value(SubstateId::KeyValueStoreSpace(store_id), key.to_vec());
-            self.loaded_entries.insert(key.to_vec(), substate.into());
-        }
-
-        self.loaded_entries.get(key).unwrap().clone()
+    pub fn get(&mut self, key: &[u8]) -> Option<&KeyValueStoreEntrySubstate> {
+        self.loaded_entries.get(key)
     }
 }
