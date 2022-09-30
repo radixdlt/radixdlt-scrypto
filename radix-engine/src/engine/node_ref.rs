@@ -164,10 +164,10 @@ pub enum RENodeRefMut<'f, 's, R: FeeReserve> {
 }
 
 impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
-    pub fn read_scrypto_value(
+    pub fn read_substate(
         &mut self,
         substate_id: &SubstateId,
-    ) -> Result<ScryptoValue, RuntimeError> {
+    ) -> Result<Substate, RuntimeError> {
         match substate_id {
             SubstateId::ComponentInfo(..) => {
                 Ok(ScryptoValue::from_typed(&self.component_mut().info))
@@ -197,31 +197,10 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
         }
     }
 
-    pub fn replace_value_with_default(&mut self, substate_id: &SubstateId) {
-        match substate_id {
-            SubstateId::ComponentInfo(..)
-            | SubstateId::ComponentState(..)
-            | SubstateId::NonFungibleSpace(..)
-            | SubstateId::KeyValueStoreSpace(..)
-            | SubstateId::KeyValueStoreEntry(..)
-            | SubstateId::Vault(..)
-            | SubstateId::Package(..)
-            | SubstateId::ResourceManager(..)
-            | SubstateId::System(..)
-            | SubstateId::Bucket(..)
-            | SubstateId::Proof(..)
-            | SubstateId::AuthZone(..)
-            | SubstateId::Worktop => {
-                panic!("Should not get here");
-            }
-            SubstateId::NonFungible(.., id) => self.non_fungible_remove(&id),
-        }
-    }
-
-    pub fn write_value(
+    pub fn write_substate(
         &mut self,
         substate_id: SubstateId,
-        value: ScryptoValue,
+        substate: Substate,
         child_nodes: HashMap<RENodeId, HeapRootRENode>,
     ) -> Result<(), NodeToSubstateFailure> {
         match substate_id {
@@ -322,34 +301,7 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
         }
     }
 
-    pub fn non_fungible_remove(&mut self, id: &NonFungibleId) {
-        let substate = NonFungibleSubstate(None);
-
-        match self {
-            RENodeRefMut::Stack(root_node, node_id) => {
-                let resource_manager = node_id
-                    .as_ref()
-                    .map_or(root_node.root(), |v| root_node.non_root(v))
-                    .resource_manager();
-                resource_manager
-                    .loaded_non_fungibles
-                    .insert(id.clone(), substate);
-            }
-            RENodeRefMut::Track(track, node_id) => {
-                let parent_substate_id = match node_id {
-                    RENodeId::ResourceManager(resource_address) => {
-                        SubstateId::NonFungibleSpace(*resource_address)
-                    }
-                    _ => panic!("Unexpected"),
-                };
-                track.set_key_value(parent_substate_id, id.to_vec(), substate);
-            }
-        }
-    }
-
-    pub fn non_fungible_put(&mut self, id: NonFungibleId, non_fungible: NonFungible) {
-        let substate = NonFungibleSubstate(Some(non_fungible));
-
+    pub fn non_fungible_put(&mut self, id: NonFungibleId, substate: NonFungibleSubstate) {
         match self {
             RENodeRefMut::Stack(root_node, node_id) => {
                 let resource_manager = node_id

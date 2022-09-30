@@ -109,7 +109,7 @@ impl System {
                     .map_err(|e| InvokeError::Error(SystemError::InvalidRequestData(e)))?;
                 Ok(ScryptoValue::from_typed(
                     &system_api
-                        .transaction_hash()
+                        .read_transaction_hash()
                         .map_err(InvokeError::Downstream)?,
                 ))
             }

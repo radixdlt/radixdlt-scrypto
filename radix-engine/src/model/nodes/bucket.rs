@@ -1,8 +1,8 @@
 use crate::engine::{HeapRENode, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::{
-    InvokeError, LockableResource, Proof, ProofError, Resource, ResourceContainerId,
-    ResourceOperationError,
+    InvokeError, LockableResource, NonFungibleSubstate, Proof, ProofError, Resource,
+    ResourceContainerId, ResourceOperationError,
 };
 use crate::types::*;
 use crate::wasm::*;
@@ -312,7 +312,10 @@ impl Bucket {
                     {
                         let address = SubstateId::NonFungible(resource_address, id);
                         system_api
-                            .substate_take(address)
+                            .substate_write(
+                                address,
+                                ScryptoValue::from_typed(&NonFungibleSubstate(None)),
+                            )
                             .map_err(InvokeError::Downstream)?;
                     }
                 }

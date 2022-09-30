@@ -1407,60 +1407,10 @@ where
         Ok(current_value)
     }
 
-    fn substate_take(&mut self, substate_id: SubstateId) -> Result<ScryptoValue, RuntimeError> {
-        for m in &mut self.modules {
-            m.pre_sys_call(
-                &mut self.track,
-                &mut self.call_frames,
-                SysCallInput::TakeSubstate {
-                    substate_id: &substate_id,
-                },
-            )
-            .map_err(RuntimeError::ModuleError)?;
-        }
-
-        // Authorization
-        if !Self::current_frame(&self.call_frames)
-            .actor
-            .is_substate_writeable(&substate_id)
-        {
-            return Err(RuntimeError::KernelError(
-                KernelError::SubstateWriteNotWriteable(
-                    Self::current_frame(&self.call_frames).actor.clone(),
-                    substate_id,
-                ),
-            ));
-        }
-
-        let (pointer, current_value) =
-            Self::read_value_internal(&mut self.call_frames, self.track, &substate_id)?;
-        let cur_children = current_value.node_ids();
-        if !cur_children.is_empty() {
-            return Err(RuntimeError::KernelError(KernelError::ValueNotAllowed));
-        }
-
-        // Write values
-        let mut node_ref = pointer.to_ref_mut(&mut self.call_frames, &mut self.track);
-        node_ref.replace_value_with_default(&substate_id);
-
-        for m in &mut self.modules {
-            m.post_sys_call(
-                &mut self.track,
-                &mut self.call_frames,
-                SysCallOutput::TakeSubstate {
-                    value: &current_value,
-                },
-            )
-            .map_err(RuntimeError::ModuleError)?;
-        }
-
-        Ok(current_value)
-    }
-
     fn substate_write(
         &mut self,
         substate_id: SubstateId,
-        value: ScryptoValue,
+        value: ScryptoValue, // TODO: use substate
     ) -> Result<(), RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
@@ -1567,7 +1517,7 @@ where
         Ok(blob)
     }
 
-    fn transaction_hash(&mut self) -> Result<Hash, RuntimeError> {
+    fn read_transaction_hash(&mut self) -> Result<Hash, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
                 &mut self.track,

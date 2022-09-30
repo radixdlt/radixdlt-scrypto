@@ -60,9 +60,7 @@ where
         value: ScryptoValue,
     ) -> Result<(), RuntimeError>;
 
-    fn substate_take(&mut self, substate_id: SubstateId) -> Result<ScryptoValue, RuntimeError>;
-
-    fn transaction_hash(&mut self) -> Result<Hash, RuntimeError>;
+    fn read_transaction_hash(&mut self) -> Result<Hash, RuntimeError>;
 
     fn read_blob(&mut self, blob_hash: &Hash) -> Result<&[u8], RuntimeError>;
 
