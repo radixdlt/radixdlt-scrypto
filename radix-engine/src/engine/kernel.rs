@@ -1250,42 +1250,28 @@ where
         assert!(taken_nodes.len() == 1);
         let root_node = taken_nodes.into_values().nth(0).unwrap();
 
-        let (global_address, global_substate) = match node_id {
-            RENodeId::Component(component_address) => (
-                GlobalAddress::Component(component_address),
-                GlobalRENode::Component(scrypto::component::Component(component_address)),
-            ),
-            RENodeId::Package(package_address) => (
-                GlobalAddress::Package(package_address),
-                GlobalRENode::Package(package_address),
-            ),
-            RENodeId::ResourceManager(resource_address) => (
-                GlobalAddress::Resource(resource_address),
-                GlobalRENode::Resource(resource_address),
-            ),
-            RENodeId::System(component_address) => (
-                GlobalAddress::Component(component_address),
-                GlobalRENode::Component(scrypto::component::Component(component_address)),
-            ),
-            _ => panic!("Not expected"),
-        };
+        match node_id {
+            RENodeId::Component(component_address) | RENodeId::System(component_address) => {
+                let global_address = GlobalAddress::Component(component_address);
+                self.track.put_substate(
+                    SubstateId::Global(global_address),
+                    Substate::GlobalRENode(GlobalRENode::Component(scrypto::component::Component(
+                        component_address,
+                    ))),
+                );
+                Self::current_frame_mut(&mut self.call_frames)
+                    .node_refs
+                    .insert(
+                        RENodeId::Global(global_address),
+                        RENodePointer::Store(RENodeId::Global(global_address)),
+                    );
+            }
+            _ => {}
+        }
 
-        self.track.put_substate(
-            SubstateId::Global(global_address),
-            Substate::GlobalRENode(global_substate),
-        );
         for (id, substate) in nodes_to_substates(root_node.to_nodes(node_id)) {
             self.track.put_substate(id, substate);
         }
-
-        Self::current_frame_mut(&mut self.call_frames)
-            .node_refs
-            .insert(
-                RENodeId::Global(global_address),
-                RENodePointer::Store(RENodeId::Global(global_address)),
-            );
-
-        // TODO: Remove
         Self::current_frame_mut(&mut self.call_frames)
             .node_refs
             .insert(node_id, RENodePointer::Store(node_id));

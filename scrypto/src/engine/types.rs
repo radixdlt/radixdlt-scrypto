@@ -78,8 +78,10 @@ impl Into<ResourceAddress> for RENodeId {
 #[derive(Debug, Clone, Copy, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum GlobalAddress {
     Component(ComponentAddress),
+    /*
     Package(PackageAddress),
     Resource(ResourceAddress),
+     */
 }
 
 /// TODO: separate space addresses?
