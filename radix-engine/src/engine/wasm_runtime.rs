@@ -109,6 +109,11 @@ where
         Ok(ScryptoValue::from_typed(&id))
     }
 
+    fn handle_get_owned_node_ids(&mut self) -> Result<ScryptoValue, RuntimeError> {
+        let node_ids = self.system_api.get_owned_node_ids()?;
+        Ok(ScryptoValue::from_typed(&node_ids))
+    }
+
     // TODO: This logic should move into KeyValueEntry decoding
     fn verify_stored_key(value: &ScryptoValue) -> Result<(), RuntimeError> {
         if !value.bucket_ids.is_empty() {
@@ -204,10 +209,13 @@ where
             }
             RadixEngineInput::RENodeGlobalize(node_id) => self.handle_node_globalize(node_id),
             RadixEngineInput::RENodeCreate(node) => self.handle_node_create(node),
+            RadixEngineInput::GetOwnedRENodeIds() => self.handle_get_owned_node_ids(),
+
             RadixEngineInput::SubstateRead(substate_id) => self.handle_substate_read(substate_id),
             RadixEngineInput::SubstateWrite(substate_id, value) => {
                 self.handle_substate_write(substate_id, value)
             }
+
             RadixEngineInput::GetActor() => self.handle_get_actor().map(encode),
             RadixEngineInput::GenerateUuid() => self.handle_generate_uuid().map(encode),
             RadixEngineInput::EmitLog(level, message) => {

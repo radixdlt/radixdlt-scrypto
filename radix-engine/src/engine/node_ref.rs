@@ -186,6 +186,7 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
             | SubstateId::System(..)
             | SubstateId::Bucket(..)
             | SubstateId::Proof(..)
+            | SubstateId::AuthZone(..)
             | SubstateId::Worktop => {
                 panic!("Should never have received permissions to read this native type.");
             }
@@ -205,6 +206,7 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
             | SubstateId::System(..)
             | SubstateId::Bucket(..)
             | SubstateId::Proof(..)
+            | SubstateId::AuthZone(..)
             | SubstateId::Worktop => {
                 panic!("Should not get here");
             }
@@ -427,6 +429,13 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
         match self {
             RENodeRefMut::Stack(re_value, id) => re_value.get_node_mut(id.as_ref()).proof_mut(),
             RENodeRefMut::Track(..) => panic!("Proof should be in stack"),
+        }
+    }
+
+    pub fn auth_zone_mut(&mut self) -> &mut AuthZone {
+        match self {
+            RENodeRefMut::Stack(re_value, id) => re_value.get_node_mut(id.as_ref()).auth_zone_mut(),
+            RENodeRefMut::Track(..) => panic!("AuthZone should be in stack"),
         }
     }
 
