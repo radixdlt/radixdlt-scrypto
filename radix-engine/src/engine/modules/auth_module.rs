@@ -161,7 +161,9 @@ impl AuthModule {
 
                 {
                     let mut node_ref = node_pointer.to_ref_mut(call_frames, track);
-                    let state = node_ref.component_state_get();
+                    let state = node_ref
+                        .component_state_get()
+                        .map_err(|e| RuntimeError::ModuleError(ModuleError::TrackError(e)))?;
                     let component = node_ref.component_mut();
                     component
                         .info

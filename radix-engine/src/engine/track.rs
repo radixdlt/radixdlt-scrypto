@@ -253,11 +253,6 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                     );
                 }
                 Substate::ComponentInfo(substate) => {
-                    let address = match &substate_id {
-                        SubstateId::ComponentInfo(address) => *address,
-                        _ => panic!("Unexpected substate id type"),
-                    };
-
                     let node = HeapRENode::Component(Component {
                         info: substate,
                         state: None,

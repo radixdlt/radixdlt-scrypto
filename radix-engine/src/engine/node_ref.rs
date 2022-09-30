@@ -216,36 +216,32 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
         }
     }
 
+    // TODO: can we move these substate getter and setter to the node representation?
+
     pub fn kv_store_get(&mut self, key: &[u8]) -> KeyValueStoreEntrySubstate {
+        if let Some(entry) = self.kv_store_mut().get(key) {
+            return entry.clone();
+        }
+
         match self {
-            RENodeRefMut::Stack(root_node, node_id) => {
-                let kv_store = root_node.get_node_mut(node_id.as_ref()).kv_store_mut();
-                kv_store
-                    .get(key)
-                    .cloned()
-                    .unwrap_or(KeyValueStoreEntrySubstate(None))
-            }
+            RENodeRefMut::Stack(..) => KeyValueStoreEntrySubstate(None), // virtualization
             RENodeRefMut::Track(track, node_id) => {
-                // let parent_substate_id = match node_id {
-                //     RENodeId::KeyValueStore(kv_store_id) => {
-                //         SubstateId::KeyValueStoreSpace(*kv_store_id)
-                //     }
-                //     _ => panic!("Unexpected"),
-                // };
+                let parent_substate_id = match node_id {
+                    RENodeId::KeyValueStore(kv_store_id) => {
+                        SubstateId::KeyValueStoreSpace(*kv_store_id)
+                    }
+                    _ => panic!("Unexpected"),
+                };
+                let substate = track.read_key_value(parent_substate_id, key.to_vec());
+                let specific_substate: KeyValueStoreEntrySubstate = substate.into();
 
-                // let kv_store = track.borrow_node_mut(node_id).kv_store_mut();
-                // if kv_store.get(key).is_none() {
-                //     let substate = track.read_key_value(parent_substate_id, key.to_vec());
-                //     kv_store.put(key.to_vec(), substate.into());
-                // }
+                let kv_store = track.borrow_node_mut(node_id).kv_store_mut();
+                kv_store.put(key.to_vec(), specific_substate.clone());
 
-                // kv_store.get(key).cloned().unwrap()
-                todo!()
+                specific_substate
             }
         }
     }
-
-    // TODO: can we move these substate getter and setter to the node representation?
 
     pub fn kv_store_put(
         &mut self,
@@ -264,115 +260,70 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
                 }
             }
             RENodeRefMut::Track(track, node_id) => {
-                //     let parent_substate_id = match node_id {
-                //         RENodeId::KeyValueStore(kv_store_id) => {
-                //             SubstateId::KeyValueStoreSpace(*kv_store_id)
-                //         }
-                //         _ => panic!("Unexpected"),
-                //     };
-                //     track.set_key_value(parent_substate_id, key, substate);
-                //     for (id, val) in to_store {
-                //         for (id, node) in val.to_nodes(id) {
-                //             track.put_node(id, node);
-                //         }
-                //     }
-                todo!()
+                let kv_store = track.borrow_node_mut(node_id).kv_store_mut();
+                kv_store.put(key, substate);
             }
         }
     }
 
     pub fn non_fungible_get(&mut self, id: &NonFungibleId) -> NonFungibleSubstate {
-        match self {
-            RENodeRefMut::Stack(root_node, node_id) => {
-                let resource_manager = node_id
-                    .as_ref()
-                    .map_or(root_node.root(), |v| root_node.non_root(v))
-                    .resource_manager();
-                resource_manager
-                    .loaded_non_fungibles
-                    .get(id)
-                    .cloned()
-                    .unwrap_or(NonFungibleSubstate(None))
-            }
-            RENodeRefMut::Track(track, node_id) => {
-                // let parent_substate_id = match node_id {
-                //     RENodeId::ResourceManager(resource_address) => {
-                //         SubstateId::NonFungibleSpace(*resource_address)
-                //     }
-                //     _ => panic!("Unexpected"),
-                // };
-                // let substate = track.read_key_value(parent_substate_id, id.to_vec());
-                // substate.into()
+        if let Some(non_fungible) = self.resource_manager_mut().get_non_fungible(id) {
+            return non_fungible.clone();
+        }
 
-                todo!()
+        match self {
+            RENodeRefMut::Stack(..) => NonFungibleSubstate(None), // virtualization
+            RENodeRefMut::Track(track, node_id) => {
+                let parent_substate_id = match node_id {
+                    RENodeId::ResourceManager(address) => SubstateId::NonFungibleSpace(*address),
+                    _ => panic!("Unexpected"),
+                };
+                let substate = track.read_key_value(parent_substate_id, id.to_vec());
+                let specific_substate: NonFungibleSubstate = substate.into();
+
+                let resource_manager = track.borrow_node_mut(node_id).resource_manager_mut();
+                resource_manager.put_non_fungible(id.clone(), specific_substate.clone());
+
+                specific_substate
             }
         }
     }
 
     pub fn non_fungible_put(&mut self, id: NonFungibleId, substate: NonFungibleSubstate) {
-        match self {
-            RENodeRefMut::Stack(root_node, node_id) => {
-                let resource_manager = root_node
-                    .get_node_mut(node_id.as_ref())
-                    .resource_manager_mut();
-                resource_manager
-                    .loaded_non_fungibles
-                    .insert(id.clone(), substate);
-            }
-            RENodeRefMut::Track(track, node_id) => {
-                // let parent_substate_id = match node_id {
-                //     RENodeId::ResourceManager(resource_address) => {
-                //         SubstateId::NonFungibleSpace(*resource_address)
-                //     }
-                //     _ => panic!("Unexpected"),
-                // };
-
-                //     if !self.loaded_non_fungibles.contains_key(id) {
-                //         let substate =
-                //             track.read_key_value(SubstateId::NonFungibleSpace(resource_address), id.to_vec());
-                //         self.loaded_non_fungibles
-                //             .insert(id.clone(), substate.into());
-                //     }
-
-                //     self.loaded_non_fungibles.get(id).unwrap().clone()
-
-                // track.set_key_value(parent_substate_id, id.to_vec(), substate);
-                todo!()
-            }
-        }
+        self.resource_manager_mut().put_non_fungible(id, substate);
     }
 
-    pub fn component_state_get(&mut self) -> ComponentStateSubstate {
+    pub fn component_state_get(&mut self) -> Result<ComponentStateSubstate, TrackError> {
+        if let Some(state) = self.component_mut().get_state() {
+            return Ok(state.clone());
+        }
+
         match self {
-            RENodeRefMut::Stack(root_node, node_id) => {
-                let component = root_node.get_node_mut(node_id.as_ref()).component_mut();
-                component
-                    .state
-                    .clone()
-                    .expect("Heap component always contains a ComponentStateSubstate")
-            }
+            RENodeRefMut::Stack(..) => panic!("Every HEAP component should contain a state"),
             RENodeRefMut::Track(track, node_id) => {
-                //         let component = track.borrow_node_mut(node_id).component_mut();
-                //         if let Some(state) = component.state {
+                let substate_id = match node_id {
+                    RENodeId::Component(address) => SubstateId::ComponentState(*address),
+                    _ => panic!("Unexpected"),
+                };
 
-                //         }
+                // TODO: Don't believe this is the right abstraction. Given I have `&mut Component`,
+                // I should be allowed to read the `state` substate without further locking.
+                // Further more, the implementation releases the WRITE LOCK even though the substate
+                // is still cached in the node.
 
-                // if !self.loaded_non_fungibles.contains_key(id) {
-                //     let substate =
-                //         track.read_key_value(SubstateId::NonFungibleSpace(resource_address), id.to_vec());
-                //     self.loaded_non_fungibles
-                //         .insert(id.clone(), substate.into());
-                // }
+                // Load the component state substate
+                track.acquire_lock(substate_id.clone(), true, false)?;
+                let component_state = track
+                    .borrow_substate(substate_id.clone())
+                    .component_state()
+                    .clone();
+                track.release_lock(substate_id, false)?;
 
-                // self.loaded_non_fungibles.get(id).unwrap().clone()
+                // Put it into the component state
+                let component = track.borrow_node_mut(node_id).component_mut();
+                component.put_state(component_state.clone());
 
-                //         component.state = Some(ComponentStateSubstate { raw });
-                //         for (id, val) in to_store {
-                //             for (id, node) in val.to_nodes(id) {
-                //                 track.put_node(id, node);
-                //             }
-                //         }
-                todo!()
+                Ok(component_state)
             }
         }
     }
