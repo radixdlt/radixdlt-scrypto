@@ -137,7 +137,10 @@ where
             substate_id,
             ScryptoValue::from_slice(&value)
                 .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?,
-        )
+        )?;
+
+        // TODO: do we ever want to return the previous substate value
+        Ok(ScryptoValue::unit())
     }
 
     fn handle_get_actor(&mut self) -> Result<ScryptoActor, RuntimeError> {

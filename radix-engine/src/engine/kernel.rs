@@ -184,26 +184,7 @@ where
             let mut node_ref = node_pointer.to_ref_mut(call_frames, track);
             node_ref.read_substate(&substate_id)?
         };
-
-        // Parse contained value (for reference management and children detection)
-        // TODO: introduce trait/enum for readable substates.
-        let contained_value = match &substate_id {
-            SubstateId::ComponentState(..) => {
-                let substate: ComponentStateSubstate = scrypto_decode(&substate.raw).unwrap();
-                Some(ScryptoValue::from_slice(&substate.raw).unwrap())
-            }
-            SubstateId::KeyValueStoreEntry(..) => {
-                let substate: KeyValueStoreEntrySubstate = scrypto_decode(&substate.raw).unwrap();
-                substate
-                    .0
-                    .map(|raw| ScryptoValue::from_slice(&raw).unwrap())
-            }
-            SubstateId::NonFungible(..) => {
-                let substate: NonFungibleSubstate = scrypto_decode(&substate.raw).unwrap();
-                substate.0.map(|v| ScryptoValue::from_typed(&v))
-            }
-            _ => None,
-        };
+        let contained_value = extract_value_from_substate(substate_id, &substate);
 
         Ok((node_pointer.clone(), substate, contained_value))
     }
@@ -760,8 +741,6 @@ where
                     } else if let Some(pointer) = current_frame.node_refs.get(&node_id) {
                         pointer.clone()
                     } else {
-                        eprintln!("!!!! {:?}", current_frame.node_refs);
-                        eprintln!("!!!! {:?}", node_id);
                         match node_id {
                             // Let these be globally accessible for now
                             // TODO: Remove when references cleaned up
@@ -1379,7 +1358,7 @@ where
     fn substate_write(
         &mut self,
         substate_id: SubstateId,
-        value: ScryptoValue, // TODO: use substate?
+        substate: ScryptoValue, // TODO: use substate?
     ) -> Result<ScryptoValue, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
@@ -1387,7 +1366,7 @@ where
                 &mut self.call_frames,
                 SysCallInput::WriteSubstate {
                     substate_id: &substate_id,
-                    value: &value,
+                    value: &substate,
                 },
             )
             .map_err(RuntimeError::ModuleError)?;
@@ -1407,18 +1386,23 @@ where
         }
 
         // TODO: Do this in a better way once references cleaned up
-        for component_address in &value.refed_component_addresses {
-            if !self
-                .track
-                .is_root(&SubstateId::ComponentInfo(*component_address))
-            {
-                return Err(RuntimeError::KernelError(KernelError::ValueNotAllowed));
+        let contained_value = extract_value_from_substate(&substate_id, &substate); // FIXME: error handling!!!
+        if let Some(value) = &contained_value {
+            for component_address in &value.refed_component_addresses {
+                if !self
+                    .track
+                    .is_root(&SubstateId::ComponentInfo(*component_address))
+                {
+                    return Err(RuntimeError::KernelError(KernelError::ValueNotAllowed));
+                }
             }
         }
 
         // Take values from current frame
         let (taken_nodes, missing_nodes) = {
-            let node_ids = value.node_ids();
+            let node_ids = contained_value
+                .map(|value| value.node_ids())
+                .unwrap_or_default();
             if !node_ids.is_empty() {
                 if !SubstateProperties::can_own_nodes(&substate_id) {
                     return Err(RuntimeError::KernelError(KernelError::ValueNotAllowed));
@@ -1431,18 +1415,20 @@ where
             }
         };
 
-        let (pointer, substate, contained_value) =
+        let (pointer, cur_substate, cur_contained_value) =
             Self::read_substate_internal(&mut self.call_frames, self.track, &substate_id)?;
 
         // Fulfill method
-        let cur_children = contained_value.map(|v| v.node_ids()).unwrap_or_default();
+        let cur_children = cur_contained_value
+            .map(|v| v.node_ids())
+            .unwrap_or_default();
         verify_stored_value_update(&cur_children, &missing_nodes)?;
 
         // TODO: verify against some schema
 
         // Write values
         let mut node_ref = pointer.to_ref_mut(&mut self.call_frames, &mut self.track);
-        node_ref.write_substate(substate_id, value, taken_nodes);
+        node_ref.write_substate(substate_id, substate, taken_nodes);
 
         for m in &mut self.modules {
             m.post_sys_call(
@@ -1453,7 +1439,7 @@ where
             .map_err(RuntimeError::ModuleError)?;
         }
 
-        Ok(substate)
+        Ok(cur_substate)
     }
 
     fn read_blob(&mut self, blob_hash: &Hash) -> Result<&[u8], RuntimeError> {
@@ -1558,5 +1544,30 @@ where
         }
 
         Ok(())
+    }
+}
+
+// Parse contained value (for reference management and children detection)
+// TODO: introduce trait/enum for readable substates.
+fn extract_value_from_substate(
+    substate_id: &SubstateId,
+    substate: &ScryptoValue,
+) -> Option<ScryptoValue> {
+    match substate_id {
+        SubstateId::ComponentState(..) => {
+            let substate: ComponentStateSubstate = scrypto_decode(&substate.raw).unwrap();
+            Some(ScryptoValue::from_slice(&substate.raw).unwrap())
+        }
+        SubstateId::KeyValueStoreEntry(..) => {
+            let substate: KeyValueStoreEntrySubstate = scrypto_decode(&substate.raw).unwrap();
+            substate
+                .0
+                .map(|raw| ScryptoValue::from_slice(&raw).unwrap())
+        }
+        SubstateId::NonFungible(..) => {
+            let substate: NonFungibleSubstate = scrypto_decode(&substate.raw).unwrap();
+            substate.0.map(|v| ScryptoValue::from_typed(&v))
+        }
+        _ => None,
     }
 }

@@ -54,8 +54,12 @@ impl<V: Encode> Drop for DataRefMut<V> {
     fn drop(&mut self) {
         let bytes = scrypto_encode(&self.value);
         let substate = match &self.substate_id {
-            SubstateId::KeyValueStoreEntry(..) => scrypto_encode(&KeyValueStoreEntrySubstate(Some(bytes))),
-            SubstateId::ComponentState(..) => scrypto_encode(&ComponentStateSubstate {raw: bytes}),
+            SubstateId::KeyValueStoreEntry(..) => {
+                scrypto_encode(&KeyValueStoreEntrySubstate(Some(bytes)))
+            }
+            SubstateId::ComponentState(..) => {
+                scrypto_encode(&ComponentStateSubstate { raw: bytes })
+            }
             s @ _ => panic!("Unsupported substate: {:?}", s),
         };
         let input = SubstateWrite(self.substate_id.clone(), substate);
