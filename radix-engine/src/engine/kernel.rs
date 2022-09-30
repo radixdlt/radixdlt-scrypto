@@ -179,9 +179,6 @@ where
 
         if let SubstateId::ComponentInfo(address) = substate_id {
             node_pointer
-                .acquire_lock(SubstateId::ComponentState(*address), false, false, track)
-                .map_err(RuntimeError::KernelError)?;
-            node_pointer
                 .acquire_lock(SubstateId::ComponentInfo(*address), false, false, track)
                 .map_err(RuntimeError::KernelError)?;
         }
@@ -194,9 +191,6 @@ where
 
         // TODO: Remove, integrate with substate borrow mechanism
         if let SubstateId::ComponentInfo(address) = substate_id {
-            node_pointer
-                .release_lock(SubstateId::ComponentState(*address), false, track)
-                .map_err(RuntimeError::KernelError)?;
             node_pointer
                 .release_lock(SubstateId::ComponentInfo(*address), false, track)
                 .map_err(RuntimeError::KernelError)?;
@@ -589,23 +583,8 @@ where
                 let node_pointer = RENodePointer::Store(node_id);
                 node_pointer
                     .acquire_lock(
-                        SubstateId::ComponentState(component_address),
-                        false,
-                        false,
-                        &mut self.track,
-                    )
-                    .map_err(RuntimeError::KernelError)?;
-                node_pointer
-                    .acquire_lock(
                         SubstateId::ComponentInfo(component_address),
                         false,
-                        false,
-                        &mut self.track,
-                    )
-                    .map_err(RuntimeError::KernelError)?;
-                node_pointer
-                    .release_lock(
-                        SubstateId::ComponentState(component_address),
                         false,
                         &mut self.track,
                     )
