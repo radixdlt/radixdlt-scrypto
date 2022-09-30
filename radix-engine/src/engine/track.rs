@@ -12,6 +12,7 @@ use crate::ledger::*;
 use crate::model::node_to_substates;
 use crate::model::nodes_to_substates;
 use crate::model::Component;
+use crate::model::KeyValueStore;
 use crate::model::KeyValueStoreEntrySubstate;
 use crate::model::LockableResource;
 use crate::model::NonFungibleSubstate;
@@ -336,6 +337,21 @@ impl<'s, R: FeeReserve> Track<'s, R> {
     }
 
     pub fn borrow_node_mut(&mut self, node_id: &RENodeId) -> &mut HeapRENode {
+        // TODO: find a better place?
+        // Also, when to create the node representation given that we're allowed
+        // to read substate without acquiring locks? and even without node ref (unverified)?
+        match &node_id {
+            RENodeId::KeyValueStore(..) => {
+                if !self.loaded_nodes.contains_key(node_id) {
+                    self.loaded_nodes.insert(
+                        node_id.clone(),
+                        HeapRENode::KeyValueStore(KeyValueStore::new().into()),
+                    );
+                }
+            }
+            _ => {}
+        }
+
         self.loaded_nodes
             .get_mut(node_id)
             .expect("Node not available")

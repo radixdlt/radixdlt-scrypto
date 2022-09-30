@@ -38,7 +38,7 @@ pub enum ResourceManagerError {
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct ResourceManager {
     pub info: ResourceManagerSubstate,
-    pub loaded_non_fungibles: HashMap<NonFungibleId, NonFungibleSubstate>,
+    pub loaded_non_fungibles: HashMap<NonFungibleId, NonFungibleSubstate>, // TODO: Do we want this to be a dedicated node, like KeyValueStore?
 }
 
 impl ResourceManager {

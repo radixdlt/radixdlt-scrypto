@@ -62,7 +62,8 @@ impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> KeyValueStore<K,
     /// Inserts a new key-value pair into this map.
     pub fn insert(&self, key: K, value: V) {
         let substate_id = SubstateId::KeyValueStoreEntry(self.id, scrypto_encode(&key));
-        let input = RadixEngineInput::SubstateWrite(substate_id, scrypto_encode(&value));
+        let substate = KeyValueStoreEntrySubstate(Some(scrypto_encode(&value)));
+        let input = RadixEngineInput::SubstateWrite(substate_id, scrypto_encode(&substate));
         call_engine(input)
     }
 }
