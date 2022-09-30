@@ -438,28 +438,8 @@ where
         &mut self,
         fn_ident: FnIdent,
         input: ScryptoValue,
+        next_owned_values: HashMap<RENodeId, HeapRootRENode>,
     ) -> Result<ScryptoValue, RuntimeError> {
-        // Figure out what buckets and proofs to move from this process
-        let values_to_take = input.node_ids();
-        let (taken_values, mut missing) = Self::current_frame_mut(&mut self.call_frames)
-            .take_available_values(values_to_take, false)?;
-        let first_missing_value = missing.drain().nth(0);
-        if let Some(missing_value) = first_missing_value {
-            return Err(RuntimeError::KernelError(KernelError::RENodeNotFound(
-                missing_value,
-            )));
-        }
-
-        let mut next_owned_values = HashMap::new();
-
-        // Internal state update to taken values
-        for (id, mut value) in taken_values {
-            match &mut value.root_mut() {
-                HeapRENode::Proof(proof) => proof.change_to_restricted(),
-                _ => {}
-            }
-            next_owned_values.insert(id, value);
-        }
 
         let mut locked_values = HashSet::<SubstateId>::new();
 
@@ -530,7 +510,8 @@ where
             // Make components visible
             for component_address in component_addresses {
                 let global_address = GlobalAddress::Component(component_address);
-                let node_pointer = RENodePointer::Store(RENodeId::Global(global_address));
+                let node_id = RENodeId::Global(global_address);
+                let node_pointer = RENodePointer::Store(node_id);
                 node_pointer
                     .acquire_lock(
                         SubstateId::Global(global_address),
@@ -539,15 +520,17 @@ where
                         &mut self.track,
                     )
                     .map_err(RuntimeError::KernelError)?;
+                /*
                 let node_ref = node_pointer.to_ref(&self.call_frames, &mut self.track);
                 let derefed_node_id = node_ref.global_re_node().node_id();
+                 */
                 node_pointer
                     .release_lock(SubstateId::Global(global_address), false, &mut self.track)
                     .map_err(RuntimeError::KernelError)?;
 
-                let node_pointer = RENodePointer::Store(derefed_node_id);
+                //let node_pointer = RENodePointer::Store(derefed_node_id);
 
-                next_frame_node_refs.insert(RENodeId::Component(component_address), node_pointer);
+                next_frame_node_refs.insert(node_id, node_pointer);
             }
         } else {
             // Pass argument references
@@ -621,37 +604,16 @@ where
         &mut self,
         fn_ident: MethodIdent,
         input: ScryptoValue,
+        mut next_owned_values: HashMap<RENodeId, HeapRootRENode>,
     ) -> Result<ScryptoValue, RuntimeError> {
-        // Figure out what buckets and proofs to move from this process
-        let values_to_take = input.node_ids();
-        let (taken_values, mut missing) = Self::current_frame_mut(&mut self.call_frames)
-            .take_available_values(values_to_take, false)?;
-        let first_missing_value = missing.drain().nth(0);
-        if let Some(missing_value) = first_missing_value {
-            return Err(RuntimeError::KernelError(KernelError::RENodeNotFound(
-                missing_value,
-            )));
-        }
-
-        let mut next_owned_values = HashMap::new();
-
-        // Internal state update to taken values
-        for (id, mut value) in taken_values {
-            match &mut value.root_mut() {
-                HeapRENode::Proof(proof) => proof.change_to_restricted(),
-                _ => {}
-            }
-            next_owned_values.insert(id, value);
-        }
-
         let mut locked_pointers = Vec::new();
         let mut next_frame_node_refs = HashMap::new();
 
-        let node_id = fn_ident.receiver.node_id();
-        let method_fn_ident = fn_ident.method_fn_ident.clone();
-
         // Authorization and state load
         let re_actor = {
+            let node_id = fn_ident.receiver.node_id();
+            let method_fn_ident = fn_ident.method_fn_ident.clone();
+
             // Find node
             let node_pointer = {
                 let current_frame = Self::current_frame(&self.call_frames);
@@ -671,16 +633,16 @@ where
                             RENodePointer::Store(node_id)
                         }
                         _ => {
-                            return Err(RuntimeError::KernelError(
-                                KernelError::InvokeMethodInvalidReceiver(node_id),
-                            ))
+                            return Err(RuntimeError::KernelError(KernelError::RENodeNotVisible(
+                                node_id,
+                            )))
                         }
                     }
                 }
             };
 
             // Lock Primary Substate
-            let substate_id = RENodeProperties::to_primary_substate_id(&method_fn_ident, node_id)?;
+            let substate_id = RENodeProperties::to_primary_substate_id(&fn_ident)?;
             let is_lock_fee = matches!(node_id, RENodeId::Vault(..))
                 && (method_fn_ident.eq(&MethodFnIdent::Native(NativeMethodFnIdent::Vault(
                     VaultMethodFnIdent::LockFee,
@@ -988,10 +950,30 @@ where
         // Prevent vaults/kvstores from being moved
         Self::process_call_data(&input)?;
 
+        // Figure out what buckets and proofs to move from this process
+        let values_to_take = input.node_ids();
+        let (taken_values, mut missing) = Self::current_frame_mut(&mut self.call_frames)
+            .take_available_values(values_to_take, false)?;
+        let first_missing_value = missing.drain().nth(0);
+        if let Some(missing_value) = first_missing_value {
+            return Err(RuntimeError::KernelError(KernelError::RENodeNotFound(
+                missing_value,
+            )));
+        }
+        // Internal state update to taken values
+        let mut next_owned_values = HashMap::new();
+        for (id, mut value) in taken_values {
+            match &mut value.root_mut() {
+                HeapRENode::Proof(proof) => proof.change_to_restricted(),
+                _ => {}
+            }
+            next_owned_values.insert(id, value);
+        }
+
         // TODO: Slowly unify these two
         let output = match fn_ident {
-            FnIdent::Method(method_ident) => self.invoke_method(method_ident, input)?,
-            FnIdent::Function(..) => self.invoke_function(fn_ident, input)?,
+            FnIdent::Method(method_ident) => self.invoke_method(method_ident, input, next_owned_values)?,
+            FnIdent::Function(..) => self.invoke_function(fn_ident, input, next_owned_values)?,
         };
 
         // Accept component references
@@ -1264,22 +1246,29 @@ where
         let root_node = taken_nodes.into_values().nth(0).unwrap();
 
         let (global_address, global_substate) = match node_id {
-            RENodeId::Component(component_address) => {
-                (GlobalAddress::Component(component_address), GlobalRENode::Component(scrypto::component::Component(component_address)))
-            }
-            RENodeId::Package(package_address) => {
-                (GlobalAddress::Package(package_address), GlobalRENode::Package(package_address))
-            }
-            RENodeId::ResourceManager(resource_address) => {
-                (GlobalAddress::Resource(resource_address), GlobalRENode::Resource(resource_address))
-            }
-            RENodeId::System(component_address) => {
-                (GlobalAddress::Component(component_address), GlobalRENode::Component(scrypto::component::Component(component_address)))
-            }
+            RENodeId::Component(component_address) => (
+                GlobalAddress::Component(component_address),
+                GlobalRENode::Component(scrypto::component::Component(component_address)),
+            ),
+            RENodeId::Package(package_address) => (
+                GlobalAddress::Package(package_address),
+                GlobalRENode::Package(package_address),
+            ),
+            RENodeId::ResourceManager(resource_address) => (
+                GlobalAddress::Resource(resource_address),
+                GlobalRENode::Resource(resource_address),
+            ),
+            RENodeId::System(component_address) => (
+                GlobalAddress::Component(component_address),
+                GlobalRENode::Component(scrypto::component::Component(component_address)),
+            ),
             _ => panic!("Not expected"),
         };
 
-        self.track.put_substate(SubstateId::Global(global_address), Substate::GlobalRENode(global_substate));
+        self.track.put_substate(
+            SubstateId::Global(global_address),
+            Substate::GlobalRENode(global_substate),
+        );
         for (id, substate) in nodes_to_substates(root_node.to_nodes(node_id)) {
             self.track.put_substate(id, substate);
         }

@@ -6,7 +6,7 @@ use crate::model::*;
 use crate::types::*;
 use crate::wasm::WasmError;
 use sbor::*;
-use scrypto::core::{FnIdent, MethodFnIdent};
+use scrypto::core::{FnIdent, MethodIdent};
 
 use super::NodeToSubstateFailure;
 use super::TrackError;
@@ -41,12 +41,13 @@ pub enum RuntimeError {
 pub enum KernelError {
     // invocation
     WasmError(WasmError),
+    RENodeNotVisible(RENodeId),
     InvokeMethodInvalidReceiver(RENodeId),
     InvokeMethodInvalidReferencePass(RENodeId),
     InvokeMethodInvalidReferenceReturn(RENodeId),
     MaxCallDepthLimitReached,
     FnIdentNotFound(FnIdent),
-    MethodFnNotFound(MethodFnIdent),
+    MethodIdentNotFound(MethodIdent),
     MethodNotFound(FunctionIdent),
     InvalidFnInput2(FnIdent),
     InvalidFnInput { fn_identifier: FunctionIdent },
