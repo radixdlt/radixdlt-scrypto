@@ -542,8 +542,6 @@ where
                     .node_refs
                     .get(&node_id)
                 {
-                    let mut visible = HashSet::new();
-                    visible.insert(SubstateId::ComponentInfo(*refed_component_address));
                     next_frame_node_refs.insert(node_id.clone(), pointer.clone());
                 } else {
                     let node_id = RENodeId::System(refed_component_address.clone());
@@ -884,8 +882,6 @@ where
                 .node_refs
                 .get(&node_id)
             {
-                let mut visible = HashSet::new();
-                visible.insert(SubstateId::ComponentInfo(*refed_component_address));
                 next_frame_node_refs.insert(node_id.clone(), pointer.clone());
             } else {
                 let node_id = RENodeId::System(refed_component_address.clone());
@@ -1007,8 +1003,6 @@ where
         // Accept component references
         for refed_component_address in &output.refed_component_addresses {
             let node_id = RENodeId::Component(*refed_component_address);
-            let mut visible = HashSet::new();
-            visible.insert(SubstateId::ComponentInfo(*refed_component_address));
             Self::current_frame_mut(&mut self.call_frames)
                 .node_refs
                 .insert(node_id, RENodePointer::Store(node_id));
@@ -1255,9 +1249,6 @@ where
                 );
             }
             RENodeId::Component(component_address) => {
-                let mut visible = HashSet::new();
-                visible.insert(SubstateId::ComponentInfo(component_address));
-
                 let frame = self
                     .call_frames
                     .last_mut()
@@ -1325,8 +1316,6 @@ where
                     SubstateId::ComponentState(component_address),
                     Substate::ComponentState(component_state),
                 );
-                let mut visible_substates = HashSet::new();
-                visible_substates.insert(SubstateId::ComponentInfo(component_address));
                 (
                     GlobalAddress::Component(component_address),
                     GlobalRENode::Component(scrypto::component::Component(component_address)),
