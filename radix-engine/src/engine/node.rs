@@ -2,263 +2,35 @@ use crate::engine::*;
 use crate::model::*;
 use crate::types::*;
 
-// TODO: still lots of unwraps
-
-#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
-pub enum Substate {
-    System(System),
-    ResourceManager(ResourceManager),
-    ComponentInfo(ComponentInfo),
-    ComponentState(ComponentState),
-    Package(Package),
-    Vault(VaultSubstate),
-    NonFungible(NonFungibleSubstate),
-    KeyValueStoreEntry(KeyValueStoreEntrySubstate),
-}
-
-impl Substate {
-    pub fn vault_mut(&mut self) -> &mut VaultSubstate {
-        if let Substate::Vault(vault) = self {
-            vault
-        } else {
-            panic!("Not a vault");
-        }
-    }
-
-    pub fn vault(&self) -> &VaultSubstate {
-        if let Substate::Vault(vault) = self {
-            vault
-        } else {
-            panic!("Not a vault");
-        }
-    }
-
-    pub fn resource_manager_mut(&mut self) -> &mut ResourceManager {
-        if let Substate::ResourceManager(resource_manager) = self {
-            resource_manager
-        } else {
-            panic!("Not a resource manager");
-        }
-    }
-
-    pub fn system(&self) -> &System {
-        if let Substate::System(system) = self {
-            system
-        } else {
-            panic!("Not a system value");
-        }
-    }
-
-    pub fn system_mut(&mut self) -> &mut System {
-        if let Substate::System(system) = self {
-            system
-        } else {
-            panic!("Not a system value");
-        }
-    }
-
-    pub fn resource_manager(&self) -> &ResourceManager {
-        if let Substate::ResourceManager(resource_manager) = self {
-            resource_manager
-        } else {
-            panic!("Not a resource manager");
-        }
-    }
-
-    pub fn component_state(&self) -> &ComponentState {
-        if let Substate::ComponentState(state) = self {
-            state
-        } else {
-            panic!("Not a component state");
-        }
-    }
-
-    pub fn component_info(&self) -> &ComponentInfo {
-        if let Substate::ComponentInfo(component) = self {
-            component
-        } else {
-            panic!("Not a component info");
-        }
-    }
-
-    pub fn component_mut(&mut self) -> &mut ComponentInfo {
-        if let Substate::ComponentInfo(component) = self {
-            component
-        } else {
-            panic!("Not a component");
-        }
-    }
-
-    pub fn package(&self) -> &Package {
-        if let Substate::Package(package) = self {
-            package
-        } else {
-            panic!("Not a package");
-        }
-    }
-
-    pub fn non_fungible(&self) -> &NonFungibleSubstate {
-        if let Substate::NonFungible(non_fungible) = self {
-            non_fungible
-        } else {
-            panic!("Not a NonFungible");
-        }
-    }
-
-    pub fn kv_entry(&self) -> &KeyValueStoreEntrySubstate {
-        if let Substate::KeyValueStoreEntry(kv_entry) = self {
-            kv_entry
-        } else {
-            panic!("Not a KVEntry");
-        }
-    }
-}
-
-impl Into<Substate> for System {
-    fn into(self) -> Substate {
-        Substate::System(self)
-    }
-}
-
-impl Into<Substate> for Package {
-    fn into(self) -> Substate {
-        Substate::Package(self)
-    }
-}
-
-impl Into<Substate> for ComponentInfo {
-    fn into(self) -> Substate {
-        Substate::ComponentInfo(self)
-    }
-}
-
-impl Into<Substate> for ComponentState {
-    fn into(self) -> Substate {
-        Substate::ComponentState(self)
-    }
-}
-
-impl Into<Substate> for ResourceManager {
-    fn into(self) -> Substate {
-        Substate::ResourceManager(self)
-    }
-}
-
-impl Into<Substate> for VaultSubstate {
-    fn into(self) -> Substate {
-        Substate::Vault(self)
-    }
-}
-
-impl Into<Substate> for NonFungibleSubstate {
-    fn into(self) -> Substate {
-        Substate::NonFungible(self)
-    }
-}
-
-impl Into<Substate> for KeyValueStoreEntrySubstate {
-    fn into(self) -> Substate {
-        Substate::KeyValueStoreEntry(self)
-    }
-}
-
-impl Into<ComponentInfo> for Substate {
-    fn into(self) -> ComponentInfo {
-        if let Substate::ComponentInfo(component) = self {
-            component
-        } else {
-            panic!("Not a component info");
-        }
-    }
-}
-
-impl Into<ComponentState> for Substate {
-    fn into(self) -> ComponentState {
-        if let Substate::ComponentState(component_state) = self {
-            component_state
-        } else {
-            panic!("Not a component");
-        }
-    }
-}
-
-impl Into<ResourceManager> for Substate {
-    fn into(self) -> ResourceManager {
-        if let Substate::ResourceManager(resource_manager) = self {
-            resource_manager
-        } else {
-            panic!("Not a resource manager");
-        }
-    }
-}
-
-impl Into<Package> for Substate {
-    fn into(self) -> Package {
-        if let Substate::Package(package) = self {
-            package
-        } else {
-            panic!("Not a resource manager");
-        }
-    }
-}
-
-impl Into<NonFungibleSubstate> for Substate {
-    fn into(self) -> NonFungibleSubstate {
-        if let Substate::NonFungible(non_fungible) = self {
-            non_fungible
-        } else {
-            panic!("Not a non-fungible wrapper");
-        }
-    }
-}
-
-impl Into<KeyValueStoreEntrySubstate> for Substate {
-    fn into(self) -> KeyValueStoreEntrySubstate {
-        if let Substate::KeyValueStoreEntry(kv_entry) = self {
-            kv_entry
-        } else {
-            panic!("Not a key value store entry wrapper");
-        }
-    }
-}
-
-impl Into<VaultSubstate> for Substate {
-    fn into(self) -> VaultSubstate {
-        if let Substate::Vault(vault) = self {
-            vault
-        } else {
-            panic!("Not a vault");
-        }
-    }
-}
-
 #[derive(Debug)]
 pub enum HeapRENode {
     Bucket(Bucket),
     Proof(Proof),
+    AuthZone(AuthZone),
     Vault(Vault),
     KeyValueStore(HeapKeyValueStore),
-    Component(ComponentInfo, ComponentState),
+    Component(Component),
     Worktop(Worktop),
     Package(Package),
-    Resource(ResourceManager, Option<HashMap<NonFungibleId, NonFungible>>),
-    AuthZone(AuthZone),
+    // TODO: Use the same representation for both key value store entry and non-fungible.
+    // Also, do we want to make non-fungible a node?
+    ResourceManager(ResourceManager, Option<HashMap<NonFungibleId, NonFungible>>),
     System(System),
 }
 
 impl HeapRENode {
     pub fn get_child_nodes(&self) -> Result<HashSet<RENodeId>, RuntimeError> {
         match self {
-            HeapRENode::Component(_, component_state) => {
-                let value = ScryptoValue::from_slice(component_state.state())
+            HeapRENode::Component(component) => {
+                let value = ScryptoValue::from_slice(&component.state.state)
                     .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                 Ok(value.node_ids())
             }
-            HeapRENode::AuthZone(..) => Ok(HashSet::new()),
-            HeapRENode::Resource(..) => Ok(HashSet::new()),
+            HeapRENode::ResourceManager(..) => Ok(HashSet::new()),
             HeapRENode::Package(..) => Ok(HashSet::new()),
             HeapRENode::Bucket(..) => Ok(HashSet::new()),
             HeapRENode::Proof(..) => Ok(HashSet::new()),
+            HeapRENode::AuthZone(..) => Ok(HashSet::new()),
             HeapRENode::KeyValueStore(kv_store) => {
                 let mut child_nodes = HashSet::new();
                 for (_id, value) in &kv_store.store {
@@ -279,16 +51,23 @@ impl HeapRENode {
         }
     }
 
+    pub fn system_mut(&mut self) -> &mut System {
+        match self {
+            HeapRENode::System(system) => system,
+            _ => panic!("Expected to be system"),
+        }
+    }
+
     pub fn resource_manager(&self) -> &ResourceManager {
         match self {
-            HeapRENode::Resource(resource_manager, ..) => resource_manager,
+            HeapRENode::ResourceManager(resource_manager, ..) => resource_manager,
             _ => panic!("Expected to be a resource manager"),
         }
     }
 
     pub fn resource_manager_mut(&mut self) -> &mut ResourceManager {
         match self {
-            HeapRENode::Resource(resource_manager, ..) => resource_manager,
+            HeapRENode::ResourceManager(resource_manager, ..) => resource_manager,
             _ => panic!("Expected to be a resource manager"),
         }
     }
@@ -309,19 +88,25 @@ impl HeapRENode {
 
     pub fn non_fungibles(&self) -> &HashMap<NonFungibleId, NonFungible> {
         match self {
-            HeapRENode::Resource(_, non_fungibles) => non_fungibles.as_ref().unwrap(),
+            HeapRENode::ResourceManager(_, non_fungibles) => non_fungibles.as_ref().unwrap(),
             _ => panic!("Expected to be non fungibles"),
         }
     }
 
     pub fn non_fungibles_mut(&mut self) -> &mut HashMap<NonFungibleId, NonFungible> {
         match self {
-            HeapRENode::Resource(_, non_fungibles) => non_fungibles.as_mut().unwrap(),
+            HeapRENode::ResourceManager(_, non_fungibles) => non_fungibles.as_mut().unwrap(),
             _ => panic!("Expected to be non fungibles"),
         }
     }
 
     pub fn package(&self) -> &Package {
+        match self {
+            HeapRENode::Package(package) => package,
+            _ => panic!("Expected to be a package"),
+        }
+    }
+    pub fn package_mut(&mut self) -> &Package {
         match self {
             HeapRENode::Package(package) => package,
             _ => panic!("Expected to be a package"),
@@ -334,32 +119,37 @@ impl HeapRENode {
             _ => panic!("Expected to be a bucket"),
         }
     }
-
-    pub fn component_info(&self) -> &ComponentInfo {
+    pub fn bucket_mut(&mut self) -> &mut Bucket {
         match self {
-            HeapRENode::Component(component_info, ..) => component_info,
-            _ => panic!("Expected to be a store"),
+            HeapRENode::Bucket(bucket) => bucket,
+            _ => panic!("Expected to be a bucket"),
         }
     }
 
-    pub fn component_info_mut(&mut self) -> &mut ComponentInfo {
+    pub fn proof(&self) -> &Proof {
         match self {
-            HeapRENode::Component(component_info, ..) => component_info,
-            _ => panic!("Expected to be a store"),
+            HeapRENode::Proof(proof) => proof,
+            _ => panic!("Expected to be a proof"),
+        }
+    }
+    pub fn proof_mut(&mut self) -> &mut Proof {
+        match self {
+            HeapRENode::Proof(proof) => proof,
+            _ => panic!("Expected to be a proof"),
         }
     }
 
-    pub fn component_state(&self) -> &ComponentState {
+    pub fn component(&self) -> &Component {
         match self {
-            HeapRENode::Component(_, component_state) => component_state,
-            _ => panic!("Expected to be a store"),
+            HeapRENode::Component(component, ..) => component,
+            _ => panic!("Expected to be a component"),
         }
     }
 
-    pub fn component_state_mut(&mut self) -> &mut ComponentState {
+    pub fn component_mut(&mut self) -> &mut Component {
         match self {
-            HeapRENode::Component(_, component_state) => component_state,
-            _ => panic!("Expected to be a store"),
+            HeapRENode::Component(component, ..) => component,
+            _ => panic!("Expected to be a component"),
         }
     }
 
@@ -391,6 +181,20 @@ impl HeapRENode {
         }
     }
 
+    pub fn worktop(&self) -> &Worktop {
+        match self {
+            HeapRENode::Worktop(worktop) => worktop,
+            _ => panic!("Expected to be a worktop"),
+        }
+    }
+
+    pub fn worktop_mut(&mut self) -> &mut Worktop {
+        match self {
+            HeapRENode::Worktop(worktop) => worktop,
+            _ => panic!("Expected to be a worktop"),
+        }
+    }
+
     pub fn verify_can_move(&self) -> Result<(), RuntimeError> {
         match self {
             HeapRENode::AuthZone(..) => {
@@ -415,7 +219,7 @@ impl HeapRENode {
             HeapRENode::KeyValueStore(..) => Ok(()),
             HeapRENode::Component(..) => Ok(()),
             HeapRENode::Vault(..) => Ok(()),
-            HeapRENode::Resource(..) => Ok(()),
+            HeapRENode::ResourceManager(..) => Ok(()),
             HeapRENode::Package(..) => Ok(()),
             HeapRENode::Worktop(..) => Err(RuntimeError::KernelError(KernelError::CantMoveWorktop)),
             HeapRENode::System(..) => Ok(()),
@@ -427,7 +231,7 @@ impl HeapRENode {
             HeapRENode::KeyValueStore { .. } => Ok(()),
             HeapRENode::Component { .. } => Ok(()),
             HeapRENode::Vault(..) => Ok(()),
-            HeapRENode::Resource(..) => {
+            HeapRENode::ResourceManager(..) => {
                 Err(RuntimeError::KernelError(KernelError::ValueNotAllowed))
             }
             HeapRENode::AuthZone(..) => {
@@ -452,7 +256,7 @@ impl HeapRENode {
             HeapRENode::KeyValueStore(..) => Err(DropFailure::KeyValueStore),
             HeapRENode::Component(..) => Err(DropFailure::Component),
             HeapRENode::Bucket(..) => Err(DropFailure::Bucket),
-            HeapRENode::Resource(..) => Err(DropFailure::Resource),
+            HeapRENode::ResourceManager(..) => Err(DropFailure::Resource),
             HeapRENode::System(..) => Err(DropFailure::System),
             HeapRENode::Proof(proof) => {
                 proof.drop();

@@ -1,6 +1,6 @@
 use crate::engine::SystemApi;
 use crate::fee::FeeReserve;
-use crate::model::{convert, InvokeError, MethodAuthorization};
+use crate::model::{ComponentInfoSubstate, ComponentStateSubstate, InvokeError};
 use crate::types::*;
 use crate::wasm::{WasmEngine, WasmInstance};
 
@@ -11,78 +11,29 @@ pub enum ComponentError {
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
-pub struct ComponentState {
-    state: Vec<u8>,
+pub struct Component {
+    pub info: ComponentInfoSubstate,
+    // TODO: lazily loading of component state
+    // We use the state to look up children nodes of a component.
+    // Changing to lazily loading at this moment requires an even larger refactoring to the code base.
+    pub state: ComponentStateSubstate,
 }
 
-impl ComponentState {
-    pub fn new(state: Vec<u8>) -> Self {
-        ComponentState { state }
-    }
-
-    pub fn state(&self) -> &[u8] {
-        &self.state
-    }
-
-    pub fn set_state(&mut self, new_state: Vec<u8>) {
-        self.state = new_state;
-    }
-}
-
-/// A component is an instance of blueprint.
-#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
-pub struct ComponentInfo {
-    package_address: PackageAddress,
-    blueprint_name: String,
-    access_rules: Vec<AccessRules>,
-}
-
-impl ComponentInfo {
+impl Component {
     pub fn new(
         package_address: PackageAddress,
         blueprint_name: String,
         access_rules: Vec<AccessRules>,
+        state: Vec<u8>,
     ) -> Self {
         Self {
-            package_address,
-            blueprint_name,
-            access_rules,
+            info: ComponentInfoSubstate {
+                package_address,
+                blueprint_name,
+                access_rules,
+            },
+            state: ComponentStateSubstate { state },
         }
-    }
-
-    pub fn method_authorization(
-        &self,
-        component_state: &ComponentState,
-        schema: &Type,
-        method_name: &str,
-    ) -> Vec<MethodAuthorization> {
-        let data = ScryptoValue::from_slice(&component_state.state)
-            .expect("Failed to decode component state");
-
-        let mut authorizations = Vec::new();
-        for auth in &self.access_rules {
-            let method_auth = auth.get(method_name);
-            let authorization = convert(schema, &data, method_auth);
-            authorizations.push(authorization);
-        }
-
-        authorizations
-    }
-
-    pub fn info(&self) -> (PackageAddress, String) {
-        (self.package_address.clone(), self.blueprint_name.clone())
-    }
-
-    pub fn authorization(&self) -> &[AccessRules] {
-        &self.access_rules
-    }
-
-    pub fn package_address(&self) -> PackageAddress {
-        self.package_address.clone()
-    }
-
-    pub fn blueprint_name(&self) -> &str {
-        &self.blueprint_name
     }
 
     pub fn main<'s, Y, W, I, R>(
@@ -97,7 +48,6 @@ impl ComponentInfo {
         I: WasmInstance,
         R: FeeReserve,
     {
-        let substate_id = SubstateId::ComponentInfo(component_address);
         let node_id = RENodeId::Component(component_address);
 
         let rtn = match component_fn {
@@ -108,13 +58,13 @@ impl ComponentInfo {
                 // Abi checks
                 {
                     let (package_id, blueprint_name) = {
-                        let component_ref = system_api
+                        let mut component_ref = system_api
                             .borrow_node(&node_id)
                             .map_err(InvokeError::Downstream)?;
-                        let component = component_ref.component_info();
-                        let blueprint_name = component.blueprint_name().to_owned();
+                        let component = component_ref.component();
+                        let blueprint_name = component.info.blueprint_name.to_owned();
                         (
-                            RENodeId::Package(component.package_address.clone()),
+                            RENodeId::Package(component.info.package_address),
                             blueprint_name,
                         )
                     };
@@ -136,14 +86,11 @@ impl ComponentInfo {
                     }
                 }
 
-                let mut ref_mut = system_api
-                    .substate_borrow_mut(&substate_id)
+                let mut node = system_api
+                    .borrow_node_mut(&node_id)
                     .map_err(InvokeError::Downstream)?;
-                let component_info = ref_mut.component_info_mut();
-                component_info.access_rules.push(input.access_rules);
-                system_api
-                    .substate_return_mut(ref_mut)
-                    .map_err(InvokeError::Downstream)?;
+                let component = node.component_mut();
+                component.info.access_rules.push(input.access_rules);
 
                 Ok(ScryptoValue::from_typed(&()))
             }

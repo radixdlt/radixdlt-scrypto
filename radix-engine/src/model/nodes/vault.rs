@@ -171,11 +171,6 @@ impl Vault {
         I: WasmInstance,
         R: FeeReserve,
     {
-        let substate_id = SubstateId::Vault(vault_id.clone());
-        let mut ref_mut = system_api
-            .substate_borrow_mut(&substate_id)
-            .map_err(InvokeError::Downstream)?;
-        let vault = ref_mut.vault_mut();
         let rtn = match vault_fn {
             VaultFnIdentifier::Put => {
                 let input: VaultPutInput = scrypto_decode(&args.raw)
@@ -184,6 +179,10 @@ impl Vault {
                     .node_drop(&RENodeId::Bucket(input.bucket.0))
                     .map_err(InvokeError::Downstream)?
                     .into();
+                let mut node_ref = system_api
+                    .borrow_node_mut(&RENodeId::Vault(vault_id.clone()))
+                    .map_err(InvokeError::Downstream)?;
+                let vault = node_ref.vault_mut();
                 vault
                     .put(bucket)
                     .map_err(|e| InvokeError::Error(VaultError::ResourceOperationError(e)))?;
@@ -192,6 +191,10 @@ impl Vault {
             VaultFnIdentifier::Take => {
                 let input: VaultTakeInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(VaultError::InvalidRequestData(e)))?;
+                let mut node_ref = system_api
+                    .borrow_node_mut(&RENodeId::Vault(vault_id.clone()))
+                    .map_err(InvokeError::Downstream)?;
+                let vault = node_ref.vault_mut();
                 let container = vault.take(input.amount)?;
                 let bucket_id = system_api
                     .node_create(HeapRENode::Bucket(Bucket::new(container)))
@@ -204,6 +207,11 @@ impl Vault {
             VaultFnIdentifier::LockFee | VaultFnIdentifier::LockContingentFee => {
                 let input: VaultLockFeeInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(VaultError::InvalidRequestData(e)))?;
+
+                let mut node_ref = system_api
+                    .borrow_node_mut(&RENodeId::Vault(vault_id.clone()))
+                    .map_err(InvokeError::Downstream)?;
+                let vault = node_ref.vault_mut();
 
                 // Check resource and take amount
                 if vault.resource_address() != RADIX_TOKEN {
@@ -225,6 +233,10 @@ impl Vault {
                     .map_err(InvokeError::Downstream)?;
 
                 // Return changes
+                let mut node_ref = system_api
+                    .borrow_node_mut(&RENodeId::Vault(vault_id.clone()))
+                    .map_err(InvokeError::Downstream)?;
+                let vault = node_ref.vault_mut();
                 vault
                     .borrow_resource_mut()
                     .put(changes)
@@ -235,6 +247,10 @@ impl Vault {
             VaultFnIdentifier::TakeNonFungibles => {
                 let input: VaultTakeNonFungiblesInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(VaultError::InvalidRequestData(e)))?;
+                let mut node_ref = system_api
+                    .borrow_node_mut(&RENodeId::Vault(vault_id.clone()))
+                    .map_err(InvokeError::Downstream)?;
+                let vault = node_ref.vault_mut();
                 let container = vault.take_non_fungibles(&input.non_fungible_ids)?;
                 let bucket_id = system_api
                     .node_create(HeapRENode::Bucket(Bucket::new(container)))
@@ -247,18 +263,30 @@ impl Vault {
             VaultFnIdentifier::GetAmount => {
                 let _: VaultGetAmountInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(VaultError::InvalidRequestData(e)))?;
+                let mut node_ref = system_api
+                    .borrow_node_mut(&RENodeId::Vault(vault_id.clone()))
+                    .map_err(InvokeError::Downstream)?;
+                let vault = node_ref.vault_mut();
                 let amount = vault.total_amount();
                 Ok(ScryptoValue::from_typed(&amount))
             }
             VaultFnIdentifier::GetResourceAddress => {
                 let _: VaultGetResourceAddressInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(VaultError::InvalidRequestData(e)))?;
+                let mut node_ref = system_api
+                    .borrow_node_mut(&RENodeId::Vault(vault_id.clone()))
+                    .map_err(InvokeError::Downstream)?;
+                let vault = node_ref.vault_mut();
                 let resource_address = vault.resource_address();
                 Ok(ScryptoValue::from_typed(&resource_address))
             }
             VaultFnIdentifier::GetNonFungibleIds => {
                 let _: VaultGetNonFungibleIdsInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(VaultError::InvalidRequestData(e)))?;
+                let mut node_ref = system_api
+                    .borrow_node_mut(&RENodeId::Vault(vault_id.clone()))
+                    .map_err(InvokeError::Downstream)?;
+                let vault = node_ref.vault_mut();
                 let ids = vault
                     .total_ids()
                     .map_err(|e| InvokeError::Error(VaultError::ResourceOperationError(e)))?;
@@ -267,6 +295,10 @@ impl Vault {
             VaultFnIdentifier::CreateProof => {
                 let _: VaultCreateProofInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(VaultError::InvalidRequestData(e)))?;
+                let mut node_ref = system_api
+                    .borrow_node_mut(&RENodeId::Vault(vault_id.clone()))
+                    .map_err(InvokeError::Downstream)?;
+                let vault = node_ref.vault_mut();
                 let proof = vault
                     .create_proof(ResourceContainerId::Vault(vault_id))
                     .map_err(|e| InvokeError::Error(VaultError::ProofError(e)))?;
@@ -281,6 +313,10 @@ impl Vault {
             VaultFnIdentifier::CreateProofByAmount => {
                 let input: VaultCreateProofByAmountInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(VaultError::InvalidRequestData(e)))?;
+                let mut node_ref = system_api
+                    .borrow_node_mut(&RENodeId::Vault(vault_id.clone()))
+                    .map_err(InvokeError::Downstream)?;
+                let vault = node_ref.vault_mut();
                 let proof = vault
                     .create_proof_by_amount(input.amount, ResourceContainerId::Vault(vault_id))
                     .map_err(|e| InvokeError::Error(VaultError::ProofError(e)))?;
@@ -295,6 +331,10 @@ impl Vault {
             VaultFnIdentifier::CreateProofByIds => {
                 let input: VaultCreateProofByIdsInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(VaultError::InvalidRequestData(e)))?;
+                let mut node_ref = system_api
+                    .borrow_node_mut(&RENodeId::Vault(vault_id.clone()))
+                    .map_err(InvokeError::Downstream)?;
+                let vault = node_ref.vault_mut();
                 let proof = vault
                     .create_proof_by_ids(&input.ids, ResourceContainerId::Vault(vault_id))
                     .map_err(|e| InvokeError::Error(VaultError::ProofError(e)))?;
@@ -307,10 +347,6 @@ impl Vault {
                 )))
             }
         }?;
-
-        system_api
-            .substate_return_mut(ref_mut)
-            .map_err(InvokeError::Downstream)?;
 
         Ok(rtn)
     }
