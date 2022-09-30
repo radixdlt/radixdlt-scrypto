@@ -11,8 +11,8 @@ pub enum HeapRENode {
     Component(Component),
     Worktop(Worktop),
     Package(Package),
-    ResourceManager(ResourceManager),
     KeyValueStore(KeyValueStore),
+    ResourceManager(ResourceManager),
     System(System),
 }
 
@@ -28,11 +28,6 @@ impl HeapRENode {
                     Ok(HashSet::new())
                 }
             }
-            HeapRENode::ResourceManager(..) => Ok(HashSet::new()),
-            HeapRENode::Package(..) => Ok(HashSet::new()),
-            HeapRENode::Bucket(..) => Ok(HashSet::new()),
-            HeapRENode::Proof(..) => Ok(HashSet::new()),
-            HeapRENode::AuthZone(..) => Ok(HashSet::new()),
             HeapRENode::KeyValueStore(store) => {
                 let mut child_nodes = HashSet::new();
                 for (_id, substate) in store.loaded_entries {
@@ -44,6 +39,11 @@ impl HeapRENode {
                 }
                 Ok(child_nodes)
             }
+            HeapRENode::ResourceManager(..) => Ok(HashSet::new()),
+            HeapRENode::Package(..) => Ok(HashSet::new()),
+            HeapRENode::Bucket(..) => Ok(HashSet::new()),
+            HeapRENode::Proof(..) => Ok(HashSet::new()),
+            HeapRENode::AuthZone(..) => Ok(HashSet::new()),
             HeapRENode::Vault(..) => Ok(HashSet::new()),
             HeapRENode::Worktop(..) => Ok(HashSet::new()),
             HeapRENode::System(..) => Ok(HashSet::new()),
