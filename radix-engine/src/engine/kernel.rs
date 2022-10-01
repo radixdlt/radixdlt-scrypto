@@ -646,6 +646,15 @@ where
                     ));
                     next_frame_node_refs.insert(package_node_id, package_node_pointer);
                 }
+                RENodeId::Proof(..) => {
+                    let resource_address = {
+                        let node_ref = node_pointer.to_ref(&self.call_frames, &mut self.track);
+                        node_ref.proof().resource_address()
+                    };
+                    let resource_node_id = RENodeId::ResourceManager(resource_address);
+                    let resource_node_pointer = RENodePointer::Store(resource_node_id);
+                    next_frame_node_refs.insert(resource_node_id, resource_node_pointer);
+                }
                 RENodeId::Bucket(..) => {
                     let resource_address = {
                         let node_ref = node_pointer.to_ref(&self.call_frames, &mut self.track);
@@ -1024,20 +1033,6 @@ where
                 )) // TODO: Assumption will break if auth is optional
         };
 
-        let node_ref = node_pointer.to_ref(&mut self.call_frames, &mut self.track);
-
-        // TODO: Add others like Bucket.resource_address(), Vault.resource_address()
-        match node_id {
-            RENodeId::Proof(..) => {
-                let resource_address = node_ref.proof().resource_address();
-                let node_id = RENodeId::ResourceManager(resource_address);
-                Self::current_frame_mut(&mut self.call_frames)
-                    .node_refs
-                    .insert(node_id, RENodePointer::Store(node_id));
-            }
-            _ => {}
-        }
-
         for m in &mut self.modules {
             m.post_sys_call(
                 &mut self.track,
@@ -1325,13 +1320,20 @@ where
         let (parent_pointer, current_value) =
             Self::read_value_internal(&mut self.call_frames, self.track, &substate_id)?;
 
-        // TODO: Add other global references
         // TODO: Clean the following referencing up
-        for component_address in &current_value.refed_component_addresses {
-            let node_id = RENodeId::Global(GlobalAddress::Component(*component_address));
+        for node_id in current_value.global_references() {
             Self::current_frame_mut(&mut self.call_frames)
                 .node_refs
                 .insert(node_id, RENodePointer::Store(node_id));
+            // TODO: Remove, Need this to support dereference of substate for now
+            if let RENodeId::Global(GlobalAddress::Component(component_address)) = node_id {
+                Self::current_frame_mut(&mut self.call_frames)
+                    .node_refs
+                    .insert(
+                        RENodeId::Component(component_address),
+                        RENodePointer::Store(RENodeId::Component(component_address)),
+                    );
+            }
         }
 
         let cur_children = current_value.node_ids();
