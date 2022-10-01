@@ -94,6 +94,16 @@ pub enum RENodeRef<'f, 's, R: FeeReserve> {
 }
 
 impl<'f, 's, R: FeeReserve> RENodeRef<'f, 's, R> {
+    pub fn proof(&self) -> &Proof {
+        match self {
+            RENodeRef::Stack(value, id) => id
+                .as_ref()
+                .map_or(value.root(), |v| value.non_root(v))
+                .proof(),
+            RENodeRef::Track(..) => panic!("Proof should be in stack"),
+        }
+    }
+
     pub fn bucket(&self) -> &Bucket {
         match self {
             RENodeRef::Stack(value, id) => id
@@ -439,12 +449,6 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
         }
     }
 
-    pub fn proof_mut(&mut self) -> &mut Proof {
-        match self {
-            RENodeRefMut::Stack(re_value, id) => re_value.get_node_mut(id.as_ref()).proof_mut(),
-            RENodeRefMut::Track(..) => panic!("Proof should be in stack"),
-        }
-    }
 
     pub fn auth_zone_mut(&mut self) -> &mut AuthZone {
         match self {

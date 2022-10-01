@@ -400,6 +400,30 @@ where
         }
 
         // Check we have valid references to pass back
+        for non_fungible_address in &output.non_fungible_addresses {
+            // Only allow passing back global references
+            let node_id = RENodeId::ResourceManager(non_fungible_address.resource_address());
+            if !Self::current_frame_mut(&mut self.call_frames)
+                .node_refs
+                .contains_key(&node_id)
+            {
+                return Err(RuntimeError::KernelError(
+                    KernelError::InvokeInvalidReferenceReturn(node_id),
+                ));
+            }
+        }
+        for resource_address in &output.resource_addresses {
+            // Only allow passing back global references
+            let node_id = RENodeId::ResourceManager(*resource_address);
+            if !Self::current_frame_mut(&mut self.call_frames)
+                .node_refs
+                .contains_key(&node_id)
+            {
+                return Err(RuntimeError::KernelError(
+                    KernelError::InvokeInvalidReferenceReturn(node_id),
+                ));
+            }
+        }
         for refed_component_address in &output.refed_component_addresses {
             // Only allow passing back global references
             let node_id = RENodeId::Global(GlobalAddress::Component(*refed_component_address));
@@ -1075,6 +1099,20 @@ where
                 )) // TODO: Assumption will break if auth is optional
         };
 
+        let node_ref = node_pointer.to_ref(&mut self.call_frames, &mut self.track);
+
+        match node_id {
+            RENodeId::Proof(..) => {
+                let resource_address = node_ref.proof().resource_address();
+                let node_id = RENodeId::ResourceManager(resource_address);
+                Self::current_frame_mut(&mut self.call_frames)
+                    .node_refs
+                    .insert(node_id, RENodePointer::Store(node_id));
+            }
+            _ => {
+            }
+        }
+
         for m in &mut self.modules {
             m.post_sys_call(
                 &mut self.track,
@@ -1362,6 +1400,7 @@ where
         let (parent_pointer, current_value) =
             Self::read_value_internal(&mut self.call_frames, self.track, &substate_id)?;
 
+        // TODO: Add other global references
         // TODO: Clean the following referencing up
         for component_address in &current_value.refed_component_addresses {
             let node_id = RENodeId::Global(GlobalAddress::Component(*component_address));
