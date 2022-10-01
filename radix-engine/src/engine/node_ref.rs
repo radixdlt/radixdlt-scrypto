@@ -449,7 +449,6 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
         }
     }
 
-
     pub fn auth_zone_mut(&mut self) -> &mut AuthZone {
         match self {
             RENodeRefMut::Stack(re_value, id) => re_value.get_node_mut(id.as_ref()).auth_zone_mut(),
