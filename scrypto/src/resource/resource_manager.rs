@@ -11,7 +11,7 @@ use crate::address::{AddressError, EntityType, BECH32_DECODER, BECH32_ENCODER};
 use crate::buffer::scrypto_encode;
 use crate::core::{FnIdent, MethodIdent, NativeMethodFnIdent};
 use crate::core::{Receiver, ResourceManagerMethodFnIdent};
-use crate::engine::types::RENodeId;
+use crate::engine::types::{GlobalAddress, RENodeId};
 use crate::engine::{api::*, call_engine};
 use crate::math::*;
 use crate::misc::*;
@@ -112,7 +112,7 @@ impl ResourceManager {
     pub fn set_mintable(&mut self, access_rule: AccessRule) -> () {
         let input = RadixEngineInput::Invoke(
             FnIdent::Method(MethodIdent {
-                receiver: Receiver::Ref(RENodeId::ResourceManager(self.0)),
+                receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Resource(self.0))),
                 method_fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::ResourceManager(
                     ResourceManagerMethodFnIdent::UpdateAuth,
                 )),
@@ -128,7 +128,7 @@ impl ResourceManager {
     pub fn set_burnable(&mut self, access_rule: AccessRule) -> () {
         let input = RadixEngineInput::Invoke(
             FnIdent::Method(MethodIdent {
-                receiver: Receiver::Ref(RENodeId::ResourceManager(self.0)),
+                receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Resource(self.0))),
                 method_fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::ResourceManager(
                     ResourceManagerMethodFnIdent::UpdateAuth,
                 )),
@@ -144,7 +144,7 @@ impl ResourceManager {
     pub fn set_withdrawable(&mut self, access_rule: AccessRule) -> () {
         let input = RadixEngineInput::Invoke(
             FnIdent::Method(MethodIdent {
-                receiver: Receiver::Ref(RENodeId::ResourceManager(self.0)),
+                receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Resource(self.0))),
                 method_fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::ResourceManager(
                     ResourceManagerMethodFnIdent::UpdateAuth,
                 )),
@@ -160,7 +160,7 @@ impl ResourceManager {
     pub fn set_depositable(&mut self, access_rule: AccessRule) -> () {
         let input = RadixEngineInput::Invoke(
             FnIdent::Method(MethodIdent {
-                receiver: Receiver::Ref(RENodeId::ResourceManager(self.0)),
+                receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Resource(self.0))),
                 method_fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::ResourceManager(
                     ResourceManagerMethodFnIdent::UpdateAuth,
                 )),
@@ -176,7 +176,7 @@ impl ResourceManager {
     pub fn set_updateable_metadata(&self, access_rule: AccessRule) -> () {
         let input = RadixEngineInput::Invoke(
             FnIdent::Method(MethodIdent {
-                receiver: Receiver::Ref(RENodeId::ResourceManager(self.0)),
+                receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Resource(self.0))),
                 method_fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::ResourceManager(
                     ResourceManagerMethodFnIdent::UpdateAuth,
                 )),
@@ -192,7 +192,7 @@ impl ResourceManager {
     pub fn set_updateable_non_fungible_data(&self, access_rule: AccessRule) -> () {
         let input = RadixEngineInput::Invoke(
             FnIdent::Method(MethodIdent {
-                receiver: Receiver::Ref(RENodeId::ResourceManager(self.0)),
+                receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Resource(self.0))),
                 method_fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::ResourceManager(
                     ResourceManagerMethodFnIdent::UpdateAuth,
                 )),
@@ -208,7 +208,7 @@ impl ResourceManager {
     pub fn lock_mintable(&mut self) -> () {
         let input = RadixEngineInput::Invoke(
             FnIdent::Method(MethodIdent {
-                receiver: Receiver::Ref(RENodeId::ResourceManager(self.0)),
+                receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Resource(self.0))),
                 method_fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::ResourceManager(
                     ResourceManagerMethodFnIdent::LockAuth,
                 )),
@@ -223,7 +223,7 @@ impl ResourceManager {
     pub fn lock_burnable(&mut self) -> () {
         let input = RadixEngineInput::Invoke(
             FnIdent::Method(MethodIdent {
-                receiver: Receiver::Ref(RENodeId::ResourceManager(self.0)),
+                receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Resource(self.0))),
                 method_fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::ResourceManager(
                     ResourceManagerMethodFnIdent::LockAuth,
                 )),
@@ -238,7 +238,7 @@ impl ResourceManager {
     pub fn lock_withdrawable(&mut self) -> () {
         let input = RadixEngineInput::Invoke(
             FnIdent::Method(MethodIdent {
-                receiver: Receiver::Ref(RENodeId::ResourceManager(self.0)),
+                receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Resource(self.0))),
                 method_fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::ResourceManager(
                     ResourceManagerMethodFnIdent::LockAuth,
                 )),
@@ -253,7 +253,7 @@ impl ResourceManager {
     pub fn lock_depositable(&mut self) -> () {
         let input = RadixEngineInput::Invoke(
             FnIdent::Method(MethodIdent {
-                receiver: Receiver::Ref(RENodeId::ResourceManager(self.0)),
+                receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Resource(self.0))),
                 method_fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::ResourceManager(
                     ResourceManagerMethodFnIdent::LockAuth,
                 )),
@@ -268,7 +268,7 @@ impl ResourceManager {
     pub fn lock_updateable_metadata(&mut self) -> () {
         let input = RadixEngineInput::Invoke(
             FnIdent::Method(MethodIdent {
-                receiver: Receiver::Ref(RENodeId::ResourceManager(self.0)),
+                receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Resource(self.0))),
                 method_fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::ResourceManager(
                     ResourceManagerMethodFnIdent::LockAuth,
                 )),
@@ -283,7 +283,7 @@ impl ResourceManager {
     pub fn lock_updateable_non_fungible_data(&mut self) -> () {
         let input = RadixEngineInput::Invoke(
             FnIdent::Method(MethodIdent {
-                receiver: Receiver::Ref(RENodeId::ResourceManager(self.0)),
+                receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Resource(self.0))),
                 method_fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::ResourceManager(
                     ResourceManagerMethodFnIdent::LockAuth,
                 )),
@@ -298,7 +298,7 @@ impl ResourceManager {
     fn mint_internal(&mut self, mint_params: MintParams) -> Bucket {
         let input = RadixEngineInput::Invoke(
             FnIdent::Method(MethodIdent {
-                receiver: Receiver::Ref(RENodeId::ResourceManager(self.0)),
+                receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Resource(self.0))),
                 method_fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::ResourceManager(
                     ResourceManagerMethodFnIdent::Mint,
                 )),
@@ -311,7 +311,7 @@ impl ResourceManager {
     fn update_non_fungible_data_internal(&mut self, id: NonFungibleId, data: Vec<u8>) -> () {
         let input = RadixEngineInput::Invoke(
             FnIdent::Method(MethodIdent {
-                receiver: Receiver::Ref(RENodeId::ResourceManager(self.0)),
+                receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Resource(self.0))),
                 method_fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::ResourceManager(
                     ResourceManagerMethodFnIdent::UpdateNonFungibleData,
                 )),
@@ -324,7 +324,7 @@ impl ResourceManager {
     fn get_non_fungible_data_internal(&self, id: NonFungibleId) -> [Vec<u8>; 2] {
         let input = RadixEngineInput::Invoke(
             FnIdent::Method(MethodIdent {
-                receiver: Receiver::Ref(RENodeId::ResourceManager(self.0)),
+                receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Resource(self.0))),
                 method_fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::ResourceManager(
                     ResourceManagerMethodFnIdent::GetNonFungible,
                 )),
@@ -335,7 +335,7 @@ impl ResourceManager {
     }
 
     native_functions! {
-        Receiver::Ref(RENodeId::ResourceManager(self.0)), NativeMethodFnIdent::ResourceManager => {
+        Receiver::Ref(RENodeId::Global(GlobalAddress::Resource(self.0))), NativeMethodFnIdent::ResourceManager => {
             pub fn metadata(&self) -> HashMap<String, String> {
                 ResourceManagerMethodFnIdent::GetMetadata,
                 ResourceManagerGetMetadataInput {}

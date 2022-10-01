@@ -402,7 +402,8 @@ where
         }
 
         // Check references returned
-        for node_id in output.global_references() {
+        for global_address in output.global_references() {
+            let node_id = RENodeId::Global(global_address);
             if !Self::current_frame_mut(&mut self.call_frames)
                 .node_refs
                 .contains_key(&node_id)
@@ -651,15 +652,26 @@ where
                         let node_ref = node_pointer.to_ref(&self.call_frames, &mut self.track);
                         node_ref.proof().resource_address()
                     };
-                    let resource_node_id = RENodeId::ResourceManager(resource_address);
-                    let resource_node_pointer = RENodePointer::Store(resource_node_id);
-                    next_frame_node_refs.insert(resource_node_id, resource_node_pointer);
+                    let global_resource_node_id =
+                        RENodeId::Global(GlobalAddress::Resource(resource_address));
+                    next_frame_node_refs.insert(
+                        global_resource_node_id,
+                        RENodePointer::Store(global_resource_node_id),
+                    );
                 }
                 RENodeId::Bucket(..) => {
                     let resource_address = {
                         let node_ref = node_pointer.to_ref(&self.call_frames, &mut self.track);
                         node_ref.bucket().resource_address()
                     };
+
+                    let global_resource_node_id =
+                        RENodeId::Global(GlobalAddress::Resource(resource_address));
+                    next_frame_node_refs.insert(
+                        global_resource_node_id,
+                        RENodePointer::Store(global_resource_node_id),
+                    );
+
                     let resource_substate_id = SubstateId::ResourceManager(resource_address);
                     let resource_node_id = RENodeId::ResourceManager(resource_address);
                     let resource_node_pointer = RENodePointer::Store(resource_node_id);
@@ -674,6 +686,13 @@ where
                         let mut node_ref = node_pointer.to_ref(&self.call_frames, &mut self.track);
                         node_ref.vault().resource_address()
                     };
+                    let global_resource_node_id =
+                        RENodeId::Global(GlobalAddress::Resource(resource_address));
+                    next_frame_node_refs.insert(
+                        global_resource_node_id,
+                        RENodePointer::Store(global_resource_node_id),
+                    );
+
                     let resource_substate_id = SubstateId::ResourceManager(resource_address);
                     let resource_node_id = RENodeId::ResourceManager(resource_address);
                     let resource_node_pointer = RENodePointer::Store(resource_node_id);
@@ -878,9 +897,9 @@ where
         // Move this into higher layer, e.g. transaction processor
         if Self::current_frame(&self.call_frames).depth == 0 {
             let mut static_refs = HashSet::new();
-            static_refs.insert(RENodeId::ResourceManager(RADIX_TOKEN));
-            static_refs.insert(RENodeId::ResourceManager(SYSTEM_TOKEN));
-            static_refs.insert(RENodeId::ResourceManager(ECDSA_TOKEN));
+            static_refs.insert(GlobalAddress::Resource(RADIX_TOKEN));
+            static_refs.insert(GlobalAddress::Resource(SYSTEM_TOKEN));
+            static_refs.insert(GlobalAddress::Resource(ECDSA_TOKEN));
 
             // Make refs visible
             let mut global_references = input.global_references();
@@ -904,20 +923,15 @@ where
             }
 
             // Check for existence
-            for node_id in global_references {
-                let substate_id = match node_id {
-                    RENodeId::Global(global_address) => SubstateId::Global(global_address),
-                    RENodeId::ResourceManager(resource_address) => {
-                        SubstateId::ResourceManager(resource_address)
-                    }
-                    _ => panic!("Unexpected"),
-                };
+            for global_address in global_references {
+                let node_id = RENodeId::Global(global_address);
+                let substate_id = SubstateId::Global(global_address);
                 let node_pointer = RENodePointer::Store(node_id);
 
                 // TODO: static check here is to support the current genesis transaction which
                 // TODO: requires references to dynamically created resources. Can remove
                 // TODO: when this is resolved.
-                if !static_refs.contains(&node_id) {
+                if !static_refs.contains(&global_address) {
                     node_pointer
                         .acquire_lock(substate_id.clone(), false, false, &mut self.track)
                         .map_err(|e| match e {
@@ -938,8 +952,10 @@ where
         } else {
             // Check that global references are owned by this call frame
             let mut global_references = input.global_references();
-            global_references.insert(RENodeId::ResourceManager(RADIX_TOKEN));
-            for node_id in global_references {
+            global_references.insert(GlobalAddress::Resource(RADIX_TOKEN));
+            for global_address in global_references {
+                let node_id = RENodeId::Global(global_address);
+
                 if let Some(pointer) = Self::current_frame_mut(&mut self.call_frames)
                     .node_refs
                     .get(&node_id)
@@ -978,7 +994,8 @@ where
         }
 
         // Accept global references
-        for node_id in output.global_references() {
+        for global_address in output.global_references() {
+            let node_id = RENodeId::Global(global_address);
             Self::current_frame_mut(&mut self.call_frames)
                 .node_refs
                 .insert(node_id, RENodePointer::Store(node_id));
@@ -1238,12 +1255,6 @@ where
             .map_err(RuntimeError::ModuleError)?;
         }
 
-        if !RENodeProperties::can_globalize(node_id) {
-            return Err(RuntimeError::KernelError(
-                KernelError::RENodeGlobalizeTypeNotAllowed(node_id),
-            ));
-        }
-
         // TODO: Authorization
 
         let mut nodes_to_take = HashSet::new();
@@ -1254,28 +1265,26 @@ where
         assert!(taken_nodes.len() == 1);
         let root_node = taken_nodes.into_values().nth(0).unwrap();
 
-        match node_id {
-            RENodeId::Component(component_address) | RENodeId::System(component_address) => {
-                let global_address = GlobalAddress::Component(component_address);
-                self.track.put_substate(
-                    SubstateId::Global(global_address),
-                    Substate::GlobalRENode(GlobalRENode::Component(scrypto::component::Component(
-                        component_address,
-                    ))),
-                );
-                Self::current_frame_mut(&mut self.call_frames)
-                    .node_refs
-                    .insert(
-                        RENodeId::Global(global_address),
-                        RENodePointer::Store(RENodeId::Global(global_address)),
-                    );
-            }
-            _ => {}
-        }
+        let (global_address, global_re_node) = RENodeProperties::to_global(node_id).ok_or(
+            RuntimeError::KernelError(KernelError::RENodeGlobalizeTypeNotAllowed(node_id)),
+        )?;
+
+        self.track.put_substate(
+            SubstateId::Global(global_address),
+            Substate::GlobalRENode(global_re_node),
+        );
+        Self::current_frame_mut(&mut self.call_frames)
+            .node_refs
+            .insert(
+                RENodeId::Global(global_address),
+                RENodePointer::Store(RENodeId::Global(global_address)),
+            );
 
         for (id, substate) in nodes_to_substates(root_node.to_nodes(node_id)) {
             self.track.put_substate(id, substate);
         }
+
+        // TODO: Remove once deref substates is implemented
         Self::current_frame_mut(&mut self.call_frames)
             .node_refs
             .insert(node_id, RENodePointer::Store(node_id));
@@ -1321,7 +1330,8 @@ where
             Self::read_value_internal(&mut self.call_frames, self.track, &substate_id)?;
 
         // TODO: Clean the following referencing up
-        for node_id in current_value.global_references() {
+        for global_address in current_value.global_references() {
+            let node_id = RENodeId::Global(global_address);
             Self::current_frame_mut(&mut self.call_frames)
                 .node_refs
                 .insert(node_id, RENodePointer::Store(node_id));

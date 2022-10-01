@@ -4,6 +4,7 @@ use sbor::rust::fmt;
 use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::core::{MethodFnIdent, MethodIdent};
+use scrypto::engine::types::GlobalAddress;
 
 use crate::abi::*;
 use crate::buffer::scrypto_encode;
@@ -56,7 +57,9 @@ impl Bucket {
     pub fn new(resource_address: ResourceAddress) -> Self {
         let input = RadixEngineInput::Invoke(
             FnIdent::Method(MethodIdent {
-                receiver: Receiver::Ref(RENodeId::ResourceManager(resource_address)),
+                receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Resource(
+                    resource_address,
+                ))),
                 method_fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::ResourceManager(
                     ResourceManagerMethodFnIdent::CreateBucket,
                 )),

@@ -25,11 +25,10 @@ impl HeapRENode {
             HeapRENode::Global(global_node) => {
                 let child_node = match global_node {
                     GlobalRENode::Component(component) => RENodeId::Component(component.0),
-                    /*GlobalRENode::Package(package_address) => RENodeId::Package(*package_address),
+                    GlobalRENode::Package(package_address) => RENodeId::Package(*package_address),
                     GlobalRENode::Resource(resource_address) => {
                         RENodeId::ResourceManager(*resource_address)
                     }
-                     */
                 };
                 let mut child_nodes = HashSet::new();
                 child_nodes.insert(child_node);

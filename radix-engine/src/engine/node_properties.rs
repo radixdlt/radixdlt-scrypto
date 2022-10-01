@@ -1,4 +1,5 @@
 use super::{KernelError, RuntimeError};
+use crate::model::GlobalRENode;
 use crate::types::*;
 use scrypto::core::{MethodFnIdent, MethodIdent};
 
@@ -6,19 +7,27 @@ pub struct RENodeProperties;
 
 impl RENodeProperties {
     /// Specifies whether an RENode may globalize as the root node or not
-    pub fn can_globalize(node_id: RENodeId) -> bool {
+    pub fn to_global(node_id: RENodeId) -> Option<(GlobalAddress, GlobalRENode)> {
         match node_id {
-            RENodeId::Global(..) => false,
-            RENodeId::AuthZone(..) => false,
-            RENodeId::Bucket(..) => false,
-            RENodeId::Proof(..) => false,
-            RENodeId::KeyValueStore(..) => false,
-            RENodeId::Worktop => false,
-            RENodeId::Component(..) => true,
-            RENodeId::Vault(..) => false,
-            RENodeId::ResourceManager(..) => true,
-            RENodeId::Package(..) => true,
-            RENodeId::System(..) => true,
+            RENodeId::Global(..) => panic!("Should never get here."),
+            RENodeId::Component(component_address) | RENodeId::System(component_address) => Some((
+                GlobalAddress::Component(component_address),
+                GlobalRENode::Component(scrypto::component::Component(component_address)),
+            )),
+            RENodeId::ResourceManager(resource_address) => Some((
+                GlobalAddress::Resource(resource_address),
+                GlobalRENode::Resource(resource_address),
+            )),
+            RENodeId::Package(package_address) => Some((
+                GlobalAddress::Package(package_address),
+                GlobalRENode::Package(package_address),
+            )),
+            RENodeId::AuthZone(..) => Option::None,
+            RENodeId::Bucket(..) => Option::None,
+            RENodeId::Proof(..) => Option::None,
+            RENodeId::KeyValueStore(..) => Option::None,
+            RENodeId::Worktop => Option::None,
+            RENodeId::Vault(..) => Option::None,
         }
     }
 

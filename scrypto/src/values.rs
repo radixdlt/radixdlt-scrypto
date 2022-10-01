@@ -139,18 +139,16 @@ impl ScryptoValue {
         node_ids
     }
 
-    pub fn global_references(&self) -> HashSet<RENodeId> {
+    pub fn global_references(&self) -> HashSet<GlobalAddress> {
         let mut node_ids = HashSet::new();
         for component_address in &self.refed_component_addresses {
-            node_ids.insert(RENodeId::Global(GlobalAddress::Component(
-                *component_address,
-            )));
+            node_ids.insert(GlobalAddress::Component(*component_address));
         }
         for resource_address in &self.resource_addresses {
-            node_ids.insert(RENodeId::ResourceManager(*resource_address));
+            node_ids.insert(GlobalAddress::Resource(*resource_address));
         }
         for non_fungible_address in &self.non_fungible_addresses {
-            node_ids.insert(RENodeId::ResourceManager(
+            node_ids.insert(GlobalAddress::Resource(
                 non_fungible_address.resource_address(),
             ));
         }
