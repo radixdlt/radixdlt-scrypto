@@ -401,13 +401,12 @@ where
 
         // Check we have valid references to pass back
         for refed_component_address in &output.refed_component_addresses {
+            // Only allow passing back global references
             let node_id = RENodeId::Global(GlobalAddress::Component(*refed_component_address));
-            if let Some(RENodePointer::Store(..)) = Self::current_frame_mut(&mut self.call_frames)
+            if !Self::current_frame_mut(&mut self.call_frames)
                 .node_refs
-                .get(&node_id)
+                .contains_key(&node_id)
             {
-                // Only allow passing back global references
-            } else {
                 return Err(RuntimeError::KernelError(
                     KernelError::InvokeInvalidReferenceReturn(node_id),
                 ));
@@ -481,7 +480,15 @@ where
         let mut next_frame_node_refs = HashMap::new();
         if Self::current_frame(&self.call_frames).depth == 0 {
             let mut component_addresses = HashSet::new();
+            let mut resource_addresses = HashSet::new();
 
+            // Collect resource addresses
+            for resource_address in &input.resource_addresses {
+                resource_addresses.insert(*resource_address);
+            }
+            for non_fungible_address in &input.non_fungible_addresses {
+                resource_addresses.insert(non_fungible_address.resource_address());
+            }
             // Collect component addresses
             for component_address in &input.refed_component_addresses {
                 component_addresses.insert(*component_address);
@@ -495,12 +502,17 @@ where
                         let scrypto_value =
                             ScryptoValue::from_slice(&args).expect("Invalid CALL arguments");
                         component_addresses.extend(scrypto_value.refed_component_addresses);
+                        resource_addresses.extend(scrypto_value.resource_addresses);
                     }
                     _ => {}
                 }
             }
 
-            // Make components visible
+            // Make refs visible
+            for resource_address in resource_addresses {
+                let node_id = RENodeId::ResourceManager(resource_address);
+                next_frame_node_refs.insert(node_id, RENodePointer::Store(node_id));
+            }
             for component_address in component_addresses {
                 let global_address = GlobalAddress::Component(component_address);
                 let node_id = RENodeId::Global(global_address);
@@ -521,6 +533,18 @@ where
             }
         } else {
             // Pass argument references
+            for resource_address in &input.resource_addresses {
+                let node_id = RENodeId::ResourceManager(*resource_address);
+                next_frame_node_refs.insert(node_id, RENodePointer::Store(node_id));
+            }
+            for non_fungible_address in &input.non_fungible_addresses {
+                let node_id = RENodeId::ResourceManager(non_fungible_address.resource_address());
+                next_frame_node_refs.insert(node_id, RENodePointer::Store(node_id));
+            }
+            next_frame_node_refs.insert(
+                RENodeId::ResourceManager(RADIX_TOKEN),
+                RENodePointer::Store(RENodeId::ResourceManager(RADIX_TOKEN)),
+            );
             for refed_component_address in &input.refed_component_addresses {
                 let node_id =
                     RENodeId::Global(GlobalAddress::Component(refed_component_address.clone()));
@@ -614,9 +638,7 @@ where
                     match node_id {
                         // Let these be globally accessible for now
                         // TODO: Remove when references cleaned up
-                        RENodeId::ResourceManager(..) | RENodeId::System(..) => {
-                            RENodePointer::Store(node_id)
-                        }
+                        RENodeId::System(..) => RENodePointer::Store(node_id),
                         _ => {
                             return Err(RuntimeError::KernelError(KernelError::RENodeNotVisible(
                                 node_id,
@@ -836,6 +858,18 @@ where
 
         // TODO: Cleanup
         // Pass argument references
+        for non_fungible_address in &input.non_fungible_addresses {
+            let node_id = RENodeId::ResourceManager(non_fungible_address.resource_address());
+            next_frame_node_refs.insert(node_id, RENodePointer::Store(node_id));
+        }
+        for resource_address in &input.resource_addresses {
+            let node_id = RENodeId::ResourceManager(*resource_address);
+            next_frame_node_refs.insert(node_id, RENodePointer::Store(node_id));
+        }
+        next_frame_node_refs.insert(
+            RENodeId::ResourceManager(RADIX_TOKEN),
+            RENodePointer::Store(RENodeId::ResourceManager(RADIX_TOKEN)),
+        );
         for refed_component_address in &input.refed_component_addresses {
             let node_id =
                 RENodeId::Global(GlobalAddress::Component(refed_component_address.clone()));
@@ -981,7 +1015,19 @@ where
             FnIdent::Function(..) => self.invoke_function(fn_ident, input, next_owned_values)?,
         };
 
-        // Accept component references
+        // Accept global references
+        for non_fungible_address in &output.non_fungible_addresses {
+            let node_id = RENodeId::ResourceManager(non_fungible_address.resource_address());
+            Self::current_frame_mut(&mut self.call_frames)
+                .node_refs
+                .insert(node_id, RENodePointer::Store(node_id));
+        }
+        for refed_resource_address in &output.resource_addresses {
+            let node_id = RENodeId::ResourceManager(*refed_resource_address);
+            Self::current_frame_mut(&mut self.call_frames)
+                .node_refs
+                .insert(node_id, RENodePointer::Store(node_id));
+        }
         for refed_component_address in &output.refed_component_addresses {
             let node_id = RENodeId::Global(GlobalAddress::Component(*refed_component_address));
             Self::current_frame_mut(&mut self.call_frames)

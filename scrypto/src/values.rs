@@ -39,6 +39,7 @@ pub struct ScryptoValue {
     pub owned_component_addresses: HashSet<ComponentAddress>,
     pub refed_component_addresses: HashSet<ComponentAddress>,
     pub resource_addresses: HashSet<ResourceAddress>,
+    pub non_fungible_addresses: HashSet<NonFungibleAddress>,
 }
 
 impl ScryptoValue {
@@ -80,6 +81,7 @@ impl ScryptoValue {
             owned_component_addresses: checker.components.iter().map(|e| e.0).collect(),
             refed_component_addresses: checker.ref_components,
             resource_addresses: checker.resource_addresses,
+            non_fungible_addresses: checker.non_fungible_addresses,
         })
     }
 
@@ -99,6 +101,7 @@ impl ScryptoValue {
             owned_component_addresses: HashSet::new(),
             refed_component_addresses: HashSet::new(),
             resource_addresses: HashSet::new(),
+            non_fungible_addresses: HashSet::new(),
         })
     }
 
@@ -252,6 +255,7 @@ pub struct ScryptoCustomValueChecker {
     pub components: HashSet<Component>,
     pub ref_components: HashSet<ComponentAddress>,
     pub resource_addresses: HashSet<ResourceAddress>,
+    pub non_fungible_addresses: HashSet<NonFungibleAddress>,
 }
 
 /// Represents an error when validating a Scrypto-specific value.
@@ -290,6 +294,7 @@ impl ScryptoCustomValueChecker {
             components: HashSet::new(),
             ref_components: HashSet::new(),
             resource_addresses: HashSet::new(),
+            non_fungible_addresses: HashSet::new(),
         }
     }
 }
@@ -389,8 +394,9 @@ impl CustomValueVisitor for ScryptoCustomValueChecker {
                     .map_err(ScryptoCustomValueCheckError::InvalidNonFungibleId)?;
             }
             ScryptoType::NonFungibleAddress => {
-                NonFungibleAddress::try_from(data)
+                let non_fungible_address = NonFungibleAddress::try_from(data)
                     .map_err(ScryptoCustomValueCheckError::InvalidNonFungibleAddress)?;
+                self.non_fungible_addresses.insert(non_fungible_address);
             }
             ScryptoType::ResourceAddress => {
                 let resource_address = ResourceAddress::try_from(data)
