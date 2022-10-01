@@ -52,6 +52,7 @@ pub enum KernelError {
     InvalidFnInput2(FnIdent),
     InvalidFnInput { fn_identifier: FunctionIdent },
     InvalidFnOutput { fn_identifier: FunctionIdent },
+    GlobalRENodeNotFound(RENodeId),
 
     // ID allocation
     IdAllocationError(IdAllocationError),
