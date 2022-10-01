@@ -334,11 +334,13 @@ where
                                     }
                                     _ => {
                                         return Err(RuntimeError::KernelError(
-                                            KernelError::MethodNotFound(FunctionIdent::Scrypto {
-                                                package_address,
-                                                blueprint_name,
-                                                ident,
-                                            }),
+                                            KernelError::FunctionIdentNotFound(
+                                                FunctionIdent::Scrypto {
+                                                    package_address,
+                                                    blueprint_name,
+                                                    ident,
+                                                },
+                                            ),
                                         ))
                                     }
                                 }
@@ -453,7 +455,7 @@ where
 
     fn invoke_function(
         &mut self,
-        fn_ident: FnIdent,
+        function_ident: FunctionIdent,
         input: ScryptoValue,
         next_owned_values: HashMap<RENodeId, HeapRootRENode>,
         next_frame_node_refs: HashMap<RENodeId, RENodePointer>,
@@ -461,12 +463,12 @@ where
         let mut locked_values = HashSet::<SubstateId>::new();
 
         // No authorization but state load
-        match &fn_ident {
-            FnIdent::Function(FunctionIdent::Scrypto {
+        match &function_ident {
+            FunctionIdent::Scrypto {
                 package_address,
                 blueprint_name,
                 ident,
-            }) => {
+            } => {
                 let node_pointer = RENodePointer::Store(RENodeId::Package(package_address.clone()));
                 node_pointer
                     .acquire_lock(
@@ -490,32 +492,24 @@ where
                             blueprint_name.clone(),
                         )))?;
                 let fn_abi = abi.get_fn_abi(ident).ok_or(RuntimeError::KernelError(
-                    KernelError::FnIdentNotFound(fn_ident.clone()),
+                    KernelError::FunctionIdentNotFound(function_ident.clone()),
                 ))?;
                 if !fn_abi.input.matches(&input.dom) {
                     return Err(RuntimeError::KernelError(KernelError::InvalidFnInput2(
-                        fn_ident.clone(),
+                        FnIdent::Function(function_ident.clone()),
                     )));
                 }
             }
             _ => {}
         };
 
-        match &fn_ident {
-            FnIdent::Function(fn_identifier) => {
-                AuthModule::function_auth(fn_identifier.clone(), &mut self.call_frames)?;
-            }
-            _ => {}
-        }
+        AuthModule::function_auth(function_ident.clone(), &mut self.call_frames)?;
 
         // start a new frame and run
         let (output, received_values) = {
             let frame = CallFrame::new_child(
                 Self::current_frame(&self.call_frames).depth + 1,
-                match &fn_ident {
-                    FnIdent::Function(function_ident) => REActor::Function(function_ident.clone()),
-                    _ => panic!("Unexpected"),
-                },
+                REActor::Function(function_ident.clone()),
                 next_owned_values,
                 next_frame_node_refs,
                 self,
@@ -1022,8 +1016,8 @@ where
             FnIdent::Method(method_ident) => {
                 self.invoke_method(method_ident, input, next_owned_values, next_node_refs)?
             }
-            FnIdent::Function(..) => {
-                self.invoke_function(fn_ident, input, next_owned_values, next_node_refs)?
+            FnIdent::Function(function_ident) => {
+                self.invoke_function(function_ident, input, next_owned_values, next_node_refs)?
             }
         };
 
