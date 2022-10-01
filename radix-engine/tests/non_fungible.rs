@@ -172,3 +172,78 @@ fn test_singleton_non_fungible() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
     receipt.expect_commit_success();
 }
+
+#[test]
+fn test_mint_update_and_withdraw() {
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
+    let (public_key, _, account) = test_runner.new_account();
+    let package_address = test_runner.compile_and_publish("./tests/non_fungible");
+
+    // create non-fungible
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .call_function(
+            package_address,
+            "NonFungibleTest",
+            "create_non_fungible_mutable",
+            args!(),
+        )
+        .call_method(
+            account,
+            "deposit_batch",
+            args!(Expression::entire_worktop()),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
+    receipt.expect_commit_success();
+    let badge_resource_address = receipt
+        .expect_commit()
+        .entity_changes
+        .new_resource_addresses[0];
+    let nft_resource_address = receipt
+        .expect_commit()
+        .entity_changes
+        .new_resource_addresses[1];
+
+    // update data
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .withdraw_from_account(badge_resource_address, account)
+        .withdraw_from_account(nft_resource_address, account)
+        .take_from_worktop_by_amount(1.into(), badge_resource_address, |builder, bid1| {
+            builder.take_from_worktop_by_amount(1.into(), nft_resource_address, |builder, bid2| {
+                builder.call_function(
+                    package_address,
+                    "NonFungibleTest",
+                    "update_nft",
+                    args!(
+                        scrypto::resource::Bucket(bid1),
+                        scrypto::resource::Bucket(bid2)
+                    ),
+                )
+            })
+        })
+        .call_method(
+            account,
+            "deposit_batch",
+            args!(Expression::entire_worktop()),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
+    receipt.expect_commit_success();
+
+    // transfer
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .withdraw_from_account(nft_resource_address, account)
+        .take_from_worktop(nft_resource_address, |builder, _bid| builder)
+        .call_method(
+            account,
+            "deposit_batch",
+            args!(Expression::entire_worktop()),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
+    receipt.expect_commit_success();
+}
