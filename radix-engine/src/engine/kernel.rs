@@ -527,6 +527,9 @@ where
                             ScryptoValue::from_slice(&args).expect("Invalid CALL arguments");
                         component_addresses.extend(scrypto_value.refed_component_addresses);
                         resource_addresses.extend(scrypto_value.resource_addresses);
+                        for non_fungible_address in &scrypto_value.non_fungible_addresses {
+                            resource_addresses.insert(non_fungible_address.resource_address());
+                        }
                     }
                     _ => {}
                 }
@@ -537,6 +540,8 @@ where
                 let node_id = RENodeId::ResourceManager(resource_address);
                 next_frame_node_refs.insert(node_id, RENodePointer::Store(node_id));
             }
+            next_frame_node_refs.insert(RENodeId::ResourceManager(RADIX_TOKEN), RENodePointer::Store(RENodeId::ResourceManager(RADIX_TOKEN)));
+
             for component_address in component_addresses {
                 let global_address = GlobalAddress::Component(component_address);
                 let node_id = RENodeId::Global(global_address);
@@ -556,31 +561,33 @@ where
                 next_frame_node_refs.insert(node_id, node_pointer);
             }
         } else {
-            // Pass argument references
+            // Pass global references
+            let mut global_node_refs = HashSet::new();
             for resource_address in &input.resource_addresses {
                 let node_id = RENodeId::ResourceManager(*resource_address);
-                next_frame_node_refs.insert(node_id, RENodePointer::Store(node_id));
+                global_node_refs.insert(node_id);
             }
             for non_fungible_address in &input.non_fungible_addresses {
                 let node_id = RENodeId::ResourceManager(non_fungible_address.resource_address());
-                next_frame_node_refs.insert(node_id, RENodePointer::Store(node_id));
+                global_node_refs.insert(node_id);
             }
-            next_frame_node_refs.insert(
-                RENodeId::ResourceManager(RADIX_TOKEN),
-                RENodePointer::Store(RENodeId::ResourceManager(RADIX_TOKEN)),
-            );
+            global_node_refs.insert(RENodeId::ResourceManager(RADIX_TOKEN));
             for refed_component_address in &input.refed_component_addresses {
-                let node_id =
-                    RENodeId::Global(GlobalAddress::Component(refed_component_address.clone()));
-                if let Some(pointer) = Self::current_frame_mut(&mut self.call_frames)
-                    .node_refs
-                    .get(&node_id)
-                {
+                let node_id = RENodeId::Global(GlobalAddress::Component(refed_component_address.clone()));
+                global_node_refs.insert(node_id);
+            }
+
+            // Check that references are owned by this call frame
+            for node_id in global_node_refs {
+                if let Some(pointer) = Self::current_frame_mut(&mut self.call_frames).node_refs.get(&node_id) {
                     next_frame_node_refs.insert(node_id.clone(), pointer.clone());
-                    next_frame_node_refs.insert(
-                        RENodeId::Component(*refed_component_address),
-                        RENodePointer::Store(RENodeId::Component(*refed_component_address)),
-                    );
+                    // TODO: Remove, Need this to support dereference of substate for now
+                    if let RENodeId::Global(GlobalAddress::Component(component_address)) = node_id {
+                        next_frame_node_refs.insert(
+                            RENodeId::Component(component_address),
+                            RENodePointer::Store(RENodeId::Component(component_address)),
+                        );
+                    }
                 } else {
                     return Err(RuntimeError::KernelError(
                         KernelError::InvokeInvalidReferencePass(node_id),
@@ -1101,6 +1108,7 @@ where
 
         let node_ref = node_pointer.to_ref(&mut self.call_frames, &mut self.track);
 
+        // TODO: Add others like Bucket.resource_address(), Vault.resource_address()
         match node_id {
             RENodeId::Proof(..) => {
                 let resource_address = node_ref.proof().resource_address();
