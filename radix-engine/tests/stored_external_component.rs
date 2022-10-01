@@ -8,7 +8,6 @@ fn stored_component_addresses_in_non_globalized_component_are_invokable() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let (_, _, _) = test_runner.new_account();
     let package = test_runner.compile_and_publish("./tests/stored_external_component");
 
     // Act
