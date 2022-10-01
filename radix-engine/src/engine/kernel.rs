@@ -401,34 +401,8 @@ where
             )));
         }
 
-        // Check we have valid references to pass back
-        for non_fungible_address in &output.non_fungible_addresses {
-            // Only allow passing back global references
-            let node_id = RENodeId::ResourceManager(non_fungible_address.resource_address());
-            if !Self::current_frame_mut(&mut self.call_frames)
-                .node_refs
-                .contains_key(&node_id)
-            {
-                return Err(RuntimeError::KernelError(
-                    KernelError::InvokeInvalidReferenceReturn(node_id),
-                ));
-            }
-        }
-        for resource_address in &output.resource_addresses {
-            // Only allow passing back global references
-            let node_id = RENodeId::ResourceManager(*resource_address);
-            if !Self::current_frame_mut(&mut self.call_frames)
-                .node_refs
-                .contains_key(&node_id)
-            {
-                return Err(RuntimeError::KernelError(
-                    KernelError::InvokeInvalidReferenceReturn(node_id),
-                ));
-            }
-        }
-        for refed_component_address in &output.refed_component_addresses {
-            // Only allow passing back global references
-            let node_id = RENodeId::Global(GlobalAddress::Component(*refed_component_address));
+        // Check references returned
+        for node_id in output.global_references() {
             if !Self::current_frame_mut(&mut self.call_frames)
                 .node_refs
                 .contains_key(&node_id)
@@ -459,7 +433,7 @@ where
         input: ScryptoValue,
         next_owned_values: HashMap<RENodeId, HeapRootRENode>,
         next_frame_node_refs: HashMap<RENodeId, RENodePointer>,
-    ) -> Result<ScryptoValue, RuntimeError> {
+    ) -> Result<(ScryptoValue, HashMap<RENodeId, HeapRootRENode>), RuntimeError> {
         let mut locked_values = HashSet::<SubstateId>::new();
 
         // No authorization but state load
@@ -530,14 +504,7 @@ where
                 .map_err(RuntimeError::KernelError)?;
         }
 
-        // move buckets and proofs to this process.
-        for (id, value) in received_values {
-            Self::current_frame_mut(&mut self.call_frames)
-                .owned_heap_nodes
-                .insert(id, value);
-        }
-
-        Ok(output)
+        Ok((output, received_values))
     }
 
     fn invoke_method(
@@ -546,7 +513,7 @@ where
         input: ScryptoValue,
         mut next_owned_values: HashMap<RENodeId, HeapRootRENode>,
         mut next_frame_node_refs: HashMap<RENodeId, RENodePointer>,
-    ) -> Result<ScryptoValue, RuntimeError> {
+    ) -> Result<(ScryptoValue, HashMap<RENodeId, HeapRootRENode>), RuntimeError> {
         let mut locked_pointers = Vec::new();
 
         // Authorization and state load
@@ -811,14 +778,7 @@ where
                 .map_err(RuntimeError::KernelError)?;
         }
 
-        // move buckets and proofs to this process.
-        for (id, value) in received_values {
-            Self::current_frame_mut(&mut self.call_frames)
-                .owned_heap_nodes
-                .insert(id, value);
-        }
-
-        Ok(output)
+        Ok((output, received_values))
     }
 }
 
@@ -992,7 +952,7 @@ where
         }
 
         // TODO: Slowly unify these two
-        let output = match fn_ident {
+        let (output, received_values) = match fn_ident {
             FnIdent::Method(method_ident) => {
                 self.invoke_method(method_ident, input, next_owned_values, next_node_refs)?
             }
@@ -1001,24 +961,27 @@ where
             }
         };
 
+        // move buckets and proofs to this process.
+        for (id, value) in received_values {
+            Self::current_frame_mut(&mut self.call_frames)
+                .owned_heap_nodes
+                .insert(id, value);
+        }
+
         // Accept global references
-        for non_fungible_address in &output.non_fungible_addresses {
-            let node_id = RENodeId::ResourceManager(non_fungible_address.resource_address());
+        for node_id in output.global_references() {
             Self::current_frame_mut(&mut self.call_frames)
                 .node_refs
                 .insert(node_id, RENodePointer::Store(node_id));
-        }
-        for refed_resource_address in &output.resource_addresses {
-            let node_id = RENodeId::ResourceManager(*refed_resource_address);
-            Self::current_frame_mut(&mut self.call_frames)
-                .node_refs
-                .insert(node_id, RENodePointer::Store(node_id));
-        }
-        for refed_component_address in &output.refed_component_addresses {
-            let node_id = RENodeId::Global(GlobalAddress::Component(*refed_component_address));
-            Self::current_frame_mut(&mut self.call_frames)
-                .node_refs
-                .insert(node_id, RENodePointer::Store(node_id));
+            // TODO: Remove, Need this to support dereference of substate for now
+            if let RENodeId::Global(GlobalAddress::Component(component_address)) = node_id {
+                Self::current_frame_mut(&mut self.call_frames)
+                    .node_refs
+                    .insert(
+                        RENodeId::Component(component_address),
+                        RENodePointer::Store(RENodeId::Component(component_address)),
+                    );
+            }
         }
 
         for m in &mut self.modules {
