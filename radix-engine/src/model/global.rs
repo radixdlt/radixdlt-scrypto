@@ -10,7 +10,10 @@ pub enum GlobalRENode {
 impl GlobalRENode {
     pub fn node_deref(&self) -> RENodeId {
         match self {
-            GlobalRENode::Component(component) => RENodeId::Component(component.0),
+            GlobalRENode::Component(component) => match component.0 {
+                ComponentAddress::System(..) => RENodeId::System(component.0),
+                _ => RENodeId::Component(component.0),
+            },
             GlobalRENode::Resource(resource_address) => {
                 RENodeId::ResourceManager(*resource_address)
             }

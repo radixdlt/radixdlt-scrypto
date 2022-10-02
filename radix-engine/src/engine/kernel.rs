@@ -533,16 +533,9 @@ where
                 } else if let Some(pointer) = current_frame.node_refs.get(&node_id) {
                     pointer.clone()
                 } else {
-                    match node_id {
-                        // Let these be globally accessible for now
-                        // TODO: Remove when references cleaned up
-                        RENodeId::System(..) => RENodePointer::Store(node_id),
-                        _ => {
-                            return Err(RuntimeError::KernelError(KernelError::RENodeNotVisible(
-                                node_id,
-                            )))
-                        }
-                    }
+                    return Err(RuntimeError::KernelError(KernelError::RENodeNotVisible(
+                        node_id,
+                    )));
                 }
             };
 
@@ -900,6 +893,7 @@ where
             static_refs.insert(GlobalAddress::Resource(RADIX_TOKEN));
             static_refs.insert(GlobalAddress::Resource(SYSTEM_TOKEN));
             static_refs.insert(GlobalAddress::Resource(ECDSA_TOKEN));
+            static_refs.insert(GlobalAddress::Component(SYS_SYSTEM_COMPONENT));
 
             // Make refs visible
             let mut global_references = input.global_references();
@@ -947,12 +941,16 @@ where
                         .map_err(RuntimeError::KernelError)?;
                 }
 
+                Self::current_frame_mut(&mut self.call_frames)
+                    .node_refs
+                    .insert(node_id, node_pointer);
                 next_node_refs.insert(node_id, node_pointer);
             }
         } else {
             // Check that global references are owned by this call frame
             let mut global_references = input.global_references();
             global_references.insert(GlobalAddress::Resource(RADIX_TOKEN));
+            global_references.insert(GlobalAddress::Component(SYS_SYSTEM_COMPONENT));
             for global_address in global_references {
                 let node_id = RENodeId::Global(global_address);
 
@@ -963,10 +961,15 @@ where
                     next_node_refs.insert(node_id.clone(), pointer.clone());
                     // TODO: Remove, Need this to support dereference of substate for now
                     if let RENodeId::Global(GlobalAddress::Component(component_address)) = node_id {
-                        next_node_refs.insert(
-                            RENodeId::Component(component_address),
-                            RENodePointer::Store(RENodeId::Component(component_address)),
-                        );
+                        match component_address {
+                            ComponentAddress::Normal(..) | ComponentAddress::Account(..) => {
+                                next_node_refs.insert(
+                                    RENodeId::Component(component_address),
+                                    RENodePointer::Store(RENodeId::Component(component_address)),
+                                );
+                            }
+                            _ => {}
+                        }
                     }
                 } else {
                     return Err(RuntimeError::KernelError(

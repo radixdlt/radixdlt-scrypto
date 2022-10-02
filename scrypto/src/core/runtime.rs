@@ -94,7 +94,9 @@ impl Runtime {
     pub fn transaction_hash() -> Hash {
         let input = RadixEngineInput::Invoke(
             FnIdent::Method(MethodIdent {
-                receiver: Receiver::Ref(RENodeId::System(SYS_SYSTEM_COMPONENT)),
+                receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Component(
+                    SYS_SYSTEM_COMPONENT,
+                ))),
                 method_fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::System(
                     SystemMethodFnIdent::GetTransactionHash,
                 )),
@@ -108,7 +110,9 @@ impl Runtime {
     pub fn current_epoch() -> u64 {
         let input = RadixEngineInput::Invoke(
             FnIdent::Method(MethodIdent {
-                receiver: Receiver::Ref(RENodeId::System(SYS_SYSTEM_COMPONENT)),
+                receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Component(
+                    SYS_SYSTEM_COMPONENT,
+                ))),
                 method_fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::System(
                     SystemMethodFnIdent::GetCurrentEpoch,
                 )),
