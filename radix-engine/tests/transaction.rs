@@ -35,7 +35,7 @@ fn test_manifest_with_non_existent_resource() {
     receipt.expect_specific_rejection(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::GlobalRENodeNotFound(..))
+            RuntimeError::KernelError(KernelError::GlobalAddressNotFound(..))
         )
     });
 }

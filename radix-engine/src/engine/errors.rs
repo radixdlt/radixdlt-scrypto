@@ -43,8 +43,11 @@ pub enum KernelError {
     WasmError(WasmError),
     RENodeNotVisible(RENodeId),
     InvokeMethodInvalidReceiver(RENodeId),
-    InvokeInvalidReferencePass(RENodeId),
-    InvokeInvalidReferenceReturn(RENodeId),
+
+    InvokeInvalidReferencePass(GlobalAddress),
+    InvokeInvalidReferenceReturn(GlobalAddress),
+    GlobalAddressNotFound(GlobalAddress),
+
     MaxCallDepthLimitReached,
     FnIdentNotFound(FnIdent),
     FunctionIdentNotFound(FunctionIdent),
@@ -52,7 +55,6 @@ pub enum KernelError {
     InvalidFnInput2(FnIdent),
     InvalidFnInput { fn_identifier: FunctionIdent },
     InvalidFnOutput { fn_identifier: FunctionIdent },
-    GlobalRENodeNotFound(RENodeId),
 
     // ID allocation
     IdAllocationError(IdAllocationError),

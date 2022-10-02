@@ -409,7 +409,7 @@ where
                 .contains_key(&node_id)
             {
                 return Err(RuntimeError::KernelError(
-                    KernelError::InvokeInvalidReferenceReturn(node_id),
+                    KernelError::InvokeInvalidReferenceReturn(global_address),
                 ));
             }
         }
@@ -936,8 +936,8 @@ where
                         .acquire_lock(substate_id.clone(), false, false, &mut self.track)
                         .map_err(|e| match e {
                             KernelError::SubstateError(TrackError::NotFound(..)) => {
-                                RuntimeError::KernelError(KernelError::GlobalRENodeNotFound(
-                                    node_id,
+                                RuntimeError::KernelError(KernelError::GlobalAddressNotFound(
+                                    global_address,
                                 ))
                             }
                             _ => RuntimeError::KernelError(e),
@@ -970,7 +970,7 @@ where
                     }
                 } else {
                     return Err(RuntimeError::KernelError(
-                        KernelError::InvokeInvalidReferencePass(node_id),
+                        KernelError::InvokeInvalidReferencePass(global_address),
                     ));
                 }
             }
