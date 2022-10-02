@@ -44,8 +44,9 @@ pub enum KernelError {
     RENodeNotVisible(RENodeId),
     InvokeMethodInvalidReceiver(RENodeId),
 
-    InvokeInvalidReferencePass(GlobalAddress),
-    InvokeInvalidReferenceReturn(GlobalAddress),
+    InvalidReferencePass(GlobalAddress),
+    InvalidReferenceReturn(GlobalAddress),
+    InvalidReferenceWrite(GlobalAddress),
     GlobalAddressNotFound(GlobalAddress),
 
     MaxCallDepthLimitReached,

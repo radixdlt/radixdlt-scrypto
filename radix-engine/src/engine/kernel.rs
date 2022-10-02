@@ -409,7 +409,7 @@ where
                 .contains_key(&node_id)
             {
                 return Err(RuntimeError::KernelError(
-                    KernelError::InvokeInvalidReferenceReturn(global_address),
+                    KernelError::InvalidReferenceReturn(global_address),
                 ));
             }
         }
@@ -970,7 +970,7 @@ where
                     }
                 } else {
                     return Err(RuntimeError::KernelError(
-                        KernelError::InvokeInvalidReferencePass(global_address),
+                        KernelError::InvalidReferencePass(global_address),
                     ));
                 }
             }
@@ -1448,15 +1448,17 @@ where
             ));
         }
 
-        // TODO: Do this in a better way once references cleaned up
-        for component_address in &value.refed_component_addresses {
-            let substate_id = SubstateId::Global(GlobalAddress::Component(*component_address));
-            self.track
-                .acquire_lock(substate_id.clone(), false, false)
-                .map_err(|e| RuntimeError::KernelError(KernelError::SubstateError(e)))?;
-            self.track
-                .release_lock(substate_id.clone(), false)
-                .map_err(|e| RuntimeError::KernelError(KernelError::SubstateError(e)))?;
+        // Verify references exist
+        for global_address in value.global_references() {
+            let node_id = RENodeId::Global(global_address);
+            if !Self::current_frame_mut(&mut self.call_frames)
+                .node_refs
+                .contains_key(&node_id)
+            {
+                return Err(RuntimeError::KernelError(
+                    KernelError::InvalidReferenceWrite(global_address),
+                ));
+            }
         }
 
         // Take values from current frame
