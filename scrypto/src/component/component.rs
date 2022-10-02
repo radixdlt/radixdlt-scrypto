@@ -90,8 +90,8 @@ impl Component {
 
     pub fn globalize(self) -> ComponentAddress {
         let input = RadixEngineInput::RENodeGlobalize(RENodeId::Component(self.0));
-        let _: () = call_engine(input);
-        self.0.clone()
+        let global_address: GlobalAddress = call_engine(input);
+        global_address.into()
     }
 }
 

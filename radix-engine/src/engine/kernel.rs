@@ -1248,7 +1248,7 @@ where
         Ok(node_id)
     }
 
-    fn node_globalize(&mut self, node_id: RENodeId) -> Result<(), RuntimeError> {
+    fn node_globalize(&mut self, node_id: RENodeId) -> Result<GlobalAddress, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
                 &mut self.track,
@@ -1301,7 +1301,7 @@ where
             .map_err(RuntimeError::ModuleError)?;
         }
 
-        Ok(())
+        Ok(global_address)
     }
 
     fn substate_read(&mut self, substate_id: SubstateId) -> Result<ScryptoValue, RuntimeError> {

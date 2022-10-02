@@ -184,8 +184,8 @@ pub fn genesis_result(invoke_result: &Vec<Vec<u8>>) -> GenesisReceipt {
     let (xrd_token, _bucket): (ResourceAddress, Option<Bucket>) =
         scrypto_decode(&invoke_result[4]).unwrap();
     let faucet_component: ComponentAddress = scrypto_decode(&invoke_result[6]).unwrap();
-    let system_component_id: RENodeId = scrypto_decode(&invoke_result[7]).unwrap();
-    let system_component: ComponentAddress = system_component_id.into();
+    let system_component: ComponentAddress = scrypto_decode(&invoke_result[7]).unwrap();
+
     GenesisReceipt {
         sys_faucet_package,
         account_package,
