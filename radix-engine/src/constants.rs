@@ -14,6 +14,6 @@ pub const DEFAULT_COST_UNIT_PRICE: &'static str = "0.0000001";
 /// The default max call depth.
 pub const DEFAULT_MAX_CALL_DEPTH: usize = 16;
 
-pub const EXTRACT_ABI_CREDIT: u32 = 10_000_000;
-pub const PREVIEW_CREDIT: u32 = 10_000_000;
-pub const GENESIS_CREATION_CREDIT: u32 = 10_000_000;
+pub const EXTRACT_ABI_CREDIT: u32 = 100_000_000;
+pub const PREVIEW_CREDIT: u32 = 100_000_000;
+pub const GENESIS_CREATION_CREDIT: u32 = 100_000_000;
