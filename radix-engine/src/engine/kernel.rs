@@ -472,7 +472,10 @@ where
                     )
                     .map_err(RuntimeError::KernelError)?;
 
-                locked_values.insert(SubstateId::Package(package_address.clone(), PackageOffset::Package));
+                locked_values.insert(SubstateId::Package(
+                    package_address.clone(),
+                    PackageOffset::Package,
+                ));
                 let package = self
                     .track
                     .borrow_node(&RENodeId::Package(package_address.clone()))
@@ -646,7 +649,8 @@ where
                         let component = node_ref.component();
                         component.info.package_address.clone()
                     };
-                    let package_substate_id = SubstateId::Package(package_address, PackageOffset::Package);
+                    let package_substate_id =
+                        SubstateId::Package(package_address, PackageOffset::Package);
                     let package_node_id = RENodeId::Package(package_address);
                     let package_node_pointer = RENodePointer::Store(package_node_id);
                     package_node_pointer
@@ -684,7 +688,10 @@ where
                         RENodePointer::Store(global_resource_node_id),
                     );
 
-                    let resource_substate_id = SubstateId::ResourceManager(resource_address, ResourceManagerOffset::ResourceManager);
+                    let resource_substate_id = SubstateId::ResourceManager(
+                        resource_address,
+                        ResourceManagerOffset::ResourceManager,
+                    );
                     let resource_node_id = RENodeId::ResourceManager(resource_address);
                     let resource_node_pointer = RENodePointer::Store(resource_node_id);
                     resource_node_pointer
@@ -705,7 +712,10 @@ where
                         RENodePointer::Store(global_resource_node_id),
                     );
 
-                    let resource_substate_id = SubstateId::ResourceManager(resource_address, ResourceManagerOffset::ResourceManager);
+                    let resource_substate_id = SubstateId::ResourceManager(
+                        resource_address,
+                        ResourceManagerOffset::ResourceManager,
+                    );
                     let resource_node_id = RENodeId::ResourceManager(resource_address);
                     let resource_node_pointer = RENodePointer::Store(resource_node_id);
                     resource_node_pointer
@@ -721,8 +731,10 @@ where
             // TODO: Remove when references cleaned up
             if let MethodFnIdent::Native(..) = fn_ident.method_fn_ident {
                 for resource_address in &input.resource_addresses {
-                    let resource_substate_id =
-                        SubstateId::ResourceManager(resource_address.clone(), ResourceManagerOffset::ResourceManager);
+                    let resource_substate_id = SubstateId::ResourceManager(
+                        resource_address.clone(),
+                        ResourceManagerOffset::ResourceManager,
+                    );
                     let resource_node_id = RENodeId::ResourceManager(resource_address.clone());
                     let resource_node_pointer = RENodePointer::Store(resource_node_id);
 

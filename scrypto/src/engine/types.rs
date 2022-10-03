@@ -111,7 +111,7 @@ impl Into<ResourceAddress> for GlobalAddress {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum AuthZoneOffset {
-    AuthZone
+    AuthZone,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -127,7 +127,7 @@ pub enum PackageOffset {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum GlobalOffset {
-    Global
+    Global,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -140,6 +140,7 @@ pub enum ResourceManagerOffset {
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum KeyValueStoreOffset {
     Space,
+    Entry(Vec<u8>),
 }
 
 /// TODO: separate space addresses?
@@ -156,7 +157,6 @@ pub enum SubstateId {
     ResourceManager(ResourceAddress, ResourceManagerOffset),
 
     KeyValueStore(KeyValueStoreId, KeyValueStoreOffset),
-    KeyValueStoreEntry(KeyValueStoreId, Vec<u8>),
 
     Vault(VaultId),
     System(ComponentAddress),

@@ -226,7 +226,9 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                     let node = HeapRENode::Global(global_node);
                     self.loaded_nodes.insert(
                         match &substate_id {
-                            SubstateId::Global(global_address, GlobalOffset::Global) => RENodeId::Global(*global_address),
+                            SubstateId::Global(global_address, GlobalOffset::Global) => {
+                                RENodeId::Global(*global_address)
+                            }
                             _ => panic!("Unexpected substate id type"),
                         },
                         node,
@@ -248,9 +250,10 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                     );
                     self.loaded_nodes.insert(
                         match &substate_id {
-                            SubstateId::ResourceManager(address, ResourceManagerOffset::ResourceManager) => {
-                                RENodeId::ResourceManager(*address)
-                            }
+                            SubstateId::ResourceManager(
+                                address,
+                                ResourceManagerOffset::ResourceManager,
+                            ) => RENodeId::ResourceManager(*address),
                             _ => panic!("Unexpected substate id type"),
                         },
                         node,
@@ -288,7 +291,9 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                     });
                     self.loaded_nodes.insert(
                         match &substate_id {
-                            SubstateId::Package(address, PackageOffset::Package) => RENodeId::Package(*address),
+                            SubstateId::Package(address, PackageOffset::Package) => {
+                                RENodeId::Package(*address)
+                            }
                             _ => panic!("Unexpected substate id type"),
                         },
                         node,
@@ -401,11 +406,15 @@ impl<'s, R: FeeReserve> Track<'s, R> {
     pub fn read_key_value(&mut self, parent_address: SubstateId, key: Vec<u8>) -> Substate {
         // TODO: consider using a single address as function input
         let substate_id = match parent_address {
-            SubstateId::ResourceManager(resource_address, ResourceManagerOffset::NonFungibleSpace) => {
-                SubstateId::ResourceManager(resource_address, ResourceManagerOffset::NonFungible(NonFungibleId(key)))
-            }
+            SubstateId::ResourceManager(
+                resource_address,
+                ResourceManagerOffset::NonFungibleSpace,
+            ) => SubstateId::ResourceManager(
+                resource_address,
+                ResourceManagerOffset::NonFungible(NonFungibleId(key)),
+            ),
             SubstateId::KeyValueStore(kv_store_id, KeyValueStoreOffset::Space) => {
-                SubstateId::KeyValueStoreEntry(kv_store_id, key)
+                SubstateId::KeyValueStore(kv_store_id, KeyValueStoreOffset::Entry(key))
             }
             _ => panic!("Unsupported key value"),
         };
@@ -442,11 +451,15 @@ impl<'s, R: FeeReserve> Track<'s, R> {
     ) {
         // TODO: consider using a single address as function input
         let substate_id = match parent_substate_id {
-            SubstateId::ResourceManager(resource_address, ResourceManagerOffset::NonFungibleSpace) => {
-                SubstateId::ResourceManager(resource_address, ResourceManagerOffset::NonFungible(NonFungibleId(key.clone())))
-            }
+            SubstateId::ResourceManager(
+                resource_address,
+                ResourceManagerOffset::NonFungibleSpace,
+            ) => SubstateId::ResourceManager(
+                resource_address,
+                ResourceManagerOffset::NonFungible(NonFungibleId(key.clone())),
+            ),
             SubstateId::KeyValueStore(kv_store_id, KeyValueStoreOffset::Space) => {
-                SubstateId::KeyValueStoreEntry(kv_store_id, key.clone())
+                SubstateId::KeyValueStore(kv_store_id, KeyValueStoreOffset::Entry(key.clone()))
             }
             _ => panic!("Unsupported key value"),
         };

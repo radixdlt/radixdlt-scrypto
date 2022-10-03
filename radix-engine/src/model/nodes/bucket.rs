@@ -310,7 +310,10 @@ impl Bucket {
                         .total_ids()
                         .expect("Failed to list non-fungible IDs on non-fungible Bucket")
                     {
-                        let address = SubstateId::ResourceManager(resource_address, ResourceManagerOffset::NonFungible(id));
+                        let address = SubstateId::ResourceManager(
+                            resource_address,
+                            ResourceManagerOffset::NonFungible(id),
+                        );
                         system_api
                             .substate_take(address)
                             .map_err(InvokeError::Downstream)?;

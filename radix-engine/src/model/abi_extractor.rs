@@ -11,7 +11,10 @@ pub fn export_abi<S: ReadableSubstateStore>(
     blueprint_name: &str,
 ) -> Result<abi::BlueprintAbi, RuntimeError> {
     let package_value: Substate = substate_store
-        .get_substate(&SubstateId::Package(package_address, PackageOffset::Package))
+        .get_substate(&SubstateId::Package(
+            package_address,
+            PackageOffset::Package,
+        ))
         .map(|s| s.substate)
         .ok_or(RuntimeError::KernelError(KernelError::PackageNotFound(
             package_address,

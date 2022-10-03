@@ -25,7 +25,10 @@ pub fn dump_package<T: ReadableSubstateStore, O: std::io::Write>(
     let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
 
     let package: Option<PackageSubstate> = substate_store
-        .get_substate(&SubstateId::Package(package_address, PackageOffset::Package))
+        .get_substate(&SubstateId::Package(
+            package_address,
+            PackageOffset::Package,
+        ))
         .map(|s| s.substate)
         .map(|s| s.into());
     match package {
@@ -164,7 +167,10 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
         let amount = vault.0.amount();
         let resource_address = vault.0.resource_address();
         let resource_manager: ResourceManagerSubstate = substate_store
-            .get_substate(&SubstateId::ResourceManager(resource_address, ResourceManagerOffset::ResourceManager))
+            .get_substate(&SubstateId::ResourceManager(
+                resource_address,
+                ResourceManagerOffset::ResourceManager,
+            ))
             .map(|s| s.substate)
             .map(|s| s.into())
             .unwrap();
@@ -189,7 +195,10 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
             let ids = vault.0.ids();
             for (inner_last, id) in ids.iter().identify_last() {
                 let non_fungible: NonFungibleSubstate = substate_store
-                    .get_substate(&SubstateId::ResourceManager(resource_address, ResourceManagerOffset::NonFungible(id.clone())))
+                    .get_substate(&SubstateId::ResourceManager(
+                        resource_address,
+                        ResourceManagerOffset::NonFungible(id.clone()),
+                    ))
                     .map(|s| s.substate)
                     .map(|s| s.into())
                     .unwrap();
@@ -222,7 +231,10 @@ pub fn dump_resource_manager<T: ReadableSubstateStore, O: std::io::Write>(
     output: &mut O,
 ) -> Result<(), DisplayError> {
     let resource_manager: Option<ResourceManagerSubstate> = substate_store
-        .get_substate(&SubstateId::ResourceManager(resource_address, ResourceManagerOffset::ResourceManager))
+        .get_substate(&SubstateId::ResourceManager(
+            resource_address,
+            ResourceManagerOffset::ResourceManager,
+        ))
         .map(|s| s.substate)
         .map(|s| s.into());
     match resource_manager {

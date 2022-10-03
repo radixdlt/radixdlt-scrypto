@@ -49,7 +49,7 @@ impl QueryableSubstateStore for TypedInMemorySubstateStore {
         self.substates
             .iter()
             .filter_map(|(key, value)| {
-                if let SubstateId::KeyValueStoreEntry(id, key) = key {
+                if let SubstateId::KeyValueStore(id, KeyValueStoreOffset::Entry(key)) = key {
                     if id == kv_store_id {
                         Some((key.clone(), value.substate.clone()))
                     } else {

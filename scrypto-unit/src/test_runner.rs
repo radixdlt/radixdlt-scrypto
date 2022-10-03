@@ -111,7 +111,10 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     ) -> Option<radix_engine::model::KeyValueStoreEntrySubstate> {
         self.execution_stores
             .get_root_store()
-            .get_substate(&SubstateId::KeyValueStoreEntry(kv_store_id, key))
+            .get_substate(&SubstateId::KeyValueStore(
+                kv_store_id,
+                KeyValueStoreOffset::Entry(key),
+            ))
             .map(|output| output.substate.into())
     }
 

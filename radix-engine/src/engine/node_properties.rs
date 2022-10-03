@@ -34,12 +34,15 @@ impl RENodeProperties {
     pub fn to_primary_substate_id(method_ident: &MethodIdent) -> Result<SubstateId, RuntimeError> {
         let substate_id = match &method_ident.method_fn_ident {
             MethodFnIdent::Native(..) => match method_ident.receiver.node_id() {
-                RENodeId::AuthZone(auth_zone_id) => SubstateId::AuthZone(auth_zone_id, AuthZoneOffset::AuthZone),
+                RENodeId::AuthZone(auth_zone_id) => {
+                    SubstateId::AuthZone(auth_zone_id, AuthZoneOffset::AuthZone)
+                }
                 RENodeId::Bucket(bucket_id) => SubstateId::Bucket(bucket_id),
                 RENodeId::Proof(proof_id) => SubstateId::Proof(proof_id),
-                RENodeId::ResourceManager(resource_address) => {
-                    SubstateId::ResourceManager(resource_address, ResourceManagerOffset::ResourceManager)
-                }
+                RENodeId::ResourceManager(resource_address) => SubstateId::ResourceManager(
+                    resource_address,
+                    ResourceManagerOffset::ResourceManager,
+                ),
                 RENodeId::System(component_address) => SubstateId::System(component_address),
                 RENodeId::Worktop => SubstateId::Worktop,
                 RENodeId::Component(component_address) => {
@@ -76,11 +79,10 @@ impl SubstateProperties {
             SubstateId::Global(global_address, ..) => RENodeId::Global(*global_address),
             SubstateId::Component(component_address, ..) => RENodeId::Component(*component_address),
             SubstateId::KeyValueStore(kv_store_id, ..) => RENodeId::KeyValueStore(*kv_store_id),
-            SubstateId::KeyValueStoreEntry(kv_store_id, ..) => {
-                RENodeId::KeyValueStore(*kv_store_id)
-            }
             SubstateId::Vault(vault_id) => RENodeId::Vault(*vault_id),
-            SubstateId::Package(package_address, PackageOffset::Package) => RENodeId::Package(*package_address),
+            SubstateId::Package(package_address, PackageOffset::Package) => {
+                RENodeId::Package(*package_address)
+            }
             SubstateId::ResourceManager(resource_address, ..) => {
                 RENodeId::ResourceManager(*resource_address)
             }
@@ -96,13 +98,13 @@ impl SubstateProperties {
         match substate_id {
             SubstateId::Global(..) => true,
             SubstateId::AuthZone(..) => false,
-            SubstateId::KeyValueStoreEntry(..) => true,
             SubstateId::Component(_, ComponentOffset::State) => true,
             SubstateId::Component(_, ComponentOffset::Info) => false,
             SubstateId::ResourceManager(_, ResourceManagerOffset::NonFungible(..)) => false,
             SubstateId::ResourceManager(_, ResourceManagerOffset::NonFungibleSpace) => false,
             SubstateId::ResourceManager(_, ResourceManagerOffset::ResourceManager) => false,
-            SubstateId::KeyValueStore(..) => false,
+            SubstateId::KeyValueStore(_, KeyValueStoreOffset::Entry(..)) => true,
+            SubstateId::KeyValueStore(_, KeyValueStoreOffset::Space) => false,
             SubstateId::Vault(..) => false,
             SubstateId::Package(..) => false,
             SubstateId::System(..) => false,

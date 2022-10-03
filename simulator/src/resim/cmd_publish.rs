@@ -68,7 +68,10 @@ impl Publish {
 
             // Overwrite package
             // TODO: implement real package overwrite
-            substate_store.put_substate(SubstateId::Package(package_address, PackageOffset::Package), output_value);
+            substate_store.put_substate(
+                SubstateId::Package(package_address, PackageOffset::Package),
+                output_value,
+            );
             writeln!(out, "Package updated!").map_err(Error::IOError)?;
         } else {
             let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
