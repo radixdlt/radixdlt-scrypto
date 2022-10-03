@@ -264,6 +264,11 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
             RENodeRefMut::Track(track, node_id) => {
                 let kv_store = track.borrow_node_mut(node_id).kv_store_mut();
                 kv_store.put(key, substate);
+                for (id, val) in to_store {
+                    for (id, node) in val.to_nodes(id) {
+                        track.put_node(id, node);
+                    }
+                }
             }
         }
     }
