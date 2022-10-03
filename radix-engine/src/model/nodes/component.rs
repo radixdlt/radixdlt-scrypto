@@ -74,10 +74,10 @@ impl Component {
                         )
                     };
 
-                    let package_ref = system_api
+                    let mut node_ref = system_api
                         .borrow_node(&package_id)
                         .map_err(InvokeError::Downstream)?;
-                    let package = package_ref.package();
+                    let package = node_ref.package();
                     let blueprint_abi = package.blueprint_abi(&blueprint_name).expect(&format!(
                         "Blueprint {} is not found in package node {:?}",
                         blueprint_name, package_id

@@ -106,6 +106,18 @@ impl<'f, 's, R: FeeReserve> RENodeRef<'f, 's, R> {
         }
     }
 
+    pub fn proof(&self) -> &Proof {
+        match self {
+            RENodeRef::Stack(value, id) => id
+                .as_ref()
+                .map_or(value.root(), |v| value.non_root(v))
+                .proof(),
+            RENodeRef::Track(..) => {
+                panic!("Unexpected")
+            }
+        }
+    }
+
     pub fn vault(&mut self) -> &Vault {
         match self {
             RENodeRef::Stack(value, id) => id
@@ -117,7 +129,7 @@ impl<'f, 's, R: FeeReserve> RENodeRef<'f, 's, R> {
         }
     }
 
-    pub fn system(&self) -> &System {
+    pub fn system(&mut self) -> &System {
         match self {
             RENodeRef::Stack(value, id) => id
                 .as_ref()
@@ -127,7 +139,7 @@ impl<'f, 's, R: FeeReserve> RENodeRef<'f, 's, R> {
         }
     }
 
-    pub fn resource_manager(&self) -> &ResourceManager {
+    pub fn resource_manager(&mut self) -> &ResourceManager {
         match self {
             RENodeRef::Stack(value, id) => id
                 .as_ref()
@@ -147,7 +159,7 @@ impl<'f, 's, R: FeeReserve> RENodeRef<'f, 's, R> {
         }
     }
 
-    pub fn package(&self) -> &Package {
+    pub fn package(&mut self) -> &Package {
         match self {
             RENodeRef::Stack(value, id) => id
                 .as_ref()

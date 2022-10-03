@@ -237,3 +237,13 @@ impl Into<VaultSubstate> for Substate {
         }
     }
 }
+
+impl Into<SystemSubstate> for Substate {
+    fn into(self) -> SystemSubstate {
+        if let Substate::System(system) = self {
+            system
+        } else {
+            panic!("Not a resource manager");
+        }
+    }
+}
