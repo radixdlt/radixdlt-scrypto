@@ -60,7 +60,7 @@ pub fn node_to_substates(node_id: RENodeId, node: HeapRENode) -> HashMap<Substat
                 _ => panic!("Unexpected"),
             };
             let substate = package.info;
-            substates.insert(SubstateId::Package(address), substate.into());
+            substates.insert(SubstateId::Package(address, PackageOffset::Package), substate.into());
         }
         HeapRENode::ResourceManager(resource_manager, maybe_non_fungibles) => {
             let address = match node_id {

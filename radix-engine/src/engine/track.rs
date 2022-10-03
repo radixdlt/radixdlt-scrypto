@@ -288,7 +288,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                     });
                     self.loaded_nodes.insert(
                         match &substate_id {
-                            SubstateId::Package(address) => RENodeId::Package(*address),
+                            SubstateId::Package(address, PackageOffset::Package) => RENodeId::Package(*address),
                             _ => panic!("Unexpected substate id type"),
                         },
                         node,

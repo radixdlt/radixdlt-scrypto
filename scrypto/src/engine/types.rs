@@ -114,12 +114,17 @@ pub enum AuthZoneOffset {
     AuthZone
 }
 
-
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum ComponentOffset {
     Info,
     State,
 }
+
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum PackageOffset {
+    Package,
+}
+
 
 /// TODO: separate space addresses?
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -130,7 +135,7 @@ pub enum SubstateId {
 
     Component(ComponentAddress, ComponentOffset),
 
-    Package(PackageAddress),
+    Package(PackageAddress, PackageOffset),
 
     ResourceManager(ResourceAddress),
     NonFungibleSpace(ResourceAddress),

@@ -86,7 +86,7 @@ impl SubstateProperties {
                 RENodeId::KeyValueStore(*kv_store_id)
             }
             SubstateId::Vault(vault_id) => RENodeId::Vault(*vault_id),
-            SubstateId::Package(package_address) => RENodeId::Package(*package_address),
+            SubstateId::Package(package_address, PackageOffset::Package) => RENodeId::Package(*package_address),
             SubstateId::ResourceManager(resource_address) => {
                 RENodeId::ResourceManager(*resource_address)
             }

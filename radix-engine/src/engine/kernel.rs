@@ -465,14 +465,14 @@ where
                 let node_pointer = RENodePointer::Store(RENodeId::Package(package_address.clone()));
                 node_pointer
                     .acquire_lock(
-                        SubstateId::Package(package_address.clone()),
+                        SubstateId::Package(package_address.clone(), PackageOffset::Package),
                         false,
                         false,
                         &mut self.track,
                     )
                     .map_err(RuntimeError::KernelError)?;
 
-                locked_values.insert(SubstateId::Package(package_address.clone()));
+                locked_values.insert(SubstateId::Package(package_address.clone(), PackageOffset::Package));
                 let package = self
                     .track
                     .borrow_node(&RENodeId::Package(package_address.clone()))
@@ -646,7 +646,7 @@ where
                         let component = node_ref.component();
                         component.info.package_address.clone()
                     };
-                    let package_substate_id = SubstateId::Package(package_address);
+                    let package_substate_id = SubstateId::Package(package_address, PackageOffset::Package);
                     let package_node_id = RENodeId::Package(package_address);
                     let package_node_pointer = RENodePointer::Store(package_node_id);
                     package_node_pointer
