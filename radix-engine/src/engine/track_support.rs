@@ -108,15 +108,16 @@ impl<'s> BaseStateTrack<'s> {
                             0
                         };
                         // TODO: remove this temporary workaround.
+
+                        // As of start of October, resources locked-by-proofs are incorrectly stored inside the container substate inside vaults
+                        // and are accidentally getting committed.  This causes bugs where these resources are locked permanently,
+                        // in future transactions.
                         //
-                        // After creating a proof from a vault, the vault node is serialized into a substate and all
-                        // resource used for proofs become illiquid. A proper fix would be to cache the node representation
-                        // until the end of transaction.
+                        // This will be changed soon, in the mean time, this is a workaround which frees all locked resource at the
+                        // end of transaction.
                         //
+                        // A proper fix would be to cache the node representation during the entire transaction.
                         // Not doing this now because we have an ongoing large-scale refactoring to node/substate implementation.
-                        //
-                        // This implementation is incorrect because it will cause proofs to reference orphaned nodes, which
-                        // breaks the resource proof system.
                         //
                         let transformed_substate = if matches!(substate_id, SubstateId::Vault(..)) {
                             let vault: Vault = scrypto_decode::<Substate>(substate).unwrap().into();

@@ -173,6 +173,8 @@ fn test_singleton_non_fungible() {
     receipt.expect_commit_success();
 }
 
+// This test was introduced in Oct 2022 to protect a regression whereby resources locked
+// by a proof in a vault was accidentally committed/persisted, and locked in future transactions
 #[test]
 fn test_mint_update_and_withdraw() {
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
