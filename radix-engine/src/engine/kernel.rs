@@ -684,7 +684,7 @@ where
                         RENodePointer::Store(global_resource_node_id),
                     );
 
-                    let resource_substate_id = SubstateId::ResourceManager(resource_address);
+                    let resource_substate_id = SubstateId::ResourceManager(resource_address, ResourceManagerOffset::ResourceManager);
                     let resource_node_id = RENodeId::ResourceManager(resource_address);
                     let resource_node_pointer = RENodePointer::Store(resource_node_id);
                     resource_node_pointer
@@ -705,7 +705,7 @@ where
                         RENodePointer::Store(global_resource_node_id),
                     );
 
-                    let resource_substate_id = SubstateId::ResourceManager(resource_address);
+                    let resource_substate_id = SubstateId::ResourceManager(resource_address, ResourceManagerOffset::ResourceManager);
                     let resource_node_id = RENodeId::ResourceManager(resource_address);
                     let resource_node_pointer = RENodePointer::Store(resource_node_id);
                     resource_node_pointer
@@ -722,7 +722,7 @@ where
             if let MethodFnIdent::Native(..) = fn_ident.method_fn_ident {
                 for resource_address in &input.resource_addresses {
                     let resource_substate_id =
-                        SubstateId::ResourceManager(resource_address.clone());
+                        SubstateId::ResourceManager(resource_address.clone(), ResourceManagerOffset::ResourceManager);
                     let resource_node_id = RENodeId::ResourceManager(resource_address.clone());
                     let resource_node_pointer = RENodePointer::Store(resource_node_id);
 

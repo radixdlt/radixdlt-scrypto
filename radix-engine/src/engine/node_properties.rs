@@ -38,7 +38,7 @@ impl RENodeProperties {
                 RENodeId::Bucket(bucket_id) => SubstateId::Bucket(bucket_id),
                 RENodeId::Proof(proof_id) => SubstateId::Proof(proof_id),
                 RENodeId::ResourceManager(resource_address) => {
-                    SubstateId::ResourceManager(resource_address)
+                    SubstateId::ResourceManager(resource_address, ResourceManagerOffset::ResourceManager)
                 }
                 RENodeId::System(component_address) => SubstateId::System(component_address),
                 RENodeId::Worktop => SubstateId::Worktop,
@@ -87,7 +87,7 @@ impl SubstateProperties {
             }
             SubstateId::Vault(vault_id) => RENodeId::Vault(*vault_id),
             SubstateId::Package(package_address, PackageOffset::Package) => RENodeId::Package(*package_address),
-            SubstateId::ResourceManager(resource_address) => {
+            SubstateId::ResourceManager(resource_address, ..) => {
                 RENodeId::ResourceManager(*resource_address)
             }
             SubstateId::System(component_address) => RENodeId::System(*component_address),

@@ -78,15 +78,15 @@ impl RadixEngineDB {
     pub fn list_resource_managers(&self) -> Vec<ResourceAddress> {
         let start = &scrypto_encode(&SubstateId::ResourceManager(ResourceAddress::Normal(
             [0; 26],
-        )));
+        ), ResourceManagerOffset::ResourceManager));
         let end = &scrypto_encode(&SubstateId::ResourceManager(ResourceAddress::Normal(
             [255; 26],
-        )));
+        ), ResourceManagerOffset::ResourceManager));
         let substate_ids: Vec<SubstateId> = self.list_items(start, end);
         substate_ids
             .into_iter()
             .map(|id| {
-                if let SubstateId::ResourceManager(resource_address) = id {
+                if let SubstateId::ResourceManager(resource_address, ResourceManagerOffset::ResourceManager) = id {
                     resource_address
                 } else {
                     panic!("Expected a resource substate id.")

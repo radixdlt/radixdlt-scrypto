@@ -130,6 +130,11 @@ pub enum GlobalOffset {
     Global
 }
 
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum ResourceManagerOffset {
+    ResourceManager,
+}
+
 
 /// TODO: separate space addresses?
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -142,7 +147,7 @@ pub enum SubstateId {
 
     Package(PackageAddress, PackageOffset),
 
-    ResourceManager(ResourceAddress),
+    ResourceManager(ResourceAddress, ResourceManagerOffset),
     NonFungibleSpace(ResourceAddress),
     NonFungible(ResourceAddress, NonFungibleId),
 
@@ -167,7 +172,7 @@ impl Into<ComponentAddress> for SubstateId {
 
 impl Into<ResourceAddress> for SubstateId {
     fn into(self) -> ResourceAddress {
-        if let SubstateId::ResourceManager(resource_address) = self {
+        if let SubstateId::ResourceManager(resource_address, ..) = self {
             return resource_address;
         } else {
             panic!("Address is not a resource address");

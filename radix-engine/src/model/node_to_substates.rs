@@ -68,7 +68,7 @@ pub fn node_to_substates(node_id: RENodeId, node: HeapRENode) -> HashMap<Substat
                 _ => panic!("Unexpected"),
             };
             let substate = resource_manager.info;
-            substates.insert(SubstateId::ResourceManager(address), substate.into());
+            substates.insert(SubstateId::ResourceManager(address, ResourceManagerOffset::ResourceManager), substate.into());
 
             if let Some(non_fungibles) = maybe_non_fungibles {
                 for (id, non_fungible) in non_fungibles {

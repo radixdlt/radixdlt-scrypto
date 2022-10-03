@@ -164,7 +164,7 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
         let amount = vault.0.amount();
         let resource_address = vault.0.resource_address();
         let resource_manager: ResourceManagerSubstate = substate_store
-            .get_substate(&SubstateId::ResourceManager(resource_address))
+            .get_substate(&SubstateId::ResourceManager(resource_address, ResourceManagerOffset::ResourceManager))
             .map(|s| s.substate)
             .map(|s| s.into())
             .unwrap();
@@ -222,7 +222,7 @@ pub fn dump_resource_manager<T: ReadableSubstateStore, O: std::io::Write>(
     output: &mut O,
 ) -> Result<(), DisplayError> {
     let resource_manager: Option<ResourceManagerSubstate> = substate_store
-        .get_substate(&SubstateId::ResourceManager(resource_address))
+        .get_substate(&SubstateId::ResourceManager(resource_address, ResourceManagerOffset::ResourceManager))
         .map(|s| s.substate)
         .map(|s| s.into());
     match resource_manager {
