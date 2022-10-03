@@ -94,7 +94,7 @@ pub fn node_to_substates(node_id: RENodeId, node: HeapRENode) -> HashMap<Substat
                 RENodeId::System(address) => address,
                 _ => panic!("Unexpected"),
             };
-            substates.insert(SubstateId::System(address), system.info.into());
+            substates.insert(SubstateId::System(address, SystemOffset::System), system.info.into());
         }
     }
     substates
