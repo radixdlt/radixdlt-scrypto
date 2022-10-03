@@ -226,7 +226,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                     let node = HeapRENode::Global(global_node);
                     self.loaded_nodes.insert(
                         match &substate_id {
-                            SubstateId::Global(global_address) => RENodeId::Global(*global_address),
+                            SubstateId::Global(global_address, GlobalOffset::Global) => RENodeId::Global(*global_address),
                             _ => panic!("Unexpected substate id type"),
                         },
                         node,

@@ -559,7 +559,7 @@ where
 
             // Deref
             if let Receiver::Ref(RENodeId::Global(global_address)) = fn_ident.receiver {
-                let substate_id = SubstateId::Global(global_address);
+                let substate_id = SubstateId::Global(global_address, GlobalOffset::Global);
                 node_pointer
                     .acquire_lock(substate_id.clone(), false, false, &mut self.track)
                     .map_err(RuntimeError::KernelError)?;
@@ -938,7 +938,7 @@ where
             // Check for existence
             for global_address in global_references {
                 let node_id = RENodeId::Global(global_address);
-                let substate_id = SubstateId::Global(global_address);
+                let substate_id = SubstateId::Global(global_address, GlobalOffset::Global);
                 let node_pointer = RENodePointer::Store(node_id);
 
                 // TODO: static check here is to support the current genesis transaction which
@@ -1292,7 +1292,7 @@ where
         )?;
 
         self.track.put_substate(
-            SubstateId::Global(global_address),
+            SubstateId::Global(global_address, GlobalOffset::Global),
             Substate::GlobalRENode(global_re_node),
         );
         Self::current_frame_mut(&mut self.call_frames)

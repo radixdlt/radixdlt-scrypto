@@ -73,7 +73,7 @@ pub struct SubstateProperties;
 impl SubstateProperties {
     pub fn get_node_id(substate_id: &SubstateId) -> RENodeId {
         match substate_id {
-            SubstateId::Global(global_address) => RENodeId::Global(*global_address),
+            SubstateId::Global(global_address, ..) => RENodeId::Global(*global_address),
             SubstateId::Component(component_address, ..) => RENodeId::Component(*component_address),
             SubstateId::NonFungibleSpace(resource_address) => {
                 RENodeId::ResourceManager(*resource_address)
@@ -94,7 +94,7 @@ impl SubstateProperties {
             SubstateId::Bucket(bucket_id) => RENodeId::Bucket(*bucket_id),
             SubstateId::Proof(proof_id) => RENodeId::Proof(*proof_id),
             SubstateId::Worktop => RENodeId::Worktop,
-            SubstateId::AuthZone(auth_zone_id, AuthZoneOffset::AuthZone) => RENodeId::AuthZone(*auth_zone_id),
+            SubstateId::AuthZone(auth_zone_id, ..) => RENodeId::AuthZone(*auth_zone_id),
         }
     }
 

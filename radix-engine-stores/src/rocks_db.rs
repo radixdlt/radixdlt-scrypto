@@ -23,13 +23,13 @@ impl RadixEngineDB {
     }
 
     pub fn list_packages(&self) -> Vec<PackageAddress> {
-        let start = &scrypto_encode(&SubstateId::Package(PackageAddress::Normal([0; 26])));
-        let end = &scrypto_encode(&SubstateId::Package(PackageAddress::Normal([255; 26])));
+        let start = &scrypto_encode(&SubstateId::Package(PackageAddress::Normal([0; 26]), PackageOffset::Package));
+        let end = &scrypto_encode(&SubstateId::Package(PackageAddress::Normal([255; 26]), PackageOffset::Package));
         let substate_ids: Vec<SubstateId> = self.list_items(start, end);
         substate_ids
             .into_iter()
             .map(|id| {
-                if let SubstateId::Package(package_address) = id {
+                if let SubstateId::Package(package_address, PackageOffset::Package) = id {
                     package_address
                 } else {
                     panic!("Expected a package substate id.")

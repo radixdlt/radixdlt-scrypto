@@ -25,7 +25,7 @@ pub fn dump_package<T: ReadableSubstateStore, O: std::io::Write>(
     let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
 
     let package: Option<PackageSubstate> = substate_store
-        .get_substate(&SubstateId::Package(package_address))
+        .get_substate(&SubstateId::Package(package_address, PackageOffset::Package))
         .map(|s| s.substate)
         .map(|s| s.into());
     match package {

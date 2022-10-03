@@ -125,11 +125,16 @@ pub enum PackageOffset {
     Package,
 }
 
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum GlobalOffset {
+    Global
+}
+
 
 /// TODO: separate space addresses?
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum SubstateId {
-    Global(GlobalAddress),
+    Global(GlobalAddress, GlobalOffset),
 
     AuthZone(AuthZoneId, AuthZoneOffset),
 
