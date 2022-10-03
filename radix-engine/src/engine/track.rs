@@ -402,7 +402,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         // TODO: consider using a single address as function input
         let substate_id = match parent_address {
             SubstateId::ResourceManager(resource_address, ResourceManagerOffset::NonFungibleSpace) => {
-                SubstateId::NonFungible(resource_address, NonFungibleId(key))
+                SubstateId::ResourceManager(resource_address, ResourceManagerOffset::NonFungible(NonFungibleId(key)))
             }
             SubstateId::KeyValueStoreSpace(kv_store_id) => {
                 SubstateId::KeyValueStoreEntry(kv_store_id, key)
@@ -443,7 +443,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         // TODO: consider using a single address as function input
         let substate_id = match parent_substate_id {
             SubstateId::ResourceManager(resource_address, ResourceManagerOffset::NonFungibleSpace) => {
-                SubstateId::NonFungible(resource_address, NonFungibleId(key.clone()))
+                SubstateId::ResourceManager(resource_address, ResourceManagerOffset::NonFungible(NonFungibleId(key.clone())))
             }
             SubstateId::KeyValueStoreSpace(kv_store_id) => {
                 SubstateId::KeyValueStoreEntry(kv_store_id, key.clone())

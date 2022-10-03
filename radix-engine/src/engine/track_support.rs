@@ -46,7 +46,7 @@ impl<'s> BaseStateTrack<'s> {
         for (substate_id, substate) in &self.substates {
             if let Some(substate) = substate {
                 match &substate_id {
-                    SubstateId::NonFungible(resource_address, key) => {
+                    SubstateId::ResourceManager(resource_address, ResourceManagerOffset::NonFungible(key)) => {
                         let next_version = if let Some(existing_output_id) =
                             Self::get_substate_output_id(&self.substate_store, &substate_id)
                         {

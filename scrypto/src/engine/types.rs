@@ -134,6 +134,7 @@ pub enum GlobalOffset {
 pub enum ResourceManagerOffset {
     ResourceManager,
     NonFungibleSpace,
+    NonFungible(NonFungibleId),
 }
 
 
@@ -149,7 +150,6 @@ pub enum SubstateId {
     Package(PackageAddress, PackageOffset),
 
     ResourceManager(ResourceAddress, ResourceManagerOffset),
-    NonFungible(ResourceAddress, NonFungibleId),
 
     KeyValueStoreSpace(KeyValueStoreId),
     KeyValueStoreEntry(KeyValueStoreId, Vec<u8>),

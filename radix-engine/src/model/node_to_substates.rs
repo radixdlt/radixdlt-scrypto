@@ -72,7 +72,7 @@ pub fn node_to_substates(node_id: RENodeId, node: HeapRENode) -> HashMap<Substat
 
             if let Some(non_fungibles) = maybe_non_fungibles {
                 for (id, non_fungible) in non_fungibles {
-                    let substate_id = SubstateId::NonFungible(address.clone(), id);
+                    let substate_id = SubstateId::ResourceManager(address.clone(), ResourceManagerOffset::NonFungible(id));
                     let substate = Substate::NonFungible(NonFungibleSubstate(Some(non_fungible)));
                     substates.insert(substate_id, substate);
                 }

@@ -486,7 +486,7 @@ impl ResourceManager {
 
                 for (id, non_fungible) in non_fungibles {
                     let value = system_api
-                        .substate_read(SubstateId::NonFungible(resource_address, id.clone()))
+                        .substate_read(SubstateId::ResourceManager(resource_address, ResourceManagerOffset::NonFungible(id.clone())))
                         .map_err(InvokeError::Downstream)?;
                     let wrapper: NonFungibleSubstate =
                         scrypto_decode(&value.raw).expect("Failed to decode NonFungibleSubstate");
@@ -499,7 +499,7 @@ impl ResourceManager {
                     }
                     system_api
                         .substate_write(
-                            SubstateId::NonFungible(resource_address, id.clone()),
+                            SubstateId::ResourceManager(resource_address, ResourceManagerOffset::NonFungible(id.clone())),
                             ScryptoValue::from_typed(&NonFungibleSubstate(Some(non_fungible))),
                         )
                         .map_err(InvokeError::Downstream)?;
@@ -559,9 +559,9 @@ impl ResourceManager {
                     .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))?;
                 // Read current value
                 let value = system_api
-                    .substate_read(SubstateId::NonFungible(
+                    .substate_read(SubstateId::ResourceManager(
                         resource_address.clone(),
-                        input.id.clone(),
+                        ResourceManagerOffset::NonFungible(input.id.clone()),
                     ))
                     .map_err(InvokeError::Downstream)?;
                 let wrapper: NonFungibleSubstate =
@@ -572,7 +572,7 @@ impl ResourceManager {
                     non_fungible.set_mutable_data(input.data);
                     system_api
                         .substate_write(
-                            SubstateId::NonFungible(resource_address.clone(), input.id.clone()),
+                            SubstateId::ResourceManager(resource_address.clone(), ResourceManagerOffset::NonFungible(input.id.clone())),
                             ScryptoValue::from_typed(&NonFungibleSubstate(Some(non_fungible))),
                         )
                         .map_err(InvokeError::Downstream)?;
@@ -590,7 +590,7 @@ impl ResourceManager {
                 let input: ResourceManagerNonFungibleExistsInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))?;
                 let value = system_api
-                    .substate_read(SubstateId::NonFungible(resource_address.clone(), input.id))
+                    .substate_read(SubstateId::ResourceManager(resource_address.clone(), ResourceManagerOffset::NonFungible(input.id)))
                     .map_err(InvokeError::Downstream)?;
                 let wrapper: NonFungibleSubstate =
                     scrypto_decode(&value.raw).expect("Failed to decode NonFungibleSubstate");
@@ -602,7 +602,7 @@ impl ResourceManager {
                 let non_fungible_address =
                     NonFungibleAddress::new(resource_address.clone(), input.id.clone());
                 let value = system_api
-                    .substate_read(SubstateId::NonFungible(resource_address.clone(), input.id))
+                    .substate_read(SubstateId::ResourceManager(resource_address.clone(), ResourceManagerOffset::NonFungible(input.id)))
                     .map_err(InvokeError::Downstream)?;
                 let wrapper: NonFungibleSubstate =
                     scrypto_decode(&value.raw).expect("Failed to decode NonFungibleSubstate");
