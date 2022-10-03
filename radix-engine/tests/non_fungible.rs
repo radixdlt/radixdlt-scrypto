@@ -234,7 +234,6 @@ fn test_mint_update_and_withdraw() {
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .withdraw_from_account(nft_resource_address, account)
-        .take_from_worktop(nft_resource_address, |builder, _bid| builder)
         .call_method(
             account,
             "deposit_batch",

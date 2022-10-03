@@ -4,6 +4,8 @@ use indexmap::{IndexMap, IndexSet};
 
 use crate::engine::*;
 use crate::ledger::*;
+use crate::model::ResourceContainer;
+use crate::model::Vault;
 use crate::state_manager::StateDiff;
 use crate::state_manager::VirtualSubstateId;
 use crate::types::*;
@@ -105,8 +107,33 @@ impl<'s> BaseStateTrack<'s> {
                         } else {
                             0
                         };
+                        // TODO: remove this temporary wrong fix.
+                        // After creating a proof from a vault, the vault node is serialized into a substate and all
+                        // resource used for proofs become illiquid. A proper fix would be to update the substate again
+                        // when the proof is dropped OR to cache the node representation until end of transaction.
+                        // Not doing this now because we have an ongoing large-scale refactoring to node/substate implementation.
+                        let transformed_substate = if matches!(substate_id, SubstateId::Vault(..)) {
+                            let vault: Vault = scrypto_decode::<Substate>(substate).unwrap().into();
+                            let resource_address = vault.resource_address();
+                            let resource = match vault.resource_type() {
+                                ResourceType::Fungible { divisibility } => {
+                                    ResourceContainer::new_fungible(
+                                        resource_address,
+                                        divisibility,
+                                        vault.total_amount(),
+                                    )
+                                }
+                                ResourceType::NonFungible => ResourceContainer::new_non_fungible(
+                                    resource_address,
+                                    vault.total_ids().unwrap(),
+                                ),
+                            };
+                            scrypto_encode(&Substate::Vault(Vault::new(resource)))
+                        } else {
+                            substate.clone()
+                        };
                         let output_value = OutputValue {
-                            substate: scrypto_decode(&substate)
+                            substate: scrypto_decode(&transformed_substate)
                                 .expect(&format!("Failed to decode substate {:?}", substate_id)),
                             version: next_version,
                         };
