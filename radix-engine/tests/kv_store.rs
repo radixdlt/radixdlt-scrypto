@@ -9,7 +9,7 @@ fn can_insert_in_child_nodes() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.compile_and_publish("./tests/kv_store");
+    let package_address = test_runner.compile_and_publish("./tests/key_value_store");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -27,7 +27,7 @@ fn create_mutable_key_value_store_into_map_and_referencing_before_storing() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.compile_and_publish("./tests/kv_store");
+    let package_address = test_runner.compile_and_publish("./tests/key_value_store");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -50,7 +50,7 @@ fn cyclic_map_fails_execution() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.compile_and_publish("./tests/kv_store");
+    let package_address = test_runner.compile_and_publish("./tests/key_value_store");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -73,7 +73,7 @@ fn self_cyclic_map_fails_execution() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.compile_and_publish("./tests/kv_store");
+    let package_address = test_runner.compile_and_publish("./tests/key_value_store");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -96,7 +96,7 @@ fn cannot_remove_key_value_stores() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.compile_and_publish("./tests/kv_store");
+    let package_address = test_runner.compile_and_publish("./tests/key_value_store");
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_scrypto_function(
@@ -133,7 +133,7 @@ fn cannot_overwrite_key_value_stores() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.compile_and_publish("./tests/kv_store");
+    let package_address = test_runner.compile_and_publish("./tests/key_value_store");
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_scrypto_function(
@@ -170,7 +170,7 @@ fn create_key_value_store_and_get() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.compile_and_publish("./tests/kv_store");
+    let package_address = test_runner.compile_and_publish("./tests/key_value_store");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -193,7 +193,7 @@ fn create_key_value_store_and_put() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.compile_and_publish("./tests/kv_store");
+    let package_address = test_runner.compile_and_publish("./tests/key_value_store");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -216,7 +216,7 @@ fn can_reference_in_memory_vault() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.compile_and_publish("./tests/kv_store");
+    let package_address = test_runner.compile_and_publish("./tests/key_value_store");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -239,7 +239,7 @@ fn can_reference_deep_in_memory_value() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.compile_and_publish("./tests/kv_store");
+    let package_address = test_runner.compile_and_publish("./tests/key_value_store");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -262,7 +262,7 @@ fn can_reference_deep_in_memory_vault() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.compile_and_publish("./tests/kv_store");
+    let package_address = test_runner.compile_and_publish("./tests/key_value_store");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -285,7 +285,7 @@ fn cannot_directly_reference_inserted_vault() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.compile_and_publish("./tests/kv_store");
+    let package_address = test_runner.compile_and_publish("./tests/key_value_store");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -313,7 +313,7 @@ fn cannot_directly_reference_vault_after_container_moved() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.compile_and_publish("./tests/kv_store");
+    let package_address = test_runner.compile_and_publish("./tests/key_value_store");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -341,7 +341,7 @@ fn cannot_directly_reference_vault_after_container_stored() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.compile_and_publish("./tests/kv_store");
+    let package_address = test_runner.compile_and_publish("./tests/key_value_store");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -369,7 +369,7 @@ fn multiple_reads_should_work() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.compile_and_publish("./tests/kv_store");
+    let package_address = test_runner.compile_and_publish("./tests/key_value_store");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())

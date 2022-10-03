@@ -123,10 +123,13 @@ impl RadixEngineDB {
 }
 
 impl QueryableSubstateStore for RadixEngineDB {
-    fn get_kv_store_entries(&self, kv_store_id: &KeyValueStoreId) -> HashMap<Vec<u8>, Substate> {
+    fn get_key_value_store_entries(
+        &self,
+        key_value_store_id: &KeyValueStoreId,
+    ) -> HashMap<Vec<u8>, Substate> {
         let unit = scrypto_encode(&());
         let id = scrypto_encode(&SubstateId::KeyValueStoreEntry(
-            kv_store_id.clone(),
+            key_value_store_id.clone(),
             scrypto_encode(&unit),
         ));
 
@@ -139,7 +142,7 @@ impl QueryableSubstateStore for RadixEngineDB {
             let substate: OutputValue = scrypto_decode(&value.to_vec()).unwrap();
             let substate_id: SubstateId = scrypto_decode(&key).unwrap();
             if let SubstateId::KeyValueStoreEntry(id, key) = substate_id {
-                if id == *kv_store_id {
+                if id == *key_value_store_id {
                     items.insert(key, substate.substate)
                 } else {
                     break;

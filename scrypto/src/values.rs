@@ -35,7 +35,7 @@ pub struct ScryptoValue {
     pub bucket_ids: HashMap<BucketId, SborPath>,
     pub proof_ids: HashMap<ProofId, SborPath>,
     pub vault_ids: HashSet<VaultId>,
-    pub kv_store_ids: HashSet<KeyValueStoreId>,
+    pub key_value_store_ids: HashSet<KeyValueStoreId>,
     pub owned_component_addresses: HashSet<ComponentAddress>,
     pub refed_component_addresses: HashSet<ComponentAddress>,
     pub resource_addresses: HashSet<ResourceAddress>,
@@ -76,7 +76,7 @@ impl ScryptoValue {
                 .map(|(e, path)| (e.0, path))
                 .collect(),
             vault_ids: checker.vaults.iter().map(|e| e.0).collect(),
-            kv_store_ids: checker.kv_stores,
+            key_value_store_ids: checker.key_value_stores,
             owned_component_addresses: checker.components.iter().map(|e| e.0).collect(),
             refed_component_addresses: checker.ref_components,
             resource_addresses: checker.resource_addresses,
@@ -95,7 +95,7 @@ impl ScryptoValue {
             bucket_ids: HashMap::new(),
             proof_ids: HashMap::new(),
             vault_ids: HashSet::new(),
-            kv_store_ids: HashSet::new(),
+            key_value_store_ids: HashSet::new(),
             owned_component_addresses: HashSet::new(),
             refed_component_addresses: HashSet::new(),
             resource_addresses: HashSet::new(),
@@ -107,8 +107,8 @@ impl ScryptoValue {
         for vault_id in &self.vault_ids {
             node_ids.insert(RENodeId::Vault(*vault_id));
         }
-        for kv_store_id in &self.kv_store_ids {
-            node_ids.insert(RENodeId::KeyValueStore(*kv_store_id));
+        for key_value_store_id in &self.key_value_store_ids {
+            node_ids.insert(RENodeId::KeyValueStore(*key_value_store_id));
         }
         for component_address in &self.owned_component_addresses {
             node_ids.insert(RENodeId::Component(*component_address));
@@ -127,8 +127,8 @@ impl ScryptoValue {
         for vault_id in &self.vault_ids {
             node_ids.insert(RENodeId::Vault(*vault_id));
         }
-        for kv_store_id in &self.kv_store_ids {
-            node_ids.insert(RENodeId::KeyValueStore(*kv_store_id));
+        for key_value_store_id in &self.key_value_store_ids {
+            node_ids.insert(RENodeId::KeyValueStore(*key_value_store_id));
         }
         for component_address in &self.owned_component_addresses {
             node_ids.insert(RENodeId::Component(*component_address));
@@ -248,7 +248,7 @@ pub struct ScryptoCustomValueChecker {
     pub buckets: HashMap<Bucket, SborPath>,
     pub proofs: HashMap<Proof, SborPath>,
     pub vaults: HashSet<Vault>,
-    pub kv_stores: HashSet<KeyValueStoreId>,
+    pub key_value_stores: HashSet<KeyValueStoreId>,
     pub components: HashSet<Component>,
     pub ref_components: HashSet<ComponentAddress>,
     pub resource_addresses: HashSet<ResourceAddress>,
@@ -286,7 +286,7 @@ impl ScryptoCustomValueChecker {
             buckets: HashMap::new(),
             proofs: HashMap::new(),
             vaults: HashSet::new(),
-            kv_stores: HashSet::new(),
+            key_value_stores: HashSet::new(),
             components: HashSet::new(),
             ref_components: HashSet::new(),
             resource_addresses: HashSet::new(),
@@ -321,7 +321,7 @@ impl CustomValueVisitor for ScryptoCustomValueChecker {
                 }
             }
             ScryptoType::KeyValueStore => {
-                let kv_store_id: KeyValueStoreId = match data.len() {
+                let key_value_store_id: KeyValueStoreId = match data.len() {
                     36 => (
                         Hash(copy_u8_array(&data[0..32])),
                         u32::from_le_bytes(copy_u8_array(&data[32..])),
@@ -333,7 +333,7 @@ impl CustomValueVisitor for ScryptoCustomValueChecker {
                     }
                 };
 
-                if !self.kv_stores.insert(kv_store_id) {
+                if !self.key_value_stores.insert(key_value_store_id) {
                     return Err(ScryptoCustomValueCheckError::DuplicateIds);
                 }
             }

@@ -52,15 +52,15 @@ impl WriteableSubstateStore for TypedInMemorySubstateStore {
 }
 
 impl QueryableSubstateStore for TypedInMemorySubstateStore {
-    fn get_kv_store_entries(
+    fn get_key_value_store_entries(
         &self,
-        kv_store_id: &KeyValueStoreId,
+        key_value_store_id: &KeyValueStoreId,
     ) -> HashMap<sbor::rust::vec::Vec<u8>, Substate> {
         self.substates
             .iter()
             .filter_map(|(key, value)| {
                 if let SubstateId::KeyValueStoreEntry(id, key) = key {
-                    if id == kv_store_id {
+                    if id == key_value_store_id {
                         Some((key.clone(), value.substate.clone()))
                     } else {
                         None

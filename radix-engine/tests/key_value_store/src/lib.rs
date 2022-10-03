@@ -1,5 +1,5 @@
 pub mod cyclic_map;
-pub mod kv_store;
+pub mod key_value_store;
 pub mod multiple_reads;
 pub mod precommitted;
 pub mod ref_check;

@@ -133,7 +133,7 @@ where
     }
 
     fn process_call_data(validated: &ScryptoValue) -> Result<(), RuntimeError> {
-        if !validated.kv_store_ids.is_empty() {
+        if !validated.key_value_store_ids.is_empty() {
             return Err(RuntimeError::KernelError(
                 KernelError::KeyValueStoreNotAllowed,
             ));
@@ -145,7 +145,7 @@ where
     }
 
     fn process_return_data(validated: &ScryptoValue) -> Result<(), RuntimeError> {
-        if !validated.kv_store_ids.is_empty() {
+        if !validated.key_value_store_ids.is_empty() {
             return Err(RuntimeError::KernelError(
                 KernelError::KeyValueStoreNotAllowed,
             ));
@@ -220,8 +220,8 @@ where
                 Ok(RENodeId::Vault(vault_id))
             }
             HeapRENode::KeyValueStore(..) => {
-                let kv_store_id = id_allocator.new_kv_store_id(transaction_hash)?;
-                Ok(RENodeId::KeyValueStore(kv_store_id))
+                let key_value_store_id = id_allocator.new_key_value_store_id(transaction_hash)?;
+                Ok(RENodeId::KeyValueStore(key_value_store_id))
             }
             HeapRENode::Package(..) => {
                 // Security Alert: ensure ID allocating will practically never fail

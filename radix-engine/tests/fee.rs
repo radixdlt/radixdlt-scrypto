@@ -165,9 +165,12 @@ where
 {
     if let Some(account_comp) = test_runner.inspect_component_state(account_address) {
         let account_comp_state = ScryptoValue::from_slice(&account_comp.raw).unwrap();
-        if let Some(kv_store_id) = account_comp_state.kv_store_ids.iter().next() {
+        if let Some(key_value_store_id) = account_comp_state.key_value_store_ids.iter().next() {
             if let Some(KeyValueStoreEntrySubstate(Some(value))) = test_runner
-                .inspect_key_value_entry(kv_store_id.clone(), scrypto_encode(&resource_address))
+                .inspect_key_value_entry(
+                    key_value_store_id.clone(),
+                    scrypto_encode(&resource_address),
+                )
             {
                 let key_value_store_entry_value = ScryptoValue::from_slice(&value).unwrap();
                 let vault_id = key_value_store_entry_value.vault_ids.iter().next().unwrap();

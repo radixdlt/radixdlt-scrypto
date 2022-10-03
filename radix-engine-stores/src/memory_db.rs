@@ -56,14 +56,17 @@ impl WriteableSubstateStore for SerializedInMemorySubstateStore {
 }
 
 impl QueryableSubstateStore for SerializedInMemorySubstateStore {
-    fn get_kv_store_entries(&self, kv_store_id: &KeyValueStoreId) -> HashMap<Vec<u8>, Substate> {
+    fn get_key_value_store_entries(
+        &self,
+        key_value_store_id: &KeyValueStoreId,
+    ) -> HashMap<Vec<u8>, Substate> {
         self.substates
             .iter()
             .filter_map(|(key, value)| {
                 let substate_id: SubstateId = scrypto_decode(key).unwrap();
                 if let SubstateId::KeyValueStoreEntry(id, key) = substate_id {
                     let output_value: OutputValue = scrypto_decode(value).unwrap();
-                    if id == *kv_store_id {
+                    if id == *key_value_store_id {
                         Some((key.clone(), output_value.substate))
                     } else {
                         None
