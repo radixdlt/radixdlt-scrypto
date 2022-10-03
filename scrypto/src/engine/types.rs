@@ -133,6 +133,7 @@ pub enum GlobalOffset {
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum ResourceManagerOffset {
     ResourceManager,
+    NonFungibleSpace,
 }
 
 
@@ -148,7 +149,6 @@ pub enum SubstateId {
     Package(PackageAddress, PackageOffset),
 
     ResourceManager(ResourceAddress, ResourceManagerOffset),
-    NonFungibleSpace(ResourceAddress),
     NonFungible(ResourceAddress, NonFungibleId),
 
     KeyValueStoreSpace(KeyValueStoreId),

@@ -54,7 +54,7 @@ impl<'s> BaseStateTrack<'s> {
                             diff.down_substates.push(existing_output_id);
                             next_version
                         } else {
-                            let parent_address = SubstateId::NonFungibleSpace(*resource_address);
+                            let parent_address = SubstateId::ResourceManager(*resource_address, ResourceManagerOffset::NonFungibleSpace);
                             let virtual_output_id =
                                 VirtualSubstateId(parent_address, key.0.clone());
                             diff.down_virtual_substates.push(virtual_output_id);

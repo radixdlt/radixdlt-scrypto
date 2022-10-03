@@ -197,7 +197,6 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
             }
             SubstateId::NonFungible(.., id) => Ok(self.non_fungible_get(id)),
             SubstateId::KeyValueStoreEntry(.., key) => Ok(self.kv_store_get(key)),
-            SubstateId::NonFungibleSpace(..)
             | SubstateId::Global(..)
             | SubstateId::Vault(..)
             | SubstateId::KeyValueStoreSpace(..)
@@ -217,7 +216,6 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
         match substate_id {
             SubstateId::Global(..)
             | SubstateId::Component(..)
-            | SubstateId::NonFungibleSpace(..)
             | SubstateId::KeyValueStoreSpace(..)
             | SubstateId::KeyValueStoreEntry(..)
             | SubstateId::Vault(..)
@@ -352,7 +350,7 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
             RENodeRefMut::Track(track, node_id) => {
                 let parent_substate_id = match node_id {
                     RENodeId::ResourceManager(resource_address) => {
-                        SubstateId::NonFungibleSpace(*resource_address)
+                        SubstateId::ResourceManager(*resource_address, ResourceManagerOffset::NonFungibleSpace)
                     }
                     _ => panic!("Unexpected"),
                 };
@@ -372,7 +370,7 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
             RENodeRefMut::Track(track, node_id) => {
                 let parent_substate_id = match node_id {
                     RENodeId::ResourceManager(resource_address) => {
-                        SubstateId::NonFungibleSpace(*resource_address)
+                        SubstateId::ResourceManager(*resource_address, ResourceManagerOffset::NonFungibleSpace)
                     }
                     _ => panic!("Unexpected"),
                 };
@@ -401,7 +399,7 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
             RENodeRefMut::Track(track, node_id) => {
                 let parent_substate_id = match node_id {
                     RENodeId::ResourceManager(resource_address) => {
-                        SubstateId::NonFungibleSpace(*resource_address)
+                        SubstateId::ResourceManager(*resource_address, ResourceManagerOffset::NonFungibleSpace)
                     }
                     _ => panic!("Unexpected"),
                 };

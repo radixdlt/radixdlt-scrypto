@@ -401,7 +401,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
     pub fn read_key_value(&mut self, parent_address: SubstateId, key: Vec<u8>) -> Substate {
         // TODO: consider using a single address as function input
         let substate_id = match parent_address {
-            SubstateId::NonFungibleSpace(resource_address) => {
+            SubstateId::ResourceManager(resource_address, ResourceManagerOffset::NonFungibleSpace) => {
                 SubstateId::NonFungible(resource_address, NonFungibleId(key))
             }
             SubstateId::KeyValueStoreSpace(kv_store_id) => {
@@ -411,7 +411,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         };
 
         match parent_address {
-            SubstateId::NonFungibleSpace(_) => self
+            SubstateId::ResourceManager(_, ResourceManagerOffset::NonFungibleSpace) => self
                 .loaded_substates
                 .get(&substate_id)
                 .map(|s| s.substate.borrow().clone())
@@ -442,7 +442,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
     ) {
         // TODO: consider using a single address as function input
         let substate_id = match parent_substate_id {
-            SubstateId::NonFungibleSpace(resource_address) => {
+            SubstateId::ResourceManager(resource_address, ResourceManagerOffset::NonFungibleSpace) => {
                 SubstateId::NonFungible(resource_address, NonFungibleId(key.clone()))
             }
             SubstateId::KeyValueStoreSpace(kv_store_id) => {
