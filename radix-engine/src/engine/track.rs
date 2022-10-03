@@ -271,7 +271,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                     self.loaded_nodes.insert(
                         node_id.clone(),
                         HeapRENode::KeyValueStore(KeyValueStore::new().into()),
-                    );
+                    ); // TODO: zero-cost node instantiation?
                 }
                 RENodeId::Component(address) => {
                     let substate = self.take_substate(SubstateId::ComponentInfo(*address));

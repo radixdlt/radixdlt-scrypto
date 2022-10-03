@@ -238,8 +238,14 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
         }
 
         match self {
-            RENodeRefMut::Stack(..) => KeyValueStoreEntrySubstate(None), // virtualization
+            RENodeRefMut::Stack(..) => {
+                let substate = KeyValueStoreEntrySubstate(None); // virtualization
+                self.key_value_store_mut()
+                    .put(key.to_vec(), substate.clone());
+                substate
+            }
             RENodeRefMut::Track(track, node_id) => {
+                // Read the key value
                 let parent_substate_id = match node_id {
                     RENodeId::KeyValueStore(key_value_store_id) => {
                         SubstateId::KeyValueStoreSpace(*key_value_store_id)
@@ -249,6 +255,7 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
                 let substate = track.read_key_value(parent_substate_id, key.to_vec());
                 let specific_substate: KeyValueStoreEntrySubstate = substate.into();
 
+                // Store in the node
                 let key_value_store = track.borrow_node_mut(node_id).key_value_store_mut();
                 key_value_store.put(key.to_vec(), specific_substate.clone());
 
@@ -293,6 +300,7 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
         match self {
             RENodeRefMut::Stack(..) => NonFungibleSubstate(None), // virtualization
             RENodeRefMut::Track(track, node_id) => {
+                // Read key value
                 let parent_substate_id = match node_id {
                     RENodeId::ResourceManager(address) => SubstateId::NonFungibleSpace(*address),
                     _ => panic!("Unexpected"),
@@ -300,6 +308,7 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
                 let substate = track.read_key_value(parent_substate_id, id.to_vec());
                 let specific_substate: NonFungibleSubstate = substate.into();
 
+                // Store it in the node
                 let resource_manager = track.borrow_node_mut(node_id).resource_manager_mut();
                 resource_manager.put_non_fungible(id.clone(), specific_substate.clone());
 
@@ -338,7 +347,7 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
                     .clone();
                 track.release_lock(substate_id, false)?;
 
-                // Put it into the component state
+                // Put it into the component node
                 let component = track.borrow_node_mut(node_id).component_mut();
                 component.put_state(component_state.clone());
 
