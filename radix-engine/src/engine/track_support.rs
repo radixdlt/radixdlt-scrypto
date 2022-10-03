@@ -107,11 +107,17 @@ impl<'s> BaseStateTrack<'s> {
                         } else {
                             0
                         };
-                        // TODO: remove this temporary wrong fix.
+                        // TODO: remove this temporary workaround.
+                        //
                         // After creating a proof from a vault, the vault node is serialized into a substate and all
-                        // resource used for proofs become illiquid. A proper fix would be to update the substate again
-                        // when the proof is dropped OR to cache the node representation until end of transaction.
+                        // resource used for proofs become illiquid. A proper fix would be to cache the node representation
+                        // until the end of transaction.
+                        //
                         // Not doing this now because we have an ongoing large-scale refactoring to node/substate implementation.
+                        //
+                        // This implementation is incorrect because it will cause proofs to reference orphaned nodes, which
+                        // breaks the resource proof system.
+                        //
                         let transformed_substate = if matches!(substate_id, SubstateId::Vault(..)) {
                             let vault: Vault = scrypto_decode::<Substate>(substate).unwrap().into();
                             let resource_address = vault.resource_address();
