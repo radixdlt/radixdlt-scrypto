@@ -1332,11 +1332,41 @@ where
                 Self::current_frame_mut(&mut self.call_frames)
                     .node_refs
                     .insert(node_id, RENodePointer::Store(node_id));
+
+                // Load the substates into cache in case the node is from store
+                // TODO: remove after locking being moved to application space
+                self.track
+                    .acquire_lock(SubstateId::ComponentInfo(*component_address), false, false)
+                    .map_err(|e| RuntimeError::KernelError(KernelError::TrackError(e)))?;
+                self.track
+                    .release_lock(SubstateId::ComponentInfo(*component_address), false)
+                    .map_err(|e| RuntimeError::KernelError(KernelError::TrackError(e)))?;
             }
 
             let cur_children = value.node_ids();
             for child_id in cur_children {
                 let child_pointer = parent_pointer.child(child_id);
+
+                // Load the substates into cache in case the node is from store
+                // TODO: remove after locking being moved to application space
+                if let RENodeId::Component(component_address) = &child_id {
+                    child_pointer
+                        .acquire_lock(
+                            SubstateId::ComponentInfo(*component_address),
+                            false,
+                            false,
+                            &mut self.track,
+                        )
+                        .map_err(RuntimeError::KernelError)?;
+                    child_pointer
+                        .release_lock(
+                            SubstateId::ComponentInfo(*component_address),
+                            false,
+                            &mut self.track,
+                        )
+                        .map_err(RuntimeError::KernelError)?;
+                }
+
                 Self::current_frame_mut(&mut self.call_frames)
                     .node_refs
                     .insert(child_id, child_pointer);
