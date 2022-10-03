@@ -124,7 +124,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     ) -> Option<radix_engine::model::VaultSubstate> {
         self.execution_stores
             .get_root_store()
-            .get_substate(&SubstateId::Vault(vault_id))
+            .get_substate(&SubstateId::Vault(vault_id, VaultOffset::Vault))
             .map(|output| output.substate.into())
     }
 

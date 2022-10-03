@@ -160,7 +160,7 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
     writeln!(output, "{}:", "Resources".green().bold());
     for (last, vault_id) in vaults.iter().identify_last() {
         let vault: VaultSubstate = substate_store
-            .get_substate(&SubstateId::Vault(*vault_id))
+            .get_substate(&SubstateId::Vault(*vault_id, VaultOffset::Vault))
             .map(|s| s.substate)
             .map(|s| s.into())
             .unwrap();

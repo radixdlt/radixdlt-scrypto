@@ -48,7 +48,7 @@ impl RENodeProperties {
                 RENodeId::Component(component_address) => {
                     SubstateId::Component(component_address, ComponentOffset::Info)
                 }
-                RENodeId::Vault(vault_id) => SubstateId::Vault(vault_id),
+                RENodeId::Vault(vault_id) => SubstateId::Vault(vault_id, VaultOffset::Vault),
                 _ => {
                     return Err(RuntimeError::KernelError(KernelError::MethodIdentNotFound(
                         method_ident.clone(),
@@ -79,7 +79,7 @@ impl SubstateProperties {
             SubstateId::Global(global_address, ..) => RENodeId::Global(*global_address),
             SubstateId::Component(component_address, ..) => RENodeId::Component(*component_address),
             SubstateId::KeyValueStore(kv_store_id, ..) => RENodeId::KeyValueStore(*kv_store_id),
-            SubstateId::Vault(vault_id) => RENodeId::Vault(*vault_id),
+            SubstateId::Vault(vault_id, ..) => RENodeId::Vault(*vault_id),
             SubstateId::Package(package_address, PackageOffset::Package) => {
                 RENodeId::Package(*package_address)
             }

@@ -143,6 +143,11 @@ pub enum KeyValueStoreOffset {
     Entry(Vec<u8>),
 }
 
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum VaultOffset {
+    Vault,
+}
+
 /// TODO: separate space addresses?
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum SubstateId {
@@ -158,7 +163,7 @@ pub enum SubstateId {
 
     KeyValueStore(KeyValueStoreId, KeyValueStoreOffset),
 
-    Vault(VaultId),
+    Vault(VaultId, VaultOffset),
     System(ComponentAddress),
     Bucket(BucketId),
     Proof(ProofId),

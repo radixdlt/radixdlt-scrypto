@@ -303,7 +303,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                     let node = HeapRENode::Vault(Vault::new(substate.0));
                     self.loaded_nodes.insert(
                         match &substate_id {
-                            SubstateId::Vault(address) => RENodeId::Vault(*address),
+                            SubstateId::Vault(address, VaultOffset::Vault) => RENodeId::Vault(*address),
                             _ => panic!("Unexpected substate id type"),
                         },
                         node,
@@ -337,7 +337,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
 
         if write_through {
             let node_id = match substate_id {
-                SubstateId::Vault(vault_id) => RENodeId::Vault(vault_id),
+                SubstateId::Vault(vault_id, VaultOffset::Vault) => RENodeId::Vault(vault_id),
                 _ => panic!("Not supported yet"),
             };
             let node = self.loaded_nodes.remove(&node_id).unwrap();
@@ -586,7 +586,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                     .expect("Failed to add fee to fee collector");
 
                 // Refund overpayment
-                let substate_id = SubstateId::Vault(vault_id);
+                let substate_id = SubstateId::Vault(vault_id, VaultOffset::Vault);
                 let mut substate = self
                     .state_track
                     .get_substate_from_base(&substate_id)

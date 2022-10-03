@@ -24,7 +24,7 @@ pub fn node_to_substates(node_id: RENodeId, node: HeapRENode) -> HashMap<Substat
                 .expect("Vault should be liquid at end of successful transaction");
             let substate = VaultSubstate(resource);
             let substate_id = match node_id {
-                RENodeId::Vault(vault_id) => SubstateId::Vault(vault_id),
+                RENodeId::Vault(vault_id) => SubstateId::Vault(vault_id, VaultOffset::Vault),
                 _ => panic!("Unexpected"),
             };
             substates.insert(substate_id, substate.into());
