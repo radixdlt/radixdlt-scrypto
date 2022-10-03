@@ -172,3 +172,76 @@ fn test_singleton_non_fungible() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
     receipt.expect_commit_success();
 }
+
+// This test was introduced in Oct 2022 to protect a regression whereby resources locked
+// by a proof in a vault was accidentally committed/persisted, and locked in future transactions
+#[test]
+fn test_mint_update_and_withdraw() {
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
+    let (public_key, _, account) = test_runner.new_account();
+    let package_address = test_runner.compile_and_publish("./tests/non_fungible");
+
+    // create non-fungible
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .call_function(
+            package_address,
+            "NonFungibleTest",
+            "create_non_fungible_mutable",
+            args!(),
+        )
+        .call_method(
+            account,
+            "deposit_batch",
+            args!(Expression::entire_worktop()),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
+    receipt.expect_commit_success();
+    let badge_resource_address = receipt
+        .expect_commit()
+        .entity_changes
+        .new_resource_addresses[0];
+    let nft_resource_address = receipt
+        .expect_commit()
+        .entity_changes
+        .new_resource_addresses[1];
+
+    // update data (the NFT is referenced within a Proof)
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .call_function_with_abi(
+            package_address,
+            "NonFungibleTest",
+            "update_nft",
+            vec![
+                format!("1,{}", badge_resource_address),
+                format!("1,{}", nft_resource_address),
+            ],
+            Some(account),
+            &test_runner.export_abi(package_address, "NonFungibleTest"),
+        )
+        .unwrap()
+        .call_method(
+            account,
+            "deposit_batch",
+            args!(Expression::entire_worktop()),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
+    receipt.expect_commit_success();
+
+    // transfer
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .withdraw_from_account(nft_resource_address, account)
+        .call_method(
+            account,
+            "deposit_batch",
+            args!(Expression::entire_worktop()),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
+    receipt.expect_commit_success();
+}
