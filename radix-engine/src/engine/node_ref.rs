@@ -199,7 +199,7 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
             SubstateId::KeyValueStoreEntry(.., key) => Ok(self.kv_store_get(key)),
             | SubstateId::Global(..)
             | SubstateId::Vault(..)
-            | SubstateId::KeyValueStoreSpace(..)
+            | SubstateId::KeyValueStore(..)
             | SubstateId::Package(..)
             | SubstateId::ResourceManager(_, ResourceManagerOffset::ResourceManager)
             | SubstateId::ResourceManager(_, ResourceManagerOffset::NonFungibleSpace)
@@ -217,7 +217,7 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
         match substate_id {
             SubstateId::Global(..)
             | SubstateId::Component(..)
-            | SubstateId::KeyValueStoreSpace(..)
+            | SubstateId::KeyValueStore(..)
             | SubstateId::KeyValueStoreEntry(..)
             | SubstateId::Vault(..)
             | SubstateId::Package(..)
@@ -277,7 +277,7 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
             RENodeRefMut::Track(track, node_id) => {
                 let parent_substate_id = match node_id {
                     RENodeId::KeyValueStore(kv_store_id) => {
-                        SubstateId::KeyValueStoreSpace(*kv_store_id)
+                        SubstateId::KeyValueStore(*kv_store_id, KeyValueStoreOffset::Space)
                     }
                     _ => panic!("Unexpected"),
                 };
@@ -309,7 +309,7 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
             RENodeRefMut::Track(track, node_id) => {
                 let parent_substate_id = match node_id {
                     RENodeId::KeyValueStore(kv_store_id) => {
-                        SubstateId::KeyValueStoreSpace(*kv_store_id)
+                        SubstateId::KeyValueStore(*kv_store_id, KeyValueStoreOffset::Space)
                     }
                     _ => panic!("Unexpected"),
                 };

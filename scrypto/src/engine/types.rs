@@ -137,6 +137,10 @@ pub enum ResourceManagerOffset {
     NonFungible(NonFungibleId),
 }
 
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum KeyValueStoreOffset {
+    Space,
+}
 
 /// TODO: separate space addresses?
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -151,7 +155,7 @@ pub enum SubstateId {
 
     ResourceManager(ResourceAddress, ResourceManagerOffset),
 
-    KeyValueStoreSpace(KeyValueStoreId),
+    KeyValueStore(KeyValueStoreId, KeyValueStoreOffset),
     KeyValueStoreEntry(KeyValueStoreId, Vec<u8>),
 
     Vault(VaultId),

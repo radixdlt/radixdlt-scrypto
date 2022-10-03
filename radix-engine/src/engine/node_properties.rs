@@ -75,7 +75,7 @@ impl SubstateProperties {
         match substate_id {
             SubstateId::Global(global_address, ..) => RENodeId::Global(*global_address),
             SubstateId::Component(component_address, ..) => RENodeId::Component(*component_address),
-            SubstateId::KeyValueStoreSpace(kv_store_id) => RENodeId::KeyValueStore(*kv_store_id),
+            SubstateId::KeyValueStore(kv_store_id, ..) => RENodeId::KeyValueStore(*kv_store_id),
             SubstateId::KeyValueStoreEntry(kv_store_id, ..) => {
                 RENodeId::KeyValueStore(*kv_store_id)
             }
@@ -102,7 +102,7 @@ impl SubstateProperties {
             SubstateId::ResourceManager(_, ResourceManagerOffset::NonFungible(..)) => false,
             SubstateId::ResourceManager(_, ResourceManagerOffset::NonFungibleSpace) => false,
             SubstateId::ResourceManager(_, ResourceManagerOffset::ResourceManager) => false,
-            SubstateId::KeyValueStoreSpace(..) => false,
+            SubstateId::KeyValueStore(..) => false,
             SubstateId::Vault(..) => false,
             SubstateId::Package(..) => false,
             SubstateId::System(..) => false,

@@ -404,7 +404,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             SubstateId::ResourceManager(resource_address, ResourceManagerOffset::NonFungibleSpace) => {
                 SubstateId::ResourceManager(resource_address, ResourceManagerOffset::NonFungible(NonFungibleId(key)))
             }
-            SubstateId::KeyValueStoreSpace(kv_store_id) => {
+            SubstateId::KeyValueStore(kv_store_id, KeyValueStoreOffset::Space) => {
                 SubstateId::KeyValueStoreEntry(kv_store_id, key)
             }
             _ => panic!("Unsupported key value"),
@@ -420,7 +420,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                         .get_substate(&substate_id)
                         .unwrap_or(Substate::NonFungible(NonFungibleSubstate(None)))
                 }),
-            SubstateId::KeyValueStoreSpace(..) => self
+            SubstateId::KeyValueStore(..) => self
                 .loaded_substates
                 .get(&substate_id)
                 .map(|s| s.substate.borrow().clone())
@@ -445,7 +445,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             SubstateId::ResourceManager(resource_address, ResourceManagerOffset::NonFungibleSpace) => {
                 SubstateId::ResourceManager(resource_address, ResourceManagerOffset::NonFungible(NonFungibleId(key.clone())))
             }
-            SubstateId::KeyValueStoreSpace(kv_store_id) => {
+            SubstateId::KeyValueStore(kv_store_id, KeyValueStoreOffset::Space) => {
                 SubstateId::KeyValueStoreEntry(kv_store_id, key.clone())
             }
             _ => panic!("Unsupported key value"),
