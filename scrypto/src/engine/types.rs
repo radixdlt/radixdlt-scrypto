@@ -153,6 +153,21 @@ pub enum SystemOffset {
     System,
 }
 
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum BucketOffset {
+    Bucket,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum ProofOffset {
+    Proof,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum WorktopOffset {
+    Worktop,
+}
+
 /// TODO: separate space addresses?
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum SubstateId {
@@ -172,9 +187,9 @@ pub enum SubstateId {
 
     System(ComponentAddress, SystemOffset),
 
-    Bucket(BucketId),
-    Proof(ProofId),
-    Worktop,
+    Bucket(BucketId, BucketOffset),
+    Proof(ProofId, ProofOffset),
+    Worktop(WorktopOffset),
 }
 
 impl Into<ComponentAddress> for SubstateId {

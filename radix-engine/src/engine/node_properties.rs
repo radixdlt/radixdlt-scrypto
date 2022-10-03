@@ -37,14 +37,14 @@ impl RENodeProperties {
                 RENodeId::AuthZone(auth_zone_id) => {
                     SubstateId::AuthZone(auth_zone_id, AuthZoneOffset::AuthZone)
                 }
-                RENodeId::Bucket(bucket_id) => SubstateId::Bucket(bucket_id),
-                RENodeId::Proof(proof_id) => SubstateId::Proof(proof_id),
+                RENodeId::Bucket(bucket_id) => SubstateId::Bucket(bucket_id, BucketOffset::Bucket),
+                RENodeId::Proof(proof_id) => SubstateId::Proof(proof_id, ProofOffset::Proof),
                 RENodeId::ResourceManager(resource_address) => SubstateId::ResourceManager(
                     resource_address,
                     ResourceManagerOffset::ResourceManager,
                 ),
                 RENodeId::System(component_address) => SubstateId::System(component_address, SystemOffset::System),
-                RENodeId::Worktop => SubstateId::Worktop,
+                RENodeId::Worktop => SubstateId::Worktop(WorktopOffset::Worktop),
                 RENodeId::Component(component_address) => {
                     SubstateId::Component(component_address, ComponentOffset::Info)
                 }
@@ -87,9 +87,9 @@ impl SubstateProperties {
                 RENodeId::ResourceManager(*resource_address)
             }
             SubstateId::System(component_address, ..) => RENodeId::System(*component_address),
-            SubstateId::Bucket(bucket_id) => RENodeId::Bucket(*bucket_id),
-            SubstateId::Proof(proof_id) => RENodeId::Proof(*proof_id),
-            SubstateId::Worktop => RENodeId::Worktop,
+            SubstateId::Bucket(bucket_id, ..) => RENodeId::Bucket(*bucket_id),
+            SubstateId::Proof(proof_id, ..) => RENodeId::Proof(*proof_id),
+            SubstateId::Worktop(..) => RENodeId::Worktop,
             SubstateId::AuthZone(auth_zone_id, ..) => RENodeId::AuthZone(*auth_zone_id),
         }
     }
@@ -110,7 +110,7 @@ impl SubstateProperties {
             SubstateId::System(..) => false,
             SubstateId::Bucket(..) => false,
             SubstateId::Proof(..) => false,
-            SubstateId::Worktop => false, // TODO: Fix
+            SubstateId::Worktop(..) => false, // TODO: Fix
         }
     }
 }

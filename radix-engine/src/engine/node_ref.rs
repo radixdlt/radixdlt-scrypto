@@ -211,7 +211,7 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
             | SubstateId::Bucket(..)
             | SubstateId::Proof(..)
             | SubstateId::AuthZone(..)
-            | SubstateId::Worktop => {
+            | SubstateId::Worktop(..) => {
                 panic!("Should never have received permissions to read this native type.");
             }
         }
@@ -230,7 +230,7 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
             | SubstateId::Bucket(..)
             | SubstateId::Proof(..)
             | SubstateId::AuthZone(..)
-            | SubstateId::Worktop => {
+            | SubstateId::Worktop(..) => {
                 panic!("Should not get here");
             }
             SubstateId::ResourceManager(_, ResourceManagerOffset::NonFungible(id)) => {
