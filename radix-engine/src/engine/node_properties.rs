@@ -34,7 +34,7 @@ impl RENodeProperties {
     pub fn to_primary_substate_id(method_ident: &MethodIdent) -> Result<SubstateId, RuntimeError> {
         let substate_id = match &method_ident.method_fn_ident {
             MethodFnIdent::Native(..) => match method_ident.receiver.node_id() {
-                RENodeId::AuthZone(auth_zone_id) => SubstateId::AuthZone(auth_zone_id),
+                RENodeId::AuthZone(auth_zone_id) => SubstateId::AuthZone(auth_zone_id, AuthZoneOffset::AuthZone),
                 RENodeId::Bucket(bucket_id) => SubstateId::Bucket(bucket_id),
                 RENodeId::Proof(proof_id) => SubstateId::Proof(proof_id),
                 RENodeId::ResourceManager(resource_address) => {
@@ -94,7 +94,7 @@ impl SubstateProperties {
             SubstateId::Bucket(bucket_id) => RENodeId::Bucket(*bucket_id),
             SubstateId::Proof(proof_id) => RENodeId::Proof(*proof_id),
             SubstateId::Worktop => RENodeId::Worktop,
-            SubstateId::AuthZone(auth_zone_id) => RENodeId::AuthZone(*auth_zone_id),
+            SubstateId::AuthZone(auth_zone_id, AuthZoneOffset::AuthZone) => RENodeId::AuthZone(*auth_zone_id),
         }
     }
 

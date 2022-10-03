@@ -110,6 +110,12 @@ impl Into<ResourceAddress> for GlobalAddress {
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum AuthZoneOffset {
+    AuthZone
+}
+
+
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum ComponentOffset {
     Info,
     State,
@@ -120,16 +126,19 @@ pub enum ComponentOffset {
 pub enum SubstateId {
     Global(GlobalAddress),
 
-    AuthZone(AuthZoneId),
+    AuthZone(AuthZoneId, AuthZoneOffset),
 
     Component(ComponentAddress, ComponentOffset),
 
     Package(PackageAddress),
+
     ResourceManager(ResourceAddress),
     NonFungibleSpace(ResourceAddress),
     NonFungible(ResourceAddress, NonFungibleId),
+
     KeyValueStoreSpace(KeyValueStoreId),
     KeyValueStoreEntry(KeyValueStoreId, Vec<u8>),
+
     Vault(VaultId),
     System(ComponentAddress),
     Bucket(BucketId),
