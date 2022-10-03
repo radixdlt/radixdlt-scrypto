@@ -43,7 +43,7 @@ impl RENodeProperties {
                 RENodeId::System(component_address) => SubstateId::System(component_address),
                 RENodeId::Worktop => SubstateId::Worktop,
                 RENodeId::Component(component_address) => {
-                    SubstateId::ComponentInfo(component_address)
+                    SubstateId::Component(component_address, ComponentOffset::Info)
                 }
                 RENodeId::Vault(vault_id) => SubstateId::Vault(vault_id),
                 _ => {
@@ -54,7 +54,7 @@ impl RENodeProperties {
             },
             MethodFnIdent::Scrypto { .. } => match method_ident.receiver.node_id() {
                 RENodeId::Component(component_address) => {
-                    SubstateId::ComponentState(component_address)
+                    SubstateId::Component(component_address, ComponentOffset::State)
                 }
                 _ => {
                     return Err(RuntimeError::KernelError(KernelError::MethodIdentNotFound(
@@ -74,12 +74,7 @@ impl SubstateProperties {
     pub fn get_node_id(substate_id: &SubstateId) -> RENodeId {
         match substate_id {
             SubstateId::Global(global_address) => RENodeId::Global(*global_address),
-            SubstateId::ComponentInfo(component_address, ..) => {
-                RENodeId::Component(*component_address)
-            }
-            SubstateId::ComponentState(component_address) => {
-                RENodeId::Component(*component_address)
-            }
+            SubstateId::Component(component_address, ..) => RENodeId::Component(*component_address),
             SubstateId::NonFungibleSpace(resource_address) => {
                 RENodeId::ResourceManager(*resource_address)
             }
@@ -108,8 +103,8 @@ impl SubstateProperties {
             SubstateId::Global(..) => true,
             SubstateId::AuthZone(..) => false,
             SubstateId::KeyValueStoreEntry(..) => true,
-            SubstateId::ComponentState(..) => true,
-            SubstateId::ComponentInfo(..) => false,
+            SubstateId::Component(_, ComponentOffset::State) => true,
+            SubstateId::Component(_, ComponentOffset::Info) => false,
             SubstateId::NonFungible(..) => false,
             SubstateId::NonFungibleSpace(..) => false,
             SubstateId::KeyValueStoreSpace(..) => false,

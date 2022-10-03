@@ -57,7 +57,10 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
     let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
 
     let component_info: Option<ComponentInfoSubstate> = substate_store
-        .get_substate(&SubstateId::ComponentInfo(component_address))
+        .get_substate(&SubstateId::Component(
+            component_address,
+            ComponentOffset::Info,
+        ))
         .map(|s| s.substate)
         .map(|s| s.into());
     match component_info {
@@ -86,7 +89,10 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
             }
 
             let state: ComponentStateSubstate = substate_store
-                .get_substate(&SubstateId::ComponentState(component_address))
+                .get_substate(&SubstateId::Component(
+                    component_address,
+                    ComponentOffset::State,
+                ))
                 .map(|s| s.substate)
                 .map(|s| s.into())
                 .unwrap();

@@ -178,12 +178,22 @@ where
                 ))
             })?;
 
-        if let SubstateId::ComponentInfo(address) = substate_id {
+        if let SubstateId::Component(address, ComponentOffset::Info) = substate_id {
             node_pointer
-                .acquire_lock(SubstateId::ComponentState(*address), false, false, track)
+                .acquire_lock(
+                    SubstateId::Component(*address, ComponentOffset::State),
+                    false,
+                    false,
+                    track,
+                )
                 .map_err(RuntimeError::KernelError)?;
             node_pointer
-                .acquire_lock(SubstateId::ComponentInfo(*address), false, false, track)
+                .acquire_lock(
+                    SubstateId::Component(*address, ComponentOffset::Info),
+                    false,
+                    false,
+                    track,
+                )
                 .map_err(RuntimeError::KernelError)?;
         }
 
@@ -194,12 +204,20 @@ where
         };
 
         // TODO: Remove, integrate with substate borrow mechanism
-        if let SubstateId::ComponentInfo(address) = substate_id {
+        if let SubstateId::Component(address, ComponentOffset::Info) = substate_id {
             node_pointer
-                .release_lock(SubstateId::ComponentState(*address), false, track)
+                .release_lock(
+                    SubstateId::Component(*address, ComponentOffset::State),
+                    false,
+                    track,
+                )
                 .map_err(RuntimeError::KernelError)?;
             node_pointer
-                .release_lock(SubstateId::ComponentInfo(*address), false, track)
+                .release_lock(
+                    SubstateId::Component(*address, ComponentOffset::Info),
+                    false,
+                    track,
+                )
                 .map_err(RuntimeError::KernelError)?;
         }
 
@@ -584,7 +602,8 @@ where
                     receiver,
                 } => match node_id {
                     RENodeId::Component(component_address) => {
-                        let temporary_substate_id = SubstateId::ComponentInfo(component_address);
+                        let temporary_substate_id =
+                            SubstateId::Component(component_address, ComponentOffset::Info);
                         node_pointer
                             .acquire_lock(
                                 temporary_substate_id.clone(),

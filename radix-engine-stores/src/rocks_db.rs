@@ -43,13 +43,13 @@ impl RadixEngineDB {
         start: ComponentAddress,
         end: ComponentAddress,
     ) -> Vec<ComponentAddress> {
-        let start = &scrypto_encode(&SubstateId::ComponentState(start));
-        let end = &scrypto_encode(&SubstateId::ComponentState(end));
+        let start = &scrypto_encode(&SubstateId::Component(start, ComponentOffset::State));
+        let end = &scrypto_encode(&SubstateId::Component(end, ComponentOffset::State));
         let substate_ids: Vec<SubstateId> = self.list_items(start, end);
         substate_ids
             .into_iter()
             .map(|id| {
-                if let SubstateId::ComponentState(component_address) = id {
+                if let SubstateId::Component(component_address, ComponentOffset::State) = id {
                     component_address
                 } else {
                     panic!("Expected a component substate id.")

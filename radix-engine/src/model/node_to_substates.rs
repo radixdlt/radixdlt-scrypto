@@ -44,8 +44,14 @@ pub fn node_to_substates(node_id: RENodeId, node: HeapRENode) -> HashMap<Substat
                 RENodeId::Component(address) => address,
                 _ => panic!("Unexpected"),
             };
-            substates.insert(SubstateId::ComponentInfo(address), component.info.into());
-            substates.insert(SubstateId::ComponentState(address), component.state.into());
+            substates.insert(
+                SubstateId::Component(address, ComponentOffset::Info),
+                component.info.into(),
+            );
+            substates.insert(
+                SubstateId::Component(address, ComponentOffset::State),
+                component.state.into(),
+            );
         }
         HeapRENode::Worktop(_) => panic!("Unexpected"),
         HeapRENode::Package(package) => {

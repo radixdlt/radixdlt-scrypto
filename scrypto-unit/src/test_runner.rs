@@ -84,7 +84,10 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     ) -> Option<radix_engine::model::ComponentInfoSubstate> {
         self.execution_stores
             .get_root_store()
-            .get_substate(&SubstateId::ComponentInfo(component_address))
+            .get_substate(&SubstateId::Component(
+                component_address,
+                ComponentOffset::Info,
+            ))
             .map(|output| output.substate.into())
     }
 
@@ -94,7 +97,10 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     ) -> Option<radix_engine::model::ComponentStateSubstate> {
         self.execution_stores
             .get_root_store()
-            .get_substate(&SubstateId::ComponentState(component_address))
+            .get_substate(&SubstateId::Component(
+                component_address,
+                ComponentOffset::State,
+            ))
             .map(|output| output.substate.into())
     }
 

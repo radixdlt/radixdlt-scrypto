@@ -34,7 +34,10 @@ pub fn export_abi_by_component<S: ReadableSubstateStore>(
     component_address: ComponentAddress,
 ) -> Result<abi::BlueprintAbi, RuntimeError> {
     let component_value: Substate = substate_store
-        .get_substate(&SubstateId::ComponentInfo(component_address))
+        .get_substate(&SubstateId::Component(
+            component_address,
+            ComponentOffset::Info,
+        ))
         .map(|s| s.substate)
         .ok_or(RuntimeError::KernelError(KernelError::RENodeNotFound(
             RENodeId::Component(component_address),

@@ -258,12 +258,12 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                 }
                 Substate::ComponentInfo(substate) => {
                     let address = match &substate_id {
-                        SubstateId::ComponentInfo(address) => *address,
+                        SubstateId::Component(address, ComponentOffset::Info) => *address,
                         _ => panic!("Unexpected substate id type"),
                     };
 
                     let component_state = self.loaded_substates
-                        .get_mut(&SubstateId::ComponentState(address))
+                        .get_mut(&SubstateId::Component(address, ComponentOffset::State))
                         .expect("Lock ComponentState before ComponentInfo before lazily loading is supported")
                         .substate
                         .take();
@@ -274,7 +274,9 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                     });
                     self.loaded_nodes.insert(
                         match &substate_id {
-                            SubstateId::ComponentInfo(address) => RENodeId::Component(*address),
+                            SubstateId::Component(address, ComponentOffset::Info) => {
+                                RENodeId::Component(*address)
+                            }
                             _ => panic!("Unexpected substate id type"),
                         },
                         node,

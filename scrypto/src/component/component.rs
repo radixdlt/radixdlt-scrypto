@@ -10,7 +10,7 @@ use crate::address::*;
 use crate::buffer::scrypto_encode;
 use crate::component::*;
 use crate::core::*;
-use crate::engine::types::{GlobalAddress, RENodeId, SubstateId};
+use crate::engine::types::{ComponentOffset, GlobalAddress, RENodeId, SubstateId};
 use crate::engine::{api::*, call_engine};
 use crate::misc::*;
 use crate::resource::AccessRules;
@@ -59,7 +59,7 @@ impl Component {
 
     /// Returns the package ID of this component.
     pub fn package_address(&self) -> PackageAddress {
-        let substate_id = SubstateId::ComponentInfo(self.0);
+        let substate_id = SubstateId::Component(self.0, ComponentOffset::Info);
         let input = RadixEngineInput::SubstateRead(substate_id);
         let output: ComponentInfoSubstate = call_engine(input);
         output.package_address
@@ -67,7 +67,7 @@ impl Component {
 
     /// Returns the blueprint name of this component.
     pub fn blueprint_name(&self) -> String {
-        let substate_id = SubstateId::ComponentInfo(self.0);
+        let substate_id = SubstateId::Component(self.0, ComponentOffset::Info);
         let input = RadixEngineInput::SubstateRead(substate_id);
         let output: ComponentInfoSubstate = call_engine(input);
         output.blueprint_name
@@ -113,7 +113,7 @@ impl BorrowedGlobalComponent {
 
     /// Returns the package ID of this component.
     pub fn package_address(&self) -> PackageAddress {
-        let substate_id = SubstateId::ComponentInfo(self.0);
+        let substate_id = SubstateId::Component(self.0, ComponentOffset::Info);
         let input = RadixEngineInput::SubstateRead(substate_id);
         let output: ComponentInfoSubstate = call_engine(input);
         output.package_address
@@ -121,7 +121,7 @@ impl BorrowedGlobalComponent {
 
     /// Returns the blueprint name of this component.
     pub fn blueprint_name(&self) -> String {
-        let substate_id = SubstateId::ComponentInfo(self.0);
+        let substate_id = SubstateId::Component(self.0, ComponentOffset::Info);
         let input = RadixEngineInput::SubstateRead(substate_id);
         let output: ComponentInfoSubstate = call_engine(input);
         output.blueprint_name

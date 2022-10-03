@@ -32,7 +32,7 @@ impl REActor {
             }) => true,
             REActor::Function(FunctionIdent::Scrypto { .. }) => match substate_id {
                 SubstateId::KeyValueStoreEntry(..) => true,
-                SubstateId::ComponentInfo(..) => true,
+                SubstateId::Component(_, ComponentOffset::Info) => true,
                 _ => false,
             },
             REActor::Method(FullyQualifiedMethod {
@@ -40,8 +40,8 @@ impl REActor {
                 fn_ident: FullyQualifiedMethodFn::Scrypto { .. },
             }) => match substate_id {
                 SubstateId::KeyValueStoreEntry(..) => true,
-                SubstateId::ComponentInfo(..) => true,
-                SubstateId::ComponentState(addr) => addr.eq(component_address),
+                SubstateId::Component(_, ComponentOffset::Info) => true,
+                SubstateId::Component(addr, ComponentOffset::State) => addr.eq(component_address),
                 _ => false,
             },
             _ => false,
@@ -64,7 +64,7 @@ impl REActor {
                 fn_ident: FullyQualifiedMethodFn::Scrypto { .. },
             }) => match substate_id {
                 SubstateId::KeyValueStoreEntry(..) => true,
-                SubstateId::ComponentState(addr) => addr.eq(component_address),
+                SubstateId::Component(addr, ComponentOffset::State) => addr.eq(component_address),
                 _ => false,
             },
             _ => false,

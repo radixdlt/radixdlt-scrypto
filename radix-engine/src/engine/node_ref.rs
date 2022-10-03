@@ -188,10 +188,10 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
         substate_id: &SubstateId,
     ) -> Result<ScryptoValue, RuntimeError> {
         match substate_id {
-            SubstateId::ComponentInfo(..) => {
+            SubstateId::Component(_, ComponentOffset::Info) => {
                 Ok(ScryptoValue::from_typed(&self.component_mut().info))
             }
-            SubstateId::ComponentState(..) => {
+            SubstateId::Component(_, ComponentOffset::State) => {
                 Ok(ScryptoValue::from_slice(&self.component_mut().state.state)
                     .expect("Failed to decode component state"))
             }
@@ -216,8 +216,7 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
     pub fn replace_value_with_default(&mut self, substate_id: &SubstateId) {
         match substate_id {
             SubstateId::Global(..)
-            | SubstateId::ComponentInfo(..)
-            | SubstateId::ComponentState(..)
+            | SubstateId::Component(..)
             | SubstateId::NonFungibleSpace(..)
             | SubstateId::KeyValueStoreSpace(..)
             | SubstateId::KeyValueStoreEntry(..)
@@ -245,7 +244,7 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
             SubstateId::Global(..) => {
                 panic!("Should not get here");
             }
-            SubstateId::ComponentState(..) => {
+            SubstateId::Component(_, ComponentOffset::State) => {
                 self.component_state_set(value, child_nodes);
             }
             SubstateId::NonFungible(.., id) => self.non_fungible_put(id, value),
