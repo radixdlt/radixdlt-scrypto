@@ -41,10 +41,11 @@ blueprint! {
             (mint_badge, resource_address, non_fungible)
         }
 
-        pub fn update_nft(mint_badge: Bucket, nft: Bucket) -> (Bucket, Bucket) {
+        pub fn update_nft(mint_badge: Bucket, proof: Proof) -> Bucket {
+            let proof = proof.unsafe_skip_proof_validation();
             mint_badge.authorize(|| {
-                borrow_resource_manager!(nft.resource_address()).update_non_fungible_data(
-                    &nft.non_fungible_id(),
+                borrow_resource_manager!(proof.resource_address()).update_non_fungible_data(
+                    &proof.non_fungible_id(),
                     Sandwich {
                         name: "Test".to_owned(),
                         available: true,
@@ -52,7 +53,7 @@ blueprint! {
                 )
             });
 
-            (mint_badge, nft)
+            mint_badge
         }
 
         pub fn create_burnable_non_fungible() -> Bucket {

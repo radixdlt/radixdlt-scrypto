@@ -206,24 +206,21 @@ fn test_mint_update_and_withdraw() {
         .entity_changes
         .new_resource_addresses[1];
 
-    // update data
+    // update data (the NFT is referenced within a Proof)
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .withdraw_from_account(badge_resource_address, account)
-        .withdraw_from_account(nft_resource_address, account)
-        .take_from_worktop_by_amount(1.into(), badge_resource_address, |builder, bid1| {
-            builder.take_from_worktop_by_amount(1.into(), nft_resource_address, |builder, bid2| {
-                builder.call_function(
-                    package_address,
-                    "NonFungibleTest",
-                    "update_nft",
-                    args!(
-                        scrypto::resource::Bucket(bid1),
-                        scrypto::resource::Bucket(bid2)
-                    ),
-                )
-            })
-        })
+        .call_function_with_abi(
+            package_address,
+            "NonFungibleTest",
+            "update_nft",
+            vec![
+                format!("1,{}", badge_resource_address),
+                format!("1,{}", nft_resource_address),
+            ],
+            Some(account),
+            &test_runner.export_abi(package_address, "NonFungibleTest"),
+        )
+        .unwrap()
         .call_method(
             account,
             "deposit_batch",
