@@ -9,6 +9,7 @@ mod resource_manager;
 mod system;
 mod transaction_processor;
 mod vault;
+mod non_fungible_store;
 mod worktop;
 
 pub use auth_zone::*;
@@ -23,3 +24,4 @@ pub use system::*;
 pub use transaction_processor::*;
 pub use vault::*;
 pub use worktop::*;
+pub use non_fungible_store::*;
