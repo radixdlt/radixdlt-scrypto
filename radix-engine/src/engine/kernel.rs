@@ -649,13 +649,8 @@ where
                         RENodePointer::Store(global_resource_node_id),
                     );
 
-                    let resource_substate_id = SubstateId::ResourceManager(resource_address);
                     let resource_node_id = RENodeId::ResourceManager(resource_address);
                     let resource_node_pointer = RENodePointer::Store(resource_node_id);
-                    resource_node_pointer
-                        .acquire_lock(resource_substate_id.clone(), true, false, &mut self.track)
-                        .map_err(RuntimeError::KernelError)?;
-                    locked_pointers.push((resource_node_pointer, resource_substate_id, false));
                     next_frame_node_refs.insert(resource_node_id, resource_node_pointer);
                 }
                 RENodeId::Vault(..) => {
@@ -670,13 +665,8 @@ where
                         RENodePointer::Store(global_resource_node_id),
                     );
 
-                    let resource_substate_id = SubstateId::ResourceManager(resource_address);
                     let resource_node_id = RENodeId::ResourceManager(resource_address);
                     let resource_node_pointer = RENodePointer::Store(resource_node_id);
-                    resource_node_pointer
-                        .acquire_lock(resource_substate_id.clone(), true, false, &mut self.track)
-                        .map_err(RuntimeError::KernelError)?;
-                    locked_pointers.push((resource_node_pointer, resource_substate_id, false));
                     next_frame_node_refs.insert(resource_node_id, resource_node_pointer);
                 }
                 _ => {}
