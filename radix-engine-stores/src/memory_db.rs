@@ -51,7 +51,10 @@ impl QueryableSubstateStore for SerializedInMemorySubstateStore {
             .iter()
             .filter_map(|(key, value)| {
                 let substate_id: SubstateId = scrypto_decode(key).unwrap();
-                if let SubstateId::KeyValueStore(id, KeyValueStoreOffset::Entry(key)) = substate_id
+                if let SubstateId(
+                    RENodeId::KeyValueStore(id),
+                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key)),
+                ) = substate_id
                 {
                     let output_value: OutputValue = scrypto_decode(value).unwrap();
                     if id == *kv_store_id {

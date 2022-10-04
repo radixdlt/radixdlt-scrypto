@@ -7,28 +7,28 @@ blueprint! {
     impl DataAccess {
         pub fn create_component_and_read_state() {
             let component_address = Self {}.instantiate().globalize();
-            let substate_id = SubstateId::Component(component_address, ComponentOffset::State);
+            let substate_id = SubstateId(RENodeId::Component(component_address), SubstateOffset::Component(ComponentOffset::State));
             let input = RadixEngineInput::SubstateRead(substate_id);
             call_engine(input)
         }
 
         pub fn create_component_and_write_state() {
             let component_address = Self {}.instantiate().globalize();
-            let substate_id = SubstateId::Component(component_address, ComponentOffset::State);
+            let substate_id = SubstateId(RENodeId::Component(component_address), SubstateOffset::Component(ComponentOffset::State));
             let input = RadixEngineInput::SubstateWrite(substate_id, scrypto_encode(&()));
             call_engine(input)
         }
 
         pub fn create_component_and_read_info() -> ComponentInfoSubstate {
             let component_address = Self {}.instantiate().globalize();
-            let substate_id = SubstateId::Component(component_address, ComponentOffset::Info);
+            let substate_id = SubstateId(RENodeId::Component(component_address), SubstateOffset::Component(ComponentOffset::Info));
             let input = RadixEngineInput::SubstateRead(substate_id);
             call_engine(input)
         }
 
         pub fn create_component_and_write_info() -> () {
             let component_address = Self {}.instantiate().globalize();
-            let substate_id = SubstateId::Component(component_address, ComponentOffset::Info);
+            let substate_id = SubstateId(RENodeId::Component(component_address), SubstateOffset::Component(ComponentOffset::Info));
             let input = RadixEngineInput::SubstateWrite(substate_id, scrypto_encode(&()));
             call_engine(input)
         }

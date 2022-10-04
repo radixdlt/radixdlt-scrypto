@@ -49,7 +49,10 @@ impl Publish {
             .map_err(Error::DataError)?;
 
         if let Some(package_address) = self.package_address.clone() {
-            let substate_id = SubstateId::Package(package_address, PackageOffset::Package);
+            let substate_id = SubstateId(
+                RENodeId::Package(package_address),
+                SubstateOffset::Package(PackageOffset::Package),
+            );
 
             let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?);
 
@@ -69,7 +72,10 @@ impl Publish {
             // Overwrite package
             // TODO: implement real package overwrite
             substate_store.put_substate(
-                SubstateId::Package(package_address, PackageOffset::Package),
+                SubstateId(
+                    RENodeId::Package(package_address),
+                    SubstateOffset::Package(PackageOffset::Package),
+                ),
                 output_value,
             );
             writeln!(out, "Package updated!").map_err(Error::IOError)?;

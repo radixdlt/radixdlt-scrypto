@@ -310,9 +310,9 @@ impl Bucket {
                         .total_ids()
                         .expect("Failed to list non-fungible IDs on non-fungible Bucket")
                     {
-                        let address = SubstateId::ResourceManager(
-                            resource_address,
-                            ResourceManagerOffset::NonFungible(id),
+                        let address = SubstateId(
+                            RENodeId::ResourceManager(resource_address),
+                            SubstateOffset::Resource(ResourceManagerOffset::NonFungible(id)),
                         );
                         system_api
                             .substate_take(address)

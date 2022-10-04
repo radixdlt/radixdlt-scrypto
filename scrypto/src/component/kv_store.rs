@@ -12,7 +12,7 @@ use crate::abi::*;
 use crate::buffer::*;
 use crate::core::{DataRef, DataRefMut};
 use crate::crypto::*;
-use crate::engine::types::{KeyValueStoreOffset, RENodeId, SubstateId};
+use crate::engine::types::{KeyValueStoreOffset, RENodeId, SubstateId, SubstateOffset};
 use crate::engine::{api::*, call_engine, types::KeyValueStoreId};
 use crate::misc::*;
 
@@ -38,16 +38,20 @@ impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> KeyValueStore<K,
 
     /// Returns the value that is associated with the given key.
     pub fn get(&self, key: &K) -> Option<DataRef<V>> {
-        let substate_id =
-            SubstateId::KeyValueStore(self.id, KeyValueStoreOffset::Entry(scrypto_encode(key)));
+        let substate_id = SubstateId(
+            RENodeId::KeyValueStore(self.id),
+            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(scrypto_encode(key))),
+        );
         let input = RadixEngineInput::SubstateRead(substate_id.clone());
         let value: Option<V> = call_engine(input);
         value.map(|value| DataRef::new(value))
     }
 
     pub fn get_mut(&mut self, key: &K) -> Option<DataRefMut<V>> {
-        let substate_id =
-            SubstateId::KeyValueStore(self.id, KeyValueStoreOffset::Entry(scrypto_encode(key)));
+        let substate_id = SubstateId(
+            RENodeId::KeyValueStore(self.id),
+            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(scrypto_encode(key))),
+        );
         let input = RadixEngineInput::SubstateRead(substate_id.clone());
         let value: Option<V> = call_engine(input);
         value.map(|value| DataRefMut::new(substate_id, value))
@@ -55,8 +59,11 @@ impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> KeyValueStore<K,
 
     /// Inserts a new key-value pair into this map.
     pub fn insert(&self, key: K, value: V) {
-        let substate_id =
-            SubstateId::KeyValueStore(self.id, KeyValueStoreOffset::Entry(scrypto_encode(&key)));
+        let substate_id = SubstateId(
+            RENodeId::KeyValueStore(self.id),
+            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(scrypto_encode(&key))),
+        );
+
         let input = RadixEngineInput::SubstateWrite(substate_id, scrypto_encode(&value));
         call_engine(input)
     }

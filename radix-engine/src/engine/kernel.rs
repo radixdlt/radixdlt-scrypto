@@ -162,7 +162,7 @@ where
         track: &mut Track<'s, R>,
         substate_id: &SubstateId,
     ) -> Result<(RENodePointer, ScryptoValue), RuntimeError> {
-        let node_id = SubstateProperties::get_node_id(substate_id);
+        let node_id = substate_id.0;
 
         // Get location
         // Note this must be run AFTER values are taken, otherwise there would be inconsistent readable_values state
@@ -178,10 +178,17 @@ where
                 ))
             })?;
 
-        if let SubstateId::Component(address, ComponentOffset::Info) = substate_id {
+        if let SubstateId(
+            RENodeId::Component(address),
+            SubstateOffset::Component(ComponentOffset::Info),
+        ) = substate_id
+        {
             node_pointer
                 .acquire_lock(
-                    SubstateId::Component(*address, ComponentOffset::State),
+                    SubstateId(
+                        RENodeId::Component(*address),
+                        SubstateOffset::Component(ComponentOffset::State),
+                    ),
                     false,
                     false,
                     track,
@@ -189,7 +196,10 @@ where
                 .map_err(RuntimeError::KernelError)?;
             node_pointer
                 .acquire_lock(
-                    SubstateId::Component(*address, ComponentOffset::Info),
+                    SubstateId(
+                        RENodeId::Component(*address),
+                        SubstateOffset::Component(ComponentOffset::Info),
+                    ),
                     false,
                     false,
                     track,
@@ -204,17 +214,27 @@ where
         };
 
         // TODO: Remove, integrate with substate borrow mechanism
-        if let SubstateId::Component(address, ComponentOffset::Info) = substate_id {
+        if let SubstateId(
+            RENodeId::Component(address),
+            SubstateOffset::Component(ComponentOffset::Info),
+        ) = substate_id
+        {
             node_pointer
                 .release_lock(
-                    SubstateId::Component(*address, ComponentOffset::State),
+                    SubstateId(
+                        RENodeId::Component(*address),
+                        SubstateOffset::Component(ComponentOffset::State),
+                    ),
                     false,
                     track,
                 )
                 .map_err(RuntimeError::KernelError)?;
             node_pointer
                 .release_lock(
-                    SubstateId::Component(*address, ComponentOffset::Info),
+                    SubstateId(
+                        RENodeId::Component(*address),
+                        SubstateOffset::Component(ComponentOffset::Info),
+                    ),
                     false,
                     track,
                 )
@@ -462,24 +482,16 @@ where
                 blueprint_name,
                 ident,
             } => {
-                let node_pointer = RENodePointer::Store(RENodeId::Package(package_address.clone()));
+                let node_id = RENodeId::Package(package_address.clone());
+                let node_pointer = RENodePointer::Store(node_id);
+                let substate_id =
+                    SubstateId(node_id, SubstateOffset::Package(PackageOffset::Package));
                 node_pointer
-                    .acquire_lock(
-                        SubstateId::Package(package_address.clone(), PackageOffset::Package),
-                        false,
-                        false,
-                        &mut self.track,
-                    )
+                    .acquire_lock(substate_id.clone(), false, false, &mut self.track)
                     .map_err(RuntimeError::KernelError)?;
 
-                locked_values.insert(SubstateId::Package(
-                    package_address.clone(),
-                    PackageOffset::Package,
-                ));
-                let package = self
-                    .track
-                    .borrow_node(&RENodeId::Package(package_address.clone()))
-                    .package();
+                locked_values.insert(substate_id);
+                let package = self.track.borrow_node(&node_id).package();
                 let abi =
                     package
                         .blueprint_abi(blueprint_name)
@@ -562,7 +574,10 @@ where
 
             // Deref
             if let Receiver::Ref(RENodeId::Global(global_address)) = fn_ident.receiver {
-                let substate_id = SubstateId::Global(global_address, GlobalOffset::Global);
+                let substate_id = SubstateId(
+                    RENodeId::Global(global_address),
+                    SubstateOffset::Global(GlobalOffset::Global),
+                );
                 node_pointer
                     .acquire_lock(substate_id.clone(), false, false, &mut self.track)
                     .map_err(RuntimeError::KernelError)?;
@@ -605,8 +620,10 @@ where
                     receiver,
                 } => match node_id {
                     RENodeId::Component(component_address) => {
-                        let temporary_substate_id =
-                            SubstateId::Component(component_address, ComponentOffset::Info);
+                        let temporary_substate_id = SubstateId(
+                            RENodeId::Component(component_address),
+                            SubstateOffset::Component(ComponentOffset::Info),
+                        );
                         node_pointer
                             .acquire_lock(
                                 temporary_substate_id.clone(),
@@ -649,9 +666,11 @@ where
                         let component = node_ref.component();
                         component.info.package_address.clone()
                     };
-                    let package_substate_id =
-                        SubstateId::Package(package_address, PackageOffset::Package);
                     let package_node_id = RENodeId::Package(package_address);
+                    let package_substate_id = SubstateId(
+                        package_node_id,
+                        SubstateOffset::Package(PackageOffset::Package),
+                    );
                     let package_node_pointer = RENodePointer::Store(package_node_id);
                     package_node_pointer
                         .acquire_lock(package_substate_id.clone(), false, false, &mut self.track)
@@ -688,11 +707,11 @@ where
                         RENodePointer::Store(global_resource_node_id),
                     );
 
-                    let resource_substate_id = SubstateId::ResourceManager(
-                        resource_address,
-                        ResourceManagerOffset::ResourceManager,
-                    );
                     let resource_node_id = RENodeId::ResourceManager(resource_address);
+                    let resource_substate_id = SubstateId(
+                        resource_node_id,
+                        SubstateOffset::Resource(ResourceManagerOffset::ResourceManager),
+                    );
                     let resource_node_pointer = RENodePointer::Store(resource_node_id);
                     resource_node_pointer
                         .acquire_lock(resource_substate_id.clone(), true, false, &mut self.track)
@@ -712,11 +731,11 @@ where
                         RENodePointer::Store(global_resource_node_id),
                     );
 
-                    let resource_substate_id = SubstateId::ResourceManager(
-                        resource_address,
-                        ResourceManagerOffset::ResourceManager,
-                    );
                     let resource_node_id = RENodeId::ResourceManager(resource_address);
+                    let resource_substate_id = SubstateId(
+                        resource_node_id,
+                        SubstateOffset::Resource(ResourceManagerOffset::ResourceManager),
+                    );
                     let resource_node_pointer = RENodePointer::Store(resource_node_id);
                     resource_node_pointer
                         .acquire_lock(resource_substate_id.clone(), true, false, &mut self.track)
@@ -731,9 +750,10 @@ where
             // TODO: Remove when references cleaned up
             if let MethodFnIdent::Native(..) = fn_ident.method_fn_ident {
                 for resource_address in &input.resource_addresses {
-                    let resource_substate_id = SubstateId::ResourceManager(
-                        resource_address.clone(),
-                        ResourceManagerOffset::ResourceManager,
+                    let resource_node_id = RENodeId::ResourceManager(resource_address.clone());
+                    let resource_substate_id = SubstateId(
+                        resource_node_id,
+                        SubstateOffset::Resource(ResourceManagerOffset::ResourceManager),
                     );
                     let resource_node_id = RENodeId::ResourceManager(resource_address.clone());
                     let resource_node_pointer = RENodePointer::Store(resource_node_id);
@@ -950,7 +970,10 @@ where
             // Check for existence
             for global_address in global_references {
                 let node_id = RENodeId::Global(global_address);
-                let substate_id = SubstateId::Global(global_address, GlobalOffset::Global);
+                let substate_id = SubstateId(
+                    node_id,
+                    SubstateOffset::Global(GlobalOffset::Global),
+                );
                 let node_pointer = RENodePointer::Store(node_id);
 
                 // TODO: static check here is to support the current genesis transaction which
@@ -1304,7 +1327,10 @@ where
         )?;
 
         self.track.put_substate(
-            SubstateId::Global(global_address, GlobalOffset::Global),
+            SubstateId(
+                RENodeId::Global(global_address),
+                SubstateOffset::Global(GlobalOffset::Global),
+            ),
             Substate::GlobalRENode(global_re_node),
         );
         Self::current_frame_mut(&mut self.call_frames)
@@ -1499,7 +1525,7 @@ where
         let (taken_nodes, missing_nodes) = {
             let node_ids = value.node_ids();
             if !node_ids.is_empty() {
-                if !SubstateProperties::can_own_nodes(&substate_id) {
+                if !SubstateProperties::can_own_nodes(&substate_id.1) {
                     return Err(RuntimeError::KernelError(KernelError::ValueNotAllowed));
                 }
 

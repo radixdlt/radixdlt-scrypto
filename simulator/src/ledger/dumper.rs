@@ -25,9 +25,9 @@ pub fn dump_package<T: ReadableSubstateStore, O: std::io::Write>(
     let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
 
     let package: Option<PackageSubstate> = substate_store
-        .get_substate(&SubstateId::Package(
-            package_address,
-            PackageOffset::Package,
+        .get_substate(&SubstateId(
+            RENodeId::Package(package_address),
+            SubstateOffset::Package(PackageOffset::Package),
         ))
         .map(|s| s.substate)
         .map(|s| s.into());
@@ -60,9 +60,9 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
     let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
 
     let component_info: Option<ComponentInfoSubstate> = substate_store
-        .get_substate(&SubstateId::Component(
-            component_address,
-            ComponentOffset::Info,
+        .get_substate(&SubstateId(
+            RENodeId::Component(component_address),
+            SubstateOffset::Component(ComponentOffset::Info),
         ))
         .map(|s| s.substate)
         .map(|s| s.into());
@@ -92,9 +92,9 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
             }
 
             let state: ComponentStateSubstate = substate_store
-                .get_substate(&SubstateId::Component(
-                    component_address,
-                    ComponentOffset::State,
+                .get_substate(&SubstateId(
+                    RENodeId::Component(component_address),
+                    SubstateOffset::Component(ComponentOffset::State),
                 ))
                 .map(|s| s.substate)
                 .map(|s| s.into())
@@ -160,16 +160,19 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
     writeln!(output, "{}:", "Resources".green().bold());
     for (last, vault_id) in vaults.iter().identify_last() {
         let vault: VaultSubstate = substate_store
-            .get_substate(&SubstateId::Vault(*vault_id, VaultOffset::Vault))
+            .get_substate(&SubstateId(
+                RENodeId::Vault(*vault_id),
+                SubstateOffset::Vault(VaultOffset::Vault),
+            ))
             .map(|s| s.substate)
             .map(|s| s.into())
             .unwrap();
         let amount = vault.0.amount();
         let resource_address = vault.0.resource_address();
         let resource_manager: ResourceManagerSubstate = substate_store
-            .get_substate(&SubstateId::ResourceManager(
-                resource_address,
-                ResourceManagerOffset::ResourceManager,
+            .get_substate(&SubstateId(
+                RENodeId::ResourceManager(resource_address),
+                SubstateOffset::Resource(ResourceManagerOffset::ResourceManager),
             ))
             .map(|s| s.substate)
             .map(|s| s.into())
@@ -195,9 +198,9 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
             let ids = vault.0.ids();
             for (inner_last, id) in ids.iter().identify_last() {
                 let non_fungible: NonFungibleSubstate = substate_store
-                    .get_substate(&SubstateId::ResourceManager(
-                        resource_address,
-                        ResourceManagerOffset::NonFungible(id.clone()),
+                    .get_substate(&SubstateId(
+                        RENodeId::ResourceManager(resource_address),
+                        SubstateOffset::Resource(ResourceManagerOffset::NonFungible(id.clone())),
                     ))
                     .map(|s| s.substate)
                     .map(|s| s.into())
@@ -231,9 +234,9 @@ pub fn dump_resource_manager<T: ReadableSubstateStore, O: std::io::Write>(
     output: &mut O,
 ) -> Result<(), DisplayError> {
     let resource_manager: Option<ResourceManagerSubstate> = substate_store
-        .get_substate(&SubstateId::ResourceManager(
-            resource_address,
-            ResourceManagerOffset::ResourceManager,
+        .get_substate(&SubstateId(
+            RENodeId::ResourceManager(resource_address),
+            SubstateOffset::Resource(ResourceManagerOffset::ResourceManager),
         ))
         .map(|s| s.substate)
         .map(|s| s.into());

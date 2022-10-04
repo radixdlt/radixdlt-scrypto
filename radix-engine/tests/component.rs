@@ -110,9 +110,9 @@ fn reentrancy_should_not_be_possible() {
             substate_id,
         ))) = e
         {
-            substate_id.eq(&SubstateId::Component(
-                component_address,
-                ComponentOffset::State,
+            substate_id.eq(&SubstateId(
+                RENodeId::Component(component_address),
+                SubstateOffset::Component(ComponentOffset::State),
             ))
         } else {
             false

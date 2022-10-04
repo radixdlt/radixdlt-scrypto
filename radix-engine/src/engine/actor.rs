@@ -31,17 +31,32 @@ impl REActor {
                 ..
             }) => true,
             REActor::Function(FunctionIdent::Scrypto { .. }) => match substate_id {
-                SubstateId::KeyValueStore(_, KeyValueStoreOffset::Entry(..)) => true,
-                SubstateId::Component(_, ComponentOffset::Info) => true,
+                SubstateId(
+                    RENodeId::KeyValueStore(_),
+                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
+                ) => true,
+                SubstateId(
+                    RENodeId::Component(_),
+                    SubstateOffset::Component(ComponentOffset::Info),
+                ) => true,
                 _ => false,
             },
             REActor::Method(FullyQualifiedMethod {
                 receiver: Receiver::Ref(RENodeId::Component(component_address)),
                 fn_ident: FullyQualifiedMethodFn::Scrypto { .. },
             }) => match substate_id {
-                SubstateId::KeyValueStore(_, KeyValueStoreOffset::Entry(..)) => true,
-                SubstateId::Component(_, ComponentOffset::Info) => true,
-                SubstateId::Component(addr, ComponentOffset::State) => addr.eq(component_address),
+                SubstateId(
+                    RENodeId::KeyValueStore(_),
+                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
+                ) => true,
+                SubstateId(
+                    RENodeId::Component(_),
+                    SubstateOffset::Component(ComponentOffset::Info),
+                ) => true,
+                SubstateId(
+                    RENodeId::Component(addr),
+                    SubstateOffset::Component(ComponentOffset::State),
+                ) => addr.eq(component_address),
                 _ => false,
             },
             _ => false,
@@ -56,15 +71,24 @@ impl REActor {
                 ..
             }) => true,
             REActor::Function(FunctionIdent::Scrypto { .. }) => match substate_id {
-                SubstateId::KeyValueStore(_, KeyValueStoreOffset::Entry(..)) => true,
+                SubstateId(
+                    RENodeId::KeyValueStore(_),
+                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
+                ) => true,
                 _ => false,
             },
             REActor::Method(FullyQualifiedMethod {
                 receiver: Receiver::Ref(RENodeId::Component(component_address)),
                 fn_ident: FullyQualifiedMethodFn::Scrypto { .. },
             }) => match substate_id {
-                SubstateId::KeyValueStore(_, KeyValueStoreOffset::Entry(..)) => true,
-                SubstateId::Component(addr, ComponentOffset::State) => addr.eq(component_address),
+                SubstateId(
+                    RENodeId::KeyValueStore(_),
+                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
+                ) => true,
+                SubstateId(
+                    RENodeId::Component(addr),
+                    SubstateOffset::Component(ComponentOffset::State),
+                ) => addr.eq(component_address),
                 _ => false,
             },
             _ => false,

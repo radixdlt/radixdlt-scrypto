@@ -34,21 +34,38 @@ impl RENodeProperties {
     pub fn to_primary_substate_id(method_ident: &MethodIdent) -> Result<SubstateId, RuntimeError> {
         let substate_id = match &method_ident.method_fn_ident {
             MethodFnIdent::Native(..) => match method_ident.receiver.node_id() {
-                RENodeId::AuthZone(auth_zone_id) => {
-                    SubstateId::AuthZone(auth_zone_id, AuthZoneOffset::AuthZone)
-                }
-                RENodeId::Bucket(bucket_id) => SubstateId::Bucket(bucket_id, BucketOffset::Bucket),
-                RENodeId::Proof(proof_id) => SubstateId::Proof(proof_id, ProofOffset::Proof),
-                RENodeId::ResourceManager(resource_address) => SubstateId::ResourceManager(
-                    resource_address,
-                    ResourceManagerOffset::ResourceManager,
+                RENodeId::AuthZone(auth_zone_id) => SubstateId(
+                    RENodeId::AuthZone(auth_zone_id),
+                    SubstateOffset::AuthZone(AuthZoneOffset::AuthZone),
                 ),
-                RENodeId::System(component_address) => SubstateId::System(component_address, SystemOffset::System),
-                RENodeId::Worktop => SubstateId::Worktop(WorktopOffset::Worktop),
-                RENodeId::Component(component_address) => {
-                    SubstateId::Component(component_address, ComponentOffset::Info)
-                }
-                RENodeId::Vault(vault_id) => SubstateId::Vault(vault_id, VaultOffset::Vault),
+                RENodeId::Bucket(bucket_id) => SubstateId(
+                    RENodeId::Bucket(bucket_id),
+                    SubstateOffset::Bucket(BucketOffset::Bucket),
+                ),
+                RENodeId::Proof(proof_id) => SubstateId(
+                    RENodeId::Proof(proof_id),
+                    SubstateOffset::Proof(ProofOffset::Proof),
+                ),
+                RENodeId::ResourceManager(resource_address) => SubstateId(
+                    RENodeId::ResourceManager(resource_address),
+                    SubstateOffset::Resource(ResourceManagerOffset::ResourceManager),
+                ),
+                RENodeId::System(component_address) => SubstateId(
+                    RENodeId::System(component_address),
+                    SubstateOffset::System(SystemOffset::System),
+                ),
+                RENodeId::Worktop => SubstateId(
+                    RENodeId::Worktop,
+                    SubstateOffset::Worktop(WorktopOffset::Worktop),
+                ),
+                RENodeId::Component(component_address) => SubstateId(
+                    RENodeId::Component(component_address),
+                    SubstateOffset::Component(ComponentOffset::Info),
+                ),
+                RENodeId::Vault(vault_id) => SubstateId(
+                    RENodeId::Vault(vault_id),
+                    SubstateOffset::Vault(VaultOffset::Vault),
+                ),
                 _ => {
                     return Err(RuntimeError::KernelError(KernelError::MethodIdentNotFound(
                         method_ident.clone(),
@@ -56,9 +73,10 @@ impl RENodeProperties {
                 }
             },
             MethodFnIdent::Scrypto { .. } => match method_ident.receiver.node_id() {
-                RENodeId::Component(component_address) => {
-                    SubstateId::Component(component_address, ComponentOffset::State)
-                }
+                RENodeId::Component(component_address) => SubstateId(
+                    RENodeId::Component(component_address),
+                    SubstateOffset::Component(ComponentOffset::State),
+                ),
                 _ => {
                     return Err(RuntimeError::KernelError(KernelError::MethodIdentNotFound(
                         method_ident.clone(),
@@ -74,43 +92,23 @@ impl RENodeProperties {
 pub struct SubstateProperties;
 
 impl SubstateProperties {
-    pub fn get_node_id(substate_id: &SubstateId) -> RENodeId {
-        match substate_id {
-            SubstateId::Global(global_address, ..) => RENodeId::Global(*global_address),
-            SubstateId::Component(component_address, ..) => RENodeId::Component(*component_address),
-            SubstateId::KeyValueStore(kv_store_id, ..) => RENodeId::KeyValueStore(*kv_store_id),
-            SubstateId::Vault(vault_id, ..) => RENodeId::Vault(*vault_id),
-            SubstateId::Package(package_address, PackageOffset::Package) => {
-                RENodeId::Package(*package_address)
-            }
-            SubstateId::ResourceManager(resource_address, ..) => {
-                RENodeId::ResourceManager(*resource_address)
-            }
-            SubstateId::System(component_address, ..) => RENodeId::System(*component_address),
-            SubstateId::Bucket(bucket_id, ..) => RENodeId::Bucket(*bucket_id),
-            SubstateId::Proof(proof_id, ..) => RENodeId::Proof(*proof_id),
-            SubstateId::Worktop(..) => RENodeId::Worktop,
-            SubstateId::AuthZone(auth_zone_id, ..) => RENodeId::AuthZone(*auth_zone_id),
-        }
-    }
-
-    pub fn can_own_nodes(substate_id: &SubstateId) -> bool {
-        match substate_id {
-            SubstateId::Global(..) => true,
-            SubstateId::AuthZone(..) => false,
-            SubstateId::Component(_, ComponentOffset::State) => true,
-            SubstateId::Component(_, ComponentOffset::Info) => false,
-            SubstateId::ResourceManager(_, ResourceManagerOffset::NonFungible(..)) => false,
-            SubstateId::ResourceManager(_, ResourceManagerOffset::NonFungibleSpace) => false,
-            SubstateId::ResourceManager(_, ResourceManagerOffset::ResourceManager) => false,
-            SubstateId::KeyValueStore(_, KeyValueStoreOffset::Entry(..)) => true,
-            SubstateId::KeyValueStore(_, KeyValueStoreOffset::Space) => false,
-            SubstateId::Vault(..) => false,
-            SubstateId::Package(..) => false,
-            SubstateId::System(..) => false,
-            SubstateId::Bucket(..) => false,
-            SubstateId::Proof(..) => false,
-            SubstateId::Worktop(..) => false, // TODO: Fix
+    pub fn can_own_nodes(offset: &SubstateOffset) -> bool {
+        match offset {
+            SubstateOffset::Global(..) => true,
+            SubstateOffset::AuthZone(..) => false,
+            SubstateOffset::Component(ComponentOffset::State) => true,
+            SubstateOffset::Component(ComponentOffset::Info) => false,
+            SubstateOffset::Resource(ResourceManagerOffset::NonFungible(..)) => false,
+            SubstateOffset::Resource(ResourceManagerOffset::NonFungibleSpace) => false,
+            SubstateOffset::Resource(ResourceManagerOffset::ResourceManager) => false,
+            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)) => true,
+            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Space) => false,
+            SubstateOffset::Vault(..) => false,
+            SubstateOffset::Package(..) => false,
+            SubstateOffset::System(..) => false,
+            SubstateOffset::Bucket(..) => false,
+            SubstateOffset::Proof(..) => false,
+            SubstateOffset::Worktop(..) => false, // TODO: Fix
         }
     }
 }

@@ -202,9 +202,9 @@ where
     S: ReadableSubstateStore + WriteableSubstateStore,
 {
     if substate_store
-        .get_substate(&SubstateId::ResourceManager(
-            RADIX_TOKEN,
-            ResourceManagerOffset::ResourceManager,
+        .get_substate(&SubstateId(
+            RENodeId::ResourceManager(RADIX_TOKEN),
+            SubstateOffset::Resource(ResourceManagerOffset::ResourceManager),
         ))
         .is_none()
     {

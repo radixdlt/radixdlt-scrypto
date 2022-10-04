@@ -188,30 +188,24 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
         substate_id: &SubstateId,
     ) -> Result<ScryptoValue, RuntimeError> {
         match substate_id {
-            SubstateId::Component(_, ComponentOffset::Info) => {
-                Ok(ScryptoValue::from_typed(&self.component_mut().info))
-            }
-            SubstateId::Component(_, ComponentOffset::State) => {
-                Ok(ScryptoValue::from_slice(&self.component_mut().state.state)
-                    .expect("Failed to decode component state"))
-            }
-            SubstateId::ResourceManager(_, ResourceManagerOffset::NonFungible(id)) => {
-                Ok(self.non_fungible_get(id))
-            }
-            SubstateId::KeyValueStore(_, KeyValueStoreOffset::Entry(key)) => {
-                Ok(self.kv_store_get(key))
-            }
-            SubstateId::Global(..)
-            | SubstateId::Vault(..)
-            | SubstateId::KeyValueStore(_, KeyValueStoreOffset::Space)
-            | SubstateId::Package(..)
-            | SubstateId::ResourceManager(_, ResourceManagerOffset::ResourceManager)
-            | SubstateId::ResourceManager(_, ResourceManagerOffset::NonFungibleSpace)
-            | SubstateId::System(..)
-            | SubstateId::Bucket(..)
-            | SubstateId::Proof(..)
-            | SubstateId::AuthZone(..)
-            | SubstateId::Worktop(..) => {
+            SubstateId(
+                RENodeId::Component(_),
+                SubstateOffset::Component(ComponentOffset::Info),
+            ) => Ok(ScryptoValue::from_typed(&self.component_mut().info)),
+            SubstateId(
+                RENodeId::Component(_),
+                SubstateOffset::Component(ComponentOffset::State),
+            ) => Ok(ScryptoValue::from_slice(&self.component_mut().state.state)
+                .expect("Failed to decode component state")),
+            SubstateId(
+                RENodeId::ResourceManager(_),
+                SubstateOffset::Resource(ResourceManagerOffset::NonFungible(id)),
+            ) => Ok(self.non_fungible_get(id)),
+            SubstateId(
+                RENodeId::KeyValueStore(_),
+                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key)),
+            ) => Ok(self.kv_store_get(key)),
+            _ => {
                 panic!("Should never have received permissions to read this native type.");
             }
         }
@@ -219,22 +213,12 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
 
     pub fn replace_value_with_default(&mut self, substate_id: &SubstateId) {
         match substate_id {
-            SubstateId::Global(..)
-            | SubstateId::Component(..)
-            | SubstateId::KeyValueStore(..)
-            | SubstateId::Vault(..)
-            | SubstateId::Package(..)
-            | SubstateId::ResourceManager(_, ResourceManagerOffset::ResourceManager)
-            | SubstateId::ResourceManager(_, ResourceManagerOffset::NonFungibleSpace)
-            | SubstateId::System(..)
-            | SubstateId::Bucket(..)
-            | SubstateId::Proof(..)
-            | SubstateId::AuthZone(..)
-            | SubstateId::Worktop(..) => {
+            SubstateId(
+                RENodeId::ResourceManager(_),
+                SubstateOffset::Resource(ResourceManagerOffset::NonFungible(id)),
+            ) => self.non_fungible_remove(&id),
+            _ => {
                 panic!("Should not get here");
-            }
-            SubstateId::ResourceManager(_, ResourceManagerOffset::NonFungible(id)) => {
-                self.non_fungible_remove(&id)
             }
         }
     }
@@ -246,16 +230,20 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
         child_nodes: HashMap<RENodeId, HeapRootRENode>,
     ) -> Result<(), NodeToSubstateFailure> {
         match substate_id {
-            SubstateId::Global(..) => {
-                panic!("Should not get here");
-            }
-            SubstateId::Component(_, ComponentOffset::State) => {
+            SubstateId(
+                RENodeId::Component(_),
+                SubstateOffset::Component(ComponentOffset::State),
+            ) => {
                 self.component_state_set(value, child_nodes);
             }
-            SubstateId::ResourceManager(.., ResourceManagerOffset::NonFungible(id)) => {
-                self.non_fungible_put(id, value)
-            }
-            SubstateId::KeyValueStore(.., KeyValueStoreOffset::Entry(key)) => {
+            SubstateId(
+                RENodeId::ResourceManager(..),
+                SubstateOffset::Resource(ResourceManagerOffset::NonFungible(id)),
+            ) => self.non_fungible_put(id, value),
+            SubstateId(
+                RENodeId::KeyValueStore(..),
+                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key)),
+            ) => {
                 self.kv_store_put(key, value, child_nodes)?;
             }
             _ => {
@@ -283,9 +271,10 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
             }
             RENodeRefMut::Track(track, node_id) => {
                 let parent_substate_id = match node_id {
-                    RENodeId::KeyValueStore(kv_store_id) => {
-                        SubstateId::KeyValueStore(*kv_store_id, KeyValueStoreOffset::Space)
-                    }
+                    RENodeId::KeyValueStore(kv_store_id) => SubstateId(
+                        RENodeId::KeyValueStore(*kv_store_id),
+                        SubstateOffset::KeyValueStore(KeyValueStoreOffset::Space),
+                    ),
                     _ => panic!("Unexpected"),
                 };
                 track.set_key_value(
@@ -315,9 +304,10 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
             }
             RENodeRefMut::Track(track, node_id) => {
                 let parent_substate_id = match node_id {
-                    RENodeId::KeyValueStore(kv_store_id) => {
-                        SubstateId::KeyValueStore(*kv_store_id, KeyValueStoreOffset::Space)
-                    }
+                    RENodeId::KeyValueStore(kv_store_id) => SubstateId(
+                        RENodeId::KeyValueStore(*kv_store_id),
+                        SubstateOffset::KeyValueStore(KeyValueStoreOffset::Space),
+                    ),
                     _ => panic!("Unexpected"),
                 };
                 let substate_value = track.read_key_value(parent_substate_id, key.to_vec());
@@ -358,9 +348,9 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
             }
             RENodeRefMut::Track(track, node_id) => {
                 let parent_substate_id = match node_id {
-                    RENodeId::ResourceManager(resource_address) => SubstateId::ResourceManager(
-                        *resource_address,
-                        ResourceManagerOffset::NonFungibleSpace,
+                    RENodeId::ResourceManager(resource_address) => SubstateId(
+                        RENodeId::ResourceManager(*resource_address),
+                        SubstateOffset::Resource(ResourceManagerOffset::NonFungibleSpace),
                     ),
                     _ => panic!("Unexpected"),
                 };
@@ -379,9 +369,9 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
             }
             RENodeRefMut::Track(track, node_id) => {
                 let parent_substate_id = match node_id {
-                    RENodeId::ResourceManager(resource_address) => SubstateId::ResourceManager(
-                        *resource_address,
-                        ResourceManagerOffset::NonFungibleSpace,
+                    RENodeId::ResourceManager(resource_address) => SubstateId(
+                        RENodeId::ResourceManager(*resource_address),
+                        SubstateOffset::Resource(ResourceManagerOffset::NonFungibleSpace),
                     ),
                     _ => panic!("Unexpected"),
                 };
@@ -409,9 +399,9 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
             }
             RENodeRefMut::Track(track, node_id) => {
                 let parent_substate_id = match node_id {
-                    RENodeId::ResourceManager(resource_address) => SubstateId::ResourceManager(
-                        *resource_address,
-                        ResourceManagerOffset::NonFungibleSpace,
+                    RENodeId::ResourceManager(resource_address) => SubstateId(
+                        RENodeId::ResourceManager(*resource_address),
+                        SubstateOffset::Resource(ResourceManagerOffset::NonFungibleSpace),
                     ),
                     _ => panic!("Unexpected"),
                 };

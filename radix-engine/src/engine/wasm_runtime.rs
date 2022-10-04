@@ -131,7 +131,10 @@ where
         substate_id: SubstateId,
     ) -> Result<ScryptoValue, RuntimeError> {
         match &substate_id {
-            SubstateId::KeyValueStore(_kv_store_id, KeyValueStoreOffset::Entry(key_bytes)) => {
+            SubstateId(
+                RENodeId::KeyValueStore(..),
+                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key_bytes)),
+            ) => {
                 let key_data = ScryptoValue::from_slice(&key_bytes)
                     .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                 Self::verify_stored_key(&key_data)?;
@@ -148,7 +151,10 @@ where
         value: Vec<u8>,
     ) -> Result<ScryptoValue, RuntimeError> {
         match &substate_id {
-            SubstateId::KeyValueStore(_kv_store_id, KeyValueStoreOffset::Entry(key_bytes)) => {
+            SubstateId(
+                RENodeId::KeyValueStore(..),
+                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key_bytes)),
+            ) => {
                 let key_data = ScryptoValue::from_slice(&key_bytes)
                     .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                 Self::verify_stored_key(&key_data)?;
