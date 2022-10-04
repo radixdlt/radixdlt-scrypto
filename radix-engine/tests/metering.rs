@@ -198,3 +198,35 @@ fn test_publish_large_package() {
     // Assert
     assert_eq!(4274112, receipt.execution.fee_summary.cost_unit_consumed);
 }
+
+#[test]
+fn test_be_able_run_large_manifest() {
+    // Arrange
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
+    let (public_key1, _, account1) = test_runner.new_account();
+    let (_, _, account2) = test_runner.new_account();
+
+    // Act
+    let mut builder = ManifestBuilder::new(&NetworkDefinition::simulator());
+    builder.lock_fee(100u32.into(), account1);
+    builder.withdraw_from_account_by_amount(100u32.into(), RADIX_TOKEN, account1);
+    for _ in 0..500 {
+        builder.take_from_worktop_by_amount(1.into(), RADIX_TOKEN, |builder, bid| {
+            builder.return_to_worktop(bid)
+        });
+    }
+    builder.call_method(
+        account2,
+        "deposit_batch",
+        args!(Expression::entire_worktop()),
+    );
+    let manifest = builder.build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&public_key1)],
+    );
+
+    // Assert
+    receipt.expect_commit_success();
+}

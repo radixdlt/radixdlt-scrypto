@@ -39,6 +39,7 @@ pub trait FeeReserve {
     fn owed(&self) -> u32;
 }
 
+#[derive(Debug)]
 pub struct SystemLoanFeeReserve {
     /// The price of cost unit
     cost_unit_price: Decimal,
@@ -129,6 +130,7 @@ impl FeeReserve for SystemLoanFeeReserve {
 
         // update balance or owed
         if !deferred {
+            // println!("Trace: {}, {}, {}, {}", self.balance, self.owed, reason.to_string(), n);
             self.balance = self
                 .balance
                 .checked_sub(n)
