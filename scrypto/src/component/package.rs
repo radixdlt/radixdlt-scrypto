@@ -1,10 +1,10 @@
 use sbor::rust::fmt;
-use sbor::rust::str::FromStr;
+use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::abi::*;
-use crate::address::{AddressError, EntityType, BECH32_DECODER, BECH32_ENCODER};
+use crate::address::{AddressError, EntityType};
 use crate::core::*;
 use crate::misc::*;
 
@@ -62,6 +62,16 @@ impl PackageAddress {
         }
         buf
     }
+
+    pub fn to_hex(&self) -> String {
+        hex::encode(self.to_vec())
+    }
+
+    pub fn try_from_hex(hex_str: &str) -> Result<Self, AddressError> {
+        let bytes = hex::decode(hex_str).map_err(|_| AddressError::HexDecodingError)?;
+
+        Self::try_from(bytes.as_ref())
+    }
 }
 
 scrypto_type!(PackageAddress, ScryptoType::PackageAddress, Vec::new());
@@ -70,17 +80,13 @@ scrypto_type!(PackageAddress, ScryptoType::PackageAddress, Vec::new());
 // text
 //======
 
-impl FromStr for PackageAddress {
-    type Err = AddressError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        BECH32_DECODER.validate_and_decode_package_address(s)
-    }
-}
-
 impl fmt::Display for PackageAddress {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}", BECH32_ENCODER.encode_package_address(self))
+        // We should consider adding a NetworkAwareDisplay / NetworkAwareDebug trait
+        // which can Bech32m encode the address appropriately
+        match self {
+            PackageAddress::Normal(_) => write!(f, "NormalPackage: {}", self.to_hex()),
+        }
     }
 }
 

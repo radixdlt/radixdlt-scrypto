@@ -1,5 +1,4 @@
 use sbor::rust::fmt;
-use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
@@ -163,6 +162,16 @@ impl ComponentAddress {
         }
         buf
     }
+
+    pub fn to_hex(&self) -> String {
+        hex::encode(self.to_vec())
+    }
+
+    pub fn try_from_hex(hex_str: &str) -> Result<Self, AddressError> {
+        let bytes = hex::decode(hex_str).map_err(|_| AddressError::HexDecodingError)?;
+
+        Self::try_from(bytes.as_ref())
+    }
 }
 
 scrypto_type!(ComponentAddress, ScryptoType::ComponentAddress, Vec::new());
@@ -171,17 +180,21 @@ scrypto_type!(ComponentAddress, ScryptoType::ComponentAddress, Vec::new());
 // text
 //======
 
-impl FromStr for ComponentAddress {
-    type Err = AddressError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        BECH32_DECODER.validate_and_decode_component_address(s)
-    }
-}
-
 impl fmt::Display for ComponentAddress {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}", BECH32_ENCODER.encode_component_address(self))
+        // We should consider adding a NetworkAwareDisplay / NetworkAwareDebug trait
+        // which can Bech32m encode the address appropriately
+        match self {
+            ComponentAddress::Normal(_) => {
+                write!(f, "NormalComponent: {}", self.to_hex())
+            }
+            ComponentAddress::Account(_) => {
+                write!(f, "AccountComponent: {}", self.to_hex())
+            }
+            ComponentAddress::System(_) => {
+                write!(f, "SystemComponent: {}", self.to_hex())
+            }
+        }
     }
 }
 

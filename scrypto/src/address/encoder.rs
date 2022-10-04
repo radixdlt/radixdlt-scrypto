@@ -1,5 +1,4 @@
 use bech32::{self, ToBase32, Variant};
-use once_cell::unsync::Lazy;
 use sbor::rust::string::String;
 
 use super::entity::EntityType;
@@ -65,11 +64,8 @@ impl Bech32Encoder {
         let full_data = combine(entity_type.id(), other_data);
 
         let bech32_string = bech32::encode(hrp, full_data.to_base32(), Variant::Bech32m)
-            .map_err(|err| AddressError::EncodingError(err))?;
+            .map_err(|err| AddressError::Bech32mEncodingError(err))?;
 
         Ok(bech32_string)
     }
 }
-
-pub const BECH32_ENCODER: Lazy<Bech32Encoder> =
-    Lazy::new(|| Bech32Encoder::new(&NetworkDefinition::simulator()));

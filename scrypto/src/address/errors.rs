@@ -5,8 +5,9 @@ use sbor::rust::fmt;
 /// Represents an error in addressing.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AddressError {
-    EncodingError(Error),
-    DecodingError(Error),
+    Bech32mEncodingError(Error),
+    Bech32mDecodingError(Error),
+    HexDecodingError,
     InvalidVariant(Variant),
     DataSectionTooShort,
     InvalidLength(usize),

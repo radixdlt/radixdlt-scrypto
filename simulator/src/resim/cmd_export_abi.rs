@@ -8,7 +8,7 @@ use crate::resim::*;
 #[derive(Parser, Debug)]
 pub struct ExportAbi {
     /// The package ID
-    package_address: PackageAddress,
+    package_address: SimulatorPackageAddress,
 
     /// The blueprint name
     blueprint_name: String,
@@ -20,12 +20,10 @@ pub struct ExportAbi {
 
 impl ExportAbi {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
-        let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
-
-        match export_abi(self.package_address, &self.blueprint_name) {
+        match export_abi(self.package_address.0, &self.blueprint_name) {
             Ok(a) => {
                 let blueprint = abi::Blueprint {
-                    package_address: bech32_encoder.encode_package_address(&self.package_address),
+                    package_address: self.package_address.0.to_hex(),
                     blueprint_name: self.blueprint_name.clone(),
                     abi: a,
                 };

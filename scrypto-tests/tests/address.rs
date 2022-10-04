@@ -81,7 +81,7 @@ fn decode_truncated_checksum_address_fails() {
     // Assert
     assert!(matches!(
         decoded_resource_address,
-        Err(AddressError::DecodingError(_))
+        Err(AddressError::Bech32mDecodingError(_))
     ));
 }
 
@@ -102,7 +102,7 @@ fn decode_modified_checksum_address_fails() {
     // Assert
     assert!(matches!(
         decoded_resource_address,
-        Err(AddressError::DecodingError(_))
+        Err(AddressError::Bech32mDecodingError(_))
     ));
 }
 

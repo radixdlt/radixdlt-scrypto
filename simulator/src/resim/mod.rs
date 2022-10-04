@@ -1,3 +1,4 @@
+mod addressing;
 mod cmd_call_function;
 mod cmd_call_method;
 mod cmd_export_abi;
@@ -20,6 +21,7 @@ mod cmd_transfer;
 mod config;
 mod error;
 
+pub use addressing::*;
 pub use cmd_call_function::*;
 pub use cmd_call_method::*;
 pub use cmd_export_abi::*;

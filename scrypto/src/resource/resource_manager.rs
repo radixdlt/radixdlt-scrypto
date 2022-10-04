@@ -1,12 +1,11 @@
 use sbor::rust::collections::HashMap;
 use sbor::rust::fmt;
-use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::abi::*;
-use crate::address::{AddressError, EntityType, BECH32_DECODER, BECH32_ENCODER};
+use crate::address::{AddressError, EntityType};
 use crate::buffer::scrypto_encode;
 use crate::core::NativeFnIdentifier;
 use crate::core::{FnIdentifier, Receiver, ResourceManagerFnIdentifier};
@@ -402,6 +401,16 @@ impl ResourceAddress {
         }
         buf
     }
+
+    pub fn to_hex(&self) -> String {
+        hex::encode(self.to_vec())
+    }
+
+    pub fn try_from_hex(hex_str: &str) -> Result<Self, AddressError> {
+        let bytes = hex::decode(hex_str).map_err(|_| AddressError::HexDecodingError)?;
+
+        Self::try_from(bytes.as_ref())
+    }
 }
 
 scrypto_type!(ResourceAddress, ScryptoType::ResourceAddress, Vec::new());
@@ -410,17 +419,15 @@ scrypto_type!(ResourceAddress, ScryptoType::ResourceAddress, Vec::new());
 // text
 //======
 
-impl FromStr for ResourceAddress {
-    type Err = AddressError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        BECH32_DECODER.validate_and_decode_resource_address(s)
-    }
-}
-
 impl fmt::Display for ResourceAddress {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}", BECH32_ENCODER.encode_resource_address(self))
+        // We should consider adding a NetworkAwareDisplay / NetworkAwareDebug trait
+        // which can Bech32m encode the address appropriately
+        match self {
+            ResourceAddress::Normal(_) => {
+                write!(f, "NormalResource: {}", self.to_hex())
+            }
+        }
     }
 }
 
