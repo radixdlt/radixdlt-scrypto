@@ -48,9 +48,9 @@ impl Component {
     /// Invokes a method on this component.
     pub fn call<T: Decode>(&self, method: &str, args: Vec<u8>) -> T {
         let input = RadixEngineInput::Invoke(
-            FnIdent::Method(MethodIdent {
+            FnIdent::Method(ReceiverMethodIdent {
                 receiver: Receiver::Ref(RENodeId::Component(self.0)),
-                method_fn_ident: MethodFnIdent::Scrypto(method.to_string()),
+                method_ident: MethodIdent::Scrypto(method.to_string()),
             }),
             args,
         );
@@ -81,10 +81,10 @@ impl Component {
 
     pub fn add_access_check(&mut self, access_rules: AccessRules) -> &mut Self {
         let input = RadixEngineInput::Invoke(
-            FnIdent::Method(MethodIdent {
+            FnIdent::Method(ReceiverMethodIdent {
                 receiver: Receiver::Ref(RENodeId::Component(self.0)),
-                method_fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::Component(
-                    ComponentMethodFnIdent::AddAccessCheck,
+                method_ident: MethodIdent::Native(NativeMethod::Component(
+                    ComponentMethod::AddAccessCheck,
                 )),
             }),
             scrypto_encode(&ComponentAddAccessCheckInput { access_rules }),
@@ -108,9 +108,9 @@ impl BorrowedGlobalComponent {
     /// Invokes a method on this component.
     pub fn call<T: Decode>(&self, method: &str, args: Vec<u8>) -> T {
         let input = RadixEngineInput::Invoke(
-            FnIdent::Method(MethodIdent {
+            FnIdent::Method(ReceiverMethodIdent {
                 receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Component(self.0))),
-                method_fn_ident: MethodFnIdent::Scrypto(method.to_string()),
+                method_ident: MethodIdent::Scrypto(method.to_string()),
             }),
             args,
         );
@@ -141,10 +141,10 @@ impl BorrowedGlobalComponent {
 
     pub fn add_access_check(&mut self, access_rules: AccessRules) -> &mut Self {
         let input = RadixEngineInput::Invoke(
-            FnIdent::Method(MethodIdent {
+            FnIdent::Method(ReceiverMethodIdent {
                 receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Component(self.0))),
-                method_fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::Component(
-                    ComponentMethodFnIdent::AddAccessCheck,
+                method_ident: MethodIdent::Native(NativeMethod::Component(
+                    ComponentMethod::AddAccessCheck,
                 )),
             }),
             scrypto_encode(&ComponentAddAccessCheckInput { access_rules }),

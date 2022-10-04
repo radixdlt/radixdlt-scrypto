@@ -79,11 +79,11 @@ impl Runtime {
         args: Vec<u8>,
     ) -> T {
         let input = RadixEngineInput::Invoke(
-            FnIdent::Method(MethodIdent {
+            FnIdent::Method(ReceiverMethodIdent {
                 receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Component(
                     component_address,
                 ))),
-                method_fn_ident: MethodFnIdent::Scrypto(method.as_ref().to_string()),
+                method_ident: MethodIdent::Scrypto(method.as_ref().to_string()),
             }),
             args,
         );
@@ -93,12 +93,12 @@ impl Runtime {
     /// Returns the transaction hash.
     pub fn transaction_hash() -> Hash {
         let input = RadixEngineInput::Invoke(
-            FnIdent::Method(MethodIdent {
+            FnIdent::Method(ReceiverMethodIdent {
                 receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Component(
                     SYS_SYSTEM_COMPONENT,
                 ))),
-                method_fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::System(
-                    SystemMethodFnIdent::GetTransactionHash,
+                method_ident: MethodIdent::Native(NativeMethod::System(
+                    SystemMethod::GetTransactionHash,
                 )),
             }),
             scrypto_encode(&SystemGetTransactionHashInput {}),
@@ -109,12 +109,12 @@ impl Runtime {
     /// Returns the current epoch number.
     pub fn current_epoch() -> u64 {
         let input = RadixEngineInput::Invoke(
-            FnIdent::Method(MethodIdent {
+            FnIdent::Method(ReceiverMethodIdent {
                 receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Component(
                     SYS_SYSTEM_COMPONENT,
                 ))),
-                method_fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::System(
-                    SystemMethodFnIdent::GetCurrentEpoch,
+                method_ident: MethodIdent::Native(NativeMethod::System(
+                    SystemMethod::GetCurrentEpoch,
                 )),
             }),
             scrypto_encode(&SystemGetCurrentEpochInput {}),

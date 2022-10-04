@@ -14,9 +14,9 @@ blueprint! {
         pub fn call_self(&mut self) {
             if let ScryptoActor::Component(addr, ..) = Runtime::actor() {
                 let input = RadixEngineInput::Invoke(
-                    FnIdent::Method(MethodIdent {
+                    FnIdent::Method(ReceiverMethodIdent {
                         receiver: Receiver::Ref(RENodeId::Component(addr)),
-                        method_fn_ident: MethodFnIdent::Scrypto("func".to_string()),
+                        method_ident: MethodIdent::Scrypto("func".to_string()),
                     }),
                     args!(),
                 );

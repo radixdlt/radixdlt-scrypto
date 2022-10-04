@@ -2,7 +2,7 @@ use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::*;
 use crate::types::*;
-use scrypto::core::{FnIdent, MethodFnIdent, MethodIdent};
+use scrypto::core::{FnIdent, MethodIdent, ReceiverMethodIdent};
 
 #[derive(Debug, Clone, PartialEq, TypeId, Encode, Decode)]
 pub struct ResourceChange {
@@ -41,10 +41,7 @@ impl ExecutionTrace {
         next_owned_values: &HashMap<RENodeId, HeapRootRENode>,
     ) -> Result<(), RuntimeError> {
         let method_ident = match fn_ident {
-            FnIdent::Method(MethodIdent {
-                method_fn_ident: fn_ident,
-                ..
-            }) => fn_ident,
+            FnIdent::Method(ReceiverMethodIdent { method_ident, .. }) => method_ident,
             _ => return Ok(()),
         };
 
@@ -58,13 +55,13 @@ impl ExecutionTrace {
             2. Hook up to when the component is globalized and convert
                blueprint-parented vaults (if any) to regular
                trace entries with component parents. */
-            if let REActor::Method(FullyQualifiedMethod {
+            if let REActor::Method(FullyQualifiedReceiverMethod {
                 receiver: Receiver::Ref(RENodeId::Component(component_address)),
                 ..
             }) = &actor
             {
                 match method_ident {
-                    MethodFnIdent::Native(NativeMethodFnIdent::Vault(VaultMethodFnIdent::Put)) => {
+                    MethodIdent::Native(NativeMethod::Vault(VaultMethod::Put)) => {
                         let decoded_input = scrypto_decode(&input.raw).map_err(|e| {
                             RuntimeError::ApplicationError(ApplicationError::VaultError(
                                 VaultError::InvalidRequestData(e),
@@ -78,7 +75,7 @@ impl ExecutionTrace {
                             next_owned_values,
                         )?;
                     }
-                    MethodFnIdent::Native(NativeMethodFnIdent::Vault(VaultMethodFnIdent::Take)) => {
+                    MethodIdent::Native(NativeMethod::Vault(VaultMethod::Take)) => {
                         let decoded_input = scrypto_decode(&input.raw).map_err(|e| {
                             RuntimeError::ApplicationError(ApplicationError::VaultError(
                                 VaultError::InvalidRequestData(e),

@@ -10,9 +10,10 @@ pub fn node_to_substates(node: HeapRENode) -> HashMap<SubstateOffset, Substate> 
         HeapRENode::Proof(_) => panic!("Unexpected"),
         HeapRENode::AuthZone(_) => panic!("Unexpected"),
         HeapRENode::Global(global_node) => {
+            let substate = global_node.address;
             substates.insert(
                 SubstateOffset::Global(GlobalOffset::Global),
-                Substate::GlobalRENode(global_node),
+                Substate::GlobalRENode(substate),
             );
         }
         HeapRENode::Vault(vault) => {

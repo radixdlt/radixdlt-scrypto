@@ -3,9 +3,8 @@ use sbor::{encode_any, DecodeError, Value};
 use scrypto::address::{AddressError, Bech32Encoder};
 use scrypto::buffer::scrypto_decode;
 use scrypto::core::{
-    BucketMethodFnIdent, FunctionIdent, MethodFnIdent, MethodIdent, NativeFunctionFnIdent,
-    NativeMethodFnIdent, NetworkDefinition, Receiver, ResourceManagerFunctionFnIdent,
-    ResourceManagerMethodFnIdent,
+    BucketMethod, FunctionIdent, MethodIdent, NativeFunction, NativeMethod, NetworkDefinition,
+    Receiver, ReceiverMethodIdent, ResourceManagerFunction, ResourceManagerMethod,
 };
 use scrypto::engine::types::*;
 use scrypto::resource::{
@@ -22,9 +21,9 @@ pub enum DecompileError {
     IdValidationError(IdValidationError),
     DecodeError(DecodeError),
     AddressError(AddressError),
-    UnrecognizedNativeFunction(NativeFunctionFnIdent),
-    UnrecognizedNativeMethod(NativeMethodFnIdent),
-    UnrecognizedMethod(MethodIdent),
+    UnrecognizedNativeFunction(NativeFunction),
+    UnrecognizedNativeMethod(NativeMethod),
+    UnrecognizedMethod(ReceiverMethodIdent),
 }
 
 pub fn decompile(
@@ -239,10 +238,9 @@ pub fn decompile(
                 buf.push_str("DROP_ALL_PROOFS;\n");
             }
             Instruction::CallFunction {
-                fn_identifier,
-
+                function_ident,
                 args,
-            } => match fn_identifier {
+            } => match function_ident {
                 FunctionIdent::Scrypto {
                     package_address,
                     blueprint_name,
@@ -274,9 +272,7 @@ pub fn decompile(
                     buf.push_str(";\n");
                 }
                 FunctionIdent::Native(native_fn_identifier) => match native_fn_identifier {
-                    NativeFunctionFnIdent::ResourceManager(
-                        ResourceManagerFunctionFnIdent::Create,
-                    ) => {
+                    NativeFunction::ResourceManager(ResourceManagerFunction::Create) => {
                         buf.push_str("CREATE_RESOURCE");
                         let input: ResourceManagerCreateInput =
                             scrypto_decode(&args).map_err(DecompileError::DecodeError)?;
@@ -307,10 +303,10 @@ pub fn decompile(
                 },
             },
             Instruction::CallMethod { method_ident, args } => match method_ident {
-                MethodIdent {
+                ReceiverMethodIdent {
                     receiver:
                         Receiver::Ref(RENodeId::Global(GlobalAddress::Component(component_address))),
-                    method_fn_ident: MethodFnIdent::Scrypto(ident),
+                    method_ident: MethodIdent::Scrypto(ident),
                 } => {
                     buf.push_str(&format!(
                         "CALL_METHOD ComponentAddress(\"{}\") \"{}\"",
@@ -338,13 +334,13 @@ pub fn decompile(
 
                     buf.push_str(";\n");
                 }
-                MethodIdent {
+                ReceiverMethodIdent {
                     receiver,
-                    method_fn_ident: MethodFnIdent::Native(native_fn_identifier),
+                    method_ident: MethodIdent::Native(native_fn_identifier),
                 } => match (receiver, native_fn_identifier) {
                     (
                         Receiver::Consumed(RENodeId::Bucket(bucket_id)),
-                        NativeMethodFnIdent::Bucket(BucketMethodFnIdent::Burn),
+                        NativeMethod::Bucket(BucketMethod::Burn),
                     ) => {
                         let _input: ConsumingBucketBurnInput =
                             scrypto_decode(&args).map_err(DecompileError::DecodeError)?;
@@ -359,7 +355,7 @@ pub fn decompile(
                     }
                     (
                         Receiver::Ref(RENodeId::ResourceManager(resource_address)),
-                        NativeMethodFnIdent::ResourceManager(ResourceManagerMethodFnIdent::Mint),
+                        NativeMethod::ResourceManager(ResourceManagerMethod::Mint),
                     ) => {
                         let input: ResourceManagerMintInput =
                             scrypto_decode(&args).map_err(DecompileError::DecodeError)?;
@@ -373,9 +369,7 @@ pub fn decompile(
                             }
                             _ => {
                                 return Err(DecompileError::UnrecognizedNativeMethod(
-                                    NativeMethodFnIdent::ResourceManager(
-                                        ResourceManagerMethodFnIdent::Mint,
-                                    ),
+                                    NativeMethod::ResourceManager(ResourceManagerMethod::Mint),
                                 ))
                             }
                         }

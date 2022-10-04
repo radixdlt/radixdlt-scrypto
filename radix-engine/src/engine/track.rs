@@ -9,7 +9,6 @@ use crate::fee::FeeReserveError;
 use crate::fee::FeeSummary;
 use crate::fee::FeeTable;
 use crate::ledger::*;
-use crate::model::nodes_to_substates;
 use crate::model::Component;
 use crate::model::KeyValueStoreEntrySubstate;
 use crate::model::LockableResource;
@@ -20,6 +19,7 @@ use crate::model::Substate;
 use crate::model::System;
 use crate::model::Vault;
 use crate::model::{node_to_substates, Package};
+use crate::model::{nodes_to_substates, GlobalRENode};
 use crate::transaction::CommitResult;
 use crate::transaction::EntityChanges;
 use crate::transaction::RejectResult;
@@ -222,8 +222,8 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         if !loaded_substate.substate.is_taken() {
             let substate = loaded_substate.substate.take();
             match substate {
-                Substate::GlobalRENode(global_node) => {
-                    let node = HeapRENode::Global(global_node);
+                Substate::GlobalRENode(substate) => {
+                    let node = HeapRENode::Global(GlobalRENode { address: substate });
                     self.loaded_nodes.insert(
                         match &substate_id {
                             SubstateId(

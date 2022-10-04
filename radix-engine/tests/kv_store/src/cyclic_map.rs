@@ -22,8 +22,8 @@ blueprint! {
                 kv_store1.id.clone()
             };
 
-            let substate_id = SubstateId(RENodeId::KeyValueStore(
-                kv_store1_id),
+            let substate_id = SubstateId(
+                RENodeId::KeyValueStore(kv_store1_id),
                 SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(scrypto_encode(&0u32))),
             );
             let input = RadixEngineInput::SubstateWrite(
@@ -43,8 +43,8 @@ blueprint! {
             let kv_store = KeyValueStore::new();
             let kv_store_id = kv_store.id.clone();
 
-            let substate_id = SubstateId(RENodeId::KeyValueStore(
-                kv_store_id.clone()),
+            let substate_id = SubstateId(
+                RENodeId::KeyValueStore(kv_store_id.clone()),
                 SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(scrypto_encode(&0u32))),
             );
             let input = RadixEngineInput::SubstateWrite(

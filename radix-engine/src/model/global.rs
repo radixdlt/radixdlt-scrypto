@@ -1,23 +1,28 @@
 use crate::types::*;
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
-pub enum GlobalRENode {
+pub enum GlobalAddressSubstate {
     Component(scrypto::component::Component),
     Resource(ResourceAddress),
     Package(PackageAddress),
 }
 
+#[derive(Debug)]
+pub struct GlobalRENode {
+    pub address: GlobalAddressSubstate,
+}
+
 impl GlobalRENode {
     pub fn node_deref(&self) -> RENodeId {
-        match self {
-            GlobalRENode::Component(component) => match component.0 {
+        match &self.address {
+            GlobalAddressSubstate::Component(component) => match component.0 {
                 ComponentAddress::System(..) => RENodeId::System(component.0),
                 _ => RENodeId::Component(component.0),
             },
-            GlobalRENode::Resource(resource_address) => {
+            GlobalAddressSubstate::Resource(resource_address) => {
                 RENodeId::ResourceManager(*resource_address)
             }
-            GlobalRENode::Package(package_address) => RENodeId::Package(*package_address),
+            GlobalAddressSubstate::Package(package_address) => RENodeId::Package(*package_address),
         }
     }
 }
