@@ -1,6 +1,5 @@
 use crate::engine::*;
 use crate::fee::FeeReserve;
-use crate::model::AuthZone;
 use crate::types::*;
 use crate::wasm::*;
 use scrypto::core::NativeFunction;

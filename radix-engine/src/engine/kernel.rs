@@ -299,7 +299,7 @@ where
             .call_frames
             .first()
             .expect("Failed to get a root frame");
-        let virtual_proofs_buckets = AuthZone::get_auth_zone(root_frame)
+        let virtual_proofs_buckets = AuthModule::get_auth_zone(root_frame)
             .virtual_proofs_buckets
             .clone();
 
