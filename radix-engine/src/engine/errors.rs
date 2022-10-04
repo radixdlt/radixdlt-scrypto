@@ -6,7 +6,7 @@ use crate::model::*;
 use crate::types::*;
 use crate::wasm::WasmError;
 use sbor::*;
-use scrypto::core::{FnIdent, MethodIdent};
+use scrypto::core::{FnIdent, ReceiverMethodIdent};
 
 use super::NodeToSubstateFailure;
 use super::TrackError;
@@ -51,8 +51,8 @@ pub enum KernelError {
 
     MaxCallDepthLimitReached,
     FnIdentNotFound(FnIdent),
-    FunctionIdentNotFound(FunctionIdent),
-    MethodIdentNotFound(MethodIdent),
+    MethodNotFound(ReceiverMethodIdent),
+    FunctionNotFound(FunctionIdent),
     InvalidFnInput2(FnIdent),
     InvalidFnInput { fn_identifier: FunctionIdent },
     InvalidFnOutput { fn_identifier: FunctionIdent },

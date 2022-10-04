@@ -15,9 +15,7 @@ blueprint! {
                     receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Component(
                         component_address,
                     ))),
-                    method_fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::System(
-                        SystemMethodFnIdent::SetEpoch,
-                    )),
+                    method_ident: MethodIdent::Native(NativeMethod::System(SystemMethod::SetEpoch)),
                 }),
                 scrypto_encode(&SystemSetEpochInput { epoch }),
             );

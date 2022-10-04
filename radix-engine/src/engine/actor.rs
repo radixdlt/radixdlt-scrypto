@@ -1,33 +1,33 @@
 use crate::types::*;
 
 #[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
-pub enum FullyQualifiedMethodFn {
+pub enum FullyQualifiedMethod {
     Scrypto {
         package_address: PackageAddress,
         blueprint_name: String,
         ident: String,
     },
-    Native(NativeMethodFnIdent),
+    Native(NativeMethod),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
-pub struct FullyQualifiedMethod {
+pub struct FullyQualifiedReceiverMethod {
     pub receiver: Receiver,
-    pub fn_ident: FullyQualifiedMethodFn,
+    pub method: FullyQualifiedMethod,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub enum REActor {
     Function(FunctionIdent),
-    Method(FullyQualifiedMethod),
+    Method(FullyQualifiedReceiverMethod),
 }
 
 impl REActor {
     pub fn is_substate_readable(&self, substate_id: &SubstateId) -> bool {
         match self {
             REActor::Function(FunctionIdent::Native(..))
-            | REActor::Method(FullyQualifiedMethod {
-                fn_ident: FullyQualifiedMethodFn::Native(..),
+            | REActor::Method(FullyQualifiedReceiverMethod {
+                method: FullyQualifiedMethod::Native(..),
                 ..
             }) => true,
             REActor::Function(FunctionIdent::Scrypto { .. }) => match substate_id {
@@ -35,9 +35,9 @@ impl REActor {
                 SubstateId::ComponentInfo(..) => true,
                 _ => false,
             },
-            REActor::Method(FullyQualifiedMethod {
+            REActor::Method(FullyQualifiedReceiverMethod {
                 receiver: Receiver::Ref(RENodeId::Component(component_address)),
-                fn_ident: FullyQualifiedMethodFn::Scrypto { .. },
+                method: FullyQualifiedMethod::Scrypto { .. },
             }) => match substate_id {
                 SubstateId::KeyValueStoreEntry(..) => true,
                 SubstateId::ComponentInfo(..) => true,
@@ -51,17 +51,17 @@ impl REActor {
     pub fn is_substate_writeable(&self, substate_id: &SubstateId) -> bool {
         match self {
             REActor::Function(FunctionIdent::Native(..))
-            | REActor::Method(FullyQualifiedMethod {
-                fn_ident: FullyQualifiedMethodFn::Native(..),
+            | REActor::Method(FullyQualifiedReceiverMethod {
+                method: FullyQualifiedMethod::Native(..),
                 ..
             }) => true,
             REActor::Function(FunctionIdent::Scrypto { .. }) => match substate_id {
                 SubstateId::KeyValueStoreEntry(..) => true,
                 _ => false,
             },
-            REActor::Method(FullyQualifiedMethod {
+            REActor::Method(FullyQualifiedReceiverMethod {
                 receiver: Receiver::Ref(RENodeId::Component(component_address)),
-                fn_ident: FullyQualifiedMethodFn::Scrypto { .. },
+                method: FullyQualifiedMethod::Scrypto { .. },
             }) => match substate_id {
                 SubstateId::KeyValueStoreEntry(..) => true,
                 SubstateId::ComponentState(addr) => addr.eq(component_address),

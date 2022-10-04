@@ -8,9 +8,8 @@ use scrypto::address::Bech32Decoder;
 use scrypto::component::ComponentAddress;
 use scrypto::component::PackageAddress;
 use scrypto::core::{
-    Blob, BucketMethodFnIdent, Expression, FunctionIdent, MethodFnIdent, MethodIdent,
-    NativeFunctionFnIdent, NativeMethodFnIdent, Receiver, ResourceManagerFunctionFnIdent,
-    ResourceManagerMethodFnIdent,
+    Blob, BucketMethod, Expression, FunctionIdent, MethodIdent, NativeFunction, NativeMethod,
+    Receiver, ReceiverMethodIdent, ResourceManagerFunction, ResourceManagerMethod,
 };
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
@@ -328,7 +327,7 @@ pub fn generate_instruction(
             }
 
             Instruction::CallFunction {
-                fn_identifier: FunctionIdent::Scrypto {
+                function_ident: FunctionIdent::Scrypto {
                     package_address: generate_package_address(package_address, bech32_decoder)?,
                     blueprint_name: generate_string(blueprint_name)?,
                     ident: generate_string(function)?,
@@ -352,11 +351,11 @@ pub fn generate_instruction(
             }
 
             Instruction::CallMethod {
-                method_ident: MethodIdent {
+                method_ident: ReceiverMethodIdent {
                     receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Component(
                         generate_component_address(component_address, bech32_decoder)?,
                     ))),
-                    method_fn_ident: MethodFnIdent::Scrypto(generate_string(method)?),
+                    method_ident: MethodIdent::Scrypto(generate_string(method)?),
                 },
                 args: args_from_value_vec!(fields),
             }
@@ -378,8 +377,8 @@ pub fn generate_instruction(
             }
 
             Instruction::CallFunction {
-                fn_identifier: FunctionIdent::Native(NativeFunctionFnIdent::ResourceManager(
-                    ResourceManagerFunctionFnIdent::Create,
+                function_ident: FunctionIdent::Native(NativeFunction::ResourceManager(
+                    ResourceManagerFunction::Create,
                 )),
                 args: args_from_value_vec!(fields),
             }
@@ -387,11 +386,9 @@ pub fn generate_instruction(
         ast::Instruction::BurnBucket { bucket } => {
             let bucket_id = generate_bucket(bucket, resolver)?;
             Instruction::CallMethod {
-                method_ident: MethodIdent {
+                method_ident: ReceiverMethodIdent {
                     receiver: Receiver::Consumed(RENodeId::Bucket(bucket_id)),
-                    method_fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::Bucket(
-                        BucketMethodFnIdent::Burn,
-                    )),
+                    method_ident: MethodIdent::Native(NativeMethod::Bucket(BucketMethod::Burn)),
                 },
                 args: args!(),
             }
@@ -408,10 +405,10 @@ pub fn generate_instruction(
             };
 
             Instruction::CallMethod {
-                method_ident: MethodIdent {
+                method_ident: ReceiverMethodIdent {
                     receiver: Receiver::Ref(RENodeId::ResourceManager(resource_address)),
-                    method_fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::ResourceManager(
-                        ResourceManagerMethodFnIdent::Mint,
+                    method_ident: MethodIdent::Native(NativeMethod::ResourceManager(
+                        ResourceManagerMethod::Mint,
                     )),
                 },
                 args: args!(input),
@@ -1199,7 +1196,7 @@ mod tests {
         generate_instruction_ok!(
             r#"CALL_FUNCTION  PackageAddress("package_sim1q8gl2qqsusgzmz92es68wy2fr7zjc523xj57eanm597qrz3dx7")  "Airdrop"  "new"  500u32  Map<String, U8>("key", 1u8)  PreciseDecimal("120");"#,
             Instruction::CallFunction {
-                fn_identifier: FunctionIdent::Scrypto {
+                function_ident: FunctionIdent::Scrypto {
                     package_address: PackageAddress::from_str(
                         "package_sim1q8gl2qqsusgzmz92es68wy2fr7zjc523xj57eanm597qrz3dx7".into()
                     )
@@ -1213,9 +1210,9 @@ mod tests {
         generate_instruction_ok!(
             r#"CALL_METHOD  ComponentAddress("component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum")  "refill";"#,
             Instruction::CallMethod {
-                method_ident: MethodIdent {
+                method_ident: ReceiverMethodIdent {
                     receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Component(component1))),
-                    method_fn_ident: MethodFnIdent::Scrypto("refill".to_string()),
+                    method_ident: MethodIdent::Scrypto("refill".to_string()),
                 },
                 args: args!()
             }

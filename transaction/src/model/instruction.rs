@@ -1,7 +1,7 @@
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto::core::{Blob, FunctionIdent, MethodIdent};
+use scrypto::core::{Blob, FunctionIdent, ReceiverMethodIdent};
 use scrypto::engine::types::*;
 use scrypto::math::*;
 use scrypto::resource::{NonFungibleId, ResourceAddress};
@@ -82,7 +82,7 @@ pub enum Instruction {
     ///
     /// Buckets and proofs in arguments moves from transaction context to the callee.
     CallFunction {
-        fn_identifier: FunctionIdent,
+        function_ident: FunctionIdent,
         args: Vec<u8>,
     },
 
@@ -90,7 +90,7 @@ pub enum Instruction {
     ///
     /// Buckets and proofs in arguments moves from transaction context to the callee.
     CallMethod {
-        method_ident: MethodIdent,
+        method_ident: ReceiverMethodIdent,
         args: Vec<u8>,
     },
 

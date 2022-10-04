@@ -16,7 +16,7 @@ pub enum BucketError {
     ResourceOperationError(ResourceOperationError),
     ProofError(ProofError),
     CouldNotCreateProof,
-    MethodNotFound(BucketMethodFnIdent),
+    MethodNotFound(BucketMethod),
 }
 
 /// A transient resource container.
@@ -153,7 +153,7 @@ impl Bucket {
 
     pub fn main<'s, Y, W, I, R>(
         bucket_id: BucketId,
-        bucket_fn: BucketMethodFnIdent,
+        method: BucketMethod,
         args: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, InvokeError<BucketError>>
@@ -163,8 +163,8 @@ impl Bucket {
         I: WasmInstance,
         R: FeeReserve,
     {
-        let rtn = match bucket_fn {
-            BucketMethodFnIdent::Take => {
+        let rtn = match method {
+            BucketMethod::Take => {
                 let input: BucketTakeInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(BucketError::InvalidRequestData(e)))?;
                 let mut node_ref = system_api
@@ -183,7 +183,7 @@ impl Bucket {
                     bucket_id,
                 )))
             }
-            BucketMethodFnIdent::TakeNonFungibles => {
+            BucketMethod::TakeNonFungibles => {
                 let input: BucketTakeNonFungiblesInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(BucketError::InvalidRequestData(e)))?;
                 let mut node_ref = system_api
@@ -202,7 +202,7 @@ impl Bucket {
                     bucket_id,
                 )))
             }
-            BucketMethodFnIdent::GetNonFungibleIds => {
+            BucketMethod::GetNonFungibleIds => {
                 let _: BucketGetNonFungibleIdsInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(BucketError::InvalidRequestData(e)))?;
                 let mut node_ref = system_api
@@ -215,7 +215,7 @@ impl Bucket {
                     .map_err(|e| InvokeError::Error(BucketError::ResourceOperationError(e)))?;
                 Ok(ScryptoValue::from_typed(&ids))
             }
-            BucketMethodFnIdent::Put => {
+            BucketMethod::Put => {
                 let input: BucketPutInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(BucketError::InvalidRequestData(e)))?;
                 let other_bucket = system_api
@@ -232,7 +232,7 @@ impl Bucket {
                     .map_err(|e| InvokeError::Error(BucketError::ResourceOperationError(e)))?;
                 Ok(ScryptoValue::from_typed(&()))
             }
-            BucketMethodFnIdent::GetAmount => {
+            BucketMethod::GetAmount => {
                 let _: BucketGetAmountInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(BucketError::InvalidRequestData(e)))?;
                 let mut node_ref = system_api
@@ -242,7 +242,7 @@ impl Bucket {
 
                 Ok(ScryptoValue::from_typed(&bucket0.total_amount()))
             }
-            BucketMethodFnIdent::GetResourceAddress => {
+            BucketMethod::GetResourceAddress => {
                 let _: BucketGetResourceAddressInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(BucketError::InvalidRequestData(e)))?;
                 let mut node_ref = system_api
@@ -252,7 +252,7 @@ impl Bucket {
 
                 Ok(ScryptoValue::from_typed(&bucket0.resource_address()))
             }
-            BucketMethodFnIdent::CreateProof => {
+            BucketMethod::CreateProof => {
                 let _: BucketCreateProofInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(BucketError::InvalidRequestData(e)))?;
                 let mut node_ref = system_api
@@ -270,7 +270,7 @@ impl Bucket {
                     proof_id,
                 )))
             }
-            _ => Err(InvokeError::Error(BucketError::MethodNotFound(bucket_fn))),
+            _ => Err(InvokeError::Error(BucketError::MethodNotFound(method))),
         }?;
 
         Ok(rtn)
@@ -278,7 +278,7 @@ impl Bucket {
 
     pub fn consuming_main<'s, Y, W, I, R>(
         node_id: RENodeId,
-        bucket_fn: BucketMethodFnIdent,
+        method: BucketMethod,
         args: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, InvokeError<BucketError>>
@@ -288,8 +288,8 @@ impl Bucket {
         I: WasmInstance,
         R: FeeReserve,
     {
-        match bucket_fn {
-            BucketMethodFnIdent::Burn => {
+        match method {
+            BucketMethod::Burn => {
                 let _: ConsumingBucketBurnInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(BucketError::InvalidRequestData(e)))?;
 
@@ -319,7 +319,7 @@ impl Bucket {
 
                 Ok(ScryptoValue::from_typed(&()))
             }
-            _ => Err(InvokeError::Error(BucketError::MethodNotFound(bucket_fn))),
+            _ => Err(InvokeError::Error(BucketError::MethodNotFound(method))),
         }
     }
 }

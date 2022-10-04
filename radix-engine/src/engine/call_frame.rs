@@ -2,7 +2,7 @@ use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::types::*;
 use crate::wasm::*;
-use scrypto::core::NativeFunctionFnIdent;
+use scrypto::core::NativeFunction;
 
 // TODO: reduce fields visibility
 
@@ -27,11 +27,9 @@ impl CallFrame {
     pub fn new_root() -> Self {
         Self {
             depth: 0,
-            actor: REActor::Function(FunctionIdent::Native(
-                NativeFunctionFnIdent::TransactionProcessor(
-                    TransactionProcessorFunctionFnIdent::Run,
-                ),
-            )),
+            actor: REActor::Function(FunctionIdent::Native(NativeFunction::TransactionProcessor(
+                TransactionProcessorFunction::Run,
+            ))),
             node_refs: HashMap::new(),
             owned_heap_nodes: HashMap::new(),
         }

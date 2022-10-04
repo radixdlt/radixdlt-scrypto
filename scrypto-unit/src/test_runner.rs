@@ -19,7 +19,7 @@ use radix_engine::wasm::{
     WasmMeteringParams,
 };
 use sbor::describe::*;
-use scrypto::core::{FnIdent, MethodFnIdent, MethodIdent};
+use scrypto::core::{FnIdent, MethodIdent, ReceiverMethodIdent};
 use scrypto::dec;
 use scrypto::math::Decimal;
 use transaction::builder::ManifestBuilder;
@@ -238,13 +238,13 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         manifest.instructions.insert(
             0,
             transaction::model::Instruction::CallMethod {
-                method_ident: MethodIdent {
+                method_ident: ReceiverMethodIdent {
                     receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Component(
                         SYS_FAUCET_COMPONENT,
                     ))),
-                    method_fn_ident: MethodFnIdent::Scrypto("lock_fee".to_string()),
+                    method_ident: MethodIdent::Scrypto("lock_fee".to_string()),
                 },
-                args: args!(dec!("1000")),
+                args: args!(dec!("100")),
             },
         );
         self.execute_manifest(manifest, initial_proofs)
@@ -649,12 +649,12 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             |kernel| {
                 kernel
                     .invoke(
-                        FnIdent::Method(MethodIdent {
+                        FnIdent::Method(ReceiverMethodIdent {
                             receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Component(
                                 SYS_SYSTEM_COMPONENT,
                             ))),
-                            method_fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::System(
-                                SystemMethodFnIdent::SetEpoch,
+                            method_ident: MethodIdent::Native(NativeMethod::System(
+                                SystemMethod::SetEpoch,
                             )),
                         }),
                         ScryptoValue::from_typed(&SystemSetEpochInput { epoch }),
@@ -668,12 +668,12 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         let current_epoch: ScryptoValue = self.kernel_call(vec![], |kernel| {
             kernel
                 .invoke(
-                    FnIdent::Method(MethodIdent {
+                    FnIdent::Method(ReceiverMethodIdent {
                         receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Component(
                             SYS_SYSTEM_COMPONENT,
                         ))),
-                        method_fn_ident: MethodFnIdent::Native(NativeMethodFnIdent::System(
-                            SystemMethodFnIdent::GetCurrentEpoch,
+                        method_ident: MethodIdent::Native(NativeMethod::System(
+                            SystemMethod::GetCurrentEpoch,
                         )),
                     }),
                     ScryptoValue::from_typed(&SystemGetCurrentEpochInput {}),
