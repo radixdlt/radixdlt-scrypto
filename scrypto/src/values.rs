@@ -195,7 +195,7 @@ impl ScryptoValue {
 
     pub fn to_string(&self) -> String {
         let context = ScryptoValueFormatterContext {
-            bech32_encoder: &Bech32Encoder::for_simulator(),
+            bech32_encoder: None,
             bucket_ids: &HashMap::new(),
             proof_ids: &HashMap::new(),
         };
@@ -209,7 +209,7 @@ impl ScryptoValue {
         proof_ids: &HashMap<ProofId, String>,
     ) -> String {
         let context = ScryptoValueFormatterContext {
-            bech32_encoder,
+            bech32_encoder: Some(bech32_encoder),
             bucket_ids,
             proof_ids,
         };
@@ -425,7 +425,7 @@ impl CustomValueVisitor for ScryptoCustomValueChecker {
 pub struct ScryptoValueFormatter {}
 
 pub struct ScryptoValueFormatterContext<'a> {
-    bech32_encoder: &'a Bech32Encoder,
+    bech32_encoder: Option<&'a Bech32Encoder>,
     bucket_ids: &'a HashMap<BucketId, String>,
     proof_ids: &'a HashMap<ProofId, String>,
 }
@@ -561,6 +561,7 @@ impl ScryptoValueFormatter {
         }
         buf
     }
+
     pub fn from_custom_value(
         type_id: u8,
         data: &[u8],
@@ -579,7 +580,8 @@ impl ScryptoValueFormatter {
                     "PackageAddress(\"{}\")",
                     context
                         .bech32_encoder
-                        .encode_package_address(&PackageAddress::try_from(data).unwrap())
+                        .map(|b| b.encode_package_address(&PackageAddress::try_from(data).unwrap()))
+                        .unwrap_or_else(|| PackageAddress::try_from(data).unwrap().to_string())
                 )
             }
             ScryptoType::ComponentAddress => {
@@ -587,7 +589,9 @@ impl ScryptoValueFormatter {
                     "ComponentAddress(\"{}\")",
                     context
                         .bech32_encoder
-                        .encode_component_address(&ComponentAddress::try_from(data).unwrap())
+                        .map(|b| b
+                            .encode_component_address(&ComponentAddress::try_from(data).unwrap()))
+                        .unwrap_or_else(|| ComponentAddress::try_from(data).unwrap().to_string())
                 )
             }
             ScryptoType::Component => {
@@ -651,7 +655,8 @@ impl ScryptoValueFormatter {
                 "ResourceAddress(\"{}\")",
                 context
                     .bech32_encoder
-                    .encode_resource_address(&ResourceAddress::try_from(data).unwrap())
+                    .map(|b| b.encode_resource_address(&ResourceAddress::try_from(data).unwrap()))
+                    .unwrap_or_else(|| ResourceAddress::try_from(data).unwrap().to_string())
             ),
             ScryptoType::Expression => {
                 format!("Expression(\"{}\")", Expression::try_from(data).unwrap())
