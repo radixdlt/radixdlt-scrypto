@@ -156,11 +156,9 @@ fn test_basic_transfer() {
         + 1248 /* decode_manifest */
         + 1000 /* drop_node */
         + 0 /* instantiate_wasm */
-        + 2205 /* invoke_function */
         + 2215 /* invoke_method */
         + 100 /* read_owned_nodes */
         + 5000 /* read_substate */
-        + 1000 /* run_function */
         + 5200 /* run_method */
         + 275232 /* run_wasm */
         + 416 /* verify_manifest */
@@ -196,7 +194,7 @@ fn test_publish_large_package() {
     receipt.expect_commit_success();
 
     // Assert
-    assert_eq!(4274112, receipt.execution.fee_summary.cost_unit_consumed);
+    assert_eq!(4271842, receipt.execution.fee_summary.cost_unit_consumed);
 }
 
 #[test]
@@ -243,6 +241,30 @@ fn should_be_able_invoke_account_balance_50_times() {
     for _ in 0..50 {
         builder.call_method(account, "balance", args!(RADIX_TOKEN));
     }
+    let manifest = builder.build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
+fn should_be_able_to_generate_5_proofs_and_then_lock_fee() {
+    // Arrange
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
+    let (public_key, _, account) = test_runner.new_account();
+    let resource_address = test_runner.create_fungible_resource(100.into(), 0, account);
+
+    // Act
+    let mut builder = ManifestBuilder::new(&NetworkDefinition::simulator());
+    for _ in 0..5 {
+        builder.create_proof_from_account_by_amount(1.into(), resource_address, account);
+    }
+    builder.lock_fee(100u32.into(), account);
     let manifest = builder.build();
     let receipt = test_runner.execute_manifest(
         manifest,
