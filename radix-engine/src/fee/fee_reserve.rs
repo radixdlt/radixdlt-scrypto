@@ -2,7 +2,6 @@ use crate::constants::{DEFAULT_COST_UNIT_LIMIT, DEFAULT_COST_UNIT_PRICE, DEFAULT
 use crate::fee::FeeSummary;
 use crate::model::Resource;
 use crate::types::*;
-use sbor::rust::cmp::min;
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
 pub enum FeeReserveError {
@@ -88,9 +87,14 @@ impl SystemLoanFeeReserve {
     ///
     /// Note that overflow is not checked.
     pub fn credit(&mut self, n: u32) {
-        let repay = min(n, self.owed);
-        self.owed = self.owed - repay;
-        self.balance = self.balance + (n - repay);
+        self.balance += n;
+        self.repay_with_balance();
+    }
+
+    fn repay_with_balance(&mut self) {
+        let n = u32::min(self.owed, self.balance);
+        self.owed -= n;
+        self.balance -= n;
     }
 }
 
@@ -136,7 +140,10 @@ impl FeeReserve for SystemLoanFeeReserve {
 
         // check system loan
         if self.consumed_instant >= self.check_point && self.owed > 0 {
-            return Err(FeeReserveError::SystemLoanNotCleared);
+            self.repay_with_balance();
+            if self.owed > 0 {
+                return Err(FeeReserveError::SystemLoanNotCleared);
+            }
         }
         Ok(())
     }
@@ -183,11 +190,7 @@ impl FeeReserve for SystemLoanFeeReserve {
     }
 
     fn finalize(mut self) -> FeeSummary {
-        if self.owed > 0 && self.balance != 0 {
-            let n = u32::min(self.owed, self.balance);
-            self.owed -= n;
-            self.balance -= n;
-        }
+        self.repay_with_balance();
 
         let consumed = self.consumed_instant + self.consumed_deferred;
         FeeSummary {
