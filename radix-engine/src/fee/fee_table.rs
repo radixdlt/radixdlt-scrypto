@@ -159,11 +159,8 @@ impl FeeTable {
                     FunctionIdent::Scrypto { .. } => 0, // Costing is through instrumentation // TODO: Josh question, why only through instrumentation?
                 }
             }
-            FnIdent::Method(ReceiverMethodIdent {
-                method_ident: method_fn_ident,
-                ..
-            }) => {
-                match method_fn_ident {
+            FnIdent::Method(ReceiverMethodIdent { method_ident, .. }) => {
+                match method_ident {
                     MethodIdent::Native(NativeMethod::AuthZone(auth_zone_ident)) => {
                         match auth_zone_ident {
                             AuthZoneMethod::Pop => self.fixed_low,

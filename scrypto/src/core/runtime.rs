@@ -3,6 +3,7 @@ use sbor::rust::string::*;
 use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::constants::SYS_SYSTEM_COMPONENT;
+use scrypto::engine::types::GlobalAddress;
 
 use crate::buffer::scrypto_encode;
 use crate::component::*;
@@ -79,7 +80,9 @@ impl Runtime {
     ) -> T {
         let input = RadixEngineInput::Invoke(
             FnIdent::Method(ReceiverMethodIdent {
-                receiver: Receiver::Ref(RENodeId::Component(component_address)),
+                receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Component(
+                    component_address,
+                ))),
                 method_ident: MethodIdent::Scrypto(method.as_ref().to_string()),
             }),
             args,

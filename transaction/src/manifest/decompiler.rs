@@ -21,7 +21,9 @@ pub enum DecompileError {
     IdValidationError(IdValidationError),
     DecodeError(DecodeError),
     AddressError(AddressError),
-    UnrecognizedNativeFunction,
+    UnrecognizedNativeFunction(NativeFunction),
+    UnrecognizedNativeMethod(NativeMethod),
+    UnrecognizedMethod(ReceiverMethodIdent),
 }
 
 pub fn decompile(
@@ -293,12 +295,17 @@ pub fn decompile(
 
                         buf.push_str(";\n");
                     }
-                    _ => return Err(DecompileError::UnrecognizedNativeFunction),
+                    _ => {
+                        return Err(DecompileError::UnrecognizedNativeFunction(
+                            native_fn_identifier,
+                        ))
+                    }
                 },
             },
             Instruction::CallMethod { method_ident, args } => match method_ident {
                 ReceiverMethodIdent {
-                    receiver: Receiver::Ref(RENodeId::Component(component_address)),
+                    receiver:
+                        Receiver::Ref(RENodeId::Global(GlobalAddress::Component(component_address))),
                     method_ident: MethodIdent::Scrypto(ident),
                 } => {
                     buf.push_str(&format!(
@@ -360,12 +367,20 @@ pub fn decompile(
                                     amount,
                                 ));
                             }
-                            _ => return Err(DecompileError::UnrecognizedNativeFunction),
+                            _ => {
+                                return Err(DecompileError::UnrecognizedNativeMethod(
+                                    NativeMethod::ResourceManager(ResourceManagerMethod::Mint),
+                                ))
+                            }
                         }
                     }
-                    _ => return Err(DecompileError::UnrecognizedNativeFunction),
+                    _ => {
+                        return Err(DecompileError::UnrecognizedNativeMethod(
+                            native_fn_identifier,
+                        ))
+                    }
                 },
-                _ => return Err(DecompileError::UnrecognizedNativeFunction),
+                method_ident => return Err(DecompileError::UnrecognizedMethod(method_ident)),
             },
             Instruction::PublishPackage { code, abi } => {
                 buf.push_str(&format!(

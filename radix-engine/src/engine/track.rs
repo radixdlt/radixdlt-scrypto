@@ -9,18 +9,17 @@ use crate::fee::FeeReserveError;
 use crate::fee::FeeSummary;
 use crate::fee::FeeTable;
 use crate::ledger::*;
-use crate::model::node_to_substates;
-use crate::model::nodes_to_substates;
 use crate::model::Component;
 use crate::model::KeyValueStoreEntrySubstate;
 use crate::model::LockableResource;
 use crate::model::NonFungibleSubstate;
-use crate::model::Package;
 use crate::model::Resource;
 use crate::model::ResourceManager;
 use crate::model::Substate;
 use crate::model::System;
 use crate::model::Vault;
+use crate::model::{node_to_substates, Package};
+use crate::model::{nodes_to_substates, GlobalRENode};
 use crate::transaction::CommitResult;
 use crate::transaction::EntityChanges;
 use crate::transaction::RejectResult;
@@ -157,13 +156,6 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         self.application_logs.push((level, message));
     }
 
-    // TODO: Clean this up
-    pub fn is_root(&mut self, _substate_id: &SubstateId) -> bool {
-        // self.state_track.is_root(substate_id)
-        // FIXME: This is temporarily disabled and can be re-enabled by storing a flag alongside each loaded node.
-        true
-    }
-
     // TODO: to read/write a value owned by track requires three coordinated steps:
     // 1. Attempt to acquire the lock
     // 2. Apply the operation
@@ -230,6 +222,16 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         if !loaded_substate.substate.is_taken() {
             let substate = loaded_substate.substate.take();
             match substate {
+                Substate::GlobalRENode(substate) => {
+                    let node = HeapRENode::Global(GlobalRENode { address: substate });
+                    self.loaded_nodes.insert(
+                        match &substate_id {
+                            SubstateId::Global(global_address) => RENodeId::Global(*global_address),
+                            _ => panic!("Unexpected substate id type"),
+                        },
+                        node,
+                    );
+                }
                 Substate::System(substate) => {
                     let node = HeapRENode::System(System {
                         info: substate.into(),

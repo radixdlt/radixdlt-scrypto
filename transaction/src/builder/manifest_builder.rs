@@ -416,7 +416,9 @@ impl ManifestBuilder {
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
             method_ident: ReceiverMethodIdent {
-                receiver: Receiver::Ref(RENodeId::Component(component_address)),
+                receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Component(
+                    component_address,
+                ))),
                 method_ident: MethodIdent::Scrypto(method_name.to_owned()),
             },
             args,
@@ -470,7 +472,9 @@ impl ManifestBuilder {
         Ok(self
             .add_instruction(Instruction::CallMethod {
                 method_ident: ReceiverMethodIdent {
-                    receiver: Receiver::Ref(RENodeId::Component(component_address)),
+                    receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Component(
+                        component_address,
+                    ))),
                     method_ident: MethodIdent::Scrypto(method.to_owned()),
                 },
                 args: args_from_bytes_vec!(arguments),
@@ -709,7 +713,7 @@ impl ManifestBuilder {
     pub fn lock_fee(&mut self, amount: Decimal, account: ComponentAddress) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
             method_ident: ReceiverMethodIdent {
-                receiver: Receiver::Ref(RENodeId::Component(account)),
+                receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Component(account))),
                 method_ident: MethodIdent::Scrypto("lock_fee".to_string()),
             },
             args: args!(amount),
@@ -720,7 +724,7 @@ impl ManifestBuilder {
     pub fn lock_contingent_fee(&mut self, amount: Decimal, account: ComponentAddress) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
             method_ident: ReceiverMethodIdent {
-                receiver: Receiver::Ref(RENodeId::Component(account)),
+                receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Component(account))),
                 method_ident: MethodIdent::Scrypto("lock_contingent_fee".to_string()),
             },
             args: args!(amount),
@@ -736,7 +740,7 @@ impl ManifestBuilder {
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
             method_ident: ReceiverMethodIdent {
-                receiver: Receiver::Ref(RENodeId::Component(account)),
+                receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Component(account))),
                 method_ident: MethodIdent::Scrypto("withdraw".to_string()),
             },
             args: args!(resource_address),
@@ -753,7 +757,7 @@ impl ManifestBuilder {
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
             method_ident: ReceiverMethodIdent {
-                receiver: Receiver::Ref(RENodeId::Component(account)),
+                receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Component(account))),
                 method_ident: MethodIdent::Scrypto("withdraw_by_amount".to_string()),
             },
             args: args!(amount, resource_address),
@@ -770,7 +774,7 @@ impl ManifestBuilder {
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
             method_ident: ReceiverMethodIdent {
-                receiver: Receiver::Ref(RENodeId::Component(account)),
+                receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Component(account))),
                 method_ident: MethodIdent::Scrypto("withdraw_by_ids".to_string()),
             },
             args: args!(ids.clone(), resource_address),
@@ -786,7 +790,7 @@ impl ManifestBuilder {
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
             method_ident: ReceiverMethodIdent {
-                receiver: Receiver::Ref(RENodeId::Component(account)),
+                receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Component(account))),
                 method_ident: MethodIdent::Scrypto("create_proof".to_string()),
             },
             args: args!(resource_address),
@@ -803,7 +807,7 @@ impl ManifestBuilder {
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
             method_ident: ReceiverMethodIdent {
-                receiver: Receiver::Ref(RENodeId::Component(account)),
+                receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Component(account))),
                 method_ident: MethodIdent::Scrypto("create_proof_by_amount".to_string()),
             },
             args: args!(amount, resource_address),
@@ -820,7 +824,7 @@ impl ManifestBuilder {
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
             method_ident: ReceiverMethodIdent {
-                receiver: Receiver::Ref(RENodeId::Component(account)),
+                receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Component(account))),
                 method_ident: MethodIdent::Scrypto("create_proof_by_ids".to_string()),
             },
             args: args!(ids.clone(), resource_address),

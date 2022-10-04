@@ -9,6 +9,14 @@ pub fn node_to_substates(node_id: RENodeId, node: HeapRENode) -> HashMap<Substat
         HeapRENode::Bucket(_) => panic!("Unexpected"),
         HeapRENode::Proof(_) => panic!("Unexpected"),
         HeapRENode::AuthZone(_) => panic!("Unexpected"),
+        HeapRENode::Global(global_node) => {
+            let substate_id = match node_id {
+                RENodeId::Global(global_address) => SubstateId::Global(global_address),
+                _ => panic!("Unexpected"),
+            };
+            let substate = global_node.address;
+            substates.insert(substate_id, Substate::GlobalRENode(substate));
+        }
         HeapRENode::Vault(vault) => {
             let resource = vault
                 .resource()

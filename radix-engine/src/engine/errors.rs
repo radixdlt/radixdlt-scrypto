@@ -6,7 +6,7 @@ use crate::model::*;
 use crate::types::*;
 use crate::wasm::WasmError;
 use sbor::*;
-use scrypto::core::{FnIdent, MethodIdent};
+use scrypto::core::{FnIdent, ReceiverMethodIdent};
 
 use super::NodeToSubstateFailure;
 use super::TrackError;
@@ -41,12 +41,13 @@ pub enum RuntimeError {
 pub enum KernelError {
     // invocation
     WasmError(WasmError),
+    RENodeNotVisible(RENodeId),
     InvokeMethodInvalidReceiver(RENodeId),
-    InvokeMethodInvalidReferencePass(RENodeId),
-    InvokeMethodInvalidReferenceReturn(RENodeId),
+    InvokeInvalidReferencePass(RENodeId),
+    InvokeInvalidReferenceReturn(RENodeId),
     MaxCallDepthLimitReached,
     FnIdentNotFound(FnIdent),
-    MethodNotFound(MethodIdent),
+    MethodNotFound(ReceiverMethodIdent),
     FunctionNotFound(FunctionIdent),
     InvalidFnInput2(FnIdent),
     InvalidFnInput { fn_identifier: FunctionIdent },
@@ -89,6 +90,7 @@ pub enum KernelError {
     CantMoveLockedBucket,
     CantMoveRestrictedProof,
     CantMoveWorktop,
+    CantMoveGlobal,
     CantMoveAuthZone,
     DropFailure(DropFailure),
 

@@ -147,6 +147,15 @@ impl<'f, 's, R: FeeReserve> RENodeRef<'f, 's, R> {
         }
     }
 
+    pub fn global_re_node(&self) -> &GlobalRENode {
+        match self {
+            RENodeRef::Stack(..) => {
+                panic!("Expecting not to be on stack.");
+            }
+            RENodeRef::Track(track, node_id) => track.borrow_node(node_id).global_re_node(),
+        }
+    }
+
     pub fn package(&self) -> &Package {
         match self {
             RENodeRef::Stack(value, id) => id
@@ -179,6 +188,7 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
             SubstateId::NonFungible(.., id) => Ok(self.non_fungible_get(id)),
             SubstateId::KeyValueStoreEntry(.., key) => Ok(self.kv_store_get(key)),
             SubstateId::NonFungibleSpace(..)
+            | SubstateId::Global(..)
             | SubstateId::Vault(..)
             | SubstateId::KeyValueStoreSpace(..)
             | SubstateId::Package(..)
@@ -195,7 +205,8 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
 
     pub fn replace_value_with_default(&mut self, substate_id: &SubstateId) {
         match substate_id {
-            SubstateId::ComponentInfo(..)
+            SubstateId::Global(..)
+            | SubstateId::ComponentInfo(..)
             | SubstateId::ComponentState(..)
             | SubstateId::NonFungibleSpace(..)
             | SubstateId::KeyValueStoreSpace(..)
@@ -221,6 +232,9 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
         child_nodes: HashMap<RENodeId, HeapRootRENode>,
     ) -> Result<(), NodeToSubstateFailure> {
         match substate_id {
+            SubstateId::Global(..) => {
+                panic!("Should not get here");
+            }
             SubstateId::ComponentState(..) => {
                 self.component_state_set(value, child_nodes);
             }

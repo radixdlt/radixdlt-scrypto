@@ -352,10 +352,9 @@ pub fn generate_instruction(
 
             Instruction::CallMethod {
                 method_ident: ReceiverMethodIdent {
-                    receiver: Receiver::Ref(RENodeId::Component(generate_component_address(
-                        component_address,
-                        bech32_decoder,
-                    )?)),
+                    receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Component(
+                        generate_component_address(component_address, bech32_decoder)?,
+                    ))),
                     method_ident: MethodIdent::Scrypto(generate_string(method)?),
                 },
                 args: args_from_value_vec!(fields),
@@ -1212,7 +1211,7 @@ mod tests {
             r#"CALL_METHOD  ComponentAddress("component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum")  "refill";"#,
             Instruction::CallMethod {
                 method_ident: ReceiverMethodIdent {
-                    receiver: Receiver::Ref(RENodeId::Component(component1)),
+                    receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Component(component1))),
                     method_ident: MethodIdent::Scrypto("refill".to_string()),
                 },
                 args: args!()
