@@ -469,7 +469,12 @@ where
                     )));
                 }
 
-                node_pointer.release_lock(SubstateId::Package(*package_address), false, &mut self.track)
+                node_pointer
+                    .release_lock(
+                        SubstateId::Package(*package_address),
+                        false,
+                        &mut self.track,
+                    )
                     .map_err(RuntimeError::KernelError)?;
             }
             _ => {}
@@ -611,7 +616,6 @@ where
                 }),
             };
 
-            // Lock Parent Substates
             // TODO: Check Component ABI here rather than in auth
             match node_id {
                 RENodeId::Component(..) => {
@@ -672,35 +676,10 @@ where
                 _ => {}
             }
 
-            // Lock Resource Managers in request
-            // TODO: Remove when references cleaned up
             if let MethodIdent::Native(..) = fn_ident.method_ident {
                 for resource_address in &input.resource_addresses {
-                    let resource_substate_id =
-                        SubstateId::ResourceManager(resource_address.clone());
                     let resource_node_id = RENodeId::ResourceManager(resource_address.clone());
                     let resource_node_pointer = RENodePointer::Store(resource_node_id);
-
-                    // This condition check is a hack to fix a resource manager locking issue when the receiver
-                    // is a resource manager and its address is present in the argument lists.
-                    //
-                    // TODO: See the outer TODO for clean-up instruction.
-                    if !locked_pointers.contains(&(
-                        resource_node_pointer,
-                        resource_substate_id.clone(),
-                        false,
-                    )) {
-                        resource_node_pointer
-                            .acquire_lock(
-                                resource_substate_id.clone(),
-                                false,
-                                false,
-                                &mut self.track,
-                            )
-                            .map_err(RuntimeError::KernelError)?;
-                        locked_pointers.push((resource_node_pointer, resource_substate_id, false));
-                    }
-
                     next_frame_node_refs.insert(resource_node_id, resource_node_pointer);
                 }
             }

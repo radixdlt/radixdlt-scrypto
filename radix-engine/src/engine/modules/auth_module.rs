@@ -108,15 +108,23 @@ impl AuthModule {
                     let node_ref = node_pointer.to_ref(call_frames, track);
                     node_ref.bucket().resource_address()
                 };
-                let resource_pointer = RENodePointer::Store(RENodeId::ResourceManager(resource_address));
-                resource_pointer.acquire_lock(SubstateId::ResourceManager(resource_address), false, false, track)
+                let resource_pointer =
+                    RENodePointer::Store(RENodeId::ResourceManager(resource_address));
+                resource_pointer
+                    .acquire_lock(
+                        SubstateId::ResourceManager(resource_address),
+                        false,
+                        false,
+                        track,
+                    )
                     .map_err(RuntimeError::KernelError)?;
                 let resource_manager = track
                     .borrow_node(&RENodeId::ResourceManager(resource_address))
                     .resource_manager();
                 let method_auth = resource_manager.get_bucket_auth(*method);
                 let auth = vec![method_auth.clone()];
-                resource_pointer.release_lock(SubstateId::ResourceManager(resource_address), false, track)
+                resource_pointer
+                    .release_lock(SubstateId::ResourceManager(resource_address), false, track)
                     .map_err(RuntimeError::KernelError)?;
 
                 auth
@@ -129,7 +137,8 @@ impl AuthModule {
                     .borrow_node(&RENodeId::ResourceManager(*resource_address))
                     .resource_manager();
                 let method_auth = resource_manager.get_auth(*method, &input).clone();
-                vec![method_auth]
+                let auth = vec![method_auth];
+                auth
             }
             ReceiverMethodIdent {
                 receiver: Receiver::Ref(RENodeId::System(..)),
@@ -155,9 +164,9 @@ impl AuthModule {
                     )
                 };
 
-
                 let package_pointer = RENodePointer::Store(RENodeId::Package(package_address));
-                package_pointer.acquire_lock(SubstateId::Package(package_address), false, false, track)
+                package_pointer
+                    .acquire_lock(SubstateId::Package(package_address), false, false, track)
                     .map_err(RuntimeError::KernelError)?;
 
                 // Assume that package_address/blueprint is the original impl of Component for now
@@ -178,7 +187,8 @@ impl AuthModule {
                     )));
                 }
 
-                package_pointer.release_lock(SubstateId::Package(package_address), false, track)
+                package_pointer
+                    .release_lock(SubstateId::Package(package_address), false, track)
                     .map_err(RuntimeError::KernelError)?;
 
                 {
@@ -197,8 +207,15 @@ impl AuthModule {
                     let mut node_ref = node_pointer.to_ref(call_frames, track);
                     node_ref.vault().resource_address()
                 };
-                let resource_pointer = RENodePointer::Store(RENodeId::ResourceManager(resource_address));
-                resource_pointer.acquire_lock(SubstateId::ResourceManager(resource_address), false, false, track)
+                let resource_pointer =
+                    RENodePointer::Store(RENodeId::ResourceManager(resource_address));
+                resource_pointer
+                    .acquire_lock(
+                        SubstateId::ResourceManager(resource_address),
+                        false,
+                        false,
+                        track,
+                    )
                     .map_err(RuntimeError::KernelError)?;
 
                 let resource_manager = track
@@ -206,7 +223,8 @@ impl AuthModule {
                     .resource_manager();
                 let auth = vec![resource_manager.get_vault_auth(*vault_fn).clone()];
 
-                resource_pointer.release_lock(SubstateId::ResourceManager(resource_address), false, track)
+                resource_pointer
+                    .release_lock(SubstateId::ResourceManager(resource_address), false, track)
                     .map_err(RuntimeError::KernelError)?;
 
                 auth
