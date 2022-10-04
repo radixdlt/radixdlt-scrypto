@@ -7,6 +7,7 @@ use crate::resource::{NonFungibleId, ResourceAddress};
 
 pub type AuthZoneId = u32;
 pub type KeyValueStoreId = (Hash, u32);
+pub type NonFungibleStoreId = (Hash, u32);
 pub type VaultId = (Hash, u32);
 pub type BucketId = u32;
 pub type ProofId = u32;
@@ -17,6 +18,7 @@ pub enum RENodeId {
     Bucket(BucketId),
     Proof(ProofId),
     KeyValueStore(KeyValueStoreId),
+    NonFungibleStore(NonFungibleStoreId),
     Worktop,
     Component(ComponentAddress),
     Vault(VaultId),
@@ -29,6 +31,7 @@ impl Into<(Hash, u32)> for RENodeId {
     fn into(self) -> KeyValueStoreId {
         match self {
             RENodeId::KeyValueStore(id) => id,
+            RENodeId::NonFungibleStore(id) => id,
             RENodeId::Vault(id) => id,
             _ => panic!("Not a stored id"),
         }
@@ -80,8 +83,8 @@ pub enum SubstateId {
     ComponentInfo(ComponentAddress),
     Package(PackageAddress),
     ResourceManager(ResourceAddress),
-    NonFungibleSpace(ResourceAddress),
-    NonFungible(ResourceAddress, NonFungibleId),
+    NonFungibleSpace(NonFungibleStoreId),
+    NonFungible(NonFungibleStoreId, NonFungibleId),
     KeyValueStoreSpace(KeyValueStoreId),
     KeyValueStoreEntry(KeyValueStoreId, Vec<u8>),
     Vault(VaultId),

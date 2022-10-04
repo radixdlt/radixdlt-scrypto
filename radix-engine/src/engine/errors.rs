@@ -86,6 +86,7 @@ pub enum KernelError {
     CantMoveRestrictedProof,
     CantMoveWorktop,
     CantMoveAuthZone,
+    CantMoveNonFungibleStore,
     DropFailure(DropFailure),
 
     BlobNotFound(Hash),
@@ -153,6 +154,7 @@ pub enum DropFailure {
     Vault,
     Package,
     KeyValueStore,
+    NonFungibleStore,
 }
 
 impl fmt::Display for RuntimeError {

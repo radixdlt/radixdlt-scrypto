@@ -11,6 +11,7 @@ impl RENodeProperties {
             RENodeId::Bucket(..) => false,
             RENodeId::Proof(..) => false,
             RENodeId::KeyValueStore(..) => false,
+            RENodeId::NonFungibleStore(..) => false,
             RENodeId::Worktop => false,
             RENodeId::Component(..) => true,
             RENodeId::Vault(..) => false,
@@ -71,11 +72,11 @@ impl SubstateProperties {
             SubstateId::ComponentState(component_address) => {
                 RENodeId::Component(*component_address)
             }
-            SubstateId::NonFungibleSpace(resource_address) => {
-                RENodeId::ResourceManager(*resource_address)
+            SubstateId::NonFungibleSpace(non_fungible_store_id) => {
+                RENodeId::NonFungibleStore(*non_fungible_store_id)
             }
-            SubstateId::NonFungible(resource_address, ..) => {
-                RENodeId::ResourceManager(*resource_address)
+            SubstateId::NonFungible(non_fungible_store_id, ..) => {
+                RENodeId::NonFungibleStore(*non_fungible_store_id)
             }
             SubstateId::KeyValueStoreSpace(key_value_store_id) => {
                 RENodeId::KeyValueStore(*key_value_store_id)

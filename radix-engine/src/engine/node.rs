@@ -12,6 +12,7 @@ pub enum HeapRENode {
     Worktop(Worktop),
     Package(Package),
     KeyValueStore(KeyValueStore),
+    NonFungibleStore(NonFungibleStore),
     ResourceManager(ResourceManager),
     System(System),
 }
@@ -39,6 +40,7 @@ impl HeapRENode {
                 }
                 Ok(child_nodes)
             }
+            HeapRENode::NonFungibleStore(..) => Ok(HashSet::new()),
             HeapRENode::ResourceManager(..) => Ok(HashSet::new()),
             HeapRENode::Package(..) => Ok(HashSet::new()),
             HeapRENode::Bucket(..) => Ok(HashSet::new()),
@@ -160,6 +162,21 @@ impl HeapRENode {
         }
     }
 
+
+    pub fn non_fungible_store(&self) -> &NonFungibleStore {
+        match self {
+            HeapRENode::NonFungibleStore(store) => store,
+            _ => panic!("Expected to be a store"),
+        }
+    }
+
+    pub fn non_fungible_store_mut(&mut self) -> &mut NonFungibleStore {
+        match self {
+            HeapRENode::NonFungibleStore(store) => store,
+            _ => panic!("Expected to be a store"),
+        }
+    }
+
     pub fn vault(&self) -> &Vault {
         match self {
             HeapRENode::Vault(vault) => vault,
@@ -210,6 +227,9 @@ impl HeapRENode {
                 }
             }
             HeapRENode::KeyValueStore(..) => Ok(()),
+            HeapRENode::NonFungibleStore(..) => Err(RuntimeError::KernelError(
+                KernelError::CantMoveNonFungibleStore,
+            )),
             HeapRENode::Component(..) => Ok(()),
             HeapRENode::Vault(..) => Ok(()),
             HeapRENode::ResourceManager(..) => Ok(()),
@@ -222,6 +242,7 @@ impl HeapRENode {
     pub fn verify_can_persist(&self) -> Result<(), RuntimeError> {
         match self {
             HeapRENode::KeyValueStore { .. } => Ok(()),
+            HeapRENode::NonFungibleStore { .. } => Ok(()),
             HeapRENode::Component { .. } => Ok(()),
             HeapRENode::Vault(..) => Ok(()),
             HeapRENode::ResourceManager(..) => {
@@ -247,6 +268,7 @@ impl HeapRENode {
             HeapRENode::Package(..) => Err(DropFailure::Package),
             HeapRENode::Vault(..) => Err(DropFailure::Vault),
             HeapRENode::KeyValueStore(..) => Err(DropFailure::KeyValueStore),
+            HeapRENode::NonFungibleStore(..) => Err(DropFailure::NonFungibleStore),
             HeapRENode::Component(..) => Err(DropFailure::Component),
             HeapRENode::Bucket(..) => Err(DropFailure::Bucket),
             HeapRENode::ResourceManager(..) => Err(DropFailure::Resource),

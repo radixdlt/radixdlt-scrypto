@@ -55,8 +55,13 @@ pub fn node_to_substates(node_id: RENodeId, node: HeapRENode) -> HashMap<Substat
             };
             let substate = resource_manager.info;
             substates.insert(SubstateId::ResourceManager(address), substate.into());
-
-            for (id, non_fungible) in resource_manager.loaded_non_fungibles {
+        }
+        HeapRENode::NonFungibleStore(non_fungible_store) => {
+            let address = match node_id {
+                RENodeId::NonFungibleStore(address) => address,
+                _ => panic!("Unexpected"),
+            };
+            for (id, non_fungible) in non_fungible_store.loaded_non_fungibles {
                 let substate_id = SubstateId::NonFungible(address.clone(), id);
                 substates.insert(substate_id, non_fungible.into());
             }
