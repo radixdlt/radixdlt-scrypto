@@ -50,6 +50,8 @@ impl IdAllocator {
         let mut data = transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
 
+        // println!("Genesis package {:?}", hash(&data).lower_26_bytes());
+
         Ok(PackageAddress::Normal(hash(data).lower_26_bytes()))
     }
 
@@ -62,6 +64,8 @@ impl IdAllocator {
     ) -> Result<ComponentAddress, IdAllocationError> {
         let mut data = transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
+
+        // println!("Genesis component {:?}", hash(&data).lower_26_bytes());
 
         match (*package_address, blueprint_name) {
             (ACCOUNT_PACKAGE, "Account") => {
@@ -80,6 +84,9 @@ impl IdAllocator {
     ) -> Result<ComponentAddress, IdAllocationError> {
         let mut data = transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
+
+        // println!("Genesis component {:?}", hash(&data).lower_26_bytes());
+
         Ok(ComponentAddress::System(hash(data).lower_26_bytes()))
     }
 
@@ -90,6 +97,8 @@ impl IdAllocator {
     ) -> Result<ResourceAddress, IdAllocationError> {
         let mut data = transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
+
+        // println!("Genesis resource {:?}", hash(&data).lower_26_bytes());
 
         Ok(ResourceAddress::Normal(hash(data).lower_26_bytes()))
     }
