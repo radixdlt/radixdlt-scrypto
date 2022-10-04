@@ -23,14 +23,14 @@ impl AuthModule {
             .last()
             .expect("Current call frame does not exist");
 
-        let auth_zone = cur_call_frame.auth_zone();
+        let auth_zone = get_auth_zone(cur_call_frame);
 
         let mut auth_zones = vec![auth_zone];
 
         // FIXME: This is wrong as it allows extern component calls to use caller's auth zone
         // Also, need to add a test for this
         if let Some(frame) = call_frames.iter().rev().nth(1) {
-            let auth_zone = frame.auth_zone();
+            let auth_zone = get_auth_zone(frame);
             auth_zones.push(auth_zone);
         }
 
@@ -48,6 +48,24 @@ impl AuthModule {
         }
 
         Ok(())
+    }
+
+    pub fn get_auth_zone(call_frame: &CallFrame) -> &AuthZone {
+        call_frame
+            .owned_heap_nodes
+            .values()
+            .find(|e| {
+                matches!(
+                    e,
+                    HeapRootRENode {
+                        root: HeapRENode::AuthZone(..),
+                        ..
+                    }
+                )
+            })
+            .expect("Could not find auth zone")
+            .root
+            .auth_zone()
     }
 
     pub fn function_auth(

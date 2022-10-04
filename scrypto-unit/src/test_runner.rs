@@ -22,7 +22,7 @@ use sbor::describe::*;
 use scrypto::dec;
 use scrypto::math::Decimal;
 use transaction::builder::ManifestBuilder;
-use transaction::model::{Executable, AuthZoneParams, MethodIdentifier, TransactionManifest};
+use transaction::model::{AuthZoneParams, Executable, MethodIdentifier, TransactionManifest};
 use transaction::model::{PreviewIntent, TestTransaction};
 use transaction::signing::EcdsaSecp256k1PrivateKey;
 use transaction::validation::TestIntentHashManager;
