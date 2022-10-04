@@ -517,6 +517,22 @@ where
                         RENodeId::Component(*refed_component_address),
                         RENodePointer::Store(RENodeId::Component(*refed_component_address)),
                     );
+
+                    // As of now, once a component is made visible to the frame, client can directly
+                    // read the substates of the component. This will cause "Substate was never locked" issue.
+                    // We use the following temporary solution to work around this.
+                    // A better solution is to create node representation before issuing any reference.
+                    // TODO: remove
+                    self.track
+                        .acquire_lock(
+                            SubstateId::ComponentInfo(*refed_component_address),
+                            false,
+                            false,
+                        )
+                        .map_err(|e| RuntimeError::KernelError(KernelError::TrackError(e)))?;
+                    self.track
+                        .release_lock(SubstateId::ComponentInfo(*refed_component_address), false)
+                        .map_err(|e| RuntimeError::KernelError(KernelError::TrackError(e)))?;
                 } else {
                     return Err(RuntimeError::KernelError(
                         KernelError::InvokeInvalidReferencePass(node_id),
@@ -816,6 +832,22 @@ where
                     RENodeId::Component(*refed_component_address),
                     RENodePointer::Store(RENodeId::Component(*refed_component_address)),
                 );
+
+                // As of now, once a component is made visible to the frame, client can directly
+                // read the substates of the component. This will cause "Substate was never locked" issue.
+                // We use the following temporary solution to work around this.
+                // A better solution is to create node representation before issuing any reference.
+                // TODO: remove
+                self.track
+                    .acquire_lock(
+                        SubstateId::ComponentInfo(*refed_component_address),
+                        false,
+                        false,
+                    )
+                    .map_err(|e| RuntimeError::KernelError(KernelError::TrackError(e)))?;
+                self.track
+                    .release_lock(SubstateId::ComponentInfo(*refed_component_address), false)
+                    .map_err(|e| RuntimeError::KernelError(KernelError::TrackError(e)))?;
             } else {
                 return Err(RuntimeError::KernelError(
                     KernelError::InvokeInvalidReferencePass(node_id),
