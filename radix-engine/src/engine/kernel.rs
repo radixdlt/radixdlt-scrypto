@@ -163,24 +163,10 @@ where
         substate_id: &SubstateId,
     ) -> Result<(RENodePointer, ScryptoValue), RuntimeError> {
         let node_id = SubstateProperties::get_node_id(substate_id);
-
-        // Find node
-        let node_pointer = {
-            let current_frame = call_frames.last().expect("Current frame always exists");
-            if current_frame.owned_heap_nodes.contains_key(&node_id) {
-                RENodePointer::Heap {
-                    frame_id: current_frame.depth,
-                    root: node_id.clone(),
-                    id: None,
-                }
-            } else if let Some(pointer) = current_frame.node_refs.get(&node_id) {
-                pointer.clone()
-            } else {
-                return Err(RuntimeError::KernelError(KernelError::RENodeNotVisible(
-                    node_id,
-                )));
-            }
-        };
+        let node_pointer = call_frames
+            .last()
+            .expect("Current frame always exists")
+            .get_node_pointer(node_id)?;
 
         if let SubstateId::ComponentInfo(address) = substate_id {
             node_pointer
@@ -517,24 +503,8 @@ where
         // Authorization and state load
         let re_actor = {
             let mut node_id = fn_ident.receiver.node_id();
-
-            // Find node
-            let mut node_pointer = {
-                let current_frame = Self::current_frame(&self.call_frames);
-                if current_frame.owned_heap_nodes.contains_key(&node_id) {
-                    RENodePointer::Heap {
-                        frame_id: current_frame.depth,
-                        root: node_id.clone(),
-                        id: None,
-                    }
-                } else if let Some(pointer) = current_frame.node_refs.get(&node_id) {
-                    pointer.clone()
-                } else {
-                    return Err(RuntimeError::KernelError(KernelError::RENodeNotVisible(
-                        node_id,
-                    )));
-                }
-            };
+            let mut node_pointer =
+                Self::current_frame(&self.call_frames).get_node_pointer(node_id)?;
 
             // Deref
             if let Receiver::Ref(RENodeId::Global(global_address)) = fn_ident.receiver {
@@ -993,22 +963,7 @@ where
         }
 
         let current_frame = Self::current_frame(&self.call_frames);
-        let node_pointer = if current_frame.owned_heap_nodes.get(node_id).is_some() {
-            RENodePointer::Heap {
-                frame_id: current_frame.depth,
-                root: node_id.clone(),
-                id: None,
-            } // TODO: can I borrow  non-root node?
-        } else {
-            current_frame
-                .node_refs
-                .get(node_id)
-                .cloned()
-                .expect(&format!(
-                    "Attempt to borrow node {:?}, which is not visible in current frame.",
-                    node_id
-                )) // TODO: Assumption will break if auth is optional
-        };
+        let node_pointer = current_frame.get_node_pointer(*node_id)?;
 
         for m in &mut self.modules {
             m.post_sys_call(
@@ -1039,22 +994,7 @@ where
         }
 
         let current_frame = Self::current_frame(&self.call_frames);
-        let node_pointer = if current_frame.owned_heap_nodes.get(node_id).is_some() {
-            RENodePointer::Heap {
-                frame_id: current_frame.depth,
-                root: node_id.clone(),
-                id: None,
-            } // TODO: can I borrow  non-root node?
-        } else {
-            current_frame
-                .node_refs
-                .get(node_id)
-                .cloned()
-                .expect(&format!(
-                    "Attempt to borrow node {:?}, which is not visible in current frame.",
-                    node_id
-                )) // TODO: Assumption will break if auth is optional
-        };
+        let node_pointer = current_frame.get_node_pointer(*node_id)?;
 
         for m in &mut self.modules {
             m.post_sys_call(
