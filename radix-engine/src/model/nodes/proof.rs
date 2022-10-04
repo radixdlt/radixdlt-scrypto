@@ -326,7 +326,7 @@ impl Proof {
 
     pub fn main<'s, Y, W, I, R>(
         proof_id: ProofId,
-        proof_fn: ProofMethodFnIdent,
+        method: ProofMethod,
         args: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, InvokeError<ProofError>>
@@ -342,24 +342,24 @@ impl Proof {
             .map_err(InvokeError::Downstream)?;
         let proof = node_ref.proof_mut();
 
-        let rtn = match proof_fn {
-            ProofMethodFnIdent::GetAmount => {
+        let rtn = match method {
+            ProofMethod::GetAmount => {
                 let _: ProofGetAmountInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(ProofError::InvalidRequestData(e)))?;
                 Ok(ScryptoValue::from_typed(&proof.total_amount()))
             }
-            ProofMethodFnIdent::GetNonFungibleIds => {
+            ProofMethod::GetNonFungibleIds => {
                 let _: ProofGetNonFungibleIdsInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(ProofError::InvalidRequestData(e)))?;
                 let ids = proof.total_ids()?;
                 Ok(ScryptoValue::from_typed(&ids))
             }
-            ProofMethodFnIdent::GetResourceAddress => {
+            ProofMethod::GetResourceAddress => {
                 let _: ProofGetResourceAddressInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(ProofError::InvalidRequestData(e)))?;
                 Ok(ScryptoValue::from_typed(&proof.resource_address()))
             }
-            ProofMethodFnIdent::Clone => {
+            ProofMethod::Clone => {
                 let _: ProofCloneInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(ProofError::InvalidRequestData(e)))?;
                 let cloned_proof = proof.clone();
@@ -379,7 +379,7 @@ impl Proof {
 
     pub fn main_consume<'s, Y, W, I, R>(
         node_id: RENodeId,
-        proof_fn: ProofMethodFnIdent,
+        method: ProofMethod,
         args: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, InvokeError<ProofError>>
@@ -393,8 +393,8 @@ impl Proof {
             .node_drop(&node_id)
             .map_err(InvokeError::Downstream)?
             .into();
-        match proof_fn {
-            ProofMethodFnIdent::Drop => {
+        match method {
+            ProofMethod::Drop => {
                 let _: ConsumingProofDropInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(ProofError::InvalidRequestData(e)))?;
                 proof.drop();

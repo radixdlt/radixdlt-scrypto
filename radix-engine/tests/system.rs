@@ -1,7 +1,7 @@
 use radix_engine::engine::{ModuleError, RuntimeError};
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
-use scrypto::core::{NativeFunctionFnIdent, SystemFunctionFnIdent};
+use scrypto::core::{NativeFunction, SystemFunction};
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::model::AuthModule;
@@ -57,10 +57,7 @@ fn system_create_should_fail_with_supervisor_privilege() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10u32.into(), SYS_FAUCET_COMPONENT)
-        .call_native_function(
-            NativeFunctionFnIdent::System(SystemFunctionFnIdent::Create),
-            args!(),
-        )
+        .call_native_function(NativeFunction::System(SystemFunction::Create), args!())
         .build();
     let receipt =
         test_runner.execute_manifest(manifest, vec![AuthModule::validator_role_nf_address()]);
@@ -80,10 +77,7 @@ fn system_create_should_succeed_with_system_privilege() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_native_function(
-            NativeFunctionFnIdent::System(SystemFunctionFnIdent::Create),
-            args!(),
-        )
+        .call_native_function(NativeFunction::System(SystemFunction::Create), args!())
         .build();
     let receipt =
         test_runner.execute_manifest(manifest, vec![AuthModule::system_role_nf_address()]);

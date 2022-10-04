@@ -5,7 +5,7 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::abi::*;
-use crate::core::{NativeMethodFnIdent, ProofMethodFnIdent, Receiver};
+use crate::core::{NativeMethod, ProofMethod, Receiver};
 use crate::engine::types::RENodeId;
 use crate::engine::{api::*, call_engine, types::ProofId};
 use crate::math::*;
@@ -67,9 +67,9 @@ impl From<NonFungibleAddress> for ProofValidationMode {
 
 impl Clone for Proof {
     native_functions! {
-        Receiver::Ref(RENodeId::Proof(self.0)), NativeMethodFnIdent::Proof => {
+        Receiver::Ref(RENodeId::Proof(self.0)), NativeMethod::Proof => {
             fn clone(&self) -> Self {
-                ProofMethodFnIdent::Clone,
+                ProofMethod::Clone,
                 ProofCloneInput {}
             }
         }
@@ -220,26 +220,26 @@ impl Proof {
     }
 
     native_functions! {
-        Receiver::Ref(RENodeId::Proof(self.0)), NativeMethodFnIdent::Proof => {
+        Receiver::Ref(RENodeId::Proof(self.0)), NativeMethod::Proof => {
             fn amount(&self) -> Decimal {
-                ProofMethodFnIdent::GetAmount,
+                ProofMethod::GetAmount,
                 ProofGetAmountInput {}
             }
             fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId> {
-                ProofMethodFnIdent::GetNonFungibleIds,
+                ProofMethod::GetNonFungibleIds,
                 ProofGetNonFungibleIdsInput {}
             }
             fn resource_address(&self) -> ResourceAddress {
-                ProofMethodFnIdent::GetResourceAddress,
+                ProofMethod::GetResourceAddress,
                 ProofGetResourceAddressInput {}
             }
         }
     }
 
     native_functions! {
-        Receiver::Consumed(RENodeId::Proof(self.0)), NativeMethodFnIdent::Proof => {
+        Receiver::Consumed(RENodeId::Proof(self.0)), NativeMethod::Proof => {
             pub fn drop(self) -> () {
-                ProofMethodFnIdent::Drop,
+                ProofMethod::Drop,
                 ConsumingProofDropInput {}
             }
         }
@@ -258,17 +258,17 @@ impl Clone for ValidatedProof {
 
 impl ValidatedProof {
     native_functions! {
-        Receiver::Ref(RENodeId::Proof(self.proof_id())), NativeMethodFnIdent::Proof => {
+        Receiver::Ref(RENodeId::Proof(self.proof_id())), NativeMethod::Proof => {
             pub fn amount(&self) -> Decimal {
-                ProofMethodFnIdent::GetAmount,
+                ProofMethod::GetAmount,
                 ProofGetAmountInput {}
             }
             pub fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId> {
-                ProofMethodFnIdent::GetNonFungibleIds,
+                ProofMethod::GetNonFungibleIds,
                 ProofGetNonFungibleIdsInput {}
             }
             pub fn resource_address(&self) -> ResourceAddress {
-                ProofMethodFnIdent::GetResourceAddress,
+                ProofMethod::GetResourceAddress,
                 ProofGetResourceAddressInput {}
             }
         }

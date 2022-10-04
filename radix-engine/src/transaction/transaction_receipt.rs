@@ -253,7 +253,7 @@ impl fmt::Debug for TransactionReceipt {
                 prefix!(i, contents.instructions),
                 match inst {
                     Instruction::CallFunction {
-                        fn_identifier: FunctionIdent::Scrypto {
+                        function_ident: FunctionIdent::Scrypto {
                             package_address,
                             blueprint_name,
                             ident,
@@ -272,7 +272,7 @@ impl fmt::Debug for TransactionReceipt {
                     } => format!(
                         "CallMethod {{ receiver: {:?}, ident: {:?}, args: {:?} }}",
                         method_ident.receiver,
-                        method_ident.fn_ident,
+                        method_ident.method_ident,
                         ScryptoValue::from_slice(&args).expect("Failed to parse call data")
                     ),
                     Instruction::PublishPackage { .. } => "PublishPackage {..}".to_owned(),

@@ -1,7 +1,7 @@
 use crate::types::*;
 use scrypto::core::{
-    FnIdent, MethodFnIdent, MethodIdent, NativeFunctionFnIdent, ResourceManagerFunctionFnIdent,
-    SystemFunctionFnIdent,
+    FnIdent, MethodIdent, NativeFunction, ReceiverMethodIdent, ResourceManagerFunction,
+    SystemFunction,
 };
 
 pub enum SystemApiCostingEntry<'a> {
@@ -134,126 +134,118 @@ impl FeeTable {
         match fn_ident {
             FnIdent::Function(function_ident) => {
                 match function_ident {
-                    FunctionIdent::Native(NativeFunctionFnIdent::TransactionProcessor(
+                    FunctionIdent::Native(NativeFunction::TransactionProcessor(
                         transaction_processor_fn,
                     )) => match transaction_processor_fn {
-                        TransactionProcessorFunctionFnIdent::Run => self.fixed_high,
+                        TransactionProcessorFunction::Run => self.fixed_high,
                     },
-                    FunctionIdent::Native(NativeFunctionFnIdent::Package(package_fn)) => {
+                    FunctionIdent::Native(NativeFunction::Package(package_fn)) => {
                         match package_fn {
-                            PackageFunctionFnIdent::Publish => {
-                                self.fixed_low + input.raw.len() as u32 * 2
-                            }
+                            PackageFunction::Publish => self.fixed_low + input.raw.len() as u32 * 2,
                         }
                     }
-                    FunctionIdent::Native(NativeFunctionFnIdent::System(system_ident)) => {
+                    FunctionIdent::Native(NativeFunction::System(system_ident)) => {
                         match system_ident {
-                            SystemFunctionFnIdent::Create => self.fixed_low,
+                            SystemFunction::Create => self.fixed_low,
                         }
                     }
-                    FunctionIdent::Native(NativeFunctionFnIdent::ResourceManager(
+                    FunctionIdent::Native(NativeFunction::ResourceManager(
                         resource_manager_ident,
                     )) => {
                         match resource_manager_ident {
-                            ResourceManagerFunctionFnIdent::Create => self.fixed_high, // TODO: more investigation about fungibility
+                            ResourceManagerFunction::Create => self.fixed_high, // TODO: more investigation about fungibility
                         }
                     }
                     FunctionIdent::Scrypto { .. } => 0, // Costing is through instrumentation // TODO: Josh question, why only through instrumentation?
                 }
             }
-            FnIdent::Method(MethodIdent {
-                fn_ident: method_fn_ident,
+            FnIdent::Method(ReceiverMethodIdent {
+                method_ident: method_fn_ident,
                 ..
             }) => {
                 match method_fn_ident {
-                    MethodFnIdent::Native(NativeMethodFnIdent::AuthZone(auth_zone_ident)) => {
+                    MethodIdent::Native(NativeMethod::AuthZone(auth_zone_ident)) => {
                         match auth_zone_ident {
-                            AuthZoneMethodFnIdent::Pop => self.fixed_low,
-                            AuthZoneMethodFnIdent::Push => self.fixed_low,
-                            AuthZoneMethodFnIdent::CreateProof => self.fixed_high, // TODO: charge differently based on auth zone size and fungibility
-                            AuthZoneMethodFnIdent::CreateProofByAmount => self.fixed_high,
-                            AuthZoneMethodFnIdent::CreateProofByIds => self.fixed_high,
-                            AuthZoneMethodFnIdent::Clear => self.fixed_high,
-                            AuthZoneMethodFnIdent::Drain => self.fixed_high,
+                            AuthZoneMethod::Pop => self.fixed_low,
+                            AuthZoneMethod::Push => self.fixed_low,
+                            AuthZoneMethod::CreateProof => self.fixed_high, // TODO: charge differently based on auth zone size and fungibility
+                            AuthZoneMethod::CreateProofByAmount => self.fixed_high,
+                            AuthZoneMethod::CreateProofByIds => self.fixed_high,
+                            AuthZoneMethod::Clear => self.fixed_high,
+                            AuthZoneMethod::Drain => self.fixed_high,
                         }
                     }
-                    MethodFnIdent::Native(NativeMethodFnIdent::System(system_ident)) => {
-                        match system_ident {
-                            SystemMethodFnIdent::GetCurrentEpoch => self.fixed_low,
-                            SystemMethodFnIdent::GetTransactionHash => self.fixed_low,
-                            SystemMethodFnIdent::SetEpoch => self.fixed_low,
-                        }
-                    }
-                    MethodFnIdent::Native(NativeMethodFnIdent::Bucket(bucket_ident)) => {
-                        match bucket_ident {
-                            BucketMethodFnIdent::Take => self.fixed_medium,
-                            BucketMethodFnIdent::TakeNonFungibles => self.fixed_medium,
-                            BucketMethodFnIdent::GetNonFungibleIds => self.fixed_medium,
-                            BucketMethodFnIdent::Put => self.fixed_medium,
-                            BucketMethodFnIdent::GetAmount => self.fixed_low,
-                            BucketMethodFnIdent::GetResourceAddress => self.fixed_low,
-                            BucketMethodFnIdent::CreateProof => self.fixed_low,
-                            BucketMethodFnIdent::Burn => self.fixed_medium,
-                        }
-                    }
-                    MethodFnIdent::Native(NativeMethodFnIdent::Proof(proof_ident)) => {
-                        match proof_ident {
-                            ProofMethodFnIdent::GetAmount => self.fixed_low,
-                            ProofMethodFnIdent::GetNonFungibleIds => self.fixed_low,
-                            ProofMethodFnIdent::GetResourceAddress => self.fixed_low,
-                            ProofMethodFnIdent::Clone => self.fixed_low,
-                            ProofMethodFnIdent::Drop => self.fixed_medium,
-                        }
-                    }
-                    MethodFnIdent::Native(NativeMethodFnIdent::ResourceManager(
-                        resource_manager_ident,
-                    )) => match resource_manager_ident {
-                        ResourceManagerMethodFnIdent::UpdateAuth => self.fixed_medium,
-                        ResourceManagerMethodFnIdent::LockAuth => self.fixed_medium,
-                        ResourceManagerMethodFnIdent::CreateVault => self.fixed_medium,
-                        ResourceManagerMethodFnIdent::CreateBucket => self.fixed_medium,
-                        ResourceManagerMethodFnIdent::Mint => self.fixed_high,
-                        ResourceManagerMethodFnIdent::GetMetadata => self.fixed_low,
-                        ResourceManagerMethodFnIdent::GetResourceType => self.fixed_low,
-                        ResourceManagerMethodFnIdent::GetTotalSupply => self.fixed_low,
-                        ResourceManagerMethodFnIdent::UpdateMetadata => self.fixed_medium,
-                        ResourceManagerMethodFnIdent::UpdateNonFungibleData => self.fixed_medium,
-                        ResourceManagerMethodFnIdent::NonFungibleExists => self.fixed_low,
-                        ResourceManagerMethodFnIdent::GetNonFungible => self.fixed_medium,
+                    MethodIdent::Native(NativeMethod::System(system_ident)) => match system_ident {
+                        SystemMethod::GetCurrentEpoch => self.fixed_low,
+                        SystemMethod::GetTransactionHash => self.fixed_low,
+                        SystemMethod::SetEpoch => self.fixed_low,
                     },
-                    MethodFnIdent::Native(NativeMethodFnIdent::Worktop(worktop_ident)) => {
+                    MethodIdent::Native(NativeMethod::Bucket(bucket_ident)) => match bucket_ident {
+                        BucketMethod::Take => self.fixed_medium,
+                        BucketMethod::TakeNonFungibles => self.fixed_medium,
+                        BucketMethod::GetNonFungibleIds => self.fixed_medium,
+                        BucketMethod::Put => self.fixed_medium,
+                        BucketMethod::GetAmount => self.fixed_low,
+                        BucketMethod::GetResourceAddress => self.fixed_low,
+                        BucketMethod::CreateProof => self.fixed_low,
+                        BucketMethod::Burn => self.fixed_medium,
+                    },
+                    MethodIdent::Native(NativeMethod::Proof(proof_ident)) => match proof_ident {
+                        ProofMethod::GetAmount => self.fixed_low,
+                        ProofMethod::GetNonFungibleIds => self.fixed_low,
+                        ProofMethod::GetResourceAddress => self.fixed_low,
+                        ProofMethod::Clone => self.fixed_low,
+                        ProofMethod::Drop => self.fixed_medium,
+                    },
+                    MethodIdent::Native(NativeMethod::ResourceManager(resource_manager_ident)) => {
+                        match resource_manager_ident {
+                            ResourceManagerMethod::UpdateAuth => self.fixed_medium,
+                            ResourceManagerMethod::LockAuth => self.fixed_medium,
+                            ResourceManagerMethod::CreateVault => self.fixed_medium,
+                            ResourceManagerMethod::CreateBucket => self.fixed_medium,
+                            ResourceManagerMethod::Mint => self.fixed_high,
+                            ResourceManagerMethod::GetMetadata => self.fixed_low,
+                            ResourceManagerMethod::GetResourceType => self.fixed_low,
+                            ResourceManagerMethod::GetTotalSupply => self.fixed_low,
+                            ResourceManagerMethod::UpdateMetadata => self.fixed_medium,
+                            ResourceManagerMethod::UpdateNonFungibleData => self.fixed_medium,
+                            ResourceManagerMethod::NonFungibleExists => self.fixed_low,
+                            ResourceManagerMethod::GetNonFungible => self.fixed_medium,
+                        }
+                    }
+                    MethodIdent::Native(NativeMethod::Worktop(worktop_ident)) => {
                         match worktop_ident {
-                            WorktopMethodFnIdent::Put => self.fixed_medium,
-                            WorktopMethodFnIdent::TakeAmount => self.fixed_medium,
-                            WorktopMethodFnIdent::TakeAll => self.fixed_medium,
-                            WorktopMethodFnIdent::TakeNonFungibles => self.fixed_medium,
-                            WorktopMethodFnIdent::AssertContains => self.fixed_low,
-                            WorktopMethodFnIdent::AssertContainsAmount => self.fixed_low,
-                            WorktopMethodFnIdent::AssertContainsNonFungibles => self.fixed_low,
-                            WorktopMethodFnIdent::Drain => self.fixed_low,
+                            WorktopMethod::Put => self.fixed_medium,
+                            WorktopMethod::TakeAmount => self.fixed_medium,
+                            WorktopMethod::TakeAll => self.fixed_medium,
+                            WorktopMethod::TakeNonFungibles => self.fixed_medium,
+                            WorktopMethod::AssertContains => self.fixed_low,
+                            WorktopMethod::AssertContainsAmount => self.fixed_low,
+                            WorktopMethod::AssertContainsNonFungibles => self.fixed_low,
+                            WorktopMethod::Drain => self.fixed_low,
                         }
                     }
-                    MethodFnIdent::Native(NativeMethodFnIdent::Component(component_ident)) => {
+                    MethodIdent::Native(NativeMethod::Component(component_ident)) => {
                         match component_ident {
-                            ComponentMethodFnIdent::AddAccessCheck => self.fixed_medium,
+                            ComponentMethod::AddAccessCheck => self.fixed_medium,
                         }
                     }
-                    MethodFnIdent::Native(NativeMethodFnIdent::Vault(vault_ident)) => {
+                    MethodIdent::Native(NativeMethod::Vault(vault_ident)) => {
                         match vault_ident {
-                            VaultMethodFnIdent::Put => self.fixed_medium,
-                            VaultMethodFnIdent::Take => self.fixed_medium, // TODO: revisit this if vault is not loaded in full
-                            VaultMethodFnIdent::TakeNonFungibles => self.fixed_medium,
-                            VaultMethodFnIdent::GetAmount => self.fixed_low,
-                            VaultMethodFnIdent::GetResourceAddress => self.fixed_low,
-                            VaultMethodFnIdent::GetNonFungibleIds => self.fixed_medium,
-                            VaultMethodFnIdent::CreateProof => self.fixed_high,
-                            VaultMethodFnIdent::CreateProofByAmount => self.fixed_high,
-                            VaultMethodFnIdent::CreateProofByIds => self.fixed_high,
-                            VaultMethodFnIdent::LockFee => self.fixed_medium,
-                            VaultMethodFnIdent::LockContingentFee => self.fixed_medium,
+                            VaultMethod::Put => self.fixed_medium,
+                            VaultMethod::Take => self.fixed_medium, // TODO: revisit this if vault is not loaded in full
+                            VaultMethod::TakeNonFungibles => self.fixed_medium,
+                            VaultMethod::GetAmount => self.fixed_low,
+                            VaultMethod::GetResourceAddress => self.fixed_low,
+                            VaultMethod::GetNonFungibleIds => self.fixed_medium,
+                            VaultMethod::CreateProof => self.fixed_high,
+                            VaultMethod::CreateProofByAmount => self.fixed_high,
+                            VaultMethod::CreateProofByIds => self.fixed_high,
+                            VaultMethod::LockFee => self.fixed_medium,
+                            VaultMethod::LockContingentFee => self.fixed_medium,
                         }
                     }
-                    MethodFnIdent::Scrypto { .. } => self.fixed_high,
+                    MethodIdent::Scrypto { .. } => self.fixed_high,
                 }
             }
         }

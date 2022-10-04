@@ -17,9 +17,9 @@ macro_rules! native_functions {
         $(
             $vis $fn $method_name $s -> $rtn {
                 let input = RadixEngineInput::Invoke(
-                    scrypto::core::FnIdent::Method(scrypto::core::MethodIdent {
+                    scrypto::core::FnIdent::Method(scrypto::core::ReceiverMethodIdent {
                         receiver: $receiver,
-                        fn_ident: scrypto::core::MethodFnIdent::Native($type_ident($fn_ident)),
+                        method_ident: scrypto::core::MethodIdent::Native($type_ident($fn_ident)),
                     }),
                     scrypto::buffer::scrypto_encode(&$arg)
                 );
