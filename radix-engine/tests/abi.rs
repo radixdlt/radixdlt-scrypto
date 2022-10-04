@@ -57,18 +57,18 @@ fn test_arg(method_name: &str, args: Vec<u8>, expected_result: ExpectedResult) {
 
     // Assert
     match expected_result {
-        ExpectedResult::Success => {
+        Success => {
             receipt.expect_commit_success();
         }
-        ExpectedResult::InvalidInput => {
+        InvalidInput => {
             receipt.expect_specific_failure(|e| {
                 matches!(
                     e,
-                    RuntimeError::KernelError(KernelError::InvalidFnInput { .. })
+                    RuntimeError::KernelError(KernelError::InvalidFnInput2(..))
                 )
             });
         }
-        ExpectedResult::InvalidOutput => {
+        InvalidOutput => {
             receipt.expect_specific_failure(|e| {
                 matches!(
                     e,

@@ -23,12 +23,10 @@ pub struct OutputValue {
 
 pub trait ReadableSubstateStore {
     fn get_substate(&self, substate_id: &SubstateId) -> Option<OutputValue>;
-    fn is_root(&self, substate_id: &SubstateId) -> bool;
 }
 
 pub trait WriteableSubstateStore {
     fn put_substate(&mut self, substate_id: SubstateId, substate: OutputValue);
-    fn set_root(&mut self, substate_id: SubstateId);
 }
 
 pub trait SubstateStore: ReadableSubstateStore + WriteableSubstateStore {}

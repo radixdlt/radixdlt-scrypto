@@ -159,6 +159,15 @@ impl<'f, 's, R: FeeReserve> RENodeRef<'f, 's, R> {
         }
     }
 
+    pub fn global_re_node(&mut self) -> &GlobalRENode {
+        match self {
+            RENodeRef::Stack(..) => {
+                panic!("Expecting not to be on stack.");
+            }
+            RENodeRef::Track(track, node_id) => track.borrow_node(node_id).global_re_node(),
+        }
+    }
+
     pub fn package(&mut self) -> &Package {
         match self {
             RENodeRef::Stack(value, id) => id

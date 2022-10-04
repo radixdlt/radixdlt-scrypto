@@ -6,10 +6,11 @@ use crate::crypto::*;
 use crate::resource::{NonFungibleId, ResourceAddress};
 
 pub type AuthZoneId = u32;
-pub type KeyValueStoreId = (Hash, u32);
-pub type VaultId = (Hash, u32);
 pub type BucketId = u32;
 pub type ProofId = u32;
+
+pub type KeyValueStoreId = (Hash, u32);
+pub type VaultId = (Hash, u32);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Encode, Decode, TypeId, Ord, PartialOrd)]
 pub enum RENodeId {
@@ -23,6 +24,7 @@ pub enum RENodeId {
     ResourceManager(ResourceAddress),
     Package(PackageAddress),
     System(ComponentAddress),
+    Global(GlobalAddress),
 }
 
 impl Into<(Hash, u32)> for RENodeId {
@@ -73,11 +75,24 @@ impl Into<ResourceAddress> for RENodeId {
     }
 }
 
+#[derive(Debug, Clone, Copy, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum GlobalAddress {
+    Component(ComponentAddress),
+    /*
+    Package(PackageAddress),
+    Resource(ResourceAddress),
+     */
+}
+
 /// TODO: separate space addresses?
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum SubstateId {
+    Global(GlobalAddress),
+
     AuthZone(AuthZoneId),
     ComponentInfo(ComponentAddress),
+    ComponentState(ComponentAddress),
+
     Package(PackageAddress),
     ResourceManager(ResourceAddress),
     NonFungibleSpace(ResourceAddress),
@@ -85,7 +100,6 @@ pub enum SubstateId {
     KeyValueStoreSpace(KeyValueStoreId),
     KeyValueStoreEntry(KeyValueStoreId, Vec<u8>),
     Vault(VaultId),
-    ComponentState(ComponentAddress),
     System(ComponentAddress),
     Bucket(BucketId),
     Proof(ProofId),

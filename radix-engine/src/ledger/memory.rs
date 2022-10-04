@@ -7,14 +7,12 @@ use crate::types::*;
 #[derive(Debug, PartialEq, Eq)]
 pub struct TypedInMemorySubstateStore {
     substates: HashMap<SubstateId, OutputValue>,
-    root_substates: HashSet<SubstateId>,
 }
 
 impl TypedInMemorySubstateStore {
     pub fn new() -> Self {
         Self {
             substates: HashMap::new(),
-            root_substates: HashSet::new(),
         }
     }
 
@@ -35,19 +33,11 @@ impl ReadableSubstateStore for TypedInMemorySubstateStore {
     fn get_substate(&self, substate_id: &SubstateId) -> Option<OutputValue> {
         self.substates.get(substate_id).cloned()
     }
-
-    fn is_root(&self, substate_id: &SubstateId) -> bool {
-        self.root_substates.contains(substate_id)
-    }
 }
 
 impl WriteableSubstateStore for TypedInMemorySubstateStore {
     fn put_substate(&mut self, substate_id: SubstateId, substate: OutputValue) {
         self.substates.insert(substate_id, substate);
-    }
-
-    fn set_root(&mut self, substate_id: SubstateId) {
-        self.root_substates.insert(substate_id);
     }
 }
 

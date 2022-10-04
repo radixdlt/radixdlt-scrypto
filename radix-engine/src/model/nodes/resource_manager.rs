@@ -12,8 +12,7 @@ use crate::types::AccessRule::*;
 use crate::types::ResourceMethodAuthKey::*;
 use crate::types::*;
 use crate::wasm::*;
-
-use self::ResourceManagerError::InvalidMethod;
+use scrypto::core::ResourceManagerFunction;
 
 /// Represents an error when accessing a bucket.
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -31,7 +30,6 @@ pub enum ResourceManagerError {
     MethodNotFound(String),
     CouldNotCreateBucket,
     CouldNotCreateVault,
-    InvalidMethod,
 }
 
 /// The definition of a resource.
@@ -55,43 +53,41 @@ impl ResourceManager {
         metadata: HashMap<String, String>,
         mut auth: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
     ) -> Result<Self, InvokeError<ResourceManagerError>> {
-        let mut vault_method_table: HashMap<VaultFnIdentifier, ResourceMethodRule> = HashMap::new();
-        vault_method_table.insert(VaultFnIdentifier::LockFee, Protected(Withdraw));
-        vault_method_table.insert(VaultFnIdentifier::LockContingentFee, Protected(Withdraw));
-        vault_method_table.insert(VaultFnIdentifier::Take, Protected(Withdraw));
-        vault_method_table.insert(VaultFnIdentifier::Put, Protected(Deposit));
-        vault_method_table.insert(VaultFnIdentifier::GetAmount, Public);
-        vault_method_table.insert(VaultFnIdentifier::GetResourceAddress, Public);
-        vault_method_table.insert(VaultFnIdentifier::GetNonFungibleIds, Public);
-        vault_method_table.insert(VaultFnIdentifier::CreateProof, Public);
-        vault_method_table.insert(VaultFnIdentifier::CreateProofByAmount, Public);
-        vault_method_table.insert(VaultFnIdentifier::CreateProofByIds, Public);
-        vault_method_table.insert(VaultFnIdentifier::TakeNonFungibles, Protected(Withdraw));
+        let mut vault_method_table: HashMap<VaultMethod, ResourceMethodRule> = HashMap::new();
+        vault_method_table.insert(VaultMethod::LockFee, Protected(Withdraw));
+        vault_method_table.insert(VaultMethod::LockContingentFee, Protected(Withdraw));
+        vault_method_table.insert(VaultMethod::Take, Protected(Withdraw));
+        vault_method_table.insert(VaultMethod::Put, Protected(Deposit));
+        vault_method_table.insert(VaultMethod::GetAmount, Public);
+        vault_method_table.insert(VaultMethod::GetResourceAddress, Public);
+        vault_method_table.insert(VaultMethod::GetNonFungibleIds, Public);
+        vault_method_table.insert(VaultMethod::CreateProof, Public);
+        vault_method_table.insert(VaultMethod::CreateProofByAmount, Public);
+        vault_method_table.insert(VaultMethod::CreateProofByIds, Public);
+        vault_method_table.insert(VaultMethod::TakeNonFungibles, Protected(Withdraw));
 
-        let mut bucket_method_table: HashMap<BucketFnIdentifier, ResourceMethodRule> =
-            HashMap::new();
-        bucket_method_table.insert(BucketFnIdentifier::Burn, Protected(Burn));
+        let mut bucket_method_table: HashMap<BucketMethod, ResourceMethodRule> = HashMap::new();
+        bucket_method_table.insert(BucketMethod::Burn, Protected(Burn));
 
-        let mut method_table: HashMap<ResourceManagerFnIdentifier, ResourceMethodRule> =
-            HashMap::new();
-        method_table.insert(ResourceManagerFnIdentifier::Mint, Protected(Mint));
+        let mut method_table: HashMap<ResourceManagerMethod, ResourceMethodRule> = HashMap::new();
+        method_table.insert(ResourceManagerMethod::Mint, Protected(Mint));
         method_table.insert(
-            ResourceManagerFnIdentifier::UpdateMetadata,
+            ResourceManagerMethod::UpdateMetadata,
             Protected(UpdateMetadata),
         );
-        method_table.insert(ResourceManagerFnIdentifier::CreateBucket, Public);
-        method_table.insert(ResourceManagerFnIdentifier::GetMetadata, Public);
-        method_table.insert(ResourceManagerFnIdentifier::GetResourceType, Public);
-        method_table.insert(ResourceManagerFnIdentifier::GetTotalSupply, Public);
-        method_table.insert(ResourceManagerFnIdentifier::CreateVault, Public);
+        method_table.insert(ResourceManagerMethod::CreateBucket, Public);
+        method_table.insert(ResourceManagerMethod::GetMetadata, Public);
+        method_table.insert(ResourceManagerMethod::GetResourceType, Public);
+        method_table.insert(ResourceManagerMethod::GetTotalSupply, Public);
+        method_table.insert(ResourceManagerMethod::CreateVault, Public);
 
         // Non Fungible methods
         method_table.insert(
-            ResourceManagerFnIdentifier::UpdateNonFungibleData,
+            ResourceManagerMethod::UpdateNonFungibleData,
             Protected(UpdateNonFungibleData),
         );
-        method_table.insert(ResourceManagerFnIdentifier::NonFungibleExists, Public);
-        method_table.insert(ResourceManagerFnIdentifier::GetNonFungible, Public);
+        method_table.insert(ResourceManagerMethod::NonFungibleExists, Public);
+        method_table.insert(ResourceManagerMethod::GetNonFungible, Public);
 
         let mut authorization: HashMap<ResourceMethodAuthKey, MethodAccessRule> = HashMap::new();
         for (auth_entry_key, default) in [
@@ -122,7 +118,7 @@ impl ResourceManager {
         Ok(resource_manager)
     }
 
-    pub fn get_vault_auth(&self, vault_fn: VaultFnIdentifier) -> &MethodAuthorization {
+    pub fn get_vault_auth(&self, vault_fn: VaultMethod) -> &MethodAuthorization {
         match self.info.vault_method_table.get(&vault_fn) {
             None => &MethodAuthorization::Unsupported,
             Some(Public) => &MethodAuthorization::AllowAll,
@@ -135,26 +131,29 @@ impl ResourceManager {
         }
     }
 
-    pub fn get_bucket_auth(&self, bucket_fn: BucketFnIdentifier) -> &MethodAuthorization {
-        match self.info.bucket_method_table.get(&bucket_fn) {
+    pub fn get_bucket_auth(&self, bucket_method: BucketMethod) -> &MethodAuthorization {
+        match self.info.bucket_method_table.get(&bucket_method) {
             None => &MethodAuthorization::Unsupported,
             Some(Public) => &MethodAuthorization::AllowAll,
             Some(Protected(method)) => self
                 .info
                 .authorization
                 .get(method)
-                .expect(&format!("Authorization for {:?} not specified", bucket_fn))
+                .expect(&format!(
+                    "Authorization for {:?} not specified",
+                    bucket_method
+                ))
                 .get_method_auth(),
         }
     }
 
     pub fn get_auth(
         &self,
-        fn_identifier: ResourceManagerFnIdentifier,
+        method: ResourceManagerMethod,
         args: &ScryptoValue,
     ) -> &MethodAuthorization {
-        match &fn_identifier {
-            ResourceManagerFnIdentifier::UpdateAuth => {
+        match &method {
+            ResourceManagerMethod::UpdateAuth => {
                 // FIXME we can't assume the input always match the function identifier
                 // especially for the auth module code path
                 let input: ResourceManagerUpdateAuthInput = scrypto_decode(&args.raw).unwrap();
@@ -165,7 +164,7 @@ impl ResourceManager {
                     }
                 }
             }
-            ResourceManagerFnIdentifier::LockAuth => {
+            ResourceManagerMethod::LockAuth => {
                 // FIXME we can't assume the input always match the function identifier
                 // especially for the auth module code path
                 let input: ResourceManagerLockAuthInput = scrypto_decode(&args.raw).unwrap();
@@ -174,7 +173,7 @@ impl ResourceManager {
                     Some(entry) => entry.get_update_auth(MethodAccessRuleMethod::Lock()),
                 }
             }
-            _ => match self.info.method_table.get(&fn_identifier) {
+            _ => match self.info.method_table.get(&method) {
                 None => &MethodAuthorization::Unsupported,
                 Some(Public) => &MethodAuthorization::AllowAll,
                 Some(Protected(method)) => self
@@ -301,7 +300,7 @@ impl ResourceManager {
     }
 
     pub fn static_main<'s, Y, W, I, R>(
-        resource_manager_fn: ResourceManagerFnIdentifier,
+        func: ResourceManagerFunction,
         args: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, InvokeError<ResourceManagerError>>
@@ -311,8 +310,8 @@ impl ResourceManager {
         I: WasmInstance,
         R: FeeReserve,
     {
-        match resource_manager_fn {
-            ResourceManagerFnIdentifier::Create => {
+        match func {
+            ResourceManagerFunction::Create => {
                 let input: ResourceManagerCreateInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))?;
 
@@ -389,13 +388,12 @@ impl ResourceManager {
 
                 Ok(ScryptoValue::from_typed(&(resource_address, bucket_id)))
             }
-            _ => Err(InvokeError::Error(InvalidMethod)),
         }
     }
 
     pub fn main<'s, Y, W, I, R>(
         resource_address: ResourceAddress,
-        resource_manager_fn: ResourceManagerFnIdentifier,
+        method: ResourceManagerMethod,
         args: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, InvokeError<ResourceManagerError>>
@@ -405,8 +403,8 @@ impl ResourceManager {
         I: WasmInstance,
         R: FeeReserve,
     {
-        let rtn = match resource_manager_fn {
-            ResourceManagerFnIdentifier::UpdateAuth => {
+        let rtn = match method {
+            ResourceManagerMethod::UpdateAuth => {
                 let input: ResourceManagerUpdateAuthInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))?;
                 let mut node_ref = system_api
@@ -424,7 +422,7 @@ impl ResourceManager {
                     ));
                 method_entry.main(MethodAccessRuleMethod::Update(input.access_rule))
             }
-            ResourceManagerFnIdentifier::LockAuth => {
+            ResourceManagerMethod::LockAuth => {
                 let input: ResourceManagerLockAuthInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))?;
                 let mut node_ref = system_api
@@ -442,7 +440,7 @@ impl ResourceManager {
                     ));
                 method_entry.main(MethodAccessRuleMethod::Lock())
             }
-            ResourceManagerFnIdentifier::CreateVault => {
+            ResourceManagerMethod::CreateVault => {
                 let _: ResourceManagerCreateVaultInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))?;
                 let mut node_ref = system_api
@@ -460,7 +458,7 @@ impl ResourceManager {
                     vault_id,
                 )))
             }
-            ResourceManagerFnIdentifier::CreateBucket => {
+            ResourceManagerMethod::CreateBucket => {
                 let _: ResourceManagerCreateBucketInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))?;
                 let mut node_ref = system_api
@@ -478,7 +476,7 @@ impl ResourceManager {
                     bucket_id,
                 )))
             }
-            ResourceManagerFnIdentifier::Mint => {
+            ResourceManagerMethod::Mint => {
                 let input: ResourceManagerMintInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))?;
                 let mut node_ref = system_api
@@ -519,7 +517,7 @@ impl ResourceManager {
                     bucket_id,
                 )))
             }
-            ResourceManagerFnIdentifier::GetMetadata => {
+            ResourceManagerMethod::GetMetadata => {
                 let _: ResourceManagerGetMetadataInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))?;
                 let mut node_ref = system_api
@@ -529,7 +527,7 @@ impl ResourceManager {
 
                 Ok(ScryptoValue::from_typed(&resource_manager.info.metadata))
             }
-            ResourceManagerFnIdentifier::GetResourceType => {
+            ResourceManagerMethod::GetResourceType => {
                 let _: ResourceManagerGetResourceTypeInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))?;
                 let mut node_ref = system_api
@@ -541,7 +539,7 @@ impl ResourceManager {
                     &resource_manager.info.resource_type,
                 ))
             }
-            ResourceManagerFnIdentifier::GetTotalSupply => {
+            ResourceManagerMethod::GetTotalSupply => {
                 let _: ResourceManagerGetTotalSupplyInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))?;
                 let mut node_ref = system_api
@@ -553,7 +551,7 @@ impl ResourceManager {
                     &resource_manager.info.total_supply,
                 ))
             }
-            ResourceManagerFnIdentifier::UpdateMetadata => {
+            ResourceManagerMethod::UpdateMetadata => {
                 let input: ResourceManagerUpdateMetadataInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))?;
                 let mut node_ref = system_api
@@ -564,7 +562,7 @@ impl ResourceManager {
                 resource_manager.update_metadata(input.metadata)?;
                 Ok(ScryptoValue::from_typed(&()))
             }
-            ResourceManagerFnIdentifier::UpdateNonFungibleData => {
+            ResourceManagerMethod::UpdateNonFungibleData => {
                 let input: ResourceManagerUpdateNonFungibleDataInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))?;
                 // Read current value
@@ -596,7 +594,7 @@ impl ResourceManager {
 
                 Ok(ScryptoValue::from_typed(&()))
             }
-            ResourceManagerFnIdentifier::NonFungibleExists => {
+            ResourceManagerMethod::NonFungibleExists => {
                 let input: ResourceManagerNonFungibleExistsInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))?;
                 let value = system_api
@@ -606,7 +604,7 @@ impl ResourceManager {
                     scrypto_decode(&value.raw).expect("Failed to decode NonFungibleSubstate");
                 Ok(ScryptoValue::from_typed(&wrapper.0.is_some()))
             }
-            ResourceManagerFnIdentifier::GetNonFungible => {
+            ResourceManagerMethod::GetNonFungible => {
                 let input: ResourceManagerGetNonFungibleInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))?;
                 let non_fungible_address =
@@ -624,7 +622,6 @@ impl ResourceManager {
                     non_fungible.mutable_data(),
                 ]))
             }
-            _ => Err(InvokeError::Error(InvalidMethod)),
         }?;
 
         Ok(rtn)

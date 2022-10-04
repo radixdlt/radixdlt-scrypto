@@ -91,10 +91,7 @@ fn local_component_with_access_rules_should_not_be_callable() {
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        matches!(
-            e,
-            RuntimeError::ModuleError(ModuleError::AuthorizationError { .. })
-        )
+        matches!(e, RuntimeError::ModuleError(ModuleError::AuthError { .. }))
     });
 }
 

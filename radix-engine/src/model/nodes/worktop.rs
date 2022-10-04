@@ -202,7 +202,7 @@ impl Worktop {
     }
 
     pub fn main<'s, Y, W, I, R>(
-        worktop_fn: WorktopFnIdentifier,
+        method: WorktopMethod,
         args: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, InvokeError<WorktopError>>
@@ -212,8 +212,8 @@ impl Worktop {
         I: WasmInstance,
         R: FeeReserve,
     {
-        let rtn = match worktop_fn {
-            WorktopFnIdentifier::Put => {
+        let rtn = match method {
+            WorktopMethod::Put => {
                 let input: WorktopPutInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(WorktopError::InvalidRequestData(e)))?;
                 let bucket = system_api
@@ -229,7 +229,7 @@ impl Worktop {
                     .map_err(|e| InvokeError::Error(WorktopError::ResourceOperationError(e)))?;
                 Ok(ScryptoValue::from_typed(&()))
             }
-            WorktopFnIdentifier::TakeAmount => {
+            WorktopMethod::TakeAmount => {
                 let input: WorktopTakeAmountInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(WorktopError::InvalidRequestData(e)))?;
                 let mut node_ref = system_api
@@ -260,7 +260,7 @@ impl Worktop {
                     bucket_id,
                 )))
             }
-            WorktopFnIdentifier::TakeAll => {
+            WorktopMethod::TakeAll => {
                 let input: WorktopTakeAllInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(WorktopError::InvalidRequestData(e)))?;
                 let mut node_ref = system_api
@@ -292,7 +292,7 @@ impl Worktop {
                     bucket_id,
                 )))
             }
-            WorktopFnIdentifier::TakeNonFungibles => {
+            WorktopMethod::TakeNonFungibles => {
                 let input: WorktopTakeNonFungiblesInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(WorktopError::InvalidRequestData(e)))?;
                 let mut node_ref = system_api
@@ -324,7 +324,7 @@ impl Worktop {
                     bucket_id,
                 )))
             }
-            WorktopFnIdentifier::AssertContains => {
+            WorktopMethod::AssertContains => {
                 let input: WorktopAssertContainsInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(WorktopError::InvalidRequestData(e)))?;
                 let mut node_ref = system_api
@@ -337,7 +337,7 @@ impl Worktop {
                     Ok(ScryptoValue::from_typed(&()))
                 }
             }
-            WorktopFnIdentifier::AssertContainsAmount => {
+            WorktopMethod::AssertContainsAmount => {
                 let input: WorktopAssertContainsAmountInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(WorktopError::InvalidRequestData(e)))?;
                 let mut node_ref = system_api
@@ -350,7 +350,7 @@ impl Worktop {
                     Ok(ScryptoValue::from_typed(&()))
                 }
             }
-            WorktopFnIdentifier::AssertContainsNonFungibles => {
+            WorktopMethod::AssertContainsNonFungibles => {
                 let input: WorktopAssertContainsNonFungiblesInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(WorktopError::InvalidRequestData(e)))?;
                 let mut node_ref = system_api
@@ -367,7 +367,7 @@ impl Worktop {
                     Ok(ScryptoValue::from_typed(&()))
                 }
             }
-            WorktopFnIdentifier::Drain => {
+            WorktopMethod::Drain => {
                 let _: WorktopDrainInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(WorktopError::InvalidRequestData(e)))?;
                 let mut node_ref = system_api

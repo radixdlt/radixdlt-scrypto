@@ -35,13 +35,14 @@ pub fn compile(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::model::{Instruction, MethodIdentifier};
+    use crate::model::Instruction;
     use sbor::rust::collections::*;
     use sbor::rust::str::FromStr;
     use scrypto::address::Bech32Decoder;
     use scrypto::args;
-    use scrypto::core::NetworkDefinition;
-    use scrypto::core::{Blob, FnIdentifier, NativeFnIdentifier, ResourceManagerFnIdentifier};
+    use scrypto::core::{Blob, FunctionIdent, MethodIdent, Receiver, ReceiverMethodIdent};
+    use scrypto::core::{NativeFunction, NetworkDefinition, ResourceManagerFunction};
+    use scrypto::engine::types::{GlobalAddress, RENodeId};
     use scrypto::math::*;
     use scrypto::resource::{
         AccessRule, MintParams, Mutability, ResourceAddress, ResourceMethodAuthKey, ResourceType,
@@ -77,9 +78,11 @@ mod tests {
                 .instructions,
             vec![
                 Instruction::CallMethod {
-                    method_identifier: MethodIdentifier::Scrypto {
-                        component_address: component1,
-                        ident: "withdraw_by_amount".to_string(),
+                    method_ident: ReceiverMethodIdent {
+                        receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Component(
+                            component1
+                        ))),
+                        method_ident: MethodIdent::Scrypto("withdraw_by_amount".to_string()),
                     },
                     args: args!(
                         Decimal::from(5u32),
@@ -97,9 +100,11 @@ mod tests {
                     .unwrap(),
                 },
                 Instruction::CallMethod {
-                    method_identifier: MethodIdentifier::Scrypto {
-                        component_address: component2,
-                        ident: "buy_gumball".to_string(),
+                    method_ident: ReceiverMethodIdent {
+                        receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Component(
+                            component2
+                        ))),
+                        method_ident: MethodIdent::Scrypto("buy_gumball".to_string()),
                     },
                     args: args!(scrypto::resource::Bucket(512))
                 },
@@ -127,9 +132,11 @@ mod tests {
                 Instruction::DropProof { proof_id: 514 },
                 Instruction::DropProof { proof_id: 515 },
                 Instruction::CallMethod {
-                    method_identifier: MethodIdentifier::Scrypto {
-                        component_address: component1,
-                        ident: "create_proof_by_amount".to_string(),
+                    method_ident: ReceiverMethodIdent {
+                        receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Component(
+                            component1
+                        ))),
+                        method_ident: MethodIdent::Scrypto("create_proof_by_amount".to_string()),
                     },
                     args: args!(
                         Decimal::from(5u32),
@@ -153,8 +160,8 @@ mod tests {
                     .unwrap()
                 },
                 Instruction::CallFunction {
-                    fn_identifier: FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
-                        ResourceManagerFnIdentifier::Create
+                    function_ident: FunctionIdent::Native(NativeFunction::ResourceManager(
+                        ResourceManagerFunction::Create
                     )),
                     args: args!(
                         ResourceType::Fungible { divisibility: 0 },
@@ -166,17 +173,21 @@ mod tests {
                     ),
                 },
                 Instruction::CallMethod {
-                    method_identifier: MethodIdentifier::Scrypto {
-                        component_address: component1,
-                        ident: "deposit_batch".into(),
+                    method_ident: ReceiverMethodIdent {
+                        receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Component(
+                            component1
+                        ))),
+                        method_ident: MethodIdent::Scrypto("deposit_batch".to_string()),
                     },
                     args: args!(Expression("ENTIRE_WORKTOP".to_owned()))
                 },
                 Instruction::DropAllProofs,
                 Instruction::CallMethod {
-                    method_identifier: MethodIdentifier::Scrypto {
-                        component_address: component2,
-                        ident: "complicated_method".to_string(),
+                    method_ident: ReceiverMethodIdent {
+                        receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Component(
+                            component2
+                        ))),
+                        method_ident: MethodIdent::Scrypto("complicated_method".to_string()),
                     },
                     args: args!(Decimal::from(1u32), PreciseDecimal::from(2u32))
                 },
