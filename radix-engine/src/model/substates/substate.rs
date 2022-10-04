@@ -5,6 +5,7 @@ use crate::types::*;
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub enum Substate {
+    GlobalRENode(GlobalAddressSubstate),
     System(SystemSubstate),
     ResourceManager(ResourceManagerSubstate),
     ComponentInfo(ComponentInfoSubstate),
@@ -16,6 +17,14 @@ pub enum Substate {
 }
 
 impl Substate {
+    pub fn global_re_node(&self) -> &GlobalAddressSubstate {
+        if let Substate::GlobalRENode(global_re_node) = self {
+            global_re_node
+        } else {
+            panic!("Not a global RENode");
+        }
+    }
+
     pub fn vault(&self) -> &VaultSubstate {
         if let Substate::Vault(vault) = self {
             vault

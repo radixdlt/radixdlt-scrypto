@@ -141,8 +141,8 @@ fn test_faucet_drain_attempt_should_fail() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(dec!("10"), account)
-        .call_method(SYS_FAUCET_COMPONENT, "free_xrd", args!())
-        .call_method(SYS_FAUCET_COMPONENT, "free_xrd", args!())
+        .call_method(SYS_FAUCET_COMPONENT, "free", args!())
+        .call_method(SYS_FAUCET_COMPONENT, "free", args!())
         .call_method(
             account,
             "deposit_batch",

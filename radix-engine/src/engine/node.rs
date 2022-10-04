@@ -4,6 +4,7 @@ use crate::types::*;
 
 #[derive(Debug)]
 pub enum HeapRENode {
+    Global(GlobalRENode), // TODO: Remove
     Bucket(Bucket),
     Proof(Proof),
     AuthZone(AuthZone),
@@ -21,6 +22,19 @@ pub enum HeapRENode {
 impl HeapRENode {
     pub fn get_child_nodes(&self) -> Result<HashSet<RENodeId>, RuntimeError> {
         match self {
+            HeapRENode::Global(global_node) => {
+                let child_node = match &global_node.address {
+                    GlobalAddressSubstate::Component(component) => RENodeId::Component(component.0),
+                    /*GlobalRENode::Package(package_address) => RENodeId::Package(*package_address),
+                    GlobalRENode::Resource(resource_address) => {
+                        RENodeId::ResourceManager(*resource_address)
+                    }
+                     */
+                };
+                let mut child_nodes = HashSet::new();
+                child_nodes.insert(child_node);
+                Ok(child_nodes)
+            }
             HeapRENode::Component(component) => {
                 let value = ScryptoValue::from_slice(&component.state.state)
                     .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
@@ -41,6 +55,13 @@ impl HeapRENode {
             HeapRENode::Vault(..) => Ok(HashSet::new()),
             HeapRENode::Worktop(..) => Ok(HashSet::new()),
             HeapRENode::System(..) => Ok(HashSet::new()),
+        }
+    }
+
+    pub fn global_re_node(&self) -> &GlobalRENode {
+        match self {
+            HeapRENode::Global(global_node) => global_node,
+            _ => panic!("Expected to be global node"),
         }
     }
 
@@ -223,11 +244,13 @@ impl HeapRENode {
             HeapRENode::Package(..) => Ok(()),
             HeapRENode::Worktop(..) => Err(RuntimeError::KernelError(KernelError::CantMoveWorktop)),
             HeapRENode::System(..) => Ok(()),
+            HeapRENode::Global(..) => Err(RuntimeError::KernelError(KernelError::CantMoveGlobal)),
         }
     }
 
     pub fn verify_can_persist(&self) -> Result<(), RuntimeError> {
         match self {
+            HeapRENode::Global { .. } => Ok(()),
             HeapRENode::KeyValueStore { .. } => Ok(()),
             HeapRENode::Component { .. } => Ok(()),
             HeapRENode::Vault(..) => Ok(()),
@@ -247,6 +270,7 @@ impl HeapRENode {
 
     pub fn try_drop(self) -> Result<(), DropFailure> {
         match self {
+            HeapRENode::Global(..) => panic!("Should never get here"),
             HeapRENode::AuthZone(mut auth_zone) => {
                 auth_zone.clear();
                 Ok(())

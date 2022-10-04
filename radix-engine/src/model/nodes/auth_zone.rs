@@ -144,7 +144,7 @@ impl AuthZone {
 
     pub fn main<'s, Y, W, I, R>(
         auth_zone_id: AuthZoneId,
-        auth_zone_fn: AuthZoneFnIdentifier,
+        method: AuthZoneMethod,
         args: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, InvokeError<AuthZoneError>>
@@ -154,8 +154,8 @@ impl AuthZone {
         I: WasmInstance,
         R: FeeReserve,
     {
-        let rtn = match auth_zone_fn {
-            AuthZoneFnIdentifier::Pop => {
+        let rtn = match method {
+            AuthZoneMethod::Pop => {
                 let _: AuthZonePopInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(AuthZoneError::InvalidRequestData(e)))?;
                 let mut node_ref = system_api
@@ -171,7 +171,7 @@ impl AuthZone {
                     proof_id,
                 )))
             }
-            AuthZoneFnIdentifier::Push => {
+            AuthZoneMethod::Push => {
                 let input: AuthZonePushInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(AuthZoneError::InvalidRequestData(e)))?;
                 let mut proof: Proof = system_api
@@ -187,7 +187,7 @@ impl AuthZone {
                 auth_zone.push(proof);
                 Ok(ScryptoValue::from_typed(&()))
             }
-            AuthZoneFnIdentifier::CreateProof => {
+            AuthZoneMethod::CreateProof => {
                 let input: AuthZoneCreateProofInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(AuthZoneError::InvalidRequestData(e)))?;
                 let resource_type = {
@@ -210,7 +210,7 @@ impl AuthZone {
                     proof_id,
                 )))
             }
-            AuthZoneFnIdentifier::CreateProofByAmount => {
+            AuthZoneMethod::CreateProofByAmount => {
                 let input: AuthZoneCreateProofByAmountInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(AuthZoneError::InvalidRequestData(e)))?;
                 let resource_type = {
@@ -237,7 +237,7 @@ impl AuthZone {
                     proof_id,
                 )))
             }
-            AuthZoneFnIdentifier::CreateProofByIds => {
+            AuthZoneMethod::CreateProofByIds => {
                 let input: AuthZoneCreateProofByIdsInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(AuthZoneError::InvalidRequestData(e)))?;
                 let resource_type = {
@@ -275,7 +275,7 @@ impl AuthZone {
                     proof_id,
                 )))
             }
-            AuthZoneFnIdentifier::Clear => {
+            AuthZoneMethod::Clear => {
                 let _: AuthZoneClearInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(AuthZoneError::InvalidRequestData(e)))?;
                 let mut node_ref = system_api
@@ -285,7 +285,7 @@ impl AuthZone {
                 auth_zone.clear();
                 Ok(ScryptoValue::from_typed(&()))
             }
-            AuthZoneFnIdentifier::Drain => {
+            AuthZoneMethod::Drain => {
                 let _: AuthZoneDrainInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(AuthZoneError::InvalidRequestData(e)))?;
                 let mut node_ref = system_api

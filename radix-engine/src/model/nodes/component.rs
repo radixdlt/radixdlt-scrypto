@@ -38,7 +38,7 @@ impl Component {
 
     pub fn main<'s, Y, W, I, R>(
         component_address: ComponentAddress,
-        component_fn: ComponentFnIdentifier,
+        method: ComponentMethod,
         args: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, InvokeError<ComponentError>>
@@ -50,15 +50,15 @@ impl Component {
     {
         let node_id = RENodeId::Component(component_address);
 
-        let rtn = match component_fn {
-            ComponentFnIdentifier::AddAccessCheck => {
+        let rtn = match method {
+            ComponentMethod::AddAccessCheck => {
                 let input: ComponentAddAccessCheckInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(ComponentError::InvalidRequestData(e)))?;
 
                 // Abi checks
                 {
                     let (package_id, blueprint_name) = {
-                        let mut component_ref = system_api
+                        let component_ref = system_api
                             .borrow_node(&node_id)
                             .map_err(InvokeError::Downstream)?;
                         let component = component_ref.component();

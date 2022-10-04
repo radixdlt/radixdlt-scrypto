@@ -1,6 +1,7 @@
 use sbor::rust::fmt;
 use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
+use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use sbor::*;
 
@@ -9,7 +10,7 @@ use crate::address::*;
 use crate::buffer::scrypto_encode;
 use crate::component::*;
 use crate::core::*;
-use crate::engine::types::{RENodeId, SubstateId};
+use crate::engine::types::{GlobalAddress, RENodeId, SubstateId};
 use crate::engine::{api::*, call_engine};
 use crate::misc::*;
 use crate::resource::AccessRules;
@@ -33,8 +34,8 @@ pub trait LocalComponent {
 }
 
 /// Represents an instantiated component.
-#[derive(PartialEq, Eq, Hash)]
-pub struct Component(pub(crate) ComponentAddress);
+#[derive(PartialEq, Eq, Hash, Clone)]
+pub struct Component(pub ComponentAddress);
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, Describe, PartialEq, Eq)]
 pub struct ComponentInfoSubstate {
@@ -46,7 +47,14 @@ pub struct ComponentInfoSubstate {
 impl Component {
     /// Invokes a method on this component.
     pub fn call<T: Decode>(&self, method: &str, args: Vec<u8>) -> T {
-        Runtime::call_method(self.0, method, args)
+        let input = RadixEngineInput::Invoke(
+            FnIdent::Method(ReceiverMethodIdent {
+                receiver: Receiver::Ref(RENodeId::Component(self.0)),
+                method_ident: MethodIdent::Scrypto(method.to_string()),
+            }),
+            args,
+        );
+        call_engine(input)
     }
 
     /// Returns the package ID of this component.
@@ -66,11 +74,13 @@ impl Component {
     }
 
     pub fn add_access_check(&mut self, access_rules: AccessRules) -> &mut Self {
-        let input = RadixEngineInput::InvokeMethod(
-            Receiver::Ref(RENodeId::Component(self.0)),
-            FnIdentifier::Native(NativeFnIdentifier::Component(
-                ComponentFnIdentifier::AddAccessCheck,
-            )),
+        let input = RadixEngineInput::Invoke(
+            FnIdent::Method(ReceiverMethodIdent {
+                receiver: Receiver::Ref(RENodeId::Component(self.0)),
+                method_ident: MethodIdent::Native(NativeMethod::Component(
+                    ComponentMethod::AddAccessCheck,
+                )),
+            }),
             scrypto_encode(&ComponentAddAccessCheckInput { access_rules }),
         );
         let _: () = call_engine(input);
@@ -82,6 +92,54 @@ impl Component {
         let input = RadixEngineInput::RENodeGlobalize(RENodeId::Component(self.0));
         let _: () = call_engine(input);
         self.0.clone()
+    }
+}
+
+#[derive(PartialEq, Eq, Hash, Clone)]
+pub struct BorrowedGlobalComponent(pub ComponentAddress);
+
+impl BorrowedGlobalComponent {
+    /// Invokes a method on this component.
+    pub fn call<T: Decode>(&self, method: &str, args: Vec<u8>) -> T {
+        let input = RadixEngineInput::Invoke(
+            FnIdent::Method(ReceiverMethodIdent {
+                receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Component(self.0))),
+                method_ident: MethodIdent::Scrypto(method.to_string()),
+            }),
+            args,
+        );
+        call_engine(input)
+    }
+
+    /// Returns the package ID of this component.
+    pub fn package_address(&self) -> PackageAddress {
+        let substate_id = SubstateId::ComponentInfo(self.0);
+        let input = RadixEngineInput::SubstateRead(substate_id);
+        let output: ComponentInfoSubstate = call_engine(input);
+        output.package_address
+    }
+
+    /// Returns the blueprint name of this component.
+    pub fn blueprint_name(&self) -> String {
+        let substate_id = SubstateId::ComponentInfo(self.0);
+        let input = RadixEngineInput::SubstateRead(substate_id);
+        let output: ComponentInfoSubstate = call_engine(input);
+        output.blueprint_name
+    }
+
+    pub fn add_access_check(&mut self, access_rules: AccessRules) -> &mut Self {
+        let input = RadixEngineInput::Invoke(
+            FnIdent::Method(ReceiverMethodIdent {
+                receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Component(self.0))),
+                method_ident: MethodIdent::Native(NativeMethod::Component(
+                    ComponentMethod::AddAccessCheck,
+                )),
+            }),
+            scrypto_encode(&ComponentAddAccessCheckInput { access_rules }),
+        );
+        let _: () = call_engine(input);
+
+        self
     }
 }
 
