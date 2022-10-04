@@ -1,6 +1,6 @@
 use scrypto::core::{FnIdent, MethodIdent, ReceiverMethodIdent};
 use transaction::errors::IdAllocationError;
-use transaction::model::Instruction;
+use transaction::model::{AuthZoneParams, Instruction};
 use transaction::validation::*;
 
 use crate::engine::*;
@@ -70,7 +70,7 @@ where
 {
     pub fn new(
         transaction_hash: Hash,
-        initial_proofs: Vec<NonFungibleAddress>,
+        auth_zone_params: AuthZoneParams,
         blobs: &'g HashMap<Hash, Vec<u8>>,
         max_depth: usize,
         track: &'g mut Track<'s, R>,
@@ -98,25 +98,20 @@ where
 
         // Initial authzone
         // TODO: Move into module initialization
+        let virtualizable_proofs_resource_addresses =
+            auth_zone_params.virtualizable_proofs_resource_addresses;
         let mut proofs_to_create = BTreeMap::<ResourceAddress, BTreeSet<NonFungibleId>>::new();
-        for non_fungible in initial_proofs {
+        for non_fungible in auth_zone_params.initial_proofs {
             proofs_to_create
                 .entry(non_fungible.resource_address())
                 .or_insert(BTreeSet::new())
                 .insert(non_fungible.non_fungible_id());
         }
         let mut proofs = Vec::new();
+
         for (resource_address, non_fungible_ids) in proofs_to_create {
-            let bucket_id = match kernel
-                .node_create(HeapRENode::Bucket(Bucket::new(Resource::new_non_fungible(
-                    resource_address,
-                    non_fungible_ids,
-                ))))
-                .expect("Failed to create bucket")
-            {
-                RENodeId::Bucket(bucket_id) => bucket_id,
-                _ => panic!("Expected Bucket RENodeId but received something else"),
-            };
+            let bucket_id =
+                kernel.create_non_fungible_bucket_with_ids(resource_address, non_fungible_ids);
             let mut node_ref = kernel
                 .borrow_node_mut(&RENodeId::Bucket(bucket_id))
                 .expect("Failed to borrow bucket node");
@@ -126,11 +121,39 @@ where
                 .expect("Failed to create proof");
             proofs.push(proof);
         }
+
+        // Create empty buckets for virtual proofs
+        let mut virtual_proofs_buckets: BTreeMap<ResourceAddress, BucketId> = BTreeMap::new();
+        for resource_address in virtualizable_proofs_resource_addresses {
+            let bucket_id = kernel
+                .create_non_fungible_bucket_with_ids(resource_address.clone(), BTreeSet::new());
+            virtual_proofs_buckets.insert(resource_address, bucket_id);
+        }
+
+        let auth_zone = AuthZone::new_with_proofs(proofs, virtual_proofs_buckets);
+
         kernel
-            .node_create(HeapRENode::AuthZone(AuthZone::new_with_proofs(proofs)))
+            .node_create(HeapRENode::AuthZone(auth_zone))
             .expect("Failed to create AuthZone");
 
         kernel
+    }
+
+    fn create_non_fungible_bucket_with_ids(
+        &mut self,
+        resource_address: ResourceAddress,
+        ids: BTreeSet<NonFungibleId>,
+    ) -> BucketId {
+        match self
+            .node_create(HeapRENode::Bucket(Bucket::new(Resource::new_non_fungible(
+                resource_address,
+                ids,
+            ))))
+            .expect("Failed to create a bucket")
+        {
+            RENodeId::Bucket(bucket_id) => bucket_id,
+            _ => panic!("Expected Bucket RENodeId but received something else"),
+        }
     }
 
     fn process_call_data(validated: &ScryptoValue) -> Result<(), RuntimeError> {
@@ -270,8 +293,21 @@ where
         &mut self,
         input: ScryptoValue,
     ) -> Result<(ScryptoValue, HashMap<RENodeId, HeapRootRENode>), RuntimeError> {
+        // Copy-over root frame's auth zone virtual_proofs_buckets
+        // TODO: Clean this up at some point (possible move to auth zone?)
+        let root_frame = self
+            .call_frames
+            .first()
+            .expect("Failed to get a root frame");
+        let virtual_proofs_buckets = AuthModule::get_auth_zone(root_frame)
+            .virtual_proofs_buckets
+            .clone();
+
         // TODO: Move to a better spot
-        self.node_create(HeapRENode::AuthZone(AuthZone::new()))?;
+        self.node_create(HeapRENode::AuthZone(AuthZone::new_with_proofs(
+            vec![],
+            virtual_proofs_buckets,
+        )))?;
 
         let output = {
             let rtn = match Self::current_frame(&self.call_frames).actor.clone() {

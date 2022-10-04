@@ -23,7 +23,7 @@ use scrypto::core::{FnIdent, MethodIdent, ReceiverMethodIdent};
 use scrypto::dec;
 use scrypto::math::Decimal;
 use transaction::builder::ManifestBuilder;
-use transaction::model::{Executable, TransactionManifest};
+use transaction::model::{AuthZoneParams, Executable, TransactionManifest};
 use transaction::model::{PreviewIntent, TestTransaction};
 use transaction::signing::EcdsaSecp256k1PrivateKey;
 use transaction::validation::TestIntentHashManager;
@@ -696,9 +696,14 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         );
         let mut execution_trace = ExecutionTrace::new();
 
+        let auth_zone_params = AuthZoneParams {
+            initial_proofs,
+            virtualizable_proofs_resource_addresses: BTreeSet::new(),
+        };
+
         let mut kernel = Kernel::new(
             tx_hash,
-            initial_proofs,
+            auth_zone_params,
             &blobs,
             DEFAULT_MAX_CALL_DEPTH,
             &mut track,

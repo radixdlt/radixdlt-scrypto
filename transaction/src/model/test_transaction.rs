@@ -2,6 +2,7 @@ use sbor::rust::vec::Vec;
 use scrypto::core::NetworkDefinition;
 use scrypto::crypto::*;
 use scrypto::resource::NonFungibleAddress;
+use std::collections::BTreeSet;
 
 use crate::builder::TransactionBuilder;
 use crate::model::*;
@@ -35,7 +36,10 @@ impl TestTransaction {
         Executable {
             transaction_hash,
             instructions: transaction.signed_intent.intent.manifest.instructions,
-            initial_proofs,
+            auth_zone_params: AuthZoneParams {
+                initial_proofs,
+                virtualizable_proofs_resource_addresses: BTreeSet::new(),
+            },
             cost_unit_limit: transaction.signed_intent.intent.header.cost_unit_limit,
             tip_percentage: transaction.signed_intent.intent.header.tip_percentage,
             blobs: transaction.signed_intent.intent.manifest.blobs,
