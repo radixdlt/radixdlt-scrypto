@@ -94,7 +94,7 @@ where
         }
         let receipt = transaction_executor.execute_with_fee_reserve(
             &validated_preview_transaction,
-            &ExecutionConfig::debug(),
+            &ExecutionConfig::default(),
             SystemLoanFeeReserve::default(),
         );
 
