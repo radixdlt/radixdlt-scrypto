@@ -34,7 +34,7 @@ impl SetCurrentEpoch {
 
         let mut kernel = Kernel::new(
             tx_hash,
-            auth_zone_params = AuthZoneParams {
+            auth_zone_params: AuthZoneParams {
                 initial_proofs: vec![AuthModule::validator_role_nf_address()],
                 virtualizable_proofs_resource_addresses: BTreeSet::new(),
             },
