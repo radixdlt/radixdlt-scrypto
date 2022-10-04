@@ -263,7 +263,11 @@ pub fn decompile(
                                 .map_err(DecompileError::IdValidationError)?;
 
                             buf.push(' ');
-                            buf.push_str(&validated_arg.to_string_with_context(&buckets, &proofs));
+                            buf.push_str(&validated_arg.to_string_with_context(
+                                &bech32_encoder,
+                                &buckets,
+                                &proofs,
+                            ));
                         }
                     } else {
                         panic!("Should not get here.");
@@ -323,7 +327,11 @@ pub fn decompile(
                                 .map_err(DecompileError::IdValidationError)?;
 
                             buf.push(' ');
-                            buf.push_str(&validated_arg.to_string_with_context(&buckets, &proofs));
+                            buf.push_str(&validated_arg.to_string_with_context(
+                                &bech32_encoder,
+                                &buckets,
+                                &proofs,
+                            ));
                         }
                     } else {
                         panic!("Should not get here.");

@@ -44,7 +44,7 @@ mod tests {
     use scrypto::core::{Blob, FnIdentifier, NativeFnIdentifier, ResourceManagerFnIdentifier};
     use scrypto::math::*;
     use scrypto::resource::{
-        AccessRule, MintParams, Mutability, ResourceAddress, ResourceMethodAuthKey, ResourceType,
+        AccessRule, MintParams, Mutability, ResourceMethodAuthKey, ResourceType,
     };
     use scrypto::{core::Expression, resource::NonFungibleId};
 

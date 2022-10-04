@@ -11,7 +11,7 @@ use sbor::type_id::*;
 use sbor::{any::*, *};
 
 use crate::abi::*;
-use crate::address::AddressError;
+use crate::address::{AddressError, Bech32Encoder};
 use crate::buffer::*;
 use crate::component::*;
 use crate::core::*;
@@ -194,15 +194,21 @@ impl ScryptoValue {
     }
 
     pub fn to_string(&self) -> String {
-        ScryptoValueFormatter::format_value(&self.dom, &HashMap::new(), &HashMap::new())
+        ScryptoValueFormatter::format_value(
+            &self.dom,
+            &Bech32Encoder::for_simulator(),
+            &HashMap::new(),
+            &HashMap::new(),
+        )
     }
 
     pub fn to_string_with_context(
         &self,
+        bech32_encoder: &Bech32Encoder,
         bucket_ids: &HashMap<BucketId, String>,
         proof_ids: &HashMap<ProofId, String>,
     ) -> String {
-        ScryptoValueFormatter::format_value(&self.dom, bucket_ids, proof_ids)
+        ScryptoValueFormatter::format_value(&self.dom, bech32_encoder, bucket_ids, proof_ids)
     }
 }
 
@@ -416,6 +422,7 @@ pub struct ScryptoValueFormatter {}
 impl ScryptoValueFormatter {
     pub fn format_value(
         value: &Value,
+        bech32_encoder: &Bech32Encoder,
         bucket_ids: &HashMap<BucketId, String>,
         proof_ids: &HashMap<ProofId, String>,
     ) -> String {
@@ -438,7 +445,7 @@ impl ScryptoValueFormatter {
             Value::Struct { fields } => {
                 format!(
                     "Struct({})",
-                    Self::format_elements(fields, bucket_ids, proof_ids)
+                    Self::format_elements(fields, bech32_encoder, bucket_ids, proof_ids)
                 )
             }
             Value::Enum { name, fields } => {
@@ -446,12 +453,15 @@ impl ScryptoValueFormatter {
                     "Enum(\"{}\"{}{})",
                     name,
                     if fields.is_empty() { "" } else { ", " },
-                    Self::format_elements(fields, bucket_ids, proof_ids)
+                    Self::format_elements(fields, bech32_encoder, bucket_ids, proof_ids)
                 )
             }
             // rust types
             Value::Option { value } => match value.borrow() {
-                Some(x) => format!("Some({})", Self::format_value(x, bucket_ids, proof_ids)),
+                Some(x) => format!(
+                    "Some({})",
+                    Self::format_value(x, bech32_encoder, bucket_ids, proof_ids)
+                ),
                 None => "None".to_string(),
             },
             Value::Array {
@@ -460,15 +470,21 @@ impl ScryptoValueFormatter {
             } => format!(
                 "Array<{}>({})",
                 Self::format_type_id(*element_type_id),
-                Self::format_elements(elements, bucket_ids, proof_ids)
+                Self::format_elements(elements, bech32_encoder, bucket_ids, proof_ids)
             ),
             Value::Tuple { elements } => format!(
                 "Tuple({})",
-                Self::format_elements(elements, bucket_ids, proof_ids)
+                Self::format_elements(elements, bech32_encoder, bucket_ids, proof_ids)
             ),
             Value::Result { value } => match value.borrow() {
-                Ok(x) => format!("Ok({})", Self::format_value(x, bucket_ids, proof_ids)),
-                Err(x) => format!("Err({})", Self::format_value(x, bucket_ids, proof_ids)),
+                Ok(x) => format!(
+                    "Ok({})",
+                    Self::format_value(x, bech32_encoder, bucket_ids, proof_ids)
+                ),
+                Err(x) => format!(
+                    "Err({})",
+                    Self::format_value(x, bech32_encoder, bucket_ids, proof_ids)
+                ),
             },
             // collections
             Value::List {
@@ -478,7 +494,7 @@ impl ScryptoValueFormatter {
                 format!(
                     "Vec<{}>({})",
                     Self::format_type_id(*element_type_id),
-                    Self::format_elements(elements, bucket_ids, proof_ids)
+                    Self::format_elements(elements, bech32_encoder, bucket_ids, proof_ids)
                 )
             }
             Value::Set {
@@ -487,7 +503,7 @@ impl ScryptoValueFormatter {
             } => format!(
                 "Set<{}>({})",
                 Self::format_type_id(*element_type_id),
-                Self::format_elements(elements, bucket_ids, proof_ids)
+                Self::format_elements(elements, bech32_encoder, bucket_ids, proof_ids)
             ),
             Value::Map {
                 key_type_id,
@@ -497,11 +513,11 @@ impl ScryptoValueFormatter {
                 "Map<{}, {}>({})",
                 Self::format_type_id(*key_type_id),
                 Self::format_type_id(*value_type_id),
-                Self::format_elements(elements, bucket_ids, proof_ids)
+                Self::format_elements(elements, bech32_encoder, bucket_ids, proof_ids)
             ),
             // custom types
             Value::Custom { type_id, bytes } => {
-                Self::from_custom_value(*type_id, bytes, bucket_ids, proof_ids)
+                Self::from_custom_value(*type_id, bytes, bech32_encoder, bucket_ids, proof_ids)
             }
         }
     }
@@ -546,6 +562,7 @@ impl ScryptoValueFormatter {
 
     pub fn format_elements(
         values: &[Value],
+        bech32_encoder: &Bech32Encoder,
         bucket_ids: &HashMap<BucketId, String>,
         proof_ids: &HashMap<ProofId, String>,
     ) -> String {
@@ -554,13 +571,14 @@ impl ScryptoValueFormatter {
             if i != 0 {
                 buf.push_str(", ");
             }
-            buf.push_str(Self::format_value(x, bucket_ids, proof_ids).as_str());
+            buf.push_str(Self::format_value(x, bech32_encoder, bucket_ids, proof_ids).as_str());
         }
         buf
     }
     pub fn from_custom_value(
         type_id: u8,
         data: &[u8],
+        bech32_encoder: &Bech32Encoder,
         bucket_ids: &HashMap<BucketId, String>,
         proof_ids: &HashMap<ProofId, String>,
     ) -> String {
@@ -575,13 +593,14 @@ impl ScryptoValueFormatter {
             ScryptoType::PackageAddress => {
                 format!(
                     "PackageAddress(\"{}\")",
-                    PackageAddress::try_from(data).unwrap()
+                    bech32_encoder.encode_package_address(&PackageAddress::try_from(data).unwrap())
                 )
             }
             ScryptoType::ComponentAddress => {
                 format!(
                     "ComponentAddress(\"{}\")",
-                    ComponentAddress::try_from(data).unwrap()
+                    bech32_encoder
+                        .encode_component_address(&ComponentAddress::try_from(data).unwrap())
                 )
             }
             ScryptoType::Component => {
@@ -643,7 +662,7 @@ impl ScryptoValueFormatter {
             ),
             ScryptoType::ResourceAddress => format!(
                 "ResourceAddress(\"{}\")",
-                ResourceAddress::try_from(data).unwrap()
+                bech32_encoder.encode_resource_address(&ResourceAddress::try_from(data).unwrap())
             ),
             ScryptoType::Expression => {
                 format!("Expression(\"{}\")", Expression::try_from(data).unwrap())
