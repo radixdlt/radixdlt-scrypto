@@ -99,7 +99,7 @@ impl FeeTable {
             tx_manifest_verification_per_byte: 1,
             tx_signature_verification_per_sig: 3750,
             tx_blob_price_per_byte: 1,
-            wasm_instantiation_per_byte: 1, // TODO: this is currently costing too much!!!
+            wasm_instantiation_per_byte: 0, // TODO: Re-enable WASM instantiation cost if it's unavoidable
             fixed_low: 100,
             fixed_medium: 500,
             fixed_high: 1000,
