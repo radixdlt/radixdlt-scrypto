@@ -242,7 +242,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
                     receiver: Receiver::Ref(RENodeId::Component(SYS_FAUCET_COMPONENT)),
                     method_ident: MethodIdent::Scrypto("lock_fee".to_string()),
                 },
-                args: args!(dec!("1000")),
+                args: args!(dec!("100")),
             },
         );
         self.execute_manifest(manifest, initial_proofs)
