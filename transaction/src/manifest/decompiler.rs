@@ -1,4 +1,5 @@
 use sbor::rust::collections::*;
+use sbor::rust::fmt;
 use sbor::{encode_any, DecodeError, Value};
 use scrypto::address::{AddressError, Bech32Encoder};
 use scrypto::buffer::scrypto_decode;
@@ -22,7 +23,7 @@ pub enum DecompileError {
     DecodeError(DecodeError),
     AddressError(AddressError),
     InvalidValue(ScryptoValueFormatterError),
-    FormattingError(std::fmt::Error),
+    FormattingError(fmt::Error),
     UnrecognizedNativeFunction,
 }
 
@@ -32,14 +33,14 @@ impl From<ScryptoValueFormatterError> for DecompileError {
     }
 }
 
-impl From<std::fmt::Error> for DecompileError {
-    fn from(error: std::fmt::Error) -> Self {
+impl From<fmt::Error> for DecompileError {
+    fn from(error: fmt::Error) -> Self {
         Self::FormattingError(error)
     }
 }
 
 pub struct DecompilationContext<'a> {
-    bech32_encoder: &'a Bech32Encoder,
+    bech32_encoder: Option<&'a Bech32Encoder>,
     id_validator: IdValidator,
     bucket_names: HashMap<BucketId, String>,
     proof_names: HashMap<ProofId, String>,
@@ -48,7 +49,16 @@ pub struct DecompilationContext<'a> {
 impl<'a> DecompilationContext<'a> {
     pub fn new(bech32_encoder: &'a Bech32Encoder) -> Self {
         Self {
-            bech32_encoder,
+            bech32_encoder: Some(bech32_encoder),
+            id_validator: IdValidator::new(),
+            bucket_names: HashMap::<BucketId, String>::new(),
+            proof_names: HashMap::<ProofId, String>::new(),
+        }
+    }
+
+    pub fn new_without_network() -> Self {
+        Self {
+            bech32_encoder: None,
             id_validator: IdValidator::new(),
             bucket_names: HashMap::<BucketId, String>::new(),
             proof_names: HashMap::<ProofId, String>::new(),
@@ -70,7 +80,7 @@ pub fn decompile(
     Ok(buf)
 }
 
-pub fn decompile_instruction<F: std::fmt::Write>(
+pub fn decompile_instruction<F: fmt::Write>(
     f: &mut F,
     instruction: &Instruction,
     context: &mut DecompilationContext,
@@ -85,9 +95,7 @@ pub fn decompile_instruction<F: std::fmt::Write>(
             write!(
                 f,
                 "TAKE_FROM_WORKTOP ResourceAddress(\"{}\") Bucket(\"{}\");\n",
-                context
-                    .bech32_encoder
-                    .encode_resource_address(&resource_address),
+                resource_address.displayable(context.bech32_encoder),
                 name
             )?;
             context.bucket_names.insert(bucket_id, name);
@@ -106,7 +114,7 @@ pub fn decompile_instruction<F: std::fmt::Write>(
                 f,
                 "TAKE_FROM_WORKTOP_BY_AMOUNT Decimal(\"{}\") ResourceAddress(\"{}\") Bucket(\"{}\");\n",
                 amount,
-                context.bech32_encoder.encode_resource_address(&resource_address),
+                resource_address.displayable(context.bech32_encoder),
                 name
             )?;
         }
@@ -127,7 +135,7 @@ pub fn decompile_instruction<F: std::fmt::Write>(
                     .map(|k| format!("NonFungibleId(\"{}\")", k))
                     .collect::<Vec<String>>()
                     .join(", "),
-                context.bech32_encoder.encode_resource_address(&resource_address),
+                resource_address.displayable(context.bech32_encoder),
                 name
             )?;
         }
@@ -150,9 +158,7 @@ pub fn decompile_instruction<F: std::fmt::Write>(
             write!(
                 f,
                 "ASSERT_WORKTOP_CONTAINS ResourceAddress(\"{}\");\n",
-                context
-                    .bech32_encoder
-                    .encode_resource_address(&resource_address)
+                resource_address.displayable(context.bech32_encoder)
             )?;
         }
         Instruction::AssertWorktopContainsByAmount {
@@ -163,9 +169,7 @@ pub fn decompile_instruction<F: std::fmt::Write>(
                 f,
                 "ASSERT_WORKTOP_CONTAINS_BY_AMOUNT Decimal(\"{}\") ResourceAddress(\"{}\");\n",
                 amount,
-                context
-                    .bech32_encoder
-                    .encode_resource_address(&resource_address)
+                resource_address.displayable(context.bech32_encoder)
             )?;
         }
         Instruction::AssertWorktopContainsByIds {
@@ -179,9 +183,7 @@ pub fn decompile_instruction<F: std::fmt::Write>(
                     .map(|k| format!("NonFungibleId(\"{}\")", k))
                     .collect::<Vec<String>>()
                     .join(", "),
-                context
-                    .bech32_encoder
-                    .encode_resource_address(&resource_address)
+                resource_address.displayable(context.bech32_encoder)
             )?;
         }
         Instruction::PopFromAuthZone => {
@@ -221,9 +223,7 @@ pub fn decompile_instruction<F: std::fmt::Write>(
             write!(
                 f,
                 "CREATE_PROOF_FROM_AUTH_ZONE ResourceAddress(\"{}\") Proof(\"{}\");\n",
-                context
-                    .bech32_encoder
-                    .encode_resource_address(&resource_address),
+                resource_address.displayable(context.bech32_encoder),
                 name
             )?;
         }
@@ -241,7 +241,8 @@ pub fn decompile_instruction<F: std::fmt::Write>(
                 f,
                 "CREATE_PROOF_FROM_AUTH_ZONE_BY_AMOUNT Decimal(\"{}\") ResourceAddress(\"{}\") Proof(\"{}\");\n",
                 amount,
-                context.bech32_encoder.encode_resource_address(&resource_address), name
+                resource_address.displayable(context.bech32_encoder),
+                name
             )?;
         }
         Instruction::CreateProofFromAuthZoneByIds {
@@ -260,7 +261,8 @@ pub fn decompile_instruction<F: std::fmt::Write>(
                 .map(|k| format!("NonFungibleId(\"{}\")", k))
                 .collect::<Vec<String>>()
                 .join(", "),
-                context.bech32_encoder.encode_resource_address(&resource_address), name
+                resource_address.displayable(context.bech32_encoder),
+                name
             )?;
         }
         Instruction::CreateProofFromBucket { bucket_id } => {
@@ -333,9 +335,7 @@ pub fn decompile_instruction<F: std::fmt::Write>(
             } => {
                 f.write_str(&format!(
                     "CALL_FUNCTION PackageAddress(\"{}\") \"{}\" \"{}\"",
-                    context
-                        .bech32_encoder
-                        .encode_package_address(&package_address),
+                    package_address.displayable(context.bech32_encoder),
                     blueprint_name,
                     ident
                 ))?;
@@ -353,7 +353,7 @@ pub fn decompile_instruction<F: std::fmt::Write>(
 
                         f.write_char(' ')?;
                         f.write_str(&validated_arg.to_string_with_context(
-                            &context.bech32_encoder,
+                            context.bech32_encoder,
                             &context.bucket_names,
                             &context.proof_names,
                         )?)?;
@@ -389,9 +389,7 @@ pub fn decompile_instruction<F: std::fmt::Write>(
             } => {
                 f.write_str(&format!(
                     "CALL_METHOD ComponentAddress(\"{}\") \"{}\"",
-                    context
-                        .bech32_encoder
-                        .encode_component_address(&component_address),
+                    component_address.displayable(context.bech32_encoder),
                     ident
                 ))?;
 
@@ -409,7 +407,7 @@ pub fn decompile_instruction<F: std::fmt::Write>(
 
                         f.write_char(' ')?;
                         f.write_str(&validated_arg.to_string_with_context(
-                            &context.bech32_encoder,
+                            context.bech32_encoder,
                             &context.bucket_names,
                             &context.proof_names,
                         )?)?;
@@ -452,9 +450,7 @@ pub fn decompile_instruction<F: std::fmt::Write>(
                             write!(
                                 f,
                                 "MINT_FUNGIBLE ResourceAddress(\"{}\") Decimal(\"{}\") ;\n",
-                                context
-                                    .bech32_encoder
-                                    .encode_resource_address(&resource_address),
+                                resource_address.displayable(context.bech32_encoder),
                                 amount,
                             )?;
                         }

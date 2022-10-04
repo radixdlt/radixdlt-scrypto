@@ -204,12 +204,12 @@ impl ScryptoValue {
 
     pub fn to_string_with_context(
         &self,
-        bech32_encoder: &Bech32Encoder,
+        bech32_encoder: Option<&Bech32Encoder>,
         bucket_ids: &HashMap<BucketId, String>,
         proof_ids: &HashMap<ProofId, String>,
     ) -> Result<String, ScryptoValueFormatterError> {
         let context = ScryptoValueFormatterContext {
-            bech32_encoder: Some(bech32_encoder),
+            bech32_encoder,
             bucket_ids,
             proof_ids,
         };
@@ -602,28 +602,18 @@ impl ScryptoValueFormatter {
                 .map_err(ScryptoCustomValueCheckError::InvalidPreciseDecimal)?,
             ScryptoType::PackageAddress => PackageAddress::try_from(data)
                 .map(|address| {
-                    context
-                        .bech32_encoder
-                        .map(|encoder| {
-                            format!(
-                                "PackageAddress(\"{}\")",
-                                encoder.encode_package_address(&address)
-                            )
-                        })
-                        .unwrap_or_else(|| format!("PackageAddress(\"{}\")", &address))
+                    format!(
+                        "PackageAddress(\"{}\")",
+                        address.displayable(context.bech32_encoder)
+                    )
                 })
                 .map_err(ScryptoCustomValueCheckError::InvalidPackageAddress)?,
             ScryptoType::ComponentAddress => ComponentAddress::try_from(data)
                 .map(|address| {
-                    context
-                        .bech32_encoder
-                        .map(|encoder| {
-                            format!(
-                                "ComponentAddress(\"{}\")",
-                                encoder.encode_component_address(&address)
-                            )
-                        })
-                        .unwrap_or_else(|| format!("ComponentAddress(\"{}\")", &address))
+                    format!(
+                        "ComponentAddress(\"{}\")",
+                        address.displayable(context.bech32_encoder)
+                    )
                 })
                 .map_err(ScryptoCustomValueCheckError::InvalidComponentAddress)?,
             ScryptoType::Component => Component::try_from(data)
@@ -676,15 +666,10 @@ impl ScryptoValueFormatter {
                 .map_err(ScryptoCustomValueCheckError::InvalidNonFungibleAddress)?,
             ScryptoType::ResourceAddress => ResourceAddress::try_from(data)
                 .map(|address| {
-                    context
-                        .bech32_encoder
-                        .map(|encoder| {
-                            format!(
-                                "ResourceAddress(\"{}\")",
-                                encoder.encode_resource_address(&address)
-                            )
-                        })
-                        .unwrap_or_else(|| format!("ResourceAddress(\"{}\")", &address))
+                    format!(
+                        "ResourceAddress(\"{}\")",
+                        address.displayable(context.bech32_encoder)
+                    )
                 })
                 .map_err(ScryptoCustomValueCheckError::InvalidResourceAddress)?,
             ScryptoType::Expression => Expression::try_from(data)

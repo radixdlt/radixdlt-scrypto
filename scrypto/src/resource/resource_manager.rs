@@ -5,7 +5,7 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::abi::*;
-use crate::address::{AddressError, EntityType};
+use crate::address::{AddressError, Bech32Encoder, EntityType};
 use crate::buffer::scrypto_encode;
 use crate::core::NativeFnIdentifier;
 use crate::core::{FnIdentifier, Receiver, ResourceManagerFnIdentifier};
@@ -411,6 +411,13 @@ impl ResourceAddress {
 
         Self::try_from(bytes.as_ref())
     }
+
+    pub fn displayable<'a, T: Into<Option<&'a Bech32Encoder>>>(
+        &'a self,
+        bech32_encoder: T,
+    ) -> DisplayableResourceAddress<'a> {
+        DisplayableResourceAddress(self, bech32_encoder.into())
+    }
 }
 
 scrypto_type!(ResourceAddress, ScryptoType::ResourceAddress, Vec::new());
@@ -423,16 +430,27 @@ impl fmt::Display for ResourceAddress {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         // We should consider adding a NetworkAwareDisplay / NetworkAwareDebug trait
         // which can Bech32m encode the address appropriately
-        match self {
-            ResourceAddress::Normal(_) => {
-                write!(f, "NormalResource: {}", self.to_hex())
-            }
-        }
+        write!(f, "{}", self.displayable(None))
     }
 }
 
 impl fmt::Debug for ResourceAddress {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}", self)
+        write!(f, "{}", self.displayable(None))
+    }
+}
+
+pub struct DisplayableResourceAddress<'a>(&'a ResourceAddress, Option<&'a Bech32Encoder>);
+
+impl<'a> fmt::Display for DisplayableResourceAddress<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        if let Some(bech32_encoder) = self.1 {
+            return write!(f, "{}", bech32_encoder.encode_resource_address(self.0));
+        }
+        match self.0 {
+            ResourceAddress::Normal(_) => {
+                write!(f, "NormalResource[{}]", self.0.to_hex())
+            }
+        }
     }
 }

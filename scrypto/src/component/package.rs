@@ -4,7 +4,7 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::abi::*;
-use crate::address::{AddressError, EntityType};
+use crate::address::{AddressError, Bech32Encoder, EntityType};
 use crate::core::*;
 use crate::misc::*;
 
@@ -72,6 +72,13 @@ impl PackageAddress {
 
         Self::try_from(bytes.as_ref())
     }
+
+    pub fn displayable<'a, T: Into<Option<&'a Bech32Encoder>>>(
+        &'a self,
+        bech32_encoder: T,
+    ) -> DisplayablePackageAddress<'a> {
+        DisplayablePackageAddress(self, bech32_encoder.into())
+    }
 }
 
 scrypto_type!(PackageAddress, ScryptoType::PackageAddress, Vec::new());
@@ -84,14 +91,27 @@ impl fmt::Display for PackageAddress {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         // We should consider adding a NetworkAwareDisplay / NetworkAwareDebug trait
         // which can Bech32m encode the address appropriately
-        match self {
-            PackageAddress::Normal(_) => write!(f, "NormalPackage: {}", self.to_hex()),
-        }
+        write!(f, "{}", self.displayable(None))
     }
 }
 
 impl fmt::Debug for PackageAddress {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}", self)
+        write!(f, "{}", self.displayable(None))
+    }
+}
+
+pub struct DisplayablePackageAddress<'a>(&'a PackageAddress, Option<&'a Bech32Encoder>);
+
+impl<'a> fmt::Display for DisplayablePackageAddress<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        if let Some(bech32_encoder) = self.1 {
+            return write!(f, "{}", bech32_encoder.encode_package_address(self.0));
+        }
+        match self.0 {
+            PackageAddress::Normal(_) => {
+                write!(f, "NormalPackage[{}]", self.0.to_hex())
+            }
+        }
     }
 }

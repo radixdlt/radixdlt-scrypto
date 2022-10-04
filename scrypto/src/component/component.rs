@@ -172,6 +172,13 @@ impl ComponentAddress {
 
         Self::try_from(bytes.as_ref())
     }
+
+    pub fn displayable<'a, T: Into<Option<&'a Bech32Encoder>>>(
+        &'a self,
+        bech32_encoder: T,
+    ) -> DisplayableComponentAddress<'a> {
+        DisplayableComponentAddress(self, bech32_encoder.into())
+    }
 }
 
 scrypto_type!(ComponentAddress, ScryptoType::ComponentAddress, Vec::new());
@@ -184,22 +191,33 @@ impl fmt::Display for ComponentAddress {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         // We should consider adding a NetworkAwareDisplay / NetworkAwareDebug trait
         // which can Bech32m encode the address appropriately
-        match self {
-            ComponentAddress::Normal(_) => {
-                write!(f, "NormalComponent: {}", self.to_hex())
-            }
-            ComponentAddress::Account(_) => {
-                write!(f, "AccountComponent: {}", self.to_hex())
-            }
-            ComponentAddress::System(_) => {
-                write!(f, "SystemComponent: {}", self.to_hex())
-            }
-        }
+        write!(f, "{}", self.displayable(None))
     }
 }
 
 impl fmt::Debug for ComponentAddress {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}", self)
+        write!(f, "{}", self.displayable(None))
+    }
+}
+
+pub struct DisplayableComponentAddress<'a>(&'a ComponentAddress, Option<&'a Bech32Encoder>);
+
+impl<'a> fmt::Display for DisplayableComponentAddress<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        if let Some(bech32_encoder) = self.1 {
+            return write!(f, "{}", bech32_encoder.encode_component_address(self.0));
+        }
+        match self.0 {
+            ComponentAddress::Normal(_) => {
+                write!(f, "NormalComponent[{}]", self.0.to_hex())
+            }
+            ComponentAddress::Account(_) => {
+                write!(f, "AccountComponent[{}]", self.0.to_hex())
+            }
+            ComponentAddress::System(_) => {
+                write!(f, "SystemComponent[{}]", self.0.to_hex())
+            }
+        }
     }
 }
