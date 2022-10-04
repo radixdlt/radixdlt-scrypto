@@ -1,4 +1,4 @@
-use scrypto::core::{FnIdent, MethodFnIdent, MethodIdent};
+use scrypto::core::{FnIdent, MethodIdent, ReceiverMethodIdent};
 use transaction::errors::IdAllocationError;
 use transaction::model::Instruction;
 use transaction::validation::*;
@@ -278,18 +278,18 @@ where
                 REActor::Function(FunctionIdent::Native(native_fn)) => {
                     NativeInterpreter::run_function(native_fn, input, self)
                 }
-                REActor::Method(FullyQualifiedMethod {
+                REActor::Method(FullyQualifiedReceiverMethod {
                     receiver,
-                    fn_ident: FullyQualifiedMethodFn::Native(native_fn),
-                }) => NativeInterpreter::run_method(receiver, native_fn, input, self),
+                    method: FullyQualifiedMethod::Native(native_method),
+                }) => NativeInterpreter::run_method(receiver, native_method, input, self),
                 REActor::Function(FunctionIdent::Scrypto {
                     package_address,
                     blueprint_name,
                     ident,
                 })
-                | REActor::Method(FullyQualifiedMethod {
-                    fn_ident:
-                        FullyQualifiedMethodFn::Scrypto {
+                | REActor::Method(FullyQualifiedReceiverMethod {
+                    method:
+                        FullyQualifiedMethod::Scrypto {
                             package_address,
                             blueprint_name,
                             ident,
@@ -323,7 +323,7 @@ where
                             .export_name
                             .to_string();
                         let scrypto_actor = match &Self::current_frame(&self.call_frames).actor {
-                            REActor::Method(FullyQualifiedMethod { receiver, .. }) => {
+                            REActor::Method(FullyQualifiedReceiverMethod { receiver, .. }) => {
                                 match receiver {
                                     Receiver::Ref(RENodeId::Component(component_address)) => {
                                         ScryptoActor::Component(
@@ -334,7 +334,7 @@ where
                                     }
                                     _ => {
                                         return Err(RuntimeError::KernelError(
-                                            KernelError::MethodNotFound(FunctionIdent::Scrypto {
+                                            KernelError::FunctionNotFound(FunctionIdent::Scrypto {
                                                 package_address,
                                                 blueprint_name,
                                                 ident,
@@ -588,7 +588,7 @@ where
 
     fn invoke_method(
         &mut self,
-        mut fn_ident: MethodIdent,
+        mut fn_ident: ReceiverMethodIdent,
         input: ScryptoValue,
         mut next_owned_values: HashMap<RENodeId, HeapRootRENode>,
     ) -> Result<ScryptoValue, RuntimeError> {
@@ -639,20 +639,25 @@ where
                     .map_err(RuntimeError::KernelError)?;
 
                 node_pointer = RENodePointer::Store(node_id);
-                fn_ident = MethodIdent {
+                fn_ident = ReceiverMethodIdent {
                     receiver: Receiver::Ref(node_id),
-                    method_fn_ident: fn_ident.method_fn_ident,
+                    method_ident: fn_ident.method_ident,
                 }
             }
 
             // Lock Primary Substate
             let substate_id = RENodeProperties::to_primary_substate_id(&fn_ident)?;
             let is_lock_fee = matches!(node_id, RENodeId::Vault(..))
-                && (fn_ident.method_fn_ident.eq(&MethodFnIdent::Native(
-                    NativeMethodFnIdent::Vault(VaultMethodFnIdent::LockFee),
-                )) || fn_ident.method_fn_ident.eq(&MethodFnIdent::Native(
-                    NativeMethodFnIdent::Vault(VaultMethodFnIdent::LockContingentFee),
-                )));
+                && (fn_ident
+                    .method_ident
+                    .eq(&MethodIdent::Native(NativeMethod::Vault(
+                        VaultMethod::LockFee,
+                    )))
+                    || fn_ident
+                        .method_ident
+                        .eq(&MethodIdent::Native(NativeMethod::Vault(
+                            VaultMethod::LockContingentFee,
+                        ))));
             if is_lock_fee && matches!(node_pointer, RENodePointer::Heap { .. }) {
                 return Err(RuntimeError::KernelError(KernelError::RENodeNotInTrack));
             }
@@ -666,8 +671,8 @@ where
 
             // Load actor
             let re_actor = match &fn_ident {
-                MethodIdent {
-                    method_fn_ident: MethodFnIdent::Scrypto(ident),
+                ReceiverMethodIdent {
+                    method_ident: MethodIdent::Scrypto(ident),
                     receiver,
                 } => match node_id {
                     RENodeId::Component(component_address) => {
@@ -685,9 +690,9 @@ where
                         let node_ref = node_pointer.to_ref(&self.call_frames, &mut self.track);
                         let component = node_ref.component();
 
-                        REActor::Method(FullyQualifiedMethod {
+                        REActor::Method(FullyQualifiedReceiverMethod {
                             receiver: receiver.clone(),
-                            fn_ident: FullyQualifiedMethodFn::Scrypto {
+                            method: FullyQualifiedMethod::Scrypto {
                                 package_address: component.info.package_address.clone(),
                                 blueprint_name: component.info.blueprint_name.clone(),
                                 ident: ident.to_string(),
@@ -696,12 +701,12 @@ where
                     }
                     _ => panic!("Should not get here."),
                 },
-                MethodIdent {
-                    method_fn_ident: MethodFnIdent::Native(native_fn),
+                ReceiverMethodIdent {
+                    method_ident: MethodIdent::Native(native_fn),
                     receiver,
-                } => REActor::Method(FullyQualifiedMethod {
+                } => REActor::Method(FullyQualifiedReceiverMethod {
                     receiver: receiver.clone(),
-                    fn_ident: FullyQualifiedMethodFn::Native(native_fn.clone()),
+                    method: FullyQualifiedMethod::Native(native_fn.clone()),
                 }),
             };
 
@@ -760,7 +765,7 @@ where
 
             // Lock Resource Managers in request
             // TODO: Remove when references cleaned up
-            if let MethodFnIdent::Native(..) = fn_ident.method_fn_ident {
+            if let MethodIdent::Native(..) = fn_ident.method_ident {
                 for resource_address in &input.resource_addresses {
                     let resource_substate_id =
                         SubstateId::ResourceManager(resource_address.clone());
