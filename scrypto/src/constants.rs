@@ -226,4 +226,32 @@ pub const SYS_SYSTEM_COMPONENT: ComponentAddress = construct_address!(
 );
 
 /// The ED25519 virtual resource address.
-pub const ED25519_TOKEN: ResourceAddress = address!(EntityType::Resource, 3u8);
+pub const ED25519_TOKEN: ResourceAddress = address!(
+    EntityType::Resource,
+    65,
+    147,
+    250,
+    184,
+    51,
+    61,
+    44,
+    7,
+    151,
+    14,
+    113,
+    197,
+    48,
+    144,
+    12,
+    19,
+    165,
+    184,
+    198,
+    170,
+    140,
+    111,
+    44,
+    146,
+    119,
+    42
+);

@@ -155,6 +155,26 @@ pub fn create_genesis() -> SystemTransaction {
         }
     };
 
+    let create_eddsa_token = {
+        let metadata: HashMap<String, String> = HashMap::new();
+        let mut eddsa_resource_auth = HashMap::new();
+        eddsa_resource_auth.insert(Withdraw, (rule!(allow_all), LOCKED));
+        let initial_supply: Option<MintParams> = None;
+
+        // TODO: Create token at a specific address
+        Instruction::CallFunction {
+            fn_identifier: FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
+                ResourceManagerFnIdentifier::Create,
+            )),
+            args: args!(
+                ResourceType::NonFungible,
+                metadata,
+                eddsa_resource_auth,
+                initial_supply
+            ),
+        }
+    };
+
     let manifest = TransactionManifest {
         instructions: vec![
             create_sys_faucet_package,
@@ -165,6 +185,7 @@ pub fn create_genesis() -> SystemTransaction {
             take_xrd,
             create_xrd_faucet,
             create_system_component,
+            create_eddsa_token,
         ],
         blobs,
     };

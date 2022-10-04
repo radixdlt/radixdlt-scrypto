@@ -86,7 +86,6 @@ pub enum KernelError {
     CantMoveRestrictedProof,
     CantMoveWorktop,
     CantMoveAuthZone,
-    CantMoveNonFungibleStore,
     DropFailure(DropFailure),
 
     BlobNotFound(Hash),
