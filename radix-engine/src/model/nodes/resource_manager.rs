@@ -503,10 +503,7 @@ impl ResourceManager {
                 let resource_manager = node_ref.resource_manager_mut();
                 let (resource, non_fungibles) =
                     resource_manager.mint(input.mint_params, resource_address)?;
-                let non_fungible_store_id = resource_manager
-                    .info
-                    .non_fungible_store_id
-                    .expect("Checked by mint method");
+                let non_fungible_store_id = resource_manager.info.non_fungible_store_id;
 
                 let bucket_id = system_api
                     .node_create(HeapRENode::Bucket(Bucket::new(resource)))
@@ -515,7 +512,10 @@ impl ResourceManager {
 
                 for (id, non_fungible) in non_fungibles {
                     let value = system_api
-                        .substate_read(SubstateId::NonFungible(non_fungible_store_id, id.clone()))
+                        .substate_read(SubstateId::NonFungible(
+                            non_fungible_store_id.expect("Checked by mint method"),
+                            id.clone(),
+                        ))
                         .map_err(InvokeError::Downstream)?;
                     let wrapper: NonFungibleSubstate =
                         scrypto_decode(&value.raw).expect("Failed to decode NonFungibleSubstate");
@@ -528,7 +528,10 @@ impl ResourceManager {
                     }
                     system_api
                         .substate_write(
-                            SubstateId::NonFungible(non_fungible_store_id, id.clone()),
+                            SubstateId::NonFungible(
+                                non_fungible_store_id.expect("Checked by mint method"),
+                                id.clone(),
+                            ),
                             ScryptoValue::from_typed(&NonFungibleSubstate(Some(non_fungible))),
                         )
                         .map_err(InvokeError::Downstream)?;
