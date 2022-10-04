@@ -12,7 +12,7 @@ use scrypto::resource::{
 };
 use scrypto::values::*;
 
-use crate::errors::*;
+use crate::errors::{self, *};
 use crate::model::*;
 use crate::validation::*;
 
@@ -21,7 +21,14 @@ pub enum DecompileError {
     IdValidationError(IdValidationError),
     DecodeError(DecodeError),
     AddressError(AddressError),
+    InvalidValue(ScryptoValueFormatterError),
     UnrecognizedNativeFunction,
+}
+
+impl From<ScryptoValueFormatterError> for DecompileError {
+    fn from(error: ScryptoValueFormatterError) -> Self {
+        Self::InvalidValue(error)
+    }
 }
 
 pub fn decompile(
@@ -267,7 +274,7 @@ pub fn decompile(
                                 &bech32_encoder,
                                 &buckets,
                                 &proofs,
-                            ));
+                            )?);
                         }
                     } else {
                         panic!("Should not get here.");
@@ -282,19 +289,19 @@ pub fn decompile(
 
                         let resource_type = ScryptoValue::from_typed(&input.resource_type);
                         buf.push(' ');
-                        buf.push_str(&resource_type.to_string());
+                        buf.push_str(&resource_type.to_string()?);
 
                         let metadata = ScryptoValue::from_typed(&input.metadata);
                         buf.push(' ');
-                        buf.push_str(&metadata.to_string());
+                        buf.push_str(&metadata.to_string()?);
 
                         let access_rules = ScryptoValue::from_typed(&input.access_rules);
                         buf.push(' ');
-                        buf.push_str(&access_rules.to_string());
+                        buf.push_str(&access_rules.to_string()?);
 
                         let mint_params = ScryptoValue::from_typed(&input.mint_params);
                         buf.push(' ');
-                        buf.push_str(&mint_params.to_string());
+                        buf.push_str(&mint_params.to_string()?);
 
                         buf.push_str(";\n");
                     }
@@ -331,7 +338,7 @@ pub fn decompile(
                                 &bech32_encoder,
                                 &buckets,
                                 &proofs,
-                            ));
+                            )?);
                         }
                     } else {
                         panic!("Should not get here.");
