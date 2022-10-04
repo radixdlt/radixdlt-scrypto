@@ -241,7 +241,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
                     component_address: SYS_FAUCET_COMPONENT,
                     ident: "lock_fee".to_string(),
                 },
-                args: args!(dec!("1000")),
+                args: args!(dec!("100")),
             },
         );
         self.execute_manifest(manifest, initial_proofs)
