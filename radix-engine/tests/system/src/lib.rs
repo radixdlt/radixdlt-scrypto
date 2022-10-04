@@ -13,9 +13,7 @@ blueprint! {
             let input = RadixEngineInput::Invoke(
                 FnIdent::Method(ReceiverMethodIdent {
                     receiver: Receiver::Ref(RENodeId::System(SYS_SYSTEM_COMPONENT)),
-                    method_ident: MethodIdent::Native(NativeMethod::System(
-                        SystemMethod::SetEpoch,
-                    )),
+                    method_ident: MethodIdent::Native(NativeMethod::System(SystemMethod::SetEpoch)),
                 }),
                 scrypto_encode(&SystemSetEpochInput { epoch }),
             );
