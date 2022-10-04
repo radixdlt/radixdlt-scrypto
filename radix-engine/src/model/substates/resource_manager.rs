@@ -6,9 +6,9 @@ use crate::types::*;
 pub struct ResourceManagerSubstate {
     pub resource_type: ResourceType,
     pub metadata: HashMap<String, String>,
-    pub method_table: HashMap<ResourceManagerFnIdentifier, ResourceMethodRule>,
-    pub vault_method_table: HashMap<VaultFnIdentifier, ResourceMethodRule>,
-    pub bucket_method_table: HashMap<BucketFnIdentifier, ResourceMethodRule>,
+    pub method_table: HashMap<ResourceManagerMethod, ResourceMethodRule>,
+    pub vault_method_table: HashMap<VaultMethod, ResourceMethodRule>,
+    pub bucket_method_table: HashMap<BucketMethod, ResourceMethodRule>,
     pub authorization: HashMap<ResourceMethodAuthKey, MethodAccessRule>,
     pub total_supply: Decimal,
 }

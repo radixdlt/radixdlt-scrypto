@@ -1,3 +1,4 @@
+use scrypto::core::{FnIdent, MethodIdent, NativeFunction, ReceiverMethodIdent};
 use scrypto::resource::AuthZoneDrainInput;
 use transaction::errors::IdAllocationError;
 use transaction::model::*;
@@ -5,7 +6,6 @@ use transaction::validation::*;
 
 use crate::engine::{HeapRENode, SystemApi};
 use crate::fee::FeeReserve;
-use crate::model::ComponentInfoSubstate;
 use crate::model::InvokeError;
 use crate::model::{
     WorktopAssertContainsAmountInput, WorktopAssertContainsInput,
@@ -112,11 +112,13 @@ impl TransactionProcessor {
             match expression.0.as_str() {
                 "ENTIRE_WORKTOP" => {
                     let buckets = system_api
-                        .invoke_method(
-                            Receiver::Ref(RENodeId::Worktop),
-                            FnIdentifier::Native(NativeFnIdentifier::Worktop(
-                                WorktopFnIdentifier::Drain,
-                            )),
+                        .invoke(
+                            FnIdent::Method(ReceiverMethodIdent {
+                                receiver: Receiver::Ref(RENodeId::Worktop),
+                                method_ident: MethodIdent::Native(NativeMethod::Worktop(
+                                    WorktopMethod::Drain,
+                                )),
+                            }),
                             ScryptoValue::from_typed(&WorktopDrainInput {}),
                         )
                         .map_err(InvokeError::Downstream)
@@ -144,11 +146,13 @@ impl TransactionProcessor {
                         .expect("AuthZone does not exist");
 
                     let proofs = system_api
-                        .invoke_method(
-                            Receiver::Ref(auth_zone_node_id),
-                            FnIdentifier::Native(NativeFnIdentifier::AuthZone(
-                                AuthZoneFnIdentifier::Drain,
-                            )),
+                        .invoke(
+                            FnIdent::Method(ReceiverMethodIdent {
+                                receiver: Receiver::Ref(auth_zone_node_id),
+                                method_ident: MethodIdent::Native(NativeMethod::AuthZone(
+                                    AuthZoneMethod::Drain,
+                                )),
+                            }),
                             ScryptoValue::from_typed(&AuthZoneDrainInput {}),
                         )
                         .map_err(InvokeError::Downstream)
@@ -193,7 +197,7 @@ impl TransactionProcessor {
     }
 
     pub fn static_main<'s, Y, W, I, R>(
-        transaction_processor_fn: TransactionProcessorFnIdentifier,
+        func: TransactionProcessorFunction,
         call_data: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, InvokeError<TransactionProcessorError>>
@@ -203,8 +207,8 @@ impl TransactionProcessor {
         I: WasmInstance,
         R: FeeReserve,
     {
-        match transaction_processor_fn {
-            TransactionProcessorFnIdentifier::Run => {
+        match func {
+            TransactionProcessorFunction::Run => {
                 let input: TransactionProcessorRunInput =
                     scrypto_decode(&call_data.raw).map_err(|e| {
                         InvokeError::Error(TransactionProcessorError::InvalidRequestData(e))
@@ -237,11 +241,13 @@ impl TransactionProcessor {
                             })
                             .and_then(|new_id| {
                                 system_api
-                                    .invoke_method(
-                                        Receiver::Ref(RENodeId::Worktop),
-                                        FnIdentifier::Native(NativeFnIdentifier::Worktop(
-                                            WorktopFnIdentifier::TakeAll,
-                                        )),
+                                    .invoke(
+                                        FnIdent::Method(ReceiverMethodIdent {
+                                            receiver: Receiver::Ref(RENodeId::Worktop),
+                                            method_ident: MethodIdent::Native(
+                                                NativeMethod::Worktop(WorktopMethod::TakeAll),
+                                            ),
+                                        }),
                                         ScryptoValue::from_typed(&WorktopTakeAllInput {
                                             resource_address: *resource_address,
                                         }),
@@ -263,11 +269,13 @@ impl TransactionProcessor {
                             })
                             .and_then(|new_id| {
                                 system_api
-                                    .invoke_method(
-                                        Receiver::Ref(RENodeId::Worktop),
-                                        FnIdentifier::Native(NativeFnIdentifier::Worktop(
-                                            WorktopFnIdentifier::TakeAmount,
-                                        )),
+                                    .invoke(
+                                        FnIdent::Method(ReceiverMethodIdent {
+                                            receiver: Receiver::Ref(RENodeId::Worktop),
+                                            method_ident: MethodIdent::Native(
+                                                NativeMethod::Worktop(WorktopMethod::TakeAmount),
+                                            ),
+                                        }),
                                         ScryptoValue::from_typed(&WorktopTakeAmountInput {
                                             amount: *amount,
                                             resource_address: *resource_address,
@@ -290,11 +298,15 @@ impl TransactionProcessor {
                             })
                             .and_then(|new_id| {
                                 system_api
-                                    .invoke_method(
-                                        Receiver::Ref(RENodeId::Worktop),
-                                        FnIdentifier::Native(NativeFnIdentifier::Worktop(
-                                            WorktopFnIdentifier::TakeNonFungibles,
-                                        )),
+                                    .invoke(
+                                        FnIdent::Method(ReceiverMethodIdent {
+                                            receiver: Receiver::Ref(RENodeId::Worktop),
+                                            method_ident: MethodIdent::Native(
+                                                NativeMethod::Worktop(
+                                                    WorktopMethod::TakeNonFungibles,
+                                                ),
+                                            ),
+                                        }),
                                         ScryptoValue::from_typed(&WorktopTakeNonFungiblesInput {
                                             ids: ids.clone(),
                                             resource_address: *resource_address,
@@ -311,11 +323,13 @@ impl TransactionProcessor {
                             .remove(bucket_id)
                             .map(|real_id| {
                                 system_api
-                                    .invoke_method(
-                                        Receiver::Ref(RENodeId::Worktop),
-                                        FnIdentifier::Native(NativeFnIdentifier::Worktop(
-                                            WorktopFnIdentifier::Put,
-                                        )),
+                                    .invoke(
+                                        FnIdent::Method(ReceiverMethodIdent {
+                                            receiver: Receiver::Ref(RENodeId::Worktop),
+                                            method_ident: MethodIdent::Native(
+                                                NativeMethod::Worktop(WorktopMethod::Put),
+                                            ),
+                                        }),
                                         ScryptoValue::from_typed(&WorktopPutInput {
                                             bucket: scrypto::resource::Bucket(real_id),
                                         }),
@@ -326,11 +340,13 @@ impl TransactionProcessor {
                                 TransactionProcessorError::BucketNotFound(*bucket_id),
                             ))),
                         Instruction::AssertWorktopContains { resource_address } => system_api
-                            .invoke_method(
-                                Receiver::Ref(RENodeId::Worktop),
-                                FnIdentifier::Native(NativeFnIdentifier::Worktop(
-                                    WorktopFnIdentifier::AssertContains,
-                                )),
+                            .invoke(
+                                FnIdent::Method(ReceiverMethodIdent {
+                                    receiver: Receiver::Ref(RENodeId::Worktop),
+                                    method_ident: MethodIdent::Native(NativeMethod::Worktop(
+                                        WorktopMethod::AssertContains,
+                                    )),
+                                }),
                                 ScryptoValue::from_typed(&WorktopAssertContainsInput {
                                     resource_address: *resource_address,
                                 }),
@@ -340,11 +356,13 @@ impl TransactionProcessor {
                             amount,
                             resource_address,
                         } => system_api
-                            .invoke_method(
-                                Receiver::Ref(RENodeId::Worktop),
-                                FnIdentifier::Native(NativeFnIdentifier::Worktop(
-                                    WorktopFnIdentifier::AssertContainsAmount,
-                                )),
+                            .invoke(
+                                FnIdent::Method(ReceiverMethodIdent {
+                                    receiver: Receiver::Ref(RENodeId::Worktop),
+                                    method_ident: MethodIdent::Native(NativeMethod::Worktop(
+                                        WorktopMethod::AssertContainsAmount,
+                                    )),
+                                }),
                                 ScryptoValue::from_typed(&WorktopAssertContainsAmountInput {
                                     amount: *amount,
                                     resource_address: *resource_address,
@@ -355,11 +373,13 @@ impl TransactionProcessor {
                             ids,
                             resource_address,
                         } => system_api
-                            .invoke_method(
-                                Receiver::Ref(RENodeId::Worktop),
-                                FnIdentifier::Native(NativeFnIdentifier::Worktop(
-                                    WorktopFnIdentifier::AssertContainsNonFungibles,
-                                )),
+                            .invoke(
+                                FnIdent::Method(ReceiverMethodIdent {
+                                    receiver: Receiver::Ref(RENodeId::Worktop),
+                                    method_ident: MethodIdent::Native(NativeMethod::Worktop(
+                                        WorktopMethod::AssertContainsNonFungibles,
+                                    )),
+                                }),
                                 ScryptoValue::from_typed(&WorktopAssertContainsNonFungiblesInput {
                                     ids: ids.clone(),
                                     resource_address: *resource_address,
@@ -374,11 +394,13 @@ impl TransactionProcessor {
                             })
                             .and_then(|new_id| {
                                 system_api
-                                    .invoke_method(
-                                        auth_zone_ref,
-                                        FnIdentifier::Native(NativeFnIdentifier::AuthZone(
-                                            AuthZoneFnIdentifier::Pop,
-                                        )),
+                                    .invoke(
+                                        FnIdent::Method(ReceiverMethodIdent {
+                                            receiver: auth_zone_ref,
+                                            method_ident: MethodIdent::Native(
+                                                NativeMethod::AuthZone(AuthZoneMethod::Pop),
+                                            ),
+                                        }),
                                         ScryptoValue::from_typed(&AuthZonePopInput {}),
                                     )
                                     .map_err(InvokeError::Downstream)
@@ -391,11 +413,13 @@ impl TransactionProcessor {
                         Instruction::ClearAuthZone => {
                             proof_id_mapping.clear();
                             system_api
-                                .invoke_method(
-                                    auth_zone_ref,
-                                    FnIdentifier::Native(NativeFnIdentifier::AuthZone(
-                                        AuthZoneFnIdentifier::Clear,
-                                    )),
+                                .invoke(
+                                    FnIdent::Method(ReceiverMethodIdent {
+                                        receiver: auth_zone_ref,
+                                        method_ident: MethodIdent::Native(NativeMethod::AuthZone(
+                                            AuthZoneMethod::Clear,
+                                        )),
+                                    }),
                                     ScryptoValue::from_typed(&AuthZoneClearInput {}),
                                 )
                                 .map_err(InvokeError::Downstream)
@@ -407,11 +431,13 @@ impl TransactionProcessor {
                             ))
                             .and_then(|real_id| {
                                 system_api
-                                    .invoke_method(
-                                        auth_zone_ref,
-                                        FnIdentifier::Native(NativeFnIdentifier::AuthZone(
-                                            AuthZoneFnIdentifier::Push,
-                                        )),
+                                    .invoke(
+                                        FnIdent::Method(ReceiverMethodIdent {
+                                            receiver: auth_zone_ref,
+                                            method_ident: MethodIdent::Native(
+                                                NativeMethod::AuthZone(AuthZoneMethod::Push),
+                                            ),
+                                        }),
                                         ScryptoValue::from_typed(&AuthZonePushInput {
                                             proof: scrypto::resource::Proof(real_id),
                                         }),
@@ -425,11 +451,13 @@ impl TransactionProcessor {
                             })
                             .and_then(|new_id| {
                                 system_api
-                                    .invoke_method(
-                                        auth_zone_ref,
-                                        FnIdentifier::Native(NativeFnIdentifier::AuthZone(
-                                            AuthZoneFnIdentifier::CreateProof,
-                                        )),
+                                    .invoke(
+                                        FnIdent::Method(ReceiverMethodIdent {
+                                            receiver: auth_zone_ref,
+                                            method_ident: MethodIdent::Native(
+                                                NativeMethod::AuthZone(AuthZoneMethod::CreateProof),
+                                            ),
+                                        }),
                                         ScryptoValue::from_typed(&AuthZoneCreateProofInput {
                                             resource_address: *resource_address,
                                         }),
@@ -451,11 +479,15 @@ impl TransactionProcessor {
                             })
                             .and_then(|new_id| {
                                 system_api
-                                    .invoke_method(
-                                        auth_zone_ref,
-                                        FnIdentifier::Native(NativeFnIdentifier::AuthZone(
-                                            AuthZoneFnIdentifier::CreateProofByAmount,
-                                        )),
+                                    .invoke(
+                                        FnIdent::Method(ReceiverMethodIdent {
+                                            receiver: auth_zone_ref,
+                                            method_ident: MethodIdent::Native(
+                                                NativeMethod::AuthZone(
+                                                    AuthZoneMethod::CreateProofByAmount,
+                                                ),
+                                            ),
+                                        }),
                                         ScryptoValue::from_typed(
                                             &AuthZoneCreateProofByAmountInput {
                                                 amount: *amount,
@@ -480,11 +512,15 @@ impl TransactionProcessor {
                             })
                             .and_then(|new_id| {
                                 system_api
-                                    .invoke_method(
-                                        auth_zone_ref,
-                                        FnIdentifier::Native(NativeFnIdentifier::AuthZone(
-                                            AuthZoneFnIdentifier::CreateProofByIds,
-                                        )),
+                                    .invoke(
+                                        FnIdent::Method(ReceiverMethodIdent {
+                                            receiver: auth_zone_ref,
+                                            method_ident: MethodIdent::Native(
+                                                NativeMethod::AuthZone(
+                                                    AuthZoneMethod::CreateProofByIds,
+                                                ),
+                                            ),
+                                        }),
                                         ScryptoValue::from_typed(&AuthZoneCreateProofByIdsInput {
                                             ids: ids.clone(),
                                             resource_address: *resource_address,
@@ -513,11 +549,15 @@ impl TransactionProcessor {
                             })
                             .and_then(|(new_id, real_bucket_id)| {
                                 system_api
-                                    .invoke_method(
-                                        Receiver::Ref(RENodeId::Bucket(real_bucket_id)),
-                                        FnIdentifier::Native(NativeFnIdentifier::Bucket(
-                                            BucketFnIdentifier::CreateProof,
-                                        )),
+                                    .invoke(
+                                        FnIdent::Method(ReceiverMethodIdent {
+                                            receiver: Receiver::Ref(RENodeId::Bucket(
+                                                real_bucket_id,
+                                            )),
+                                            method_ident: MethodIdent::Native(
+                                                NativeMethod::Bucket(BucketMethod::CreateProof),
+                                            ),
+                                        }),
                                         ScryptoValue::from_typed(&BucketCreateProofInput {}),
                                     )
                                     .map_err(InvokeError::Downstream)
@@ -538,11 +578,15 @@ impl TransactionProcessor {
                                     .cloned()
                                     .map(|real_id| {
                                         system_api
-                                            .invoke_method(
-                                                Receiver::Ref(RENodeId::Proof(real_id)),
-                                                FnIdentifier::Native(NativeFnIdentifier::Proof(
-                                                    ProofFnIdentifier::Clone,
-                                                )),
+                                            .invoke(
+                                                FnIdent::Method(ReceiverMethodIdent {
+                                                    receiver: Receiver::Ref(RENodeId::Proof(
+                                                        real_id,
+                                                    )),
+                                                    method_ident: MethodIdent::Native(
+                                                        NativeMethod::Proof(ProofMethod::Clone),
+                                                    ),
+                                                }),
                                                 ScryptoValue::from_typed(&ProofCloneInput {}),
                                             )
                                             .map_err(InvokeError::Downstream)
@@ -562,11 +606,13 @@ impl TransactionProcessor {
                             .remove(proof_id)
                             .map(|real_id| {
                                 system_api
-                                    .invoke_method(
-                                        Receiver::Consumed(RENodeId::Proof(real_id)),
-                                        FnIdentifier::Native(NativeFnIdentifier::Proof(
-                                            ProofFnIdentifier::Drop,
-                                        )),
+                                    .invoke(
+                                        FnIdent::Method(ReceiverMethodIdent {
+                                            receiver: Receiver::Consumed(RENodeId::Proof(real_id)),
+                                            method_ident: MethodIdent::Native(NativeMethod::Proof(
+                                                ProofMethod::Drop,
+                                            )),
+                                        }),
                                         ScryptoValue::from_typed(&ConsumingProofDropInput {}),
                                     )
                                     .map_err(InvokeError::Downstream)
@@ -577,27 +623,31 @@ impl TransactionProcessor {
                         Instruction::DropAllProofs => {
                             for (_, real_id) in proof_id_mapping.drain() {
                                 system_api
-                                    .invoke_method(
-                                        Receiver::Consumed(RENodeId::Proof(real_id)),
-                                        FnIdentifier::Native(NativeFnIdentifier::Proof(
-                                            ProofFnIdentifier::Drop,
-                                        )),
+                                    .invoke(
+                                        FnIdent::Method(ReceiverMethodIdent {
+                                            receiver: Receiver::Consumed(RENodeId::Proof(real_id)),
+                                            method_ident: MethodIdent::Native(NativeMethod::Proof(
+                                                ProofMethod::Drop,
+                                            )),
+                                        }),
                                         ScryptoValue::from_typed(&ConsumingProofDropInput {}),
                                     )
                                     .map_err(InvokeError::Downstream)?;
                             }
                             system_api
-                                .invoke_method(
-                                    auth_zone_ref,
-                                    FnIdentifier::Native(NativeFnIdentifier::AuthZone(
-                                        AuthZoneFnIdentifier::Clear,
-                                    )),
+                                .invoke(
+                                    FnIdent::Method(ReceiverMethodIdent {
+                                        receiver: auth_zone_ref,
+                                        method_ident: MethodIdent::Native(NativeMethod::AuthZone(
+                                            AuthZoneMethod::Clear,
+                                        )),
+                                    }),
                                     ScryptoValue::from_typed(&AuthZoneClearInput {}),
                                 )
                                 .map_err(InvokeError::Downstream)
                         }
                         Instruction::CallFunction {
-                            fn_identifier,
+                            function_ident: fn_identifier,
                             args,
                         } => {
                             Self::replace_ids(
@@ -609,18 +659,20 @@ impl TransactionProcessor {
                             .and_then(|call_data| Self::process_expressions(call_data, system_api))
                             .and_then(|call_data| {
                                 system_api
-                                    .invoke_function(fn_identifier.clone(), call_data)
+                                    .invoke(FnIdent::Function(fn_identifier.clone()), call_data)
                                     .map_err(InvokeError::Downstream)
                             })
                             .and_then(|result| {
                                 // Auto move into auth_zone
                                 for (proof_id, _) in &result.proof_ids {
                                     system_api
-                                        .invoke_method(
-                                            auth_zone_ref,
-                                            FnIdentifier::Native(NativeFnIdentifier::AuthZone(
-                                                AuthZoneFnIdentifier::Push,
-                                            )),
+                                        .invoke(
+                                            FnIdent::Method(ReceiverMethodIdent {
+                                                receiver: auth_zone_ref,
+                                                method_ident: MethodIdent::Native(
+                                                    NativeMethod::AuthZone(AuthZoneMethod::Push),
+                                                ),
+                                            }),
                                             ScryptoValue::from_typed(&AuthZonePushInput {
                                                 proof: scrypto::resource::Proof(*proof_id),
                                             }),
@@ -630,11 +682,13 @@ impl TransactionProcessor {
                                 // Auto move into worktop
                                 for (bucket_id, _) in &result.bucket_ids {
                                     system_api
-                                        .invoke_method(
-                                            Receiver::Ref(RENodeId::Worktop),
-                                            FnIdentifier::Native(NativeFnIdentifier::Worktop(
-                                                WorktopFnIdentifier::Put,
-                                            )),
+                                        .invoke(
+                                            FnIdent::Method(ReceiverMethodIdent {
+                                                receiver: Receiver::Ref(RENodeId::Worktop),
+                                                method_ident: MethodIdent::Native(
+                                                    NativeMethod::Worktop(WorktopMethod::Put),
+                                                ),
+                                            }),
                                             ScryptoValue::from_typed(&WorktopPutInput {
                                                 bucket: scrypto::resource::Bucket(*bucket_id),
                                             }),
@@ -645,7 +699,11 @@ impl TransactionProcessor {
                             })
                         }
                         Instruction::CallMethod {
-                            method_identifier,
+                            method_ident:
+                                ReceiverMethodIdent {
+                                    receiver,
+                                    method_ident: fn_ident,
+                                },
                             args,
                         } => {
                             Self::replace_ids(
@@ -656,66 +714,31 @@ impl TransactionProcessor {
                             )
                             .and_then(|call_data| Self::process_expressions(call_data, system_api))
                             .and_then(|call_data| {
-                                // TODO: Move this into preprocessor step
-                                match method_identifier {
-                                    MethodIdentifier::Scrypto {
-                                        component_address,
-                                        ident,
-                                    } => system_api
-                                        .substate_read(SubstateId::ComponentInfo(
-                                            *component_address,
-                                        ))
-                                        .map_err(InvokeError::Downstream)
-                                        .and_then(|s| {
-                                            let component_info: ComponentInfoSubstate =
-                                                scrypto_decode(&s.raw).expect(
-                                                    "Failed to decode ComponentInfo substate",
-                                                );
-
-                                            system_api
-                                                .invoke_method(
-                                                    Receiver::Ref(RENodeId::Component(
-                                                        *component_address,
-                                                    )),
-                                                    FnIdentifier::Scrypto {
-                                                        ident: ident.to_string(),
-                                                        package_address: component_info
-                                                            .package_address,
-                                                        blueprint_name: component_info
-                                                            .blueprint_name,
-                                                    },
-                                                    call_data,
-                                                )
-                                                .map_err(InvokeError::Downstream)
+                                system_api
+                                    .invoke(
+                                        FnIdent::Method(ReceiverMethodIdent {
+                                            receiver: Self::replace_receiver(
+                                                receiver.clone(),
+                                                &mut proof_id_mapping,
+                                                &mut bucket_id_mapping,
+                                            )?,
+                                            method_ident: fn_ident.clone(),
                                         }),
-                                    MethodIdentifier::Native {
-                                        receiver,
-                                        native_fn_identifier,
-                                    } => Self::replace_receiver(
-                                        receiver.clone(),
-                                        &mut proof_id_mapping,
-                                        &mut bucket_id_mapping,
+                                        call_data,
                                     )
-                                    .and_then(|receiver| {
-                                        system_api
-                                            .invoke_method(
-                                                receiver,
-                                                FnIdentifier::Native(native_fn_identifier.clone()),
-                                                call_data,
-                                            )
-                                            .map_err(InvokeError::Downstream)
-                                    }),
-                                }
+                                    .map_err(InvokeError::Downstream)
                             })
                             .and_then(|result| {
                                 // Auto move into auth_zone
                                 for (proof_id, _) in &result.proof_ids {
                                     system_api
-                                        .invoke_method(
-                                            auth_zone_ref,
-                                            FnIdentifier::Native(NativeFnIdentifier::AuthZone(
-                                                AuthZoneFnIdentifier::Push,
-                                            )),
+                                        .invoke(
+                                            FnIdent::Method(ReceiverMethodIdent {
+                                                receiver: auth_zone_ref,
+                                                method_ident: MethodIdent::Native(
+                                                    NativeMethod::AuthZone(AuthZoneMethod::Push),
+                                                ),
+                                            }),
                                             ScryptoValue::from_typed(&AuthZonePushInput {
                                                 proof: scrypto::resource::Proof(*proof_id),
                                             }),
@@ -725,11 +748,13 @@ impl TransactionProcessor {
                                 // Auto move into worktop
                                 for (bucket_id, _) in &result.bucket_ids {
                                     system_api
-                                        .invoke_method(
-                                            Receiver::Ref(RENodeId::Worktop),
-                                            FnIdentifier::Native(NativeFnIdentifier::Worktop(
-                                                WorktopFnIdentifier::Put,
-                                            )),
+                                        .invoke(
+                                            FnIdent::Method(ReceiverMethodIdent {
+                                                receiver: Receiver::Ref(RENodeId::Worktop),
+                                                method_ident: MethodIdent::Native(
+                                                    NativeMethod::Worktop(WorktopMethod::Put),
+                                                ),
+                                            }),
                                             ScryptoValue::from_typed(&WorktopPutInput {
                                                 bucket: scrypto::resource::Bucket(*bucket_id),
                                             }),
@@ -740,10 +765,10 @@ impl TransactionProcessor {
                             })
                         }
                         Instruction::PublishPackage { code, abi } => system_api
-                            .invoke_function(
-                                FnIdentifier::Native(NativeFnIdentifier::Package(
-                                    PackageFnIdentifier::Publish,
-                                )),
+                            .invoke(
+                                FnIdent::Function(FunctionIdent::Native(NativeFunction::Package(
+                                    PackageFunction::Publish,
+                                ))),
                                 ScryptoValue::from_typed(&PackagePublishInput {
                                     code: code.clone(),
                                     abi: abi.clone(),

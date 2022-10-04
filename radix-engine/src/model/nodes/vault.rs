@@ -161,7 +161,7 @@ impl Vault {
 
     pub fn main<'s, Y, W, I, R>(
         vault_id: VaultId,
-        vault_fn: VaultFnIdentifier,
+        method: VaultMethod,
         args: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, InvokeError<VaultError>>
@@ -171,8 +171,8 @@ impl Vault {
         I: WasmInstance,
         R: FeeReserve,
     {
-        let rtn = match vault_fn {
-            VaultFnIdentifier::Put => {
+        let rtn = match method {
+            VaultMethod::Put => {
                 let input: VaultPutInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(VaultError::InvalidRequestData(e)))?;
                 let bucket = system_api
@@ -188,7 +188,7 @@ impl Vault {
                     .map_err(|e| InvokeError::Error(VaultError::ResourceOperationError(e)))?;
                 Ok(ScryptoValue::from_typed(&()))
             }
-            VaultFnIdentifier::Take => {
+            VaultMethod::Take => {
                 let input: VaultTakeInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(VaultError::InvalidRequestData(e)))?;
                 let mut node_ref = system_api
@@ -204,7 +204,7 @@ impl Vault {
                     bucket_id,
                 )))
             }
-            VaultFnIdentifier::LockFee | VaultFnIdentifier::LockContingentFee => {
+            VaultMethod::LockFee | VaultMethod::LockContingentFee => {
                 let input: VaultLockFeeInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(VaultError::InvalidRequestData(e)))?;
 
@@ -228,7 +228,7 @@ impl Vault {
                     .lock_fee(
                         vault_id,
                         fee,
-                        matches!(vault_fn, VaultFnIdentifier::LockContingentFee),
+                        matches!(method, VaultMethod::LockContingentFee),
                     )
                     .map_err(InvokeError::Downstream)?;
 
@@ -244,7 +244,7 @@ impl Vault {
 
                 Ok(ScryptoValue::from_typed(&()))
             }
-            VaultFnIdentifier::TakeNonFungibles => {
+            VaultMethod::TakeNonFungibles => {
                 let input: VaultTakeNonFungiblesInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(VaultError::InvalidRequestData(e)))?;
                 let mut node_ref = system_api
@@ -260,7 +260,7 @@ impl Vault {
                     bucket_id,
                 )))
             }
-            VaultFnIdentifier::GetAmount => {
+            VaultMethod::GetAmount => {
                 let _: VaultGetAmountInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(VaultError::InvalidRequestData(e)))?;
                 let mut node_ref = system_api
@@ -270,7 +270,7 @@ impl Vault {
                 let amount = vault.total_amount();
                 Ok(ScryptoValue::from_typed(&amount))
             }
-            VaultFnIdentifier::GetResourceAddress => {
+            VaultMethod::GetResourceAddress => {
                 let _: VaultGetResourceAddressInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(VaultError::InvalidRequestData(e)))?;
                 let mut node_ref = system_api
@@ -280,7 +280,7 @@ impl Vault {
                 let resource_address = vault.resource_address();
                 Ok(ScryptoValue::from_typed(&resource_address))
             }
-            VaultFnIdentifier::GetNonFungibleIds => {
+            VaultMethod::GetNonFungibleIds => {
                 let _: VaultGetNonFungibleIdsInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(VaultError::InvalidRequestData(e)))?;
                 let mut node_ref = system_api
@@ -292,7 +292,7 @@ impl Vault {
                     .map_err(|e| InvokeError::Error(VaultError::ResourceOperationError(e)))?;
                 Ok(ScryptoValue::from_typed(&ids))
             }
-            VaultFnIdentifier::CreateProof => {
+            VaultMethod::CreateProof => {
                 let _: VaultCreateProofInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(VaultError::InvalidRequestData(e)))?;
                 let mut node_ref = system_api
@@ -310,7 +310,7 @@ impl Vault {
                     proof_id,
                 )))
             }
-            VaultFnIdentifier::CreateProofByAmount => {
+            VaultMethod::CreateProofByAmount => {
                 let input: VaultCreateProofByAmountInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(VaultError::InvalidRequestData(e)))?;
                 let mut node_ref = system_api
@@ -328,7 +328,7 @@ impl Vault {
                     proof_id,
                 )))
             }
-            VaultFnIdentifier::CreateProofByIds => {
+            VaultMethod::CreateProofByIds => {
                 let input: VaultCreateProofByIdsInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(VaultError::InvalidRequestData(e)))?;
                 let mut node_ref = system_api

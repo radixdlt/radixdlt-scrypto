@@ -137,7 +137,7 @@ impl<'f, 's, R: FeeReserve> RENodeRef<'f, 's, R> {
         }
     }
 
-    pub fn component(&mut self) -> &Component {
+    pub fn component(&self) -> &Component {
         match self {
             RENodeRef::Stack(value, id) => id
                 .as_ref()

@@ -3,6 +3,7 @@ use crate::fee::FeeReserve;
 use crate::model::*;
 use crate::types::*;
 use crate::wasm::*;
+use scrypto::core::{FnIdent, MethodIdent, NativeFunction, ReceiverMethodIdent};
 
 pub struct NativeInterpreter;
 
@@ -76,9 +77,8 @@ impl Into<ApplicationError> for SystemError {
 }
 
 impl NativeInterpreter {
-    pub fn run<'s, Y, W, I, R>(
-        receiver: Option<Receiver>,
-        fn_identifier: NativeFnIdentifier,
+    pub fn run_function<'s, Y, W, I, R>(
+        fn_identifier: NativeFunction,
         input: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, RuntimeError>
@@ -88,67 +88,76 @@ impl NativeInterpreter {
         I: WasmInstance,
         R: FeeReserve,
     {
-        match (receiver, fn_identifier) {
-            (None, NativeFnIdentifier::TransactionProcessor(transaction_processor_fn)) => {
-                TransactionProcessor::static_main(transaction_processor_fn, input, system_api)
-                    .map_err(|e| e.into())
+        match fn_identifier {
+            NativeFunction::TransactionProcessor(func) => {
+                TransactionProcessor::static_main(func, input, system_api).map_err(|e| e.into())
             }
-            (None, NativeFnIdentifier::Package(package_fn)) => {
-                Package::static_main(package_fn, input, system_api).map_err(|e| e.into())
+            NativeFunction::Package(func) => {
+                Package::static_main(func, input, system_api).map_err(|e| e.into())
             }
-            (None, NativeFnIdentifier::ResourceManager(resource_manager_fn)) => {
-                ResourceManager::static_main(resource_manager_fn, input, system_api)
-                    .map_err(|e| e.into())
+            NativeFunction::ResourceManager(func) => {
+                ResourceManager::static_main(func, input, system_api).map_err(|e| e.into())
             }
-            (None, NativeFnIdentifier::System(system_fn)) => {
-                System::static_main(system_fn, input, system_api).map_err(|e| e.into())
+            NativeFunction::System(func) => {
+                System::static_main(func, input, system_api).map_err(|e| e.into())
             }
-            (Some(Receiver::Consumed(node_id)), NativeFnIdentifier::Bucket(bucket_fn)) => {
-                Bucket::consuming_main(node_id, bucket_fn, input, system_api).map_err(|e| e.into())
+        }
+    }
+
+    pub fn run_method<'s, Y, W, I, R>(
+        receiver: Receiver,
+        native_method: NativeMethod,
+        input: ScryptoValue,
+        system_api: &mut Y,
+    ) -> Result<ScryptoValue, RuntimeError>
+    where
+        Y: SystemApi<'s, W, I, R>,
+        W: WasmEngine<I>,
+        I: WasmInstance,
+        R: FeeReserve,
+    {
+        match (receiver.clone(), native_method.clone()) {
+            (Receiver::Consumed(node_id), NativeMethod::Bucket(method)) => {
+                Bucket::consuming_main(node_id, method, input, system_api).map_err(|e| e.into())
             }
-            (Some(Receiver::Consumed(node_id)), NativeFnIdentifier::Proof(proof_fn)) => {
-                Proof::main_consume(node_id, proof_fn, input, system_api).map_err(|e| e.into())
+            (Receiver::Consumed(node_id), NativeMethod::Proof(method)) => {
+                Proof::main_consume(node_id, method, input, system_api).map_err(|e| e.into())
+            }
+            (Receiver::Ref(RENodeId::AuthZone(auth_zone_id)), NativeMethod::AuthZone(method)) => {
+                AuthZone::main(auth_zone_id, method, input, system_api).map_err(|e| e.into())
+            }
+            (Receiver::Ref(RENodeId::Bucket(bucket_id)), NativeMethod::Bucket(method)) => {
+                Bucket::main(bucket_id, method, input, system_api).map_err(|e| e.into())
+            }
+            (Receiver::Ref(RENodeId::Proof(proof_id)), NativeMethod::Proof(method)) => {
+                Proof::main(proof_id, method, input, system_api).map_err(|e| e.into())
+            }
+            (Receiver::Ref(RENodeId::Worktop), NativeMethod::Worktop(method)) => {
+                Worktop::main(method, input, system_api).map_err(|e| e.into())
+            }
+            (Receiver::Ref(RENodeId::Vault(vault_id)), NativeMethod::Vault(method)) => {
+                Vault::main(vault_id, method, input, system_api).map_err(|e| e.into())
             }
             (
-                Some(Receiver::Ref(RENodeId::AuthZone(auth_zone_id))),
-                NativeFnIdentifier::AuthZone(auth_zone_fn),
+                Receiver::Ref(RENodeId::Component(component_address)),
+                NativeMethod::Component(method),
             ) => {
-                AuthZone::main(auth_zone_id, auth_zone_fn, input, system_api).map_err(|e| e.into())
+                Component::main(component_address, method, input, system_api).map_err(|e| e.into())
             }
             (
-                Some(Receiver::Ref(RENodeId::Bucket(bucket_id))),
-                NativeFnIdentifier::Bucket(bucket_fn),
-            ) => Bucket::main(bucket_id, bucket_fn, input, system_api).map_err(|e| e.into()),
-            (
-                Some(Receiver::Ref(RENodeId::Proof(proof_id))),
-                NativeFnIdentifier::Proof(proof_fn),
-            ) => Proof::main(proof_id, proof_fn, input, system_api).map_err(|e| e.into()),
-            (Some(Receiver::Ref(RENodeId::Worktop)), NativeFnIdentifier::Worktop(worktop_fn)) => {
-                Worktop::main(worktop_fn, input, system_api).map_err(|e| e.into())
-            }
-            (
-                Some(Receiver::Ref(RENodeId::Vault(vault_id))),
-                NativeFnIdentifier::Vault(vault_fn),
-            ) => Vault::main(vault_id, vault_fn, input, system_api).map_err(|e| e.into()),
-            (
-                Some(Receiver::Ref(RENodeId::Component(component_address))),
-                NativeFnIdentifier::Component(component_fn),
-            ) => Component::main(component_address, component_fn, input, system_api)
+                Receiver::Ref(RENodeId::ResourceManager(resource_address)),
+                NativeMethod::ResourceManager(method),
+            ) => ResourceManager::main(resource_address, method, input, system_api)
                 .map_err(|e| e.into()),
-            (
-                Some(Receiver::Ref(RENodeId::ResourceManager(resource_address))),
-                NativeFnIdentifier::ResourceManager(resource_manager_fn),
-            ) => ResourceManager::main(resource_address, resource_manager_fn, input, system_api)
-                .map_err(|e| e.into()),
-            (
-                Some(Receiver::Ref(RENodeId::System(component_address))),
-                NativeFnIdentifier::System(system_fn),
-            ) => {
-                System::main(component_address, system_fn, input, system_api).map_err(|e| e.into())
+            (Receiver::Ref(RENodeId::System(component_address)), NativeMethod::System(method)) => {
+                System::main(component_address, method, input, system_api).map_err(|e| e.into())
             }
             _ => {
-                return Err(RuntimeError::KernelError(KernelError::MethodNotFound(
-                    FnIdentifier::Native(fn_identifier.clone()),
+                return Err(RuntimeError::KernelError(KernelError::FnIdentNotFound(
+                    FnIdent::Method(ReceiverMethodIdent {
+                        receiver,
+                        method_ident: MethodIdent::Native(native_method),
+                    }),
                 )))
             }
         }

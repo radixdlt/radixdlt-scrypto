@@ -1,23 +1,10 @@
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto::component::ComponentAddress;
-use scrypto::core::{Blob, FnIdentifier, NativeFnIdentifier, Receiver};
+use scrypto::core::{Blob, FunctionIdent, ReceiverMethodIdent};
 use scrypto::engine::types::*;
 use scrypto::math::*;
 use scrypto::resource::{NonFungibleId, ResourceAddress};
-
-#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
-pub enum MethodIdentifier {
-    Scrypto {
-        component_address: ComponentAddress,
-        ident: String,
-    },
-    Native {
-        receiver: Receiver,
-        native_fn_identifier: NativeFnIdentifier,
-    },
-}
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub enum Instruction {
@@ -95,7 +82,7 @@ pub enum Instruction {
     ///
     /// Buckets and proofs in arguments moves from transaction context to the callee.
     CallFunction {
-        fn_identifier: FnIdentifier,
+        function_ident: FunctionIdent,
         args: Vec<u8>,
     },
 
@@ -103,7 +90,7 @@ pub enum Instruction {
     ///
     /// Buckets and proofs in arguments moves from transaction context to the callee.
     CallMethod {
-        method_identifier: MethodIdentifier,
+        method_ident: ReceiverMethodIdent,
         args: Vec<u8>,
     },
 

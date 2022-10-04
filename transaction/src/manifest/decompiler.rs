@@ -3,8 +3,8 @@ use sbor::{encode_any, DecodeError, Value};
 use scrypto::address::{AddressError, Bech32Encoder};
 use scrypto::buffer::scrypto_decode;
 use scrypto::core::{
-    BucketFnIdentifier, FnIdentifier, NativeFnIdentifier, NetworkDefinition, Receiver,
-    ResourceManagerFnIdentifier,
+    BucketMethod, FunctionIdent, MethodIdent, NativeFunction, NativeMethod, NetworkDefinition,
+    Receiver, ReceiverMethodIdent, ResourceManagerFunction, ResourceManagerMethod,
 };
 use scrypto::engine::types::*;
 use scrypto::resource::{
@@ -236,11 +236,10 @@ pub fn decompile(
                 buf.push_str("DROP_ALL_PROOFS;\n");
             }
             Instruction::CallFunction {
-                fn_identifier,
-
+                function_ident,
                 args,
-            } => match fn_identifier {
-                FnIdentifier::Scrypto {
+            } => match function_ident {
+                FunctionIdent::Scrypto {
                     package_address,
                     blueprint_name,
                     ident,
@@ -270,8 +269,8 @@ pub fn decompile(
                     }
                     buf.push_str(";\n");
                 }
-                FnIdentifier::Native(native_fn_identifier) => match native_fn_identifier {
-                    NativeFnIdentifier::ResourceManager(ResourceManagerFnIdentifier::Create) => {
+                FunctionIdent::Native(native_fn_identifier) => match native_fn_identifier {
+                    NativeFunction::ResourceManager(ResourceManagerFunction::Create) => {
                         buf.push_str("CREATE_RESOURCE");
                         let input: ResourceManagerCreateInput =
                             scrypto_decode(&args).map_err(DecompileError::DecodeError)?;
@@ -297,13 +296,10 @@ pub fn decompile(
                     _ => return Err(DecompileError::UnrecognizedNativeFunction),
                 },
             },
-            Instruction::CallMethod {
-                method_identifier,
-                args,
-            } => match method_identifier {
-                MethodIdentifier::Scrypto {
-                    component_address,
-                    ident,
+            Instruction::CallMethod { method_ident, args } => match method_ident {
+                ReceiverMethodIdent {
+                    receiver: Receiver::Ref(RENodeId::Component(component_address)),
+                    method_ident: MethodIdent::Scrypto(ident),
                 } => {
                     buf.push_str(&format!(
                         "CALL_METHOD ComponentAddress(\"{}\") \"{}\"",
@@ -331,13 +327,13 @@ pub fn decompile(
 
                     buf.push_str(";\n");
                 }
-                MethodIdentifier::Native {
-                    native_fn_identifier,
+                ReceiverMethodIdent {
                     receiver,
-                } => match (native_fn_identifier, receiver) {
+                    method_ident: MethodIdent::Native(native_fn_identifier),
+                } => match (receiver, native_fn_identifier) {
                     (
-                        NativeFnIdentifier::Bucket(BucketFnIdentifier::Burn),
                         Receiver::Consumed(RENodeId::Bucket(bucket_id)),
+                        NativeMethod::Bucket(BucketMethod::Burn),
                     ) => {
                         let _input: ConsumingBucketBurnInput =
                             scrypto_decode(&args).map_err(DecompileError::DecodeError)?;
@@ -351,8 +347,8 @@ pub fn decompile(
                         ));
                     }
                     (
-                        NativeFnIdentifier::ResourceManager(ResourceManagerFnIdentifier::Mint),
                         Receiver::Ref(RENodeId::ResourceManager(resource_address)),
+                        NativeMethod::ResourceManager(ResourceManagerMethod::Mint),
                     ) => {
                         let input: ResourceManagerMintInput =
                             scrypto_decode(&args).map_err(DecompileError::DecodeError)?;
@@ -369,6 +365,7 @@ pub fn decompile(
                     }
                     _ => return Err(DecompileError::UnrecognizedNativeFunction),
                 },
+                _ => return Err(DecompileError::UnrecognizedNativeFunction),
             },
             Instruction::PublishPackage { code, abi } => {
                 buf.push_str(&format!(

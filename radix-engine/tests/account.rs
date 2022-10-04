@@ -1,6 +1,7 @@
 use radix_engine::engine::ResourceChange;
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
+use scrypto::core::{MethodIdent, ReceiverMethodIdent};
 use scrypto::values::ScryptoValue;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -110,9 +111,9 @@ fn account_to_bucket_to_account() {
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder
                 .add_instruction(Instruction::CallMethod {
-                    method_identifier: MethodIdentifier::Scrypto {
-                        component_address: account,
-                        ident: "deposit".to_string(),
+                    method_ident: ReceiverMethodIdent {
+                        receiver: Receiver::Ref(RENodeId::Component(account)),
+                        method_ident: MethodIdent::Scrypto("deposit".to_string()),
                     },
                     args: args!(scrypto::resource::Bucket(bucket_id)),
                 })

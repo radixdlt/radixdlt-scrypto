@@ -2,15 +2,11 @@ use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::Resource;
 use crate::types::*;
+use scrypto::core::FnIdent;
 
 pub enum SysCallInput<'a> {
-    InvokeFunction {
-        fn_identifier: &'a FnIdentifier,
-        input: &'a ScryptoValue,
-    },
-    InvokeMethod {
-        receiver: &'a Receiver,
-        fn_identifier: &'a FnIdentifier,
+    Invoke {
+        function_identifier: &'a FnIdent,
         input: &'a ScryptoValue,
     },
     ReadOwnedNodes,
@@ -48,8 +44,7 @@ pub enum SysCallInput<'a> {
 }
 
 pub enum SysCallOutput<'a> {
-    InvokeFunction { output: &'a ScryptoValue },
-    InvokeMethod { output: &'a ScryptoValue },
+    Invoke { output: &'a ScryptoValue },
     BorrowNode { node_pointer: &'a RENodePointer },
     DropNode { node: &'a HeapRootRENode },
     CreateNode { node_id: &'a RENodeId },
