@@ -83,7 +83,6 @@ pub enum KernelError {
     SubstateError(TrackError),
     SubstateReadNotReadable(REActor, SubstateId),
     SubstateWriteNotWriteable(REActor, SubstateId),
-    SubstateReadSubstateNotFound(SubstateId),
 
     // constraints
     ValueNotAllowed,

@@ -164,19 +164,23 @@ where
     ) -> Result<(RENodePointer, ScryptoValue), RuntimeError> {
         let node_id = SubstateProperties::get_node_id(substate_id);
 
-        // Get location
-        // Note this must be run AFTER values are taken, otherwise there would be inconsistent readable_values state
-        let node_pointer = call_frames
-            .last()
-            .expect("Current call frame does not exist")
-            .node_refs
-            .get(&node_id)
-            .cloned()
-            .ok_or_else(|| {
-                RuntimeError::KernelError(KernelError::SubstateReadSubstateNotFound(
-                    substate_id.clone(),
-                ))
-            })?;
+        // Find node
+        let node_pointer = {
+            let current_frame = call_frames.last().expect("Current frame always exists");
+            if current_frame.owned_heap_nodes.contains_key(&node_id) {
+                RENodePointer::Heap {
+                    frame_id: current_frame.depth,
+                    root: node_id.clone(),
+                    id: None,
+                }
+            } else if let Some(pointer) = current_frame.node_refs.get(&node_id) {
+                pointer.clone()
+            } else {
+                return Err(RuntimeError::KernelError(KernelError::RENodeNotVisible(
+                    node_id,
+                )));
+            }
+        };
 
         if let SubstateId::ComponentInfo(address) = substate_id {
             node_pointer
@@ -942,7 +946,7 @@ where
             }
         };
 
-        // move buckets and proofs to this process.
+        // move re nodes to this process.
         for (id, value) in received_values {
             Self::current_frame_mut(&mut self.call_frames)
                 .owned_heap_nodes
@@ -1155,39 +1159,6 @@ where
         Self::current_frame_mut(&mut self.call_frames)
             .owned_heap_nodes
             .insert(node_id, heap_root_node);
-
-        // TODO: Clean the following up
-        match node_id {
-            RENodeId::KeyValueStore(..) | RENodeId::ResourceManager(..) => {
-                let frame = self
-                    .call_frames
-                    .last_mut()
-                    .expect("Current call frame does not exist");
-                frame.node_refs.insert(
-                    node_id.clone(),
-                    RENodePointer::Heap {
-                        frame_id: frame.depth,
-                        root: node_id.clone(),
-                        id: None,
-                    },
-                );
-            }
-            RENodeId::Component(..) => {
-                let frame = self
-                    .call_frames
-                    .last_mut()
-                    .expect("Current call frame does not exist");
-                frame.node_refs.insert(
-                    node_id.clone(),
-                    RENodePointer::Heap {
-                        frame_id: frame.depth,
-                        root: node_id.clone(),
-                        id: None,
-                    },
-                );
-            }
-            _ => {}
-        }
 
         for m in &mut self.modules {
             m.post_sys_call(
