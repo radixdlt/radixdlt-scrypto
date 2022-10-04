@@ -12,7 +12,7 @@ use scrypto::resource::{
 };
 use scrypto::values::*;
 
-use crate::errors::{self, *};
+use crate::errors::*;
 use crate::model::*;
 use crate::validation::*;
 
@@ -41,7 +41,7 @@ pub fn decompile(
     let mut buckets = HashMap::<BucketId, String>::new();
     let mut proofs = HashMap::<ProofId, String>::new();
     for inst in instructions {
-        match inst.clone() {
+        match inst {
             Instruction::TakeFromWorktop { resource_address } => {
                 let bucket_id = id_validator
                     .new_bucket()
@@ -88,7 +88,7 @@ pub fn decompile(
             }
             Instruction::ReturnToWorktop { bucket_id } => {
                 id_validator
-                    .drop_bucket(bucket_id)
+                    .drop_bucket(*bucket_id)
                     .map_err(DecompileError::IdValidationError)?;
                 buf.push_str(&format!(
                     "RETURN_TO_WORKTOP Bucket({});\n",
@@ -137,7 +137,7 @@ pub fn decompile(
             }
             Instruction::PushToAuthZone { proof_id } => {
                 id_validator
-                    .drop_proof(proof_id)
+                    .drop_proof(*proof_id)
                     .map_err(DecompileError::IdValidationError)?;
                 buf.push_str(&format!(
                     "PUSH_TO_AUTH_ZONE Proof({});\n",
@@ -196,7 +196,7 @@ pub fn decompile(
             }
             Instruction::CreateProofFromBucket { bucket_id } => {
                 let proof_id = id_validator
-                    .new_proof(ProofKind::BucketProof(bucket_id))
+                    .new_proof(ProofKind::BucketProof(*bucket_id))
                     .map_err(DecompileError::IdValidationError)?;
                 let name = format!("proof{}", proofs.len() + 1);
                 proofs.insert(proof_id, name.clone());
@@ -211,7 +211,7 @@ pub fn decompile(
             }
             Instruction::CloneProof { proof_id } => {
                 let proof_id2 = id_validator
-                    .clone_proof(proof_id)
+                    .clone_proof(*proof_id)
                     .map_err(DecompileError::IdValidationError)?;
                 let name = format!("proof{}", proofs.len() + 1);
                 proofs.insert(proof_id2, name.clone());
@@ -226,7 +226,7 @@ pub fn decompile(
             }
             Instruction::DropProof { proof_id } => {
                 id_validator
-                    .drop_proof(proof_id)
+                    .drop_proof(*proof_id)
                     .map_err(DecompileError::IdValidationError)?;
                 buf.push_str(&format!(
                     "DROP_PROOF Proof({});\n",
