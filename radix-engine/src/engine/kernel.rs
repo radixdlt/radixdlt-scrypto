@@ -1260,9 +1260,9 @@ where
                 let global_address = GlobalAddress::Component(component_address);
                 self.track.put_substate(
                     SubstateId::Global(global_address),
-                    Substate::GlobalRENode(GlobalRENode::Component(scrypto::component::Component(
-                        component_address,
-                    ))),
+                    Substate::GlobalRENode(GlobalAddressSubstate::Component(
+                        scrypto::component::Component(component_address),
+                    )),
                 );
                 Self::current_frame_mut(&mut self.call_frames)
                     .node_refs

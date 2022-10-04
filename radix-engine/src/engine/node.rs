@@ -23,8 +23,8 @@ impl HeapRENode {
     pub fn get_child_nodes(&self) -> Result<HashSet<RENodeId>, RuntimeError> {
         match self {
             HeapRENode::Global(global_node) => {
-                let child_node = match global_node {
-                    GlobalRENode::Component(component) => RENodeId::Component(component.0),
+                let child_node = match &global_node.address {
+                    GlobalAddressSubstate::Component(component) => RENodeId::Component(component.0),
                     /*GlobalRENode::Package(package_address) => RENodeId::Package(*package_address),
                     GlobalRENode::Resource(resource_address) => {
                         RENodeId::ResourceManager(*resource_address)
