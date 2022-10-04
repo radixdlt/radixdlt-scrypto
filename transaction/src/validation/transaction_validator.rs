@@ -69,7 +69,7 @@ impl TransactionValidator<NotarizedTransaction> for NotarizedTransactionValidato
         let tip_percentage = transaction.signed_intent.intent.header.tip_percentage;
         let blobs = transaction.signed_intent.intent.manifest.blobs.clone();
 
-        let proofs = ExecutableProofs {
+        let auth_zone_params = AuthZoneParams {
             initial_proofs: AuthModule::pk_non_fungibles(&keys),
             virtualizable_proofs_resource_addresses: BTreeSet::new(),
         };
@@ -77,7 +77,7 @@ impl TransactionValidator<NotarizedTransaction> for NotarizedTransactionValidato
         Ok(Executable::new(
             transaction_hash,
             instructions,
-            proofs,
+            auth_zone_params,
             cost_unit_limit,
             tip_percentage,
             blobs,
@@ -109,7 +109,7 @@ impl NotarizedTransactionValidator {
         Ok(Executable {
             transaction_hash,
             instructions,
-            proofs: ExecutableProofs {
+            auth_zone_params: AuthZoneParams {
                 initial_proofs,
                 virtualizable_proofs_resource_addresses,
             },

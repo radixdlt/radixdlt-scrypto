@@ -7,7 +7,7 @@ pub use std::collections::BTreeSet;
 use crate::model::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ExecutableProofs {
+pub struct AuthZoneParams {
     pub initial_proofs: Vec<NonFungibleAddress>,
     pub virtualizable_proofs_resource_addresses: BTreeSet<ResourceAddress>,
 }
@@ -17,7 +17,7 @@ pub struct ExecutableProofs {
 pub struct Executable {
     pub transaction_hash: Hash,
     pub instructions: Vec<Instruction>,
-    pub proofs: ExecutableProofs,
+    pub auth_zone_params: AuthZoneParams,
     pub cost_unit_limit: u32,
     pub tip_percentage: u32,
     pub blobs: Vec<Vec<u8>>,
@@ -27,7 +27,7 @@ impl Executable {
     pub fn new(
         transaction_hash: Hash,
         instructions: Vec<Instruction>,
-        proofs: ExecutableProofs,
+        auth_zone_params: AuthZoneParams,
         cost_unit_limit: u32,
         tip_percentage: u32,
         blobs: Vec<Vec<u8>>,
@@ -35,7 +35,7 @@ impl Executable {
         Self {
             transaction_hash,
             instructions,
-            proofs,
+            auth_zone_params,
             cost_unit_limit,
             tip_percentage,
             blobs,
@@ -62,8 +62,8 @@ impl Executable {
         &self.instructions
     }
 
-    pub fn proofs(&self) -> ExecutableProofs {
-        self.proofs.clone()
+    pub fn auth_zone_params(&self) -> AuthZoneParams {
+        self.auth_zone_params.clone()
     }
 
     pub fn blobs(&self) -> &[Vec<u8>] {

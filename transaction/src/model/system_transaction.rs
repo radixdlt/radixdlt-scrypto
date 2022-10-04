@@ -1,4 +1,4 @@
-use crate::model::{AuthModule, Executable, ExecutableProofs, TransactionManifest};
+use crate::model::{AuthModule, Executable, AuthZoneParams, TransactionManifest};
 use sbor::*;
 use scrypto::crypto::Hash;
 use std::collections::BTreeSet;
@@ -15,11 +15,11 @@ impl Into<Executable> for SystemTransaction {
         let instructions = self.manifest.instructions;
         let blobs = self.manifest.blobs;
 
-        let proofs = ExecutableProofs {
+        let auth_zone_params = AuthZoneParams {
             initial_proofs: vec![AuthModule::system_role_nf_address()],
             virtualizable_proofs_resource_addresses: BTreeSet::new(),
         };
 
-        Executable::new(transaction_hash, instructions, proofs, 10_000, 0, blobs)
+        Executable::new(transaction_hash, instructions, auth_zone_params, 10_000, 0, blobs)
     }
 }

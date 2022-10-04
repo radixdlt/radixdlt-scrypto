@@ -107,7 +107,7 @@ where
         fee_reserve: R,
     ) -> TransactionReceipt {
         let transaction_hash = transaction.transaction_hash();
-        let proofs = transaction.proofs();
+        let auth_zone_params = transaction.auth_zone_params();
         let instructions = transaction.instructions().to_vec();
         let blobs: HashMap<Hash, Vec<u8>> = transaction
             .blobs()
@@ -119,7 +119,7 @@ where
         if execution_config.trace {
             println!("{:-^80}", "Transaction Metadata");
             println!("Transaction hash: {}", transaction_hash);
-            println!("Transaction proofs: {:?}", proofs);
+            println!("Transaction auth zone params: {:?}", auth_zone_params);
             println!("Number of unique blobs: {}", blobs.len());
 
             println!("{:-^80}", "Engine Execution Log");
@@ -158,7 +158,7 @@ where
             modules.push(Box::new(CostingModule::default()));
             let mut kernel = Kernel::new(
                 transaction_hash,
-                proofs,
+                auth_zone_params,
                 &blobs,
                 execution_config.max_call_depth,
                 &mut track,

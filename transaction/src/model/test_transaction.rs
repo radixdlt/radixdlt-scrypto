@@ -36,7 +36,7 @@ impl TestTransaction {
         Executable {
             transaction_hash,
             instructions: transaction.signed_intent.intent.manifest.instructions,
-            proofs: ExecutableProofs {
+            auth_zone_params: AuthZoneParams {
                 initial_proofs,
                 virtualizable_proofs_resource_addresses: BTreeSet::new(),
             },

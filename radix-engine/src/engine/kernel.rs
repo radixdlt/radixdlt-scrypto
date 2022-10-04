@@ -1,5 +1,5 @@
 use transaction::errors::IdAllocationError;
-use transaction::model::{ExecutableProofs, Instruction};
+use transaction::model::{AuthZoneParams, Instruction};
 use transaction::validation::*;
 
 use crate::engine::*;
@@ -69,7 +69,7 @@ where
 {
     pub fn new(
         transaction_hash: Hash,
-        proofs: ExecutableProofs,
+        auth_zone_params: AuthZoneParams,
         blobs: &'g HashMap<Hash, Vec<u8>>,
         max_depth: usize,
         track: &'g mut Track<'s, R>,
@@ -98,9 +98,9 @@ where
         // Initial authzone
         // TODO: Move into module initialization
         let virtualizable_proofs_resource_addresses =
-            proofs.virtualizable_proofs_resource_addresses;
+            auth_zone_params.virtualizable_proofs_resource_addresses;
         let mut proofs_to_create = BTreeMap::<ResourceAddress, BTreeSet<NonFungibleId>>::new();
-        for non_fungible in proofs.initial_proofs {
+        for non_fungible in auth_zone_params.initial_proofs {
             proofs_to_create
                 .entry(non_fungible.resource_address())
                 .or_insert(BTreeSet::new())
@@ -123,7 +123,7 @@ where
 
         // Create empty buckets for virtual proofs
         let mut virtual_proofs_buckets: BTreeMap<ResourceAddress, BucketId> = BTreeMap::new();
-        for resource_address in virtualizable_proofs_resource_addresses.clone() {
+        for resource_address in virtualizable_proofs_resource_addresses {
             let bucket_id = kernel
                 .create_non_fungible_bucket_with_ids(resource_address.clone(), BTreeSet::new());
             virtual_proofs_buckets.insert(resource_address, bucket_id);
