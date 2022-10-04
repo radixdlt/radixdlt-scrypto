@@ -27,7 +27,7 @@ fn bench_transfer(c: &mut Criterion) {
     // Create two accounts
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
-        .call_method(SYS_FAUCET_COMPONENT, "free_xrd", args!())
+        .call_method(SYS_FAUCET_COMPONENT, "free", args!())
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.new_account_with_resource(
                 &rule!(require(NonFungibleAddress::from_public_key(&public_key))),
@@ -65,7 +65,7 @@ fn bench_transfer(c: &mut Criterion) {
     // Fill first account
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
-        .call_method(SYS_FAUCET_COMPONENT, "free_xrd", args!())
+        .call_method(SYS_FAUCET_COMPONENT, "free", args!())
         .call_method(
             account1,
             "deposit_batch",
