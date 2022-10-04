@@ -463,6 +463,8 @@ where
         fn_identifier: FnIdentifier,
         input: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError> {
+        let depth = Self::current_frame(&self.call_frames).depth;
+
         for m in &mut self.modules {
             m.pre_sys_call(
                 &mut self.track,
@@ -470,13 +472,14 @@ where
                 SysCallInput::InvokeFunction {
                     fn_identifier: &fn_identifier,
                     input: &input,
+                    depth,
                 },
             )
             .map_err(RuntimeError::ModuleError)?;
         }
 
         // Check call depth
-        if Self::current_frame(&self.call_frames).depth == self.max_depth {
+        if depth == self.max_depth {
             return Err(RuntimeError::KernelError(
                 KernelError::MaxCallDepthLimitReached,
             ));
@@ -709,6 +712,8 @@ where
         fn_identifier: FnIdentifier,
         input: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError> {
+        let depth = Self::current_frame(&self.call_frames).depth;
+
         for m in &mut self.modules {
             m.pre_sys_call(
                 &mut self.track,
@@ -717,13 +722,14 @@ where
                     receiver: &receiver,
                     fn_identifier: &fn_identifier,
                     input: &input,
+                    depth,
                 },
             )
             .map_err(RuntimeError::ModuleError)?;
         }
 
         // check call depth
-        if Self::current_frame(&self.call_frames).depth == self.max_depth {
+        if depth == self.max_depth {
             return Err(RuntimeError::KernelError(
                 KernelError::MaxCallDepthLimitReached,
             ));

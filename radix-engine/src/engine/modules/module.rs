@@ -7,11 +7,13 @@ pub enum SysCallInput<'a> {
     InvokeFunction {
         fn_identifier: &'a FnIdentifier,
         input: &'a ScryptoValue,
+        depth: usize,
     },
     InvokeMethod {
         receiver: &'a Receiver,
         fn_identifier: &'a FnIdentifier,
         input: &'a ScryptoValue,
+        depth: usize,
     },
     ReadOwnedNodes,
     BorrowNode {
