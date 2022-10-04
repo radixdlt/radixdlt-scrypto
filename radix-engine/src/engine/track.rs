@@ -15,6 +15,7 @@ use crate::model::Component;
 use crate::model::KeyValueStore;
 use crate::model::KeyValueStoreEntrySubstate;
 use crate::model::LockableResource;
+use crate::model::NonFungibleStore;
 use crate::model::NonFungibleSubstate;
 use crate::model::Package;
 use crate::model::Resource;
@@ -271,7 +272,13 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                     self.loaded_nodes.insert(
                         node_id.clone(),
                         HeapRENode::KeyValueStore(KeyValueStore::new().into()),
-                    ); // TODO: zero-cost node instantiation?
+                    );
+                }
+                RENodeId::NonFungibleStore(_) => {
+                    self.loaded_nodes.insert(
+                        node_id.clone(),
+                        HeapRENode::NonFungibleStore(NonFungibleStore::new().into()),
+                    );
                 }
                 RENodeId::Component(address) => {
                     let substate = self.take_substate(SubstateId::ComponentInfo(*address));
@@ -291,7 +298,6 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                     let substate = self.take_substate(SubstateId::ResourceManager(*address));
                     let node = HeapRENode::ResourceManager(ResourceManager {
                         info: substate.into(),
-                        loaded_non_fungibles: HashMap::new(),
                     });
                     self.loaded_nodes.insert(node_id.clone(), node);
                 }

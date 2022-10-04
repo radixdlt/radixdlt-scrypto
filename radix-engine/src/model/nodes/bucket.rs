@@ -305,15 +305,15 @@ impl Bucket {
                     .map_err(InvokeError::Downstream)?;
                 let resource_manager = value.resource_manager_mut();
                 resource_manager.burn(bucket.total_amount());
+                let non_fungible_store_id = resource_manager.info.non_fungible_store_id.clone();
                 if matches!(resource_manager.resource_type(), ResourceType::NonFungible) {
                     for id in bucket
                         .total_ids()
                         .expect("Failed to list non-fungible IDs on non-fungible Bucket")
                     {
-                        let address = SubstateId::NonFungible(resource_address, id);
                         system_api
                             .substate_write(
-                                address,
+                                SubstateId::NonFungible(non_fungible_store_id.unwrap(), id),
                                 ScryptoValue::from_typed(&NonFungibleSubstate(None)),
                             )
                             .map_err(InvokeError::Downstream)?;

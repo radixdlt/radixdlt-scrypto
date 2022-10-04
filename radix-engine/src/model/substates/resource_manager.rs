@@ -11,6 +11,7 @@ pub struct ResourceManagerSubstate {
     pub bucket_method_table: HashMap<BucketFnIdentifier, ResourceMethodRule>,
     pub authorization: HashMap<ResourceMethodAuthKey, MethodAccessRule>,
     pub total_supply: Decimal,
+    pub non_fungible_store_id: Option<NonFungibleStoreId>,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]

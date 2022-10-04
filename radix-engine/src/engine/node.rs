@@ -162,7 +162,6 @@ impl HeapRENode {
         }
     }
 
-
     pub fn non_fungible_store(&self) -> &NonFungibleStore {
         match self {
             HeapRENode::NonFungibleStore(store) => store,

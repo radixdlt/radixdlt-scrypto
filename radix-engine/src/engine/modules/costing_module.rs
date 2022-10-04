@@ -125,6 +125,13 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                                     loaded: false,
                                     size: 0,
                                 },
+                                RENodeId::NonFungibleStore(_) => {
+                                    SystemApiCostingEntry::BorrowNode {
+                                        // TODO: figure out loaded state and size
+                                        loaded: false,
+                                        size: 0,
+                                    }
+                                }
                                 RENodeId::ResourceManager(_) => SystemApiCostingEntry::BorrowNode {
                                     // TODO: figure out loaded state and size
                                     loaded: false,

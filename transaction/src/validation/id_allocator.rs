@@ -127,4 +127,12 @@ impl IdAllocator {
     ) -> Result<KeyValueStoreId, IdAllocationError> {
         Ok((transaction_hash, self.next()?))
     }
+
+    /// Creates a new non-fungible store ID.
+    pub fn new_non_fungible_store_id(
+        &mut self,
+        transaction_hash: Hash,
+    ) -> Result<NonFungibleStoreId, IdAllocationError> {
+        Ok((transaction_hash, self.next()?))
+    }
 }

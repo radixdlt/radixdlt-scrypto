@@ -38,7 +38,6 @@ pub enum ResourceManagerError {
 #[derive(Debug)]
 pub struct ResourceManager {
     pub info: ResourceManagerSubstate,
-    pub non_fungible_store_id: Option<NonFungibleStoreId>,
 }
 
 impl ResourceManager {
@@ -108,8 +107,8 @@ impl ResourceManager {
                 bucket_method_table,
                 authorization,
                 total_supply: 0.into(),
+                non_fungible_store_id,
             },
-            non_fungible_store_id,
         };
 
         Ok(resource_manager)
@@ -326,15 +325,17 @@ impl ResourceManager {
                     if let Some(mint_params) = &input.mint_params {
                         if let MintParams::NonFungible { entries } = mint_params {
                             for (non_fungible_id, data) in entries {
-                                system_api.substate_write(
-                                    SubstateId::NonFungible(
-                                        non_fungible_store_id,
-                                        non_fungible_id.clone(),
-                                    ),
-                                    ScryptoValue::from_typed(&NonFungibleSubstate(Some(
-                                        NonFungible::new(data.0.clone(), data.1.clone()), // FIXME: verify data
-                                    ))),
-                                );
+                                system_api
+                                    .substate_write(
+                                        SubstateId::NonFungible(
+                                            non_fungible_store_id,
+                                            non_fungible_id.clone(),
+                                        ),
+                                        ScryptoValue::from_typed(&NonFungibleSubstate(Some(
+                                            NonFungible::new(data.0.clone(), data.1.clone()), // FIXME: verify data
+                                        ))),
+                                    )
+                                    .map_err(InvokeError::Downstream)?;
                             }
                             resource_manager.info.total_supply = entries.len().into();
                         } else {
@@ -495,13 +496,17 @@ impl ResourceManager {
             ResourceManagerFnIdentifier::Mint => {
                 let input: ResourceManagerMintInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))?;
+
                 let mut node_ref = system_api
                     .borrow_node_mut(&RENodeId::ResourceManager(resource_address))
                     .map_err(InvokeError::Downstream)?;
                 let resource_manager = node_ref.resource_manager_mut();
-
                 let (resource, non_fungibles) =
                     resource_manager.mint(input.mint_params, resource_address)?;
+                let non_fungible_store_id = resource_manager
+                    .info
+                    .non_fungible_store_id
+                    .expect("Checked by mint method");
 
                 let bucket_id = system_api
                     .node_create(HeapRENode::Bucket(Bucket::new(resource)))
@@ -510,12 +515,7 @@ impl ResourceManager {
 
                 for (id, non_fungible) in non_fungibles {
                     let value = system_api
-                        .substate_read(SubstateId::NonFungible(
-                            resource_manager
-                                .non_fungible_store_id
-                                .expect("Checked by mint method"),
-                            id.clone(),
-                        ))
+                        .substate_read(SubstateId::NonFungible(non_fungible_store_id, id.clone()))
                         .map_err(InvokeError::Downstream)?;
                     let wrapper: NonFungibleSubstate =
                         scrypto_decode(&value.raw).expect("Failed to decode NonFungibleSubstate");
@@ -528,12 +528,7 @@ impl ResourceManager {
                     }
                     system_api
                         .substate_write(
-                            SubstateId::NonFungible(
-                                resource_manager
-                                    .non_fungible_store_id
-                                    .expect("Checked by mint method"),
-                                id.clone(),
-                            ),
+                            SubstateId::NonFungible(non_fungible_store_id, id.clone()),
                             ScryptoValue::from_typed(&NonFungibleSubstate(Some(non_fungible))),
                         )
                         .map_err(InvokeError::Downstream)?;
@@ -598,6 +593,7 @@ impl ResourceManager {
                 let resource_manager = node_ref.resource_manager_mut();
                 let substate_id = SubstateId::NonFungible(
                     resource_manager
+                        .info
                         .non_fungible_store_id
                         .ok_or(InvokeError::Error(ResourceManagerError::NotNonFungible))?,
                     input.id.clone(),
@@ -605,7 +601,7 @@ impl ResourceManager {
 
                 // Read current value
                 let value = system_api
-                    .substate_read(substate_id)
+                    .substate_read(substate_id.clone())
                     .map_err(InvokeError::Downstream)?;
                 let substate: NonFungibleSubstate =
                     scrypto_decode(&value.raw).expect("Failed to decode NonFungibleSubstate");
@@ -639,6 +635,7 @@ impl ResourceManager {
                 let resource_manager = node_ref.resource_manager_mut();
                 let substate_id = SubstateId::NonFungible(
                     resource_manager
+                        .info
                         .non_fungible_store_id
                         .ok_or(InvokeError::Error(ResourceManagerError::NotNonFungible))?,
                     input.id.clone(),
@@ -661,6 +658,7 @@ impl ResourceManager {
                 let resource_manager = node_ref.resource_manager_mut();
                 let substate_id = SubstateId::NonFungible(
                     resource_manager
+                        .info
                         .non_fungible_store_id
                         .ok_or(InvokeError::Error(ResourceManagerError::NotNonFungible))?,
                     input.id.clone(),

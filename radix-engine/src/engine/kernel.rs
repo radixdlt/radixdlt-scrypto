@@ -223,6 +223,11 @@ where
                 let key_value_store_id = id_allocator.new_key_value_store_id(transaction_hash)?;
                 Ok(RENodeId::KeyValueStore(key_value_store_id))
             }
+            HeapRENode::NonFungibleStore(..) => {
+                let non_fungible_store_id =
+                    id_allocator.new_non_fungible_store_id(transaction_hash)?;
+                Ok(RENodeId::NonFungibleStore(non_fungible_store_id))
+            }
             HeapRENode::Package(..) => {
                 // Security Alert: ensure ID allocating will practically never fail
                 let package_address = id_allocator.new_package_address(transaction_hash)?;
