@@ -1,6 +1,7 @@
-use crate::model::{AuthModule, Executable, TransactionManifest};
+use crate::model::{AuthModule, Executable, ExecutableProofs, TransactionManifest};
 use sbor::*;
 use scrypto::crypto::Hash;
+use std::collections::BTreeSet;
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct SystemTransaction {
@@ -14,13 +15,11 @@ impl Into<Executable> for SystemTransaction {
         let instructions = self.manifest.instructions;
         let blobs = self.manifest.blobs;
 
-        Executable::new(
-            transaction_hash,
-            instructions,
-            vec![AuthModule::system_role_nf_address()],
-            10_000,
-            0,
-            blobs,
-        )
+        let proofs = ExecutableProofs {
+            initial_proofs: vec![AuthModule::system_role_nf_address()],
+            virtualizable_proofs_resource_addresses: BTreeSet::new(),
+        };
+
+        Executable::new(transaction_hash, instructions, proofs, 10_000, 0, blobs)
     }
 }

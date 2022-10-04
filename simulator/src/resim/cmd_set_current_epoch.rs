@@ -35,6 +35,7 @@ impl SetCurrentEpoch {
         let mut kernel = Kernel::new(
             tx_hash,
             vec![AuthModule::validator_role_nf_address()],
+            BTreeSet::new(),
             &blobs,
             DEFAULT_MAX_CALL_DEPTH,
             &mut track,

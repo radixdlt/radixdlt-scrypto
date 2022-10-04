@@ -22,7 +22,7 @@ use sbor::describe::*;
 use scrypto::dec;
 use scrypto::math::Decimal;
 use transaction::builder::ManifestBuilder;
-use transaction::model::{Executable, MethodIdentifier, TransactionManifest};
+use transaction::model::{Executable, ExecutableProofs, MethodIdentifier, TransactionManifest};
 use transaction::model::{PreviewIntent, TestTransaction};
 use transaction::signing::EcdsaSecp256k1PrivateKey;
 use transaction::validation::TestIntentHashManager;
@@ -689,9 +689,14 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         );
         let mut execution_trace = ExecutionTrace::new();
 
+        let proofs = ExecutableProofs {
+            initial_proofs,
+            virtualizable_proofs_resource_addresses: BTreeSet::new(),
+        };
+
         let mut kernel = Kernel::new(
             tx_hash,
-            initial_proofs,
+            proofs,
             &blobs,
             DEFAULT_MAX_CALL_DEPTH,
             &mut track,

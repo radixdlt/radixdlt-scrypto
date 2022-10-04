@@ -1,5 +1,6 @@
 use crate::engine::*;
 use crate::fee::FeeReserve;
+use crate::model::AuthZone;
 use crate::types::*;
 use crate::wasm::*;
 
@@ -103,5 +104,22 @@ impl CallFrame {
         }
 
         Ok((taken, missing))
+    }
+
+    pub fn auth_zone(&self) -> &AuthZone {
+        self.owned_heap_nodes
+            .values()
+            .find(|e| {
+                matches!(
+                    e,
+                    HeapRootRENode {
+                        root: HeapRENode::AuthZone(..),
+                        ..
+                    }
+                )
+            })
+            .expect("Could not find auth zone")
+            .root
+            .auth_zone()
     }
 }

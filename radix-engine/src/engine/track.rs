@@ -480,7 +480,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             .and_then(|()| {
                 self.fee_reserve.consume(
                     self.fee_table.tx_signature_verification_per_sig()
-                        * transaction.initial_proofs().len() as u32,
+                        * transaction.proofs().initial_proofs.len() as u32,
                     "verify_signatures",
                     false,
                 )
