@@ -72,7 +72,7 @@ pub const ACCOUNT_PACKAGE: PackageAddress = construct_address!(
 );
 
 /// The ECDSA virtual resource address.
-pub const ECDSA_TOKEN: ResourceAddress = construct_address!(
+pub const ECDSA_SECP256K1_TOKEN: ResourceAddress = construct_address!(
     EntityType::Resource,
     159,
     148,
@@ -226,7 +226,7 @@ pub const SYS_SYSTEM_COMPONENT: ComponentAddress = construct_address!(
 );
 
 /// The ED25519 virtual resource address.
-pub const ED25519_TOKEN: ResourceAddress = address!(
+pub const EDDSA_ED25519_TOKEN: ResourceAddress = address!(
     EntityType::Resource,
     65,
     147,

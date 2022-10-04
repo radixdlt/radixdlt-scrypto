@@ -25,11 +25,12 @@ const XRD_MAX_SUPPLY: i128 = 1_000_000_000_000i128;
 pub struct GenesisReceipt {
     pub sys_faucet_package: PackageAddress,
     pub account_package: PackageAddress,
-    pub ecdsa_token: ResourceAddress,
+    pub ecdsa_secp256k1_token: ResourceAddress,
     pub system_token: ResourceAddress,
     pub xrd_token: ResourceAddress,
     pub faucet_component: ComponentAddress,
     pub system_component: ComponentAddress,
+    pub eddsa_ed25519_token: ResourceAddress,
 }
 
 pub fn create_genesis() -> SystemTransaction {
@@ -61,7 +62,7 @@ pub fn create_genesis() -> SystemTransaction {
 
         inst
     };
-    let create_ecdsa_token = {
+    let create_ecdsa_secp256k1_token = {
         let metadata: HashMap<String, String> = HashMap::new();
         let mut ecdsa_resource_auth = HashMap::new();
         ecdsa_resource_auth.insert(Withdraw, (rule!(allow_all), LOCKED));
@@ -155,7 +156,7 @@ pub fn create_genesis() -> SystemTransaction {
         }
     };
 
-    let create_eddsa_token = {
+    let create_eddsa_ed25519_token = {
         let metadata: HashMap<String, String> = HashMap::new();
         let mut eddsa_resource_auth = HashMap::new();
         eddsa_resource_auth.insert(Withdraw, (rule!(allow_all), LOCKED));
@@ -179,13 +180,13 @@ pub fn create_genesis() -> SystemTransaction {
         instructions: vec![
             create_sys_faucet_package,
             create_account_package,
-            create_ecdsa_token,
+            create_ecdsa_secp256k1_token,
             create_system_token,
             create_xrd_token,
             take_xrd,
             create_xrd_faucet,
             create_system_component,
-            create_eddsa_token,
+            create_eddsa_ed25519_token,
         ],
         blobs,
     };
@@ -196,7 +197,7 @@ pub fn create_genesis() -> SystemTransaction {
 pub fn genesis_result(invoke_result: &Vec<Vec<u8>>) -> GenesisReceipt {
     let sys_faucet_package: PackageAddress = scrypto_decode(&invoke_result[0]).unwrap();
     let account_package: PackageAddress = scrypto_decode(&invoke_result[1]).unwrap();
-    let (ecdsa_token, _bucket): (ResourceAddress, Option<Bucket>) =
+    let (ecdsa_secp256k1_token, _bucket): (ResourceAddress, Option<Bucket>) =
         scrypto_decode(&invoke_result[2]).unwrap();
     let (system_token, _bucket): (ResourceAddress, Option<Bucket>) =
         scrypto_decode(&invoke_result[3]).unwrap();
@@ -205,14 +206,17 @@ pub fn genesis_result(invoke_result: &Vec<Vec<u8>>) -> GenesisReceipt {
     let faucet_component: ComponentAddress = scrypto_decode(&invoke_result[6]).unwrap();
     let system_component_id: RENodeId = scrypto_decode(&invoke_result[7]).unwrap();
     let system_component: ComponentAddress = system_component_id.into();
+    let (eddsa_ed25519_token, _bucket): (ResourceAddress, Option<Bucket>) =
+        scrypto_decode(&invoke_result[8]).unwrap();
     GenesisReceipt {
         sys_faucet_package,
         account_package,
-        ecdsa_token,
+        ecdsa_secp256k1_token,
         system_token,
         xrd_token,
         faucet_component,
         system_component,
+        eddsa_ed25519_token,
     }
 }
 
@@ -278,7 +282,7 @@ mod tests {
 
         assert_eq!(genesis_receipt.sys_faucet_package, SYS_FAUCET_PACKAGE);
         assert_eq!(genesis_receipt.account_package, ACCOUNT_PACKAGE);
-        assert_eq!(genesis_receipt.ecdsa_token, ECDSA_TOKEN);
+        assert_eq!(genesis_receipt.ecdsa_secp256k1_token, ECDSA_SECP256K1_TOKEN);
         assert_eq!(genesis_receipt.system_token, SYSTEM_TOKEN);
         assert_eq!(genesis_receipt.xrd_token, RADIX_TOKEN);
         assert_eq!(genesis_receipt.faucet_component, SYS_FAUCET_COMPONENT);

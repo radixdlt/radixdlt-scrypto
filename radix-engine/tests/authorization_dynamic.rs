@@ -226,10 +226,12 @@ fn chess_should_not_allow_second_player_to_move_if_first_player_didnt_move() {
     let (pk, _, _) = test_runner.new_account();
     let (other_public_key, _, _) = test_runner.new_account();
     let package = test_runner.compile_and_publish("./tests/component");
-    let non_fungible_address =
-        NonFungibleAddress::new(ECDSA_TOKEN, NonFungibleId::from_bytes(pk.to_vec()));
+    let non_fungible_address = NonFungibleAddress::new(
+        ECDSA_SECP256K1_TOKEN,
+        NonFungibleId::from_bytes(pk.to_vec()),
+    );
     let other_non_fungible_address = NonFungibleAddress::new(
-        ECDSA_TOKEN,
+        ECDSA_SECP256K1_TOKEN,
         NonFungibleId::from_bytes(other_public_key.to_vec()),
     );
     let players = [non_fungible_address, other_non_fungible_address.clone()];
