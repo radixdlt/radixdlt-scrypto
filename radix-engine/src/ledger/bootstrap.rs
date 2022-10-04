@@ -283,6 +283,7 @@ mod tests {
         assert_eq!(genesis_receipt.sys_faucet_package, SYS_FAUCET_PACKAGE);
         assert_eq!(genesis_receipt.account_package, ACCOUNT_PACKAGE);
         assert_eq!(genesis_receipt.ecdsa_secp256k1_token, ECDSA_SECP256K1_TOKEN);
+        assert_eq!(genesis_receipt.eddsa_ed25519_token, EDDSA_ED25519_TOKEN);
         assert_eq!(genesis_receipt.system_token, SYSTEM_TOKEN);
         assert_eq!(genesis_receipt.xrd_token, RADIX_TOKEN);
         assert_eq!(genesis_receipt.faucet_component, SYS_FAUCET_COMPONENT);

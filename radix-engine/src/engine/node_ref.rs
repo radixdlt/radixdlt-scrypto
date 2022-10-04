@@ -298,7 +298,12 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
         }
 
         match self {
-            RENodeRefMut::Stack(..) => NonFungibleSubstate(None), // virtualization
+            RENodeRefMut::Stack(..) => {
+                let substate = NonFungibleSubstate(None); // virtualization
+                self.non_fungible_store_mut()
+                    .put(id.clone(), substate.clone());
+                substate
+            }
             RENodeRefMut::Track(track, node_id) => {
                 // Read key value
                 let parent_substate_id = match node_id {

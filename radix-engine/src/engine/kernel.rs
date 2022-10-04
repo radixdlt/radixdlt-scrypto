@@ -157,8 +157,7 @@ where
     }
 
     fn read_substate_internal(
-        call_frames: &mut Vec<CallFrame>,
-        track: &mut Track<'s, R>,
+        &mut self,
         substate_id: &SubstateId,
     ) -> Result<(RENodePointer, ScryptoValue, Option<ScryptoValue>), RuntimeError> {
         let node_id = SubstateProperties::get_node_id(substate_id);
@@ -167,21 +166,30 @@ where
 
         // Get location
         // Note this must be run AFTER values are taken, otherwise there would be inconsistent readable_values state
-        let node_pointer = call_frames
-            .last()
-            .expect("Current call frame does not exist")
-            .node_refs
-            .get(&node_id)
-            .cloned()
-            .ok_or_else(|| {
-                RuntimeError::KernelError(KernelError::SubstateReadSubstateNotFound(
-                    substate_id.clone(),
-                ))
-            })?;
+        let current_frame = Self::current_frame(&self.call_frames);
+        let node_pointer = if current_frame.owned_heap_nodes.get(&node_id).is_some() {
+            RENodePointer::Heap {
+                frame_id: current_frame.depth,
+                root: node_id.clone(),
+                id: None,
+            }
+        } else {
+            self.call_frames
+                .last()
+                .expect("Current call frame does not exist")
+                .node_refs
+                .get(&node_id)
+                .cloned()
+                .ok_or_else(|| {
+                    RuntimeError::KernelError(KernelError::SubstateReadSubstateNotFound(
+                        substate_id.clone(),
+                    ))
+                })?
+        };
 
         // Read current value
         let substate = {
-            let mut node_ref = node_pointer.to_ref_mut(call_frames, track);
+            let mut node_ref = node_pointer.to_ref_mut(&mut self.call_frames, self.track);
             node_ref.read_substate(&substate_id)?
         };
         let contained_value = extract_value_from_substate(substate_id, &substate);
@@ -1328,7 +1336,7 @@ where
         }
 
         let (parent_pointer, substate, contained_value) =
-            Self::read_substate_internal(&mut self.call_frames, self.track, &substate_id)?;
+            self.read_substate_internal(&substate_id)?;
 
         // TODO: Clean the following referencing up
         if let Some(value) = contained_value {
@@ -1451,7 +1459,7 @@ where
         };
 
         let (pointer, cur_substate, cur_contained_value) =
-            Self::read_substate_internal(&mut self.call_frames, self.track, &substate_id)?;
+            self.read_substate_internal(&substate_id)?;
 
         // Fulfill method
         let cur_children = cur_contained_value
