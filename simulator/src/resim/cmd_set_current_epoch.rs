@@ -5,7 +5,7 @@ use radix_engine::engine::{ExecutionTrace, Kernel, SystemApi};
 use radix_engine::fee::{FeeTable, SystemLoanFeeReserve};
 use radix_engine::types::*;
 use radix_engine_stores::rocks_db::RadixEngineDB;
-use transaction::model::AuthModule;
+use transaction::model::{AuthModule, AuthZoneParams};
 
 use crate::resim::*;
 
@@ -34,8 +34,10 @@ impl SetCurrentEpoch {
 
         let mut kernel = Kernel::new(
             tx_hash,
-            vec![AuthModule::validator_role_nf_address()],
-            BTreeSet::new(),
+            auth_zone_params = AuthZoneParams {
+                initial_proofs: vec![AuthModule::validator_role_nf_address()],
+                virtualizable_proofs_resource_addresses: BTreeSet::new(),
+            },
             &blobs,
             DEFAULT_MAX_CALL_DEPTH,
             &mut track,
