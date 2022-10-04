@@ -433,9 +433,6 @@ where
         next_owned_values: HashMap<RENodeId, HeapRootRENode>,
         next_frame_node_refs: HashMap<RENodeId, RENodePointer>,
     ) -> Result<(ScryptoValue, HashMap<RENodeId, HeapRootRENode>), RuntimeError> {
-        let mut locked_values = HashSet::<SubstateId>::new();
-
-        // No authorization but state load
         match &function_ident {
             FunctionIdent::Scrypto {
                 package_address,
@@ -452,7 +449,6 @@ where
                     )
                     .map_err(RuntimeError::KernelError)?;
 
-                locked_values.insert(SubstateId::Package(package_address.clone()));
                 let package = self
                     .track
                     .borrow_node(&RENodeId::Package(package_address.clone()))
@@ -472,6 +468,9 @@ where
                         FnIdent::Function(function_ident.clone()),
                     )));
                 }
+
+                node_pointer.release_lock(SubstateId::Package(*package_address), false, &mut self.track)
+                    .map_err(RuntimeError::KernelError)?;
             }
             _ => {}
         };
@@ -493,15 +492,6 @@ where
 
         // Remove the last after clean-up
         self.call_frames.pop();
-
-        // Release locked addresses
-        for l in locked_values {
-            // TODO: refactor after introducing `Lock` representation.
-            self.track
-                .release_lock(l.clone(), false)
-                .map_err(KernelError::SubstateError)
-                .map_err(RuntimeError::KernelError)?;
-        }
 
         Ok((output, received_values))
     }
@@ -630,17 +620,8 @@ where
                         let component = node_ref.component();
                         component.info.package_address.clone()
                     };
-                    let package_substate_id = SubstateId::Package(package_address);
                     let package_node_id = RENodeId::Package(package_address);
                     let package_node_pointer = RENodePointer::Store(package_node_id);
-                    package_node_pointer
-                        .acquire_lock(package_substate_id.clone(), false, false, &mut self.track)
-                        .map_err(RuntimeError::KernelError)?;
-                    locked_pointers.push((
-                        package_node_pointer,
-                        package_substate_id.clone(),
-                        false,
-                    ));
                     next_frame_node_refs.insert(package_node_id, package_node_pointer);
                 }
                 RENodeId::Proof(..) => {

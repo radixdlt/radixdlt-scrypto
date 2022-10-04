@@ -148,6 +148,11 @@ impl AuthModule {
                     )
                 };
 
+
+                let package_pointer = RENodePointer::Store(RENodeId::Package(package_address));
+                package_pointer.acquire_lock(SubstateId::Package(package_address), false, false, track)
+                    .map_err(RuntimeError::KernelError)?;
+
                 // Assume that package_address/blueprint is the original impl of Component for now
                 // TODO: Remove this assumption
                 let package = track
@@ -165,6 +170,9 @@ impl AuthModule {
                         FnIdent::Method(method_ident),
                     )));
                 }
+
+                package_pointer.release_lock(SubstateId::Package(package_address), false, track)
+                    .map_err(RuntimeError::KernelError)?;
 
                 {
                     let node_ref = node_pointer.to_ref(call_frames, track);
