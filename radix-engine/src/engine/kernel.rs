@@ -292,6 +292,7 @@ where
         input: ScryptoValue,
     ) -> Result<(ScryptoValue, HashMap<RENodeId, HeapRootRENode>), RuntimeError> {
         // Copy-over root frame's auth zone virtual_proofs_buckets
+        // TODO: Clean this up at some point (possible move to auth zone?)
         let root_frame = self
             .call_frames
             .first()
