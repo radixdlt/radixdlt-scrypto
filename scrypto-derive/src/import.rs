@@ -437,7 +437,7 @@ mod tests {
                 impl Simple {
                     pub fn new() -> ::scrypto::component::ComponentAddress {
                         ::scrypto::core::Runtime::call_function(
-                            ::scrypto::component::PackageAddress::from_str("056967d3d49213394892980af59be76e9b3e7cc4cb78237460d0c7").unwrap(),
+                            ::scrypto::component::PackageAddress::try_from_hex("056967d3d49213394892980af59be76e9b3e7cc4cb78237460d0c7").unwrap(),
                             "Simple",
                             "new",
                             ::scrypto::args!()
