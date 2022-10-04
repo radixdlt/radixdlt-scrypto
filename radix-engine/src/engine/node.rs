@@ -41,7 +41,14 @@ impl HeapRENode {
                 Ok(child_nodes)
             }
             HeapRENode::NonFungibleStore(..) => Ok(HashSet::new()),
-            HeapRENode::ResourceManager(..) => Ok(HashSet::new()),
+            HeapRENode::ResourceManager(resource_manager) => {
+                let mut child_nodes = HashSet::new();
+                if let Some(non_fungible_store_id) = &resource_manager.info.non_fungible_store_id {
+                    child_nodes
+                        .insert(RENodeId::NonFungibleStore(non_fungible_store_id.to_owned()));
+                }
+                Ok(child_nodes)
+            }
             HeapRENode::Package(..) => Ok(HashSet::new()),
             HeapRENode::Bucket(..) => Ok(HashSet::new()),
             HeapRENode::Proof(..) => Ok(HashSet::new()),
@@ -226,9 +233,7 @@ impl HeapRENode {
                 }
             }
             HeapRENode::KeyValueStore(..) => Ok(()),
-            HeapRENode::NonFungibleStore(..) => Err(RuntimeError::KernelError(
-                KernelError::CantMoveNonFungibleStore,
-            )),
+            HeapRENode::NonFungibleStore(..) => Ok(()),
             HeapRENode::Component(..) => Ok(()),
             HeapRENode::Vault(..) => Ok(()),
             HeapRENode::ResourceManager(..) => Ok(()),
