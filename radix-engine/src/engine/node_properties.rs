@@ -10,9 +10,13 @@ impl RENodeProperties {
     pub fn to_global(node_id: RENodeId) -> Option<(GlobalAddress, GlobalAddressSubstate)> {
         match node_id {
             RENodeId::Global(..) => panic!("Should never get here."),
-            RENodeId::Component(component_address) | RENodeId::System(component_address) => Some((
+            RENodeId::Component(component_address) => Some((
                 GlobalAddress::Component(component_address),
                 GlobalAddressSubstate::Component(scrypto::component::Component(component_address)),
+            )),
+            RENodeId::System(component_address) => Some((
+                GlobalAddress::Component(component_address),
+                GlobalAddressSubstate::SystemComponent(scrypto::component::Component(component_address)),
             )),
             RENodeId::ResourceManager(resource_address) => Some((
                 GlobalAddress::Resource(resource_address),
