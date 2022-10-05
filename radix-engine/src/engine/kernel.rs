@@ -186,6 +186,7 @@ where
         node_pointer: RENodePointer,
         offset: SubstateOffset,
     ) -> Result<ScryptoValue, RuntimeError> {
+        // TODO: Cleanup
         if let SubstateOffset::Component(ComponentOffset::Info) = offset {
             node_pointer
                 .acquire_lock(
@@ -1243,15 +1244,6 @@ where
                 Self::current_frame_mut(&mut self.call_frames)
                     .node_refs
                     .insert(node_id, RENodePointer::Store(node_id));
-                // TODO: Remove, Need this to support dereference of substate for now
-                if let RENodeId::Global(GlobalAddress::Component(component_address)) = node_id {
-                    Self::current_frame_mut(&mut self.call_frames)
-                        .node_refs
-                        .insert(
-                            RENodeId::Component(component_address),
-                            RENodePointer::Store(RENodeId::Component(component_address)),
-                        );
-                }
             }
 
             let cur_children = value.node_ids();
