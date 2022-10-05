@@ -40,10 +40,10 @@ impl From<fmt::Error> for DecompileError {
 }
 
 pub struct DecompilationContext<'a> {
-    bech32_encoder: Option<&'a Bech32Encoder>,
-    id_validator: IdValidator,
-    bucket_names: HashMap<BucketId, String>,
-    proof_names: HashMap<ProofId, String>,
+    pub bech32_encoder: Option<&'a Bech32Encoder>,
+    pub id_validator: IdValidator,
+    pub bucket_names: HashMap<BucketId, String>,
+    pub proof_names: HashMap<ProofId, String>,
 }
 
 impl<'a> DecompilationContext<'a> {
@@ -353,7 +353,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                             .map_err(DecompileError::IdValidationError)?;
 
                         f.write_char(' ')?;
-                        f.write_str(&validated_arg.to_string_with_context(
+                        f.write_str(&validated_arg.to_string_with_fixed_context(
                             context.bech32_encoder,
                             &context.bucket_names,
                             &context.proof_names,
@@ -371,10 +371,28 @@ pub fn decompile_instruction<F: fmt::Write>(
 
                     f.write_str(&format!(
                         "CREATE_RESOURCE {} {} {} {};",
-                        ScryptoValue::from_typed(&input.resource_type).to_string()?,
-                        ScryptoValue::from_typed(&input.metadata).to_string()?,
-                        ScryptoValue::from_typed(&input.access_rules).to_string()?,
-                        ScryptoValue::from_typed(&input.mint_params).to_string()?,
+                        ScryptoValue::from_typed(&input.resource_type)
+                            .to_string_with_fixed_context(
+                                context.bech32_encoder,
+                                &context.bucket_names,
+                                &context.proof_names,
+                            )?,
+                        ScryptoValue::from_typed(&input.metadata).to_string_with_fixed_context(
+                            context.bech32_encoder,
+                            &context.bucket_names,
+                            &context.proof_names,
+                        )?,
+                        ScryptoValue::from_typed(&input.access_rules)
+                            .to_string_with_fixed_context(
+                                context.bech32_encoder,
+                                &context.bucket_names,
+                                &context.proof_names,
+                            )?,
+                        ScryptoValue::from_typed(&input.mint_params).to_string_with_fixed_context(
+                            context.bech32_encoder,
+                            &context.bucket_names,
+                            &context.proof_names,
+                        )?,
                     ))?;
                 }
                 _ => return Err(DecompileError::UnrecognizedNativeFunction),
@@ -407,7 +425,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                             .map_err(DecompileError::IdValidationError)?;
 
                         f.write_char(' ')?;
-                        f.write_str(&validated_arg.to_string_with_context(
+                        f.write_str(&validated_arg.to_string_with_fixed_context(
                             context.bech32_encoder,
                             &context.bucket_names,
                             &context.proof_names,

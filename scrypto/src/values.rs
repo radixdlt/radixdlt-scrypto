@@ -193,20 +193,24 @@ impl ScryptoValue {
             + self.owned_component_addresses.len()
     }
 
-    pub fn to_string(&self) -> Result<String, ScryptoValueFormatterError> {
-        let context = ScryptoValueFormatterContext {
-            bech32_encoder: None,
-            bucket_ids: &HashMap::new(),
-            proof_ids: &HashMap::new(),
-        };
-        ScryptoValueFormatter::format_value(&self.dom, &context)
+    pub fn to_string_with_context<'a>(
+        &'a self,
+        bech32_encoder: Option<&'a Bech32Encoder>,
+        bucket_ids: Option<&'a HashMap<BucketId, String>>,
+        proof_ids: Option<&'a HashMap<ProofId, String>>,
+    ) -> Result<String, ScryptoValueFormatterError> {
+        self.to_string_with_fixed_context(
+            bech32_encoder,
+            bucket_ids.unwrap_or(&HashMap::new()),
+            proof_ids.unwrap_or(&HashMap::new()),
+        )
     }
 
-    pub fn to_string_with_context(
-        &self,
-        bech32_encoder: Option<&Bech32Encoder>,
-        bucket_ids: &HashMap<BucketId, String>,
-        proof_ids: &HashMap<ProofId, String>,
+    pub fn to_string_with_fixed_context<'a>(
+        &'a self,
+        bech32_encoder: Option<&'a Bech32Encoder>,
+        bucket_ids: &'a HashMap<BucketId, String>,
+        proof_ids: &'a HashMap<ProofId, String>,
     ) -> Result<String, ScryptoValueFormatterError> {
         let context = ScryptoValueFormatterContext {
             bech32_encoder,
@@ -215,20 +219,49 @@ impl ScryptoValue {
         };
         ScryptoValueFormatter::format_value(&self.dom, &context)
     }
+
+    pub fn displayable<
+        'a,
+        T1: Into<Option<&'a Bech32Encoder>>,
+        T2: Into<Option<&'a HashMap<BucketId, String>>>,
+        T3: Into<Option<&'a HashMap<ProofId, String>>>,
+    >(
+        &'a self,
+        bech32_encoder: T1,
+        bucket_names: T2,
+        proof_names: T3,
+    ) -> DisplayableScryptoValue<'a> {
+        DisplayableScryptoValue(
+            self,
+            bech32_encoder.into(),
+            bucket_names.into(),
+            proof_names.into(),
+        )
+    }
 }
 
 impl fmt::Debug for ScryptoValue {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self.to_string() {
+        match self.to_string_with_context(None, None, None) {
             Ok(str) => write!(f, "{}", str),
             Err(err) => write!(f, "Invalid Value: {:?}", err),
         }
     }
 }
 
-impl fmt::Display for ScryptoValue {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:?}", self)
+pub struct DisplayableScryptoValue<'a>(
+    &'a ScryptoValue,
+    Option<&'a Bech32Encoder>,
+    Option<&'a HashMap<BucketId, String>>,
+    Option<&'a HashMap<ProofId, String>>,
+);
+
+impl<'a> fmt::Display for DisplayableScryptoValue<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        match self.0.to_string_with_context(self.1, self.2, self.3) {
+            Ok(str) => write!(f, "{}", str),
+            Err(err) => write!(f, "Invalid Value: {:?}", err),
+        }
     }
 }
 

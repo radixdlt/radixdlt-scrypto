@@ -91,7 +91,12 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
                 .unwrap();
 
             let state_data = ScryptoValue::from_slice(state.state()).unwrap();
-            writeln!(output, "{}: {}", "State".green().bold(), state_data);
+            writeln!(
+                output,
+                "{}: {}",
+                "State".green().bold(),
+                state_data.displayable(&bech32_encoder, None, None)
+            );
 
             // Find all vaults owned by the component, assuming a tree structure.
             let mut vaults_found: HashSet<VaultId> = state_data.vault_ids.iter().cloned().collect();
@@ -118,6 +123,7 @@ fn dump_kv_store<T: ReadableSubstateStore + QueryableSubstateStore, O: std::io::
     substate_store: &T,
     output: &mut O,
 ) -> Result<(Vec<KeyValueStoreId>, Vec<VaultId>), DisplayError> {
+    let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
     let mut referenced_maps = Vec::new();
     let mut referenced_vaults = Vec::new();
     let map = substate_store.get_kv_store_entries(kv_store_id);
@@ -132,7 +138,13 @@ fn dump_kv_store<T: ReadableSubstateStore + QueryableSubstateStore, O: std::io::
         let key = ScryptoValue::from_slice(k).unwrap();
         if let Some(v) = &v.kv_entry().0 {
             let value = ScryptoValue::from_slice(&v).unwrap();
-            writeln!(output, "{} {} => {}", list_item_prefix(last), key, value);
+            writeln!(
+                output,
+                "{} {} => {}",
+                list_item_prefix(last),
+                key.displayable(&bech32_encoder, None, None),
+                value.displayable(&bech32_encoder, None, None)
+            );
             referenced_maps.extend(value.kv_store_ids);
             referenced_vaults.extend(value.vault_ids);
         }
@@ -197,9 +209,9 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
                         "{}  {} NonFungible {{ id: {}, immutable_data: {}, mutable_data: {} }}",
                         if last { " " } else { "│" },
                         list_item_prefix(inner_last),
-                        id,
-                        immutable_data,
-                        mutable_data
+                        id.displayable(&bech32_encoder, None, None),
+                        immutable_data.displayable(&bech32_encoder, None, None),
+                        mutable_data.displayable(&bech32_encoder, None, None)
                     );
                 }
             }

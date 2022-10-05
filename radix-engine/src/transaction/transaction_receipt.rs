@@ -252,9 +252,15 @@ impl<'a> fmt::Display for DisplayableTransactionReceipt<'a> {
                 for (i, output) in outputs.iter().enumerate() {
                     write!(
                         f,
-                        "\n{} {:?}",
+                        "\n{} {}",
                         prefix!(i, outputs),
-                        ScryptoValue::from_slice(output).expect("Failed to parse return data")
+                        ScryptoValue::from_slice(output)
+                            .expect("Failed to parse return data")
+                            .displayable(
+                                bech32_encoder,
+                                &decompilation_context.bucket_names,
+                                &decompilation_context.proof_names
+                            )
                     )?;
                 }
             }
