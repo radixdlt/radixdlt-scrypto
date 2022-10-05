@@ -1145,13 +1145,7 @@ where
 
         // TODO: Authorization
 
-        let mut nodes_to_take = HashSet::new();
-        nodes_to_take.insert(node_id);
-        let (taken_nodes, missing_nodes) = Self::current_frame_mut(&mut self.call_frames)
-            .take_available_values(nodes_to_take, false)?;
-        assert!(missing_nodes.is_empty());
-        assert!(taken_nodes.len() == 1);
-        let root_node = taken_nodes.into_values().nth(0).unwrap();
+        let node = Self::current_frame_mut(&mut self.call_frames).take_node(node_id)?;
 
         let (global_address, global_substate) = RENodeProperties::to_global(node_id).ok_or(
             RuntimeError::KernelError(KernelError::RENodeGlobalizeTypeNotAllowed(node_id)),
@@ -1171,7 +1165,7 @@ where
                 RENodePointer::Store(RENodeId::Global(global_address)),
             );
 
-        for (id, substate) in nodes_to_substates(root_node.to_nodes(node_id)) {
+        for (id, substate) in nodes_to_substates(node.to_nodes(node_id)) {
             self.track.put_substate(id, substate);
         }
 
