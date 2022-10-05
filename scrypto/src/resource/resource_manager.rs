@@ -437,7 +437,9 @@ pub struct DisplayableResourceAddress<'a>(&'a ResourceAddress, Option<&'a Bech32
 impl<'a> fmt::Display for DisplayableResourceAddress<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         if let Some(bech32_encoder) = self.1 {
-            return write!(f, "{}", bech32_encoder.encode_resource_address(self.0));
+            return bech32_encoder
+                .encode_resource_address_to_fmt(f, self.0)
+                .map_err(|_| fmt::Error);
         }
         match self.0 {
             ResourceAddress::Normal(_) => {

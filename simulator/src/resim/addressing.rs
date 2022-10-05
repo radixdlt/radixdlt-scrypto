@@ -35,8 +35,7 @@ impl FromStr for SimulatorPackageAddress {
 
 impl fmt::Display for SimulatorPackageAddress {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        let address = Bech32Encoder::for_simulator().encode_package_address(&self.0);
-        write!(f, "{}", address)
+        write!(f, "{}", self.0.displayable(&Bech32Encoder::for_simulator()))
     }
 }
 
@@ -76,8 +75,7 @@ impl FromStr for SimulatorResourceAddress {
 
 impl fmt::Display for SimulatorResourceAddress {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        let address = Bech32Encoder::for_simulator().encode_resource_address(&self.0);
-        write!(f, "{}", address)
+        write!(f, "{}", self.0.displayable(&Bech32Encoder::for_simulator()))
     }
 }
 
@@ -117,8 +115,7 @@ impl FromStr for SimulatorComponentAddress {
 
 impl fmt::Display for SimulatorComponentAddress {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        let address = Bech32Encoder::for_simulator().encode_component_address(&self.0);
-        write!(f, "{}", address)
+        write!(f, "{}", self.0.displayable(&Bech32Encoder::for_simulator()))
     }
 }
 

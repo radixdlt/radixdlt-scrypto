@@ -45,13 +45,13 @@ fn generate_u8_array(entity_byte: u8) -> [u8; 27] {
 // ==============
 
 #[test]
-fn encode_package_address_correct_entity_type_succeeds() {
+fn encode_package_address_to_string_correct_entity_type_succeeds() {
     // Arrange
     let package_address = PackageAddress::Normal([0u8; 26]);
     let bech32_encoder = Bech32Encoder::for_simulator();
 
     // Act
-    let bech32 = bech32_encoder.encode_package_address(&package_address);
+    let bech32 = bech32_encoder.encode_package_address_to_string(&package_address);
 
     // Assert
     assert!(bech32.starts_with("package"));
@@ -71,7 +71,8 @@ fn decode_truncated_checksum_address_fails() {
     let bech32_encoder = Bech32Encoder::for_simulator();
     let bech32_decoder = Bech32Decoder::for_simulator();
 
-    let encoded_resource_address = bech32_encoder.encode_resource_address(&resource_address);
+    let encoded_resource_address =
+        bech32_encoder.encode_resource_address_to_string(&resource_address);
 
     // Act
     let decoded_resource_address = bech32_decoder.validate_and_decode_resource_address(
@@ -92,7 +93,8 @@ fn decode_modified_checksum_address_fails() {
     let bech32_encoder = Bech32Encoder::for_simulator();
     let bech32_decoder = Bech32Decoder::for_simulator();
 
-    let mut encoded_resource_address = bech32_encoder.encode_resource_address(&resource_address);
+    let mut encoded_resource_address =
+        bech32_encoder.encode_resource_address_to_string(&resource_address);
 
     // Act
     encoded_resource_address.push_str("qq");

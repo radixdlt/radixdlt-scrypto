@@ -98,7 +98,9 @@ pub struct DisplayablePackageAddress<'a>(&'a PackageAddress, Option<&'a Bech32En
 impl<'a> fmt::Display for DisplayablePackageAddress<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         if let Some(bech32_encoder) = self.1 {
-            return write!(f, "{}", bech32_encoder.encode_package_address(self.0));
+            return bech32_encoder
+                .encode_package_address_to_fmt(f, self.0)
+                .map_err(|_| fmt::Error);
         }
         match self.0 {
             PackageAddress::Normal(_) => {

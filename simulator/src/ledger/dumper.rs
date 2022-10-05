@@ -34,7 +34,7 @@ pub fn dump_package<T: ReadableSubstateStore, O: std::io::Write>(
                 output,
                 "{}: {}",
                 "Package".green().bold(),
-                bech32_encoder.encode_package_address(&package_address)
+                package_address.displayable(&bech32_encoder)
             );
             writeln!(
                 output,
@@ -66,7 +66,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
                 output,
                 "{}: {}",
                 "Component".green().bold(),
-                bech32_encoder.encode_component_address(&component_address)
+                component_address.displayable(&bech32_encoder),
             );
 
             writeln!(
@@ -178,7 +178,7 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
             "{} {{ amount: {}, resource address: {}{}{} }}",
             list_item_prefix(last),
             amount,
-            bech32_encoder.encode_resource_address(&resource_address),
+            resource_address.displayable(&bech32_encoder),
             resource_manager
                 .metadata()
                 .get("name")

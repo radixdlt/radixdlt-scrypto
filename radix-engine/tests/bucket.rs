@@ -104,7 +104,7 @@ fn test_take_with_invalid_granularity() {
     let (public_key, _, account) = test_runner.new_account();
     let resource_address = test_runner.create_fungible_resource(100.into(), 2, account);
     let resource_address_str =
-        Bech32Encoder::for_simulator().encode_resource_address(&resource_address);
+        Bech32Encoder::for_simulator().encode_resource_address_to_string(&resource_address);
     let package_address = test_runner.compile_and_publish("./tests/bucket");
 
     // Act
@@ -146,7 +146,7 @@ fn test_take_with_negative_amount() {
     let (public_key, _, account) = test_runner.new_account();
     let resource_address = test_runner.create_fungible_resource(100.into(), 2, account);
     let resource_address_str =
-        Bech32Encoder::for_simulator().encode_resource_address(&resource_address);
+        Bech32Encoder::for_simulator().encode_resource_address_to_string(&resource_address);
     let package_address = test_runner.compile_and_publish("./tests/bucket");
 
     // Act
