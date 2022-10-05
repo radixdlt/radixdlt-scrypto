@@ -19,7 +19,8 @@ pub enum HeapRENode {
 }
 
 impl HeapRENode {
-    pub fn get_loaded_child_nodes(&self) -> Result<HashSet<RENodeId>, RuntimeError> {
+    /// Not that this method is intended for heap nodes only, see the panic below.
+    pub fn get_child_nodes(&self) -> Result<HashSet<RENodeId>, RuntimeError> {
         match self {
             HeapRENode::Global(global_node) => {
                 let child_node = match &global_node.address {
@@ -40,7 +41,7 @@ impl HeapRENode {
                         .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
                     Ok(value.node_ids())
                 } else {
-                    Ok(HashSet::new())
+                    panic!("Component state should be available for heap component")
                 }
             }
             HeapRENode::KeyValueStore(store) => {
