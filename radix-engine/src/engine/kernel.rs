@@ -729,20 +729,6 @@ where
                     ));
                     next_frame_node_refs.insert(package_node_id, package_node_pointer);
                 }
-                RENodeId::Bucket(..) => {
-                    let resource_address = {
-                        let node_ref = node_pointer.to_ref(&self.call_frames, &mut self.track);
-                        node_ref.bucket().resource_address()
-                    };
-                    let resource_substate_id = SubstateId::ResourceManager(resource_address);
-                    let resource_node_id = RENodeId::ResourceManager(resource_address);
-                    let resource_node_pointer = RENodePointer::Store(resource_node_id);
-                    resource_node_pointer
-                        .acquire_lock(resource_substate_id.clone(), true, false, &mut self.track)
-                        .map_err(RuntimeError::KernelError)?;
-                    locked_pointers.push((resource_node_pointer, resource_substate_id, false));
-                    next_frame_node_refs.insert(resource_node_id, resource_node_pointer);
-                }
                 RENodeId::Vault(..) => {
                     let resource_address = {
                         let mut node_ref = node_pointer.to_ref(&self.call_frames, &mut self.track);

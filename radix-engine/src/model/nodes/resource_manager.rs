@@ -74,6 +74,7 @@ impl ResourceManager {
         method_table.insert(ResourceManagerMethod::GetResourceType, Public);
         method_table.insert(ResourceManagerMethod::GetTotalSupply, Public);
         method_table.insert(ResourceManagerMethod::CreateVault, Public);
+        method_table.insert(ResourceManagerMethod::Burn, Public);
 
         // Non Fungible methods
         method_table.insert(
@@ -167,6 +168,12 @@ impl ResourceManager {
                     Some(entry) => entry.get_update_auth(MethodAccessRuleMethod::Lock()),
                 }
             }
+            ResourceManagerMethod::Burn => self
+                .info
+                .authorization
+                .get(&ResourceMethodAuthKey::Burn)
+                .expect(&format!("Authorization for {:?} not specified", method))
+                .get_method_auth(),
             _ => match self.info.method_table.get(&method) {
                 None => &MethodAuthorization::Unsupported,
                 Some(Public) => &MethodAuthorization::AllowAll,
