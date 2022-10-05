@@ -21,7 +21,13 @@ fn can_create_clone_and_drop_bucket_proof() {
             package_address,
             "BucketProof",
             "create_clone_drop_bucket_proof",
-            vec![format!("1,{}", resource_address.displayable(&Bech32Encoder::for_simulator())), "1".to_owned()],
+            vec![
+                format!(
+                    "1,{}",
+                    resource_address.displayable(&Bech32Encoder::for_simulator())
+                ),
+                "1".to_owned(),
+            ],
             Some(account),
             &test_runner.export_abi(package_address, "BucketProof"),
         )
@@ -51,7 +57,10 @@ fn can_create_clone_and_drop_vault_proof() {
         package_address,
         "VaultProof",
         "new",
-        vec![format!("1,{}", resource_address.displayable(&Bech32Encoder::for_simulator()))],
+        vec![format!(
+            "1,{}",
+            resource_address.displayable(&Bech32Encoder::for_simulator())
+        )],
         account,
         public_key,
     );
@@ -85,7 +94,10 @@ fn can_create_clone_and_drop_vault_proof_by_amount() {
         package_address,
         "VaultProof",
         "new",
-        vec![format!("3,{}", resource_address.displayable(&Bech32Encoder::for_simulator()))],
+        vec![format!(
+            "3,{}",
+            resource_address.displayable(&Bech32Encoder::for_simulator())
+        )],
         account,
         public_key,
     );
@@ -121,7 +133,10 @@ fn can_create_clone_and_drop_vault_proof_by_ids() {
         package_address,
         "VaultProof",
         "new",
-        vec![format!("3,{}", resource_address.displayable(&Bech32Encoder::for_simulator()))],
+        vec![format!(
+            "3,{}",
+            resource_address.displayable(&Bech32Encoder::for_simulator())
+        )],
         account,
         public_key,
     );
@@ -165,8 +180,14 @@ fn can_use_bucket_for_authorization() {
             "BucketProof",
             "use_bucket_proof_for_auth",
             vec![
-                format!("1,{}", auth_resource_address.displayable(&Bech32Encoder::for_simulator())),
-                format!("1,{}", burnable_resource_address.displayable(&Bech32Encoder::for_simulator())),
+                format!(
+                    "1,{}",
+                    auth_resource_address.displayable(&Bech32Encoder::for_simulator())
+                ),
+                format!(
+                    "1,{}",
+                    burnable_resource_address.displayable(&Bech32Encoder::for_simulator())
+                ),
             ],
             Some(account),
             &test_runner.export_abi(package_address, "BucketProof"),
@@ -197,7 +218,10 @@ fn can_use_vault_for_authorization() {
         package_address,
         "VaultProof",
         "new",
-        vec![format!("1,{}", auth_resource_address.displayable(&Bech32Encoder::for_simulator()))],
+        vec![format!(
+            "1,{}",
+            auth_resource_address.displayable(&Bech32Encoder::for_simulator())
+        )],
         account,
         public_key,
     );
@@ -208,7 +232,10 @@ fn can_use_vault_for_authorization() {
         .call_method_with_abi(
             component_address,
             "use_vault_proof_for_auth",
-            vec![format!("1,{}", burnable_resource_address.displayable(&Bech32Encoder::for_simulator()))],
+            vec![format!(
+                "1,{}",
+                burnable_resource_address.displayable(&Bech32Encoder::for_simulator())
+            )],
             Some(account),
             &test_runner.export_abi_by_component(component_address),
         )
@@ -237,7 +264,13 @@ fn can_create_proof_from_account_and_pass_on() {
             package_address,
             "VaultProof",
             "receive_proof",
-            vec![format!("1,{}", resource_address.displayable(&Bech32Encoder::for_simulator())), "1".to_owned()],
+            vec![
+                format!(
+                    "1,{}",
+                    resource_address.displayable(&Bech32Encoder::for_simulator())
+                ),
+                "1".to_owned(),
+            ],
             Some(account),
             &test_runner.export_abi(package_address, "VaultProof"),
         )
@@ -266,7 +299,13 @@ fn cant_move_restricted_proof() {
             package_address,
             "VaultProof",
             "receive_proof_and_push_to_auth_zone",
-            vec![format!("1,{}", resource_address.displayable(&Bech32Encoder::for_simulator())), "1".to_owned()],
+            vec![
+                format!(
+                    "1,{}",
+                    resource_address.displayable(&Bech32Encoder::for_simulator())
+                ),
+                "1".to_owned(),
+            ],
             Some(account),
             &test_runner.export_abi(package_address, "VaultProof"),
         )
@@ -300,7 +339,13 @@ fn cant_move_locked_bucket() {
             package_address,
             "BucketProof",
             "return_bucket_while_locked",
-            vec![format!("1,{}", resource_address.displayable(&Bech32Encoder::for_simulator())), "1".to_owned()],
+            vec![
+                format!(
+                    "1,{}",
+                    resource_address.displayable(&Bech32Encoder::for_simulator())
+                ),
+                "1".to_owned(),
+            ],
             Some(account),
             &test_runner.export_abi(package_address, "BucketProof"),
         )
@@ -330,7 +375,10 @@ fn can_compose_bucket_and_vault_proof() {
         package_address,
         "VaultProof",
         "new",
-        vec![format!("1,{}", resource_address.displayable(&Bech32Encoder::for_simulator()))],
+        vec![format!(
+            "1,{}",
+            resource_address.displayable(&Bech32Encoder::for_simulator())
+        )],
         account,
         public_key,
     );
@@ -366,7 +414,10 @@ fn can_compose_bucket_and_vault_proof_by_amount() {
         package_address,
         "VaultProof",
         "new",
-        vec![format!("1,{}", resource_address.displayable(&Bech32Encoder::for_simulator()))],
+        vec![format!(
+            "1,{}",
+            resource_address.displayable(&Bech32Encoder::for_simulator())
+        )],
         account,
         public_key,
     );
@@ -401,7 +452,10 @@ fn can_compose_bucket_and_vault_proof_by_ids() {
         package_address,
         "VaultProof",
         "new",
-        vec![format!("1,{}", resource_address.displayable(&Bech32Encoder::for_simulator()))],
+        vec![format!(
+            "1,{}",
+            resource_address.displayable(&Bech32Encoder::for_simulator())
+        )],
         account,
         public_key,
     );
@@ -447,7 +501,10 @@ fn can_create_vault_proof_by_amount_from_non_fungibles() {
         package_address,
         "VaultProof",
         "new",
-        vec![format!("3,{}", resource_address.displayable(&Bech32Encoder::for_simulator()))],
+        vec![format!(
+            "3,{}",
+            resource_address.displayable(&Bech32Encoder::for_simulator())
+        )],
         account,
         public_key,
     );
