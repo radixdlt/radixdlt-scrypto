@@ -31,43 +31,19 @@ impl RENodeProperties {
         }
     }
 
-    pub fn to_primary_substate_id(
+    pub fn to_primary_offset(
         method_ident: &ReceiverMethodIdent,
-    ) -> Result<SubstateId, RuntimeError> {
-        let substate_id = match &method_ident.method_ident {
+    ) -> Result<SubstateOffset, RuntimeError> {
+        let offset = match &method_ident.method_ident {
             MethodIdent::Native(..) => match method_ident.receiver.node_id() {
-                RENodeId::AuthZone(auth_zone_id) => SubstateId(
-                    RENodeId::AuthZone(auth_zone_id),
-                    SubstateOffset::AuthZone(AuthZoneOffset::AuthZone),
-                ),
-                RENodeId::Bucket(bucket_id) => SubstateId(
-                    RENodeId::Bucket(bucket_id),
-                    SubstateOffset::Bucket(BucketOffset::Bucket),
-                ),
-                RENodeId::Proof(proof_id) => SubstateId(
-                    RENodeId::Proof(proof_id),
-                    SubstateOffset::Proof(ProofOffset::Proof),
-                ),
-                RENodeId::ResourceManager(resource_address) => SubstateId(
-                    RENodeId::ResourceManager(resource_address),
-                    SubstateOffset::Resource(ResourceManagerOffset::ResourceManager),
-                ),
-                RENodeId::System(component_address) => SubstateId(
-                    RENodeId::System(component_address),
-                    SubstateOffset::System(SystemOffset::System),
-                ),
-                RENodeId::Worktop => SubstateId(
-                    RENodeId::Worktop,
-                    SubstateOffset::Worktop(WorktopOffset::Worktop),
-                ),
-                RENodeId::Component(component_address) => SubstateId(
-                    RENodeId::Component(component_address),
-                    SubstateOffset::Component(ComponentOffset::Info),
-                ),
-                RENodeId::Vault(vault_id) => SubstateId(
-                    RENodeId::Vault(vault_id),
-                    SubstateOffset::Vault(VaultOffset::Vault),
-                ),
+                RENodeId::AuthZone(..) => SubstateOffset::AuthZone(AuthZoneOffset::AuthZone),
+                RENodeId::Bucket(..) => SubstateOffset::Bucket(BucketOffset::Bucket),
+                RENodeId::Proof(..) => SubstateOffset::Proof(ProofOffset::Proof),
+                RENodeId::ResourceManager(..) => SubstateOffset::Resource(ResourceManagerOffset::ResourceManager),
+                RENodeId::System(..) => SubstateOffset::System(SystemOffset::System),
+                RENodeId::Worktop => SubstateOffset::Worktop(WorktopOffset::Worktop),
+                RENodeId::Component(..) => SubstateOffset::Component(ComponentOffset::Info),
+                RENodeId::Vault(..) => SubstateOffset::Vault(VaultOffset::Vault),
                 _ => {
                     return Err(RuntimeError::KernelError(KernelError::MethodNotFound(
                         method_ident.clone(),
@@ -75,10 +51,7 @@ impl RENodeProperties {
                 }
             },
             MethodIdent::Scrypto { .. } => match method_ident.receiver.node_id() {
-                RENodeId::Component(component_address) => SubstateId(
-                    RENodeId::Component(component_address),
-                    SubstateOffset::Component(ComponentOffset::State),
-                ),
+                RENodeId::Component(..) => SubstateOffset::Component(ComponentOffset::State),
                 _ => {
                     return Err(RuntimeError::KernelError(KernelError::MethodNotFound(
                         method_ident.clone(),
@@ -87,7 +60,7 @@ impl RENodeProperties {
             },
         };
 
-        Ok(substate_id)
+        Ok(offset)
     }
 }
 

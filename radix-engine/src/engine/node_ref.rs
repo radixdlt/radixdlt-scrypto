@@ -16,16 +16,25 @@ pub enum RENodePointer {
 }
 
 impl RENodePointer {
+    fn node_id(&self) -> RENodeId {
+        match self {
+            RENodePointer::Heap { root, id, .. } => {
+                id.unwrap_or(*root)
+            }
+            RENodePointer::Store(node_id) => *node_id
+        }
+    }
+
     pub fn acquire_lock<'s, R: FeeReserve>(
         &self,
-        substate_id: SubstateId,
+        offset: SubstateOffset,
         mutable: bool,
         write_through: bool,
         track: &mut Track<'s, R>,
     ) -> Result<(), KernelError> {
         match self {
             RENodePointer::Store(..) => track
-                .acquire_lock(substate_id.clone(), mutable, write_through)
+                .acquire_lock(SubstateId(self.node_id(), offset), mutable, write_through)
                 .map_err(KernelError::SubstateError),
             RENodePointer::Heap { .. } => Ok(()),
         }
@@ -33,13 +42,13 @@ impl RENodePointer {
 
     pub fn release_lock<'s, R: FeeReserve>(
         &self,
-        substate_id: SubstateId,
+        offset: SubstateOffset,
         write_through: bool,
         track: &mut Track<'s, R>,
     ) -> Result<(), KernelError> {
         match self {
             RENodePointer::Store(..) => track
-                .release_lock(substate_id, write_through)
+                .release_lock(SubstateId(self.node_id(), offset), write_through)
                 .map_err(KernelError::SubstateError),
             RENodePointer::Heap { .. } => Ok(()),
         }
