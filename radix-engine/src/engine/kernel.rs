@@ -757,6 +757,16 @@ where
                     locked_pointers.push((resource_node_pointer, resource_substate_id, false));
                     next_frame_node_refs.insert(resource_node_id, resource_node_pointer);
                 }
+                RENodeId::ResourceManager(..) => {
+                    let mut node_ref = node_pointer.to_ref(&self.call_frames, &mut self.track);
+                    let resource_manager = node_ref.resource_manager();
+
+                    if let Some(store_id) = resource_manager.info.non_fungible_store_id {
+                        let node_id = RENodeId::NonFungibleStore(store_id);
+                        let node_pointer = RENodePointer::Store(node_id);
+                        next_frame_node_refs.insert(node_id, node_pointer);
+                    }
+                }
                 _ => {}
             }
 

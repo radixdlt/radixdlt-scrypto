@@ -72,9 +72,8 @@ impl Worktop {
     }
 
     pub fn drop(self) -> Result<(), DropFailure> {
-        for (address, resource) in self.resources {
+        for (_address, resource) in self.resources {
             if !resource.borrow().is_empty() {
-                println!("{:?}", address);
                 return Err(DropFailure::Worktop);
             }
         }
