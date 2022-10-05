@@ -1218,7 +1218,6 @@ where
         // Insert node into heap
         let node_id = Self::new_node_id(&mut self.id_allocator, self.transaction_hash, &re_node)
             .map_err(|e| RuntimeError::KernelError(KernelError::IdAllocationError(e)))?;
-        self.track.new_node_ids.push(node_id.clone());
         let heap_root_node = HeapRootRENode {
             root: re_node,
             child_nodes,
@@ -1295,6 +1294,7 @@ where
         let (global_address, global_substate) = RENodeProperties::to_global(node_id).ok_or(
             RuntimeError::KernelError(KernelError::RENodeGlobalizeTypeNotAllowed(node_id)),
         )?;
+        self.track.new_global_addresses.push(global_address);
 
         self.track.put_substate(
             SubstateId::Global(global_address),
