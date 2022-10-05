@@ -181,9 +181,11 @@ fn test_mint_update_and_withdraw() {
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account();
     let package_address = test_runner.compile_and_publish("./tests/non_fungible");
+    let network = NetworkDefinition::simulator();
+    let bech32_encoder = Bech32Encoder::for_simulator();
 
     // create non-fungible
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new(&network)
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function(
             package_address,
@@ -209,15 +211,15 @@ fn test_mint_update_and_withdraw() {
         .new_resource_addresses[1];
 
     // update data (the NFT is referenced within a Proof)
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new(&network)
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_function_with_abi(
             package_address,
             "NonFungibleTest",
             "update_nft",
             vec![
-                format!("1,{}", badge_resource_address),
-                format!("1,{}", nft_resource_address),
+                format!("1,{}", badge_resource_address.displayable(&bech32_encoder)),
+                format!("1,{}", nft_resource_address.displayable(&bech32_encoder)),
             ],
             Some(account),
             &test_runner.export_abi(package_address, "NonFungibleTest"),

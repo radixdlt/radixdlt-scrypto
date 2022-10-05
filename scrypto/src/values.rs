@@ -617,7 +617,7 @@ impl ScryptoValueFormatter {
                 })
                 .map_err(ScryptoCustomValueCheckError::InvalidComponentAddress)?,
             ScryptoType::Component => Component::try_from(data)
-                .map(|d| format!("Component(\"{}\")", d))
+                .map(|d| format!("Component(\"{}\")", d.0.displayable(context.bech32_encoder)))
                 .map_err(ScryptoCustomValueCheckError::InvalidComponent)?,
             ScryptoType::KeyValueStore => KeyValueStore::<(), ()>::try_from(data)
                 .map(|d| format!("KeyValueStore(\"{}\")", d))

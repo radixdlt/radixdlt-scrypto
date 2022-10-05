@@ -426,14 +426,6 @@ scrypto_type!(ResourceAddress, ScryptoType::ResourceAddress, Vec::new());
 // text
 //======
 
-impl fmt::Display for ResourceAddress {
-    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        // We should consider adding a NetworkAwareDisplay / NetworkAwareDebug trait
-        // which can Bech32m encode the address appropriately
-        write!(f, "{}", self.displayable(None))
-    }
-}
-
 impl fmt::Debug for ResourceAddress {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(f, "{}", self.displayable(None))

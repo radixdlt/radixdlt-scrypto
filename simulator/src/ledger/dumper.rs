@@ -73,7 +73,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
                 output,
                 "{}: {{ package_address: {}, blueprint_name: \"{}\" }}",
                 "Blueprint".green().bold(),
-                c.package_address(),
+                c.package_address().displayable(&bech32_encoder),
                 c.blueprint_name()
             );
 
