@@ -1158,21 +1158,16 @@ where
             ),
             Substate::GlobalRENode(global_substate),
         );
+        for (id, substate) in nodes_to_substates(node.to_nodes(node_id)) {
+            self.track.put_substate(id, substate);
+        }
+
         Self::current_frame_mut(&mut self.call_frames)
             .node_refs
             .insert(
                 RENodeId::Global(global_address),
                 RENodePointer::Store(RENodeId::Global(global_address)),
             );
-
-        for (id, substate) in nodes_to_substates(node.to_nodes(node_id)) {
-            self.track.put_substate(id, substate);
-        }
-
-        // TODO: Remove once deref substates is implemented
-        Self::current_frame_mut(&mut self.call_frames)
-            .node_refs
-            .insert(node_id, RENodePointer::Store(node_id));
 
         for m in &mut self.modules {
             m.post_sys_call(
