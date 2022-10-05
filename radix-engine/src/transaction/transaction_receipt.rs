@@ -1,5 +1,5 @@
 use colored::*;
-use transaction::manifest::decompiler::{DecompilationContext, decompile_instruction};
+use transaction::manifest::decompiler::{decompile_instruction, DecompilationContext};
 use transaction::model::*;
 
 use crate::engine::{RejectionError, ResourceChange, RuntimeError};
@@ -234,7 +234,8 @@ impl<'a> fmt::Display for DisplayableTransactionReceipt<'a> {
             )?;
         }
 
-        let mut decompilation_context = DecompilationContext::new_with_optional_network(bech32_encoder);
+        let mut decompilation_context =
+            DecompilationContext::new_with_optional_network(bech32_encoder);
 
         write!(f, "\n{}", "Instructions:".bold().green())?;
         for (i, inst) in contents.instructions.iter().enumerate() {

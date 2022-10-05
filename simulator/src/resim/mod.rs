@@ -196,7 +196,12 @@ pub fn handle_manifest<O: std::io::Write>(
             );
 
             if output_receipt {
-                writeln!(out, "{}", receipt.displayable(&Bech32Encoder::new(&network))).map_err(Error::IOError)?;
+                writeln!(
+                    out,
+                    "{}",
+                    receipt.displayable(&Bech32Encoder::new(&network))
+                )
+                .map_err(Error::IOError)?;
             }
 
             if receipt.is_commit() {
