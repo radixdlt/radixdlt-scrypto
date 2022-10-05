@@ -37,11 +37,18 @@ pub trait LocalComponent {
 #[derive(PartialEq, Eq, Hash, Clone)]
 pub struct Component(pub ComponentAddress);
 
+// TODO: de-duplication
 #[derive(Debug, Clone, TypeId, Encode, Decode, Describe, PartialEq, Eq)]
 pub struct ComponentInfoSubstate {
     pub package_address: PackageAddress,
     pub blueprint_name: String,
     pub access_rules: Vec<AccessRules>,
+}
+
+// TODO: de-duplication
+#[derive(Debug, Clone, TypeId, Encode, Decode, Describe, PartialEq, Eq)]
+pub struct ComponentStateSubstate {
+    pub raw: Vec<u8>,
 }
 
 impl Component {

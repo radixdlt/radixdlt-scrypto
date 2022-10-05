@@ -106,11 +106,11 @@ fn reentrancy_should_not_be_possible() {
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        if let RuntimeError::KernelError(KernelError::SubstateError(TrackError::NotAvailable(
+        if let RuntimeError::KernelError(KernelError::TrackError(TrackError::NotAvailable(
             substate_id,
         ))) = e
         {
-            substate_id.eq(&SubstateId::ComponentState(component_address))
+            substate_id.eq(&SubstateId::ComponentInfo(component_address))
         } else {
             false
         }

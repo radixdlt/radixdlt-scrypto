@@ -3,4 +3,4 @@ pub mod kv_store;
 pub mod multiple_reads;
 pub mod precommitted;
 pub mod ref_check;
-pub mod super_key_value_store;
+pub mod super_kv_store;

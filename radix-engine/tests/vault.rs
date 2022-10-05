@@ -66,7 +66,7 @@ fn non_existent_vault_in_committed_component_should_fail() {
 }
 
 #[test]
-fn non_existent_vault_in_key_value_store_creation_should_fail() {
+fn non_existent_vault_in_kv_store_creation_should_fail() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
@@ -78,7 +78,7 @@ fn non_existent_vault_in_key_value_store_creation_should_fail() {
         .call_scrypto_function(
             package_address,
             "NonExistentVault",
-            "create_key_value_store_with_non_existent_vault",
+            "create_kv_store_with_non_existent_vault",
             args!(),
         )
         .build();
@@ -94,7 +94,7 @@ fn non_existent_vault_in_key_value_store_creation_should_fail() {
 }
 
 #[test]
-fn non_existent_vault_in_committed_key_value_store_should_fail() {
+fn non_existent_vault_in_committed_kv_store_should_fail() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
@@ -114,7 +114,7 @@ fn non_existent_vault_in_committed_key_value_store_should_fail() {
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_method(
             component_address,
-            "create_non_existent_vault_in_key_value_store",
+            "create_non_existent_vault_in_kv_store",
             args!(),
         )
         .build();

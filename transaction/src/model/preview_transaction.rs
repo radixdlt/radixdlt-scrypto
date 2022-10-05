@@ -7,6 +7,7 @@ use crate::model::TransactionIntent;
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct PreviewFlags {
     pub unlimited_loan: bool,
+    pub assume_all_signature_proofs: bool,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]

@@ -9,17 +9,16 @@ pub enum HeapRENode {
     Proof(Proof),
     AuthZone(AuthZone),
     Vault(Vault),
-    KeyValueStore(HeapKeyValueStore),
     Component(Component),
     Worktop(Worktop),
     Package(Package),
-    // TODO: Use the same representation for both key value store entry and non-fungible.
-    // Also, do we want to make non-fungible a node?
-    ResourceManager(ResourceManager, Option<HashMap<NonFungibleId, NonFungible>>),
+    KeyValueStore(KeyValueStore),
+    ResourceManager(ResourceManager),
     System(System),
 }
 
 impl HeapRENode {
+    /// Not that this method is intended for heap nodes only, see the panic below.
     pub fn get_child_nodes(&self) -> Result<HashSet<RENodeId>, RuntimeError> {
         match self {
             HeapRENode::Global(global_node) => {
@@ -37,22 +36,30 @@ impl HeapRENode {
                 Ok(child_nodes)
             }
             HeapRENode::Component(component) => {
-                let value = ScryptoValue::from_slice(&component.state.state)
-                    .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
-                Ok(value.node_ids())
+                if let Some(state) = &component.state {
+                    let value = ScryptoValue::from_slice(&state.raw)
+                        .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
+                    Ok(value.node_ids())
+                } else {
+                    panic!("Component state should be available for heap component")
+                }
+            }
+            HeapRENode::KeyValueStore(store) => {
+                let mut child_nodes = HashSet::new();
+                for (_id, substate) in &store.loaded_entries {
+                    if let Some(v) = &substate.0 {
+                        let value = ScryptoValue::from_slice(&v)
+                            .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
+                        child_nodes.extend(value.node_ids());
+                    }
+                }
+                Ok(child_nodes)
             }
             HeapRENode::ResourceManager(..) => Ok(HashSet::new()),
             HeapRENode::Package(..) => Ok(HashSet::new()),
             HeapRENode::Bucket(..) => Ok(HashSet::new()),
             HeapRENode::Proof(..) => Ok(HashSet::new()),
             HeapRENode::AuthZone(..) => Ok(HashSet::new()),
-            HeapRENode::KeyValueStore(kv_store) => {
-                let mut child_nodes = HashSet::new();
-                for (_id, value) in &kv_store.store {
-                    child_nodes.extend(value.node_ids());
-                }
-                Ok(child_nodes)
-            }
             HeapRENode::Vault(..) => Ok(HashSet::new()),
             HeapRENode::Worktop(..) => Ok(HashSet::new()),
             HeapRENode::System(..) => Ok(HashSet::new()),
@@ -108,26 +115,13 @@ impl HeapRENode {
         }
     }
 
-    pub fn non_fungibles(&self) -> &HashMap<NonFungibleId, NonFungible> {
-        match self {
-            HeapRENode::ResourceManager(_, non_fungibles) => non_fungibles.as_ref().unwrap(),
-            _ => panic!("Expected to be non fungibles"),
-        }
-    }
-
-    pub fn non_fungibles_mut(&mut self) -> &mut HashMap<NonFungibleId, NonFungible> {
-        match self {
-            HeapRENode::ResourceManager(_, non_fungibles) => non_fungibles.as_mut().unwrap(),
-            _ => panic!("Expected to be non fungibles"),
-        }
-    }
-
     pub fn package(&self) -> &Package {
         match self {
             HeapRENode::Package(package) => package,
             _ => panic!("Expected to be a package"),
         }
     }
+
     pub fn package_mut(&mut self) -> &Package {
         match self {
             HeapRENode::Package(package) => package,
@@ -175,14 +169,14 @@ impl HeapRENode {
         }
     }
 
-    pub fn kv_store(&self) -> &HeapKeyValueStore {
+    pub fn kv_store(&self) -> &KeyValueStore {
         match self {
             HeapRENode::KeyValueStore(store) => store,
             _ => panic!("Expected to be a store"),
         }
     }
 
-    pub fn kv_store_mut(&mut self) -> &mut HeapKeyValueStore {
+    pub fn kv_store_mut(&mut self) -> &mut KeyValueStore {
         match self {
             HeapRENode::KeyValueStore(store) => store,
             _ => panic!("Expected to be a store"),

@@ -29,7 +29,7 @@ blueprint! {
             self.vault = Option::Some(Vault((Runtime::transaction_hash(), 1025)))
         }
 
-        pub fn create_key_value_store_with_non_existent_vault() -> ComponentAddress {
+        pub fn create_kv_store_with_non_existent_vault() -> ComponentAddress {
             let vaults = KeyValueStore::new();
             vaults.insert(0, Vault((Runtime::transaction_hash(), 1025)));
             NonExistentVault {
@@ -40,7 +40,7 @@ blueprint! {
             .globalize()
         }
 
-        pub fn create_non_existent_vault_in_key_value_store(&mut self) {
+        pub fn create_non_existent_vault_in_kv_store(&mut self) {
             self.vaults
                 .insert(0, Vault((Runtime::transaction_hash(), 1025)));
         }
