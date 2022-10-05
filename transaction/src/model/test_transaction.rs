@@ -28,7 +28,7 @@ impl TestTransaction {
                 nonce,
                 notary_public_key: EcdsaSecp256k1PublicKey([0u8; 33]).into(),
                 notary_as_signatory: false,
-                cost_unit_limit: 10_000_000,
+                cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,
                 tip_percentage: 5,
             })
             .manifest(manifest)
