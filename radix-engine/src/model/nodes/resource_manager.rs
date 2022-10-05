@@ -36,9 +36,18 @@ pub enum ResourceManagerError {
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct ResourceManager {
     pub info: ResourceManagerSubstate,
+    pub loaded_non_fungibles: HashMap<NonFungibleId, NonFungibleSubstate>, // TODO: Do we want this to be a dedicated node, like KeyValueStore?
 }
 
 impl ResourceManager {
+    pub fn get_non_fungible(&mut self, id: &NonFungibleId) -> Option<&NonFungibleSubstate> {
+        self.loaded_non_fungibles.get(id)
+    }
+
+    pub fn put_non_fungible(&mut self, id: NonFungibleId, non_fungible: NonFungibleSubstate) {
+        self.loaded_non_fungibles.insert(id, non_fungible);
+    }
+
     pub fn new(
         resource_type: ResourceType,
         metadata: HashMap<String, String>,
@@ -103,6 +112,7 @@ impl ResourceManager {
                 authorization,
                 total_supply: 0.into(),
             },
+            loaded_non_fungibles: HashMap::new(),
         };
 
         Ok(resource_manager)
@@ -309,12 +319,14 @@ impl ResourceManager {
                     ResourceManager::new(input.resource_type, input.metadata, input.access_rules)?;
 
                 let resource_node_id = if matches!(input.resource_type, ResourceType::NonFungible) {
-                    let mut non_fungibles: HashMap<NonFungibleId, NonFungible> = HashMap::new();
                     if let Some(mint_params) = &input.mint_params {
                         if let MintParams::NonFungible { entries } = mint_params {
                             for (non_fungible_id, data) in entries {
                                 let non_fungible = NonFungible::new(data.0.clone(), data.1.clone());
-                                non_fungibles.insert(non_fungible_id.clone(), non_fungible);
+                                resource_manager.loaded_non_fungibles.insert(
+                                    non_fungible_id.clone(),
+                                    NonFungibleSubstate(Some(non_fungible)),
+                                );
                             }
                             resource_manager.info.total_supply = entries.len().into();
                         } else {
@@ -324,10 +336,7 @@ impl ResourceManager {
                         }
                     }
                     system_api
-                        .node_create(HeapRENode::ResourceManager(
-                            resource_manager,
-                            Some(non_fungibles),
-                        ))
+                        .node_create(HeapRENode::ResourceManager(resource_manager))
                         .map_err(InvokeError::Downstream)?
                 } else {
                     if let Some(mint_params) = &input.mint_params {
@@ -347,7 +356,7 @@ impl ResourceManager {
                         }
                     }
                     system_api
-                        .node_create(HeapRENode::ResourceManager(resource_manager, None))
+                        .node_create(HeapRENode::ResourceManager(resource_manager))
                         .map_err(InvokeError::Downstream)?
                 };
                 let resource_address = resource_node_id.clone().into();

@@ -6,7 +6,7 @@ use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
 #[test]
-fn should_not_be_able_to_globalize_key_value_store() {
+fn should_not_be_able_to_globalize_kv_store() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);

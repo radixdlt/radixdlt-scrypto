@@ -1,16 +1,23 @@
 use sbor::rust::vec::Vec;
 use scrypto::buffer::scrypto_encode;
 use scrypto::crypto::*;
-use scrypto::resource::NonFungibleAddress;
+use scrypto::resource::{NonFungibleAddress, ResourceAddress};
+pub use std::collections::BTreeSet;
 
 use crate::model::*;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AuthZoneParams {
+    pub initial_proofs: Vec<NonFungibleAddress>,
+    pub virtualizable_proofs_resource_addresses: BTreeSet<ResourceAddress>,
+}
 
 /// Represents a validated transaction
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Executable {
     pub transaction_hash: Hash,
     pub instructions: Vec<Instruction>,
-    pub initial_proofs: Vec<NonFungibleAddress>,
+    pub auth_zone_params: AuthZoneParams,
     pub cost_unit_limit: u32,
     pub tip_percentage: u32,
     pub blobs: Vec<Vec<u8>>,
@@ -20,7 +27,7 @@ impl Executable {
     pub fn new(
         transaction_hash: Hash,
         instructions: Vec<Instruction>,
-        initial_proofs: Vec<NonFungibleAddress>,
+        auth_zone_params: AuthZoneParams,
         cost_unit_limit: u32,
         tip_percentage: u32,
         blobs: Vec<Vec<u8>>,
@@ -28,7 +35,7 @@ impl Executable {
         Self {
             transaction_hash,
             instructions,
-            initial_proofs,
+            auth_zone_params,
             cost_unit_limit,
             tip_percentage,
             blobs,
@@ -55,8 +62,8 @@ impl Executable {
         &self.instructions
     }
 
-    pub fn initial_proofs(&self) -> Vec<NonFungibleAddress> {
-        self.initial_proofs.clone()
+    pub fn auth_zone_params(&self) -> AuthZoneParams {
+        self.auth_zone_params.clone()
     }
 
     pub fn blobs(&self) -> &[Vec<u8>] {

@@ -93,7 +93,7 @@ impl System {
             SystemMethod::GetCurrentEpoch => {
                 let _: SystemGetCurrentEpochInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(SystemError::InvalidRequestData(e)))?;
-                let node_ref = system_api
+                let mut node_ref = system_api
                     .borrow_node(&RENodeId::System(component_address))
                     .map_err(InvokeError::Downstream)?;
                 Ok(ScryptoValue::from_typed(&node_ref.system().info.epoch))
@@ -112,7 +112,7 @@ impl System {
                     .map_err(|e| InvokeError::Error(SystemError::InvalidRequestData(e)))?;
                 Ok(ScryptoValue::from_typed(
                     &system_api
-                        .transaction_hash()
+                        .read_transaction_hash()
                         .map_err(InvokeError::Downstream)?,
                 ))
             }
