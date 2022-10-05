@@ -56,9 +56,9 @@ impl<'a> DecompilationContext<'a> {
         }
     }
 
-    pub fn new_without_network() -> Self {
+    pub fn new_with_optional_network(bech32_encoder: Option<&'a Bech32Encoder>) -> Self {
         Self {
-            bech32_encoder: None,
+            bech32_encoder,
             id_validator: IdValidator::new(),
             bucket_names: HashMap::<BucketId, String>::new(),
             proof_names: HashMap::<ProofId, String>::new(),
@@ -74,7 +74,8 @@ pub fn decompile(
     let mut buf = String::new();
     let mut context = DecompilationContext::new(&bech32_encoder);
     for inst in instructions {
-        decompile_instruction(&mut buf, inst, &mut context)?
+        decompile_instruction(&mut buf, inst, &mut context)?;
+        buf.push('\n');
     }
 
     Ok(buf)
@@ -94,7 +95,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             let name = format!("bucket{}", context.bucket_names.len() + 1);
             write!(
                 f,
-                "TAKE_FROM_WORKTOP ResourceAddress(\"{}\") Bucket(\"{}\");\n",
+                "TAKE_FROM_WORKTOP ResourceAddress(\"{}\") Bucket(\"{}\");",
                 resource_address.displayable(context.bech32_encoder),
                 name
             )?;
@@ -112,7 +113,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             context.bucket_names.insert(bucket_id, name.clone());
             write!(
                 f,
-                "TAKE_FROM_WORKTOP_BY_AMOUNT Decimal(\"{}\") ResourceAddress(\"{}\") Bucket(\"{}\");\n",
+                "TAKE_FROM_WORKTOP_BY_AMOUNT Decimal(\"{}\") ResourceAddress(\"{}\") Bucket(\"{}\");",
                 amount,
                 resource_address.displayable(context.bech32_encoder),
                 name
@@ -130,7 +131,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             context.bucket_names.insert(bucket_id, name.clone());
             write!(
                 f,
-                "TAKE_FROM_WORKTOP_BY_IDS Set<NonFungibleId>({}) ResourceAddress(\"{}\") Bucket(\"{}\");\n",
+                "TAKE_FROM_WORKTOP_BY_IDS Set<NonFungibleId>({}) ResourceAddress(\"{}\") Bucket(\"{}\");",
                 ids.iter()
                     .map(|k| format!("NonFungibleId(\"{}\")", k))
                     .collect::<Vec<String>>()
@@ -146,7 +147,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                 .map_err(DecompileError::IdValidationError)?;
             write!(
                 f,
-                "RETURN_TO_WORKTOP Bucket({});\n",
+                "RETURN_TO_WORKTOP Bucket({});",
                 context
                     .bucket_names
                     .get(&bucket_id)
@@ -157,7 +158,7 @@ pub fn decompile_instruction<F: fmt::Write>(
         Instruction::AssertWorktopContains { resource_address } => {
             write!(
                 f,
-                "ASSERT_WORKTOP_CONTAINS ResourceAddress(\"{}\");\n",
+                "ASSERT_WORKTOP_CONTAINS ResourceAddress(\"{}\");",
                 resource_address.displayable(context.bech32_encoder)
             )?;
         }
@@ -167,7 +168,7 @@ pub fn decompile_instruction<F: fmt::Write>(
         } => {
             write!(
                 f,
-                "ASSERT_WORKTOP_CONTAINS_BY_AMOUNT Decimal(\"{}\") ResourceAddress(\"{}\");\n",
+                "ASSERT_WORKTOP_CONTAINS_BY_AMOUNT Decimal(\"{}\") ResourceAddress(\"{}\");",
                 amount,
                 resource_address.displayable(context.bech32_encoder)
             )?;
@@ -178,7 +179,7 @@ pub fn decompile_instruction<F: fmt::Write>(
         } => {
             write!(
                 f,
-                "ASSERT_WORKTOP_CONTAINS_BY_IDS Set<NonFungibleId>({}) ResourceAddress(\"{}\");\n",
+                "ASSERT_WORKTOP_CONTAINS_BY_IDS Set<NonFungibleId>({}) ResourceAddress(\"{}\");",
                 ids.iter()
                     .map(|k| format!("NonFungibleId(\"{}\")", k))
                     .collect::<Vec<String>>()
@@ -193,7 +194,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                 .map_err(DecompileError::IdValidationError)?;
             let name = format!("proof{}", context.proof_names.len() + 1);
             context.proof_names.insert(proof_id, name.clone());
-            write!(f, "POP_FROM_AUTH_ZONE Proof(\"{}\");\n", name)?;
+            write!(f, "POP_FROM_AUTH_ZONE Proof(\"{}\");", name)?;
         }
         Instruction::PushToAuthZone { proof_id } => {
             context
@@ -202,7 +203,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                 .map_err(DecompileError::IdValidationError)?;
             write!(
                 f,
-                "PUSH_TO_AUTH_ZONE Proof({});\n",
+                "PUSH_TO_AUTH_ZONE Proof({});",
                 context
                     .proof_names
                     .get(&proof_id)
@@ -211,7 +212,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             )?;
         }
         Instruction::ClearAuthZone => {
-            f.write_str("CLEAR_AUTH_ZONE;\n")?;
+            f.write_str("CLEAR_AUTH_ZONE;")?;
         }
         Instruction::CreateProofFromAuthZone { resource_address } => {
             let proof_id = context
@@ -222,7 +223,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             context.proof_names.insert(proof_id, name.clone());
             write!(
                 f,
-                "CREATE_PROOF_FROM_AUTH_ZONE ResourceAddress(\"{}\") Proof(\"{}\");\n",
+                "CREATE_PROOF_FROM_AUTH_ZONE ResourceAddress(\"{}\") Proof(\"{}\");",
                 resource_address.displayable(context.bech32_encoder),
                 name
             )?;
@@ -239,7 +240,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             context.proof_names.insert(proof_id, name.clone());
             write!(
                 f,
-                "CREATE_PROOF_FROM_AUTH_ZONE_BY_AMOUNT Decimal(\"{}\") ResourceAddress(\"{}\") Proof(\"{}\");\n",
+                "CREATE_PROOF_FROM_AUTH_ZONE_BY_AMOUNT Decimal(\"{}\") ResourceAddress(\"{}\") Proof(\"{}\");",
                 amount,
                 resource_address.displayable(context.bech32_encoder),
                 name
@@ -257,7 +258,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             context.proof_names.insert(proof_id, name.clone());
             write!(
                 f,
-                "CREATE_PROOF_FROM_AUTH_ZONE_BY_IDS Set<NonFungibleId>({}) ResourceAddress(\"{}\") Proof(\"{}\");\n",ids.iter()
+                "CREATE_PROOF_FROM_AUTH_ZONE_BY_IDS Set<NonFungibleId>({}) ResourceAddress(\"{}\") Proof(\"{}\");",ids.iter()
                 .map(|k| format!("NonFungibleId(\"{}\")", k))
                 .collect::<Vec<String>>()
                 .join(", "),
@@ -274,7 +275,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             context.proof_names.insert(proof_id, name.clone());
             write!(
                 f,
-                "CREATE_PROOF_FROM_BUCKET Bucket({}) Proof(\"{}\");\n",
+                "CREATE_PROOF_FROM_BUCKET Bucket({}) Proof(\"{}\");",
                 context
                     .bucket_names
                     .get(&bucket_id)
@@ -292,7 +293,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             context.proof_names.insert(proof_id2, name.clone());
             write!(
                 f,
-                "CLONE_PROOF Proof({}) Proof(\"{}\");\n",
+                "CLONE_PROOF Proof({}) Proof(\"{}\");",
                 context
                     .proof_names
                     .get(&proof_id)
@@ -308,7 +309,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                 .map_err(DecompileError::IdValidationError)?;
             write!(
                 f,
-                "DROP_PROOF Proof({});\n",
+                "DROP_PROOF Proof({});",
                 context
                     .proof_names
                     .get(&proof_id)
@@ -321,7 +322,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                 .id_validator
                 .drop_all_proofs()
                 .map_err(DecompileError::IdValidationError)?;
-            f.write_str("DROP_ALL_PROOFS;\n")?;
+            f.write_str("DROP_ALL_PROOFS;")?;
         }
         Instruction::CallFunction {
             fn_identifier,
@@ -361,7 +362,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                 } else {
                     panic!("Should not get here.");
                 }
-                f.write_str(";\n")?;
+                f.write_str(";")?;
             }
             FnIdentifier::Native(native_fn_identifier) => match native_fn_identifier {
                 NativeFnIdentifier::ResourceManager(ResourceManagerFnIdentifier::Create) => {
@@ -369,7 +370,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                         scrypto_decode(&args).map_err(DecompileError::DecodeError)?;
 
                     f.write_str(&format!(
-                        "CREATE_RESOURCE {} {} {} {};\n",
+                        "CREATE_RESOURCE {} {} {} {};",
                         ScryptoValue::from_typed(&input.resource_type).to_string()?,
                         ScryptoValue::from_typed(&input.metadata).to_string()?,
                         ScryptoValue::from_typed(&input.access_rules).to_string()?,
@@ -416,7 +417,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                     panic!("Should not get here.");
                 }
 
-                f.write_str(";\n")?;
+                f.write_str(";")?;
             }
             MethodIdentifier::Native {
                 native_fn_identifier,
@@ -431,7 +432,7 @@ pub fn decompile_instruction<F: fmt::Write>(
 
                     write!(
                         f,
-                        "BURN_BUCKET Bucket({});\n",
+                        "BURN_BUCKET Bucket({});",
                         context
                             .bucket_names
                             .get(&bucket_id)
@@ -449,7 +450,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                         MintParams::Fungible { amount } => {
                             write!(
                                 f,
-                                "MINT_FUNGIBLE ResourceAddress(\"{}\") Decimal(\"{}\") ;\n",
+                                "MINT_FUNGIBLE ResourceAddress(\"{}\") Decimal(\"{}\");",
                                 resource_address.displayable(context.bech32_encoder),
                                 amount,
                             )?;
@@ -461,7 +462,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             },
         },
         Instruction::PublishPackage { code, abi } => {
-            write!(f, "PUBLISH_PACKAGE Blob(\"{}\") Blob(\"{}\");\n", code, abi)?;
+            write!(f, "PUBLISH_PACKAGE Blob(\"{}\") Blob(\"{}\");", code, abi)?;
         }
     }
     Ok(())

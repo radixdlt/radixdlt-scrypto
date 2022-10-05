@@ -14,10 +14,19 @@ impl From<SimulatorPackageAddress> for PackageAddress {
     }
 }
 
+impl From<PackageAddress> for SimulatorPackageAddress {
+    fn from(address: PackageAddress) -> Self {
+        Self(address)
+    }
+}
+
 impl FromStr for SimulatorPackageAddress {
     type Err = AddressError;
 
     fn from_str(address: &str) -> Result<Self, Self::Err> {
+        if let Ok(address) = PackageAddress::try_from_hex(address) {
+            return Ok(address.into());
+        }
         let address =
             Bech32Decoder::for_simulator().validate_and_decode_package_address(address)?;
         Ok(Self(address))
@@ -46,10 +55,19 @@ impl From<SimulatorResourceAddress> for ResourceAddress {
     }
 }
 
+impl From<ResourceAddress> for SimulatorResourceAddress {
+    fn from(address: ResourceAddress) -> Self {
+        Self(address)
+    }
+}
+
 impl FromStr for SimulatorResourceAddress {
     type Err = AddressError;
 
     fn from_str(address: &str) -> Result<Self, Self::Err> {
+        if let Ok(address) = ResourceAddress::try_from_hex(address) {
+            return Ok(address.into());
+        }
         let address =
             Bech32Decoder::for_simulator().validate_and_decode_resource_address(address)?;
         Ok(Self(address))
@@ -78,10 +96,19 @@ impl From<SimulatorComponentAddress> for ComponentAddress {
     }
 }
 
+impl From<ComponentAddress> for SimulatorComponentAddress {
+    fn from(address: ComponentAddress) -> Self {
+        Self(address)
+    }
+}
+
 impl FromStr for SimulatorComponentAddress {
     type Err = AddressError;
 
     fn from_str(address: &str) -> Result<Self, Self::Err> {
+        if let Ok(address) = ComponentAddress::try_from_hex(address) {
+            return Ok(address.into());
+        }
         let address =
             Bech32Decoder::for_simulator().validate_and_decode_component_address(address)?;
         Ok(Self(address))

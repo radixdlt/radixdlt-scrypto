@@ -87,6 +87,7 @@ impl Publish {
                     out,
                     "Success! New Package: {}",
                     receipt.expect_commit().entity_changes.new_package_addresses[0]
+                        .displayable(&Bech32Encoder::for_simulator())
                         .to_string()
                         .green()
                 )

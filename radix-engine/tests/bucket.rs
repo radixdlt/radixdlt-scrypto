@@ -204,7 +204,7 @@ fn create_empty_bucket() {
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
-    println!("{:?}", receipt);
+    println!("{}", receipt.displayable(&Bech32Encoder::for_simulator()));
 
     // Assert
     receipt.expect_commit_success();

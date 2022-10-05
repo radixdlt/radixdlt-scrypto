@@ -143,13 +143,13 @@ pub fn handle_manifest<O: std::io::Write>(
     output_receipt: bool,
     out: &mut O,
 ) -> Result<Option<TransactionReceipt>, Error> {
+    let network = match network {
+        Some(n) => NetworkDefinition::from_str(&n).map_err(Error::ParseNetworkError)?,
+        None => NetworkDefinition::simulator(),
+    };
     match manifest_path {
         Some(path) => {
             if !env::var(ENV_DISABLE_MANIFEST_OUTPUT).is_ok() {
-                let network = match network {
-                    Some(n) => NetworkDefinition::from_str(&n).map_err(Error::ParseNetworkError)?,
-                    None => NetworkDefinition::simulator(),
-                };
                 let manifest_str =
                     decompile(&manifest.instructions, &network).map_err(Error::DecompileError)?;
                 fs::write(path, manifest_str).map_err(Error::IOError)?;
@@ -196,7 +196,7 @@ pub fn handle_manifest<O: std::io::Write>(
             );
 
             if output_receipt {
-                writeln!(out, "{:?}", receipt).map_err(Error::IOError)?;
+                writeln!(out, "{}", receipt.displayable(&Bech32Encoder::new(&network))).map_err(Error::IOError)?;
             }
 
             if receipt.is_commit() {
