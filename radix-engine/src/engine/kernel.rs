@@ -429,6 +429,28 @@ where
         call_frames.last().expect("Current frame always exists")
     }
 
+    fn deref(
+        node_pointer: RENodePointer,
+        call_frames: &Vec<CallFrame>,
+        track: &mut Track<'s, R>,
+    ) -> Result<Option<RENodePointer>, RuntimeError> {
+        if let RENodeId::Global(..) = node_pointer.node_id() {
+            let offset = SubstateOffset::Global(GlobalOffset::Global);
+            node_pointer
+                .acquire_lock(offset.clone(), false, false, track)
+                .map_err(RuntimeError::KernelError)?;
+            let node_ref = node_pointer.to_ref(call_frames, track);
+            let node_id = node_ref.global_re_node().node_deref();
+            node_pointer
+                .release_lock(offset, false, track)
+                .map_err(RuntimeError::KernelError)?;
+            Ok(Some(RENodePointer::Store(node_id)))
+        } else {
+            Ok(None)
+        }
+    }
+
+
     fn invoke_function(
         &mut self,
         function_ident: FunctionIdent,
@@ -514,21 +536,14 @@ where
                 Self::current_frame(&self.call_frames).get_node_pointer(node_id)?;
 
             // Deref
-            if let Receiver::Ref(RENodeId::Global(..)) = fn_ident.receiver {
-                let offset = SubstateOffset::Global(GlobalOffset::Global);
-                node_pointer
-                    .acquire_lock(offset.clone(), false, false, &mut self.track)
-                    .map_err(RuntimeError::KernelError)?;
-                let node_ref = node_pointer.to_ref(&self.call_frames, &mut self.track);
-                node_id = node_ref.global_re_node().node_deref();
-                node_pointer
-                    .release_lock(offset, false, &mut self.track)
-                    .map_err(RuntimeError::KernelError)?;
-
-                node_pointer = RENodePointer::Store(node_id);
-                fn_ident = ReceiverMethodIdent {
-                    receiver: Receiver::Ref(node_id),
-                    method_ident: fn_ident.method_ident,
+            if let Receiver::Ref(..) = fn_ident.receiver {
+                if let Some(derefed) = Self::deref(node_pointer, &self.call_frames, &mut self.track)? {
+                    node_id = derefed.node_id();
+                    node_pointer = derefed;
+                    fn_ident = ReceiverMethodIdent {
+                        receiver: Receiver::Ref(node_id),
+                        method_ident: fn_ident.method_ident,
+                    }
                 }
             }
 
@@ -1171,25 +1186,17 @@ where
 
         // Get Pointer
         let mut node_id = substate_id.0;
-        // TODO: Check if valid offset for node_id
-        let offset = substate_id.1;
         let mut node_pointer = Self::current_frame(&self.call_frames).get_node_pointer(node_id)?;
 
         // Deref
-        if let RENodeId::Global(..) = node_id {
-            let offset = SubstateOffset::Global(GlobalOffset::Global);
-            node_pointer
-                .acquire_lock(offset.clone(), false, false, &mut self.track)
-                .map_err(RuntimeError::KernelError)?;
-            let node_ref = node_pointer.to_ref(&self.call_frames, &mut self.track);
-            node_id = node_ref.global_re_node().node_deref();
-            node_pointer
-                .release_lock(offset, false, &mut self.track)
-                .map_err(RuntimeError::KernelError)?;
-            node_pointer = RENodePointer::Store(node_id);
+        if let Some(derefed) = Self::deref(node_pointer, &self.call_frames, &mut self.track)? {
+            node_id = derefed.node_id();
+            node_pointer = derefed;
         }
 
         // Authorization
+        // TODO: Check if valid offset for node_id
+        let offset = substate_id.1;
         if !Self::current_frame(&self.call_frames)
             .actor
             .is_substate_readable(&SubstateId(node_id, offset.clone()))
