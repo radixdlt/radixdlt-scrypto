@@ -1,7 +1,7 @@
 use sbor::rust::collections::*;
 use sbor::rust::fmt;
 use sbor::{encode_any, DecodeError, Value};
-use scrypto::address::{AddressError, Bech32Encoder};
+use scrypto::address::{AddressError, Bech32Encoder, ContextualDisplay};
 use scrypto::buffer::scrypto_decode;
 use scrypto::core::{
     BucketFnIdentifier, FnIdentifier, NativeFnIdentifier, NetworkDefinition, Receiver,
@@ -96,7 +96,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             write!(
                 f,
                 "TAKE_FROM_WORKTOP ResourceAddress(\"{}\") Bucket(\"{}\");",
-                resource_address.displayable(context.bech32_encoder),
+                resource_address.display(context.bech32_encoder),
                 name
             )?;
             context.bucket_names.insert(bucket_id, name);
@@ -115,7 +115,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                 f,
                 "TAKE_FROM_WORKTOP_BY_AMOUNT Decimal(\"{}\") ResourceAddress(\"{}\") Bucket(\"{}\");",
                 amount,
-                resource_address.displayable(context.bech32_encoder),
+                resource_address.display(context.bech32_encoder),
                 name
             )?;
         }
@@ -136,7 +136,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                     .map(|k| format!("NonFungibleId(\"{}\")", k))
                     .collect::<Vec<String>>()
                     .join(", "),
-                resource_address.displayable(context.bech32_encoder),
+                resource_address.display(context.bech32_encoder),
                 name
             )?;
         }
@@ -159,7 +159,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             write!(
                 f,
                 "ASSERT_WORKTOP_CONTAINS ResourceAddress(\"{}\");",
-                resource_address.displayable(context.bech32_encoder)
+                resource_address.display(context.bech32_encoder)
             )?;
         }
         Instruction::AssertWorktopContainsByAmount {
@@ -170,7 +170,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                 f,
                 "ASSERT_WORKTOP_CONTAINS_BY_AMOUNT Decimal(\"{}\") ResourceAddress(\"{}\");",
                 amount,
-                resource_address.displayable(context.bech32_encoder)
+                resource_address.display(context.bech32_encoder)
             )?;
         }
         Instruction::AssertWorktopContainsByIds {
@@ -184,7 +184,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                     .map(|k| format!("NonFungibleId(\"{}\")", k))
                     .collect::<Vec<String>>()
                     .join(", "),
-                resource_address.displayable(context.bech32_encoder)
+                resource_address.display(context.bech32_encoder)
             )?;
         }
         Instruction::PopFromAuthZone => {
@@ -224,7 +224,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             write!(
                 f,
                 "CREATE_PROOF_FROM_AUTH_ZONE ResourceAddress(\"{}\") Proof(\"{}\");",
-                resource_address.displayable(context.bech32_encoder),
+                resource_address.display(context.bech32_encoder),
                 name
             )?;
         }
@@ -242,7 +242,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                 f,
                 "CREATE_PROOF_FROM_AUTH_ZONE_BY_AMOUNT Decimal(\"{}\") ResourceAddress(\"{}\") Proof(\"{}\");",
                 amount,
-                resource_address.displayable(context.bech32_encoder),
+                resource_address.display(context.bech32_encoder),
                 name
             )?;
         }
@@ -262,7 +262,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                 .map(|k| format!("NonFungibleId(\"{}\")", k))
                 .collect::<Vec<String>>()
                 .join(", "),
-                resource_address.displayable(context.bech32_encoder),
+                resource_address.display(context.bech32_encoder),
                 name
             )?;
         }
@@ -336,7 +336,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             } => {
                 f.write_str(&format!(
                     "CALL_FUNCTION PackageAddress(\"{}\") \"{}\" \"{}\"",
-                    package_address.displayable(context.bech32_encoder),
+                    package_address.display(context.bech32_encoder),
                     blueprint_name,
                     ident
                 ))?;
@@ -408,7 +408,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             } => {
                 f.write_str(&format!(
                     "CALL_METHOD ComponentAddress(\"{}\") \"{}\"",
-                    component_address.displayable(context.bech32_encoder),
+                    component_address.display(context.bech32_encoder),
                     ident
                 ))?;
 
@@ -469,7 +469,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                             write!(
                                 f,
                                 "MINT_FUNGIBLE ResourceAddress(\"{}\") Decimal(\"{}\");",
-                                resource_address.displayable(context.bech32_encoder),
+                                resource_address.display(context.bech32_encoder),
                                 amount,
                             )?;
                         }

@@ -1,7 +1,7 @@
 use clap::Parser;
 use colored::*;
 use radix_engine_stores::rocks_db::RadixEngineDB;
-use scrypto::address::Bech32Encoder;
+use scrypto::address::{Bech32Encoder, ContextualDisplay};
 
 use crate::resim::*;
 use crate::utils::*;
@@ -22,7 +22,7 @@ impl ShowLedger {
                 out,
                 "{} {}",
                 list_item_prefix(last),
-                package_address.displayable(&bech32_encoder)
+                package_address.display(&bech32_encoder)
             )
             .map_err(Error::IOError)?;
         }
@@ -33,7 +33,7 @@ impl ShowLedger {
                 out,
                 "{} {}",
                 list_item_prefix(last),
-                component_address.displayable(&bech32_encoder)
+                component_address.display(&bech32_encoder)
             )
             .map_err(Error::IOError)?;
         }
@@ -44,7 +44,7 @@ impl ShowLedger {
                 out,
                 "{} {}",
                 list_item_prefix(last),
-                resource_address.displayable(&bech32_encoder)
+                resource_address.display(&bech32_encoder)
             )
             .map_err(Error::IOError)?;
         }

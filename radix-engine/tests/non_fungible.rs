@@ -1,5 +1,6 @@
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
+use scrypto::address::ContextualDisplay;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -218,8 +219,8 @@ fn test_mint_update_and_withdraw() {
             "NonFungibleTest",
             "update_nft",
             vec![
-                format!("1,{}", badge_resource_address.displayable(&bech32_encoder)),
-                format!("1,{}", nft_resource_address.displayable(&bech32_encoder)),
+                format!("1,{}", badge_resource_address.display(&bech32_encoder)),
+                format!("1,{}", nft_resource_address.display(&bech32_encoder)),
             ],
             Some(account),
             &test_runner.export_abi(package_address, "NonFungibleTest"),

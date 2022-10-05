@@ -3,6 +3,7 @@ use colored::*;
 use radix_engine::engine::Substate;
 use radix_engine::ledger::{OutputValue, ReadableSubstateStore, WriteableSubstateStore};
 use radix_engine::types::*;
+use scrypto::prelude::ContextualDisplay;
 use std::ffi::OsStr;
 use std::fs;
 use std::path::PathBuf;
@@ -87,7 +88,7 @@ impl Publish {
                     out,
                     "Success! New Package: {}",
                     receipt.expect_commit().entity_changes.new_package_addresses[0]
-                        .displayable(&Bech32Encoder::for_simulator())
+                        .display(&Bech32Encoder::for_simulator())
                         .to_string()
                         .green()
                 )

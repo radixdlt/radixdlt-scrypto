@@ -3,6 +3,7 @@ use colored::*;
 use radix_engine::ledger::*;
 use radix_engine::model::*;
 use radix_engine::types::*;
+use scrypto::address::ContextualDisplay;
 use std::collections::VecDeque;
 
 use crate::utils::*;
@@ -34,7 +35,7 @@ pub fn dump_package<T: ReadableSubstateStore, O: std::io::Write>(
                 output,
                 "{}: {}",
                 "Package".green().bold(),
-                package_address.displayable(&bech32_encoder)
+                package_address.display(&bech32_encoder)
             );
             writeln!(
                 output,
@@ -66,14 +67,14 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
                 output,
                 "{}: {}",
                 "Component".green().bold(),
-                component_address.displayable(&bech32_encoder),
+                component_address.display(&bech32_encoder),
             );
 
             writeln!(
                 output,
                 "{}: {{ package_address: {}, blueprint_name: \"{}\" }}",
                 "Blueprint".green().bold(),
-                c.package_address().displayable(&bech32_encoder),
+                c.package_address().display(&bech32_encoder),
                 c.blueprint_name()
             );
 
@@ -178,7 +179,7 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
             "{} {{ amount: {}, resource address: {}{}{} }}",
             list_item_prefix(last),
             amount,
-            resource_address.displayable(&bech32_encoder),
+            resource_address.display(&bech32_encoder),
             resource_manager
                 .metadata()
                 .get("name")

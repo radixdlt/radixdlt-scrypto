@@ -4,6 +4,7 @@ use std::str::FromStr;
 use radix_engine::types::{
     AddressError, Bech32Decoder, Bech32Encoder, ComponentAddress, PackageAddress, ResourceAddress,
 };
+use scrypto::address::ContextualDisplay;
 
 #[derive(Clone)]
 pub struct SimulatorPackageAddress(pub PackageAddress);
@@ -35,7 +36,7 @@ impl FromStr for SimulatorPackageAddress {
 
 impl fmt::Display for SimulatorPackageAddress {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}", self.0.displayable(&Bech32Encoder::for_simulator()))
+        write!(f, "{}", self.0.display(&Bech32Encoder::for_simulator()))
     }
 }
 
@@ -75,7 +76,7 @@ impl FromStr for SimulatorResourceAddress {
 
 impl fmt::Display for SimulatorResourceAddress {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}", self.0.displayable(&Bech32Encoder::for_simulator()))
+        write!(f, "{}", self.0.display(&Bech32Encoder::for_simulator()))
     }
 }
 
@@ -115,7 +116,7 @@ impl FromStr for SimulatorComponentAddress {
 
 impl fmt::Display for SimulatorComponentAddress {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}", self.0.displayable(&Bech32Encoder::for_simulator()))
+        write!(f, "{}", self.0.display(&Bech32Encoder::for_simulator()))
     }
 }
 

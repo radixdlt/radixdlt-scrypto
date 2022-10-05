@@ -18,7 +18,7 @@ use crate::core::*;
 use crate::crypto::*;
 use crate::engine::types::*;
 use crate::math::*;
-use crate::misc::copy_u8_array;
+use crate::misc::*;
 use crate::resource::*;
 
 pub enum ScryptoValueReplaceError {
@@ -637,7 +637,7 @@ impl ScryptoValueFormatter {
                 .map(|address| {
                     format!(
                         "PackageAddress(\"{}\")",
-                        address.displayable(context.bech32_encoder)
+                        address.display(context.bech32_encoder)
                     )
                 })
                 .map_err(ScryptoCustomValueCheckError::InvalidPackageAddress)?,
@@ -645,12 +645,12 @@ impl ScryptoValueFormatter {
                 .map(|address| {
                     format!(
                         "ComponentAddress(\"{}\")",
-                        address.displayable(context.bech32_encoder)
+                        address.display(context.bech32_encoder)
                     )
                 })
                 .map_err(ScryptoCustomValueCheckError::InvalidComponentAddress)?,
             ScryptoType::Component => Component::try_from(data)
-                .map(|d| format!("Component(\"{}\")", d.0.displayable(context.bech32_encoder)))
+                .map(|d| format!("Component(\"{}\")", d.0.display(context.bech32_encoder)))
                 .map_err(ScryptoCustomValueCheckError::InvalidComponent)?,
             ScryptoType::KeyValueStore => KeyValueStore::<(), ()>::try_from(data)
                 .map(|d| format!("KeyValueStore(\"{}\")", d))
@@ -701,7 +701,7 @@ impl ScryptoValueFormatter {
                 .map(|address| {
                     format!(
                         "ResourceAddress(\"{}\")",
-                        address.displayable(context.bech32_encoder)
+                        address.display(context.bech32_encoder)
                     )
                 })
                 .map_err(ScryptoCustomValueCheckError::InvalidResourceAddress)?,

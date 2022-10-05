@@ -4,7 +4,7 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::abi::*;
-use crate::address::{AddressError, Bech32Encoder, EntityType};
+use crate::address::{AddressDisplayContext, AddressError, EntityType, NO_NETWORK};
 use crate::core::*;
 use crate::misc::*;
 
@@ -72,13 +72,6 @@ impl PackageAddress {
 
         Self::try_from(bytes.as_ref())
     }
-
-    pub fn displayable<'a, T: Into<Option<&'a Bech32Encoder>>>(
-        &'a self,
-        bech32_encoder: T,
-    ) -> DisplayablePackageAddress<'a> {
-        DisplayablePackageAddress(self, bech32_encoder.into())
-    }
 }
 
 scrypto_type!(PackageAddress, ScryptoType::PackageAddress, Vec::new());
@@ -89,23 +82,28 @@ scrypto_type!(PackageAddress, ScryptoType::PackageAddress, Vec::new());
 
 impl fmt::Debug for PackageAddress {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}", self.displayable(None))
+        write!(f, "{}", self.display(NO_NETWORK))
     }
 }
 
-pub struct DisplayablePackageAddress<'a>(&'a PackageAddress, Option<&'a Bech32Encoder>);
+impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for PackageAddress {
+    type Error = AddressError;
 
-impl<'a> fmt::Display for DisplayablePackageAddress<'a> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        if let Some(bech32_encoder) = self.1 {
-            return bech32_encoder
-                .encode_package_address_to_fmt(f, self.0)
-                .map_err(|_| fmt::Error);
+    fn contextual_format<F: fmt::Write>(
+        &self,
+        f: &mut F,
+        context: &AddressDisplayContext<'a>,
+    ) -> Result<(), Self::Error> {
+        if let Some(encoder) = context.encoder {
+            return encoder.encode_package_address_to_fmt(f, self);
         }
-        match self.0 {
+
+        // This could be made more performant by streaming the hex into the formatter
+        match self {
             PackageAddress::Normal(_) => {
-                write!(f, "NormalPackage[{}]", self.0.to_hex())
+                write!(f, "NormalPackage[{}]", self.to_hex())
             }
         }
+        .map_err(|err| AddressError::FormatError(err))
     }
 }

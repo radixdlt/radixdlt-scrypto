@@ -166,13 +166,6 @@ impl ComponentAddress {
 
         Self::try_from(bytes.as_ref())
     }
-
-    pub fn displayable<'a, T: Into<Option<&'a Bech32Encoder>>>(
-        &'a self,
-        bech32_encoder: T,
-    ) -> DisplayableComponentAddress<'a> {
-        DisplayableComponentAddress(self, bech32_encoder.into())
-    }
 }
 
 scrypto_type!(ComponentAddress, ScryptoType::ComponentAddress, Vec::new());
@@ -183,29 +176,34 @@ scrypto_type!(ComponentAddress, ScryptoType::ComponentAddress, Vec::new());
 
 impl fmt::Debug for ComponentAddress {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}", self.displayable(None))
+        write!(f, "{}", self.display(NO_NETWORK))
     }
 }
 
-pub struct DisplayableComponentAddress<'a>(&'a ComponentAddress, Option<&'a Bech32Encoder>);
+impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for ComponentAddress {
+    type Error = AddressError;
 
-impl<'a> fmt::Display for DisplayableComponentAddress<'a> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        if let Some(bech32_encoder) = self.1 {
-            return bech32_encoder
-                .encode_component_address_to_fmt(f, self.0)
-                .map_err(|_| fmt::Error);
+    fn contextual_format<F: fmt::Write>(
+        &self,
+        f: &mut F,
+        context: &AddressDisplayContext<'a>,
+    ) -> Result<(), Self::Error> {
+        if let Some(encoder) = context.encoder {
+            return encoder.encode_component_address_to_fmt(f, self);
         }
-        match self.0 {
+
+        // This could be made more performant by streaming the hex into the formatter
+        match self {
             ComponentAddress::Normal(_) => {
-                write!(f, "NormalComponent[{}]", self.0.to_hex())
+                write!(f, "NormalComponent[{}]", self.to_hex())
             }
             ComponentAddress::Account(_) => {
-                write!(f, "AccountComponent[{}]", self.0.to_hex())
+                write!(f, "AccountComponent[{}]", self.to_hex())
             }
             ComponentAddress::System(_) => {
-                write!(f, "SystemComponent[{}]", self.0.to_hex())
+                write!(f, "SystemComponent[{}]", self.to_hex())
             }
         }
+        .map_err(|err| AddressError::FormatError(err))
     }
 }

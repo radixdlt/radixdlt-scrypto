@@ -1,5 +1,6 @@
 use clap::Parser;
 use colored::*;
+use scrypto::prelude::ContextualDisplay;
 
 use crate::resim::*;
 
@@ -17,7 +18,7 @@ impl ShowConfigs {
             match configs.default_account {
                 Some((component, str)) => format!(
                     "({}, {})",
-                    component.displayable(&Bech32Encoder::for_simulator()),
+                    component.display(&Bech32Encoder::for_simulator()),
                     str
                 ),
                 None => "None".to_owned(),

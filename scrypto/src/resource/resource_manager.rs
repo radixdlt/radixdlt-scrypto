@@ -5,7 +5,7 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::abi::*;
-use crate::address::{AddressError, Bech32Encoder, EntityType};
+use crate::address::*;
 use crate::buffer::scrypto_encode;
 use crate::core::NativeFnIdentifier;
 use crate::core::{FnIdentifier, Receiver, ResourceManagerFnIdentifier};
@@ -411,13 +411,6 @@ impl ResourceAddress {
 
         Self::try_from(bytes.as_ref())
     }
-
-    pub fn displayable<'a, T: Into<Option<&'a Bech32Encoder>>>(
-        &'a self,
-        bech32_encoder: T,
-    ) -> DisplayableResourceAddress<'a> {
-        DisplayableResourceAddress(self, bech32_encoder.into())
-    }
 }
 
 scrypto_type!(ResourceAddress, ScryptoType::ResourceAddress, Vec::new());
@@ -428,23 +421,28 @@ scrypto_type!(ResourceAddress, ScryptoType::ResourceAddress, Vec::new());
 
 impl fmt::Debug for ResourceAddress {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}", self.displayable(None))
+        write!(f, "{}", self.display(NO_NETWORK))
     }
 }
 
-pub struct DisplayableResourceAddress<'a>(&'a ResourceAddress, Option<&'a Bech32Encoder>);
+impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for ResourceAddress {
+    type Error = AddressError;
 
-impl<'a> fmt::Display for DisplayableResourceAddress<'a> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        if let Some(bech32_encoder) = self.1 {
-            return bech32_encoder
-                .encode_resource_address_to_fmt(f, self.0)
-                .map_err(|_| fmt::Error);
+    fn contextual_format<F: fmt::Write>(
+        &self,
+        f: &mut F,
+        context: &AddressDisplayContext<'a>,
+    ) -> Result<(), Self::Error> {
+        if let Some(encoder) = context.encoder {
+            return encoder.encode_resource_address_to_fmt(f, self);
         }
-        match self.0 {
+
+        // This could be made more performant by streaming the hex into the formatter
+        match self {
             ResourceAddress::Normal(_) => {
-                write!(f, "NormalResource[{}]", self.0.to_hex())
+                write!(f, "NormalResource[{}]", self.to_hex())
             }
         }
+        .map_err(|err| AddressError::FormatError(err))
     }
 }

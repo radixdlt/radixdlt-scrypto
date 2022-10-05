@@ -2,6 +2,7 @@ use clap::Parser;
 use colored::*;
 use radix_engine::types::*;
 use rand::Rng;
+use scrypto::prelude::ContextualDisplay;
 
 use crate::resim::*;
 
@@ -57,7 +58,7 @@ impl NewAccount {
             writeln!(
                 out,
                 "Account component address: {}",
-                account.displayable(&bech32_encoder).to_string().green()
+                account.display(&bech32_encoder).to_string().green()
             )
             .map_err(Error::IOError)?;
             writeln!(out, "Public key: {}", public_key.to_string().green())

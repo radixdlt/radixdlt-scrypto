@@ -1,4 +1,5 @@
 use colored::*;
+use scrypto::address::ContextualDisplay;
 use transaction::manifest::decompiler::{decompile_instruction, DecompilationContext};
 use transaction::model::*;
 
@@ -281,7 +282,7 @@ impl<'a> fmt::Display for DisplayableTransactionReceipt<'a> {
                     f,
                     "\n{} Package: {}",
                     prefix!(i, c.entity_changes.new_package_addresses),
-                    package_address.displayable(bech32_encoder)
+                    package_address.display(bech32_encoder)
                 )?;
             }
             for (i, component_address) in
@@ -291,7 +292,7 @@ impl<'a> fmt::Display for DisplayableTransactionReceipt<'a> {
                     f,
                     "\n{} Component: {}",
                     prefix!(i, c.entity_changes.new_component_addresses),
-                    component_address.displayable(bech32_encoder)
+                    component_address.display(bech32_encoder)
                 )?;
             }
             for (i, resource_address) in c.entity_changes.new_resource_addresses.iter().enumerate()
@@ -300,7 +301,7 @@ impl<'a> fmt::Display for DisplayableTransactionReceipt<'a> {
                     f,
                     "\n{} Resource: {}",
                     prefix!(i, c.entity_changes.new_resource_addresses),
-                    resource_address.displayable(bech32_encoder)
+                    resource_address.display(bech32_encoder)
                 )?;
             }
         }
