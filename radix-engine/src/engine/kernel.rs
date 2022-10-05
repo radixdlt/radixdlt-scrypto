@@ -161,7 +161,7 @@ where
         call_frames: &mut Vec<CallFrame>,
         track: &mut Track<'s, R>,
         substate_id: &SubstateId,
-    ) -> Result<(RENodePointer, ScryptoValue, Option<ScryptoValue>), RuntimeError> {
+    ) -> Result<(RENodePointer, ScryptoValue), RuntimeError> {
         let node_id = SubstateProperties::get_node_id(substate_id);
 
         // TODO: verify if this breaks if reading substate of heap nodes.
@@ -185,9 +185,8 @@ where
             let mut node_ref = node_pointer.to_ref_mut(call_frames, track);
             node_ref.read_substate(&substate_id)?
         };
-        let contained_value = extract_value_from_substate(substate_id, &substate);
 
-        Ok((node_pointer.clone(), substate, contained_value))
+        Ok((node_pointer.clone(), substate))
     }
 
     fn new_uuid(
@@ -1313,10 +1312,11 @@ where
             ));
         }
 
-        let (parent_pointer, substate, contained_value) =
+        let (parent_pointer, substate) =
             Self::read_substate_internal(&mut self.call_frames, self.track, &substate_id)?;
 
         // TODO: Clean the following referencing up
+        let contained_value = extract_value_from_substate(&substate_id, &substate);
         if let Some(value) = contained_value {
             for component_address in &value.refed_component_addresses {
                 let node_id = RENodeId::Global(GlobalAddress::Component(*component_address));
@@ -1437,14 +1437,15 @@ where
             }
         };
 
-        let (pointer, cur_substate, cur_contained_value) =
+        let (pointer, prev_substate) =
             Self::read_substate_internal(&mut self.call_frames, self.track, &substate_id)?;
+        let prev_contained_value = extract_value_from_substate(&substate_id, &prev_substate);
 
         // Fulfill method
-        let cur_children = cur_contained_value
+        let prev_children = prev_contained_value
             .map(|v| v.node_ids())
             .unwrap_or_default();
-        verify_stored_value_update(&cur_children, &missing_nodes)?;
+        verify_stored_value_update(&prev_children, &missing_nodes)?;
 
         // TODO: verify against some schema
 
@@ -1461,7 +1462,7 @@ where
             .map_err(RuntimeError::ModuleError)?;
         }
 
-        Ok(cur_substate)
+        Ok(prev_substate)
     }
 
     fn read_blob(&mut self, blob_hash: &Hash) -> Result<&[u8], RuntimeError> {
@@ -1570,11 +1571,13 @@ where
 }
 
 // Parse contained value (for reference management and children detection)
-// TODO: introduce trait/enum for readable substates.
 fn extract_value_from_substate(
     substate_id: &SubstateId,
     substate: &ScryptoValue,
 ) -> Option<ScryptoValue> {
+    // Not that in the future, we may store child node ids and node refs in fields
+    // other than the "any" byte array. Then, we will have to change the implementation to read
+    // all fields.
     match substate_id {
         SubstateId::ComponentState(..) => {
             let substate: ComponentStateSubstate = scrypto_decode(&substate.raw).unwrap();
