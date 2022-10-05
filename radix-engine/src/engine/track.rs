@@ -109,7 +109,7 @@ pub struct Track<'s, R: FeeReserve> {
     state_track: AppStateTrack<'s>,
     loaded_substates: IndexMap<SubstateId, LoadedSubstate>,
     loaded_nodes: IndexMap<RENodeId, HeapRENode>,
-    pub new_node_ids: Vec<RENodeId>,
+    pub new_global_addresses: Vec<GlobalAddress>,
     pub fee_reserve: R,
     pub fee_table: FeeTable,
 }
@@ -147,7 +147,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             state_track,
             loaded_substates: IndexMap::new(),
             loaded_nodes: IndexMap::new(),
-            new_node_ids: Vec::new(),
+            new_global_addresses: Vec::new(),
             fee_reserve,
             fee_table,
         }
@@ -598,35 +598,13 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             // TODO: update XRD supply or disable it
             // TODO: pay tips to the lead validator
 
-            let mut new_component_addresses = Vec::new();
-            let mut new_resource_addresses = Vec::new();
-            let mut new_package_addresses = Vec::new();
-            for substate_id in self.new_node_ids {
-                match substate_id {
-                    RENodeId::Component(component_address) => {
-                        new_component_addresses.push(component_address)
-                    }
-                    RENodeId::ResourceManager(resource_address) => {
-                        new_resource_addresses.push(resource_address)
-                    }
-                    RENodeId::Package(package_address) => {
-                        new_package_addresses.push(package_address)
-                    }
-                    _ => {}
-                }
-            }
-
             TransactionResult::Commit(CommitResult {
                 outcome: match invoke_result {
                     Ok(output) => TransactionOutcome::Success(output),
                     Err(error) => TransactionOutcome::Failure(error),
                 },
                 state_updates: self.state_track.into_base().generate_diff(),
-                entity_changes: EntityChanges {
-                    new_package_addresses,
-                    new_component_addresses,
-                    new_resource_addresses,
-                },
+                entity_changes: EntityChanges::new(self.new_global_addresses),
                 resource_changes,
             })
         };
