@@ -160,22 +160,10 @@ where
     fn read_value_internal(
         call_frames: &mut Vec<CallFrame>,
         track: &mut Track<'s, R>,
-        substate_id: &SubstateId,
-    ) -> Result<(RENodePointer, ScryptoValue), RuntimeError> {
-        let node_id = substate_id.0;
-
-        // Get location
-        // Note this must be run AFTER values are taken, otherwise there would be inconsistent readable_values state
-        let node_pointer = call_frames
-            .last()
-            .expect("Current frame always exists")
-            .get_node_pointer(node_id)?;
-
-        if let SubstateId(
-            RENodeId::Component(..),
-            SubstateOffset::Component(ComponentOffset::Info),
-        ) = substate_id
-        {
+        node_pointer: RENodePointer,
+        offset: SubstateOffset,
+    ) -> Result<ScryptoValue, RuntimeError> {
+        if let SubstateOffset::Component(ComponentOffset::Info) = offset {
             node_pointer
                 .acquire_lock(
                     SubstateOffset::Component(ComponentOffset::State),
@@ -197,15 +185,11 @@ where
         // Read current value
         let current_value = {
             let mut node_ref = node_pointer.to_ref_mut(call_frames, track);
-            node_ref.read_scrypto_value(&substate_id)?
+            node_ref.read_scrypto_value(&SubstateId(node_pointer.node_id(), offset.clone()))?
         };
 
         // TODO: Remove, integrate with substate borrow mechanism
-        if let SubstateId(
-            RENodeId::Component(..),
-            SubstateOffset::Component(ComponentOffset::Info),
-        ) = substate_id
-        {
+        if let SubstateOffset::Component(ComponentOffset::Info) = offset {
             node_pointer
                 .release_lock(
                     SubstateOffset::Component(ComponentOffset::State),
@@ -222,7 +206,7 @@ where
                 .map_err(RuntimeError::KernelError)?;
         }
 
-        Ok((node_pointer.clone(), current_value))
+        Ok(current_value)
     }
 
     fn new_uuid(
@@ -1206,6 +1190,11 @@ where
             .map_err(RuntimeError::ModuleError)?;
         }
 
+        // Get Pointer
+        let node_id = substate_id.0;
+        let node_pointer = Self::current_frame(&self.call_frames).get_node_pointer(node_id)?;
+        let offset = substate_id.1;
+
         // Authorization
         if !Self::current_frame(&self.call_frames)
             .actor
@@ -1219,8 +1208,7 @@ where
             ));
         }
 
-        let (parent_pointer, current_value) =
-            Self::read_value_internal(&mut self.call_frames, self.track, &substate_id)?;
+        let current_value = Self::read_value_internal(&mut self.call_frames, self.track, node_pointer, offset)?;
 
         // TODO: Clean the following referencing up
         for global_address in current_value.global_references() {
@@ -1241,7 +1229,7 @@ where
 
         let cur_children = current_value.node_ids();
         for child_id in cur_children {
-            let child_pointer = parent_pointer.child(child_id);
+            let child_pointer = node_pointer.child(child_id);
             Self::current_frame_mut(&mut self.call_frames)
                 .node_refs
                 .insert(child_id, child_pointer);
@@ -1286,16 +1274,19 @@ where
             ));
         }
 
-        let (pointer, current_value) =
-            Self::read_value_internal(&mut self.call_frames, self.track, &substate_id)?;
+        let node_id = substate_id.0;
+        let node_pointer = Self::current_frame(&self.call_frames).get_node_pointer(node_id)?;
+        let offset = substate_id.1;
+
+        let current_value = Self::read_value_internal(&mut self.call_frames, self.track, node_pointer, offset.clone())?;
         let cur_children = current_value.node_ids();
         if !cur_children.is_empty() {
             return Err(RuntimeError::KernelError(KernelError::ValueNotAllowed));
         }
 
         // Write values
-        let mut node_ref = pointer.to_ref_mut(&mut self.call_frames, &mut self.track);
-        node_ref.replace_value_with_default(&substate_id);
+        let mut node_ref = node_pointer.to_ref_mut(&mut self.call_frames, &mut self.track);
+        node_ref.replace_value_with_default(&SubstateId(node_id, offset));
 
         for m in &mut self.modules {
             m.post_sys_call(
@@ -1369,8 +1360,11 @@ where
             }
         };
 
-        let (pointer, current_value) =
-            Self::read_value_internal(&mut self.call_frames, self.track, &substate_id)?;
+        let node_id = substate_id.0;
+        let node_pointer = Self::current_frame(&self.call_frames).get_node_pointer(node_id)?;
+        let offset = substate_id.1;
+
+        let current_value = Self::read_value_internal(&mut self.call_frames, self.track, node_pointer, offset.clone())?;
         let cur_children = current_value.node_ids();
 
         // Fulfill method
@@ -1379,9 +1373,9 @@ where
         // TODO: verify against some schema
 
         // Write values
-        let mut node_ref = pointer.to_ref_mut(&mut self.call_frames, &mut self.track);
+        let mut node_ref = node_pointer.to_ref_mut(&mut self.call_frames, &mut self.track);
         node_ref
-            .write_value(substate_id, value, taken_nodes)
+            .write_value(SubstateId(node_id, offset), value, taken_nodes)
             .map_err(|e| RuntimeError::KernelError(KernelError::NodeToSubstateFailure(e)))?;
 
         for m in &mut self.modules {

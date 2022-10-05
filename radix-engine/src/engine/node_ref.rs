@@ -16,7 +16,7 @@ pub enum RENodePointer {
 }
 
 impl RENodePointer {
-    fn node_id(&self) -> RENodeId {
+    pub fn node_id(&self) -> RENodeId {
         match self {
             RENodePointer::Heap { root, id, .. } => {
                 id.unwrap_or(*root)
