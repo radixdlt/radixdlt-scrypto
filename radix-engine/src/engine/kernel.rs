@@ -508,7 +508,7 @@ where
 
     fn invoke_method(
         &mut self,
-        mut fn_ident: ReceiverMethodIdent,
+        mut method_ident: ReceiverMethodIdent,
         input: ScryptoValue,
         mut next_owned_values: HashMap<RENodeId, HeapRootRENode>,
         mut next_frame_node_refs: HashMap<RENodeId, RENodePointer>,
@@ -517,7 +517,7 @@ where
 
         // Authorization and state load
         let re_actor = {
-            let mut node_id = fn_ident.receiver.node_id();
+            let mut node_id = method_ident.receiver.node_id();
 
             // Find node
             let mut node_pointer = {
@@ -538,7 +538,7 @@ where
             };
 
             // Deref
-            if let Receiver::Ref(RENodeId::Global(global_address)) = fn_ident.receiver {
+            if let Receiver::Ref(RENodeId::Global(global_address)) = method_ident.receiver {
                 let substate_id = SubstateId::Global(global_address);
                 node_pointer
                     .acquire_lock(substate_id.clone(), false, false, &mut self.track)
@@ -550,21 +550,21 @@ where
                     .map_err(RuntimeError::KernelError)?;
 
                 node_pointer = RENodePointer::Store(node_id);
-                fn_ident = ReceiverMethodIdent {
+                method_ident = ReceiverMethodIdent {
                     receiver: Receiver::Ref(node_id),
-                    method_ident: fn_ident.method_ident,
+                    method_ident: method_ident.method_ident,
                 }
             }
 
             // Lock Primary Substate
-            let substate_id = RENodeProperties::to_primary_substate_id(&fn_ident)?;
+            let substate_id = RENodeProperties::to_primary_substate_id(&method_ident)?;
             let is_lock_fee = matches!(node_id, RENodeId::Vault(..))
-                && (fn_ident
+                && (method_ident
                     .method_ident
                     .eq(&MethodIdent::Native(NativeMethod::Vault(
                         VaultMethod::LockFee,
                     )))
-                    || fn_ident
+                    || method_ident
                         .method_ident
                         .eq(&MethodIdent::Native(NativeMethod::Vault(
                             VaultMethod::LockContingentFee,
@@ -581,7 +581,7 @@ where
             let mut temporary_locks = Vec::new();
 
             // Load actor
-            let re_actor = match &fn_ident {
+            let re_actor = match &method_ident {
                 ReceiverMethodIdent {
                     method_ident: MethodIdent::Scrypto(ident),
                     receiver,
@@ -703,7 +703,7 @@ where
 
             // Lock Resource Managers in request
             // TODO: Remove when references cleaned up
-            if let MethodIdent::Native(..) = fn_ident.method_ident {
+            if let MethodIdent::Native(..) = method_ident.method_ident {
                 for resource_address in &input.resource_addresses {
                     let resource_substate_id =
                         SubstateId::ResourceManager(resource_address.clone());
@@ -741,21 +741,21 @@ where
                 &current_frame.actor,
                 &node_id,
                 node_pointer,
-                FnIdent::Method(fn_ident.clone()),
+                FnIdent::Method(method_ident.clone()),
                 &input,
                 &next_owned_values,
             )?;
 
             // Check method authorization
             AuthModule::receiver_auth(
-                fn_ident.clone(),
+                method_ident.clone(),
                 &input,
                 node_pointer.clone(),
                 &mut self.call_frames,
                 &mut self.track,
             )?;
 
-            match &fn_ident.receiver {
+            match &method_ident.receiver {
                 Receiver::Consumed(..) => {
                     let heap_node = Self::current_frame_mut(&mut self.call_frames)
                         .owned_heap_nodes
