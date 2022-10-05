@@ -23,6 +23,10 @@ pub struct KeyValueStore<K: Encode + Decode, V: 'static + Encode + Decode + Type
     pub value: PhantomData<V>,
 }
 
+// TODO: de-duplication
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
+pub struct KeyValueStoreEntrySubstate(pub Option<Vec<u8>>);
+
 impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> KeyValueStore<K, V> {
     /// Creates a new key value store.
     pub fn new() -> Self {
@@ -43,8 +47,10 @@ impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> KeyValueStore<K,
             SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(scrypto_encode(key))),
         );
         let input = RadixEngineInput::SubstateRead(substate_id.clone());
-        let value: Option<V> = call_engine(input);
-        value.map(|value| DataRef::new(value))
+        let value: KeyValueStoreEntrySubstate = call_engine(input);
+        value
+            .0
+            .map(|raw| DataRef::new(scrypto_decode(&raw).unwrap()))
     }
 
     pub fn get_mut(&mut self, key: &K) -> Option<DataRefMut<V>> {
@@ -53,8 +59,10 @@ impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> KeyValueStore<K,
             SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(scrypto_encode(key))),
         );
         let input = RadixEngineInput::SubstateRead(substate_id.clone());
-        let value: Option<V> = call_engine(input);
-        value.map(|value| DataRefMut::new(substate_id, value))
+        let value: KeyValueStoreEntrySubstate = call_engine(input);
+        value
+            .0
+            .map(|raw| DataRefMut::new(substate_id, scrypto_decode(&raw).unwrap()))
     }
 
     /// Inserts a new key-value pair into this map.
@@ -63,8 +71,8 @@ impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> KeyValueStore<K,
             RENodeId::KeyValueStore(self.id),
             SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(scrypto_encode(&key))),
         );
-
-        let input = RadixEngineInput::SubstateWrite(substate_id, scrypto_encode(&value));
+        let substate = KeyValueStoreEntrySubstate(Some(scrypto_encode(&value)));
+        let input = RadixEngineInput::SubstateWrite(substate_id, scrypto_encode(&substate));
         call_engine(input)
     }
 }

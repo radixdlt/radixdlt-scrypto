@@ -100,7 +100,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
                 .map(|s| s.into())
                 .unwrap();
 
-            let state_data = ScryptoValue::from_slice(state.state()).unwrap();
+            let state_data = ScryptoValue::from_slice(&state.raw).unwrap();
             writeln!(output, "{}: {}", "State".green().bold(), state_data);
 
             // Find all vaults owned by the component, assuming a tree structure.
@@ -140,7 +140,7 @@ fn dump_kv_store<T: ReadableSubstateStore + QueryableSubstateStore, O: std::io::
     );
     for (last, (k, v)) in map.iter().identify_last() {
         let key = ScryptoValue::from_slice(k).unwrap();
-        if let Some(v) = &v.kv_entry().0 {
+        if let Some(v) = &v.kv_store_entry().0 {
             let value = ScryptoValue::from_slice(&v).unwrap();
             writeln!(output, "{} {} => {}", list_item_prefix(last), key, value);
             referenced_maps.extend(value.kv_store_ids);

@@ -24,42 +24,14 @@ impl AuthModule {
             .last()
             .expect("Current call frame does not exist");
 
-        let auth_zone = cur_call_frame
-            .owned_heap_nodes
-            .values()
-            .find(|e| {
-                matches!(
-                    e,
-                    HeapRootRENode {
-                        root: HeapRENode::AuthZone(..),
-                        ..
-                    }
-                )
-            })
-            .expect("Could not find auth zone")
-            .root
-            .auth_zone();
+        let auth_zone = Self::get_auth_zone(cur_call_frame);
 
         let mut auth_zones = vec![auth_zone];
 
         // FIXME: This is wrong as it allows extern component calls to use caller's auth zone
         // Also, need to add a test for this
         if let Some(frame) = call_frames.iter().rev().nth(1) {
-            let auth_zone = frame
-                .owned_heap_nodes
-                .values()
-                .find(|e| {
-                    matches!(
-                        e,
-                        HeapRootRENode {
-                            root: HeapRENode::AuthZone(..),
-                            ..
-                        }
-                    )
-                })
-                .expect("Could not find auth zone")
-                .root
-                .auth_zone();
+            let auth_zone = Self::get_auth_zone(frame);
             auth_zones.push(auth_zone);
         }
 
@@ -79,6 +51,24 @@ impl AuthModule {
         Ok(())
     }
 
+    pub fn get_auth_zone(call_frame: &CallFrame) -> &AuthZone {
+        call_frame
+            .owned_heap_nodes
+            .values()
+            .find(|e| {
+                matches!(
+                    e,
+                    HeapRootRENode {
+                        root: HeapRENode::AuthZone(..),
+                        ..
+                    }
+                )
+            })
+            .expect("Could not find auth zone")
+            .root
+            .auth_zone()
+    }
+
     pub fn function_auth(
         function_ident: FunctionIdent,
         call_frames: &mut Vec<CallFrame>,
@@ -96,7 +86,7 @@ impl AuthModule {
         method_ident: ReceiverMethodIdent,
         input: &ScryptoValue,
         node_pointer: RENodePointer,
-        call_frames: &Vec<CallFrame>,
+        call_frames: &mut Vec<CallFrame>,
         track: &mut Track<'s, R>,
     ) -> Result<(), RuntimeError> {
         let auth = match &method_ident {
@@ -152,8 +142,8 @@ impl AuthModule {
                 method_ident: MethodIdent::Scrypto(ref ident),
             } => {
                 let (package_address, blueprint_name) = {
-                    let value_ref = node_pointer.to_ref(call_frames, track);
-                    let component = value_ref.component();
+                    let mut node_ref = node_pointer.to_ref(call_frames, track);
+                    let component = node_ref.component();
                     (
                         component.info.package_address.clone(),
                         component.info.blueprint_name.clone(),
@@ -190,11 +180,14 @@ impl AuthModule {
                     .map_err(RuntimeError::KernelError)?;
 
                 {
-                    let node_ref = node_pointer.to_ref(call_frames, track);
-                    let component = node_ref.component();
+                    let mut node_ref = node_pointer.to_ref_mut(call_frames, track);
+                    let state = node_ref
+                        .component_state_get()
+                        .map_err(|e| RuntimeError::ModuleError(ModuleError::TrackError(e)))?;
+                    let component = node_ref.component_mut();
                     component
                         .info
-                        .method_authorization(&component.state, &abi.structure, ident)
+                        .method_authorization(&state, &abi.structure, ident)
                 }
             }
             ReceiverMethodIdent {

@@ -53,7 +53,7 @@ impl RENodeProperties {
                 }
             },
             MethodIdent::Scrypto { .. } => match method_ident.receiver.node_id() {
-                RENodeId::Component(..) => SubstateOffset::Component(ComponentOffset::State),
+                RENodeId::Component(..) => SubstateOffset::Component(ComponentOffset::Info),
                 _ => {
                     return Err(RuntimeError::KernelError(KernelError::MethodNotFound(
                         method_ident.clone(),

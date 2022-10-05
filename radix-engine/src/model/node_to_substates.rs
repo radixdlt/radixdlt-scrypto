@@ -24,10 +24,10 @@ pub fn node_to_substates(node: HeapRENode) -> HashMap<SubstateOffset, Substate> 
             substates.insert(SubstateOffset::Vault(VaultOffset::Vault), substate.into());
         }
         HeapRENode::KeyValueStore(store) => {
-            for (k, v) in store.store {
+            for (k, v) in store.loaded_entries {
                 substates.insert(
                     SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(k)),
-                    Substate::KeyValueStoreEntry(KeyValueStoreEntrySubstate(Some(v.raw))),
+                    v.into(),
                 );
             }
         }
@@ -36,10 +36,12 @@ pub fn node_to_substates(node: HeapRENode) -> HashMap<SubstateOffset, Substate> 
                 SubstateOffset::Component(ComponentOffset::Info),
                 component.info.into(),
             );
-            substates.insert(
-                SubstateOffset::Component(ComponentOffset::State),
-                component.state.into(),
-            );
+            if let Some(state) = component.state {
+                substates.insert(
+                    SubstateOffset::Component(ComponentOffset::State),
+                    state.into(),
+                );
+            }
         }
         HeapRENode::Worktop(_) => panic!("Unexpected"),
         HeapRENode::Package(package) => {
@@ -49,19 +51,16 @@ pub fn node_to_substates(node: HeapRENode) -> HashMap<SubstateOffset, Substate> 
                 substate.into(),
             );
         }
-        HeapRENode::ResourceManager(resource_manager, maybe_non_fungibles) => {
+        HeapRENode::ResourceManager(resource_manager) => {
             let substate = resource_manager.info;
             substates.insert(
                 SubstateOffset::Resource(ResourceManagerOffset::ResourceManager),
                 substate.into(),
             );
 
-            if let Some(non_fungibles) = maybe_non_fungibles {
-                for (id, non_fungible) in non_fungibles {
-                    let offset = SubstateOffset::Resource(ResourceManagerOffset::NonFungible(id));
-                    let substate = Substate::NonFungible(NonFungibleSubstate(Some(non_fungible)));
-                    substates.insert(offset, substate);
-                }
+            for (id, non_fungible) in resource_manager.loaded_non_fungibles {
+                let offset = SubstateOffset::Resource(ResourceManagerOffset::NonFungible(id));
+                substates.insert(offset, non_fungible.into());
             }
         }
         HeapRENode::System(system) => {

@@ -10,6 +10,7 @@ use crate::fee::FeeSummary;
 use crate::fee::FeeTable;
 use crate::ledger::*;
 use crate::model::Component;
+use crate::model::KeyValueStore;
 use crate::model::KeyValueStoreEntrySubstate;
 use crate::model::LockableResource;
 use crate::model::NonFungibleSubstate;
@@ -18,6 +19,7 @@ use crate::model::ResourceManager;
 use crate::model::Substate;
 use crate::model::System;
 use crate::model::Vault;
+use crate::model::VaultSubstate;
 use crate::model::{node_to_substates, Package};
 use crate::model::{nodes_to_substates, GlobalRENode};
 use crate::transaction::CommitResult;
@@ -217,115 +219,6 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             }
         }
 
-        // Converts the main substate into corresponding node.
-        // This model requires a primary substate per node.
-        if !loaded_substate.substate.is_taken() {
-            let substate = loaded_substate.substate.take();
-            match substate {
-                Substate::GlobalRENode(substate) => {
-                    let node = HeapRENode::Global(GlobalRENode { address: substate });
-                    self.loaded_nodes.insert(
-                        match &substate_id {
-                            SubstateId(
-                                RENodeId::Global(global_address),
-                                SubstateOffset::Global(GlobalOffset::Global),
-                            ) => RENodeId::Global(*global_address),
-                            _ => panic!("Unexpected substate id type"),
-                        },
-                        node,
-                    );
-                }
-                Substate::System(substate) => {
-                    let node = HeapRENode::System(System {
-                        info: substate.into(),
-                    });
-                    self.loaded_nodes
-                        .insert(RENodeId::System(SYS_SYSTEM_COMPONENT), node);
-                }
-                Substate::ResourceManager(substate) => {
-                    let node = HeapRENode::ResourceManager(
-                        ResourceManager {
-                            info: substate.into(),
-                        },
-                        None,
-                    );
-                    self.loaded_nodes.insert(
-                        match &substate_id {
-                            SubstateId(
-                                RENodeId::ResourceManager(address),
-                                SubstateOffset::Resource(ResourceManagerOffset::ResourceManager),
-                            ) => RENodeId::ResourceManager(*address),
-                            _ => panic!("Unexpected substate id type"),
-                        },
-                        node,
-                    );
-                }
-                Substate::ComponentInfo(substate) => {
-                    let address = match &substate_id {
-                        SubstateId(
-                            RENodeId::Component(address),
-                            SubstateOffset::Component(ComponentOffset::Info),
-                        ) => *address,
-                        _ => panic!("Unexpected substate id type"),
-                    };
-
-                    let component_state = self.loaded_substates
-                        .get_mut(&SubstateId(RENodeId::Component(address), SubstateOffset::Component(ComponentOffset::State)))
-                        .expect("Lock ComponentState before ComponentInfo before lazily loading is supported")
-                        .substate
-                        .take();
-
-                    let node = HeapRENode::Component(Component {
-                        info: substate,
-                        state: component_state.into(),
-                    });
-                    self.loaded_nodes.insert(
-                        match &substate_id {
-                            SubstateId(
-                                RENodeId::Component(address),
-                                SubstateOffset::Component(ComponentOffset::Info),
-                            ) => RENodeId::Component(*address),
-                            _ => panic!("Unexpected substate id type"),
-                        },
-                        node,
-                    );
-                }
-                Substate::Package(substate) => {
-                    let node = HeapRENode::Package(Package {
-                        info: substate.into(),
-                    });
-                    self.loaded_nodes.insert(
-                        match &substate_id {
-                            SubstateId(
-                                RENodeId::Package(address),
-                                SubstateOffset::Package(PackageOffset::Package),
-                            ) => RENodeId::Package(*address),
-                            _ => panic!("Unexpected substate id type"),
-                        },
-                        node,
-                    );
-                }
-                Substate::Vault(substate) => {
-                    let node = HeapRENode::Vault(Vault::new(substate.0));
-                    self.loaded_nodes.insert(
-                        match &substate_id {
-                            SubstateId(
-                                RENodeId::Vault(vault_id),
-                                SubstateOffset::Vault(VaultOffset::Vault),
-                            ) => RENodeId::Vault(*vault_id),
-                            _ => panic!("Unexpected substate id type"),
-                        },
-                        node,
-                    );
-                }
-                s @ Substate::ComponentState(_)
-                | s @ Substate::NonFungible(_)
-                | s @ Substate::KeyValueStoreEntry(_) => {
-                    self.put_substate(substate_id, s);
-                }
-            };
-        }
-
         Ok(())
     }
 
@@ -363,14 +256,82 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         Ok(())
     }
 
+    fn create_node_if_missing(&mut self, node_id: &RENodeId) {
+        if !self.loaded_nodes.contains_key(node_id) {
+            match node_id {
+                RENodeId::AuthZone(_)
+                | RENodeId::Bucket(_)
+                | RENodeId::Proof(_)
+                | RENodeId::Worktop => panic!("Unexpected"),
+                RENodeId::Global(..) => {
+                    let offset = SubstateOffset::Global(GlobalOffset::Global);
+                    let substate = self.take_substate(SubstateId(*node_id, offset));
+                    let node = HeapRENode::Global(GlobalRENode {
+                        address: substate.into(),
+                    });
+                    self.loaded_nodes.insert(node_id.clone(), node);
+                }
+                RENodeId::KeyValueStore(_) => {
+                    self.loaded_nodes.insert(
+                        node_id.clone(),
+                        HeapRENode::KeyValueStore(KeyValueStore::new().into()),
+                    ); // TODO: zero-cost node instantiation?
+                }
+                RENodeId::Component(..) => {
+                    let offset = SubstateOffset::Component(ComponentOffset::Info);
+                    let substate = self.take_substate(SubstateId(*node_id, offset));
+                    let node = HeapRENode::Component(Component {
+                        info: substate.into(),
+                        state: None,
+                    });
+                    self.loaded_nodes.insert(node_id.clone(), node);
+                }
+                RENodeId::Vault(..) => {
+                    let offset = SubstateOffset::Vault(VaultOffset::Vault);
+                    let substate: VaultSubstate =
+                        self.take_substate(SubstateId(*node_id, offset)).into();
+                    let node = HeapRENode::Vault(Vault::new(substate.0));
+                    self.loaded_nodes.insert(node_id.clone(), node);
+                }
+                RENodeId::ResourceManager(..) => {
+                    let offset = SubstateOffset::Resource(ResourceManagerOffset::ResourceManager);
+                    let substate = self.take_substate(SubstateId(*node_id, offset));
+                    let node = HeapRENode::ResourceManager(ResourceManager {
+                        info: substate.into(),
+                        loaded_non_fungibles: HashMap::new(),
+                    });
+                    self.loaded_nodes.insert(node_id.clone(), node);
+                }
+                RENodeId::Package(..) => {
+                    let offset = SubstateOffset::Package(PackageOffset::Package);
+                    let substate = self.take_substate(SubstateId(*node_id, offset));
+                    let node = HeapRENode::Package(Package {
+                        info: substate.into(),
+                    });
+                    self.loaded_nodes.insert(node_id.clone(), node);
+                }
+                RENodeId::System(..) => {
+                    let offset = SubstateOffset::System(SystemOffset::System);
+                    let substate = self.take_substate(SubstateId(*node_id, offset));
+                    let node = HeapRENode::System(System {
+                        info: substate.into(),
+                    });
+                    self.loaded_nodes.insert(node_id.clone(), node);
+                }
+            }
+        }
+    }
+
     // TODO: Clean this up!
     // Despite being named as borrow_*, borrow rules are not enforced here but within `acquire_lock`.
 
-    pub fn borrow_node(&self, node_id: &RENodeId) -> &HeapRENode {
+    pub fn borrow_node(&mut self, node_id: &RENodeId) -> &HeapRENode {
+        self.create_node_if_missing(node_id);
         self.loaded_nodes.get(node_id).expect("Node not available")
     }
 
     pub fn borrow_node_mut(&mut self, node_id: &RENodeId) -> &mut HeapRENode {
+        self.create_node_if_missing(node_id);
         self.loaded_nodes
             .get_mut(node_id)
             .expect("Node not available")
@@ -394,6 +355,14 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             .expect(&format!("Substate {:?} was never locked", substate_id))
             .substate
             .borrow_mut()
+    }
+
+    pub fn take_substate(&mut self, substate_id: SubstateId) -> Substate {
+        self.loaded_substates
+            .get_mut(&substate_id)
+            .expect(&format!("Substate {:?} was never locked", substate_id))
+            .substate
+            .take()
     }
 
     // TODO remove
@@ -520,7 +489,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             .and_then(|()| {
                 self.fee_reserve.consume(
                     self.fee_table.tx_signature_verification_per_sig()
-                        * transaction.initial_proofs().len() as u32,
+                        * transaction.auth_zone_params().initial_proofs.len() as u32,
                     "verify_signatures",
                     false,
                 )

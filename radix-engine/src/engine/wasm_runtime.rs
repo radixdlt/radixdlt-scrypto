@@ -2,7 +2,7 @@ use crate::engine::RuntimeError;
 use crate::engine::{HeapRENode, SystemApi};
 use crate::fee::*;
 use crate::model::{
-    Component, ComponentInfoSubstate, ComponentStateSubstate, HeapKeyValueStore, InvokeError,
+    Component, ComponentInfoSubstate, ComponentStateSubstate, InvokeError, KeyValueStore,
 };
 use crate::types::*;
 use crate::wasm::*;
@@ -87,10 +87,10 @@ where
                 // Create component
                 HeapRENode::Component(Component {
                     info: ComponentInfoSubstate::new(package_address, blueprint_name, Vec::new()),
-                    state: ComponentStateSubstate::new(state),
+                    state: Some(ComponentStateSubstate::new(state)),
                 })
             }
-            ScryptoRENode::KeyValueStore => HeapRENode::KeyValueStore(HeapKeyValueStore::new()),
+            ScryptoRENode::KeyValueStore => HeapRENode::KeyValueStore(KeyValueStore::new()),
         };
 
         let id = self.system_api.node_create(node)?;
@@ -102,25 +102,6 @@ where
         Ok(ScryptoValue::from_typed(&node_ids))
     }
 
-    // TODO: This logic should move into KeyValueEntry decoding
-    fn verify_stored_key(value: &ScryptoValue) -> Result<(), RuntimeError> {
-        if !value.bucket_ids.is_empty() {
-            return Err(RuntimeError::KernelError(KernelError::BucketNotAllowed));
-        }
-        if !value.proof_ids.is_empty() {
-            return Err(RuntimeError::KernelError(KernelError::ProofNotAllowed));
-        }
-        if !value.vault_ids.is_empty() {
-            return Err(RuntimeError::KernelError(KernelError::VaultNotAllowed));
-        }
-        if !value.kv_store_ids.is_empty() {
-            return Err(RuntimeError::KernelError(
-                KernelError::KeyValueStoreNotAllowed,
-            ));
-        }
-        Ok(())
-    }
-
     fn handle_node_globalize(&mut self, node_id: RENodeId) -> Result<ScryptoValue, RuntimeError> {
         let global_address = self.system_api.node_globalize(node_id)?;
         Ok(ScryptoValue::from_typed(&global_address))
@@ -130,18 +111,6 @@ where
         &mut self,
         substate_id: SubstateId,
     ) -> Result<ScryptoValue, RuntimeError> {
-        match &substate_id {
-            SubstateId(
-                RENodeId::KeyValueStore(..),
-                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key_bytes)),
-            ) => {
-                let key_data = ScryptoValue::from_slice(&key_bytes)
-                    .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
-                Self::verify_stored_key(&key_data)?;
-            }
-            _ => {}
-        }
-
         self.system_api.substate_read(substate_id)
     }
 
@@ -150,20 +119,15 @@ where
         substate_id: SubstateId,
         value: Vec<u8>,
     ) -> Result<ScryptoValue, RuntimeError> {
-        match &substate_id {
-            SubstateId(
-                RENodeId::KeyValueStore(..),
-                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key_bytes)),
-            ) => {
-                let key_data = ScryptoValue::from_slice(&key_bytes)
-                    .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
-                Self::verify_stored_key(&key_data)?;
-            }
-            _ => {}
-        }
-        let scrypto_value = ScryptoValue::from_slice(&value)
-            .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
-        self.system_api.substate_write(substate_id, scrypto_value)?;
+        // FIXME: check if the value contains NOT allowed values.
+
+        self.system_api.substate_write(
+            substate_id,
+            ScryptoValue::from_slice(&value)
+                .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?,
+        )?;
+
+        // TODO: do we ever want to return the previous substate value
         Ok(ScryptoValue::unit())
     }
 
