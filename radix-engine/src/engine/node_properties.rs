@@ -1,5 +1,6 @@
 use super::{KernelError, RuntimeError};
 use crate::types::*;
+use scrypto::core::{MethodIdent, ReceiverMethodIdent};
 
 pub struct RENodeProperties;
 
@@ -7,6 +8,7 @@ impl RENodeProperties {
     /// Specifies whether an RENode may globalize as the root node or not
     pub fn can_globalize(node_id: RENodeId) -> bool {
         match node_id {
+            RENodeId::Global(..) => false,
             RENodeId::AuthZone(..) => false,
             RENodeId::Bucket(..) => false,
             RENodeId::Proof(..) => false,
@@ -22,11 +24,10 @@ impl RENodeProperties {
     }
 
     pub fn to_primary_substate_id(
-        function: &FnIdentifier,
-        node_id: RENodeId,
+        method_ident: &ReceiverMethodIdent,
     ) -> Result<SubstateId, RuntimeError> {
-        let substate_id = match function {
-            FnIdentifier::Native(..) => match node_id {
+        let substate_id = match &method_ident.method_ident {
+            MethodIdent::Native(..) => match method_ident.receiver.node_id() {
                 RENodeId::AuthZone(auth_zone_id) => SubstateId::AuthZone(auth_zone_id),
                 RENodeId::Bucket(bucket_id) => SubstateId::Bucket(bucket_id),
                 RENodeId::Proof(proof_id) => SubstateId::Proof(proof_id),
@@ -41,17 +42,17 @@ impl RENodeProperties {
                 RENodeId::Vault(vault_id) => SubstateId::Vault(vault_id),
                 _ => {
                     return Err(RuntimeError::KernelError(KernelError::MethodNotFound(
-                        function.clone(),
+                        method_ident.clone(),
                     )))
                 }
             },
-            FnIdentifier::Scrypto { .. } => match node_id {
+            MethodIdent::Scrypto { .. } => match method_ident.receiver.node_id() {
                 RENodeId::Component(component_address) => {
                     SubstateId::ComponentInfo(component_address)
                 }
                 _ => {
                     return Err(RuntimeError::KernelError(KernelError::MethodNotFound(
-                        function.clone(),
+                        method_ident.clone(),
                     )))
                 }
             },
@@ -66,6 +67,7 @@ pub struct SubstateProperties;
 impl SubstateProperties {
     pub fn get_node_id(substate_id: &SubstateId) -> RENodeId {
         match substate_id {
+            SubstateId::Global(global_address) => RENodeId::Global(*global_address),
             SubstateId::ComponentInfo(component_address, ..) => {
                 RENodeId::Component(*component_address)
             }
@@ -78,11 +80,9 @@ impl SubstateProperties {
             SubstateId::NonFungible(non_fungible_store_id, ..) => {
                 RENodeId::NonFungibleStore(*non_fungible_store_id)
             }
-            SubstateId::KeyValueStoreSpace(key_value_store_id) => {
-                RENodeId::KeyValueStore(*key_value_store_id)
-            }
-            SubstateId::KeyValueStoreEntry(key_value_store_id, ..) => {
-                RENodeId::KeyValueStore(*key_value_store_id)
+            SubstateId::KeyValueStoreSpace(kv_store_id) => RENodeId::KeyValueStore(*kv_store_id),
+            SubstateId::KeyValueStoreEntry(kv_store_id, ..) => {
+                RENodeId::KeyValueStore(*kv_store_id)
             }
             SubstateId::Vault(vault_id) => RENodeId::Vault(*vault_id),
             SubstateId::Package(package_address) => RENodeId::Package(*package_address),
@@ -99,6 +99,7 @@ impl SubstateProperties {
 
     pub fn can_own_nodes(substate_id: &SubstateId) -> bool {
         match substate_id {
+            SubstateId::Global(..) => true,
             SubstateId::AuthZone(..) => false,
             SubstateId::KeyValueStoreEntry(..) => true,
             SubstateId::ComponentState(..) => true,

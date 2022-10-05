@@ -9,21 +9,20 @@ use crate::fee::FeeReserveError;
 use crate::fee::FeeSummary;
 use crate::fee::FeeTable;
 use crate::ledger::*;
-use crate::model::node_to_substates;
-use crate::model::nodes_to_substates;
 use crate::model::Component;
 use crate::model::KeyValueStore;
 use crate::model::KeyValueStoreEntrySubstate;
 use crate::model::LockableResource;
 use crate::model::NonFungibleStore;
 use crate::model::NonFungibleSubstate;
-use crate::model::Package;
 use crate::model::Resource;
 use crate::model::ResourceManager;
 use crate::model::Substate;
 use crate::model::System;
 use crate::model::Vault;
 use crate::model::VaultSubstate;
+use crate::model::{node_to_substates, Package};
+use crate::model::{nodes_to_substates, GlobalRENode};
 use crate::transaction::CommitResult;
 use crate::transaction::EntityChanges;
 use crate::transaction::RejectResult;
@@ -160,13 +159,6 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         self.application_logs.push((level, message));
     }
 
-    // TODO: Clean this up
-    pub fn is_root(&mut self, _substate_id: &SubstateId) -> bool {
-        // self.state_track.is_root(substate_id)
-        // FIXME: This is temporarily disabled and can be re-enabled by storing a flag alongside each loaded node.
-        true
-    }
-
     // TODO: to read/write a value owned by track requires three coordinated steps:
     // 1. Attempt to acquire the lock
     // 2. Apply the operation
@@ -268,6 +260,13 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                 | RENodeId::Bucket(_)
                 | RENodeId::Proof(_)
                 | RENodeId::Worktop => panic!("Unexpected"),
+                RENodeId::Global(address) => {
+                    let substate = self.take_substate(SubstateId::Global(*address));
+                    let node = HeapRENode::Global(GlobalRENode {
+                        address: substate.into(),
+                    });
+                    self.loaded_nodes.insert(node_id.clone(), node);
+                }
                 RENodeId::KeyValueStore(_) => {
                     self.loaded_nodes.insert(
                         node_id.clone(),
@@ -388,8 +387,8 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             SubstateId::NonFungibleSpace(resource_address) => {
                 SubstateId::NonFungible(resource_address, NonFungibleId(key))
             }
-            SubstateId::KeyValueStoreSpace(key_value_store_id) => {
-                SubstateId::KeyValueStoreEntry(key_value_store_id, key)
+            SubstateId::KeyValueStoreSpace(kv_store_id) => {
+                SubstateId::KeyValueStoreEntry(kv_store_id, key)
             }
             _ => panic!("Unsupported key value"),
         };
@@ -429,8 +428,8 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             SubstateId::NonFungibleSpace(resource_address) => {
                 SubstateId::NonFungible(resource_address, NonFungibleId(key.clone()))
             }
-            SubstateId::KeyValueStoreSpace(key_value_store_id) => {
-                SubstateId::KeyValueStoreEntry(key_value_store_id, key.clone())
+            SubstateId::KeyValueStoreSpace(kv_store_id) => {
+                SubstateId::KeyValueStoreEntry(kv_store_id, key.clone())
             }
             _ => panic!("Unsupported key value"),
         };

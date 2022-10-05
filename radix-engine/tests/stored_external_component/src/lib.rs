@@ -38,7 +38,7 @@ blueprint! {
 
         pub fn func(&mut self) {
             if let Some(component) = self.external_component {
-                let component: &Component = borrow_component!(component);
+                let component: &BorrowedGlobalComponent = borrow_component!(component);
                 component.call::<()>("func", args![]);
             }
         }

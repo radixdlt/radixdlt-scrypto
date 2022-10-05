@@ -2,10 +2,7 @@ use crate::model::Substate;
 use crate::types::*;
 
 pub trait QueryableSubstateStore {
-    fn get_key_value_store_entries(
-        &self,
-        key_value_store_id: &KeyValueStoreId,
-    ) -> HashMap<Vec<u8>, Substate>;
+    fn get_kv_store_entries(&self, kv_store_id: &KeyValueStoreId) -> HashMap<Vec<u8>, Substate>;
 }
 
 #[derive(Debug, Clone, Hash, TypeId, Encode, Decode, PartialEq, Eq)]
@@ -23,12 +20,10 @@ pub struct OutputValue {
 
 pub trait ReadableSubstateStore {
     fn get_substate(&self, substate_id: &SubstateId) -> Option<OutputValue>;
-    fn is_root(&self, substate_id: &SubstateId) -> bool;
 }
 
 pub trait WriteableSubstateStore {
     fn put_substate(&mut self, substate_id: SubstateId, substate: OutputValue);
-    fn set_root(&mut self, substate_id: SubstateId);
 }
 
 pub trait SubstateStore: ReadableSubstateStore + WriteableSubstateStore {}

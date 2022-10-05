@@ -6,6 +6,7 @@ use crate::model::*;
 use crate::types::*;
 use crate::wasm::WasmError;
 use sbor::*;
+use scrypto::core::{FnIdent, ReceiverMethodIdent};
 
 use super::NodeToSubstateFailure;
 use super::TrackError;
@@ -40,13 +41,17 @@ pub enum RuntimeError {
 pub enum KernelError {
     // invocation
     WasmError(WasmError),
+    RENodeNotVisible(RENodeId),
     InvokeMethodInvalidReceiver(RENodeId),
-    InvokeMethodInvalidReferencePass(RENodeId),
-    InvokeMethodInvalidReferenceReturn(RENodeId),
+    InvokeInvalidReferencePass(RENodeId),
+    InvokeInvalidReferenceReturn(RENodeId),
     MaxCallDepthLimitReached,
-    MethodNotFound(FnIdentifier),
-    InvalidFnInput { fn_identifier: FnIdentifier },
-    InvalidFnOutput { fn_identifier: FnIdentifier },
+    FnIdentNotFound(FnIdent),
+    MethodNotFound(ReceiverMethodIdent),
+    FunctionNotFound(FunctionIdent),
+    InvalidFnInput2(FnIdent),
+    InvalidFnInput { fn_identifier: FunctionIdent },
+    InvalidFnOutput { fn_identifier: FunctionIdent },
 
     // ID allocation
     IdAllocationError(IdAllocationError),
@@ -85,6 +90,7 @@ pub enum KernelError {
     CantMoveLockedBucket,
     CantMoveRestrictedProof,
     CantMoveWorktop,
+    CantMoveGlobal,
     CantMoveAuthZone,
     DropFailure(DropFailure),
 
@@ -93,12 +99,11 @@ pub enum KernelError {
 
 #[derive(Debug, Encode, Decode, TypeId)]
 pub enum ModuleError {
-    AuthorizationError {
-        function: FnIdentifier,
+    AuthError {
+        fn_ident: FnIdent,
         authorization: MethodAuthorization,
         error: MethodAuthorizationError,
     },
-
     CostingError(FeeReserveError),
 
     TrackError(TrackError),

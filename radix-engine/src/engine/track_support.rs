@@ -1,6 +1,5 @@
-use core::ops::RangeFull;
-
-use indexmap::{IndexMap, IndexSet};
+use indexmap::IndexMap;
+use sbor::rust::ops::RangeFull;
 
 use crate::ledger::*;
 use crate::model::*;
@@ -19,14 +18,12 @@ pub struct BaseStateTrack<'s> {
     /// the separation between app state track and base stack track.
     ///
     substates: IndexMap<SubstateId, Option<Vec<u8>>>,
-    new_root_substates: IndexSet<SubstateId>,
 }
 
 impl<'s> BaseStateTrack<'s> {
     pub fn new(substate_store: &'s dyn ReadableSubstateStore) -> Self {
         Self {
             substate_store,
-            new_root_substates: IndexSet::new(),
             substates: IndexMap::new(),
         }
     }
@@ -44,10 +41,6 @@ impl<'s> BaseStateTrack<'s> {
 
     pub fn generate_diff(&self) -> StateDiff {
         let mut diff = StateDiff::new();
-
-        for substate_id in &self.new_root_substates {
-            diff.new_roots.push(substate_id.clone());
-        }
 
         for (substate_id, substate) in &self.substates {
             if let Some(substate) = substate {
@@ -74,7 +67,7 @@ impl<'s> BaseStateTrack<'s> {
                         };
                         diff.up_substates.insert(substate_id.clone(), output_value);
                     }
-                    SubstateId::KeyValueStoreEntry(key_value_store_id, key) => {
+                    SubstateId::KeyValueStoreEntry(kv_store_id, key) => {
                         let next_version = if let Some(existing_output_id) =
                             Self::get_substate_output_id(&self.substate_store, &substate_id)
                         {
@@ -82,8 +75,7 @@ impl<'s> BaseStateTrack<'s> {
                             diff.down_substates.push(existing_output_id);
                             next_version
                         } else {
-                            let parent_address =
-                                SubstateId::KeyValueStoreSpace(*key_value_store_id);
+                            let parent_address = SubstateId::KeyValueStoreSpace(*kv_store_id);
                             let virtual_output_id = VirtualSubstateId(parent_address, key.clone());
                             diff.down_virtual_substates.push(virtual_output_id);
                             0
@@ -135,7 +127,6 @@ pub struct AppStateTrack<'s> {
     base_state_track: BaseStateTrack<'s>,
     /// Substates either created during the transaction or loaded from the base state track
     substates: IndexMap<SubstateId, Option<Vec<u8>>>,
-    new_root_substates: IndexSet<SubstateId>,
 }
 
 impl<'s> AppStateTrack<'s> {
@@ -143,28 +134,7 @@ impl<'s> AppStateTrack<'s> {
         Self {
             base_state_track,
             substates: IndexMap::new(),
-            new_root_substates: IndexSet::new(),
         }
-    }
-
-    pub fn is_root(&mut self, substate_id: &SubstateId) -> bool {
-        if self.new_root_substates.contains(substate_id) {
-            return true;
-        }
-
-        if self
-            .base_state_track
-            .new_root_substates
-            .contains(substate_id)
-        {
-            return true;
-        }
-
-        self.base_state_track.substate_store.is_root(substate_id)
-    }
-
-    pub fn set_substate_root(&mut self, substate_id: SubstateId) {
-        self.new_root_substates.insert(substate_id);
     }
 
     /// Returns a copy of the substate associated with the given address, if exists
@@ -229,15 +199,11 @@ impl<'s> AppStateTrack<'s> {
         self.base_state_track
             .substates
             .extend(self.substates.drain(RangeFull));
-        self.base_state_track
-            .new_root_substates
-            .extend(self.new_root_substates.drain(RangeFull));
     }
 
     /// Rollback all state changes
     pub fn rollback(&mut self) {
         self.substates.clear();
-        self.new_root_substates.clear();
     }
 
     /// Unwraps into the base state track

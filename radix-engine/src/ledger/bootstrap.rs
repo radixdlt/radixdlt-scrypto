@@ -5,7 +5,7 @@ use crate::transaction::{ExecutionConfig, TransactionExecutor};
 use crate::types::ResourceMethodAuthKey::Withdraw;
 use crate::types::*;
 use crate::wasm::{DefaultWasmEngine, WasmInstrumenter};
-use scrypto::core::Blob;
+use scrypto::core::{Blob, NativeFunction, ResourceManagerFunction, SystemFunction};
 use scrypto::resource::Bucket;
 use transaction::model::{Executable, Instruction, SystemTransaction, TransactionManifest};
 use transaction::validation::{IdAllocator, IdSpace};
@@ -64,19 +64,19 @@ pub fn create_genesis() -> SystemTransaction {
     };
     let create_ecdsa_secp256k1_token = {
         let metadata: HashMap<String, String> = HashMap::new();
-        let mut ecdsa_resource_auth = HashMap::new();
-        ecdsa_resource_auth.insert(Withdraw, (rule!(allow_all), LOCKED));
+        let mut access_rules = HashMap::new();
+        access_rules.insert(Withdraw, (rule!(allow_all), LOCKED));
         let initial_supply: Option<MintParams> = None;
 
         // TODO: Create token at a specific address
         Instruction::CallFunction {
-            fn_identifier: FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
-                ResourceManagerFnIdentifier::Create,
+            function_ident: FunctionIdent::Native(NativeFunction::ResourceManager(
+                ResourceManagerFunction::Create,
             )),
             args: args!(
                 ResourceType::NonFungible,
                 metadata,
-                ecdsa_resource_auth,
+                access_rules,
                 initial_supply
             ),
         }
@@ -92,8 +92,8 @@ pub fn create_genesis() -> SystemTransaction {
 
         // TODO: Create token at a specific address
         Instruction::CallFunction {
-            fn_identifier: FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
-                ResourceManagerFnIdentifier::Create,
+            function_ident: FunctionIdent::Native(NativeFunction::ResourceManager(
+                ResourceManagerFunction::Create,
             )),
             args: args!(
                 ResourceType::NonFungible,
@@ -119,8 +119,8 @@ pub fn create_genesis() -> SystemTransaction {
         });
 
         Instruction::CallFunction {
-            fn_identifier: FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
-                ResourceManagerFnIdentifier::Create,
+            function_ident: FunctionIdent::Native(NativeFunction::ResourceManager(
+                ResourceManagerFunction::Create,
             )),
             args: args!(
                 ResourceType::Fungible { divisibility: 18 },
@@ -138,7 +138,7 @@ pub fn create_genesis() -> SystemTransaction {
     let create_xrd_faucet = {
         let bucket = Bucket(id_allocator.new_bucket_id().unwrap());
         Instruction::CallFunction {
-            fn_identifier: FnIdentifier::Scrypto {
+            function_ident: FunctionIdent::Scrypto {
                 package_address: SYS_FAUCET_PACKAGE,
                 blueprint_name: "Faucet".to_string(),
                 ident: "new".to_string(),
@@ -149,28 +149,26 @@ pub fn create_genesis() -> SystemTransaction {
 
     let create_system_component = {
         Instruction::CallFunction {
-            fn_identifier: FnIdentifier::Native(NativeFnIdentifier::System(
-                SystemFnIdentifier::Create,
-            )),
+            function_ident: FunctionIdent::Native(NativeFunction::System(SystemFunction::Create)),
             args: args!(),
         }
     };
 
     let create_eddsa_ed25519_token = {
         let metadata: HashMap<String, String> = HashMap::new();
-        let mut eddsa_resource_auth = HashMap::new();
-        eddsa_resource_auth.insert(Withdraw, (rule!(allow_all), LOCKED));
+        let mut access_rules = HashMap::new();
+        access_rules.insert(Withdraw, (rule!(allow_all), LOCKED));
         let initial_supply: Option<MintParams> = None;
 
         // TODO: Create token at a specific address
         Instruction::CallFunction {
-            fn_identifier: FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
-                ResourceManagerFnIdentifier::Create,
+            function_ident: FunctionIdent::Native(NativeFunction::ResourceManager(
+                ResourceManagerFunction::Create,
             )),
             args: args!(
                 ResourceType::NonFungible,
                 metadata,
-                eddsa_resource_auth,
+                access_rules,
                 initial_supply
             ),
         }

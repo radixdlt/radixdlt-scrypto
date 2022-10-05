@@ -5,9 +5,9 @@ blueprint! {
     struct Globalize {}
 
     impl Globalize {
-        pub fn globalize_key_value_store() {
-            let key_value_store: KeyValueStore<String, String> = KeyValueStore::new();
-            let node_id = RENodeId::KeyValueStore(key_value_store.id);
+        pub fn globalize_kv_store() {
+            let kv_store: KeyValueStore<String, String> = KeyValueStore::new();
+            let node_id = RENodeId::KeyValueStore(kv_store.id);
             let input = RadixEngineInput::RENodeGlobalize(node_id);
             call_engine(input)
         }

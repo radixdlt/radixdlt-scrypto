@@ -11,55 +11,46 @@ blueprint! {
 
     impl CyclicMap {
         pub fn new() -> ComponentAddress {
-            let key_value_store0 = KeyValueStore::new();
-            let key_value_store0_id = key_value_store0.id.clone();
-            let key_value_store1 = KeyValueStore::new();
-            key_value_store0.insert(1u32, key_value_store1);
+            let kv_store0 = KeyValueStore::new();
+            let kv_store0_id = kv_store0.id.clone();
+            let kv_store1 = KeyValueStore::new();
+            kv_store0.insert(1u32, kv_store1);
 
             // Retrieve reference
-            let key_value_store1_id = {
-                let key_value_store1 = key_value_store0.get(&1u32).unwrap();
-                key_value_store1.id.clone()
+            let kv_store1_id = {
+                let kv_store1 = kv_store0.get(&1u32).unwrap();
+                kv_store1.id.clone()
             };
 
-            let substate_id =
-                SubstateId::KeyValueStoreEntry(key_value_store1_id, scrypto_encode(&0u32));
+            let substate_id = SubstateId::KeyValueStoreEntry(kv_store1_id, scrypto_encode(&0u32));
             let substate =
                 KeyValueStoreEntrySubstate(Some(scrypto_encode(&KeyValueStore::<(), ()> {
-                    id: key_value_store0_id,
+                    id: kv_store0_id,
                     key: PhantomData,
                     value: PhantomData,
                 })));
             let input = RadixEngineInput::SubstateWrite(substate_id, scrypto_encode(&substate));
             let _: () = call_engine(input);
 
-            CyclicMap {
-                store: key_value_store0,
-            }
-            .instantiate()
-            .globalize()
+            CyclicMap { store: kv_store0 }.instantiate().globalize()
         }
 
         pub fn new_self_cyclic() -> ComponentAddress {
-            let key_value_store = KeyValueStore::new();
-            let key_value_store_id = key_value_store.id.clone();
+            let kv_store = KeyValueStore::new();
+            let kv_store_id = kv_store.id.clone();
 
             let substate_id =
-                SubstateId::KeyValueStoreEntry(key_value_store_id.clone(), scrypto_encode(&0u32));
+                SubstateId::KeyValueStoreEntry(kv_store_id.clone(), scrypto_encode(&0u32));
             let substate =
                 KeyValueStoreEntrySubstate(Some(scrypto_encode(&KeyValueStore::<(), ()> {
-                    id: key_value_store_id,
+                    id: kv_store_id,
                     key: PhantomData,
                     value: PhantomData,
                 })));
             let input = RadixEngineInput::SubstateWrite(substate_id, scrypto_encode(&substate));
             let _: () = call_engine(input);
 
-            CyclicMap {
-                store: key_value_store,
-            }
-            .instantiate()
-            .globalize()
+            CyclicMap { store: kv_store }.instantiate().globalize()
         }
     }
 }

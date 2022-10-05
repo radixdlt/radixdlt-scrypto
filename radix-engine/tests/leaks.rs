@@ -97,7 +97,7 @@ fn dangling_worktop_should_fail() {
 }
 
 #[test]
-fn dangling_key_value_store_should_fail() {
+fn dangling_kv_store_should_fail() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
@@ -106,12 +106,7 @@ fn dangling_key_value_store_should_fail() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_scrypto_function(
-            package_address,
-            "Leaks",
-            "dangling_key_value_store",
-            args!(),
-        )
+        .call_scrypto_function(package_address, "Leaks", "dangling_kv_store", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 

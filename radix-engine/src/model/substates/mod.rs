@@ -1,5 +1,5 @@
 mod component;
-mod key_value_store_entry;
+mod kv_store_entry;
 mod non_fungible;
 mod package;
 mod resource_manager;
@@ -8,7 +8,7 @@ mod system;
 mod vault;
 
 pub use component::*;
-pub use key_value_store_entry::*;
+pub use kv_store_entry::*;
 pub use non_fungible::*;
 pub use package::*;
 pub use resource_manager::*;
