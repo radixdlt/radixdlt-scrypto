@@ -23,14 +23,13 @@ blueprint! {
             };
 
             let substate_id = SubstateId::KeyValueStoreEntry(kv_store1_id, scrypto_encode(&0u32));
-            let input = RadixEngineInput::SubstateWrite(
-                substate_id,
-                scrypto_encode(&KeyValueStore::<(), ()> {
+            let substate =
+                KeyValueStoreEntrySubstate(Some(scrypto_encode(&KeyValueStore::<(), ()> {
                     id: kv_store0_id,
                     key: PhantomData,
                     value: PhantomData,
-                }),
-            );
+                })));
+            let input = RadixEngineInput::SubstateWrite(substate_id, scrypto_encode(&substate));
             let _: () = call_engine(input);
 
             CyclicMap { store: kv_store0 }.instantiate().globalize()
@@ -42,14 +41,13 @@ blueprint! {
 
             let substate_id =
                 SubstateId::KeyValueStoreEntry(kv_store_id.clone(), scrypto_encode(&0u32));
-            let input = RadixEngineInput::SubstateWrite(
-                substate_id,
-                scrypto_encode(&KeyValueStore::<(), ()> {
+            let substate =
+                KeyValueStoreEntrySubstate(Some(scrypto_encode(&KeyValueStore::<(), ()> {
                     id: kv_store_id,
                     key: PhantomData,
                     value: PhantomData,
-                }),
-            );
+                })));
+            let input = RadixEngineInput::SubstateWrite(substate_id, scrypto_encode(&substate));
             let _: () = call_engine(input);
 
             CyclicMap { store: kv_store }.instantiate().globalize()

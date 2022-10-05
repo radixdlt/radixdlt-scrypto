@@ -243,7 +243,7 @@ impl Worktop {
                     container
                 } else {
                     let resource_type = {
-                        let node_ref = system_api
+                        let mut node_ref = system_api
                             .borrow_node(&RENodeId::ResourceManager(input.resource_address))
                             .map_err(|e| InvokeError::Downstream(e))?;
                         let resource_manager = node_ref.resource_manager();
@@ -274,7 +274,7 @@ impl Worktop {
                     container
                 } else {
                     let resource_type = {
-                        let node_ref = system_api
+                        let mut node_ref = system_api
                             .borrow_node(&RENodeId::ResourceManager(input.resource_address))
                             .map_err(|e| InvokeError::Downstream(e))?;
                         let resource_manager = node_ref.resource_manager();
@@ -306,7 +306,7 @@ impl Worktop {
                     container
                 } else {
                     let resource_type = {
-                        let node_ref = system_api
+                        let mut node_ref = system_api
                             .borrow_node(&RENodeId::ResourceManager(input.resource_address))
                             .map_err(|e| InvokeError::Downstream(e))?;
                         let resource_manager = node_ref.resource_manager();

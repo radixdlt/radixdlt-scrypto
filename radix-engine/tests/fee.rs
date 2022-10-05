@@ -164,13 +164,13 @@ where
     S: radix_engine::ledger::ReadableSubstateStore + WriteableSubstateStore,
 {
     if let Some(account_comp) = test_runner.inspect_component_state(account_address) {
-        let account_comp_state = ScryptoValue::from_slice(account_comp.state()).unwrap();
+        let account_comp_state = ScryptoValue::from_slice(&account_comp.raw).unwrap();
         if let Some(kv_store_id) = account_comp_state.kv_store_ids.iter().next() {
             if let Some(KeyValueStoreEntrySubstate(Some(value))) = test_runner
                 .inspect_key_value_entry(kv_store_id.clone(), scrypto_encode(&resource_address))
             {
-                let kv_entry_value = ScryptoValue::from_slice(&value).unwrap();
-                let vault_id = kv_entry_value.vault_ids.iter().next().unwrap();
+                let kv_store_entry_value = ScryptoValue::from_slice(&value).unwrap();
+                let vault_id = kv_store_entry_value.vault_ids.iter().next().unwrap();
                 let vault = test_runner.inspect_vault(vault_id.clone()).unwrap();
                 return vault.0.amount();
             }

@@ -46,17 +46,17 @@ where
     /// Moves an RENode from Heap to Store
     fn node_globalize(&mut self, node_id: RENodeId) -> Result<(), RuntimeError>;
 
+    /// Reads a substate
     fn substate_read(&mut self, substate_id: SubstateId) -> Result<ScryptoValue, RuntimeError>;
 
+    /// Updates a substate and returns previous one
     fn substate_write(
         &mut self,
         substate_id: SubstateId,
         value: ScryptoValue,
-    ) -> Result<(), RuntimeError>;
+    ) -> Result<ScryptoValue, RuntimeError>;
 
-    fn substate_take(&mut self, substate_id: SubstateId) -> Result<ScryptoValue, RuntimeError>;
-
-    fn transaction_hash(&mut self) -> Result<Hash, RuntimeError>;
+    fn read_transaction_hash(&mut self) -> Result<Hash, RuntimeError>;
 
     fn read_blob(&mut self, blob_hash: &Hash) -> Result<&[u8], RuntimeError>;
 

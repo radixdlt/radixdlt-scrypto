@@ -86,7 +86,7 @@ impl AuthModule {
         method_ident: ReceiverMethodIdent,
         input: &ScryptoValue,
         node_pointer: RENodePointer,
-        call_frames: &Vec<CallFrame>,
+        call_frames: &mut Vec<CallFrame>,
         track: &mut Track<'s, R>,
     ) -> Result<(), RuntimeError> {
         let auth = match &method_ident {
@@ -130,8 +130,8 @@ impl AuthModule {
                 method_ident: MethodIdent::Scrypto(ref ident),
             } => {
                 let (package_address, blueprint_name) = {
-                    let value_ref = node_pointer.to_ref(call_frames, track);
-                    let component = value_ref.component();
+                    let mut node_ref = node_pointer.to_ref(call_frames, track);
+                    let component = node_ref.component();
                     (
                         component.info.package_address.clone(),
                         component.info.blueprint_name.clone(),
@@ -157,11 +157,14 @@ impl AuthModule {
                 }
 
                 {
-                    let node_ref = node_pointer.to_ref(call_frames, track);
-                    let component = node_ref.component();
+                    let mut node_ref = node_pointer.to_ref_mut(call_frames, track);
+                    let state = node_ref
+                        .component_state_get()
+                        .map_err(|e| RuntimeError::ModuleError(ModuleError::TrackError(e)))?;
+                    let component = node_ref.component_mut();
                     component
                         .info
-                        .method_authorization(&component.state, &abi.structure, ident)
+                        .method_authorization(&state, &abi.structure, ident)
                 }
             }
             ReceiverMethodIdent {

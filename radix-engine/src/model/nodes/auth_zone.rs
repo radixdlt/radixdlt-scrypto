@@ -191,10 +191,10 @@ impl AuthZone {
                 let input: AuthZoneCreateProofInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(AuthZoneError::InvalidRequestData(e)))?;
                 let resource_type = {
-                    let value = system_api
+                    let mut node_ref = system_api
                         .borrow_node(&RENodeId::ResourceManager(input.resource_address))
                         .map_err(InvokeError::Downstream)?;
-                    let resource_manager = value.resource_manager();
+                    let resource_manager = node_ref.resource_manager();
                     resource_manager.resource_type()
                 };
                 let mut node_ref = system_api
@@ -214,10 +214,10 @@ impl AuthZone {
                 let input: AuthZoneCreateProofByAmountInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(AuthZoneError::InvalidRequestData(e)))?;
                 let resource_type = {
-                    let value = system_api
+                    let mut node_ref = system_api
                         .borrow_node(&RENodeId::ResourceManager(input.resource_address))
                         .map_err(InvokeError::Downstream)?;
-                    let resource_manager = value.resource_manager();
+                    let resource_manager = node_ref.resource_manager();
                     resource_manager.resource_type()
                 };
                 let mut node_ref = system_api
@@ -241,10 +241,10 @@ impl AuthZone {
                 let input: AuthZoneCreateProofByIdsInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(AuthZoneError::InvalidRequestData(e)))?;
                 let resource_type = {
-                    let value = system_api
+                    let mut node_ref = system_api
                         .borrow_node(&RENodeId::ResourceManager(input.resource_address))
                         .map_err(InvokeError::Downstream)?;
-                    let resource_manager = value.resource_manager();
+                    let resource_manager = node_ref.resource_manager();
                     resource_manager.resource_type()
                 };
 
