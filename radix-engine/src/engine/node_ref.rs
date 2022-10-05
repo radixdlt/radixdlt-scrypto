@@ -18,10 +18,8 @@ pub enum RENodePointer {
 impl RENodePointer {
     pub fn node_id(&self) -> RENodeId {
         match self {
-            RENodePointer::Heap { root, id, .. } => {
-                id.unwrap_or(*root)
-            }
-            RENodePointer::Store(node_id) => *node_id
+            RENodePointer::Heap { root, id, .. } => id.unwrap_or(*root),
+            RENodePointer::Store(node_id) => *node_id,
         }
     }
 

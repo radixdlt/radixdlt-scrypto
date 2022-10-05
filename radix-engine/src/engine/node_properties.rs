@@ -39,7 +39,9 @@ impl RENodeProperties {
                 RENodeId::AuthZone(..) => SubstateOffset::AuthZone(AuthZoneOffset::AuthZone),
                 RENodeId::Bucket(..) => SubstateOffset::Bucket(BucketOffset::Bucket),
                 RENodeId::Proof(..) => SubstateOffset::Proof(ProofOffset::Proof),
-                RENodeId::ResourceManager(..) => SubstateOffset::Resource(ResourceManagerOffset::ResourceManager),
+                RENodeId::ResourceManager(..) => {
+                    SubstateOffset::Resource(ResourceManagerOffset::ResourceManager)
+                }
                 RENodeId::System(..) => SubstateOffset::System(SystemOffset::System),
                 RENodeId::Worktop => SubstateOffset::Worktop(WorktopOffset::Worktop),
                 RENodeId::Component(..) => SubstateOffset::Component(ComponentOffset::Info),
