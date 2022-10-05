@@ -78,7 +78,7 @@ impl System {
     }
 
     pub fn main<'s, Y, W, I, R>(
-        component_address: ComponentAddress,
+        component_id: ComponentId,
         method: SystemMethod,
         args: ScryptoValue,
         system_api: &mut Y,
@@ -94,7 +94,7 @@ impl System {
                 let _: SystemGetCurrentEpochInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(SystemError::InvalidRequestData(e)))?;
                 let mut node_ref = system_api
-                    .borrow_node(&RENodeId::System(component_address))
+                    .borrow_node(&RENodeId::System(component_id))
                     .map_err(InvokeError::Downstream)?;
                 Ok(ScryptoValue::from_typed(&node_ref.system().info.epoch))
             }
@@ -102,7 +102,7 @@ impl System {
                 let SystemSetEpochInput { epoch } = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(SystemError::InvalidRequestData(e)))?;
                 let mut system_node_ref = system_api
-                    .borrow_node_mut(&RENodeId::System(SYS_SYSTEM_COMPONENT))
+                    .borrow_node_mut(&RENodeId::System(component_id))
                     .map_err(InvokeError::Downstream)?;
                 system_node_ref.system_mut().info.epoch = epoch;
                 Ok(ScryptoValue::from_typed(&()))

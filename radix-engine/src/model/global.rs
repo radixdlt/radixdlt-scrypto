@@ -8,14 +8,9 @@ pub enum GlobalAddressSubstate {
     Package(PackageAddress),
 }
 
-#[derive(Debug)]
-pub struct GlobalRENode {
-    pub address: GlobalAddressSubstate,
-}
-
-impl GlobalRENode {
+impl GlobalAddressSubstate {
     pub fn node_deref(&self) -> RENodeId {
-        match &self.address {
+        match self {
             GlobalAddressSubstate::Component(component) => RENodeId::Component(component.0),
             GlobalAddressSubstate::SystemComponent(component) => RENodeId::System(component.0),
             GlobalAddressSubstate::Resource(resource_address) => {
@@ -23,5 +18,16 @@ impl GlobalRENode {
             }
             GlobalAddressSubstate::Package(package_address) => RENodeId::Package(*package_address),
         }
+    }
+}
+
+#[derive(Debug)]
+pub struct GlobalRENode {
+    pub address: GlobalAddressSubstate,
+}
+
+impl GlobalRENode {
+    pub fn node_deref(&self) -> RENodeId {
+        self.address.node_deref()
     }
 }

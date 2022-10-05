@@ -59,9 +59,19 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
 ) -> Result<(), DisplayError> {
     let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
 
+    let node_id = RENodeId::Global(GlobalAddress::Component(component_address));
+    let component_id = substate_store
+        .get_substate(&SubstateId(
+            node_id,
+            SubstateOffset::Global(GlobalOffset::Global),
+        ))
+        .map(|s| s.substate)
+        .map(|s| s.global_re_node().node_deref())
+        .ok_or(DisplayError::ComponentNotFound)?;
+
     let component_info: Option<ComponentInfoSubstate> = substate_store
         .get_substate(&SubstateId(
-            RENodeId::Component(component_address),
+            component_id,
             SubstateOffset::Component(ComponentOffset::Info),
         ))
         .map(|s| s.substate)
@@ -93,7 +103,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
 
             let state: ComponentStateSubstate = substate_store
                 .get_substate(&SubstateId(
-                    RENodeId::Component(component_address),
+                    component_id,
                     SubstateOffset::Component(ComponentOffset::State),
                 ))
                 .map(|s| s.substate)

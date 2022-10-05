@@ -138,19 +138,16 @@ impl NativeInterpreter {
             (Receiver::Ref(RENodeId::Vault(vault_id)), NativeMethod::Vault(method)) => {
                 Vault::main(vault_id, method, input, system_api).map_err(|e| e.into())
             }
-            (
-                Receiver::Ref(RENodeId::Component(component_address)),
-                NativeMethod::Component(method),
-            ) => {
-                Component::main(component_address, method, input, system_api).map_err(|e| e.into())
+            (Receiver::Ref(RENodeId::Component(component_id)), NativeMethod::Component(method)) => {
+                Component::main(component_id, method, input, system_api).map_err(|e| e.into())
             }
             (
                 Receiver::Ref(RENodeId::ResourceManager(resource_address)),
                 NativeMethod::ResourceManager(method),
             ) => ResourceManager::main(resource_address, method, input, system_api)
                 .map_err(|e| e.into()),
-            (Receiver::Ref(RENodeId::System(component_address)), NativeMethod::System(method)) => {
-                System::main(component_address, method, input, system_api).map_err(|e| e.into())
+            (Receiver::Ref(RENodeId::System(component_id)), NativeMethod::System(method)) => {
+                System::main(component_id, method, input, system_api).map_err(|e| e.into())
             }
             _ => {
                 return Err(RuntimeError::KernelError(KernelError::FnIdentNotFound(

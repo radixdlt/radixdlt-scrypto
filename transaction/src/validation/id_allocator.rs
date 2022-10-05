@@ -57,13 +57,13 @@ impl IdAllocator {
     pub fn new_component_address(
         &mut self,
         transaction_hash: Hash,
-        package_address: &PackageAddress,
+        package_address: PackageAddress,
         blueprint_name: &str,
     ) -> Result<ComponentAddress, IdAllocationError> {
         let mut data = transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
 
-        match (*package_address, blueprint_name) {
+        match (package_address, blueprint_name) {
             (ACCOUNT_PACKAGE, "Account") => {
                 Ok(ComponentAddress::Account(hash(data).lower_26_bytes()))
             }
@@ -117,6 +117,13 @@ impl IdAllocator {
 
     /// Creates a new vault ID.
     pub fn new_vault_id(&mut self, transaction_hash: Hash) -> Result<VaultId, IdAllocationError> {
+        Ok((transaction_hash, self.next()?))
+    }
+
+    pub fn new_component_id(
+        &mut self,
+        transaction_hash: Hash,
+    ) -> Result<ComponentId, IdAllocationError> {
         Ok((transaction_hash, self.next()?))
     }
 
