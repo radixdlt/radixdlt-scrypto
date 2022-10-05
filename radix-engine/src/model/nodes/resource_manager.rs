@@ -14,6 +14,7 @@ use crate::types::ResourceMethodAuthKey::*;
 use crate::types::*;
 use crate::wasm::*;
 use scrypto::core::ResourceManagerFunction;
+use scrypto::resource::ResourceManagerBurnInput;
 
 /// Represents an error when accessing a bucket.
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -31,6 +32,7 @@ pub enum ResourceManagerError {
     CouldNotCreateBucket,
     CouldNotCreateVault,
     NotNonFungible,
+    MismatchingBucketResource,
 }
 
 #[derive(Debug)]
@@ -263,10 +265,6 @@ impl ResourceManager {
         Ok((Resource::new_non_fungible(self_address, ids), non_fungibles))
     }
 
-    pub fn burn(&mut self, amount: Decimal) {
-        self.info.total_supply -= amount;
-    }
-
     fn update_metadata(
         &mut self,
         new_metadata: HashMap<String, String>,
@@ -419,6 +417,47 @@ impl ResourceManager {
         R: FeeReserve,
     {
         let rtn = match method {
+            ResourceManagerMethod::Burn => {
+                let input: ResourceManagerBurnInput = scrypto_decode(&args.raw)
+                    .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))?;
+
+                let bucket: Bucket = system_api
+                    .node_drop(&RENodeId::Bucket(input.bucket.0))
+                    .map_err(InvokeError::Downstream)?
+                    .into();
+
+                let mut node_ref = system_api
+                    .borrow_node_mut(&RENodeId::ResourceManager(resource_address))
+                    .map_err(InvokeError::Downstream)?;
+                let resource_manager = node_ref.resource_manager_mut();
+
+                // Check if resource matches
+                if bucket.resource_address() != resource_address {
+                    return Err(InvokeError::Error(
+                        ResourceManagerError::MismatchingBucketResource,
+                    ));
+                }
+
+                // Update balance
+                resource_manager.info.total_supply -= bucket.total_amount();
+
+                // Burn non-fungible
+                if let Some(non_fungible_store_id) = resource_manager.info.non_fungible_store_id {
+                    for id in bucket
+                        .total_ids()
+                        .expect("Failed to list non-fungible IDs on non-fungible Bucket")
+                    {
+                        system_api
+                            .substate_write(
+                                SubstateId::NonFungible(non_fungible_store_id, id),
+                                ScryptoValue::from_typed(&NonFungibleSubstate(None)),
+                            )
+                            .map_err(InvokeError::Downstream)?;
+                    }
+                }
+
+                Ok(ScryptoValue::from_typed(&()))
+            }
             ResourceManagerMethod::UpdateAuth => {
                 let input: ResourceManagerUpdateAuthInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))?;

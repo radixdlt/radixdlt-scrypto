@@ -45,6 +45,11 @@ pub struct ResourceManagerCreateInput {
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
+pub struct ResourceManagerBurnInput {
+    pub bucket: Bucket,
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
 pub struct ResourceManagerUpdateAuthInput {
     pub method: ResourceMethodAuthKey,
     pub access_rule: AccessRule,
@@ -360,6 +365,12 @@ impl ResourceManager {
                     id: id.clone()
                 }
             }
+            pub fn burn(&mut self, bucket: Bucket) -> () {
+                ResourceManagerMethod::Burn,
+                ResourceManagerBurnInput {
+                    bucket
+                }
+            }
         }
     }
 
@@ -375,11 +386,6 @@ impl ResourceManager {
         let mut entries = HashMap::new();
         entries.insert(id.clone(), (data.immutable_data(), data.mutable_data()));
         self.mint_internal(MintParams::NonFungible { entries })
-    }
-
-    /// Burns a bucket of resources.
-    pub fn burn(&self, bucket: Bucket) {
-        bucket.burn()
     }
 
     /// Returns the data of a non-fungible unit, both the immutable and mutable parts.
