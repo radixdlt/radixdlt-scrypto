@@ -893,18 +893,6 @@ where
                     .get(&node_id)
                 {
                     next_node_refs.insert(node_id.clone(), pointer.clone());
-                    // TODO: Remove, Need this to support dereference of substate for now
-                    if let RENodeId::Global(GlobalAddress::Component(component_address)) = node_id {
-                        match component_address {
-                            ComponentAddress::Normal(..) | ComponentAddress::Account(..) => {
-                                next_node_refs.insert(
-                                    RENodeId::Component(component_address),
-                                    RENodePointer::Store(RENodeId::Component(component_address)),
-                                );
-                            }
-                            _ => {}
-                        }
-                    }
                 } else {
                     return Err(RuntimeError::KernelError(
                         KernelError::InvalidReferencePass(global_address),
@@ -936,15 +924,6 @@ where
             Self::current_frame_mut(&mut self.call_frames)
                 .node_refs
                 .insert(node_id, RENodePointer::Store(node_id));
-            // TODO: Remove, Need this to support dereference of substate for now
-            if let RENodeId::Global(GlobalAddress::Component(component_address)) = node_id {
-                Self::current_frame_mut(&mut self.call_frames)
-                    .node_refs
-                    .insert(
-                        RENodeId::Component(component_address),
-                        RENodePointer::Store(RENodeId::Component(component_address)),
-                    );
-            }
         }
 
         for m in &mut self.modules {
@@ -1194,23 +1173,21 @@ where
         let mut node_id = substate_id.0;
         // TODO: Check if valid offset for node_id
         let offset = substate_id.1;
+        let mut node_pointer = Self::current_frame(&self.call_frames).get_node_pointer(node_id)?;
 
         // Deref
-        if let RENodeId::Global(global_address) = node_id {
+        if let RENodeId::Global(..) = node_id {
             let offset = SubstateOffset::Global(GlobalOffset::Global);
-            let global_pointer = RENodePointer::Store(RENodeId::Global(global_address));
-            global_pointer
+            node_pointer
                 .acquire_lock(offset.clone(), false, false, &mut self.track)
                 .map_err(RuntimeError::KernelError)?;
-            let node_ref = global_pointer.to_ref(&self.call_frames, &mut self.track);
+            let node_ref = node_pointer.to_ref(&self.call_frames, &mut self.track);
             node_id = node_ref.global_re_node().node_deref();
-            global_pointer
+            node_pointer
                 .release_lock(offset, false, &mut self.track)
                 .map_err(RuntimeError::KernelError)?;
+            node_pointer = RENodePointer::Store(node_id);
         }
-
-
-        let node_pointer = Self::current_frame(&self.call_frames).get_node_pointer(node_id)?;
 
         // Authorization
         if !Self::current_frame(&self.call_frames)
@@ -1233,15 +1210,6 @@ where
             Self::current_frame_mut(&mut self.call_frames)
                 .node_refs
                 .insert(node_id, RENodePointer::Store(node_id));
-            // TODO: Remove, Need this to support dereference of substate for now
-            if let RENodeId::Global(GlobalAddress::Component(component_address)) = node_id {
-                Self::current_frame_mut(&mut self.call_frames)
-                    .node_refs
-                    .insert(
-                        RENodeId::Component(component_address),
-                        RENodePointer::Store(RENodeId::Component(component_address)),
-                    );
-            }
         }
 
         let cur_children = current_value.node_ids();
