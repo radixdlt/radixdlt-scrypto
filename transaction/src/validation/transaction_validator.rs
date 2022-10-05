@@ -307,9 +307,9 @@ impl NotarizedTransactionValidator {
         if let Some(vault_id) = value.vault_ids.iter().nth(0) {
             return Err(CallDataValidationError::VaultNotAllowed(vault_id.clone()));
         }
-        if let Some(key_value_store_id) = value.key_value_store_ids.iter().nth(0) {
+        if let Some(kv_store_id) = value.kv_store_ids.iter().nth(0) {
             return Err(CallDataValidationError::KeyValueStoreNotAllowed(
-                key_value_store_id.clone(),
+                kv_store_id.clone(),
             ));
         }
         Ok(())

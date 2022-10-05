@@ -381,8 +381,8 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             SubstateId::NonFungibleSpace(resource_address) => {
                 SubstateId::NonFungible(resource_address, NonFungibleId(key))
             }
-            SubstateId::KeyValueStoreSpace(key_value_store_id) => {
-                SubstateId::KeyValueStoreEntry(key_value_store_id, key)
+            SubstateId::KeyValueStoreSpace(kv_store_id) => {
+                SubstateId::KeyValueStoreEntry(kv_store_id, key)
             }
             _ => panic!("Unsupported key value"),
         };
@@ -422,8 +422,8 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             SubstateId::NonFungibleSpace(resource_address) => {
                 SubstateId::NonFungible(resource_address, NonFungibleId(key.clone()))
             }
-            SubstateId::KeyValueStoreSpace(key_value_store_id) => {
-                SubstateId::KeyValueStoreEntry(key_value_store_id, key.clone())
+            SubstateId::KeyValueStoreSpace(kv_store_id) => {
+                SubstateId::KeyValueStoreEntry(kv_store_id, key.clone())
             }
             _ => panic!("Unsupported key value"),
         };

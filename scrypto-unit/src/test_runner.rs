@@ -100,12 +100,12 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
 
     pub fn inspect_key_value_entry(
         &mut self,
-        key_value_store_id: KeyValueStoreId,
+        kv_store_id: KeyValueStoreId,
         key: Vec<u8>,
     ) -> Option<radix_engine::model::KeyValueStoreEntrySubstate> {
         self.execution_stores
             .get_root_store()
-            .get_substate(&SubstateId::KeyValueStoreEntry(key_value_store_id, key))
+            .get_substate(&SubstateId::KeyValueStoreEntry(kv_store_id, key))
             .map(|output| output.substate.into())
     }
 

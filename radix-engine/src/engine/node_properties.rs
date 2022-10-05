@@ -79,11 +79,9 @@ impl SubstateProperties {
             SubstateId::NonFungible(resource_address, ..) => {
                 RENodeId::ResourceManager(*resource_address)
             }
-            SubstateId::KeyValueStoreSpace(key_value_store_id) => {
-                RENodeId::KeyValueStore(*key_value_store_id)
-            }
-            SubstateId::KeyValueStoreEntry(key_value_store_id, ..) => {
-                RENodeId::KeyValueStore(*key_value_store_id)
+            SubstateId::KeyValueStoreSpace(kv_store_id) => RENodeId::KeyValueStore(*kv_store_id),
+            SubstateId::KeyValueStoreEntry(kv_store_id, ..) => {
+                RENodeId::KeyValueStore(*kv_store_id)
             }
             SubstateId::Vault(vault_id) => RENodeId::Vault(*vault_id),
             SubstateId::Package(package_address) => RENodeId::Package(*package_address),

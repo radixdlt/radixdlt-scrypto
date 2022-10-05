@@ -155,7 +155,7 @@ fn should_be_able_to_call_write_method_on_a_stored_component_in_global_component
 }
 
 #[test]
-fn should_be_able_to_call_read_method_on_a_key_value_stored_component_in_owned_component() {
+fn should_be_able_to_call_read_method_on_a_kv_stored_component_in_owned_component() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
@@ -178,7 +178,7 @@ fn should_be_able_to_call_read_method_on_a_key_value_stored_component_in_owned_c
 }
 
 #[test]
-fn should_be_able_to_call_write_method_on_a_key_value_stored_component_in_owned_component() {
+fn should_be_able_to_call_write_method_on_a_kv_stored_component_in_owned_component() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
@@ -201,7 +201,7 @@ fn should_be_able_to_call_write_method_on_a_key_value_stored_component_in_owned_
 }
 
 #[test]
-fn should_be_able_to_call_read_method_on_a_key_value_stored_component_in_global_component() {
+fn should_be_able_to_call_read_method_on_a_kv_stored_component_in_global_component() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
@@ -236,7 +236,7 @@ fn should_be_able_to_call_read_method_on_a_key_value_stored_component_in_global_
 }
 
 #[test]
-fn should_be_able_to_call_write_method_on_a_key_value_stored_component_in_global_component() {
+fn should_be_able_to_call_write_method_on_a_kv_stored_component_in_global_component() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);

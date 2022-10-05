@@ -203,7 +203,7 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
                 Ok(ScryptoValue::from_typed(&self.non_fungible_get(id)))
             }
             SubstateId::KeyValueStoreEntry(.., key) => {
-                Ok(ScryptoValue::from_typed(&self.key_value_store_get(&key)))
+                Ok(ScryptoValue::from_typed(&self.kv_store_get(&key)))
             }
             s @ _ => {
                 panic!("Should never have received permissions to read {:?}.", s);
@@ -231,7 +231,7 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
             SubstateId::KeyValueStoreEntry(.., key) => {
                 let actual_substate: KeyValueStoreEntrySubstate =
                     scrypto_decode(&substate.raw).expect("TODO: who should check this");
-                self.key_value_store_put(key, actual_substate, child_nodes);
+                self.kv_store_put(key, actual_substate, child_nodes);
             }
             s @ _ => {
                 panic!("Should never have received permissions to write {:?}.", s);
@@ -241,23 +241,22 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
 
     // TODO: can we move these substate getter and setter to the node representation?
 
-    pub fn key_value_store_get(&mut self, key: &[u8]) -> KeyValueStoreEntrySubstate {
-        if let Some(entry) = self.key_value_store_mut().get(key) {
+    pub fn kv_store_get(&mut self, key: &[u8]) -> KeyValueStoreEntrySubstate {
+        if let Some(entry) = self.kv_store_mut().get(key) {
             return entry.clone();
         }
 
         match self {
             RENodeRefMut::Stack(..) => {
                 let substate = KeyValueStoreEntrySubstate(None); // virtualization
-                self.key_value_store_mut()
-                    .put(key.to_vec(), substate.clone());
+                self.kv_store_mut().put(key.to_vec(), substate.clone());
                 substate
             }
             RENodeRefMut::Track(track, node_id) => {
                 // Read the key value
                 let parent_substate_id = match node_id {
-                    RENodeId::KeyValueStore(key_value_store_id) => {
-                        SubstateId::KeyValueStoreSpace(*key_value_store_id)
+                    RENodeId::KeyValueStore(kv_store_id) => {
+                        SubstateId::KeyValueStoreSpace(*kv_store_id)
                     }
                     _ => panic!("Unexpected"),
                 };
@@ -265,15 +264,15 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
                 let specific_substate: KeyValueStoreEntrySubstate = substate.into();
 
                 // Store in the node
-                let key_value_store = track.borrow_node_mut(node_id).key_value_store_mut();
-                key_value_store.put(key.to_vec(), specific_substate.clone());
+                let kv_store = track.borrow_node_mut(node_id).kv_store_mut();
+                kv_store.put(key.to_vec(), specific_substate.clone());
 
                 specific_substate
             }
         }
     }
 
-    pub fn key_value_store_put(
+    pub fn kv_store_put(
         &mut self,
         key: Vec<u8>,
         substate: KeyValueStoreEntrySubstate, // TODO: disallow soft deletion
@@ -283,15 +282,15 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
             RENodeRefMut::Stack(root_node, node_id) => {
                 root_node
                     .get_node_mut(node_id.as_ref())
-                    .key_value_store_mut()
+                    .kv_store_mut()
                     .put(key, substate);
                 for (id, val) in to_store {
                     root_node.insert_non_root_nodes(val.to_nodes(id));
                 }
             }
             RENodeRefMut::Track(track, node_id) => {
-                let key_value_store = track.borrow_node_mut(node_id).key_value_store_mut();
-                key_value_store.put(key, substate);
+                let kv_store = track.borrow_node_mut(node_id).kv_store_mut();
+                kv_store.put(key, substate);
                 for (id, val) in to_store {
                     for (id, node) in val.to_nodes(id) {
                         track.put_node(id, node);
@@ -422,14 +421,12 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
         }
     }
 
-    pub fn key_value_store_mut(&mut self) -> &mut KeyValueStore {
+    pub fn kv_store_mut(&mut self) -> &mut KeyValueStore {
         match self {
             RENodeRefMut::Stack(root_node, id) => {
-                root_node.get_node_mut(id.as_ref()).key_value_store_mut()
+                root_node.get_node_mut(id.as_ref()).kv_store_mut()
             }
-            RENodeRefMut::Track(track, node_id) => {
-                track.borrow_node_mut(node_id).key_value_store_mut()
-            }
+            RENodeRefMut::Track(track, node_id) => track.borrow_node_mut(node_id).kv_store_mut(),
         }
     }
 

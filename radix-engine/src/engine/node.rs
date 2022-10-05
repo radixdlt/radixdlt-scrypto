@@ -167,14 +167,14 @@ impl HeapRENode {
         }
     }
 
-    pub fn key_value_store(&self) -> &KeyValueStore {
+    pub fn kv_store(&self) -> &KeyValueStore {
         match self {
             HeapRENode::KeyValueStore(store) => store,
             _ => panic!("Expected to be a store"),
         }
     }
 
-    pub fn key_value_store_mut(&mut self) -> &mut KeyValueStore {
+    pub fn kv_store_mut(&mut self) -> &mut KeyValueStore {
         match self {
             HeapRENode::KeyValueStore(store) => store,
             _ => panic!("Expected to be a store"),

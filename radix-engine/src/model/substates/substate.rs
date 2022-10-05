@@ -120,9 +120,9 @@ impl Substate {
         }
     }
 
-    pub fn key_value_store_entry(&self) -> &KeyValueStoreEntrySubstate {
-        if let Substate::KeyValueStoreEntry(key_value_store_entry) = self {
-            key_value_store_entry
+    pub fn kv_store_entry(&self) -> &KeyValueStoreEntrySubstate {
+        if let Substate::KeyValueStoreEntry(kv_store_entry) = self {
+            kv_store_entry
         } else {
             panic!("Not a KVEntry");
         }
@@ -229,8 +229,8 @@ impl Into<NonFungibleSubstate> for Substate {
 
 impl Into<KeyValueStoreEntrySubstate> for Substate {
     fn into(self) -> KeyValueStoreEntrySubstate {
-        if let Substate::KeyValueStoreEntry(key_value_store_entry) = self {
-            key_value_store_entry
+        if let Substate::KeyValueStoreEntry(kv_store_entry) = self {
+            kv_store_entry
         } else {
             panic!("Not a key value store entry wrapper");
         }

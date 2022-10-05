@@ -6,7 +6,7 @@ use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
 #[test]
-fn should_not_be_able_to_globalize_key_value_store() {
+fn should_not_be_able_to_globalize_kv_store() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
@@ -15,12 +15,7 @@ fn should_not_be_able_to_globalize_key_value_store() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_scrypto_function(
-            package_address,
-            "Globalize",
-            "globalize_key_value_store",
-            args!(),
-        )
+        .call_scrypto_function(package_address, "Globalize", "globalize_kv_store", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 

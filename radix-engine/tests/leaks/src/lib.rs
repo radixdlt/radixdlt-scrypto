@@ -31,7 +31,7 @@ blueprint! {
             bucket
         }
 
-        pub fn dangling_key_value_store() {
+        pub fn dangling_kv_store() {
             let map = KeyValueStore::new();
             map.insert("hello".to_owned(), "world".to_owned());
             map.get(&"hello".to_owned());

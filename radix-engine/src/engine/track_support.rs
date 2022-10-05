@@ -67,7 +67,7 @@ impl<'s> BaseStateTrack<'s> {
                         };
                         diff.up_substates.insert(substate_id.clone(), output_value);
                     }
-                    SubstateId::KeyValueStoreEntry(key_value_store_id, key) => {
+                    SubstateId::KeyValueStoreEntry(kv_store_id, key) => {
                         let next_version = if let Some(existing_output_id) =
                             Self::get_substate_output_id(&self.substate_store, &substate_id)
                         {
@@ -75,8 +75,7 @@ impl<'s> BaseStateTrack<'s> {
                             diff.down_substates.push(existing_output_id);
                             next_version
                         } else {
-                            let parent_address =
-                                SubstateId::KeyValueStoreSpace(*key_value_store_id);
+                            let parent_address = SubstateId::KeyValueStoreSpace(*kv_store_id);
                             let virtual_output_id = VirtualSubstateId(parent_address, key.clone());
                             diff.down_virtual_substates.push(virtual_output_id);
                             0

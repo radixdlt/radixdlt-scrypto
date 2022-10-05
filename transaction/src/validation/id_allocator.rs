@@ -121,7 +121,7 @@ impl IdAllocator {
     }
 
     /// Creates a new key value store ID.
-    pub fn new_key_value_store_id(
+    pub fn new_kv_store_id(
         &mut self,
         transaction_hash: Hash,
     ) -> Result<KeyValueStoreId, IdAllocationError> {
