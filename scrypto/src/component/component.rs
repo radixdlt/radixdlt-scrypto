@@ -120,7 +120,7 @@ impl BorrowedGlobalComponent {
     /// Returns the package ID of this component.
     pub fn package_address(&self) -> PackageAddress {
         let substate_id = SubstateId(
-            RENodeId::Component(self.0),
+            RENodeId::Global(GlobalAddress::Component(self.0)),
             SubstateOffset::Component(ComponentOffset::Info),
         );
         let input = RadixEngineInput::SubstateRead(substate_id);
@@ -131,7 +131,7 @@ impl BorrowedGlobalComponent {
     /// Returns the blueprint name of this component.
     pub fn blueprint_name(&self) -> String {
         let substate_id = SubstateId(
-            RENodeId::Component(self.0),
+            RENodeId::Global(GlobalAddress::Component(self.0)),
             SubstateOffset::Component(ComponentOffset::Info),
         );
         let input = RadixEngineInput::SubstateRead(substate_id);

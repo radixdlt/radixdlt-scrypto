@@ -1191,19 +1191,36 @@ where
         }
 
         // Get Pointer
-        let node_id = substate_id.0;
-        let node_pointer = Self::current_frame(&self.call_frames).get_node_pointer(node_id)?;
+        let mut node_id = substate_id.0;
+        // TODO: Check if valid offset for node_id
         let offset = substate_id.1;
+
+        // Deref
+        if let RENodeId::Global(global_address) = node_id {
+            let offset = SubstateOffset::Global(GlobalOffset::Global);
+            let global_pointer = RENodePointer::Store(RENodeId::Global(global_address));
+            global_pointer
+                .acquire_lock(offset.clone(), false, false, &mut self.track)
+                .map_err(RuntimeError::KernelError)?;
+            let node_ref = global_pointer.to_ref(&self.call_frames, &mut self.track);
+            node_id = node_ref.global_re_node().node_deref();
+            global_pointer
+                .release_lock(offset, false, &mut self.track)
+                .map_err(RuntimeError::KernelError)?;
+        }
+
+
+        let node_pointer = Self::current_frame(&self.call_frames).get_node_pointer(node_id)?;
 
         // Authorization
         if !Self::current_frame(&self.call_frames)
             .actor
-            .is_substate_readable(&substate_id)
+            .is_substate_readable(&SubstateId(node_id, offset.clone()))
         {
             return Err(RuntimeError::KernelError(
                 KernelError::SubstateReadNotReadable(
                     Self::current_frame(&self.call_frames).actor.clone(),
-                    substate_id.clone(),
+                    SubstateId(node_id, offset.clone()),
                 ),
             ));
         }
