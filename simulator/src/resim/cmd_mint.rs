@@ -12,7 +12,7 @@ pub struct Mint {
     amount: Decimal,
 
     /// The resource address
-    resource_address: ResourceAddress,
+    resource_address: SimulatorResourceAddress,
 
     /// The proofs to add to the auth zone
     #[clap(short, long, multiple = true)]
@@ -52,7 +52,7 @@ impl Mint {
 
         let manifest = manifest_builder
             .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
-            .mint(self.amount, self.resource_address)
+            .mint(self.amount, self.resource_address.0)
             .call_method(
                 default_account,
                 "deposit_batch",

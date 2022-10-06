@@ -1,5 +1,4 @@
 use sbor::rust::fmt;
-use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
@@ -194,15 +193,9 @@ scrypto_type!(Component, ScryptoType::Component, Vec::new());
 // text
 //======
 
-impl fmt::Display for Component {
-    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}", self.0)
-    }
-}
-
 impl fmt::Debug for Component {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}", self)
+        write!(f, "{:?}", self.0)
     }
 }
 
@@ -247,6 +240,16 @@ impl ComponentAddress {
         }
         buf
     }
+
+    pub fn to_hex(&self) -> String {
+        hex::encode(self.to_vec())
+    }
+
+    pub fn try_from_hex(hex_str: &str) -> Result<Self, AddressError> {
+        let bytes = hex::decode(hex_str).map_err(|_| AddressError::HexDecodingError)?;
+
+        Self::try_from(bytes.as_ref())
+    }
 }
 
 scrypto_type!(ComponentAddress, ScryptoType::ComponentAddress, Vec::new());
@@ -255,22 +258,36 @@ scrypto_type!(ComponentAddress, ScryptoType::ComponentAddress, Vec::new());
 // text
 //======
 
-impl FromStr for ComponentAddress {
-    type Err = AddressError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        BECH32_DECODER.validate_and_decode_component_address(s)
-    }
-}
-
-impl fmt::Display for ComponentAddress {
-    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}", BECH32_ENCODER.encode_component_address(self))
-    }
-}
-
 impl fmt::Debug for ComponentAddress {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}", self)
+        write!(f, "{}", self.display(NO_NETWORK))
+    }
+}
+
+impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for ComponentAddress {
+    type Error = AddressError;
+
+    fn contextual_format<F: fmt::Write>(
+        &self,
+        f: &mut F,
+        context: &AddressDisplayContext<'a>,
+    ) -> Result<(), Self::Error> {
+        if let Some(encoder) = context.encoder {
+            return encoder.encode_component_address_to_fmt(f, self);
+        }
+
+        // This could be made more performant by streaming the hex into the formatter
+        match self {
+            ComponentAddress::Normal(_) => {
+                write!(f, "NormalComponent[{}]", self.to_hex())
+            }
+            ComponentAddress::Account(_) => {
+                write!(f, "AccountComponent[{}]", self.to_hex())
+            }
+            ComponentAddress::System(_) => {
+                write!(f, "SystemComponent[{}]", self.to_hex())
+            }
+        }
+        .map_err(|err| AddressError::FormatError(err))
     }
 }

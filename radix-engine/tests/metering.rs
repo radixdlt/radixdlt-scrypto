@@ -30,7 +30,7 @@ fn test_loop_out_of_cost_unit() {
     let mut test_runner = TestRunner::new(true, &mut store);
 
     // Act
-    let code = wat2wasm(&include_str!("wasm/loop.wat").replace("${n}", "7000000"));
+    let code = wat2wasm(&include_str!("wasm/loop.wat").replace("${n}", "70000000"));
     let package_address = test_runner.publish_package(code, test_abi_any_in_void_out("Test", "f"));
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(45.into(), SYS_FAUCET_COMPONENT)

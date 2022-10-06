@@ -54,7 +54,7 @@ pub struct Worktop {
     resources: HashMap<ResourceAddress, Rc<RefCell<LockableResource>>>,
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
 pub enum WorktopError {
     InvalidRequestData(DecodeError),
     MethodNotFound(String),
