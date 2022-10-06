@@ -289,13 +289,19 @@ macro_rules! include_abi {
 
 /// Generates a bridge/stub to make package calls to a blueprint.
 ///
-/// You can also use this to make calls to the component itself.
-/// If you just wish to make calls to an instantiated component, see the [external_component]! macro.
+/// If you just wish to instead make calls to an instantiated component, see the [external_component]! macro.
 ///
 /// # Examples
 /// ```no_run
 /// use scrypto::prelude::*;
+/// use scrypto::address::Bech32Decoder;
 /// use sbor::{TypeId, Encode, Decode, Describe};
+///
+/// external_blueprint! {
+///     CustomAccountBlueprint {
+///         fn instantiate_global(account_name: &str) -> ComponentAddress;
+///     }
+/// }
 ///
 /// #[derive(TypeId, Encode, Decode, Describe)]
 /// enum DepositResult {
@@ -303,31 +309,32 @@ macro_rules! include_abi {
 ///     Failure
 /// }
 ///
-/// external_blueprint! {
-///     {
-///         package: "package_sim1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqsnznk7n",
-///         blueprint: "CustomAccount"
-///     },
-///     CustomAccount {
-///         fn instantiate_global(account_name: &str) -> ComponentAddress;
+/// external_component! {
+///     AccountInterface {
 ///         fn deposit(&mut self, b: Bucket) -> DepositResult;
 ///         fn deposit_no_return(&mut self, b: Bucket);
 ///         fn read_balance(&self) -> Decimal;
 ///     }
 /// }
 ///
-/// fn create_custom_accounts() {
-///     let new_account_address = CustomAccount::instantiate_global("account_name");
-///     let mut account = CustomAccount::from(new_account_address);
-///
-///     let empty_bucket = Bucket::new(ResourceAddress::from_str("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag").unwrap());
-///     account.deposit(empty_bucket);
+/// fn instantiate_custom_account() -> ComponentAddress {
+///     let package_address = Bech32Decoder::for_simulator()
+///         .validate_and_decode_package_address("package_sim1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqsnznk7n")
+///         .unwrap();
+///     let blueprint = CustomAccountBlueprint::at(package_address, "CustomAccount");
+///     blueprint.instantiate_global("account_name")
 /// }
 ///
-/// fn bridge_to_existing_account(component_address: ComponentAddress) {
-///     let existing_account = CustomAccount::from(component_address);
-///     let balance = existing_account.read_balance();
-///     // ...
+/// fn create_and_transfer() {
+///     let component_address = instantiate_custom_account();
+///
+///     let mut account = AccountInterface::at(component_address);
+///
+///     let resource_address = Bech32Decoder::for_simulator()
+///         .validate_and_decode_resource_address("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag")
+///         .unwrap();
+///     let empty_bucket = Bucket::new(resource_address);
+///     account.deposit(empty_bucket);
 /// }
 /// ```
 ///
@@ -338,7 +345,6 @@ macro_rules! include_abi {
 #[macro_export]
 macro_rules! external_blueprint {
     (
-        $blueprint_context:tt,
         $blueprint_ident:ident {
             $($blueprint_contents:tt)*
         }
@@ -346,32 +352,105 @@ macro_rules! external_blueprint {
 
         #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
         struct $blueprint_ident {
-            component_address: ::scrypto::component::ComponentAddress,
+            package_address: ::scrypto::component::PackageAddress,
+            blueprint_name: ::sbor::rust::string::String,
         }
 
         // We allow dead code because it's used for importing interfaces, and not all the interface might be used
         #[allow(dead_code, unused_imports)]
         impl $blueprint_ident {
-            ::scrypto::external_interface_members!(
-                $blueprint_context,
+            fn at<S>(package_address: ::scrypto::component::PackageAddress, blueprint_name: S) -> Self
+            where
+                S: Into<::sbor::rust::string::String>
+            {
+                Self {
+                    package_address,
+                    blueprint_name: blueprint_name.into(),
+                }
+            }
+
+            ::scrypto::external_blueprint_members!(
                 $($blueprint_contents)*
             );
         }
 
-        impl From<::scrypto::component::ComponentAddress> for $blueprint_ident {
-            fn from(component_address: ::scrypto::component::ComponentAddress) -> Self {
-                Self {
-                    component_address
-                }
-            }
-        }
-
-        impl From<$blueprint_ident> for ::scrypto::component::ComponentAddress {
-            fn from(a: $blueprint_ident) -> ::scrypto::component::ComponentAddress {
-                a.component_address
+        impl From<$blueprint_ident> for ::scrypto::component::PackageAddress {
+            fn from(a: $blueprint_ident) -> ::scrypto::component::PackageAddress {
+                a.package_address
             }
         }
     };
+}
+
+// This is a TT-Muncher, a useful guide for this type of use case is here: https://adventures.michaelfbryan.com/posts/non-trivial-macros/
+#[macro_export]
+macro_rules! external_blueprint_members {
+    (
+        fn $method_name:ident(&self$(, $method_args:ident: $method_types:ty)*) -> $method_output:ty;
+        $($rest:tt)*
+    ) => {
+        compile_error!("The external_blueprint! macro cannot be used to define component methods which take &self or &mut self. For these component methods, use a separate external_component! macro.");
+    };
+    (
+        fn $method_name:ident(&self$(, $method_args:ident: $method_types:ty)*);
+        $($rest:tt)*
+    ) => {
+        compile_error!("The external_blueprint! macro cannot be used to define component methods which take &self or &mut self. For these component methods, use a separate external_component! macro.");
+    };
+    (
+        fn $method_name:ident(&mut self$(, $method_args:ident: $method_types:ty)*) -> $method_output:ty;
+        $($rest:tt)*
+    ) => {
+        compile_error!("The external_blueprint! macro cannot be used to define component methods which take &self or &mut self. For these component methods, use a separate external_component! macro.");
+    };
+    (
+        fn $method_name:ident(&mut self$(, $method_args:ident: $method_types:ty)*);
+        $($rest:tt)*
+    ) => {
+        compile_error!("The external_blueprint! macro cannot be used to define component methods which take &self or &mut self. For these component methods, use a separate external_component! macro.");
+    };
+    (
+        fn $method_name:ident(self$(, $method_args:ident: $method_types:ty)*) -> $method_output:ty;
+        $($rest:tt)*
+    ) => {
+        compile_error!("The external_blueprint! macro cannot be used to define component methods which take &self or &mut self. Also, just self is not supported. For these component methods, use a separate external_component! macro.");
+    };
+    (
+        fn $method_name:ident(self$(, $method_args:ident: $method_types:ty)*);
+        $($rest:tt)*
+    ) => {
+        compile_error!("The external_blueprint! macro cannot be used to define component methods which take &self or &mut self. Also, just self is not supported. For these component methods, use a separate external_component! macro.");
+    };
+    (
+        fn $func_name:ident($($func_args:ident: $func_types:ty),*) -> $func_output:ty;
+        $($rest:tt)*
+    ) => {
+        pub fn $func_name(&self, $($func_args: $func_types),*) -> $func_output {
+            ::scrypto::core::Runtime::call_function(
+                self.package_address,
+                &self.blueprint_name,
+                stringify!($func_name),
+                ::scrypto::args!($($func_args),*)
+            )
+        }
+        ::scrypto::external_blueprint_members!($($rest)*);
+    };
+    (
+        fn $func_name:ident($($func_args:ident: $func_types:ty),*);
+        $($rest:tt)*
+    ) => {
+        pub fn $func_name(&self, $($func_args: $func_types),*) {
+            use ::scrypto::rust::str::FromStr;
+            ::scrypto::core::Runtime::call_function(
+                self.package_address,
+                &self.blueprint_name,
+                stringify!($func_name),
+                ::scrypto::args!($($func_args),*)
+            )
+        }
+        ::scrypto::external_blueprint_members!($($rest)*);
+    };
+    () => {}
 }
 
 /// Generates a bridge/stub to make cross-component calls.
@@ -379,6 +458,7 @@ macro_rules! external_blueprint {
 /// # Examples
 /// ```no_run
 /// use scrypto::prelude::*;
+/// use scrypto::address::Bech32Decoder;
 /// use sbor::{TypeId, Encode, Decode, Describe};
 ///
 /// #[derive(TypeId, Encode, Decode, Describe)]
@@ -396,7 +476,7 @@ macro_rules! external_blueprint {
 /// }
 ///
 /// fn bridge_to_existing_account(component_address: ComponentAddress) {
-///     let existing_account = AccountInterface::from(component_address);
+///     let existing_account = AccountInterface::at(component_address);
 ///     let balance = existing_account.read_balance();
 ///     // ...
 /// }
@@ -421,7 +501,13 @@ macro_rules! external_component {
         // We allow dead code because it's used for importing interfaces, and not all the interface might be used
         #[allow(dead_code, unused_imports)]
         impl $component_ident {
-            ::scrypto::external_interface_members!((), $($component_methods)*);
+            fn at(component_address: ::scrypto::component::ComponentAddress) -> Self {
+                Self {
+                    component_address,
+                }
+            }
+
+            ::scrypto::external_component_members!($($component_methods)*);
         }
 
         impl From<::scrypto::component::ComponentAddress> for $component_ident {
@@ -442,9 +528,8 @@ macro_rules! external_component {
 
 // This is a TT-Muncher, a useful guide for this type of use case is here: https://adventures.michaelfbryan.com/posts/non-trivial-macros/
 #[macro_export]
-macro_rules! external_interface_members {
+macro_rules! external_component_members {
     (
-        $blueprint_context:tt,
         fn $method_name:ident(&self$(, $method_args:ident: $method_types:ty)*) -> $method_output:ty;
         $($rest:tt)*
     ) => {
@@ -455,10 +540,9 @@ macro_rules! external_interface_members {
                 ::scrypto::args!($($method_args),*)
             )
         }
-        ::scrypto::external_interface_members!($blueprint_context, $($rest)*);
+        ::scrypto::external_component_members!($($rest)*);
     };
     (
-        $blueprint_context:tt,
         fn $method_name:ident(&self$(, $method_args:ident: $method_types:ty)*);
         $($rest:tt)*
     ) => {
@@ -469,10 +553,9 @@ macro_rules! external_interface_members {
                 ::scrypto::args!($($method_args),*)
             )
         }
-        ::scrypto::external_interface_members!($blueprint_context, $($rest)*);
+        ::scrypto::external_component_members!($($rest)*);
     };
     (
-        $blueprint_context:tt,
         fn $method_name:ident(&mut self$(, $method_args:ident: $method_types:ty)*) -> $method_output:ty;
         $($rest:tt)*
     ) => {
@@ -483,10 +566,9 @@ macro_rules! external_interface_members {
                 ::scrypto::args!($($method_args),*)
             )
         }
-        ::scrypto::external_interface_members!($blueprint_context, $($rest)*);
+        ::scrypto::external_component_members!($($rest)*);
     };
     (
-        $blueprint_context:tt,
         fn $method_name:ident(&mut self$(, $method_args:ident: $method_types:ty)*);
         $($rest:tt)*
     ) => {
@@ -497,102 +579,31 @@ macro_rules! external_interface_members {
                 ::scrypto::args!($($method_args),*)
             )
         }
-        ::scrypto::external_interface_members!($blueprint_context, $($rest)*);
+        ::scrypto::external_component_members!($($rest)*);
     };
     (
-        $blueprint_context:tt,
         fn $method_name:ident(self$(, $method_args:ident: $method_types:ty)*) -> $method_output:ty;
         $($rest:tt)*
     ) => {
         compile_error!("Components cannot define methods taking self. Did you mean &self or &mut self instead?");
     };
     (
-        $blueprint_context:tt,
         fn $method_name:ident(self$(, $method_args:ident: $method_types:ty)*);
         $($rest:tt)*
     ) => {
         compile_error!("Components cannot define methods taking self. Did you mean &self or &mut self instead?");
     };
     (
-        $blueprint_context:tt,
-        fn $func_name:ident($($func_args:ident: $func_types:ty),*) -> $func_output:ty;
+        fn $method_name:ident($($method_args:ident: $method_types:ty),*) -> $method_output:ty;
         $($rest:tt)*
     ) => {
-        pub fn $func_name($($func_args: $func_types),*) -> $func_output {
-            ::scrypto::core::Runtime::call_function(
-                ::scrypto::component::PackageAddress::from_str(::scrypto::package_address_from_context!($blueprint_context)).unwrap(),
-                ::scrypto::blueprint_name_from_context!($blueprint_context),
-                stringify!($func_name),
-                ::scrypto::args!($($func_args),*)
-            )
-        }
-        ::scrypto::external_interface_members!($blueprint_context, $($rest)*);
+        compile_error!("The external_component! macro cannot be used to define static blueprint methods which don't take &self or &mut self. For these package methods, use a separate external_blueprint! macro.");
     };
     (
-        $blueprint_context:tt,
-        fn $func_name:ident($($func_args:ident: $func_types:ty),*);
+        fn $method_name:ident($($method_args:ident: $method_types:ty),*);
         $($rest:tt)*
     ) => {
-        pub fn $func_name($($func_args: $func_types),*) {
-            use ::scrypto::rust::str::FromStr;
-            ::scrypto::core::Runtime::call_function(
-                ::scrypto::component::PackageAddress::from_str(::scrypto::package_address_from_context!($blueprint_context)).unwrap(),
-                ::scrypto::blueprint_name_from_context!($blueprint_context),
-                stringify!($func_name),
-                ::scrypto::args!($($func_args),*)
-            )
-        }
-        ::scrypto::external_interface_members!($blueprint_context, $($rest)*);
+        compile_error!("The external_component! macro cannot be used to define static blueprint methods which don't take &self or &mut self. For these package methods, use a separate external_blueprint! macro.");
     };
-    (
-        $blueprint_context:tt,
-    ) => {}
-}
-
-#[macro_export]
-macro_rules! package_address_from_context {
-    (
-        {
-            package: $package_address:literal,
-            blueprint: $blueprint_logical_name:literal $(,)?
-        }
-    ) => {
-        $package_address
-    };
-    // This macro is only called when used for blueprint function calls (instead of component method calls)
-    //    () is the context passed into the external_interface_members macro by the external_component macro,
-    //    which doesn't support function calls. So when we detect a () parameter, then we assume we're
-    //    being called from the external_component macro, and can give a more useful error message.
-    () => {
-        compile_error!("Cannot call package functions (ie without &self or &mut self) on a external_component - use a external_blueprint instead.");
-    };
-    (
-        $blueprint_context:tt
-    ) => {
-        compile_error!("Unknown blueprint context - use { package: \"<PACKAGE_HEX_ADDRESS>\", blueprint: \"<BLUEPRINT_LOGICAL_NAME>\" }")
-    }
-}
-
-#[macro_export]
-macro_rules! blueprint_name_from_context {
-    (
-        {
-            package: $package_address:literal,
-            blueprint: $blueprint_logical_name:literal $(,)?
-        }
-    ) => {
-        $blueprint_logical_name
-    };
-    // This macro is only called when used for blueprint function calls (instead of component method calls)
-    //    () is the context passed into the external_interface_members macro by the external_component macro,
-    //    which doesn't support function calls. So when we detect a () parameter, then we assume we're
-    //    being called from the external_component macro, and can give a more useful error message.
-    () => {
-        compile_error!("Cannot call package functions (ie without &self or &mut self) on a external_component - use a external_blueprint instead.");
-    };
-    (
-        $blueprint_context:tt
-    ) => {
-        compile_error!("Unknown blueprint context - use { package: \"<PACKAGE_HEX_ADDRESS>\", blueprint: \"<BLUEPRINT_LOGICAL_NAME>\" }")
-    }
+    () => {}
 }

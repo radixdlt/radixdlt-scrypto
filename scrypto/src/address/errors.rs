@@ -1,13 +1,14 @@
-use bech32::{Error, Variant};
-#[cfg(not(feature = "alloc"))]
+use bech32;
 use sbor::rust::fmt;
 
 /// Represents an error in addressing.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AddressError {
-    EncodingError(Error),
-    DecodingError(Error),
-    InvalidVariant(Variant),
+    Bech32mEncodingError(bech32::Error),
+    Bech32mDecodingError(bech32::Error),
+    FormatError(fmt::Error),
+    HexDecodingError,
+    InvalidVariant(bech32::Variant),
     DataSectionTooShort,
     InvalidLength(usize),
     InvalidEntityTypeId(u8),
@@ -17,7 +18,6 @@ pub enum AddressError {
 #[cfg(not(feature = "alloc"))]
 impl std::error::Error for AddressError {}
 
-#[cfg(not(feature = "alloc"))]
 impl fmt::Display for AddressError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)

@@ -12,10 +12,10 @@ pub struct Transfer {
     amount: Decimal,
 
     /// The resource address.
-    resource_address: ResourceAddress,
+    resource_address: SimulatorResourceAddress,
 
     /// The recipient component address.
-    recipient: ComponentAddress,
+    recipient: SimulatorComponentAddress,
 
     /// The proofs to add to the auth zone
     #[clap(short, long, multiple = true)]
@@ -55,9 +55,9 @@ impl Transfer {
 
         let manifest = manifest_builder
             .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
-            .withdraw_from_account_by_amount(self.amount, self.resource_address, default_account)
+            .withdraw_from_account_by_amount(self.amount, self.resource_address.0, default_account)
             .call_method(
-                self.recipient,
+                self.recipient.0,
                 "deposit_batch",
                 args!(Expression::entire_worktop()),
             )
