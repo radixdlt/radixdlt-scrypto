@@ -198,7 +198,10 @@ where
     S: ReadableSubstateStore + WriteableSubstateStore,
 {
     if substate_store
-        .get_substate(&SubstateId::ResourceManager(RADIX_TOKEN))
+        .get_substate(&SubstateId(
+            RENodeId::ResourceManager(RADIX_TOKEN),
+            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
+        ))
         .is_none()
     {
         let mut wasm_engine = DefaultWasmEngine::new();

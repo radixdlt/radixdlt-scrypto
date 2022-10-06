@@ -239,12 +239,16 @@ impl<'s, R: FeeReserve> Track<'s, R> {
 
         if write_through {
             let node_id = match substate_id {
-                SubstateId::Vault(vault_id) => RENodeId::Vault(vault_id),
+                SubstateId(
+                    RENodeId::Vault(vault_id),
+                    SubstateOffset::Vault(VaultOffset::Vault),
+                ) => RENodeId::Vault(vault_id),
                 _ => panic!("Not supported yet"),
             };
             let node = self.loaded_nodes.remove(&node_id).unwrap();
-            for (substate_id, substate) in node_to_substates(node_id, node) {
-                self.state_track.put_substate_to_base(substate_id, substate);
+            for (offset, substate) in node_to_substates(node) {
+                self.state_track
+                    .put_substate_to_base(SubstateId(node_id, offset), substate);
             }
         } else {
             self.loaded_substates.insert(substate_id, loaded_substate);
@@ -259,8 +263,9 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                 | RENodeId::Bucket(_)
                 | RENodeId::Proof(_)
                 | RENodeId::Worktop => panic!("Unexpected"),
-                RENodeId::Global(address) => {
-                    let substate = self.take_substate(SubstateId::Global(*address));
+                RENodeId::Global(..) => {
+                    let offset = SubstateOffset::Global(GlobalOffset::Global);
+                    let substate = self.take_substate(SubstateId(*node_id, offset));
                     let node = HeapRENode::Global(GlobalRENode {
                         address: substate.into(),
                     });
@@ -272,37 +277,43 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                         HeapRENode::KeyValueStore(KeyValueStore::new().into()),
                     ); // TODO: zero-cost node instantiation?
                 }
-                RENodeId::Component(address) => {
-                    let substate = self.take_substate(SubstateId::ComponentInfo(*address));
+                RENodeId::Component(..) => {
+                    let offset = SubstateOffset::Component(ComponentOffset::Info);
+                    let substate = self.take_substate(SubstateId(*node_id, offset));
                     let node = HeapRENode::Component(Component {
                         info: substate.into(),
                         state: None,
                     });
                     self.loaded_nodes.insert(node_id.clone(), node);
                 }
-                RENodeId::Vault(vault_id) => {
+                RENodeId::Vault(..) => {
+                    let offset = SubstateOffset::Vault(VaultOffset::Vault);
                     let substate: VaultSubstate =
-                        self.take_substate(SubstateId::Vault(*vault_id)).into();
+                        self.take_substate(SubstateId(*node_id, offset)).into();
                     let node = HeapRENode::Vault(Vault::new(substate.0));
                     self.loaded_nodes.insert(node_id.clone(), node);
                 }
-                RENodeId::ResourceManager(address) => {
-                    let substate = self.take_substate(SubstateId::ResourceManager(*address));
+                RENodeId::ResourceManager(..) => {
+                    let offset =
+                        SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
+                    let substate = self.take_substate(SubstateId(*node_id, offset));
                     let node = HeapRENode::ResourceManager(ResourceManager {
                         info: substate.into(),
                         loaded_non_fungibles: HashMap::new(),
                     });
                     self.loaded_nodes.insert(node_id.clone(), node);
                 }
-                RENodeId::Package(address) => {
-                    let substate = self.take_substate(SubstateId::Package(*address));
+                RENodeId::Package(..) => {
+                    let offset = SubstateOffset::Package(PackageOffset::Package);
+                    let substate = self.take_substate(SubstateId(*node_id, offset));
                     let node = HeapRENode::Package(Package {
                         info: substate.into(),
                     });
                     self.loaded_nodes.insert(node_id.clone(), node);
                 }
-                RENodeId::System(address) => {
-                    let substate = self.take_substate(SubstateId::System(*address));
+                RENodeId::System(..) => {
+                    let offset = SubstateOffset::System(SystemOffset::System);
+                    let substate = self.take_substate(SubstateId(*node_id, offset));
                     let node = HeapRENode::System(System {
                         info: substate.into(),
                     });
@@ -378,17 +389,27 @@ impl<'s, R: FeeReserve> Track<'s, R> {
     pub fn read_key_value(&mut self, parent_address: SubstateId, key: Vec<u8>) -> Substate {
         // TODO: consider using a single address as function input
         let substate_id = match parent_address {
-            SubstateId::NonFungibleSpace(resource_address) => {
-                SubstateId::NonFungible(resource_address, NonFungibleId(key))
-            }
-            SubstateId::KeyValueStoreSpace(kv_store_id) => {
-                SubstateId::KeyValueStoreEntry(kv_store_id, key)
-            }
+            SubstateId(
+                RENodeId::ResourceManager(resource_address),
+                SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungibleSpace),
+            ) => SubstateId(
+                RENodeId::ResourceManager(resource_address),
+                SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(NonFungibleId(
+                    key,
+                ))),
+            ),
+            SubstateId(
+                RENodeId::KeyValueStore(kv_store_id),
+                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Space),
+            ) => SubstateId(
+                RENodeId::KeyValueStore(kv_store_id),
+                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key)),
+            ),
             _ => panic!("Unsupported key value"),
         };
 
         match parent_address {
-            SubstateId::NonFungibleSpace(_) => self
+            SubstateId(RENodeId::ResourceManager(..), ..) => self
                 .loaded_substates
                 .get(&substate_id)
                 .map(|s| s.substate.borrow().clone())
@@ -397,7 +418,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                         .get_substate(&substate_id)
                         .unwrap_or(Substate::NonFungible(NonFungibleSubstate(None)))
                 }),
-            SubstateId::KeyValueStoreSpace(..) => self
+            SubstateId(RENodeId::KeyValueStore(..), ..) => self
                 .loaded_substates
                 .get(&substate_id)
                 .map(|s| s.substate.borrow().clone())
@@ -419,12 +440,22 @@ impl<'s, R: FeeReserve> Track<'s, R> {
     ) {
         // TODO: consider using a single address as function input
         let substate_id = match parent_substate_id {
-            SubstateId::NonFungibleSpace(resource_address) => {
-                SubstateId::NonFungible(resource_address, NonFungibleId(key.clone()))
-            }
-            SubstateId::KeyValueStoreSpace(kv_store_id) => {
-                SubstateId::KeyValueStoreEntry(kv_store_id, key.clone())
-            }
+            SubstateId(
+                RENodeId::ResourceManager(resource_address),
+                SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungibleSpace),
+            ) => SubstateId(
+                RENodeId::ResourceManager(resource_address),
+                SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(NonFungibleId(
+                    key.clone(),
+                ))),
+            ),
+            SubstateId(
+                RENodeId::KeyValueStore(kv_store_id),
+                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Space),
+            ) => SubstateId(
+                RENodeId::KeyValueStore(kv_store_id),
+                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key.clone())),
+            ),
             _ => panic!("Unsupported key value"),
         };
 
@@ -550,7 +581,11 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                     .expect("Failed to add fee to fee collector");
 
                 // Refund overpayment
-                let substate_id = SubstateId::Vault(vault_id);
+                let substate_id = SubstateId(
+                    RENodeId::Vault(vault_id),
+                    SubstateOffset::Vault(VaultOffset::Vault),
+                );
+
                 let mut substate = self
                     .state_track
                     .get_substate_from_base(&substate_id)

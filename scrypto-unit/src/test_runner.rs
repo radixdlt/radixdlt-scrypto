@@ -84,7 +84,10 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     ) -> Option<radix_engine::model::ComponentInfoSubstate> {
         self.execution_stores
             .get_root_store()
-            .get_substate(&SubstateId::ComponentInfo(component_address))
+            .get_substate(&SubstateId(
+                RENodeId::Component(component_address),
+                SubstateOffset::Component(ComponentOffset::Info),
+            ))
             .map(|output| output.substate.into())
     }
 
@@ -94,7 +97,10 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     ) -> Option<radix_engine::model::ComponentStateSubstate> {
         self.execution_stores
             .get_root_store()
-            .get_substate(&SubstateId::ComponentState(component_address))
+            .get_substate(&SubstateId(
+                RENodeId::Component(component_address),
+                SubstateOffset::Component(ComponentOffset::State),
+            ))
             .map(|output| output.substate.into())
     }
 
@@ -105,7 +111,10 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     ) -> Option<radix_engine::model::KeyValueStoreEntrySubstate> {
         self.execution_stores
             .get_root_store()
-            .get_substate(&SubstateId::KeyValueStoreEntry(kv_store_id, key))
+            .get_substate(&SubstateId(
+                RENodeId::KeyValueStore(kv_store_id),
+                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key)),
+            ))
             .map(|output| output.substate.into())
     }
 
@@ -115,7 +124,10 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     ) -> Option<radix_engine::model::VaultSubstate> {
         self.execution_stores
             .get_root_store()
-            .get_substate(&SubstateId::Vault(vault_id))
+            .get_substate(&SubstateId(
+                RENodeId::Vault(vault_id),
+                SubstateOffset::Vault(VaultOffset::Vault),
+            ))
             .map(|output| output.substate.into())
     }
 

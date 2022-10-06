@@ -16,16 +16,42 @@ pub enum RENodePointer {
 }
 
 impl RENodePointer {
+    pub fn node_id(&self) -> RENodeId {
+        match self {
+            RENodePointer::Heap { root, id, .. } => id.unwrap_or(*root),
+            RENodePointer::Store(node_id) => *node_id,
+        }
+    }
+
+    pub fn node_deref<'f, 's, R: FeeReserve>(
+        &self,
+        call_frames: &'f Vec<CallFrame>,
+        track: &'f mut Track<'s, R>,
+    ) -> Result<Option<RENodePointer>, RuntimeError> {
+        if let RENodeId::Global(..) = self.node_id() {
+            let offset = SubstateOffset::Global(GlobalOffset::Global);
+            self.acquire_lock(offset.clone(), false, false, track)
+                .map_err(RuntimeError::KernelError)?;
+            let mut node_ref = self.to_ref(call_frames, track);
+            let node_id = node_ref.global_re_node().node_deref();
+            self.release_lock(offset, false, track)
+                .map_err(RuntimeError::KernelError)?;
+            Ok(Some(RENodePointer::Store(node_id)))
+        } else {
+            Ok(None)
+        }
+    }
+
     pub fn acquire_lock<'s, R: FeeReserve>(
         &self,
-        substate_id: SubstateId,
+        offset: SubstateOffset,
         mutable: bool,
         write_through: bool,
         track: &mut Track<'s, R>,
     ) -> Result<(), KernelError> {
         match self {
             RENodePointer::Store(..) => track
-                .acquire_lock(substate_id.clone(), mutable, write_through)
+                .acquire_lock(SubstateId(self.node_id(), offset), mutable, write_through)
                 .map_err(KernelError::TrackError),
             RENodePointer::Heap { .. } => Ok(()),
         }
@@ -33,13 +59,13 @@ impl RENodePointer {
 
     pub fn release_lock<'s, R: FeeReserve>(
         &self,
-        substate_id: SubstateId,
+        offset: SubstateOffset,
         write_through: bool,
         track: &mut Track<'s, R>,
     ) -> Result<(), KernelError> {
         match self {
             RENodePointer::Store(..) => track
-                .release_lock(substate_id, write_through)
+                .release_lock(SubstateId(self.node_id(), offset), write_through)
                 .map_err(KernelError::TrackError),
             RENodePointer::Heap { .. } => Ok(()),
         }
@@ -191,20 +217,26 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
         substate_id: &SubstateId,
     ) -> Result<ScryptoValue, RuntimeError> {
         match substate_id {
-            SubstateId::ComponentInfo(..) => {
-                Ok(ScryptoValue::from_typed(&self.component_mut().info))
-            }
-            SubstateId::ComponentState(..) => Ok(ScryptoValue::from_typed(
+            SubstateId(
+                RENodeId::Component(_),
+                SubstateOffset::Component(ComponentOffset::Info),
+            ) => Ok(ScryptoValue::from_typed(&self.component_mut().info)),
+            SubstateId(
+                RENodeId::Component(_),
+                SubstateOffset::Component(ComponentOffset::State),
+            ) => Ok(ScryptoValue::from_typed(
                 &self
                     .component_state_get()
                     .map_err(|e| RuntimeError::KernelError(KernelError::TrackError(e)))?,
             )),
-            SubstateId::NonFungible(.., id) => {
-                Ok(ScryptoValue::from_typed(&self.non_fungible_get(id)))
-            }
-            SubstateId::KeyValueStoreEntry(.., key) => {
-                Ok(ScryptoValue::from_typed(&self.kv_store_get(&key)))
-            }
+            SubstateId(
+                RENodeId::ResourceManager(_),
+                SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(id)),
+            ) => Ok(ScryptoValue::from_typed(&self.non_fungible_get(id))),
+            SubstateId(
+                RENodeId::KeyValueStore(_),
+                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key)),
+            ) => Ok(ScryptoValue::from_typed(&self.kv_store_get(&key))),
             s @ _ => {
                 panic!("Should never have received permissions to read {:?}.", s);
             }
@@ -218,17 +250,26 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
         child_nodes: HashMap<RENodeId, HeapRootRENode>,
     ) {
         match substate_id {
-            SubstateId::ComponentState(_) => {
+            SubstateId(
+                RENodeId::Component(_),
+                SubstateOffset::Component(ComponentOffset::State),
+            ) => {
                 let actual_substate: ComponentStateSubstate =
                     scrypto_decode(&substate.raw).expect("TODO: who should check this");
                 self.component_state_put(actual_substate, child_nodes);
             }
-            SubstateId::NonFungible(_, id) => {
+            SubstateId(
+                RENodeId::ResourceManager(..),
+                SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(id)),
+            ) => {
                 let actual_substate: NonFungibleSubstate =
                     scrypto_decode(&substate.raw).expect("TODO: who should check this");
                 self.non_fungible_put(id, actual_substate);
             }
-            SubstateId::KeyValueStoreEntry(.., key) => {
+            SubstateId(
+                RENodeId::KeyValueStore(..),
+                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key)),
+            ) => {
                 let actual_substate: KeyValueStoreEntrySubstate =
                     scrypto_decode(&substate.raw).expect("TODO: who should check this");
                 self.kv_store_put(key, actual_substate, child_nodes);
@@ -254,12 +295,10 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
             }
             RENodeRefMut::Track(track, node_id) => {
                 // Read the key value
-                let parent_substate_id = match node_id {
-                    RENodeId::KeyValueStore(kv_store_id) => {
-                        SubstateId::KeyValueStoreSpace(*kv_store_id)
-                    }
-                    _ => panic!("Unexpected"),
-                };
+                let parent_substate_id = SubstateId(
+                    *node_id,
+                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Space),
+                );
                 let substate = track.read_key_value(parent_substate_id, key.to_vec());
                 let specific_substate: KeyValueStoreEntrySubstate = substate.into();
 
@@ -310,7 +349,10 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
             RENodeRefMut::Track(track, node_id) => {
                 // Read key value
                 let parent_substate_id = match node_id {
-                    RENodeId::ResourceManager(address) => SubstateId::NonFungibleSpace(*address),
+                    RENodeId::ResourceManager(resource_address) => SubstateId(
+                        RENodeId::ResourceManager(*resource_address),
+                        SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungibleSpace),
+                    ),
                     _ => panic!("Unexpected"),
                 };
                 let substate = track.read_key_value(parent_substate_id, id.to_vec());
@@ -338,7 +380,10 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
             RENodeRefMut::Stack(..) => panic!("Every HEAP component should contain a state"),
             RENodeRefMut::Track(track, node_id) => {
                 let substate_id = match node_id {
-                    RENodeId::Component(address) => SubstateId::ComponentState(*address),
+                    RENodeId::Component(component_address) => SubstateId(
+                        RENodeId::Component(*component_address),
+                        SubstateOffset::Component(ComponentOffset::State),
+                    ),
                     _ => panic!("Unexpected"),
                 };
 

@@ -50,7 +50,10 @@ impl Publish {
             .map_err(Error::DataError)?;
 
         if let Some(package_address) = self.package_address.clone() {
-            let substate_id = SubstateId::Package(package_address.0);
+            let substate_id = SubstateId(
+                RENodeId::Package(package_address.0),
+                SubstateOffset::Package(PackageOffset::Package),
+            );
 
             let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?);
 
@@ -69,11 +72,17 @@ impl Publish {
 
             // Overwrite package
             // TODO: implement real package overwrite
-            substate_store.put_substate(SubstateId::Package(package_address.0), output_value);
+            substate_store.put_substate(
+                SubstateId(
+                    RENodeId::Package(package_address.0),
+                    SubstateOffset::Package(PackageOffset::Package),
+                ),
+                output_value,
+            );
             writeln!(out, "Package updated!").map_err(Error::IOError)?;
         } else {
             let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-                .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
+                .lock_fee(100u32.into(), SYS_FAUCET_COMPONENT)
                 .publish_package(code, abi)
                 .build();
 

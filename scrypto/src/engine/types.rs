@@ -109,44 +109,80 @@ impl Into<ResourceAddress> for GlobalAddress {
     }
 }
 
-/// TODO: separate space addresses?
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub enum SubstateId {
-    Global(GlobalAddress),
+pub enum AuthZoneOffset {
+    AuthZone,
+}
 
-    AuthZone(AuthZoneId),
-    ComponentInfo(ComponentAddress),
-    ComponentState(ComponentAddress),
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum ComponentOffset {
+    Info,
+    State,
+}
 
-    Package(PackageAddress),
-    ResourceManager(ResourceAddress),
-    NonFungibleSpace(ResourceAddress),
-    NonFungible(ResourceAddress, NonFungibleId),
-    KeyValueStoreSpace(KeyValueStoreId),
-    KeyValueStoreEntry(KeyValueStoreId, Vec<u8>),
-    Vault(VaultId),
-    System(ComponentAddress),
-    Bucket(BucketId),
-    Proof(ProofId),
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum PackageOffset {
+    Package,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum GlobalOffset {
+    Global,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum ResourceManagerOffset {
+    ResourceManager,
+    NonFungibleSpace,
+    NonFungible(NonFungibleId),
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum KeyValueStoreOffset {
+    Space,
+    Entry(Vec<u8>),
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum VaultOffset {
+    Vault,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum SystemOffset {
+    System,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum BucketOffset {
+    Bucket,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum ProofOffset {
+    Proof,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum WorktopOffset {
     Worktop,
 }
 
-impl Into<ComponentAddress> for SubstateId {
-    fn into(self) -> ComponentAddress {
-        match self {
-            SubstateId::ComponentInfo(component_address)
-            | SubstateId::ComponentState(component_address) => component_address,
-            _ => panic!("Address is not a component address"),
-        }
-    }
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum SubstateOffset {
+    Global(GlobalOffset),
+    AuthZone(AuthZoneOffset),
+    Component(ComponentOffset),
+    Package(PackageOffset),
+    ResourceManager(ResourceManagerOffset),
+    KeyValueStore(KeyValueStoreOffset),
+    Vault(VaultOffset),
+    System(SystemOffset),
+    Bucket(BucketOffset),
+    Proof(ProofOffset),
+    Worktop(WorktopOffset),
 }
 
-impl Into<ResourceAddress> for SubstateId {
-    fn into(self) -> ResourceAddress {
-        if let SubstateId::ResourceManager(resource_address) = self {
-            return resource_address;
-        } else {
-            panic!("Address is not a resource address");
-        }
-    }
-}
+/// TODO: separate space addresses?
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub struct SubstateId(pub RENodeId, pub SubstateOffset);
