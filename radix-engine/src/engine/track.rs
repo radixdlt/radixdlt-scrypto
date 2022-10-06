@@ -294,7 +294,8 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                     self.loaded_nodes.insert(node_id.clone(), node);
                 }
                 RENodeId::ResourceManager(..) => {
-                    let offset = SubstateOffset::Resource(ResourceManagerOffset::ResourceManager);
+                    let offset =
+                        SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
                     let substate = self.take_substate(SubstateId(*node_id, offset));
                     let node = HeapRENode::ResourceManager(ResourceManager {
                         info: substate.into(),
@@ -390,10 +391,12 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         let substate_id = match parent_address {
             SubstateId(
                 RENodeId::ResourceManager(resource_address),
-                SubstateOffset::Resource(ResourceManagerOffset::NonFungibleSpace),
+                SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungibleSpace),
             ) => SubstateId(
                 RENodeId::ResourceManager(resource_address),
-                SubstateOffset::Resource(ResourceManagerOffset::NonFungible(NonFungibleId(key))),
+                SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(NonFungibleId(
+                    key,
+                ))),
             ),
             SubstateId(
                 RENodeId::KeyValueStore(kv_store_id),
@@ -439,10 +442,10 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         let substate_id = match parent_substate_id {
             SubstateId(
                 RENodeId::ResourceManager(resource_address),
-                SubstateOffset::Resource(ResourceManagerOffset::NonFungibleSpace),
+                SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungibleSpace),
             ) => SubstateId(
                 RENodeId::ResourceManager(resource_address),
-                SubstateOffset::Resource(ResourceManagerOffset::NonFungible(NonFungibleId(
+                SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(NonFungibleId(
                     key.clone(),
                 ))),
             ),

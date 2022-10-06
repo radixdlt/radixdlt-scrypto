@@ -312,7 +312,7 @@ impl Bucket {
                     {
                         let address = SubstateId(
                             RENodeId::ResourceManager(resource_address),
-                            SubstateOffset::Resource(ResourceManagerOffset::NonFungible(id)),
+                            SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(id)),
                         );
                         system_api
                             .substate_write(

@@ -174,7 +174,7 @@ pub enum SubstateOffset {
     AuthZone(AuthZoneOffset),
     Component(ComponentOffset),
     Package(PackageOffset),
-    Resource(ResourceManagerOffset),
+    ResourceManager(ResourceManagerOffset),
     KeyValueStore(KeyValueStoreOffset),
     Vault(VaultOffset),
     System(SystemOffset),

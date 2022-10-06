@@ -100,7 +100,8 @@ impl AuthModule {
                 };
                 let node_id = RENodeId::ResourceManager(resource_address);
                 let resource_pointer = RENodePointer::Store(node_id);
-                let offset = SubstateOffset::Resource(ResourceManagerOffset::ResourceManager);
+                let offset =
+                    SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
                 resource_pointer
                     .acquire_lock(offset.clone(), false, false, track)
                     .map_err(RuntimeError::KernelError)?;
@@ -200,7 +201,8 @@ impl AuthModule {
                 };
                 let node_id = RENodeId::ResourceManager(resource_address);
                 let resource_pointer = RENodePointer::Store(node_id);
-                let offset = SubstateOffset::Resource(ResourceManagerOffset::ResourceManager);
+                let offset =
+                    SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
                 resource_pointer
                     .acquire_lock(offset.clone(), false, false, track)
                     .map_err(RuntimeError::KernelError)?;

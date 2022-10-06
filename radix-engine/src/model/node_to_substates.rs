@@ -54,12 +54,13 @@ pub fn node_to_substates(node: HeapRENode) -> HashMap<SubstateOffset, Substate> 
         HeapRENode::ResourceManager(resource_manager) => {
             let substate = resource_manager.info;
             substates.insert(
-                SubstateOffset::Resource(ResourceManagerOffset::ResourceManager),
+                SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
                 substate.into(),
             );
 
             for (id, non_fungible) in resource_manager.loaded_non_fungibles {
-                let offset = SubstateOffset::Resource(ResourceManagerOffset::NonFungible(id));
+                let offset =
+                    SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(id));
                 substates.insert(offset, non_fungible.into());
             }
         }

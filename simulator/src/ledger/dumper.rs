@@ -172,7 +172,7 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
         let resource_manager: ResourceManagerSubstate = substate_store
             .get_substate(&SubstateId(
                 RENodeId::ResourceManager(resource_address),
-                SubstateOffset::Resource(ResourceManagerOffset::ResourceManager),
+                SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
             ))
             .map(|s| s.substate)
             .map(|s| s.into())
@@ -200,7 +200,9 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
                 let non_fungible: NonFungibleSubstate = substate_store
                     .get_substate(&SubstateId(
                         RENodeId::ResourceManager(resource_address),
-                        SubstateOffset::Resource(ResourceManagerOffset::NonFungible(id.clone())),
+                        SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(
+                            id.clone(),
+                        )),
                     ))
                     .map(|s| s.substate)
                     .map(|s| s.into())
@@ -236,7 +238,7 @@ pub fn dump_resource_manager<T: ReadableSubstateStore, O: std::io::Write>(
     let resource_manager: Option<ResourceManagerSubstate> = substate_store
         .get_substate(&SubstateId(
             RENodeId::ResourceManager(resource_address),
-            SubstateOffset::Resource(ResourceManagerOffset::ResourceManager),
+            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
         ))
         .map(|s| s.substate)
         .map(|s| s.into());

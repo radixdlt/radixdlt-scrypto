@@ -40,7 +40,7 @@ impl RENodeProperties {
                 RENodeId::Bucket(..) => SubstateOffset::Bucket(BucketOffset::Bucket),
                 RENodeId::Proof(..) => SubstateOffset::Proof(ProofOffset::Proof),
                 RENodeId::ResourceManager(..) => {
-                    SubstateOffset::Resource(ResourceManagerOffset::ResourceManager)
+                    SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager)
                 }
                 RENodeId::System(..) => SubstateOffset::System(SystemOffset::System),
                 RENodeId::Worktop => SubstateOffset::Worktop(WorktopOffset::Worktop),
@@ -75,9 +75,9 @@ impl SubstateProperties {
             SubstateOffset::AuthZone(..) => false,
             SubstateOffset::Component(ComponentOffset::State) => true,
             SubstateOffset::Component(ComponentOffset::Info) => false,
-            SubstateOffset::Resource(ResourceManagerOffset::NonFungible(..)) => false,
-            SubstateOffset::Resource(ResourceManagerOffset::NonFungibleSpace) => false,
-            SubstateOffset::Resource(ResourceManagerOffset::ResourceManager) => false,
+            SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(..)) => false,
+            SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungibleSpace) => false,
+            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager) => false,
             SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)) => true,
             SubstateOffset::KeyValueStore(KeyValueStoreOffset::Space) => false,
             SubstateOffset::Vault(..) => false,
