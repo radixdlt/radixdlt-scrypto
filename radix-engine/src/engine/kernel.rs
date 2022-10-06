@@ -466,27 +466,6 @@ where
         call_frames.last().expect("Current frame always exists")
     }
 
-    fn deref(
-        node_pointer: RENodePointer,
-        call_frames: &Vec<CallFrame>,
-        track: &mut Track<'s, R>,
-    ) -> Result<Option<RENodePointer>, RuntimeError> {
-        if let RENodeId::Global(..) = node_pointer.node_id() {
-            let offset = SubstateOffset::Global(GlobalOffset::Global);
-            node_pointer
-                .acquire_lock(offset.clone(), false, false, track)
-                .map_err(RuntimeError::KernelError)?;
-            let mut node_ref = node_pointer.to_ref(call_frames, track);
-            let node_id = node_ref.global_re_node().node_deref();
-            node_pointer
-                .release_lock(offset, false, track)
-                .map_err(RuntimeError::KernelError)?;
-            Ok(Some(RENodePointer::Store(node_id)))
-        } else {
-            Ok(None)
-        }
-    }
-
     fn invoke_function(
         &mut self,
         function_ident: FunctionIdent,
@@ -570,7 +549,7 @@ where
             // Deref
             if let Receiver::Ref(..) = method_ident.receiver {
                 if let Some(derefed) =
-                    Self::deref(node_pointer, &self.call_frames, &mut self.track)?
+                    node_pointer.node_deref(&self.call_frames, &mut self.track)?
                 {
                     node_id = derefed.node_id();
                     node_pointer = derefed;
@@ -984,7 +963,12 @@ where
         }
 
         let current_frame = Self::current_frame(&self.call_frames);
-        let node_pointer = current_frame.get_node_pointer(*node_id)?;
+        let mut node_pointer = current_frame.get_node_pointer(*node_id)?;
+
+        // Deref
+        if let Some(derefed) = node_pointer.node_deref(&self.call_frames, &mut self.track)? {
+            node_pointer = derefed;
+        }
 
         for m in &mut self.modules {
             m.post_sys_call(
@@ -1015,7 +999,12 @@ where
         }
 
         let current_frame = Self::current_frame(&self.call_frames);
-        let node_pointer = current_frame.get_node_pointer(*node_id)?;
+        let mut node_pointer = current_frame.get_node_pointer(*node_id)?;
+
+        // Deref
+        if let Some(derefed) = node_pointer.node_deref(&self.call_frames, &mut self.track)? {
+            node_pointer = derefed;
+        }
 
         for m in &mut self.modules {
             m.post_sys_call(
@@ -1198,7 +1187,7 @@ where
         let mut node_pointer = Self::current_frame(&self.call_frames).get_node_pointer(node_id)?;
 
         // Deref
-        if let Some(derefed) = Self::deref(node_pointer, &self.call_frames, &mut self.track)? {
+        if let Some(derefed) = node_pointer.node_deref(&self.call_frames, &mut self.track)? {
             node_id = derefed.node_id();
             node_pointer = derefed;
         }
@@ -1312,7 +1301,7 @@ where
         // Get Pointer
         let mut node_id = substate_id.0;
         let mut node_pointer = Self::current_frame(&self.call_frames).get_node_pointer(node_id)?;
-        if let Some(derefed) = Self::deref(node_pointer, &self.call_frames, &mut self.track)? {
+        if let Some(derefed) = node_pointer.node_deref(&self.call_frames, &mut self.track)? {
             node_id = derefed.node_id();
             node_pointer = derefed;
         }
