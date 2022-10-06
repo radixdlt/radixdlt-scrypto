@@ -45,7 +45,7 @@ mod tests {
     use scrypto::engine::types::{GlobalAddress, RENodeId};
     use scrypto::math::*;
     use scrypto::resource::{
-        AccessRule, MintParams, Mutability, ResourceAddress, ResourceMethodAuthKey, ResourceType,
+        AccessRule, MintParams, Mutability, ResourceMethodAuthKey, ResourceType,
     };
     use scrypto::{core::Expression, resource::NonFungibleId};
 
@@ -86,18 +86,20 @@ mod tests {
                     },
                     args: args!(
                         Decimal::from(5u32),
-                        ResourceAddress::from_str(
-                            "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag"
-                        )
-                        .unwrap()
+                        bech32_decoder
+                            .validate_and_decode_resource_address(
+                                "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag"
+                            )
+                            .unwrap()
                     )
                 },
                 Instruction::TakeFromWorktopByAmount {
                     amount: Decimal::from(2),
-                    resource_address: ResourceAddress::from_str(
-                        "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag"
-                    )
-                    .unwrap(),
+                    resource_address: bech32_decoder
+                        .validate_and_decode_resource_address(
+                            "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag"
+                        )
+                        .unwrap(),
                 },
                 Instruction::CallMethod {
                     method_ident: ReceiverMethodIdent {
@@ -110,22 +112,25 @@ mod tests {
                 },
                 Instruction::AssertWorktopContainsByAmount {
                     amount: Decimal::from(3),
-                    resource_address: ResourceAddress::from_str(
-                        "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag"
-                    )
-                    .unwrap(),
+                    resource_address: bech32_decoder
+                        .validate_and_decode_resource_address(
+                            "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag"
+                        )
+                        .unwrap(),
                 },
                 Instruction::AssertWorktopContains {
-                    resource_address: ResourceAddress::from_str(
-                        "resource_sim1qzhdk7tq68u8msj38r6v6yqa5myc64ejx3ud20zlh9gseqtux6"
-                    )
-                    .unwrap(),
+                    resource_address: bech32_decoder
+                        .validate_and_decode_resource_address(
+                            "resource_sim1qzhdk7tq68u8msj38r6v6yqa5myc64ejx3ud20zlh9gseqtux6"
+                        )
+                        .unwrap(),
                 },
                 Instruction::TakeFromWorktop {
-                    resource_address: ResourceAddress::from_str(
-                        "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag"
-                    )
-                    .unwrap(),
+                    resource_address: bech32_decoder
+                        .validate_and_decode_resource_address(
+                            "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag"
+                        )
+                        .unwrap(),
                 },
                 Instruction::CreateProofFromBucket { bucket_id: 513 },
                 Instruction::CloneProof { proof_id: 514 },
@@ -140,10 +145,11 @@ mod tests {
                     },
                     args: args!(
                         Decimal::from(5u32),
-                        ResourceAddress::from_str(
-                            "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag"
-                        )
-                        .unwrap()
+                        bech32_decoder
+                            .validate_and_decode_resource_address(
+                                "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag"
+                            )
+                            .unwrap()
                     )
                 },
                 Instruction::PopFromAuthZone,
@@ -154,10 +160,11 @@ mod tests {
                         NonFungibleId::from_str("0905000000").unwrap(),
                         NonFungibleId::from_str("0907000000").unwrap(),
                     ]),
-                    resource_address: ResourceAddress::from_str(
-                        "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag"
-                    )
-                    .unwrap()
+                    resource_address: bech32_decoder
+                        .validate_and_decode_resource_address(
+                            "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag"
+                        )
+                        .unwrap()
                 },
                 Instruction::CallFunction {
                     function_ident: FunctionIdent::Native(NativeFunction::ResourceManager(

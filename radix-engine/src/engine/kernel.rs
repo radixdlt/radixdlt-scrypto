@@ -1526,7 +1526,7 @@ fn extract_value_from_substate(
                 .0
                 .map(|raw| ScryptoValue::from_slice(&raw).unwrap())
         }
-        SubstateOffset::Resource(ResourceManagerOffset::NonFungible(..)) => {
+        SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(..)) => {
             let substate: NonFungibleSubstate = scrypto_decode(&substate.raw).ok()?;
             substate.0.map(|v| ScryptoValue::from_typed(&v))
         }

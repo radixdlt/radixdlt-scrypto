@@ -231,7 +231,7 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
             )),
             SubstateId(
                 RENodeId::ResourceManager(_),
-                SubstateOffset::Resource(ResourceManagerOffset::NonFungible(id)),
+                SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(id)),
             ) => Ok(ScryptoValue::from_typed(&self.non_fungible_get(id))),
             SubstateId(
                 RENodeId::KeyValueStore(_),
@@ -260,7 +260,7 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
             }
             SubstateId(
                 RENodeId::ResourceManager(..),
-                SubstateOffset::Resource(ResourceManagerOffset::NonFungible(id)),
+                SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(id)),
             ) => {
                 let actual_substate: NonFungibleSubstate =
                     scrypto_decode(&substate.raw).expect("TODO: who should check this");
@@ -351,7 +351,7 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
                 let parent_substate_id = match node_id {
                     RENodeId::ResourceManager(resource_address) => SubstateId(
                         RENodeId::ResourceManager(*resource_address),
-                        SubstateOffset::Resource(ResourceManagerOffset::NonFungibleSpace),
+                        SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungibleSpace),
                     ),
                     _ => panic!("Unexpected"),
                 };

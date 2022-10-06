@@ -55,7 +55,7 @@ pub enum SubstateCache {
 // 1. Make it an invariant that every node must be persistable at the end of a transaction, so no need of this error.
 // 2. Make `Track` more dynamic and allow nodes to define whether it's ready for persistence.
 // 3. Make transient property part of substate rather than node.
-#[derive(Debug, Encode, Decode, TypeId)]
+#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
 pub enum NodeToSubstateFailure {
     VaultPartiallyLocked,
 }
@@ -114,7 +114,7 @@ pub struct Track<'s, R: FeeReserve> {
     pub fee_table: FeeTable,
 }
 
-#[derive(Debug, Encode, Decode, TypeId)]
+#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
 pub enum TrackError {
     NotFound(SubstateId),
     NotAvailable(SubstateId),
@@ -294,7 +294,8 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                     self.loaded_nodes.insert(node_id.clone(), node);
                 }
                 RENodeId::ResourceManager(..) => {
-                    let offset = SubstateOffset::Resource(ResourceManagerOffset::ResourceManager);
+                    let offset =
+                        SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
                     let substate = self.take_substate(SubstateId(*node_id, offset));
                     let node = HeapRENode::ResourceManager(ResourceManager {
                         info: substate.into(),
@@ -390,10 +391,12 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         let substate_id = match parent_address {
             SubstateId(
                 RENodeId::ResourceManager(resource_address),
-                SubstateOffset::Resource(ResourceManagerOffset::NonFungibleSpace),
+                SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungibleSpace),
             ) => SubstateId(
                 RENodeId::ResourceManager(resource_address),
-                SubstateOffset::Resource(ResourceManagerOffset::NonFungible(NonFungibleId(key))),
+                SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(NonFungibleId(
+                    key,
+                ))),
             ),
             SubstateId(
                 RENodeId::KeyValueStore(kv_store_id),
@@ -439,10 +442,10 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         let substate_id = match parent_substate_id {
             SubstateId(
                 RENodeId::ResourceManager(resource_address),
-                SubstateOffset::Resource(ResourceManagerOffset::NonFungibleSpace),
+                SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungibleSpace),
             ) => SubstateId(
                 RENodeId::ResourceManager(resource_address),
-                SubstateOffset::Resource(ResourceManagerOffset::NonFungible(NonFungibleId(
+                SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(NonFungibleId(
                     key.clone(),
                 ))),
             ),

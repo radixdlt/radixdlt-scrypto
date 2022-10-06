@@ -15,7 +15,7 @@ use crate::wasm::*;
 use scrypto::core::ResourceManagerFunction;
 
 /// Represents an error when accessing a bucket.
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
 pub enum ResourceManagerError {
     InvalidDivisibility,
     InvalidAmount(Decimal, u8),
@@ -497,7 +497,7 @@ impl ResourceManager {
                     let value = system_api
                         .substate_read(SubstateId(
                             RENodeId::ResourceManager(resource_address.clone()),
-                            SubstateOffset::Resource(ResourceManagerOffset::NonFungible(
+                            SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(
                                 id.clone(),
                             )),
                         ))
@@ -515,9 +515,9 @@ impl ResourceManager {
                         .substate_write(
                             SubstateId(
                                 RENodeId::ResourceManager(resource_address.clone()),
-                                SubstateOffset::Resource(ResourceManagerOffset::NonFungible(
-                                    id.clone(),
-                                )),
+                                SubstateOffset::ResourceManager(
+                                    ResourceManagerOffset::NonFungible(id.clone()),
+                                ),
                             ),
                             ScryptoValue::from_typed(&NonFungibleSubstate(Some(non_fungible))),
                         )
@@ -580,7 +580,7 @@ impl ResourceManager {
                 let value = system_api
                     .substate_read(SubstateId(
                         RENodeId::ResourceManager(resource_address.clone()),
-                        SubstateOffset::Resource(ResourceManagerOffset::NonFungible(
+                        SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(
                             input.id.clone(),
                         )),
                     ))
@@ -595,9 +595,9 @@ impl ResourceManager {
                         .substate_write(
                             SubstateId(
                                 RENodeId::ResourceManager(resource_address.clone()),
-                                SubstateOffset::Resource(ResourceManagerOffset::NonFungible(
-                                    input.id,
-                                )),
+                                SubstateOffset::ResourceManager(
+                                    ResourceManagerOffset::NonFungible(input.id),
+                                ),
                             ),
                             ScryptoValue::from_typed(&NonFungibleSubstate(Some(non_fungible))),
                         )
@@ -618,7 +618,9 @@ impl ResourceManager {
                 let value = system_api
                     .substate_read(SubstateId(
                         RENodeId::ResourceManager(resource_address.clone()),
-                        SubstateOffset::Resource(ResourceManagerOffset::NonFungible(input.id)),
+                        SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(
+                            input.id,
+                        )),
                     ))
                     .map_err(InvokeError::Downstream)?;
                 let wrapper: NonFungibleSubstate =
@@ -633,7 +635,9 @@ impl ResourceManager {
                 let value = system_api
                     .substate_read(SubstateId(
                         RENodeId::ResourceManager(resource_address.clone()),
-                        SubstateOffset::Resource(ResourceManagerOffset::NonFungible(input.id)),
+                        SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(
+                            input.id,
+                        )),
                     ))
                     .map_err(InvokeError::Downstream)?;
                 let wrapper: NonFungibleSubstate =

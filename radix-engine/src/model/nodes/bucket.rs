@@ -7,7 +7,7 @@ use crate::model::{
 use crate::types::*;
 use crate::wasm::*;
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
 pub enum BucketError {
     InvalidDivisibility,
     InvalidRequestData(DecodeError),
@@ -312,7 +312,7 @@ impl Bucket {
                     {
                         let address = SubstateId(
                             RENodeId::ResourceManager(resource_address),
-                            SubstateOffset::Resource(ResourceManagerOffset::NonFungible(id)),
+                            SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(id)),
                         );
                         system_api
                             .substate_write(

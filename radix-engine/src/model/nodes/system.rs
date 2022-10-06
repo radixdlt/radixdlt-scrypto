@@ -8,7 +8,7 @@ use crate::types::*;
 use crate::wasm::*;
 use scrypto::core::{SystemCreateInput, SystemFunction};
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
 pub enum SystemError {
     InvalidRequestData(DecodeError),
 }

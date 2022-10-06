@@ -98,11 +98,11 @@ impl RadixEngineDB {
     pub fn list_resource_managers(&self) -> Vec<ResourceAddress> {
         let start = &scrypto_encode(&SubstateId(
             RENodeId::ResourceManager(ResourceAddress::Normal([0; 26])),
-            SubstateOffset::Resource(ResourceManagerOffset::ResourceManager),
+            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
         ));
         let end = &scrypto_encode(&SubstateId(
             RENodeId::ResourceManager(ResourceAddress::Normal([255; 26])),
-            SubstateOffset::Resource(ResourceManagerOffset::ResourceManager),
+            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
         ));
         let substate_ids: Vec<SubstateId> = self.list_items(start, end);
         substate_ids
@@ -110,7 +110,7 @@ impl RadixEngineDB {
             .map(|id| {
                 if let SubstateId(
                     RENodeId::ResourceManager(resource_address),
-                    SubstateOffset::Resource(ResourceManagerOffset::ResourceManager),
+                    SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
                 ) = id
                 {
                     resource_address

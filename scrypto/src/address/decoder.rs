@@ -9,7 +9,6 @@ use super::errors::AddressError;
 use super::hrpset::HrpSet;
 
 use bech32::{self, FromBase32, Variant};
-use once_cell::unsync::Lazy;
 
 /// Represents a decoder which understands how to decode Scrypto addresses in Bech32.
 pub struct Bech32Decoder {
@@ -65,7 +64,7 @@ impl Bech32Decoder {
     fn validate_and_decode(&self, address: &str) -> Result<Vec<u8>, AddressError> {
         // Decode the address string
         let (actual_hrp, data, variant) =
-            bech32::decode(address).map_err(|err| AddressError::DecodingError(err))?;
+            bech32::decode(address).map_err(|err| AddressError::Bech32mDecodingError(err))?;
 
         // Validate the Bech32 variant to ensure that is is Bech32m
         match variant {
@@ -74,7 +73,8 @@ impl Bech32Decoder {
         };
 
         // Convert the data to u8 from u5.
-        let data = Vec::<u8>::from_base32(&data).map_err(|err| AddressError::DecodingError(err))?;
+        let data =
+            Vec::<u8>::from_base32(&data).map_err(|err| AddressError::Bech32mDecodingError(err))?;
 
         // Obtain the HRP based on the entity byte in the data
         let expected_hrp = if let Some(entity_type_id) = data.get(0) {
@@ -96,6 +96,3 @@ impl Bech32Decoder {
         Ok(data)
     }
 }
-
-pub const BECH32_DECODER: Lazy<Bech32Decoder> =
-    Lazy::new(|| Bech32Decoder::new(&NetworkDefinition::simulator()));

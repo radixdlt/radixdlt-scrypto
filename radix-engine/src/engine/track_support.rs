@@ -47,7 +47,7 @@ impl<'s> BaseStateTrack<'s> {
                 match &substate_id {
                     SubstateId(
                         RENodeId::ResourceManager(resource_address),
-                        SubstateOffset::Resource(ResourceManagerOffset::NonFungible(key)),
+                        SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(key)),
                     ) => {
                         let next_version = if let Some(existing_output_id) =
                             Self::get_substate_output_id(&self.substate_store, &substate_id)
@@ -58,7 +58,9 @@ impl<'s> BaseStateTrack<'s> {
                         } else {
                             let parent_address = SubstateId(
                                 RENodeId::ResourceManager(*resource_address),
-                                SubstateOffset::Resource(ResourceManagerOffset::NonFungibleSpace),
+                                SubstateOffset::ResourceManager(
+                                    ResourceManagerOffset::NonFungibleSpace,
+                                ),
                             );
                             let virtual_output_id =
                                 VirtualSubstateId(parent_address, key.0.clone());

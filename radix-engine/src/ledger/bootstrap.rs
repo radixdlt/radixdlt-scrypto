@@ -200,7 +200,7 @@ where
     if substate_store
         .get_substate(&SubstateId(
             RENodeId::ResourceManager(RADIX_TOKEN),
-            SubstateOffset::Resource(ResourceManagerOffset::ResourceManager),
+            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
         ))
         .is_none()
     {
