@@ -37,7 +37,12 @@ fn set_epoch_without_supervisor_auth_fails() {
     let epoch = 9876u64;
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_scrypto_function(package_address, "SystemTest", "set_epoch", args!(epoch))
+        .call_scrypto_function(
+            package_address,
+            "SystemTest",
+            "set_epoch",
+            args!(SYS_SYSTEM_COMPONENT, epoch),
+        )
         .call_scrypto_function(package_address, "SystemTest", "get_epoch", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);

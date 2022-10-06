@@ -78,10 +78,35 @@ impl Into<ResourceAddress> for RENodeId {
 #[derive(Debug, Clone, Copy, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum GlobalAddress {
     Component(ComponentAddress),
-    /*
     Package(PackageAddress),
     Resource(ResourceAddress),
-     */
+}
+
+impl Into<ComponentAddress> for GlobalAddress {
+    fn into(self) -> ComponentAddress {
+        match self {
+            GlobalAddress::Component(component_address) => component_address,
+            _ => panic!("Not a component address"),
+        }
+    }
+}
+
+impl Into<PackageAddress> for GlobalAddress {
+    fn into(self) -> PackageAddress {
+        match self {
+            GlobalAddress::Package(package_address) => package_address,
+            _ => panic!("Not a package address"),
+        }
+    }
+}
+
+impl Into<ResourceAddress> for GlobalAddress {
+    fn into(self) -> ResourceAddress {
+        match self {
+            GlobalAddress::Resource(resource_address) => resource_address,
+            _ => panic!("Not a resource address"),
+        }
+    }
 }
 
 /// TODO: separate space addresses?

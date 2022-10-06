@@ -382,9 +382,10 @@ impl ResourceManager {
                     None
                 };
 
-                system_api
+                let global_address = system_api
                     .node_globalize(resource_node_id)
                     .map_err(InvokeError::Downstream)?;
+                let resource_address: ResourceAddress = global_address.into();
 
                 Ok(ScryptoValue::from_typed(&(resource_address, bucket_id)))
             }

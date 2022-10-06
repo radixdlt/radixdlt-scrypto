@@ -650,7 +650,9 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
                 kernel
                     .invoke(
                         FnIdent::Method(ReceiverMethodIdent {
-                            receiver: Receiver::Ref(RENodeId::System(SYS_SYSTEM_COMPONENT)),
+                            receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Component(
+                                SYS_SYSTEM_COMPONENT,
+                            ))),
                             method_ident: MethodIdent::Native(NativeMethod::System(
                                 SystemMethod::SetEpoch,
                             )),
@@ -667,7 +669,9 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             kernel
                 .invoke(
                     FnIdent::Method(ReceiverMethodIdent {
-                        receiver: Receiver::Ref(RENodeId::System(SYS_SYSTEM_COMPONENT)),
+                        receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Component(
+                            SYS_SYSTEM_COMPONENT,
+                        ))),
                         method_ident: MethodIdent::Native(NativeMethod::System(
                             SystemMethod::GetCurrentEpoch,
                         )),

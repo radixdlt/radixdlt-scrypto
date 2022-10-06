@@ -73,6 +73,32 @@ pub struct EntityChanges {
     pub new_resource_addresses: Vec<ResourceAddress>,
 }
 
+impl EntityChanges {
+    pub fn new(new_global_addresses: Vec<GlobalAddress>) -> Self {
+        let mut entity_changes = Self {
+            new_package_addresses: Vec::new(),
+            new_component_addresses: Vec::new(),
+            new_resource_addresses: Vec::new(),
+        };
+
+        for new_global_address in new_global_addresses {
+            match new_global_address {
+                GlobalAddress::Package(package_address) => {
+                    entity_changes.new_package_addresses.push(package_address)
+                }
+                GlobalAddress::Component(component_address) => entity_changes
+                    .new_component_addresses
+                    .push(component_address),
+                GlobalAddress::Resource(resource_address) => {
+                    entity_changes.new_resource_addresses.push(resource_address)
+                }
+            }
+        }
+
+        entity_changes
+    }
+}
+
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct RejectResult {
     pub error: RejectionError,
@@ -106,6 +132,29 @@ impl TransactionReceipt {
         match &self.result {
             TransactionResult::Commit(..) => panic!("Expected rejection but was commit"),
             TransactionResult::Reject(ref r) => &r.error,
+        }
+    }
+
+    pub fn expect_specific_rejection<F>(&self, f: F)
+    where
+        F: FnOnce(&RuntimeError) -> bool,
+    {
+        match &self.result {
+            TransactionResult::Commit(..) => panic!("Expected rejection but was committed"),
+            TransactionResult::Reject(result) => match &result.error {
+                RejectionError::ErrorBeforeFeeLoanRepaid(err) => {
+                    if !f(&err) {
+                        panic!(
+                            "Expected specific rejection but was different error:\n{:?}",
+                            self
+                        );
+                    }
+                }
+                RejectionError::SuccessButFeeLoanNotRepaid => panic!(
+                    "Expected specific rejection but was different error:\n{:?}",
+                    self
+                ),
+            },
         }
     }
 

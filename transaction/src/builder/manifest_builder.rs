@@ -630,7 +630,9 @@ impl ManifestBuilder {
     pub fn mint(&mut self, amount: Decimal, resource_address: ResourceAddress) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
             method_ident: ReceiverMethodIdent {
-                receiver: Receiver::Ref(RENodeId::ResourceManager(resource_address)),
+                receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Resource(
+                    resource_address,
+                ))),
                 method_ident: MethodIdent::Native(NativeMethod::ResourceManager(
                     ResourceManagerMethod::Mint,
                 )),

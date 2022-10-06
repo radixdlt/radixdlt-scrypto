@@ -43,8 +43,12 @@ pub enum KernelError {
     WasmError(WasmError),
     RENodeNotVisible(RENodeId),
     InvokeMethodInvalidReceiver(RENodeId),
-    InvokeInvalidReferencePass(RENodeId),
-    InvokeInvalidReferenceReturn(RENodeId),
+
+    InvalidReferencePass(GlobalAddress),
+    InvalidReferenceReturn(GlobalAddress),
+    InvalidReferenceWrite(GlobalAddress),
+    GlobalAddressNotFound(GlobalAddress),
+
     MaxCallDepthLimitReached,
     FnIdentNotFound(FnIdent),
     MethodNotFound(ReceiverMethodIdent),
