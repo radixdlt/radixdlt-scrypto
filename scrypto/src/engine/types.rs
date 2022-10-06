@@ -25,8 +25,8 @@ pub enum RENodeId {
     Component(ComponentId),
     System(ComponentId),
     Vault(VaultId),
-    ResourceManager(ResourceAddress),
-    Package(PackageAddress),
+    ResourceManager(ResourceAddress), // TODO: Convert this into id
+    Package(PackageAddress),          // TODO: Convert this into id
 }
 
 impl Into<(Hash, u32)> for RENodeId {
