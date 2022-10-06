@@ -9,7 +9,7 @@ use crate::resim::*;
 #[derive(Parser, Debug)]
 pub struct CallFunction {
     /// The package which the function belongs to
-    package_address: PackageAddress,
+    package_address: SimulatorPackageAddress,
 
     /// The name of the blueprint which the function belongs to
     blueprint_name: String,
@@ -59,12 +59,12 @@ impl CallFunction {
         let manifest = manifest_builder
             .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
             .call_function_with_abi(
-                self.package_address,
+                self.package_address.0,
                 &self.blueprint_name,
                 &self.function_name,
                 self.arguments.clone(),
                 Some(default_account),
-                &export_abi(self.package_address, &self.blueprint_name)?,
+                &export_abi(self.package_address.0, &self.blueprint_name)?,
             )
             .map_err(Error::TransactionConstructionError)?
             .call_method(

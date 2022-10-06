@@ -11,7 +11,7 @@ use crate::resim::*;
 #[derive(Parser, Debug)]
 pub struct CallMethod {
     /// The component that the method belongs to
-    component_address: ComponentAddress,
+    component_address: SimulatorComponentAddress,
 
     /// The method name
     method_name: String,
@@ -58,11 +58,11 @@ impl CallMethod {
         let manifest = manifest_builder
             .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
             .call_method_with_abi(
-                self.component_address,
+                self.component_address.0,
                 &self.method_name,
                 self.arguments.clone(),
                 Some(default_account),
-                &export_abi_by_component(self.component_address)?,
+                &export_abi_by_component(self.component_address.0)?,
             )
             .map_err(Error::TransactionConstructionError)?
             .call_method(

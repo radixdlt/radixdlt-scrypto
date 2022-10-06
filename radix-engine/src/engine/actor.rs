@@ -16,7 +16,7 @@ pub struct FullyQualifiedReceiverMethod {
     pub method: FullyQualifiedMethod,
 }
 
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
 pub enum REActor {
     Function(FunctionIdent),
     Method(FullyQualifiedReceiverMethod),

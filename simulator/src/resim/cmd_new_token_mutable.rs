@@ -8,7 +8,7 @@ use crate::resim::*;
 #[derive(Parser, Debug)]
 pub struct NewTokenMutable {
     /// The minter resource address
-    minter_resource_address: ResourceAddress,
+    minter_resource_address: SimulatorResourceAddress,
 
     /// The symbol
     #[clap(long)]
@@ -68,7 +68,7 @@ impl NewTokenMutable {
 
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
-            .new_token_mutable(metadata, self.minter_resource_address)
+            .new_token_mutable(metadata, self.minter_resource_address.0)
             .build();
         handle_manifest(
             manifest,

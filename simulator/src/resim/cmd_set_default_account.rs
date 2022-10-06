@@ -7,7 +7,7 @@ use crate::resim::*;
 #[derive(Parser, Debug)]
 pub struct SetDefaultAccount {
     /// The account component address
-    component_address: ComponentAddress,
+    component_address: SimulatorComponentAddress,
 
     /// The private key for accessing the account
     private_key: String,
@@ -16,7 +16,7 @@ pub struct SetDefaultAccount {
 impl SetDefaultAccount {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
         let mut configs = get_configs()?;
-        configs.default_account = Some((self.component_address, self.private_key.clone()));
+        configs.default_account = Some((self.component_address.0, self.private_key.clone()));
         set_configs(&configs)?;
 
         writeln!(out, "Default account updated!").map_err(Error::IOError)?;

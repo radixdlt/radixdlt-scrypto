@@ -4,7 +4,7 @@ use crate::model::{ComponentInfoSubstate, ComponentStateSubstate, InvokeError};
 use crate::types::*;
 use crate::wasm::{WasmEngine, WasmInstance};
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
 pub enum ComponentError {
     InvalidRequestData(DecodeError),
     BlueprintFunctionNotFound(String),
