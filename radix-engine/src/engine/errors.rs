@@ -8,7 +8,6 @@ use crate::wasm::WasmError;
 use sbor::*;
 use scrypto::core::{FnIdent, ReceiverMethodIdent};
 
-use super::NodeToSubstateFailure;
 use super::TrackError;
 
 /// Represents an error which causes a tranasction to be rejected.
@@ -80,7 +79,6 @@ pub enum KernelError {
 
     // Substate
     TrackError(TrackError),
-    NodeToSubstateFailure(NodeToSubstateFailure),
     SubstateReadNotReadable(REActor, SubstateId),
     SubstateWriteNotWriteable(REActor, SubstateId),
 
