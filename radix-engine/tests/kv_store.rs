@@ -63,7 +63,7 @@ fn cyclic_map_fails_execution() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::SubstateReadSubstateNotFound(_))
+            RuntimeError::KernelError(KernelError::RENodeNotVisible(_))
         )
     });
 }
@@ -86,7 +86,7 @@ fn self_cyclic_map_fails_execution() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::SubstateReadSubstateNotFound(..))
+            RuntimeError::KernelError(KernelError::RENodeNotVisible(..))
         )
     });
 }

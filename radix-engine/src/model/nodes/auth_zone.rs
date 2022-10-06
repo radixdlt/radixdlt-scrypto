@@ -5,6 +5,7 @@ use crate::model::{
 };
 use crate::types::*;
 use crate::wasm::*;
+use scrypto::core::{FnIdent, MethodIdent, ReceiverMethodIdent};
 use scrypto::resource::AuthZoneDrainInput;
 
 #[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
@@ -191,12 +192,23 @@ impl AuthZone {
                 let input: AuthZoneCreateProofInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(AuthZoneError::InvalidRequestData(e)))?;
                 let resource_type = {
-                    let mut node_ref = system_api
-                        .borrow_node(&RENodeId::ResourceManager(input.resource_address))
+                    let result = system_api
+                        .invoke(
+                            FnIdent::Method(ReceiverMethodIdent {
+                                receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Resource(
+                                    input.resource_address,
+                                ))),
+                                method_ident: MethodIdent::Native(NativeMethod::ResourceManager(
+                                    ResourceManagerMethod::GetResourceType,
+                                )),
+                            }),
+                            ScryptoValue::from_typed(&ResourceManagerGetResourceTypeInput {}),
+                        )
                         .map_err(InvokeError::Downstream)?;
-                    let resource_manager = node_ref.resource_manager();
-                    resource_manager.resource_type()
+                    let resource_type: ResourceType = scrypto_decode(&result.raw).unwrap();
+                    resource_type
                 };
+
                 let mut node_ref = system_api
                     .borrow_node_mut(&RENodeId::AuthZone(auth_zone_id))
                     .map_err(InvokeError::Downstream)?;
@@ -214,12 +226,23 @@ impl AuthZone {
                 let input: AuthZoneCreateProofByAmountInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(AuthZoneError::InvalidRequestData(e)))?;
                 let resource_type = {
-                    let mut node_ref = system_api
-                        .borrow_node(&RENodeId::ResourceManager(input.resource_address))
+                    let result = system_api
+                        .invoke(
+                            FnIdent::Method(ReceiverMethodIdent {
+                                receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Resource(
+                                    input.resource_address,
+                                ))),
+                                method_ident: MethodIdent::Native(NativeMethod::ResourceManager(
+                                    ResourceManagerMethod::GetResourceType,
+                                )),
+                            }),
+                            ScryptoValue::from_typed(&ResourceManagerGetResourceTypeInput {}),
+                        )
                         .map_err(InvokeError::Downstream)?;
-                    let resource_manager = node_ref.resource_manager();
-                    resource_manager.resource_type()
+                    let resource_type: ResourceType = scrypto_decode(&result.raw).unwrap();
+                    resource_type
                 };
+
                 let mut node_ref = system_api
                     .borrow_node_mut(&RENodeId::AuthZone(auth_zone_id))
                     .map_err(InvokeError::Downstream)?;
@@ -241,11 +264,21 @@ impl AuthZone {
                 let input: AuthZoneCreateProofByIdsInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(AuthZoneError::InvalidRequestData(e)))?;
                 let resource_type = {
-                    let mut node_ref = system_api
-                        .borrow_node(&RENodeId::ResourceManager(input.resource_address))
+                    let result = system_api
+                        .invoke(
+                            FnIdent::Method(ReceiverMethodIdent {
+                                receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Resource(
+                                    input.resource_address,
+                                ))),
+                                method_ident: MethodIdent::Native(NativeMethod::ResourceManager(
+                                    ResourceManagerMethod::GetResourceType,
+                                )),
+                            }),
+                            ScryptoValue::from_typed(&ResourceManagerGetResourceTypeInput {}),
+                        )
                         .map_err(InvokeError::Downstream)?;
-                    let resource_manager = node_ref.resource_manager();
-                    resource_manager.resource_type()
+                    let resource_type: ResourceType = scrypto_decode(&result.raw).unwrap();
+                    resource_type
                 };
 
                 let mut node_ref = system_api

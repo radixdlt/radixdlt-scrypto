@@ -83,7 +83,6 @@ pub enum KernelError {
     NodeToSubstateFailure(NodeToSubstateFailure),
     SubstateReadNotReadable(REActor, SubstateId),
     SubstateWriteNotWriteable(REActor, SubstateId),
-    SubstateReadSubstateNotFound(SubstateId),
 
     // constraints
     ValueNotAllowed,
