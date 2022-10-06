@@ -21,7 +21,7 @@ pub struct Proof {
     evidence: HashMap<ResourceContainerId, (Rc<RefCell<ResourceContainer>>, LockedAmountOrIds)>,
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
 pub enum ProofError {
     /// Error produced by a resource container.
     ResourceContainerError(ResourceContainerError),

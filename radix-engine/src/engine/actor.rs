@@ -1,6 +1,6 @@
 use crate::types::*;
 
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
 pub struct REActor {
     pub fn_identifier: FnIdentifier,
     pub receiver: Option<Receiver>,

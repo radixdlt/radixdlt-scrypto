@@ -3,6 +3,7 @@ use colored::*;
 use radix_engine::engine::Substate;
 use radix_engine::ledger::{OutputValue, ReadableSubstateStore, WriteableSubstateStore};
 use radix_engine::types::*;
+use scrypto::prelude::ContextualDisplay;
 use std::ffi::OsStr;
 use std::fs;
 use std::path::PathBuf;
@@ -19,7 +20,7 @@ pub struct Publish {
 
     /// The package ID, for overwriting
     #[clap(long)]
-    package_address: Option<PackageAddress>,
+    package_address: Option<SimulatorPackageAddress>,
 
     /// The network to use when outputting manifest, [simulator | adapanet | nebunet | mainnet]
     #[clap(short, long)]
@@ -49,7 +50,7 @@ impl Publish {
             .map_err(Error::DataError)?;
 
         if let Some(package_address) = self.package_address.clone() {
-            let substate_id = SubstateId::Package(package_address);
+            let substate_id = SubstateId::Package(package_address.0);
 
             let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?);
 
@@ -65,7 +66,7 @@ impl Publish {
 
             // Overwrite package
             // TODO: implement real package overwrite
-            substate_store.put_substate(SubstateId::Package(package_address), output_value);
+            substate_store.put_substate(SubstateId::Package(package_address.0), output_value);
             writeln!(out, "Package updated!").map_err(Error::IOError)?;
         } else {
             let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -87,6 +88,7 @@ impl Publish {
                     out,
                     "Success! New Package: {}",
                     receipt.expect_commit().entity_changes.new_package_addresses[0]
+                        .display(&Bech32Encoder::for_simulator())
                         .to_string()
                         .green()
                 )

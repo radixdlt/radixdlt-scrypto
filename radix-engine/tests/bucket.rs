@@ -103,6 +103,8 @@ fn test_take_with_invalid_granularity() {
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account();
     let resource_address = test_runner.create_fungible_resource(100.into(), 2, account);
+    let resource_address_str =
+        Bech32Encoder::for_simulator().encode_resource_address_to_string(&resource_address);
     let package_address = test_runner.compile_and_publish("./tests/bucket");
 
     // Act
@@ -112,7 +114,7 @@ fn test_take_with_invalid_granularity() {
             package_address,
             "BucketTest",
             "take_from_bucket",
-            vec![format!("100,{}", resource_address), "1.123".to_owned()],
+            vec![format!("100,{}", resource_address_str), "1.123".to_owned()],
             Some(account),
             &test_runner.export_abi(package_address, "BucketTest"),
         )
@@ -143,6 +145,8 @@ fn test_take_with_negative_amount() {
     let mut test_runner = TestRunner::new(true, &mut store);
     let (public_key, _, account) = test_runner.new_account();
     let resource_address = test_runner.create_fungible_resource(100.into(), 2, account);
+    let resource_address_str =
+        Bech32Encoder::for_simulator().encode_resource_address_to_string(&resource_address);
     let package_address = test_runner.compile_and_publish("./tests/bucket");
 
     // Act
@@ -152,7 +156,7 @@ fn test_take_with_negative_amount() {
             package_address,
             "BucketTest",
             "take_from_bucket",
-            vec![format!("100,{}", resource_address), "-2".to_owned()],
+            vec![format!("100,{}", resource_address_str), "-2".to_owned()],
             Some(account),
             &test_runner.export_abi(package_address, "BucketTest"),
         )
@@ -200,7 +204,7 @@ fn create_empty_bucket() {
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
-    println!("{:?}", receipt);
+    println!("{}", receipt.displayable(&Bech32Encoder::for_simulator()));
 
     // Assert
     receipt.expect_commit_success();

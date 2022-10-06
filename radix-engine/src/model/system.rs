@@ -4,7 +4,7 @@ use crate::model::InvokeError;
 use crate::types::*;
 use crate::wasm::*;
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
 pub enum SystemError {
     InvalidRequestData(DecodeError),
 }

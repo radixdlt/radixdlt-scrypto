@@ -1,6 +1,7 @@
 use sbor::rust::collections::*;
+use sbor::rust::fmt;
 use sbor::{encode_any, DecodeError, Value};
-use scrypto::address::{AddressError, Bech32Encoder};
+use scrypto::address::{AddressError, Bech32Encoder, ContextualDisplay};
 use scrypto::buffer::scrypto_decode;
 use scrypto::core::{
     BucketFnIdentifier, FnIdentifier, NativeFnIdentifier, NetworkDefinition, Receiver,
@@ -21,7 +22,48 @@ pub enum DecompileError {
     IdValidationError(IdValidationError),
     DecodeError(DecodeError),
     AddressError(AddressError),
+    InvalidValue(ScryptoValueFormatterError),
+    FormattingError(fmt::Error),
     UnrecognizedNativeFunction,
+}
+
+impl From<ScryptoValueFormatterError> for DecompileError {
+    fn from(error: ScryptoValueFormatterError) -> Self {
+        Self::InvalidValue(error)
+    }
+}
+
+impl From<fmt::Error> for DecompileError {
+    fn from(error: fmt::Error) -> Self {
+        Self::FormattingError(error)
+    }
+}
+
+pub struct DecompilationContext<'a> {
+    pub bech32_encoder: Option<&'a Bech32Encoder>,
+    pub id_validator: IdValidator,
+    pub bucket_names: HashMap<BucketId, String>,
+    pub proof_names: HashMap<ProofId, String>,
+}
+
+impl<'a> DecompilationContext<'a> {
+    pub fn new(bech32_encoder: &'a Bech32Encoder) -> Self {
+        Self {
+            bech32_encoder: Some(bech32_encoder),
+            id_validator: IdValidator::new(),
+            bucket_names: HashMap::<BucketId, String>::new(),
+            proof_names: HashMap::<ProofId, String>::new(),
+        }
+    }
+
+    pub fn new_with_optional_network(bech32_encoder: Option<&'a Bech32Encoder>) -> Self {
+        Self {
+            bech32_encoder,
+            id_validator: IdValidator::new(),
+            bucket_names: HashMap::<BucketId, String>::new(),
+            proof_names: HashMap::<ProofId, String>::new(),
+        }
+    }
 }
 
 pub fn decompile(
@@ -30,356 +72,418 @@ pub fn decompile(
 ) -> Result<String, DecompileError> {
     let bech32_encoder = Bech32Encoder::new(network);
     let mut buf = String::new();
-    let mut id_validator = IdValidator::new();
-    let mut buckets = HashMap::<BucketId, String>::new();
-    let mut proofs = HashMap::<ProofId, String>::new();
+    let mut context = DecompilationContext::new(&bech32_encoder);
     for inst in instructions {
-        match inst.clone() {
-            Instruction::TakeFromWorktop { resource_address } => {
-                let bucket_id = id_validator
-                    .new_bucket()
-                    .map_err(DecompileError::IdValidationError)?;
-                let name = format!("bucket{}", buckets.len() + 1);
-                buckets.insert(bucket_id, name.clone());
-                buf.push_str(&format!(
-                    "TAKE_FROM_WORKTOP ResourceAddress(\"{}\") Bucket(\"{}\");\n",
-                    bech32_encoder.encode_resource_address(&resource_address),
-                    name
-                ));
-            }
-            Instruction::TakeFromWorktopByAmount {
-                amount,
-                resource_address,
-            } => {
-                let bucket_id = id_validator
-                    .new_bucket()
-                    .map_err(DecompileError::IdValidationError)?;
-                let name = format!("bucket{}", buckets.len() + 1);
-                buckets.insert(bucket_id, name.clone());
-                buf.push_str(&format!(
-                    "TAKE_FROM_WORKTOP_BY_AMOUNT Decimal(\"{}\") ResourceAddress(\"{}\") Bucket(\"{}\");\n",
-                    amount, bech32_encoder.encode_resource_address(&resource_address), name
-                ));
-            }
-            Instruction::TakeFromWorktopByIds {
-                ids,
-                resource_address,
-            } => {
-                let bucket_id = id_validator
-                    .new_bucket()
-                    .map_err(DecompileError::IdValidationError)?;
-                let name = format!("bucket{}", buckets.len() + 1);
-                buckets.insert(bucket_id, name.clone());
-                buf.push_str(&format!(
-                    "TAKE_FROM_WORKTOP_BY_IDS Set<NonFungibleId>({}) ResourceAddress(\"{}\") Bucket(\"{}\");\n",
-                    ids.iter()
-                    .map(|k| format!("NonFungibleId(\"{}\")", k))
-                    .collect::<Vec<String>>()
-                    .join(", "),
-                    bech32_encoder.encode_resource_address(&resource_address), name
-                ));
-            }
-            Instruction::ReturnToWorktop { bucket_id } => {
-                id_validator
-                    .drop_bucket(bucket_id)
-                    .map_err(DecompileError::IdValidationError)?;
-                buf.push_str(&format!(
-                    "RETURN_TO_WORKTOP Bucket({});\n",
-                    buckets
-                        .get(&bucket_id)
-                        .map(|name| format!("\"{}\"", name))
-                        .unwrap_or(format!("{}u32", bucket_id))
-                ));
-            }
-            Instruction::AssertWorktopContains { resource_address } => {
-                buf.push_str(&format!(
-                    "ASSERT_WORKTOP_CONTAINS ResourceAddress(\"{}\");\n",
-                    bech32_encoder.encode_resource_address(&resource_address)
-                ));
-            }
-            Instruction::AssertWorktopContainsByAmount {
-                amount,
-                resource_address,
-            } => {
-                buf.push_str(&format!(
-                    "ASSERT_WORKTOP_CONTAINS_BY_AMOUNT Decimal(\"{}\") ResourceAddress(\"{}\");\n",
-                    amount,
-                    bech32_encoder.encode_resource_address(&resource_address)
-                ));
-            }
-            Instruction::AssertWorktopContainsByIds {
-                ids,
-                resource_address,
-            } => {
-                buf.push_str(&format!(
-                    "ASSERT_WORKTOP_CONTAINS_BY_IDS Set<NonFungibleId>({}) ResourceAddress(\"{}\");\n",
-                    ids.iter()
-                        .map(|k| format!("NonFungibleId(\"{}\")", k))
-                        .collect::<Vec<String>>()
-                        .join(", "),
-                    bech32_encoder.encode_resource_address(&resource_address)
-                ));
-            }
-            Instruction::PopFromAuthZone => {
-                let proof_id = id_validator
-                    .new_proof(ProofKind::AuthZoneProof)
-                    .map_err(DecompileError::IdValidationError)?;
-                let name = format!("proof{}", proofs.len() + 1);
-                proofs.insert(proof_id, name.clone());
-                buf.push_str(&format!("POP_FROM_AUTH_ZONE Proof(\"{}\");\n", name));
-            }
-            Instruction::PushToAuthZone { proof_id } => {
-                id_validator
-                    .drop_proof(proof_id)
-                    .map_err(DecompileError::IdValidationError)?;
-                buf.push_str(&format!(
-                    "PUSH_TO_AUTH_ZONE Proof({});\n",
-                    proofs
-                        .get(&proof_id)
-                        .map(|name| format!("\"{}\"", name))
-                        .unwrap_or(format!("{}u32", proof_id))
-                ));
-            }
-            Instruction::ClearAuthZone => {
-                buf.push_str("CLEAR_AUTH_ZONE;\n");
-            }
-            Instruction::CreateProofFromAuthZone { resource_address } => {
-                let proof_id = id_validator
-                    .new_proof(ProofKind::AuthZoneProof)
-                    .map_err(DecompileError::IdValidationError)?;
-                let name = format!("proof{}", proofs.len() + 1);
-                proofs.insert(proof_id, name.clone());
-                buf.push_str(&format!(
-                    "CREATE_PROOF_FROM_AUTH_ZONE ResourceAddress(\"{}\") Proof(\"{}\");\n",
-                    bech32_encoder.encode_resource_address(&resource_address),
-                    name
-                ));
-            }
-            Instruction::CreateProofFromAuthZoneByAmount {
-                amount,
-                resource_address,
-            } => {
-                let proof_id = id_validator
-                    .new_proof(ProofKind::AuthZoneProof)
-                    .map_err(DecompileError::IdValidationError)?;
-                let name = format!("proof{}", proofs.len() + 1);
-                proofs.insert(proof_id, name.clone());
-                buf.push_str(&format!(
-                    "CREATE_PROOF_FROM_AUTH_ZONE_BY_AMOUNT Decimal(\"{}\") ResourceAddress(\"{}\") Proof(\"{}\");\n",
-                    amount,
-                    bech32_encoder.encode_resource_address(&resource_address), name
-                ));
-            }
-            Instruction::CreateProofFromAuthZoneByIds {
-                ids,
-                resource_address,
-            } => {
-                let proof_id = id_validator
-                    .new_proof(ProofKind::AuthZoneProof)
-                    .map_err(DecompileError::IdValidationError)?;
-                let name = format!("proof{}", proofs.len() + 1);
-                proofs.insert(proof_id, name.clone());
-                buf.push_str(&format!(
-                    "CREATE_PROOF_FROM_AUTH_ZONE_BY_IDS Set<NonFungibleId>({}) ResourceAddress(\"{}\") Proof(\"{}\");\n",ids.iter()
-                    .map(|k| format!("NonFungibleId(\"{}\")", k))
-                    .collect::<Vec<String>>()
-                    .join(", "),
-                    bech32_encoder.encode_resource_address(&resource_address), name
-                ));
-            }
-            Instruction::CreateProofFromBucket { bucket_id } => {
-                let proof_id = id_validator
-                    .new_proof(ProofKind::BucketProof(bucket_id))
-                    .map_err(DecompileError::IdValidationError)?;
-                let name = format!("proof{}", proofs.len() + 1);
-                proofs.insert(proof_id, name.clone());
-                buf.push_str(&format!(
-                    "CREATE_PROOF_FROM_BUCKET Bucket({}) Proof(\"{}\");\n",
-                    buckets
-                        .get(&bucket_id)
-                        .map(|name| format!("\"{}\"", name))
-                        .unwrap_or(format!("{}u32", bucket_id)),
-                    name
-                ));
-            }
-            Instruction::CloneProof { proof_id } => {
-                let proof_id2 = id_validator
-                    .clone_proof(proof_id)
-                    .map_err(DecompileError::IdValidationError)?;
-                let name = format!("proof{}", proofs.len() + 1);
-                proofs.insert(proof_id2, name.clone());
-                buf.push_str(&format!(
-                    "CLONE_PROOF Proof({}) Proof(\"{}\");\n",
-                    proofs
-                        .get(&proof_id)
-                        .map(|name| format!("\"{}\"", name))
-                        .unwrap_or(format!("{}u32", proof_id)),
-                    name
-                ));
-            }
-            Instruction::DropProof { proof_id } => {
-                id_validator
-                    .drop_proof(proof_id)
-                    .map_err(DecompileError::IdValidationError)?;
-                buf.push_str(&format!(
-                    "DROP_PROOF Proof({});\n",
-                    proofs
-                        .get(&proof_id)
-                        .map(|name| format!("\"{}\"", name))
-                        .unwrap_or(format!("{}u32", proof_id)),
-                ));
-            }
-            Instruction::DropAllProofs => {
-                id_validator
-                    .drop_all_proofs()
-                    .map_err(DecompileError::IdValidationError)?;
-                buf.push_str("DROP_ALL_PROOFS;\n");
-            }
-            Instruction::CallFunction {
-                fn_identifier,
-
-                args,
-            } => match fn_identifier {
-                FnIdentifier::Scrypto {
-                    package_address,
-                    blueprint_name,
-                    ident,
-                } => {
-                    buf.push_str(&format!(
-                        "CALL_FUNCTION PackageAddress(\"{}\") \"{}\" \"{}\"",
-                        bech32_encoder.encode_package_address(&package_address),
-                        blueprint_name,
-                        ident
-                    ));
-                    let validated_arg =
-                        ScryptoValue::from_slice(&args).map_err(DecompileError::DecodeError)?;
-                    if let Value::Struct { fields } = validated_arg.dom {
-                        for field in fields {
-                            let bytes = encode_any(&field);
-                            let validated_arg = ScryptoValue::from_slice(&bytes)
-                                .map_err(DecompileError::DecodeError)?;
-                            id_validator
-                                .move_resources(&validated_arg)
-                                .map_err(DecompileError::IdValidationError)?;
-
-                            buf.push(' ');
-                            buf.push_str(&validated_arg.to_string_with_context(&buckets, &proofs));
-                        }
-                    } else {
-                        panic!("Should not get here.");
-                    }
-                    buf.push_str(";\n");
-                }
-                FnIdentifier::Native(native_fn_identifier) => match native_fn_identifier {
-                    NativeFnIdentifier::ResourceManager(ResourceManagerFnIdentifier::Create) => {
-                        buf.push_str("CREATE_RESOURCE");
-                        let input: ResourceManagerCreateInput =
-                            scrypto_decode(&args).map_err(DecompileError::DecodeError)?;
-
-                        let resource_type = ScryptoValue::from_typed(&input.resource_type);
-                        buf.push(' ');
-                        buf.push_str(&resource_type.to_string());
-
-                        let metadata = ScryptoValue::from_typed(&input.metadata);
-                        buf.push(' ');
-                        buf.push_str(&metadata.to_string());
-
-                        let access_rules = ScryptoValue::from_typed(&input.access_rules);
-                        buf.push(' ');
-                        buf.push_str(&access_rules.to_string());
-
-                        let mint_params = ScryptoValue::from_typed(&input.mint_params);
-                        buf.push(' ');
-                        buf.push_str(&mint_params.to_string());
-
-                        buf.push_str(";\n");
-                    }
-                    _ => return Err(DecompileError::UnrecognizedNativeFunction),
-                },
-            },
-            Instruction::CallMethod {
-                method_identifier,
-                args,
-            } => match method_identifier {
-                MethodIdentifier::Scrypto {
-                    component_address,
-                    ident,
-                } => {
-                    buf.push_str(&format!(
-                        "CALL_METHOD ComponentAddress(\"{}\") \"{}\"",
-                        bech32_encoder.encode_component_address(&component_address),
-                        ident
-                    ));
-
-                    let validated_arg =
-                        ScryptoValue::from_slice(&args).map_err(DecompileError::DecodeError)?;
-                    if let Value::Struct { fields } = validated_arg.dom {
-                        for field in fields {
-                            let bytes = encode_any(&field);
-                            let validated_arg = ScryptoValue::from_slice(&bytes)
-                                .map_err(DecompileError::DecodeError)?;
-                            id_validator
-                                .move_resources(&validated_arg)
-                                .map_err(DecompileError::IdValidationError)?;
-
-                            buf.push(' ');
-                            buf.push_str(&validated_arg.to_string_with_context(&buckets, &proofs));
-                        }
-                    } else {
-                        panic!("Should not get here.");
-                    }
-
-                    buf.push_str(";\n");
-                }
-                MethodIdentifier::Native {
-                    native_fn_identifier,
-                    receiver,
-                } => match (native_fn_identifier, receiver) {
-                    (
-                        NativeFnIdentifier::Bucket(BucketFnIdentifier::Burn),
-                        Receiver::Consumed(RENodeId::Bucket(bucket_id)),
-                    ) => {
-                        let _input: ConsumingBucketBurnInput =
-                            scrypto_decode(&args).map_err(DecompileError::DecodeError)?;
-
-                        buf.push_str(&format!(
-                            "BURN_BUCKET Bucket({});\n",
-                            buckets
-                                .get(&bucket_id)
-                                .map(|name| format!("\"{}\"", name))
-                                .unwrap_or(format!("{}u32", bucket_id)),
-                        ));
-                    }
-                    (
-                        NativeFnIdentifier::ResourceManager(ResourceManagerFnIdentifier::Mint),
-                        Receiver::Ref(RENodeId::ResourceManager(resource_address)),
-                    ) => {
-                        let input: ResourceManagerMintInput =
-                            scrypto_decode(&args).map_err(DecompileError::DecodeError)?;
-                        match input.mint_params {
-                            MintParams::Fungible { amount } => {
-                                buf.push_str(&format!(
-                                    "MINT_FUNGIBLE ResourceAddress(\"{}\") Decimal(\"{}\") ;\n",
-                                    bech32_encoder.encode_resource_address(&resource_address),
-                                    amount,
-                                ));
-                            }
-                            _ => return Err(DecompileError::UnrecognizedNativeFunction),
-                        }
-                    }
-                    _ => return Err(DecompileError::UnrecognizedNativeFunction),
-                },
-            },
-            Instruction::PublishPackage { code, abi } => {
-                buf.push_str(&format!(
-                    "PUBLISH_PACKAGE Blob(\"{}\") Blob(\"{}\");\n",
-                    code, abi
-                ));
-            }
-        }
+        decompile_instruction(&mut buf, inst, &mut context)?;
+        buf.push('\n');
     }
 
     Ok(buf)
+}
+
+pub fn decompile_instruction<F: fmt::Write>(
+    f: &mut F,
+    instruction: &Instruction,
+    context: &mut DecompilationContext,
+) -> Result<(), DecompileError> {
+    match instruction {
+        Instruction::TakeFromWorktop { resource_address } => {
+            let bucket_id = context
+                .id_validator
+                .new_bucket()
+                .map_err(DecompileError::IdValidationError)?;
+            let name = format!("bucket{}", context.bucket_names.len() + 1);
+            write!(
+                f,
+                "TAKE_FROM_WORKTOP ResourceAddress(\"{}\") Bucket(\"{}\");",
+                resource_address.display(context.bech32_encoder),
+                name
+            )?;
+            context.bucket_names.insert(bucket_id, name);
+        }
+        Instruction::TakeFromWorktopByAmount {
+            amount,
+            resource_address,
+        } => {
+            let bucket_id = context
+                .id_validator
+                .new_bucket()
+                .map_err(DecompileError::IdValidationError)?;
+            let name = format!("bucket{}", context.bucket_names.len() + 1);
+            context.bucket_names.insert(bucket_id, name.clone());
+            write!(
+                f,
+                "TAKE_FROM_WORKTOP_BY_AMOUNT Decimal(\"{}\") ResourceAddress(\"{}\") Bucket(\"{}\");",
+                amount,
+                resource_address.display(context.bech32_encoder),
+                name
+            )?;
+        }
+        Instruction::TakeFromWorktopByIds {
+            ids,
+            resource_address,
+        } => {
+            let bucket_id = context
+                .id_validator
+                .new_bucket()
+                .map_err(DecompileError::IdValidationError)?;
+            let name = format!("bucket{}", context.bucket_names.len() + 1);
+            context.bucket_names.insert(bucket_id, name.clone());
+            write!(
+                f,
+                "TAKE_FROM_WORKTOP_BY_IDS Set<NonFungibleId>({}) ResourceAddress(\"{}\") Bucket(\"{}\");",
+                ids.iter()
+                    .map(|k| format!("NonFungibleId(\"{}\")", k))
+                    .collect::<Vec<String>>()
+                    .join(", "),
+                resource_address.display(context.bech32_encoder),
+                name
+            )?;
+        }
+        Instruction::ReturnToWorktop { bucket_id } => {
+            context
+                .id_validator
+                .drop_bucket(*bucket_id)
+                .map_err(DecompileError::IdValidationError)?;
+            write!(
+                f,
+                "RETURN_TO_WORKTOP Bucket({});",
+                context
+                    .bucket_names
+                    .get(&bucket_id)
+                    .map(|name| format!("\"{}\"", name))
+                    .unwrap_or(format!("{}u32", bucket_id))
+            )?;
+        }
+        Instruction::AssertWorktopContains { resource_address } => {
+            write!(
+                f,
+                "ASSERT_WORKTOP_CONTAINS ResourceAddress(\"{}\");",
+                resource_address.display(context.bech32_encoder)
+            )?;
+        }
+        Instruction::AssertWorktopContainsByAmount {
+            amount,
+            resource_address,
+        } => {
+            write!(
+                f,
+                "ASSERT_WORKTOP_CONTAINS_BY_AMOUNT Decimal(\"{}\") ResourceAddress(\"{}\");",
+                amount,
+                resource_address.display(context.bech32_encoder)
+            )?;
+        }
+        Instruction::AssertWorktopContainsByIds {
+            ids,
+            resource_address,
+        } => {
+            write!(
+                f,
+                "ASSERT_WORKTOP_CONTAINS_BY_IDS Set<NonFungibleId>({}) ResourceAddress(\"{}\");",
+                ids.iter()
+                    .map(|k| format!("NonFungibleId(\"{}\")", k))
+                    .collect::<Vec<String>>()
+                    .join(", "),
+                resource_address.display(context.bech32_encoder)
+            )?;
+        }
+        Instruction::PopFromAuthZone => {
+            let proof_id = context
+                .id_validator
+                .new_proof(ProofKind::AuthZoneProof)
+                .map_err(DecompileError::IdValidationError)?;
+            let name = format!("proof{}", context.proof_names.len() + 1);
+            context.proof_names.insert(proof_id, name.clone());
+            write!(f, "POP_FROM_AUTH_ZONE Proof(\"{}\");", name)?;
+        }
+        Instruction::PushToAuthZone { proof_id } => {
+            context
+                .id_validator
+                .drop_proof(*proof_id)
+                .map_err(DecompileError::IdValidationError)?;
+            write!(
+                f,
+                "PUSH_TO_AUTH_ZONE Proof({});",
+                context
+                    .proof_names
+                    .get(&proof_id)
+                    .map(|name| format!("\"{}\"", name))
+                    .unwrap_or(format!("{}u32", proof_id))
+            )?;
+        }
+        Instruction::ClearAuthZone => {
+            f.write_str("CLEAR_AUTH_ZONE;")?;
+        }
+        Instruction::CreateProofFromAuthZone { resource_address } => {
+            let proof_id = context
+                .id_validator
+                .new_proof(ProofKind::AuthZoneProof)
+                .map_err(DecompileError::IdValidationError)?;
+            let name = format!("proof{}", context.proof_names.len() + 1);
+            context.proof_names.insert(proof_id, name.clone());
+            write!(
+                f,
+                "CREATE_PROOF_FROM_AUTH_ZONE ResourceAddress(\"{}\") Proof(\"{}\");",
+                resource_address.display(context.bech32_encoder),
+                name
+            )?;
+        }
+        Instruction::CreateProofFromAuthZoneByAmount {
+            amount,
+            resource_address,
+        } => {
+            let proof_id = context
+                .id_validator
+                .new_proof(ProofKind::AuthZoneProof)
+                .map_err(DecompileError::IdValidationError)?;
+            let name = format!("proof{}", context.proof_names.len() + 1);
+            context.proof_names.insert(proof_id, name.clone());
+            write!(
+                f,
+                "CREATE_PROOF_FROM_AUTH_ZONE_BY_AMOUNT Decimal(\"{}\") ResourceAddress(\"{}\") Proof(\"{}\");",
+                amount,
+                resource_address.display(context.bech32_encoder),
+                name
+            )?;
+        }
+        Instruction::CreateProofFromAuthZoneByIds {
+            ids,
+            resource_address,
+        } => {
+            let proof_id = context
+                .id_validator
+                .new_proof(ProofKind::AuthZoneProof)
+                .map_err(DecompileError::IdValidationError)?;
+            let name = format!("proof{}", context.proof_names.len() + 1);
+            context.proof_names.insert(proof_id, name.clone());
+            write!(
+                f,
+                "CREATE_PROOF_FROM_AUTH_ZONE_BY_IDS Set<NonFungibleId>({}) ResourceAddress(\"{}\") Proof(\"{}\");",ids.iter()
+                .map(|k| format!("NonFungibleId(\"{}\")", k))
+                .collect::<Vec<String>>()
+                .join(", "),
+                resource_address.display(context.bech32_encoder),
+                name
+            )?;
+        }
+        Instruction::CreateProofFromBucket { bucket_id } => {
+            let proof_id = context
+                .id_validator
+                .new_proof(ProofKind::BucketProof(*bucket_id))
+                .map_err(DecompileError::IdValidationError)?;
+            let name = format!("proof{}", context.proof_names.len() + 1);
+            context.proof_names.insert(proof_id, name.clone());
+            write!(
+                f,
+                "CREATE_PROOF_FROM_BUCKET Bucket({}) Proof(\"{}\");",
+                context
+                    .bucket_names
+                    .get(&bucket_id)
+                    .map(|name| format!("\"{}\"", name))
+                    .unwrap_or(format!("{}u32", bucket_id)),
+                name
+            )?;
+        }
+        Instruction::CloneProof { proof_id } => {
+            let proof_id2 = context
+                .id_validator
+                .clone_proof(*proof_id)
+                .map_err(DecompileError::IdValidationError)?;
+            let name = format!("proof{}", context.proof_names.len() + 1);
+            context.proof_names.insert(proof_id2, name.clone());
+            write!(
+                f,
+                "CLONE_PROOF Proof({}) Proof(\"{}\");",
+                context
+                    .proof_names
+                    .get(&proof_id)
+                    .map(|name| format!("\"{}\"", name))
+                    .unwrap_or(format!("{}u32", proof_id)),
+                name
+            )?;
+        }
+        Instruction::DropProof { proof_id } => {
+            context
+                .id_validator
+                .drop_proof(*proof_id)
+                .map_err(DecompileError::IdValidationError)?;
+            write!(
+                f,
+                "DROP_PROOF Proof({});",
+                context
+                    .proof_names
+                    .get(&proof_id)
+                    .map(|name| format!("\"{}\"", name))
+                    .unwrap_or(format!("{}u32", proof_id)),
+            )?;
+        }
+        Instruction::DropAllProofs => {
+            context
+                .id_validator
+                .drop_all_proofs()
+                .map_err(DecompileError::IdValidationError)?;
+            f.write_str("DROP_ALL_PROOFS;")?;
+        }
+        Instruction::CallFunction {
+            fn_identifier,
+
+            args,
+        } => match fn_identifier {
+            FnIdentifier::Scrypto {
+                package_address,
+                blueprint_name,
+                ident,
+            } => {
+                f.write_str(&format!(
+                    "CALL_FUNCTION PackageAddress(\"{}\") \"{}\" \"{}\"",
+                    package_address.display(context.bech32_encoder),
+                    blueprint_name,
+                    ident
+                ))?;
+                let validated_arg =
+                    ScryptoValue::from_slice(&args).map_err(DecompileError::DecodeError)?;
+                if let Value::Struct { fields } = validated_arg.dom {
+                    for field in fields {
+                        let bytes = encode_any(&field);
+                        let validated_arg = ScryptoValue::from_slice(&bytes)
+                            .map_err(DecompileError::DecodeError)?;
+                        context
+                            .id_validator
+                            .move_resources(&validated_arg)
+                            .map_err(DecompileError::IdValidationError)?;
+
+                        f.write_char(' ')?;
+                        f.write_str(&validated_arg.to_string_with_fixed_context(
+                            context.bech32_encoder,
+                            &context.bucket_names,
+                            &context.proof_names,
+                        )?)?;
+                    }
+                } else {
+                    panic!("Should not get here.");
+                }
+                f.write_str(";")?;
+            }
+            FnIdentifier::Native(native_fn_identifier) => match native_fn_identifier {
+                NativeFnIdentifier::ResourceManager(ResourceManagerFnIdentifier::Create) => {
+                    let input: ResourceManagerCreateInput =
+                        scrypto_decode(&args).map_err(DecompileError::DecodeError)?;
+
+                    f.write_str(&format!(
+                        "CREATE_RESOURCE {} {} {} {};",
+                        ScryptoValue::from_typed(&input.resource_type)
+                            .to_string_with_fixed_context(
+                                context.bech32_encoder,
+                                &context.bucket_names,
+                                &context.proof_names,
+                            )?,
+                        ScryptoValue::from_typed(&input.metadata).to_string_with_fixed_context(
+                            context.bech32_encoder,
+                            &context.bucket_names,
+                            &context.proof_names,
+                        )?,
+                        ScryptoValue::from_typed(&input.access_rules)
+                            .to_string_with_fixed_context(
+                                context.bech32_encoder,
+                                &context.bucket_names,
+                                &context.proof_names,
+                            )?,
+                        ScryptoValue::from_typed(&input.mint_params).to_string_with_fixed_context(
+                            context.bech32_encoder,
+                            &context.bucket_names,
+                            &context.proof_names,
+                        )?,
+                    ))?;
+                }
+                _ => return Err(DecompileError::UnrecognizedNativeFunction),
+            },
+        },
+        Instruction::CallMethod {
+            method_identifier,
+            args,
+        } => match method_identifier {
+            MethodIdentifier::Scrypto {
+                component_address,
+                ident,
+            } => {
+                f.write_str(&format!(
+                    "CALL_METHOD ComponentAddress(\"{}\") \"{}\"",
+                    component_address.display(context.bech32_encoder),
+                    ident
+                ))?;
+
+                let validated_arg =
+                    ScryptoValue::from_slice(&args).map_err(DecompileError::DecodeError)?;
+                if let Value::Struct { fields } = validated_arg.dom {
+                    for field in fields {
+                        let bytes = encode_any(&field);
+                        let validated_arg = ScryptoValue::from_slice(&bytes)
+                            .map_err(DecompileError::DecodeError)?;
+                        context
+                            .id_validator
+                            .move_resources(&validated_arg)
+                            .map_err(DecompileError::IdValidationError)?;
+
+                        f.write_char(' ')?;
+                        f.write_str(&validated_arg.to_string_with_fixed_context(
+                            context.bech32_encoder,
+                            &context.bucket_names,
+                            &context.proof_names,
+                        )?)?;
+                    }
+                } else {
+                    panic!("Should not get here.");
+                }
+
+                f.write_str(";")?;
+            }
+            MethodIdentifier::Native {
+                native_fn_identifier,
+                receiver,
+            } => match (native_fn_identifier, receiver) {
+                (
+                    NativeFnIdentifier::Bucket(BucketFnIdentifier::Burn),
+                    Receiver::Consumed(RENodeId::Bucket(bucket_id)),
+                ) => {
+                    let _input: ConsumingBucketBurnInput =
+                        scrypto_decode(&args).map_err(DecompileError::DecodeError)?;
+
+                    write!(
+                        f,
+                        "BURN_BUCKET Bucket({});",
+                        context
+                            .bucket_names
+                            .get(&bucket_id)
+                            .map(|name| format!("\"{}\"", name))
+                            .unwrap_or(format!("{}u32", bucket_id)),
+                    )?;
+                }
+                (
+                    NativeFnIdentifier::ResourceManager(ResourceManagerFnIdentifier::Mint),
+                    Receiver::Ref(RENodeId::ResourceManager(resource_address)),
+                ) => {
+                    let input: ResourceManagerMintInput =
+                        scrypto_decode(&args).map_err(DecompileError::DecodeError)?;
+                    match input.mint_params {
+                        MintParams::Fungible { amount } => {
+                            write!(
+                                f,
+                                "MINT_FUNGIBLE ResourceAddress(\"{}\") Decimal(\"{}\");",
+                                resource_address.display(context.bech32_encoder),
+                                amount,
+                            )?;
+                        }
+                        _ => return Err(DecompileError::UnrecognizedNativeFunction),
+                    }
+                }
+                _ => return Err(DecompileError::UnrecognizedNativeFunction),
+            },
+        },
+        Instruction::PublishPackage { code, abi } => {
+            write!(f, "PUBLISH_PACKAGE Blob(\"{}\") Blob(\"{}\");", code, abi)?;
+        }
+    }
+    Ok(())
 }
 
 #[cfg(test)]
