@@ -12,7 +12,7 @@ pub struct Package {
     pub info: PackageSubstate,
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
 pub enum PackageError {
     InvalidRequestData(DecodeError),
     InvalidAbi(DecodeError),

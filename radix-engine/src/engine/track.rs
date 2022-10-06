@@ -55,7 +55,7 @@ pub enum SubstateCache {
 // 1. Make it an invariant that every node must be persistable at the end of a transaction, so no need of this error.
 // 2. Make `Track` more dynamic and allow nodes to define whether it's ready for persistence.
 // 3. Make transient property part of substate rather than node.
-#[derive(Debug, Encode, Decode, TypeId)]
+#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
 pub enum NodeToSubstateFailure {
     VaultPartiallyLocked,
 }
@@ -114,7 +114,7 @@ pub struct Track<'s, R: FeeReserve> {
     pub fee_table: FeeTable,
 }
 
-#[derive(Debug, Encode, Decode, TypeId)]
+#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
 pub enum TrackError {
     NotFound(SubstateId),
     NotAvailable(SubstateId),

@@ -7,7 +7,7 @@ use crate::types::*;
 use crate::wasm::*;
 use scrypto::resource::AuthZoneDrainInput;
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
 pub enum AuthZoneError {
     EmptyAuthZone,
     ProofError(ProofError),

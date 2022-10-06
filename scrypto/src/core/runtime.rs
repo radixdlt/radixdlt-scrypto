@@ -55,10 +55,10 @@ impl Runtime {
     }
 
     /// Invokes a function on a blueprint.
-    pub fn call_function<S: AsRef<str>, T: Decode>(
+    pub fn call_function<S1: AsRef<str>, S2: AsRef<str>, T: Decode>(
         package_address: PackageAddress,
-        blueprint_name: S,
-        function: S,
+        blueprint_name: S1,
+        function: S2,
         args: Vec<u8>,
     ) -> T {
         let input = RadixEngineInput::Invoke(

@@ -12,7 +12,7 @@ use super::NodeToSubstateFailure;
 use super::TrackError;
 
 /// Represents an error which causes a tranasction to be rejected.
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
 pub enum RejectionError {
     SuccessButFeeLoanNotRepaid,
     ErrorBeforeFeeLoanRepaid(RuntimeError),
@@ -25,7 +25,7 @@ impl fmt::Display for RejectionError {
 }
 
 /// Represents an error when executing a transaction.
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
 pub enum RuntimeError {
     /// An error occurred within the kernel.
     KernelError(KernelError),
@@ -37,7 +37,7 @@ pub enum RuntimeError {
     ApplicationError(ApplicationError),
 }
 
-#[derive(Debug, Encode, Decode, TypeId)]
+#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
 pub enum KernelError {
     // invocation
     WasmError(WasmError),
@@ -97,7 +97,7 @@ pub enum KernelError {
     BlobNotFound(Hash),
 }
 
-#[derive(Debug, Encode, Decode, TypeId)]
+#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
 pub enum ModuleError {
     AuthError {
         fn_ident: FnIdent,
@@ -125,7 +125,7 @@ impl<E> InvokeError<E> {
     }
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
 pub enum ApplicationError {
     TransactionProcessorError(TransactionProcessorError),
 
@@ -148,7 +148,7 @@ pub enum ApplicationError {
     AuthZoneError(AuthZoneError),
 }
 
-#[derive(Debug, PartialEq, Encode, Decode, TypeId)]
+#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
 pub enum DropFailure {
     System,
     Resource,
