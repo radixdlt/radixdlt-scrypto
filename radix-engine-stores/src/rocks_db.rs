@@ -54,20 +54,20 @@ impl RadixEngineDB {
         end: ComponentAddress,
     ) -> Vec<ComponentAddress> {
         let start = &scrypto_encode(&SubstateId(
-            RENodeId::Component(start),
-            SubstateOffset::Component(ComponentOffset::State),
+            RENodeId::Global(GlobalAddress::Component(start)),
+            SubstateOffset::Global(GlobalOffset::Global),
         ));
         let end = &scrypto_encode(&SubstateId(
-            RENodeId::Component(end),
-            SubstateOffset::Component(ComponentOffset::State),
+            RENodeId::Global(GlobalAddress::Component(end)),
+            SubstateOffset::Global(GlobalOffset::Global),
         ));
         let substate_ids: Vec<SubstateId> = self.list_items(start, end);
         substate_ids
             .into_iter()
             .map(|id| {
                 if let SubstateId(
-                    RENodeId::Component(component_address),
-                    SubstateOffset::Component(ComponentOffset::State),
+                    RENodeId::Global(GlobalAddress::Component(component_address)),
+                    SubstateOffset::Global(GlobalOffset::Global),
                 ) = id
                 {
                     component_address

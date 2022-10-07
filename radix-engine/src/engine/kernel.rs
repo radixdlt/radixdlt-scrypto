@@ -240,6 +240,60 @@ where
         id_allocator.new_uuid(transaction_hash)
     }
 
+    // TODO: Move this into a native function
+    fn globalize(
+        id_allocator: &mut IdAllocator,
+        transaction_hash: Hash,
+        node_id: RENodeId,
+        re_node: &HeapRENode,
+    ) -> Result<(GlobalAddress, GlobalAddressSubstate), RuntimeError> {
+        match re_node {
+            HeapRENode::Component(component) => {
+                let component_address = id_allocator
+                    .new_component_address(
+                        transaction_hash,
+                        component.info.package_address,
+                        &component.info.blueprint_name,
+                    )
+                    .map_err(|e| RuntimeError::KernelError(KernelError::IdAllocationError(e)))?;
+                let component_id: ComponentId = node_id.into();
+                Ok((
+                    GlobalAddress::Component(component_address),
+                    GlobalAddressSubstate::Component(scrypto::component::Component(component_id)),
+                ))
+            }
+            HeapRENode::System(..) => {
+                let component_address = id_allocator
+                    .new_system_component_address(transaction_hash)
+                    .map_err(|e| RuntimeError::KernelError(KernelError::IdAllocationError(e)))?;
+                let component_id: ComponentId = node_id.into();
+                Ok((
+                    GlobalAddress::Component(component_address),
+                    GlobalAddressSubstate::SystemComponent(scrypto::component::Component(
+                        component_id,
+                    )),
+                ))
+            }
+            HeapRENode::ResourceManager(..) => {
+                let resource_address: ResourceAddress = node_id.into();
+                Ok((
+                    GlobalAddress::Resource(resource_address),
+                    GlobalAddressSubstate::Resource(resource_address),
+                ))
+            }
+            HeapRENode::Package(..) => {
+                let package_address: PackageAddress = node_id.into();
+                Ok((
+                    GlobalAddress::Package(package_address),
+                    GlobalAddressSubstate::Package(package_address),
+                ))
+            }
+            _ => Err(RuntimeError::KernelError(
+                KernelError::RENodeGlobalizeTypeNotAllowed(node_id),
+            )),
+        }
+    }
+
     fn new_node_id(
         id_allocator: &mut IdAllocator,
         transaction_hash: Hash,
@@ -277,18 +331,13 @@ where
                 let resource_address = id_allocator.new_resource_address(transaction_hash)?;
                 Ok(RENodeId::ResourceManager(resource_address))
             }
-            HeapRENode::Component(ref component) => {
-                let component_address = id_allocator.new_component_address(
-                    transaction_hash,
-                    &component.info.package_address,
-                    &component.info.blueprint_name,
-                )?;
-                Ok(RENodeId::Component(component_address))
+            HeapRENode::Component(..) => {
+                let component_id = id_allocator.new_component_id(transaction_hash)?;
+                Ok(RENodeId::Component(component_id))
             }
             HeapRENode::System(..) => {
-                let system_component_address =
-                    id_allocator.new_system_component_address(transaction_hash)?;
-                Ok(RENodeId::System(system_component_address))
+                let component_id = id_allocator.new_component_id(transaction_hash)?;
+                Ok(RENodeId::System(component_id))
             }
         }
     }
@@ -365,9 +414,9 @@ where
                         let scrypto_actor = match &Self::current_frame(&self.call_frames).actor {
                             REActor::Method(FullyQualifiedReceiverMethod { receiver, .. }) => {
                                 match receiver {
-                                    Receiver::Ref(RENodeId::Component(component_address)) => {
+                                    Receiver::Ref(RENodeId::Component(component_id)) => {
                                         ScryptoActor::Component(
-                                            *component_address,
+                                            *component_id,
                                             package_address.clone(),
                                             blueprint_name.clone(),
                                         )
@@ -670,14 +719,6 @@ where
                     next_frame_node_refs.insert(resource_node_id, resource_node_pointer);
                 }
                 _ => {}
-            }
-
-            if let MethodIdent::Native(..) = method_ident.method_ident {
-                for resource_address in &input.resource_addresses {
-                    let resource_node_id = RENodeId::ResourceManager(resource_address.clone());
-                    let resource_node_pointer = RENodePointer::Store(resource_node_id);
-                    next_frame_node_refs.insert(resource_node_id, resource_node_pointer);
-                }
             }
 
             let current_frame = Self::current_frame(&self.call_frames);
@@ -1138,11 +1179,13 @@ where
 
         let node = Self::current_frame_mut(&mut self.call_frames).take_node(node_id)?;
 
-        let (global_address, global_substate) = RENodeProperties::to_global(node_id).ok_or(
-            RuntimeError::KernelError(KernelError::RENodeGlobalizeTypeNotAllowed(node_id)),
+        let (global_address, global_substate) = Self::globalize(
+            &mut self.id_allocator,
+            self.transaction_hash,
+            node_id,
+            &node.root,
         )?;
         self.track.new_global_addresses.push(global_address);
-
         self.track.put_substate(
             SubstateId(
                 RENodeId::Global(global_address),

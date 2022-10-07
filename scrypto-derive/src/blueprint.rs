@@ -241,12 +241,12 @@ fn generate_dispatcher(
                         let actor = ::scrypto::core::Runtime::actor();
                     });
                     stmts.push(parse_quote! {
-                        let (component_address, ..) = actor.as_component();
+                        let (component_id, ..) = actor.as_component();
                     });
                     stmts.push(parse_quote! {
                         let mut component_data = ::scrypto::core::DataPointer::new(
                             ::scrypto::engine::types::SubstateId(
-                                ::scrypto::engine::types::RENodeId::Component(component_address),
+                                ::scrypto::engine::types::RENodeId::Component(component_id),
                                 ::scrypto::engine::types::SubstateOffset::Component(::scrypto::engine::types::ComponentOffset::State),
                             )
                         );
@@ -472,14 +472,6 @@ fn generate_stubs(
             pub component: ::scrypto::component::Component,
         }
 
-        impl From<ComponentAddress> for #value_ident {
-            fn from(component: ComponentAddress) -> Self {
-                Self {
-                    component: ::scrypto::component::Component::from(component)
-                }
-            }
-        }
-
         impl ::scrypto::component::LocalComponent for #value_ident {
             fn package_address(&self) -> PackageAddress {
                 self.component.package_address()
@@ -603,10 +595,10 @@ mod tests {
 
                     let input: Test_x_Input = ::scrypto::buffer::scrypto_decode_from_buffer(args).unwrap();
                     let actor = ::scrypto::core::Runtime::actor();
-                    let (component_address, ..) = actor.as_component();
+                    let (component_id, ..) = actor.as_component();
                     let mut component_data = ::scrypto::core::DataPointer::new(
                         ::scrypto::engine::types::SubstateId(
-                            ::scrypto::engine::types::RENodeId::Component(component_address),
+                            ::scrypto::engine::types::RENodeId::Component(component_id),
                             ::scrypto::engine::types::SubstateOffset::Component(::scrypto::engine::types::ComponentOffset::State),
                         )
                     );
@@ -667,14 +659,6 @@ mod tests {
                 #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
                 pub struct TestComponent {
                     pub component: ::scrypto::component::Component,
-                }
-
-                impl From<ComponentAddress> for TestComponent {
-                    fn from(component: ComponentAddress) -> Self {
-                        Self {
-                            component: ::scrypto::component::Component::from(component)
-                        }
-                    }
                 }
 
                 impl ::scrypto::component::LocalComponent for TestComponent {
@@ -757,14 +741,6 @@ mod tests {
                 #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
                 pub struct TestComponent {
                     pub component: ::scrypto::component::Component,
-                }
-
-                impl From<ComponentAddress> for TestComponent {
-                    fn from(component: ComponentAddress) -> Self {
-                        Self {
-                            component: ::scrypto::component::Component::from(component)
-                        }
-                    }
                 }
 
                 impl ::scrypto::component::LocalComponent for TestComponent {

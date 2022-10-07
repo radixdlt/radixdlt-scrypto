@@ -35,11 +35,14 @@ fn can_withdraw_from_my_account() {
     let outputs = receipt.expect_commit_success();
     let other_account_balance: Decimal = scrypto_decode(&outputs[3]).unwrap();
     let transfer_amount = other_account_balance - 1000 /* initial balance */;
+    let account_id: ComponentId = test_runner.deref_component(account).unwrap().into();
+    let other_account_id: ComponentId = test_runner.deref_component(other_account).unwrap().into();
+
     assert_resource_changes_for_transfer(
         &receipt.expect_commit().resource_changes,
         RADIX_TOKEN,
-        account,
-        other_account,
+        account_id,
+        other_account_id,
         transfer_amount,
     );
 }
@@ -164,19 +167,19 @@ fn test_account_balance() {
 fn assert_resource_changes_for_transfer(
     resource_changes: &Vec<ResourceChange>,
     resource_address: ResourceAddress,
-    source_account: ComponentAddress,
-    target_account: ComponentAddress,
+    source_account: ComponentId,
+    target_account: ComponentId,
     transfer_amount: Decimal,
 ) {
     assert_eq!(2, resource_changes.len());
     assert!(resource_changes
         .iter()
         .any(|r| r.resource_address == resource_address
-            && r.component_address == source_account
+            && r.component_id == source_account
             && r.amount == -transfer_amount));
     assert!(resource_changes
         .iter()
         .any(|r| r.resource_address == resource_address
-            && r.component_address == target_account
+            && r.component_id == target_account
             && r.amount == Decimal::from(transfer_amount)));
 }

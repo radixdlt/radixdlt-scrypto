@@ -9,7 +9,10 @@ use crate::address::*;
 use crate::buffer::scrypto_encode;
 use crate::component::*;
 use crate::core::*;
-use crate::engine::types::{ComponentOffset, GlobalAddress, RENodeId, SubstateId, SubstateOffset};
+use crate::crypto::Hash;
+use crate::engine::types::{
+    ComponentId, ComponentOffset, GlobalAddress, RENodeId, SubstateId, SubstateOffset,
+};
 use crate::engine::{api::*, call_engine};
 use crate::misc::*;
 use crate::resource::AccessRules;
@@ -34,7 +37,7 @@ pub trait LocalComponent {
 
 /// Represents an instantiated component.
 #[derive(PartialEq, Eq, Hash, Clone)]
-pub struct Component(pub ComponentAddress);
+pub struct Component(pub ComponentId);
 
 // TODO: de-duplication
 #[derive(Debug, Clone, TypeId, Encode, Decode, Describe, PartialEq, Eq)]
@@ -165,25 +168,32 @@ impl BorrowedGlobalComponent {
 // binary
 //========
 
-impl TryFrom<&[u8]> for Component {
-    type Error = AddressError;
-
-    fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-        let component_address = ComponentAddress::try_from(slice)?;
-        Ok(Self(component_address))
-    }
+/// Represents an error when decoding key value store.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ParseComponentError {
+    InvalidHex(String),
+    InvalidLength(usize),
 }
 
-impl From<ComponentAddress> for Component {
-    fn from(component: ComponentAddress) -> Self {
-        let component_address = ComponentAddress::try_from(component.to_vec().as_slice()).unwrap();
-        Self(component_address)
+impl TryFrom<&[u8]> for Component {
+    type Error = ParseComponentError;
+
+    fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
+        match slice.len() {
+            36 => Ok(Self((
+                Hash(copy_u8_array(&slice[0..32])),
+                u32::from_le_bytes(copy_u8_array(&slice[32..])),
+            ))),
+            _ => Err(ParseComponentError::InvalidLength(slice.len())),
+        }
     }
 }
 
 impl Component {
     pub fn to_vec(&self) -> Vec<u8> {
-        self.0.to_vec()
+        let mut v = self.0 .0.to_vec();
+        v.extend(self.0 .1.to_le_bytes());
+        v
     }
 }
 
@@ -192,6 +202,12 @@ scrypto_type!(Component, ScryptoType::Component, Vec::new());
 //======
 // text
 //======
+
+impl fmt::Display for Component {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        write!(f, "{}", hex::encode(self.to_vec()))
+    }
+}
 
 impl fmt::Debug for Component {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {

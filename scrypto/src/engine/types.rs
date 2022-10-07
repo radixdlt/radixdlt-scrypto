@@ -9,6 +9,7 @@ pub type AuthZoneId = u32;
 pub type BucketId = u32;
 pub type ProofId = u32;
 
+pub type ComponentId = (Hash, u32);
 pub type KeyValueStoreId = (Hash, u32);
 pub type VaultId = (Hash, u32);
 
@@ -17,14 +18,15 @@ pub enum RENodeId {
     AuthZone(AuthZoneId),
     Bucket(BucketId),
     Proof(ProofId),
+
+    Global(GlobalAddress),
     KeyValueStore(KeyValueStoreId),
     Worktop,
-    Component(ComponentAddress),
+    Component(ComponentId),
+    System(ComponentId),
     Vault(VaultId),
-    ResourceManager(ResourceAddress),
-    Package(PackageAddress),
-    System(ComponentAddress),
-    Global(GlobalAddress),
+    ResourceManager(ResourceAddress), // TODO: Convert this into id
+    Package(PackageAddress),          // TODO: Convert this into id
 }
 
 impl Into<(Hash, u32)> for RENodeId {
@@ -32,6 +34,8 @@ impl Into<(Hash, u32)> for RENodeId {
         match self {
             RENodeId::KeyValueStore(id) => id,
             RENodeId::Vault(id) => id,
+            RENodeId::Component(id) => id,
+            RENodeId::System(id) => id,
             _ => panic!("Not a stored id"),
         }
     }
@@ -43,16 +47,6 @@ impl Into<u32> for RENodeId {
             RENodeId::Bucket(id) => id,
             RENodeId::Proof(id) => id,
             _ => panic!("Not a transient id"),
-        }
-    }
-}
-
-impl Into<ComponentAddress> for RENodeId {
-    fn into(self) -> ComponentAddress {
-        match self {
-            RENodeId::Component(component_address) => component_address,
-            RENodeId::System(component_address) => component_address,
-            _ => panic!("Not a component address"),
         }
     }
 }

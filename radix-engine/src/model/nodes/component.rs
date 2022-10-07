@@ -42,7 +42,7 @@ impl Component {
     }
 
     pub fn main<'s, Y, W, I, R>(
-        component_address: ComponentAddress,
+        component_id: ComponentId,
         method: ComponentMethod,
         args: ScryptoValue,
         system_api: &mut Y,
@@ -53,7 +53,7 @@ impl Component {
         I: WasmInstance,
         R: FeeReserve,
     {
-        let node_id = RENodeId::Component(component_address);
+        let node_id = RENodeId::Component(component_id);
 
         let rtn = match method {
             ComponentMethod::AddAccessCheck => {

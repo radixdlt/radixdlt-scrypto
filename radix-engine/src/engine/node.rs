@@ -24,6 +24,9 @@ impl HeapRENode {
             HeapRENode::Global(global_node) => {
                 let child_node = match &global_node.address {
                     GlobalAddressSubstate::Component(component) => RENodeId::Component(component.0),
+                    GlobalAddressSubstate::SystemComponent(component) => {
+                        RENodeId::System(component.0)
+                    }
                     GlobalAddressSubstate::Package(package_address) => {
                         RENodeId::Package(*package_address)
                     }

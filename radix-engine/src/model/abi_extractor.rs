@@ -36,15 +36,28 @@ pub fn export_abi_by_component<S: ReadableSubstateStore>(
     substate_store: &S,
     component_address: ComponentAddress,
 ) -> Result<abi::BlueprintAbi, RuntimeError> {
+    let node_id = RENodeId::Global(GlobalAddress::Component(component_address));
+    let global = substate_store
+        .get_substate(&SubstateId(
+            node_id,
+            SubstateOffset::Global(GlobalOffset::Global),
+        ))
+        .map(|s| s.substate)
+        .ok_or(RuntimeError::KernelError(KernelError::RENodeNotFound(
+            node_id,
+        )))?;
+    let component_id = global.global_re_node().node_deref();
+
     let component_value: Substate = substate_store
         .get_substate(&SubstateId(
-            RENodeId::Component(component_address),
+            component_id,
             SubstateOffset::Component(ComponentOffset::Info),
         ))
         .map(|s| s.substate)
         .ok_or(RuntimeError::KernelError(KernelError::RENodeNotFound(
-            RENodeId::Component(component_address),
+            component_id,
         )))?;
+
     let component_info = component_value.component_info();
     export_abi(
         substate_store,
