@@ -162,13 +162,10 @@ impl Parser {
                 abi: self.parse_value()?,
             },
             TokenKind::CreateResource => Instruction::CreateResource {
-                args: {
-                    let mut values = vec![];
-                    while self.peek()?.kind != TokenKind::Semicolon {
-                        values.push(self.parse_value()?);
-                    }
-                    values
-                },
+                resource_type: self.parse_value()?,
+                metadata: self.parse_value()?,
+                access_rules: self.parse_value()?,
+                mint_params: self.parse_value()?,
             },
             TokenKind::BurnBucket => Instruction::BurnBucket {
                 bucket: self.parse_value()?,
@@ -718,15 +715,13 @@ mod tests {
         parse_instruction_ok!(
             r#"CREATE_RESOURCE Enum("Fungible", 0u8) Map<String, String>() Map<Enum, Tuple>() Some(Enum("Fungible", Decimal("1.0")));"#,
             Instruction::CreateResource {
-                args: vec![
-                    Value::Enum("Fungible".to_string(), vec![Value::U8(0)]),
-                    Value::Map(Type::String, Type::String, vec![]),
-                    Value::Map(Type::Enum, Type::Tuple, vec![]),
-                    Value::Option(Box::new(Option::Some(Value::Enum(
-                        "Fungible".to_string(),
-                        vec![Value::Decimal(Value::String("1.0".into()).into())]
-                    )))),
-                ]
+                resource_type: Value::Enum("Fungible".to_string(), vec![Value::U8(0)]),
+                metadata: Value::Map(Type::String, Type::String, vec![]),
+                access_rules: Value::Map(Type::Enum, Type::Tuple, vec![]),
+                mint_params: Value::Option(Box::new(Option::Some(Value::Enum(
+                    "Fungible".to_string(),
+                    vec![Value::Decimal(Value::String("1.0".into()).into())]
+                )))),
             }
         );
     }

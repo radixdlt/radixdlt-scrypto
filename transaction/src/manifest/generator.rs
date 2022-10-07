@@ -5,6 +5,7 @@ use sbor::rust::str::FromStr;
 use sbor::type_id::*;
 use scrypto::abi::*;
 use scrypto::address::Bech32Decoder;
+use scrypto::buffer::scrypto_decode;
 use scrypto::component::ComponentAddress;
 use scrypto::component::PackageAddress;
 use scrypto::core::{
@@ -15,7 +16,8 @@ use scrypto::crypto::*;
 use scrypto::engine::types::*;
 use scrypto::math::*;
 use scrypto::resource::{
-    MintParams, NonFungibleAddress, NonFungibleId, ResourceAddress, ResourceManagerMintInput,
+    MintParams, NonFungibleAddress, NonFungibleId, ResourceAddress, ResourceManagerCreateInput,
+    ResourceManagerMintInput,
 };
 use scrypto::values::*;
 use scrypto::{args, args_from_value_vec};
@@ -51,6 +53,7 @@ pub enum GeneratorError {
     NameResolverError(NameResolverError),
     IdValidationError(IdValidationError),
     InvalidBlobHash,
+    ArgumentsDoNotMatchAbi,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -365,23 +368,39 @@ pub fn generate_instruction(
             code: generate_blob(code, blobs)?,
             abi: generate_blob(abi, blobs)?,
         },
-        ast::Instruction::CreateResource { args } => {
-            // TODO: Add arg verification
-            let args = generate_args(args, resolver, bech32_decoder, blobs)?;
-            let mut fields = Vec::new();
-            for arg in &args {
-                let validated_arg = ScryptoValue::from_slice(arg).unwrap();
+        ast::Instruction::CreateResource {
+            resource_type,
+            metadata,
+            access_rules,
+            mint_params,
+        } => {
+            // Generates call data
+            let mut args = Vec::new();
+            for arg in [
+                generate_value(resource_type, None, resolver, bech32_decoder, blobs)?,
+                generate_value(metadata, None, resolver, bech32_decoder, blobs)?,
+                generate_value(access_rules, None, resolver, bech32_decoder, blobs)?,
+                generate_value(mint_params, None, resolver, bech32_decoder, blobs)?,
+            ] {
+                let validated_arg = ScryptoValue::from_value(arg)
+                    .expect("Failed to convert value into ScryptoValue");
                 id_validator
                     .move_resources(&validated_arg)
                     .map_err(GeneratorError::IdValidationError)?;
-                fields.push(validated_arg.dom);
+                args.push(validated_arg.dom);
+            }
+            let args = args_from_value_vec!(args);
+
+            // Check if call data matches ABI
+            if scrypto_decode::<ResourceManagerCreateInput>(&args).is_err() {
+                return Err(GeneratorError::ArgumentsDoNotMatchAbi);
             }
 
             Instruction::CallFunction {
                 fn_identifier: FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
                     ResourceManagerFnIdentifier::Create,
                 )),
-                args: args_from_value_vec!(fields),
+                args,
             }
         }
         ast::Instruction::BurnBucket { bucket } => {
