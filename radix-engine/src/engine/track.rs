@@ -413,7 +413,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         };
 
         match parent_address {
-            SubstateId(RENodeId::ResourceManager(..), ..) => self
+            SubstateId(RENodeId::NonFungibleStore(..), ..) => self
                 .loaded_substates
                 .get(&substate_id)
                 .map(|s| s.substate.borrow().clone())
