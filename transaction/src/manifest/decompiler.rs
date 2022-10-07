@@ -508,9 +508,43 @@ pub fn decompile_instruction<F: fmt::Write>(
 mod tests {
     use super::*;
     use crate::manifest::*;
+    use sbor::*;
+    use scrypto::buffer::scrypto_encode;
+    use scrypto::core::FnIdentifier;
     use scrypto::core::NetworkDefinition;
+    use scrypto::resource::AccessRule;
+    use scrypto::resource::Mutability;
+    use scrypto::resource::ResourceMethodAuthKey;
+    use scrypto::resource::ResourceType;
 
-    #[cfg(not(feature = "alloc"))]
+    #[derive(TypeId, Encode, Decode)]
+    struct BadResourceManagerCreateInput {
+        pub resource_type: ResourceType,
+        pub metadata: HashMap<String, String>,
+        pub access_rules: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
+        // pub mint_params: Option<MintParams>,
+    }
+
+    #[test]
+    fn test_decompile_create_resource_with_invalid_arguments() {
+        let manifest = decompile(
+            &[Instruction::CallFunction {
+                fn_identifier: FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
+                    ResourceManagerFnIdentifier::Create,
+                )),
+                args: scrypto_encode(&BadResourceManagerCreateInput {
+                    resource_type: ResourceType::NonFungible,
+                    metadata: HashMap::new(),
+                    access_rules: HashMap::new(),
+                }),
+            }],
+            &NetworkDefinition::simulator(),
+        )
+        .unwrap();
+
+        assert_eq!(manifest, "\n");
+    }
+
     #[test]
     fn test_decompile() {
         let network = NetworkDefinition::simulator();
