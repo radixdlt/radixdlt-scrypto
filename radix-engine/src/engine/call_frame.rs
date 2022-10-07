@@ -21,9 +21,21 @@ pub struct CallFrame {
 
     /// Owned Values
     pub owned_heap_nodes: HashMap<RENodeId, HeapRootRENode>,
+
+    pub locks: Vec<(RENodePointer, SubstateOffset)>,
 }
 
 impl CallFrame {
+    pub fn add_substate_lock(&mut self, node_pointer: RENodePointer, offset: SubstateOffset) {
+        self.locks.push((node_pointer, offset))
+    }
+
+    pub fn release_substate_lock(&mut self, node_pointer: RENodePointer, offset: SubstateOffset) {
+        let p = (node_pointer, offset);
+        let index = self.locks.iter().position(|s| s.eq(&p)).unwrap();
+        self.locks.remove(index);
+    }
+
     pub fn new_root() -> Self {
         Self {
             depth: 0,
@@ -32,6 +44,7 @@ impl CallFrame {
             ))),
             node_refs: HashMap::new(),
             owned_heap_nodes: HashMap::new(),
+            locks: Vec::new(),
         }
     }
 
@@ -53,6 +66,7 @@ impl CallFrame {
             actor,
             node_refs,
             owned_heap_nodes,
+            locks: Vec::new(),
         }
     }
 

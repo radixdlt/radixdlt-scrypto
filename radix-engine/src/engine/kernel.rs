@@ -194,11 +194,12 @@ where
             node_pointer
                 .acquire_lock(
                     offset.clone(),
-                    false,
+                    true,
                     false,
                     track,
                 )
                 .map_err(RuntimeError::KernelError)?;
+            call_frames.last_mut().unwrap().add_substate_lock(node_pointer, offset.clone());
         }
         /*
             node_pointer
@@ -518,6 +519,12 @@ where
             }
         }
 
+        // Drop substate references
+        for (node_pointer, offset) in Self::current_frame_mut(&mut self.call_frames).locks.iter() {
+            node_pointer.release_lock(offset.clone(), false, self.track)
+                .map_err(RuntimeError::KernelError)?;
+        }
+
         // drop proofs and check resource leak
         Self::current_frame_mut(&mut self.call_frames).drop_owned_values()?;
 
@@ -644,7 +651,7 @@ where
                 } => match node_id {
                     RENodeId::Component(..) => {
                         node_pointer
-                            .acquire_lock(SubstateOffset::Component(ComponentOffset::Info), true, false, &mut self.track)
+                            .acquire_lock(SubstateOffset::Component(ComponentOffset::Info), false, false, &mut self.track)
                             .map_err(RuntimeError::KernelError)?;
 
                         let mut node_ref = node_pointer.to_ref(&self.call_frames, &mut self.track);
@@ -1266,13 +1273,11 @@ where
     }
 
     fn substate_ref_drop(&mut self, substate_id: SubstateId) -> Result<ScryptoValue, RuntimeError> {
-        let mut node_id = substate_id.0;
-        let mut node_pointer = Self::current_frame(&self.call_frames).get_node_pointer(node_id)?;
+        let mut node_pointer = Self::current_frame(&self.call_frames).get_node_pointer(substate_id.0)?;
         let offset = substate_id.1;
 
         // Deref
         if let Some(derefed) = node_pointer.node_deref(&self.call_frames, &mut self.track)? {
-            node_id = derefed.node_id();
             node_pointer = derefed;
         }
 
@@ -1286,6 +1291,9 @@ where
                     self.track,
                 )
                 .map_err(RuntimeError::KernelError)?;
+
+            Self::current_frame_mut(&mut self.call_frames)
+                .release_substate_lock(node_pointer, offset.clone());
         }
 
         Ok(ScryptoValue::unit())
@@ -1450,6 +1458,8 @@ where
                     self.track,
                 )
                 .map_err(RuntimeError::KernelError)?;
+            Self::current_frame_mut(&mut self.call_frames)
+                .release_substate_lock(node_pointer, offset.clone());
         }
 
         let prev_substate = Self::read_substate_internal(
@@ -1469,6 +1479,8 @@ where
                     self.track,
                 )
                 .map_err(RuntimeError::KernelError)?;
+            Self::current_frame_mut(&mut self.call_frames)
+                .release_substate_lock(node_pointer, offset.clone());
         }
 
         let prev_contained_value = extract_value_from_substate(&offset, &prev_substate);

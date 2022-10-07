@@ -111,7 +111,7 @@ fn reentrancy_should_not_be_possible() {
             RuntimeError::KernelError(KernelError::TrackError(TrackError::NotAvailable(
                 SubstateId(
                     RENodeId::Component(..),
-                    SubstateOffset::Component(ComponentOffset::Info)
+                    SubstateOffset::Component(ComponentOffset::State)
                 )
             )))
         )
