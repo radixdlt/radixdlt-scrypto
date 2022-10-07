@@ -226,17 +226,6 @@ where
             node_ref.read_substate(&SubstateId(node_pointer.node_id(), offset.clone()))?
         };
 
-        if !(matches!(offset, SubstateOffset::KeyValueStore(..))
-            || matches!(offset, SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(..)))
-        ) {
-            node_pointer
-                .release_lock(
-                    offset,
-                    false,
-                    track,
-                )
-                .map_err(RuntimeError::KernelError)?;
-        }
 
         /*
         // TODO: Remove, integrate with substate borrow mechanism
@@ -1276,6 +1265,32 @@ where
         Ok(global_address)
     }
 
+    fn substate_ref_drop(&mut self, substate_id: SubstateId) -> Result<ScryptoValue, RuntimeError> {
+        let mut node_id = substate_id.0;
+        let mut node_pointer = Self::current_frame(&self.call_frames).get_node_pointer(node_id)?;
+        let offset = substate_id.1;
+
+        // Deref
+        if let Some(derefed) = node_pointer.node_deref(&self.call_frames, &mut self.track)? {
+            node_id = derefed.node_id();
+            node_pointer = derefed;
+        }
+
+        if !(matches!(offset, SubstateOffset::KeyValueStore(..))
+            || matches!(offset, SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(..)))
+        ) {
+            node_pointer
+                .release_lock(
+                    offset.clone(),
+                    false,
+                    self.track,
+                )
+                .map_err(RuntimeError::KernelError)?;
+        }
+
+        Ok(ScryptoValue::unit())
+    }
+
     fn substate_read(&mut self, substate_id: SubstateId) -> Result<ScryptoValue, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
@@ -1425,12 +1440,37 @@ where
             ));
         }
 
+        if !(matches!(offset, SubstateOffset::KeyValueStore(..))
+            || matches!(offset, SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(..)))
+        ) {
+            node_pointer
+                .release_lock(
+                    offset.clone(),
+                    false,
+                    self.track,
+                )
+                .map_err(RuntimeError::KernelError)?;
+        }
+
         let prev_substate = Self::read_substate_internal(
             &mut self.call_frames,
             self.track,
             node_pointer,
             offset.clone(),
         )?;
+
+        if !(matches!(offset, SubstateOffset::KeyValueStore(..))
+            || matches!(offset, SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(..)))
+        ) {
+            node_pointer
+                .release_lock(
+                    offset.clone(),
+                    false,
+                    self.track,
+                )
+                .map_err(RuntimeError::KernelError)?;
+        }
+
         let prev_contained_value = extract_value_from_substate(&offset, &prev_substate);
 
         // Fulfill method

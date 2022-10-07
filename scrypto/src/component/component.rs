@@ -132,9 +132,12 @@ impl BorrowedGlobalComponent {
             RENodeId::Global(GlobalAddress::Component(self.0)),
             SubstateOffset::Component(ComponentOffset::Info),
         );
-        let input = RadixEngineInput::SubstateRead(substate_id);
+        let input = RadixEngineInput::SubstateRead(substate_id.clone());
         let output: ComponentInfoSubstate = call_engine(input);
-        output.package_address
+        let package_address = output.package_address;
+        let _: () = call_engine(RadixEngineInput::SubstateRefDrop(substate_id));
+
+        package_address
     }
 
     /// Returns the blueprint name of this component.
@@ -143,9 +146,11 @@ impl BorrowedGlobalComponent {
             RENodeId::Global(GlobalAddress::Component(self.0)),
             SubstateOffset::Component(ComponentOffset::Info),
         );
-        let input = RadixEngineInput::SubstateRead(substate_id);
+        let input = RadixEngineInput::SubstateRead(substate_id.clone());
         let output: ComponentInfoSubstate = call_engine(input);
-        output.blueprint_name
+        let blueprint_name = output.blueprint_name;
+        let _: () = call_engine(RadixEngineInput::SubstateRefDrop(substate_id));
+        blueprint_name
     }
 
     pub fn add_access_check(&mut self, access_rules: AccessRules) -> &mut Self {

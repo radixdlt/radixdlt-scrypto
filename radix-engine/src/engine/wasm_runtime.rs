@@ -114,6 +114,13 @@ where
         self.system_api.substate_read(substate_id)
     }
 
+    fn handle_substate_ref_drop(
+        &mut self,
+        substate_id: SubstateId,
+    ) -> Result<ScryptoValue, RuntimeError> {
+        self.system_api.substate_ref_drop(substate_id)
+    }
+
     fn handle_substate_write(
         &mut self,
         substate_id: SubstateId,
@@ -170,6 +177,7 @@ where
             RadixEngineInput::SubstateWrite(substate_id, value) => {
                 self.handle_substate_write(substate_id, value)
             }
+            RadixEngineInput::SubstateRefDrop(substate_id) => self.handle_substate_ref_drop(substate_id),
 
             RadixEngineInput::GetActor() => self.handle_get_actor().map(encode),
             RadixEngineInput::GenerateUuid() => self.handle_generate_uuid().map(encode),
