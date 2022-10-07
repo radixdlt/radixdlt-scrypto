@@ -3,6 +3,7 @@ use crate::fee::FeeReserve;
 use crate::model::{Bucket, LockableResource, Resource, ResourceOperationError};
 use crate::types::*;
 use crate::wasm::*;
+use scrypto::core::{FnIdent, MethodIdent, ReceiverMethodIdent};
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct WorktopPutInput {
@@ -53,7 +54,7 @@ pub struct Worktop {
     resources: HashMap<ResourceAddress, Rc<RefCell<LockableResource>>>,
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
 pub enum WorktopError {
     InvalidRequestData(DecodeError),
     MethodNotFound(String),
@@ -239,12 +240,25 @@ impl Worktop {
                 let resource_resource = if let Some(resource) = maybe_resource {
                     resource
                 } else {
+                    // TODO: substate read instead of invoke?
                     let resource_type = {
-                        let mut node_ref = system_api
-                            .borrow_node(&RENodeId::ResourceManager(input.resource_address))
-                            .map_err(|e| InvokeError::Downstream(e))?;
-                        let resource_manager = node_ref.resource_manager();
-                        resource_manager.resource_type()
+                        let result = system_api
+                            .invoke(
+                                FnIdent::Method(ReceiverMethodIdent {
+                                    receiver: Receiver::Ref(RENodeId::Global(
+                                        GlobalAddress::Resource(input.resource_address),
+                                    )),
+                                    method_ident: MethodIdent::Native(
+                                        NativeMethod::ResourceManager(
+                                            ResourceManagerMethod::GetResourceType,
+                                        ),
+                                    ),
+                                }),
+                                ScryptoValue::from_typed(&ResourceManagerGetResourceTypeInput {}),
+                            )
+                            .map_err(InvokeError::Downstream)?;
+                        let resource_type: ResourceType = scrypto_decode(&result.raw).unwrap();
+                        resource_type
                     };
 
                     Resource::new_empty(input.resource_address, resource_type)
@@ -270,12 +284,25 @@ impl Worktop {
                 let resource_resource = if let Some(resource) = maybe_resource {
                     resource
                 } else {
+                    // TODO: substate read instead of invoke?
                     let resource_type = {
-                        let mut node_ref = system_api
-                            .borrow_node(&RENodeId::ResourceManager(input.resource_address))
-                            .map_err(|e| InvokeError::Downstream(e))?;
-                        let resource_manager = node_ref.resource_manager();
-                        resource_manager.resource_type()
+                        let result = system_api
+                            .invoke(
+                                FnIdent::Method(ReceiverMethodIdent {
+                                    receiver: Receiver::Ref(RENodeId::Global(
+                                        GlobalAddress::Resource(input.resource_address),
+                                    )),
+                                    method_ident: MethodIdent::Native(
+                                        NativeMethod::ResourceManager(
+                                            ResourceManagerMethod::GetResourceType,
+                                        ),
+                                    ),
+                                }),
+                                ScryptoValue::from_typed(&ResourceManagerGetResourceTypeInput {}),
+                            )
+                            .map_err(InvokeError::Downstream)?;
+                        let resource_type: ResourceType = scrypto_decode(&result.raw).unwrap();
+                        resource_type
                     };
 
                     Resource::new_empty(input.resource_address, resource_type)
@@ -302,12 +329,25 @@ impl Worktop {
                 let resource_resource = if let Some(resource) = maybe_resource {
                     resource
                 } else {
+                    // TODO: substate read instead of invoke?
                     let resource_type = {
-                        let mut node_ref = system_api
-                            .borrow_node(&RENodeId::ResourceManager(input.resource_address))
-                            .map_err(|e| InvokeError::Downstream(e))?;
-                        let resource_manager = node_ref.resource_manager();
-                        resource_manager.resource_type()
+                        let result = system_api
+                            .invoke(
+                                FnIdent::Method(ReceiverMethodIdent {
+                                    receiver: Receiver::Ref(RENodeId::Global(
+                                        GlobalAddress::Resource(input.resource_address),
+                                    )),
+                                    method_ident: MethodIdent::Native(
+                                        NativeMethod::ResourceManager(
+                                            ResourceManagerMethod::GetResourceType,
+                                        ),
+                                    ),
+                                }),
+                                ScryptoValue::from_typed(&ResourceManagerGetResourceTypeInput {}),
+                            )
+                            .map_err(InvokeError::Downstream)?;
+                        let resource_type: ResourceType = scrypto_decode(&result.raw).unwrap();
+                        resource_type
                     };
 
                     Resource::new_empty(input.resource_address, resource_type)

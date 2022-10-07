@@ -56,7 +56,7 @@ pub enum SubstateCache {
 // 1. Make it an invariant that every node must be persistable at the end of a transaction, so no need of this error.
 // 2. Make `Track` more dynamic and allow nodes to define whether it's ready for persistence.
 // 3. Make transient property part of substate rather than node.
-#[derive(Debug, Encode, Decode, TypeId)]
+#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
 pub enum NodeToSubstateFailure {
     VaultPartiallyLocked,
 }
@@ -110,12 +110,12 @@ pub struct Track<'s, R: FeeReserve> {
     state_track: AppStateTrack<'s>,
     loaded_substates: IndexMap<SubstateId, LoadedSubstate>,
     loaded_nodes: IndexMap<RENodeId, HeapRENode>,
-    pub new_node_ids: Vec<RENodeId>,
+    pub new_global_addresses: Vec<GlobalAddress>,
     pub fee_reserve: R,
     pub fee_table: FeeTable,
 }
 
-#[derive(Debug, Encode, Decode, TypeId)]
+#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
 pub enum TrackError {
     NotFound(SubstateId),
     NotAvailable(SubstateId),
@@ -148,7 +148,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             state_track,
             loaded_substates: IndexMap::new(),
             loaded_nodes: IndexMap::new(),
-            new_node_ids: Vec::new(),
+            new_global_addresses: Vec::new(),
             fee_reserve,
             fee_table,
         }
@@ -240,12 +240,16 @@ impl<'s, R: FeeReserve> Track<'s, R> {
 
         if write_through {
             let node_id = match substate_id {
-                SubstateId::Vault(vault_id) => RENodeId::Vault(vault_id),
+                SubstateId(
+                    RENodeId::Vault(vault_id),
+                    SubstateOffset::Vault(VaultOffset::Vault),
+                ) => RENodeId::Vault(vault_id),
                 _ => panic!("Not supported yet"),
             };
             let node = self.loaded_nodes.remove(&node_id).unwrap();
-            for (substate_id, substate) in node_to_substates(node_id, node) {
-                self.state_track.put_substate_to_base(substate_id, substate);
+            for (offset, substate) in node_to_substates(node) {
+                self.state_track
+                    .put_substate_to_base(SubstateId(node_id, offset), substate);
             }
         } else {
             self.loaded_substates.insert(substate_id, loaded_substate);
@@ -260,8 +264,9 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                 | RENodeId::Bucket(_)
                 | RENodeId::Proof(_)
                 | RENodeId::Worktop => panic!("Unexpected"),
-                RENodeId::Global(address) => {
-                    let substate = self.take_substate(SubstateId::Global(*address));
+                RENodeId::Global(..) => {
+                    let offset = SubstateOffset::Global(GlobalOffset::Global);
+                    let substate = self.take_substate(SubstateId(*node_id, offset));
                     let node = HeapRENode::Global(GlobalRENode {
                         address: substate.into(),
                     });
@@ -279,36 +284,42 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                         HeapRENode::NonFungibleStore(NonFungibleStore::new().into()),
                     );
                 }
-                RENodeId::Component(address) => {
-                    let substate = self.take_substate(SubstateId::ComponentInfo(*address));
+                RENodeId::Component(..) => {
+                    let offset = SubstateOffset::Component(ComponentOffset::Info);
+                    let substate = self.take_substate(SubstateId(*node_id, offset));
                     let node = HeapRENode::Component(Component {
                         info: substate.into(),
                         state: None,
                     });
                     self.loaded_nodes.insert(node_id.clone(), node);
                 }
-                RENodeId::Vault(vault_id) => {
+                RENodeId::Vault(..) => {
+                    let offset = SubstateOffset::Vault(VaultOffset::Vault);
                     let substate: VaultSubstate =
-                        self.take_substate(SubstateId::Vault(*vault_id)).into();
+                        self.take_substate(SubstateId(*node_id, offset)).into();
                     let node = HeapRENode::Vault(Vault::new(substate.0));
                     self.loaded_nodes.insert(node_id.clone(), node);
                 }
-                RENodeId::ResourceManager(address) => {
-                    let substate = self.take_substate(SubstateId::ResourceManager(*address));
+                RENodeId::ResourceManager(..) => {
+                    let offset =
+                        SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
+                    let substate = self.take_substate(SubstateId(*node_id, offset));
                     let node = HeapRENode::ResourceManager(ResourceManager {
                         info: substate.into(),
                     });
                     self.loaded_nodes.insert(node_id.clone(), node);
                 }
-                RENodeId::Package(address) => {
-                    let substate = self.take_substate(SubstateId::Package(*address));
+                RENodeId::Package(..) => {
+                    let offset = SubstateOffset::Package(PackageOffset::Package);
+                    let substate = self.take_substate(SubstateId(*node_id, offset));
                     let node = HeapRENode::Package(Package {
                         info: substate.into(),
                     });
                     self.loaded_nodes.insert(node_id.clone(), node);
                 }
-                RENodeId::System(address) => {
-                    let substate = self.take_substate(SubstateId::System(*address));
+                RENodeId::System(..) => {
+                    let offset = SubstateOffset::System(SystemOffset::System);
+                    let substate = self.take_substate(SubstateId(*node_id, offset));
                     let node = HeapRENode::System(System {
                         info: substate.into(),
                     });
@@ -384,17 +395,25 @@ impl<'s, R: FeeReserve> Track<'s, R> {
     pub fn read_key_value(&mut self, parent_address: SubstateId, key: Vec<u8>) -> Substate {
         // TODO: consider using a single address as function input
         let substate_id = match parent_address {
-            SubstateId::NonFungibleSpace(resource_address) => {
-                SubstateId::NonFungible(resource_address, NonFungibleId(key))
-            }
-            SubstateId::KeyValueStoreSpace(kv_store_id) => {
-                SubstateId::KeyValueStoreEntry(kv_store_id, key)
-            }
+            SubstateId(
+                RENodeId::NonFungibleStore(store_id),
+                SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Space),
+            ) => SubstateId(
+                RENodeId::NonFungibleStore(store_id),
+                SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(NonFungibleId(key))),
+            ),
+            SubstateId(
+                RENodeId::KeyValueStore(kv_store_id),
+                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Space),
+            ) => SubstateId(
+                RENodeId::KeyValueStore(kv_store_id),
+                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key)),
+            ),
             _ => panic!("Unsupported key value"),
         };
 
         match parent_address {
-            SubstateId::NonFungibleSpace(_) => self
+            SubstateId(RENodeId::ResourceManager(..), ..) => self
                 .loaded_substates
                 .get(&substate_id)
                 .map(|s| s.substate.borrow().clone())
@@ -403,7 +422,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                         .get_substate(&substate_id)
                         .unwrap_or(Substate::NonFungible(NonFungibleSubstate(None)))
                 }),
-            SubstateId::KeyValueStoreSpace(..) => self
+            SubstateId(RENodeId::KeyValueStore(..), ..) => self
                 .loaded_substates
                 .get(&substate_id)
                 .map(|s| s.substate.borrow().clone())
@@ -425,12 +444,22 @@ impl<'s, R: FeeReserve> Track<'s, R> {
     ) {
         // TODO: consider using a single address as function input
         let substate_id = match parent_substate_id {
-            SubstateId::NonFungibleSpace(resource_address) => {
-                SubstateId::NonFungible(resource_address, NonFungibleId(key.clone()))
-            }
-            SubstateId::KeyValueStoreSpace(kv_store_id) => {
-                SubstateId::KeyValueStoreEntry(kv_store_id, key.clone())
-            }
+            SubstateId(
+                RENodeId::NonFungibleStore(resource_address),
+                SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Space),
+            ) => SubstateId(
+                RENodeId::NonFungibleStore(resource_address),
+                SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(NonFungibleId(
+                    key.clone(),
+                ))),
+            ),
+            SubstateId(
+                RENodeId::KeyValueStore(kv_store_id),
+                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Space),
+            ) => SubstateId(
+                RENodeId::KeyValueStore(kv_store_id),
+                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key.clone())),
+            ),
             _ => panic!("Unsupported key value"),
         };
 
@@ -447,13 +476,13 @@ impl<'s, R: FeeReserve> Track<'s, R> {
     ) -> Result<Self, PreExecutionError> {
         let result = self
             .fee_reserve
-            .consume(self.fee_table.tx_base_fee(), "base_fee", false)
+            .consume(self.fee_table.tx_base_fee(), "base_fee", true)
             .and_then(|()| {
                 self.fee_reserve.consume(
                     self.fee_table.tx_manifest_decoding_per_byte()
                         * transaction.manifest_instructions_size() as u32,
                     "decode_manifest",
-                    false,
+                    true,
                 )
             })
             .and_then(|()| {
@@ -461,15 +490,15 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                     self.fee_table.tx_manifest_verification_per_byte()
                         * transaction.manifest_instructions_size() as u32,
                     "verify_manifest",
-                    false,
+                    true,
                 )
             })
             .and_then(|()| {
                 self.fee_reserve.consume(
                     self.fee_table.tx_signature_verification_per_sig()
-                        * transaction.initial_proofs().len() as u32,
+                        * transaction.auth_zone_params().initial_proofs.len() as u32,
                     "verify_signatures",
-                    false,
+                    true,
                 )
             })
             .and_then(|()| {
@@ -556,7 +585,11 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                     .expect("Failed to add fee to fee collector");
 
                 // Refund overpayment
-                let substate_id = SubstateId::Vault(vault_id);
+                let substate_id = SubstateId(
+                    RENodeId::Vault(vault_id),
+                    SubstateOffset::Vault(VaultOffset::Vault),
+                );
+
                 let mut substate = self
                     .state_track
                     .get_substate_from_base(&substate_id)
@@ -572,35 +605,13 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             // TODO: update XRD supply or disable it
             // TODO: pay tips to the lead validator
 
-            let mut new_component_addresses = Vec::new();
-            let mut new_resource_addresses = Vec::new();
-            let mut new_package_addresses = Vec::new();
-            for substate_id in self.new_node_ids {
-                match substate_id {
-                    RENodeId::Component(component_address) => {
-                        new_component_addresses.push(component_address)
-                    }
-                    RENodeId::ResourceManager(resource_address) => {
-                        new_resource_addresses.push(resource_address)
-                    }
-                    RENodeId::Package(package_address) => {
-                        new_package_addresses.push(package_address)
-                    }
-                    _ => {}
-                }
-            }
-
             TransactionResult::Commit(CommitResult {
                 outcome: match invoke_result {
                     Ok(output) => TransactionOutcome::Success(output),
                     Err(error) => TransactionOutcome::Failure(error),
                 },
                 state_updates: self.state_track.into_base().generate_diff(),
-                entity_changes: EntityChanges {
-                    new_package_addresses,
-                    new_component_addresses,
-                    new_resource_addresses,
-                },
+                entity_changes: EntityChanges::new(self.new_global_addresses),
                 resource_changes,
             })
         };

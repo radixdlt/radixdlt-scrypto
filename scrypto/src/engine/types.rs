@@ -3,7 +3,8 @@ use sbor::*;
 
 use crate::component::{ComponentAddress, PackageAddress};
 use crate::crypto::*;
-use crate::resource::{NonFungibleId, ResourceAddress};
+use crate::resource::NonFungibleId;
+use crate::resource::ResourceAddress;
 
 pub type AuthZoneId = u32;
 pub type BucketId = u32;
@@ -81,50 +82,116 @@ impl Into<ResourceAddress> for RENodeId {
 #[derive(Debug, Clone, Copy, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum GlobalAddress {
     Component(ComponentAddress),
-    /*
     Package(PackageAddress),
     Resource(ResourceAddress),
-     */
+}
+
+impl Into<ComponentAddress> for GlobalAddress {
+    fn into(self) -> ComponentAddress {
+        match self {
+            GlobalAddress::Component(component_address) => component_address,
+            _ => panic!("Not a component address"),
+        }
+    }
+}
+
+impl Into<PackageAddress> for GlobalAddress {
+    fn into(self) -> PackageAddress {
+        match self {
+            GlobalAddress::Package(package_address) => package_address,
+            _ => panic!("Not a package address"),
+        }
+    }
+}
+
+impl Into<ResourceAddress> for GlobalAddress {
+    fn into(self) -> ResourceAddress {
+        match self {
+            GlobalAddress::Resource(resource_address) => resource_address,
+            _ => panic!("Not a resource address"),
+        }
+    }
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum AuthZoneOffset {
+    AuthZone,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum ComponentOffset {
+    Info,
+    State,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum PackageOffset {
+    Package,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum GlobalOffset {
+    Global,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum ResourceManagerOffset {
+    ResourceManager,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum KeyValueStoreOffset {
+    Space,
+    Entry(Vec<u8>),
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum NonFungibleStoreOffset {
+    Space,
+    Entry(NonFungibleId),
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum VaultOffset {
+    Vault,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum SystemOffset {
+    System,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum BucketOffset {
+    Bucket,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum ProofOffset {
+    Proof,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum WorktopOffset {
+    Worktop,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum SubstateOffset {
+    Global(GlobalOffset),
+    AuthZone(AuthZoneOffset),
+    Component(ComponentOffset),
+    Package(PackageOffset),
+    ResourceManager(ResourceManagerOffset),
+    KeyValueStore(KeyValueStoreOffset),
+    NonFungibleStore(NonFungibleStoreOffset),
+    Vault(VaultOffset),
+    System(SystemOffset),
+    Bucket(BucketOffset),
+    Proof(ProofOffset),
+    Worktop(WorktopOffset),
 }
 
 /// TODO: separate space addresses?
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub enum SubstateId {
-    Global(GlobalAddress),
-
-    AuthZone(AuthZoneId),
-    ComponentInfo(ComponentAddress),
-    ComponentState(ComponentAddress),
-
-    Package(PackageAddress),
-    ResourceManager(ResourceAddress),
-    NonFungibleSpace(NonFungibleStoreId),
-    NonFungible(NonFungibleStoreId, NonFungibleId),
-    KeyValueStoreSpace(KeyValueStoreId),
-    KeyValueStoreEntry(KeyValueStoreId, Vec<u8>),
-    Vault(VaultId),
-    System(ComponentAddress),
-    Bucket(BucketId),
-    Proof(ProofId),
-    Worktop,
-}
-
-impl Into<ComponentAddress> for SubstateId {
-    fn into(self) -> ComponentAddress {
-        match self {
-            SubstateId::ComponentInfo(component_address)
-            | SubstateId::ComponentState(component_address) => component_address,
-            _ => panic!("Address is not a component address"),
-        }
-    }
-}
-
-impl Into<ResourceAddress> for SubstateId {
-    fn into(self) -> ResourceAddress {
-        if let SubstateId::ResourceManager(resource_address) = self {
-            return resource_address;
-        } else {
-            panic!("Address is not a resource address");
-        }
-    }
-}
+pub struct SubstateId(pub RENodeId, pub SubstateOffset);

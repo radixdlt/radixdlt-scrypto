@@ -44,7 +44,7 @@ where
     fn node_create(&mut self, re_node: HeapRENode) -> Result<RENodeId, RuntimeError>;
 
     /// Moves an RENode from Heap to Store
-    fn node_globalize(&mut self, node_id: RENodeId) -> Result<(), RuntimeError>;
+    fn node_globalize(&mut self, node_id: RENodeId) -> Result<GlobalAddress, RuntimeError>;
 
     /// Reads a substate
     fn substate_read(&mut self, substate_id: SubstateId) -> Result<ScryptoValue, RuntimeError>;

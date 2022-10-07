@@ -10,7 +10,7 @@ use crate::model::{
 use crate::types::*;
 use crate::wasm::*;
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
 pub enum BucketError {
     InvalidDivisibility,
     InvalidRequestData(DecodeError),

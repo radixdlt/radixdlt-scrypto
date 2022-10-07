@@ -8,7 +8,7 @@ use crate::types::*;
 use crate::wasm::*;
 use scrypto::core::{SystemCreateInput, SystemFunction};
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
 pub enum SystemError {
     InvalidRequestData(DecodeError),
 }
@@ -66,13 +66,13 @@ impl System {
                     }))
                     .map_err(InvokeError::Downstream)?;
 
-                let system_node_id = node_id.clone();
-
-                system_api
+                let global_address = system_api
                     .node_globalize(node_id)
                     .map_err(InvokeError::Downstream)?;
 
-                Ok(ScryptoValue::from_typed(&system_node_id))
+                let component_address: ComponentAddress = global_address.into();
+
+                Ok(ScryptoValue::from_typed(&component_address))
             }
         }
     }

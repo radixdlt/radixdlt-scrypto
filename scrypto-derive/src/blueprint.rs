@@ -243,8 +243,13 @@ fn generate_dispatcher(
                     stmts.push(parse_quote! {
                         let (component_address, ..) = actor.as_component();
                     });
-                    stmts.push(parse_quote!{
-                        let mut component_data = ::scrypto::core::DataPointer::new(::scrypto::engine::types::SubstateId::ComponentState(component_address));
+                    stmts.push(parse_quote! {
+                        let mut component_data = ::scrypto::core::DataPointer::new(
+                            ::scrypto::engine::types::SubstateId(
+                                ::scrypto::engine::types::RENodeId::Component(component_address),
+                                ::scrypto::engine::types::SubstateOffset::Component(::scrypto::engine::types::ComponentOffset::State),
+                            )
+                        );
                     });
                     stmts.push(stmt);
                 }
@@ -599,7 +604,12 @@ mod tests {
                     let input: Test_x_Input = ::scrypto::buffer::scrypto_decode_from_buffer(args).unwrap();
                     let actor = ::scrypto::core::Runtime::actor();
                     let (component_address, ..) = actor.as_component();
-                    let mut component_data = ::scrypto::core::DataPointer::new(::scrypto::engine::types::SubstateId::ComponentState(component_address));
+                    let mut component_data = ::scrypto::core::DataPointer::new(
+                        ::scrypto::engine::types::SubstateId(
+                            ::scrypto::engine::types::RENodeId::Component(component_address),
+                            ::scrypto::engine::types::SubstateOffset::Component(::scrypto::engine::types::ComponentOffset::State),
+                        )
+                    );
                     let state: DataRef<Test_impl::Test> = component_data.get();
 
                     let rtn = ::scrypto::buffer::scrypto_encode_to_buffer(&Test_impl::Test::x(state.deref(), input.arg0));

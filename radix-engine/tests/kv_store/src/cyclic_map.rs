@@ -22,7 +22,10 @@ blueprint! {
                 kv_store1.id.clone()
             };
 
-            let substate_id = SubstateId::KeyValueStoreEntry(kv_store1_id, scrypto_encode(&0u32));
+            let substate_id = SubstateId(
+                RENodeId::KeyValueStore(kv_store1_id),
+                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(scrypto_encode(&0u32))),
+            );
             let substate =
                 KeyValueStoreEntrySubstate(Some(scrypto_encode(&KeyValueStore::<(), ()> {
                     id: kv_store0_id,
@@ -39,8 +42,10 @@ blueprint! {
             let kv_store = KeyValueStore::new();
             let kv_store_id = kv_store.id.clone();
 
-            let substate_id =
-                SubstateId::KeyValueStoreEntry(kv_store_id.clone(), scrypto_encode(&0u32));
+            let substate_id = SubstateId(
+                RENodeId::KeyValueStore(kv_store_id.clone()),
+                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(scrypto_encode(&0u32))),
+            );
             let substate =
                 KeyValueStoreEntrySubstate(Some(scrypto_encode(&KeyValueStore::<(), ()> {
                     id: kv_store_id,

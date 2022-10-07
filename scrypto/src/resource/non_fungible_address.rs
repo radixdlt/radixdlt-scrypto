@@ -148,15 +148,16 @@ impl fmt::Debug for NonFungibleAddress {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::sbor::rust::string::ToString;
+    use crate::{address::Bech32Decoder, sbor::rust::string::ToString};
 
     #[test]
     pub fn non_fungible_address_from_and_to_string_succeeds() {
         // Arrange
-        let resource_address = ResourceAddress::from_str(
-            "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p",
-        )
-        .expect("Resource address from str failed.");
+        let resource_address = Bech32Decoder::for_simulator()
+            .validate_and_decode_resource_address(
+                "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p",
+            )
+            .expect("Resource address from str failed.");
         let non_fungible_id = NonFungibleId(
             hex::decode("30071000000071dba5dd36e30de857049805fd1553cd")
                 .expect("Invalid NonFungibleId hex"),

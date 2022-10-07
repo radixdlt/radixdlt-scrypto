@@ -1,11 +1,14 @@
 use crate::engine::{HeapRENode, SystemApi};
 use crate::fee::FeeReserve;
-use crate::model::{InvokeError, Proof, ProofError};
+use crate::model::{
+    InvokeError, LockableResource, LockedAmountOrIds, Proof, ProofError, ResourceContainerId,
+};
 use crate::types::*;
 use crate::wasm::*;
+use scrypto::core::{FnIdent, MethodIdent, ReceiverMethodIdent};
 use scrypto::resource::AuthZoneDrainInput;
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
 pub enum AuthZoneError {
     EmptyAuthZone,
     ProofError(ProofError),
@@ -20,15 +23,69 @@ pub enum AuthZoneError {
 #[derive(Debug)]
 pub struct AuthZone {
     pub proofs: Vec<Proof>,
+    /// IDs of buckets that act as an evidence for virtual proofs.
+    /// A virtual proof for any NonFunbigleId can be created for any ResourceAddress in the map.
+    /// Note: when a virtual proof is created,
+    /// the resources aren't actually being added to the bucket.
+    pub virtual_proofs_buckets: BTreeMap<ResourceAddress, BucketId>,
 }
 
 impl AuthZone {
-    pub fn new_with_proofs(proofs: Vec<Proof>) -> Self {
-        Self { proofs }
+    pub fn new_with_proofs(
+        proofs: Vec<Proof>,
+        virtual_proofs_buckets: BTreeMap<ResourceAddress, BucketId>,
+    ) -> Self {
+        Self {
+            proofs,
+            virtual_proofs_buckets,
+        }
     }
 
     pub fn new() -> Self {
-        Self { proofs: Vec::new() }
+        Self {
+            proofs: Vec::new(),
+            virtual_proofs_buckets: BTreeMap::new(),
+        }
+    }
+
+    pub fn is_proof_virtualizable(&self, resource_address: &ResourceAddress) -> bool {
+        self.virtual_proofs_buckets.contains_key(resource_address)
+    }
+
+    fn virtualize_non_fungible_proof(
+        &self,
+        resource_address: &ResourceAddress,
+        ids: &BTreeSet<NonFungibleId>,
+    ) -> Proof {
+        let bucket_id = self
+            .virtual_proofs_buckets
+            .get(resource_address)
+            .expect("Failed to create a virtual proof (bucket does not exist)")
+            .clone();
+
+        let mut locked_ids = BTreeMap::new();
+        for id in ids.clone() {
+            locked_ids.insert(id, 0);
+        }
+        let mut evidence = HashMap::new();
+        evidence.insert(
+            ResourceContainerId::Bucket(bucket_id),
+            (
+                Rc::new(RefCell::new(LockableResource::NonFungible {
+                    resource_address: resource_address.clone(),
+                    locked_ids: locked_ids,
+                    liquid_ids: BTreeSet::new(),
+                })),
+                LockedAmountOrIds::Ids(ids.clone()),
+            ),
+        );
+        Proof::new(
+            resource_address.clone(),
+            ResourceType::NonFungible,
+            LockedAmountOrIds::Ids(ids.clone()),
+            evidence,
+        )
+        .expect("Failed to create a virtual proof")
     }
 
     fn pop(&mut self) -> Result<Proof, InvokeError<AuthZoneError>> {
@@ -135,12 +192,23 @@ impl AuthZone {
                 let input: AuthZoneCreateProofInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(AuthZoneError::InvalidRequestData(e)))?;
                 let resource_type = {
-                    let mut node_ref = system_api
-                        .borrow_node(&RENodeId::ResourceManager(input.resource_address))
+                    let result = system_api
+                        .invoke(
+                            FnIdent::Method(ReceiverMethodIdent {
+                                receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Resource(
+                                    input.resource_address,
+                                ))),
+                                method_ident: MethodIdent::Native(NativeMethod::ResourceManager(
+                                    ResourceManagerMethod::GetResourceType,
+                                )),
+                            }),
+                            ScryptoValue::from_typed(&ResourceManagerGetResourceTypeInput {}),
+                        )
                         .map_err(InvokeError::Downstream)?;
-                    let resource_manager = node_ref.resource_manager();
-                    resource_manager.resource_type()
+                    let resource_type: ResourceType = scrypto_decode(&result.raw).unwrap();
+                    resource_type
                 };
+
                 let mut node_ref = system_api
                     .borrow_node_mut(&RENodeId::AuthZone(auth_zone_id))
                     .map_err(InvokeError::Downstream)?;
@@ -158,12 +226,23 @@ impl AuthZone {
                 let input: AuthZoneCreateProofByAmountInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(AuthZoneError::InvalidRequestData(e)))?;
                 let resource_type = {
-                    let mut node_ref = system_api
-                        .borrow_node(&RENodeId::ResourceManager(input.resource_address))
+                    let result = system_api
+                        .invoke(
+                            FnIdent::Method(ReceiverMethodIdent {
+                                receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Resource(
+                                    input.resource_address,
+                                ))),
+                                method_ident: MethodIdent::Native(NativeMethod::ResourceManager(
+                                    ResourceManagerMethod::GetResourceType,
+                                )),
+                            }),
+                            ScryptoValue::from_typed(&ResourceManagerGetResourceTypeInput {}),
+                        )
                         .map_err(InvokeError::Downstream)?;
-                    let resource_manager = node_ref.resource_manager();
-                    resource_manager.resource_type()
+                    let resource_type: ResourceType = scrypto_decode(&result.raw).unwrap();
+                    resource_type
                 };
+
                 let mut node_ref = system_api
                     .borrow_node_mut(&RENodeId::AuthZone(auth_zone_id))
                     .map_err(InvokeError::Downstream)?;
@@ -185,21 +264,42 @@ impl AuthZone {
                 let input: AuthZoneCreateProofByIdsInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(AuthZoneError::InvalidRequestData(e)))?;
                 let resource_type = {
-                    let mut node_ref = system_api
-                        .borrow_node(&RENodeId::ResourceManager(input.resource_address))
+                    let result = system_api
+                        .invoke(
+                            FnIdent::Method(ReceiverMethodIdent {
+                                receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Resource(
+                                    input.resource_address,
+                                ))),
+                                method_ident: MethodIdent::Native(NativeMethod::ResourceManager(
+                                    ResourceManagerMethod::GetResourceType,
+                                )),
+                            }),
+                            ScryptoValue::from_typed(&ResourceManagerGetResourceTypeInput {}),
+                        )
                         .map_err(InvokeError::Downstream)?;
-                    let resource_manager = node_ref.resource_manager();
-                    resource_manager.resource_type()
+                    let resource_type: ResourceType = scrypto_decode(&result.raw).unwrap();
+                    resource_type
                 };
+
                 let mut node_ref = system_api
                     .borrow_node_mut(&RENodeId::AuthZone(auth_zone_id))
                     .map_err(InvokeError::Downstream)?;
                 let auth_zone = node_ref.auth_zone_mut();
-                let proof = auth_zone.create_proof_by_ids(
+
+                let maybe_existing_proof = auth_zone.create_proof_by_ids(
                     &input.ids,
                     input.resource_address,
                     resource_type,
-                )?;
+                );
+
+                let proof = match maybe_existing_proof {
+                    Ok(proof) => proof,
+                    Err(_) if auth_zone.is_proof_virtualizable(&input.resource_address) => {
+                        auth_zone.virtualize_non_fungible_proof(&input.resource_address, &input.ids)
+                    }
+                    Err(e) => Err(e)?,
+                };
+
                 let proof_id = system_api
                     .node_create(HeapRENode::Proof(proof))
                     .map_err(InvokeError::Downstream)?

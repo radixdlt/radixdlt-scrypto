@@ -1,7 +1,8 @@
 use sbor::Decode;
-use std::collections::HashSet;
+use std::collections::{BTreeSet, HashSet};
 
 use scrypto::buffer::scrypto_decode;
+use scrypto::constants::*;
 use scrypto::crypto::PublicKey;
 use scrypto::values::*;
 
@@ -68,10 +69,15 @@ impl TransactionValidator<NotarizedTransaction> for NotarizedTransactionValidato
         let tip_percentage = transaction.signed_intent.intent.header.tip_percentage;
         let blobs = transaction.signed_intent.intent.manifest.blobs.clone();
 
+        let auth_zone_params = AuthZoneParams {
+            initial_proofs: AuthModule::pk_non_fungibles(&keys),
+            virtualizable_proofs_resource_addresses: BTreeSet::new(),
+        };
+
         Ok(Executable::new(
             transaction_hash,
             instructions,
-            AuthModule::pk_non_fungibles(&keys),
+            auth_zone_params,
             cost_unit_limit,
             tip_percentage,
             blobs,
@@ -94,10 +100,19 @@ impl NotarizedTransactionValidator {
         let instructions = self.validate_intent(&intent, intent_hash_manager)?;
         let initial_proofs = AuthModule::pk_non_fungibles(&preview_intent.signer_public_keys);
 
+        let mut virtualizable_proofs_resource_addresses = BTreeSet::new();
+        if preview_intent.flags.assume_all_signature_proofs {
+            virtualizable_proofs_resource_addresses.insert(ECDSA_SECP256K1_TOKEN);
+            virtualizable_proofs_resource_addresses.insert(EDDSA_ED25519_TOKEN);
+        }
+
         Ok(Executable {
             transaction_hash,
             instructions,
-            initial_proofs,
+            auth_zone_params: AuthZoneParams {
+                initial_proofs,
+                virtualizable_proofs_resource_addresses,
+            },
             cost_unit_limit: intent.header.cost_unit_limit,
             tip_percentage: intent.header.tip_percentage,
             blobs: intent.manifest.blobs,
@@ -416,6 +431,7 @@ mod tests {
                 signer_public_keys: Vec::new(),
                 flags: PreviewFlags {
                     unlimited_loan: true,
+                    assume_all_signature_proofs: false,
                 },
             },
             &mut intent_hash_manager,

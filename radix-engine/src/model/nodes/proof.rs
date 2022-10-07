@@ -21,7 +21,7 @@ pub struct Proof {
     evidence: HashMap<ResourceContainerId, (Rc<RefCell<LockableResource>>, LockedAmountOrIds)>,
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
 pub enum ProofError {
     /// Error produced by a resource container.
     ResourceOperationError(ResourceOperationError),
@@ -337,10 +337,10 @@ impl Proof {
         R: FeeReserve,
     {
         let node_id = RENodeId::Proof(proof_id);
-        let mut node_ref = system_api
-            .borrow_node_mut(&node_id)
+        let node_ref = system_api
+            .borrow_node(&node_id)
             .map_err(InvokeError::Downstream)?;
-        let proof = node_ref.proof_mut();
+        let proof = node_ref.proof();
 
         let rtn = match method {
             ProofMethod::GetAmount => {

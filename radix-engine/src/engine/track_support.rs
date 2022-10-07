@@ -45,7 +45,10 @@ impl<'s> BaseStateTrack<'s> {
         for (substate_id, substate) in &self.substates {
             if let Some(substate) = substate {
                 match &substate_id {
-                    SubstateId::NonFungible(resource_address, key) => {
+                    SubstateId(
+                        RENodeId::NonFungibleStore(store_id),
+                        SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(key)),
+                    ) => {
                         let next_version = if let Some(existing_output_id) =
                             Self::get_substate_output_id(&self.substate_store, &substate_id)
                         {
@@ -53,7 +56,10 @@ impl<'s> BaseStateTrack<'s> {
                             diff.down_substates.push(existing_output_id);
                             next_version
                         } else {
-                            let parent_address = SubstateId::NonFungibleSpace(*resource_address);
+                            let parent_address = SubstateId(
+                                RENodeId::NonFungibleStore(*store_id),
+                                SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Space),
+                            );
                             let virtual_output_id =
                                 VirtualSubstateId(parent_address, key.0.clone());
                             diff.down_virtual_substates.push(virtual_output_id);
@@ -67,7 +73,10 @@ impl<'s> BaseStateTrack<'s> {
                         };
                         diff.up_substates.insert(substate_id.clone(), output_value);
                     }
-                    SubstateId::KeyValueStoreEntry(kv_store_id, key) => {
+                    SubstateId(
+                        RENodeId::KeyValueStore(kv_store_id),
+                        SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key)),
+                    ) => {
                         let next_version = if let Some(existing_output_id) =
                             Self::get_substate_output_id(&self.substate_store, &substate_id)
                         {
@@ -75,7 +84,10 @@ impl<'s> BaseStateTrack<'s> {
                             diff.down_substates.push(existing_output_id);
                             next_version
                         } else {
-                            let parent_address = SubstateId::KeyValueStoreSpace(*kv_store_id);
+                            let parent_address = SubstateId(
+                                RENodeId::KeyValueStore(*kv_store_id),
+                                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Space),
+                            );
                             let virtual_output_id = VirtualSubstateId(parent_address, key.clone());
                             diff.down_virtual_substates.push(virtual_output_id);
                             0

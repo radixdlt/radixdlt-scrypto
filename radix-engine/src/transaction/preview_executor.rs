@@ -75,7 +75,7 @@ where
             max_cost_unit_limit: DEFAULT_MAX_COST_UNIT_LIMIT,
             min_tip_percentage: 0,
         };
-        let execution_params = ExecutionConfig::default();
+
         let validator = NotarizedTransactionValidator::new(validation_config);
 
         let validated_preview_transaction = validator
@@ -94,7 +94,7 @@ where
         }
         let receipt = transaction_executor.execute_with_fee_reserve(
             &validated_preview_transaction,
-            &execution_params,
+            &ExecutionConfig::default(),
             SystemLoanFeeReserve::default(),
         );
 

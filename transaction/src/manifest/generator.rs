@@ -1168,39 +1168,43 @@ mod tests {
             r#"TAKE_FROM_WORKTOP_BY_AMOUNT  Decimal("1.0")  ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak")  Bucket("xrd_bucket");"#,
             Instruction::TakeFromWorktopByAmount {
                 amount: Decimal::from(1),
-                resource_address: ResourceAddress::from_str(
-                    "resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak"
-                )
-                .unwrap(),
+                resource_address: Bech32Decoder::for_simulator()
+                    .validate_and_decode_resource_address(
+                        "resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak"
+                    )
+                    .unwrap(),
             }
         );
         generate_instruction_ok!(
             r#"TAKE_FROM_WORKTOP  ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak")  Bucket("xrd_bucket");"#,
             Instruction::TakeFromWorktop {
-                resource_address: ResourceAddress::from_str(
-                    "resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak"
-                )
-                .unwrap(),
+                resource_address: Bech32Decoder::for_simulator()
+                    .validate_and_decode_resource_address(
+                        "resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak"
+                    )
+                    .unwrap(),
             }
         );
         generate_instruction_ok!(
             r#"ASSERT_WORKTOP_CONTAINS_BY_AMOUNT  Decimal("1.0")  ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak");"#,
             Instruction::AssertWorktopContainsByAmount {
                 amount: Decimal::from(1),
-                resource_address: ResourceAddress::from_str(
-                    "resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak"
-                )
-                .unwrap(),
+                resource_address: Bech32Decoder::for_simulator()
+                    .validate_and_decode_resource_address(
+                        "resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak"
+                    )
+                    .unwrap(),
             }
         );
         generate_instruction_ok!(
             r#"CALL_FUNCTION  PackageAddress("package_sim1q8gl2qqsusgzmz92es68wy2fr7zjc523xj57eanm597qrz3dx7")  "Airdrop"  "new"  500u32  Map<String, U8>("key", 1u8)  PreciseDecimal("120");"#,
             Instruction::CallFunction {
                 function_ident: FunctionIdent::Scrypto {
-                    package_address: PackageAddress::from_str(
-                        "package_sim1q8gl2qqsusgzmz92es68wy2fr7zjc523xj57eanm597qrz3dx7".into()
-                    )
-                    .unwrap(),
+                    package_address: Bech32Decoder::for_simulator()
+                        .validate_and_decode_package_address(
+                            "package_sim1q8gl2qqsusgzmz92es68wy2fr7zjc523xj57eanm597qrz3dx7".into()
+                        )
+                        .unwrap(),
                     blueprint_name: "Airdrop".into(),
                     ident: "new".to_string(),
                 },

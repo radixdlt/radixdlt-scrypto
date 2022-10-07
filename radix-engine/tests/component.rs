@@ -87,7 +87,7 @@ fn reentrancy_should_not_be_possible() {
     let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.compile_and_publish("./tests/component");
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(10u32.into(), SYS_FAUCET_COMPONENT)
         .call_scrypto_function(package_address, "ReentrantComponent", "new", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -99,7 +99,7 @@ fn reentrancy_should_not_be_possible() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(10u32.into(), SYS_FAUCET_COMPONENT)
         .call_method(component_address, "call_self", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -110,7 +110,10 @@ fn reentrancy_should_not_be_possible() {
             substate_id,
         ))) = e
         {
-            substate_id.eq(&SubstateId::ComponentInfo(component_address))
+            substate_id.eq(&SubstateId(
+                RENodeId::Component(component_address),
+                SubstateOffset::Component(ComponentOffset::Info),
+            ))
         } else {
             false
         }

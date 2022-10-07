@@ -12,7 +12,7 @@ pub struct Package {
     pub info: PackageSubstate,
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
 pub enum PackageError {
     InvalidRequestData(DecodeError),
     InvalidAbi(DecodeError),
@@ -72,10 +72,10 @@ impl Package {
                 let node_id = system_api
                     .node_create(HeapRENode::Package(package))
                     .map_err(InvokeError::Downstream)?;
-                system_api
+                let global_address = system_api
                     .node_globalize(node_id)
                     .map_err(InvokeError::Downstream)?;
-                let package_address: PackageAddress = node_id.into();
+                let package_address: PackageAddress = global_address.into();
                 Ok(ScryptoValue::from_typed(&package_address))
             }
         }

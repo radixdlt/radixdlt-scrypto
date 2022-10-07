@@ -101,4 +101,37 @@ impl CallFrame {
 
         Ok((taken, missing))
     }
+
+    pub fn take_node(&mut self, node_id: RENodeId) -> Result<HeapRootRENode, RuntimeError> {
+        let maybe = self.owned_heap_nodes.remove(&node_id);
+        if let Some(root_node) = maybe {
+            root_node.root().verify_can_move()?;
+            Ok(root_node)
+        } else {
+            Err(RuntimeError::KernelError(KernelError::RENodeNotFound(
+                node_id,
+            )))
+        }
+    }
+
+    pub fn get_node_pointer(&self, node_id: RENodeId) -> Result<RENodePointer, RuntimeError> {
+        // Find node
+        let node_pointer = {
+            if self.owned_heap_nodes.contains_key(&node_id) {
+                RENodePointer::Heap {
+                    frame_id: self.depth,
+                    root: node_id.clone(),
+                    id: None,
+                }
+            } else if let Some(pointer) = self.node_refs.get(&node_id) {
+                pointer.clone()
+            } else {
+                return Err(RuntimeError::KernelError(KernelError::RENodeNotVisible(
+                    node_id,
+                )));
+            }
+        };
+
+        Ok(node_pointer)
+    }
 }

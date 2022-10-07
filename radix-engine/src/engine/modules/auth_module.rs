@@ -24,42 +24,14 @@ impl AuthModule {
             .last()
             .expect("Current call frame does not exist");
 
-        let auth_zone = cur_call_frame
-            .owned_heap_nodes
-            .values()
-            .find(|e| {
-                matches!(
-                    e,
-                    HeapRootRENode {
-                        root: HeapRENode::AuthZone(..),
-                        ..
-                    }
-                )
-            })
-            .expect("Could not find auth zone")
-            .root
-            .auth_zone();
+        let auth_zone = Self::get_auth_zone(cur_call_frame);
 
         let mut auth_zones = vec![auth_zone];
 
         // FIXME: This is wrong as it allows extern component calls to use caller's auth zone
         // Also, need to add a test for this
         if let Some(frame) = call_frames.iter().rev().nth(1) {
-            let auth_zone = frame
-                .owned_heap_nodes
-                .values()
-                .find(|e| {
-                    matches!(
-                        e,
-                        HeapRootRENode {
-                            root: HeapRENode::AuthZone(..),
-                            ..
-                        }
-                    )
-                })
-                .expect("Could not find auth zone")
-                .root
-                .auth_zone();
+            let auth_zone = Self::get_auth_zone(frame);
             auth_zones.push(auth_zone);
         }
 
@@ -77,6 +49,24 @@ impl AuthModule {
         }
 
         Ok(())
+    }
+
+    pub fn get_auth_zone(call_frame: &CallFrame) -> &AuthZone {
+        call_frame
+            .owned_heap_nodes
+            .values()
+            .find(|e| {
+                matches!(
+                    e,
+                    HeapRootRENode {
+                        root: HeapRENode::AuthZone(..),
+                        ..
+                    }
+                )
+            })
+            .expect("Could not find auth zone")
+            .root
+            .auth_zone()
     }
 
     pub fn function_auth(
@@ -108,7 +98,8 @@ impl AuthModule {
                     .borrow_node(&RENodeId::ResourceManager(*resource_address))
                     .resource_manager();
                 let method_auth = resource_manager.get_auth(*method, &input).clone();
-                vec![method_auth]
+                let auth = vec![method_auth];
+                auth
             }
             ReceiverMethodIdent {
                 receiver: Receiver::Ref(RENodeId::System(..)),
@@ -134,6 +125,13 @@ impl AuthModule {
                     )
                 };
 
+                let node_id = RENodeId::Package(package_address);
+                let package_pointer = RENodePointer::Store(node_id);
+                let offset = SubstateOffset::Package(PackageOffset::Package);
+                package_pointer
+                    .acquire_lock(offset.clone(), false, false, track)
+                    .map_err(RuntimeError::KernelError)?;
+
                 // Assume that package_address/blueprint is the original impl of Component for now
                 // TODO: Remove this assumption
                 let package = track
@@ -151,6 +149,10 @@ impl AuthModule {
                         FnIdent::Method(method_ident),
                     )));
                 }
+
+                package_pointer
+                    .release_lock(offset, false, track)
+                    .map_err(RuntimeError::KernelError)?;
 
                 {
                     let mut node_ref = node_pointer.to_ref_mut(call_frames, track);
@@ -171,10 +173,24 @@ impl AuthModule {
                     let mut node_ref = node_pointer.to_ref(call_frames, track);
                     node_ref.vault().resource_address()
                 };
+                let node_id = RENodeId::ResourceManager(resource_address);
+                let resource_pointer = RENodePointer::Store(node_id);
+                let offset =
+                    SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
+                resource_pointer
+                    .acquire_lock(offset.clone(), false, false, track)
+                    .map_err(RuntimeError::KernelError)?;
+
                 let resource_manager = track
                     .borrow_node(&RENodeId::ResourceManager(resource_address))
                     .resource_manager();
-                vec![resource_manager.get_vault_auth(*vault_fn).clone()]
+                let auth = vec![resource_manager.get_vault_auth(*vault_fn).clone()];
+
+                resource_pointer
+                    .release_lock(offset, false, track)
+                    .map_err(RuntimeError::KernelError)?;
+
+                auth
             }
             _ => vec![],
         };

@@ -2,6 +2,7 @@ use sbor::rust::vec::Vec;
 use scrypto::core::NetworkDefinition;
 use scrypto::crypto::*;
 use scrypto::resource::NonFungibleAddress;
+use std::collections::BTreeSet;
 
 use crate::builder::TransactionBuilder;
 use crate::model::*;
@@ -23,7 +24,7 @@ impl TestTransaction {
                 nonce,
                 notary_public_key: EcdsaSecp256k1PublicKey([0u8; 33]).into(),
                 notary_as_signatory: false,
-                cost_unit_limit: 10_000_000,
+                cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,
                 tip_percentage: 5,
             })
             .manifest(manifest)
@@ -35,7 +36,10 @@ impl TestTransaction {
         Executable {
             transaction_hash,
             instructions: transaction.signed_intent.intent.manifest.instructions,
-            initial_proofs,
+            auth_zone_params: AuthZoneParams {
+                initial_proofs,
+                virtualizable_proofs_resource_addresses: BTreeSet::new(),
+            },
             cost_unit_limit: transaction.signed_intent.intent.header.cost_unit_limit,
             tip_percentage: transaction.signed_intent.intent.header.tip_percentage,
             blobs: transaction.signed_intent.intent.manifest.blobs,
