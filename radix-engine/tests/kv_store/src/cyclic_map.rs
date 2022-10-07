@@ -32,6 +32,8 @@ blueprint! {
                     key: PhantomData,
                     value: PhantomData,
                 })));
+
+            let _: () = call_engine(RadixEngineInput::CreateRef(substate_id.clone(), true));
             let input = RadixEngineInput::SubstateWrite(substate_id, scrypto_encode(&substate));
             let _: () = call_engine(input);
 
@@ -52,6 +54,7 @@ blueprint! {
                     key: PhantomData,
                     value: PhantomData,
                 })));
+            let _: () = call_engine(RadixEngineInput::CreateRef(substate_id.clone(), true));
             let input = RadixEngineInput::SubstateWrite(substate_id, scrypto_encode(&substate));
             let _: () = call_engine(input);
 

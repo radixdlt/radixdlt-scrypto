@@ -181,77 +181,6 @@ where
         Ok(())
     }
 
-    fn read_substate_internal(
-        call_frames: &mut Vec<CallFrame>,
-        track: &mut Track<'s, R>,
-        node_pointer: RENodePointer,
-        offset: SubstateOffset,
-    ) -> Result<ScryptoValue, RuntimeError> {
-        // TODO: Cleanup
-        //if let SubstateOffset::Component(ComponentOffset::Info) = offset {
-        if !(matches!(offset, SubstateOffset::KeyValueStore(..))
-            || matches!(offset, SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(..)))
-        ) {
-            node_pointer
-                .acquire_lock(
-                    offset.clone(),
-                    true,
-                    false,
-                    track,
-                )
-                .map_err(RuntimeError::KernelError)?;
-            call_frames.last_mut().unwrap().add_substate_lock(node_pointer, offset.clone(), true);
-        }
-        /*
-            node_pointer
-                .acquire_lock(
-                    offset.clone(),
-                    false,
-                    false,
-                    track,
-                )
-                .map_err(RuntimeError::KernelError)?;
-            node_pointer
-                .acquire_lock(
-                    SubstateOffset::Component(ComponentOffset::Info),
-                    false,
-                    false,
-                    track,
-                )
-                .map_err(RuntimeError::KernelError)?;
-        }
-         */
-
-        // Read current value
-        let substate = {
-            let mut node_ref = node_pointer.to_ref_mut(call_frames, track);
-            node_ref.read_substate(&SubstateId(node_pointer.node_id(), offset.clone()))?
-        };
-
-
-        /*
-        // TODO: Remove, integrate with substate borrow mechanism
-        //if let SubstateOffset::Component(ComponentOffset::Info) = offset {
-            node_pointer
-                .release_lock(
-                    offset,
-                    false,
-                    track,
-                )
-                .map_err(RuntimeError::KernelError)?;
-            node_pointer
-                .release_lock(
-                    SubstateOffset::Component(ComponentOffset::Info),
-                    false,
-                    track,
-                )
-                .map_err(RuntimeError::KernelError)?;
-        }
-         */
-
-        Ok(substate)
-    }
-
     fn new_uuid(
         id_allocator: &mut IdAllocator,
         transaction_hash: Hash,
@@ -522,8 +451,12 @@ where
 
         // Drop substate references
         for SubstateLock { pointer: (node_pointer, offset), .. } in Self::current_frame_mut(&mut self.call_frames).locks.iter() {
-            node_pointer.release_lock(offset.clone(), false, self.track)
-                .map_err(RuntimeError::KernelError)?;
+            if !(matches!(offset, SubstateOffset::KeyValueStore(..))
+                || matches!(offset, SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(..)))
+            ) {
+                node_pointer.release_lock(offset.clone(), false, self.track)
+                    .map_err(RuntimeError::KernelError)?;
+            }
         }
 
         // drop proofs and check resource leak
@@ -1273,7 +1206,64 @@ where
         Ok(global_address)
     }
 
-    fn substate_ref_drop(&mut self, substate_id: SubstateId) -> Result<ScryptoValue, RuntimeError> {
+    fn create_ref(&mut self, substate_id: SubstateId, mutable: bool) -> Result<ScryptoValue, RuntimeError> {
+        let mut node_pointer = Self::current_frame(&self.call_frames).get_node_pointer(substate_id.0)?;
+        let offset = substate_id.1;
+
+        // Deref
+        if let Some(derefed) = node_pointer.node_deref(&self.call_frames, &mut self.track)? {
+            node_pointer = derefed;
+        }
+
+        // TODO: Check if valid offset for node_id
+
+        // Authorization
+        if mutable {
+            if !Self::current_frame(&self.call_frames)
+                .actor
+                .is_substate_writeable(node_pointer.node_id(), offset.clone())
+            {
+                return Err(RuntimeError::KernelError(
+                    KernelError::SubstateWriteNotWriteable(
+                        Self::current_frame(&self.call_frames).actor.clone(),
+                        SubstateId(node_pointer.node_id(), offset.clone()),
+                    ),
+                ));
+            }
+        } else {
+            if !Self::current_frame(&self.call_frames)
+                .actor
+                .is_substate_readable(node_pointer.node_id(), offset.clone())
+            {
+                return Err(RuntimeError::KernelError(
+                    KernelError::SubstateReadNotReadable(
+                        Self::current_frame(&self.call_frames).actor.clone(),
+                        SubstateId(node_pointer.node_id(), offset.clone()),
+                    ),
+                ));
+            }
+        }
+
+        if !(matches!(offset, SubstateOffset::KeyValueStore(..))
+            || matches!(offset, SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(..)))
+        ) {
+            node_pointer
+                .acquire_lock(
+                    offset.clone(),
+                    mutable,
+                    false,
+                    &mut self.track,
+                )
+                .map_err(RuntimeError::KernelError)?;
+        }
+
+        Self::current_frame_mut(&mut self.call_frames)
+            .add_substate_lock(node_pointer, offset.clone(), mutable);
+
+        Ok(ScryptoValue::unit())
+    }
+
+    fn drop_ref(&mut self, substate_id: SubstateId) -> Result<ScryptoValue, RuntimeError> {
         let mut node_pointer = Self::current_frame(&self.call_frames).get_node_pointer(substate_id.0)?;
         let offset = substate_id.1;
 
@@ -1292,10 +1282,10 @@ where
                     self.track,
                 )
                 .map_err(RuntimeError::KernelError)?;
-
-            Self::current_frame_mut(&mut self.call_frames)
-                .release_substate_lock(node_pointer, offset.clone());
         }
+
+        Self::current_frame_mut(&mut self.call_frames)
+            .release_substate_lock(node_pointer, offset.clone());
 
         Ok(ScryptoValue::unit())
     }
@@ -1314,6 +1304,7 @@ where
 
         // Get Pointer
         let mut node_id = substate_id.0;
+        let offset = substate_id.1;
         let mut node_pointer = Self::current_frame(&self.call_frames).get_node_pointer(node_id)?;
 
         // Deref
@@ -1322,27 +1313,14 @@ where
             node_pointer = derefed;
         }
 
-        // Authorization
-        // TODO: Check if valid offset for node_id
-        let offset = substate_id.1;
-        if !Self::current_frame(&self.call_frames)
-            .actor
-            .is_substate_readable(node_id, offset.clone())
-        {
-            return Err(RuntimeError::KernelError(
-                KernelError::SubstateReadNotReadable(
-                    Self::current_frame(&self.call_frames).actor.clone(),
-                    SubstateId(node_id, offset.clone()),
-                ),
-            ));
+        if !Self::current_frame_mut(&mut self.call_frames).has_lock(node_pointer, offset.clone(), false) {
+            return Err(RuntimeError::KernelError(KernelError::SubstateRefDoesNotExist(SubstateId(node_id, offset.clone()))));
         }
 
-        let substate = Self::read_substate_internal(
-            &mut self.call_frames,
-            self.track,
-            node_pointer,
-            offset.clone(),
-        )?;
+        let substate = {
+            let mut node_ref = node_pointer.to_ref_mut(&mut self.call_frames, &mut self.track);
+            node_ref.read_substate(&SubstateId(node_pointer.node_id(), offset.clone()))?
+        };
 
         // TODO: Clean the following referencing up
         let contained_value = extract_value_from_substate(&offset, &substate);
@@ -1436,53 +1414,14 @@ where
             node_pointer = derefed;
         }
 
-        // Authorization
-        if !Self::current_frame(&self.call_frames)
-            .actor
-            .is_substate_writeable(node_id, offset.clone())
-        {
-            return Err(RuntimeError::KernelError(
-                KernelError::SubstateWriteNotWriteable(
-                    Self::current_frame(&self.call_frames).actor.clone(),
-                    SubstateId(node_id, offset.clone()),
-                ),
-            ));
+        if !Self::current_frame_mut(&mut self.call_frames).has_lock(node_pointer, offset.clone(), false) {
+            return Err(RuntimeError::KernelError(KernelError::SubstateRefDoesNotExist(SubstateId(node_id, offset.clone()))));
         }
 
-        if !(matches!(offset, SubstateOffset::KeyValueStore(..))
-            || matches!(offset, SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(..)))
-        ) {
-            node_pointer
-                .release_lock(
-                    offset.clone(),
-                    false,
-                    self.track,
-                )
-                .map_err(RuntimeError::KernelError)?;
-            Self::current_frame_mut(&mut self.call_frames)
-                .release_substate_lock(node_pointer, offset.clone());
-        }
-
-        let prev_substate = Self::read_substate_internal(
-            &mut self.call_frames,
-            self.track,
-            node_pointer,
-            offset.clone(),
-        )?;
-
-        if !(matches!(offset, SubstateOffset::KeyValueStore(..))
-            || matches!(offset, SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(..)))
-        ) {
-            node_pointer
-                .release_lock(
-                    offset.clone(),
-                    false,
-                    self.track,
-                )
-                .map_err(RuntimeError::KernelError)?;
-            Self::current_frame_mut(&mut self.call_frames)
-                .release_substate_lock(node_pointer, offset.clone());
-        }
+        let prev_substate = {
+            let mut node_ref = node_pointer.to_ref_mut(&mut self.call_frames, &mut self.track);
+            node_ref.read_substate(&SubstateId(node_pointer.node_id(), offset.clone()))?
+        };
 
         let prev_contained_value = extract_value_from_substate(&offset, &prev_substate);
 

@@ -39,7 +39,9 @@ pub enum RadixEngineInput {
 
     SubstateRead(SubstateId),
     SubstateWrite(SubstateId, Vec<u8>),
-    SubstateRefDrop(SubstateId),
+
+    CreateRef(SubstateId, bool),
+    DropRef(SubstateId),
 
     GetActor(),
     EmitLog(Level, String),

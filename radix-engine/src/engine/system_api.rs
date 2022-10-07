@@ -49,7 +49,9 @@ where
     /// Reads a substate
     fn substate_read(&mut self, substate_id: SubstateId) -> Result<ScryptoValue, RuntimeError>;
 
-    fn substate_ref_drop(&mut self, substate_id: SubstateId) -> Result<ScryptoValue, RuntimeError>;
+    fn create_ref(&mut self, substate_id: SubstateId, mutable: bool) -> Result<ScryptoValue, RuntimeError>;
+
+    fn drop_ref(&mut self, substate_id: SubstateId) -> Result<ScryptoValue, RuntimeError>;
 
     /// Updates a substate and returns previous one
     fn substate_write(

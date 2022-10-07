@@ -310,15 +310,19 @@ impl Bucket {
                         .total_ids()
                         .expect("Failed to list non-fungible IDs on non-fungible Bucket")
                     {
-                        let address = SubstateId(
+                        let substate_id = SubstateId(
                             RENodeId::ResourceManager(resource_address),
                             SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(id)),
                         );
+                        system_api.create_ref(substate_id.clone(), true)
+                            .map_err(InvokeError::Downstream)?;
                         system_api
                             .substate_write(
-                                address,
+                                substate_id.clone(),
                                 ScryptoValue::from_typed(&NonFungibleSubstate(None)),
                             )
+                            .map_err(InvokeError::Downstream)?;
+                        system_api.drop_ref(substate_id.clone())
                             .map_err(InvokeError::Downstream)?;
                     }
                 }

@@ -11,8 +11,9 @@ blueprint! {
                 RENodeId::Global(GlobalAddress::Component(component_address)),
                 SubstateOffset::Component(ComponentOffset::State),
             );
-            let input = RadixEngineInput::SubstateRead(substate_id);
-            call_engine(input)
+
+            let _: () = call_engine(RadixEngineInput::CreateRef(substate_id.clone(), false));
+            call_engine(RadixEngineInput::SubstateRead(substate_id))
         }
 
         pub fn create_component_and_write_state() {
@@ -21,8 +22,8 @@ blueprint! {
                 RENodeId::Global(GlobalAddress::Component(component_address)),
                 SubstateOffset::Component(ComponentOffset::State),
             );
-            let input = RadixEngineInput::SubstateWrite(substate_id, scrypto_encode(&()));
-            call_engine(input)
+            let _: () = call_engine(RadixEngineInput::CreateRef(substate_id.clone(), true));
+            call_engine(RadixEngineInput::SubstateWrite(substate_id, scrypto_encode(&())))
         }
 
         pub fn create_component_and_read_info() -> ComponentInfoSubstate {
@@ -31,6 +32,7 @@ blueprint! {
                 RENodeId::Global(GlobalAddress::Component(component_address)),
                 SubstateOffset::Component(ComponentOffset::Info),
             );
+            let _: () = call_engine(RadixEngineInput::CreateRef(substate_id.clone(), false));
             let input = RadixEngineInput::SubstateRead(substate_id);
             call_engine(input)
         }
@@ -41,6 +43,7 @@ blueprint! {
                 RENodeId::Global(GlobalAddress::Component(component_address)),
                 SubstateOffset::Component(ComponentOffset::Info),
             );
+            let _: () = call_engine(RadixEngineInput::CreateRef(substate_id.clone(), true));
             let input = RadixEngineInput::SubstateWrite(substate_id, scrypto_encode(&()));
             call_engine(input)
         }

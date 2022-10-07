@@ -10,6 +10,7 @@ use sbor::rust::ops::{Deref, DerefMut};
 use sbor::{Decode, Encode};
 
 pub struct DataRef<V: Encode> {
+    substate_id: SubstateId,
     value: V,
 }
 
@@ -20,8 +21,8 @@ impl<V: fmt::Display + Encode> fmt::Display for DataRef<V> {
 }
 
 impl<V: Encode> DataRef<V> {
-    pub fn new(value: V) -> DataRef<V> {
-        DataRef { value }
+    pub fn new(substate_id: SubstateId, value: V) -> DataRef<V> {
+        DataRef { substate_id, value }
     }
 }
 
@@ -32,6 +33,15 @@ impl<V: Encode> Deref for DataRef<V> {
         &self.value
     }
 }
+
+impl<V: Encode> Drop for DataRef<V> {
+    fn drop(&mut self) {
+        let input = RadixEngineInput::DropRef(self.substate_id.clone());
+        let _: () = call_engine(input);
+    }
+}
+
+
 
 pub struct DataRefMut<V: Encode> {
     substate_id: SubstateId,
@@ -65,6 +75,9 @@ impl<V: Encode> Drop for DataRefMut<V> {
         };
         let input = SubstateWrite(self.substate_id.clone(), substate);
         let _: () = call_engine(input);
+
+        let input = RadixEngineInput::DropRef(self.substate_id.clone());
+        let _: () = call_engine(input);
     }
 }
 
@@ -95,36 +108,46 @@ impl<V: 'static + Encode + Decode> DataPointer<V> {
         }
     }
 
-    pub fn get_mut(&mut self) -> DataRefMut<V> {
+    pub fn get(&self) -> DataRef<V> {
+        let input = RadixEngineInput::CreateRef(self.substate_id.clone(), false);
+        let _: () = call_engine(input);
+
         let input = RadixEngineInput::SubstateRead(self.substate_id.clone());
         match &self.substate_id {
             SubstateId(RENodeId::KeyValueStore(..), ..) => {
                 let substate: KeyValueStoreEntrySubstate = call_engine(input);
-                DataRefMut {
+                DataRef {
                     substate_id: self.substate_id.clone(),
                     value: scrypto_decode(&substate.0.unwrap()).unwrap(),
                 }
             }
-            SubstateId(
-                RENodeId::Component(..),
-                SubstateOffset::Component(ComponentOffset::State),
-            ) => {
+            SubstateId(_, SubstateOffset::Component(ComponentOffset::State)) => {
                 let substate: ComponentStateSubstate = call_engine(input);
-                DataRefMut {
+                DataRef {
                     substate_id: self.substate_id.clone(),
                     value: scrypto_decode(&substate.raw).unwrap(),
                 }
             }
-            s @ _ => panic!("Unsupported substate: {:?}", s),
+            _ => {
+                let substate: V = call_engine(input);
+                DataRef {
+                    substate_id: self.substate_id.clone(),
+                    value: substate
+                }
+            }
         }
     }
 
-    pub fn get(&self) -> DataRef<V> {
+    pub fn get_mut(&mut self) -> DataRefMut<V> {
+        let input = RadixEngineInput::CreateRef(self.substate_id.clone(), true);
+        let _: () = call_engine(input);
+
         let input = RadixEngineInput::SubstateRead(self.substate_id.clone());
         match &self.substate_id {
             SubstateId(RENodeId::KeyValueStore(..), ..) => {
                 let substate: KeyValueStoreEntrySubstate = call_engine(input);
-                DataRef {
+                DataRefMut {
+                    substate_id: self.substate_id.clone(),
                     value: scrypto_decode(&substate.0.unwrap()).unwrap(),
                 }
             }
@@ -133,11 +156,19 @@ impl<V: 'static + Encode + Decode> DataPointer<V> {
                 SubstateOffset::Component(ComponentOffset::State),
             ) => {
                 let substate: ComponentStateSubstate = call_engine(input);
-                DataRef {
+                DataRefMut {
+                    substate_id: self.substate_id.clone(),
                     value: scrypto_decode(&substate.raw).unwrap(),
                 }
             }
-            s @ _ => panic!("Unsupported substate: {:?}", s),
+            _ => {
+                let substate: V = call_engine(input);
+                DataRefMut {
+                    substate_id: self.substate_id.clone(),
+                    value: substate
+                }
+            }
         }
     }
+
 }

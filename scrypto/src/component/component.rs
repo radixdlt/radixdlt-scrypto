@@ -72,9 +72,9 @@ impl Component {
             RENodeId::Component(self.0),
             SubstateOffset::Component(ComponentOffset::Info),
         );
-        let input = RadixEngineInput::SubstateRead(substate_id);
-        let output: ComponentInfoSubstate = call_engine(input);
-        output.package_address
+        let pointer = DataPointer::new(substate_id);
+        let state: DataRef<ComponentInfoSubstate> = pointer.get();
+        state.package_address
     }
 
     /// Returns the blueprint name of this component.
@@ -83,9 +83,9 @@ impl Component {
             RENodeId::Component(self.0),
             SubstateOffset::Component(ComponentOffset::Info),
         );
-        let input = RadixEngineInput::SubstateRead(substate_id);
-        let output: ComponentInfoSubstate = call_engine(input);
-        output.blueprint_name
+        let pointer = DataPointer::new(substate_id);
+        let state: DataRef<ComponentInfoSubstate> = pointer.get();
+        state.blueprint_name.clone()
     }
 
     pub fn add_access_check(&mut self, access_rules: AccessRules) -> &mut Self {
@@ -132,12 +132,9 @@ impl BorrowedGlobalComponent {
             RENodeId::Global(GlobalAddress::Component(self.0)),
             SubstateOffset::Component(ComponentOffset::Info),
         );
-        let input = RadixEngineInput::SubstateRead(substate_id.clone());
-        let output: ComponentInfoSubstate = call_engine(input);
-        let package_address = output.package_address;
-        let _: () = call_engine(RadixEngineInput::SubstateRefDrop(substate_id));
-
-        package_address
+        let pointer = DataPointer::new(substate_id);
+        let state: DataRef<ComponentInfoSubstate> = pointer.get();
+        state.package_address
     }
 
     /// Returns the blueprint name of this component.
@@ -146,11 +143,9 @@ impl BorrowedGlobalComponent {
             RENodeId::Global(GlobalAddress::Component(self.0)),
             SubstateOffset::Component(ComponentOffset::Info),
         );
-        let input = RadixEngineInput::SubstateRead(substate_id.clone());
-        let output: ComponentInfoSubstate = call_engine(input);
-        let blueprint_name = output.blueprint_name;
-        let _: () = call_engine(RadixEngineInput::SubstateRefDrop(substate_id));
-        blueprint_name
+        let pointer = DataPointer::new(substate_id);
+        let state: DataRef<ComponentInfoSubstate> = pointer.get();
+        state.blueprint_name.clone()
     }
 
     pub fn add_access_check(&mut self, access_rules: AccessRules) -> &mut Self {

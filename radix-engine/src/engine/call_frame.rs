@@ -42,6 +42,11 @@ impl CallFrame {
         self.locks.remove(index);
     }
 
+    pub fn has_lock(&self, node_pointer: RENodePointer, offset: SubstateOffset, mutable: bool) -> bool {
+        let p = (node_pointer, offset);
+        self.locks.iter().position(|s| s.pointer.eq(&p) && (!mutable || mutable == s.mutable)).is_some()
+    }
+
     pub fn new_root() -> Self {
         Self {
             depth: 0,

@@ -114,11 +114,19 @@ where
         self.system_api.substate_read(substate_id)
     }
 
+    fn handle_substate_borrow(
+        &mut self,
+        substate_id: SubstateId,
+        mutable: bool,
+    ) -> Result<ScryptoValue, RuntimeError> {
+        self.system_api.create_ref(substate_id, mutable)
+    }
+
     fn handle_substate_ref_drop(
         &mut self,
         substate_id: SubstateId,
     ) -> Result<ScryptoValue, RuntimeError> {
-        self.system_api.substate_ref_drop(substate_id)
+        self.system_api.drop_ref(substate_id)
     }
 
     fn handle_substate_write(
@@ -177,7 +185,8 @@ where
             RadixEngineInput::SubstateWrite(substate_id, value) => {
                 self.handle_substate_write(substate_id, value)
             }
-            RadixEngineInput::SubstateRefDrop(substate_id) => self.handle_substate_ref_drop(substate_id),
+            RadixEngineInput::CreateRef(substate_id, mutable) => self.handle_substate_borrow(substate_id, mutable),
+            RadixEngineInput::DropRef(substate_id) => self.handle_substate_ref_drop(substate_id),
 
             RadixEngineInput::GetActor() => self.handle_get_actor().map(encode),
             RadixEngineInput::GenerateUuid() => self.handle_generate_uuid().map(encode),

@@ -46,11 +46,15 @@ impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> KeyValueStore<K,
             RENodeId::KeyValueStore(self.id),
             SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(scrypto_encode(key))),
         );
+
+        let input = RadixEngineInput::CreateRef(substate_id.clone(), false);
+        let _: () = call_engine(input);
+
         let input = RadixEngineInput::SubstateRead(substate_id.clone());
         let value: KeyValueStoreEntrySubstate = call_engine(input);
         value
             .0
-            .map(|raw| DataRef::new(scrypto_decode(&raw).unwrap()))
+            .map(|raw| DataRef::new(substate_id.clone(), scrypto_decode(&raw).unwrap()))
     }
 
     pub fn get_mut(&mut self, key: &K) -> Option<DataRefMut<V>> {
@@ -58,6 +62,9 @@ impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> KeyValueStore<K,
             RENodeId::KeyValueStore(self.id),
             SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(scrypto_encode(key))),
         );
+        let input = RadixEngineInput::CreateRef(substate_id.clone(), true);
+        let _: () = call_engine(input);
+
         let input = RadixEngineInput::SubstateRead(substate_id.clone());
         let value: KeyValueStoreEntrySubstate = call_engine(input);
         value
@@ -71,9 +78,16 @@ impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> KeyValueStore<K,
             RENodeId::KeyValueStore(self.id),
             SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(scrypto_encode(&key))),
         );
+
+        let input = RadixEngineInput::CreateRef(substate_id.clone(), true);
+        let _: () = call_engine(input);
+
         let substate = KeyValueStoreEntrySubstate(Some(scrypto_encode(&value)));
-        let input = RadixEngineInput::SubstateWrite(substate_id, scrypto_encode(&substate));
-        call_engine(input)
+        let input = RadixEngineInput::SubstateWrite(substate_id.clone(), scrypto_encode(&substate));
+        let _: () = call_engine(input);
+
+        let input = RadixEngineInput::DropRef(substate_id.clone());
+        let _: () = call_engine(input);
     }
 }
 
