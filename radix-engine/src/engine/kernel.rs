@@ -721,14 +721,6 @@ where
                 _ => {}
             }
 
-            if let MethodIdent::Native(..) = method_ident.method_ident {
-                for resource_address in &input.resource_addresses {
-                    let resource_node_id = RENodeId::ResourceManager(resource_address.clone());
-                    let resource_node_pointer = RENodePointer::Store(resource_node_id);
-                    next_frame_node_refs.insert(resource_node_id, resource_node_pointer);
-                }
-            }
-
             let current_frame = Self::current_frame(&self.call_frames);
             self.execution_trace.trace_invoke_method(
                 &self.call_frames,
