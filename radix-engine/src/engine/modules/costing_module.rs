@@ -17,28 +17,31 @@ impl<R: FeeReserve> Module<R> for CostingModule {
             SysCallInput::Invoke {
                 function_identifier,
                 input,
+                depth,
             } => {
-                track
-                    .fee_reserve
-                    .consume(
-                        track
-                            .fee_table
-                            .system_api_cost(SystemApiCostingEntry::Invoke {
-                                function_identifier: function_identifier.clone(),
-                                input: &input,
-                            }),
-                        "invoke_function",
-                        false,
-                    )
-                    .map_err(ModuleError::CostingError)?;
-                track
-                    .fee_reserve
-                    .consume(
-                        track.fee_table.run_fn_cost(&function_identifier, &input),
-                        "run_function",
-                        false,
-                    )
-                    .map_err(ModuleError::CostingError)?;
+                if depth > 0 {
+                    track
+                        .fee_reserve
+                        .consume(
+                            track
+                                .fee_table
+                                .system_api_cost(SystemApiCostingEntry::Invoke {
+                                    function_identifier: function_identifier.clone(),
+                                    input: &input,
+                                }),
+                            "invoke_function",
+                            false,
+                        )
+                        .map_err(ModuleError::CostingError)?;
+                    track
+                        .fee_reserve
+                        .consume(
+                            track.fee_table.run_fn_cost(&function_identifier, &input),
+                            "run_function",
+                            false,
+                        )
+                        .map_err(ModuleError::CostingError)?;
+                }
             }
             SysCallInput::ReadOwnedNodes => {
                 track

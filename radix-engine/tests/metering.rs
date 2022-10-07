@@ -156,10 +156,10 @@ fn test_basic_transfer() {
         + 1698 /* decode_manifest */
         + 1000 /* drop_node */
         + 0 /* instantiate_wasm */
-        + 5170 /* invoke_function */
+        + 2215 /* invoke_function */
         + 100 /* read_owned_nodes */
         + 3500 /* read_substate */
-        + 6200 /* run_function */
+        + 5200 /* run_function */
         + 345262 /* run_wasm */
         + 566 /* verify_manifest */
         + 3750 /* verify_signatures */
@@ -194,5 +194,83 @@ fn test_publish_large_package() {
     receipt.expect_commit_success();
 
     // Assert
-    assert_eq!(4285150, receipt.execution.fee_summary.cost_unit_consumed);
+    assert_eq!(4282630, receipt.execution.fee_summary.cost_unit_consumed);
+}
+
+#[test]
+fn should_be_able_run_large_manifest() {
+    // Arrange
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
+    let (public_key, _, account) = test_runner.new_account();
+
+    // Act
+    let mut builder = ManifestBuilder::new(&NetworkDefinition::simulator());
+    builder.lock_fee(100u32.into(), account);
+    builder.withdraw_from_account_by_amount(100u32.into(), RADIX_TOKEN, account);
+    for _ in 0..500 {
+        builder.take_from_worktop_by_amount(1.into(), RADIX_TOKEN, |builder, bid| {
+            builder.return_to_worktop(bid)
+        });
+    }
+    builder.call_method(
+        account,
+        "deposit_batch",
+        args!(Expression::entire_worktop()),
+    );
+    let manifest = builder.build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
+fn should_be_able_invoke_account_balance_50_times() {
+    // Arrange
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
+    let (public_key, _, account) = test_runner.new_account();
+
+    // Act
+    let mut builder = ManifestBuilder::new(&NetworkDefinition::simulator());
+    builder.lock_fee(100u32.into(), account);
+    for _ in 0..50 {
+        builder.call_method(account, "balance", args!(RADIX_TOKEN));
+    }
+    let manifest = builder.build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
+fn should_be_able_to_generate_5_proofs_and_then_lock_fee() {
+    // Arrange
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
+    let (public_key, _, account) = test_runner.new_account();
+    let resource_address = test_runner.create_fungible_resource(100.into(), 0, account);
+
+    // Act
+    let mut builder = ManifestBuilder::new(&NetworkDefinition::simulator());
+    for _ in 0..5 {
+        builder.create_proof_from_account_by_amount(1.into(), resource_address, account);
+    }
+    builder.lock_fee(100u32.into(), account);
+    let manifest = builder.build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
+
+    // Assert
+    receipt.expect_commit_success();
 }
