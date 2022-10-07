@@ -6,12 +6,11 @@ use crate::model::{
 };
 use crate::types::*;
 use crate::wasm::*;
-use scrypto::core::SystemCreateInput;
+use scrypto::core::{SystemCreateInput, SystemFunction};
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
 pub enum SystemError {
     InvalidRequestData(DecodeError),
-    InvalidMethod,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
@@ -20,16 +19,21 @@ pub struct System {
 }
 
 impl System {
-    pub fn auth(system_fn: &SystemFnIdentifier) -> Vec<MethodAuthorization> {
-        match system_fn {
-            SystemFnIdentifier::Create => {
+    pub fn function_auth(func: &SystemFunction) -> Vec<MethodAuthorization> {
+        match func {
+            SystemFunction::Create => {
                 vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(
                     HardProofRule::Require(HardResourceOrNonFungible::NonFungible(
                         NonFungibleAddress::new(SYSTEM_TOKEN, AuthModule::system_id()),
                     )),
                 ))]
             }
-            SystemFnIdentifier::SetEpoch => {
+        }
+    }
+
+    pub fn method_auth(method: &SystemMethod) -> Vec<MethodAuthorization> {
+        match method {
+            SystemMethod::SetEpoch => {
                 vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(
                     HardProofRule::Require(HardResourceOrNonFungible::NonFungible(
                         NonFungibleAddress::new(SYSTEM_TOKEN, AuthModule::supervisor_id()),
@@ -41,7 +45,7 @@ impl System {
     }
 
     pub fn static_main<'s, Y, W, I, R>(
-        system_fn: SystemFnIdentifier,
+        func: SystemFunction,
         args: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, InvokeError<SystemError>>
@@ -51,8 +55,8 @@ impl System {
         I: WasmInstance,
         R: FeeReserve,
     {
-        match system_fn {
-            SystemFnIdentifier::Create => {
+        match func {
+            SystemFunction::Create => {
                 let _: SystemCreateInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(SystemError::InvalidRequestData(e)))?;
 
@@ -62,21 +66,20 @@ impl System {
                     }))
                     .map_err(InvokeError::Downstream)?;
 
-                let system_node_id = node_id.clone();
-
-                system_api
+                let global_address = system_api
                     .node_globalize(node_id)
                     .map_err(InvokeError::Downstream)?;
 
-                Ok(ScryptoValue::from_typed(&system_node_id))
+                let component_address: ComponentAddress = global_address.into();
+
+                Ok(ScryptoValue::from_typed(&component_address))
             }
-            _ => Err(InvokeError::Error(SystemError::InvalidMethod)),
         }
     }
 
     pub fn main<'s, Y, W, I, R>(
         component_address: ComponentAddress,
-        system_fn: SystemFnIdentifier,
+        method: SystemMethod,
         args: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, InvokeError<SystemError>>
@@ -86,16 +89,16 @@ impl System {
         I: WasmInstance,
         R: FeeReserve,
     {
-        match system_fn {
-            SystemFnIdentifier::GetCurrentEpoch => {
+        match method {
+            SystemMethod::GetCurrentEpoch => {
                 let _: SystemGetCurrentEpochInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(SystemError::InvalidRequestData(e)))?;
-                let node_ref = system_api
+                let mut node_ref = system_api
                     .borrow_node(&RENodeId::System(component_address))
                     .map_err(InvokeError::Downstream)?;
                 Ok(ScryptoValue::from_typed(&node_ref.system().info.epoch))
             }
-            SystemFnIdentifier::SetEpoch => {
+            SystemMethod::SetEpoch => {
                 let SystemSetEpochInput { epoch } = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(SystemError::InvalidRequestData(e)))?;
                 let mut system_node_ref = system_api
@@ -104,16 +107,15 @@ impl System {
                 system_node_ref.system_mut().info.epoch = epoch;
                 Ok(ScryptoValue::from_typed(&()))
             }
-            SystemFnIdentifier::GetTransactionHash => {
+            SystemMethod::GetTransactionHash => {
                 let _: SystemGetTransactionHashInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(SystemError::InvalidRequestData(e)))?;
                 Ok(ScryptoValue::from_typed(
                     &system_api
-                        .transaction_hash()
+                        .read_transaction_hash()
                         .map_err(InvokeError::Downstream)?,
                 ))
             }
-            _ => Err(InvokeError::Error(SystemError::InvalidMethod)),
         }
     }
 }

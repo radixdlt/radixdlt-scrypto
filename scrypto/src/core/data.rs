@@ -1,8 +1,9 @@
 use crate::buffer::*;
+use crate::component::{ComponentStateSubstate, KeyValueStoreEntrySubstate};
 use crate::engine::api::RadixEngineInput;
 use crate::engine::api::RadixEngineInput::SubstateWrite;
 use crate::engine::call_engine;
-use crate::engine::types::SubstateId;
+use crate::engine::types::{ComponentOffset, RENodeId, SubstateId, SubstateOffset};
 use sbor::rust::fmt;
 use sbor::rust::marker::PhantomData;
 use sbor::rust::ops::{Deref, DerefMut};
@@ -52,7 +53,17 @@ impl<V: Encode> DataRefMut<V> {
 impl<V: Encode> Drop for DataRefMut<V> {
     fn drop(&mut self) {
         let bytes = scrypto_encode(&self.value);
-        let input = SubstateWrite(self.substate_id.clone(), bytes);
+        let substate = match &self.substate_id {
+            SubstateId(RENodeId::KeyValueStore(..), ..) => {
+                scrypto_encode(&KeyValueStoreEntrySubstate(Some(bytes)))
+            }
+            SubstateId(
+                RENodeId::Component(..),
+                SubstateOffset::Component(ComponentOffset::State),
+            ) => scrypto_encode(&ComponentStateSubstate { raw: bytes }),
+            s @ _ => panic!("Unsupported substate: {:?}", s),
+        };
+        let input = SubstateWrite(self.substate_id.clone(), substate);
         let _: () = call_engine(input);
     }
 }
@@ -86,16 +97,47 @@ impl<V: 'static + Encode + Decode> DataPointer<V> {
 
     pub fn get_mut(&mut self) -> DataRefMut<V> {
         let input = RadixEngineInput::SubstateRead(self.substate_id.clone());
-        let value: V = call_engine(input);
-        DataRefMut {
-            substate_id: self.substate_id.clone(),
-            value,
+        match &self.substate_id {
+            SubstateId(RENodeId::KeyValueStore(..), ..) => {
+                let substate: KeyValueStoreEntrySubstate = call_engine(input);
+                DataRefMut {
+                    substate_id: self.substate_id.clone(),
+                    value: scrypto_decode(&substate.0.unwrap()).unwrap(),
+                }
+            }
+            SubstateId(
+                RENodeId::Component(..),
+                SubstateOffset::Component(ComponentOffset::State),
+            ) => {
+                let substate: ComponentStateSubstate = call_engine(input);
+                DataRefMut {
+                    substate_id: self.substate_id.clone(),
+                    value: scrypto_decode(&substate.raw).unwrap(),
+                }
+            }
+            s @ _ => panic!("Unsupported substate: {:?}", s),
         }
     }
 
     pub fn get(&self) -> DataRef<V> {
         let input = RadixEngineInput::SubstateRead(self.substate_id.clone());
-        let value: V = call_engine(input);
-        DataRef { value }
+        match &self.substate_id {
+            SubstateId(RENodeId::KeyValueStore(..), ..) => {
+                let substate: KeyValueStoreEntrySubstate = call_engine(input);
+                DataRef {
+                    value: scrypto_decode(&substate.0.unwrap()).unwrap(),
+                }
+            }
+            SubstateId(
+                RENodeId::Component(..),
+                SubstateOffset::Component(ComponentOffset::State),
+            ) => {
+                let substate: ComponentStateSubstate = call_engine(input);
+                DataRef {
+                    value: scrypto_decode(&substate.raw).unwrap(),
+                }
+            }
+            s @ _ => panic!("Unsupported substate: {:?}", s),
+        }
     }
 }

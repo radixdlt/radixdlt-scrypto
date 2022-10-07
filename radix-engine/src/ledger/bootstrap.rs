@@ -5,7 +5,7 @@ use crate::transaction::{ExecutionConfig, TransactionExecutor};
 use crate::types::ResourceMethodAuthKey::Withdraw;
 use crate::types::*;
 use crate::wasm::{DefaultWasmEngine, WasmInstrumenter};
-use scrypto::core::Blob;
+use scrypto::core::{Blob, NativeFunction, ResourceManagerFunction, SystemFunction};
 use scrypto::resource::Bucket;
 use transaction::model::{Executable, Instruction, SystemTransaction, TransactionManifest};
 use transaction::validation::{IdAllocator, IdSpace};
@@ -69,8 +69,8 @@ pub fn create_genesis() -> SystemTransaction {
 
         // TODO: Create token at a specific address
         Instruction::CallFunction {
-            fn_identifier: FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
-                ResourceManagerFnIdentifier::Create,
+            function_ident: FunctionIdent::Native(NativeFunction::ResourceManager(
+                ResourceManagerFunction::Create,
             )),
             args: args!(
                 ResourceType::NonFungible,
@@ -91,8 +91,8 @@ pub fn create_genesis() -> SystemTransaction {
 
         // TODO: Create token at a specific address
         Instruction::CallFunction {
-            fn_identifier: FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
-                ResourceManagerFnIdentifier::Create,
+            function_ident: FunctionIdent::Native(NativeFunction::ResourceManager(
+                ResourceManagerFunction::Create,
             )),
             args: args!(
                 ResourceType::NonFungible,
@@ -118,8 +118,8 @@ pub fn create_genesis() -> SystemTransaction {
         });
 
         Instruction::CallFunction {
-            fn_identifier: FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
-                ResourceManagerFnIdentifier::Create,
+            function_ident: FunctionIdent::Native(NativeFunction::ResourceManager(
+                ResourceManagerFunction::Create,
             )),
             args: args!(
                 ResourceType::Fungible { divisibility: 18 },
@@ -137,7 +137,7 @@ pub fn create_genesis() -> SystemTransaction {
     let create_xrd_faucet = {
         let bucket = Bucket(id_allocator.new_bucket_id().unwrap());
         Instruction::CallFunction {
-            fn_identifier: FnIdentifier::Scrypto {
+            function_ident: FunctionIdent::Scrypto {
                 package_address: SYS_FAUCET_PACKAGE,
                 blueprint_name: "Faucet".to_string(),
                 ident: "new".to_string(),
@@ -148,9 +148,7 @@ pub fn create_genesis() -> SystemTransaction {
 
     let create_system_component = {
         Instruction::CallFunction {
-            fn_identifier: FnIdentifier::Native(NativeFnIdentifier::System(
-                SystemFnIdentifier::Create,
-            )),
+            function_ident: FunctionIdent::Native(NativeFunction::System(SystemFunction::Create)),
             args: args!(),
         }
     };
@@ -182,8 +180,8 @@ pub fn genesis_result(invoke_result: &Vec<Vec<u8>>) -> GenesisReceipt {
     let (xrd_token, _bucket): (ResourceAddress, Option<Bucket>) =
         scrypto_decode(&invoke_result[4]).unwrap();
     let faucet_component: ComponentAddress = scrypto_decode(&invoke_result[6]).unwrap();
-    let system_component_id: RENodeId = scrypto_decode(&invoke_result[7]).unwrap();
-    let system_component: ComponentAddress = system_component_id.into();
+    let system_component: ComponentAddress = scrypto_decode(&invoke_result[7]).unwrap();
+
     GenesisReceipt {
         sys_faucet_package,
         account_package,
@@ -200,7 +198,10 @@ where
     S: ReadableSubstateStore + WriteableSubstateStore,
 {
     if substate_store
-        .get_substate(&SubstateId::ResourceManager(RADIX_TOKEN))
+        .get_substate(&SubstateId(
+            RENodeId::ResourceManager(RADIX_TOKEN),
+            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
+        ))
         .is_none()
     {
         let mut wasm_engine = DefaultWasmEngine::new();

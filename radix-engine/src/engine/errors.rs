@@ -6,12 +6,13 @@ use crate::model::*;
 use crate::types::*;
 use crate::wasm::WasmError;
 use sbor::*;
+use scrypto::core::{FnIdent, ReceiverMethodIdent};
 
 use super::NodeToSubstateFailure;
 use super::TrackError;
 
 /// Represents an error which causes a tranasction to be rejected.
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
 pub enum RejectionError {
     SuccessButFeeLoanNotRepaid,
     ErrorBeforeFeeLoanRepaid(RuntimeError),
@@ -24,7 +25,7 @@ impl fmt::Display for RejectionError {
 }
 
 /// Represents an error when executing a transaction.
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
 pub enum RuntimeError {
     /// An error occurred within the kernel.
     KernelError(KernelError),
@@ -36,17 +37,25 @@ pub enum RuntimeError {
     ApplicationError(ApplicationError),
 }
 
-#[derive(Debug, Encode, Decode, TypeId)]
+#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
 pub enum KernelError {
     // invocation
     WasmError(WasmError),
+    RENodeNotVisible(RENodeId),
     InvokeMethodInvalidReceiver(RENodeId),
-    InvokeMethodInvalidReferencePass(RENodeId),
-    InvokeMethodInvalidReferenceReturn(RENodeId),
+
+    InvalidReferencePass(GlobalAddress),
+    InvalidReferenceReturn(GlobalAddress),
+    InvalidReferenceWrite(GlobalAddress),
+    GlobalAddressNotFound(GlobalAddress),
+
     MaxCallDepthLimitReached,
-    MethodNotFound(FnIdentifier),
-    InvalidFnInput { fn_identifier: FnIdentifier },
-    InvalidFnOutput { fn_identifier: FnIdentifier },
+    FnIdentNotFound(FnIdent),
+    MethodNotFound(ReceiverMethodIdent),
+    FunctionNotFound(FunctionIdent),
+    InvalidFnInput2(FnIdent),
+    InvalidFnInput { fn_identifier: FunctionIdent },
+    InvalidFnOutput { fn_identifier: FunctionIdent },
 
     // ID allocation
     IdAllocationError(IdAllocationError),
@@ -70,11 +79,10 @@ pub enum KernelError {
     RENodeNotInTrack,
 
     // Substate
+    TrackError(TrackError),
     NodeToSubstateFailure(NodeToSubstateFailure),
-    SubstateError(TrackError),
     SubstateReadNotReadable(REActor, SubstateId),
     SubstateWriteNotWriteable(REActor, SubstateId),
-    SubstateReadSubstateNotFound(SubstateId),
 
     // constraints
     ValueNotAllowed,
@@ -85,21 +93,23 @@ pub enum KernelError {
     CantMoveLockedBucket,
     CantMoveRestrictedProof,
     CantMoveWorktop,
+    CantMoveGlobal,
     CantMoveAuthZone,
     DropFailure(DropFailure),
 
     BlobNotFound(Hash),
 }
 
-#[derive(Debug, Encode, Decode, TypeId)]
+#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
 pub enum ModuleError {
-    AuthorizationError {
-        function: FnIdentifier,
+    AuthError {
+        fn_ident: FnIdent,
         authorization: MethodAuthorization,
         error: MethodAuthorizationError,
     },
-
     CostingError(FeeReserveError),
+
+    TrackError(TrackError),
 }
 
 #[derive(Debug)]
@@ -118,7 +128,7 @@ impl<E> InvokeError<E> {
     }
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
 pub enum ApplicationError {
     TransactionProcessorError(TransactionProcessorError),
 
@@ -141,7 +151,7 @@ pub enum ApplicationError {
     AuthZoneError(AuthZoneError),
 }
 
-#[derive(Debug, PartialEq, Encode, Decode, TypeId)]
+#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
 pub enum DropFailure {
     System,
     Resource,

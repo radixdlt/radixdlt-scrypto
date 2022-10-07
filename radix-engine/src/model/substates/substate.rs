@@ -5,6 +5,7 @@ use crate::types::*;
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub enum Substate {
+    GlobalRENode(GlobalAddressSubstate),
     System(SystemSubstate),
     ResourceManager(ResourceManagerSubstate),
     ComponentInfo(ComponentInfoSubstate),
@@ -16,6 +17,14 @@ pub enum Substate {
 }
 
 impl Substate {
+    pub fn global_re_node(&self) -> &GlobalAddressSubstate {
+        if let Substate::GlobalRENode(global_re_node) = self {
+            global_re_node
+        } else {
+            panic!("Not a global RENode");
+        }
+    }
+
     pub fn vault(&self) -> &VaultSubstate {
         if let Substate::Vault(vault) = self {
             vault
@@ -111,9 +120,9 @@ impl Substate {
         }
     }
 
-    pub fn kv_entry(&self) -> &KeyValueStoreEntrySubstate {
-        if let Substate::KeyValueStoreEntry(kv_entry) = self {
-            kv_entry
+    pub fn kv_store_entry(&self) -> &KeyValueStoreEntrySubstate {
+        if let Substate::KeyValueStoreEntry(kv_store_entry) = self {
+            kv_store_entry
         } else {
             panic!("Not a KVEntry");
         }
@@ -220,8 +229,8 @@ impl Into<NonFungibleSubstate> for Substate {
 
 impl Into<KeyValueStoreEntrySubstate> for Substate {
     fn into(self) -> KeyValueStoreEntrySubstate {
-        if let Substate::KeyValueStoreEntry(kv_entry) = self {
-            kv_entry
+        if let Substate::KeyValueStoreEntry(kv_store_entry) = self {
+            kv_store_entry
         } else {
             panic!("Not a key value store entry wrapper");
         }
@@ -234,6 +243,26 @@ impl Into<VaultSubstate> for Substate {
             vault
         } else {
             panic!("Not a vault");
+        }
+    }
+}
+
+impl Into<SystemSubstate> for Substate {
+    fn into(self) -> SystemSubstate {
+        if let Substate::System(system) = self {
+            system
+        } else {
+            panic!("Not a resource manager");
+        }
+    }
+}
+
+impl Into<GlobalAddressSubstate> for Substate {
+    fn into(self) -> GlobalAddressSubstate {
+        if let Substate::GlobalRENode(substate) = self {
+            substate
+        } else {
+            panic!("Not a global address substate");
         }
     }
 }

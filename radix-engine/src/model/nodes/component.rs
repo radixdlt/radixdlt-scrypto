@@ -4,7 +4,7 @@ use crate::model::{ComponentInfoSubstate, ComponentStateSubstate, InvokeError};
 use crate::types::*;
 use crate::wasm::{WasmEngine, WasmInstance};
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
 pub enum ComponentError {
     InvalidRequestData(DecodeError),
     BlueprintFunctionNotFound(String),
@@ -13,10 +13,7 @@ pub enum ComponentError {
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct Component {
     pub info: ComponentInfoSubstate,
-    // TODO: lazily loading of component state
-    // We use the state to look up children nodes of a component.
-    // Changing to lazily loading at this moment requires an even larger refactoring to the code base.
-    pub state: ComponentStateSubstate,
+    pub state: Option<ComponentStateSubstate>,
 }
 
 impl Component {
@@ -32,13 +29,21 @@ impl Component {
                 blueprint_name,
                 access_rules,
             },
-            state: ComponentStateSubstate { state },
+            state: Some(ComponentStateSubstate { raw: state }),
         }
+    }
+
+    pub fn get_state(&self) -> Option<&ComponentStateSubstate> {
+        self.state.as_ref()
+    }
+
+    pub fn put_state(&mut self, state: ComponentStateSubstate) {
+        self.state = Some(state);
     }
 
     pub fn main<'s, Y, W, I, R>(
         component_address: ComponentAddress,
-        component_fn: ComponentFnIdentifier,
+        method: ComponentMethod,
         args: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, InvokeError<ComponentError>>
@@ -50,18 +55,18 @@ impl Component {
     {
         let node_id = RENodeId::Component(component_address);
 
-        let rtn = match component_fn {
-            ComponentFnIdentifier::AddAccessCheck => {
+        let rtn = match method {
+            ComponentMethod::AddAccessCheck => {
                 let input: ComponentAddAccessCheckInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(ComponentError::InvalidRequestData(e)))?;
 
                 // Abi checks
                 {
                     let (package_id, blueprint_name) = {
-                        let mut component_ref = system_api
+                        let mut node_ref = system_api
                             .borrow_node(&node_id)
                             .map_err(InvokeError::Downstream)?;
-                        let component = component_ref.component();
+                        let component = node_ref.component();
                         let blueprint_name = component.info.blueprint_name.to_owned();
                         (
                             RENodeId::Package(component.info.package_address),
@@ -69,10 +74,10 @@ impl Component {
                         )
                     };
 
-                    let package_ref = system_api
+                    let mut node_ref = system_api
                         .borrow_node(&package_id)
                         .map_err(InvokeError::Downstream)?;
-                    let package = package_ref.package();
+                    let package = node_ref.package();
                     let blueprint_abi = package.blueprint_abi(&blueprint_name).expect(&format!(
                         "Blueprint {} is not found in package node {:?}",
                         blueprint_name, package_id

@@ -18,6 +18,5 @@ cd "$(dirname "$0")"
 
 (cd assets/account; cargo clean)
 (cd assets/sys-faucet; cargo clean)
-(cd assets/sys-utils; cargo clean)
 (cd examples/hello-world; cargo clean)
 (cd examples/no-std; cargo clean)

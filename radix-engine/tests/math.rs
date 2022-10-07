@@ -28,7 +28,7 @@ fn test_integer_basic_ops() {
         manifest,
         vec![NonFungibleAddress::from_public_key(&public_key)],
     );
-    println!("{:?}", receipt);
+    println!("{}", receipt.displayable(&Bech32Encoder::for_simulator()));
 
     // Assert
     receipt.expect_commit_success();
@@ -52,7 +52,7 @@ fn test_native_and_safe_integer_interop() {
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    println!("{:?}", receipt);
+    println!("{}", receipt.displayable(&Bech32Encoder::for_simulator()));
 
     // Assert
     receipt.expect_commit_success();

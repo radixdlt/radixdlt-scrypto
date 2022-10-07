@@ -3,6 +3,7 @@ use crate::fee::FeeReserve;
 use crate::model::{Bucket, LockableResource, Resource, ResourceOperationError};
 use crate::types::*;
 use crate::wasm::*;
+use scrypto::core::{FnIdent, MethodIdent, ReceiverMethodIdent};
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct WorktopPutInput {
@@ -53,7 +54,7 @@ pub struct Worktop {
     resources: HashMap<ResourceAddress, Rc<RefCell<LockableResource>>>,
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
 pub enum WorktopError {
     InvalidRequestData(DecodeError),
     MethodNotFound(String),
@@ -202,7 +203,7 @@ impl Worktop {
     }
 
     pub fn main<'s, Y, W, I, R>(
-        worktop_fn: WorktopFnIdentifier,
+        method: WorktopMethod,
         args: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, InvokeError<WorktopError>>
@@ -212,8 +213,8 @@ impl Worktop {
         I: WasmInstance,
         R: FeeReserve,
     {
-        let rtn = match worktop_fn {
-            WorktopFnIdentifier::Put => {
+        let rtn = match method {
+            WorktopMethod::Put => {
                 let input: WorktopPutInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(WorktopError::InvalidRequestData(e)))?;
                 let bucket = system_api
@@ -229,7 +230,7 @@ impl Worktop {
                     .map_err(|e| InvokeError::Error(WorktopError::ResourceOperationError(e)))?;
                 Ok(ScryptoValue::from_typed(&()))
             }
-            WorktopFnIdentifier::TakeAmount => {
+            WorktopMethod::TakeAmount => {
                 let input: WorktopTakeAmountInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(WorktopError::InvalidRequestData(e)))?;
                 let mut node_ref = system_api
@@ -242,12 +243,25 @@ impl Worktop {
                 let resource_container = if let Some(container) = maybe_container {
                     container
                 } else {
+                    // TODO: substate read instead of invoke?
                     let resource_type = {
-                        let node_ref = system_api
-                            .borrow_node(&RENodeId::ResourceManager(input.resource_address))
-                            .map_err(|e| InvokeError::Downstream(e))?;
-                        let resource_manager = node_ref.resource_manager();
-                        resource_manager.resource_type()
+                        let result = system_api
+                            .invoke(
+                                FnIdent::Method(ReceiverMethodIdent {
+                                    receiver: Receiver::Ref(RENodeId::Global(
+                                        GlobalAddress::Resource(input.resource_address),
+                                    )),
+                                    method_ident: MethodIdent::Native(
+                                        NativeMethod::ResourceManager(
+                                            ResourceManagerMethod::GetResourceType,
+                                        ),
+                                    ),
+                                }),
+                                ScryptoValue::from_typed(&ResourceManagerGetResourceTypeInput {}),
+                            )
+                            .map_err(InvokeError::Downstream)?;
+                        let resource_type: ResourceType = scrypto_decode(&result.raw).unwrap();
+                        resource_type
                     };
 
                     Resource::new_empty(input.resource_address, resource_type)
@@ -260,7 +274,7 @@ impl Worktop {
                     bucket_id,
                 )))
             }
-            WorktopFnIdentifier::TakeAll => {
+            WorktopMethod::TakeAll => {
                 let input: WorktopTakeAllInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(WorktopError::InvalidRequestData(e)))?;
                 let mut node_ref = system_api
@@ -273,12 +287,25 @@ impl Worktop {
                 let resource_container = if let Some(container) = maybe_container {
                     container
                 } else {
+                    // TODO: substate read instead of invoke?
                     let resource_type = {
-                        let node_ref = system_api
-                            .borrow_node(&RENodeId::ResourceManager(input.resource_address))
-                            .map_err(|e| InvokeError::Downstream(e))?;
-                        let resource_manager = node_ref.resource_manager();
-                        resource_manager.resource_type()
+                        let result = system_api
+                            .invoke(
+                                FnIdent::Method(ReceiverMethodIdent {
+                                    receiver: Receiver::Ref(RENodeId::Global(
+                                        GlobalAddress::Resource(input.resource_address),
+                                    )),
+                                    method_ident: MethodIdent::Native(
+                                        NativeMethod::ResourceManager(
+                                            ResourceManagerMethod::GetResourceType,
+                                        ),
+                                    ),
+                                }),
+                                ScryptoValue::from_typed(&ResourceManagerGetResourceTypeInput {}),
+                            )
+                            .map_err(InvokeError::Downstream)?;
+                        let resource_type: ResourceType = scrypto_decode(&result.raw).unwrap();
+                        resource_type
                     };
 
                     Resource::new_empty(input.resource_address, resource_type)
@@ -292,7 +319,7 @@ impl Worktop {
                     bucket_id,
                 )))
             }
-            WorktopFnIdentifier::TakeNonFungibles => {
+            WorktopMethod::TakeNonFungibles => {
                 let input: WorktopTakeNonFungiblesInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(WorktopError::InvalidRequestData(e)))?;
                 let mut node_ref = system_api
@@ -305,12 +332,25 @@ impl Worktop {
                 let resource_container = if let Some(container) = maybe_container {
                     container
                 } else {
+                    // TODO: substate read instead of invoke?
                     let resource_type = {
-                        let node_ref = system_api
-                            .borrow_node(&RENodeId::ResourceManager(input.resource_address))
-                            .map_err(|e| InvokeError::Downstream(e))?;
-                        let resource_manager = node_ref.resource_manager();
-                        resource_manager.resource_type()
+                        let result = system_api
+                            .invoke(
+                                FnIdent::Method(ReceiverMethodIdent {
+                                    receiver: Receiver::Ref(RENodeId::Global(
+                                        GlobalAddress::Resource(input.resource_address),
+                                    )),
+                                    method_ident: MethodIdent::Native(
+                                        NativeMethod::ResourceManager(
+                                            ResourceManagerMethod::GetResourceType,
+                                        ),
+                                    ),
+                                }),
+                                ScryptoValue::from_typed(&ResourceManagerGetResourceTypeInput {}),
+                            )
+                            .map_err(InvokeError::Downstream)?;
+                        let resource_type: ResourceType = scrypto_decode(&result.raw).unwrap();
+                        resource_type
                     };
 
                     Resource::new_empty(input.resource_address, resource_type)
@@ -324,7 +364,7 @@ impl Worktop {
                     bucket_id,
                 )))
             }
-            WorktopFnIdentifier::AssertContains => {
+            WorktopMethod::AssertContains => {
                 let input: WorktopAssertContainsInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(WorktopError::InvalidRequestData(e)))?;
                 let mut node_ref = system_api
@@ -337,7 +377,7 @@ impl Worktop {
                     Ok(ScryptoValue::from_typed(&()))
                 }
             }
-            WorktopFnIdentifier::AssertContainsAmount => {
+            WorktopMethod::AssertContainsAmount => {
                 let input: WorktopAssertContainsAmountInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(WorktopError::InvalidRequestData(e)))?;
                 let mut node_ref = system_api
@@ -350,7 +390,7 @@ impl Worktop {
                     Ok(ScryptoValue::from_typed(&()))
                 }
             }
-            WorktopFnIdentifier::AssertContainsNonFungibles => {
+            WorktopMethod::AssertContainsNonFungibles => {
                 let input: WorktopAssertContainsNonFungiblesInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(WorktopError::InvalidRequestData(e)))?;
                 let mut node_ref = system_api
@@ -367,7 +407,7 @@ impl Worktop {
                     Ok(ScryptoValue::from_typed(&()))
                 }
             }
-            WorktopFnIdentifier::Drain => {
+            WorktopMethod::Drain => {
                 let _: WorktopDrainInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(WorktopError::InvalidRequestData(e)))?;
                 let mut node_ref = system_api

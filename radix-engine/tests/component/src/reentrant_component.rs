@@ -1,3 +1,4 @@
+use scrypto::engine::{api::*, call_engine, types::*};
 use scrypto::prelude::*;
 
 blueprint! {
@@ -12,8 +13,14 @@ blueprint! {
 
         pub fn call_self(&mut self) {
             if let ScryptoActor::Component(addr, ..) = Runtime::actor() {
-                let self_component = borrow_component!(addr);
-                self_component.call("func", args!())
+                let input = RadixEngineInput::Invoke(
+                    FnIdent::Method(ReceiverMethodIdent {
+                        receiver: Receiver::Ref(RENodeId::Component(addr)),
+                        method_ident: MethodIdent::Scrypto("func".to_string()),
+                    }),
+                    args!(),
+                );
+                call_engine(input)
             }
         }
     }

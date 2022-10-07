@@ -64,7 +64,7 @@ pub fn handle_import(input: TokenStream) -> Result<TokenStream> {
             fns.push(parse_quote! {
                 pub fn #func_indent(#(#func_args: #func_types),*) -> #func_output {
                     ::scrypto::core::Runtime::call_function(
-                        ::scrypto::component::PackageAddress::from_str(#package_address).unwrap(),
+                        ::scrypto::component::PackageAddress::try_from_hex(#package_address).unwrap(),
                         #blueprint_name,
                         #func_name,
                         ::scrypto::args!(#(#func_args),*)
@@ -437,7 +437,7 @@ mod tests {
                 impl Simple {
                     pub fn new() -> ::scrypto::component::ComponentAddress {
                         ::scrypto::core::Runtime::call_function(
-                            ::scrypto::component::PackageAddress::from_str("056967d3d49213394892980af59be76e9b3e7cc4cb78237460d0c7").unwrap(),
+                            ::scrypto::component::PackageAddress::try_from_hex("056967d3d49213394892980af59be76e9b3e7cc4cb78237460d0c7").unwrap(),
                             "Simple",
                             "new",
                             ::scrypto::args!()

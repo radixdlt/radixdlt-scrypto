@@ -30,7 +30,7 @@ fn test_loop_out_of_cost_unit() {
     let mut test_runner = TestRunner::new(true, &mut store);
 
     // Act
-    let code = wat2wasm(&include_str!("wasm/loop.wat").replace("${n}", "7000000"));
+    let code = wat2wasm(&include_str!("wasm/loop.wat").replace("${n}", "70000000"));
     let package_address = test_runner.publish_package(code, test_abi_any_in_void_out("Test", "f"));
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(45.into(), SYS_FAUCET_COMPONENT)
@@ -153,15 +153,15 @@ fn test_basic_transfer() {
         + 0 /* blobs */
         + 4400 /* borrow_node */
         + 7500 /* create_node */
-        + 1248 /* decode_manifest */
+        + 1698 /* decode_manifest */
         + 1000 /* drop_node */
         + 0 /* instantiate_wasm */
-        + 2215 /* invoke_method */
+        + 2215 /* invoke_function */
         + 100 /* read_owned_nodes */
-        + 5000 /* read_substate */
-        + 5200 /* run_method */
-        + 275232 /* run_wasm */
-        + 416 /* verify_manifest */
+        + 3500 /* read_substate */
+        + 5200 /* run_function */
+        + 345262 /* run_wasm */
+        + 566 /* verify_manifest */
         + 3750 /* verify_signatures */
         + 3000, /* write_substate */
         receipt.execution.fee_summary.cost_unit_consumed
@@ -194,7 +194,7 @@ fn test_publish_large_package() {
     receipt.expect_commit_success();
 
     // Assert
-    assert_eq!(4271842, receipt.execution.fee_summary.cost_unit_consumed);
+    assert_eq!(4282630, receipt.execution.fee_summary.cost_unit_consumed);
 }
 
 #[test]

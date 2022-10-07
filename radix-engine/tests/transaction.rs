@@ -8,6 +8,39 @@ use transaction::builder::ManifestBuilder;
 use transaction::model::Instruction;
 
 #[test]
+fn test_manifest_with_non_existent_resource() {
+    // Arrange
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
+    let (public_key, _, account) = test_runner.new_account();
+    let non_existent_resource = ResourceAddress::Normal([0u8; 26]);
+
+    // Act
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        .lock_fee(10.into(), account)
+        .take_from_worktop(non_existent_resource, |builder, bucket_id| {
+            builder.call_method(
+                account,
+                "deposit",
+                args!(scrypto::resource::Bucket(bucket_id)),
+            )
+        })
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
+
+    // Assert
+    receipt.expect_specific_rejection(|e| {
+        matches!(
+            e,
+            RuntimeError::KernelError(KernelError::GlobalAddressNotFound(..))
+        )
+    });
+}
+
+#[test]
 fn test_call_method_with_all_resources_doesnt_drop_auth_zone_proofs() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
@@ -47,6 +80,7 @@ fn test_call_method_with_all_resources_doesnt_drop_auth_zone_proofs() {
         manifest,
         vec![NonFungibleAddress::from_public_key(&public_key)],
     );
+    println!("{}", receipt.displayable(&Bech32Encoder::for_simulator()));
 
     // Assert
     receipt.expect_commit_success();
@@ -71,6 +105,7 @@ fn test_transaction_can_end_with_proofs_remaining_in_auth_zone() {
         manifest,
         vec![NonFungibleAddress::from_public_key(&public_key)],
     );
+    println!("{}", receipt.displayable(&Bech32Encoder::for_simulator()));
 
     // Assert
     receipt.expect_commit_success();
@@ -96,6 +131,7 @@ fn test_non_existent_blob_hash() {
         manifest,
         vec![NonFungibleAddress::from_public_key(&public_key)],
     );
+    println!("{}", receipt.displayable(&Bech32Encoder::for_simulator()));
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -126,6 +162,7 @@ fn test_entire_auth_zone() {
         manifest,
         vec![NonFungibleAddress::from_public_key(&public_key)],
     );
+    println!("{}", receipt.displayable(&Bech32Encoder::for_simulator()));
 
     // Assert
     receipt.expect_commit_success();
@@ -153,6 +190,7 @@ fn test_faucet_drain_attempt_should_fail() {
         manifest,
         vec![NonFungibleAddress::from_public_key(&public_key)],
     );
+    println!("{}", receipt.displayable(&Bech32Encoder::for_simulator()));
 
     // Assert
     receipt.expect_commit_failure();

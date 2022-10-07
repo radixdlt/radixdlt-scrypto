@@ -1,5 +1,6 @@
 use colored::*;
-use scrypto::core::NetworkDefinition;
+use scrypto::address::ContextualDisplay;
+use transaction::manifest::decompiler::{decompile_instruction, DecompilationContext};
 use transaction::model::*;
 
 use crate::engine::{RejectionError, ResourceChange, RuntimeError};
@@ -72,6 +73,32 @@ pub struct EntityChanges {
     pub new_resource_addresses: Vec<ResourceAddress>,
 }
 
+impl EntityChanges {
+    pub fn new(new_global_addresses: Vec<GlobalAddress>) -> Self {
+        let mut entity_changes = Self {
+            new_package_addresses: Vec::new(),
+            new_component_addresses: Vec::new(),
+            new_resource_addresses: Vec::new(),
+        };
+
+        for new_global_address in new_global_addresses {
+            match new_global_address {
+                GlobalAddress::Package(package_address) => {
+                    entity_changes.new_package_addresses.push(package_address)
+                }
+                GlobalAddress::Component(component_address) => entity_changes
+                    .new_component_addresses
+                    .push(component_address),
+                GlobalAddress::Resource(resource_address) => {
+                    entity_changes.new_resource_addresses.push(resource_address)
+                }
+            }
+        }
+
+        entity_changes
+    }
+}
+
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct RejectResult {
     pub error: RejectionError,
@@ -105,6 +132,29 @@ impl TransactionReceipt {
         match &self.result {
             TransactionResult::Commit(..) => panic!("Expected rejection but was commit"),
             TransactionResult::Reject(ref r) => &r.error,
+        }
+    }
+
+    pub fn expect_specific_rejection<F>(&self, f: F)
+    where
+        F: FnOnce(&RuntimeError) -> bool,
+    {
+        match &self.result {
+            TransactionResult::Commit(..) => panic!("Expected rejection but was committed"),
+            TransactionResult::Reject(result) => match &result.error {
+                RejectionError::ErrorBeforeFeeLoanRepaid(err) => {
+                    if !f(&err) {
+                        panic!(
+                            "Expected specific rejection but was different error:\n{:?}",
+                            self
+                        );
+                    }
+                }
+                RejectionError::SuccessButFeeLoanNotRepaid => panic!(
+                    "Expected specific rejection but was different error:\n{:?}",
+                    self
+                ),
+            },
         }
     }
 
@@ -142,8 +192,8 @@ impl TransactionReceipt {
                 TransactionOutcome::Failure(err) => {
                     if !f(&err) {
                         panic!(
-                            "Expected specific failure but was different error:\n{:?}",
-                            self
+                            "Expected specific failure but was different error:\n{}",
+                            self.displayable(None)
                         );
                     }
                 }
@@ -171,6 +221,13 @@ impl TransactionReceipt {
         let commit = self.expect_commit();
         &commit.entity_changes.new_resource_addresses
     }
+
+    pub fn displayable<'a, T: Into<Option<&'a Bech32Encoder>>>(
+        &'a self,
+        bech32_encoder: T,
+    ) -> DisplayableTransactionReceipt<'a> {
+        DisplayableTransactionReceipt(self, bech32_encoder.into())
+    }
 }
 
 macro_rules! prefix {
@@ -185,9 +242,19 @@ macro_rules! prefix {
 
 impl fmt::Debug for TransactionReceipt {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let contents = &self.contents;
-        let execution = &self.execution;
-        let result = &self.result;
+        write!(f, "{}", self.displayable(None))
+    }
+}
+
+pub struct DisplayableTransactionReceipt<'a>(&'a TransactionReceipt, Option<&'a Bech32Encoder>);
+
+impl<'a> fmt::Display for DisplayableTransactionReceipt<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let contents = &self.0.contents;
+        let execution = &self.0.execution;
+        let result = &self.0.result;
+
+        let bech32_encoder = self.1;
 
         write!(
             f,
@@ -242,60 +309,16 @@ impl fmt::Debug for TransactionReceipt {
             )?;
         }
 
-        // TODO - Need to fix the hardcoding of local simulator HRPs for transaction receipts, and for address formatting
-        let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
+        let mut decompilation_context =
+            DecompilationContext::new_with_optional_network(bech32_encoder);
 
         write!(f, "\n{}", "Instructions:".bold().green())?;
         for (i, inst) in contents.instructions.iter().enumerate() {
-            write!(
-                f,
-                "\n{} {}",
-                prefix!(i, contents.instructions),
-                match inst {
-                    Instruction::CallFunction {
-                        fn_identifier: FnIdentifier::Scrypto {
-                            package_address,
-                            blueprint_name,
-                            ident,
-                        },
-                        args,
-                    } => format!(
-                        "CallFunction {{ package_address: {}, blueprint_name: {:?}, method_name: {:?}, args: {:?} }}",
-                        bech32_encoder.encode_package_address(&package_address),
-                        blueprint_name,
-                        ident,
-                        ScryptoValue::from_slice(&args).expect("Failed parse call data")
-                    ),
-                    Instruction::CallMethod {
-                        method_identifier,
-                        args,
-                    } => {
-                        match method_identifier {
-                            MethodIdentifier::Scrypto {
-                                component_address,
-                                ident
-                            } => {
-                                format!(
-                                    "CallMethod {{ component_address: {}, method_name: {:?}, args: {:?} }}",
-                                    bech32_encoder.encode_component_address(&component_address),
-                                    ident,
-                                    ScryptoValue::from_slice(&args).expect("Failed to parse call data")
-                                )
-                            },
-                            MethodIdentifier::Native { receiver, native_fn_identifier } => {
-                                format!(
-                                    "CallNativeMethod {{ receiver: {:?}, ident: {:?}, args: {:?} }}",
-                                    receiver,
-                                    native_fn_identifier,
-                                    ScryptoValue::from_slice(&args).expect("Failed to parse call data")
-                                )
-                            }
-                        }
-                    },
-                    Instruction::PublishPackage { .. } => "PublishPackage {..}".to_owned(),
-                    i @ _ => format!("{:?}", i),
-                }
-            )?;
+            write!(f, "\n{} ", prefix!(i, contents.instructions))?;
+            let res = decompile_instruction(f, inst, &mut decompilation_context);
+            if let Err(err) = res {
+                write!(f, "[INVALID_INSTRUCTION({:?})]", err)?
+            }
         }
 
         if let TransactionResult::Commit(c) = &result {
@@ -304,9 +327,15 @@ impl fmt::Debug for TransactionReceipt {
                 for (i, output) in outputs.iter().enumerate() {
                     write!(
                         f,
-                        "\n{} {:?}",
+                        "\n{} {}",
                         prefix!(i, outputs),
-                        ScryptoValue::from_slice(output).expect("Failed to parse return data")
+                        ScryptoValue::from_slice(output)
+                            .expect("Failed to parse return data")
+                            .displayable(
+                                bech32_encoder,
+                                &decompilation_context.bucket_names,
+                                &decompilation_context.proof_names
+                            )
                     )?;
                 }
             }
@@ -327,7 +356,7 @@ impl fmt::Debug for TransactionReceipt {
                     f,
                     "\n{} Package: {}",
                     prefix!(i, c.entity_changes.new_package_addresses),
-                    bech32_encoder.encode_package_address(package_address)
+                    package_address.display(bech32_encoder)
                 )?;
             }
             for (i, component_address) in
@@ -337,7 +366,7 @@ impl fmt::Debug for TransactionReceipt {
                     f,
                     "\n{} Component: {}",
                     prefix!(i, c.entity_changes.new_component_addresses),
-                    bech32_encoder.encode_component_address(component_address)
+                    component_address.display(bech32_encoder)
                 )?;
             }
             for (i, resource_address) in c.entity_changes.new_resource_addresses.iter().enumerate()
@@ -346,11 +375,17 @@ impl fmt::Debug for TransactionReceipt {
                     f,
                     "\n{} Resource: {}",
                     prefix!(i, c.entity_changes.new_resource_addresses),
-                    bech32_encoder.encode_resource_address(resource_address)
+                    resource_address.display(bech32_encoder)
                 )?;
             }
         }
 
         Ok(())
+    }
+}
+
+impl<'a> fmt::Debug for DisplayableTransactionReceipt<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self)
     }
 }

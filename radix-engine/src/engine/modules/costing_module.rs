@@ -14,8 +14,8 @@ impl<R: FeeReserve> Module<R> for CostingModule {
         input: SysCallInput,
     ) -> Result<(), ModuleError> {
         match input {
-            SysCallInput::InvokeFunction {
-                fn_identifier,
+            SysCallInput::Invoke {
+                function_identifier,
                 input,
                 depth,
             } => {
@@ -23,12 +23,12 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                     track
                         .fee_reserve
                         .consume(
-                            track.fee_table.system_api_cost(
-                                SystemApiCostingEntry::InvokeFunction {
-                                    fn_identifier: fn_identifier.clone(),
+                            track
+                                .fee_table
+                                .system_api_cost(SystemApiCostingEntry::Invoke {
+                                    function_identifier: function_identifier.clone(),
                                     input: &input,
-                                },
-                            ),
+                                }),
                             "invoke_function",
                             false,
                         )
@@ -36,43 +36,8 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                     track
                         .fee_reserve
                         .consume(
-                            track
-                                .fee_table
-                                .run_method_cost(None, &fn_identifier, &input),
+                            track.fee_table.run_fn_cost(&function_identifier, &input),
                             "run_function",
-                            false,
-                        )
-                        .map_err(ModuleError::CostingError)?;
-                }
-            }
-            SysCallInput::InvokeMethod {
-                receiver,
-                fn_identifier,
-                input,
-                depth,
-            } => {
-                if depth > 0 {
-                    track
-                        .fee_reserve
-                        .consume(
-                            track
-                                .fee_table
-                                .system_api_cost(SystemApiCostingEntry::InvokeMethod {
-                                    receiver: receiver.clone(),
-                                    input: &input,
-                                }),
-                            "invoke_method",
-                            false,
-                        )
-                        .map_err(ModuleError::CostingError)?;
-
-                    track
-                        .fee_reserve
-                        .consume(
-                            track
-                                .fee_table
-                                .run_method_cost(Some(receiver), &fn_identifier, &input),
-                            "run_method",
                             false,
                         )
                         .map_err(ModuleError::CostingError)?;
@@ -96,6 +61,11 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                     .consume(
                         track.fee_table.system_api_cost({
                             match node_id {
+                                RENodeId::Global(_) => SystemApiCostingEntry::BorrowNode {
+                                    // TODO: figure out loaded state and size
+                                    loaded: true,
+                                    size: 0,
+                                },
                                 RENodeId::AuthZone(_) => SystemApiCostingEntry::BorrowNode {
                                     // TODO: figure out loaded state and size
                                     loaded: true,

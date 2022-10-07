@@ -1,6 +1,6 @@
 use sbor::rust::fmt;
-use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
+use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use sbor::*;
 
@@ -9,7 +9,7 @@ use crate::address::*;
 use crate::buffer::scrypto_encode;
 use crate::component::*;
 use crate::core::*;
-use crate::engine::types::{RENodeId, SubstateId};
+use crate::engine::types::{ComponentOffset, GlobalAddress, RENodeId, SubstateId, SubstateOffset};
 use crate::engine::{api::*, call_engine};
 use crate::misc::*;
 use crate::resource::AccessRules;
@@ -33,9 +33,10 @@ pub trait LocalComponent {
 }
 
 /// Represents an instantiated component.
-#[derive(PartialEq, Eq, Hash)]
-pub struct Component(pub(crate) ComponentAddress);
+#[derive(PartialEq, Eq, Hash, Clone)]
+pub struct Component(pub ComponentAddress);
 
+// TODO: de-duplication
 #[derive(Debug, Clone, TypeId, Encode, Decode, Describe, PartialEq, Eq)]
 pub struct ComponentInfoSubstate {
     pub package_address: PackageAddress,
@@ -43,15 +44,31 @@ pub struct ComponentInfoSubstate {
     pub access_rules: Vec<AccessRules>,
 }
 
+// TODO: de-duplication
+#[derive(Debug, Clone, TypeId, Encode, Decode, Describe, PartialEq, Eq)]
+pub struct ComponentStateSubstate {
+    pub raw: Vec<u8>,
+}
+
 impl Component {
     /// Invokes a method on this component.
     pub fn call<T: Decode>(&self, method: &str, args: Vec<u8>) -> T {
-        Runtime::call_method(self.0, method, args)
+        let input = RadixEngineInput::Invoke(
+            FnIdent::Method(ReceiverMethodIdent {
+                receiver: Receiver::Ref(RENodeId::Component(self.0)),
+                method_ident: MethodIdent::Scrypto(method.to_string()),
+            }),
+            args,
+        );
+        call_engine(input)
     }
 
     /// Returns the package ID of this component.
     pub fn package_address(&self) -> PackageAddress {
-        let substate_id = SubstateId::ComponentInfo(self.0);
+        let substate_id = SubstateId(
+            RENodeId::Component(self.0),
+            SubstateOffset::Component(ComponentOffset::Info),
+        );
         let input = RadixEngineInput::SubstateRead(substate_id);
         let output: ComponentInfoSubstate = call_engine(input);
         output.package_address
@@ -59,18 +76,23 @@ impl Component {
 
     /// Returns the blueprint name of this component.
     pub fn blueprint_name(&self) -> String {
-        let substate_id = SubstateId::ComponentInfo(self.0);
+        let substate_id = SubstateId(
+            RENodeId::Component(self.0),
+            SubstateOffset::Component(ComponentOffset::Info),
+        );
         let input = RadixEngineInput::SubstateRead(substate_id);
         let output: ComponentInfoSubstate = call_engine(input);
         output.blueprint_name
     }
 
     pub fn add_access_check(&mut self, access_rules: AccessRules) -> &mut Self {
-        let input = RadixEngineInput::InvokeMethod(
-            Receiver::Ref(RENodeId::Component(self.0)),
-            FnIdentifier::Native(NativeFnIdentifier::Component(
-                ComponentFnIdentifier::AddAccessCheck,
-            )),
+        let input = RadixEngineInput::Invoke(
+            FnIdent::Method(ReceiverMethodIdent {
+                receiver: Receiver::Ref(RENodeId::Component(self.0)),
+                method_ident: MethodIdent::Native(NativeMethod::Component(
+                    ComponentMethod::AddAccessCheck,
+                )),
+            }),
             scrypto_encode(&ComponentAddAccessCheckInput { access_rules }),
         );
         let _: () = call_engine(input);
@@ -80,8 +102,62 @@ impl Component {
 
     pub fn globalize(self) -> ComponentAddress {
         let input = RadixEngineInput::RENodeGlobalize(RENodeId::Component(self.0));
+        let global_address: GlobalAddress = call_engine(input);
+        global_address.into()
+    }
+}
+
+#[derive(PartialEq, Eq, Hash, Clone)]
+pub struct BorrowedGlobalComponent(pub ComponentAddress);
+
+impl BorrowedGlobalComponent {
+    /// Invokes a method on this component.
+    pub fn call<T: Decode>(&self, method: &str, args: Vec<u8>) -> T {
+        let input = RadixEngineInput::Invoke(
+            FnIdent::Method(ReceiverMethodIdent {
+                receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Component(self.0))),
+                method_ident: MethodIdent::Scrypto(method.to_string()),
+            }),
+            args,
+        );
+        call_engine(input)
+    }
+
+    /// Returns the package ID of this component.
+    pub fn package_address(&self) -> PackageAddress {
+        let substate_id = SubstateId(
+            RENodeId::Global(GlobalAddress::Component(self.0)),
+            SubstateOffset::Component(ComponentOffset::Info),
+        );
+        let input = RadixEngineInput::SubstateRead(substate_id);
+        let output: ComponentInfoSubstate = call_engine(input);
+        output.package_address
+    }
+
+    /// Returns the blueprint name of this component.
+    pub fn blueprint_name(&self) -> String {
+        let substate_id = SubstateId(
+            RENodeId::Global(GlobalAddress::Component(self.0)),
+            SubstateOffset::Component(ComponentOffset::Info),
+        );
+        let input = RadixEngineInput::SubstateRead(substate_id);
+        let output: ComponentInfoSubstate = call_engine(input);
+        output.blueprint_name
+    }
+
+    pub fn add_access_check(&mut self, access_rules: AccessRules) -> &mut Self {
+        let input = RadixEngineInput::Invoke(
+            FnIdent::Method(ReceiverMethodIdent {
+                receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Component(self.0))),
+                method_ident: MethodIdent::Native(NativeMethod::Component(
+                    ComponentMethod::AddAccessCheck,
+                )),
+            }),
+            scrypto_encode(&ComponentAddAccessCheckInput { access_rules }),
+        );
         let _: () = call_engine(input);
-        self.0.clone()
+
+        self
     }
 }
 
@@ -117,15 +193,9 @@ scrypto_type!(Component, ScryptoType::Component, Vec::new());
 // text
 //======
 
-impl fmt::Display for Component {
-    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}", self.0)
-    }
-}
-
 impl fmt::Debug for Component {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}", self)
+        write!(f, "{:?}", self.0)
     }
 }
 
@@ -170,6 +240,16 @@ impl ComponentAddress {
         }
         buf
     }
+
+    pub fn to_hex(&self) -> String {
+        hex::encode(self.to_vec())
+    }
+
+    pub fn try_from_hex(hex_str: &str) -> Result<Self, AddressError> {
+        let bytes = hex::decode(hex_str).map_err(|_| AddressError::HexDecodingError)?;
+
+        Self::try_from(bytes.as_ref())
+    }
 }
 
 scrypto_type!(ComponentAddress, ScryptoType::ComponentAddress, Vec::new());
@@ -178,22 +258,36 @@ scrypto_type!(ComponentAddress, ScryptoType::ComponentAddress, Vec::new());
 // text
 //======
 
-impl FromStr for ComponentAddress {
-    type Err = AddressError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        BECH32_DECODER.validate_and_decode_component_address(s)
-    }
-}
-
-impl fmt::Display for ComponentAddress {
-    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}", BECH32_ENCODER.encode_component_address(self))
-    }
-}
-
 impl fmt::Debug for ComponentAddress {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}", self)
+        write!(f, "{}", self.display(NO_NETWORK))
+    }
+}
+
+impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for ComponentAddress {
+    type Error = AddressError;
+
+    fn contextual_format<F: fmt::Write>(
+        &self,
+        f: &mut F,
+        context: &AddressDisplayContext<'a>,
+    ) -> Result<(), Self::Error> {
+        if let Some(encoder) = context.encoder {
+            return encoder.encode_component_address_to_fmt(f, self);
+        }
+
+        // This could be made more performant by streaming the hex into the formatter
+        match self {
+            ComponentAddress::Normal(_) => {
+                write!(f, "NormalComponent[{}]", self.to_hex())
+            }
+            ComponentAddress::Account(_) => {
+                write!(f, "AccountComponent[{}]", self.to_hex())
+            }
+            ComponentAddress::System(_) => {
+                write!(f, "SystemComponent[{}]", self.to_hex())
+            }
+        }
+        .map_err(|err| AddressError::FormatError(err))
     }
 }

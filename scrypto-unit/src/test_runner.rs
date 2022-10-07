@@ -19,10 +19,11 @@ use radix_engine::wasm::{
     WasmMeteringParams,
 };
 use sbor::describe::*;
+use scrypto::core::{FnIdent, MethodIdent, ReceiverMethodIdent};
 use scrypto::dec;
 use scrypto::math::Decimal;
 use transaction::builder::ManifestBuilder;
-use transaction::model::{Executable, MethodIdentifier, TransactionManifest};
+use transaction::model::{AuthZoneParams, Executable, TransactionManifest};
 use transaction::model::{PreviewIntent, TestTransaction};
 use transaction::signing::EcdsaSecp256k1PrivateKey;
 use transaction::validation::TestIntentHashManager;
@@ -83,7 +84,10 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     ) -> Option<radix_engine::model::ComponentInfoSubstate> {
         self.execution_stores
             .get_root_store()
-            .get_substate(&SubstateId::ComponentInfo(component_address))
+            .get_substate(&SubstateId(
+                RENodeId::Component(component_address),
+                SubstateOffset::Component(ComponentOffset::Info),
+            ))
             .map(|output| output.substate.into())
     }
 
@@ -93,7 +97,10 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     ) -> Option<radix_engine::model::ComponentStateSubstate> {
         self.execution_stores
             .get_root_store()
-            .get_substate(&SubstateId::ComponentState(component_address))
+            .get_substate(&SubstateId(
+                RENodeId::Component(component_address),
+                SubstateOffset::Component(ComponentOffset::State),
+            ))
             .map(|output| output.substate.into())
     }
 
@@ -104,7 +111,10 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     ) -> Option<radix_engine::model::KeyValueStoreEntrySubstate> {
         self.execution_stores
             .get_root_store()
-            .get_substate(&SubstateId::KeyValueStoreEntry(kv_store_id, key))
+            .get_substate(&SubstateId(
+                RENodeId::KeyValueStore(kv_store_id),
+                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key)),
+            ))
             .map(|output| output.substate.into())
     }
 
@@ -114,7 +124,10 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     ) -> Option<radix_engine::model::VaultSubstate> {
         self.execution_stores
             .get_root_store()
-            .get_substate(&SubstateId::Vault(vault_id))
+            .get_substate(&SubstateId(
+                RENodeId::Vault(vault_id),
+                SubstateOffset::Vault(VaultOffset::Vault),
+            ))
             .map(|output| output.substate.into())
     }
 
@@ -237,9 +250,11 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         manifest.instructions.insert(
             0,
             transaction::model::Instruction::CallMethod {
-                method_identifier: MethodIdentifier::Scrypto {
-                    component_address: SYS_FAUCET_COMPONENT,
-                    ident: "lock_fee".to_string(),
+                method_ident: ReceiverMethodIdent {
+                    receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Component(
+                        SYS_FAUCET_COMPONENT,
+                    ))),
+                    method_ident: MethodIdent::Scrypto("lock_fee".to_string()),
                 },
                 args: args!(dec!("100")),
             },
@@ -645,11 +660,15 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             )],
             |kernel| {
                 kernel
-                    .invoke_method(
-                        Receiver::Ref(RENodeId::System(SYS_SYSTEM_COMPONENT)),
-                        FnIdentifier::Native(NativeFnIdentifier::System(
-                            SystemFnIdentifier::SetEpoch,
-                        )),
+                    .invoke(
+                        FnIdent::Method(ReceiverMethodIdent {
+                            receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Component(
+                                SYS_SYSTEM_COMPONENT,
+                            ))),
+                            method_ident: MethodIdent::Native(NativeMethod::System(
+                                SystemMethod::SetEpoch,
+                            )),
+                        }),
                         ScryptoValue::from_typed(&SystemSetEpochInput { epoch }),
                     )
                     .unwrap()
@@ -660,11 +679,15 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
     pub fn get_current_epoch(&mut self) -> u64 {
         let current_epoch: ScryptoValue = self.kernel_call(vec![], |kernel| {
             kernel
-                .invoke_method(
-                    Receiver::Ref(RENodeId::System(SYS_SYSTEM_COMPONENT)),
-                    FnIdentifier::Native(NativeFnIdentifier::System(
-                        SystemFnIdentifier::GetCurrentEpoch,
-                    )),
+                .invoke(
+                    FnIdent::Method(ReceiverMethodIdent {
+                        receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Component(
+                            SYS_SYSTEM_COMPONENT,
+                        ))),
+                        method_ident: MethodIdent::Native(NativeMethod::System(
+                            SystemMethod::GetCurrentEpoch,
+                        )),
+                    }),
                     ScryptoValue::from_typed(&SystemGetCurrentEpochInput {}),
                 )
                 .unwrap()
@@ -689,9 +712,14 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         );
         let mut execution_trace = ExecutionTrace::new();
 
+        let auth_zone_params = AuthZoneParams {
+            initial_proofs,
+            virtualizable_proofs_resource_addresses: BTreeSet::new(),
+        };
+
         let mut kernel = Kernel::new(
             tx_hash,
-            initial_proofs,
+            auth_zone_params,
             &blobs,
             DEFAULT_MAX_CALL_DEPTH,
             &mut track,
@@ -719,9 +747,9 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
 pub fn is_auth_error(e: &RuntimeError) -> bool {
     matches!(
         e,
-        RuntimeError::ModuleError(ModuleError::AuthorizationError {
+        RuntimeError::ModuleError(ModuleError::AuthError {
             authorization: _,
-            function: _,
+            fn_ident: _,
             error: ::radix_engine::model::MethodAuthorizationError::NotAuthorized
         })
     )

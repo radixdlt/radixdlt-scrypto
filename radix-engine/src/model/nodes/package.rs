@@ -12,7 +12,7 @@ pub struct Package {
     pub info: PackageSubstate,
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
 pub enum PackageError {
     InvalidRequestData(DecodeError),
     InvalidAbi(DecodeError),
@@ -42,7 +42,7 @@ impl Package {
     }
 
     pub fn static_main<'s, Y, W, I, R>(
-        package_fn: PackageFnIdentifier,
+        func: PackageFunction,
         call_data: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, InvokeError<PackageError>>
@@ -52,8 +52,8 @@ impl Package {
         I: WasmInstance,
         R: FeeReserve,
     {
-        match package_fn {
-            PackageFnIdentifier::Publish => {
+        match func {
+            PackageFunction::Publish => {
                 let input: PackagePublishInput = scrypto_decode(&call_data.raw)
                     .map_err(|e| InvokeError::Error(PackageError::InvalidRequestData(e)))?;
                 let code = system_api
@@ -72,10 +72,10 @@ impl Package {
                 let node_id = system_api
                     .node_create(HeapRENode::Package(package))
                     .map_err(InvokeError::Downstream)?;
-                system_api
+                let global_address = system_api
                     .node_globalize(node_id)
                     .map_err(InvokeError::Downstream)?;
-                let package_address: PackageAddress = node_id.into();
+                let package_address: PackageAddress = global_address.into();
                 Ok(ScryptoValue::from_typed(&package_address))
             }
         }

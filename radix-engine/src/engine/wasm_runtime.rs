@@ -2,10 +2,11 @@ use crate::engine::RuntimeError;
 use crate::engine::{HeapRENode, SystemApi};
 use crate::fee::*;
 use crate::model::{
-    Component, ComponentInfoSubstate, ComponentStateSubstate, HeapKeyValueStore, InvokeError,
+    Component, ComponentInfoSubstate, ComponentStateSubstate, InvokeError, KeyValueStore,
 };
 use crate::types::*;
 use crate::wasm::*;
+use scrypto::core::FnIdent;
 
 use super::KernelError;
 
@@ -53,27 +54,14 @@ where
     }
 
     // FIXME: limit access to the API
-
-    fn handle_invoke_function(
+    fn handle_invoke(
         &mut self,
-        fn_identifier: FnIdentifier,
+        fn_ident: FnIdent,
         input: Vec<u8>,
     ) -> Result<ScryptoValue, RuntimeError> {
         let call_data = ScryptoValue::from_slice(&input)
             .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
-        self.system_api.invoke_function(fn_identifier, call_data)
-    }
-
-    fn handle_invoke_method(
-        &mut self,
-        receiver: Receiver,
-        fn_identifier: FnIdentifier,
-        input: Vec<u8>,
-    ) -> Result<ScryptoValue, RuntimeError> {
-        let call_data = ScryptoValue::from_slice(&input)
-            .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
-        self.system_api
-            .invoke_method(receiver, fn_identifier, call_data)
+        self.system_api.invoke(fn_ident, call_data)
     }
 
     fn handle_node_create(
@@ -99,10 +87,10 @@ where
                 // Create component
                 HeapRENode::Component(Component {
                     info: ComponentInfoSubstate::new(package_address, blueprint_name, Vec::new()),
-                    state: ComponentStateSubstate::new(state),
+                    state: Some(ComponentStateSubstate::new(state)),
                 })
             }
-            ScryptoRENode::KeyValueStore => HeapRENode::KeyValueStore(HeapKeyValueStore::new()),
+            ScryptoRENode::KeyValueStore => HeapRENode::KeyValueStore(KeyValueStore::new()),
         };
 
         let id = self.system_api.node_create(node)?;
@@ -114,43 +102,15 @@ where
         Ok(ScryptoValue::from_typed(&node_ids))
     }
 
-    // TODO: This logic should move into KeyValueEntry decoding
-    fn verify_stored_key(value: &ScryptoValue) -> Result<(), RuntimeError> {
-        if !value.bucket_ids.is_empty() {
-            return Err(RuntimeError::KernelError(KernelError::BucketNotAllowed));
-        }
-        if !value.proof_ids.is_empty() {
-            return Err(RuntimeError::KernelError(KernelError::ProofNotAllowed));
-        }
-        if !value.vault_ids.is_empty() {
-            return Err(RuntimeError::KernelError(KernelError::VaultNotAllowed));
-        }
-        if !value.kv_store_ids.is_empty() {
-            return Err(RuntimeError::KernelError(
-                KernelError::KeyValueStoreNotAllowed,
-            ));
-        }
-        Ok(())
-    }
-
     fn handle_node_globalize(&mut self, node_id: RENodeId) -> Result<ScryptoValue, RuntimeError> {
-        self.system_api.node_globalize(node_id)?;
-        Ok(ScryptoValue::unit())
+        let global_address = self.system_api.node_globalize(node_id)?;
+        Ok(ScryptoValue::from_typed(&global_address))
     }
 
     fn handle_substate_read(
         &mut self,
         substate_id: SubstateId,
     ) -> Result<ScryptoValue, RuntimeError> {
-        match &substate_id {
-            SubstateId::KeyValueStoreEntry(_kv_store_id, key_bytes) => {
-                let key_data = ScryptoValue::from_slice(&key_bytes)
-                    .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
-                Self::verify_stored_key(&key_data)?;
-            }
-            _ => {}
-        }
-
         self.system_api.substate_read(substate_id)
     }
 
@@ -159,17 +119,15 @@ where
         substate_id: SubstateId,
         value: Vec<u8>,
     ) -> Result<ScryptoValue, RuntimeError> {
-        match &substate_id {
-            SubstateId::KeyValueStoreEntry(_kv_store_id, key_bytes) => {
-                let key_data = ScryptoValue::from_slice(&key_bytes)
-                    .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
-                Self::verify_stored_key(&key_data)?;
-            }
-            _ => {}
-        }
-        let scrypto_value = ScryptoValue::from_slice(&value)
-            .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
-        self.system_api.substate_write(substate_id, scrypto_value)?;
+        // FIXME: check if the value contains NOT allowed values.
+
+        self.system_api.substate_write(
+            substate_id,
+            ScryptoValue::from_slice(&value)
+                .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?,
+        )?;
+
+        // TODO: do we ever want to return the previous substate value
         Ok(ScryptoValue::unit())
     }
 
@@ -201,11 +159,8 @@ where
         let input: RadixEngineInput = scrypto_decode(&input.raw)
             .map_err(|_| InvokeError::Error(WasmError::InvalidRadixEngineInput))?;
         match input {
-            RadixEngineInput::InvokeFunction(fn_identifier, input_bytes) => {
-                self.handle_invoke_function(fn_identifier, input_bytes)
-            }
-            RadixEngineInput::InvokeMethod(receiver, fn_identifier, input_bytes) => {
-                self.handle_invoke_method(receiver, fn_identifier, input_bytes)
+            RadixEngineInput::Invoke(fn_ident, input_bytes) => {
+                self.handle_invoke(fn_ident, input_bytes)
             }
             RadixEngineInput::RENodeGlobalize(node_id) => self.handle_node_globalize(node_id),
             RadixEngineInput::RENodeCreate(node) => self.handle_node_create(node),
