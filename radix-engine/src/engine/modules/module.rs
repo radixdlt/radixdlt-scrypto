@@ -8,6 +8,7 @@ pub enum SysCallInput<'a> {
     Invoke {
         function_identifier: &'a FnIdent,
         input: &'a ScryptoValue,
+        depth: usize,
     },
     ReadOwnedNodes,
     BorrowNode {

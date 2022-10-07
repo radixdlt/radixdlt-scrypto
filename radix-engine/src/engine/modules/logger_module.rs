@@ -33,6 +33,7 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
             SysCallInput::Invoke {
                 function_identifier,
                 input,
+                ..
             } => {
                 log!(
                     self,
