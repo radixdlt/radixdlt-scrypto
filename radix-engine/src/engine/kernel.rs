@@ -187,10 +187,23 @@ where
         offset: SubstateOffset,
     ) -> Result<ScryptoValue, RuntimeError> {
         // TODO: Cleanup
-        if let SubstateOffset::Component(ComponentOffset::Info) = offset {
+        //if let SubstateOffset::Component(ComponentOffset::Info) = offset {
+        if !(matches!(offset, SubstateOffset::KeyValueStore(..))
+            || matches!(offset, SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(..)))
+        ) {
             node_pointer
                 .acquire_lock(
-                    SubstateOffset::Component(ComponentOffset::State),
+                    offset.clone(),
+                    false,
+                    false,
+                    track,
+                )
+                .map_err(RuntimeError::KernelError)?;
+        }
+        /*
+            node_pointer
+                .acquire_lock(
+                    offset.clone(),
                     false,
                     false,
                     track,
@@ -205,6 +218,7 @@ where
                 )
                 .map_err(RuntimeError::KernelError)?;
         }
+         */
 
         // Read current value
         let substate = {
@@ -212,11 +226,24 @@ where
             node_ref.read_substate(&SubstateId(node_pointer.node_id(), offset.clone()))?
         };
 
-        // TODO: Remove, integrate with substate borrow mechanism
-        if let SubstateOffset::Component(ComponentOffset::Info) = offset {
+        if !(matches!(offset, SubstateOffset::KeyValueStore(..))
+            || matches!(offset, SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(..)))
+        ) {
             node_pointer
                 .release_lock(
-                    SubstateOffset::Component(ComponentOffset::State),
+                    offset,
+                    false,
+                    track,
+                )
+                .map_err(RuntimeError::KernelError)?;
+        }
+
+        /*
+        // TODO: Remove, integrate with substate borrow mechanism
+        //if let SubstateOffset::Component(ComponentOffset::Info) = offset {
+            node_pointer
+                .release_lock(
+                    offset,
                     false,
                     track,
                 )
@@ -229,6 +256,7 @@ where
                 )
                 .map_err(RuntimeError::KernelError)?;
         }
+         */
 
         Ok(substate)
     }
@@ -610,27 +638,14 @@ where
             }
 
             // Lock Primary Substate
-            let offset = RENodeProperties::to_primary_offset(&method_ident)?;
-            let is_lock_fee =
-                matches!(node_id, RENodeId::Vault(..))
-                    && (method_ident
-                        .method_ident
-                        .eq(&MethodIdent::Native(NativeMethod::Vault(
-                            VaultMethod::LockFee,
-                        )))
-                        || method_ident.method_ident.eq(&MethodIdent::Native(
-                            NativeMethod::Vault(VaultMethod::LockFee),
-                        ))
-                        || method_ident.method_ident.eq(&MethodIdent::Native(
-                            NativeMethod::Vault(VaultMethod::LockContingentFee),
-                        )));
-            if is_lock_fee && matches!(node_pointer, RENodePointer::Heap { .. }) {
-                return Err(RuntimeError::KernelError(KernelError::RENodeNotInTrack));
-            }
+            //let offset = RENodeProperties::to_primary_offset(&method_ident)?;
+
+            /*
             node_pointer
                 .acquire_lock(offset.clone(), true, is_lock_fee, &mut self.track)
                 .map_err(RuntimeError::KernelError)?;
             locked_pointers.push((node_pointer, offset.clone(), is_lock_fee));
+             */
 
             // Load actor
             let re_actor = match &method_ident {
@@ -639,16 +654,25 @@ where
                     receiver,
                 } => match node_id {
                     RENodeId::Component(..) => {
+                        node_pointer
+                            .acquire_lock(SubstateOffset::Component(ComponentOffset::Info), true, false, &mut self.track)
+                            .map_err(RuntimeError::KernelError)?;
+
                         let mut node_ref = node_pointer.to_ref(&self.call_frames, &mut self.track);
                         let component = node_ref.component();
-                        REActor::Method(FullyQualifiedReceiverMethod {
+                        let actor = REActor::Method(FullyQualifiedReceiverMethod {
                             receiver: receiver.clone(),
                             method: FullyQualifiedMethod::Scrypto {
                                 package_address: component.info.package_address.clone(),
                                 blueprint_name: component.info.blueprint_name.clone(),
                                 ident: ident.to_string(),
                             },
-                        })
+                        });
+                        node_pointer
+                            .release_lock(SubstateOffset::Component(ComponentOffset::Info), false, &mut self.track)
+                            .map_err(RuntimeError::KernelError)?;
+
+                        actor
                     }
                     _ => panic!("Should not get here."),
                 },
@@ -702,7 +726,43 @@ where
                     let resource_node_pointer = RENodePointer::Store(resource_node_id);
                     next_frame_node_refs.insert(resource_node_id, resource_node_pointer);
                 }
+                RENodeId::ResourceManager(..) => {
+                    let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
+                    node_pointer
+                        .acquire_lock(offset.clone(), true, false, &mut self.track)
+                        .map_err(RuntimeError::KernelError)?;
+                    locked_pointers.push((node_pointer, offset.clone(), false));
+                }
+                RENodeId::System(..) => {
+                    let offset = SubstateOffset::System(SystemOffset::System);
+                    node_pointer
+                        .acquire_lock(offset.clone(), true, false, &mut self.track)
+                        .map_err(RuntimeError::KernelError)?;
+                    locked_pointers.push((node_pointer, offset.clone(), false));
+                }
                 RENodeId::Vault(..) => {
+                    // TODO: Remove
+                    let is_lock_fee =
+                        method_ident
+                            .method_ident
+                            .eq(&MethodIdent::Native(NativeMethod::Vault(
+                                VaultMethod::LockFee,
+                            )))
+                            || method_ident.method_ident.eq(&MethodIdent::Native(
+                            NativeMethod::Vault(VaultMethod::LockFee),
+                        ))
+                            || method_ident.method_ident.eq(&MethodIdent::Native(
+                            NativeMethod::Vault(VaultMethod::LockContingentFee),
+                        ));
+                    if is_lock_fee && matches!(node_pointer, RENodePointer::Heap { .. }) {
+                        return Err(RuntimeError::KernelError(KernelError::RENodeNotInTrack));
+                    }
+                    let offset = SubstateOffset::Vault(VaultOffset::Vault);
+                    node_pointer
+                        .acquire_lock(offset.clone(), true, is_lock_fee, &mut self.track)
+                        .map_err(RuntimeError::KernelError)?;
+                    locked_pointers.push((node_pointer, offset.clone(), is_lock_fee));
+
                     let resource_address = {
                         let mut node_ref = node_pointer.to_ref(&self.call_frames, &mut self.track);
                         node_ref.vault().resource_address()
