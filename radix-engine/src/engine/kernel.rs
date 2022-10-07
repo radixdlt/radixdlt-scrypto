@@ -4,6 +4,7 @@ use transaction::model::{AuthZoneParams, Instruction};
 use transaction::validation::*;
 
 use crate::engine::*;
+use crate::engine::call_frame::SubstateLock;
 use crate::fee::FeeReserve;
 use crate::model::*;
 use crate::types::*;
@@ -199,7 +200,7 @@ where
                     track,
                 )
                 .map_err(RuntimeError::KernelError)?;
-            call_frames.last_mut().unwrap().add_substate_lock(node_pointer, offset.clone());
+            call_frames.last_mut().unwrap().add_substate_lock(node_pointer, offset.clone(), true);
         }
         /*
             node_pointer
@@ -520,7 +521,7 @@ where
         }
 
         // Drop substate references
-        for (node_pointer, offset) in Self::current_frame_mut(&mut self.call_frames).locks.iter() {
+        for SubstateLock { pointer: (node_pointer, offset), .. } in Self::current_frame_mut(&mut self.call_frames).locks.iter() {
             node_pointer.release_lock(offset.clone(), false, self.track)
                 .map_err(RuntimeError::KernelError)?;
         }

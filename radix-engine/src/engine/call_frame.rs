@@ -4,6 +4,12 @@ use crate::types::*;
 use crate::wasm::*;
 use scrypto::core::NativeFunction;
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SubstateLock {
+    pub pointer: (RENodePointer, SubstateOffset),
+    pub mutable: bool,
+}
+
 // TODO: reduce fields visibility
 
 /// A call frame is the basic unit that forms a transaction call stack, which keeps track of the
@@ -22,17 +28,17 @@ pub struct CallFrame {
     /// Owned Values
     pub owned_heap_nodes: HashMap<RENodeId, HeapRootRENode>,
 
-    pub locks: Vec<(RENodePointer, SubstateOffset)>,
+    pub locks: Vec<SubstateLock>,
 }
 
 impl CallFrame {
-    pub fn add_substate_lock(&mut self, node_pointer: RENodePointer, offset: SubstateOffset) {
-        self.locks.push((node_pointer, offset))
+    pub fn add_substate_lock(&mut self, node_pointer: RENodePointer, offset: SubstateOffset, mutable: bool) {
+        self.locks.push(SubstateLock { pointer: (node_pointer, offset), mutable, })
     }
 
     pub fn release_substate_lock(&mut self, node_pointer: RENodePointer, offset: SubstateOffset) {
         let p = (node_pointer, offset);
-        let index = self.locks.iter().position(|s| s.eq(&p)).unwrap();
+        let index = self.locks.iter().position(|s| s.pointer.eq(&p)).unwrap();
         self.locks.remove(index);
     }
 
