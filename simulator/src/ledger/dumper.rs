@@ -211,9 +211,9 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
             let ids = vault.0.ids();
             for (inner_last, id) in ids.iter().identify_last() {
                 let non_fungible: NonFungibleSubstate = substate_store
-                    .get_substate(&SubstateId::NonFungible(
+                    .get_substate(&SubstateId(
                         RENodeId::NonFungibleStore(resource_manager.non_fungible_store_id.unwrap()),
-                        id.clone(),
+                        SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(id.clone())),
                     ))
                     .map(|s| s.substate)
                     .map(|s| s.into())
