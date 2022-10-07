@@ -25,6 +25,7 @@ pub enum DecompileError {
     InvalidValue(ScryptoValueFormatterError),
     FormattingError(fmt::Error),
     UnrecognizedNativeFunction,
+    InvalidArguments,
 }
 
 impl From<ScryptoValueFormatterError> for DecompileError {
@@ -66,6 +67,8 @@ impl<'a> DecompilationContext<'a> {
     }
 }
 
+/// Contract: if the instructions are from a validated notarized transaction, no error
+/// should be returned.
 pub fn decompile(
     instructions: &[Instruction],
     network: &NetworkDefinition,
@@ -326,7 +329,6 @@ pub fn decompile_instruction<F: fmt::Write>(
         }
         Instruction::CallFunction {
             fn_identifier,
-
             args,
         } => match fn_identifier {
             FnIdentifier::Scrypto {
@@ -360,7 +362,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                         )?)?;
                     }
                 } else {
-                    panic!("Should not get here.");
+                    return Err(DecompileError::InvalidArguments);
                 }
                 f.write_str(";")?;
             }
@@ -432,7 +434,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                         )?)?;
                     }
                 } else {
-                    panic!("Should not get here.");
+                    return Err(DecompileError::InvalidArguments);
                 }
 
                 f.write_str(";")?;
