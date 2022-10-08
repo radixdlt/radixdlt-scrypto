@@ -79,7 +79,10 @@ pub enum KernelError {
     RENodeNotInTrack,
 
     // Substate
-    SubstateRefDoesNotExist(SubstateId),
+    MovingLockedRENode(RENodeId),
+    SubstateRefDoesNotExist(LockHandle),
+    SubstateRefIsNotMut(LockHandle),
+
     TrackError(TrackError),
     NodeToSubstateFailure(NodeToSubstateFailure),
     SubstateReadNotReadable(REActor, SubstateId),

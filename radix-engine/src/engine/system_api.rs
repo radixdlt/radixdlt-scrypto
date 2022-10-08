@@ -46,17 +46,16 @@ where
     /// Moves an RENode from Heap to Store
     fn node_globalize(&mut self, node_id: RENodeId) -> Result<GlobalAddress, RuntimeError>;
 
-    /// Reads a substate
-    fn substate_read(&mut self, substate_id: SubstateId) -> Result<ScryptoValue, RuntimeError>;
-
-    fn create_ref(&mut self, substate_id: SubstateId, mutable: bool) -> Result<ScryptoValue, RuntimeError>;
-
-    fn drop_ref(&mut self, substate_id: SubstateId) -> Result<ScryptoValue, RuntimeError>;
-
-    /// Updates a substate and returns previous one
-    fn substate_write(
+    fn create_ref(
         &mut self,
         substate_id: SubstateId,
+        mutable: bool,
+    ) -> Result<LockHandle, RuntimeError>;
+    fn drop_ref(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError>;
+    fn substate_read(&mut self, lock_handle: LockHandle) -> Result<ScryptoValue, RuntimeError>;
+    fn substate_write(
+        &mut self,
+        lock_handle: LockHandle,
         value: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError>;
 

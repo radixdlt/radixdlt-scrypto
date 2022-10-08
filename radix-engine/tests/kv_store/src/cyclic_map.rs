@@ -33,8 +33,9 @@ blueprint! {
                     value: PhantomData,
                 })));
 
-            let _: () = call_engine(RadixEngineInput::CreateRef(substate_id.clone(), true));
-            let input = RadixEngineInput::SubstateWrite(substate_id, scrypto_encode(&substate));
+            let input = RadixEngineInput::CreateRef(substate_id, true);
+            let lock_handle: LockHandle = call_engine(input);
+            let input = RadixEngineInput::SubstateWrite(lock_handle, scrypto_encode(&substate));
             let _: () = call_engine(input);
 
             CyclicMap { store: kv_store0 }.instantiate().globalize()
@@ -54,8 +55,10 @@ blueprint! {
                     key: PhantomData,
                     value: PhantomData,
                 })));
-            let _: () = call_engine(RadixEngineInput::CreateRef(substate_id.clone(), true));
-            let input = RadixEngineInput::SubstateWrite(substate_id, scrypto_encode(&substate));
+
+            let input = RadixEngineInput::CreateRef(substate_id, true);
+            let lock_handle: LockHandle = call_engine(input);
+            let input = RadixEngineInput::SubstateWrite(lock_handle, scrypto_encode(&substate));
             let _: () = call_engine(input);
 
             CyclicMap { store: kv_store }.instantiate().globalize()

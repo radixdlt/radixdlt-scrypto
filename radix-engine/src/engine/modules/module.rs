@@ -24,10 +24,10 @@ pub enum SysCallInput<'a> {
         node_id: &'a RENodeId,
     },
     ReadSubstate {
-        substate_id: &'a SubstateId,
+        lock_handle: &'a LockHandle,
     },
     WriteSubstate {
-        substate_id: &'a SubstateId,
+        lock_handle: &'a LockHandle,
         value: &'a ScryptoValue,
     },
     TakeSubstate {

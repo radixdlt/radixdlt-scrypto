@@ -60,14 +60,14 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
             SysCallInput::GlobalizeNode { node_id } => {
                 log!(self, "Globalizing node: node_id = {:?}", node_id);
             }
-            SysCallInput::ReadSubstate { substate_id } => {
-                log!(self, "Reading substate: substate_id = {:?}", substate_id);
+            SysCallInput::ReadSubstate { lock_handle } => {
+                log!(self, "Reading substate: lock_handle = {:?}", lock_handle);
             }
-            SysCallInput::WriteSubstate { substate_id, value } => {
+            SysCallInput::WriteSubstate { lock_handle, value } => {
                 log!(
                     self,
-                    "Writing substate: substate_id = {:?}, value = {:?}",
-                    substate_id,
+                    "Writing substate: lock_handle = {:?}, value = {:?}",
+                    lock_handle,
                     value
                 );
             }

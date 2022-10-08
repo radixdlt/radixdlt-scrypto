@@ -8,6 +8,7 @@ use scrypto::core::NativeFunction;
 pub struct SubstateLock {
     pub pointer: (RENodePointer, SubstateOffset),
     pub mutable: bool,
+    pub refed_nodes: HashSet<RENodeId>,
 }
 
 // TODO: reduce fields visibility
@@ -28,23 +29,76 @@ pub struct CallFrame {
     /// Owned Values
     pub owned_heap_nodes: HashMap<RENodeId, HeapRootRENode>,
 
-    pub locks: Vec<SubstateLock>,
+    cur_lock_handle: LockHandle,
+    pub locks: HashMap<LockHandle, SubstateLock>,
+    node_lock_index: HashMap<RENodeId, u32>,
 }
 
 impl CallFrame {
-    pub fn add_substate_lock(&mut self, node_pointer: RENodePointer, offset: SubstateOffset, mutable: bool) {
-        self.locks.push(SubstateLock { pointer: (node_pointer, offset), mutable, })
+    pub fn create_substate_ref(
+        &mut self,
+        node_pointer: RENodePointer,
+        offset: SubstateOffset,
+        mutable: bool,
+    ) -> LockHandle {
+        self.cur_lock_handle = self.cur_lock_handle + 1;
+        self.locks.insert(
+            self.cur_lock_handle,
+            SubstateLock {
+                pointer: (node_pointer, offset),
+                mutable,
+                refed_nodes: HashSet::new(),
+            },
+        );
+
+        let counter = self
+            .node_lock_index
+            .entry(node_pointer.node_id())
+            .or_insert(0u32);
+        *counter += 1;
+
+        self.cur_lock_handle
     }
 
-    pub fn release_substate_lock(&mut self, node_pointer: RENodePointer, offset: SubstateOffset) {
-        let p = (node_pointer, offset);
-        let index = self.locks.iter().position(|s| s.pointer.eq(&p)).unwrap();
-        self.locks.remove(index);
+    pub fn drop_substate_ref(
+        &mut self,
+        lock_handle: LockHandle,
+    ) -> Result<(RENodePointer, SubstateOffset), KernelError> {
+        let substate_lock = self
+            .locks
+            .remove(&lock_handle)
+            .ok_or(KernelError::SubstateRefDoesNotExist(lock_handle))?;
+
+        for refed_node in substate_lock.refed_nodes {
+            self.node_refs.remove(&refed_node);
+        }
+
+        let counter = self
+            .node_lock_index
+            .entry(substate_lock.pointer.0.node_id())
+            .or_insert(0u32);
+        *counter -= 1;
+        if *counter == 0 {
+            self.node_lock_index
+                .remove(&substate_lock.pointer.0.node_id());
+        }
+
+        Ok(substate_lock.pointer)
     }
 
-    pub fn has_lock(&self, node_pointer: RENodePointer, offset: SubstateOffset, mutable: bool) -> bool {
-        let p = (node_pointer, offset);
-        self.locks.iter().position(|s| s.pointer.eq(&p) && (!mutable || mutable == s.mutable)).is_some()
+    pub fn get_substate_ref(&self, lock_handle: LockHandle) -> Result<&SubstateLock, KernelError> {
+        self.locks
+            .get(&lock_handle)
+            .ok_or(KernelError::SubstateRefDoesNotExist(lock_handle))
+    }
+
+    pub fn get_substate_ref_mut(
+        &mut self,
+        lock_handle: LockHandle,
+    ) -> Result<&mut SubstateLock, KernelError> {
+        self.locks
+            .get_mut(&lock_handle)
+            .ok_or(KernelError::SubstateRefDoesNotExist(lock_handle))
     }
 
     pub fn new_root() -> Self {
@@ -55,7 +109,9 @@ impl CallFrame {
             ))),
             node_refs: HashMap::new(),
             owned_heap_nodes: HashMap::new(),
-            locks: Vec::new(),
+            cur_lock_handle: 0u32,
+            locks: HashMap::new(),
+            node_lock_index: HashMap::new(),
         }
     }
 
@@ -77,7 +133,9 @@ impl CallFrame {
             actor,
             node_refs,
             owned_heap_nodes,
-            locks: Vec::new(),
+            cur_lock_handle: 0u32,
+            locks: HashMap::new(),
+            node_lock_index: HashMap::new(),
         }
     }
 
@@ -101,6 +159,12 @@ impl CallFrame {
             let mut missing_values = HashSet::new();
 
             for id in node_ids {
+                if self.node_lock_index.contains_key(&id) {
+                    return Err(RuntimeError::KernelError(KernelError::MovingLockedRENode(
+                        id,
+                    )));
+                }
+
                 let maybe = self.owned_heap_nodes.remove(&id);
                 if let Some(value) = maybe {
                     value.root().verify_can_move()?;
@@ -128,6 +192,12 @@ impl CallFrame {
     }
 
     pub fn take_node(&mut self, node_id: RENodeId) -> Result<HeapRootRENode, RuntimeError> {
+        if self.node_lock_index.contains_key(&node_id) {
+            return Err(RuntimeError::KernelError(KernelError::MovingLockedRENode(
+                node_id,
+            )));
+        }
+
         let maybe = self.owned_heap_nodes.remove(&node_id);
         if let Some(root_node) = maybe {
             root_node.root().verify_can_move()?;
