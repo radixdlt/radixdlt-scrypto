@@ -65,7 +65,7 @@ impl CallFrame {
         let substate_lock = self
             .locks
             .remove(&lock_handle)
-            .ok_or(KernelError::SubstateRefDoesNotExist(lock_handle))?;
+            .ok_or(KernelError::LockDoesNotExist(lock_handle))?;
 
         for refed_node in substate_lock.refed_nodes {
             self.node_refs.remove(&refed_node);
@@ -87,7 +87,7 @@ impl CallFrame {
     pub fn get_lock(&self, lock_handle: LockHandle) -> Result<&SubstateLock, KernelError> {
         self.locks
             .get(&lock_handle)
-            .ok_or(KernelError::SubstateRefDoesNotExist(lock_handle))
+            .ok_or(KernelError::LockDoesNotExist(lock_handle))
     }
 
     pub fn get_lock_mut(
@@ -96,7 +96,7 @@ impl CallFrame {
     ) -> Result<&mut SubstateLock, KernelError> {
         self.locks
             .get_mut(&lock_handle)
-            .ok_or(KernelError::SubstateRefDoesNotExist(lock_handle))
+            .ok_or(KernelError::LockDoesNotExist(lock_handle))
     }
 
     pub fn new_root() -> Self {

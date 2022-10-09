@@ -295,7 +295,6 @@ where
         frame: CallFrame,
         input: ScryptoValue,
     ) -> Result<(ScryptoValue, HashMap<RENodeId, HeapRootRENode>), RuntimeError> {
-
         self.call_frames.push(frame);
 
         // Copy-over root frame's auth zone virtual_proofs_buckets
@@ -1214,9 +1213,12 @@ where
             m.pre_sys_call(
                 &mut self.track,
                 &mut self.call_frames,
-                SysCallInput::LockSubstate { substate_id: &substate_id, mutable },
+                SysCallInput::LockSubstate {
+                    substate_id: &substate_id,
+                    mutable,
+                },
             )
-                .map_err(RuntimeError::ModuleError)?;
+            .map_err(RuntimeError::ModuleError)?;
         }
 
         let mut node_pointer =
@@ -1237,7 +1239,7 @@ where
                 .is_substate_writeable(node_pointer.node_id(), offset.clone())
             {
                 return Err(RuntimeError::KernelError(
-                    KernelError::SubstateWriteNotWriteable(
+                    KernelError::SubstateNotWriteable(
                         Self::current_frame(&self.call_frames).actor.clone(),
                         SubstateId(node_pointer.node_id(), offset.clone()),
                     ),
@@ -1248,12 +1250,10 @@ where
                 .actor
                 .is_substate_readable(node_pointer.node_id(), offset.clone())
             {
-                return Err(RuntimeError::KernelError(
-                    KernelError::SubstateReadNotReadable(
-                        Self::current_frame(&self.call_frames).actor.clone(),
-                        SubstateId(node_pointer.node_id(), offset.clone()),
-                    ),
-                ));
+                return Err(RuntimeError::KernelError(KernelError::SubstateNotReadable(
+                    Self::current_frame(&self.call_frames).actor.clone(),
+                    SubstateId(node_pointer.node_id(), offset.clone()),
+                )));
             }
         }
 
@@ -1278,9 +1278,9 @@ where
             m.post_sys_call(
                 &mut self.track,
                 &mut self.call_frames,
-                SysCallOutput::LockSubstate { lock_handle, },
+                SysCallOutput::LockSubstate { lock_handle },
             )
-                .map_err(RuntimeError::ModuleError)?;
+            .map_err(RuntimeError::ModuleError)?;
         }
 
         Ok(lock_handle)
@@ -1295,7 +1295,7 @@ where
                     lock_handle: &lock_handle,
                 },
             )
-                .map_err(RuntimeError::ModuleError)?;
+            .map_err(RuntimeError::ModuleError)?;
         }
 
         let (node_pointer, offset) = Self::current_frame_mut(&mut self.call_frames)
@@ -1319,7 +1319,7 @@ where
                 &mut self.call_frames,
                 SysCallOutput::DropLock,
             )
-                .map_err(RuntimeError::ModuleError)?;
+            .map_err(RuntimeError::ModuleError)?;
         }
 
         Ok(())
@@ -1411,7 +1411,7 @@ where
             .clone();
 
         if !mutable {
-            return Err(RuntimeError::KernelError(KernelError::SubstateRefIsNotMut(
+            return Err(RuntimeError::KernelError(KernelError::LockNotMutable(
                 lock_handle,
             )));
         }
