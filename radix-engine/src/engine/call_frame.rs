@@ -30,12 +30,12 @@ pub struct CallFrame {
     pub owned_heap_nodes: HashMap<RENodeId, HeapRootRENode>,
 
     cur_lock_handle: LockHandle,
-    pub locks: HashMap<LockHandle, SubstateLock>,
+    locks: HashMap<LockHandle, SubstateLock>,
     node_lock_index: HashMap<RENodeId, u32>,
 }
 
 impl CallFrame {
-    pub fn create_substate_ref(
+    pub fn create_lock(
         &mut self,
         node_pointer: RENodePointer,
         offset: SubstateOffset,
@@ -60,7 +60,7 @@ impl CallFrame {
         self.cur_lock_handle
     }
 
-    pub fn drop_substate_ref(
+    pub fn drop_lock(
         &mut self,
         lock_handle: LockHandle,
     ) -> Result<(RENodePointer, SubstateOffset), KernelError> {
@@ -86,13 +86,13 @@ impl CallFrame {
         Ok(substate_lock.pointer)
     }
 
-    pub fn get_substate_ref(&self, lock_handle: LockHandle) -> Result<&SubstateLock, KernelError> {
+    pub fn get_lock(&self, lock_handle: LockHandle) -> Result<&SubstateLock, KernelError> {
         self.locks
             .get(&lock_handle)
             .ok_or(KernelError::SubstateRefDoesNotExist(lock_handle))
     }
 
-    pub fn get_substate_ref_mut(
+    pub fn get_lock_mut(
         &mut self,
         lock_handle: LockHandle,
     ) -> Result<&mut SubstateLock, KernelError> {
@@ -139,7 +139,11 @@ impl CallFrame {
         }
     }
 
-    pub fn drop_owned_values(&mut self) -> Result<(), RuntimeError> {
+    pub fn drain_locks(&mut self) -> HashMap<LockHandle, SubstateLock> {
+        self.locks.drain().collect()
+    }
+
+    pub fn drop_frame(mut self) -> Result<(), RuntimeError> {
         let values = self
             .owned_heap_nodes
             .drain()

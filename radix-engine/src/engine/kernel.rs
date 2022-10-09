@@ -449,8 +449,10 @@ where
             }
         }
 
-        // Drop substate references
-        for (_, lock) in Self::current_frame_mut(&mut self.call_frames).locks.iter() {
+        let mut call_frame = self.call_frames.pop().unwrap();
+
+        // Auto drop locks
+        for (_, lock) in call_frame.drain_locks() {
             let SubstateLock {
                 pointer: (node_pointer, offset),
                 ..
@@ -462,13 +464,13 @@ where
                 ))
             {
                 node_pointer
-                    .release_lock(offset.clone(), false, self.track)
+                    .release_lock(offset, false, self.track)
                     .map_err(RuntimeError::KernelError)?;
             }
         }
 
         // drop proofs and check resource leak
-        Self::current_frame_mut(&mut self.call_frames).drop_owned_values()?;
+        call_frame.drop_frame()?;
 
         Ok((output, received_values))
     }
@@ -539,9 +541,6 @@ where
             self.call_frames.push(frame);
             self.run(input)?
         };
-
-        // Remove the last after clean-up
-        self.call_frames.pop();
 
         Ok((output, received_values))
     }
@@ -768,9 +767,6 @@ where
             self.call_frames.push(frame);
             self.run(input)?
         };
-
-        // Remove the last after clean-up
-        self.call_frames.pop();
 
         // Release locked addresses
         for (node_pointer, offset, write_through) in locked_pointers {
@@ -1267,7 +1263,7 @@ where
                 .map_err(RuntimeError::KernelError)?;
         }
 
-        let lock_handle = Self::current_frame_mut(&mut self.call_frames).create_substate_ref(
+        let lock_handle = Self::current_frame_mut(&mut self.call_frames).create_lock(
             node_pointer,
             offset.clone(),
             mutable,
@@ -1278,7 +1274,7 @@ where
 
     fn drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError> {
         let (node_pointer, offset) = Self::current_frame_mut(&mut self.call_frames)
-            .drop_substate_ref(lock_handle)
+            .drop_lock(lock_handle)
             .map_err(RuntimeError::KernelError)?;
 
         if !(matches!(offset, SubstateOffset::KeyValueStore(..))
@@ -1311,7 +1307,7 @@ where
             pointer: (node_pointer, offset),
             ..
         } = Self::current_frame_mut(&mut self.call_frames)
-            .get_substate_ref(lock_handle)
+            .get_lock(lock_handle)
             .map_err(RuntimeError::KernelError)?
             .clone();
 
@@ -1337,7 +1333,7 @@ where
             for child_id in cur_children {
                 let child_pointer = node_pointer.child(child_id);
                 cur_frame.node_refs.insert(child_id, child_pointer);
-                let lock = cur_frame.get_substate_ref_mut(lock_handle).unwrap();
+                let lock = cur_frame.get_lock_mut(lock_handle).unwrap();
                 lock.refed_nodes.insert(child_id);
             }
         }
@@ -1376,7 +1372,7 @@ where
             mutable,
             ..
         } = Self::current_frame_mut(&mut self.call_frames)
-            .get_substate_ref(lock_handle)
+            .get_lock(lock_handle)
             .map_err(RuntimeError::KernelError)?
             .clone();
 
