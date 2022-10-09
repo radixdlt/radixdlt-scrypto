@@ -1206,7 +1206,8 @@ where
 
     fn lock_substate(
         &mut self,
-        substate_id: SubstateId,
+        node_id: RENodeId,
+        offset: SubstateOffset,
         mutable: bool,
     ) -> Result<LockHandle, RuntimeError> {
         for m in &mut self.modules {
@@ -1214,16 +1215,15 @@ where
                 &mut self.track,
                 &mut self.call_frames,
                 SysCallInput::LockSubstate {
-                    substate_id: &substate_id,
+                    node_id: &node_id,
+                    offset: &offset,
                     mutable,
                 },
             )
             .map_err(RuntimeError::ModuleError)?;
         }
 
-        let mut node_pointer =
-            Self::current_frame(&self.call_frames).get_node_pointer(substate_id.0)?;
-        let offset = substate_id.1;
+        let mut node_pointer = Self::current_frame(&self.call_frames).get_node_pointer(node_id)?;
 
         // Deref
         if let Some(derefed) = node_pointer.node_deref(&self.call_frames, &mut self.track)? {

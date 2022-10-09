@@ -109,11 +109,12 @@ where
 
     fn handle_lock_substate(
         &mut self,
-        substate_id: SubstateId,
+        node_id: RENodeId,
+        offset: SubstateOffset,
         mutable: bool,
     ) -> Result<ScryptoValue, RuntimeError> {
         self.system_api
-            .lock_substate(substate_id, mutable)
+            .lock_substate(node_id, offset, mutable)
             .map(|handle| ScryptoValue::from_typed(&handle))
     }
 
@@ -182,8 +183,8 @@ where
             RadixEngineInput::RENodeCreate(node) => self.handle_node_create(node),
             RadixEngineInput::GetOwnedRENodeIds() => self.handle_get_owned_node_ids(),
 
-            RadixEngineInput::LockSubstate(substate_id, mutable) => {
-                self.handle_lock_substate(substate_id, mutable)
+            RadixEngineInput::LockSubstate(node_id, offset, mutable) => {
+                self.handle_lock_substate(node_id, offset, mutable)
             }
             RadixEngineInput::ReadSubstate(lock_handle) => self.handle_read_substate(lock_handle),
             RadixEngineInput::WriteSubstate(lock_handle, value) => {

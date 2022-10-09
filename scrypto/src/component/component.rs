@@ -10,9 +10,7 @@ use crate::buffer::scrypto_encode;
 use crate::component::*;
 use crate::core::*;
 use crate::crypto::Hash;
-use crate::engine::types::{
-    ComponentId, ComponentOffset, GlobalAddress, RENodeId, SubstateId, SubstateOffset,
-};
+use crate::engine::types::{ComponentId, ComponentOffset, GlobalAddress, RENodeId, SubstateOffset};
 use crate::engine::{api::*, call_engine};
 use crate::misc::*;
 use crate::resource::AccessRules;
@@ -68,22 +66,20 @@ impl Component {
 
     /// Returns the package ID of this component.
     pub fn package_address(&self) -> PackageAddress {
-        let substate_id = SubstateId(
+        let pointer = DataPointer::new(
             RENodeId::Component(self.0),
             SubstateOffset::Component(ComponentOffset::Info),
         );
-        let pointer = DataPointer::new(substate_id);
         let state: DataRef<ComponentInfoSubstate> = pointer.get();
         state.package_address
     }
 
     /// Returns the blueprint name of this component.
     pub fn blueprint_name(&self) -> String {
-        let substate_id = SubstateId(
+        let pointer = DataPointer::new(
             RENodeId::Component(self.0),
             SubstateOffset::Component(ComponentOffset::Info),
         );
-        let pointer = DataPointer::new(substate_id);
         let state: DataRef<ComponentInfoSubstate> = pointer.get();
         state.blueprint_name.clone()
     }
@@ -128,22 +124,20 @@ impl BorrowedGlobalComponent {
 
     /// Returns the package ID of this component.
     pub fn package_address(&self) -> PackageAddress {
-        let substate_id = SubstateId(
+        let pointer = DataPointer::new(
             RENodeId::Global(GlobalAddress::Component(self.0)),
             SubstateOffset::Component(ComponentOffset::Info),
         );
-        let pointer = DataPointer::new(substate_id);
         let state: DataRef<ComponentInfoSubstate> = pointer.get();
         state.package_address
     }
 
     /// Returns the blueprint name of this component.
     pub fn blueprint_name(&self) -> String {
-        let substate_id = SubstateId(
+        let pointer = DataPointer::new(
             RENodeId::Global(GlobalAddress::Component(self.0)),
             SubstateOffset::Component(ComponentOffset::Info),
         );
-        let pointer = DataPointer::new(substate_id);
         let state: DataRef<ComponentInfoSubstate> = pointer.get();
         state.blueprint_name.clone()
     }

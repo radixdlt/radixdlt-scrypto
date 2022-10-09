@@ -61,13 +61,15 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
                 log!(self, "Globalizing node: node_id = {:?}", node_id);
             }
             SysCallInput::LockSubstate {
-                substate_id,
+                node_id,
+                offset,
                 mutable,
             } => {
                 log!(
                     self,
-                    "Lock substate: substate_id {:?} mutable {:?}",
-                    substate_id,
+                    "Lock substate: node_id {:?} offset {:?} mutable {:?}",
+                    node_id,
+                    offset,
                     mutable
                 );
             }

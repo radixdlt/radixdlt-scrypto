@@ -48,7 +48,8 @@ where
 
     fn lock_substate(
         &mut self,
-        substate_id: SubstateId,
+        node_id: RENodeId,
+        offset: SubstateOffset,
         mutable: bool,
     ) -> Result<LockHandle, RuntimeError>;
     fn drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError>;

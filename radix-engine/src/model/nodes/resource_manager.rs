@@ -494,14 +494,12 @@ impl ResourceManager {
                     .into();
 
                 for (id, non_fungible) in non_fungibles {
-                    let substate_id = SubstateId(
-                        RENodeId::ResourceManager(resource_address.clone()),
-                        SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(
-                            id.clone(),
-                        )),
+                    let node_id = RENodeId::ResourceManager(resource_address.clone());
+                    let offset = SubstateOffset::ResourceManager(
+                        ResourceManagerOffset::NonFungible(id.clone()),
                     );
                     let lock_handle = system_api
-                        .lock_substate(substate_id.clone(), true)
+                        .lock_substate(node_id, offset, true)
                         .map_err(InvokeError::Downstream)?;
                     let value = system_api
                         .read_substate(lock_handle)
@@ -579,15 +577,14 @@ impl ResourceManager {
             ResourceManagerMethod::UpdateNonFungibleData => {
                 let input: ResourceManagerUpdateNonFungibleDataInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))?;
-                let substate_id = SubstateId(
-                    RENodeId::ResourceManager(resource_address.clone()),
-                    SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(
-                        input.id.clone(),
-                    )),
-                );
+
+                let node_id = RENodeId::ResourceManager(resource_address.clone());
+                let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(
+                    input.id.clone(),
+                ));
 
                 let lock_handle = system_api
-                    .lock_substate(substate_id.clone(), true)
+                    .lock_substate(node_id, offset, true)
                     .map_err(InvokeError::Downstream)?;
 
                 // Read current value
@@ -623,12 +620,12 @@ impl ResourceManager {
             ResourceManagerMethod::NonFungibleExists => {
                 let input: ResourceManagerNonFungibleExistsInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))?;
-                let substate_id = SubstateId(
-                    RENodeId::ResourceManager(resource_address.clone()),
-                    SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(input.id)),
-                );
+
+                let node_id = RENodeId::ResourceManager(resource_address.clone());
+                let offset =
+                    SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(input.id));
                 let lock_handle = system_api
-                    .lock_substate(substate_id.clone(), false)
+                    .lock_substate(node_id, offset, false)
                     .map_err(InvokeError::Downstream)?;
                 let value = system_api
                     .read_substate(lock_handle)
@@ -647,12 +644,11 @@ impl ResourceManager {
                 let non_fungible_address =
                     NonFungibleAddress::new(resource_address.clone(), input.id.clone());
 
-                let substate_id = SubstateId(
-                    RENodeId::ResourceManager(resource_address.clone()),
-                    SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(input.id)),
-                );
+                let node_id = RENodeId::ResourceManager(resource_address.clone());
+                let offset =
+                    SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(input.id));
                 let lock_handle = system_api
-                    .lock_substate(substate_id.clone(), false)
+                    .lock_substate(node_id, offset, false)
                     .map_err(InvokeError::Downstream)?;
                 let value = system_api
                     .read_substate(lock_handle)
