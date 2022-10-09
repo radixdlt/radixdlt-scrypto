@@ -13,8 +13,8 @@ blueprint! {
             );
 
             let lock_handle: LockHandle =
-                call_engine(RadixEngineInput::CreateRef(substate_id.clone(), false));
-            call_engine(RadixEngineInput::SubstateRead(lock_handle))
+                call_engine(RadixEngineInput::LockSubstate(substate_id.clone(), false));
+            call_engine(RadixEngineInput::ReadSubstate(lock_handle))
         }
 
         pub fn create_component_and_write_state() {
@@ -24,8 +24,8 @@ blueprint! {
                 SubstateOffset::Component(ComponentOffset::State),
             );
             let lock_handle: LockHandle =
-                call_engine(RadixEngineInput::CreateRef(substate_id.clone(), true));
-            call_engine(RadixEngineInput::SubstateWrite(
+                call_engine(RadixEngineInput::LockSubstate(substate_id.clone(), true));
+            call_engine(RadixEngineInput::WriteSubstate(
                 lock_handle,
                 scrypto_encode(&()),
             ))
@@ -38,8 +38,8 @@ blueprint! {
                 SubstateOffset::Component(ComponentOffset::Info),
             );
             let lock_handle: LockHandle =
-                call_engine(RadixEngineInput::CreateRef(substate_id.clone(), false));
-            let input = RadixEngineInput::SubstateRead(lock_handle);
+                call_engine(RadixEngineInput::LockSubstate(substate_id.clone(), false));
+            let input = RadixEngineInput::ReadSubstate(lock_handle);
             call_engine(input)
         }
 
@@ -50,8 +50,8 @@ blueprint! {
                 SubstateOffset::Component(ComponentOffset::Info),
             );
             let lock_handle: LockHandle =
-                call_engine(RadixEngineInput::CreateRef(substate_id.clone(), true));
-            let input = RadixEngineInput::SubstateWrite(lock_handle, scrypto_encode(&()));
+                call_engine(RadixEngineInput::LockSubstate(substate_id.clone(), true));
+            let input = RadixEngineInput::WriteSubstate(lock_handle, scrypto_encode(&()));
             call_engine(input)
         }
     }

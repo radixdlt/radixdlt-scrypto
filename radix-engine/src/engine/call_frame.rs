@@ -1,7 +1,5 @@
 use crate::engine::*;
-use crate::fee::FeeReserve;
 use crate::types::*;
-use crate::wasm::*;
 use scrypto::core::NativeFunction;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -115,19 +113,12 @@ impl CallFrame {
         }
     }
 
-    pub fn new_child<'s, Y, W, I, R>(
+    pub fn new_child(
         depth: usize,
         actor: REActor,
         owned_heap_nodes: HashMap<RENodeId, HeapRootRENode>,
         node_refs: HashMap<RENodeId, RENodePointer>,
-        _system_api: &mut Y,
-    ) -> Self
-    where
-        Y: SystemApi<'s, W, I, R>,
-        W: WasmEngine<I>,
-        I: WasmInstance,
-        R: FeeReserve,
-    {
+    ) -> Self {
         Self {
             depth,
             actor,

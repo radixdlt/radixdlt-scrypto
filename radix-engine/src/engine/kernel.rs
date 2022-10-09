@@ -292,8 +292,12 @@ where
 
     fn run(
         &mut self,
+        frame: CallFrame,
         input: ScryptoValue,
     ) -> Result<(ScryptoValue, HashMap<RENodeId, HeapRootRENode>), RuntimeError> {
+
+        self.call_frames.push(frame);
+
         // Copy-over root frame's auth zone virtual_proofs_buckets
         // TODO: Clean this up at some point (possible move to auth zone?)
         let root_frame = self
@@ -530,17 +534,13 @@ where
         AuthModule::function_auth(function_ident.clone(), &mut self.call_frames)?;
 
         // start a new frame and run
-        let (output, received_values) = {
-            let frame = CallFrame::new_child(
-                Self::current_frame(&self.call_frames).depth + 1,
-                REActor::Function(function_ident.clone()),
-                next_owned_values,
-                next_frame_node_refs,
-                self,
-            );
-            self.call_frames.push(frame);
-            self.run(input)?
-        };
+        let frame = CallFrame::new_child(
+            Self::current_frame(&self.call_frames).depth + 1,
+            REActor::Function(function_ident.clone()),
+            next_owned_values,
+            next_frame_node_refs,
+        );
+        let (output, received_values) = self.run(frame, input)?;
 
         Ok((output, received_values))
     }
@@ -756,17 +756,13 @@ where
             };
 
         // start a new frame
-        let (output, received_values) = {
-            let frame = CallFrame::new_child(
-                Self::current_frame(&self.call_frames).depth + 1,
-                re_actor,
-                next_owned_values,
-                next_frame_node_refs,
-                self,
-            );
-            self.call_frames.push(frame);
-            self.run(input)?
-        };
+        let frame = CallFrame::new_child(
+            Self::current_frame(&self.call_frames).depth + 1,
+            re_actor,
+            next_owned_values,
+            next_frame_node_refs,
+        );
+        let (output, received_values) = self.run(frame, input)?;
 
         // Release locked addresses
         for (node_pointer, offset, write_through) in locked_pointers {
