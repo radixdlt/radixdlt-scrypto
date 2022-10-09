@@ -37,10 +37,10 @@ pub enum RadixEngineInput {
     RENodeGlobalize(RENodeId),
     GetOwnedRENodeIds(),
 
-    CreateRef(SubstateId, bool),
-    SubstateRead(LockHandle),
-    SubstateWrite(LockHandle, Vec<u8>),
-    DropRef(LockHandle),
+    LockSubstate(SubstateId, bool),
+    ReadSubstate(LockHandle),
+    WriteSubstate(LockHandle, Vec<u8>),
+    DropLock(LockHandle),
 
     GetActor(),
     EmitLog(Level, String),

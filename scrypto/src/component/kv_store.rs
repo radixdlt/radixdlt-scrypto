@@ -47,14 +47,14 @@ impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> KeyValueStore<K,
             SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(scrypto_encode(key))),
         );
 
-        let input = RadixEngineInput::CreateRef(substate_id.clone(), false);
+        let input = RadixEngineInput::LockSubstate(substate_id.clone(), false);
         let lock_handle: LockHandle = call_engine(input);
 
-        let input = RadixEngineInput::SubstateRead(lock_handle);
+        let input = RadixEngineInput::ReadSubstate(lock_handle);
         let value: KeyValueStoreEntrySubstate = call_engine(input);
 
         if value.0.is_none() {
-            let input = RadixEngineInput::DropRef(lock_handle);
+            let input = RadixEngineInput::DropLock(lock_handle);
             let _: () = call_engine(input);
         }
 
@@ -68,14 +68,14 @@ impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> KeyValueStore<K,
             RENodeId::KeyValueStore(self.id),
             SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(scrypto_encode(key))),
         );
-        let input = RadixEngineInput::CreateRef(substate_id.clone(), true);
+        let input = RadixEngineInput::LockSubstate(substate_id.clone(), true);
         let lock_handle: LockHandle = call_engine(input);
 
-        let input = RadixEngineInput::SubstateRead(lock_handle);
+        let input = RadixEngineInput::ReadSubstate(lock_handle);
         let value: KeyValueStoreEntrySubstate = call_engine(input);
 
         if value.0.is_none() {
-            let input = RadixEngineInput::DropRef(lock_handle);
+            let input = RadixEngineInput::DropLock(lock_handle);
             let _: () = call_engine(input);
         }
 
@@ -91,14 +91,14 @@ impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> KeyValueStore<K,
             SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(scrypto_encode(&key))),
         );
 
-        let input = RadixEngineInput::CreateRef(substate_id.clone(), true);
+        let input = RadixEngineInput::LockSubstate(substate_id.clone(), true);
         let lock_handle: LockHandle = call_engine(input);
 
         let substate = KeyValueStoreEntrySubstate(Some(scrypto_encode(&value)));
-        let input = RadixEngineInput::SubstateWrite(lock_handle, scrypto_encode(&substate));
+        let input = RadixEngineInput::WriteSubstate(lock_handle, scrypto_encode(&substate));
         let _: () = call_engine(input);
 
-        let input = RadixEngineInput::DropRef(lock_handle);
+        let input = RadixEngineInput::DropLock(lock_handle);
         let _: () = call_engine(input);
     }
 }

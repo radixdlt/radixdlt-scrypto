@@ -107,40 +107,31 @@ where
         Ok(ScryptoValue::from_typed(&global_address))
     }
 
-    fn handle_substate_read(
-        &mut self,
-        lock_handle: LockHandle,
-    ) -> Result<ScryptoValue, RuntimeError> {
-        self.system_api.substate_read(lock_handle)
-    }
-
-    fn handle_substate_borrow(
+    fn handle_lock_substate(
         &mut self,
         substate_id: SubstateId,
         mutable: bool,
     ) -> Result<ScryptoValue, RuntimeError> {
         self.system_api
-            .create_ref(substate_id, mutable)
+            .lock_substate(substate_id, mutable)
             .map(|handle| ScryptoValue::from_typed(&handle))
     }
 
-    fn handle_substate_ref_drop(
+    fn handle_read_substate(
         &mut self,
         lock_handle: LockHandle,
     ) -> Result<ScryptoValue, RuntimeError> {
-        self.system_api
-            .drop_ref(lock_handle)
-            .map(|unit| ScryptoValue::from_typed(&unit))
+        self.system_api.read_substate(lock_handle)
     }
 
-    fn handle_substate_write(
+    fn handle_write_substate(
         &mut self,
         lock_handle: LockHandle,
         value: Vec<u8>,
     ) -> Result<ScryptoValue, RuntimeError> {
         // FIXME: check if the value contains NOT allowed values.
 
-        self.system_api.substate_write(
+        self.system_api.write_substate(
             lock_handle,
             ScryptoValue::from_slice(&value)
                 .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?,
@@ -148,6 +139,12 @@ where
 
         // TODO: do we ever want to return the previous substate value
         Ok(ScryptoValue::unit())
+    }
+
+    fn handle_drop_lock(&mut self, lock_handle: LockHandle) -> Result<ScryptoValue, RuntimeError> {
+        self.system_api
+            .drop_lock(lock_handle)
+            .map(|unit| ScryptoValue::from_typed(&unit))
     }
 
     fn handle_get_actor(&mut self) -> Result<ScryptoActor, RuntimeError> {
@@ -185,14 +182,14 @@ where
             RadixEngineInput::RENodeCreate(node) => self.handle_node_create(node),
             RadixEngineInput::GetOwnedRENodeIds() => self.handle_get_owned_node_ids(),
 
-            RadixEngineInput::SubstateRead(lock_handle) => self.handle_substate_read(lock_handle),
-            RadixEngineInput::SubstateWrite(lock_handle, value) => {
-                self.handle_substate_write(lock_handle, value)
+            RadixEngineInput::LockSubstate(substate_id, mutable) => {
+                self.handle_lock_substate(substate_id, mutable)
             }
-            RadixEngineInput::CreateRef(substate_id, mutable) => {
-                self.handle_substate_borrow(substate_id, mutable)
+            RadixEngineInput::ReadSubstate(lock_handle) => self.handle_read_substate(lock_handle),
+            RadixEngineInput::WriteSubstate(lock_handle, value) => {
+                self.handle_write_substate(lock_handle, value)
             }
-            RadixEngineInput::DropRef(lock_handle) => self.handle_substate_ref_drop(lock_handle),
+            RadixEngineInput::DropLock(lock_handle) => self.handle_drop_lock(lock_handle),
 
             RadixEngineInput::GetActor() => self.handle_get_actor().map(encode),
             RadixEngineInput::GenerateUuid() => self.handle_generate_uuid().map(encode),

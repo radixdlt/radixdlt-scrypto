@@ -315,16 +315,16 @@ impl Bucket {
                             SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(id)),
                         );
                         let lock_handle = system_api
-                            .create_ref(substate_id.clone(), true)
+                            .lock_substate(substate_id.clone(), true)
                             .map_err(InvokeError::Downstream)?;
                         system_api
-                            .substate_write(
+                            .write_substate(
                                 lock_handle,
                                 ScryptoValue::from_typed(&NonFungibleSubstate(None)),
                             )
                             .map_err(InvokeError::Downstream)?;
                         system_api
-                            .drop_ref(lock_handle)
+                            .drop_lock(lock_handle)
                             .map_err(InvokeError::Downstream)?;
                     }
                 }

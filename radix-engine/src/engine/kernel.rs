@@ -1213,7 +1213,7 @@ where
         Ok(global_address)
     }
 
-    fn create_ref(
+    fn lock_substate(
         &mut self,
         substate_id: SubstateId,
         mutable: bool,
@@ -1276,7 +1276,7 @@ where
         Ok(lock_handle)
     }
 
-    fn drop_ref(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError> {
+    fn drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError> {
         let (node_pointer, offset) = Self::current_frame_mut(&mut self.call_frames)
             .drop_substate_ref(lock_handle)
             .map_err(RuntimeError::KernelError)?;
@@ -1295,7 +1295,7 @@ where
         Ok(())
     }
 
-    fn substate_read(&mut self, lock_handle: LockHandle) -> Result<ScryptoValue, RuntimeError> {
+    fn read_substate(&mut self, lock_handle: LockHandle) -> Result<ScryptoValue, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
                 &mut self.track,
@@ -1354,7 +1354,7 @@ where
         Ok(substate)
     }
 
-    fn substate_write(
+    fn write_substate(
         &mut self,
         lock_handle: LockHandle,
         substate: ScryptoValue, // TODO: use substate?

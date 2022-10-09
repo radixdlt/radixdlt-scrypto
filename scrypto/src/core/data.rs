@@ -1,7 +1,7 @@
 use crate::buffer::*;
 use crate::component::{ComponentStateSubstate, KeyValueStoreEntrySubstate};
 use crate::engine::api::RadixEngineInput;
-use crate::engine::api::RadixEngineInput::SubstateWrite;
+use crate::engine::api::RadixEngineInput::WriteSubstate;
 use crate::engine::call_engine;
 use crate::engine::types::{ComponentOffset, LockHandle, RENodeId, SubstateId, SubstateOffset};
 use sbor::rust::fmt;
@@ -36,7 +36,7 @@ impl<V: Encode> Deref for DataRef<V> {
 
 impl<V: Encode> Drop for DataRef<V> {
     fn drop(&mut self) {
-        let input = RadixEngineInput::DropRef(self.lock_handle);
+        let input = RadixEngineInput::DropLock(self.lock_handle);
         let _: () = call_engine(input);
     }
 }
@@ -76,10 +76,10 @@ impl<V: Encode> Drop for DataRefMut<V> {
             ) => scrypto_encode(&ComponentStateSubstate { raw: bytes }),
             s @ _ => panic!("Unsupported substate: {:?}", s),
         };
-        let input = SubstateWrite(self.lock_handle, substate);
+        let input = WriteSubstate(self.lock_handle, substate);
         let _: () = call_engine(input);
 
-        let input = RadixEngineInput::DropRef(self.lock_handle);
+        let input = RadixEngineInput::DropLock(self.lock_handle);
         let _: () = call_engine(input);
     }
 }
@@ -112,10 +112,10 @@ impl<V: 'static + Encode + Decode> DataPointer<V> {
     }
 
     pub fn get(&self) -> DataRef<V> {
-        let input = RadixEngineInput::CreateRef(self.substate_id.clone(), false);
+        let input = RadixEngineInput::LockSubstate(self.substate_id.clone(), false);
         let lock_handle: LockHandle = call_engine(input);
 
-        let input = RadixEngineInput::SubstateRead(lock_handle);
+        let input = RadixEngineInput::ReadSubstate(lock_handle);
         match &self.substate_id {
             SubstateId(RENodeId::KeyValueStore(..), ..) => {
                 let substate: KeyValueStoreEntrySubstate = call_engine(input);
@@ -142,10 +142,10 @@ impl<V: 'static + Encode + Decode> DataPointer<V> {
     }
 
     pub fn get_mut(&mut self) -> DataRefMut<V> {
-        let input = RadixEngineInput::CreateRef(self.substate_id.clone(), true);
+        let input = RadixEngineInput::LockSubstate(self.substate_id.clone(), true);
         let lock_handle: LockHandle = call_engine(input);
 
-        let input = RadixEngineInput::SubstateRead(lock_handle);
+        let input = RadixEngineInput::ReadSubstate(lock_handle);
         match &self.substate_id {
             SubstateId(RENodeId::KeyValueStore(..), ..) => {
                 let substate: KeyValueStoreEntrySubstate = call_engine(input);
