@@ -23,12 +23,19 @@ pub enum SysCallInput<'a> {
     GlobalizeNode {
         node_id: &'a RENodeId,
     },
+    LockSubstate {
+        substate_id: &'a SubstateId,
+        mutable: bool,
+    },
     ReadSubstate {
         lock_handle: &'a LockHandle,
     },
     WriteSubstate {
         lock_handle: &'a LockHandle,
         value: &'a ScryptoValue,
+    },
+    DropLock {
+        lock_handle: &'a LockHandle,
     },
     TakeSubstate {
         substate_id: &'a SubstateId,
@@ -50,8 +57,10 @@ pub enum SysCallOutput<'a> {
     DropNode { node: &'a HeapRootRENode },
     CreateNode { node_id: &'a RENodeId },
     GlobalizeNode,
+    LockSubstate { lock_handle: LockHandle },
     ReadSubstate { value: &'a ScryptoValue },
     WriteSubstate,
+    DropLock,
     TakeSubstate { value: &'a ScryptoValue },
     ReadTransactionHash { hash: &'a Hash },
     ReadBlob { blob: &'a [u8] },

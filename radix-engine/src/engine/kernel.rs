@@ -1210,6 +1210,15 @@ where
         substate_id: SubstateId,
         mutable: bool,
     ) -> Result<LockHandle, RuntimeError> {
+        for m in &mut self.modules {
+            m.pre_sys_call(
+                &mut self.track,
+                &mut self.call_frames,
+                SysCallInput::LockSubstate { substate_id: &substate_id, mutable },
+            )
+                .map_err(RuntimeError::ModuleError)?;
+        }
+
         let mut node_pointer =
             Self::current_frame(&self.call_frames).get_node_pointer(substate_id.0)?;
         let offset = substate_id.1;
@@ -1265,10 +1274,30 @@ where
             mutable,
         );
 
+        for m in &mut self.modules {
+            m.post_sys_call(
+                &mut self.track,
+                &mut self.call_frames,
+                SysCallOutput::LockSubstate { lock_handle, },
+            )
+                .map_err(RuntimeError::ModuleError)?;
+        }
+
         Ok(lock_handle)
     }
 
     fn drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError> {
+        for m in &mut self.modules {
+            m.pre_sys_call(
+                &mut self.track,
+                &mut self.call_frames,
+                SysCallInput::DropLock {
+                    lock_handle: &lock_handle,
+                },
+            )
+                .map_err(RuntimeError::ModuleError)?;
+        }
+
         let (node_pointer, offset) = Self::current_frame_mut(&mut self.call_frames)
             .drop_lock(lock_handle)
             .map_err(RuntimeError::KernelError)?;
@@ -1282,6 +1311,15 @@ where
             node_pointer
                 .release_lock(offset.clone(), false, self.track)
                 .map_err(RuntimeError::KernelError)?;
+        }
+
+        for m in &mut self.modules {
+            m.post_sys_call(
+                &mut self.track,
+                &mut self.call_frames,
+                SysCallOutput::DropLock,
+            )
+                .map_err(RuntimeError::ModuleError)?;
         }
 
         Ok(())

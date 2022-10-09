@@ -60,6 +60,9 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
             SysCallInput::GlobalizeNode { node_id } => {
                 log!(self, "Globalizing node: node_id = {:?}", node_id);
             }
+            SysCallInput::LockSubstate { substate_id, mutable } => {
+                log!(self, "Lock substate: substate_id {:?} mutable {:?}", substate_id, mutable);
+            }
             SysCallInput::ReadSubstate { lock_handle } => {
                 log!(self, "Reading substate: lock_handle = {:?}", lock_handle);
             }
@@ -69,6 +72,13 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
                     "Writing substate: lock_handle = {:?}, value = {:?}",
                     lock_handle,
                     value
+                );
+            }
+            SysCallInput::DropLock { lock_handle } => {
+                log!(
+                    self,
+                    "Drop Lock: lock_handle = {:?}",
+                    lock_handle
                 );
             }
             SysCallInput::TakeSubstate { substate_id } => {
@@ -106,8 +116,10 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
             SysCallOutput::DropNode { .. } => {}
             SysCallOutput::CreateNode { .. } => {}
             SysCallOutput::GlobalizeNode { .. } => {}
+            SysCallOutput::LockSubstate { .. } => {}
             SysCallOutput::ReadSubstate { .. } => {}
             SysCallOutput::WriteSubstate { .. } => {}
+            SysCallOutput::DropLock { .. } => {}
             SysCallOutput::TakeSubstate { .. } => {}
             SysCallOutput::ReadTransactionHash { .. } => {}
             SysCallOutput::ReadBlob { .. } => {}

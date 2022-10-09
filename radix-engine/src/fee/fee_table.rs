@@ -51,6 +51,9 @@ pub enum SystemApiCostingEntry<'a> {
     TakeSubstate {
         size: u32,
     },
+    LockSubstate {
+        size: u32,
+    },
     /// Reads the data of a Substate
     ReadSubstate {
         size: u32,
@@ -59,6 +62,8 @@ pub enum SystemApiCostingEntry<'a> {
     WriteSubstate {
         size: u32,
     },
+
+    DropLock,
 
     /*
      * Misc
@@ -274,9 +279,12 @@ impl FeeTable {
                 }
             }
             SystemApiCostingEntry::ReturnSubstate { size } => self.fixed_low + 100 * size,
+
+            SystemApiCostingEntry::LockSubstate { .. } => self.fixed_low,
             SystemApiCostingEntry::TakeSubstate { .. } => self.fixed_medium,
             SystemApiCostingEntry::ReadSubstate { .. } => self.fixed_medium,
             SystemApiCostingEntry::WriteSubstate { .. } => self.fixed_medium,
+            SystemApiCostingEntry::DropLock => self.fixed_low,
 
             SystemApiCostingEntry::ReadEpoch => self.fixed_low,
             SystemApiCostingEntry::ReadTransactionHash => self.fixed_low,
