@@ -176,7 +176,7 @@ impl AuthZone {
                 let input: AuthZonePushInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(AuthZoneError::InvalidRequestData(e)))?;
                 let mut proof: Proof = system_api
-                    .node_drop(&RENodeId::Proof(input.proof.0))
+                    .node_drop(RENodeId::Proof(input.proof.0))
                     .map_err(InvokeError::Downstream)?
                     .into();
                 proof.change_to_unrestricted();

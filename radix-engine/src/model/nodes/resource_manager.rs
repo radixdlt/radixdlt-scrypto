@@ -502,7 +502,7 @@ impl ResourceManager {
                         .lock_substate(node_id, offset, true)
                         .map_err(InvokeError::Downstream)?;
                     let value = system_api
-                        .read_substate(lock_handle)
+                        .read(lock_handle)
                         .map_err(InvokeError::Downstream)?;
                     let wrapper: NonFungibleSubstate =
                         scrypto_decode(&value.raw).expect("Failed to decode NonFungibleSubstate");
@@ -514,7 +514,7 @@ impl ResourceManager {
                         ));
                     }
                     system_api
-                        .write_substate(
+                        .write(
                             lock_handle,
                             ScryptoValue::from_typed(&NonFungibleSubstate(Some(non_fungible))),
                         )
@@ -589,7 +589,7 @@ impl ResourceManager {
 
                 // Read current value
                 let value = system_api
-                    .read_substate(lock_handle)
+                    .read(lock_handle)
                     .map_err(InvokeError::Downstream)?;
                 let wrapper: NonFungibleSubstate =
                     scrypto_decode(&value.raw).expect("Failed to decode NonFungibleSubstate");
@@ -598,7 +598,7 @@ impl ResourceManager {
                 if let Some(mut non_fungible) = wrapper.0 {
                     non_fungible.set_mutable_data(input.data);
                     system_api
-                        .write_substate(
+                        .write(
                             lock_handle,
                             ScryptoValue::from_typed(&NonFungibleSubstate(Some(non_fungible))),
                         )
@@ -628,7 +628,7 @@ impl ResourceManager {
                     .lock_substate(node_id, offset, false)
                     .map_err(InvokeError::Downstream)?;
                 let value = system_api
-                    .read_substate(lock_handle)
+                    .read(lock_handle)
                     .map_err(InvokeError::Downstream)?;
                 system_api
                     .drop_lock(lock_handle)
@@ -651,7 +651,7 @@ impl ResourceManager {
                     .lock_substate(node_id, offset, false)
                     .map_err(InvokeError::Downstream)?;
                 let value = system_api
-                    .read_substate(lock_handle)
+                    .read(lock_handle)
                     .map_err(InvokeError::Downstream)?;
                 system_api
                     .drop_lock(lock_handle)

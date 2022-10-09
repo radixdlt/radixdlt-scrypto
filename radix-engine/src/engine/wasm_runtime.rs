@@ -118,21 +118,18 @@ where
             .map(|handle| ScryptoValue::from_typed(&handle))
     }
 
-    fn handle_read_substate(
-        &mut self,
-        lock_handle: LockHandle,
-    ) -> Result<ScryptoValue, RuntimeError> {
-        self.system_api.read_substate(lock_handle)
+    fn handle_read(&mut self, lock_handle: LockHandle) -> Result<ScryptoValue, RuntimeError> {
+        self.system_api.read(lock_handle)
     }
 
-    fn handle_write_substate(
+    fn handle_write(
         &mut self,
         lock_handle: LockHandle,
         value: Vec<u8>,
     ) -> Result<ScryptoValue, RuntimeError> {
         // FIXME: check if the value contains NOT allowed values.
 
-        self.system_api.write_substate(
+        self.system_api.write(
             lock_handle,
             ScryptoValue::from_slice(&value)
                 .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?,
@@ -186,10 +183,8 @@ where
             RadixEngineInput::LockSubstate(node_id, offset, mutable) => {
                 self.handle_lock_substate(node_id, offset, mutable)
             }
-            RadixEngineInput::ReadSubstate(lock_handle) => self.handle_read_substate(lock_handle),
-            RadixEngineInput::WriteSubstate(lock_handle, value) => {
-                self.handle_write_substate(lock_handle, value)
-            }
+            RadixEngineInput::Read(lock_handle) => self.handle_read(lock_handle),
+            RadixEngineInput::Write(lock_handle, value) => self.handle_write(lock_handle, value),
             RadixEngineInput::DropLock(lock_handle) => self.handle_drop_lock(lock_handle),
 
             RadixEngineInput::GetActor() => self.handle_get_actor().map(encode),

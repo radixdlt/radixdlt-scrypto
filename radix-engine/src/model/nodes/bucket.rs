@@ -219,7 +219,7 @@ impl Bucket {
                 let input: BucketPutInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(BucketError::InvalidRequestData(e)))?;
                 let other_bucket = system_api
-                    .node_drop(&RENodeId::Bucket(input.bucket.0))
+                    .node_drop(RENodeId::Bucket(input.bucket.0))
                     .map_err(InvokeError::Downstream)?
                     .into();
                 let mut node_ref = system_api
@@ -294,7 +294,7 @@ impl Bucket {
                     .map_err(|e| InvokeError::Error(BucketError::InvalidRequestData(e)))?;
 
                 let bucket: Bucket = system_api
-                    .node_drop(&node_id)
+                    .node_drop(node_id)
                     .map_err(InvokeError::Downstream)?
                     .into();
 
@@ -320,7 +320,7 @@ impl Bucket {
                             )
                             .map_err(InvokeError::Downstream)?;
                         system_api
-                            .write_substate(
+                            .write(
                                 lock_handle,
                                 ScryptoValue::from_typed(&NonFungibleSubstate(None)),
                             )

@@ -34,7 +34,7 @@ blueprint! {
 
             let input = RadixEngineInput::LockSubstate(node_id, offset, true);
             let lock_handle: LockHandle = call_engine(input);
-            let input = RadixEngineInput::WriteSubstate(lock_handle, scrypto_encode(&substate));
+            let input = RadixEngineInput::Write(lock_handle, scrypto_encode(&substate));
             let _: () = call_engine(input);
 
             CyclicMap { store: kv_store0 }.instantiate().globalize()
@@ -56,7 +56,7 @@ blueprint! {
 
             let input = RadixEngineInput::LockSubstate(node_id, offset, true);
             let lock_handle: LockHandle = call_engine(input);
-            let input = RadixEngineInput::WriteSubstate(lock_handle, scrypto_encode(&substate));
+            let input = RadixEngineInput::Write(lock_handle, scrypto_encode(&substate));
             let _: () = call_engine(input);
 
             CyclicMap { store: kv_store }.instantiate().globalize()

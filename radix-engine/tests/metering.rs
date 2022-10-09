@@ -162,7 +162,7 @@ fn test_basic_transfer() {
         + 100 /* read_owned_nodes */
         + 3500 /* read_substate */
         + 5200 /* run_function */
-        + 342302 /* run_wasm */
+        + 338404 /* run_wasm */
         + 566 /* verify_manifest */
         + 3750 /* verify_signatures */
         + 3000, /* write_substate */
@@ -196,7 +196,7 @@ fn test_publish_large_package() {
     receipt.expect_commit_success();
 
     // Assert
-    assert_eq!(4284670, receipt.execution.fee_summary.cost_unit_consumed);
+    assert_eq!(4284388, receipt.execution.fee_summary.cost_unit_consumed);
 }
 
 #[test]

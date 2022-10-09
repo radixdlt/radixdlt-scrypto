@@ -390,7 +390,7 @@ impl Proof {
         R: FeeReserve,
     {
         let proof: Proof = system_api
-            .node_drop(&node_id)
+            .node_drop(node_id)
             .map_err(InvokeError::Downstream)?
             .into();
         match method {

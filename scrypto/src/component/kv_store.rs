@@ -49,7 +49,7 @@ impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> KeyValueStore<K,
         );
         let lock_handle: LockHandle = call_engine(input);
 
-        let input = RadixEngineInput::ReadSubstate(lock_handle);
+        let input = RadixEngineInput::Read(lock_handle);
         let value: KeyValueStoreEntrySubstate = call_engine(input);
 
         if value.0.is_none() {
@@ -68,7 +68,7 @@ impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> KeyValueStore<K,
             RadixEngineInput::LockSubstate(RENodeId::KeyValueStore(self.id), offset.clone(), true);
         let lock_handle: LockHandle = call_engine(input);
 
-        let input = RadixEngineInput::ReadSubstate(lock_handle);
+        let input = RadixEngineInput::Read(lock_handle);
         let value: KeyValueStoreEntrySubstate = call_engine(input);
 
         if value.0.is_none() {
@@ -91,7 +91,7 @@ impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> KeyValueStore<K,
         let lock_handle: LockHandle = call_engine(input);
 
         let substate = KeyValueStoreEntrySubstate(Some(scrypto_encode(&value)));
-        let input = RadixEngineInput::WriteSubstate(lock_handle, scrypto_encode(&substate));
+        let input = RadixEngineInput::Write(lock_handle, scrypto_encode(&substate));
         let _: () = call_engine(input);
 
         let input = RadixEngineInput::DropLock(lock_handle);

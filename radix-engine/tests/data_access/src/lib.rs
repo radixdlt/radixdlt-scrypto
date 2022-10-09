@@ -12,7 +12,7 @@ blueprint! {
                 SubstateOffset::Component(ComponentOffset::State),
                 false,
             ));
-            call_engine(RadixEngineInput::ReadSubstate(lock_handle))
+            call_engine(RadixEngineInput::Read(lock_handle))
         }
 
         pub fn create_component_and_write_state() {
@@ -22,10 +22,7 @@ blueprint! {
                 SubstateOffset::Component(ComponentOffset::State),
                 true,
             ));
-            call_engine(RadixEngineInput::WriteSubstate(
-                lock_handle,
-                scrypto_encode(&()),
-            ))
+            call_engine(RadixEngineInput::Write(lock_handle, scrypto_encode(&())))
         }
 
         pub fn create_component_and_read_info() -> ComponentInfoSubstate {
@@ -35,7 +32,7 @@ blueprint! {
                 SubstateOffset::Component(ComponentOffset::Info),
                 false,
             ));
-            let input = RadixEngineInput::ReadSubstate(lock_handle);
+            let input = RadixEngineInput::Read(lock_handle);
             call_engine(input)
         }
 
@@ -46,7 +43,7 @@ blueprint! {
                 SubstateOffset::Component(ComponentOffset::Info),
                 true,
             ));
-            let input = RadixEngineInput::WriteSubstate(lock_handle, scrypto_encode(&()));
+            let input = RadixEngineInput::Write(lock_handle, scrypto_encode(&()));
             call_engine(input)
         }
     }

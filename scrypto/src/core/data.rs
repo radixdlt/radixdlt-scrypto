@@ -1,7 +1,7 @@
 use crate::buffer::*;
 use crate::component::{ComponentStateSubstate, KeyValueStoreEntrySubstate};
 use crate::engine::api::RadixEngineInput;
-use crate::engine::api::RadixEngineInput::WriteSubstate;
+use crate::engine::api::RadixEngineInput::Write;
 use crate::engine::call_engine;
 use crate::engine::types::{
     ComponentOffset, KeyValueStoreOffset, LockHandle, RENodeId, SubstateOffset,
@@ -77,7 +77,7 @@ impl<V: Encode> Drop for DataRefMut<V> {
             }
             s @ _ => panic!("Unsupported substate: {:?}", s),
         };
-        let input = WriteSubstate(self.lock_handle, substate);
+        let input = Write(self.lock_handle, substate);
         let _: () = call_engine(input);
 
         let input = RadixEngineInput::DropLock(self.lock_handle);
@@ -118,7 +118,7 @@ impl<V: 'static + Encode + Decode> DataPointer<V> {
         let input = RadixEngineInput::LockSubstate(self.node_id, self.offset.clone(), false);
         let lock_handle: LockHandle = call_engine(input);
 
-        let input = RadixEngineInput::ReadSubstate(lock_handle);
+        let input = RadixEngineInput::Read(lock_handle);
         match &self.offset {
             SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)) => {
                 let substate: KeyValueStoreEntrySubstate = call_engine(input);
@@ -148,7 +148,7 @@ impl<V: 'static + Encode + Decode> DataPointer<V> {
         let input = RadixEngineInput::LockSubstate(self.node_id, self.offset.clone(), true);
         let lock_handle: LockHandle = call_engine(input);
 
-        let input = RadixEngineInput::ReadSubstate(lock_handle);
+        let input = RadixEngineInput::Read(lock_handle);
         match &self.offset {
             SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)) => {
                 let substate: KeyValueStoreEntrySubstate = call_engine(input);

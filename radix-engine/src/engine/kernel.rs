@@ -1071,12 +1071,12 @@ where
         Ok(node_ids)
     }
 
-    fn node_drop(&mut self, node_id: &RENodeId) -> Result<HeapRootRENode, RuntimeError> {
+    fn node_drop(&mut self, node_id: RENodeId) -> Result<HeapRootRENode, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
                 &mut self.track,
                 &mut self.call_frames,
-                SysCallInput::DropNode { node_id: node_id },
+                SysCallInput::DropNode { node_id: &node_id },
             )
             .map_err(RuntimeError::ModuleError)?;
         }
@@ -1325,7 +1325,7 @@ where
         Ok(())
     }
 
-    fn read_substate(&mut self, lock_handle: LockHandle) -> Result<ScryptoValue, RuntimeError> {
+    fn read(&mut self, lock_handle: LockHandle) -> Result<ScryptoValue, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
                 &mut self.track,
@@ -1384,11 +1384,11 @@ where
         Ok(substate)
     }
 
-    fn write_substate(
+    fn write(
         &mut self,
         lock_handle: LockHandle,
         substate: ScryptoValue, // TODO: use substate?
-    ) -> Result<ScryptoValue, RuntimeError> {
+    ) -> Result<(), RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
                 &mut self.track,
@@ -1482,7 +1482,7 @@ where
             .map_err(RuntimeError::ModuleError)?;
         }
 
-        Ok(prev_substate)
+        Ok(())
     }
 
     fn read_blob(&mut self, blob_hash: &Hash) -> Result<&[u8], RuntimeError> {
