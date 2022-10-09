@@ -1347,7 +1347,7 @@ where
 
         let substate = {
             let mut node_ref = node_pointer.to_ref_mut(&mut self.call_frames, &mut self.track);
-            node_ref.read_substate(&SubstateId(node_pointer.node_id(), offset.clone()))?
+            node_ref.read_substate(&offset)?
         };
 
         // TODO: Clean the following referencing up
@@ -1452,7 +1452,7 @@ where
 
         let prev_substate = {
             let mut node_ref = node_pointer.to_ref_mut(&mut self.call_frames, &mut self.track);
-            node_ref.read_substate(&SubstateId(node_pointer.node_id(), offset.clone()))?
+            node_ref.read_substate(&offset)?
         };
 
         let prev_contained_value = extract_value_from_substate(&offset, &prev_substate);
@@ -1467,11 +1467,7 @@ where
 
         // Write values
         let mut node_ref = node_pointer.to_ref_mut(&mut self.call_frames, &mut self.track);
-        node_ref.write_substate(
-            SubstateId(node_pointer.node_id(), offset.clone()),
-            substate,
-            taken_nodes,
-        );
+        node_ref.write_substate(&offset, substate, taken_nodes)?;
 
         for m in &mut self.modules {
             m.post_sys_call(
