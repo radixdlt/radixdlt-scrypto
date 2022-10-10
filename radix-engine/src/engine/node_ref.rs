@@ -226,11 +226,10 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
         &mut self,
         offset: &SubstateOffset,
     ) -> Result<ScryptoValue, RuntimeError> {
-        let value = match self {
+        let substate_ref = match self {
             RENodeRefMut::Stack(root_node, _, node_id) => {
                 let heap_re_node = root_node.get_node_mut(node_id.as_ref());
-                let substate_ref = heap_re_node.borrow_substate(&offset)?;
-                substate_ref.to_scrypto_value()
+                heap_re_node.borrow_substate(&offset)?
             }
             RENodeRefMut::Track(track, node_id) => match (&node_id, &offset) {
                 (
@@ -241,9 +240,8 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
                         *node_id,
                         SubstateOffset::KeyValueStore(KeyValueStoreOffset::Space),
                     );
-                    track
-                        .read_key_value(parent_substate_id, key.to_vec())
-                        .to_scrypto_value()
+                    let substate = track.read_key_value(parent_substate_id, key.to_vec());
+                    substate.to_ref()
                 }
                 (
                     RENodeId::ResourceManager(..),
@@ -255,17 +253,17 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
                         *node_id,
                         SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungibleSpace),
                     );
-                    track
-                        .read_key_value(parent_substate_id, non_fungible_id.to_vec())
-                        .to_scrypto_value()
+                    let substate = track.read_key_value(parent_substate_id, non_fungible_id.to_vec());
+                    substate.to_ref()
                 }
-                _ => track
-                    .borrow_substate(SubstateId(*node_id, offset.clone()))
-                    .to_scrypto_value(),
+                _ => {
+                    let substate = track.borrow_substate(SubstateId(*node_id, offset.clone()));
+                    substate.to_ref()
+                }
             },
         };
 
-        Ok(value)
+        Ok(substate_ref.to_scrypto_value())
     }
 
     pub fn write_substate(

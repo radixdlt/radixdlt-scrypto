@@ -7,13 +7,23 @@ pub enum SubstateRef<'a> {
     ComponentState(&'a ComponentStateSubstate),
     NonFungible(&'a NonFungibleSubstate),
     KeyValueStoreEntry(&'a KeyValueStoreEntrySubstate),
+    Package(&'a PackageSubstate),
+    Vault(&'a VaultSubstate),
+    ResourceManager(&'a ResourceManagerSubstate),
+    System(&'a SystemSubstate),
+    Global(&'a GlobalAddressSubstate),
 }
 
 impl<'a> SubstateRef<'a> {
     pub fn to_scrypto_value(&self) -> ScryptoValue {
         match self {
+            SubstateRef::Global(value) => ScryptoValue::from_typed(*value),
+            SubstateRef::System(value) => ScryptoValue::from_typed(*value),
+            SubstateRef::ResourceManager(value) => ScryptoValue::from_typed(*value),
             SubstateRef::ComponentInfo(value) => ScryptoValue::from_typed(*value),
             SubstateRef::ComponentState(value) => ScryptoValue::from_typed(*value),
+            SubstateRef::Package(value) => ScryptoValue::from_typed(*value),
+            SubstateRef::Vault(value) => ScryptoValue::from_typed(*value),
             SubstateRef::NonFungible(value) => ScryptoValue::from_typed(*value),
             SubstateRef::KeyValueStoreEntry(value) => ScryptoValue::from_typed(*value),
         }

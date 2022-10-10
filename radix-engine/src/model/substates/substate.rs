@@ -1,3 +1,4 @@
+use crate::engine::SubstateRef;
 use crate::model::*;
 use crate::types::*;
 
@@ -17,17 +18,17 @@ pub enum Substate {
 }
 
 impl Substate {
-    pub fn to_scrypto_value(&self) -> ScryptoValue {
+    pub fn to_ref(&self) -> SubstateRef {
         match self {
-            Substate::GlobalRENode(value) => ScryptoValue::from_typed(value),
-            Substate::System(value) => ScryptoValue::from_typed(value),
-            Substate::ResourceManager(value) => ScryptoValue::from_typed(value),
-            Substate::ComponentInfo(value) => ScryptoValue::from_typed(value),
-            Substate::ComponentState(value) => ScryptoValue::from_typed(value),
-            Substate::Package(value) => ScryptoValue::from_typed(value),
-            Substate::Vault(value) => ScryptoValue::from_typed(value),
-            Substate::NonFungible(value) => ScryptoValue::from_typed(value),
-            Substate::KeyValueStoreEntry(value) => ScryptoValue::from_typed(value),
+            Substate::GlobalRENode(value) => SubstateRef::Global(value),
+            Substate::System(value) => SubstateRef::System(value),
+            Substate::ResourceManager(value) => SubstateRef::ResourceManager(value),
+            Substate::ComponentInfo(value) => SubstateRef::ComponentInfo(value),
+            Substate::ComponentState(value) => SubstateRef::ComponentState(value),
+            Substate::Package(value) => SubstateRef::Package(value),
+            Substate::Vault(value) => SubstateRef::Vault(value),
+            Substate::NonFungible(value) => SubstateRef::NonFungible(value),
+            Substate::KeyValueStoreEntry(value) => SubstateRef::KeyValueStoreEntry(value),
         }
     }
 
