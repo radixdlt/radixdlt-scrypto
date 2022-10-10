@@ -91,11 +91,14 @@ impl Component {
                     }
                 }
 
-                let mut node = system_api
-                    .borrow_node_mut(&node_id)
-                    .map_err(InvokeError::Downstream)?;
-                let component = node.component_mut();
-                component.info.access_rules.push(input.access_rules);
+                let offset = SubstateOffset::Component(ComponentOffset::Info);
+                let handle = system_api.lock_substate(node_id, offset, true).map_err(InvokeError::Downstream)?;
+                let mut substate_ref_mut = system_api.get_mut(handle).map_err(InvokeError::Downstream)?;
+                substate_ref_mut.update(|r| {
+                    r.component_info().access_rules.push(input.access_rules);
+                    Ok(())
+                }).map_err(InvokeError::Downstream)?;
+                system_api.drop_lock(handle).map_err(InvokeError::Downstream)?;
 
                 Ok(ScryptoValue::from_typed(&()))
             }

@@ -569,6 +569,13 @@ pub enum RawSubstateRefMut<'a> {
 }
 
 impl<'a> RawSubstateRefMut<'a> {
+    pub fn component_info(&mut self) -> &mut ComponentInfoSubstate {
+        match self {
+            RawSubstateRefMut::ComponentInfo(value) => *value,
+            _ => panic!("Not system"),
+        }
+    }
+
     pub fn system(&mut self) -> &mut SystemSubstate {
         match self {
             RawSubstateRefMut::System(value) => *value,

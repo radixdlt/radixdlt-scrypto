@@ -374,13 +374,4 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
             RENodeRefMut::Track(track, node_id) => track.borrow_node_mut(node_id).vault_mut(),
         }
     }
-
-    pub fn component_mut(&mut self) -> &mut Component {
-        match self {
-            RENodeRefMut::Stack(root_node, _, id) => {
-                root_node.get_node_mut(id.as_ref()).component_mut()
-            }
-            RENodeRefMut::Track(track, node_id) => track.borrow_node_mut(node_id).component_mut(),
-        }
-    }
 }
