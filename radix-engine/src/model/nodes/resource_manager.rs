@@ -450,7 +450,9 @@ impl ResourceManager {
                     ));
                 }
 
-                // Update balance
+                // Update total supply
+                // TODO: there might be better for maintaining total supply, especially for non-fungibles
+                // where we can leverage capabilities of key-value map.
                 resource_manager.info.total_supply -= bucket.total_amount();
 
                 // Burn non-fungible
