@@ -1416,6 +1416,14 @@ where
             )));
         }
 
+        let prev_children = {
+            let substate_ref_mut =
+                node_pointer.borrow_substate(&offset, &mut self.call_frames, &mut self.track)?;
+            let (_old_global_references, prev_children) =
+                substate_ref_mut.references_and_owned_nodes();
+            prev_children
+        };
+
         let substate = match offset {
             SubstateOffset::Component(ComponentOffset::State) => {
                 let substate = scrypto_decode(&substate.raw).unwrap();
@@ -1462,6 +1470,7 @@ where
                 (HashMap::new(), HashSet::new())
             }
         };
+        verify_stored_value_update(&prev_children, &missing_nodes)?;
 
         // Write values
         {
@@ -1472,11 +1481,6 @@ where
                 &mut self.call_frames,
                 &mut self.track,
             )?;
-            let (_old_global_references, prev_children) =
-                substate_ref_mut.references_and_owned_nodes();
-
-            verify_stored_value_update(&prev_children, &missing_nodes)?;
-
             substate_ref_mut.overwrite(substate)?;
         }
 
