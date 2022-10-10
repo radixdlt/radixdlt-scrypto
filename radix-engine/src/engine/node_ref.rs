@@ -230,8 +230,8 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
                     .map_err(|e| RuntimeError::KernelError(KernelError::TrackError(e)))?,
             )),
             SubstateId(
-                RENodeId::ResourceManager(_),
-                SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(id)),
+                RENodeId::NonFungibleStore(_),
+                SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(id)),
             ) => Ok(ScryptoValue::from_typed(&self.non_fungible_get(id))),
             SubstateId(
                 RENodeId::KeyValueStore(_),
@@ -259,8 +259,8 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
                 self.component_state_put(actual_substate, child_nodes);
             }
             SubstateId(
-                RENodeId::ResourceManager(..),
-                SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(id)),
+                RENodeId::NonFungibleStore(..),
+                SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(id)),
             ) => {
                 let actual_substate: NonFungibleSubstate =
                     scrypto_decode(&substate.raw).expect("TODO: who should check this");
@@ -340,27 +340,29 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
     }
 
     pub fn non_fungible_get(&mut self, id: &NonFungibleId) -> NonFungibleSubstate {
-        if let Some(non_fungible) = self.resource_manager_mut().get_non_fungible(id) {
+        if let Some(non_fungible) = self.non_fungible_store_mut().get(id) {
             return non_fungible.clone();
         }
 
         match self {
-            RENodeRefMut::Stack(..) => NonFungibleSubstate(None), // virtualization
+            RENodeRefMut::Stack(..) => {
+                let substate = NonFungibleSubstate(None); // virtualization
+                self.non_fungible_store_mut()
+                    .put(id.clone(), substate.clone());
+                substate
+            }
             RENodeRefMut::Track(track, node_id) => {
                 // Read key value
-                let parent_substate_id = match node_id {
-                    RENodeId::ResourceManager(resource_address) => SubstateId(
-                        RENodeId::ResourceManager(*resource_address),
-                        SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungibleSpace),
-                    ),
-                    _ => panic!("Unexpected"),
-                };
+                let parent_substate_id = SubstateId(
+                    *node_id,
+                    SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Space),
+                );
                 let substate = track.read_key_value(parent_substate_id, id.to_vec());
                 let specific_substate: NonFungibleSubstate = substate.into();
 
                 // Store it in the node
-                let resource_manager = track.borrow_node_mut(node_id).resource_manager_mut();
-                resource_manager.put_non_fungible(id.clone(), specific_substate.clone());
+                let non_fungible_store = track.borrow_node_mut(node_id).non_fungible_store_mut();
+                non_fungible_store.put(id.clone(), specific_substate.clone());
 
                 specific_substate
             }
@@ -368,7 +370,7 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
     }
 
     pub fn non_fungible_put(&mut self, id: NonFungibleId, substate: NonFungibleSubstate) {
-        self.resource_manager_mut().put_non_fungible(id, substate);
+        self.non_fungible_store_mut().put(id, substate);
     }
 
     pub fn component_state_get(&mut self) -> Result<ComponentStateSubstate, TrackError> {
@@ -462,6 +464,17 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
             }
             RENodeRefMut::Track(track, node_id) => {
                 track.borrow_node_mut(node_id).resource_manager_mut()
+            }
+        }
+    }
+
+    pub fn non_fungible_store_mut(&mut self) -> &mut NonFungibleStore {
+        match self {
+            RENodeRefMut::Stack(root_node, id) => {
+                root_node.get_node_mut(id.as_ref()).non_fungible_store_mut()
+            }
+            RENodeRefMut::Track(track, node_id) => {
+                track.borrow_node_mut(node_id).non_fungible_store_mut()
             }
         }
     }

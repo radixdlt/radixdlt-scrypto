@@ -3,7 +3,8 @@ use sbor::*;
 
 use crate::component::{ComponentAddress, PackageAddress};
 use crate::crypto::*;
-use crate::resource::{NonFungibleId, ResourceAddress};
+use crate::resource::NonFungibleId;
+use crate::resource::ResourceAddress;
 
 pub type AuthZoneId = u32;
 pub type BucketId = u32;
@@ -11,6 +12,7 @@ pub type ProofId = u32;
 
 pub type ComponentId = (Hash, u32);
 pub type KeyValueStoreId = (Hash, u32);
+pub type NonFungibleStoreId = (Hash, u32);
 pub type VaultId = (Hash, u32);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Encode, Decode, TypeId, Ord, PartialOrd)]
@@ -21,6 +23,7 @@ pub enum RENodeId {
 
     Global(GlobalAddress),
     KeyValueStore(KeyValueStoreId),
+    NonFungibleStore(NonFungibleStoreId),
     Worktop,
     Component(ComponentId),
     System(ComponentId),
@@ -33,6 +36,7 @@ impl Into<(Hash, u32)> for RENodeId {
     fn into(self) -> KeyValueStoreId {
         match self {
             RENodeId::KeyValueStore(id) => id,
+            RENodeId::NonFungibleStore(id) => id,
             RENodeId::Vault(id) => id,
             RENodeId::Component(id) => id,
             RENodeId::System(id) => id,
@@ -127,14 +131,18 @@ pub enum GlobalOffset {
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum ResourceManagerOffset {
     ResourceManager,
-    NonFungibleSpace,
-    NonFungible(NonFungibleId),
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum KeyValueStoreOffset {
     Space,
     Entry(Vec<u8>),
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum NonFungibleStoreOffset {
+    Space,
+    Entry(NonFungibleId),
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -170,6 +178,7 @@ pub enum SubstateOffset {
     Package(PackageOffset),
     ResourceManager(ResourceManagerOffset),
     KeyValueStore(KeyValueStoreOffset),
+    NonFungibleStore(NonFungibleStoreOffset),
     Vault(VaultOffset),
     System(SystemOffset),
     Bucket(BucketOffset),

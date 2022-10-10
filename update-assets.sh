@@ -3,7 +3,7 @@
 set -x
 set -e
 
-cd "$(dirname "$0")"
+cd "$(dirname "$0")/assets"
 
 echo "Building packages..."
 (cd account; scrypto build)
