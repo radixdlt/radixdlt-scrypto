@@ -1443,18 +1443,13 @@ where
             }
         };
 
-        let prev_substate = {
+        let (_old_global_references, prev_children) = {
             let substate_ref =
                 node_pointer.borrow_substate(&offset, &mut self.call_frames, &mut self.track)?;
-            substate_ref.to_scrypto_value()
+            substate_ref.references_and_owned_nodes()
         };
 
-        let prev_contained_value = extract_value_from_substate(&offset, &prev_substate);
-
         // Fulfill method
-        let prev_children = prev_contained_value
-            .map(|v| v.node_ids())
-            .unwrap_or_default();
         verify_stored_value_update(&prev_children, &missing_nodes)?;
 
         // TODO: verify against some schema
