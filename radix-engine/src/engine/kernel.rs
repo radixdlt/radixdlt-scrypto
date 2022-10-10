@@ -1455,8 +1455,12 @@ where
         // TODO: verify against some schema
 
         // Write values
-        let mut node_ref = node_pointer.to_ref_mut(&mut self.call_frames, &mut self.track);
-        node_ref.write_substate(&offset, substate, taken_nodes)?;
+        node_pointer.add_children(taken_nodes, &mut self.call_frames, &mut self.track);
+        {
+            let mut node_ref = node_pointer.to_ref_mut(&mut self.call_frames, &mut self.track);
+            node_ref.write_substate(&offset, substate)?;
+        }
+
 
         for m in &mut self.modules {
             m.post_sys_call(

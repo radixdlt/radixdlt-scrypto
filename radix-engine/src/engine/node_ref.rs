@@ -166,6 +166,34 @@ impl RENodePointer {
         Ok(substate_ref)
     }
 
+    pub fn add_children<'f, 'p, 's, R: FeeReserve>(
+        &self,
+        child_nodes: HashMap<RENodeId, HeapRootRENode>,
+        call_frames: &'f mut Vec<CallFrame>,
+        track: &'f mut Track<'s, R>,
+    ) {
+        match self {
+            RENodePointer::Heap { frame_id, root, .. } => {
+                let frame = call_frames.get_mut(*frame_id).unwrap();
+                let root_node = frame
+                    .owned_heap_nodes
+                    .get_mut(&root)
+                    .unwrap();
+
+                for (id, val) in child_nodes {
+                    root_node.insert_non_root_nodes(val.to_nodes(id));
+                }
+            }
+            RENodePointer::Store(..) => {
+                for (id, val) in child_nodes {
+                    for (id, node) in val.to_nodes(id) {
+                        track.put_node(id, node);
+                    }
+                }
+            },
+        }
+    }
+
     // TODO: ref drop mechanism
     // TODO: concurrent refs and mut refs
 }
@@ -278,13 +306,12 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
         &mut self,
         offset: &SubstateOffset,
         substate: ScryptoValue,
-        child_nodes: HashMap<RENodeId, HeapRootRENode>,
     ) -> Result<(), RuntimeError> {
         match (self.node_id(), offset) {
             (RENodeId::Component(..), SubstateOffset::Component(ComponentOffset::State)) => {
                 let actual_substate: ComponentStateSubstate =
                     scrypto_decode(&substate.raw).expect("TODO: who should check this");
-                self.component_state_put(actual_substate, child_nodes);
+                self.component_state_put(actual_substate);
             }
             (
                 RENodeId::ResourceManager(..),
@@ -300,7 +327,7 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
             ) => {
                 let actual_substate: KeyValueStoreEntrySubstate =
                     scrypto_decode(&substate.raw).expect("TODO: who should check this");
-                self.kv_store_put(key.clone(), actual_substate, child_nodes);
+                self.kv_store_put(key.clone(), actual_substate);
             }
             (RENodeId::System(..), SubstateOffset::System(SystemOffset::System)) => {
                 let actual_substate: SystemSubstate =
@@ -323,7 +350,6 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
         &mut self,
         key: Vec<u8>,
         substate: KeyValueStoreEntrySubstate, // TODO: disallow soft deletion
-        to_store: HashMap<RENodeId, HeapRootRENode>,
     ) {
         match self {
             RENodeRefMut::Stack(root_node, _, node_id) => {
@@ -331,9 +357,6 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
                     .get_node_mut(node_id.as_ref())
                     .kv_store_mut()
                     .put(key, substate);
-                for (id, val) in to_store {
-                    root_node.insert_non_root_nodes(val.to_nodes(id));
-                }
             }
             RENodeRefMut::Track(track, node_id) => {
                 let parent_substate_id = match node_id {
@@ -344,14 +367,7 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
                     _ => panic!("Unexpected"),
                 };
 
-                //track.borrow_node_mut(node_id).kv_store_mut().put(key.clone(), substate.clone());
                 track.set_key_value(parent_substate_id, key, substate);
-
-                for (id, val) in to_store {
-                    for (id, node) in val.to_nodes(id) {
-                        track.put_node(id, node);
-                    }
-                }
             }
         }
     }
@@ -418,15 +434,11 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
     pub fn component_state_put(
         &mut self,
         substate: ComponentStateSubstate,
-        to_store: HashMap<RENodeId, HeapRootRENode>,
     ) {
         match self {
             RENodeRefMut::Stack(root_node, _, node_id) => {
                 let component = root_node.get_node_mut(node_id.as_ref()).component_mut();
                 component.state = Some(substate);
-                for (id, val) in to_store {
-                    root_node.insert_non_root_nodes(val.to_nodes(id));
-                }
             }
             RENodeRefMut::Track(track, node_id) => {
                 let substate_id =
@@ -435,11 +447,6 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
 
                 let component = track.borrow_node_mut(node_id).component_mut();
                 component.state = Some(substate);
-                for (id, val) in to_store {
-                    for (id, node) in val.to_nodes(id) {
-                        track.put_node(id, node);
-                    }
-                }
             }
         }
     }
