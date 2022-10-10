@@ -114,16 +114,16 @@ impl HeapRENode {
     pub fn borrow_substate_mut(
         &mut self,
         offset: &SubstateOffset,
-    ) -> Result<SubstateRefMut, RuntimeError> {
+    ) -> Result<RawSubstateRefMut, RuntimeError> {
         let substate_ref = match (self, offset) {
             (
                 HeapRENode::Component(component),
                 SubstateOffset::Component(ComponentOffset::State),
-            ) => SubstateRefMut::ComponentState(component.state.as_mut().unwrap()),
+            ) => RawSubstateRefMut::ComponentState(component.state.as_mut().unwrap()),
             (
                 HeapRENode::Component(component),
                 SubstateOffset::Component(ComponentOffset::Info),
-            ) => SubstateRefMut::ComponentInfo(&mut component.info),
+            ) => RawSubstateRefMut::ComponentInfo(&mut component.info),
             (
                 HeapRENode::ResourceManager(resource_manager),
                 SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(id)),
@@ -132,7 +132,7 @@ impl HeapRENode {
                     .loaded_non_fungibles
                     .entry(id.clone())
                     .or_insert(NonFungibleSubstate(None));
-                SubstateRefMut::NonFungible(entry)
+                RawSubstateRefMut::NonFungible(entry)
             }
             (
                 HeapRENode::KeyValueStore(kv_store),
@@ -142,7 +142,7 @@ impl HeapRENode {
                     .loaded_entries
                     .entry(key.to_vec())
                     .or_insert(KeyValueStoreEntrySubstate(None));
-                SubstateRefMut::KeyValueStoreEntry(entry)
+                RawSubstateRefMut::KeyValueStoreEntry(entry)
             }
             (_, offset) => {
                 return Err(RuntimeError::KernelError(KernelError::OffsetNotAvailable(

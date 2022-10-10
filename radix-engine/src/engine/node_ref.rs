@@ -166,56 +166,13 @@ impl RENodePointer {
         Ok(substate_ref)
     }
 
-    pub fn borrow_substate_mut<'f, 'p, 's, R: FeeReserve>(
+    pub fn get_substate_mut<'f, 's, R: FeeReserve>(
         &self,
         offset: &SubstateOffset,
         call_frames: &'f mut Vec<CallFrame>,
         track: &'f mut Track<'s, R>,
-    ) -> Result<SubstateRefMut<'f>, RuntimeError> {
-        let substate_ref = match self {
-            RENodePointer::Heap { frame_id, root, id } => {
-                let frame = call_frames.get_mut(*frame_id).unwrap();
-                let heap_re_node = frame
-                    .owned_heap_nodes
-                    .get_mut(&root)
-                    .unwrap()
-                    .get_node_mut(id.as_ref());
-                heap_re_node.borrow_substate_mut(offset)?
-            }
-            RENodePointer::Store(node_id) => match (node_id, offset) {
-                (
-                    RENodeId::KeyValueStore(..),
-                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key)),
-                ) => {
-                    let parent_substate_id = SubstateId(
-                        *node_id,
-                        SubstateOffset::KeyValueStore(KeyValueStoreOffset::Space),
-                    );
-                    track
-                        .read_key_value_mut(parent_substate_id, key.to_vec())
-                        .to_ref_mut()
-                }
-                (
-                    RENodeId::ResourceManager(..),
-                    SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(
-                        non_fungible_id,
-                    )),
-                ) => {
-                    let parent_substate_id = SubstateId(
-                        *node_id,
-                        SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungibleSpace),
-                    );
-                    track
-                        .read_key_value_mut(parent_substate_id, non_fungible_id.to_vec())
-                        .to_ref_mut()
-                }
-                _ => track
-                    .borrow_substate_mut(SubstateId(*node_id, offset.clone()))
-                    .to_ref_mut(),
-            },
-        };
-
-        Ok(substate_ref)
+    ) -> Result<SubstateRefMut<'f, 's, R>, RuntimeError> {
+        SubstateRefMut::new(self.clone(), offset.clone(), call_frames, track)
     }
 
     pub fn add_children<'f, 'p, 's, R: FeeReserve>(
@@ -426,28 +383,4 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
             RENodeRefMut::Track(track, node_id) => track.borrow_node_mut(node_id).component_mut(),
         }
     }
-}
-
-pub fn verify_stored_value_update(
-    old: &HashSet<RENodeId>,
-    missing: &HashSet<RENodeId>,
-) -> Result<(), RuntimeError> {
-    // TODO: optimize intersection search
-    for old_id in old.iter() {
-        if !missing.contains(&old_id) {
-            return Err(RuntimeError::KernelError(KernelError::StoredNodeRemoved(
-                old_id.clone(),
-            )));
-        }
-    }
-
-    for missing_id in missing.iter() {
-        if !old.contains(missing_id) {
-            return Err(RuntimeError::KernelError(KernelError::RENodeNotFound(
-                *missing_id,
-            )));
-        }
-    }
-
-    Ok(())
 }

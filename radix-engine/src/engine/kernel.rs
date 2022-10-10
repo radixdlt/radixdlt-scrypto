@@ -1416,14 +1416,6 @@ where
             )));
         }
 
-        let prev_children = {
-            let substate_ref_mut =
-                node_pointer.borrow_substate(&offset, &mut self.call_frames, &mut self.track)?;
-            let (_old_global_references, prev_children) =
-                substate_ref_mut.references_and_owned_nodes();
-            prev_children
-        };
-
         let substate = match offset {
             SubstateOffset::Component(ComponentOffset::State) => {
                 let substate = scrypto_decode(&substate.raw).unwrap();
@@ -1444,44 +1436,11 @@ where
             _ => panic!("oops: {:?}", offset),
         };
 
-        let (new_global_references, children) = substate.to_ref().references_and_owned_nodes();
-        for global_address in new_global_references {
-            let node_id = RENodeId::Global(global_address);
-            if !Self::current_frame_mut(&mut self.call_frames)
-                .node_refs
-                .contains_key(&node_id)
-            {
-                return Err(RuntimeError::KernelError(
-                    KernelError::InvalidReferenceWrite(global_address),
-                ));
-            }
-        }
-
-        // Take values from current frame
-        let (taken_nodes, missing_nodes) = {
-            if !children.is_empty() {
-                if !SubstateProperties::can_own_nodes(&offset) {
-                    return Err(RuntimeError::KernelError(KernelError::ValueNotAllowed));
-                }
-
-                Self::current_frame_mut(&mut self.call_frames)
-                    .take_available_values(children, true)?
-            } else {
-                (HashMap::new(), HashSet::new())
-            }
-        };
-        verify_stored_value_update(&prev_children, &missing_nodes)?;
-
         // Write values
         {
-            node_pointer.add_children(taken_nodes, &mut self.call_frames, &mut self.track);
-
-            let mut substate_ref_mut = node_pointer.borrow_substate_mut(
-                &offset,
-                &mut self.call_frames,
-                &mut self.track,
-            )?;
-            substate_ref_mut.overwrite(substate)?;
+            let mut substate_mut =
+                node_pointer.get_substate_mut(&offset, &mut self.call_frames, &mut self.track)?;
+            substate_mut.overwrite(substate)?;
         }
 
         for m in &mut self.modules {

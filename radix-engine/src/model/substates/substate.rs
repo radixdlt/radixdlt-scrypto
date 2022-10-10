@@ -1,4 +1,7 @@
-use crate::engine::{KernelError, RuntimeError};
+use crate::engine::{
+    CallFrame, KernelError, RENodePointer, RuntimeError, SubstateProperties, Track,
+};
+use crate::fee::FeeReserve;
 use crate::model::*;
 use crate::types::*;
 
@@ -18,17 +21,17 @@ pub enum Substate {
 }
 
 impl Substate {
-    pub fn to_ref_mut(&mut self) -> SubstateRefMut {
+    pub fn to_ref_mut(&mut self) -> RawSubstateRefMut {
         match self {
-            Substate::GlobalRENode(value) => SubstateRefMut::Global(value),
-            Substate::System(value) => SubstateRefMut::System(value),
-            Substate::ResourceManager(value) => SubstateRefMut::ResourceManager(value),
-            Substate::ComponentInfo(value) => SubstateRefMut::ComponentInfo(value),
-            Substate::ComponentState(value) => SubstateRefMut::ComponentState(value),
-            Substate::Package(value) => SubstateRefMut::Package(value),
-            Substate::Vault(value) => SubstateRefMut::Vault(value),
-            Substate::NonFungible(value) => SubstateRefMut::NonFungible(value),
-            Substate::KeyValueStoreEntry(value) => SubstateRefMut::KeyValueStoreEntry(value),
+            Substate::GlobalRENode(value) => RawSubstateRefMut::Global(value),
+            Substate::System(value) => RawSubstateRefMut::System(value),
+            Substate::ResourceManager(value) => RawSubstateRefMut::ResourceManager(value),
+            Substate::ComponentInfo(value) => RawSubstateRefMut::ComponentInfo(value),
+            Substate::ComponentState(value) => RawSubstateRefMut::ComponentState(value),
+            Substate::Package(value) => RawSubstateRefMut::Package(value),
+            Substate::Vault(value) => RawSubstateRefMut::Vault(value),
+            Substate::NonFungible(value) => RawSubstateRefMut::NonFungible(value),
+            Substate::KeyValueStoreEntry(value) => RawSubstateRefMut::KeyValueStoreEntry(value),
         }
     }
 
@@ -384,7 +387,159 @@ impl<'a> SubstateRef<'a> {
     }
 }
 
-pub enum SubstateRefMut<'a> {
+pub fn verify_stored_value_update(
+    old: &HashSet<RENodeId>,
+    missing: &HashSet<RENodeId>,
+) -> Result<(), RuntimeError> {
+    // TODO: optimize intersection search
+    for old_id in old.iter() {
+        if !missing.contains(&old_id) {
+            return Err(RuntimeError::KernelError(KernelError::StoredNodeRemoved(
+                old_id.clone(),
+            )));
+        }
+    }
+
+    for missing_id in missing.iter() {
+        if !old.contains(missing_id) {
+            return Err(RuntimeError::KernelError(KernelError::RENodeNotFound(
+                *missing_id,
+            )));
+        }
+    }
+
+    Ok(())
+}
+
+pub struct SubstateRefMut<'f, 's, R: FeeReserve> {
+    prev_children: HashSet<RENodeId>,
+    node_pointer: RENodePointer,
+    offset: SubstateOffset,
+    call_frames: &'f mut Vec<CallFrame>,
+    track: &'f mut Track<'s, R>,
+}
+
+impl<'f, 's, R: FeeReserve> SubstateRefMut<'f, 's, R> {
+    pub fn new(
+        node_pointer: RENodePointer,
+        offset: SubstateOffset,
+        call_frames: &'f mut Vec<CallFrame>,
+        track: &'f mut Track<'s, R>,
+    ) -> Result<Self, RuntimeError> {
+        let prev_children = {
+            let substate_ref_mut = node_pointer.borrow_substate(&offset, call_frames, track)?;
+            let (_old_global_references, prev_children) =
+                substate_ref_mut.references_and_owned_nodes();
+            prev_children
+        };
+
+        let substate_ref_mut = Self {
+            prev_children,
+            node_pointer,
+            offset,
+            call_frames,
+            track,
+        };
+        Ok(substate_ref_mut)
+    }
+
+    pub fn overwrite(&'f mut self, substate: Substate) -> Result<(), RuntimeError> {
+        let (new_global_references, children) = substate.to_ref().references_and_owned_nodes();
+        for global_address in new_global_references {
+            let node_id = RENodeId::Global(global_address);
+            let current_frame = self.call_frames.last_mut().unwrap();
+            if !current_frame.node_refs.contains_key(&node_id) {
+                return Err(RuntimeError::KernelError(
+                    KernelError::InvalidReferenceWrite(global_address),
+                ));
+            }
+        }
+
+        // Take values from current frame
+        let (taken_nodes, missing_nodes) = {
+            if !children.is_empty() {
+                if !SubstateProperties::can_own_nodes(&self.offset) {
+                    return Err(RuntimeError::KernelError(KernelError::ValueNotAllowed));
+                }
+
+                let current_frame = self.call_frames.last_mut().unwrap();
+                current_frame.take_available_values(children, true)?
+            } else {
+                (HashMap::new(), HashSet::new())
+            }
+        };
+        verify_stored_value_update(&self.prev_children, &missing_nodes)?;
+
+        self.node_pointer
+            .add_children(taken_nodes, &mut self.call_frames, &mut self.track);
+
+        let raw_mut = self.get_ref_mut();
+        match (raw_mut, substate) {
+            (RawSubstateRefMut::ComponentState(current), Substate::ComponentState(next)) => {
+                *current = next
+            }
+            (
+                RawSubstateRefMut::KeyValueStoreEntry(current),
+                Substate::KeyValueStoreEntry(next),
+            ) => *current = next,
+            (RawSubstateRefMut::NonFungible(current), Substate::NonFungible(next)) => {
+                *current = next
+            }
+            (RawSubstateRefMut::System(current), Substate::System(next)) => *current = next,
+            _ => return Err(RuntimeError::KernelError(KernelError::InvalidOverwrite)),
+        }
+
+        Ok(())
+    }
+
+    fn get_ref_mut(&'f mut self) -> RawSubstateRefMut<'f> {
+        match self.node_pointer {
+            RENodePointer::Heap { frame_id, root, id } => {
+                let frame = self.call_frames.get_mut(frame_id).unwrap();
+                let heap_re_node = frame
+                    .owned_heap_nodes
+                    .get_mut(&root)
+                    .unwrap()
+                    .get_node_mut(id.as_ref());
+                heap_re_node.borrow_substate_mut(&self.offset).unwrap()
+            }
+            RENodePointer::Store(node_id) => match (node_id, &self.offset) {
+                (
+                    RENodeId::KeyValueStore(..),
+                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key)),
+                ) => {
+                    let parent_substate_id = SubstateId(
+                        node_id,
+                        SubstateOffset::KeyValueStore(KeyValueStoreOffset::Space),
+                    );
+                    self.track
+                        .read_key_value_mut(parent_substate_id, key.to_vec())
+                        .to_ref_mut()
+                }
+                (
+                    RENodeId::ResourceManager(..),
+                    SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(
+                        non_fungible_id,
+                    )),
+                ) => {
+                    let parent_substate_id = SubstateId(
+                        node_id,
+                        SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungibleSpace),
+                    );
+                    self.track
+                        .read_key_value_mut(parent_substate_id, non_fungible_id.to_vec())
+                        .to_ref_mut()
+                }
+                _ => self
+                    .track
+                    .borrow_substate_mut(SubstateId(node_id, self.offset.clone()))
+                    .to_ref_mut(),
+            },
+        }
+    }
+}
+
+pub enum RawSubstateRefMut<'a> {
     ComponentInfo(&'a mut ComponentInfoSubstate),
     ComponentState(&'a mut ComponentStateSubstate),
     NonFungible(&'a mut NonFungibleSubstate),
@@ -394,54 +549,4 @@ pub enum SubstateRefMut<'a> {
     ResourceManager(&'a mut ResourceManagerSubstate),
     System(&'a mut SystemSubstate),
     Global(&'a mut GlobalAddressSubstate),
-}
-
-impl<'a> SubstateRefMut<'a> {
-    pub fn overwrite(&mut self, substate: Substate) -> Result<(), RuntimeError> {
-        match (self, substate) {
-            (SubstateRefMut::ComponentState(current), Substate::ComponentState(next)) => {
-                **current = next
-            }
-            (SubstateRefMut::KeyValueStoreEntry(current), Substate::KeyValueStoreEntry(next)) => {
-                **current = next
-            }
-            (SubstateRefMut::NonFungible(current), Substate::NonFungible(next)) => **current = next,
-            (SubstateRefMut::System(current), Substate::System(next)) => **current = next,
-            _ => return Err(RuntimeError::KernelError(KernelError::InvalidOverwrite)),
-        }
-
-        Ok(())
-    }
-
-    pub fn references_and_owned_nodes(&self) -> (HashSet<GlobalAddress>, HashSet<RENodeId>) {
-        match self {
-            SubstateRefMut::ComponentState(substate) => {
-                let scrypto_value = ScryptoValue::from_slice(&substate.raw).unwrap();
-                (scrypto_value.global_references(), scrypto_value.node_ids())
-            }
-            SubstateRefMut::KeyValueStoreEntry(substate) => {
-                let maybe_scrypto_value = substate
-                    .0
-                    .as_ref()
-                    .map(|raw| ScryptoValue::from_slice(raw).unwrap());
-                if let Some(scrypto_value) = maybe_scrypto_value {
-                    (scrypto_value.global_references(), scrypto_value.node_ids())
-                } else {
-                    (HashSet::new(), HashSet::new())
-                }
-            }
-            SubstateRefMut::NonFungible(substate) => {
-                let maybe_scrypto_value = substate
-                    .0
-                    .as_ref()
-                    .map(|non_fungible| ScryptoValue::from_typed(non_fungible));
-                if let Some(scrypto_value) = maybe_scrypto_value {
-                    (scrypto_value.global_references(), scrypto_value.node_ids())
-                } else {
-                    (HashSet::new(), HashSet::new())
-                }
-            }
-            _ => (HashSet::new(), HashSet::new()),
-        }
-    }
 }
