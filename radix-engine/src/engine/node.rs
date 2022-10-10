@@ -28,6 +28,38 @@ impl<'a> SubstateRef<'a> {
             SubstateRef::KeyValueStoreEntry(value) => ScryptoValue::from_typed(*value),
         }
     }
+
+    pub fn references_and_owned_nodes(&self) -> (HashSet<GlobalAddress>, HashSet<RENodeId>) {
+        match self {
+            SubstateRef::ComponentState(substate) => {
+                let scrypto_value = ScryptoValue::from_slice(&substate.raw).unwrap();
+                (scrypto_value.global_references(), scrypto_value.node_ids())
+            }
+            SubstateRef::KeyValueStoreEntry(substate) => {
+                let maybe_scrypto_value = substate
+                    .0
+                    .as_ref()
+                    .map(|raw| ScryptoValue::from_slice(raw).unwrap());
+                if let Some(scrypto_value) = maybe_scrypto_value {
+                    (scrypto_value.global_references(), scrypto_value.node_ids())
+                } else {
+                    (HashSet::new(), HashSet::new())
+                }
+            }
+            SubstateRef::NonFungible(substate) => {
+                let maybe_scrypto_value = substate
+                    .0
+                    .as_ref()
+                    .map(|non_fungible| ScryptoValue::from_typed(non_fungible));
+                if let Some(scrypto_value) = maybe_scrypto_value {
+                    (scrypto_value.global_references(), scrypto_value.node_ids())
+                } else {
+                    (HashSet::new(), HashSet::new())
+                }
+            }
+            _ => (HashSet::new(), HashSet::new()),
+        }
+    }
 }
 
 #[derive(Debug)]

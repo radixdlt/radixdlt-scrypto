@@ -411,32 +411,47 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         match parent_address {
             SubstateId(RENodeId::ResourceManager(..), ..) => {
                 if !self.loaded_substates.contains_key(&substate_id) {
-                    let substate = self.state_track
+                    let substate = self
+                        .state_track
                         .get_substate(&substate_id)
                         .unwrap_or(Substate::NonFungible(NonFungibleSubstate(None)));
 
-                    self.loaded_substates.insert(substate_id.clone(), LoadedSubstate {
-                        substate: SubstateCache::Free(substate),
-                        lock_state: LockState::no_lock(),
-                    });
+                    self.loaded_substates.insert(
+                        substate_id.clone(),
+                        LoadedSubstate {
+                            substate: SubstateCache::Free(substate),
+                            lock_state: LockState::no_lock(),
+                        },
+                    );
                 }
 
-                self.loaded_substates.get(&substate_id).unwrap().substate.borrow()
-            },
+                self.loaded_substates
+                    .get(&substate_id)
+                    .unwrap()
+                    .substate
+                    .borrow()
+            }
             SubstateId(RENodeId::KeyValueStore(..), ..) => {
                 if !self.loaded_substates.contains_key(&substate_id) {
                     let substate = self.state_track.get_substate(&substate_id).unwrap_or(
                         Substate::KeyValueStoreEntry(KeyValueStoreEntrySubstate(None)),
                     );
 
-                    self.loaded_substates.insert(substate_id.clone(), LoadedSubstate {
-                        substate: SubstateCache::Free(substate),
-                        lock_state: LockState::no_lock(),
-                    });
+                    self.loaded_substates.insert(
+                        substate_id.clone(),
+                        LoadedSubstate {
+                            substate: SubstateCache::Free(substate),
+                            lock_state: LockState::no_lock(),
+                        },
+                    );
                 }
 
-                self.loaded_substates.get(&substate_id).unwrap().substate.borrow()
-            },
+                self.loaded_substates
+                    .get(&substate_id)
+                    .unwrap()
+                    .substate
+                    .borrow()
+            }
             _ => panic!("Invalid keyed value address {:?}", parent_address),
         }
     }

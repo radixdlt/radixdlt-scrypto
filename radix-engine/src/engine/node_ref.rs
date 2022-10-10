@@ -225,7 +225,7 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
     pub fn borrow_substate(
         &mut self,
         offset: &SubstateOffset,
-    ) -> Result<ScryptoValue, RuntimeError> {
+    ) -> Result<SubstateRef, RuntimeError> {
         let substate_ref = match self {
             RENodeRefMut::Stack(root_node, _, node_id) => {
                 let heap_re_node = root_node.get_node_mut(node_id.as_ref());
@@ -253,7 +253,8 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
                         *node_id,
                         SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungibleSpace),
                     );
-                    let substate = track.read_key_value(parent_substate_id, non_fungible_id.to_vec());
+                    let substate =
+                        track.read_key_value(parent_substate_id, non_fungible_id.to_vec());
                     substate.to_ref()
                 }
                 _ => {
@@ -263,7 +264,7 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
             },
         };
 
-        Ok(substate_ref.to_scrypto_value())
+        Ok(substate_ref)
     }
 
     pub fn write_substate(
