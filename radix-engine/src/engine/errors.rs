@@ -82,7 +82,7 @@ pub enum KernelError {
     MovingLockedRENode(RENodeId),
     LockDoesNotExist(LockHandle),
     LockNotMutable(LockHandle),
-    OffsetNotAvailable(RENodeId, SubstateOffset),
+    OffsetNotAvailable(SubstateOffset),
     SubstateNotReadable(REActor, SubstateId),
     SubstateNotWriteable(REActor, SubstateId),
     TrackError(TrackError),

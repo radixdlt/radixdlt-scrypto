@@ -17,6 +17,20 @@ pub enum Substate {
 }
 
 impl Substate {
+    pub fn to_scrypto_value(&self) -> ScryptoValue {
+        match self {
+            Substate::GlobalRENode(value) => ScryptoValue::from_typed(value),
+            Substate::System(value) => ScryptoValue::from_typed(value),
+            Substate::ResourceManager(value) => ScryptoValue::from_typed(value),
+            Substate::ComponentInfo(value) => ScryptoValue::from_typed(value),
+            Substate::ComponentState(value) => ScryptoValue::from_typed(value),
+            Substate::Package(value) => ScryptoValue::from_typed(value),
+            Substate::Vault(value) => ScryptoValue::from_typed(value),
+            Substate::NonFungible(value) => ScryptoValue::from_typed(value),
+            Substate::KeyValueStoreEntry(value) => ScryptoValue::from_typed(value),
+        }
+    }
+
     pub fn global_re_node(&self) -> &GlobalAddressSubstate {
         if let Substate::GlobalRENode(global_re_node) = self {
             global_re_node

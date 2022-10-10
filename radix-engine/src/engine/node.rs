@@ -2,6 +2,25 @@ use crate::engine::*;
 use crate::model::*;
 use crate::types::*;
 
+
+pub enum SubstateRef<'a> {
+    ComponentInfo(&'a ComponentInfoSubstate),
+    ComponentState(&'a ComponentStateSubstate),
+    NonFungible(&'a NonFungibleSubstate),
+    KeyValueStoreEntry(&'a KeyValueStoreEntrySubstate),
+}
+
+impl<'a> SubstateRef<'a> {
+    pub fn to_scrypto_value(&self) -> ScryptoValue {
+        match self {
+            SubstateRef::ComponentInfo(value) => ScryptoValue::from_typed(*value),
+            SubstateRef::ComponentState(value) => ScryptoValue::from_typed(*value),
+            SubstateRef::NonFungible(value) => ScryptoValue::from_typed(*value),
+            SubstateRef::KeyValueStoreEntry(value) => ScryptoValue::from_typed(*value),
+        }
+    }
+}
+
 #[derive(Debug)]
 pub enum HeapRENode {
     Global(GlobalRENode), // TODO: Remove
@@ -67,6 +86,29 @@ impl HeapRENode {
             HeapRENode::Worktop(..) => Ok(HashSet::new()),
             HeapRENode::System(..) => Ok(HashSet::new()),
         }
+    }
+
+    pub fn borrow_substate(&mut self, offset: &SubstateOffset) -> Result<SubstateRef, RuntimeError> {
+        let substate_ref = match (self, offset) {
+            (HeapRENode::Component(component), SubstateOffset::Component(ComponentOffset::State)) => {
+                SubstateRef::ComponentState(component.state.as_ref().unwrap())
+            },
+            (HeapRENode::Component(component), SubstateOffset::Component(ComponentOffset::Info)) => {
+                SubstateRef::ComponentInfo(&component.info)
+            },
+            (HeapRENode::ResourceManager(resource_manager), SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(id))) => {
+                let entry = resource_manager.loaded_non_fungibles.entry(id.clone()).or_insert(NonFungibleSubstate(None));
+                SubstateRef::NonFungible(entry)
+            },
+            (HeapRENode::KeyValueStore(kv_store), SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key))) => {
+                let entry = kv_store.loaded_entries.entry(key.to_vec()).or_insert(KeyValueStoreEntrySubstate(None));
+                SubstateRef::KeyValueStoreEntry(entry)
+            }
+            (_, offset) => {
+                return Err(RuntimeError::KernelError(KernelError::OffsetNotAvailable(offset.clone())));
+            }
+        };
+        Ok(substate_ref)
     }
 
     pub fn global_re_node(&self) -> &GlobalRENode {
