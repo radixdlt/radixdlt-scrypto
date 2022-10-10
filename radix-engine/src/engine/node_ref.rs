@@ -104,7 +104,11 @@ impl RENodePointer {
         match self {
             RENodePointer::Heap { frame_id, root, id } => {
                 let frame = call_frames.get_mut(*frame_id).unwrap();
-                RENodeRefMut::Stack(frame.owned_heap_nodes.get_mut(root).unwrap(), root.clone(), id.clone())
+                RENodeRefMut::Stack(
+                    frame.owned_heap_nodes.get_mut(root).unwrap(),
+                    root.clone(),
+                    id.clone(),
+                )
             }
             RENodePointer::Store(node_id) => RENodeRefMut::Track(track, node_id.clone()),
         }
@@ -213,11 +217,55 @@ pub enum RENodeRefMut<'f, 's, R: FeeReserve> {
 impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
     fn node_id(&self) -> RENodeId {
         match self {
-            RENodeRefMut::Stack(_, root, child) => {
-                child.unwrap_or(*root)
-            }
+            RENodeRefMut::Stack(_, root, child) => child.unwrap_or(*root),
             RENodeRefMut::Track(_, node_id) => *node_id,
         }
+    }
+
+    pub fn borrow_substate(
+        &mut self,
+        offset: &SubstateOffset,
+    ) -> Result<ScryptoValue, RuntimeError> {
+        let value = match self {
+            RENodeRefMut::Stack(root_node, _, node_id) => {
+                let heap_re_node = root_node.get_node_mut(node_id.as_ref());
+                let substate_ref = heap_re_node.borrow_substate(&offset)?;
+                substate_ref.to_scrypto_value()
+            }
+            RENodeRefMut::Track(track, node_id) => match (&node_id, &offset) {
+                (
+                    RENodeId::KeyValueStore(..),
+                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key)),
+                ) => {
+                    let parent_substate_id = SubstateId(
+                        *node_id,
+                        SubstateOffset::KeyValueStore(KeyValueStoreOffset::Space),
+                    );
+                    track
+                        .read_key_value(parent_substate_id, key.to_vec())
+                        .to_scrypto_value()
+                }
+                (
+                    RENodeId::ResourceManager(..),
+                    SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(
+                        non_fungible_id,
+                    )),
+                ) => {
+                    let parent_substate_id = SubstateId(
+                        *node_id,
+                        SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungibleSpace),
+                    );
+                    track
+                        .read_key_value(parent_substate_id, non_fungible_id.to_vec())
+                        .to_scrypto_value()
+                }
+                _ => track
+                    .borrow_substate(SubstateId(*node_id, offset.clone()))
+                    .to_scrypto_value(),
+            },
+        };
+
+        Ok(value)
     }
 
     pub fn write_substate(
@@ -231,19 +279,27 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
                 let actual_substate: ComponentStateSubstate =
                     scrypto_decode(&substate.raw).expect("TODO: who should check this");
                 self.component_state_put(actual_substate, child_nodes);
-            },
-            (RENodeId::ResourceManager(..), SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(id))) => {
+            }
+            (
+                RENodeId::ResourceManager(..),
+                SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(id)),
+            ) => {
                 let actual_substate: NonFungibleSubstate =
                     scrypto_decode(&substate.raw).expect("TODO: who should check this");
                 self.non_fungible_put(id.clone(), actual_substate);
-            },
-            (RENodeId::KeyValueStore(..), SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key))) => {
+            }
+            (
+                RENodeId::KeyValueStore(..),
+                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key)),
+            ) => {
                 let actual_substate: KeyValueStoreEntrySubstate =
                     scrypto_decode(&substate.raw).expect("TODO: who should check this");
                 self.kv_store_put(key.clone(), actual_substate, child_nodes);
             }
             (_, offset) => {
-                return Err(RuntimeError::KernelError(KernelError::OffsetNotAvailable(offset.clone())));
+                return Err(RuntimeError::KernelError(KernelError::OffsetNotAvailable(
+                    offset.clone(),
+                )));
             }
         }
 
@@ -292,7 +348,10 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
     pub fn non_fungible_put(&mut self, id: NonFungibleId, substate: NonFungibleSubstate) {
         match self {
             RENodeRefMut::Stack(root_node, _, node_id) => {
-                root_node.get_node_mut(node_id.as_ref()).resource_manager_mut().put_non_fungible(id, substate);
+                root_node
+                    .get_node_mut(node_id.as_ref())
+                    .resource_manager_mut()
+                    .put_non_fungible(id, substate);
             }
             RENodeRefMut::Track(track, node_id) => {
                 let parent_substate_id = match node_id {
@@ -359,7 +418,8 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
                 }
             }
             RENodeRefMut::Track(track, node_id) => {
-                let substate_id = SubstateId(*node_id, SubstateOffset::Component(ComponentOffset::State));
+                let substate_id =
+                    SubstateId(*node_id, SubstateOffset::Component(ComponentOffset::State));
                 track.put_substate(substate_id, Substate::ComponentState(substate.clone()));
 
                 let component = track.borrow_node_mut(node_id).component_mut();
@@ -375,21 +435,27 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
 
     pub fn bucket_mut(&mut self) -> &mut Bucket {
         match self {
-            RENodeRefMut::Stack(root_node, _, id) => root_node.get_node_mut(id.as_ref()).bucket_mut(),
+            RENodeRefMut::Stack(root_node, _, id) => {
+                root_node.get_node_mut(id.as_ref()).bucket_mut()
+            }
             RENodeRefMut::Track(..) => panic!("Bucket should be in stack"),
         }
     }
 
     pub fn proof_mut(&mut self) -> &mut Proof {
         match self {
-            RENodeRefMut::Stack(root_node, _, id) => root_node.get_node_mut(id.as_ref()).proof_mut(),
+            RENodeRefMut::Stack(root_node, _, id) => {
+                root_node.get_node_mut(id.as_ref()).proof_mut()
+            }
             RENodeRefMut::Track(..) => panic!("Proof should be in stack"),
         }
     }
 
     pub fn auth_zone_mut(&mut self) -> &mut AuthZone {
         match self {
-            RENodeRefMut::Stack(re_value, _, id) => re_value.get_node_mut(id.as_ref()).auth_zone_mut(),
+            RENodeRefMut::Stack(re_value, _, id) => {
+                re_value.get_node_mut(id.as_ref()).auth_zone_mut()
+            }
             RENodeRefMut::Track(..) => panic!("AuthZone should be in stack"),
         }
     }
@@ -416,21 +482,27 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
 
     pub fn system_mut(&mut self) -> &mut System {
         match self {
-            RENodeRefMut::Stack(root_node, _, id) => root_node.get_node_mut(id.as_ref()).system_mut(),
+            RENodeRefMut::Stack(root_node, _, id) => {
+                root_node.get_node_mut(id.as_ref()).system_mut()
+            }
             RENodeRefMut::Track(track, node_id) => track.borrow_node_mut(node_id).system_mut(),
         }
     }
 
     pub fn worktop_mut(&mut self) -> &mut Worktop {
         match self {
-            RENodeRefMut::Stack(root_node, _, id) => root_node.get_node_mut(id.as_ref()).worktop_mut(),
+            RENodeRefMut::Stack(root_node, _, id) => {
+                root_node.get_node_mut(id.as_ref()).worktop_mut()
+            }
             RENodeRefMut::Track(track, node_id) => track.borrow_node_mut(node_id).worktop_mut(),
         }
     }
 
     pub fn vault_mut(&mut self) -> &mut Vault {
         match self {
-            RENodeRefMut::Stack(root_node, _, id) => root_node.get_node_mut(id.as_ref()).vault_mut(),
+            RENodeRefMut::Stack(root_node, _, id) => {
+                root_node.get_node_mut(id.as_ref()).vault_mut()
+            }
             RENodeRefMut::Track(track, node_id) => track.borrow_node_mut(node_id).vault_mut(),
         }
     }

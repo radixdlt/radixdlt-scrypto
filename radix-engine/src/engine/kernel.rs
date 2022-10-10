@@ -1345,32 +1345,9 @@ where
             .map_err(RuntimeError::KernelError)?
             .clone();
 
-        let substate = match node_pointer {
-            RENodePointer::Heap { frame_id, root, id } => {
-                let frame = self.call_frames.get_mut(frame_id).unwrap();
-                let heap_re_node = frame.owned_heap_nodes.get_mut(&root).unwrap().get_node_mut(id.as_ref());
-                let substate_ref = heap_re_node.borrow_substate(&offset)?;
-                substate_ref.to_scrypto_value()
-            }
-            RENodePointer::Store(node_id) => {
-                match (node_id, &offset) {
-                    (RENodeId::KeyValueStore(..), SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key))) => {
-                        let parent_substate_id = SubstateId(
-                            node_id,
-                            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Space),
-                        );
-                        self.track.read_key_value(parent_substate_id, key.to_vec()).to_scrypto_value()
-                    }
-                    (RENodeId::ResourceManager(..), SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(non_fungible_id))) => {
-                        let parent_substate_id = SubstateId(
-                            node_id,
-                            SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungibleSpace),
-                        );
-                        self.track.read_key_value(parent_substate_id, non_fungible_id.to_vec()).to_scrypto_value()
-                    }
-                    _ => self.track.borrow_substate(SubstateId(node_id, offset.clone())).to_scrypto_value()
-                }
-            },
+        let substate = {
+            let mut node_ref = node_pointer.to_ref_mut(&mut self.call_frames, &mut self.track);
+            node_ref.borrow_substate(&offset)?
         };
 
         // TODO: Clean the following referencing up
@@ -1473,32 +1450,9 @@ where
             }
         };
 
-        let prev_substate = match node_pointer {
-            RENodePointer::Heap { frame_id, root, id } => {
-                let frame = self.call_frames.get_mut(frame_id).unwrap();
-                let heap_re_node = frame.owned_heap_nodes.get_mut(&root).unwrap().get_node_mut(id.as_ref());
-                let substate_ref = heap_re_node.borrow_substate(&offset)?;
-                substate_ref.to_scrypto_value()
-            }
-            RENodePointer::Store(node_id) => {
-                match (node_id, &offset) {
-                    (RENodeId::KeyValueStore(..), SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key))) => {
-                        let parent_substate_id = SubstateId(
-                            node_id,
-                            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Space),
-                        );
-                        self.track.read_key_value(parent_substate_id, key.to_vec()).to_scrypto_value()
-                    }
-                    (RENodeId::ResourceManager(..), SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(non_fungible_id))) => {
-                        let parent_substate_id = SubstateId(
-                            node_id,
-                            SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungibleSpace),
-                        );
-                        self.track.read_key_value(parent_substate_id, non_fungible_id.to_vec()).to_scrypto_value()
-                    }
-                    _ => self.track.borrow_substate(SubstateId(node_id, offset.clone())).to_scrypto_value()
-                }
-            },
+        let prev_substate = {
+            let mut node_ref = node_pointer.to_ref_mut(&mut self.call_frames, &mut self.track);
+            node_ref.borrow_substate(&offset)?
         };
 
         let prev_contained_value = extract_value_from_substate(&offset, &prev_substate);

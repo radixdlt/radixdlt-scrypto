@@ -2,7 +2,6 @@ use crate::engine::*;
 use crate::model::*;
 use crate::types::*;
 
-
 pub enum SubstateRef<'a> {
     ComponentInfo(&'a ComponentInfoSubstate),
     ComponentState(&'a ComponentStateSubstate),
@@ -88,24 +87,43 @@ impl HeapRENode {
         }
     }
 
-    pub fn borrow_substate(&mut self, offset: &SubstateOffset) -> Result<SubstateRef, RuntimeError> {
+    pub fn borrow_substate(
+        &mut self,
+        offset: &SubstateOffset,
+    ) -> Result<SubstateRef, RuntimeError> {
         let substate_ref = match (self, offset) {
-            (HeapRENode::Component(component), SubstateOffset::Component(ComponentOffset::State)) => {
-                SubstateRef::ComponentState(component.state.as_ref().unwrap())
-            },
-            (HeapRENode::Component(component), SubstateOffset::Component(ComponentOffset::Info)) => {
-                SubstateRef::ComponentInfo(&component.info)
-            },
-            (HeapRENode::ResourceManager(resource_manager), SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(id))) => {
-                let entry = resource_manager.loaded_non_fungibles.entry(id.clone()).or_insert(NonFungibleSubstate(None));
+            (
+                HeapRENode::Component(component),
+                SubstateOffset::Component(ComponentOffset::State),
+            ) => SubstateRef::ComponentState(component.state.as_ref().unwrap()),
+            (
+                HeapRENode::Component(component),
+                SubstateOffset::Component(ComponentOffset::Info),
+            ) => SubstateRef::ComponentInfo(&component.info),
+            (
+                HeapRENode::ResourceManager(resource_manager),
+                SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(id)),
+            ) => {
+                let entry = resource_manager
+                    .loaded_non_fungibles
+                    .entry(id.clone())
+                    .or_insert(NonFungibleSubstate(None));
                 SubstateRef::NonFungible(entry)
-            },
-            (HeapRENode::KeyValueStore(kv_store), SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key))) => {
-                let entry = kv_store.loaded_entries.entry(key.to_vec()).or_insert(KeyValueStoreEntrySubstate(None));
+            }
+            (
+                HeapRENode::KeyValueStore(kv_store),
+                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key)),
+            ) => {
+                let entry = kv_store
+                    .loaded_entries
+                    .entry(key.to_vec())
+                    .or_insert(KeyValueStoreEntrySubstate(None));
                 SubstateRef::KeyValueStoreEntry(entry)
             }
             (_, offset) => {
-                return Err(RuntimeError::KernelError(KernelError::OffsetNotAvailable(offset.clone())));
+                return Err(RuntimeError::KernelError(KernelError::OffsetNotAvailable(
+                    offset.clone(),
+                )));
             }
         };
         Ok(substate_ref)
