@@ -1,4 +1,4 @@
-use crate::engine::SubstateRef;
+use crate::engine::{KernelError, RuntimeError};
 use crate::model::*;
 use crate::types::*;
 
@@ -18,6 +18,20 @@ pub enum Substate {
 }
 
 impl Substate {
+    pub fn to_ref_mut(&mut self) -> SubstateRefMut {
+        match self {
+            Substate::GlobalRENode(value) => SubstateRefMut::Global(value),
+            Substate::System(value) => SubstateRefMut::System(value),
+            Substate::ResourceManager(value) => SubstateRefMut::ResourceManager(value),
+            Substate::ComponentInfo(value) => SubstateRefMut::ComponentInfo(value),
+            Substate::ComponentState(value) => SubstateRefMut::ComponentState(value),
+            Substate::Package(value) => SubstateRefMut::Package(value),
+            Substate::Vault(value) => SubstateRefMut::Vault(value),
+            Substate::NonFungible(value) => SubstateRefMut::NonFungible(value),
+            Substate::KeyValueStoreEntry(value) => SubstateRefMut::KeyValueStoreEntry(value),
+        }
+    }
+
     pub fn to_ref(&self) -> SubstateRef {
         match self {
             Substate::GlobalRENode(value) => SubstateRef::Global(value),
@@ -278,6 +292,156 @@ impl Into<GlobalAddressSubstate> for Substate {
             substate
         } else {
             panic!("Not a global address substate");
+        }
+    }
+}
+
+pub enum SubstateRef<'a> {
+    ComponentInfo(&'a ComponentInfoSubstate),
+    ComponentState(&'a ComponentStateSubstate),
+    NonFungible(&'a NonFungibleSubstate),
+    KeyValueStoreEntry(&'a KeyValueStoreEntrySubstate),
+    Package(&'a PackageSubstate),
+    Vault(&'a VaultSubstate),
+    ResourceManager(&'a ResourceManagerSubstate),
+    System(&'a SystemSubstate),
+    Global(&'a GlobalAddressSubstate),
+}
+
+impl<'a> SubstateRef<'a> {
+    pub fn to_scrypto_value(&self) -> ScryptoValue {
+        match self {
+            SubstateRef::Global(value) => ScryptoValue::from_typed(*value),
+            SubstateRef::System(value) => ScryptoValue::from_typed(*value),
+            SubstateRef::ResourceManager(value) => ScryptoValue::from_typed(*value),
+            SubstateRef::ComponentInfo(value) => ScryptoValue::from_typed(*value),
+            SubstateRef::ComponentState(value) => ScryptoValue::from_typed(*value),
+            SubstateRef::Package(value) => ScryptoValue::from_typed(*value),
+            SubstateRef::Vault(value) => ScryptoValue::from_typed(*value),
+            SubstateRef::NonFungible(value) => ScryptoValue::from_typed(*value),
+            SubstateRef::KeyValueStoreEntry(value) => ScryptoValue::from_typed(*value),
+        }
+    }
+
+    pub fn non_fungible(&self) -> &NonFungibleSubstate {
+        match self {
+            SubstateRef::NonFungible(non_fungible_substate) => *non_fungible_substate,
+            _ => panic!("Not a non fungible"),
+        }
+    }
+
+    pub fn system(&self) -> &SystemSubstate {
+        match self {
+            SubstateRef::System(system) => *system,
+            _ => panic!("Not a system substate"),
+        }
+    }
+
+    pub fn component_state(&self) -> &ComponentStateSubstate {
+        match self {
+            SubstateRef::ComponentState(state) => *state,
+            _ => panic!("Not a component state"),
+        }
+    }
+
+    pub fn component_info(&self) -> &ComponentInfoSubstate {
+        match self {
+            SubstateRef::ComponentInfo(info) => *info,
+            _ => panic!("Not a component info"),
+        }
+    }
+
+    pub fn references_and_owned_nodes(&self) -> (HashSet<GlobalAddress>, HashSet<RENodeId>) {
+        match self {
+            SubstateRef::ComponentState(substate) => {
+                let scrypto_value = ScryptoValue::from_slice(&substate.raw).unwrap();
+                (scrypto_value.global_references(), scrypto_value.node_ids())
+            }
+            SubstateRef::KeyValueStoreEntry(substate) => {
+                let maybe_scrypto_value = substate
+                    .0
+                    .as_ref()
+                    .map(|raw| ScryptoValue::from_slice(raw).unwrap());
+                if let Some(scrypto_value) = maybe_scrypto_value {
+                    (scrypto_value.global_references(), scrypto_value.node_ids())
+                } else {
+                    (HashSet::new(), HashSet::new())
+                }
+            }
+            SubstateRef::NonFungible(substate) => {
+                let maybe_scrypto_value = substate
+                    .0
+                    .as_ref()
+                    .map(|non_fungible| ScryptoValue::from_typed(non_fungible));
+                if let Some(scrypto_value) = maybe_scrypto_value {
+                    (scrypto_value.global_references(), scrypto_value.node_ids())
+                } else {
+                    (HashSet::new(), HashSet::new())
+                }
+            }
+            _ => (HashSet::new(), HashSet::new()),
+        }
+    }
+}
+
+pub enum SubstateRefMut<'a> {
+    ComponentInfo(&'a mut ComponentInfoSubstate),
+    ComponentState(&'a mut ComponentStateSubstate),
+    NonFungible(&'a mut NonFungibleSubstate),
+    KeyValueStoreEntry(&'a mut KeyValueStoreEntrySubstate),
+    Package(&'a mut PackageSubstate),
+    Vault(&'a mut VaultSubstate),
+    ResourceManager(&'a mut ResourceManagerSubstate),
+    System(&'a mut SystemSubstate),
+    Global(&'a mut GlobalAddressSubstate),
+}
+
+impl<'a> SubstateRefMut<'a> {
+    pub fn overwrite(&mut self, substate: Substate) -> Result<(), RuntimeError> {
+        match (self, substate) {
+            (SubstateRefMut::ComponentState(current), Substate::ComponentState(next)) => {
+                **current = next
+            }
+            (SubstateRefMut::KeyValueStoreEntry(current), Substate::KeyValueStoreEntry(next)) => {
+                **current = next
+            }
+            (SubstateRefMut::NonFungible(current), Substate::NonFungible(next)) => **current = next,
+            (SubstateRefMut::System(current), Substate::System(next)) => **current = next,
+            _ => return Err(RuntimeError::KernelError(KernelError::InvalidOverwrite)),
+        }
+
+        Ok(())
+    }
+
+    pub fn references_and_owned_nodes(&self) -> (HashSet<GlobalAddress>, HashSet<RENodeId>) {
+        match self {
+            SubstateRefMut::ComponentState(substate) => {
+                let scrypto_value = ScryptoValue::from_slice(&substate.raw).unwrap();
+                (scrypto_value.global_references(), scrypto_value.node_ids())
+            }
+            SubstateRefMut::KeyValueStoreEntry(substate) => {
+                let maybe_scrypto_value = substate
+                    .0
+                    .as_ref()
+                    .map(|raw| ScryptoValue::from_slice(raw).unwrap());
+                if let Some(scrypto_value) = maybe_scrypto_value {
+                    (scrypto_value.global_references(), scrypto_value.node_ids())
+                } else {
+                    (HashSet::new(), HashSet::new())
+                }
+            }
+            SubstateRefMut::NonFungible(substate) => {
+                let maybe_scrypto_value = substate
+                    .0
+                    .as_ref()
+                    .map(|non_fungible| ScryptoValue::from_typed(non_fungible));
+                if let Some(scrypto_value) = maybe_scrypto_value {
+                    (scrypto_value.global_references(), scrypto_value.node_ids())
+                } else {
+                    (HashSet::new(), HashSet::new())
+                }
+            }
+            _ => (HashSet::new(), HashSet::new()),
         }
     }
 }

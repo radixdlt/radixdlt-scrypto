@@ -581,32 +581,27 @@ where
                         receiver,
                     } => match node_id {
                         RENodeId::Component(..) => {
+                            let offset = SubstateOffset::Component(ComponentOffset::Info);
                             node_pointer
-                                .acquire_lock(
-                                    SubstateOffset::Component(ComponentOffset::Info),
-                                    false,
-                                    false,
-                                    &mut self.track,
-                                )
+                                .acquire_lock(offset.clone(), false, false, &mut self.track)
                                 .map_err(RuntimeError::KernelError)?;
 
-                            let mut node_ref =
-                                node_pointer.to_ref(&self.call_frames, &mut self.track);
-                            let component = node_ref.component();
+                            let substate_ref = node_pointer.borrow_substate(
+                                &offset,
+                                &mut self.call_frames,
+                                &mut self.track,
+                            )?;
+                            let info = substate_ref.component_info();
                             let actor = REActor::Method(FullyQualifiedReceiverMethod {
                                 receiver: receiver.clone(),
                                 method: FullyQualifiedMethod::Scrypto {
-                                    package_address: component.info.package_address.clone(),
-                                    blueprint_name: component.info.blueprint_name.clone(),
+                                    package_address: info.package_address.clone(),
+                                    blueprint_name: info.blueprint_name.clone(),
                                     ident: ident.to_string(),
                                 },
                             });
                             node_pointer
-                                .release_lock(
-                                    SubstateOffset::Component(ComponentOffset::Info),
-                                    false,
-                                    &mut self.track,
-                                )
+                                .release_lock(offset, false, &mut self.track)
                                 .map_err(RuntimeError::KernelError)?;
 
                             actor
@@ -626,11 +621,23 @@ where
                 match node_id {
                     RENodeId::Component(..) => {
                         let package_address = {
-                            let mut node_ref =
-                                node_pointer.to_ref(&self.call_frames, &mut self.track);
-                            let component = node_ref.component();
-                            component.info.package_address.clone()
+                            let offset = SubstateOffset::Component(ComponentOffset::Info);
+                            node_pointer
+                                .acquire_lock(offset.clone(), false, false, &mut self.track)
+                                .map_err(RuntimeError::KernelError)?;
+                            let substate_ref = node_pointer.borrow_substate(
+                                &offset,
+                                &mut self.call_frames,
+                                &mut self.track,
+                            )?;
+                            let info = substate_ref.component_info();
+                            let package_address = info.package_address.clone();
+                            node_pointer
+                                .release_lock(offset, false, &mut self.track)
+                                .map_err(RuntimeError::KernelError)?;
+                            package_address
                         };
+
                         let package_node_id = RENodeId::Package(package_address);
                         let package_node_pointer = RENodePointer::Store(package_node_id);
                         next_frame_node_refs.insert(package_node_id, package_node_pointer);
@@ -1443,24 +1450,40 @@ where
             }
         };
 
-        let (_old_global_references, prev_children) = {
-            let substate_ref =
-                node_pointer.borrow_substate(&offset, &mut self.call_frames, &mut self.track)?;
-            substate_ref.references_and_owned_nodes()
-        };
-
-        // Fulfill method
-        verify_stored_value_update(&prev_children, &missing_nodes)?;
-
-        // TODO: verify against some schema
-
         // Write values
-        node_pointer.add_children(taken_nodes, &mut self.call_frames, &mut self.track);
         {
-            let mut node_ref = node_pointer.to_ref_mut(&mut self.call_frames, &mut self.track);
-            node_ref.write_substate(&offset, substate)?;
-        }
+            node_pointer.add_children(taken_nodes, &mut self.call_frames, &mut self.track);
 
+            let mut substate_ref_mut = node_pointer.borrow_substate_mut(
+                &offset,
+                &mut self.call_frames,
+                &mut self.track,
+            )?;
+            let (_old_global_references, prev_children) =
+                substate_ref_mut.references_and_owned_nodes();
+
+            verify_stored_value_update(&prev_children, &missing_nodes)?;
+            let substate = match offset {
+                SubstateOffset::Component(ComponentOffset::State) => {
+                    let substate = scrypto_decode(&substate.raw).unwrap();
+                    Substate::ComponentState(substate)
+                }
+                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)) => {
+                    let substate = scrypto_decode(&substate.raw).unwrap();
+                    Substate::KeyValueStoreEntry(substate)
+                }
+                SubstateOffset::System(SystemOffset::System) => {
+                    let substate = scrypto_decode(&substate.raw).unwrap();
+                    Substate::System(substate)
+                }
+                SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(..)) => {
+                    let substate = scrypto_decode(&substate.raw).unwrap();
+                    Substate::NonFungible(substate)
+                }
+                _ => panic!("oops: {:?}", offset),
+            };
+            substate_ref_mut.overwrite(substate)?;
+        }
 
         for m in &mut self.modules {
             m.post_sys_call(

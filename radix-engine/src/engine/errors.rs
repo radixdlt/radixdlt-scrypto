@@ -83,6 +83,7 @@ pub enum KernelError {
     LockDoesNotExist(LockHandle),
     LockNotMutable(LockHandle),
     OffsetNotAvailable(SubstateOffset),
+    InvalidOverwrite,
     SubstateNotReadable(REActor, SubstateId),
     SubstateNotWriteable(REActor, SubstateId),
     TrackError(TrackError),

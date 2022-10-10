@@ -2,80 +2,6 @@ use crate::engine::*;
 use crate::model::*;
 use crate::types::*;
 
-pub enum SubstateRef<'a> {
-    ComponentInfo(&'a ComponentInfoSubstate),
-    ComponentState(&'a ComponentStateSubstate),
-    NonFungible(&'a NonFungibleSubstate),
-    KeyValueStoreEntry(&'a KeyValueStoreEntrySubstate),
-    Package(&'a PackageSubstate),
-    Vault(&'a VaultSubstate),
-    ResourceManager(&'a ResourceManagerSubstate),
-    System(&'a SystemSubstate),
-    Global(&'a GlobalAddressSubstate),
-}
-
-impl<'a> SubstateRef<'a> {
-    pub fn to_scrypto_value(&self) -> ScryptoValue {
-        match self {
-            SubstateRef::Global(value) => ScryptoValue::from_typed(*value),
-            SubstateRef::System(value) => ScryptoValue::from_typed(*value),
-            SubstateRef::ResourceManager(value) => ScryptoValue::from_typed(*value),
-            SubstateRef::ComponentInfo(value) => ScryptoValue::from_typed(*value),
-            SubstateRef::ComponentState(value) => ScryptoValue::from_typed(*value),
-            SubstateRef::Package(value) => ScryptoValue::from_typed(*value),
-            SubstateRef::Vault(value) => ScryptoValue::from_typed(*value),
-            SubstateRef::NonFungible(value) => ScryptoValue::from_typed(*value),
-            SubstateRef::KeyValueStoreEntry(value) => ScryptoValue::from_typed(*value),
-        }
-    }
-
-    pub fn non_fungible(&self) -> &NonFungibleSubstate {
-        match self {
-            SubstateRef::NonFungible(non_fungible_substate) => *non_fungible_substate,
-            _ => panic!("Not a non fungible"),
-        }
-    }
-
-    pub fn system(&self) -> &SystemSubstate {
-        match self {
-            SubstateRef::System(system) => *system,
-            _ => panic!("Not a system substate"),
-        }
-    }
-
-    pub fn references_and_owned_nodes(&self) -> (HashSet<GlobalAddress>, HashSet<RENodeId>) {
-        match self {
-            SubstateRef::ComponentState(substate) => {
-                let scrypto_value = ScryptoValue::from_slice(&substate.raw).unwrap();
-                (scrypto_value.global_references(), scrypto_value.node_ids())
-            }
-            SubstateRef::KeyValueStoreEntry(substate) => {
-                let maybe_scrypto_value = substate
-                    .0
-                    .as_ref()
-                    .map(|raw| ScryptoValue::from_slice(raw).unwrap());
-                if let Some(scrypto_value) = maybe_scrypto_value {
-                    (scrypto_value.global_references(), scrypto_value.node_ids())
-                } else {
-                    (HashSet::new(), HashSet::new())
-                }
-            }
-            SubstateRef::NonFungible(substate) => {
-                let maybe_scrypto_value = substate
-                    .0
-                    .as_ref()
-                    .map(|non_fungible| ScryptoValue::from_typed(non_fungible));
-                if let Some(scrypto_value) = maybe_scrypto_value {
-                    (scrypto_value.global_references(), scrypto_value.node_ids())
-                } else {
-                    (HashSet::new(), HashSet::new())
-                }
-            }
-            _ => (HashSet::new(), HashSet::new()),
-        }
-    }
-}
-
 #[derive(Debug)]
 pub enum HeapRENode {
     Global(GlobalRENode), // TODO: Remove
@@ -175,6 +101,48 @@ impl HeapRENode {
                     .entry(key.to_vec())
                     .or_insert(KeyValueStoreEntrySubstate(None));
                 SubstateRef::KeyValueStoreEntry(entry)
+            }
+            (_, offset) => {
+                return Err(RuntimeError::KernelError(KernelError::OffsetNotAvailable(
+                    offset.clone(),
+                )));
+            }
+        };
+        Ok(substate_ref)
+    }
+
+    pub fn borrow_substate_mut(
+        &mut self,
+        offset: &SubstateOffset,
+    ) -> Result<SubstateRefMut, RuntimeError> {
+        let substate_ref = match (self, offset) {
+            (
+                HeapRENode::Component(component),
+                SubstateOffset::Component(ComponentOffset::State),
+            ) => SubstateRefMut::ComponentState(component.state.as_mut().unwrap()),
+            (
+                HeapRENode::Component(component),
+                SubstateOffset::Component(ComponentOffset::Info),
+            ) => SubstateRefMut::ComponentInfo(&mut component.info),
+            (
+                HeapRENode::ResourceManager(resource_manager),
+                SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(id)),
+            ) => {
+                let entry = resource_manager
+                    .loaded_non_fungibles
+                    .entry(id.clone())
+                    .or_insert(NonFungibleSubstate(None));
+                SubstateRefMut::NonFungible(entry)
+            }
+            (
+                HeapRENode::KeyValueStore(kv_store),
+                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key)),
+            ) => {
+                let entry = kv_store
+                    .loaded_entries
+                    .entry(key.to_vec())
+                    .or_insert(KeyValueStoreEntrySubstate(None));
+                SubstateRefMut::KeyValueStoreEntry(entry)
             }
             (_, offset) => {
                 return Err(RuntimeError::KernelError(KernelError::OffsetNotAvailable(

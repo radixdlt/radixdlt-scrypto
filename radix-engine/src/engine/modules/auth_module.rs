@@ -143,12 +143,18 @@ impl AuthModule {
                 method_ident: MethodIdent::Scrypto(ref ident),
             } => {
                 let (package_address, blueprint_name) = {
-                    let mut node_ref = node_pointer.to_ref(call_frames, track);
-                    let component = node_ref.component();
-                    (
-                        component.info.package_address.clone(),
-                        component.info.blueprint_name.clone(),
-                    )
+                    let offset = SubstateOffset::Component(ComponentOffset::Info);
+                    node_pointer
+                        .acquire_lock(offset.clone(), false, false, track)
+                        .map_err(RuntimeError::KernelError)?;
+                    let substate_ref = node_pointer.borrow_substate(&offset, call_frames, track)?;
+                    let info = substate_ref.component_info();
+                    let package_and_blueprint =
+                        (info.package_address.clone(), info.blueprint_name.clone());
+                    node_pointer
+                        .release_lock(offset, false, track)
+                        .map_err(RuntimeError::KernelError)?;
+                    package_and_blueprint
                 };
 
                 let node_id = RENodeId::Package(package_address);
@@ -180,15 +186,31 @@ impl AuthModule {
                     .release_lock(offset, false, track)
                     .map_err(RuntimeError::KernelError)?;
 
+                let state = {
+                    let offset = SubstateOffset::Component(ComponentOffset::State);
+                    node_pointer
+                        .acquire_lock(offset.clone(), false, false, track)
+                        .map_err(RuntimeError::KernelError)?;
+                    let substate_ref = node_pointer.borrow_substate(&offset, call_frames, track)?;
+                    let state = substate_ref.component_state().clone();
+                    node_pointer
+                        .release_lock(offset, false, track)
+                        .map_err(RuntimeError::KernelError)?;
+                    state
+                };
+
                 {
-                    let mut node_ref = node_pointer.to_ref_mut(call_frames, track);
-                    let state = node_ref
-                        .component_state_get()
-                        .map_err(|e| RuntimeError::ModuleError(ModuleError::TrackError(e)))?;
-                    let component = node_ref.component_mut();
-                    component
-                        .info
-                        .method_authorization(&state, &abi.structure, ident)
+                    let offset = SubstateOffset::Component(ComponentOffset::Info);
+                    node_pointer
+                        .acquire_lock(offset.clone(), false, false, track)
+                        .map_err(RuntimeError::KernelError)?;
+                    let substate_ref = node_pointer.borrow_substate(&offset, call_frames, track)?;
+                    let info = substate_ref.component_info();
+                    let auth = info.method_authorization(&state, &abi.structure, ident);
+                    node_pointer
+                        .release_lock(offset, false, track)
+                        .map_err(RuntimeError::KernelError)?;
+                    auth
                 }
             }
             ReceiverMethodIdent {

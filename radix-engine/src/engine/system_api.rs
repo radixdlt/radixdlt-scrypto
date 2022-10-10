@@ -1,7 +1,7 @@
 use crate::engine::node::*;
 use crate::engine::*;
 use crate::fee::FeeReserve;
-use crate::model::Resource;
+use crate::model::{Resource, SubstateRef};
 use crate::types::*;
 use crate::wasm::*;
 use scrypto::core::FnIdent;
