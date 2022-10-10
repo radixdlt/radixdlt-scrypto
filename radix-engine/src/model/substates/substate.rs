@@ -447,14 +447,15 @@ impl<'f, 's, R: FeeReserve> SubstateRefMut<'f, 's, R> {
         &self.offset
     }
 
-    pub fn update<F>(&mut self, f: F) -> Result<(), RuntimeError>
+    pub fn update<F, T>(&mut self, f: F) -> Result<T, RuntimeError>
     where
-        F: FnOnce(&mut RawSubstateRefMut) -> Result<(), RuntimeError>,
+        F: FnOnce(&mut RawSubstateRefMut) -> Result<T, RuntimeError>,
     {
-        let (new_global_references, new_children) = {
+        let (new_global_references, new_children, rtn) = {
             let mut substate_ref_mut = self.get_ref_mut();
-            f(&mut substate_ref_mut)?;
-            substate_ref_mut.to_ref().references_and_owned_nodes()
+            let rtn = f(&mut substate_ref_mut)?;
+            let refs_and_owned = substate_ref_mut.to_ref().references_and_owned_nodes();
+            (refs_and_owned.0, refs_and_owned.1, rtn)
         };
 
         for global_address in new_global_references {
@@ -485,7 +486,7 @@ impl<'f, 's, R: FeeReserve> SubstateRefMut<'f, 's, R> {
         self.node_pointer
             .add_children(taken_nodes, &mut self.call_frames, &mut self.track);
 
-        Ok(())
+        Ok(rtn)
     }
 
     pub fn overwrite(&mut self, substate: Substate) -> Result<(), RuntimeError> {
