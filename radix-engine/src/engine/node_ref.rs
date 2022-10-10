@@ -302,6 +302,14 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
                     scrypto_decode(&substate.raw).expect("TODO: who should check this");
                 self.kv_store_put(key.clone(), actual_substate, child_nodes);
             }
+            (
+                RENodeId::System(..),
+                SubstateOffset::System(SystemOffset::System),
+            ) => {
+                let actual_substate: SystemSubstate =
+                    scrypto_decode(&substate.raw).expect("TODO: who should check this");
+                self.system_mut().info = actual_substate;
+            }
             (_, offset) => {
                 return Err(RuntimeError::KernelError(KernelError::OffsetNotAvailable(
                     offset.clone(),

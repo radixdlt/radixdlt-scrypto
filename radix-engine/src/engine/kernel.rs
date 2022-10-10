@@ -672,13 +672,6 @@ where
                             .map_err(RuntimeError::KernelError)?;
                         locked_pointers.push((node_pointer, offset.clone(), false));
                     }
-                    RENodeId::System(..) => {
-                        let offset = SubstateOffset::System(SystemOffset::System);
-                        node_pointer
-                            .acquire_lock(offset.clone(), true, false, &mut self.track)
-                            .map_err(RuntimeError::KernelError)?;
-                        locked_pointers.push((node_pointer, offset.clone(), false));
-                    }
                     RENodeId::Vault(..) => {
                         // TODO: Remove
                         let is_lock_fee = method_ident.method_ident.eq(&MethodIdent::Native(
