@@ -31,9 +31,8 @@ pub enum SysCallInput<'a> {
     ReadSubstate {
         lock_handle: &'a LockHandle,
     },
-    WriteSubstate {
+    GetMut {
         lock_handle: &'a LockHandle,
-        value: &'a ScryptoValue,
     },
     DropLock {
         lock_handle: &'a LockHandle,
@@ -73,7 +72,7 @@ pub enum SysCallOutput<'a> {
         node_pointer: &'a RENodePointer,
         offset: &'a SubstateOffset,
     },
-    WriteSubstate,
+    GetMut,
     DropLock,
     TakeSubstate {
         value: &'a ScryptoValue,

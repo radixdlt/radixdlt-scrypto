@@ -2,7 +2,7 @@ use crate::engine::RuntimeError;
 use crate::engine::{HeapRENode, SystemApi};
 use crate::fee::*;
 use crate::model::{
-    Component, ComponentInfoSubstate, ComponentStateSubstate, InvokeError, KeyValueStore,
+    Component, ComponentInfoSubstate, ComponentStateSubstate, InvokeError, KeyValueStore, Substate,
 };
 use crate::types::*;
 use crate::wasm::*;
@@ -131,11 +131,25 @@ where
     ) -> Result<ScryptoValue, RuntimeError> {
         // FIXME: check if the value contains NOT allowed values.
 
-        self.system_api.write(
-            lock_handle,
-            ScryptoValue::from_slice(&value)
-                .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?,
-        )?;
+        let mut substate_mut = self.system_api.get_mut(lock_handle)?;
+
+        let substate = match substate_mut.offset() {
+            SubstateOffset::Component(ComponentOffset::State) => {
+                let substate = scrypto_decode(&value).unwrap();
+                Substate::ComponentState(substate)
+            }
+            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)) => {
+                let substate = scrypto_decode(&value).unwrap();
+                Substate::KeyValueStoreEntry(substate)
+            }
+            SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(..)) => {
+                let substate = scrypto_decode(&value).unwrap();
+                Substate::NonFungible(substate)
+            }
+            offset => panic!("oops: {:?}", offset),
+        };
+
+        substate_mut.overwrite(substate)?;
 
         // TODO: do we ever want to return the previous substate value
         Ok(ScryptoValue::unit())

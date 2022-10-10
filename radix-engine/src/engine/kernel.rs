@@ -1384,18 +1384,16 @@ where
         node_pointer.borrow_substate(&offset, &mut self.call_frames, &mut self.track)
     }
 
-    fn write(
-        &mut self,
+    fn get_mut<'f>(
+        &'f mut self,
         lock_handle: LockHandle,
-        substate: ScryptoValue, // TODO: use substate?
-    ) -> Result<(), RuntimeError> {
+    ) -> Result<SubstateRefMut<'f, 's, R>, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
                 &mut self.track,
                 &mut self.call_frames,
-                SysCallInput::WriteSubstate {
+                SysCallInput::GetMut {
                     lock_handle: &lock_handle,
-                    value: &substate,
                 },
             )
             .map_err(RuntimeError::ModuleError)?;
@@ -1416,43 +1414,16 @@ where
             )));
         }
 
-        let substate = match offset {
-            SubstateOffset::Component(ComponentOffset::State) => {
-                let substate = scrypto_decode(&substate.raw).unwrap();
-                Substate::ComponentState(substate)
-            }
-            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)) => {
-                let substate = scrypto_decode(&substate.raw).unwrap();
-                Substate::KeyValueStoreEntry(substate)
-            }
-            SubstateOffset::System(SystemOffset::System) => {
-                let substate = scrypto_decode(&substate.raw).unwrap();
-                Substate::System(substate)
-            }
-            SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(..)) => {
-                let substate = scrypto_decode(&substate.raw).unwrap();
-                Substate::NonFungible(substate)
-            }
-            _ => panic!("oops: {:?}", offset),
-        };
-
-        // Write values
-        {
-            let mut substate_mut =
-                node_pointer.get_substate_mut(&offset, &mut self.call_frames, &mut self.track)?;
-            substate_mut.overwrite(substate)?;
-        }
-
         for m in &mut self.modules {
             m.post_sys_call(
                 &mut self.track,
                 &mut self.call_frames,
-                SysCallOutput::WriteSubstate,
+                SysCallOutput::GetMut,
             )
             .map_err(RuntimeError::ModuleError)?;
         }
 
-        Ok(())
+        node_pointer.get_substate_mut(offset, &mut self.call_frames, &mut self.track)
     }
 
     fn read_blob(&mut self, blob_hash: &Hash) -> Result<&[u8], RuntimeError> {

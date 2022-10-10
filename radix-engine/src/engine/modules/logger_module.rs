@@ -76,13 +76,8 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
             SysCallInput::ReadSubstate { lock_handle } => {
                 log!(self, "Reading substate: lock_handle = {:?}", lock_handle);
             }
-            SysCallInput::WriteSubstate { lock_handle, value } => {
-                log!(
-                    self,
-                    "Writing substate: lock_handle = {:?}, value = {:?}",
-                    lock_handle,
-                    value
-                );
+            SysCallInput::GetMut { lock_handle } => {
+                log!(self, "Get Mut: lock_handle = {:?}", lock_handle);
             }
             SysCallInput::DropLock { lock_handle } => {
                 log!(self, "Drop Lock: lock_handle = {:?}", lock_handle);
@@ -124,7 +119,7 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
             SysCallOutput::GlobalizeNode { .. } => {}
             SysCallOutput::LockSubstate { .. } => {}
             SysCallOutput::ReadSubstate { .. } => {}
-            SysCallOutput::WriteSubstate { .. } => {}
+            SysCallOutput::GetMut { .. } => {}
             SysCallOutput::DropLock { .. } => {}
             SysCallOutput::TakeSubstate { .. } => {}
             SysCallOutput::ReadTransactionHash { .. } => {}

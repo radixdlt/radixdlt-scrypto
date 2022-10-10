@@ -195,7 +195,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                     )
                     .map_err(ModuleError::CostingError)?;
             }
-            SysCallInput::WriteSubstate { .. } => {
+            SysCallInput::GetMut { .. } => {
                 // Costing
                 track
                     .fee_reserve

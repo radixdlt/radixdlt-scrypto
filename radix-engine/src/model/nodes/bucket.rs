@@ -2,7 +2,7 @@ use crate::engine::{HeapRENode, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::{
     InvokeError, LockableResource, NonFungibleSubstate, Proof, ProofError, Resource,
-    ResourceContainerId, ResourceOperationError,
+    ResourceContainerId, ResourceOperationError, Substate,
 };
 use crate::types::*;
 use crate::wasm::*;
@@ -319,12 +319,16 @@ impl Bucket {
                                 true,
                             )
                             .map_err(InvokeError::Downstream)?;
-                        system_api
-                            .write(
-                                lock_handle,
-                                ScryptoValue::from_typed(&NonFungibleSubstate(None)),
-                            )
-                            .map_err(InvokeError::Downstream)?;
+
+                        {
+                            let mut substate_mut = system_api
+                                .get_mut(lock_handle)
+                                .map_err(InvokeError::Downstream)?;
+                            substate_mut
+                                .overwrite(Substate::NonFungible(NonFungibleSubstate(None)))
+                                .map_err(InvokeError::Downstream)?;
+                        }
+
                         system_api
                             .drop_lock(lock_handle)
                             .map_err(InvokeError::Downstream)?;

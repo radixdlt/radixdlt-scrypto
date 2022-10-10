@@ -443,7 +443,11 @@ impl<'f, 's, R: FeeReserve> SubstateRefMut<'f, 's, R> {
         Ok(substate_ref_mut)
     }
 
-    pub fn overwrite(&'f mut self, substate: Substate) -> Result<(), RuntimeError> {
+    pub fn offset(&self) -> &SubstateOffset {
+        &self.offset
+    }
+
+    pub fn overwrite(&mut self, substate: Substate) -> Result<(), RuntimeError> {
         let (new_global_references, children) = substate.to_ref().references_and_owned_nodes();
         for global_address in new_global_references {
             let node_id = RENodeId::Global(global_address);
@@ -492,7 +496,7 @@ impl<'f, 's, R: FeeReserve> SubstateRefMut<'f, 's, R> {
         Ok(())
     }
 
-    fn get_ref_mut(&'f mut self) -> RawSubstateRefMut<'f> {
+    fn get_ref_mut(&mut self) -> RawSubstateRefMut {
         match self.node_pointer {
             RENodePointer::Heap { frame_id, root, id } => {
                 let frame = self.call_frames.get_mut(frame_id).unwrap();

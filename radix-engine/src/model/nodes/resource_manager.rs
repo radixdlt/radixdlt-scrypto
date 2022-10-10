@@ -3,7 +3,7 @@ use crate::fee::FeeReserve;
 use crate::model::{
     Bucket, InvokeError, MethodAuthorization, NonFungible, NonFungibleSubstate, Resource,
     ResourceMethodRule::{Protected, Public},
-    Vault,
+    Substate, Vault,
 };
 use crate::model::{
     MethodAccessRule, MethodAccessRuleMethod, ResourceManagerSubstate, ResourceMethodRule,
@@ -513,12 +513,17 @@ impl ResourceManager {
                             ),
                         ));
                     }
-                    system_api
-                        .write(
-                            lock_handle,
-                            ScryptoValue::from_typed(&NonFungibleSubstate(Some(non_fungible))),
-                        )
-                        .map_err(InvokeError::Downstream)?;
+
+                    {
+                        let mut substate_mut = system_api
+                            .get_mut(lock_handle)
+                            .map_err(InvokeError::Downstream)?;
+                        substate_mut
+                            .overwrite(Substate::NonFungible(NonFungibleSubstate(Some(
+                                non_fungible,
+                            ))))
+                            .map_err(InvokeError::Downstream)?;
+                    }
 
                     system_api
                         .drop_lock(lock_handle)
@@ -596,11 +601,13 @@ impl ResourceManager {
                 // Write new value
                 if let Some(mut non_fungible) = wrapper.0.clone() {
                     non_fungible.set_mutable_data(input.data);
-                    system_api
-                        .write(
-                            lock_handle,
-                            ScryptoValue::from_typed(&NonFungibleSubstate(Some(non_fungible))),
-                        )
+                    let mut substate_mut = system_api
+                        .get_mut(lock_handle)
+                        .map_err(InvokeError::Downstream)?;
+                    substate_mut
+                        .overwrite(Substate::NonFungible(NonFungibleSubstate(Some(
+                            non_fungible,
+                        ))))
                         .map_err(InvokeError::Downstream)?;
                 } else {
                     let non_fungible_address =

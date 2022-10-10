@@ -1,7 +1,7 @@
 use crate::engine::node::*;
 use crate::engine::*;
 use crate::fee::FeeReserve;
-use crate::model::{Resource, SubstateRef};
+use crate::model::{Resource, SubstateRef, SubstateRefMut};
 use crate::types::*;
 use crate::wasm::*;
 use scrypto::core::FnIdent;
@@ -55,7 +55,10 @@ where
     fn drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError>;
 
     fn borrow(&mut self, lock_handle: LockHandle) -> Result<SubstateRef, RuntimeError>;
-    fn write(&mut self, lock_handle: LockHandle, value: ScryptoValue) -> Result<(), RuntimeError>;
+    fn get_mut(
+        &mut self,
+        lock_handle: LockHandle,
+    ) -> Result<SubstateRefMut<'_, 's, R>, RuntimeError>;
 
     fn read_transaction_hash(&mut self) -> Result<Hash, RuntimeError>;
 

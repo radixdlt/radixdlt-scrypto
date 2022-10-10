@@ -168,14 +168,14 @@ impl RENodePointer {
 
     pub fn get_substate_mut<'f, 's, R: FeeReserve>(
         &self,
-        offset: &SubstateOffset,
+        offset: SubstateOffset,
         call_frames: &'f mut Vec<CallFrame>,
         track: &'f mut Track<'s, R>,
     ) -> Result<SubstateRefMut<'f, 's, R>, RuntimeError> {
-        SubstateRefMut::new(self.clone(), offset.clone(), call_frames, track)
+        SubstateRefMut::new(self.clone(), offset, call_frames, track)
     }
 
-    pub fn add_children<'f, 'p, 's, R: FeeReserve>(
+    pub fn add_children<'f, 's, R: FeeReserve>(
         &self,
         child_nodes: HashMap<RENodeId, HeapRootRENode>,
         call_frames: &'f mut Vec<CallFrame>,
