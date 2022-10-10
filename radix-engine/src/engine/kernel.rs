@@ -1416,35 +1416,48 @@ where
             )));
         }
 
-        // TODO: Do this in a better way once references cleaned up
-        let contained_value = extract_value_from_substate(&offset, &substate); // FIXME: error handling!!!
-        if let Some(value) = &contained_value {
-            // Verify references exist
-            for global_address in value.global_references() {
-                let node_id = RENodeId::Global(global_address);
-                if !Self::current_frame_mut(&mut self.call_frames)
-                    .node_refs
-                    .contains_key(&node_id)
-                {
-                    return Err(RuntimeError::KernelError(
-                        KernelError::InvalidReferenceWrite(global_address),
-                    ));
-                }
+        let substate = match offset {
+            SubstateOffset::Component(ComponentOffset::State) => {
+                let substate = scrypto_decode(&substate.raw).unwrap();
+                Substate::ComponentState(substate)
+            }
+            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)) => {
+                let substate = scrypto_decode(&substate.raw).unwrap();
+                Substate::KeyValueStoreEntry(substate)
+            }
+            SubstateOffset::System(SystemOffset::System) => {
+                let substate = scrypto_decode(&substate.raw).unwrap();
+                Substate::System(substate)
+            }
+            SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(..)) => {
+                let substate = scrypto_decode(&substate.raw).unwrap();
+                Substate::NonFungible(substate)
+            }
+            _ => panic!("oops: {:?}", offset),
+        };
+
+        let (new_global_references, children) = substate.to_ref().references_and_owned_nodes();
+        for global_address in new_global_references {
+            let node_id = RENodeId::Global(global_address);
+            if !Self::current_frame_mut(&mut self.call_frames)
+                .node_refs
+                .contains_key(&node_id)
+            {
+                return Err(RuntimeError::KernelError(
+                    KernelError::InvalidReferenceWrite(global_address),
+                ));
             }
         }
 
         // Take values from current frame
         let (taken_nodes, missing_nodes) = {
-            let node_ids = contained_value
-                .map(|value| value.node_ids())
-                .unwrap_or_default();
-            if !node_ids.is_empty() {
+            if !children.is_empty() {
                 if !SubstateProperties::can_own_nodes(&offset) {
                     return Err(RuntimeError::KernelError(KernelError::ValueNotAllowed));
                 }
 
                 Self::current_frame_mut(&mut self.call_frames)
-                    .take_available_values(node_ids, true)?
+                    .take_available_values(children, true)?
             } else {
                 (HashMap::new(), HashSet::new())
             }
@@ -1463,25 +1476,7 @@ where
                 substate_ref_mut.references_and_owned_nodes();
 
             verify_stored_value_update(&prev_children, &missing_nodes)?;
-            let substate = match offset {
-                SubstateOffset::Component(ComponentOffset::State) => {
-                    let substate = scrypto_decode(&substate.raw).unwrap();
-                    Substate::ComponentState(substate)
-                }
-                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)) => {
-                    let substate = scrypto_decode(&substate.raw).unwrap();
-                    Substate::KeyValueStoreEntry(substate)
-                }
-                SubstateOffset::System(SystemOffset::System) => {
-                    let substate = scrypto_decode(&substate.raw).unwrap();
-                    Substate::System(substate)
-                }
-                SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(..)) => {
-                    let substate = scrypto_decode(&substate.raw).unwrap();
-                    Substate::NonFungible(substate)
-                }
-                _ => panic!("oops: {:?}", offset),
-            };
+
             substate_ref_mut.overwrite(substate)?;
         }
 
@@ -1599,32 +1594,5 @@ where
         }
 
         Ok(())
-    }
-}
-
-// Parse contained value (for reference management and children detection)
-fn extract_value_from_substate(
-    offset: &SubstateOffset,
-    substate: &ScryptoValue,
-) -> Option<ScryptoValue> {
-    // Not that in the future, we may store child node ids and node refs in fields
-    // other than the "any" byte array. Then, we will have to change the implementation to read
-    // all fields.
-    match offset {
-        SubstateOffset::Component(ComponentOffset::State) => {
-            let substate: ComponentStateSubstate = scrypto_decode(&substate.raw).ok()?;
-            Some(ScryptoValue::from_slice(&substate.raw).unwrap())
-        }
-        SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)) => {
-            let substate: KeyValueStoreEntrySubstate = scrypto_decode(&substate.raw).ok()?;
-            substate
-                .0
-                .map(|raw| ScryptoValue::from_slice(&raw).unwrap())
-        }
-        SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(..)) => {
-            let substate: NonFungibleSubstate = scrypto_decode(&substate.raw).ok()?;
-            substate.0.map(|v| ScryptoValue::from_typed(&v))
-        }
-        _ => None,
     }
 }
