@@ -64,7 +64,7 @@ impl SetCurrentEpoch {
             .map_err(Error::TransactionExecutionError)?;
 
         // Commit
-        let receipt = track.finalize(Ok(Vec::new()), Vec::new());
+        let receipt = track.finalize(Ok(Vec::new()), ExecutionTrace::new());
         if let TransactionResult::Commit(c) = receipt.result {
             c.state_updates.commit(&mut substate_store);
         }
