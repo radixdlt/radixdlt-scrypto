@@ -1325,7 +1325,7 @@ where
         Ok(())
     }
 
-    fn read(&mut self, lock_handle: LockHandle) -> Result<ScryptoValue, RuntimeError> {
+    fn borrow(&mut self, lock_handle: LockHandle) -> Result<SubstateRef, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
                 &mut self.track,
@@ -1346,9 +1346,9 @@ where
             .clone();
 
         let (global_references, children) = {
-            let mut node_ref = node_pointer.to_ref_mut(&mut self.call_frames, &mut self.track);
-            let substate = node_ref.borrow_substate(&offset)?;
-            substate.references_and_owned_nodes()
+            let substate_ref =
+                node_pointer.borrow_substate(&offset, &mut self.call_frames, &mut self.track)?;
+            substate_ref.references_and_owned_nodes()
         };
 
         // Expand references
@@ -1369,22 +1369,19 @@ where
             }
         }
 
-        let value = {
-            let mut node_ref = node_pointer.to_ref_mut(&mut self.call_frames, &mut self.track);
-            let substate = node_ref.borrow_substate(&offset)?;
-            substate.to_scrypto_value()
-        };
-
         for m in &mut self.modules {
             m.post_sys_call(
                 &mut self.track,
                 &mut self.call_frames,
-                SysCallOutput::ReadSubstate { value: &value },
+                SysCallOutput::ReadSubstate {
+                    node_pointer: &node_pointer,
+                    offset: &offset,
+                },
             )
             .map_err(RuntimeError::ModuleError)?;
         }
 
-        Ok(value)
+        node_pointer.borrow_substate(&offset, &mut self.call_frames, &mut self.track)
     }
 
     fn write(
@@ -1454,8 +1451,9 @@ where
         };
 
         let prev_substate = {
-            let mut node_ref = node_pointer.to_ref_mut(&mut self.call_frames, &mut self.track);
-            node_ref.borrow_substate(&offset)?.to_scrypto_value()
+            let substate_ref =
+                node_pointer.borrow_substate(&offset, &mut self.call_frames, &mut self.track)?;
+            substate_ref.to_scrypto_value()
         };
 
         let prev_contained_value = extract_value_from_substate(&offset, &prev_substate);

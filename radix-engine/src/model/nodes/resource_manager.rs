@@ -501,11 +501,11 @@ impl ResourceManager {
                     let lock_handle = system_api
                         .lock_substate(node_id, offset, true)
                         .map_err(InvokeError::Downstream)?;
-                    let value = system_api
-                        .read(lock_handle)
+                    let substate_ref = system_api
+                        .borrow(lock_handle)
                         .map_err(InvokeError::Downstream)?;
-                    let wrapper: NonFungibleSubstate =
-                        scrypto_decode(&value.raw).expect("Failed to decode NonFungibleSubstate");
+
+                    let wrapper = substate_ref.non_fungible();
                     if wrapper.0.is_some() {
                         return Err(InvokeError::Error(
                             ResourceManagerError::NonFungibleAlreadyExists(
@@ -588,14 +588,13 @@ impl ResourceManager {
                     .map_err(InvokeError::Downstream)?;
 
                 // Read current value
-                let value = system_api
-                    .read(lock_handle)
+                let substate_ref = system_api
+                    .borrow(lock_handle)
                     .map_err(InvokeError::Downstream)?;
-                let wrapper: NonFungibleSubstate =
-                    scrypto_decode(&value.raw).expect("Failed to decode NonFungibleSubstate");
+                let wrapper = substate_ref.non_fungible();
 
                 // Write new value
-                if let Some(mut non_fungible) = wrapper.0 {
+                if let Some(mut non_fungible) = wrapper.0.clone() {
                     non_fungible.set_mutable_data(input.data);
                     system_api
                         .write(
@@ -627,16 +626,15 @@ impl ResourceManager {
                 let lock_handle = system_api
                     .lock_substate(node_id, offset, false)
                     .map_err(InvokeError::Downstream)?;
-                let value = system_api
-                    .read(lock_handle)
+                let substate_ref = system_api
+                    .borrow(lock_handle)
                     .map_err(InvokeError::Downstream)?;
+                let exists = substate_ref.non_fungible().0.is_some();
                 system_api
                     .drop_lock(lock_handle)
                     .map_err(InvokeError::Downstream)?;
 
-                let wrapper: NonFungibleSubstate =
-                    scrypto_decode(&value.raw).expect("Failed to decode NonFungibleSubstate");
-                Ok(ScryptoValue::from_typed(&wrapper.0.is_some()))
+                Ok(ScryptoValue::from_typed(&exists))
             }
             ResourceManagerMethod::GetNonFungible => {
                 let input: ResourceManagerGetNonFungibleInput = scrypto_decode(&args.raw)
@@ -650,22 +648,24 @@ impl ResourceManager {
                 let lock_handle = system_api
                     .lock_substate(node_id, offset, false)
                     .map_err(InvokeError::Downstream)?;
-                let value = system_api
-                    .read(lock_handle)
+                let substate_ref = system_api
+                    .borrow(lock_handle)
                     .map_err(InvokeError::Downstream)?;
+
+                let wrapper = substate_ref.non_fungible();
+                let non_fungible = wrapper.0.as_ref().ok_or(InvokeError::Error(
+                    ResourceManagerError::NonFungibleNotFound(non_fungible_address),
+                ))?;
+                let scrypto_value = ScryptoValue::from_typed(&[
+                    non_fungible.immutable_data(),
+                    non_fungible.mutable_data(),
+                ]);
+
                 system_api
                     .drop_lock(lock_handle)
                     .map_err(InvokeError::Downstream)?;
 
-                let wrapper: NonFungibleSubstate =
-                    scrypto_decode(&value.raw).expect("Failed to decode NonFungibleSubstate");
-                let non_fungible = wrapper.0.ok_or(InvokeError::Error(
-                    ResourceManagerError::NonFungibleNotFound(non_fungible_address),
-                ))?;
-                Ok(ScryptoValue::from_typed(&[
-                    non_fungible.immutable_data(),
-                    non_fungible.mutable_data(),
-                ]))
+                Ok(scrypto_value)
             }
         }?;
 

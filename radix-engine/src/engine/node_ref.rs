@@ -114,6 +114,58 @@ impl RENodePointer {
         }
     }
 
+    pub fn borrow_substate<'f, 'p, 's, R: FeeReserve>(
+        &self,
+        offset: &SubstateOffset,
+        call_frames: &'f mut Vec<CallFrame>,
+        track: &'f mut Track<'s, R>,
+    ) -> Result<SubstateRef<'f>, RuntimeError> {
+        let substate_ref = match self {
+            RENodePointer::Heap { frame_id, root, id } => {
+                let frame = call_frames.get_mut(*frame_id).unwrap();
+                let heap_re_node = frame
+                    .owned_heap_nodes
+                    .get_mut(&root)
+                    .unwrap()
+                    .get_node_mut(id.as_ref());
+                heap_re_node.borrow_substate(offset)?
+            }
+            RENodePointer::Store(node_id) => match (node_id, offset) {
+                (
+                    RENodeId::KeyValueStore(..),
+                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key)),
+                ) => {
+                    let parent_substate_id = SubstateId(
+                        *node_id,
+                        SubstateOffset::KeyValueStore(KeyValueStoreOffset::Space),
+                    );
+                    track
+                        .read_key_value(parent_substate_id, key.to_vec())
+                        .to_ref()
+                }
+                (
+                    RENodeId::ResourceManager(..),
+                    SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(
+                        non_fungible_id,
+                    )),
+                ) => {
+                    let parent_substate_id = SubstateId(
+                        *node_id,
+                        SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungibleSpace),
+                    );
+                    track
+                        .read_key_value(parent_substate_id, non_fungible_id.to_vec())
+                        .to_ref()
+                }
+                _ => track
+                    .borrow_substate(SubstateId(*node_id, offset.clone()))
+                    .to_ref(),
+            },
+        };
+
+        Ok(substate_ref)
+    }
+
     // TODO: ref drop mechanism
     // TODO: concurrent refs and mut refs
 }
@@ -220,51 +272,6 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
             RENodeRefMut::Stack(_, root, child) => child.unwrap_or(*root),
             RENodeRefMut::Track(_, node_id) => *node_id,
         }
-    }
-
-    pub fn borrow_substate(
-        &mut self,
-        offset: &SubstateOffset,
-    ) -> Result<SubstateRef, RuntimeError> {
-        let substate_ref = match self {
-            RENodeRefMut::Stack(root_node, _, node_id) => {
-                let heap_re_node = root_node.get_node_mut(node_id.as_ref());
-                heap_re_node.borrow_substate(&offset)?
-            }
-            RENodeRefMut::Track(track, node_id) => match (&node_id, &offset) {
-                (
-                    RENodeId::KeyValueStore(..),
-                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key)),
-                ) => {
-                    let parent_substate_id = SubstateId(
-                        *node_id,
-                        SubstateOffset::KeyValueStore(KeyValueStoreOffset::Space),
-                    );
-                    let substate = track.read_key_value(parent_substate_id, key.to_vec());
-                    substate.to_ref()
-                }
-                (
-                    RENodeId::ResourceManager(..),
-                    SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(
-                        non_fungible_id,
-                    )),
-                ) => {
-                    let parent_substate_id = SubstateId(
-                        *node_id,
-                        SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungibleSpace),
-                    );
-                    let substate =
-                        track.read_key_value(parent_substate_id, non_fungible_id.to_vec());
-                    substate.to_ref()
-                }
-                _ => {
-                    let substate = track.borrow_substate(SubstateId(*node_id, offset.clone()));
-                    substate.to_ref()
-                }
-            },
-        };
-
-        Ok(substate_ref)
     }
 
     pub fn write_substate(

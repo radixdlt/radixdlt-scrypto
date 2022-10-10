@@ -54,7 +54,7 @@ where
     ) -> Result<LockHandle, RuntimeError>;
     fn drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError>;
 
-    fn read(&mut self, lock_handle: LockHandle) -> Result<ScryptoValue, RuntimeError>;
+    fn borrow(&mut self, lock_handle: LockHandle) -> Result<SubstateRef, RuntimeError>;
     fn write(&mut self, lock_handle: LockHandle, value: ScryptoValue) -> Result<(), RuntimeError>;
 
     fn read_transaction_hash(&mut self) -> Result<Hash, RuntimeError>;

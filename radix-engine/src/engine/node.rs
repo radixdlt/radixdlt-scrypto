@@ -29,6 +29,13 @@ impl<'a> SubstateRef<'a> {
         }
     }
 
+    pub fn non_fungible(&self) -> &NonFungibleSubstate {
+        match self {
+            SubstateRef::NonFungible(non_fungible_substate) => *non_fungible_substate,
+            _ => panic!("Not a non fungible"),
+        }
+    }
+
     pub fn references_and_owned_nodes(&self) -> (HashSet<GlobalAddress>, HashSet<RENodeId>) {
         match self {
             SubstateRef::ComponentState(substate) => {
