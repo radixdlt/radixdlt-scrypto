@@ -1325,7 +1325,7 @@ where
         Ok(())
     }
 
-    fn borrow(&mut self, lock_handle: LockHandle) -> Result<SubstateRef, RuntimeError> {
+    fn get_ref(&mut self, lock_handle: LockHandle) -> Result<SubstateRef, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
                 &mut self.track,

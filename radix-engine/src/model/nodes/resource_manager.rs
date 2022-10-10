@@ -502,7 +502,7 @@ impl ResourceManager {
                         .lock_substate(node_id, offset, true)
                         .map_err(InvokeError::Downstream)?;
                     let substate_ref = system_api
-                        .borrow(lock_handle)
+                        .get_ref(lock_handle)
                         .map_err(InvokeError::Downstream)?;
 
                     let wrapper = substate_ref.non_fungible();
@@ -594,7 +594,7 @@ impl ResourceManager {
 
                 // Read current value
                 let substate_ref = system_api
-                    .borrow(lock_handle)
+                    .get_ref(lock_handle)
                     .map_err(InvokeError::Downstream)?;
                 let wrapper = substate_ref.non_fungible();
 
@@ -634,7 +634,7 @@ impl ResourceManager {
                     .lock_substate(node_id, offset, false)
                     .map_err(InvokeError::Downstream)?;
                 let substate_ref = system_api
-                    .borrow(lock_handle)
+                    .get_ref(lock_handle)
                     .map_err(InvokeError::Downstream)?;
                 let exists = substate_ref.non_fungible().0.is_some();
                 system_api
@@ -656,7 +656,7 @@ impl ResourceManager {
                     .lock_substate(node_id, offset, false)
                     .map_err(InvokeError::Downstream)?;
                 let substate_ref = system_api
-                    .borrow(lock_handle)
+                    .get_ref(lock_handle)
                     .map_err(InvokeError::Downstream)?;
 
                 let wrapper = substate_ref.non_fungible();

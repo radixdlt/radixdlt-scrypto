@@ -54,7 +54,7 @@ where
     ) -> Result<LockHandle, RuntimeError>;
     fn drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError>;
 
-    fn borrow(&mut self, lock_handle: LockHandle) -> Result<SubstateRef, RuntimeError>;
+    fn get_ref(&mut self, lock_handle: LockHandle) -> Result<SubstateRef, RuntimeError>;
     fn get_mut(
         &mut self,
         lock_handle: LockHandle,

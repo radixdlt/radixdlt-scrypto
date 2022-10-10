@@ -2,7 +2,7 @@ use crate::engine::{AuthModule, HeapRENode, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::{
     HardAuthRule, HardProofRule, HardResourceOrNonFungible, InvokeError, MethodAuthorization,
-    Substate, SystemSubstate,
+    SystemSubstate,
 };
 use crate::types::*;
 use crate::wasm::*;
@@ -102,7 +102,9 @@ impl System {
                     )
                     .map_err(InvokeError::Downstream)?;
 
-                let substate_ref = system_api.borrow(handle).map_err(InvokeError::Downstream)?;
+                let substate_ref = system_api
+                    .get_ref(handle)
+                    .map_err(InvokeError::Downstream)?;
                 let system = substate_ref.system();
 
                 Ok(ScryptoValue::from_typed(&system.epoch))
@@ -124,7 +126,10 @@ impl System {
                         .get_mut(handle)
                         .map_err(InvokeError::Downstream)?;
                     substate_mut
-                        .overwrite(Substate::System(SystemSubstate { epoch }))
+                        .update(|r| {
+                            r.system().epoch = epoch;
+                            Ok(())
+                        })
                         .map_err(InvokeError::Downstream)?;
                 }
 

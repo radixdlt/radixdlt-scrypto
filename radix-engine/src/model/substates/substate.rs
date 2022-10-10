@@ -447,8 +447,16 @@ impl<'f, 's, R: FeeReserve> SubstateRefMut<'f, 's, R> {
         &self.offset
     }
 
-    pub fn overwrite(&mut self, substate: Substate) -> Result<(), RuntimeError> {
-        let (new_global_references, children) = substate.to_ref().references_and_owned_nodes();
+    pub fn update<F>(&mut self, f: F) -> Result<(), RuntimeError>
+    where
+        F: FnOnce(&mut RawSubstateRefMut) -> Result<(), RuntimeError>,
+    {
+        let (new_global_references, new_children) = {
+            let mut substate_ref_mut = self.get_ref_mut();
+            f(&mut substate_ref_mut)?;
+            substate_ref_mut.to_ref().references_and_owned_nodes()
+        };
+
         for global_address in new_global_references {
             let node_id = RENodeId::Global(global_address);
             let current_frame = self.call_frames.last_mut().unwrap();
@@ -461,13 +469,13 @@ impl<'f, 's, R: FeeReserve> SubstateRefMut<'f, 's, R> {
 
         // Take values from current frame
         let (taken_nodes, missing_nodes) = {
-            if !children.is_empty() {
+            if !new_children.is_empty() {
                 if !SubstateProperties::can_own_nodes(&self.offset) {
                     return Err(RuntimeError::KernelError(KernelError::ValueNotAllowed));
                 }
 
                 let current_frame = self.call_frames.last_mut().unwrap();
-                current_frame.take_available_values(children, true)?
+                current_frame.take_available_values(new_children, true)?
             } else {
                 (HashMap::new(), HashSet::new())
             }
@@ -477,23 +485,28 @@ impl<'f, 's, R: FeeReserve> SubstateRefMut<'f, 's, R> {
         self.node_pointer
             .add_children(taken_nodes, &mut self.call_frames, &mut self.track);
 
-        let raw_mut = self.get_ref_mut();
-        match (raw_mut, substate) {
-            (RawSubstateRefMut::ComponentState(current), Substate::ComponentState(next)) => {
-                *current = next
-            }
-            (
-                RawSubstateRefMut::KeyValueStoreEntry(current),
-                Substate::KeyValueStoreEntry(next),
-            ) => *current = next,
-            (RawSubstateRefMut::NonFungible(current), Substate::NonFungible(next)) => {
-                *current = next
-            }
-            (RawSubstateRefMut::System(current), Substate::System(next)) => *current = next,
-            _ => return Err(RuntimeError::KernelError(KernelError::InvalidOverwrite)),
-        }
-
         Ok(())
+    }
+
+    pub fn overwrite(&mut self, substate: Substate) -> Result<(), RuntimeError> {
+        self.update(|raw_mut| {
+            match (raw_mut, substate) {
+                (RawSubstateRefMut::ComponentState(current), Substate::ComponentState(next)) => {
+                    **current = next
+                }
+                (
+                    RawSubstateRefMut::KeyValueStoreEntry(current),
+                    Substate::KeyValueStoreEntry(next),
+                ) => **current = next,
+                (RawSubstateRefMut::NonFungible(current), Substate::NonFungible(next)) => {
+                    **current = next
+                }
+                (RawSubstateRefMut::System(current), Substate::System(next)) => **current = next,
+                _ => return Err(RuntimeError::KernelError(KernelError::InvalidOverwrite)),
+            }
+
+            Ok(())
+        })
     }
 
     fn get_ref_mut(&mut self) -> RawSubstateRefMut {
@@ -553,4 +566,27 @@ pub enum RawSubstateRefMut<'a> {
     ResourceManager(&'a mut ResourceManagerSubstate),
     System(&'a mut SystemSubstate),
     Global(&'a mut GlobalAddressSubstate),
+}
+
+impl<'a> RawSubstateRefMut<'a> {
+    pub fn system(&mut self) -> &mut SystemSubstate {
+        match self {
+            RawSubstateRefMut::System(value) => *value,
+            _ => panic!("Not system"),
+        }
+    }
+
+    fn to_ref(&self) -> SubstateRef {
+        match self {
+            RawSubstateRefMut::Global(value) => SubstateRef::Global(value),
+            RawSubstateRefMut::System(value) => SubstateRef::System(value),
+            RawSubstateRefMut::ResourceManager(value) => SubstateRef::ResourceManager(value),
+            RawSubstateRefMut::ComponentInfo(value) => SubstateRef::ComponentInfo(value),
+            RawSubstateRefMut::ComponentState(value) => SubstateRef::ComponentState(value),
+            RawSubstateRefMut::Package(value) => SubstateRef::Package(value),
+            RawSubstateRefMut::Vault(value) => SubstateRef::Vault(value),
+            RawSubstateRefMut::NonFungible(value) => SubstateRef::NonFungible(value),
+            RawSubstateRefMut::KeyValueStoreEntry(value) => SubstateRef::KeyValueStoreEntry(value),
+        }
+    }
 }

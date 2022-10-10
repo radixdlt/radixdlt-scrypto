@@ -120,7 +120,7 @@ where
 
     fn handle_read(&mut self, lock_handle: LockHandle) -> Result<ScryptoValue, RuntimeError> {
         self.system_api
-            .borrow(lock_handle)
+            .get_ref(lock_handle)
             .map(|substate_ref| substate_ref.to_scrypto_value())
     }
 
