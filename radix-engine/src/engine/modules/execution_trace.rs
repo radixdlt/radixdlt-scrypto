@@ -7,7 +7,7 @@ use scrypto::core::{FnIdent, MethodIdent, ReceiverMethodIdent};
 #[derive(Debug, Clone, PartialEq, TypeId, Encode, Decode)]
 pub struct ResourceChange {
     pub resource_address: ResourceAddress,
-    pub component_address: ComponentAddress,
+    pub component_id: ComponentId,
     pub vault_id: VaultId,
     pub amount: Decimal,
 }
@@ -19,7 +19,7 @@ pub struct ExecutionTraceReceipt {
 
 #[derive(Debug)]
 pub struct ExecutionTrace {
-    pub resource_changes: HashMap<ComponentAddress, HashMap<VaultId, (ResourceAddress, Decimal)>>,
+    pub resource_changes: HashMap<ComponentId, HashMap<VaultId, (ResourceAddress, Decimal)>>,
 }
 
 impl ExecutionTrace {
@@ -56,7 +56,7 @@ impl ExecutionTrace {
                blueprint-parented vaults (if any) to regular
                trace entries with component parents. */
             if let REActor::Method(FullyQualifiedReceiverMethod {
-                receiver: Receiver::Ref(RENodeId::Component(component_address)),
+                receiver: Receiver::Ref(RENodeId::Component(component_id)),
                 ..
             }) = &actor
             {
@@ -69,7 +69,7 @@ impl ExecutionTrace {
                         })?;
 
                         self.handle_vault_put(
-                            component_address,
+                            component_id,
                             vault_id,
                             decoded_input,
                             next_owned_values,
@@ -88,7 +88,7 @@ impl ExecutionTrace {
 
                         self.handle_vault_take(
                             &resource_address,
-                            component_address,
+                            component_id,
                             vault_id,
                             decoded_input,
                         )?;
@@ -103,7 +103,7 @@ impl ExecutionTrace {
 
     fn handle_vault_put(
         &mut self,
-        component_address: &ComponentAddress,
+        component_id: &ComponentId,
         vault_id: &VaultId,
         input: VaultPutInput,
         next_owned_values: &HashMap<RENodeId, HeapRootRENode>,
@@ -122,7 +122,7 @@ impl ExecutionTrace {
             if let ResourceType::Fungible { divisibility: _ } = bucket.resource_type() {
                 self.record_resource_change(
                     &bucket.resource_address(),
-                    component_address,
+                    component_id,
                     vault_id,
                     bucket.total_amount(),
                 )
@@ -140,23 +140,23 @@ impl ExecutionTrace {
     fn handle_vault_take(
         &mut self,
         resource_address: &ResourceAddress,
-        component_address: &ComponentAddress,
+        component_id: &ComponentId,
         vault_id: &VaultId,
         input: VaultTakeInput,
     ) -> Result<(), RuntimeError> {
-        self.record_resource_change(resource_address, component_address, vault_id, -input.amount)
+        self.record_resource_change(resource_address, component_id, vault_id, -input.amount)
     }
 
     fn record_resource_change(
         &mut self,
         resource_address: &ResourceAddress,
-        component_address: &ComponentAddress,
+        component_id: &ComponentId,
         vault_id: &VaultId,
         amount: Decimal,
     ) -> Result<(), RuntimeError> {
         let component_changes = self
             .resource_changes
-            .entry(component_address.clone())
+            .entry(component_id.clone())
             .or_insert(HashMap::new());
 
         let vault_change = component_changes
@@ -172,11 +172,11 @@ impl ExecutionTrace {
         let resource_changes: Vec<ResourceChange> = self
             .resource_changes
             .into_iter()
-            .flat_map(|(component_address, v)| {
+            .flat_map(|(component_id, v)| {
                 v.into_iter().map(
                     move |(vault_id, (resource_address, amount))| ResourceChange {
                         resource_address,
-                        component_address,
+                        component_id,
                         vault_id,
                         amount,
                     },

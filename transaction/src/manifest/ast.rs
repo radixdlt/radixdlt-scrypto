@@ -97,7 +97,10 @@ pub enum Instruction {
     },
 
     CreateResource {
-        args: Vec<Value>,
+        resource_type: Value,
+        metadata: Value,
+        access_rules: Value,
+        mint_params: Value,
     },
 
     BurnBucket {

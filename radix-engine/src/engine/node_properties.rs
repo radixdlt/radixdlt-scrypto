@@ -1,37 +1,10 @@
 use super::{KernelError, RuntimeError};
-use crate::model::GlobalAddressSubstate;
 use crate::types::*;
 use scrypto::core::{MethodIdent, ReceiverMethodIdent};
 
 pub struct RENodeProperties;
 
 impl RENodeProperties {
-    /// Specifies whether an RENode may globalize as the root node or not
-    pub fn to_global(node_id: RENodeId) -> Option<(GlobalAddress, GlobalAddressSubstate)> {
-        match node_id {
-            RENodeId::Global(..) => panic!("Should never get here."),
-            RENodeId::Component(component_address) | RENodeId::System(component_address) => Some((
-                GlobalAddress::Component(component_address),
-                GlobalAddressSubstate::Component(scrypto::component::Component(component_address)),
-            )),
-            RENodeId::ResourceManager(resource_address) => Some((
-                GlobalAddress::Resource(resource_address),
-                GlobalAddressSubstate::Resource(resource_address),
-            )),
-            RENodeId::Package(package_address) => Some((
-                GlobalAddress::Package(package_address),
-                GlobalAddressSubstate::Package(package_address),
-            )),
-            RENodeId::AuthZone(..) => Option::None,
-            RENodeId::Bucket(..) => Option::None,
-            RENodeId::Proof(..) => Option::None,
-            RENodeId::KeyValueStore(..) => Option::None,
-            RENodeId::NonFungibleStore(..) => Option::None,
-            RENodeId::Worktop => Option::None,
-            RENodeId::Vault(..) => Option::None,
-        }
-    }
-
     pub fn to_primary_offset(
         method_ident: &ReceiverMethodIdent,
     ) -> Result<SubstateOffset, RuntimeError> {

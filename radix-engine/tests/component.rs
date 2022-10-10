@@ -106,17 +106,15 @@ fn reentrancy_should_not_be_possible() {
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        if let RuntimeError::KernelError(KernelError::TrackError(TrackError::NotAvailable(
-            substate_id,
-        ))) = e
-        {
-            substate_id.eq(&SubstateId(
-                RENodeId::Component(component_address),
-                SubstateOffset::Component(ComponentOffset::Info),
-            ))
-        } else {
-            false
-        }
+        matches!(
+            e,
+            RuntimeError::KernelError(KernelError::TrackError(TrackError::NotAvailable(
+                SubstateId(
+                    RENodeId::Component(..),
+                    SubstateOffset::Component(ComponentOffset::Info)
+                )
+            )))
+        )
     });
 }
 

@@ -36,7 +36,7 @@ pub struct ScryptoValue {
     pub proof_ids: HashMap<ProofId, SborPath>,
     pub vault_ids: HashSet<VaultId>,
     pub kv_store_ids: HashSet<KeyValueStoreId>,
-    pub owned_component_addresses: HashSet<ComponentAddress>,
+    pub component_ids: HashSet<ComponentId>,
     pub refed_component_addresses: HashSet<ComponentAddress>,
     pub resource_addresses: HashSet<ResourceAddress>,
     pub non_fungible_addresses: HashSet<NonFungibleAddress>,
@@ -78,7 +78,7 @@ impl ScryptoValue {
                 .collect(),
             vault_ids: checker.vaults.iter().map(|e| e.0).collect(),
             kv_store_ids: checker.kv_stores,
-            owned_component_addresses: checker.components.iter().map(|e| e.0).collect(),
+            component_ids: checker.components.iter().map(|e| e.0).collect(),
             refed_component_addresses: checker.ref_components,
             resource_addresses: checker.resource_addresses,
             non_fungible_addresses: checker.non_fungible_addresses,
@@ -98,7 +98,7 @@ impl ScryptoValue {
             proof_ids: HashMap::new(),
             vault_ids: HashSet::new(),
             kv_store_ids: HashSet::new(),
-            owned_component_addresses: HashSet::new(),
+            component_ids: HashSet::new(),
             refed_component_addresses: HashSet::new(),
             resource_addresses: HashSet::new(),
             non_fungible_addresses: HashSet::new(),
@@ -113,8 +113,8 @@ impl ScryptoValue {
         for kv_store_id in &self.kv_store_ids {
             node_ids.insert(RENodeId::KeyValueStore(*kv_store_id));
         }
-        for component_address in &self.owned_component_addresses {
-            node_ids.insert(RENodeId::Component(*component_address));
+        for component_id in &self.component_ids {
+            node_ids.insert(RENodeId::Component(*component_id));
         }
         for (bucket_id, _) in &self.bucket_ids {
             node_ids.insert(RENodeId::Bucket(*bucket_id));
@@ -133,7 +133,7 @@ impl ScryptoValue {
         for kv_store_id in &self.kv_store_ids {
             node_ids.insert(RENodeId::KeyValueStore(*kv_store_id));
         }
-        for component_address in &self.owned_component_addresses {
+        for component_address in &self.component_ids {
             node_ids.insert(RENodeId::Component(*component_address));
         }
         node_ids
@@ -209,7 +209,7 @@ impl ScryptoValue {
         self.bucket_ids.len()
             + self.proof_ids.len()
             + self.vault_ids.len()
-            + self.owned_component_addresses.len()
+            + self.component_ids.len()
     }
 
     pub fn to_string_with_context<'a>(
@@ -328,8 +328,8 @@ pub enum ScryptoCustomValueCheckError {
     InvalidDecimal(ParseDecimalError),
     InvalidPreciseDecimal(ParsePreciseDecimalError),
     InvalidPackageAddress(AddressError),
+    InvalidComponent(ParseComponentError),
     InvalidComponentAddress(AddressError),
-    InvalidComponent(AddressError),
     InvalidResourceAddress(AddressError),
     InvalidHash(ParseHashError),
     InvalidEcdsaSecp256k1PublicKey(ParseEcdsaSecp256k1PublicKeyError),
@@ -672,7 +672,7 @@ impl ScryptoValueFormatter {
                 })
                 .map_err(ScryptoCustomValueCheckError::InvalidComponentAddress)?,
             ScryptoType::Component => Component::try_from(data)
-                .map(|d| format!("Component(\"{}\")", d.0.display(context.bech32_encoder)))
+                .map(|d| format!("Component(\"{}\")", d))
                 .map_err(ScryptoCustomValueCheckError::InvalidComponent)?,
             ScryptoType::KeyValueStore => KeyValueStore::<(), ()>::try_from(data)
                 .map(|d| format!("KeyValueStore(\"{}\")", d))

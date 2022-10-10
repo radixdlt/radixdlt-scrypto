@@ -78,14 +78,28 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         )
     }
 
+    pub fn deref_component(&mut self, component_address: ComponentAddress) -> Option<RENodeId> {
+        let node_id = RENodeId::Global(GlobalAddress::Component(component_address));
+        let global = self
+            .execution_stores
+            .get_root_store()
+            .get_substate(&SubstateId(
+                node_id,
+                SubstateOffset::Global(GlobalOffset::Global),
+            ))
+            .map(|s| s.substate)?;
+        Some(global.global_re_node().node_deref())
+    }
+
     pub fn inspect_component(
         &mut self,
         component_address: ComponentAddress,
     ) -> Option<radix_engine::model::ComponentInfoSubstate> {
+        let node_id = self.deref_component(component_address)?;
         self.execution_stores
             .get_root_store()
             .get_substate(&SubstateId(
-                RENodeId::Component(component_address),
+                node_id,
                 SubstateOffset::Component(ComponentOffset::Info),
             ))
             .map(|output| output.substate.into())
@@ -95,10 +109,12 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
         &mut self,
         component_address: ComponentAddress,
     ) -> Option<radix_engine::model::ComponentStateSubstate> {
+        let node_id = self.deref_component(component_address)?;
+
         self.execution_stores
             .get_root_store()
             .get_substate(&SubstateId(
-                RENodeId::Component(component_address),
+                node_id,
                 SubstateOffset::Component(ComponentOffset::State),
             ))
             .map(|output| output.substate.into())

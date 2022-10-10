@@ -56,9 +56,9 @@ blueprint! {
                 "invalid_blueprint".to_owned(),
                 scrypto_encode(&NodeCreate {}),
             ));
-            let address: ComponentAddress = call_engine(input);
+            let component_id: ComponentId = call_engine(input);
 
-            let input = RadixEngineInput::RENodeGlobalize(RENodeId::Component(address));
+            let input = RadixEngineInput::RENodeGlobalize(RENodeId::Component(component_id));
             let _: () = call_engine(input);
         }
 
@@ -69,9 +69,9 @@ blueprint! {
                 "NodeCreate".to_owned(),
                 scrypto_encode(&NodeCreate {}),
             ));
-            let address: ComponentAddress = call_engine(input);
+            let component_id: ComponentId = call_engine(input);
 
-            let input = RadixEngineInput::RENodeGlobalize(RENodeId::Component(address));
+            let input = RadixEngineInput::RENodeGlobalize(RENodeId::Component(component_id));
             let _: () = call_engine(input);
         }
     }
