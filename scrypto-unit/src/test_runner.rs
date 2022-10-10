@@ -751,7 +751,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
 
         // Commit
         self.next_transaction_nonce += 1;
-        let receipt = track.finalize(Ok(Vec::new()), Vec::new());
+        let receipt = track.finalize(Ok(Vec::new()), ExecutionTrace::new());
         if let TransactionResult::Commit(c) = receipt.result {
             c.state_updates.commit(substate_store);
         }

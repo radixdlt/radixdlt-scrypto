@@ -17,7 +17,7 @@ fn can_withdraw_from_my_account() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), account)
+        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .withdraw_from_account(RADIX_TOKEN, account)
         .call_method(
             other_account,
@@ -134,7 +134,7 @@ fn account_to_bucket_to_account() {
 
     // Assert
     receipt.expect_commit_success();
-    assert!(receipt.expect_commit().resource_changes.is_empty());
+    assert_eq!(1, receipt.expect_commit().resource_changes.len()); // Just the fee payment
 }
 
 #[test]
@@ -157,7 +157,7 @@ fn test_account_balance() {
     let outputs = receipt.expect_commit_success();
 
     // Assert
-    assert!(receipt.expect_commit().resource_changes.is_empty());
+    assert_eq!(1, receipt.expect_commit().resource_changes.len()); // Just the fee payment
     assert_eq!(
         outputs[1],
         ScryptoValue::from_typed(&Decimal::from(1000)).raw
@@ -171,7 +171,7 @@ fn assert_resource_changes_for_transfer(
     target_account: ComponentId,
     transfer_amount: Decimal,
 ) {
-    assert_eq!(2, resource_changes.len());
+    assert_eq!(3, resource_changes.len()); // Two transfers (withdrawal, deposit) + fee payment
     assert!(resource_changes
         .iter()
         .any(|r| r.resource_address == resource_address
