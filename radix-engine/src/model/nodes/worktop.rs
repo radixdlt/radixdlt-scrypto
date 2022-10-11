@@ -215,7 +215,7 @@ impl Worktop {
                 let input: WorktopPutInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(WorktopError::InvalidRequestData(e)))?;
                 let bucket = system_api
-                    .node_drop(&RENodeId::Bucket(input.bucket.0))
+                    .node_drop(RENodeId::Bucket(input.bucket.0))
                     .map_err(|e| InvokeError::Downstream(e))?
                     .into();
                 let mut node_ref = system_api

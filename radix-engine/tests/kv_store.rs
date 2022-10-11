@@ -86,7 +86,7 @@ fn self_cyclic_map_fails_execution() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::RENodeNotVisible(..))
+            RuntimeError::KernelError(KernelError::MovingLockedRENode(..))
         )
     });
 }

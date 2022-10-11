@@ -172,6 +172,21 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                     )
                     .map_err(ModuleError::CostingError)?;
             }
+            SysCallInput::LockSubstate { .. } => {
+                // Costing
+                track
+                    .fee_reserve
+                    .consume(
+                        track
+                            .fee_table
+                            .system_api_cost(SystemApiCostingEntry::LockSubstate {
+                                size: 0, // TODO: get size of the value
+                            }),
+                        "lock_substate",
+                        false,
+                    )
+                    .map_err(ModuleError::CostingError)?;
+            }
             SysCallInput::ReadSubstate { .. } => {
                 // Costing
                 track
@@ -198,6 +213,19 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                                 size: 0, // TODO: get size of the value
                             }),
                         "write_substate",
+                        false,
+                    )
+                    .map_err(ModuleError::CostingError)?;
+            }
+            SysCallInput::DropLock { .. } => {
+                // Costing
+                track
+                    .fee_reserve
+                    .consume(
+                        track
+                            .fee_table
+                            .system_api_cost(SystemApiCostingEntry::DropLock),
+                        "drop_lock",
                         false,
                     )
                     .map_err(ModuleError::CostingError)?;

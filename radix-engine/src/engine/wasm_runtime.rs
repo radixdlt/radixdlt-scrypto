@@ -107,28 +107,42 @@ where
         Ok(ScryptoValue::from_typed(&global_address))
     }
 
-    fn handle_substate_read(
+    fn handle_lock_substate(
         &mut self,
-        substate_id: SubstateId,
+        node_id: RENodeId,
+        offset: SubstateOffset,
+        mutable: bool,
     ) -> Result<ScryptoValue, RuntimeError> {
-        self.system_api.substate_read(substate_id)
+        self.system_api
+            .lock_substate(node_id, offset, mutable)
+            .map(|handle| ScryptoValue::from_typed(&handle))
     }
 
-    fn handle_substate_write(
+    fn handle_read(&mut self, lock_handle: LockHandle) -> Result<ScryptoValue, RuntimeError> {
+        self.system_api.read(lock_handle)
+    }
+
+    fn handle_write(
         &mut self,
-        substate_id: SubstateId,
+        lock_handle: LockHandle,
         value: Vec<u8>,
     ) -> Result<ScryptoValue, RuntimeError> {
         // FIXME: check if the value contains NOT allowed values.
 
-        self.system_api.substate_write(
-            substate_id,
+        self.system_api.write(
+            lock_handle,
             ScryptoValue::from_slice(&value)
                 .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?,
         )?;
 
         // TODO: do we ever want to return the previous substate value
         Ok(ScryptoValue::unit())
+    }
+
+    fn handle_drop_lock(&mut self, lock_handle: LockHandle) -> Result<ScryptoValue, RuntimeError> {
+        self.system_api
+            .drop_lock(lock_handle)
+            .map(|unit| ScryptoValue::from_typed(&unit))
     }
 
     fn handle_get_actor(&mut self) -> Result<ScryptoActor, RuntimeError> {
@@ -166,10 +180,12 @@ where
             RadixEngineInput::RENodeCreate(node) => self.handle_node_create(node),
             RadixEngineInput::GetOwnedRENodeIds() => self.handle_get_owned_node_ids(),
 
-            RadixEngineInput::SubstateRead(substate_id) => self.handle_substate_read(substate_id),
-            RadixEngineInput::SubstateWrite(substate_id, value) => {
-                self.handle_substate_write(substate_id, value)
+            RadixEngineInput::LockSubstate(node_id, offset, mutable) => {
+                self.handle_lock_substate(node_id, offset, mutable)
             }
+            RadixEngineInput::Read(lock_handle) => self.handle_read(lock_handle),
+            RadixEngineInput::Write(lock_handle, value) => self.handle_write(lock_handle, value),
+            RadixEngineInput::DropLock(lock_handle) => self.handle_drop_lock(lock_handle),
 
             RadixEngineInput::GetActor() => self.handle_get_actor().map(encode),
             RadixEngineInput::GenerateUuid() => self.handle_generate_uuid().map(encode),

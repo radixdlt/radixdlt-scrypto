@@ -79,10 +79,13 @@ pub enum KernelError {
     RENodeNotInTrack,
 
     // Substate
+    MovingLockedRENode(RENodeId),
+    LockDoesNotExist(LockHandle),
+    LockNotMutable(LockHandle),
+    SubstateNotReadable(REActor, SubstateId),
+    SubstateNotWriteable(REActor, SubstateId),
     TrackError(TrackError),
     NodeToSubstateFailure(NodeToSubstateFailure),
-    SubstateReadNotReadable(REActor, SubstateId),
-    SubstateWriteNotWriteable(REActor, SubstateId),
 
     // constraints
     ValueNotAllowed,

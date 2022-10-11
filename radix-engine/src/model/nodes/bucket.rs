@@ -222,7 +222,7 @@ impl Bucket {
                 let input: BucketPutInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(BucketError::InvalidRequestData(e)))?;
                 let other_bucket = system_api
-                    .node_drop(&RENodeId::Bucket(input.bucket.0))
+                    .node_drop(RENodeId::Bucket(input.bucket.0))
                     .map_err(InvokeError::Downstream)?
                     .into();
                 let mut node_ref = system_api

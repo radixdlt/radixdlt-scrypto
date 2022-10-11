@@ -10,9 +10,7 @@ use crate::buffer::scrypto_encode;
 use crate::component::*;
 use crate::core::*;
 use crate::crypto::Hash;
-use crate::engine::types::{
-    ComponentId, ComponentOffset, GlobalAddress, RENodeId, SubstateId, SubstateOffset,
-};
+use crate::engine::types::{ComponentId, ComponentOffset, GlobalAddress, RENodeId, SubstateOffset};
 use crate::engine::{api::*, call_engine};
 use crate::misc::*;
 use crate::resource::AccessRules;
@@ -68,24 +66,22 @@ impl Component {
 
     /// Returns the package ID of this component.
     pub fn package_address(&self) -> PackageAddress {
-        let substate_id = SubstateId(
+        let pointer = DataPointer::new(
             RENodeId::Component(self.0),
             SubstateOffset::Component(ComponentOffset::Info),
         );
-        let input = RadixEngineInput::SubstateRead(substate_id);
-        let output: ComponentInfoSubstate = call_engine(input);
-        output.package_address
+        let state: DataRef<ComponentInfoSubstate> = pointer.get();
+        state.package_address
     }
 
     /// Returns the blueprint name of this component.
     pub fn blueprint_name(&self) -> String {
-        let substate_id = SubstateId(
+        let pointer = DataPointer::new(
             RENodeId::Component(self.0),
             SubstateOffset::Component(ComponentOffset::Info),
         );
-        let input = RadixEngineInput::SubstateRead(substate_id);
-        let output: ComponentInfoSubstate = call_engine(input);
-        output.blueprint_name
+        let state: DataRef<ComponentInfoSubstate> = pointer.get();
+        state.blueprint_name.clone()
     }
 
     pub fn add_access_check(&mut self, access_rules: AccessRules) -> &mut Self {
@@ -128,24 +124,22 @@ impl BorrowedGlobalComponent {
 
     /// Returns the package ID of this component.
     pub fn package_address(&self) -> PackageAddress {
-        let substate_id = SubstateId(
+        let pointer = DataPointer::new(
             RENodeId::Global(GlobalAddress::Component(self.0)),
             SubstateOffset::Component(ComponentOffset::Info),
         );
-        let input = RadixEngineInput::SubstateRead(substate_id);
-        let output: ComponentInfoSubstate = call_engine(input);
-        output.package_address
+        let state: DataRef<ComponentInfoSubstate> = pointer.get();
+        state.package_address
     }
 
     /// Returns the blueprint name of this component.
     pub fn blueprint_name(&self) -> String {
-        let substate_id = SubstateId(
+        let pointer = DataPointer::new(
             RENodeId::Global(GlobalAddress::Component(self.0)),
             SubstateOffset::Component(ComponentOffset::Info),
         );
-        let input = RadixEngineInput::SubstateRead(substate_id);
-        let output: ComponentInfoSubstate = call_engine(input);
-        output.blueprint_name
+        let state: DataRef<ComponentInfoSubstate> = pointer.get();
+        state.blueprint_name.clone()
     }
 
     pub fn add_access_check(&mut self, access_rules: AccessRules) -> &mut Self {

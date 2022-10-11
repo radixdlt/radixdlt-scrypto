@@ -3,6 +3,7 @@ use transaction::errors::IdAllocationError;
 use transaction::model::{AuthZoneParams, Instruction};
 use transaction::validation::*;
 
+use crate::engine::call_frame::SubstateLock;
 use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::*;
@@ -180,59 +181,6 @@ where
         Ok(())
     }
 
-    fn read_substate_internal(
-        call_frames: &mut Vec<CallFrame>,
-        track: &mut Track<'s, R>,
-        node_pointer: RENodePointer,
-        offset: SubstateOffset,
-    ) -> Result<ScryptoValue, RuntimeError> {
-        // TODO: Cleanup
-        if let SubstateOffset::Component(ComponentOffset::Info) = offset {
-            node_pointer
-                .acquire_lock(
-                    SubstateOffset::Component(ComponentOffset::State),
-                    false,
-                    false,
-                    track,
-                )
-                .map_err(RuntimeError::KernelError)?;
-            node_pointer
-                .acquire_lock(
-                    SubstateOffset::Component(ComponentOffset::Info),
-                    false,
-                    false,
-                    track,
-                )
-                .map_err(RuntimeError::KernelError)?;
-        }
-
-        // Read current value
-        let substate = {
-            let mut node_ref = node_pointer.to_ref_mut(call_frames, track);
-            node_ref.read_substate(&SubstateId(node_pointer.node_id(), offset.clone()))?
-        };
-
-        // TODO: Remove, integrate with substate borrow mechanism
-        if let SubstateOffset::Component(ComponentOffset::Info) = offset {
-            node_pointer
-                .release_lock(
-                    SubstateOffset::Component(ComponentOffset::State),
-                    false,
-                    track,
-                )
-                .map_err(RuntimeError::KernelError)?;
-            node_pointer
-                .release_lock(
-                    SubstateOffset::Component(ComponentOffset::Info),
-                    false,
-                    track,
-                )
-                .map_err(RuntimeError::KernelError)?;
-        }
-
-        Ok(substate)
-    }
-
     fn new_uuid(
         id_allocator: &mut IdAllocator,
         transaction_hash: Hash,
@@ -349,8 +297,11 @@ where
 
     fn run(
         &mut self,
+        frame: CallFrame,
         input: ScryptoValue,
     ) -> Result<(ScryptoValue, HashMap<RENodeId, HeapRootRENode>), RuntimeError> {
+        self.call_frames.push(frame);
+
         // Copy-over root frame's auth zone virtual_proofs_buckets
         // TODO: Clean this up at some point (possible move to auth zone?)
         let root_frame = self
@@ -506,8 +457,28 @@ where
             }
         }
 
+        let mut call_frame = self.call_frames.pop().unwrap();
+
+        // Auto drop locks
+        for (_, lock) in call_frame.drain_locks() {
+            let SubstateLock {
+                pointer: (node_pointer, offset),
+                ..
+            } = lock;
+            if !(matches!(offset, SubstateOffset::KeyValueStore(..))
+                || matches!(
+                    offset,
+                    SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(..))
+                ))
+            {
+                node_pointer
+                    .release_lock(offset, false, self.track)
+                    .map_err(RuntimeError::KernelError)?;
+            }
+        }
+
         // drop proofs and check resource leak
-        Self::current_frame_mut(&mut self.call_frames).drop_owned_values()?;
+        call_frame.drop_frame()?;
 
         Ok((output, received_values))
     }
@@ -567,20 +538,13 @@ where
         AuthModule::function_auth(function_ident.clone(), &mut self.call_frames)?;
 
         // start a new frame and run
-        let (output, received_values) = {
-            let frame = CallFrame::new_child(
-                Self::current_frame(&self.call_frames).depth + 1,
-                REActor::Function(function_ident.clone()),
-                next_owned_values,
-                next_frame_node_refs,
-                self,
-            );
-            self.call_frames.push(frame);
-            self.run(input)?
-        };
-
-        // Remove the last after clean-up
-        self.call_frames.pop();
+        let frame = CallFrame::new_child(
+            Self::current_frame(&self.call_frames).depth + 1,
+            REActor::Function(function_ident.clone()),
+            next_owned_values,
+            next_frame_node_refs,
+        );
+        let (output, received_values) = self.run(frame, input)?;
 
         Ok((output, received_values))
     }
@@ -595,200 +559,222 @@ where
         let mut locked_pointers = Vec::new();
 
         // Authorization and state load
-        let re_actor = {
-            let mut node_id = method_ident.receiver.node_id();
-            let mut node_pointer =
-                Self::current_frame(&self.call_frames).get_node_pointer(node_id)?;
+        let re_actor =
+            {
+                let mut node_id = method_ident.receiver.node_id();
+                let mut node_pointer =
+                    Self::current_frame(&self.call_frames).get_node_pointer(node_id)?;
 
-            // Deref
-            if let Receiver::Ref(..) = method_ident.receiver {
-                if let Some(derefed) =
-                    node_pointer.node_deref(&self.call_frames, &mut self.track)?
-                {
-                    node_id = derefed.node_id();
-                    node_pointer = derefed;
-                    method_ident = ReceiverMethodIdent {
-                        receiver: Receiver::Ref(node_id),
-                        method_ident: method_ident.method_ident,
+                // Deref
+                if let Receiver::Ref(..) = method_ident.receiver {
+                    if let Some(derefed) =
+                        node_pointer.node_deref(&self.call_frames, &mut self.track)?
+                    {
+                        node_id = derefed.node_id();
+                        node_pointer = derefed;
+                        method_ident = ReceiverMethodIdent {
+                            receiver: Receiver::Ref(node_id),
+                            method_ident: method_ident.method_ident,
+                        }
                     }
                 }
-            }
 
-            // Lock Primary Substate
-            let offset = RENodeProperties::to_primary_offset(&method_ident)?;
-            let is_lock_fee =
-                matches!(node_id, RENodeId::Vault(..))
-                    && (method_ident
-                        .method_ident
-                        .eq(&MethodIdent::Native(NativeMethod::Vault(
-                            VaultMethod::LockFee,
-                        )))
-                        || method_ident.method_ident.eq(&MethodIdent::Native(
-                            NativeMethod::Vault(VaultMethod::LockFee),
-                        ))
-                        || method_ident.method_ident.eq(&MethodIdent::Native(
-                            NativeMethod::Vault(VaultMethod::LockContingentFee),
-                        )));
-            if is_lock_fee && matches!(node_pointer, RENodePointer::Heap { .. }) {
-                return Err(RuntimeError::KernelError(KernelError::RENodeNotInTrack));
-            }
-            node_pointer
-                .acquire_lock(offset.clone(), true, is_lock_fee, &mut self.track)
-                .map_err(RuntimeError::KernelError)?;
-            locked_pointers.push((node_pointer, offset.clone(), is_lock_fee));
+                // Load actor
+                let re_actor = match &method_ident {
+                    ReceiverMethodIdent {
+                        method_ident: MethodIdent::Scrypto(ident),
+                        receiver,
+                    } => match node_id {
+                        RENodeId::Component(..) => {
+                            node_pointer
+                                .acquire_lock(
+                                    SubstateOffset::Component(ComponentOffset::Info),
+                                    false,
+                                    false,
+                                    &mut self.track,
+                                )
+                                .map_err(RuntimeError::KernelError)?;
 
-            // Load actor
-            let re_actor = match &method_ident {
-                ReceiverMethodIdent {
-                    method_ident: MethodIdent::Scrypto(ident),
-                    receiver,
-                } => match node_id {
+                            let mut node_ref =
+                                node_pointer.to_ref(&self.call_frames, &mut self.track);
+                            let component = node_ref.component();
+                            let actor = REActor::Method(FullyQualifiedReceiverMethod {
+                                receiver: receiver.clone(),
+                                method: FullyQualifiedMethod::Scrypto {
+                                    package_address: component.info.package_address.clone(),
+                                    blueprint_name: component.info.blueprint_name.clone(),
+                                    ident: ident.to_string(),
+                                },
+                            });
+                            node_pointer
+                                .release_lock(
+                                    SubstateOffset::Component(ComponentOffset::Info),
+                                    false,
+                                    &mut self.track,
+                                )
+                                .map_err(RuntimeError::KernelError)?;
+
+                            actor
+                        }
+                        _ => panic!("Should not get here."),
+                    },
+                    ReceiverMethodIdent {
+                        method_ident: MethodIdent::Native(native_fn),
+                        receiver,
+                    } => REActor::Method(FullyQualifiedReceiverMethod {
+                        receiver: receiver.clone(),
+                        method: FullyQualifiedMethod::Native(native_fn.clone()),
+                    }),
+                };
+
+                // TODO: Check Component ABI here rather than in auth
+                match node_id {
                     RENodeId::Component(..) => {
-                        let mut node_ref = node_pointer.to_ref(&self.call_frames, &mut self.track);
-                        let component = node_ref.component();
-                        REActor::Method(FullyQualifiedReceiverMethod {
-                            receiver: receiver.clone(),
-                            method: FullyQualifiedMethod::Scrypto {
-                                package_address: component.info.package_address.clone(),
-                                blueprint_name: component.info.blueprint_name.clone(),
-                                ident: ident.to_string(),
-                            },
-                        })
+                        let package_address = {
+                            let mut node_ref =
+                                node_pointer.to_ref(&self.call_frames, &mut self.track);
+                            let component = node_ref.component();
+                            component.info.package_address.clone()
+                        };
+                        let package_node_id = RENodeId::Package(package_address);
+                        let package_node_pointer = RENodePointer::Store(package_node_id);
+                        next_frame_node_refs.insert(package_node_id, package_node_pointer);
                     }
-                    _ => panic!("Should not get here."),
-                },
-                ReceiverMethodIdent {
-                    method_ident: MethodIdent::Native(native_fn),
-                    receiver,
-                } => REActor::Method(FullyQualifiedReceiverMethod {
-                    receiver: receiver.clone(),
-                    method: FullyQualifiedMethod::Native(native_fn.clone()),
-                }),
+                    RENodeId::Proof(..) => {
+                        let resource_address = {
+                            let node_ref = node_pointer.to_ref(&self.call_frames, &mut self.track);
+                            node_ref.proof().resource_address()
+                        };
+                        let global_resource_node_id =
+                            RENodeId::Global(GlobalAddress::Resource(resource_address));
+                        next_frame_node_refs.insert(
+                            global_resource_node_id,
+                            RENodePointer::Store(global_resource_node_id),
+                        );
+                    }
+                    RENodeId::Bucket(..) => {
+                        let resource_address = {
+                            let node_ref = node_pointer.to_ref(&self.call_frames, &mut self.track);
+                            node_ref.bucket().resource_address()
+                        };
+
+                        let global_resource_node_id =
+                            RENodeId::Global(GlobalAddress::Resource(resource_address));
+                        next_frame_node_refs.insert(
+                            global_resource_node_id,
+                            RENodePointer::Store(global_resource_node_id),
+                        );
+
+                        let resource_node_id = RENodeId::ResourceManager(resource_address);
+                        let resource_node_pointer = RENodePointer::Store(resource_node_id);
+                        next_frame_node_refs.insert(resource_node_id, resource_node_pointer);
+                    }
+                    RENodeId::ResourceManager(..) => {
+                        let offset =
+                            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
+                        node_pointer
+                            .acquire_lock(offset.clone(), true, false, &mut self.track)
+                            .map_err(RuntimeError::KernelError)?;
+                        locked_pointers.push((node_pointer, offset.clone(), false));
+
+                        let mut node_ref = node_pointer.to_ref(&self.call_frames, &mut self.track);
+                        let resource_manager = node_ref.resource_manager();
+                        if let Some(store_id) = resource_manager.info.non_fungible_store_id {
+                            let node_id = RENodeId::NonFungibleStore(store_id);
+                            let node_pointer = RENodePointer::Store(node_id);
+                            next_frame_node_refs.insert(node_id, node_pointer);
+                        }
+                    }
+                    RENodeId::System(..) => {
+                        let offset = SubstateOffset::System(SystemOffset::System);
+                        node_pointer
+                            .acquire_lock(offset.clone(), true, false, &mut self.track)
+                            .map_err(RuntimeError::KernelError)?;
+                        locked_pointers.push((node_pointer, offset.clone(), false));
+                    }
+                    RENodeId::Vault(..) => {
+                        // TODO: Remove
+                        let is_lock_fee = method_ident.method_ident.eq(&MethodIdent::Native(
+                            NativeMethod::Vault(VaultMethod::LockFee),
+                        )) || method_ident.method_ident.eq(&MethodIdent::Native(
+                            NativeMethod::Vault(VaultMethod::LockFee),
+                        )) || method_ident.method_ident.eq(&MethodIdent::Native(
+                            NativeMethod::Vault(VaultMethod::LockContingentFee),
+                        ));
+                        if is_lock_fee && matches!(node_pointer, RENodePointer::Heap { .. }) {
+                            return Err(RuntimeError::KernelError(KernelError::RENodeNotInTrack));
+                        }
+                        let offset = SubstateOffset::Vault(VaultOffset::Vault);
+                        node_pointer
+                            .acquire_lock(offset.clone(), true, is_lock_fee, &mut self.track)
+                            .map_err(RuntimeError::KernelError)?;
+                        locked_pointers.push((node_pointer, offset.clone(), is_lock_fee));
+
+                        let resource_address = {
+                            let mut node_ref =
+                                node_pointer.to_ref(&self.call_frames, &mut self.track);
+                            node_ref.vault().resource_address()
+                        };
+                        let global_resource_node_id =
+                            RENodeId::Global(GlobalAddress::Resource(resource_address));
+                        next_frame_node_refs.insert(
+                            global_resource_node_id,
+                            RENodePointer::Store(global_resource_node_id),
+                        );
+
+                        let resource_node_id = RENodeId::ResourceManager(resource_address);
+                        let resource_node_pointer = RENodePointer::Store(resource_node_id);
+                        next_frame_node_refs.insert(resource_node_id, resource_node_pointer);
+                    }
+                    _ => {}
+                }
+
+                let current_frame = Self::current_frame(&self.call_frames);
+                self.execution_trace.trace_invoke_method(
+                    &self.call_frames,
+                    &mut self.track,
+                    &current_frame.actor,
+                    &node_id,
+                    node_pointer,
+                    FnIdent::Method(method_ident.clone()),
+                    &input,
+                    &next_owned_values,
+                )?;
+
+                // Check method authorization
+                AuthModule::receiver_auth(
+                    method_ident.clone(),
+                    &input,
+                    node_pointer.clone(),
+                    &mut self.call_frames,
+                    &mut self.track,
+                )?;
+
+                match &method_ident.receiver {
+                    Receiver::Consumed(..) => {
+                        let heap_node = Self::current_frame_mut(&mut self.call_frames)
+                            .owned_heap_nodes
+                            .remove(&node_id)
+                            .ok_or(RuntimeError::KernelError(
+                                KernelError::InvokeMethodInvalidReceiver(node_id),
+                            ))?;
+                        next_owned_values.insert(node_id, heap_node);
+                    }
+                    _ => {}
+                }
+
+                next_frame_node_refs.insert(node_id.clone(), node_pointer.clone());
+                re_actor
             };
 
-            // TODO: Check Component ABI here rather than in auth
-            match node_id {
-                RENodeId::Component(..) => {
-                    let package_address = {
-                        let mut node_ref = node_pointer.to_ref(&self.call_frames, &mut self.track);
-                        let component = node_ref.component();
-                        component.info.package_address.clone()
-                    };
-                    let package_node_id = RENodeId::Package(package_address);
-                    let package_node_pointer = RENodePointer::Store(package_node_id);
-                    next_frame_node_refs.insert(package_node_id, package_node_pointer);
-                }
-                RENodeId::Proof(..) => {
-                    let resource_address = {
-                        let node_ref = node_pointer.to_ref(&self.call_frames, &mut self.track);
-                        node_ref.proof().resource_address()
-                    };
-                    let global_resource_node_id =
-                        RENodeId::Global(GlobalAddress::Resource(resource_address));
-                    next_frame_node_refs.insert(
-                        global_resource_node_id,
-                        RENodePointer::Store(global_resource_node_id),
-                    );
-                }
-                RENodeId::Bucket(..) => {
-                    let resource_address = {
-                        let node_ref = node_pointer.to_ref(&self.call_frames, &mut self.track);
-                        node_ref.bucket().resource_address()
-                    };
-
-                    let global_resource_node_id =
-                        RENodeId::Global(GlobalAddress::Resource(resource_address));
-                    next_frame_node_refs.insert(
-                        global_resource_node_id,
-                        RENodePointer::Store(global_resource_node_id),
-                    );
-
-                    let resource_node_id = RENodeId::ResourceManager(resource_address);
-                    let resource_node_pointer = RENodePointer::Store(resource_node_id);
-                    next_frame_node_refs.insert(resource_node_id, resource_node_pointer);
-                }
-                RENodeId::Vault(..) => {
-                    let resource_address = {
-                        let mut node_ref = node_pointer.to_ref(&self.call_frames, &mut self.track);
-                        node_ref.vault().resource_address()
-                    };
-                    let global_resource_node_id =
-                        RENodeId::Global(GlobalAddress::Resource(resource_address));
-                    next_frame_node_refs.insert(
-                        global_resource_node_id,
-                        RENodePointer::Store(global_resource_node_id),
-                    );
-
-                    let resource_node_id = RENodeId::ResourceManager(resource_address);
-                    let resource_node_pointer = RENodePointer::Store(resource_node_id);
-                    next_frame_node_refs.insert(resource_node_id, resource_node_pointer);
-                }
-                RENodeId::ResourceManager(..) => {
-                    let mut node_ref = node_pointer.to_ref(&self.call_frames, &mut self.track);
-                    let resource_manager = node_ref.resource_manager();
-
-                    if let Some(store_id) = resource_manager.info.non_fungible_store_id {
-                        let node_id = RENodeId::NonFungibleStore(store_id);
-                        let node_pointer = RENodePointer::Store(node_id);
-                        next_frame_node_refs.insert(node_id, node_pointer);
-                    }
-                }
-                _ => {}
-            }
-
-            let current_frame = Self::current_frame(&self.call_frames);
-            self.execution_trace.trace_invoke_method(
-                &self.call_frames,
-                &mut self.track,
-                &current_frame.actor,
-                &node_id,
-                node_pointer,
-                FnIdent::Method(method_ident.clone()),
-                &input,
-                &next_owned_values,
-            )?;
-
-            // Check method authorization
-            AuthModule::receiver_auth(
-                method_ident.clone(),
-                &input,
-                node_pointer.clone(),
-                &mut self.call_frames,
-                &mut self.track,
-            )?;
-
-            match &method_ident.receiver {
-                Receiver::Consumed(..) => {
-                    let heap_node = Self::current_frame_mut(&mut self.call_frames)
-                        .owned_heap_nodes
-                        .remove(&node_id)
-                        .ok_or(RuntimeError::KernelError(
-                            KernelError::InvokeMethodInvalidReceiver(node_id),
-                        ))?;
-                    next_owned_values.insert(node_id, heap_node);
-                }
-                _ => {}
-            }
-
-            next_frame_node_refs.insert(node_id.clone(), node_pointer.clone());
-            re_actor
-        };
-
         // start a new frame
-        let (output, received_values) = {
-            let frame = CallFrame::new_child(
-                Self::current_frame(&self.call_frames).depth + 1,
-                re_actor,
-                next_owned_values,
-                next_frame_node_refs,
-                self,
-            );
-            self.call_frames.push(frame);
-            self.run(input)?
-        };
-
-        // Remove the last after clean-up
-        self.call_frames.pop();
+        let frame = CallFrame::new_child(
+            Self::current_frame(&self.call_frames).depth + 1,
+            re_actor,
+            next_owned_values,
+            next_frame_node_refs,
+        );
+        let (output, received_values) = self.run(frame, input)?;
 
         // Release locked addresses
         for (node_pointer, offset, write_through) in locked_pointers {
@@ -1098,12 +1084,12 @@ where
         Ok(node_ids)
     }
 
-    fn node_drop(&mut self, node_id: &RENodeId) -> Result<HeapRootRENode, RuntimeError> {
+    fn node_drop(&mut self, node_id: RENodeId) -> Result<HeapRootRENode, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
                 &mut self.track,
                 &mut self.call_frames,
-                SysCallInput::DropNode { node_id: node_id },
+                SysCallInput::DropNode { node_id: &node_id },
             )
             .map_err(RuntimeError::ModuleError)?;
         }
@@ -1231,56 +1217,161 @@ where
         Ok(global_address)
     }
 
-    fn substate_read(&mut self, substate_id: SubstateId) -> Result<ScryptoValue, RuntimeError> {
+    fn lock_substate(
+        &mut self,
+        node_id: RENodeId,
+        offset: SubstateOffset,
+        mutable: bool,
+    ) -> Result<LockHandle, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
                 &mut self.track,
                 &mut self.call_frames,
-                SysCallInput::ReadSubstate {
-                    substate_id: &substate_id,
+                SysCallInput::LockSubstate {
+                    node_id: &node_id,
+                    offset: &offset,
+                    mutable,
                 },
             )
             .map_err(RuntimeError::ModuleError)?;
         }
 
-        // Get Pointer
-        let mut node_id = substate_id.0;
         let mut node_pointer = Self::current_frame(&self.call_frames).get_node_pointer(node_id)?;
 
         // Deref
         if let Some(derefed) = node_pointer.node_deref(&self.call_frames, &mut self.track)? {
-            node_id = derefed.node_id();
             node_pointer = derefed;
         }
 
-        // Authorization
         // TODO: Check if valid offset for node_id
-        let offset = substate_id.1;
-        if !Self::current_frame(&self.call_frames)
-            .actor
-            .is_substate_readable(node_id, offset.clone())
-        {
-            return Err(RuntimeError::KernelError(
-                KernelError::SubstateReadNotReadable(
+
+        // Authorization
+        if mutable {
+            if !Self::current_frame(&self.call_frames)
+                .actor
+                .is_substate_writeable(node_pointer.node_id(), offset.clone())
+            {
+                return Err(RuntimeError::KernelError(
+                    KernelError::SubstateNotWriteable(
+                        Self::current_frame(&self.call_frames).actor.clone(),
+                        SubstateId(node_pointer.node_id(), offset.clone()),
+                    ),
+                ));
+            }
+        } else {
+            if !Self::current_frame(&self.call_frames)
+                .actor
+                .is_substate_readable(node_pointer.node_id(), offset.clone())
+            {
+                return Err(RuntimeError::KernelError(KernelError::SubstateNotReadable(
                     Self::current_frame(&self.call_frames).actor.clone(),
-                    SubstateId(node_id, offset.clone()),
-                ),
-            ));
+                    SubstateId(node_pointer.node_id(), offset.clone()),
+                )));
+            }
         }
 
-        let substate = Self::read_substate_internal(
-            &mut self.call_frames,
-            self.track,
+        if !(matches!(offset, SubstateOffset::KeyValueStore(..))
+            || matches!(
+                offset,
+                SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(..))
+            ))
+        {
+            node_pointer
+                .acquire_lock(offset.clone(), mutable, false, &mut self.track)
+                .map_err(RuntimeError::KernelError)?;
+        }
+
+        let lock_handle = Self::current_frame_mut(&mut self.call_frames).create_lock(
             node_pointer,
             offset.clone(),
-        )?;
+            mutable,
+        );
+
+        for m in &mut self.modules {
+            m.post_sys_call(
+                &mut self.track,
+                &mut self.call_frames,
+                SysCallOutput::LockSubstate { lock_handle },
+            )
+            .map_err(RuntimeError::ModuleError)?;
+        }
+
+        Ok(lock_handle)
+    }
+
+    fn drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError> {
+        for m in &mut self.modules {
+            m.pre_sys_call(
+                &mut self.track,
+                &mut self.call_frames,
+                SysCallInput::DropLock {
+                    lock_handle: &lock_handle,
+                },
+            )
+            .map_err(RuntimeError::ModuleError)?;
+        }
+
+        let (node_pointer, offset) = Self::current_frame_mut(&mut self.call_frames)
+            .drop_lock(lock_handle)
+            .map_err(RuntimeError::KernelError)?;
+
+        if !(matches!(offset, SubstateOffset::KeyValueStore(..))
+            || matches!(
+                offset,
+                SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(..))
+            ))
+        {
+            node_pointer
+                .release_lock(offset.clone(), false, self.track)
+                .map_err(RuntimeError::KernelError)?;
+        }
+
+        for m in &mut self.modules {
+            m.post_sys_call(
+                &mut self.track,
+                &mut self.call_frames,
+                SysCallOutput::DropLock,
+            )
+            .map_err(RuntimeError::ModuleError)?;
+        }
+
+        Ok(())
+    }
+
+    fn read(&mut self, lock_handle: LockHandle) -> Result<ScryptoValue, RuntimeError> {
+        for m in &mut self.modules {
+            m.pre_sys_call(
+                &mut self.track,
+                &mut self.call_frames,
+                SysCallInput::ReadSubstate {
+                    lock_handle: &lock_handle,
+                },
+            )
+            .map_err(RuntimeError::ModuleError)?;
+        }
+
+        let SubstateLock {
+            pointer: (node_pointer, offset),
+            ..
+        } = Self::current_frame_mut(&mut self.call_frames)
+            .get_lock(lock_handle)
+            .map_err(RuntimeError::KernelError)?
+            .clone();
+
+        let substate = {
+            let mut node_ref = node_pointer.to_ref_mut(&mut self.call_frames, &mut self.track);
+            node_ref.read_substate(&SubstateId(node_pointer.node_id(), offset.clone()))?
+        };
 
         // TODO: Clean the following referencing up
         let contained_value = extract_value_from_substate(&offset, &substate);
         if let Some(value) = contained_value {
+            let cur_frame = Self::current_frame_mut(&mut self.call_frames);
+
+            // TODO: Figure out how to drop these references as well on reference drop
             for global_address in value.global_references() {
                 let node_id = RENodeId::Global(global_address);
-                Self::current_frame_mut(&mut self.call_frames)
+                cur_frame
                     .node_refs
                     .insert(node_id, RENodePointer::Store(node_id));
             }
@@ -1288,9 +1379,10 @@ where
             let cur_children = value.node_ids();
             for child_id in cur_children {
                 let child_pointer = node_pointer.child(child_id);
-                Self::current_frame_mut(&mut self.call_frames)
-                    .node_refs
-                    .insert(child_id, child_pointer);
+                cur_frame.node_refs.insert(child_id, child_pointer);
+                cur_frame
+                    .add_lock_visible_node(lock_handle, child_id)
+                    .map_err(RuntimeError::KernelError)?;
             }
         }
 
@@ -1306,24 +1398,37 @@ where
         Ok(substate)
     }
 
-    fn substate_write(
+    fn write(
         &mut self,
-        substate_id: SubstateId,
+        lock_handle: LockHandle,
         substate: ScryptoValue, // TODO: use substate?
-    ) -> Result<ScryptoValue, RuntimeError> {
+    ) -> Result<(), RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
                 &mut self.track,
                 &mut self.call_frames,
                 SysCallInput::WriteSubstate {
-                    substate_id: &substate_id,
+                    lock_handle: &lock_handle,
                     value: &substate,
                 },
             )
             .map_err(RuntimeError::ModuleError)?;
         }
 
-        let offset = substate_id.1;
+        let SubstateLock {
+            pointer: (node_pointer, offset),
+            mutable,
+            ..
+        } = Self::current_frame_mut(&mut self.call_frames)
+            .get_lock(lock_handle)
+            .map_err(RuntimeError::KernelError)?
+            .clone();
+
+        if !mutable {
+            return Err(RuntimeError::KernelError(KernelError::LockNotMutable(
+                lock_handle,
+            )));
+        }
 
         // TODO: Do this in a better way once references cleaned up
         let contained_value = extract_value_from_substate(&offset, &substate); // FIXME: error handling!!!
@@ -1359,33 +1464,11 @@ where
             }
         };
 
-        // Get Pointer
-        let mut node_id = substate_id.0;
-        let mut node_pointer = Self::current_frame(&self.call_frames).get_node_pointer(node_id)?;
-        if let Some(derefed) = node_pointer.node_deref(&self.call_frames, &mut self.track)? {
-            node_id = derefed.node_id();
-            node_pointer = derefed;
-        }
+        let prev_substate = {
+            let mut node_ref = node_pointer.to_ref_mut(&mut self.call_frames, &mut self.track);
+            node_ref.read_substate(&SubstateId(node_pointer.node_id(), offset.clone()))?
+        };
 
-        // Authorization
-        if !Self::current_frame(&self.call_frames)
-            .actor
-            .is_substate_writeable(node_id, offset.clone())
-        {
-            return Err(RuntimeError::KernelError(
-                KernelError::SubstateWriteNotWriteable(
-                    Self::current_frame(&self.call_frames).actor.clone(),
-                    SubstateId(node_id, offset.clone()),
-                ),
-            ));
-        }
-
-        let prev_substate = Self::read_substate_internal(
-            &mut self.call_frames,
-            self.track,
-            node_pointer,
-            offset.clone(),
-        )?;
         let prev_contained_value = extract_value_from_substate(&offset, &prev_substate);
 
         // Fulfill method
@@ -1398,7 +1481,11 @@ where
 
         // Write values
         let mut node_ref = node_pointer.to_ref_mut(&mut self.call_frames, &mut self.track);
-        node_ref.write_substate(SubstateId(node_id, offset), substate, taken_nodes);
+        node_ref.write_substate(
+            SubstateId(node_pointer.node_id(), offset.clone()),
+            substate,
+            taken_nodes,
+        );
 
         for m in &mut self.modules {
             m.post_sys_call(
@@ -1409,7 +1496,7 @@ where
             .map_err(RuntimeError::ModuleError)?;
         }
 
-        Ok(prev_substate)
+        Ok(())
     }
 
     fn read_blob(&mut self, blob_hash: &Hash) -> Result<&[u8], RuntimeError> {

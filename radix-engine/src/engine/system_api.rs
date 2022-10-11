@@ -38,7 +38,7 @@ where
     ) -> Result<RENodeRefMut<'_, 's, R>, RuntimeError>;
 
     /// Removes an RENode and all of it's children from the Heap
-    fn node_drop(&mut self, node_id: &RENodeId) -> Result<HeapRootRENode, RuntimeError>;
+    fn node_drop(&mut self, node_id: RENodeId) -> Result<HeapRootRENode, RuntimeError>;
 
     /// Creates a new RENode and places it in the Heap
     fn node_create(&mut self, re_node: HeapRENode) -> Result<RENodeId, RuntimeError>;
@@ -46,15 +46,16 @@ where
     /// Moves an RENode from Heap to Store
     fn node_globalize(&mut self, node_id: RENodeId) -> Result<GlobalAddress, RuntimeError>;
 
-    /// Reads a substate
-    fn substate_read(&mut self, substate_id: SubstateId) -> Result<ScryptoValue, RuntimeError>;
-
-    /// Updates a substate and returns previous one
-    fn substate_write(
+    fn lock_substate(
         &mut self,
-        substate_id: SubstateId,
-        value: ScryptoValue,
-    ) -> Result<ScryptoValue, RuntimeError>;
+        node_id: RENodeId,
+        offset: SubstateOffset,
+        mutable: bool,
+    ) -> Result<LockHandle, RuntimeError>;
+    fn drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError>;
+
+    fn read(&mut self, lock_handle: LockHandle) -> Result<ScryptoValue, RuntimeError>;
+    fn write(&mut self, lock_handle: LockHandle, value: ScryptoValue) -> Result<(), RuntimeError>;
 
     fn read_transaction_hash(&mut self) -> Result<Hash, RuntimeError>;
 

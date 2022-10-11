@@ -60,16 +60,32 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
             SysCallInput::GlobalizeNode { node_id } => {
                 log!(self, "Globalizing node: node_id = {:?}", node_id);
             }
-            SysCallInput::ReadSubstate { substate_id } => {
-                log!(self, "Reading substate: substate_id = {:?}", substate_id);
-            }
-            SysCallInput::WriteSubstate { substate_id, value } => {
+            SysCallInput::LockSubstate {
+                node_id,
+                offset,
+                mutable,
+            } => {
                 log!(
                     self,
-                    "Writing substate: substate_id = {:?}, value = {:?}",
-                    substate_id,
+                    "Lock substate: node_id {:?} offset {:?} mutable {:?}",
+                    node_id,
+                    offset,
+                    mutable
+                );
+            }
+            SysCallInput::ReadSubstate { lock_handle } => {
+                log!(self, "Reading substate: lock_handle = {:?}", lock_handle);
+            }
+            SysCallInput::WriteSubstate { lock_handle, value } => {
+                log!(
+                    self,
+                    "Writing substate: lock_handle = {:?}, value = {:?}",
+                    lock_handle,
                     value
                 );
+            }
+            SysCallInput::DropLock { lock_handle } => {
+                log!(self, "Drop Lock: lock_handle = {:?}", lock_handle);
             }
             SysCallInput::TakeSubstate { substate_id } => {
                 log!(self, "Taking substate: substate_id = {:?}", substate_id);
@@ -106,8 +122,10 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
             SysCallOutput::DropNode { .. } => {}
             SysCallOutput::CreateNode { .. } => {}
             SysCallOutput::GlobalizeNode { .. } => {}
+            SysCallOutput::LockSubstate { .. } => {}
             SysCallOutput::ReadSubstate { .. } => {}
             SysCallOutput::WriteSubstate { .. } => {}
+            SysCallOutput::DropLock { .. } => {}
             SysCallOutput::TakeSubstate { .. } => {}
             SysCallOutput::ReadTransactionHash { .. } => {}
             SysCallOutput::ReadBlob { .. } => {}

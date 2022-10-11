@@ -81,7 +81,45 @@ fn invalid_blueprint_name_should_cause_error() {
 }
 
 #[test]
-fn reentrancy_should_not_be_possible() {
+fn mut_reentrancy_should_not_be_possible() {
+    // Arrange
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
+    let package_address = test_runner.compile_and_publish("./tests/component");
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        .lock_fee(10u32.into(), SYS_FAUCET_COMPONENT)
+        .call_scrypto_function(package_address, "ReentrantComponent", "new", args!())
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    receipt.expect_commit_success();
+    let component_address = receipt
+        .expect_commit()
+        .entity_changes
+        .new_component_addresses[0];
+
+    // Act
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        .lock_fee(10u32.into(), SYS_FAUCET_COMPONENT)
+        .call_method(component_address, "call_mut_self", args!())
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::KernelError(KernelError::TrackError(TrackError::NotAvailable(
+                SubstateId(
+                    RENodeId::Component(..),
+                    SubstateOffset::Component(ComponentOffset::State)
+                )
+            )))
+        )
+    });
+}
+
+#[test]
+fn read_reentrancy_should_be_possible() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
@@ -105,13 +143,41 @@ fn reentrancy_should_not_be_possible() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
+fn read_then_mut_reentrancy_should_not_be_possible() {
+    // Arrange
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
+    let package_address = test_runner.compile_and_publish("./tests/component");
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        .lock_fee(10u32.into(), SYS_FAUCET_COMPONENT)
+        .call_scrypto_function(package_address, "ReentrantComponent", "new", args!())
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    receipt.expect_commit_success();
+    let component_address = receipt
+        .expect_commit()
+        .entity_changes
+        .new_component_addresses[0];
+
+    // Act
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        .lock_fee(10u32.into(), SYS_FAUCET_COMPONENT)
+        .call_method(component_address, "call_mut_self_2", args!())
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::TrackError(TrackError::NotAvailable(
                 SubstateId(
                     RENodeId::Component(..),
-                    SubstateOffset::Component(ComponentOffset::Info)
+                    SubstateOffset::Component(ComponentOffset::State)
                 )
             )))
         )

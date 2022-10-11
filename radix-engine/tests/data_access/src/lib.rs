@@ -7,41 +7,43 @@ blueprint! {
     impl DataAccess {
         pub fn create_component_and_read_state() {
             let component_address = Self {}.instantiate().globalize();
-            let substate_id = SubstateId(
+            let lock_handle: LockHandle = call_engine(RadixEngineInput::LockSubstate(
                 RENodeId::Global(GlobalAddress::Component(component_address)),
                 SubstateOffset::Component(ComponentOffset::State),
-            );
-            let input = RadixEngineInput::SubstateRead(substate_id);
-            call_engine(input)
+                false,
+            ));
+            call_engine(RadixEngineInput::Read(lock_handle))
         }
 
         pub fn create_component_and_write_state() {
             let component_address = Self {}.instantiate().globalize();
-            let substate_id = SubstateId(
+            let lock_handle: LockHandle = call_engine(RadixEngineInput::LockSubstate(
                 RENodeId::Global(GlobalAddress::Component(component_address)),
                 SubstateOffset::Component(ComponentOffset::State),
-            );
-            let input = RadixEngineInput::SubstateWrite(substate_id, scrypto_encode(&()));
-            call_engine(input)
+                true,
+            ));
+            call_engine(RadixEngineInput::Write(lock_handle, scrypto_encode(&())))
         }
 
         pub fn create_component_and_read_info() -> ComponentInfoSubstate {
             let component_address = Self {}.instantiate().globalize();
-            let substate_id = SubstateId(
+            let lock_handle: LockHandle = call_engine(RadixEngineInput::LockSubstate(
                 RENodeId::Global(GlobalAddress::Component(component_address)),
                 SubstateOffset::Component(ComponentOffset::Info),
-            );
-            let input = RadixEngineInput::SubstateRead(substate_id);
+                false,
+            ));
+            let input = RadixEngineInput::Read(lock_handle);
             call_engine(input)
         }
 
         pub fn create_component_and_write_info() -> () {
             let component_address = Self {}.instantiate().globalize();
-            let substate_id = SubstateId(
+            let lock_handle: LockHandle = call_engine(RadixEngineInput::LockSubstate(
                 RENodeId::Global(GlobalAddress::Component(component_address)),
                 SubstateOffset::Component(ComponentOffset::Info),
-            );
-            let input = RadixEngineInput::SubstateWrite(substate_id, scrypto_encode(&()));
+                true,
+            ));
+            let input = RadixEngineInput::Write(lock_handle, scrypto_encode(&()));
             call_engine(input)
         }
     }

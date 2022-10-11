@@ -6,6 +6,7 @@ use crate::crypto::*;
 use crate::resource::NonFungibleId;
 use crate::resource::ResourceAddress;
 
+pub type LockHandle = u32;
 pub type AuthZoneId = u32;
 pub type BucketId = u32;
 pub type ProofId = u32;

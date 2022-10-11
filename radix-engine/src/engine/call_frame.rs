@@ -1,8 +1,13 @@
 use crate::engine::*;
-use crate::fee::FeeReserve;
 use crate::types::*;
-use crate::wasm::*;
 use scrypto::core::NativeFunction;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SubstateLock {
+    pub pointer: (RENodePointer, SubstateOffset),
+    pub mutable: bool,
+    pub owned_nodes: HashSet<RENodeId>,
+}
 
 // TODO: reduce fields visibility
 
@@ -21,9 +26,85 @@ pub struct CallFrame {
 
     /// Owned Values
     pub owned_heap_nodes: HashMap<RENodeId, HeapRootRENode>,
+
+    next_lock_handle: LockHandle,
+    locks: HashMap<LockHandle, SubstateLock>,
+    node_lock_count: HashMap<RENodeId, u32>,
 }
 
 impl CallFrame {
+    pub fn create_lock(
+        &mut self,
+        node_pointer: RENodePointer,
+        offset: SubstateOffset,
+        mutable: bool,
+    ) -> LockHandle {
+        let lock_handle = self.next_lock_handle;
+        self.locks.insert(
+            lock_handle,
+            SubstateLock {
+                pointer: (node_pointer, offset),
+                mutable,
+                owned_nodes: HashSet::new(),
+            },
+        );
+        self.next_lock_handle = self.next_lock_handle + 1;
+
+        let counter = self
+            .node_lock_count
+            .entry(node_pointer.node_id())
+            .or_insert(0u32);
+        *counter += 1;
+
+        lock_handle
+    }
+
+    pub fn drop_lock(
+        &mut self,
+        lock_handle: LockHandle,
+    ) -> Result<(RENodePointer, SubstateOffset), KernelError> {
+        let substate_lock = self
+            .locks
+            .remove(&lock_handle)
+            .ok_or(KernelError::LockDoesNotExist(lock_handle))?;
+
+        for refed_node in substate_lock.owned_nodes {
+            self.node_refs.remove(&refed_node);
+        }
+
+        let counter = self
+            .node_lock_count
+            .entry(substate_lock.pointer.0.node_id())
+            .or_insert(0u32);
+        *counter -= 1;
+        if *counter == 0 {
+            self.node_lock_count
+                .remove(&substate_lock.pointer.0.node_id());
+        }
+
+        Ok(substate_lock.pointer)
+    }
+
+    pub fn get_lock(&self, lock_handle: LockHandle) -> Result<&SubstateLock, KernelError> {
+        self.locks
+            .get(&lock_handle)
+            .ok_or(KernelError::LockDoesNotExist(lock_handle))
+    }
+
+    // TODO: Figure out right interface for this
+    pub fn add_lock_visible_node(
+        &mut self,
+        lock_handle: LockHandle,
+        node_id: RENodeId,
+    ) -> Result<(), KernelError> {
+        let lock = self
+            .locks
+            .get_mut(&lock_handle)
+            .ok_or(KernelError::LockDoesNotExist(lock_handle))?;
+        lock.owned_nodes.insert(node_id);
+        Ok(())
+    }
+
     pub fn new_root() -> Self {
         Self {
             depth: 0,
@@ -32,31 +113,34 @@ impl CallFrame {
             ))),
             node_refs: HashMap::new(),
             owned_heap_nodes: HashMap::new(),
+            next_lock_handle: 0u32,
+            locks: HashMap::new(),
+            node_lock_count: HashMap::new(),
         }
     }
 
-    pub fn new_child<'s, Y, W, I, R>(
+    pub fn new_child(
         depth: usize,
         actor: REActor,
         owned_heap_nodes: HashMap<RENodeId, HeapRootRENode>,
         node_refs: HashMap<RENodeId, RENodePointer>,
-        _system_api: &mut Y,
-    ) -> Self
-    where
-        Y: SystemApi<'s, W, I, R>,
-        W: WasmEngine<I>,
-        I: WasmInstance,
-        R: FeeReserve,
-    {
+    ) -> Self {
         Self {
             depth,
             actor,
             node_refs,
             owned_heap_nodes,
+            next_lock_handle: 0u32,
+            locks: HashMap::new(),
+            node_lock_count: HashMap::new(),
         }
     }
 
-    pub fn drop_owned_values(&mut self) -> Result<(), RuntimeError> {
+    pub fn drain_locks(&mut self) -> HashMap<LockHandle, SubstateLock> {
+        self.locks.drain().collect()
+    }
+
+    pub fn drop_frame(mut self) -> Result<(), RuntimeError> {
         let values = self
             .owned_heap_nodes
             .drain()
@@ -76,6 +160,12 @@ impl CallFrame {
             let mut missing_values = HashSet::new();
 
             for id in node_ids {
+                if self.node_lock_count.contains_key(&id) {
+                    return Err(RuntimeError::KernelError(KernelError::MovingLockedRENode(
+                        id,
+                    )));
+                }
+
                 let maybe = self.owned_heap_nodes.remove(&id);
                 if let Some(value) = maybe {
                     value.root().verify_can_move()?;
@@ -103,6 +193,12 @@ impl CallFrame {
     }
 
     pub fn take_node(&mut self, node_id: RENodeId) -> Result<HeapRootRENode, RuntimeError> {
+        if self.node_lock_count.contains_key(&node_id) {
+            return Err(RuntimeError::KernelError(KernelError::MovingLockedRENode(
+                node_id,
+            )));
+        }
+
         let maybe = self.owned_heap_nodes.remove(&node_id);
         if let Some(root_node) = maybe {
             root_node.root().verify_can_move()?;
