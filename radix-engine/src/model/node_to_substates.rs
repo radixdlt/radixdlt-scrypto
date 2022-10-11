@@ -76,7 +76,9 @@ pub fn node_to_substates(node: HeapRENode) -> HashMap<SubstateOffset, PersistedS
     substates
 }
 
-pub fn nodes_to_substates(nodes: HashMap<RENodeId, HeapRENode>) -> HashMap<SubstateId, PersistedSubstate> {
+pub fn nodes_to_substates(
+    nodes: HashMap<RENodeId, HeapRENode>,
+) -> HashMap<SubstateId, PersistedSubstate> {
     let mut substates = HashMap::new();
     for (id, node) in nodes {
         for (offset, substate) in node_to_substates(node) {

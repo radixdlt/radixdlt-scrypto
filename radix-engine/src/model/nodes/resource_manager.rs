@@ -1,9 +1,9 @@
 use crate::engine::{HeapRENode, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::{
-    Bucket, InvokeError, NonFungible, NonFungibleSubstate, Resource,
+    Bucket, InvokeError, NonFungible, NonFungibleSubstate, PersistedSubstate, Resource,
     ResourceMethodRule::{Protected, Public},
-    PersistedSubstate, Vault,
+    Vault,
 };
 use crate::model::{
     MethodAccessRule, MethodAccessRuleMethod, NonFungibleStore, ResourceManagerSubstate,
@@ -301,7 +301,8 @@ impl ResourceManager {
                         let non_fungible_handle =
                             system_api.lock_substate(node_id, offset, true)?;
                         let mut substate_mut = system_api.get_mut(non_fungible_handle)?;
-                        substate_mut.overwrite(PersistedSubstate::NonFungible(NonFungibleSubstate(None)))?;
+                        substate_mut
+                            .overwrite(PersistedSubstate::NonFungible(NonFungibleSubstate(None)))?;
                         system_api.drop_lock(non_fungible_handle)?;
                     }
                 }
@@ -406,9 +407,9 @@ impl ResourceManager {
 
                     {
                         let mut substate_mut = system_api.get_mut(non_fungible_handle)?;
-                        substate_mut.overwrite(PersistedSubstate::NonFungible(NonFungibleSubstate(
-                            Some(non_fungible),
-                        )))?;
+                        substate_mut.overwrite(PersistedSubstate::NonFungible(
+                            NonFungibleSubstate(Some(non_fungible)),
+                        ))?;
                     }
 
                     system_api.drop_lock(non_fungible_handle)?;
@@ -473,9 +474,9 @@ impl ResourceManager {
                 if let Some(mut non_fungible) = wrapper.0.clone() {
                     non_fungible.set_mutable_data(input.data);
                     let mut substate_mut = system_api.get_mut(non_fungible_handle)?;
-                    substate_mut.overwrite(PersistedSubstate::NonFungible(NonFungibleSubstate(Some(
-                        non_fungible,
-                    ))))?;
+                    substate_mut.overwrite(PersistedSubstate::NonFungible(NonFungibleSubstate(
+                        Some(non_fungible),
+                    )))?;
                 } else {
                     let non_fungible_address =
                         NonFungibleAddress::new(resource_address.clone(), input.id);

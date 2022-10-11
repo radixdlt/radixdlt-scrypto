@@ -58,7 +58,9 @@ impl PersistedSubstate {
             PersistedSubstate::Package(value) => RawSubstateRefMut::Package(value),
             PersistedSubstate::Vault(value) => RawSubstateRefMut::Vault(value),
             PersistedSubstate::NonFungible(value) => RawSubstateRefMut::NonFungible(value),
-            PersistedSubstate::KeyValueStoreEntry(value) => RawSubstateRefMut::KeyValueStoreEntry(value),
+            PersistedSubstate::KeyValueStoreEntry(value) => {
+                RawSubstateRefMut::KeyValueStoreEntry(value)
+            }
         }
     }
 
@@ -263,6 +265,7 @@ impl Into<GlobalAddressSubstate> for PersistedSubstate {
 }
 
 pub enum SubstateRef<'a> {
+    Bucket(&'a Bucket),
     ComponentInfo(&'a ComponentInfoSubstate),
     ComponentState(&'a ComponentStateSubstate),
     NonFungible(&'a NonFungibleSubstate),
@@ -286,6 +289,7 @@ impl<'a> SubstateRef<'a> {
             SubstateRef::Vault(value) => ScryptoValue::from_typed(*value),
             SubstateRef::NonFungible(value) => ScryptoValue::from_typed(*value),
             SubstateRef::KeyValueStoreEntry(value) => ScryptoValue::from_typed(*value),
+            _ => panic!("Unsupported scrypto value"),
         }
     }
 
@@ -317,6 +321,13 @@ impl<'a> SubstateRef<'a> {
         }
     }
 
+    pub fn bucket(&self) -> &Bucket {
+        match self {
+            SubstateRef::Bucket(value) => *value,
+            _ => panic!("Not a bucket"),
+        }
+    }
+
     pub fn resource_manager(&self) -> &ResourceManagerSubstate {
         match self {
             SubstateRef::ResourceManager(value) => *value,
@@ -340,6 +351,11 @@ impl<'a> SubstateRef<'a> {
 
     pub fn references_and_owned_nodes(&self) -> (HashSet<GlobalAddress>, HashSet<RENodeId>) {
         match self {
+            SubstateRef::Bucket(bucket) => {
+                let mut references = HashSet::new();
+                references.insert(GlobalAddress::Resource(bucket.resource_address()));
+                (references, HashSet::new())
+            }
             SubstateRef::ComponentInfo(substate) => {
                 let mut references = HashSet::new();
                 references.insert(GlobalAddress::Package(substate.package_address));
@@ -483,9 +499,10 @@ impl<'f, 's, R: FeeReserve> SubstateRefMut<'f, 's, R> {
     pub fn overwrite(&mut self, substate: PersistedSubstate) -> Result<(), RuntimeError> {
         let raw_mut = self.get_raw_mut();
         match (raw_mut, substate) {
-            (RawSubstateRefMut::ComponentState(current), PersistedSubstate::ComponentState(next)) => {
-                *current = next
-            }
+            (
+                RawSubstateRefMut::ComponentState(current),
+                PersistedSubstate::ComponentState(next),
+            ) => *current = next,
             (
                 RawSubstateRefMut::KeyValueStoreEntry(current),
                 PersistedSubstate::KeyValueStoreEntry(next),
@@ -493,7 +510,9 @@ impl<'f, 's, R: FeeReserve> SubstateRefMut<'f, 's, R> {
             (RawSubstateRefMut::NonFungible(current), PersistedSubstate::NonFungible(next)) => {
                 *current = next
             }
-            (RawSubstateRefMut::System(current), PersistedSubstate::System(next)) => *current = next,
+            (RawSubstateRefMut::System(current), PersistedSubstate::System(next)) => {
+                *current = next
+            }
             _ => return Err(RuntimeError::KernelError(KernelError::InvalidOverwrite)),
         }
 
@@ -557,9 +576,17 @@ pub enum RawSubstateRefMut<'a> {
     ResourceManager(&'a mut ResourceManagerSubstate),
     System(&'a mut SystemSubstate),
     Global(&'a mut GlobalAddressSubstate),
+    Bucket(&'a mut Bucket),
 }
 
 impl<'a> RawSubstateRefMut<'a> {
+    pub fn bucket(&mut self) -> &mut Bucket {
+        match self {
+            RawSubstateRefMut::Bucket(value) => *value,
+            _ => panic!("Not a bucket"),
+        }
+    }
+
     pub fn resource_manager(&mut self) -> &mut ResourceManagerSubstate {
         match self {
             RawSubstateRefMut::ResourceManager(value) => *value,
@@ -583,6 +610,7 @@ impl<'a> RawSubstateRefMut<'a> {
 
     fn to_ref(&self) -> SubstateRef {
         match self {
+            RawSubstateRefMut::Bucket(value) => SubstateRef::Bucket(value),
             RawSubstateRefMut::Global(value) => SubstateRef::Global(value),
             RawSubstateRefMut::System(value) => SubstateRef::System(value),
             RawSubstateRefMut::ResourceManager(value) => SubstateRef::ResourceManager(value),

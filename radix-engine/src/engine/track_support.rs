@@ -180,7 +180,10 @@ impl<'s> AppStateTrack<'s> {
     }
 
     /// Returns a copy of the substate associated with the given address from the base track
-    pub fn get_substate_from_base(&mut self, substate_id: &SubstateId) -> Option<PersistedSubstate> {
+    pub fn get_substate_from_base(
+        &mut self,
+        substate_id: &SubstateId,
+    ) -> Option<PersistedSubstate> {
         self.base_state_track
             .substates
             .entry(substate_id.clone())

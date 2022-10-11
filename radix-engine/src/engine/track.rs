@@ -16,9 +16,9 @@ use crate::model::KeyValueStoreEntrySubstate;
 use crate::model::LockableResource;
 use crate::model::NonFungibleStore;
 use crate::model::NonFungibleSubstate;
+use crate::model::PersistedSubstate;
 use crate::model::Resource;
 use crate::model::ResourceManager;
-use crate::model::PersistedSubstate;
 use crate::model::System;
 use crate::model::Vault;
 use crate::model::VaultSubstate;
@@ -405,7 +405,11 @@ impl<'s, R: FeeReserve> Track<'s, R> {
     }
 
     /// Returns the value of a key value pair
-    pub fn read_key_value(&mut self, parent_address: SubstateId, key: Vec<u8>) -> &PersistedSubstate {
+    pub fn read_key_value(
+        &mut self,
+        parent_address: SubstateId,
+        key: Vec<u8>,
+    ) -> &PersistedSubstate {
         // TODO: consider using a single address as function input
         let substate_id = match parent_address {
             SubstateId(

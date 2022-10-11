@@ -151,16 +151,16 @@ fn test_basic_transfer() {
     assert_eq!(
         10000 /* base_fee */
         + 0 /* blobs */
-        + 4400 /* borrow_node */
+        + 3400 /* borrow_node */
         + 7500 /* create_node */
         + 1698 /* decode_manifest */
         + 700 /* drop_lock */
         + 1000 /* drop_node */
         + 0 /* instantiate_wasm */
         + 2215 /* invoke_function */
-        + 700 /* lock_substate */
+        + 800 /* lock_substate */
         + 100 /* read_owned_nodes */
-        + 3500 /* read_substate */
+        + 4000 /* read_substate */
         + 5200 /* run_function */
         + 338152 /* run_wasm */
         + 566 /* verify_manifest */

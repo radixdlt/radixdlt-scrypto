@@ -646,23 +646,6 @@ where
                             RENodePointer::Store(global_resource_node_id),
                         );
                     }
-                    RENodeId::Bucket(..) => {
-                        let resource_address = {
-                            let node_ref = node_pointer.to_ref(&self.call_frames, &mut self.track);
-                            node_ref.bucket().resource_address()
-                        };
-
-                        let global_resource_node_id =
-                            RENodeId::Global(GlobalAddress::Resource(resource_address));
-                        next_frame_node_refs.insert(
-                            global_resource_node_id,
-                            RENodePointer::Store(global_resource_node_id),
-                        );
-
-                        let resource_node_id = RENodeId::ResourceManager(resource_address);
-                        let resource_node_pointer = RENodePointer::Store(resource_node_id);
-                        next_frame_node_refs.insert(resource_node_id, resource_node_pointer);
-                    }
                     RENodeId::Vault(..) => {
                         // TODO: Remove
                         let is_lock_fee = method_ident.method_ident.eq(&MethodIdent::Native(

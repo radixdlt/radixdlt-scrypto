@@ -2,7 +2,8 @@ use crate::engine::RuntimeError;
 use crate::engine::{HeapRENode, SystemApi};
 use crate::fee::*;
 use crate::model::{
-    Component, ComponentInfoSubstate, ComponentStateSubstate, InvokeError, KeyValueStore, PersistedSubstate,
+    Component, ComponentInfoSubstate, ComponentStateSubstate, InvokeError, KeyValueStore,
+    PersistedSubstate,
 };
 use crate::types::*;
 use crate::wasm::*;

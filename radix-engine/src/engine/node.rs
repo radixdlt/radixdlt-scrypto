@@ -115,6 +115,9 @@ impl HeapRENode {
                 HeapRENode::ResourceManager(resource_manager),
                 SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
             ) => SubstateRef::ResourceManager(&resource_manager.info),
+            (HeapRENode::Bucket(bucket), SubstateOffset::Bucket(BucketOffset::Bucket)) => {
+                SubstateRef::Bucket(bucket)
+            }
             (_, offset) => {
                 return Err(RuntimeError::KernelError(KernelError::OffsetNotAvailable(
                     offset.clone(),
@@ -161,6 +164,9 @@ impl HeapRENode {
                 HeapRENode::ResourceManager(resource_manager),
                 SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
             ) => RawSubstateRefMut::ResourceManager(&mut resource_manager.info),
+            (HeapRENode::Bucket(bucket), SubstateOffset::Bucket(BucketOffset::Bucket)) => {
+                RawSubstateRefMut::Bucket(bucket)
+            }
             (_, offset) => {
                 return Err(RuntimeError::KernelError(KernelError::OffsetNotAvailable(
                     offset.clone(),
