@@ -28,6 +28,60 @@ pub struct ExecutionTrace {
     pub fee_vaults_components: HashMap<VaultId, ComponentId>,
 }
 
+impl<R: FeeReserve> Module<R> for ExecutionTrace {
+    fn pre_sys_call(
+        &mut self,
+        track: &mut Track<R>,
+        heap: &mut Vec<CallFrame>,
+        input: SysCallInput,
+    ) -> Result<(), ModuleError> {
+        self.trace_invoke_method(
+            heap 
+            track,
+            todo!("actor"), 
+            input
+        )
+    }
+
+    fn post_sys_call(
+        &mut self,
+        _track: &mut Track<R>,
+        _heap: &mut Vec<CallFrame>,
+        _output: SysCallOutput,
+    ) -> Result<(), ModuleError> {
+        Ok(())
+    }
+
+    fn on_wasm_instantiation(
+        &mut self,
+        _track: &mut Track<R>,
+        _heap: &mut Vec<CallFrame>,
+        _code: &[u8],
+    ) -> Result<(), ModuleError> {
+        Ok(())
+    }
+
+    fn on_wasm_costing(
+        &mut self,
+        _track: &mut Track<R>,
+        _heap: &mut Vec<CallFrame>,
+        _units: u32,
+    ) -> Result<(), ModuleError> {
+        Ok(())
+    }
+
+    fn on_lock_fee(
+        &mut self,
+        _track: &mut Track<R>,
+        _heap: &mut Vec<CallFrame>,
+        _vault_id: VaultId,
+        fee: Resource,
+        _contingent: bool,
+    ) -> Result<Resource, ModuleError> {
+        Ok(fee)
+    }
+}
+
 impl ExecutionTrace {
     pub fn new() -> ExecutionTrace {
         Self {
@@ -36,7 +90,7 @@ impl ExecutionTrace {
         }
     }
 
-    pub fn trace_invoke_method<'s, R: FeeReserve>(
+    fn trace_invoke_method<'s, R: FeeReserve>(
         &mut self,
         call_frames: &Vec<CallFrame>,
         track: &mut Track<'s, R>,
