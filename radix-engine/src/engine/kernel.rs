@@ -308,6 +308,7 @@ where
 
         // Copy-over root frame's auth zone virtual_proofs_buckets
         // TODO: Clean this up at some point (possible move to auth zone?)
+        // TODO: Move to a better spot
         let root_frame = self
             .call_frames
             .first()
@@ -315,8 +316,6 @@ where
         let virtual_proofs_buckets = AuthModule::get_auth_zone(root_frame)
             .virtual_proofs_buckets
             .clone();
-
-        // TODO: Move to a better spot
         self.node_create(HeapRENode::AuthZone(AuthZone::new_with_proofs(
             vec![],
             virtual_proofs_buckets,

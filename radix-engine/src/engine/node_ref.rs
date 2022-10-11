@@ -227,15 +227,6 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
         }
     }
 
-    pub fn worktop_mut(&mut self) -> &mut Worktop {
-        match self {
-            RENodeRefMut::Stack(root_node, _, id) => {
-                root_node.get_node_mut(id.as_ref()).worktop_mut()
-            }
-            RENodeRefMut::Track(track, node_id) => track.borrow_node_mut(node_id).worktop_mut(),
-        }
-    }
-
     pub fn vault_mut(&mut self) -> &mut Vault {
         match self {
             RENodeRefMut::Stack(root_node, _, id) => {

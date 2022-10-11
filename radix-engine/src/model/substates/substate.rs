@@ -265,6 +265,7 @@ impl Into<GlobalAddressSubstate> for PersistedSubstate {
 }
 
 pub enum SubstateRef<'a> {
+    Worktop(&'a Worktop),
     Proof(&'a Proof),
     Bucket(&'a Bucket),
     ComponentInfo(&'a ComponentInfoSubstate),
@@ -326,6 +327,13 @@ impl<'a> SubstateRef<'a> {
         match self {
             SubstateRef::Proof(value) => *value,
             _ => panic!("Not a proof"),
+        }
+    }
+
+    pub fn worktop(&self) -> &Worktop {
+        match self {
+            SubstateRef::Worktop(value) => *value,
+            _ => panic!("Not a worktop"),
         }
     }
 
@@ -591,9 +599,17 @@ pub enum RawSubstateRefMut<'a> {
     Global(&'a mut GlobalAddressSubstate),
     Bucket(&'a mut Bucket),
     Proof(&'a mut Proof),
+    Worktop(&'a mut Worktop),
 }
 
 impl<'a> RawSubstateRefMut<'a> {
+    pub fn worktop(&mut self) -> &mut Worktop {
+        match self {
+            RawSubstateRefMut::Worktop(value) => *value,
+            _ => panic!("Not a worktop"),
+        }
+    }
+
     pub fn bucket(&mut self) -> &mut Bucket {
         match self {
             RawSubstateRefMut::Bucket(value) => *value,
@@ -635,6 +651,7 @@ impl<'a> RawSubstateRefMut<'a> {
             RawSubstateRefMut::NonFungible(value) => SubstateRef::NonFungible(value),
             RawSubstateRefMut::KeyValueStoreEntry(value) => SubstateRef::KeyValueStoreEntry(value),
             RawSubstateRefMut::Proof(value) => SubstateRef::Proof(value),
+            RawSubstateRefMut::Worktop(value) => SubstateRef::Worktop(value),
         }
     }
 }

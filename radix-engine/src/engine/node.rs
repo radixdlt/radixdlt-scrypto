@@ -121,6 +121,9 @@ impl HeapRENode {
             (HeapRENode::Proof(proof), SubstateOffset::Proof(ProofOffset::Proof)) => {
                 SubstateRef::Proof(proof)
             }
+            (HeapRENode::Worktop(worktop), SubstateOffset::Worktop(WorktopOffset::Worktop)) => {
+                SubstateRef::Worktop(worktop)
+            }
             (_, offset) => {
                 return Err(RuntimeError::KernelError(KernelError::OffsetNotAvailable(
                     offset.clone(),
@@ -173,6 +176,9 @@ impl HeapRENode {
             (HeapRENode::Proof(proof), SubstateOffset::Proof(ProofOffset::Proof)) => {
                 RawSubstateRefMut::Proof(proof)
             }
+            (HeapRENode::Worktop(worktop), SubstateOffset::Worktop(WorktopOffset::Worktop)) => {
+                RawSubstateRefMut::Worktop(worktop)
+            }
             (_, offset) => {
                 return Err(RuntimeError::KernelError(KernelError::OffsetNotAvailable(
                     offset.clone(),
@@ -207,20 +213,6 @@ impl HeapRENode {
         match self {
             HeapRENode::Vault(vault) => vault,
             _ => panic!("Expected to be a vault"),
-        }
-    }
-
-    pub fn worktop(&self) -> &Worktop {
-        match self {
-            HeapRENode::Worktop(worktop) => worktop,
-            _ => panic!("Expected to be a worktop"),
-        }
-    }
-
-    pub fn worktop_mut(&mut self) -> &mut Worktop {
-        match self {
-            HeapRENode::Worktop(worktop) => worktop,
-            _ => panic!("Expected to be a worktop"),
         }
     }
 
