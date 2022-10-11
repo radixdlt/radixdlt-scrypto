@@ -127,31 +127,12 @@ where
     fn handle_write(
         &mut self,
         lock_handle: LockHandle,
-        value: Vec<u8>,
+        buffer: Vec<u8>,
     ) -> Result<ScryptoValue, RuntimeError> {
-        // FIXME: check if the value contains NOT allowed values.
-
         let mut substate_mut = self.system_api.get_mut(lock_handle)?;
-
-        let substate = match substate_mut.offset() {
-            SubstateOffset::Component(ComponentOffset::State) => {
-                let substate = scrypto_decode(&value).unwrap();
-                Substate::ComponentState(substate)
-            }
-            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)) => {
-                let substate = scrypto_decode(&value).unwrap();
-                Substate::KeyValueStoreEntry(substate)
-            }
-            SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(..)) => {
-                let substate = scrypto_decode(&value).unwrap();
-                Substate::NonFungible(substate)
-            }
-            offset => panic!("oops: {:?}", offset),
-        };
-
+        let substate = Substate::decode_from_buffer(substate_mut.offset(), &buffer)?;
         substate_mut.overwrite(substate)?;
 
-        // TODO: do we ever want to return the previous substate value
         Ok(ScryptoValue::unit())
     }
 

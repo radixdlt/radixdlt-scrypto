@@ -21,6 +21,33 @@ pub enum Substate {
 }
 
 impl Substate {
+    pub fn decode_from_buffer(
+        offset: &SubstateOffset,
+        buffer: &[u8],
+    ) -> Result<Self, RuntimeError> {
+        let substate = match offset {
+            SubstateOffset::Component(ComponentOffset::State) => {
+                let substate = scrypto_decode(buffer).map_err(|e| KernelError::DecodeError(e))?;
+                Substate::ComponentState(substate)
+            }
+            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)) => {
+                let substate = scrypto_decode(buffer).map_err(|e| KernelError::DecodeError(e))?;
+                Substate::KeyValueStoreEntry(substate)
+            }
+            SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(..)) => {
+                let substate = scrypto_decode(buffer).map_err(|e| KernelError::DecodeError(e))?;
+                Substate::NonFungible(substate)
+            }
+            offset => {
+                return Err(RuntimeError::KernelError(KernelError::OffsetNotAvailable(
+                    offset.clone(),
+                )))
+            }
+        };
+
+        Ok(substate)
+    }
+
     pub fn to_ref_mut(&mut self) -> RawSubstateRefMut {
         match self {
             Substate::GlobalRENode(value) => RawSubstateRefMut::Global(value),
@@ -69,70 +96,6 @@ impl Substate {
             vault
         } else {
             panic!("Not a vault");
-        }
-    }
-
-    pub fn resource_manager(&mut self) -> &mut ResourceManagerSubstate {
-        if let Substate::ResourceManager(resource_manager) = self {
-            resource_manager
-        } else {
-            panic!("Not a resource manager");
-        }
-    }
-
-    pub fn resource_manager_mut(&mut self) -> &mut ResourceManagerSubstate {
-        if let Substate::ResourceManager(resource_manager) = self {
-            resource_manager
-        } else {
-            panic!("Not a resource manager");
-        }
-    }
-
-    pub fn system(&self) -> &SystemSubstate {
-        if let Substate::System(system) = self {
-            system
-        } else {
-            panic!("Not a system value");
-        }
-    }
-
-    pub fn system_mut(&mut self) -> &mut SystemSubstate {
-        if let Substate::System(system) = self {
-            system
-        } else {
-            panic!("Not a system value");
-        }
-    }
-
-    pub fn component_state(&self) -> &ComponentStateSubstate {
-        if let Substate::ComponentState(state) = self {
-            state
-        } else {
-            panic!("Not a component state");
-        }
-    }
-
-    pub fn component_state_mut(&mut self) -> &mut ComponentStateSubstate {
-        if let Substate::ComponentState(component) = self {
-            component
-        } else {
-            panic!("Not a component state");
-        }
-    }
-
-    pub fn component_info(&self) -> &ComponentInfoSubstate {
-        if let Substate::ComponentInfo(info) = self {
-            info
-        } else {
-            panic!("Not a component info");
-        }
-    }
-
-    pub fn component_info_mut(&mut self) -> &mut ComponentInfoSubstate {
-        if let Substate::ComponentInfo(component) = self {
-            component
-        } else {
-            panic!("Not a component info");
         }
     }
 
