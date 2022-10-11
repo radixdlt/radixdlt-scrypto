@@ -150,7 +150,6 @@ where
         };
 
         // Invoke the function/method
-        let mut execution_trace = ExecutionTrace::new();
         let invoke_result = {
             let mut modules = Vec::<Box<dyn Module<R>>>::new();
             if execution_config.trace {
@@ -185,7 +184,7 @@ where
         };
 
         // Produce the final transaction receipt
-        let track_receipt = track.finalize(invoke_result, execution_trace);
+        let track_receipt = track.finalize(invoke_result);
 
         let receipt = TransactionReceipt {
             contents: TransactionContents { instructions },

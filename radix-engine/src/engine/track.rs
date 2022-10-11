@@ -114,6 +114,7 @@ pub struct Track<'s, R: FeeReserve> {
     pub new_global_addresses: Vec<GlobalAddress>,
     pub fee_reserve: R,
     pub fee_table: FeeTable,
+    pub vault_ops: Vec<(REActor, VaultId, VaultOp)>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
@@ -152,6 +153,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             new_global_addresses: Vec::new(),
             fee_reserve,
             fee_table,
+            vault_ops: Vec::new(),
         }
     }
 
@@ -520,11 +522,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         }
     }
 
-    pub fn finalize(
-        mut self,
-        invoke_result: Result<Vec<Vec<u8>>, RuntimeError>,
-        execution_trace: ExecutionTrace, // TODO: wrong abstraction, resource change should be derived from track instead of kernel
-    ) -> TrackReceipt {
+    pub fn finalize(mut self, invoke_result: Result<Vec<Vec<u8>>, RuntimeError>) -> TrackReceipt {
         let is_success = invoke_result.is_ok();
 
         // Commit/rollback application state changes
@@ -613,8 +611,6 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                 };
             }
 
-            let execution_trace_receipt = execution_trace.to_receipt(actual_fee_payments);
-
             // TODO: update XRD supply or disable it
             // TODO: pay tips to the lead validator
 
@@ -625,7 +621,8 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                 },
                 state_updates: self.state_track.into_base().generate_diff(),
                 entity_changes: EntityChanges::new(self.new_global_addresses),
-                resource_changes: execution_trace_receipt.resource_changes,
+                resource_changes: ExecutionTraceReceipt::from_vault_ops(self.vault_ops)
+                    .resource_changes,
             })
         };
 

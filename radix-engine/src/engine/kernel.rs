@@ -724,8 +724,6 @@ where
                     _ => {}
                 }
 
-                let current_frame = Self::current_frame(&self.call_frames);
-
                 // Check method authorization
                 AuthModule::receiver_auth(
                     method_ident.clone(),
