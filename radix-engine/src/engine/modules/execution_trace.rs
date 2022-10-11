@@ -225,7 +225,7 @@ impl ExecutionTraceReceipt {
         state_track: &mut AppStateTrack,
     ) -> Self {
         let mut component_vault_changes = HashMap::<ComponentId, HashMap<VaultId, Decimal>>::new();
-        let mut component_vault_fee_locking = HashMap::<ComponentId, VaultId>::new();
+        let mut vault_fee_locking = HashMap::<VaultId, ComponentId>::new();
         for op in ops {
             if let REActor::Method(FullyQualifiedReceiverMethod { receiver, .. }) = op.0 {
                 if let Receiver::Ref(RENodeId::Component(component_id)) = receiver {
@@ -247,7 +247,7 @@ impl ExecutionTraceReceipt {
                                 .or_default() -= amount;
                         }
                         VaultOp::LockFee(_) | VaultOp::LockContingentFee(_) => {
-                            component_vault_fee_locking.insert(component_id, vault_id);
+                            vault_fee_locking.insert(vault_id, component_id);
                         }
                     };
                 }
@@ -255,15 +255,15 @@ impl ExecutionTraceReceipt {
         }
 
         for (vault_id, amount) in actual_fee_payments {
-            let component_id = component_vault_fee_locking
-                .get(&vault_id)
-                .expect("Failed to find component ID for a fee payment vault")
-                .clone();
-            *component_vault_changes
-                .entry(component_id)
-                .or_default()
-                .entry(vault_id)
-                .or_default() -= amount;
+            if let Some(component_id) = vault_fee_locking.get(&vault_id) {
+                *component_vault_changes
+                    .entry(*component_id)
+                    .or_default()
+                    .entry(vault_id)
+                    .or_default() -= amount;
+            } else {
+                // If execution trace has been opted out, we won't have a record for `lock_fee`.
+            }
         }
 
         let mut resource_changes = Vec::<ResourceChange>::new();

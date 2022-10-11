@@ -136,8 +136,14 @@ fn test_trace_fee_payments() {
     let fee_summary = &receipt.execution.fee_summary;
     let total_fee_paid = fee_summary.burned.add(fee_summary.tipped);
 
-    assert_eq!(1, resource_changes.len());
-
+    assert_eq!(2, resource_changes.len());
+    let faucet_component_id: ComponentId = test_runner
+        .deref_component(SYS_FAUCET_COMPONENT)
+        .unwrap()
+        .into();
+    assert!(resource_changes
+        .iter()
+        .any(|r| r.component_id == faucet_component_id && r.amount == 0.into()));
     assert!(resource_changes
         .iter()
         .any(|r| r.component_id == funded_component_id && r.amount == -total_fee_paid));
