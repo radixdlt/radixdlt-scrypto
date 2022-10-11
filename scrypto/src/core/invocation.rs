@@ -118,6 +118,7 @@ pub enum ResourceManagerFunction {
     Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe, PartialOrd, Ord,
 )]
 pub enum ResourceManagerMethod {
+    Burn,
     UpdateAuth,
     LockAuth,
     Mint,

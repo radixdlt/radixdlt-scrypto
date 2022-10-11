@@ -23,7 +23,7 @@ where
 
     fn invoke(
         &mut self,
-        function_identifier: FnIdent,
+        fn_ident: FnIdent,
         input: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError>;
 

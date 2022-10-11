@@ -2,7 +2,7 @@ use sbor::Decode;
 use std::collections::{BTreeSet, HashSet};
 
 use scrypto::buffer::scrypto_decode;
-use scrypto::constants::{ECDSA_TOKEN, ED25519_TOKEN};
+use scrypto::constants::*;
 use scrypto::crypto::PublicKey;
 use scrypto::values::*;
 
@@ -102,8 +102,8 @@ impl NotarizedTransactionValidator {
 
         let mut virtualizable_proofs_resource_addresses = BTreeSet::new();
         if preview_intent.flags.assume_all_signature_proofs {
-            virtualizable_proofs_resource_addresses.insert(ECDSA_TOKEN);
-            virtualizable_proofs_resource_addresses.insert(ED25519_TOKEN);
+            virtualizable_proofs_resource_addresses.insert(ECDSA_SECP256K1_TOKEN);
+            virtualizable_proofs_resource_addresses.insert(EDDSA_ED25519_TOKEN);
         }
 
         Ok(Executable {

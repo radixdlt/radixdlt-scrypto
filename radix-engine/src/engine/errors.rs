@@ -164,6 +164,7 @@ pub enum DropFailure {
     Vault,
     Package,
     KeyValueStore,
+    NonFungibleStore,
 }
 
 impl fmt::Display for RuntimeError {

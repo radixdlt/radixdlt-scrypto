@@ -270,6 +270,11 @@ where
                 let kv_store_id = id_allocator.new_kv_store_id(transaction_hash)?;
                 Ok(RENodeId::KeyValueStore(kv_store_id))
             }
+            HeapRENode::NonFungibleStore(..) => {
+                let non_fungible_store_id =
+                    id_allocator.new_non_fungible_store_id(transaction_hash)?;
+                Ok(RENodeId::NonFungibleStore(non_fungible_store_id))
+            }
             HeapRENode::Package(..) => {
                 // Security Alert: ensure ID allocating will practically never fail
                 let package_address = id_allocator.new_package_address(transaction_hash)?;
@@ -463,7 +468,7 @@ where
             if !(matches!(offset, SubstateOffset::KeyValueStore(..))
                 || matches!(
                     offset,
-                    SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(..))
+                    SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(..))
                 ))
             {
                 node_pointer
@@ -671,6 +676,14 @@ where
                             .acquire_lock(offset.clone(), true, false, &mut self.track)
                             .map_err(RuntimeError::KernelError)?;
                         locked_pointers.push((node_pointer, offset.clone(), false));
+
+                        let mut node_ref = node_pointer.to_ref(&self.call_frames, &mut self.track);
+                        let resource_manager = node_ref.resource_manager();
+                        if let Some(store_id) = resource_manager.info.non_fungible_store_id {
+                            let node_id = RENodeId::NonFungibleStore(store_id);
+                            let node_pointer = RENodePointer::Store(node_id);
+                            next_frame_node_refs.insert(node_id, node_pointer);
+                        }
                     }
                     RENodeId::System(..) => {
                         let offset = SubstateOffset::System(SystemOffset::System);
@@ -867,7 +880,7 @@ where
             let mut static_refs = HashSet::new();
             static_refs.insert(GlobalAddress::Resource(RADIX_TOKEN));
             static_refs.insert(GlobalAddress::Resource(SYSTEM_TOKEN));
-            static_refs.insert(GlobalAddress::Resource(ECDSA_TOKEN));
+            static_refs.insert(GlobalAddress::Resource(ECDSA_SECP256K1_TOKEN));
             static_refs.insert(GlobalAddress::Component(SYS_SYSTEM_COMPONENT));
 
             // Make refs visible
@@ -1260,7 +1273,7 @@ where
         if !(matches!(offset, SubstateOffset::KeyValueStore(..))
             || matches!(
                 offset,
-                SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(..))
+                SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(..))
             ))
         {
             node_pointer
@@ -1305,7 +1318,7 @@ where
         if !(matches!(offset, SubstateOffset::KeyValueStore(..))
             || matches!(
                 offset,
-                SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(..))
+                SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(..))
             ))
         {
             node_pointer
@@ -1609,7 +1622,7 @@ fn extract_value_from_substate(
                 .0
                 .map(|raw| ScryptoValue::from_slice(&raw).unwrap())
         }
-        SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(..)) => {
+        SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(..)) => {
             let substate: NonFungibleSubstate = scrypto_decode(&substate.raw).ok()?;
             substate.0.map(|v| ScryptoValue::from_typed(&v))
         }

@@ -49,7 +49,6 @@ mod tests {
     };
     use scrypto::{core::Expression, resource::NonFungibleId};
 
-    #[cfg(not(feature = "alloc"))]
     #[test]
     fn test_compile() {
         let bech32_decoder = Bech32Decoder::new(&NetworkDefinition::simulator());

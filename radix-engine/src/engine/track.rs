@@ -13,6 +13,7 @@ use crate::model::Component;
 use crate::model::KeyValueStore;
 use crate::model::KeyValueStoreEntrySubstate;
 use crate::model::LockableResource;
+use crate::model::NonFungibleStore;
 use crate::model::NonFungibleSubstate;
 use crate::model::Resource;
 use crate::model::ResourceManager;
@@ -275,7 +276,13 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                     self.loaded_nodes.insert(
                         node_id.clone(),
                         HeapRENode::KeyValueStore(KeyValueStore::new().into()),
-                    ); // TODO: zero-cost node instantiation?
+                    );
+                }
+                RENodeId::NonFungibleStore(_) => {
+                    self.loaded_nodes.insert(
+                        node_id.clone(),
+                        HeapRENode::NonFungibleStore(NonFungibleStore::new().into()),
+                    );
                 }
                 RENodeId::Component(..) => {
                     let offset = SubstateOffset::Component(ComponentOffset::Info);
@@ -299,7 +306,6 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                     let substate = self.take_substate(SubstateId(*node_id, offset));
                     let node = HeapRENode::ResourceManager(ResourceManager {
                         info: substate.into(),
-                        loaded_non_fungibles: HashMap::new(),
                     });
                     self.loaded_nodes.insert(node_id.clone(), node);
                 }
@@ -390,13 +396,11 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         // TODO: consider using a single address as function input
         let substate_id = match parent_address {
             SubstateId(
-                RENodeId::ResourceManager(resource_address),
-                SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungibleSpace),
+                RENodeId::NonFungibleStore(store_id),
+                SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Space),
             ) => SubstateId(
-                RENodeId::ResourceManager(resource_address),
-                SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(NonFungibleId(
-                    key,
-                ))),
+                RENodeId::NonFungibleStore(store_id),
+                SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(NonFungibleId(key))),
             ),
             SubstateId(
                 RENodeId::KeyValueStore(kv_store_id),
@@ -409,7 +413,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         };
 
         match parent_address {
-            SubstateId(RENodeId::ResourceManager(..), ..) => self
+            SubstateId(RENodeId::NonFungibleStore(..), ..) => self
                 .loaded_substates
                 .get(&substate_id)
                 .map(|s| s.substate.borrow().clone())
@@ -441,11 +445,11 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         // TODO: consider using a single address as function input
         let substate_id = match parent_substate_id {
             SubstateId(
-                RENodeId::ResourceManager(resource_address),
-                SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungibleSpace),
+                RENodeId::NonFungibleStore(resource_address),
+                SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Space),
             ) => SubstateId(
-                RENodeId::ResourceManager(resource_address),
-                SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(NonFungibleId(
+                RENodeId::NonFungibleStore(resource_address),
+                SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(NonFungibleId(
                     key.clone(),
                 ))),
             ),
