@@ -1,5 +1,4 @@
 use indexmap::IndexMap;
-use std::ops::Add;
 use transaction::model::Executable;
 
 use crate::engine::AppStateTrack;
@@ -537,7 +536,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         let fee_summary = self.fee_reserve.finalize();
         let is_rejection = !fee_summary.loan_fully_repaid;
 
-        let mut actual_fee_payments: HashMap<VaultId, (ResourceAddress, Decimal)> = HashMap::new();
+        let mut actual_fee_payments: HashMap<VaultId, Decimal> = HashMap::new();
 
         // Commit fee state changes
         let result = if is_rejection {
@@ -553,8 +552,6 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                 Resource::new_empty(RADIX_TOKEN, ResourceType::Fungible { divisibility: 18 })
                     .into();
             for (vault_id, mut locked, contingent) in fee_summary.payments.iter().cloned().rev() {
-                let resource_address = locked.resource_address();
-
                 let amount = if contingent {
                     if is_success {
                         Decimal::min(locked.amount(), required)
@@ -594,12 +591,13 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                     .expect("Failed to put a fee-locking vault");
                 self.state_track.put_substate_to_base(substate_id, substate);
 
-                match actual_fee_payments.remove(&vault_id) {
-                    Some((resource_address, current_value)) => actual_fee_payments
-                        .insert(vault_id, (resource_address, current_value.add(amount))),
-                    None => actual_fee_payments.insert(vault_id, (resource_address, amount)),
-                };
+                *actual_fee_payments.entry(vault_id).or_default() += amount;
             }
+            let execution_trace_receipt = ExecutionTraceReceipt::new(
+                self.vault_ops,
+                actual_fee_payments,
+                &mut self.state_track,
+            );
 
             // TODO: update XRD supply or disable it
             // TODO: pay tips to the lead validator
@@ -611,8 +609,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                 },
                 state_updates: self.state_track.into_base().generate_diff(),
                 entity_changes: EntityChanges::new(self.new_global_addresses),
-                resource_changes: ExecutionTraceReceipt::from_vault_ops(self.vault_ops)
-                    .resource_changes,
+                resource_changes: execution_trace_receipt.resource_changes,
             })
         };
 
