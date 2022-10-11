@@ -1380,8 +1380,9 @@ where
             for child_id in cur_children {
                 let child_pointer = node_pointer.child(child_id);
                 cur_frame.node_refs.insert(child_id, child_pointer);
-                let lock = cur_frame.get_lock_mut(lock_handle).unwrap();
-                lock.refed_nodes.insert(child_id);
+                cur_frame
+                    .add_lock_visible_node(lock_handle, child_id)
+                    .map_err(RuntimeError::KernelError)?;
             }
         }
 

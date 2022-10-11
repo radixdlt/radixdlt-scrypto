@@ -330,18 +330,20 @@ impl ResourceManager {
                         if let MintParams::NonFungible { entries } = mint_params {
                             for (non_fungible_id, data) in entries {
                                 let offset = SubstateOffset::NonFungibleStore(
-                                    NonFungibleStoreOffset::Entry(
-                                        non_fungible_id.clone(),
-                                    ),
+                                    NonFungibleStoreOffset::Entry(non_fungible_id.clone()),
                                 );
-                                let handle = system_api.lock_substate(non_fungible_store_node_id, offset, true)
+                                let handle = system_api
+                                    .lock_substate(non_fungible_store_node_id, offset, true)
                                     .map_err(InvokeError::Downstream)?;
-                                let scrypto_value = ScryptoValue::from_typed(&NonFungibleSubstate(Some(
-                                    NonFungible::new(data.0.clone(), data.1.clone()), // FIXME: verify data
-                                )));
-                                system_api.write(handle, scrypto_value)
+                                let scrypto_value =
+                                    ScryptoValue::from_typed(&NonFungibleSubstate(Some(
+                                        NonFungible::new(data.0.clone(), data.1.clone()), // FIXME: verify data
+                                    )));
+                                system_api
+                                    .write(handle, scrypto_value)
                                     .map_err(InvokeError::Downstream)?;
-                                system_api.drop_lock(handle)
+                                system_api
+                                    .drop_lock(handle)
                                     .map_err(InvokeError::Downstream)?;
                             }
                             resource_manager.info.total_supply = entries.len().into();
@@ -462,13 +464,17 @@ impl ResourceManager {
                         .total_ids()
                         .expect("Failed to list non-fungible IDs on non-fungible Bucket")
                     {
-                        let offset = SubstateOffset::NonFungibleStore(
-                            NonFungibleStoreOffset::Entry(id),
-                        );
-                        let handle = system_api.lock_substate(node_id, offset, true).map_err(InvokeError::Downstream)?;
-                        system_api.write(handle, ScryptoValue::from_typed(&NonFungibleSubstate(None)))
+                        let offset =
+                            SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(id));
+                        let handle = system_api
+                            .lock_substate(node_id, offset, true)
                             .map_err(InvokeError::Downstream)?;
-                        system_api.drop_lock(handle).map_err(InvokeError::Downstream)?;
+                        system_api
+                            .write(handle, ScryptoValue::from_typed(&NonFungibleSubstate(None)))
+                            .map_err(InvokeError::Downstream)?;
+                        system_api
+                            .drop_lock(handle)
+                            .map_err(InvokeError::Downstream)?;
                     }
                 }
 
@@ -565,9 +571,8 @@ impl ResourceManager {
 
                 for (id, non_fungible) in non_fungibles {
                     let node_id = RENodeId::NonFungibleStore(non_fungible_store_id.unwrap());
-                    let offset = SubstateOffset::NonFungibleStore(
-                        NonFungibleStoreOffset::Entry(id.clone()),
-                    );
+                    let offset =
+                        SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(id.clone()));
                     let lock_handle = system_api
                         .lock_substate(node_id, offset, true)
                         .map_err(InvokeError::Downstream)?;
@@ -652,7 +657,10 @@ impl ResourceManager {
                         .borrow_node_mut(&RENodeId::ResourceManager(resource_address))
                         .map_err(InvokeError::Downstream)?;
                     let resource_manager = node_ref.resource_manager_mut();
-                    resource_manager.info.non_fungible_store_id.ok_or(InvokeError::Error(ResourceManagerError::NotNonFungible))?
+                    resource_manager
+                        .info
+                        .non_fungible_store_id
+                        .ok_or(InvokeError::Error(ResourceManagerError::NotNonFungible))?
                 };
 
                 let node_id = RENodeId::NonFungibleStore(non_fungible_store_id);
@@ -702,7 +710,10 @@ impl ResourceManager {
                         .borrow_node_mut(&RENodeId::ResourceManager(resource_address))
                         .map_err(InvokeError::Downstream)?;
                     let resource_manager = node_ref.resource_manager_mut();
-                    resource_manager.info.non_fungible_store_id.ok_or(InvokeError::Error(ResourceManagerError::NotNonFungible))?
+                    resource_manager
+                        .info
+                        .non_fungible_store_id
+                        .ok_or(InvokeError::Error(ResourceManagerError::NotNonFungible))?
                 };
 
                 let node_id = RENodeId::NonFungibleStore(non_fungible_store_id);
@@ -730,7 +741,10 @@ impl ResourceManager {
                         .borrow_node_mut(&RENodeId::ResourceManager(resource_address))
                         .map_err(InvokeError::Downstream)?;
                     let resource_manager = node_ref.resource_manager_mut();
-                    resource_manager.info.non_fungible_store_id.ok_or(InvokeError::Error(ResourceManagerError::NotNonFungible))?
+                    resource_manager
+                        .info
+                        .non_fungible_store_id
+                        .ok_or(InvokeError::Error(ResourceManagerError::NotNonFungible))?
                 };
 
                 let non_fungible_address =
