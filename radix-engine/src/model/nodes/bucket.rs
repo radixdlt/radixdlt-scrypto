@@ -170,17 +170,14 @@ impl Bucket {
             BucketMethod::Take => {
                 let input: BucketTakeInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(BucketError::InvalidRequestData(e)))?;
-                let mut node_ref = system_api
-                    .borrow_node_mut(&RENodeId::Bucket(bucket_id))
-                    .map_err(InvokeError::Downstream)?;
+                let mut node_ref = system_api.borrow_node_mut(&RENodeId::Bucket(bucket_id))?;
                 let bucket0 = node_ref.bucket_mut();
 
                 let container = bucket0
                     .take(input.amount)
                     .map_err(|e| InvokeError::Error(BucketError::ResourceOperationError(e)))?;
                 let bucket_id = system_api
-                    .node_create(HeapRENode::Bucket(Bucket::new(container)))
-                    .map_err(InvokeError::Downstream)?
+                    .node_create(HeapRENode::Bucket(Bucket::new(container)))?
                     .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
                     bucket_id,
@@ -189,17 +186,14 @@ impl Bucket {
             BucketMethod::TakeNonFungibles => {
                 let input: BucketTakeNonFungiblesInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(BucketError::InvalidRequestData(e)))?;
-                let mut node_ref = system_api
-                    .borrow_node_mut(&RENodeId::Bucket(bucket_id))
-                    .map_err(InvokeError::Downstream)?;
+                let mut node_ref = system_api.borrow_node_mut(&RENodeId::Bucket(bucket_id))?;
                 let bucket0 = node_ref.bucket_mut();
 
                 let container = bucket0
                     .take_non_fungibles(&input.ids)
                     .map_err(|e| InvokeError::Error(BucketError::ResourceOperationError(e)))?;
                 let bucket_id = system_api
-                    .node_create(HeapRENode::Bucket(Bucket::new(container)))
-                    .map_err(InvokeError::Downstream)?
+                    .node_create(HeapRENode::Bucket(Bucket::new(container)))?
                     .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
                     bucket_id,
@@ -208,9 +202,7 @@ impl Bucket {
             BucketMethod::GetNonFungibleIds => {
                 let _: BucketGetNonFungibleIdsInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(BucketError::InvalidRequestData(e)))?;
-                let mut node_ref = system_api
-                    .borrow_node_mut(&RENodeId::Bucket(bucket_id))
-                    .map_err(InvokeError::Downstream)?;
+                let mut node_ref = system_api.borrow_node_mut(&RENodeId::Bucket(bucket_id))?;
                 let bucket0 = node_ref.bucket_mut();
 
                 let ids = bucket0
@@ -222,12 +214,9 @@ impl Bucket {
                 let input: BucketPutInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(BucketError::InvalidRequestData(e)))?;
                 let other_bucket = system_api
-                    .node_drop(RENodeId::Bucket(input.bucket.0))
-                    .map_err(InvokeError::Downstream)?
+                    .node_drop(RENodeId::Bucket(input.bucket.0))?
                     .into();
-                let mut node_ref = system_api
-                    .borrow_node_mut(&RENodeId::Bucket(bucket_id))
-                    .map_err(InvokeError::Downstream)?;
+                let mut node_ref = system_api.borrow_node_mut(&RENodeId::Bucket(bucket_id))?;
                 let bucket0 = node_ref.bucket_mut();
 
                 bucket0
@@ -238,9 +227,7 @@ impl Bucket {
             BucketMethod::GetAmount => {
                 let _: BucketGetAmountInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(BucketError::InvalidRequestData(e)))?;
-                let mut node_ref = system_api
-                    .borrow_node_mut(&RENodeId::Bucket(bucket_id))
-                    .map_err(InvokeError::Downstream)?;
+                let mut node_ref = system_api.borrow_node_mut(&RENodeId::Bucket(bucket_id))?;
                 let bucket0 = node_ref.bucket_mut();
 
                 Ok(ScryptoValue::from_typed(&bucket0.total_amount()))
@@ -248,9 +235,7 @@ impl Bucket {
             BucketMethod::GetResourceAddress => {
                 let _: BucketGetResourceAddressInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(BucketError::InvalidRequestData(e)))?;
-                let mut node_ref = system_api
-                    .borrow_node_mut(&RENodeId::Bucket(bucket_id))
-                    .map_err(InvokeError::Downstream)?;
+                let mut node_ref = system_api.borrow_node_mut(&RENodeId::Bucket(bucket_id))?;
                 let bucket0 = node_ref.bucket_mut();
 
                 Ok(ScryptoValue::from_typed(&bucket0.resource_address()))
@@ -258,17 +243,12 @@ impl Bucket {
             BucketMethod::CreateProof => {
                 let _: BucketCreateProofInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(BucketError::InvalidRequestData(e)))?;
-                let mut node_ref = system_api
-                    .borrow_node_mut(&RENodeId::Bucket(bucket_id))
-                    .map_err(InvokeError::Downstream)?;
+                let mut node_ref = system_api.borrow_node_mut(&RENodeId::Bucket(bucket_id))?;
                 let bucket0 = node_ref.bucket_mut();
                 let proof = bucket0
                     .create_proof(bucket_id)
                     .map_err(|e| InvokeError::Error(BucketError::ProofError(e)))?;
-                let proof_id = system_api
-                    .node_create(HeapRENode::Proof(proof))
-                    .map_err(InvokeError::Downstream)?
-                    .into();
+                let proof_id = system_api.node_create(HeapRENode::Proof(proof))?.into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Proof(
                     proof_id,
                 )))
@@ -296,9 +276,7 @@ impl Bucket {
                 let _: ConsumingBucketBurnInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(BucketError::InvalidRequestData(e)))?;
 
-                let node_ref = system_api
-                    .borrow_node(&node_id)
-                    .map_err(InvokeError::Downstream)?;
+                let node_ref = system_api.borrow_node(&node_id)?;
                 let bucket = node_ref.bucket();
                 let resource_address = bucket.resource_address();
                 let bucket_id = match node_id {

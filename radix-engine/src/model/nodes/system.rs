@@ -60,15 +60,11 @@ impl System {
                 let _: SystemCreateInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(SystemError::InvalidRequestData(e)))?;
 
-                let node_id = system_api
-                    .node_create(HeapRENode::System(System {
-                        info: SystemSubstate { epoch: 0 },
-                    }))
-                    .map_err(InvokeError::Downstream)?;
+                let node_id = system_api.node_create(HeapRENode::System(System {
+                    info: SystemSubstate { epoch: 0 },
+                }))?;
 
-                let global_address = system_api
-                    .node_globalize(node_id)
-                    .map_err(InvokeError::Downstream)?;
+                let global_address = system_api.node_globalize(node_id)?;
 
                 let component_address: ComponentAddress = global_address.into();
 
@@ -94,17 +90,13 @@ impl System {
                 let _: SystemGetCurrentEpochInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(SystemError::InvalidRequestData(e)))?;
 
-                let handle = system_api
-                    .lock_substate(
-                        RENodeId::System(component_id),
-                        SubstateOffset::System(SystemOffset::System),
-                        false,
-                    )
-                    .map_err(InvokeError::Downstream)?;
+                let handle = system_api.lock_substate(
+                    RENodeId::System(component_id),
+                    SubstateOffset::System(SystemOffset::System),
+                    false,
+                )?;
 
-                let substate_ref = system_api
-                    .get_ref(handle)
-                    .map_err(InvokeError::Downstream)?;
+                let substate_ref = system_api.get_ref(handle)?;
                 let system = substate_ref.system();
 
                 Ok(ScryptoValue::from_typed(&system.epoch))
@@ -113,13 +105,11 @@ impl System {
                 let SystemSetEpochInput { epoch } = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(SystemError::InvalidRequestData(e)))?;
 
-                let handle = system_api
-                    .lock_substate(
-                        RENodeId::System(component_id),
-                        SubstateOffset::System(SystemOffset::System),
-                        true,
-                    )
-                    .map_err(InvokeError::Downstream)?;
+                let handle = system_api.lock_substate(
+                    RENodeId::System(component_id),
+                    SubstateOffset::System(SystemOffset::System),
+                    true,
+                )?;
 
                 {
                     let mut substate_mut = system_api
@@ -127,7 +117,7 @@ impl System {
                         .map_err(InvokeError::Downstream)?;
                     let mut raw_mut = substate_mut.get_raw_mut();
                     raw_mut.system().epoch = epoch;
-                    substate_mut.flush().map_err(InvokeError::Downstream)?;
+                    substate_mut.flush()?;
                 }
 
                 Ok(ScryptoValue::from_typed(&()))
@@ -136,9 +126,7 @@ impl System {
                 let _: SystemGetTransactionHashInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(SystemError::InvalidRequestData(e)))?;
                 Ok(ScryptoValue::from_typed(
-                    &system_api
-                        .read_transaction_hash()
-                        .map_err(InvokeError::Downstream)?,
+                    &system_api.read_transaction_hash()?,
                 ))
             }
         }

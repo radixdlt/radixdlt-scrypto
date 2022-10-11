@@ -129,6 +129,12 @@ pub enum InvokeError<E> {
     Downstream(RuntimeError),
 }
 
+impl<E> From<RuntimeError> for InvokeError<E> {
+    fn from(runtime_error: RuntimeError) -> Self {
+        InvokeError::Downstream(runtime_error)
+    }
+}
+
 impl<E> InvokeError<E> {
     pub fn error(error: E) -> Self {
         InvokeError::Error(error)

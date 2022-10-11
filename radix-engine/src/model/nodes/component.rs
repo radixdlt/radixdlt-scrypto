@@ -64,24 +64,16 @@ impl Component {
                 {
                     let (package_id, blueprint_name) = {
                         let offset = SubstateOffset::Component(ComponentOffset::Info);
-                        let handle = system_api
-                            .lock_substate(node_id, offset, false)
-                            .map_err(InvokeError::Downstream)?;
-                        let substate_ref = system_api
-                            .get_ref(handle)
-                            .map_err(InvokeError::Downstream)?;
+                        let handle = system_api.lock_substate(node_id, offset, false)?;
+                        let substate_ref = system_api.get_ref(handle)?;
                         let component_info = substate_ref.component_info();
                         let package_address = component_info.package_address;
                         let blueprint_name = component_info.blueprint_name.to_owned();
-                        system_api
-                            .drop_lock(handle)
-                            .map_err(InvokeError::Downstream)?;
+                        system_api.drop_lock(handle)?;
                         (RENodeId::Package(package_address), blueprint_name)
                     };
 
-                    let mut node_ref = system_api
-                        .borrow_node(&package_id)
-                        .map_err(InvokeError::Downstream)?;
+                    let mut node_ref = system_api.borrow_node(&package_id)?;
                     let package = node_ref.package();
                     let blueprint_abi = package.blueprint_abi(&blueprint_name).expect(&format!(
                         "Blueprint {} is not found in package node {:?}",
@@ -97,25 +89,19 @@ impl Component {
                 }
 
                 let offset = SubstateOffset::Component(ComponentOffset::Info);
-                let handle = system_api
-                    .lock_substate(node_id, offset, true)
-                    .map_err(InvokeError::Downstream)?;
-                let mut substate_ref_mut = system_api
-                    .get_mut(handle)
-                    .map_err(InvokeError::Downstream)?;
+                let handle = system_api.lock_substate(node_id, offset, true)?;
+                let mut substate_ref_mut = system_api.get_mut(handle)?;
                 let mut raw_mut = substate_ref_mut.get_raw_mut();
                 raw_mut
                     .component_info()
                     .access_rules
                     .push(input.access_rules);
-                substate_ref_mut.flush().map_err(InvokeError::Downstream)?;
-                system_api
-                    .drop_lock(handle)
-                    .map_err(InvokeError::Downstream)?;
+                substate_ref_mut.flush()?;
+                system_api.drop_lock(handle)?;
 
-                Ok(ScryptoValue::from_typed(&()))
+                ScryptoValue::from_typed(&())
             }
-        }?;
+        };
 
         Ok(rtn)
     }

@@ -188,28 +188,29 @@ where
     fn main(&mut self, input: ScryptoValue) -> Result<ScryptoValue, InvokeError<WasmError>> {
         let input: RadixEngineInput = scrypto_decode(&input.raw)
             .map_err(|_| InvokeError::Error(WasmError::InvalidRadixEngineInput))?;
-        match input {
+        let rtn = match input {
             RadixEngineInput::Invoke(fn_ident, input_bytes) => {
-                self.handle_invoke(fn_ident, input_bytes)
+                self.handle_invoke(fn_ident, input_bytes)?
             }
-            RadixEngineInput::RENodeGlobalize(node_id) => self.handle_node_globalize(node_id),
-            RadixEngineInput::RENodeCreate(node) => self.handle_node_create(node),
-            RadixEngineInput::GetOwnedRENodeIds() => self.handle_get_owned_node_ids(),
+            RadixEngineInput::RENodeGlobalize(node_id) => self.handle_node_globalize(node_id)?,
+            RadixEngineInput::RENodeCreate(node) => self.handle_node_create(node)?,
+            RadixEngineInput::GetOwnedRENodeIds() => self.handle_get_owned_node_ids()?,
 
             RadixEngineInput::LockSubstate(node_id, offset, mutable) => {
-                self.handle_lock_substate(node_id, offset, mutable)
+                self.handle_lock_substate(node_id, offset, mutable)?
             }
-            RadixEngineInput::Read(lock_handle) => self.handle_read(lock_handle),
-            RadixEngineInput::Write(lock_handle, value) => self.handle_write(lock_handle, value),
-            RadixEngineInput::DropLock(lock_handle) => self.handle_drop_lock(lock_handle),
+            RadixEngineInput::Read(lock_handle) => self.handle_read(lock_handle)?,
+            RadixEngineInput::Write(lock_handle, value) => self.handle_write(lock_handle, value)?,
+            RadixEngineInput::DropLock(lock_handle) => self.handle_drop_lock(lock_handle)?,
 
-            RadixEngineInput::GetActor() => self.handle_get_actor().map(encode),
-            RadixEngineInput::GenerateUuid() => self.handle_generate_uuid().map(encode),
+            RadixEngineInput::GetActor() => self.handle_get_actor().map(encode)?,
+            RadixEngineInput::GenerateUuid() => self.handle_generate_uuid().map(encode)?,
             RadixEngineInput::EmitLog(level, message) => {
-                self.handle_emit_log(level, message).map(encode)
+                self.handle_emit_log(level, message).map(encode)?
             }
-        }
-        .map_err(InvokeError::downstream)
+        };
+
+        Ok(rtn)
     }
 
     fn consume_cost_units(&mut self, n: u32) -> Result<(), InvokeError<WasmError>> {

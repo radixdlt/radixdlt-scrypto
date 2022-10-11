@@ -337,42 +337,37 @@ impl Proof {
         R: FeeReserve,
     {
         let node_id = RENodeId::Proof(proof_id);
-        let node_ref = system_api
-            .borrow_node(&node_id)
-            .map_err(InvokeError::Downstream)?;
+        let node_ref = system_api.borrow_node(&node_id)?;
         let proof = node_ref.proof();
 
         let rtn = match method {
             ProofMethod::GetAmount => {
                 let _: ProofGetAmountInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(ProofError::InvalidRequestData(e)))?;
-                Ok(ScryptoValue::from_typed(&proof.total_amount()))
+                ScryptoValue::from_typed(&proof.total_amount())
             }
             ProofMethod::GetNonFungibleIds => {
                 let _: ProofGetNonFungibleIdsInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(ProofError::InvalidRequestData(e)))?;
                 let ids = proof.total_ids()?;
-                Ok(ScryptoValue::from_typed(&ids))
+                ScryptoValue::from_typed(&ids)
             }
             ProofMethod::GetResourceAddress => {
                 let _: ProofGetResourceAddressInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(ProofError::InvalidRequestData(e)))?;
-                Ok(ScryptoValue::from_typed(&proof.resource_address()))
+                ScryptoValue::from_typed(&proof.resource_address())
             }
             ProofMethod::Clone => {
                 let _: ProofCloneInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(ProofError::InvalidRequestData(e)))?;
                 let cloned_proof = proof.clone();
                 let proof_id = system_api
-                    .node_create(HeapRENode::Proof(cloned_proof))
-                    .map_err(InvokeError::Downstream)?
+                    .node_create(HeapRENode::Proof(cloned_proof))?
                     .into();
-                Ok(ScryptoValue::from_typed(&scrypto::resource::Proof(
-                    proof_id,
-                )))
+                ScryptoValue::from_typed(&scrypto::resource::Proof(proof_id))
             }
             _ => return Err(InvokeError::Error(ProofError::UnknownMethod)),
-        }?;
+        };
 
         Ok(rtn)
     }
@@ -389,10 +384,7 @@ impl Proof {
         I: WasmInstance,
         R: FeeReserve,
     {
-        let proof: Proof = system_api
-            .node_drop(node_id)
-            .map_err(InvokeError::Downstream)?
-            .into();
+        let proof: Proof = system_api.node_drop(node_id)?.into();
         match method {
             ProofMethod::Drop => {
                 let _: ConsumingProofDropInput = scrypto_decode(&args.raw)
