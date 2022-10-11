@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use radix_engine::constants::*;
-use radix_engine::engine::{ExecutionTrace, Kernel, KernelError, ModuleError};
+use radix_engine::engine::{Kernel, KernelError, ModuleError};
 use radix_engine::engine::{RuntimeError, SystemApi, Track};
 use radix_engine::fee::{FeeTable, SystemLoanFeeReserve};
 use radix_engine::ledger::*;
@@ -726,7 +726,6 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             SystemLoanFeeReserve::default(),
             FeeTable::new(),
         );
-        let mut execution_trace = ExecutionTrace::new();
 
         let auth_zone_params = AuthZoneParams {
             initial_proofs,
@@ -742,7 +741,6 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
             &mut self.wasm_engine,
             &mut self.wasm_instrumenter,
             WasmMeteringParams::new(InstructionCostRules::tiered(1, 5, 10, 5000), 512), // TODO: add to ExecutionConfig
-            &mut execution_trace,
             Vec::new(),
         );
 
@@ -751,7 +749,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
 
         // Commit
         self.next_transaction_nonce += 1;
-        let receipt = track.finalize(Ok(Vec::new()), ExecutionTrace::new());
+        let receipt = track.finalize(Ok(Vec::new()));
         if let TransactionResult::Commit(c) = receipt.result {
             c.state_updates.commit(substate_store);
         }
@@ -761,14 +759,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
 }
 
 pub fn is_auth_error(e: &RuntimeError) -> bool {
-    matches!(
-        e,
-        RuntimeError::ModuleError(ModuleError::AuthError {
-            authorization: _,
-            fn_ident: _,
-            error: ::radix_engine::model::MethodAuthorizationError::NotAuthorized
-        })
-    )
+    matches!(e, RuntimeError::ModuleError(ModuleError::AuthError(_)))
 }
 
 pub fn is_costing_error(e: &RuntimeError) -> bool {
