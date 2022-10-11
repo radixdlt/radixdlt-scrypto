@@ -73,35 +73,35 @@ pub trait Module<R: FeeReserve> {
     fn pre_sys_call(
         &mut self,
         track: &mut Track<R>,
-        heap: &mut Vec<CallFrame>,
+        call_frames: &mut Vec<CallFrame>,
         input: SysCallInput,
     ) -> Result<(), ModuleError>;
 
     fn post_sys_call(
         &mut self,
         track: &mut Track<R>,
-        heap: &mut Vec<CallFrame>,
+        call_frames: &mut Vec<CallFrame>,
         output: SysCallOutput,
     ) -> Result<(), ModuleError>;
 
     fn on_wasm_instantiation(
         &mut self,
         track: &mut Track<R>,
-        heap: &mut Vec<CallFrame>,
+        call_frames: &mut Vec<CallFrame>,
         code: &[u8],
     ) -> Result<(), ModuleError>;
 
     fn on_wasm_costing(
         &mut self,
         track: &mut Track<R>,
-        heap: &mut Vec<CallFrame>,
+        call_frames: &mut Vec<CallFrame>,
         units: u32,
     ) -> Result<(), ModuleError>;
 
     fn on_lock_fee(
         &mut self,
         track: &mut Track<R>,
-        heap: &mut Vec<CallFrame>,
+        call_frames: &mut Vec<CallFrame>,
         vault_id: VaultId,
         fee: Resource,
         contingent: bool,
