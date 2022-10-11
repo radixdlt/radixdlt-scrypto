@@ -30,8 +30,6 @@ where
     /// Retrieves all nodes owned by the current frame
     fn get_owned_node_ids(&mut self) -> Result<Vec<RENodeId>, RuntimeError>;
 
-    fn borrow_node(&mut self, node_id: &RENodeId) -> Result<RENodeRef<'_, 's, R>, RuntimeError>;
-
     fn borrow_node_mut(
         &mut self,
         node_id: &RENodeId,
