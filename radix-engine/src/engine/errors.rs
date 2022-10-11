@@ -10,7 +10,6 @@ use scrypto::core::{FnIdent, ReceiverMethodIdent};
 use super::AuthError;
 use super::CostingError;
 use super::ExecutionTraceError;
-use super::NodeToSubstateFailure;
 use super::TrackError;
 
 /// Represents an error which causes a tranasction to be rejected.
@@ -87,7 +86,6 @@ pub enum KernelError {
     SubstateNotReadable(REActor, SubstateId),
     SubstateNotWriteable(REActor, SubstateId),
     TrackError(TrackError),
-    NodeToSubstateFailure(NodeToSubstateFailure),
 
     // constraints
     ValueNotAllowed,
