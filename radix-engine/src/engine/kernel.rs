@@ -1412,6 +1412,31 @@ where
             )));
         }
 
+        let (global_references, children) = {
+            let substate_ref =
+                node_pointer.borrow_substate(&offset, &mut self.call_frames, &mut self.track)?;
+            substate_ref.references_and_owned_nodes()
+        };
+
+        // Expand references
+        {
+            let cur_frame = Self::current_frame_mut(&mut self.call_frames);
+            // TODO: Figure out how to drop these references as well on reference drop
+            for global_address in global_references {
+                let node_id = RENodeId::Global(global_address);
+                cur_frame
+                    .node_refs
+                    .insert(node_id, RENodePointer::Store(node_id));
+            }
+            for child_id in &children {
+                let child_pointer = node_pointer.child(*child_id);
+                cur_frame.node_refs.insert(*child_id, child_pointer);
+                cur_frame
+                    .add_lock_visible_node(lock_handle, *child_id)
+                    .map_err(RuntimeError::KernelError)?;
+            }
+        }
+
         for m in &mut self.modules {
             m.post_sys_call(
                 &mut self.track,
@@ -1421,7 +1446,14 @@ where
             .map_err(RuntimeError::ModuleError)?;
         }
 
-        node_pointer.get_substate_mut(offset, &mut self.call_frames, &mut self.track)
+        SubstateRefMut::new(
+            lock_handle,
+            node_pointer,
+            offset,
+            children,
+            &mut self.call_frames,
+            &mut self.track,
+        )
     }
 
     fn read_blob(&mut self, blob_hash: &Hash) -> Result<&[u8], RuntimeError> {

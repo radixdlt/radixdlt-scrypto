@@ -426,6 +426,7 @@ pub fn verify_stored_value_update(
 }
 
 pub struct SubstateRefMut<'f, 's, R: FeeReserve> {
+    lock_handle: LockHandle,
     prev_children: HashSet<RENodeId>,
     node_pointer: RENodePointer,
     offset: SubstateOffset,
@@ -435,19 +436,15 @@ pub struct SubstateRefMut<'f, 's, R: FeeReserve> {
 
 impl<'f, 's, R: FeeReserve> SubstateRefMut<'f, 's, R> {
     pub fn new(
+        lock_handle: LockHandle,
         node_pointer: RENodePointer,
         offset: SubstateOffset,
+        prev_children: HashSet<RENodeId>,
         call_frames: &'f mut Vec<CallFrame>,
         track: &'f mut Track<'s, R>,
     ) -> Result<Self, RuntimeError> {
-        let prev_children = {
-            let substate_ref_mut = node_pointer.borrow_substate(&offset, call_frames, track)?;
-            let (_old_global_references, prev_children) =
-                substate_ref_mut.references_and_owned_nodes();
-            prev_children
-        };
-
         let substate_ref_mut = Self {
+            lock_handle,
             prev_children,
             node_pointer,
             offset,
@@ -467,9 +464,10 @@ impl<'f, 's, R: FeeReserve> SubstateRefMut<'f, 's, R> {
             substate_ref_mut.to_ref().references_and_owned_nodes()
         };
 
+        let current_frame = self.call_frames.last_mut().unwrap();
+
         for global_address in new_global_references {
             let node_id = RENodeId::Global(global_address);
-            let current_frame = self.call_frames.last_mut().unwrap();
             if !current_frame.node_refs.contains_key(&node_id) {
                 return Err(RuntimeError::KernelError(
                     KernelError::InvalidReferenceWrite(global_address),
@@ -484,7 +482,6 @@ impl<'f, 's, R: FeeReserve> SubstateRefMut<'f, 's, R> {
                     return Err(RuntimeError::KernelError(KernelError::ValueNotAllowed));
                 }
 
-                let current_frame = self.call_frames.last_mut().unwrap();
                 current_frame.take_available_values(new_children, true)?
             } else {
                 (HashMap::new(), HashSet::new())
@@ -492,6 +489,9 @@ impl<'f, 's, R: FeeReserve> SubstateRefMut<'f, 's, R> {
         };
         verify_stored_value_update(&self.prev_children, &missing_nodes)?;
 
+        for child_node in taken_nodes.keys() {
+            current_frame.add_lock_visible_node(self.lock_handle, *child_node)?;
+        }
         self.node_pointer
             .add_children(taken_nodes, &mut self.call_frames, &mut self.track);
 

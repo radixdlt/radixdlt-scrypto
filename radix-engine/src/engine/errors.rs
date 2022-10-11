@@ -37,6 +37,12 @@ pub enum RuntimeError {
     ApplicationError(ApplicationError),
 }
 
+impl From<KernelError> for RuntimeError {
+    fn from(error: KernelError) -> Self {
+        RuntimeError::KernelError(error)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
 pub enum KernelError {
     // invocation
