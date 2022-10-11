@@ -337,8 +337,10 @@ impl Proof {
         R: FeeReserve,
     {
         let node_id = RENodeId::Proof(proof_id);
-        let node_ref = system_api.borrow_node(&node_id)?;
-        let proof = node_ref.proof();
+        let offset = SubstateOffset::Proof(ProofOffset::Proof);
+        let handle = system_api.lock_substate(node_id, offset, false)?;
+        let substate_ref = system_api.get_ref(handle)?;
+        let proof = substate_ref.proof();
 
         let rtn = match method {
             ProofMethod::GetAmount => {
@@ -349,13 +351,12 @@ impl Proof {
             ProofMethod::GetNonFungibleIds => {
                 let _: ProofGetNonFungibleIdsInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(ProofError::InvalidRequestData(e)))?;
-                let ids = proof.total_ids()?;
-                ScryptoValue::from_typed(&ids)
+                ScryptoValue::from_typed(&proof.total_ids()?)
             }
             ProofMethod::GetResourceAddress => {
                 let _: ProofGetResourceAddressInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(ProofError::InvalidRequestData(e)))?;
-                ScryptoValue::from_typed(&proof.resource_address())
+                ScryptoValue::from_typed(&proof.resource_address)
             }
             ProofMethod::Clone => {
                 let _: ProofCloneInput = scrypto_decode(&args.raw)

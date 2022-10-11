@@ -95,8 +95,12 @@ impl AuthModule {
                 method_ident: MethodIdent::Native(NativeMethod::Bucket(ref method)),
             } => {
                 let resource_address = {
-                    let node_ref = node_pointer.to_ref(call_frames, track);
-                    node_ref.bucket().resource_address()
+                    let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
+                    node_pointer.acquire_lock(offset.clone(), false, false, track)?;
+                    let substate_ref = node_pointer.borrow_substate(&offset, call_frames, track)?;
+                    let resource_address = substate_ref.bucket().resource_address();
+                    node_pointer.release_lock(offset.clone(), false, track)?;
+                    resource_address
                 };
                 let node_id = RENodeId::ResourceManager(resource_address);
                 let resource_pointer = RENodePointer::Store(node_id);

@@ -200,30 +200,6 @@ pub enum RENodeRef<'f, 's, R: FeeReserve> {
 }
 
 impl<'f, 's, R: FeeReserve> RENodeRef<'f, 's, R> {
-    pub fn bucket(&self) -> &Bucket {
-        match self {
-            RENodeRef::Stack(value, id) => id
-                .as_ref()
-                .map_or(value.root(), |v| value.non_root(v))
-                .bucket(),
-            RENodeRef::Track(..) => {
-                panic!("Unexpected")
-            }
-        }
-    }
-
-    pub fn proof(&self) -> &Proof {
-        match self {
-            RENodeRef::Stack(value, id) => id
-                .as_ref()
-                .map_or(value.root(), |v| value.non_root(v))
-                .proof(),
-            RENodeRef::Track(..) => {
-                panic!("Unexpected")
-            }
-        }
-    }
-
     pub fn vault(&mut self) -> &Vault {
         match self {
             RENodeRef::Stack(value, id) => id
@@ -242,24 +218,6 @@ pub enum RENodeRefMut<'f, 's, R: FeeReserve> {
 }
 
 impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
-    pub fn bucket_mut(&mut self) -> &mut Bucket {
-        match self {
-            RENodeRefMut::Stack(root_node, _, id) => {
-                root_node.get_node_mut(id.as_ref()).bucket_mut()
-            }
-            RENodeRefMut::Track(..) => panic!("Bucket should be in stack"),
-        }
-    }
-
-    pub fn proof_mut(&mut self) -> &mut Proof {
-        match self {
-            RENodeRefMut::Stack(root_node, _, id) => {
-                root_node.get_node_mut(id.as_ref()).proof_mut()
-            }
-            RENodeRefMut::Track(..) => panic!("Proof should be in stack"),
-        }
-    }
-
     pub fn auth_zone_mut(&mut self) -> &mut AuthZone {
         match self {
             RENodeRefMut::Stack(re_value, _, id) => {

@@ -265,6 +265,7 @@ impl Into<GlobalAddressSubstate> for PersistedSubstate {
 }
 
 pub enum SubstateRef<'a> {
+    Proof(&'a Proof),
     Bucket(&'a Bucket),
     ComponentInfo(&'a ComponentInfoSubstate),
     ComponentState(&'a ComponentStateSubstate),
@@ -321,6 +322,13 @@ impl<'a> SubstateRef<'a> {
         }
     }
 
+    pub fn proof(&self) -> &Proof {
+        match self {
+            SubstateRef::Proof(value) => *value,
+            _ => panic!("Not a proof"),
+        }
+    }
+
     pub fn bucket(&self) -> &Bucket {
         match self {
             SubstateRef::Bucket(value) => *value,
@@ -351,6 +359,11 @@ impl<'a> SubstateRef<'a> {
 
     pub fn references_and_owned_nodes(&self) -> (HashSet<GlobalAddress>, HashSet<RENodeId>) {
         match self {
+            SubstateRef::Proof(proof) => {
+                let mut references = HashSet::new();
+                references.insert(GlobalAddress::Resource(proof.resource_address()));
+                (references, HashSet::new())
+            }
             SubstateRef::Bucket(bucket) => {
                 let mut references = HashSet::new();
                 references.insert(GlobalAddress::Resource(bucket.resource_address()));
@@ -577,6 +590,7 @@ pub enum RawSubstateRefMut<'a> {
     System(&'a mut SystemSubstate),
     Global(&'a mut GlobalAddressSubstate),
     Bucket(&'a mut Bucket),
+    Proof(&'a mut Proof),
 }
 
 impl<'a> RawSubstateRefMut<'a> {
@@ -620,6 +634,7 @@ impl<'a> RawSubstateRefMut<'a> {
             RawSubstateRefMut::Vault(value) => SubstateRef::Vault(value),
             RawSubstateRefMut::NonFungible(value) => SubstateRef::NonFungible(value),
             RawSubstateRefMut::KeyValueStoreEntry(value) => SubstateRef::KeyValueStoreEntry(value),
+            RawSubstateRefMut::Proof(value) => SubstateRef::Proof(value),
         }
     }
 }

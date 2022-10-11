@@ -118,6 +118,9 @@ impl HeapRENode {
             (HeapRENode::Bucket(bucket), SubstateOffset::Bucket(BucketOffset::Bucket)) => {
                 SubstateRef::Bucket(bucket)
             }
+            (HeapRENode::Proof(proof), SubstateOffset::Proof(ProofOffset::Proof)) => {
+                SubstateRef::Proof(proof)
+            }
             (_, offset) => {
                 return Err(RuntimeError::KernelError(KernelError::OffsetNotAvailable(
                     offset.clone(),
@@ -167,6 +170,9 @@ impl HeapRENode {
             (HeapRENode::Bucket(bucket), SubstateOffset::Bucket(BucketOffset::Bucket)) => {
                 RawSubstateRefMut::Bucket(bucket)
             }
+            (HeapRENode::Proof(proof), SubstateOffset::Proof(ProofOffset::Proof)) => {
+                RawSubstateRefMut::Proof(proof)
+            }
             (_, offset) => {
                 return Err(RuntimeError::KernelError(KernelError::OffsetNotAvailable(
                     offset.clone(),
@@ -187,32 +193,6 @@ impl HeapRENode {
         match self {
             HeapRENode::AuthZone(auth_zone, ..) => auth_zone,
             _ => panic!("Expected to be an auth zone"),
-        }
-    }
-
-    pub fn bucket(&self) -> &Bucket {
-        match self {
-            HeapRENode::Bucket(bucket) => bucket,
-            _ => panic!("Expected to be a bucket"),
-        }
-    }
-    pub fn bucket_mut(&mut self) -> &mut Bucket {
-        match self {
-            HeapRENode::Bucket(bucket) => bucket,
-            _ => panic!("Expected to be a bucket"),
-        }
-    }
-
-    pub fn proof(&self) -> &Proof {
-        match self {
-            HeapRENode::Proof(proof) => proof,
-            _ => panic!("Expected to be a proof"),
-        }
-    }
-    pub fn proof_mut(&mut self) -> &mut Proof {
-        match self {
-            HeapRENode::Proof(proof) => proof,
-            _ => panic!("Expected to be a proof"),
         }
     }
 

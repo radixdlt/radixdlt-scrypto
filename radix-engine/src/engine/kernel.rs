@@ -113,13 +113,17 @@ where
         for (resource_address, non_fungible_ids) in proofs_to_create {
             let bucket_id =
                 kernel.create_non_fungible_bucket_with_ids(resource_address, non_fungible_ids);
-            let mut node_ref = kernel
-                .borrow_node_mut(&RENodeId::Bucket(bucket_id))
-                .expect("Failed to borrow bucket node");
-            let bucket = node_ref.bucket_mut();
-            let proof = bucket
+
+            let node_id = RENodeId::Bucket(bucket_id);
+            let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
+            let handle = kernel.lock_substate(node_id, offset, true).unwrap();
+            let mut substate_mut = kernel.get_mut(handle).unwrap();
+            let mut raw_mut = substate_mut.get_raw_mut();
+            let proof = raw_mut
+                .bucket()
                 .create_proof(bucket_id)
                 .expect("Failed to create proof");
+            substate_mut.flush().unwrap();
             proofs.push(proof);
         }
 
@@ -634,18 +638,6 @@ where
 
                 // TODO: Check Component ABI here rather than in auth
                 match node_id {
-                    RENodeId::Proof(..) => {
-                        let resource_address = {
-                            let node_ref = node_pointer.to_ref(&self.call_frames, &mut self.track);
-                            node_ref.proof().resource_address()
-                        };
-                        let global_resource_node_id =
-                            RENodeId::Global(GlobalAddress::Resource(resource_address));
-                        next_frame_node_refs.insert(
-                            global_resource_node_id,
-                            RENodePointer::Store(global_resource_node_id),
-                        );
-                    }
                     RENodeId::Vault(..) => {
                         // TODO: Remove
                         let is_lock_fee = method_ident.method_ident.eq(&MethodIdent::Native(
