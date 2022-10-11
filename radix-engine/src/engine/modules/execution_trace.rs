@@ -95,15 +95,11 @@ impl ExecutionTrace {
         call_frames: &Vec<CallFrame>,
         track: &mut Track<'s, R>,
         actor: &REActor,
-        node_id: &RENodeId,
-        node_pointer: RENodePointer,
-        fn_ident: FnIdent,
-        input: &ScryptoValue,
-        next_owned_values: &HashMap<RENodeId, HeapRootRENode>,
+        input: &SysCallInput, 
     ) -> Result<(), RuntimeError> {
-        let method_ident = match fn_ident {
+        let method_ident = match input.fn_ident {
             FnIdent::Method(ReceiverMethodIdent { method_ident, .. }) => method_ident,
-            _ => return Ok(()),
+            _ => return Ok(()), 
         };
 
         if let RENodeId::Vault(vault_id) = node_id {

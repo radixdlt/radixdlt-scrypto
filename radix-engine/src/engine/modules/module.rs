@@ -6,7 +6,7 @@ use scrypto::core::FnIdent;
 
 pub enum SysCallInput<'a> {
     Invoke {
-        function_identifier: &'a FnIdent,
+        fn_ident: &'a FnIdent,
         input: &'a ScryptoValue,
         depth: usize,
     },

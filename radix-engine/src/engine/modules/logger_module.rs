@@ -31,14 +31,14 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
     ) -> Result<(), ModuleError> {
         match input {
             SysCallInput::Invoke {
-                function_identifier,
+                fn_ident,
                 input,
                 ..
             } => {
                 log!(
                     self,
                     "Invoking: fn = {:?}, buckets = {:?}, proofs = {:?}",
-                    function_identifier,
+                    fn_ident,
                     input.bucket_ids,
                     input.proof_ids
                 );

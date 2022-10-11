@@ -15,7 +15,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
     ) -> Result<(), ModuleError> {
         match input {
             SysCallInput::Invoke {
-                function_identifier,
+                fn_ident,
                 input,
                 depth,
             } => {
@@ -26,7 +26,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                             track
                                 .fee_table
                                 .system_api_cost(SystemApiCostingEntry::Invoke {
-                                    function_identifier: function_identifier.clone(),
+                                    fn_ident: fn_ident.clone(),
                                     input: &input,
                                 }),
                             "invoke_function",
@@ -36,7 +36,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                     track
                         .fee_reserve
                         .consume(
-                            track.fee_table.run_fn_cost(&function_identifier, &input),
+                            track.fee_table.run_fn_cost(&fn_ident, &input),
                             "run_function",
                             false,
                         )

@@ -157,6 +157,7 @@ where
                 modules.push(Box::new(LoggerModule::new()));
             }
             modules.push(Box::new(CostingModule::default()));
+            modules.push(Box::new(ExecutionTrace::new()));
             let mut kernel = Kernel::new(
                 transaction_hash,
                 auth_zone_params,
@@ -166,7 +167,6 @@ where
                 self.wasm_engine,
                 self.wasm_instrumenter,
                 WasmMeteringParams::new(InstructionCostRules::tiered(1, 5, 10, 5000), 512), // TODO: add to ExecutionConfig
-                &mut execution_trace,
                 modules,
             );
             kernel

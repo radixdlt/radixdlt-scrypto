@@ -50,14 +50,10 @@ pub struct Kernel<
     /// ID allocator
     id_allocator: IdAllocator,
 
-    /// Execution trace
-    execution_trace: &'g mut ExecutionTrace,
-
     /// Call frames
     call_frames: Vec<CallFrame>,
 
     /// Kernel modules
-    /// TODO: move execution trace and  authorization to modules
     modules: Vec<Box<dyn Module<R>>>,
 
     phantom: PhantomData<I>,
@@ -78,7 +74,6 @@ where
         wasm_engine: &'g mut W,
         wasm_instrumenter: &'g mut WasmInstrumenter,
         wasm_metering_params: WasmMeteringParams,
-        execution_trace: &'g mut ExecutionTrace,
         modules: Vec<Box<dyn Module<R>>>,
     ) -> Self {
         let frame = CallFrame::new_root();
@@ -91,7 +86,6 @@ where
             wasm_instrumenter,
             wasm_metering_params,
             id_allocator: IdAllocator::new(IdSpace::Application),
-            execution_trace,
             call_frames: vec![frame],
             modules,
             phantom: PhantomData,
@@ -730,16 +724,6 @@ where
                 }
 
                 let current_frame = Self::current_frame(&self.call_frames);
-                self.execution_trace.trace_invoke_method(
-                    &self.call_frames,
-                    &mut self.track,
-                    &current_frame.actor,
-                    &node_id,
-                    node_pointer,
-                    FnIdent::Method(method_ident.clone()),
-                    &input,
-                    &next_owned_values,
-                )?;
 
                 // Check method authorization
                 AuthModule::receiver_auth(
@@ -836,7 +820,7 @@ where
                 &mut self.track,
                 &mut self.call_frames,
                 SysCallInput::Invoke {
-                    function_identifier: &fn_ident,
+                    fn_ident: &fn_ident,
                     input: &input,
                     depth,
                 },
