@@ -265,6 +265,7 @@ impl Into<GlobalAddressSubstate> for PersistedSubstate {
 }
 
 pub enum SubstateRef<'a> {
+    AuthZone(&'a AuthZone),
     Worktop(&'a Worktop),
     Proof(&'a Proof),
     Bucket(&'a Bucket),
@@ -327,6 +328,13 @@ impl<'a> SubstateRef<'a> {
         match self {
             SubstateRef::Proof(value) => *value,
             _ => panic!("Not a proof"),
+        }
+    }
+
+    pub fn auth_zone(&self) -> &AuthZone {
+        match self {
+            SubstateRef::AuthZone(value) => *value,
+            _ => panic!("Not an authzone"),
         }
     }
 
@@ -600,9 +608,17 @@ pub enum RawSubstateRefMut<'a> {
     Bucket(&'a mut Bucket),
     Proof(&'a mut Proof),
     Worktop(&'a mut Worktop),
+    AuthZone(&'a mut AuthZone),
 }
 
 impl<'a> RawSubstateRefMut<'a> {
+    pub fn auth_zone(&mut self) -> &mut AuthZone {
+        match self {
+            RawSubstateRefMut::AuthZone(value) => *value,
+            _ => panic!("Not an authzone"),
+        }
+    }
+
     pub fn worktop(&mut self) -> &mut Worktop {
         match self {
             RawSubstateRefMut::Worktop(value) => *value,
@@ -652,6 +668,7 @@ impl<'a> RawSubstateRefMut<'a> {
             RawSubstateRefMut::KeyValueStoreEntry(value) => SubstateRef::KeyValueStoreEntry(value),
             RawSubstateRefMut::Proof(value) => SubstateRef::Proof(value),
             RawSubstateRefMut::Worktop(value) => SubstateRef::Worktop(value),
+            RawSubstateRefMut::AuthZone(value) => SubstateRef::AuthZone(value),
         }
     }
 }

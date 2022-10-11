@@ -218,15 +218,6 @@ pub enum RENodeRefMut<'f, 's, R: FeeReserve> {
 }
 
 impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
-    pub fn auth_zone_mut(&mut self) -> &mut AuthZone {
-        match self {
-            RENodeRefMut::Stack(re_value, _, id) => {
-                re_value.get_node_mut(id.as_ref()).auth_zone_mut()
-            }
-            RENodeRefMut::Track(..) => panic!("AuthZone should be in stack"),
-        }
-    }
-
     pub fn vault_mut(&mut self) -> &mut Vault {
         match self {
             RENodeRefMut::Stack(root_node, _, id) => {

@@ -5,7 +5,6 @@ use crate::model::{
 };
 use crate::types::*;
 use crate::wasm::*;
-use scrypto::core::{FnIdent, MethodIdent, ReceiverMethodIdent};
 use scrypto::resource::AuthZoneDrainInput;
 
 #[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
@@ -155,13 +154,24 @@ impl AuthZone {
         I: WasmInstance,
         R: FeeReserve,
     {
+        let node_id = RENodeId::AuthZone(auth_zone_id);
+        let offset = SubstateOffset::AuthZone(AuthZoneOffset::AuthZone);
+        let auth_zone_handle = system_api.lock_substate(node_id, offset, true)?;
+
         let rtn = match method {
             AuthZoneMethod::Pop => {
                 let _: AuthZonePopInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(AuthZoneError::InvalidRequestData(e)))?;
-                let mut node_ref = system_api.borrow_node_mut(&RENodeId::AuthZone(auth_zone_id))?;
-                let auth_zone = node_ref.auth_zone_mut();
-                let proof = auth_zone.pop()?;
+
+                let proof = {
+                    let mut substate_mut = system_api.get_mut(auth_zone_handle)?;
+                    let mut raw_mut = substate_mut.get_raw_mut();
+                    let auth_zone = raw_mut.auth_zone();
+                    let proof = auth_zone.pop()?;
+                    substate_mut.flush()?;
+                    proof
+                };
+
                 let proof_id = system_api.node_create(HeapRENode::Proof(proof))?.into();
                 ScryptoValue::from_typed(&scrypto::resource::Proof(proof_id))
             }
@@ -171,99 +181,103 @@ impl AuthZone {
                 let mut proof: Proof = system_api.node_drop(RENodeId::Proof(input.proof.0))?.into();
                 proof.change_to_unrestricted();
 
-                let mut node_ref = system_api.borrow_node_mut(&RENodeId::AuthZone(auth_zone_id))?;
-                let auth_zone = node_ref.auth_zone_mut();
+                let mut substate_mut = system_api.get_mut(auth_zone_handle)?;
+                let mut raw_mut = substate_mut.get_raw_mut();
+                let auth_zone = raw_mut.auth_zone();
                 auth_zone.push(proof);
+                substate_mut.flush()?;
+
                 ScryptoValue::from_typed(&())
             }
             AuthZoneMethod::CreateProof => {
                 let input: AuthZoneCreateProofInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(AuthZoneError::InvalidRequestData(e)))?;
+
                 let resource_type = {
-                    let result = system_api.invoke(
-                        FnIdent::Method(ReceiverMethodIdent {
-                            receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Resource(
-                                input.resource_address,
-                            ))),
-                            method_ident: MethodIdent::Native(NativeMethod::ResourceManager(
-                                ResourceManagerMethod::GetResourceType,
-                            )),
-                        }),
-                        ScryptoValue::from_typed(&ResourceManagerGetResourceTypeInput {}),
-                    )?;
-                    let resource_type: ResourceType = scrypto_decode(&result.raw).unwrap();
-                    resource_type
+                    let resource_id =
+                        RENodeId::Global(GlobalAddress::Resource(input.resource_address));
+                    let offset =
+                        SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
+                    let resource_handle = system_api.lock_substate(resource_id, offset, false)?;
+                    let substate_ref = system_api.get_ref(resource_handle)?;
+                    substate_ref.resource_manager().resource_type
                 };
 
-                let mut node_ref = system_api.borrow_node_mut(&RENodeId::AuthZone(auth_zone_id))?;
-                let auth_zone = node_ref.auth_zone_mut();
-                let proof = auth_zone.create_proof(input.resource_address, resource_type)?;
+                let proof = {
+                    let mut substate_mut = system_api.get_mut(auth_zone_handle)?;
+                    let mut raw_mut = substate_mut.get_raw_mut();
+                    let auth_zone = raw_mut.auth_zone();
+                    let proof = auth_zone.create_proof(input.resource_address, resource_type)?;
+                    substate_mut.flush()?;
+                    proof
+                };
+
                 let proof_id = system_api.node_create(HeapRENode::Proof(proof))?.into();
                 ScryptoValue::from_typed(&scrypto::resource::Proof(proof_id))
             }
             AuthZoneMethod::CreateProofByAmount => {
                 let input: AuthZoneCreateProofByAmountInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(AuthZoneError::InvalidRequestData(e)))?;
+
                 let resource_type = {
-                    let result = system_api.invoke(
-                        FnIdent::Method(ReceiverMethodIdent {
-                            receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Resource(
-                                input.resource_address,
-                            ))),
-                            method_ident: MethodIdent::Native(NativeMethod::ResourceManager(
-                                ResourceManagerMethod::GetResourceType,
-                            )),
-                        }),
-                        ScryptoValue::from_typed(&ResourceManagerGetResourceTypeInput {}),
-                    )?;
-                    let resource_type: ResourceType = scrypto_decode(&result.raw).unwrap();
-                    resource_type
+                    let resource_id =
+                        RENodeId::Global(GlobalAddress::Resource(input.resource_address));
+                    let offset =
+                        SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
+                    let resource_handle = system_api.lock_substate(resource_id, offset, false)?;
+                    let substate_ref = system_api.get_ref(resource_handle)?;
+                    substate_ref.resource_manager().resource_type
                 };
 
-                let mut node_ref = system_api.borrow_node_mut(&RENodeId::AuthZone(auth_zone_id))?;
-                let auth_zone = node_ref.auth_zone_mut();
-                let proof = auth_zone.create_proof_by_amount(
-                    input.amount,
-                    input.resource_address,
-                    resource_type,
-                )?;
+                let proof = {
+                    let mut substate_mut = system_api.get_mut(auth_zone_handle)?;
+                    let mut raw_mut = substate_mut.get_raw_mut();
+                    let auth_zone = raw_mut.auth_zone();
+                    let proof = auth_zone.create_proof_by_amount(
+                        input.amount,
+                        input.resource_address,
+                        resource_type,
+                    )?;
+                    substate_mut.flush()?;
+                    proof
+                };
+
                 let proof_id = system_api.node_create(HeapRENode::Proof(proof))?.into();
                 ScryptoValue::from_typed(&scrypto::resource::Proof(proof_id))
             }
             AuthZoneMethod::CreateProofByIds => {
                 let input: AuthZoneCreateProofByIdsInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(AuthZoneError::InvalidRequestData(e)))?;
+
                 let resource_type = {
-                    let result = system_api.invoke(
-                        FnIdent::Method(ReceiverMethodIdent {
-                            receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Resource(
-                                input.resource_address,
-                            ))),
-                            method_ident: MethodIdent::Native(NativeMethod::ResourceManager(
-                                ResourceManagerMethod::GetResourceType,
-                            )),
-                        }),
-                        ScryptoValue::from_typed(&ResourceManagerGetResourceTypeInput {}),
-                    )?;
-                    let resource_type: ResourceType = scrypto_decode(&result.raw).unwrap();
-                    resource_type
+                    let resource_id =
+                        RENodeId::Global(GlobalAddress::Resource(input.resource_address));
+                    let offset =
+                        SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
+                    let resource_handle = system_api.lock_substate(resource_id, offset, false)?;
+                    let substate_ref = system_api.get_ref(resource_handle)?;
+                    substate_ref.resource_manager().resource_type
                 };
 
-                let mut node_ref = system_api.borrow_node_mut(&RENodeId::AuthZone(auth_zone_id))?;
-                let auth_zone = node_ref.auth_zone_mut();
-
-                let maybe_existing_proof = auth_zone.create_proof_by_ids(
-                    &input.ids,
-                    input.resource_address,
-                    resource_type,
-                );
-
-                let proof = match maybe_existing_proof {
-                    Ok(proof) => proof,
-                    Err(_) if auth_zone.is_proof_virtualizable(&input.resource_address) => {
-                        auth_zone.virtualize_non_fungible_proof(&input.resource_address, &input.ids)
-                    }
-                    Err(e) => Err(e)?,
+                let proof = {
+                    let mut substate_mut = system_api.get_mut(auth_zone_handle)?;
+                    let mut raw_mut = substate_mut.get_raw_mut();
+                    let auth_zone = raw_mut.auth_zone();
+                    let maybe_existing_proof = auth_zone.create_proof_by_ids(
+                        &input.ids,
+                        input.resource_address,
+                        resource_type,
+                    );
+                    let proof = match maybe_existing_proof {
+                        Ok(proof) => proof,
+                        Err(_) if auth_zone.is_proof_virtualizable(&input.resource_address) => {
+                            auth_zone
+                                .virtualize_non_fungible_proof(&input.resource_address, &input.ids)
+                        }
+                        Err(e) => Err(e)?,
+                    };
+                    substate_mut.flush()?;
+                    proof
                 };
 
                 let proof_id = system_api.node_create(HeapRENode::Proof(proof))?.into();
@@ -272,17 +286,26 @@ impl AuthZone {
             AuthZoneMethod::Clear => {
                 let _: AuthZoneClearInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(AuthZoneError::InvalidRequestData(e)))?;
-                let mut node_ref = system_api.borrow_node_mut(&RENodeId::AuthZone(auth_zone_id))?;
-                let auth_zone = node_ref.auth_zone_mut();
+                let mut substate_mut = system_api.get_mut(auth_zone_handle)?;
+                let mut raw_mut = substate_mut.get_raw_mut();
+                let auth_zone = raw_mut.auth_zone();
                 auth_zone.clear();
+                substate_mut.flush()?;
                 ScryptoValue::from_typed(&())
             }
             AuthZoneMethod::Drain => {
                 let _: AuthZoneDrainInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(AuthZoneError::InvalidRequestData(e)))?;
-                let mut node_ref = system_api.borrow_node_mut(&RENodeId::AuthZone(auth_zone_id))?;
-                let auth_zone = node_ref.auth_zone_mut();
-                let proofs = auth_zone.drain();
+
+                let proofs = {
+                    let mut substate_mut = system_api.get_mut(auth_zone_handle)?;
+                    let mut raw_mut = substate_mut.get_raw_mut();
+                    let auth_zone = raw_mut.auth_zone();
+                    let proofs = auth_zone.drain();
+                    substate_mut.flush()?;
+                    proofs
+                };
+
                 let mut proof_ids: Vec<scrypto::resource::Proof> = Vec::new();
                 for proof in proofs {
                     let proof_id: ProofId =
