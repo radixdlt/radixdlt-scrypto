@@ -291,21 +291,21 @@ impl ResourceManager {
                 // Update total supply
                 // TODO: there might be better for maintaining total supply, especially for non-fungibles
                 // where we can leverage capabilities of key-value map.
+                let mut substate_mut = system_api
+                    .get_mut(handle)
+                    .map_err(InvokeError::Downstream)?;
+
+                // Update total supply
                 {
-                    let mut substate_mut = system_api
-                        .get_mut(handle)
-                        .map_err(InvokeError::Downstream)?;
                     let mut raw_mut = substate_mut.get_raw_mut();
-                    raw_mut.resource_manager().total_supply -= bucket.total_amount();
+                    let resource_manager = raw_mut.resource_manager();
+                    resource_manager.total_supply -= bucket.total_amount();
                     substate_mut.flush().map_err(InvokeError::Downstream)?;
                 }
 
-                let substate_ref = system_api
-                    .get_ref(handle)
-                    .map_err(InvokeError::Downstream)?;
-                let resource_manager = substate_ref.resource_manager();
-
                 // Burn non-fungible
+                let mut raw_mut = substate_mut.get_raw_mut();
+                let resource_manager = raw_mut.resource_manager();
                 if let Some(non_fungible_store_id) = resource_manager.non_fungible_store_id {
                     let node_id = RENodeId::NonFungibleStore(non_fungible_store_id);
 
@@ -453,10 +453,11 @@ impl ResourceManager {
                     .map_err(InvokeError::Downstream)?
                     .into();
 
-                let substate_ref = system_api
-                    .get_ref(handle)
+                let mut substate_mut = system_api
+                    .get_mut(handle)
                     .map_err(InvokeError::Downstream)?;
-                let resource_manager = substate_ref.resource_manager();
+                let mut raw_mut = substate_mut.get_raw_mut();
+                let resource_manager = raw_mut.resource_manager();
                 let non_fungible_store_id = resource_manager.non_fungible_store_id.clone();
                 for (id, non_fungible) in non_fungibles {
                     let node_id = RENodeId::NonFungibleStore(non_fungible_store_id.unwrap());
@@ -582,13 +583,13 @@ impl ResourceManager {
                     input.id.clone(),
                 ));
 
-                let lock_handle = system_api
+                let non_fungible_handle = system_api
                     .lock_substate(node_id, offset, true)
                     .map_err(InvokeError::Downstream)?;
 
                 // Read current value
                 let substate_ref = system_api
-                    .get_ref(lock_handle)
+                    .get_ref(non_fungible_handle)
                     .map_err(InvokeError::Downstream)?;
                 let wrapper = substate_ref.non_fungible();
 
@@ -596,7 +597,7 @@ impl ResourceManager {
                 if let Some(mut non_fungible) = wrapper.0.clone() {
                     non_fungible.set_mutable_data(input.data);
                     let mut substate_mut = system_api
-                        .get_mut(lock_handle)
+                        .get_mut(non_fungible_handle)
                         .map_err(InvokeError::Downstream)?;
                     substate_mut
                         .overwrite(Substate::NonFungible(NonFungibleSubstate(Some(
@@ -612,7 +613,7 @@ impl ResourceManager {
                 }
 
                 system_api
-                    .drop_lock(lock_handle)
+                    .drop_lock(non_fungible_handle)
                     .map_err(InvokeError::Downstream)?;
 
                 Ok(ScryptoValue::from_typed(&()))
