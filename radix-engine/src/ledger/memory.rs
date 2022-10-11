@@ -1,6 +1,6 @@
 use crate::ledger::*;
 use crate::ledger::{OutputValue, WriteableSubstateStore};
-use crate::model::Substate;
+use crate::model::PersistedSubstate;
 use crate::types::*;
 
 /// A substate store that stores all typed substates in host memory.
@@ -45,7 +45,7 @@ impl QueryableSubstateStore for TypedInMemorySubstateStore {
     fn get_kv_store_entries(
         &self,
         kv_store_id: &KeyValueStoreId,
-    ) -> HashMap<sbor::rust::vec::Vec<u8>, Substate> {
+    ) -> HashMap<sbor::rust::vec::Vec<u8>, PersistedSubstate> {
         self.substates
             .iter()
             .filter_map(|(key, value)| {

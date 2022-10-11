@@ -10,7 +10,7 @@ pub fn export_abi<S: ReadableSubstateStore>(
     package_address: PackageAddress,
     blueprint_name: &str,
 ) -> Result<abi::BlueprintAbi, RuntimeError> {
-    let package_value: Substate = substate_store
+    let package_value: PersistedSubstate = substate_store
         .get_substate(&SubstateId(
             RENodeId::Package(package_address),
             SubstateOffset::Package(PackageOffset::Package),
@@ -48,7 +48,7 @@ pub fn export_abi_by_component<S: ReadableSubstateStore>(
         )))?;
     let component_id = global.global_re_node().node_deref();
 
-    let component_value: Substate = substate_store
+    let component_value: PersistedSubstate = substate_store
         .get_substate(&SubstateId(
             component_id,
             SubstateOffset::Component(ComponentOffset::Info),

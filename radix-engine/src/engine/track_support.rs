@@ -150,7 +150,7 @@ impl<'s> AppStateTrack<'s> {
     }
 
     /// Returns a copy of the substate associated with the given address, if exists
-    pub fn get_substate(&mut self, substate_id: &SubstateId) -> Option<Substate> {
+    pub fn get_substate(&mut self, substate_id: &SubstateId) -> Option<PersistedSubstate> {
         self.substates
             .entry(substate_id.clone())
             .or_insert_with(|| {
@@ -174,13 +174,13 @@ impl<'s> AppStateTrack<'s> {
     }
 
     /// Creates a new substate and updates an existing one
-    pub fn put_substate(&mut self, substate_id: SubstateId, substate: Substate) {
+    pub fn put_substate(&mut self, substate_id: SubstateId, substate: PersistedSubstate) {
         self.substates
             .insert(substate_id, Some(scrypto_encode(&substate)));
     }
 
     /// Returns a copy of the substate associated with the given address from the base track
-    pub fn get_substate_from_base(&mut self, substate_id: &SubstateId) -> Option<Substate> {
+    pub fn get_substate_from_base(&mut self, substate_id: &SubstateId) -> Option<PersistedSubstate> {
         self.base_state_track
             .substates
             .entry(substate_id.clone())
@@ -198,7 +198,7 @@ impl<'s> AppStateTrack<'s> {
     }
 
     /// Creates a new substate and updates an existing one to the base track
-    pub fn put_substate_to_base(&mut self, substate_id: SubstateId, substate: Substate) {
+    pub fn put_substate_to_base(&mut self, substate_id: SubstateId, substate: PersistedSubstate) {
         assert!(!self.substates.contains_key(&substate_id));
 
         self.base_state_track

@@ -18,7 +18,7 @@ use crate::model::NonFungibleStore;
 use crate::model::NonFungibleSubstate;
 use crate::model::Resource;
 use crate::model::ResourceManager;
-use crate::model::Substate;
+use crate::model::PersistedSubstate;
 use crate::model::System;
 use crate::model::Vault;
 use crate::model::VaultSubstate;
@@ -49,7 +49,7 @@ impl LockState {
 
 #[derive(Debug)]
 pub enum SubstateCache {
-    Free(Substate),
+    Free(PersistedSubstate),
     Taken,
 }
 
@@ -63,7 +63,7 @@ pub enum NodeToSubstateFailure {
 }
 
 impl SubstateCache {
-    pub fn borrow(&self) -> &Substate {
+    pub fn borrow(&self) -> &PersistedSubstate {
         match self {
             Self::Free(substate) => substate,
             Self::Taken => {
@@ -72,7 +72,7 @@ impl SubstateCache {
         }
     }
 
-    pub fn borrow_mut(&mut self) -> &mut Substate {
+    pub fn borrow_mut(&mut self) -> &mut PersistedSubstate {
         match self {
             Self::Free(substate) => substate,
             Self::Taken => {
@@ -81,7 +81,7 @@ impl SubstateCache {
         }
     }
 
-    pub fn take(&mut self) -> Substate {
+    pub fn take(&mut self) -> PersistedSubstate {
         match core::mem::replace(self, SubstateCache::Taken) {
             Self::Free(substate) => substate,
             Self::Taken => {
@@ -90,7 +90,7 @@ impl SubstateCache {
         }
     }
 
-    pub fn put(&mut self, substate: Substate) {
+    pub fn put(&mut self, substate: PersistedSubstate) {
         *self = SubstateCache::Free(substate);
     }
 
@@ -355,7 +355,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         self.loaded_nodes.insert(node_id, node);
     }
 
-    pub fn borrow_substate(&self, node_id: RENodeId, offset: SubstateOffset) -> &Substate {
+    pub fn borrow_substate(&self, node_id: RENodeId, offset: SubstateOffset) -> &PersistedSubstate {
         let substate_id = SubstateId(node_id, offset);
         self.loaded_substates
             .get(&substate_id)
@@ -368,7 +368,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         &mut self,
         node_id: RENodeId,
         offset: SubstateOffset,
-    ) -> &mut Substate {
+    ) -> &mut PersistedSubstate {
         let substate_id = SubstateId(node_id, offset);
         self.loaded_substates
             .get_mut(&substate_id)
@@ -377,7 +377,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             .borrow_mut()
     }
 
-    pub fn take_substate(&mut self, substate_id: SubstateId) -> Substate {
+    pub fn take_substate(&mut self, substate_id: SubstateId) -> PersistedSubstate {
         self.loaded_substates
             .get_mut(&substate_id)
             .expect(&format!("Substate {:?} was never locked", substate_id))
@@ -387,7 +387,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
 
     // TODO remove
     // Currently used by node globalization
-    pub fn put_substate(&mut self, substate_id: SubstateId, substate: Substate) {
+    pub fn put_substate(&mut self, substate_id: SubstateId, substate: PersistedSubstate) {
         if !self.loaded_substates.contains_key(&substate_id) {
             self.loaded_substates.insert(
                 substate_id.clone(),
@@ -405,7 +405,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
     }
 
     /// Returns the value of a key value pair
-    pub fn read_key_value(&mut self, parent_address: SubstateId, key: Vec<u8>) -> &Substate {
+    pub fn read_key_value(&mut self, parent_address: SubstateId, key: Vec<u8>) -> &PersistedSubstate {
         // TODO: consider using a single address as function input
         let substate_id = match parent_address {
             SubstateId(
@@ -431,7 +431,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                     let substate = self
                         .state_track
                         .get_substate(&substate_id)
-                        .unwrap_or(Substate::NonFungible(NonFungibleSubstate(None)));
+                        .unwrap_or(PersistedSubstate::NonFungible(NonFungibleSubstate(None)));
 
                     self.loaded_substates.insert(
                         substate_id.clone(),
@@ -451,7 +451,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             SubstateId(RENodeId::KeyValueStore(..), ..) => {
                 if !self.loaded_substates.contains_key(&substate_id) {
                     let substate = self.state_track.get_substate(&substate_id).unwrap_or(
-                        Substate::KeyValueStoreEntry(KeyValueStoreEntrySubstate(None)),
+                        PersistedSubstate::KeyValueStoreEntry(KeyValueStoreEntrySubstate(None)),
                     );
 
                     self.loaded_substates.insert(
@@ -477,7 +477,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         &mut self,
         parent_address: SubstateId,
         key: Vec<u8>,
-    ) -> &mut Substate {
+    ) -> &mut PersistedSubstate {
         // TODO: consider using a single address as function input
         let substate_id = match parent_address {
             SubstateId(
@@ -503,7 +503,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                     let substate = self
                         .state_track
                         .get_substate(&substate_id)
-                        .unwrap_or(Substate::NonFungible(NonFungibleSubstate(None)));
+                        .unwrap_or(PersistedSubstate::NonFungible(NonFungibleSubstate(None)));
 
                     self.loaded_substates.insert(
                         substate_id.clone(),
@@ -523,7 +523,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             SubstateId(RENodeId::KeyValueStore(..), ..) => {
                 if !self.loaded_substates.contains_key(&substate_id) {
                     let substate = self.state_track.get_substate(&substate_id).unwrap_or(
-                        Substate::KeyValueStoreEntry(KeyValueStoreEntrySubstate(None)),
+                        PersistedSubstate::KeyValueStoreEntry(KeyValueStoreEntrySubstate(None)),
                     );
 
                     self.loaded_substates.insert(
@@ -546,7 +546,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
     }
 
     /// Sets a key value
-    pub fn set_key_value<V: Into<Substate>>(
+    pub fn set_key_value<V: Into<PersistedSubstate>>(
         &mut self,
         parent_substate_id: SubstateId,
         key: Vec<u8>,

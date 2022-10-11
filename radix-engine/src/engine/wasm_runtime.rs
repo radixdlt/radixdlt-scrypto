@@ -2,7 +2,7 @@ use crate::engine::RuntimeError;
 use crate::engine::{HeapRENode, SystemApi};
 use crate::fee::*;
 use crate::model::{
-    Component, ComponentInfoSubstate, ComponentStateSubstate, InvokeError, KeyValueStore, Substate,
+    Component, ComponentInfoSubstate, ComponentStateSubstate, InvokeError, KeyValueStore, PersistedSubstate,
 };
 use crate::types::*;
 use crate::wasm::*;
@@ -130,7 +130,7 @@ where
         buffer: Vec<u8>,
     ) -> Result<ScryptoValue, RuntimeError> {
         let mut substate_mut = self.system_api.get_mut(lock_handle)?;
-        let substate = Substate::decode_from_buffer(substate_mut.offset(), &buffer)?;
+        let substate = PersistedSubstate::decode_from_buffer(substate_mut.offset(), &buffer)?;
         substate_mut.overwrite(substate)?;
 
         Ok(ScryptoValue::unit())

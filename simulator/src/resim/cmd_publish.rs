@@ -1,7 +1,7 @@
 use clap::Parser;
 use colored::*;
 use radix_engine::ledger::{OutputValue, ReadableSubstateStore, WriteableSubstateStore};
-use radix_engine::model::Substate;
+use radix_engine::model::PersistedSubstate;
 use radix_engine::types::*;
 use scrypto::prelude::ContextualDisplay;
 use std::ffi::OsStr;
@@ -66,7 +66,7 @@ impl Publish {
                 blueprint_abis: abi,
             };
             let output_value = OutputValue {
-                substate: Substate::Package(validated_package),
+                substate: PersistedSubstate::Package(validated_package),
                 version: previous_version.unwrap_or(0),
             };
 
