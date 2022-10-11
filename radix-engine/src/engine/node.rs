@@ -170,41 +170,6 @@ impl HeapRENode {
         Ok(substate_ref)
     }
 
-    pub fn global_re_node(&self) -> &GlobalRENode {
-        match self {
-            HeapRENode::Global(global_node) => global_node,
-            _ => panic!("Expected to be global node"),
-        }
-    }
-
-    pub fn system(&self) -> &System {
-        match self {
-            HeapRENode::System(system) => system,
-            _ => panic!("Expected to be system"),
-        }
-    }
-
-    pub fn system_mut(&mut self) -> &mut System {
-        match self {
-            HeapRENode::System(system) => system,
-            _ => panic!("Expected to be system"),
-        }
-    }
-
-    pub fn resource_manager(&self) -> &ResourceManager {
-        match self {
-            HeapRENode::ResourceManager(resource_manager, ..) => resource_manager,
-            _ => panic!("Expected to be a resource manager"),
-        }
-    }
-
-    pub fn resource_manager_mut(&mut self) -> &mut ResourceManager {
-        match self {
-            HeapRENode::ResourceManager(resource_manager, ..) => resource_manager,
-            _ => panic!("Expected to be a resource manager"),
-        }
-    }
-
     pub fn auth_zone(&self) -> &AuthZone {
         match self {
             HeapRENode::AuthZone(auth_zone, ..) => auth_zone,
@@ -216,20 +181,6 @@ impl HeapRENode {
         match self {
             HeapRENode::AuthZone(auth_zone, ..) => auth_zone,
             _ => panic!("Expected to be an auth zone"),
-        }
-    }
-
-    pub fn package(&self) -> &Package {
-        match self {
-            HeapRENode::Package(package) => package,
-            _ => panic!("Expected to be a package"),
-        }
-    }
-
-    pub fn package_mut(&mut self) -> &Package {
-        match self {
-            HeapRENode::Package(package) => package,
-            _ => panic!("Expected to be a package"),
         }
     }
 
@@ -256,48 +207,6 @@ impl HeapRENode {
         match self {
             HeapRENode::Proof(proof) => proof,
             _ => panic!("Expected to be a proof"),
-        }
-    }
-
-    pub fn component(&self) -> &Component {
-        match self {
-            HeapRENode::Component(component, ..) => component,
-            _ => panic!("Expected to be a component"),
-        }
-    }
-
-    pub fn component_mut(&mut self) -> &mut Component {
-        match self {
-            HeapRENode::Component(component, ..) => component,
-            _ => panic!("Expected to be a component"),
-        }
-    }
-
-    pub fn kv_store(&self) -> &KeyValueStore {
-        match self {
-            HeapRENode::KeyValueStore(store) => store,
-            _ => panic!("Expected to be a store"),
-        }
-    }
-
-    pub fn kv_store_mut(&mut self) -> &mut KeyValueStore {
-        match self {
-            HeapRENode::KeyValueStore(store) => store,
-            _ => panic!("Expected to be a store"),
-        }
-    }
-
-    pub fn non_fungible_store(&self) -> &NonFungibleStore {
-        match self {
-            HeapRENode::NonFungibleStore(store) => store,
-            _ => panic!("Expected to be a store"),
-        }
-    }
-
-    pub fn non_fungible_store_mut(&mut self) -> &mut NonFungibleStore {
-        match self {
-            HeapRENode::NonFungibleStore(store) => store,
-            _ => panic!("Expected to be a store"),
         }
     }
 

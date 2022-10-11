@@ -341,12 +341,17 @@ where
                         },
                     ..
                 }) => {
+                    let package_id = RENodeId::Package(package_address);
+                    let package_offset = SubstateOffset::Package(PackageOffset::Package);
+
                     let output = {
-                        let package = self
-                            .track
-                            .borrow_node(&RENodeId::Package(package_address))
-                            .package()
-                            .clone();
+                        let package = {
+                            let substate = self
+                                .track
+                                .borrow_substate(package_id, package_offset.clone());
+                            substate.package().clone() // TODO: Remove clone()
+                        };
+
                         for m in &mut self.modules {
                             m.on_wasm_instantiation(
                                 &mut self.track,
@@ -355,6 +360,7 @@ where
                             )
                             .map_err(RuntimeError::ModuleError)?;
                         }
+
                         let instrumented_code = self
                             .wasm_instrumenter
                             .instrument(package.code(), &self.wasm_metering_params);
@@ -405,7 +411,7 @@ where
 
                     let package = self
                         .track
-                        .borrow_node(&RENodeId::Package(package_address))
+                        .borrow_substate(package_id, package_offset)
                         .package();
                     let blueprint_abi = package
                         .blueprint_abi(&blueprint_name)
@@ -511,7 +517,11 @@ where
                     .acquire_lock(offset.clone(), false, false, &mut self.track)
                     .map_err(RuntimeError::KernelError)?;
 
-                let package = self.track.borrow_node(&node_id).package();
+                let package = self
+                    .track
+                    .borrow_substate(node_id, offset.clone())
+                    .package();
+
                 let abi =
                     package
                         .blueprint_abi(blueprint_name)
@@ -568,7 +578,7 @@ where
                 // Deref
                 if let Receiver::Ref(..) = method_ident.receiver {
                     if let Some(derefed) =
-                        node_pointer.node_deref(&self.call_frames, &mut self.track)?
+                        node_pointer.node_deref(&mut self.call_frames, &mut self.track)?
                     {
                         node_id = derefed.node_id();
                         node_pointer = derefed;
@@ -624,29 +634,6 @@ where
 
                 // TODO: Check Component ABI here rather than in auth
                 match node_id {
-                    RENodeId::Component(..) => {
-                        let package_address = {
-                            let offset = SubstateOffset::Component(ComponentOffset::Info);
-                            node_pointer
-                                .acquire_lock(offset.clone(), false, false, &mut self.track)
-                                .map_err(RuntimeError::KernelError)?;
-                            let substate_ref = node_pointer.borrow_substate(
-                                &offset,
-                                &mut self.call_frames,
-                                &mut self.track,
-                            )?;
-                            let info = substate_ref.component_info();
-                            let package_address = info.package_address.clone();
-                            node_pointer
-                                .release_lock(offset, false, &mut self.track)
-                                .map_err(RuntimeError::KernelError)?;
-                            package_address
-                        };
-
-                        let package_node_id = RENodeId::Package(package_address);
-                        let package_node_pointer = RENodePointer::Store(package_node_id);
-                        next_frame_node_refs.insert(package_node_id, package_node_pointer);
-                    }
                     RENodeId::Proof(..) => {
                         let resource_address = {
                             let node_ref = node_pointer.to_ref(&self.call_frames, &mut self.track);
@@ -995,7 +982,7 @@ where
         let mut node_pointer = current_frame.get_node_pointer(*node_id)?;
 
         // Deref
-        if let Some(derefed) = node_pointer.node_deref(&self.call_frames, &mut self.track)? {
+        if let Some(derefed) = node_pointer.node_deref(&mut self.call_frames, &mut self.track)? {
             node_pointer = derefed;
         }
 
@@ -1031,7 +1018,7 @@ where
         let mut node_pointer = current_frame.get_node_pointer(*node_id)?;
 
         // Deref
-        if let Some(derefed) = node_pointer.node_deref(&self.call_frames, &mut self.track)? {
+        if let Some(derefed) = node_pointer.node_deref(&mut self.call_frames, &mut self.track)? {
             node_pointer = derefed;
         }
 
@@ -1223,7 +1210,7 @@ where
         let mut node_pointer = Self::current_frame(&self.call_frames).get_node_pointer(node_id)?;
 
         // Deref
-        if let Some(derefed) = node_pointer.node_deref(&self.call_frames, &mut self.track)? {
+        if let Some(derefed) = node_pointer.node_deref(&mut self.call_frames, &mut self.track)? {
             node_pointer = derefed;
         }
 

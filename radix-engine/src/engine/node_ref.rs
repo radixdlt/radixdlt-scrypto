@@ -25,15 +25,16 @@ impl RENodePointer {
 
     pub fn node_deref<'f, 's, R: FeeReserve>(
         &self,
-        call_frames: &'f Vec<CallFrame>,
+        call_frames: &'f mut Vec<CallFrame>,
         track: &'f mut Track<'s, R>,
     ) -> Result<Option<RENodePointer>, RuntimeError> {
         if let RENodeId::Global(..) = self.node_id() {
             let offset = SubstateOffset::Global(GlobalOffset::Global);
             self.acquire_lock(offset.clone(), false, false, track)
                 .map_err(RuntimeError::KernelError)?;
-            let mut node_ref = self.to_ref(call_frames, track);
-            let node_id = node_ref.global_re_node().node_deref();
+
+            let substate_ref = self.borrow_substate(&offset, call_frames, track)?;
+            let node_id = substate_ref.global_address().node_deref();
             self.release_lock(offset, false, track)
                 .map_err(RuntimeError::KernelError)?;
             Ok(Some(RENodePointer::Store(node_id)))
@@ -233,35 +234,6 @@ impl<'f, 's, R: FeeReserve> RENodeRef<'f, 's, R> {
             RENodeRef::Track(track, node_id) => track.borrow_node(node_id).vault(),
         }
     }
-
-    pub fn system(&mut self) -> &System {
-        match self {
-            RENodeRef::Stack(value, id) => id
-                .as_ref()
-                .map_or(value.root(), |v| value.non_root(v))
-                .system(),
-            RENodeRef::Track(track, node_id) => track.borrow_node(node_id).system(),
-        }
-    }
-
-    pub fn global_re_node(&mut self) -> &GlobalRENode {
-        match self {
-            RENodeRef::Stack(..) => {
-                panic!("Expecting not to be on stack.");
-            }
-            RENodeRef::Track(track, node_id) => track.borrow_node(node_id).global_re_node(),
-        }
-    }
-
-    pub fn package(&mut self) -> &Package {
-        match self {
-            RENodeRef::Stack(value, id) => id
-                .as_ref()
-                .map_or(value.root(), |v| value.non_root(v))
-                .package(),
-            RENodeRef::Track(track, node_id) => track.borrow_node(node_id).package(),
-        }
-    }
 }
 
 pub enum RENodeRefMut<'f, 's, R: FeeReserve> {
@@ -294,24 +266,6 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
                 re_value.get_node_mut(id.as_ref()).auth_zone_mut()
             }
             RENodeRefMut::Track(..) => panic!("AuthZone should be in stack"),
-        }
-    }
-
-    pub fn kv_store_mut(&mut self) -> &mut KeyValueStore {
-        match self {
-            RENodeRefMut::Stack(root_node, _, id) => {
-                root_node.get_node_mut(id.as_ref()).kv_store_mut()
-            }
-            RENodeRefMut::Track(track, node_id) => track.borrow_node_mut(node_id).kv_store_mut(),
-        }
-    }
-
-    pub fn system_mut(&mut self) -> &mut System {
-        match self {
-            RENodeRefMut::Stack(root_node, _, id) => {
-                root_node.get_node_mut(id.as_ref()).system_mut()
-            }
-            RENodeRefMut::Track(track, node_id) => track.borrow_node_mut(node_id).system_mut(),
         }
     }
 

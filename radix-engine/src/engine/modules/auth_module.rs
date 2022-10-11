@@ -178,9 +178,9 @@ impl AuthModule {
                 // Assume that package_address/blueprint is the original impl of Component for now
                 // TODO: Remove this assumption
                 let package = track
-                    .borrow_node(&RENodeId::Package(package_address))
+                    .borrow_substate(node_id, offset.clone())
                     .package()
-                    .clone();
+                    .clone(); // TODO: Remove clone
                 let abi = package
                     .blueprint_abi(&blueprint_name)
                     .expect("Blueprint not found for existing component");

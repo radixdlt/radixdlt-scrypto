@@ -361,8 +361,27 @@ impl<'a> SubstateRef<'a> {
         }
     }
 
+    pub fn package(&self) -> &PackageSubstate {
+        match self {
+            SubstateRef::Package(value) => *value,
+            _ => panic!("Not a package"),
+        }
+    }
+
+    pub fn global_address(&self) -> &GlobalAddressSubstate {
+        match self {
+            SubstateRef::Global(value) => *value,
+            _ => panic!("Not a global address"),
+        }
+    }
+
     pub fn references_and_owned_nodes(&self) -> (HashSet<GlobalAddress>, HashSet<RENodeId>) {
         match self {
+            SubstateRef::ComponentInfo(substate) => {
+                let mut references = HashSet::new();
+                references.insert(GlobalAddress::Package(substate.package_address));
+                (references, HashSet::new())
+            }
             SubstateRef::ResourceManager(substate) => {
                 let mut owned_nodes = HashSet::new();
                 if let Some(non_fungible_store_id) = substate.non_fungible_store_id {
