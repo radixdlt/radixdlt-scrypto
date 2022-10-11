@@ -54,14 +54,13 @@ impl Component {
         R: FeeReserve,
     {
         let node_id = RENodeId::Component(component_id);
+        let offset = SubstateOffset::Component(ComponentOffset::Info);
+        let handle = system_api.lock_substate(node_id, offset, true)?;
 
         let rtn = match method {
             ComponentMethod::AddAccessCheck => {
                 let input: ComponentAddAccessCheckInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(ComponentError::InvalidRequestData(e)))?;
-
-                let offset = SubstateOffset::Component(ComponentOffset::Info);
-                let handle = system_api.lock_substate(node_id, offset, true)?;
 
                 // Abi checks
                 {
@@ -100,8 +99,6 @@ impl Component {
                     .access_rules
                     .push(input.access_rules);
                 substate_ref_mut.flush()?;
-
-                system_api.drop_lock(handle)?;
 
                 ScryptoValue::from_typed(&())
             }
