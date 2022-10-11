@@ -363,6 +363,13 @@ impl<'a> SubstateRef<'a> {
 
     pub fn references_and_owned_nodes(&self) -> (HashSet<GlobalAddress>, HashSet<RENodeId>) {
         match self {
+            SubstateRef::ResourceManager(substate) => {
+                let mut owned_nodes = HashSet::new();
+                if let Some(non_fungible_store_id) = substate.non_fungible_store_id {
+                    owned_nodes.insert(RENodeId::NonFungibleStore(non_fungible_store_id));
+                }
+                (HashSet::new(), owned_nodes)
+            }
             SubstateRef::ComponentState(substate) => {
                 let scrypto_value = ScryptoValue::from_slice(&substate.raw).unwrap();
                 (scrypto_value.global_references(), scrypto_value.node_ids())
@@ -542,14 +549,14 @@ impl<'f, 's, R: FeeReserve> SubstateRefMut<'f, 's, R> {
                         .to_ref_mut()
                 }
                 (
-                    RENodeId::ResourceManager(..),
-                    SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(
+                    RENodeId::NonFungibleStore(..),
+                    SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(
                         non_fungible_id,
                     )),
                 ) => {
                     let parent_substate_id = SubstateId(
                         node_id,
-                        SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungibleSpace),
+                        SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Space),
                     );
                     self.track
                         .read_key_value_mut(parent_substate_id, non_fungible_id.to_vec())

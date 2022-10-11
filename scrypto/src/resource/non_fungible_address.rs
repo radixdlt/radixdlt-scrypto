@@ -6,7 +6,7 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::abi::*;
-use crate::constants::{ECDSA_TOKEN, ED25519_TOKEN};
+use crate::constants::{ECDSA_SECP256K1_TOKEN, EDDSA_ED25519_TOKEN};
 use crate::crypto::PublicKey;
 use crate::resource::*;
 
@@ -28,11 +28,12 @@ impl NonFungibleAddress {
     pub fn from_public_key<P: Into<PublicKey> + Clone>(public_key: &P) -> Self {
         let public_key: PublicKey = public_key.clone().into();
         match public_key {
-            PublicKey::EcdsaSecp256k1(public_key) => {
-                NonFungibleAddress::new(ECDSA_TOKEN, NonFungibleId::from_bytes(public_key.to_vec()))
-            }
+            PublicKey::EcdsaSecp256k1(public_key) => NonFungibleAddress::new(
+                ECDSA_SECP256K1_TOKEN,
+                NonFungibleId::from_bytes(public_key.to_vec()),
+            ),
             PublicKey::EddsaEd25519(public_key) => NonFungibleAddress::new(
-                ED25519_TOKEN,
+                EDDSA_ED25519_TOKEN,
                 NonFungibleId::from_bytes(public_key.to_vec()),
             ),
         }

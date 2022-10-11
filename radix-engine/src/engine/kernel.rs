@@ -270,6 +270,11 @@ where
                 let kv_store_id = id_allocator.new_kv_store_id(transaction_hash)?;
                 Ok(RENodeId::KeyValueStore(kv_store_id))
             }
+            HeapRENode::NonFungibleStore(..) => {
+                let non_fungible_store_id =
+                    id_allocator.new_non_fungible_store_id(transaction_hash)?;
+                Ok(RENodeId::NonFungibleStore(non_fungible_store_id))
+            }
             HeapRENode::Package(..) => {
                 // Security Alert: ensure ID allocating will practically never fail
                 let package_address = id_allocator.new_package_address(transaction_hash)?;
@@ -463,7 +468,7 @@ where
             if !(matches!(offset, SubstateOffset::KeyValueStore(..))
                 || matches!(
                     offset,
-                    SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(..))
+                    SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(..))
                 ))
             {
                 node_pointer
@@ -859,7 +864,7 @@ where
             let mut static_refs = HashSet::new();
             static_refs.insert(GlobalAddress::Resource(RADIX_TOKEN));
             static_refs.insert(GlobalAddress::Resource(SYSTEM_TOKEN));
-            static_refs.insert(GlobalAddress::Resource(ECDSA_TOKEN));
+            static_refs.insert(GlobalAddress::Resource(ECDSA_SECP256K1_TOKEN));
             static_refs.insert(GlobalAddress::Component(SYS_SYSTEM_COMPONENT));
 
             // Make refs visible
@@ -1252,7 +1257,7 @@ where
         if !(matches!(offset, SubstateOffset::KeyValueStore(..))
             || matches!(
                 offset,
-                SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(..))
+                SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(..))
             ))
         {
             node_pointer
@@ -1297,7 +1302,7 @@ where
         if !(matches!(offset, SubstateOffset::KeyValueStore(..))
             || matches!(
                 offset,
-                SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(..))
+                SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(..))
             ))
         {
             node_pointer
@@ -1356,8 +1361,9 @@ where
             for child_id in children {
                 let child_pointer = node_pointer.child(child_id);
                 cur_frame.node_refs.insert(child_id, child_pointer);
-                let lock = cur_frame.get_lock_mut(lock_handle).unwrap();
-                lock.refed_nodes.insert(child_id);
+                cur_frame
+                    .add_lock_visible_node(lock_handle, child_id)
+                    .map_err(RuntimeError::KernelError)?;
             }
         }
 

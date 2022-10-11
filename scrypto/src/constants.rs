@@ -2,6 +2,13 @@ use crate::component::{ComponentAddress, PackageAddress};
 use crate::resource::*;
 use crate::{address, construct_address};
 
+// After changing Radix Engine ID allocation, you will most likely need to update the addresses below.
+//
+// To obtain the new addresses, uncomment the println code in `id_allocator.rs` and
+// run `cd radix-engine && cargo test -- bootstrap_receipt_should_match_constants --nocapture`.
+//
+// We've arranged the addresses in the order they're created in the genesis transaction.
+
 /// The address of the sys-faucet package.
 pub const SYS_FAUCET_PACKAGE: PackageAddress = construct_address!(
     EntityType::Package,
@@ -64,135 +71,39 @@ pub const ACCOUNT_PACKAGE: PackageAddress = construct_address!(
     99
 );
 
-/// The address of the SysFaucet component
-pub const SYS_FAUCET_COMPONENT: ComponentAddress = construct_address!(
-    EntityType::NormalComponent,
-    112,
-    80,
-    185,
-    38,
-    180,
-    181,
-    171,
-    151,
-    101,
-    224,
-    68,
-    235,
-    5,
-    132,
-    5,
-    4,
-    142,
-    77,
-    126,
-    195,
-    109,
-    190,
-    183,
-    241,
-    137,
-    99
-);
-
-pub const SYS_SYSTEM_COMPONENT: ComponentAddress = construct_address!(
-    EntityType::SystemComponent,
-    81,
-    130,
-    179,
-    100,
-    248,
-    151,
-    66,
-    205,
-    2,
-    212,
-    180,
-    65,
-    90,
-    181,
-    166,
-    24,
-    91,
-    47,
-    48,
+/// The ECDSA virtual resource address.
+pub const ECDSA_SECP256K1_TOKEN: ResourceAddress = construct_address!(
+    EntityType::Resource,
+    159,
+    148,
+    169,
+    154,
+    227,
+    78,
     75,
+    52,
+    72,
+    3,
+    114,
+    131,
+    232,
+    41,
+    172,
     176,
-    51,
-    61,
-    100,
-    210,
-    105
+    75,
+    148,
+    70,
+    164,
+    177,
+    26,
+    121,
+    68,
+    254,
+    162
 );
-// TODO Add other system components
 
 /// The system token which allows access to system resources (e.g. setting epoch)
 pub const SYSTEM_TOKEN: ResourceAddress = construct_address!(
-    EntityType::Resource,
-    8,
-    176,
-    243,
-    225,
-    122,
-    72,
-    73,
-    246,
-    165,
-    39,
-    153,
-    157,
-    162,
-    22,
-    192,
-    89,
-    71,
-    248,
-    164,
-    205,
-    128,
-    162,
-    219,
-    72,
-    86,
-    194
-);
-
-/// The ECDSA virtual resource address.
-pub const ECDSA_TOKEN: ResourceAddress = construct_address!(
-    EntityType::Resource,
-    146,
-    35,
-    6,
-    166,
-    209,
-    58,
-    246,
-    56,
-    102,
-    182,
-    136,
-    201,
-    16,
-    55,
-    25,
-    208,
-    75,
-    20,
-    192,
-    96,
-    188,
-    72,
-    153,
-    166,
-    19,
-    181
-);
-
-/// The ED25519 virtual resource address.
-pub const ED25519_TOKEN: ResourceAddress = address!(EntityType::Resource, 3u8);
-
-/// The XRD resource address.
-pub const RADIX_TOKEN: ResourceAddress = address!(
     EntityType::Resource,
     141,
     129,
@@ -220,4 +131,127 @@ pub const RADIX_TOKEN: ResourceAddress = address!(
     102,
     224,
     208
+);
+
+/// The XRD resource address.
+pub const RADIX_TOKEN: ResourceAddress = address!(
+    EntityType::Resource,
+    241,
+    88,
+    60,
+    234,
+    185,
+    86,
+    59,
+    118,
+    36,
+    26,
+    46,
+    225,
+    245,
+    4,
+    254,
+    227,
+    6,
+    207,
+    47,
+    230,
+    180,
+    123,
+    170,
+    4,
+    214,
+    11
+);
+
+/// The address of the SysFaucet component
+pub const SYS_FAUCET_COMPONENT: ComponentAddress = construct_address!(
+    EntityType::NormalComponent,
+    114,
+    63,
+    138,
+    22,
+    205,
+    183,
+    174,
+    20,
+    68,
+    7,
+    164,
+    7,
+    239,
+    151,
+    153,
+    224,
+    209,
+    203,
+    205,
+    23,
+    249,
+    157,
+    63,
+    159,
+    19,
+    141
+);
+
+pub const SYS_SYSTEM_COMPONENT: ComponentAddress = construct_address!(
+    EntityType::SystemComponent,
+    164,
+    118,
+    252,
+    242,
+    45,
+    239,
+    129,
+    211,
+    155,
+    52,
+    61,
+    103,
+    10,
+    165,
+    183,
+    134,
+    87,
+    179,
+    22,
+    142,
+    181,
+    94,
+    179,
+    91,
+    14,
+    251
+);
+
+/// The ED25519 virtual resource address.
+pub const EDDSA_ED25519_TOKEN: ResourceAddress = address!(
+    EntityType::Resource,
+    14,
+    202,
+    207,
+    67,
+    8,
+    9,
+    8,
+    175,
+    215,
+    72,
+    85,
+    112,
+    29,
+    27,
+    108,
+    41,
+    237,
+    23,
+    161,
+    0,
+    126,
+    65,
+    51,
+    138,
+    155,
+    155
 );

@@ -1,8 +1,11 @@
+use scrypto::core::{FnIdent, MethodIdent, ReceiverMethodIdent};
+use scrypto::resource::ResourceManagerBurnInput;
+
 use crate::engine::{HeapRENode, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::{
-    InvokeError, LockableResource, NonFungibleSubstate, Proof, ProofError, Resource,
-    ResourceContainerId, ResourceOperationError, Substate,
+    InvokeError, LockableResource, Proof, ProofError, Resource, ResourceContainerId,
+    ResourceOperationError,
 };
 use crate::types::*;
 use crate::wasm::*;
@@ -124,7 +127,7 @@ impl Bucket {
         self.borrow_resource().total_amount()
     }
 
-    fn total_ids(&self) -> Result<BTreeSet<NonFungibleId>, ResourceOperationError> {
+    pub fn total_ids(&self) -> Result<BTreeSet<NonFungibleId>, ResourceOperationError> {
         self.borrow_resource().total_ids()
     }
 
@@ -293,64 +296,29 @@ impl Bucket {
                 let _: ConsumingBucketBurnInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(BucketError::InvalidRequestData(e)))?;
 
-                let bucket: Bucket = system_api
-                    .node_drop(node_id)
-                    .map_err(InvokeError::Downstream)?
-                    .into();
-
-                // Notify resource manager, TODO: Should not need to notify manually
+                let node_ref = system_api
+                    .borrow_node(&node_id)
+                    .map_err(InvokeError::Downstream)?;
+                let bucket = node_ref.bucket();
                 let resource_address = bucket.resource_address();
+                let bucket_id = match node_id {
+                    RENodeId::Bucket(bucket_id) => bucket_id,
+                    _ => panic!("Unexpected"),
+                };
 
-                let node_id = RENodeId::ResourceManager(resource_address);
-                let offset =
-                    SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-                let handle = system_api
-                    .lock_substate(node_id, offset, true)
-                    .map_err(InvokeError::Downstream)?;
-                let mut substate_mut = system_api
-                    .get_mut(handle)
-                    .map_err(InvokeError::Downstream)?;
-                let resource_type = substate_mut
-                    .update(|s| {
-                        s.resource_manager().burn(bucket.total_amount());
-                        Ok(s.resource_manager().resource_type)
-                    })
-                    .map_err(InvokeError::Downstream)?;
                 system_api
-                    .drop_lock(handle)
-                    .map_err(InvokeError::Downstream)?;
-
-                if matches!(resource_type, ResourceType::NonFungible) {
-                    for id in bucket
-                        .total_ids()
-                        .expect("Failed to list non-fungible IDs on non-fungible Bucket")
-                    {
-                        let lock_handle = system_api
-                            .lock_substate(
-                                RENodeId::ResourceManager(resource_address),
-                                SubstateOffset::ResourceManager(
-                                    ResourceManagerOffset::NonFungible(id),
-                                ),
-                                true,
-                            )
-                            .map_err(InvokeError::Downstream)?;
-
-                        {
-                            let mut substate_mut = system_api
-                                .get_mut(lock_handle)
-                                .map_err(InvokeError::Downstream)?;
-                            substate_mut
-                                .overwrite(Substate::NonFungible(NonFungibleSubstate(None)))
-                                .map_err(InvokeError::Downstream)?;
-                        }
-
-                        system_api
-                            .drop_lock(lock_handle)
-                            .map_err(InvokeError::Downstream)?;
-                    }
-                }
-
-                Ok(ScryptoValue::from_typed(&()))
+                    .invoke(
+                        FnIdent::Method(ReceiverMethodIdent {
+                            receiver: Receiver::Ref(RENodeId::ResourceManager(resource_address)),
+                            method_ident: MethodIdent::Native(NativeMethod::ResourceManager(
+                                ResourceManagerMethod::Burn,
+                            )),
+                        }),
+                        ScryptoValue::from_typed(&ResourceManagerBurnInput {
+                            bucket: scrypto::resource::Bucket(bucket_id),
+                        }),
+                    )
+                    .map_err(InvokeError::Downstream)
             }
             _ => Err(InvokeError::Error(BucketError::MethodNotFound(method))),
         }

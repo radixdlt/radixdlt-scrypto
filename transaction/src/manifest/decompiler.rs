@@ -22,11 +22,9 @@ pub enum DecompileError {
     IdValidationError(IdValidationError),
     DecodeError(DecodeError),
     AddressError(AddressError),
-    UnrecognizedNativeFunction(NativeFunction),
-    UnrecognizedNativeMethod(NativeMethod),
-    UnrecognizedMethod(ReceiverMethodIdent),
     InvalidValue(ScryptoValueFormatterError),
     FormattingError(fmt::Error),
+    InvalidArguments,
 }
 
 impl From<ScryptoValueFormatterError> for DecompileError {
@@ -68,6 +66,8 @@ impl<'a> DecompilationContext<'a> {
     }
 }
 
+/// Contract: if the instructions are from a validated notarized transaction, no error
+/// should be returned.
 pub fn decompile(
     instructions: &[Instruction],
     network: &NetworkDefinition,
@@ -328,7 +328,6 @@ pub fn decompile_instruction<F: fmt::Write>(
         }
         Instruction::CallFunction {
             function_ident,
-
             args,
         } => match function_ident {
             FunctionIdent::Scrypto {
@@ -362,43 +361,53 @@ pub fn decompile_instruction<F: fmt::Write>(
                         )?)?;
                     }
                 } else {
-                    panic!("Should not get here.");
+                    return Err(DecompileError::InvalidArguments);
                 }
                 f.write_str(";")?;
             }
-            FunctionIdent::Native(native_function) => match native_function {
-                NativeFunction::ResourceManager(ResourceManagerFunction::Create) => {
-                    let input: ResourceManagerCreateInput =
-                        scrypto_decode(&args).map_err(DecompileError::DecodeError)?;
-
-                    f.write_str(&format!(
-                        "CREATE_RESOURCE {} {} {} {};",
-                        ScryptoValue::from_typed(&input.resource_type)
-                            .to_string_with_fixed_context(
-                                context.bech32_encoder,
-                                &context.bucket_names,
-                                &context.proof_names,
-                            )?,
-                        ScryptoValue::from_typed(&input.metadata).to_string_with_fixed_context(
-                            context.bech32_encoder,
-                            &context.bucket_names,
-                            &context.proof_names,
-                        )?,
-                        ScryptoValue::from_typed(&input.access_rules)
-                            .to_string_with_fixed_context(
-                                context.bech32_encoder,
-                                &context.bucket_names,
-                                &context.proof_names,
-                            )?,
-                        ScryptoValue::from_typed(&input.mint_params).to_string_with_fixed_context(
-                            context.bech32_encoder,
-                            &context.bucket_names,
-                            &context.proof_names,
-                        )?,
-                    ))?;
+            FunctionIdent::Native(native_function_ident) => {
+                let mut recognized = false;
+                match native_function_ident {
+                    NativeFunction::ResourceManager(ResourceManagerFunction::Create) => {
+                        if let Ok(input) = scrypto_decode::<ResourceManagerCreateInput>(&args) {
+                            recognized = true;
+                            f.write_str(&format!(
+                                "CREATE_RESOURCE {} {} {} {};",
+                                ScryptoValue::from_typed(&input.resource_type)
+                                    .to_string_with_fixed_context(
+                                        context.bech32_encoder,
+                                        &context.bucket_names,
+                                        &context.proof_names,
+                                    )?,
+                                ScryptoValue::from_typed(&input.metadata)
+                                    .to_string_with_fixed_context(
+                                        context.bech32_encoder,
+                                        &context.bucket_names,
+                                        &context.proof_names,
+                                    )?,
+                                ScryptoValue::from_typed(&input.access_rules)
+                                    .to_string_with_fixed_context(
+                                        context.bech32_encoder,
+                                        &context.bucket_names,
+                                        &context.proof_names,
+                                    )?,
+                                ScryptoValue::from_typed(&input.mint_params)
+                                    .to_string_with_fixed_context(
+                                        context.bech32_encoder,
+                                        &context.bucket_names,
+                                        &context.proof_names,
+                                    )?,
+                            ))?;
+                        }
+                    }
+                    _ => {}
                 }
-                f @ _ => return Err(DecompileError::UnrecognizedNativeFunction(*f)),
-            },
+
+                if !recognized {
+                    // FIXME: we need a syntax to represent unrecognized invocation
+                    // To unblock alphanet, we temporarily decompile any unrecognized instruction into nothing.
+                }
+            }
         },
         Instruction::CallMethod { method_ident, args } => match method_ident {
             ReceiverMethodIdent {
@@ -432,57 +441,60 @@ pub fn decompile_instruction<F: fmt::Write>(
                         )?)?;
                     }
                 } else {
-                    panic!("Should not get here.");
+                    return Err(DecompileError::InvalidArguments);
                 }
 
                 f.write_str(";")?;
             }
             ReceiverMethodIdent {
                 receiver,
-                method_ident: MethodIdent::Native(native_method),
-            } => match (receiver, native_method) {
-                (
-                    Receiver::Consumed(RENodeId::Bucket(bucket_id)),
-                    NativeMethod::Bucket(BucketMethod::Burn),
-                ) => {
-                    let _input: ConsumingBucketBurnInput =
-                        scrypto_decode(&args).map_err(DecompileError::DecodeError)?;
-
-                    write!(
-                        f,
-                        "BURN_BUCKET Bucket({});",
-                        context
-                            .bucket_names
-                            .get(&bucket_id)
-                            .map(|name| format!("\"{}\"", name))
-                            .unwrap_or(format!("{}u32", bucket_id)),
-                    )?;
-                }
-                (
-                    Receiver::Ref(RENodeId::ResourceManager(resource_address)),
-                    NativeMethod::ResourceManager(ResourceManagerMethod::Mint),
-                ) => {
-                    let input: ResourceManagerMintInput =
-                        scrypto_decode(&args).map_err(DecompileError::DecodeError)?;
-                    match input.mint_params {
-                        MintParams::Fungible { amount } => {
+                method_ident,
+            } => {
+                let mut recognized = false;
+                match (method_ident, receiver) {
+                    (
+                        MethodIdent::Native(NativeMethod::Bucket(BucketMethod::Burn)),
+                        Receiver::Consumed(RENodeId::Bucket(bucket_id)),
+                    ) => {
+                        if let Ok(_input) = scrypto_decode::<ConsumingBucketBurnInput>(&args) {
+                            recognized = true;
                             write!(
                                 f,
-                                "MINT_FUNGIBLE ResourceAddress(\"{}\") Decimal(\"{}\");",
-                                resource_address.display(context.bech32_encoder),
-                                amount,
+                                "BURN_BUCKET Bucket({});",
+                                context
+                                    .bucket_names
+                                    .get(&bucket_id)
+                                    .map(|name| format!("\"{}\"", name))
+                                    .unwrap_or(format!("{}u32", bucket_id)),
                             )?;
                         }
-                        _ => {
-                            return Err(DecompileError::UnrecognizedNativeMethod(
-                                NativeMethod::ResourceManager(ResourceManagerMethod::Mint),
-                            ))
+                    }
+                    (
+                        MethodIdent::Native(NativeMethod::ResourceManager(
+                            ResourceManagerMethod::Mint,
+                        )),
+                        Receiver::Ref(RENodeId::ResourceManager(resource_address)),
+                    ) => {
+                        if let Ok(input) = scrypto_decode::<ResourceManagerMintInput>(&args) {
+                            if let MintParams::Fungible { amount } = input.mint_params {
+                                recognized = true;
+                                write!(
+                                    f,
+                                    "MINT_FUNGIBLE ResourceAddress(\"{}\") Decimal(\"{}\");",
+                                    resource_address.display(context.bech32_encoder),
+                                    amount,
+                                )?;
+                            }
                         }
                     }
+                    _ => {}
                 }
-                _ => return Err(DecompileError::UnrecognizedNativeMethod(*native_method)),
-            },
-            method_ident => return Err(DecompileError::UnrecognizedMethod(method_ident.clone())),
+
+                if !recognized {
+                    // FIXME: we need a syntax to represent unrecognized invocation
+                    // To unblock alphanet, we temporarily decompile any unrecognized instruction into nothing.
+                }
+            }
         },
         Instruction::PublishPackage { code, abi } => {
             write!(f, "PUBLISH_PACKAGE Blob(\"{}\") Blob(\"{}\");", code, abi)?;
@@ -495,9 +507,43 @@ pub fn decompile_instruction<F: fmt::Write>(
 mod tests {
     use super::*;
     use crate::manifest::*;
+    use sbor::*;
+    use scrypto::buffer::scrypto_encode;
+    use scrypto::core::FunctionIdent;
     use scrypto::core::NetworkDefinition;
+    use scrypto::resource::AccessRule;
+    use scrypto::resource::Mutability;
+    use scrypto::resource::ResourceMethodAuthKey;
+    use scrypto::resource::ResourceType;
 
-    #[cfg(not(feature = "alloc"))]
+    #[derive(TypeId, Encode, Decode)]
+    struct BadResourceManagerCreateInput {
+        pub resource_type: ResourceType,
+        pub metadata: HashMap<String, String>,
+        pub access_rules: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
+        // pub mint_params: Option<MintParams>,
+    }
+
+    #[test]
+    fn test_decompile_create_resource_with_invalid_arguments() {
+        let manifest = decompile(
+            &[Instruction::CallFunction {
+                function_ident: FunctionIdent::Native(NativeFunction::ResourceManager(
+                    ResourceManagerFunction::Create,
+                )),
+                args: scrypto_encode(&BadResourceManagerCreateInput {
+                    resource_type: ResourceType::NonFungible,
+                    metadata: HashMap::new(),
+                    access_rules: HashMap::new(),
+                }),
+            }],
+            &NetworkDefinition::simulator(),
+        )
+        .unwrap();
+
+        assert_eq!(manifest, "\n");
+    }
+
     #[test]
     fn test_decompile() {
         let network = NetworkDefinition::simulator();

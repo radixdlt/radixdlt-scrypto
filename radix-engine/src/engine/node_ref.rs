@@ -144,14 +144,14 @@ impl RENodePointer {
                         .to_ref()
                 }
                 (
-                    RENodeId::ResourceManager(..),
-                    SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(
+                    RENodeId::NonFungibleStore(..),
+                    SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(
                         non_fungible_id,
                     )),
                 ) => {
                     let parent_substate_id = SubstateId(
                         *node_id,
-                        SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungibleSpace),
+                        SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Space),
                     );
                     track
                         .read_key_value(parent_substate_id, non_fungible_id.to_vec())

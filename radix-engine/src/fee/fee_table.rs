@@ -213,6 +213,7 @@ impl FeeTable {
                             ResourceManagerMethod::UpdateNonFungibleData => self.fixed_medium,
                             ResourceManagerMethod::NonFungibleExists => self.fixed_low,
                             ResourceManagerMethod::GetNonFungible => self.fixed_medium,
+                            ResourceManagerMethod::Burn => self.fixed_medium,
                         }
                     }
                     MethodIdent::Native(NativeMethod::Worktop(worktop_ident)) => {

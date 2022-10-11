@@ -142,7 +142,7 @@ where
                 let substate = scrypto_decode(&value).unwrap();
                 Substate::KeyValueStoreEntry(substate)
             }
-            SubstateOffset::ResourceManager(ResourceManagerOffset::NonFungible(..)) => {
+            SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(..)) => {
                 let substate = scrypto_decode(&value).unwrap();
                 Substate::NonFungible(substate)
             }

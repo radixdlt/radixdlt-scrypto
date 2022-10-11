@@ -6,7 +6,7 @@ use scrypto::core::NativeFunction;
 pub struct SubstateLock {
     pub pointer: (RENodePointer, SubstateOffset),
     pub mutable: bool,
-    pub refed_nodes: HashSet<RENodeId>,
+    pub owned_nodes: HashSet<RENodeId>,
 }
 
 // TODO: reduce fields visibility
@@ -27,9 +27,9 @@ pub struct CallFrame {
     /// Owned Values
     pub owned_heap_nodes: HashMap<RENodeId, HeapRootRENode>,
 
-    cur_lock_handle: LockHandle,
+    next_lock_handle: LockHandle,
     locks: HashMap<LockHandle, SubstateLock>,
-    node_lock_index: HashMap<RENodeId, u32>,
+    node_lock_count: HashMap<RENodeId, u32>,
 }
 
 impl CallFrame {
@@ -39,23 +39,24 @@ impl CallFrame {
         offset: SubstateOffset,
         mutable: bool,
     ) -> LockHandle {
-        self.cur_lock_handle = self.cur_lock_handle + 1;
+        let lock_handle = self.next_lock_handle;
         self.locks.insert(
-            self.cur_lock_handle,
+            lock_handle,
             SubstateLock {
                 pointer: (node_pointer, offset),
                 mutable,
-                refed_nodes: HashSet::new(),
+                owned_nodes: HashSet::new(),
             },
         );
+        self.next_lock_handle = self.next_lock_handle + 1;
 
         let counter = self
-            .node_lock_index
+            .node_lock_count
             .entry(node_pointer.node_id())
             .or_insert(0u32);
         *counter += 1;
 
-        self.cur_lock_handle
+        lock_handle
     }
 
     pub fn drop_lock(
@@ -67,17 +68,17 @@ impl CallFrame {
             .remove(&lock_handle)
             .ok_or(KernelError::LockDoesNotExist(lock_handle))?;
 
-        for refed_node in substate_lock.refed_nodes {
+        for refed_node in substate_lock.owned_nodes {
             self.node_refs.remove(&refed_node);
         }
 
         let counter = self
-            .node_lock_index
+            .node_lock_count
             .entry(substate_lock.pointer.0.node_id())
             .or_insert(0u32);
         *counter -= 1;
         if *counter == 0 {
-            self.node_lock_index
+            self.node_lock_count
                 .remove(&substate_lock.pointer.0.node_id());
         }
 
@@ -90,13 +91,18 @@ impl CallFrame {
             .ok_or(KernelError::LockDoesNotExist(lock_handle))
     }
 
-    pub fn get_lock_mut(
+    // TODO: Figure out right interface for this
+    pub fn add_lock_visible_node(
         &mut self,
         lock_handle: LockHandle,
-    ) -> Result<&mut SubstateLock, KernelError> {
-        self.locks
+        node_id: RENodeId,
+    ) -> Result<(), KernelError> {
+        let lock = self
+            .locks
             .get_mut(&lock_handle)
-            .ok_or(KernelError::LockDoesNotExist(lock_handle))
+            .ok_or(KernelError::LockDoesNotExist(lock_handle))?;
+        lock.owned_nodes.insert(node_id);
+        Ok(())
     }
 
     pub fn new_root() -> Self {
@@ -107,9 +113,9 @@ impl CallFrame {
             ))),
             node_refs: HashMap::new(),
             owned_heap_nodes: HashMap::new(),
-            cur_lock_handle: 0u32,
+            next_lock_handle: 0u32,
             locks: HashMap::new(),
-            node_lock_index: HashMap::new(),
+            node_lock_count: HashMap::new(),
         }
     }
 
@@ -124,9 +130,9 @@ impl CallFrame {
             actor,
             node_refs,
             owned_heap_nodes,
-            cur_lock_handle: 0u32,
+            next_lock_handle: 0u32,
             locks: HashMap::new(),
-            node_lock_index: HashMap::new(),
+            node_lock_count: HashMap::new(),
         }
     }
 
@@ -154,7 +160,7 @@ impl CallFrame {
             let mut missing_values = HashSet::new();
 
             for id in node_ids {
-                if self.node_lock_index.contains_key(&id) {
+                if self.node_lock_count.contains_key(&id) {
                     return Err(RuntimeError::KernelError(KernelError::MovingLockedRENode(
                         id,
                     )));
@@ -187,7 +193,7 @@ impl CallFrame {
     }
 
     pub fn take_node(&mut self, node_id: RENodeId) -> Result<HeapRootRENode, RuntimeError> {
-        if self.node_lock_index.contains_key(&node_id) {
+        if self.node_lock_count.contains_key(&node_id) {
             return Err(RuntimeError::KernelError(KernelError::MovingLockedRENode(
                 node_id,
             )));

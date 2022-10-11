@@ -67,7 +67,7 @@ fn test_assume_all_signature_proofs_flag_create_proof_instruction() {
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .create_proof_from_auth_zone_by_ids(
             &BTreeSet::from([NonFungibleAddress::from_public_key(&public_key).non_fungible_id()]),
-            ECDSA_TOKEN,
+            ECDSA_SECP256K1_TOKEN,
             |builder, proof_id| {
                 builder
                     .push_to_auth_zone(proof_id)
