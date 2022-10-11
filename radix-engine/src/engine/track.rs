@@ -597,6 +597,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                 self.vault_ops,
                 actual_fee_payments,
                 &mut self.state_track,
+                invoke_result.is_ok(),
             );
 
             // TODO: update XRD supply or disable it
