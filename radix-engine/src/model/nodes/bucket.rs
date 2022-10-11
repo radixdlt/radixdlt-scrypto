@@ -300,12 +300,27 @@ impl Bucket {
 
                 // Notify resource manager, TODO: Should not need to notify manually
                 let resource_address = bucket.resource_address();
-                let mut value = system_api
-                    .borrow_node_mut(&RENodeId::ResourceManager(resource_address))
+
+                let node_id = RENodeId::ResourceManager(resource_address);
+                let offset =
+                    SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
+                let handle = system_api
+                    .lock_substate(node_id, offset, true)
                     .map_err(InvokeError::Downstream)?;
-                let resource_manager = value.resource_manager_mut();
-                resource_manager.burn(bucket.total_amount());
-                if matches!(resource_manager.resource_type(), ResourceType::NonFungible) {
+                let mut substate_mut = system_api
+                    .get_mut(handle)
+                    .map_err(InvokeError::Downstream)?;
+                let resource_type = substate_mut
+                    .update(|s| {
+                        s.resource_manager().burn(bucket.total_amount());
+                        Ok(s.resource_manager().resource_type)
+                    })
+                    .map_err(InvokeError::Downstream)?;
+                system_api
+                    .drop_lock(handle)
+                    .map_err(InvokeError::Downstream)?;
+
+                if matches!(resource_type, ResourceType::NonFungible) {
                     for id in bucket
                         .total_ids()
                         .expect("Failed to list non-fungible IDs on non-fungible Bucket")

@@ -354,6 +354,13 @@ impl<'a> SubstateRef<'a> {
         }
     }
 
+    pub fn resource_manager(&self) -> &ResourceManagerSubstate {
+        match self {
+            SubstateRef::ResourceManager(value) => *value,
+            _ => panic!("Not a resource manager"),
+        }
+    }
+
     pub fn references_and_owned_nodes(&self) -> (HashSet<GlobalAddress>, HashSet<RENodeId>) {
         match self {
             SubstateRef::ComponentState(substate) => {
@@ -570,6 +577,13 @@ pub enum RawSubstateRefMut<'a> {
 }
 
 impl<'a> RawSubstateRefMut<'a> {
+    pub fn resource_manager(&mut self) -> &mut ResourceManagerSubstate {
+        match self {
+            RawSubstateRefMut::ResourceManager(value) => *value,
+            _ => panic!("Not resource manager"),
+        }
+    }
+
     pub fn component_info(&mut self) -> &mut ComponentInfoSubstate {
         match self {
             RawSubstateRefMut::ComponentInfo(value) => *value,

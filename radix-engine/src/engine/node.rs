@@ -102,6 +102,10 @@ impl HeapRENode {
                     .or_insert(KeyValueStoreEntrySubstate(None));
                 SubstateRef::KeyValueStoreEntry(entry)
             }
+            (
+                HeapRENode::ResourceManager(resource_manager),
+                SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
+            ) => SubstateRef::ResourceManager(&resource_manager.info),
             (_, offset) => {
                 return Err(RuntimeError::KernelError(KernelError::OffsetNotAvailable(
                     offset.clone(),
@@ -144,6 +148,10 @@ impl HeapRENode {
                     .or_insert(KeyValueStoreEntrySubstate(None));
                 RawSubstateRefMut::KeyValueStoreEntry(entry)
             }
+            (
+                HeapRENode::ResourceManager(resource_manager),
+                SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
+            ) => RawSubstateRefMut::ResourceManager(&mut resource_manager.info),
             (_, offset) => {
                 return Err(RuntimeError::KernelError(KernelError::OffsetNotAvailable(
                     offset.clone(),

@@ -53,12 +53,28 @@ where
         mutable: bool,
     ) -> Result<LockHandle, RuntimeError>;
     fn drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError>;
-
     fn get_ref(&mut self, lock_handle: LockHandle) -> Result<SubstateRef, RuntimeError>;
     fn get_mut(
         &mut self,
         lock_handle: LockHandle,
     ) -> Result<SubstateRefMut<'_, 's, R>, RuntimeError>;
+
+    /// Convenience method
+    fn read_substate<F, T>(
+        &mut self,
+        node_id: RENodeId,
+        offset: SubstateOffset,
+        f: F,
+    ) -> Result<T, RuntimeError>
+    where
+        F: FnOnce(SubstateRef) -> T,
+    {
+        let handle = self.lock_substate(node_id, offset, false)?;
+        let substate_ref = self.get_ref(handle)?;
+        let rtn = f(substate_ref);
+        self.drop_lock(handle)?;
+        Ok(rtn)
+    }
 
     fn read_transaction_hash(&mut self) -> Result<Hash, RuntimeError>;
 

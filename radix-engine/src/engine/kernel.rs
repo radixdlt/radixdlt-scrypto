@@ -671,14 +671,6 @@ where
                         let resource_node_pointer = RENodePointer::Store(resource_node_id);
                         next_frame_node_refs.insert(resource_node_id, resource_node_pointer);
                     }
-                    RENodeId::ResourceManager(..) => {
-                        let offset =
-                            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-                        node_pointer
-                            .acquire_lock(offset.clone(), true, false, &mut self.track)
-                            .map_err(RuntimeError::KernelError)?;
-                        locked_pointers.push((node_pointer, offset.clone(), false));
-                    }
                     RENodeId::Vault(..) => {
                         // TODO: Remove
                         let is_lock_fee = method_ident.method_ident.eq(&MethodIdent::Native(

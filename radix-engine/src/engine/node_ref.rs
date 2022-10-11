@@ -255,26 +255,6 @@ impl<'f, 's, R: FeeReserve> RENodeRef<'f, 's, R> {
         }
     }
 
-    pub fn resource_manager(&mut self) -> &ResourceManager {
-        match self {
-            RENodeRef::Stack(value, id) => id
-                .as_ref()
-                .map_or(value.root(), |v| value.non_root(v))
-                .resource_manager(),
-            RENodeRef::Track(track, node_id) => track.borrow_node(node_id).resource_manager(),
-        }
-    }
-
-    pub fn component(&mut self) -> &Component {
-        match self {
-            RENodeRef::Stack(value, id) => id
-                .as_ref()
-                .map_or(value.root(), |v| value.non_root(v))
-                .component(),
-            RENodeRef::Track(track, node_id) => track.borrow_node(node_id).component(),
-        }
-    }
-
     pub fn global_re_node(&mut self) -> &GlobalRENode {
         match self {
             RENodeRef::Stack(..) => {
@@ -325,17 +305,6 @@ impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
                 re_value.get_node_mut(id.as_ref()).auth_zone_mut()
             }
             RENodeRefMut::Track(..) => panic!("AuthZone should be in stack"),
-        }
-    }
-
-    pub fn resource_manager_mut(&mut self) -> &mut ResourceManager {
-        match self {
-            RENodeRefMut::Stack(root_node, _, id) => {
-                root_node.get_node_mut(id.as_ref()).resource_manager_mut()
-            }
-            RENodeRefMut::Track(track, node_id) => {
-                track.borrow_node_mut(node_id).resource_manager_mut()
-            }
         }
     }
 

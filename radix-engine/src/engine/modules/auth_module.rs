@@ -105,11 +105,11 @@ impl AuthModule {
                 resource_pointer
                     .acquire_lock(offset.clone(), false, false, track)
                     .map_err(RuntimeError::KernelError)?;
-                let resource_manager = track
-                    .borrow_node(&RENodeId::ResourceManager(resource_address))
-                    .resource_manager();
-                let method_auth = resource_manager.get_bucket_auth(*method);
-                let auth = vec![method_auth.clone()];
+
+                let substate_ref = resource_pointer.borrow_substate(&offset, call_frames, track)?;
+                let resource_manager = substate_ref.resource_manager();
+                let auth = vec![resource_manager.get_bucket_auth(*method).clone()];
+
                 resource_pointer
                     .release_lock(offset, false, track)
                     .map_err(RuntimeError::KernelError)?;
@@ -120,10 +120,21 @@ impl AuthModule {
                 receiver: Receiver::Ref(RENodeId::ResourceManager(resource_address)),
                 method_ident: MethodIdent::Native(NativeMethod::ResourceManager(ref method)),
             } => {
-                let resource_manager = track
-                    .borrow_node(&RENodeId::ResourceManager(*resource_address))
-                    .resource_manager();
+                let node_id = RENodeId::ResourceManager(*resource_address);
+                let resource_pointer = RENodePointer::Store(node_id);
+                let offset =
+                    SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
+                resource_pointer
+                    .acquire_lock(offset.clone(), false, false, track)
+                    .map_err(RuntimeError::KernelError)?;
+
+                let substate_ref = resource_pointer.borrow_substate(&offset, call_frames, track)?;
+                let resource_manager = substate_ref.resource_manager();
                 let method_auth = resource_manager.get_auth(*method, &input).clone();
+                resource_pointer
+                    .release_lock(offset, false, track)
+                    .map_err(RuntimeError::KernelError)?;
+
                 let auth = vec![method_auth];
                 auth
             }
@@ -229,9 +240,8 @@ impl AuthModule {
                     .acquire_lock(offset.clone(), false, false, track)
                     .map_err(RuntimeError::KernelError)?;
 
-                let resource_manager = track
-                    .borrow_node(&RENodeId::ResourceManager(resource_address))
-                    .resource_manager();
+                let substate_ref = resource_pointer.borrow_substate(&offset, call_frames, track)?;
+                let resource_manager = substate_ref.resource_manager();
                 let auth = vec![resource_manager.get_vault_auth(*vault_fn).clone()];
 
                 resource_pointer

@@ -29,7 +29,7 @@ use crate::transaction::TransactionOutcome;
 use crate::transaction::TransactionResult;
 use crate::types::*;
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
 pub enum LockState {
     Read(usize),
     Write,
@@ -117,7 +117,7 @@ pub struct Track<'s, R: FeeReserve> {
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
 pub enum TrackError {
     NotFound(SubstateId),
-    NotAvailable(SubstateId),
+    SubstateLocked(SubstateId, LockState),
     AlreadyLoaded(SubstateId),
     NodeToSubstateFailure(NodeToSubstateFailure),
 }
@@ -207,7 +207,10 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             LockState::Read(n) => {
                 if mutable {
                     if n != 0 {
-                        return Err(TrackError::NotAvailable(substate_id));
+                        return Err(TrackError::SubstateLocked(
+                            substate_id,
+                            loaded_substate.lock_state,
+                        ));
                     }
                     loaded_substate.lock_state = LockState::Write;
                 } else {
@@ -215,7 +218,10 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                 }
             }
             LockState::Write => {
-                return Err(TrackError::NotAvailable(substate_id));
+                return Err(TrackError::SubstateLocked(
+                    substate_id,
+                    loaded_substate.lock_state,
+                ));
             }
         }
 
