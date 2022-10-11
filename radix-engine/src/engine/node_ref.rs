@@ -157,9 +157,7 @@ impl RENodePointer {
                         .read_key_value(parent_substate_id, non_fungible_id.to_vec())
                         .to_ref()
                 }
-                _ => track
-                    .borrow_substate(SubstateId(*node_id, offset.clone()))
-                    .to_ref(),
+                _ => track.borrow_substate(*node_id, offset.clone()).to_ref(),
             },
         };
 

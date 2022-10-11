@@ -355,7 +355,8 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         self.loaded_nodes.insert(node_id, node);
     }
 
-    pub fn borrow_substate(&self, substate_id: SubstateId) -> &Substate {
+    pub fn borrow_substate(&self, node_id: RENodeId, offset: SubstateOffset) -> &Substate {
+        let substate_id = SubstateId(node_id, offset);
         self.loaded_substates
             .get(&substate_id)
             .expect(&format!("Substate {:?} was never locked", substate_id))
@@ -363,7 +364,12 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             .borrow()
     }
 
-    pub fn borrow_substate_mut(&mut self, substate_id: SubstateId) -> &mut Substate {
+    pub fn borrow_substate_mut(
+        &mut self,
+        node_id: RENodeId,
+        offset: SubstateOffset,
+    ) -> &mut Substate {
+        let substate_id = SubstateId(node_id, offset);
         self.loaded_substates
             .get_mut(&substate_id)
             .expect(&format!("Substate {:?} was never locked", substate_id))

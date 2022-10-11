@@ -558,7 +558,7 @@ impl<'f, 's, R: FeeReserve> SubstateRefMut<'f, 's, R> {
                 }
                 _ => self
                     .track
-                    .borrow_substate_mut(SubstateId(node_id, self.offset.clone()))
+                    .borrow_substate_mut(node_id, self.offset.clone())
                     .to_ref_mut(),
             },
         }
