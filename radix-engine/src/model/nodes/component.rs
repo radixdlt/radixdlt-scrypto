@@ -63,9 +63,7 @@ impl Component {
                 // Abi checks
                 {
                     let (package_id, blueprint_name) = {
-                        let mut node_ref = system_api
-                            .borrow_node(&node_id)
-                            .map_err(InvokeError::Downstream)?;
+                        let mut node_ref = system_api.borrow_node(&node_id)?;
                         let component = node_ref.component();
                         let blueprint_name = component.info.blueprint_name.to_owned();
                         (
@@ -74,9 +72,7 @@ impl Component {
                         )
                     };
 
-                    let mut node_ref = system_api
-                        .borrow_node(&package_id)
-                        .map_err(InvokeError::Downstream)?;
+                    let mut node_ref = system_api.borrow_node(&package_id)?;
                     let package = node_ref.package();
                     let blueprint_abi = package.blueprint_abi(&blueprint_name).expect(&format!(
                         "Blueprint {} is not found in package node {:?}",
@@ -91,15 +87,13 @@ impl Component {
                     }
                 }
 
-                let mut node = system_api
-                    .borrow_node_mut(&node_id)
-                    .map_err(InvokeError::Downstream)?;
+                let mut node = system_api.borrow_node_mut(&node_id)?;
                 let component = node.component_mut();
                 component.info.access_rules.push(input.access_rules);
 
-                Ok(ScryptoValue::from_typed(&()))
+                ScryptoValue::from_typed(&())
             }
-        }?;
+        };
 
         Ok(rtn)
     }
