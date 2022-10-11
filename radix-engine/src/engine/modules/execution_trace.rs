@@ -106,6 +106,15 @@ impl ExecutionTrace {
                 method_ident,
             }) = fn_ident
             {
+                /* TODO: Warning: depends on call frame's actor being the vault's parent component!
+                This isn't always the case! For example, when vault is instantiated in a blueprint
+                before the component is globalized (see: test_restricted_transfer in bucket.rs).
+                For now, such vault calls are NOT traced.
+                Possible solution:
+                1. Separately record vault calls that have a blueprint parent
+                2. Hook up to when the component is globalized and convert
+                blueprint-parented vaults (if any) to regular
+                trace entries with component parents. */
                 match (receiver, method_ident) {
                     (
                         Receiver::Ref(RENodeId::Vault(vault_id)),
