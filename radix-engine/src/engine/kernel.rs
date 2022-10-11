@@ -529,7 +529,8 @@ where
             _ => {}
         };
 
-        AuthModule::function_auth(function_ident.clone(), &mut self.call_frames)?;
+        AuthModule::function_auth(function_ident.clone(), &mut self.call_frames)
+            .map_err(|e| RuntimeError::ModuleError(ModuleError::AuthError(e)))?;
 
         // start a new frame and run
         let frame = CallFrame::new_child(
@@ -732,7 +733,8 @@ where
                     node_pointer.clone(),
                     &mut self.call_frames,
                     &mut self.track,
-                )?;
+                )
+                .map_err(|e| RuntimeError::ModuleError(ModuleError::AuthError(e)))?;
 
                 match &method_ident.receiver {
                     Receiver::Consumed(..) => {

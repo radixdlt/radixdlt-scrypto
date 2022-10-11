@@ -26,6 +26,9 @@ pub enum VaultOp {
     LockContingentFee(Decimal),
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
+pub enum ExecutionTraceError {}
+
 #[derive(Debug)]
 pub struct ExecutionTrace {
     /// Stores resource changes that resulted from vault's operations.
