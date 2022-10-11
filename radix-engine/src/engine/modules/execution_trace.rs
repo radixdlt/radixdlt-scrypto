@@ -19,13 +19,20 @@ pub struct ExecutionTraceReceipt {
 
 #[derive(Debug)]
 pub struct ExecutionTrace {
+    /// Stores resource changes that resulted from vault's put/take operations.
     pub resource_changes: HashMap<ComponentId, HashMap<VaultId, (ResourceAddress, Decimal)>>,
+
+    /// Stores component IDs associated with vaults that have been used to lock a fee.
+    /// This, together with a FeeSummary, is later used to create ResourceChange entries
+    /// for fee payments (incl. any refunds back to the vault).
+    pub fee_vaults_components: HashMap<VaultId, ComponentId>,
 }
 
 impl ExecutionTrace {
     pub fn new() -> ExecutionTrace {
         Self {
             resource_changes: HashMap::new(),
+            fee_vaults_components: HashMap::new(),
         }
     }
 
@@ -93,6 +100,14 @@ impl ExecutionTrace {
                             decoded_input,
                         )?;
                     }
+                    MethodIdent::Native(NativeMethod::Vault(VaultMethod::LockFee)) => {
+                        self.fee_vaults_components
+                            .insert(vault_id.clone(), component_id.clone());
+                    }
+                    MethodIdent::Native(NativeMethod::Vault(VaultMethod::LockContingentFee)) => {
+                        self.fee_vaults_components
+                            .insert(vault_id.clone(), component_id.clone());
+                    }
                     _ => {} // no-op
                 }
             }
@@ -125,7 +140,8 @@ impl ExecutionTrace {
                     component_id,
                     vault_id,
                     bucket.total_amount(),
-                )
+                );
+                Ok(())
             } else {
                 /* TODO: Also handle non-fungible resource changes */
                 Ok(())
@@ -144,7 +160,8 @@ impl ExecutionTrace {
         vault_id: &VaultId,
         input: VaultTakeInput,
     ) -> Result<(), RuntimeError> {
-        self.record_resource_change(resource_address, component_id, vault_id, -input.amount)
+        self.record_resource_change(resource_address, component_id, vault_id, -input.amount);
+        Ok(())
     }
 
     fn record_resource_change(
@@ -153,7 +170,7 @@ impl ExecutionTrace {
         component_id: &ComponentId,
         vault_id: &VaultId,
         amount: Decimal,
-    ) -> Result<(), RuntimeError> {
+    ) {
         let component_changes = self
             .resource_changes
             .entry(component_id.clone())
@@ -164,11 +181,22 @@ impl ExecutionTrace {
             .or_insert((resource_address.clone(), Decimal::zero()));
 
         vault_change.1 += amount;
-
-        Ok(())
     }
 
-    pub fn to_receipt(self) -> ExecutionTraceReceipt {
+    pub fn to_receipt(
+        mut self,
+        fee_payments: HashMap<VaultId, (ResourceAddress, Decimal)>,
+    ) -> ExecutionTraceReceipt {
+        // Add fee payments resource changes
+        for (vault_id, (resource_address, amount)) in fee_payments {
+            let component_id = self
+                .fee_vaults_components
+                .get(&vault_id)
+                .expect("Failed to find component ID for a fee payment vault")
+                .clone();
+            self.record_resource_change(&resource_address, &component_id, &vault_id, -amount);
+        }
+
         let resource_changes: Vec<ResourceChange> = self
             .resource_changes
             .into_iter()
@@ -184,6 +212,7 @@ impl ExecutionTrace {
             })
             .filter(|el| !el.amount.is_zero())
             .collect();
+
         ExecutionTraceReceipt { resource_changes }
     }
 }

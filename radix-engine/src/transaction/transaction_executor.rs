@@ -185,8 +185,7 @@ where
         };
 
         // Produce the final transaction receipt
-        let execution_trace_receipt = execution_trace.to_receipt();
-        let track_receipt = track.finalize(invoke_result, execution_trace_receipt.resource_changes);
+        let track_receipt = track.finalize(invoke_result, execution_trace);
 
         let receipt = TransactionReceipt {
             contents: TransactionContents { instructions },
