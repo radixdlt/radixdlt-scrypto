@@ -295,12 +295,9 @@ impl ResourceManager {
                     let mut substate_mut = system_api
                         .get_mut(handle)
                         .map_err(InvokeError::Downstream)?;
-                    substate_mut
-                        .update(|s| {
-                            s.resource_manager().total_supply -= bucket.total_amount();
-                            Ok(())
-                        })
-                        .map_err(InvokeError::Downstream)?;
+                    let mut raw_mut = substate_mut.get_raw_mut();
+                    raw_mut.resource_manager().total_supply -= bucket.total_amount();
+                    substate_mut.flush().map_err(InvokeError::Downstream)?;
                 }
 
                 let substate_ref = system_api
@@ -347,22 +344,17 @@ impl ResourceManager {
                 let mut substate_mut = system_api
                     .get_mut(handle)
                     .map_err(InvokeError::Downstream)?;
-
-                substate_mut
-                    .update(|s| {
-                        let method_entry = s
-                            .resource_manager()
-                            .authorization
-                            .get_mut(&input.method)
-                            .expect(&format!(
-                                "Authorization for {:?} not specified",
-                                input.method
-                            ));
-                        method_entry
-                            .main(MethodAccessRuleMethod::Update(input.access_rule))
-                            .map_err(|e| e.into())
-                    })
-                    .map_err(InvokeError::Downstream)?;
+                let mut raw_mut = substate_mut.get_raw_mut();
+                let method_entry = raw_mut
+                    .resource_manager()
+                    .authorization
+                    .get_mut(&input.method)
+                    .expect(&format!(
+                        "Authorization for {:?} not specified",
+                        input.method
+                    ));
+                method_entry.main(MethodAccessRuleMethod::Update(input.access_rule))?;
+                substate_mut.flush().map_err(InvokeError::Downstream)?;
 
                 system_api
                     .drop_lock(handle)
@@ -381,21 +373,18 @@ impl ResourceManager {
                 let mut substate_mut = system_api
                     .get_mut(handle)
                     .map_err(InvokeError::Downstream)?;
-                substate_mut
-                    .update(|s| {
-                        let method_entry = s
-                            .resource_manager()
-                            .authorization
-                            .get_mut(&input.method)
-                            .expect(&format!(
-                                "Authorization for {:?} not specified",
-                                input.method
-                            ));
-                        method_entry
-                            .main(MethodAccessRuleMethod::Lock())
-                            .map_err(|e| e.into())
-                    })
-                    .map_err(InvokeError::Downstream)?;
+                let mut raw_mut = substate_mut.get_raw_mut();
+                let method_entry = raw_mut
+                    .resource_manager()
+                    .authorization
+                    .get_mut(&input.method)
+                    .expect(&format!(
+                        "Authorization for {:?} not specified",
+                        input.method
+                    ));
+                method_entry.main(MethodAccessRuleMethod::Lock())?;
+                substate_mut.flush().map_err(InvokeError::Downstream)?;
+
                 system_api
                     .drop_lock(handle)
                     .map_err(InvokeError::Downstream)?;
@@ -452,14 +441,11 @@ impl ResourceManager {
                     let mut substate_mut = system_api
                         .get_mut(handle)
                         .map_err(InvokeError::Downstream)?;
-                    substate_mut
-                        .update(|s| {
-                            let resource_manager = s.resource_manager();
-                            resource_manager
-                                .mint(input.mint_params, resource_address)
-                                .map_err(|e| e.into())
-                        })
-                        .map_err(InvokeError::Downstream)?
+                    let mut raw_mut = substate_mut.get_raw_mut();
+                    let resource_manager = raw_mut.resource_manager();
+                    let result = resource_manager.mint(input.mint_params, resource_address)?;
+                    substate_mut.flush().map_err(InvokeError::Downstream)?;
+                    result
                 };
 
                 let bucket_id = system_api
@@ -565,14 +551,9 @@ impl ResourceManager {
                 let mut substate_mut = system_api
                     .get_mut(handle)
                     .map_err(InvokeError::Downstream)?;
-                substate_mut
-                    .update(|s| {
-                        let resource_manager = s.resource_manager();
-                        resource_manager
-                            .update_metadata(input.metadata)
-                            .map_err(|e| e.into())
-                    })
-                    .map_err(InvokeError::Downstream)?;
+                let mut raw_mut = substate_mut.get_raw_mut();
+                raw_mut.resource_manager().update_metadata(input.metadata)?;
+                substate_mut.flush().map_err(InvokeError::Downstream)?;
                 system_api
                     .drop_lock(handle)
                     .map_err(InvokeError::Downstream)?;

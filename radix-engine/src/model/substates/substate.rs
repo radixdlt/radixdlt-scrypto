@@ -461,15 +461,10 @@ impl<'f, 's, R: FeeReserve> SubstateRefMut<'f, 's, R> {
         &self.offset
     }
 
-    pub fn update<F, T>(&mut self, f: F) -> Result<T, RuntimeError>
-    where
-        F: FnOnce(&mut RawSubstateRefMut) -> Result<T, RuntimeError>,
-    {
-        let (new_global_references, new_children, rtn) = {
-            let mut substate_ref_mut = self.get_ref_mut();
-            let rtn = f(&mut substate_ref_mut)?;
-            let refs_and_owned = substate_ref_mut.to_ref().references_and_owned_nodes();
-            (refs_and_owned.0, refs_and_owned.1, rtn)
+    pub fn flush(&mut self) -> Result<(), RuntimeError> {
+        let (new_global_references, new_children) = {
+            let substate_ref_mut = self.get_raw_mut();
+            substate_ref_mut.to_ref().references_and_owned_nodes()
         };
 
         for global_address in new_global_references {
@@ -500,31 +495,30 @@ impl<'f, 's, R: FeeReserve> SubstateRefMut<'f, 's, R> {
         self.node_pointer
             .add_children(taken_nodes, &mut self.call_frames, &mut self.track);
 
-        Ok(rtn)
+        Ok(())
     }
 
     pub fn overwrite(&mut self, substate: Substate) -> Result<(), RuntimeError> {
-        self.update(|raw_mut| {
-            match (raw_mut, substate) {
-                (RawSubstateRefMut::ComponentState(current), Substate::ComponentState(next)) => {
-                    **current = next
-                }
-                (
-                    RawSubstateRefMut::KeyValueStoreEntry(current),
-                    Substate::KeyValueStoreEntry(next),
-                ) => **current = next,
-                (RawSubstateRefMut::NonFungible(current), Substate::NonFungible(next)) => {
-                    **current = next
-                }
-                (RawSubstateRefMut::System(current), Substate::System(next)) => **current = next,
-                _ => return Err(RuntimeError::KernelError(KernelError::InvalidOverwrite)),
+        let raw_mut = self.get_raw_mut();
+        match (raw_mut, substate) {
+            (RawSubstateRefMut::ComponentState(current), Substate::ComponentState(next)) => {
+                *current = next
             }
+            (
+                RawSubstateRefMut::KeyValueStoreEntry(current),
+                Substate::KeyValueStoreEntry(next),
+            ) => *current = next,
+            (RawSubstateRefMut::NonFungible(current), Substate::NonFungible(next)) => {
+                *current = next
+            }
+            (RawSubstateRefMut::System(current), Substate::System(next)) => *current = next,
+            _ => return Err(RuntimeError::KernelError(KernelError::InvalidOverwrite)),
+        }
 
-            Ok(())
-        })
+        self.flush()
     }
 
-    fn get_ref_mut(&mut self) -> RawSubstateRefMut {
+    pub fn get_raw_mut(&mut self) -> RawSubstateRefMut {
         match self.node_pointer {
             RENodePointer::Heap { frame_id, root, id } => {
                 let frame = self.call_frames.get_mut(frame_id).unwrap();

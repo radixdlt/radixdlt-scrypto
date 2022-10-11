@@ -103,12 +103,12 @@ impl Component {
                 let mut substate_ref_mut = system_api
                     .get_mut(handle)
                     .map_err(InvokeError::Downstream)?;
-                substate_ref_mut
-                    .update(|r| {
-                        r.component_info().access_rules.push(input.access_rules);
-                        Ok(())
-                    })
-                    .map_err(InvokeError::Downstream)?;
+                let mut raw_mut = substate_ref_mut.get_raw_mut();
+                raw_mut
+                    .component_info()
+                    .access_rules
+                    .push(input.access_rules);
+                substate_ref_mut.flush().map_err(InvokeError::Downstream)?;
                 system_api
                     .drop_lock(handle)
                     .map_err(InvokeError::Downstream)?;
