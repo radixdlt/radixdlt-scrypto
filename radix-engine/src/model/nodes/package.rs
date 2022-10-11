@@ -56,25 +56,14 @@ impl Package {
             PackageFunction::Publish => {
                 let input: PackagePublishInput = scrypto_decode(&call_data.raw)
                     .map_err(|e| InvokeError::Error(PackageError::InvalidRequestData(e)))?;
-                let code = system_api
-                    .read_blob(&input.code.0)
-                    .map_err(InvokeError::Downstream)?
-                    .to_vec();
-                let abi = system_api
-                    .read_blob(&input.abi.0)
-                    .map_err(InvokeError::Downstream)
-                    .and_then(|blob| {
-                        scrypto_decode::<HashMap<String, BlueprintAbi>>(blob)
-                            .map_err(|e| InvokeError::Error(PackageError::InvalidAbi(e)))
-                    })?;
+                let code = system_api.read_blob(&input.code.0)?.to_vec();
+                let blob = system_api.read_blob(&input.abi.0)?;
+                let abi = scrypto_decode::<HashMap<String, BlueprintAbi>>(blob)
+                    .map_err(|e| InvokeError::Error(PackageError::InvalidAbi(e)))?;
                 let package = Package::new(code, abi)
                     .map_err(|e| InvokeError::Error(PackageError::InvalidWasm(e)))?;
-                let node_id = system_api
-                    .node_create(HeapRENode::Package(package))
-                    .map_err(InvokeError::Downstream)?;
-                let global_address = system_api
-                    .node_globalize(node_id)
-                    .map_err(InvokeError::Downstream)?;
+                let node_id = system_api.node_create(HeapRENode::Package(package))?;
+                let global_address = system_api.node_globalize(node_id)?;
                 let package_address: PackageAddress = global_address.into();
                 Ok(ScryptoValue::from_typed(&package_address))
             }
