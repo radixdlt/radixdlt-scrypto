@@ -3,7 +3,8 @@ use colored::*;
 use radix_engine::ledger::*;
 use radix_engine::model::*;
 use radix_engine::types::*;
-use scrypto::address::ContextualDisplay;
+use scrypto::misc::ContextualDisplay;
+use scrypto::values::ScryptoValueFormatterContext;
 use std::collections::VecDeque;
 
 use crate::utils::*;
@@ -112,11 +113,13 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
                 .unwrap();
 
             let state_data = ScryptoValue::from_slice(&state.raw).unwrap();
+            let value_display_context =
+                ScryptoValueFormatterContext::no_manifest_context(Some(&bech32_encoder));
             writeln!(
                 output,
                 "{}: {}",
                 "State".green().bold(),
-                state_data.displayable(&bech32_encoder, None, None)
+                state_data.display(value_display_context)
             );
 
             // Find all vaults owned by the component, assuming a tree structure.
@@ -159,12 +162,14 @@ fn dump_kv_store<T: ReadableSubstateStore + QueryableSubstateStore, O: std::io::
         let key = ScryptoValue::from_slice(k).unwrap();
         if let Some(v) = &v.kv_store_entry().0 {
             let value = ScryptoValue::from_slice(&v).unwrap();
+            let value_display_context =
+                ScryptoValueFormatterContext::no_manifest_context(Some(&bech32_encoder));
             writeln!(
                 output,
                 "{} {} => {}",
                 list_item_prefix(last),
-                key.displayable(&bech32_encoder, None, None),
-                value.displayable(&bech32_encoder, None, None)
+                key.display(value_display_context),
+                value.display(value_display_context)
             );
             referenced_maps.extend(value.kv_store_ids);
             referenced_vaults.extend(value.vault_ids);
@@ -234,14 +239,16 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
                         ScryptoValue::from_slice(&non_fungible.immutable_data()).unwrap();
                     let mutable_data =
                         ScryptoValue::from_slice(&non_fungible.mutable_data()).unwrap();
+                    let value_display_context =
+                        ScryptoValueFormatterContext::no_manifest_context(Some(&bech32_encoder));
                     writeln!(
                         output,
                         "{}  {} NonFungible {{ id: {}, immutable_data: {}, mutable_data: {} }}",
                         if last { " " } else { "│" },
                         list_item_prefix(inner_last),
-                        id.displayable(&bech32_encoder, None, None),
-                        immutable_data.displayable(&bech32_encoder, None, None),
-                        mutable_data.displayable(&bech32_encoder, None, None)
+                        id.display(value_display_context),
+                        immutable_data.display(value_display_context),
+                        mutable_data.display(value_display_context)
                     );
                 }
             }

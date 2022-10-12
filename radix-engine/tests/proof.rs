@@ -1,7 +1,7 @@
 use radix_engine::engine::{KernelError, RuntimeError};
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
-use scrypto::address::ContextualDisplay;
+use scrypto::misc::ContextualDisplay;
 use scrypto::resource::{Bucket, Proof, DIVISIBILITY_MAXIMUM};
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -39,11 +39,8 @@ fn can_create_clone_and_drop_bucket_proof() {
             args!(Expression::entire_worktop()),
         )
         .build();
-    let receipt = test_runner.execute_manifest(
-        manifest,
-        vec![NonFungibleAddress::from_public_key(&public_key)],
-    );
-    println!("{}", receipt.displayable(&Bech32Encoder::for_simulator()));
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
+    println!("{}", receipt.display(&Bech32Encoder::for_simulator()));
 
     // Assert
     receipt.expect_commit_success();
@@ -79,7 +76,7 @@ fn can_create_clone_and_drop_vault_proof() {
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    println!("{}", receipt.displayable(&Bech32Encoder::for_simulator()));
+    println!("{}", receipt.display(&Bech32Encoder::for_simulator()));
 
     // Assert
     receipt.expect_commit_success();
@@ -119,7 +116,7 @@ fn can_create_clone_and_drop_vault_proof_by_amount() {
         .unwrap()
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    println!("{}", receipt.displayable(&Bech32Encoder::for_simulator()));
+    println!("{}", receipt.display(&Bech32Encoder::for_simulator()));
 
     // Assert
     receipt.expect_commit_success();

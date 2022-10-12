@@ -1,13 +1,14 @@
 use sbor::rust::collections::*;
 use sbor::rust::fmt;
 use sbor::{encode_any, Value};
-use scrypto::address::{AddressError, Bech32Encoder, ContextualDisplay};
+use scrypto::address::{AddressError, Bech32Encoder};
 use scrypto::buffer::scrypto_decode;
 use scrypto::core::{
     BucketMethod, FunctionIdent, MethodIdent, NativeFunction, NativeMethod, NetworkDefinition,
     Receiver, ReceiverMethodIdent, ResourceManagerFunction, ResourceManagerMethod,
 };
 use scrypto::engine::types::*;
+use scrypto::misc::ContextualDisplay;
 use scrypto::resource::{
     ConsumingBucketBurnInput, MintParams, ResourceManagerCreateInput, ResourceManagerMintInput,
 };
@@ -55,6 +56,14 @@ impl<'a> DecompilationContext<'a> {
             bucket_names: HashMap::<BucketId, String>::new(),
             proof_names: HashMap::<ProofId, String>::new(),
         }
+    }
+
+    pub fn for_value_display(&'a self) -> ScryptoValueFormatterContext<'a> {
+        ScryptoValueFormatterContext::with_manifest_context(
+            self.bech32_encoder,
+            &self.bucket_names,
+            &self.proof_names,
+        )
     }
 }
 
@@ -326,11 +335,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                             .map_err(|_| DecompileError::InvalidArguments)?;
 
                         f.write_char(' ')?;
-                        f.write_str(&validated_arg.to_string_with_fixed_context(
-                            context.bech32_encoder,
-                            &context.bucket_names,
-                            &context.proof_names,
-                        ))?;
+                        write!(f, "{}", validated_arg.display(context.for_value_display()))?;
                     }
                 } else {
                     return Err(DecompileError::InvalidArguments);
@@ -346,29 +351,13 @@ pub fn decompile_instruction<F: fmt::Write>(
                             f.write_str(&format!(
                                 "CREATE_RESOURCE {} {} {} {};",
                                 ScryptoValue::from_typed(&input.resource_type)
-                                    .to_string_with_fixed_context(
-                                        context.bech32_encoder,
-                                        &context.bucket_names,
-                                        &context.proof_names,
-                                    ),
+                                    .display(context.for_value_display()),
                                 ScryptoValue::from_typed(&input.metadata)
-                                    .to_string_with_fixed_context(
-                                        context.bech32_encoder,
-                                        &context.bucket_names,
-                                        &context.proof_names,
-                                    ),
+                                    .display(context.for_value_display()),
                                 ScryptoValue::from_typed(&input.access_rules)
-                                    .to_string_with_fixed_context(
-                                        context.bech32_encoder,
-                                        &context.bucket_names,
-                                        &context.proof_names,
-                                    ),
+                                    .display(context.for_value_display()),
                                 ScryptoValue::from_typed(&input.mint_params)
-                                    .to_string_with_fixed_context(
-                                        context.bech32_encoder,
-                                        &context.bucket_names,
-                                        &context.proof_names,
-                                    ),
+                                    .display(context.for_value_display()),
                             ))?;
                         }
                     }
@@ -402,11 +391,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                             .map_err(|_| DecompileError::InvalidArguments)?;
 
                         f.write_char(' ')?;
-                        f.write_str(&validated_arg.to_string_with_fixed_context(
-                            context.bech32_encoder,
-                            &context.bucket_names,
-                            &context.proof_names,
-                        ))?;
+                        write!(f, "{}", &validated_arg.display(context.for_value_display()))?;
                     }
                 } else {
                     return Err(DecompileError::InvalidArguments);
