@@ -90,9 +90,17 @@ impl SubstateCache {
 }
 
 #[derive(Debug)]
+pub enum SubstateMetaState {
+    New,
+    Updated,
+    Loaded,
+}
+
+#[derive(Debug)]
 pub struct LoadedSubstate {
     pub substate: SubstateCache,
     pub lock_state: LockState,
+    pub metastate: SubstateMetaState,
 }
 
 /// Transaction-wide states and side effects
@@ -111,7 +119,8 @@ pub struct Track<'s, R: FeeReserve> {
 pub enum TrackError {
     NotFound(SubstateId),
     SubstateLocked(SubstateId, LockState),
-    AlreadyLoaded(SubstateId),
+    WriteThroughOnNewSubstate(SubstateId),
+    WriteThroughOnUpdatedSubstate(SubstateId),
 }
 
 pub struct TrackReceipt {
@@ -167,10 +176,6 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         mutable: bool,
         write_through: bool,
     ) -> Result<(), TrackError> {
-        if write_through && self.loaded_substates.contains_key(&substate_id) {
-            return Err(TrackError::AlreadyLoaded(substate_id));
-        }
-
         // Load the substate from state track
         if !self.loaded_substates.contains_key(&substate_id) {
             let maybe_substate = if write_through {
@@ -185,6 +190,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                     LoadedSubstate {
                         substate: SubstateCache::Free(substate),
                         lock_state: LockState::no_lock(),
+                        metastate: SubstateMetaState::Loaded,
                     },
                 );
             } else {
@@ -196,6 +202,19 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             .loaded_substates
             .get_mut(&substate_id)
             .expect("Existence checked upfront");
+
+        if write_through {
+            match loaded_substate.metastate {
+                SubstateMetaState::New => {
+                    return Err(TrackError::WriteThroughOnNewSubstate(substate_id))
+                }
+                SubstateMetaState::Updated => {
+                    return Err(TrackError::WriteThroughOnUpdatedSubstate(substate_id))
+                }
+                SubstateMetaState::Loaded => {}
+            }
+        }
+
         match loaded_substate.lock_state {
             LockState::Read(n) => {
                 if mutable {
@@ -233,7 +252,10 @@ impl<'s, R: FeeReserve> Track<'s, R> {
 
         match &loaded_substate.lock_state {
             LockState::Read(n) => loaded_substate.lock_state = LockState::Read(n - 1),
-            LockState::Write => loaded_substate.lock_state = LockState::no_lock(),
+            LockState::Write => {
+                loaded_substate.lock_state = LockState::no_lock();
+                loaded_substate.metastate = SubstateMetaState::Updated;
+            }
         }
 
         if write_through {
@@ -385,6 +407,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                 LoadedSubstate {
                     substate: SubstateCache::Free(substate),
                     lock_state: LockState::no_lock(),
+                    metastate: SubstateMetaState::New,
                 },
             );
         } else {
@@ -429,6 +452,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                         LoadedSubstate {
                             substate: SubstateCache::Free(substate),
                             lock_state: LockState::no_lock(),
+                            metastate: SubstateMetaState::Loaded,
                         },
                     );
                 }
@@ -450,6 +474,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                         LoadedSubstate {
                             substate: SubstateCache::Free(substate),
                             lock_state: LockState::no_lock(),
+                            metastate: SubstateMetaState::Loaded,
                         },
                     );
                 }
@@ -501,6 +526,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                         LoadedSubstate {
                             substate: SubstateCache::Free(substate),
                             lock_state: LockState::no_lock(),
+                            metastate: SubstateMetaState::New,
                         },
                     );
                 }
@@ -522,6 +548,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                         LoadedSubstate {
                             substate: SubstateCache::Free(substate),
                             lock_state: LockState::no_lock(),
+                            metastate: SubstateMetaState::New,
                         },
                     );
                 }

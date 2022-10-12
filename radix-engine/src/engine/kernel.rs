@@ -463,6 +463,7 @@ where
         for (_, lock) in call_frame.drain_locks() {
             let SubstateLock {
                 pointer: (node_pointer, offset),
+                write_through,
                 ..
             } = lock;
             if !(matches!(offset, SubstateOffset::KeyValueStore(..))
@@ -472,7 +473,7 @@ where
                 ))
             {
                 node_pointer
-                    .release_lock(offset, false, self.track)
+                    .release_lock(offset, write_through, self.track)
                     .map_err(RuntimeError::KernelError)?;
             }
         }
