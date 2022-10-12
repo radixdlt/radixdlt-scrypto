@@ -60,7 +60,7 @@ impl RENodePointer {
                 } else {
                     Ok(())
                 }
-            },
+            }
         }
     }
 

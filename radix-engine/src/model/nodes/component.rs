@@ -76,7 +76,8 @@ impl Component {
                     };
 
                     let package_offset = SubstateOffset::Package(PackageOffset::Package);
-                    let handle = system_api.lock_substate(package_id, package_offset, false, false)?;
+                    let handle =
+                        system_api.lock_substate(package_id, package_offset, false, false)?;
                     let substate_ref = system_api.get_ref(handle)?;
                     let package = substate_ref.package();
                     let blueprint_abi = package.blueprint_abi(&blueprint_name).expect(&format!(

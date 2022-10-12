@@ -400,7 +400,8 @@ impl ResourceManager {
                     let node_id = RENodeId::NonFungibleStore(non_fungible_store_id.unwrap());
                     let offset =
                         SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(id.clone()));
-                    let non_fungible_handle = system_api.lock_substate(node_id, offset, true, false)?;
+                    let non_fungible_handle =
+                        system_api.lock_substate(node_id, offset, true, false)?;
 
                     {
                         let mut substate_mut = system_api.get_ref_mut(non_fungible_handle)?;
@@ -502,7 +503,8 @@ impl ResourceManager {
                 let node_id = RENodeId::NonFungibleStore(non_fungible_store_id);
                 let offset =
                     SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(input.id));
-                let non_fungible_handle = system_api.lock_substate(node_id, offset, false, false)?;
+                let non_fungible_handle =
+                    system_api.lock_substate(node_id, offset, false, false)?;
                 let substate = system_api.get_ref(non_fungible_handle)?;
                 let exists = substate.non_fungible().0.is_some();
 
@@ -523,7 +525,8 @@ impl ResourceManager {
                 let node_id = RENodeId::NonFungibleStore(non_fungible_store_id);
                 let offset =
                     SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(input.id));
-                let non_fungible_handle = system_api.lock_substate(node_id, offset, false, false)?;
+                let non_fungible_handle =
+                    system_api.lock_substate(node_id, offset, false, false)?;
                 let non_fungible_ref = system_api.get_ref(non_fungible_handle)?;
                 let wrapper = non_fungible_ref.non_fungible();
                 if let Some(non_fungible) = wrapper.0.as_ref() {

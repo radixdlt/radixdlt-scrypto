@@ -85,7 +85,11 @@ impl CallFrame {
                 .remove(&substate_lock.pointer.0.node_id());
         }
 
-        Ok((substate_lock.pointer.0, substate_lock.pointer.1, substate_lock.write_through))
+        Ok((
+            substate_lock.pointer.0,
+            substate_lock.pointer.1,
+            substate_lock.write_through,
+        ))
     }
 
     pub fn get_lock(&self, lock_handle: LockHandle) -> Result<&SubstateLock, KernelError> {
