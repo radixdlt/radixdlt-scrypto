@@ -62,16 +62,32 @@ pub enum TokenKind {
 
     Decimal,
     PreciseDecimal,
-    PackageAddress,
-    ComponentAddress,
-    ResourceAddress,
     Hash,
-    Bucket,
-    Proof,
     NonFungibleId,
     NonFungibleAddress,
     Expression,
     Blob,
+
+    /* Global RE Nodes */
+    PackageAddress,
+    ComponentAddress,
+    ResourceAddress,
+
+    /* Other RE Nodes */
+    Bucket,
+    Proof,
+    AuthZone,
+    Worktop,
+    KeyValueStore,
+    NonFungibleStore,
+    Component,
+    System,
+    Vault,
+    ResourceManager,
+    Package,
+
+    /* Borrow */
+    Borrow,
 
     /* Punctuations */
     OpenParenthesis,
@@ -387,12 +403,7 @@ impl Lexer {
             "Map" => Ok(TokenKind::Map),
             "Decimal" => Ok(TokenKind::Decimal),
             "PreciseDecimal" => Ok(TokenKind::PreciseDecimal),
-            "PackageAddress" => Ok(TokenKind::PackageAddress),
-            "ComponentAddress" => Ok(TokenKind::ComponentAddress),
-            "ResourceAddress" => Ok(TokenKind::ResourceAddress),
             "Hash" => Ok(TokenKind::Hash),
-            "Bucket" => Ok(TokenKind::Bucket),
-            "Proof" => Ok(TokenKind::Proof),
             "NonFungibleId" => Ok(TokenKind::NonFungibleId),
             "NonFungibleAddress" => Ok(TokenKind::NonFungibleAddress),
             "Expression" => Ok(TokenKind::Expression),
@@ -402,6 +413,24 @@ impl Lexer {
             "None" => Ok(TokenKind::None),
             "Ok" => Ok(TokenKind::Ok),
             "Err" => Ok(TokenKind::Err),
+
+            "PackageAddress" => Ok(TokenKind::PackageAddress),
+            "ComponentAddress" => Ok(TokenKind::ComponentAddress),
+            "ResourceAddress" => Ok(TokenKind::ResourceAddress),
+
+            "Bucket" => Ok(TokenKind::Bucket),
+            "Proof" => Ok(TokenKind::Proof),
+            "AuthZone" => Ok(TokenKind::AuthZone),
+            "Worktop" => Ok(TokenKind::Worktop),
+            "KeyValueStore" => Ok(TokenKind::KeyValueStore),
+            "NonFungibleStore" => Ok(TokenKind::NonFungibleStore),
+            "Component" => Ok(TokenKind::Component),
+            "System" => Ok(TokenKind::System),
+            "Vault" => Ok(TokenKind::Vault),
+            "ResourceManager" => Ok(TokenKind::ResourceManager),
+            "Package" => Ok(TokenKind::Package),
+
+            "borrow" => Ok(TokenKind::Borrow),
 
             "TAKE_FROM_WORKTOP" => Ok(TokenKind::TakeFromWorktop),
             "TAKE_FROM_WORKTOP_BY_AMOUNT" => Ok(TokenKind::TakeFromWorktopByAmount),
