@@ -168,7 +168,7 @@ fn get_native_type(ty: &des::Type) -> Result<(Type, Vec<Item>)> {
                         #[derive(Debug, ::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
                         pub struct #ident (
                             #( pub #types ),*
-                        )
+                        );
                     });
                 }
                 des::Fields::Unit => {
