@@ -26,7 +26,7 @@ pub enum SysCallInput<'a> {
     LockSubstate {
         node_id: &'a RENodeId,
         offset: &'a SubstateOffset,
-        mutable: bool,
+        flags: &'a LockFlags,
     },
     GetRef {
         lock_handle: &'a LockHandle,

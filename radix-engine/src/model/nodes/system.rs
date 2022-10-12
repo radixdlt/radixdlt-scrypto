@@ -1,4 +1,4 @@
-use crate::engine::{AuthModule, HeapRENode, SystemApi};
+use crate::engine::{AuthModule, HeapRENode, LockFlags, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::{
     HardAuthRule, HardProofRule, HardResourceOrNonFungible, InvokeError, MethodAuthorization,
@@ -73,6 +73,14 @@ impl System {
         }
     }
 
+    fn method_lock_flags(method: SystemMethod) -> LockFlags {
+        match method {
+            SystemMethod::SetEpoch => LockFlags::MUTABLE,
+            SystemMethod::GetCurrentEpoch => LockFlags::empty(),
+            SystemMethod::GetTransactionHash => LockFlags::empty(),
+        }
+    }
+
     pub fn main<'s, Y, W, I, R>(
         component_id: ComponentId,
         method: SystemMethod,
@@ -87,7 +95,7 @@ impl System {
     {
         let node_id = RENodeId::System(component_id);
         let offset = SubstateOffset::System(SystemOffset::System);
-        let handle = system_api.lock_substate(node_id, offset, true, false)?;
+        let handle = system_api.lock_substate(node_id, offset, Self::method_lock_flags(method))?;
 
         match method {
             SystemMethod::GetCurrentEpoch => {

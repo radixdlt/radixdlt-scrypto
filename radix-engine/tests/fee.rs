@@ -126,7 +126,7 @@ fn should_be_rejected_when_lock_fee_with_temp_vault() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::TrackError(
-                TrackError::WriteThroughOnNewSubstate(..)
+                TrackError::LockUnmodifiedBaseOnNewSubstate(..)
             ))
         )
     });
@@ -163,7 +163,7 @@ fn should_be_rejected_when_mutate_vault_and_lock_fee() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::TrackError(
-                TrackError::WriteThroughOnUpdatedSubstate(..)
+                TrackError::LockUnmodifiedBaseOnOnUpdatedSubstate(..)
             ))
         )
     });

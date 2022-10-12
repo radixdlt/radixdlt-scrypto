@@ -1,5 +1,5 @@
-use crate::engine::RuntimeError;
 use crate::engine::{HeapRENode, SystemApi};
+use crate::engine::{LockFlags, RuntimeError};
 use crate::fee::*;
 use crate::model::{
     Component, ComponentInfoSubstate, ComponentStateSubstate, InvokeError, KeyValueStore, Substate,
@@ -113,8 +113,15 @@ where
         offset: SubstateOffset,
         mutable: bool,
     ) -> Result<ScryptoValue, RuntimeError> {
+        let flags = if mutable {
+            LockFlags::MUTABLE
+        } else {
+            // TODO: Do we want to expose full flag functionality to Scrypto?
+            LockFlags::empty()
+        };
+
         self.system_api
-            .lock_substate(node_id, offset, mutable, false)
+            .lock_substate(node_id, offset, flags)
             .map(|handle| ScryptoValue::from_typed(&handle))
     }
 

@@ -1,4 +1,4 @@
-use crate::engine::SystemApi;
+use crate::engine::{LockFlags, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::{ComponentInfoSubstate, ComponentStateSubstate, InvokeError};
 use crate::types::*;
@@ -41,6 +41,12 @@ impl Component {
         self.state = Some(state);
     }
 
+    fn method_lock_flags(method: ComponentMethod) -> LockFlags {
+        match method {
+            ComponentMethod::AddAccessCheck => LockFlags::MUTABLE,
+        }
+    }
+
     pub fn main<'s, Y, W, I, R>(
         component_id: ComponentId,
         method: ComponentMethod,
@@ -55,7 +61,7 @@ impl Component {
     {
         let node_id = RENodeId::Component(component_id);
         let offset = SubstateOffset::Component(ComponentOffset::Info);
-        let handle = system_api.lock_substate(node_id, offset, true, false)?;
+        let handle = system_api.lock_substate(node_id, offset, Self::method_lock_flags(method))?;
 
         let rtn = match method {
             ComponentMethod::AddAccessCheck => {
@@ -77,7 +83,7 @@ impl Component {
 
                     let package_offset = SubstateOffset::Package(PackageOffset::Package);
                     let handle =
-                        system_api.lock_substate(package_id, package_offset, false, false)?;
+                        system_api.lock_substate(package_id, package_offset, LockFlags::empty())?;
                     let substate_ref = system_api.get_ref(handle)?;
                     let package = substate_ref.package();
                     let blueprint_abi = package.blueprint_abi(&blueprint_name).expect(&format!(

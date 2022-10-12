@@ -4,7 +4,19 @@ use crate::fee::FeeReserve;
 use crate::model::{Resource, SubstateRef, SubstateRefMut};
 use crate::types::*;
 use crate::wasm::*;
+use bitflags::bitflags;
 use scrypto::core::FnIdent;
+
+bitflags! {
+    pub struct LockFlags: u32 {
+        /// Allows the locked substate to be mutated
+        const MUTABLE = 0b00000001;
+        /// Checks that the substate locked is unmodified from the beginning of
+        /// the transaction. This is used mainly for locking fees in vaults which
+        /// requires this in order to be able to support rollbacks
+        const UNMODIFIED_BASE = 0b00000010;
+    }
+}
 
 pub trait SystemApi<'s, W, I, R>
 where
@@ -46,15 +58,21 @@ where
     /// Moves an RENode from Heap to Store
     fn node_globalize(&mut self, node_id: RENodeId) -> Result<GlobalAddress, RuntimeError>;
 
+    /// Locks a visible substate
     fn lock_substate(
         &mut self,
         node_id: RENodeId,
         offset: SubstateOffset,
-        mutable: bool,
-        write_through: bool, // TODO: This is related to fees only, figure out way to remove as it is unsafe
+        flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError>;
+
+    /// Drops a lock
     fn drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError>;
+
+    /// Get a non-mutable reference to a locked substate
     fn get_ref(&mut self, lock_handle: LockHandle) -> Result<SubstateRef, RuntimeError>;
+
+    /// Get a mutable reference to a locked substate
     fn get_ref_mut(
         &mut self,
         lock_handle: LockHandle,

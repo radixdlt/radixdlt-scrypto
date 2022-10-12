@@ -21,7 +21,7 @@ pub use native_interpreter::NativeInterpreter;
 pub use node::*;
 pub use node_properties::*;
 pub use node_ref::*;
-pub use system_api::SystemApi;
+pub use system_api::{LockFlags, SystemApi};
 pub use track::*;
 pub use track_support::*;
 pub use wasm_runtime::*;

@@ -1,4 +1,4 @@
-use crate::engine::{HeapRENode, SystemApi};
+use crate::engine::{HeapRENode, LockFlags, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::{
     InvokeError, LockableResource, LockedAmountOrIds, Proof, ProofError, ResourceContainerId,
@@ -239,7 +239,7 @@ impl AuthZone {
                     let offset =
                         SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
                     let resource_handle =
-                        system_api.lock_substate(resource_id, offset, false, false)?;
+                        system_api.lock_substate(resource_id, offset, LockFlags::empty())?;
                     let substate_ref = system_api.get_ref(resource_handle)?;
                     substate_ref.resource_manager().resource_type
                 };
