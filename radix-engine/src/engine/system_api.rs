@@ -51,6 +51,7 @@ where
         node_id: RENodeId,
         offset: SubstateOffset,
         mutable: bool,
+        write_through: bool, // TODO: This is related to fees only, figure out way to remove as it is unsafe
     ) -> Result<LockHandle, RuntimeError>;
     fn drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError>;
     fn get_ref(&mut self, lock_handle: LockHandle) -> Result<SubstateRef, RuntimeError>;

@@ -663,13 +663,8 @@ where
                         let is_lock_fee = method_ident.method_ident.eq(&MethodIdent::Native(
                             NativeMethod::Vault(VaultMethod::LockFee),
                         )) || method_ident.method_ident.eq(&MethodIdent::Native(
-                            NativeMethod::Vault(VaultMethod::LockFee),
-                        )) || method_ident.method_ident.eq(&MethodIdent::Native(
                             NativeMethod::Vault(VaultMethod::LockContingentFee),
                         ));
-                        if is_lock_fee && matches!(node_pointer, RENodePointer::Heap { .. }) {
-                            return Err(RuntimeError::KernelError(KernelError::RENodeNotInTrack));
-                        }
                         let offset = SubstateOffset::Vault(VaultOffset::Vault);
                         node_pointer
                             .acquire_lock(offset.clone(), true, is_lock_fee, &mut self.track)
@@ -1180,6 +1175,7 @@ where
         node_id: RENodeId,
         offset: SubstateOffset,
         mutable: bool,
+        write_through: bool,
     ) -> Result<LockHandle, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
@@ -1235,7 +1231,7 @@ where
             ))
         {
             node_pointer
-                .acquire_lock(offset.clone(), mutable, false, &mut self.track)
+                .acquire_lock(offset.clone(), mutable, write_through, &mut self.track)
                 .map_err(RuntimeError::KernelError)?;
         }
 
@@ -1243,6 +1239,7 @@ where
             node_pointer,
             offset.clone(),
             mutable,
+            write_through,
         );
 
         for m in &mut self.modules {
@@ -1269,7 +1266,7 @@ where
             .map_err(RuntimeError::ModuleError)?;
         }
 
-        let (node_pointer, offset) = Self::current_frame_mut(&mut self.call_frames)
+        let (node_pointer, offset, write_through) = Self::current_frame_mut(&mut self.call_frames)
             .drop_lock(lock_handle)
             .map_err(RuntimeError::KernelError)?;
 
@@ -1280,7 +1277,7 @@ where
             ))
         {
             node_pointer
-                .release_lock(offset.clone(), false, self.track)
+                .release_lock(offset.clone(), write_through, self.track)
                 .map_err(RuntimeError::KernelError)?;
         }
 

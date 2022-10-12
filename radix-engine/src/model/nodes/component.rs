@@ -55,7 +55,7 @@ impl Component {
     {
         let node_id = RENodeId::Component(component_id);
         let offset = SubstateOffset::Component(ComponentOffset::Info);
-        let handle = system_api.lock_substate(node_id, offset, true)?;
+        let handle = system_api.lock_substate(node_id, offset, true, false)?;
 
         let rtn = match method {
             ComponentMethod::AddAccessCheck => {
@@ -76,7 +76,8 @@ impl Component {
                     };
 
                     let package_offset = SubstateOffset::Package(PackageOffset::Package);
-                    let handle = system_api.lock_substate(package_id, package_offset, false)?;
+                    let handle =
+                        system_api.lock_substate(package_id, package_offset, false, false)?;
                     let substate_ref = system_api.get_ref(handle)?;
                     let package = substate_ref.package();
                     let blueprint_abi = package.blueprint_abi(&blueprint_name).expect(&format!(

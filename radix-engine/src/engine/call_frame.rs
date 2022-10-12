@@ -7,6 +7,7 @@ pub struct SubstateLock {
     pub pointer: (RENodePointer, SubstateOffset),
     pub mutable: bool,
     pub owned_nodes: HashSet<RENodeId>,
+    pub write_through: bool,
 }
 
 // TODO: reduce fields visibility
@@ -38,6 +39,7 @@ impl CallFrame {
         node_pointer: RENodePointer,
         offset: SubstateOffset,
         mutable: bool,
+        write_through: bool,
     ) -> LockHandle {
         let lock_handle = self.next_lock_handle;
         self.locks.insert(
@@ -46,6 +48,7 @@ impl CallFrame {
                 pointer: (node_pointer, offset),
                 mutable,
                 owned_nodes: HashSet::new(),
+                write_through,
             },
         );
         self.next_lock_handle = self.next_lock_handle + 1;
@@ -62,7 +65,7 @@ impl CallFrame {
     pub fn drop_lock(
         &mut self,
         lock_handle: LockHandle,
-    ) -> Result<(RENodePointer, SubstateOffset), KernelError> {
+    ) -> Result<(RENodePointer, SubstateOffset, bool), KernelError> {
         let substate_lock = self
             .locks
             .remove(&lock_handle)
@@ -82,7 +85,11 @@ impl CallFrame {
                 .remove(&substate_lock.pointer.0.node_id());
         }
 
-        Ok(substate_lock.pointer)
+        Ok((
+            substate_lock.pointer.0,
+            substate_lock.pointer.1,
+            substate_lock.write_through,
+        ))
     }
 
     pub fn get_lock(&self, lock_handle: LockHandle) -> Result<&SubstateLock, KernelError> {
