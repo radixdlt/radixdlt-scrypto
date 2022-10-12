@@ -104,7 +104,7 @@ impl System {
                     .map_err(|e| InvokeError::Error(SystemError::InvalidRequestData(e)))?;
 
                 let mut substate_mut = system_api
-                    .get_mut(handle)
+                    .get_ref_mut(handle)
                     .map_err(InvokeError::Downstream)?;
                 let mut raw_mut = substate_mut.get_raw_mut();
                 raw_mut.system().epoch = epoch;

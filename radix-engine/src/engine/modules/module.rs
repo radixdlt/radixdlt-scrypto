@@ -28,10 +28,10 @@ pub enum SysCallInput<'a> {
         offset: &'a SubstateOffset,
         mutable: bool,
     },
-    ReadSubstate {
+    GetRef {
         lock_handle: &'a LockHandle,
     },
-    GetMut {
+    GetRefMut {
         lock_handle: &'a LockHandle,
     },
     DropLock {
@@ -68,11 +68,11 @@ pub enum SysCallOutput<'a> {
     LockSubstate {
         lock_handle: LockHandle,
     },
-    ReadSubstate {
+    GetRef {
         node_pointer: &'a RENodePointer,
         offset: &'a SubstateOffset,
     },
-    GetMut,
+    GetRefMut,
     DropLock,
     TakeSubstate {
         value: &'a ScryptoValue,

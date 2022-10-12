@@ -440,7 +440,7 @@ impl<'f, 's, R: FeeReserve> SubstateRefMut<'f, 's, R> {
         &self.offset
     }
 
-    pub fn flush(&mut self) -> Result<(), RuntimeError> {
+    pub fn flush(mut self) -> Result<(), RuntimeError> {
         let (new_global_references, new_children) = {
             let substate_ref_mut = self.get_raw_mut();
             substate_ref_mut.to_ref().references_and_owned_nodes()
@@ -478,26 +478,6 @@ impl<'f, 's, R: FeeReserve> SubstateRefMut<'f, 's, R> {
             .add_children(taken_nodes, &mut self.call_frames, &mut self.track);
 
         Ok(())
-    }
-
-    pub fn overwrite(&mut self, substate: Substate) -> Result<(), RuntimeError> {
-        let raw_mut = self.get_raw_mut();
-        match (raw_mut, substate) {
-            (RawSubstateRefMut::ComponentState(current), Substate::ComponentState(next)) => {
-                *current = next
-            }
-            (
-                RawSubstateRefMut::KeyValueStoreEntry(current),
-                Substate::KeyValueStoreEntry(next),
-            ) => *current = next,
-            (RawSubstateRefMut::NonFungible(current), Substate::NonFungible(next)) => {
-                *current = next
-            }
-            (RawSubstateRefMut::System(current), Substate::System(next)) => *current = next,
-            _ => return Err(RuntimeError::KernelError(KernelError::InvalidOverwrite)),
-        }
-
-        self.flush()
     }
 
     pub fn get_raw_mut(&mut self) -> RawSubstateRefMut {
@@ -560,10 +540,31 @@ pub enum RawSubstateRefMut<'a> {
 }
 
 impl<'a> RawSubstateRefMut<'a> {
+    pub fn non_fungible(&mut self) -> &mut NonFungibleSubstate {
+        match self {
+            RawSubstateRefMut::NonFungible(value) => *value,
+            _ => panic!("Not a non fungible"),
+        }
+    }
+
     pub fn resource_manager(&mut self) -> &mut ResourceManagerSubstate {
         match self {
             RawSubstateRefMut::ResourceManager(value) => *value,
             _ => panic!("Not resource manager"),
+        }
+    }
+
+    pub fn kv_store_entry(&mut self) -> &mut KeyValueStoreEntrySubstate {
+        match self {
+            RawSubstateRefMut::KeyValueStoreEntry(value) => *value,
+            _ => panic!("Not a key value store entry"),
+        }
+    }
+
+    pub fn component_state(&mut self) -> &mut ComponentStateSubstate {
+        match self {
+            RawSubstateRefMut::ComponentState(value) => *value,
+            _ => panic!("Not component state"),
         }
     }
 

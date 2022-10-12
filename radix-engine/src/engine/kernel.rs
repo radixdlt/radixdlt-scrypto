@@ -1314,7 +1314,7 @@ where
             m.pre_sys_call(
                 &mut self.track,
                 &mut self.call_frames,
-                SysCallInput::ReadSubstate {
+                SysCallInput::GetRef {
                     lock_handle: &lock_handle,
                 },
             )
@@ -1358,7 +1358,7 @@ where
             m.post_sys_call(
                 &mut self.track,
                 &mut self.call_frames,
-                SysCallOutput::ReadSubstate {
+                SysCallOutput::GetRef {
                     node_pointer: &node_pointer,
                     offset: &offset,
                 },
@@ -1369,7 +1369,7 @@ where
         node_pointer.borrow_substate(&offset, &mut self.call_frames, &mut self.track)
     }
 
-    fn get_mut<'f>(
+    fn get_ref_mut<'f>(
         &'f mut self,
         lock_handle: LockHandle,
     ) -> Result<SubstateRefMut<'f, 's, R>, RuntimeError> {
@@ -1377,7 +1377,7 @@ where
             m.pre_sys_call(
                 &mut self.track,
                 &mut self.call_frames,
-                SysCallInput::GetMut {
+                SysCallInput::GetRefMut {
                     lock_handle: &lock_handle,
                 },
             )
@@ -1428,7 +1428,7 @@ where
             m.post_sys_call(
                 &mut self.track,
                 &mut self.call_frames,
-                SysCallOutput::GetMut,
+                SysCallOutput::GetRefMut,
             )
             .map_err(RuntimeError::ModuleError)?;
         }
