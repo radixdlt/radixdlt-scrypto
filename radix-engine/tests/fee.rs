@@ -1,5 +1,5 @@
-use radix_engine::engine::ApplicationError;
 use radix_engine::engine::RuntimeError;
+use radix_engine::engine::{ApplicationError, KernelError, TrackError};
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::ledger::WriteableSubstateStore;
 use radix_engine::model::KeyValueStoreEntrySubstate;
@@ -122,11 +122,18 @@ fn should_be_rejected_when_lock_fee_with_temp_vault() {
             .build()
     });
 
-    receipt.expect_rejection();
+    receipt.expect_specific_rejection(|e| {
+        matches!(
+            e,
+            RuntimeError::KernelError(KernelError::TrackError(
+                TrackError::WriteThroughOnNewSubstate(..)
+            ))
+        )
+    });
 }
 
 #[test]
-fn should_be_rejected_when_query_vault_and_lock_fee() {
+fn should_be_success_when_query_vault_and_lock_fee() {
     let receipt = run_manifest(|component_address| {
         ManifestBuilder::new(&NetworkDefinition::simulator())
             .call_method(
@@ -137,7 +144,29 @@ fn should_be_rejected_when_query_vault_and_lock_fee() {
             .build()
     });
 
-    receipt.expect_rejection();
+    receipt.expect_commit_success();
+}
+
+#[test]
+fn should_be_rejected_when_mutate_vault_and_lock_fee() {
+    let receipt = run_manifest(|component_address| {
+        ManifestBuilder::new(&NetworkDefinition::simulator())
+            .call_method(
+                component_address,
+                "update_vault_and_lock_fee",
+                args!(Decimal::from(10)),
+            )
+            .build()
+    });
+
+    receipt.expect_specific_rejection(|e| {
+        matches!(
+            e,
+            RuntimeError::KernelError(KernelError::TrackError(
+                TrackError::WriteThroughOnUpdatedSubstate(..)
+            ))
+        )
+    });
 }
 
 #[test]

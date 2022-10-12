@@ -151,56 +151,25 @@ impl<'s> AppStateTrack<'s> {
 
     /// Returns a copy of the substate associated with the given address, if exists
     pub fn get_substate(&mut self, substate_id: &SubstateId) -> Option<Substate> {
-        self.substates
-            .entry(substate_id.clone())
-            .or_insert_with(|| {
-                // First, try to copy it from the base track
-                self.base_state_track
-                    .substates
-                    .get(substate_id)
-                    .cloned()
-                    .unwrap_or_else(|| {
-                        // If not found, load from the substate store
-                        self.base_state_track
-                            .substate_store
-                            .get_substate(substate_id)
-                            .map(|s| scrypto_encode(&s.substate))
-                    })
-            })
-            .as_ref()
-            .map(|x| {
-                scrypto_decode(x).expect(&format!("Failed to decode substate {:?}", substate_id))
-            })
-    }
-
-    /// Creates a new substate and updates an existing one
-    pub fn put_substate(&mut self, substate_id: SubstateId, substate: Substate) {
-        self.substates
-            .insert(substate_id, Some(scrypto_encode(&substate)));
-    }
-
-    /// Returns a copy of the substate associated with the given address from the base track
-    pub fn get_substate_from_base(&mut self, substate_id: &SubstateId) -> Option<Substate> {
+        // First, try to copy it from the base track
         self.base_state_track
             .substates
-            .entry(substate_id.clone())
-            .or_insert_with(|| {
-                // Load from the substate store
+            .get(substate_id)
+            .cloned()
+            .unwrap_or_else(|| {
+                // If not found, load from the substate store
                 self.base_state_track
                     .substate_store
                     .get_substate(substate_id)
                     .map(|s| scrypto_encode(&s.substate))
             })
-            .as_ref()
             .map(|x| {
-                scrypto_decode(x).expect(&format!("Failed to decode substate {:?}", substate_id))
+                scrypto_decode(&x).expect(&format!("Failed to decode substate {:?}", substate_id))
             })
     }
 
-    /// Creates a new substate and updates an existing one to the base track
-    pub fn put_substate_to_base(&mut self, substate_id: SubstateId, substate: Substate) {
-        assert!(!self.substates.contains_key(&substate_id));
-
+    /// Creates a new substate and updates an existing one
+    pub fn put_substate(&mut self, substate_id: SubstateId, substate: Substate) {
         self.base_state_track
             .substates
             .insert(substate_id, Some(scrypto_encode(&substate)));
@@ -211,11 +180,6 @@ impl<'s> AppStateTrack<'s> {
         self.base_state_track
             .substates
             .extend(self.substates.drain(RangeFull));
-    }
-
-    /// Rollback all state changes
-    pub fn rollback(&mut self) {
-        self.substates.clear();
     }
 
     /// Unwraps into the base state track

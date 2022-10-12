@@ -50,13 +50,17 @@ impl RENodePointer {
         write_through: bool,
         track: &mut Track<'s, R>,
     ) -> Result<(), KernelError> {
+        let substate_id = SubstateId(self.node_id(), offset);
+
         match self {
             RENodePointer::Store(..) => track
-                .acquire_lock(SubstateId(self.node_id(), offset), mutable, write_through)
+                .acquire_lock(substate_id, mutable, write_through)
                 .map_err(KernelError::TrackError),
             RENodePointer::Heap { .. } => {
                 if write_through {
-                    Err(KernelError::RENodeNotInTrack)
+                    Err(KernelError::TrackError(
+                        TrackError::WriteThroughOnNewSubstate(substate_id),
+                    ))
                 } else {
                     Ok(())
                 }

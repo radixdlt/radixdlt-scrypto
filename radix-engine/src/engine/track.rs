@@ -178,11 +178,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
     ) -> Result<(), TrackError> {
         // Load the substate from state track
         if !self.loaded_substates.contains_key(&substate_id) {
-            let maybe_substate = if write_through {
-                self.state_track.get_substate_from_base(&substate_id)
-            } else {
-                self.state_track.get_substate(&substate_id)
-            };
+            let maybe_substate = self.state_track.get_substate(&substate_id);
 
             if let Some(substate) = maybe_substate {
                 self.loaded_substates.insert(
@@ -269,7 +265,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             let node = self.loaded_nodes.remove(&node_id).unwrap();
             for (offset, substate) in node_to_substates(node) {
                 self.state_track
-                    .put_substate_to_base(SubstateId(node_id, offset), substate);
+                    .put_substate(SubstateId(node_id, offset), substate);
             }
         } else {
             self.loaded_substates.insert(substate_id, loaded_substate);
@@ -661,12 +657,11 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             for (id, substate) in nodes_to_substates(self.loaded_nodes.into_iter().collect()) {
                 self.state_track.put_substate(id, substate);
             }
-
-            self.state_track.commit();
         } else {
-            self.state_track.rollback();
             self.loaded_substates.clear();
         }
+
+        self.state_track.commit();
 
         // Close fee reserve
         let fee_summary = self.fee_reserve.finalize();
@@ -718,14 +713,14 @@ impl<'s, R: FeeReserve> Track<'s, R> {
 
                 let mut substate = self
                     .state_track
-                    .get_substate_from_base(&substate_id)
+                    .get_substate(&substate_id)
                     .expect("Failed to fetch a fee-locking vault");
                 substate
                     .vault_mut()
                     .0
                     .put(locked)
                     .expect("Failed to put a fee-locking vault");
-                self.state_track.put_substate_to_base(substate_id, substate);
+                self.state_track.put_substate(substate_id, substate);
 
                 *actual_fee_payments.entry(vault_id).or_default() += amount;
             }
