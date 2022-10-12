@@ -1,7 +1,7 @@
 use crate::engine::{HeapRENode, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::{
-    Bucket, InvokeError, MethodAuthorization, NonFungible, NonFungibleSubstate, Resource,
+    Bucket, InvokeError, NonFungible, NonFungibleSubstate, Resource,
     ResourceMethodRule::{Protected, Public},
     Vault,
 };
@@ -113,174 +113,6 @@ impl ResourceManager {
         Ok(resource_manager)
     }
 
-    pub fn get_vault_auth(&self, vault_fn: VaultMethod) -> &MethodAuthorization {
-        match self.info.vault_method_table.get(&vault_fn) {
-            None => &MethodAuthorization::Unsupported,
-            Some(Public) => &MethodAuthorization::AllowAll,
-            Some(Protected(auth_key)) => self
-                .info
-                .authorization
-                .get(auth_key)
-                .expect(&format!("Authorization for {:?} not specified", vault_fn))
-                .get_method_auth(),
-        }
-    }
-
-    pub fn get_bucket_auth(&self, bucket_method: BucketMethod) -> &MethodAuthorization {
-        match self.info.bucket_method_table.get(&bucket_method) {
-            None => &MethodAuthorization::Unsupported,
-            Some(Public) => &MethodAuthorization::AllowAll,
-            Some(Protected(method)) => self
-                .info
-                .authorization
-                .get(method)
-                .expect(&format!(
-                    "Authorization for {:?} not specified",
-                    bucket_method
-                ))
-                .get_method_auth(),
-        }
-    }
-
-    pub fn get_auth(
-        &self,
-        method: ResourceManagerMethod,
-        args: &ScryptoValue,
-    ) -> &MethodAuthorization {
-        match &method {
-            ResourceManagerMethod::UpdateAuth => {
-                // FIXME we can't assume the input always match the function identifier
-                // especially for the auth module code path
-                let input: ResourceManagerUpdateAuthInput = scrypto_decode(&args.raw).unwrap();
-                match self.info.authorization.get(&input.method) {
-                    None => &MethodAuthorization::Unsupported,
-                    Some(entry) => {
-                        entry.get_update_auth(MethodAccessRuleMethod::Update(input.access_rule))
-                    }
-                }
-            }
-            ResourceManagerMethod::LockAuth => {
-                // FIXME we can't assume the input always match the function identifier
-                // especially for the auth module code path
-                let input: ResourceManagerLockAuthInput = scrypto_decode(&args.raw).unwrap();
-                match self.info.authorization.get(&input.method) {
-                    None => &MethodAuthorization::Unsupported,
-                    Some(entry) => entry.get_update_auth(MethodAccessRuleMethod::Lock()),
-                }
-            }
-            ResourceManagerMethod::Burn => self
-                .info
-                .authorization
-                .get(&ResourceMethodAuthKey::Burn)
-                .expect(&format!("Authorization for {:?} not specified", method))
-                .get_method_auth(),
-            _ => match self.info.method_table.get(&method) {
-                None => &MethodAuthorization::Unsupported,
-                Some(Public) => &MethodAuthorization::AllowAll,
-                Some(Protected(method)) => self
-                    .info
-                    .authorization
-                    .get(method)
-                    .expect(&format!("Authorization for {:?} not specified", method))
-                    .get_method_auth(),
-            },
-        }
-    }
-
-    pub fn resource_type(&self) -> ResourceType {
-        self.info.resource_type
-    }
-
-    pub fn metadata(&self) -> &HashMap<String, String> {
-        &self.info.metadata
-    }
-
-    pub fn total_supply(&self) -> Decimal {
-        self.info.total_supply
-    }
-
-    pub fn mint(
-        &mut self,
-        mint_params: MintParams,
-        self_address: ResourceAddress,
-    ) -> Result<(Resource, HashMap<NonFungibleId, NonFungible>), InvokeError<ResourceManagerError>>
-    {
-        match mint_params {
-            MintParams::Fungible { amount } => self.mint_fungible(amount, self_address),
-            MintParams::NonFungible { entries } => self.mint_non_fungibles(entries, self_address),
-        }
-    }
-
-    pub fn mint_fungible(
-        &mut self,
-        amount: Decimal,
-        self_address: ResourceAddress,
-    ) -> Result<(Resource, HashMap<NonFungibleId, NonFungible>), InvokeError<ResourceManagerError>>
-    {
-        if let ResourceType::Fungible { divisibility } = self.info.resource_type {
-            // check amount
-            self.check_amount(amount)?;
-
-            // Practically impossible to overflow the Decimal type with this limit in place.
-            if amount > dec!("1000000000000000000") {
-                return Err(InvokeError::Error(
-                    ResourceManagerError::MaxMintAmountExceeded,
-                ));
-            }
-
-            self.info.total_supply += amount;
-
-            Ok((
-                Resource::new_fungible(self_address, divisibility, amount),
-                HashMap::new(),
-            ))
-        } else {
-            Err(InvokeError::Error(
-                ResourceManagerError::ResourceTypeDoesNotMatch,
-            ))
-        }
-    }
-
-    pub fn mint_non_fungibles(
-        &mut self,
-        entries: HashMap<NonFungibleId, (Vec<u8>, Vec<u8>)>,
-        self_address: ResourceAddress,
-    ) -> Result<(Resource, HashMap<NonFungibleId, NonFungible>), InvokeError<ResourceManagerError>>
-    {
-        // check resource type
-        if !matches!(self.info.resource_type, ResourceType::NonFungible) {
-            return Err(InvokeError::Error(
-                ResourceManagerError::ResourceTypeDoesNotMatch,
-            ));
-        }
-
-        // check amount
-        let amount: Decimal = entries.len().into();
-        self.check_amount(amount)?;
-
-        self.info.total_supply += amount;
-
-        // Allocate non-fungibles
-        let mut ids = BTreeSet::new();
-        let mut non_fungibles = HashMap::new();
-        for (id, data) in entries {
-            let non_fungible = NonFungible::new(data.0, data.1);
-            ids.insert(id.clone());
-            non_fungibles.insert(id, non_fungible);
-        }
-
-        Ok((Resource::new_non_fungible(self_address, ids), non_fungibles))
-    }
-
-    fn update_metadata(
-        &mut self,
-        new_metadata: HashMap<String, String>,
-    ) -> Result<(), InvokeError<ResourceManagerError>> {
-        self.info.metadata = new_metadata;
-
-        Ok(())
-    }
-
     fn check_amount(&self, amount: Decimal) -> Result<(), InvokeError<ResourceManagerError>> {
         let divisibility = self.info.resource_type.divisibility();
 
@@ -331,17 +163,20 @@ impl ResourceManager {
                                 let offset = SubstateOffset::NonFungibleStore(
                                     NonFungibleStoreOffset::Entry(non_fungible_id.clone()),
                                 );
-                                let handle = system_api.lock_substate(
+                                let non_fungible_handle = system_api.lock_substate(
                                     non_fungible_store_node_id,
                                     offset,
                                     true,
                                 )?;
-                                let scrypto_value =
-                                    ScryptoValue::from_typed(&NonFungibleSubstate(Some(
-                                        NonFungible::new(data.0.clone(), data.1.clone()), // FIXME: verify data
-                                    )));
-                                system_api.write(handle, scrypto_value)?;
-                                system_api.drop_lock(handle)?;
+                                let mut substate_mut =
+                                    system_api.get_ref_mut(non_fungible_handle)?;
+                                let mut raw_mut = substate_mut.get_raw_mut();
+                                let non_fungible_mut = raw_mut.non_fungible();
+                                *non_fungible_mut = NonFungibleSubstate(Some(
+                                    NonFungible::new(data.0.clone(), data.1.clone()), // FIXME: verify data
+                                ));
+                                substate_mut.flush()?;
+                                system_api.drop_lock(non_fungible_handle)?;
                             }
                             resource_manager.info.total_supply = entries.len().into();
                         } else {
@@ -419,6 +254,10 @@ impl ResourceManager {
         I: WasmInstance,
         R: FeeReserve,
     {
+        let node_id = RENodeId::ResourceManager(resource_address);
+        let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
+        let resman_handle = system_api.lock_substate(node_id, offset, true)?;
+
         let rtn = match method {
             ResourceManagerMethod::Burn => {
                 let input: ResourceManagerBurnInput = scrypto_decode(&args.raw)
@@ -428,24 +267,30 @@ impl ResourceManager {
                     .node_drop(RENodeId::Bucket(input.bucket.0))?
                     .into();
 
-                let mut node_ref =
-                    system_api.borrow_node_mut(&RENodeId::ResourceManager(resource_address))?;
-                let resource_manager = node_ref.resource_manager_mut();
-
                 // Check if resource matches
+                // TODO: Move this check into actor check
                 if bucket.resource_address() != resource_address {
                     return Err(InvokeError::Error(
                         ResourceManagerError::MismatchingBucketResource,
                     ));
                 }
-
                 // Update total supply
                 // TODO: there might be better for maintaining total supply, especially for non-fungibles
                 // where we can leverage capabilities of key-value map.
-                resource_manager.info.total_supply -= bucket.total_amount();
+
+                // Update total supply
+                {
+                    let mut substate_mut = system_api.get_ref_mut(resman_handle)?;
+                    let mut raw_mut = substate_mut.get_raw_mut();
+                    let resource_manager = raw_mut.resource_manager();
+                    resource_manager.total_supply -= bucket.total_amount();
+                    substate_mut.flush()?;
+                }
 
                 // Burn non-fungible
-                if let Some(non_fungible_store_id) = resource_manager.info.non_fungible_store_id {
+                let substate_ref = system_api.get_ref(resman_handle)?;
+                let resource_manager = substate_ref.resource_manager();
+                if let Some(non_fungible_store_id) = resource_manager.non_fungible_store_id {
                     let node_id = RENodeId::NonFungibleStore(non_fungible_store_id);
 
                     for id in bucket
@@ -454,196 +299,183 @@ impl ResourceManager {
                     {
                         let offset =
                             SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(id));
-                        let handle = system_api.lock_substate(node_id, offset, true)?;
-                        system_api
-                            .write(handle, ScryptoValue::from_typed(&NonFungibleSubstate(None)))?;
-                        system_api.drop_lock(handle)?;
+                        let non_fungible_handle =
+                            system_api.lock_substate(node_id, offset, true)?;
+                        let mut substate_mut = system_api.get_ref_mut(non_fungible_handle)?;
+                        let mut raw_mut = substate_mut.get_raw_mut();
+                        let non_fungible_mut = raw_mut.non_fungible();
+
+                        *non_fungible_mut = NonFungibleSubstate(None);
+                        substate_mut.flush()?;
+                        system_api.drop_lock(non_fungible_handle)?;
                     }
                 }
 
-                Ok(ScryptoValue::from_typed(&()))
+                ScryptoValue::from_typed(&())
             }
             ResourceManagerMethod::UpdateAuth => {
                 let input: ResourceManagerUpdateAuthInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))?;
-                let mut node_ref =
-                    system_api.borrow_node_mut(&RENodeId::ResourceManager(resource_address))?;
-                let resource_manager = node_ref.resource_manager_mut();
-
-                let method_entry = resource_manager
-                    .info
+                let mut substate_mut = system_api.get_ref_mut(resman_handle)?;
+                let mut raw_mut = substate_mut.get_raw_mut();
+                let method_entry = raw_mut
+                    .resource_manager()
                     .authorization
                     .get_mut(&input.method)
                     .expect(&format!(
                         "Authorization for {:?} not specified",
                         input.method
                     ));
-                method_entry.main(MethodAccessRuleMethod::Update(input.access_rule))
+                method_entry.main(MethodAccessRuleMethod::Update(input.access_rule))?;
+                substate_mut.flush()?;
+
+                ScryptoValue::unit()
             }
             ResourceManagerMethod::LockAuth => {
                 let input: ResourceManagerLockAuthInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))?;
-                let mut node_ref =
-                    system_api.borrow_node_mut(&RENodeId::ResourceManager(resource_address))?;
-                let resource_manager = node_ref.resource_manager_mut();
-
-                let method_entry = resource_manager
-                    .info
+                let mut substate_mut = system_api.get_ref_mut(resman_handle)?;
+                let mut raw_mut = substate_mut.get_raw_mut();
+                let method_entry = raw_mut
+                    .resource_manager()
                     .authorization
                     .get_mut(&input.method)
                     .expect(&format!(
                         "Authorization for {:?} not specified",
                         input.method
                     ));
-                method_entry.main(MethodAccessRuleMethod::Lock())
+                method_entry.main(MethodAccessRuleMethod::Lock())?;
+                substate_mut.flush()?;
+                ScryptoValue::unit()
             }
             ResourceManagerMethod::CreateVault => {
                 let _: ResourceManagerCreateVaultInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))?;
-                let mut node_ref =
-                    system_api.borrow_node_mut(&RENodeId::ResourceManager(resource_address))?;
-                let resource_manager = node_ref.resource_manager_mut();
 
-                let resource =
-                    Resource::new_empty(resource_address, resource_manager.resource_type());
+                let substate_ref = system_api.get_ref(resman_handle)?;
+                let resource_type = substate_ref.resource_manager().resource_type;
+                let resource = Resource::new_empty(resource_address, resource_type);
                 let vault_id = system_api
                     .node_create(HeapRENode::Vault(Vault::new(resource)))?
                     .into();
-                Ok(ScryptoValue::from_typed(&scrypto::resource::Vault(
-                    vault_id,
-                )))
+                ScryptoValue::from_typed(&scrypto::resource::Vault(vault_id))
             }
             ResourceManagerMethod::CreateBucket => {
                 let _: ResourceManagerCreateBucketInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))?;
-                let mut node_ref =
-                    system_api.borrow_node_mut(&RENodeId::ResourceManager(resource_address))?;
-                let resource_manager = node_ref.resource_manager_mut();
+                let substate_ref = system_api.get_ref(resman_handle)?;
+                let resource_type = substate_ref.resource_manager().resource_type;
 
-                let container =
-                    Resource::new_empty(resource_address, resource_manager.resource_type());
+                let container = Resource::new_empty(resource_address, resource_type);
                 let bucket_id = system_api
                     .node_create(HeapRENode::Bucket(Bucket::new(container)))?
                     .into();
-                Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
-                    bucket_id,
-                )))
+                ScryptoValue::from_typed(&scrypto::resource::Bucket(bucket_id))
             }
             ResourceManagerMethod::Mint => {
                 let input: ResourceManagerMintInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))?;
 
-                let mut node_ref =
-                    system_api.borrow_node_mut(&RENodeId::ResourceManager(resource_address))?;
-                let resource_manager = node_ref.resource_manager_mut();
-                let (resource, non_fungibles) =
-                    resource_manager.mint(input.mint_params, resource_address)?;
-                let non_fungible_store_id = resource_manager.info.non_fungible_store_id;
+                let (resource, non_fungibles) = {
+                    let mut substate_mut = system_api.get_ref_mut(resman_handle)?;
+                    let mut raw_mut = substate_mut.get_raw_mut();
+                    let resource_manager = raw_mut.resource_manager();
+                    let result = resource_manager.mint(input.mint_params, resource_address)?;
+                    substate_mut.flush()?;
+                    result
+                };
 
                 let bucket_id = system_api
                     .node_create(HeapRENode::Bucket(Bucket::new(resource)))?
                     .into();
 
+                let non_fungible_store_id = {
+                    let substate_ref = system_api.get_ref(resman_handle)?;
+                    let resource_manager = substate_ref.resource_manager();
+                    resource_manager.non_fungible_store_id.clone()
+                };
+
                 for (id, non_fungible) in non_fungibles {
                     let node_id = RENodeId::NonFungibleStore(non_fungible_store_id.unwrap());
                     let offset =
                         SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(id.clone()));
-                    let lock_handle = system_api.lock_substate(node_id, offset, true)?;
-                    let value = system_api.read(lock_handle)?;
-                    let wrapper: NonFungibleSubstate =
-                        scrypto_decode(&value.raw).expect("Failed to decode NonFungibleSubstate");
-                    if wrapper.0.is_some() {
-                        return Err(InvokeError::Error(
-                            ResourceManagerError::NonFungibleAlreadyExists(
-                                NonFungibleAddress::new(resource_address, id.clone()),
-                            ),
-                        ));
-                    }
-                    system_api.write(
-                        lock_handle,
-                        ScryptoValue::from_typed(&NonFungibleSubstate(Some(non_fungible))),
-                    )?;
+                    let non_fungible_handle = system_api.lock_substate(node_id, offset, true)?;
 
-                    system_api.drop_lock(lock_handle)?;
+                    {
+                        let mut substate_mut = system_api.get_ref_mut(non_fungible_handle)?;
+                        let mut raw_mut = substate_mut.get_raw_mut();
+                        let non_fungible_mut = raw_mut.non_fungible();
+
+                        if non_fungible_mut.0.is_some() {
+                            return Err(InvokeError::Error(
+                                ResourceManagerError::NonFungibleAlreadyExists(
+                                    NonFungibleAddress::new(resource_address, id.clone()),
+                                ),
+                            ));
+                        }
+
+                        *non_fungible_mut = NonFungibleSubstate(Some(non_fungible));
+                        substate_mut.flush()?;
+                    }
+
+                    system_api.drop_lock(non_fungible_handle)?;
                 }
 
-                Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
-                    bucket_id,
-                )))
+                ScryptoValue::from_typed(&scrypto::resource::Bucket(bucket_id))
             }
             ResourceManagerMethod::GetMetadata => {
                 let _: ResourceManagerGetMetadataInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))?;
-                let mut node_ref =
-                    system_api.borrow_node_mut(&RENodeId::ResourceManager(resource_address))?;
-                let resource_manager = node_ref.resource_manager_mut();
-
-                Ok(ScryptoValue::from_typed(&resource_manager.info.metadata))
+                let substate_ref = system_api.get_ref(resman_handle)?;
+                let metadata = &substate_ref.resource_manager().metadata;
+                ScryptoValue::from_typed(metadata)
             }
             ResourceManagerMethod::GetResourceType => {
                 let _: ResourceManagerGetResourceTypeInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))?;
-                let mut node_ref =
-                    system_api.borrow_node_mut(&RENodeId::ResourceManager(resource_address))?;
-                let resource_manager = node_ref.resource_manager_mut();
-
-                Ok(ScryptoValue::from_typed(
-                    &resource_manager.info.resource_type,
-                ))
+                let substate_ref = system_api.get_ref(resman_handle)?;
+                let resource_type = &substate_ref.resource_manager().resource_type;
+                ScryptoValue::from_typed(resource_type)
             }
             ResourceManagerMethod::GetTotalSupply => {
                 let _: ResourceManagerGetTotalSupplyInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))?;
-                let mut node_ref =
-                    system_api.borrow_node_mut(&RENodeId::ResourceManager(resource_address))?;
-                let resource_manager = node_ref.resource_manager_mut();
-
-                Ok(ScryptoValue::from_typed(
-                    &resource_manager.info.total_supply,
-                ))
+                let substate_ref = system_api.get_ref(resman_handle)?;
+                let total_supply = &substate_ref.resource_manager().total_supply;
+                ScryptoValue::from_typed(total_supply)
             }
             ResourceManagerMethod::UpdateMetadata => {
                 let input: ResourceManagerUpdateMetadataInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))?;
-                let mut node_ref =
-                    system_api.borrow_node_mut(&RENodeId::ResourceManager(resource_address))?;
-                let resource_manager = node_ref.resource_manager_mut();
 
-                resource_manager.update_metadata(input.metadata)?;
-                Ok(ScryptoValue::from_typed(&()))
+                let mut substate_mut = system_api.get_ref_mut(resman_handle)?;
+                let mut raw_mut = substate_mut.get_raw_mut();
+                raw_mut.resource_manager().update_metadata(input.metadata)?;
+                substate_mut.flush()?;
+
+                ScryptoValue::from_typed(&())
             }
             ResourceManagerMethod::UpdateNonFungibleData => {
                 let input: ResourceManagerUpdateNonFungibleDataInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))?;
-                let non_fungible_store_id = {
-                    let mut node_ref =
-                        system_api.borrow_node_mut(&RENodeId::ResourceManager(resource_address))?;
-                    let resource_manager = node_ref.resource_manager_mut();
-                    resource_manager
-                        .info
-                        .non_fungible_store_id
-                        .ok_or(InvokeError::Error(ResourceManagerError::NotNonFungible))?
-                };
+
+                let substate_ref = system_api.get_ref(resman_handle)?;
+                let resource_manager = substate_ref.resource_manager();
+                let non_fungible_store_id = resource_manager
+                    .non_fungible_store_id
+                    .ok_or(InvokeError::Error(ResourceManagerError::NotNonFungible))?;
 
                 let node_id = RENodeId::NonFungibleStore(non_fungible_store_id);
                 let offset = SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(
                     input.id.clone(),
                 ));
 
-                let lock_handle = system_api.lock_substate(node_id, offset, true)?;
-
-                // Read current value
-                let value = system_api.read(lock_handle)?;
-                let substate: NonFungibleSubstate =
-                    scrypto_decode(&value.raw).expect("Failed to decode NonFungibleSubstate");
-
-                // Write new value
-                if let Some(mut non_fungible) = substate.0 {
+                let non_fungible_handle = system_api.lock_substate(node_id, offset, true)?;
+                let mut substate_mut = system_api.get_ref_mut(non_fungible_handle)?;
+                let mut raw_mut = substate_mut.get_raw_mut();
+                let non_fungible_mut = raw_mut.non_fungible();
+                if let Some(ref mut non_fungible) = non_fungible_mut.0 {
                     non_fungible.set_mutable_data(input.data);
-                    system_api.write(
-                        lock_handle,
-                        ScryptoValue::from_typed(&NonFungibleSubstate(Some(non_fungible))),
-                    )?;
                 } else {
                     let non_fungible_address =
                         NonFungibleAddress::new(resource_address.clone(), input.id);
@@ -651,47 +483,38 @@ impl ResourceManager {
                         ResourceManagerError::NonFungibleNotFound(non_fungible_address.clone()),
                     ));
                 }
+                substate_mut.flush()?;
 
-                system_api.drop_lock(lock_handle)?;
+                system_api.drop_lock(non_fungible_handle)?;
 
-                Ok(ScryptoValue::from_typed(&()))
+                ScryptoValue::from_typed(&())
             }
             ResourceManagerMethod::NonFungibleExists => {
                 let input: ResourceManagerNonFungibleExistsInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))?;
-                let non_fungible_store_id = {
-                    let mut node_ref =
-                        system_api.borrow_node_mut(&RENodeId::ResourceManager(resource_address))?;
-                    let resource_manager = node_ref.resource_manager_mut();
-                    resource_manager
-                        .info
-                        .non_fungible_store_id
-                        .ok_or(InvokeError::Error(ResourceManagerError::NotNonFungible))?
-                };
+                let substate_ref = system_api.get_ref(resman_handle)?;
+                let resource_manager = substate_ref.resource_manager();
+                let non_fungible_store_id = resource_manager
+                    .non_fungible_store_id
+                    .ok_or(InvokeError::Error(ResourceManagerError::NotNonFungible))?;
 
                 let node_id = RENodeId::NonFungibleStore(non_fungible_store_id);
                 let offset =
                     SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(input.id));
-                let lock_handle = system_api.lock_substate(node_id, offset, false)?;
-                let value = system_api.read(lock_handle)?;
-                system_api.drop_lock(lock_handle)?;
+                let non_fungible_handle = system_api.lock_substate(node_id, offset, false)?;
+                let substate = system_api.get_ref(non_fungible_handle)?;
+                let exists = substate.non_fungible().0.is_some();
 
-                let wrapper: NonFungibleSubstate =
-                    scrypto_decode(&value.raw).expect("Failed to decode NonFungibleSubstate");
-                Ok(ScryptoValue::from_typed(&wrapper.0.is_some()))
+                ScryptoValue::from_typed(&exists)
             }
             ResourceManagerMethod::GetNonFungible => {
                 let input: ResourceManagerGetNonFungibleInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))?;
-                let non_fungible_store_id = {
-                    let mut node_ref =
-                        system_api.borrow_node_mut(&RENodeId::ResourceManager(resource_address))?;
-                    let resource_manager = node_ref.resource_manager_mut();
-                    resource_manager
-                        .info
-                        .non_fungible_store_id
-                        .ok_or(InvokeError::Error(ResourceManagerError::NotNonFungible))?
-                };
+                let substate_ref = system_api.get_ref(resman_handle)?;
+                let resource_manager = substate_ref.resource_manager();
+                let non_fungible_store_id = resource_manager
+                    .non_fungible_store_id
+                    .ok_or(InvokeError::Error(ResourceManagerError::NotNonFungible))?;
 
                 let non_fungible_address =
                     NonFungibleAddress::new(resource_address.clone(), input.id.clone());
@@ -699,21 +522,21 @@ impl ResourceManager {
                 let node_id = RENodeId::NonFungibleStore(non_fungible_store_id);
                 let offset =
                     SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(input.id));
-                let lock_handle = system_api.lock_substate(node_id, offset, false)?;
-                let value = system_api.read(lock_handle)?;
-                system_api.drop_lock(lock_handle)?;
-
-                let wrapper: NonFungibleSubstate =
-                    scrypto_decode(&value.raw).expect("Failed to decode NonFungibleSubstate");
-                let non_fungible = wrapper.0.ok_or(InvokeError::Error(
-                    ResourceManagerError::NonFungibleNotFound(non_fungible_address),
-                ))?;
-                Ok(ScryptoValue::from_typed(&[
-                    non_fungible.immutable_data(),
-                    non_fungible.mutable_data(),
-                ]))
+                let non_fungible_handle = system_api.lock_substate(node_id, offset, false)?;
+                let non_fungible_ref = system_api.get_ref(non_fungible_handle)?;
+                let wrapper = non_fungible_ref.non_fungible();
+                if let Some(non_fungible) = wrapper.0.as_ref() {
+                    ScryptoValue::from_typed(&[
+                        non_fungible.immutable_data(),
+                        non_fungible.mutable_data(),
+                    ])
+                } else {
+                    return Err(InvokeError::Error(
+                        ResourceManagerError::NonFungibleNotFound(non_fungible_address),
+                    ));
+                }
             }
-        }?;
+        };
 
         Ok(rtn)
     }

@@ -279,7 +279,6 @@ impl Bucket {
                 let node_ref = system_api.borrow_node(&node_id)?;
                 let bucket = node_ref.bucket();
                 let resource_address = bucket.resource_address();
-
                 let bucket_id = match node_id {
                     RENodeId::Bucket(bucket_id) => bucket_id,
                     _ => panic!("Unexpected"),

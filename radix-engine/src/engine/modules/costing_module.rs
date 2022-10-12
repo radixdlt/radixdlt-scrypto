@@ -1,7 +1,12 @@
 use crate::engine::*;
-use crate::fee::{FeeReserve, SystemApiCostingEntry};
+use crate::fee::{FeeReserve, FeeReserveError, SystemApiCostingEntry};
 use crate::model::Resource;
 use crate::types::*;
+
+#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
+pub enum CostingError {
+    FeeReserveError(FeeReserveError),
+}
 
 #[derive(Default)]
 pub struct CostingModule;
@@ -10,12 +15,12 @@ impl<R: FeeReserve> Module<R> for CostingModule {
     fn pre_sys_call(
         &mut self,
         track: &mut Track<R>,
-        _heap: &mut Vec<CallFrame>,
+        _call_frames: &mut Vec<CallFrame>,
         input: SysCallInput,
     ) -> Result<(), ModuleError> {
         match input {
             SysCallInput::Invoke {
-                function_identifier,
+                fn_ident,
                 input,
                 depth,
             } => {
@@ -26,21 +31,21 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                             track
                                 .fee_table
                                 .system_api_cost(SystemApiCostingEntry::Invoke {
-                                    function_identifier: function_identifier.clone(),
+                                    fn_ident: fn_ident.clone(),
                                     input: &input,
                                 }),
                             "invoke_function",
                             false,
                         )
-                        .map_err(ModuleError::CostingError)?;
+                        .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
                     track
                         .fee_reserve
                         .consume(
-                            track.fee_table.run_fn_cost(&function_identifier, &input),
+                            track.fee_table.run_fn_cost(&fn_ident, &input),
                             "run_function",
                             false,
                         )
-                        .map_err(ModuleError::CostingError)?;
+                        .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
                 }
             }
             SysCallInput::ReadOwnedNodes => {
@@ -53,7 +58,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                         "read_owned_nodes",
                         false,
                     )
-                    .map_err(ModuleError::CostingError)?;
+                    .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
             }
             SysCallInput::BorrowNode { node_id } => {
                 track
@@ -128,7 +133,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                         "borrow_node",
                         false,
                     )
-                    .map_err(ModuleError::CostingError)?;
+                    .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
             }
             SysCallInput::DropNode { .. } => {
                 track
@@ -140,7 +145,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                         "drop_node",
                         false,
                     )
-                    .map_err(ModuleError::CostingError)?;
+                    .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
             }
             SysCallInput::CreateNode { .. } => {
                 // Costing
@@ -155,7 +160,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                         "create_node",
                         false,
                     )
-                    .map_err(ModuleError::CostingError)?;
+                    .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
             }
             SysCallInput::GlobalizeNode { .. } => {
                 // Costing
@@ -170,7 +175,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                         "globalize_node",
                         false,
                     )
-                    .map_err(ModuleError::CostingError)?;
+                    .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
             }
             SysCallInput::LockSubstate { .. } => {
                 // Costing
@@ -185,9 +190,9 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                         "lock_substate",
                         false,
                     )
-                    .map_err(ModuleError::CostingError)?;
+                    .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
             }
-            SysCallInput::ReadSubstate { .. } => {
+            SysCallInput::GetRef { .. } => {
                 // Costing
                 track
                     .fee_reserve
@@ -200,9 +205,9 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                         "read_substate",
                         false,
                     )
-                    .map_err(ModuleError::CostingError)?;
+                    .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
             }
-            SysCallInput::WriteSubstate { .. } => {
+            SysCallInput::GetRefMut { .. } => {
                 // Costing
                 track
                     .fee_reserve
@@ -215,7 +220,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                         "write_substate",
                         false,
                     )
-                    .map_err(ModuleError::CostingError)?;
+                    .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
             }
             SysCallInput::DropLock { .. } => {
                 // Costing
@@ -228,7 +233,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                         "drop_lock",
                         false,
                     )
-                    .map_err(ModuleError::CostingError)?;
+                    .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
             }
             SysCallInput::TakeSubstate { .. } => {
                 // Costing
@@ -243,7 +248,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                         "take_substate",
                         false,
                     )
-                    .map_err(ModuleError::CostingError)?;
+                    .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
             }
             SysCallInput::ReadTransactionHash => {
                 track
@@ -255,7 +260,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                         "read_transaction_hash",
                         false,
                     )
-                    .map_err(ModuleError::CostingError)?;
+                    .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
             }
             SysCallInput::ReadBlob { .. } => {
                 track
@@ -267,7 +272,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                         "read_blob",
                         false,
                     )
-                    .map_err(ModuleError::CostingError)?;
+                    .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
             }
             SysCallInput::GenerateUuid => {
                 track
@@ -279,7 +284,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                         "generate_uuid",
                         false,
                     )
-                    .map_err(ModuleError::CostingError)?;
+                    .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
             }
             SysCallInput::EmitLog { message, .. } => {
                 track
@@ -293,7 +298,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                         "emit_log",
                         false,
                     )
-                    .map_err(ModuleError::CostingError)?;
+                    .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
             }
         }
 
@@ -303,7 +308,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
     fn post_sys_call(
         &mut self,
         _track: &mut Track<R>,
-        _heap: &mut Vec<CallFrame>,
+        _call_frames: &mut Vec<CallFrame>,
         _output: SysCallOutput,
     ) -> Result<(), ModuleError> {
         Ok(())
@@ -312,7 +317,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
     fn on_wasm_instantiation(
         &mut self,
         track: &mut Track<R>,
-        _heap: &mut Vec<CallFrame>,
+        _call_frames: &mut Vec<CallFrame>,
         code: &[u8],
     ) -> Result<(), ModuleError> {
         track
@@ -322,25 +327,25 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                 "instantiate_wasm",
                 false,
             )
-            .map_err(ModuleError::CostingError)
+            .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))
     }
 
     fn on_wasm_costing(
         &mut self,
         track: &mut Track<R>,
-        _heap: &mut Vec<CallFrame>,
+        _call_frames: &mut Vec<CallFrame>,
         units: u32,
     ) -> Result<(), ModuleError> {
         track
             .fee_reserve
             .consume(units, "run_wasm", false)
-            .map_err(ModuleError::CostingError)
+            .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))
     }
 
     fn on_lock_fee(
         &mut self,
         track: &mut Track<R>,
-        _heap: &mut Vec<CallFrame>,
+        _call_frames: &mut Vec<CallFrame>,
         vault_id: VaultId,
         fee: Resource,
         contingent: bool,
@@ -348,6 +353,6 @@ impl<R: FeeReserve> Module<R> for CostingModule {
         track
             .fee_reserve
             .repay(vault_id, fee, contingent)
-            .map_err(ModuleError::CostingError)
+            .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))
     }
 }

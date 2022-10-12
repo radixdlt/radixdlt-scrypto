@@ -49,7 +49,7 @@ impl SubstateProperties {
             SubstateOffset::AuthZone(..) => false,
             SubstateOffset::Component(ComponentOffset::State) => true,
             SubstateOffset::Component(ComponentOffset::Info) => false,
-            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager) => false,
+            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager) => true,
             SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)) => true,
             SubstateOffset::KeyValueStore(KeyValueStoreOffset::Space) => false,
             SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(..)) => false,

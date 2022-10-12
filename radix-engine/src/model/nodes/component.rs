@@ -54,6 +54,8 @@ impl Component {
         R: FeeReserve,
     {
         let node_id = RENodeId::Component(component_id);
+        let offset = SubstateOffset::Component(ComponentOffset::Info);
+        let handle = system_api.lock_substate(node_id, offset, true)?;
 
         let rtn = match method {
             ComponentMethod::AddAccessCheck => {
@@ -63,17 +65,20 @@ impl Component {
                 // Abi checks
                 {
                     let (package_id, blueprint_name) = {
-                        let mut node_ref = system_api.borrow_node(&node_id)?;
-                        let component = node_ref.component();
-                        let blueprint_name = component.info.blueprint_name.to_owned();
+                        let substate_ref = system_api.get_ref(handle)?;
+                        let component_info = substate_ref.component_info();
+                        let package_address = component_info.package_address;
+                        let blueprint_name = component_info.blueprint_name.to_owned();
                         (
-                            RENodeId::Package(component.info.package_address),
+                            RENodeId::Global(GlobalAddress::Package(package_address)),
                             blueprint_name,
                         )
                     };
 
-                    let mut node_ref = system_api.borrow_node(&package_id)?;
-                    let package = node_ref.package();
+                    let package_offset = SubstateOffset::Package(PackageOffset::Package);
+                    let handle = system_api.lock_substate(package_id, package_offset, false)?;
+                    let substate_ref = system_api.get_ref(handle)?;
+                    let package = substate_ref.package();
                     let blueprint_abi = package.blueprint_abi(&blueprint_name).expect(&format!(
                         "Blueprint {} is not found in package node {:?}",
                         blueprint_name, package_id
@@ -87,9 +92,13 @@ impl Component {
                     }
                 }
 
-                let mut node = system_api.borrow_node_mut(&node_id)?;
-                let component = node.component_mut();
-                component.info.access_rules.push(input.access_rules);
+                let mut substate_ref_mut = system_api.get_ref_mut(handle)?;
+                let mut raw_mut = substate_ref_mut.get_raw_mut();
+                raw_mut
+                    .component_info()
+                    .access_rules
+                    .push(input.access_rules);
+                substate_ref_mut.flush()?;
 
                 ScryptoValue::from_typed(&())
             }

@@ -1,4 +1,4 @@
-use radix_engine::engine::{KernelError, RuntimeError, TrackError};
+use radix_engine::engine::{KernelError, LockState, RuntimeError, TrackError};
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
 use scrypto::address::Bech32Decoder;
@@ -108,11 +108,12 @@ fn mut_reentrancy_should_not_be_possible() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::TrackError(TrackError::NotAvailable(
+            RuntimeError::KernelError(KernelError::TrackError(TrackError::SubstateLocked(
                 SubstateId(
                     RENodeId::Component(..),
                     SubstateOffset::Component(ComponentOffset::State)
-                )
+                ),
+                LockState::Write
             )))
         )
     });
@@ -174,11 +175,12 @@ fn read_then_mut_reentrancy_should_not_be_possible() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::TrackError(TrackError::NotAvailable(
+            RuntimeError::KernelError(KernelError::TrackError(TrackError::SubstateLocked(
                 SubstateId(
                     RENodeId::Component(..),
                     SubstateOffset::Component(ComponentOffset::State)
-                )
+                ),
+                LockState::Read(1),
             )))
         )
     });

@@ -85,19 +85,31 @@ impl System {
         I: WasmInstance,
         R: FeeReserve,
     {
+        let node_id = RENodeId::System(component_id);
+        let offset = SubstateOffset::System(SystemOffset::System);
+        let handle = system_api.lock_substate(node_id, offset, true)?;
+
         match method {
             SystemMethod::GetCurrentEpoch => {
                 let _: SystemGetCurrentEpochInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(SystemError::InvalidRequestData(e)))?;
-                let mut node_ref = system_api.borrow_node(&RENodeId::System(component_id))?;
-                Ok(ScryptoValue::from_typed(&node_ref.system().info.epoch))
+
+                let substate_ref = system_api.get_ref(handle)?;
+                let system = substate_ref.system();
+
+                Ok(ScryptoValue::from_typed(&system.epoch))
             }
             SystemMethod::SetEpoch => {
                 let SystemSetEpochInput { epoch } = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(SystemError::InvalidRequestData(e)))?;
-                let mut system_node_ref =
-                    system_api.borrow_node_mut(&RENodeId::System(component_id))?;
-                system_node_ref.system_mut().info.epoch = epoch;
+
+                let mut substate_mut = system_api
+                    .get_ref_mut(handle)
+                    .map_err(InvokeError::Downstream)?;
+                let mut raw_mut = substate_mut.get_raw_mut();
+                raw_mut.system().epoch = epoch;
+                substate_mut.flush()?;
+
                 Ok(ScryptoValue::from_typed(&()))
             }
             SystemMethod::GetTransactionHash => {

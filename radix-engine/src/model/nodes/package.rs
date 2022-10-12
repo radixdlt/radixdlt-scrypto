@@ -33,14 +33,6 @@ impl Package {
         })
     }
 
-    pub fn code(&self) -> &[u8] {
-        &self.info.code
-    }
-
-    pub fn blueprint_abi(&self, blueprint_name: &str) -> Option<&BlueprintAbi> {
-        self.info.blueprint_abis.get(blueprint_name)
-    }
-
     pub fn static_main<'s, Y, W, I, R>(
         func: PackageFunction,
         call_data: ScryptoValue,
