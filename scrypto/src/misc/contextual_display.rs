@@ -9,6 +9,14 @@ pub trait ContextualDisplay<Context>: Sized {
         context: &Context,
     ) -> Result<(), Self::Error>;
 
+    fn format<F: fmt::Write, TContext: Into<Context>>(
+        &self,
+        f: &mut F,
+        context: TContext,
+    ) -> Result<(), Self::Error> {
+        self.contextual_format(f, &context.into())
+    }
+
     fn display<'a, 'b, TContext: Into<Context>>(
         &'a self,
         context: TContext,
