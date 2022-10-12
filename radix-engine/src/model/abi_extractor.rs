@@ -58,7 +58,8 @@ pub fn export_abi_by_component<S: ReadableSubstateStore>(
             component_id,
         )))?;
 
-    let component_info = component_value.component_info();
+    let component_ref = component_value.to_ref();
+    let component_info = component_ref.component_info();
     export_abi(
         substate_store,
         component_info.package_address,

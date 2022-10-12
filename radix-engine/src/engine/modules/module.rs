@@ -28,12 +28,11 @@ pub enum SysCallInput<'a> {
         offset: &'a SubstateOffset,
         mutable: bool,
     },
-    ReadSubstate {
+    GetRef {
         lock_handle: &'a LockHandle,
     },
-    WriteSubstate {
+    GetRefMut {
         lock_handle: &'a LockHandle,
-        value: &'a ScryptoValue,
     },
     DropLock {
         lock_handle: &'a LockHandle,
@@ -53,19 +52,40 @@ pub enum SysCallInput<'a> {
 }
 
 pub enum SysCallOutput<'a> {
-    Invoke { output: &'a ScryptoValue },
-    BorrowNode { node_pointer: &'a RENodePointer },
-    DropNode { node: &'a HeapRootRENode },
-    CreateNode { node_id: &'a RENodeId },
+    Invoke {
+        output: &'a ScryptoValue,
+    },
+    BorrowNode {
+        node_pointer: &'a RENodePointer,
+    },
+    DropNode {
+        node: &'a HeapRootRENode,
+    },
+    CreateNode {
+        node_id: &'a RENodeId,
+    },
     GlobalizeNode,
-    LockSubstate { lock_handle: LockHandle },
-    ReadSubstate { value: &'a ScryptoValue },
-    WriteSubstate,
+    LockSubstate {
+        lock_handle: LockHandle,
+    },
+    GetRef {
+        node_pointer: &'a RENodePointer,
+        offset: &'a SubstateOffset,
+    },
+    GetRefMut,
     DropLock,
-    TakeSubstate { value: &'a ScryptoValue },
-    ReadTransactionHash { hash: &'a Hash },
-    ReadBlob { blob: &'a [u8] },
-    GenerateUuid { uuid: u128 },
+    TakeSubstate {
+        value: &'a ScryptoValue,
+    },
+    ReadTransactionHash {
+        hash: &'a Hash,
+    },
+    ReadBlob {
+        blob: &'a [u8],
+    },
+    GenerateUuid {
+        uuid: u128,
+    },
     EmitLog,
 }
 

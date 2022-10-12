@@ -38,6 +38,12 @@ pub enum RuntimeError {
     ApplicationError(ApplicationError),
 }
 
+impl From<KernelError> for RuntimeError {
+    fn from(error: KernelError) -> Self {
+        RuntimeError::KernelError(error)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
 pub enum KernelError {
     // invocation
@@ -83,6 +89,8 @@ pub enum KernelError {
     MovingLockedRENode(RENodeId),
     LockDoesNotExist(LockHandle),
     LockNotMutable(LockHandle),
+    OffsetNotAvailable(SubstateOffset),
+    InvalidOverwrite,
     SubstateNotReadable(REActor, SubstateId),
     SubstateNotWriteable(REActor, SubstateId),
     TrackError(TrackError),

@@ -2,7 +2,7 @@ use crate::engine::RuntimeError;
 use crate::engine::{HeapRENode, SystemApi};
 use crate::fee::*;
 use crate::model::{
-    Component, ComponentInfoSubstate, ComponentStateSubstate, InvokeError, KeyValueStore,
+    Component, ComponentInfoSubstate, ComponentStateSubstate, InvokeError, KeyValueStore, Substate,
 };
 use crate::types::*;
 use crate::wasm::*;
@@ -119,23 +119,33 @@ where
     }
 
     fn handle_read(&mut self, lock_handle: LockHandle) -> Result<ScryptoValue, RuntimeError> {
-        self.system_api.read(lock_handle)
+        self.system_api
+            .get_ref(lock_handle)
+            .map(|substate_ref| substate_ref.to_scrypto_value())
     }
 
     fn handle_write(
         &mut self,
         lock_handle: LockHandle,
-        value: Vec<u8>,
+        buffer: Vec<u8>,
     ) -> Result<ScryptoValue, RuntimeError> {
-        // FIXME: check if the value contains NOT allowed values.
+        let mut substate_mut = self.system_api.get_ref_mut(lock_handle)?;
+        let substate = Substate::decode_from_buffer(substate_mut.offset(), &buffer)?;
+        let mut raw_mut = substate_mut.get_raw_mut();
 
-        self.system_api.write(
-            lock_handle,
-            ScryptoValue::from_slice(&value)
-                .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?,
-        )?;
+        match substate {
+            Substate::ComponentState(next) => *raw_mut.component_state() = next,
+            Substate::KeyValueStoreEntry(next) => {
+                *raw_mut.kv_store_entry() = next;
+            }
+            Substate::NonFungible(next) => {
+                *raw_mut.non_fungible() = next;
+            }
+            _ => return Err(RuntimeError::KernelError(KernelError::InvalidOverwrite)),
+        }
 
-        // TODO: do we ever want to return the previous substate value
+        substate_mut.flush()?;
+
         Ok(ScryptoValue::unit())
     }
 

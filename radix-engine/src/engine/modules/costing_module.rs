@@ -192,7 +192,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                     )
                     .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
             }
-            SysCallInput::ReadSubstate { .. } => {
+            SysCallInput::GetRef { .. } => {
                 // Costing
                 track
                     .fee_reserve
@@ -207,7 +207,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                     )
                     .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
             }
-            SysCallInput::WriteSubstate { .. } => {
+            SysCallInput::GetRefMut { .. } => {
                 // Costing
                 track
                     .fee_reserve

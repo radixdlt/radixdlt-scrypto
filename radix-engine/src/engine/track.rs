@@ -30,7 +30,7 @@ use crate::transaction::TransactionOutcome;
 use crate::transaction::TransactionResult;
 use crate::types::*;
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
 pub enum LockState {
     Read(usize),
     Write,
@@ -110,7 +110,7 @@ pub struct Track<'s, R: FeeReserve> {
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
 pub enum TrackError {
     NotFound(SubstateId),
-    NotAvailable(SubstateId),
+    SubstateLocked(SubstateId, LockState),
     AlreadyLoaded(SubstateId),
 }
 
@@ -200,7 +200,10 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             LockState::Read(n) => {
                 if mutable {
                     if n != 0 {
-                        return Err(TrackError::NotAvailable(substate_id));
+                        return Err(TrackError::SubstateLocked(
+                            substate_id,
+                            loaded_substate.lock_state,
+                        ));
                     }
                     loaded_substate.lock_state = LockState::Write;
                 } else {
@@ -208,7 +211,10 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                 }
             }
             LockState::Write => {
-                return Err(TrackError::NotAvailable(substate_id));
+                return Err(TrackError::SubstateLocked(
+                    substate_id,
+                    loaded_substate.lock_state,
+                ));
             }
         }
 
@@ -340,7 +346,8 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         self.loaded_nodes.insert(node_id, node);
     }
 
-    pub fn borrow_substate(&self, substate_id: SubstateId) -> &Substate {
+    pub fn borrow_substate(&self, node_id: RENodeId, offset: SubstateOffset) -> &Substate {
+        let substate_id = SubstateId(node_id, offset);
         self.loaded_substates
             .get(&substate_id)
             .expect(&format!("Substate {:?} was never locked", substate_id))
@@ -348,7 +355,12 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             .borrow()
     }
 
-    pub fn borrow_substate_mut(&mut self, substate_id: SubstateId) -> &mut Substate {
+    pub fn borrow_substate_mut(
+        &mut self,
+        node_id: RENodeId,
+        offset: SubstateOffset,
+    ) -> &mut Substate {
+        let substate_id = SubstateId(node_id, offset);
         self.loaded_substates
             .get_mut(&substate_id)
             .expect(&format!("Substate {:?} was never locked", substate_id))
@@ -384,7 +396,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
     }
 
     /// Returns the value of a key value pair
-    pub fn read_key_value(&mut self, parent_address: SubstateId, key: Vec<u8>) -> Substate {
+    pub fn read_key_value(&mut self, parent_address: SubstateId, key: Vec<u8>) -> &Substate {
         // TODO: consider using a single address as function input
         let substate_id = match parent_address {
             SubstateId(
@@ -405,24 +417,121 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         };
 
         match parent_address {
-            SubstateId(RENodeId::NonFungibleStore(..), ..) => self
-                .loaded_substates
-                .get(&substate_id)
-                .map(|s| s.substate.borrow().clone())
-                .unwrap_or_else(|| {
-                    self.state_track
+            SubstateId(RENodeId::NonFungibleStore(..), ..) => {
+                if !self.loaded_substates.contains_key(&substate_id) {
+                    let substate = self
+                        .state_track
                         .get_substate(&substate_id)
-                        .unwrap_or(Substate::NonFungible(NonFungibleSubstate(None)))
-                }),
-            SubstateId(RENodeId::KeyValueStore(..), ..) => self
-                .loaded_substates
-                .get(&substate_id)
-                .map(|s| s.substate.borrow().clone())
-                .unwrap_or_else(|| {
-                    self.state_track.get_substate(&substate_id).unwrap_or(
+                        .unwrap_or(Substate::NonFungible(NonFungibleSubstate(None)));
+
+                    self.loaded_substates.insert(
+                        substate_id.clone(),
+                        LoadedSubstate {
+                            substate: SubstateCache::Free(substate),
+                            lock_state: LockState::no_lock(),
+                        },
+                    );
+                }
+
+                self.loaded_substates
+                    .get(&substate_id)
+                    .unwrap()
+                    .substate
+                    .borrow()
+            }
+            SubstateId(RENodeId::KeyValueStore(..), ..) => {
+                if !self.loaded_substates.contains_key(&substate_id) {
+                    let substate = self.state_track.get_substate(&substate_id).unwrap_or(
                         Substate::KeyValueStoreEntry(KeyValueStoreEntrySubstate(None)),
-                    )
-                }),
+                    );
+
+                    self.loaded_substates.insert(
+                        substate_id.clone(),
+                        LoadedSubstate {
+                            substate: SubstateCache::Free(substate),
+                            lock_state: LockState::no_lock(),
+                        },
+                    );
+                }
+
+                self.loaded_substates
+                    .get(&substate_id)
+                    .unwrap()
+                    .substate
+                    .borrow()
+            }
+            _ => panic!("Invalid keyed value address {:?}", parent_address),
+        }
+    }
+
+    pub fn read_key_value_mut(
+        &mut self,
+        parent_address: SubstateId,
+        key: Vec<u8>,
+    ) -> &mut Substate {
+        // TODO: consider using a single address as function input
+        let substate_id = match parent_address {
+            SubstateId(
+                RENodeId::NonFungibleStore(non_fungible_store_id),
+                SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Space),
+            ) => SubstateId(
+                RENodeId::NonFungibleStore(non_fungible_store_id),
+                SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(NonFungibleId(key))),
+            ),
+            SubstateId(
+                RENodeId::KeyValueStore(kv_store_id),
+                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Space),
+            ) => SubstateId(
+                RENodeId::KeyValueStore(kv_store_id),
+                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key)),
+            ),
+            _ => panic!("Unsupported key value"),
+        };
+
+        match parent_address {
+            SubstateId(RENodeId::NonFungibleStore(..), ..) => {
+                if !self.loaded_substates.contains_key(&substate_id) {
+                    let substate = self
+                        .state_track
+                        .get_substate(&substate_id)
+                        .unwrap_or(Substate::NonFungible(NonFungibleSubstate(None)));
+
+                    self.loaded_substates.insert(
+                        substate_id.clone(),
+                        LoadedSubstate {
+                            substate: SubstateCache::Free(substate),
+                            lock_state: LockState::no_lock(),
+                        },
+                    );
+                }
+
+                self.loaded_substates
+                    .get_mut(&substate_id)
+                    .unwrap()
+                    .substate
+                    .borrow_mut()
+            }
+            SubstateId(RENodeId::KeyValueStore(..), ..) => {
+                if !self.loaded_substates.contains_key(&substate_id) {
+                    let substate = self.state_track.get_substate(&substate_id).unwrap_or(
+                        Substate::KeyValueStoreEntry(KeyValueStoreEntrySubstate(None)),
+                    );
+
+                    self.loaded_substates.insert(
+                        substate_id.clone(),
+                        LoadedSubstate {
+                            substate: SubstateCache::Free(substate),
+                            lock_state: LockState::no_lock(),
+                        },
+                    );
+                }
+
+                self.loaded_substates
+                    .get_mut(&substate_id)
+                    .unwrap()
+                    .substate
+                    .borrow_mut()
+            }
             _ => panic!("Invalid keyed value address {:?}", parent_address),
         }
     }
