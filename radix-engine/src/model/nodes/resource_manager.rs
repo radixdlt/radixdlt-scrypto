@@ -389,10 +389,12 @@ impl ResourceManager {
                     .node_create(HeapRENode::Bucket(Bucket::new(resource)))?
                     .into();
 
-                let mut substate_mut = system_api.get_ref_mut(resman_handle)?;
-                let mut raw_mut = substate_mut.get_raw_mut();
-                let resource_manager = raw_mut.resource_manager();
-                let non_fungible_store_id = resource_manager.non_fungible_store_id.clone();
+                let non_fungible_store_id = {
+                    let substate_ref = system_api.get_ref(resman_handle)?;
+                    let resource_manager = substate_ref.resource_manager();
+                    resource_manager.non_fungible_store_id.clone()
+                };
+
                 for (id, non_fungible) in non_fungibles {
                     let node_id = RENodeId::NonFungibleStore(non_fungible_store_id.unwrap());
                     let offset =

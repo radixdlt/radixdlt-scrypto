@@ -408,12 +408,21 @@ pub fn verify_stored_value_update(
 }
 
 pub struct SubstateRefMut<'f, 's, R: FeeReserve> {
+    flushed: bool,
     lock_handle: LockHandle,
     prev_children: HashSet<RENodeId>,
     node_pointer: RENodePointer,
     offset: SubstateOffset,
     call_frames: &'f mut Vec<CallFrame>,
     track: &'f mut Track<'s, R>,
+}
+
+impl<'f, 's, R: FeeReserve> Drop for SubstateRefMut<'f, 's, R> {
+    fn drop(&mut self) {
+        if !self.flushed {
+            self.do_flush().expect("Auto-flush failure.");
+        }
+    }
 }
 
 impl<'f, 's, R: FeeReserve> SubstateRefMut<'f, 's, R> {
@@ -426,6 +435,7 @@ impl<'f, 's, R: FeeReserve> SubstateRefMut<'f, 's, R> {
         track: &'f mut Track<'s, R>,
     ) -> Result<Self, RuntimeError> {
         let substate_ref_mut = Self {
+            flushed: false,
             lock_handle,
             prev_children,
             node_pointer,
@@ -440,7 +450,7 @@ impl<'f, 's, R: FeeReserve> SubstateRefMut<'f, 's, R> {
         &self.offset
     }
 
-    pub fn flush(mut self) -> Result<(), RuntimeError> {
+    fn do_flush(&mut self) -> Result<(), RuntimeError> {
         let (new_global_references, new_children) = {
             let substate_ref_mut = self.get_raw_mut();
             substate_ref_mut.to_ref().references_and_owned_nodes()
@@ -478,6 +488,11 @@ impl<'f, 's, R: FeeReserve> SubstateRefMut<'f, 's, R> {
             .add_children(taken_nodes, &mut self.call_frames, &mut self.track);
 
         Ok(())
+    }
+
+    pub fn flush(mut self) -> Result<(), RuntimeError> {
+        self.flushed = true;
+        self.do_flush()
     }
 
     pub fn get_raw_mut(&mut self) -> RawSubstateRefMut {
