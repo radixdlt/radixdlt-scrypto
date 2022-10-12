@@ -44,6 +44,7 @@ pub enum GeneratorError {
     InvalidDecimal(String),
     InvalidPreciseDecimal(String),
     InvalidHash(String),
+    InvalidNodeId(String),
     InvalidKeyValueStoreId(String),
     InvalidVaultId(String),
     InvalidNonFungibleId(String),
@@ -657,17 +658,15 @@ fn generate_re_node_id(
             Ok(RENodeId::AuthZone(auth_zone_id))
         }
         ast::RENode::Worktop => Ok(RENodeId::Worktop),
-        ast::RENode::KeyValueStore(hash, index) => {
-            Ok(RENodeId::KeyValueStore(generate_node_id(hash, index)?))
+        ast::RENode::KeyValueStore(node_id) => {
+            Ok(RENodeId::KeyValueStore(generate_node_id(node_id)?))
         }
-        ast::RENode::NonFungibleStore(hash, index) => {
-            Ok(RENodeId::NonFungibleStore(generate_node_id(hash, index)?))
+        ast::RENode::NonFungibleStore(node_id) => {
+            Ok(RENodeId::NonFungibleStore(generate_node_id(node_id)?))
         }
-        ast::RENode::Component(hash, index) => {
-            Ok(RENodeId::Component(generate_node_id(hash, index)?))
-        }
-        ast::RENode::System(hash, index) => Ok(RENodeId::System(generate_node_id(hash, index)?)),
-        ast::RENode::Vault(hash, index) => Ok(RENodeId::Vault(generate_node_id(hash, index)?)),
+        ast::RENode::Component(node_id) => Ok(RENodeId::Component(generate_node_id(node_id)?)),
+        ast::RENode::System(node_id) => Ok(RENodeId::System(generate_node_id(node_id)?)),
+        ast::RENode::Vault(node_id) => Ok(RENodeId::Vault(generate_node_id(node_id)?)),
         ast::RENode::ResourceManager(value) => {
             let resource_address = match value {
                 ast::Value::String(s) => bech32_decoder
@@ -689,18 +688,20 @@ fn generate_re_node_id(
     }
 }
 
-fn generate_node_id(hash: &ast::Value, index: &ast::Value) -> Result<(Hash, u32), GeneratorError> {
-    let hash = match hash {
+fn generate_node_id(node_id: &ast::Value) -> Result<(Hash, u32), GeneratorError> {
+    match node_id {
         ast::Value::String(s) => {
-            Hash::from_str(s).map_err(|_| GeneratorError::InvalidHash(s.into()))?
+            if s.len() != 2 * (Hash::LENGTH + 4) {
+                return Err(GeneratorError::InvalidNodeId(s.into()));
+            }
+            let hash = Hash::from_str(&s[0..Hash::LENGTH * 2])
+                .map_err(|_| GeneratorError::InvalidNodeId(s.into()))?;
+            let index = u32::from_str_radix(&s[Hash::LENGTH * 2..], 16)
+                .map_err(|_| GeneratorError::InvalidNodeId(s.into()))?;
+            Ok((hash, index))
         }
-        v => return invalid_type!(v, ast::Type::String),
-    };
-    let index = match index {
-        ast::Value::U32(v) => *v,
-        v @ _ => return invalid_type!(v, ast::Type::U32),
-    };
-    Ok((hash, index))
+        v => invalid_type!(v, ast::Type::String),
+    }
 }
 
 fn generate_hash(value: &ast::Value) -> Result<Hash, GeneratorError> {

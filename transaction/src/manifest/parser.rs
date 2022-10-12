@@ -235,26 +235,11 @@ impl Parser {
             TokenKind::Proof => Ok(RENode::Proof(self.parse_values_one()?)),
             TokenKind::AuthZone => Ok(RENode::AuthZone(self.parse_values_one()?)),
             TokenKind::Worktop => Ok(RENode::Worktop),
-            TokenKind::KeyValueStore => {
-                let pair = self.parse_values_two()?;
-                Ok(RENode::KeyValueStore(pair.0, pair.1))
-            }
-            TokenKind::NonFungibleStore => {
-                let pair = self.parse_values_two()?;
-                Ok(RENode::NonFungibleStore(pair.0, pair.1))
-            }
-            TokenKind::Component => {
-                let pair = self.parse_values_two()?;
-                Ok(RENode::Component(pair.0, pair.1))
-            }
-            TokenKind::System => {
-                let pair = self.parse_values_two()?;
-                Ok(RENode::System(pair.0, pair.1))
-            }
-            TokenKind::Vault => {
-                let pair = self.parse_values_two()?;
-                Ok(RENode::Vault(pair.0, pair.1))
-            }
+            TokenKind::KeyValueStore => Ok(RENode::KeyValueStore(self.parse_values_one()?)),
+            TokenKind::NonFungibleStore => Ok(RENode::NonFungibleStore(self.parse_values_one()?)),
+            TokenKind::Component => Ok(RENode::Component(self.parse_values_one()?)),
+            TokenKind::System => Ok(RENode::System(self.parse_values_one()?)),
+            TokenKind::Vault => Ok(RENode::Vault(self.parse_values_one()?)),
             TokenKind::ResourceManager => Ok(RENode::ResourceManager(self.parse_values_one()?)),
             TokenKind::Package => Ok(RENode::Package(self.parse_values_one()?)),
             _ => Err(ParserError::UnexpectedToken(token)),
@@ -442,19 +427,6 @@ impl Parser {
             })
         } else {
             Ok(values[0].clone())
-        }
-    }
-
-    fn parse_values_two(&mut self) -> Result<(Value, Value), ParserError> {
-        let values =
-            self.parse_values_any(TokenKind::OpenParenthesis, TokenKind::CloseParenthesis)?;
-        if values.len() != 2 {
-            Err(ParserError::InvalidNumberOfValues {
-                actual: values.len(),
-                expected: 2,
-            })
-        } else {
-            Ok((values[0].clone(), values[1].clone()))
         }
     }
 
