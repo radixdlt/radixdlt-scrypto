@@ -86,7 +86,7 @@ pub enum Instruction {
     },
 
     CallMethod {
-        receiver: Value,
+        receiver: Receiver,
         method: Value,
         args: Vec<Value>,
     },
@@ -111,6 +111,35 @@ pub enum Instruction {
         resource_address: Value,
         amount: Value,
     },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Receiver {
+    Global(GlobalAddress), // implied reference
+    Owned(RENode),
+    Ref(RENode),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum GlobalAddress {
+    PackageAddress,
+    ComponentAddress,
+    ResourceAddress,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum RENode {
+    Bucket,
+    Proof,
+    AuthZone,
+    Worktop,
+    KeyValueStore,
+    NonFungibleStore,
+    Component,
+    System,
+    Vault,
+    ResourceManager,
+    Package,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
