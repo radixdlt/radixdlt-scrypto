@@ -1,8 +1,10 @@
 use sbor::rust::collections::BTreeSet;
+use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto::core::NativeFnIdentifier;
+use scrypto::core::{FnIdent, MethodIdent, NativeMethod, ReceiverMethodIdent};
 
-use crate::core::{AuthZoneFnIdentifier, FnIdentifier, Receiver};
+use crate::core::{AuthZoneMethod, Receiver};
+use crate::engine::types::RENodeId;
 use crate::engine::{api::*, call_engine};
 use crate::math::Decimal;
 use crate::native_functions;
@@ -36,6 +38,9 @@ pub struct AuthZoneCreateProofByIdsInput {
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct AuthZoneClearInput {}
 
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct AuthZoneDrainInput {}
+
 /// Represents the auth zone, which is used by system for checking
 /// if this component is allowed to
 ///
@@ -45,28 +50,33 @@ pub struct ComponentAuthZone {}
 
 impl ComponentAuthZone {
     native_functions! {
-        Receiver::CurrentAuthZone, NativeFnIdentifier::AuthZone => {
+        {
+            let input = RadixEngineInput::GetOwnedRENodeIds();
+            let owned_node_ids: Vec<RENodeId> = call_engine(input);
+            let node_id = owned_node_ids.into_iter().find(|n| matches!(n, RENodeId::AuthZone(..))).expect("AuthZone does not exist");
+            Receiver::Ref(node_id)
+        }, NativeMethod::AuthZone => {
             pub fn pop() -> Proof {
-                AuthZoneFnIdentifier::Pop,
+                AuthZoneMethod::Pop,
                 AuthZonePopInput {}
             }
 
             pub fn create_proof(resource_address: ResourceAddress) -> Proof {
-                AuthZoneFnIdentifier::CreateProof,
+                AuthZoneMethod::CreateProof,
                 AuthZoneCreateProofInput {
                     resource_address
                 }
             }
 
             pub fn create_proof_by_amount(amount: Decimal, resource_address: ResourceAddress) -> Proof {
-                AuthZoneFnIdentifier::CreateProofByAmount,
+                AuthZoneMethod::CreateProofByAmount,
                 AuthZoneCreateProofByAmountInput {
                     amount, resource_address
                 }
             }
 
             pub fn create_proof_by_ids(ids: &BTreeSet<NonFungibleId>, resource_address: ResourceAddress) -> Proof {
-                AuthZoneFnIdentifier::CreateProofByIds,
+                AuthZoneMethod::CreateProofByIds,
                 AuthZoneCreateProofByIdsInput {
                     ids: ids.clone(),
                     resource_address
@@ -76,10 +86,19 @@ impl ComponentAuthZone {
     }
 
     pub fn push<P: Into<Proof>>(proof: P) {
+        let input = RadixEngineInput::GetOwnedRENodeIds();
+        let owned_node_ids: Vec<RENodeId> = call_engine(input);
+        let node_id = owned_node_ids
+            .into_iter()
+            .find(|n| matches!(n, RENodeId::AuthZone(..)))
+            .expect("AuthZone does not exist");
+
         let proof: Proof = proof.into();
-        let input = RadixEngineInput::InvokeMethod(
-            Receiver::CurrentAuthZone,
-            FnIdentifier::Native(NativeFnIdentifier::AuthZone(AuthZoneFnIdentifier::Push)),
+        let input = RadixEngineInput::Invoke(
+            FnIdent::Method(ReceiverMethodIdent {
+                receiver: Receiver::Ref(node_id),
+                method_ident: MethodIdent::Native(NativeMethod::AuthZone(AuthZoneMethod::Push)),
+            }),
             scrypto::buffer::scrypto_encode(&(AuthZonePushInput { proof })),
         );
         call_engine(input)

@@ -1,11 +1,8 @@
-use core::ops::RangeFull;
+use indexmap::IndexMap;
+use sbor::rust::ops::RangeFull;
 
-use indexmap::{IndexMap, IndexSet};
-
-use crate::engine::*;
 use crate::ledger::*;
-use crate::model::ResourceContainer;
-use crate::model::Vault;
+use crate::model::*;
 use crate::state_manager::StateDiff;
 use crate::state_manager::VirtualSubstateId;
 use crate::types::*;
@@ -21,14 +18,12 @@ pub struct BaseStateTrack<'s> {
     /// the separation between app state track and base stack track.
     ///
     substates: IndexMap<SubstateId, Option<Vec<u8>>>,
-    new_root_substates: IndexSet<SubstateId>,
 }
 
 impl<'s> BaseStateTrack<'s> {
     pub fn new(substate_store: &'s dyn ReadableSubstateStore) -> Self {
         Self {
             substate_store,
-            new_root_substates: IndexSet::new(),
             substates: IndexMap::new(),
         }
     }
@@ -47,14 +42,13 @@ impl<'s> BaseStateTrack<'s> {
     pub fn generate_diff(&self) -> StateDiff {
         let mut diff = StateDiff::new();
 
-        for substate_id in &self.new_root_substates {
-            diff.new_roots.push(substate_id.clone());
-        }
-
         for (substate_id, substate) in &self.substates {
             if let Some(substate) = substate {
                 match &substate_id {
-                    SubstateId::NonFungible(resource_address, key) => {
+                    SubstateId(
+                        RENodeId::NonFungibleStore(store_id),
+                        SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(key)),
+                    ) => {
                         let next_version = if let Some(existing_output_id) =
                             Self::get_substate_output_id(&self.substate_store, &substate_id)
                         {
@@ -62,7 +56,10 @@ impl<'s> BaseStateTrack<'s> {
                             diff.down_substates.push(existing_output_id);
                             next_version
                         } else {
-                            let parent_address = SubstateId::NonFungibleSpace(*resource_address);
+                            let parent_address = SubstateId(
+                                RENodeId::NonFungibleStore(*store_id),
+                                SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Space),
+                            );
                             let virtual_output_id =
                                 VirtualSubstateId(parent_address, key.0.clone());
                             diff.down_virtual_substates.push(virtual_output_id);
@@ -71,12 +68,15 @@ impl<'s> BaseStateTrack<'s> {
 
                         let output_value = OutputValue {
                             substate: scrypto_decode(&substate)
-                                .expect("Failed to decode NonFungibleWrapper substate"),
+                                .expect("Failed to decode NonFungibleSubstate"),
                             version: next_version,
                         };
                         diff.up_substates.insert(substate_id.clone(), output_value);
                     }
-                    SubstateId::KeyValueStoreEntry(kv_store_id, key) => {
+                    SubstateId(
+                        RENodeId::KeyValueStore(kv_store_id),
+                        SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key)),
+                    ) => {
                         let next_version = if let Some(existing_output_id) =
                             Self::get_substate_output_id(&self.substate_store, &substate_id)
                         {
@@ -84,7 +84,10 @@ impl<'s> BaseStateTrack<'s> {
                             diff.down_substates.push(existing_output_id);
                             next_version
                         } else {
-                            let parent_address = SubstateId::KeyValueStoreSpace(*kv_store_id);
+                            let parent_address = SubstateId(
+                                RENodeId::KeyValueStore(*kv_store_id),
+                                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Space),
+                            );
                             let virtual_output_id = VirtualSubstateId(parent_address, key.clone());
                             diff.down_virtual_substates.push(virtual_output_id);
                             0
@@ -92,7 +95,7 @@ impl<'s> BaseStateTrack<'s> {
 
                         let output_value = OutputValue {
                             substate: scrypto_decode(&substate)
-                                .expect("Failed to decode KeyValueStoreEntryWrapper substate"),
+                                .expect("Failed to decode KeyValueStoreEntrySubstate"),
                             version: next_version,
                         };
                         diff.up_substates.insert(substate_id.clone(), output_value);
@@ -107,40 +110,8 @@ impl<'s> BaseStateTrack<'s> {
                         } else {
                             0
                         };
-                        // TODO: remove this temporary workaround.
-
-                        // As of start of October, resources locked-by-proofs are incorrectly stored inside the container substate inside vaults
-                        // and are accidentally getting committed.  This causes bugs where these resources are locked permanently,
-                        // in future transactions.
-                        //
-                        // This will be changed soon, in the mean time, this is a workaround which frees all locked resource at the
-                        // end of transaction.
-                        //
-                        // A proper fix would be to cache the node representation during the entire transaction.
-                        // Not doing this now because we have an ongoing large-scale refactoring to node/substate implementation.
-                        //
-                        let transformed_substate = if matches!(substate_id, SubstateId::Vault(..)) {
-                            let vault: Vault = scrypto_decode::<Substate>(substate).unwrap().into();
-                            let resource_address = vault.resource_address();
-                            let resource = match vault.resource_type() {
-                                ResourceType::Fungible { divisibility } => {
-                                    ResourceContainer::new_fungible(
-                                        resource_address,
-                                        divisibility,
-                                        vault.total_amount(),
-                                    )
-                                }
-                                ResourceType::NonFungible => ResourceContainer::new_non_fungible(
-                                    resource_address,
-                                    vault.total_ids().unwrap(),
-                                ),
-                            };
-                            scrypto_encode(&Substate::Vault(Vault::new(resource)))
-                        } else {
-                            substate.clone()
-                        };
                         let output_value = OutputValue {
-                            substate: scrypto_decode(&transformed_substate)
+                            substate: scrypto_decode(&substate)
                                 .expect(&format!("Failed to decode substate {:?}", substate_id)),
                             version: next_version,
                         };
@@ -168,7 +139,6 @@ pub struct AppStateTrack<'s> {
     base_state_track: BaseStateTrack<'s>,
     /// Substates either created during the transaction or loaded from the base state track
     substates: IndexMap<SubstateId, Option<Vec<u8>>>,
-    new_root_substates: IndexSet<SubstateId>,
 }
 
 impl<'s> AppStateTrack<'s> {
@@ -176,28 +146,7 @@ impl<'s> AppStateTrack<'s> {
         Self {
             base_state_track,
             substates: IndexMap::new(),
-            new_root_substates: IndexSet::new(),
         }
-    }
-
-    pub fn is_root(&mut self, substate_id: &SubstateId) -> bool {
-        if self.new_root_substates.contains(substate_id) {
-            return true;
-        }
-
-        if self
-            .base_state_track
-            .new_root_substates
-            .contains(substate_id)
-        {
-            return true;
-        }
-
-        self.base_state_track.substate_store.is_root(substate_id)
-    }
-
-    pub fn set_substate_root(&mut self, substate_id: SubstateId) {
-        self.new_root_substates.insert(substate_id);
     }
 
     /// Returns a copy of the substate associated with the given address, if exists
@@ -224,17 +173,15 @@ impl<'s> AppStateTrack<'s> {
             })
     }
 
-    /// Returns a copy of the substate associated with the given address from the base track
-    pub fn get_substate_from_base(
-        &mut self,
-        substate_id: &SubstateId,
-    ) -> Result<Option<Substate>, StateTrackError> {
-        if self.substates.contains_key(substate_id) {
-            return Err(StateTrackError::RENodeAlreadyTouched);
-        }
+    /// Creates a new substate and updates an existing one
+    pub fn put_substate(&mut self, substate_id: SubstateId, substate: Substate) {
+        self.substates
+            .insert(substate_id, Some(scrypto_encode(&substate)));
+    }
 
-        Ok(self
-            .base_state_track
+    /// Returns a copy of the substate associated with the given address from the base track
+    pub fn get_substate_from_base(&mut self, substate_id: &SubstateId) -> Option<Substate> {
+        self.base_state_track
             .substates
             .entry(substate_id.clone())
             .or_insert_with(|| {
@@ -247,13 +194,7 @@ impl<'s> AppStateTrack<'s> {
             .as_ref()
             .map(|x| {
                 scrypto_decode(x).expect(&format!("Failed to decode substate {:?}", substate_id))
-            }))
-    }
-
-    /// Creates a new substate and updates an existing one
-    pub fn put_substate(&mut self, substate_id: SubstateId, substate: Substate) {
-        self.substates
-            .insert(substate_id, Some(scrypto_encode(&substate)));
+            })
     }
 
     /// Creates a new substate and updates an existing one to the base track
@@ -270,15 +211,11 @@ impl<'s> AppStateTrack<'s> {
         self.base_state_track
             .substates
             .extend(self.substates.drain(RangeFull));
-        self.base_state_track
-            .new_root_substates
-            .extend(self.new_root_substates.drain(RangeFull));
     }
 
     /// Rollback all state changes
     pub fn rollback(&mut self) {
         self.substates.clear();
-        self.new_root_substates.clear();
     }
 
     /// Unwraps into the base state track

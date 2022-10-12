@@ -1,18 +1,28 @@
-use transaction::model::ExecutableTransaction;
+use indexmap::IndexMap;
+use transaction::model::Executable;
 
 use crate::engine::AppStateTrack;
 use crate::engine::BaseStateTrack;
-use crate::engine::StateTrackError;
 use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::fee::FeeReserveError;
 use crate::fee::FeeSummary;
 use crate::fee::FeeTable;
 use crate::ledger::*;
-use crate::model::Bucket;
-use crate::model::KeyValueStoreEntryWrapper;
-use crate::model::NonFungibleWrapper;
-use crate::model::ResourceContainer;
+use crate::model::Component;
+use crate::model::KeyValueStore;
+use crate::model::KeyValueStoreEntrySubstate;
+use crate::model::LockableResource;
+use crate::model::NonFungibleStore;
+use crate::model::NonFungibleSubstate;
+use crate::model::Resource;
+use crate::model::ResourceManager;
+use crate::model::Substate;
+use crate::model::System;
+use crate::model::Vault;
+use crate::model::VaultSubstate;
+use crate::model::{node_to_substates, Package};
+use crate::model::{nodes_to_substates, GlobalRENode};
 use crate::transaction::CommitResult;
 use crate::transaction::EntityChanges;
 use crate::transaction::RejectResult;
@@ -20,38 +30,88 @@ use crate::transaction::TransactionOutcome;
 use crate::transaction::TransactionResult;
 use crate::types::*;
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
+pub enum LockState {
+    Read(usize),
+    Write,
+}
+
+impl LockState {
+    pub fn no_lock() -> Self {
+        Self::Read(0)
+    }
+
+    pub fn is_free(&self) -> bool {
+        matches!(self, LockState::Read(0))
+    }
+}
+
 #[derive(Debug)]
-pub enum BorrowedSubstate {
-    Loaded(Substate, u32),
-    LoadedMut(Substate),
+pub enum SubstateCache {
+    Free(Substate),
     Taken,
 }
 
-impl BorrowedSubstate {
-    fn loaded(value: Substate, mutable: bool) -> Self {
-        if mutable {
-            BorrowedSubstate::LoadedMut(value)
-        } else {
-            BorrowedSubstate::Loaded(value, 1)
+impl SubstateCache {
+    pub fn borrow(&self) -> &Substate {
+        match self {
+            Self::Free(substate) => substate,
+            Self::Taken => {
+                panic!("Attempted to borrow already taken substate")
+            }
         }
     }
+
+    pub fn borrow_mut(&mut self) -> &mut Substate {
+        match self {
+            Self::Free(substate) => substate,
+            Self::Taken => {
+                panic!("Attempted to borrow already taken substate")
+            }
+        }
+    }
+
+    pub fn take(&mut self) -> Substate {
+        match core::mem::replace(self, SubstateCache::Taken) {
+            Self::Free(substate) => substate,
+            Self::Taken => {
+                panic!("Attempted to take already taken substate")
+            }
+        }
+    }
+
+    pub fn put(&mut self, substate: Substate) {
+        *self = SubstateCache::Free(substate);
+    }
+
+    pub fn is_taken(&self) -> bool {
+        matches!(self, SubstateCache::Taken)
+    }
+}
+
+#[derive(Debug)]
+pub struct LoadedSubstate {
+    pub substate: SubstateCache,
+    pub lock_state: LockState,
 }
 
 /// Transaction-wide states and side effects
 pub struct Track<'s, R: FeeReserve> {
     application_logs: Vec<(Level, String)>,
-    new_substates: Vec<SubstateId>,
     state_track: AppStateTrack<'s>,
-    borrowed_substates: HashMap<SubstateId, BorrowedSubstate>,
+    loaded_substates: IndexMap<SubstateId, LoadedSubstate>,
+    loaded_nodes: IndexMap<RENodeId, HeapRENode>,
+    pub new_global_addresses: Vec<GlobalAddress>,
     pub fee_reserve: R,
     pub fee_table: FeeTable,
+    pub vault_ops: Vec<(REActor, VaultId, VaultOp)>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
 pub enum TrackError {
-    Reentrancy,
-    NotFound,
-    StateTrackError(StateTrackError),
+    NotFound(SubstateId),
+    SubstateLocked(SubstateId, LockState),
+    AlreadyLoaded(SubstateId),
 }
 
 pub struct TrackReceipt {
@@ -76,37 +136,19 @@ impl<'s, R: FeeReserve> Track<'s, R> {
 
         Self {
             application_logs: Vec::new(),
-            new_substates: Vec::new(),
             state_track,
-            borrowed_substates: HashMap::new(),
+            loaded_substates: IndexMap::new(),
+            loaded_nodes: IndexMap::new(),
+            new_global_addresses: Vec::new(),
             fee_reserve,
             fee_table,
+            vault_ops: Vec::new(),
         }
     }
 
     /// Adds a log message.
     pub fn add_log(&mut self, level: Level, message: String) {
         self.application_logs.push((level, message));
-    }
-
-    /// Creates a row with the given key/value
-    pub fn create_uuid_substate<V: Into<Substate>>(
-        &mut self,
-        substate_id: SubstateId,
-        value: V,
-        is_root: bool,
-    ) {
-        self.new_substates.push(substate_id.clone());
-        self.state_track
-            .put_substate(substate_id.clone(), value.into());
-        if is_root {
-            self.state_track.set_substate_root(substate_id);
-        }
-    }
-
-    // TODO: Clean this up
-    pub fn is_root(&mut self, substate_id: &SubstateId) -> bool {
-        self.state_track.is_root(substate_id)
     }
 
     // TODO: to read/write a value owned by track requires three coordinated steps:
@@ -125,162 +167,371 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         mutable: bool,
         write_through: bool,
     ) -> Result<(), TrackError> {
-        if let Some(current) = self.borrowed_substates.get_mut(&substate_id) {
-            if mutable {
-                return Err(TrackError::Reentrancy);
-            } else {
-                match current {
-                    BorrowedSubstate::Taken | BorrowedSubstate::LoadedMut(..) => {
-                        panic!("Should never get here")
-                    }
-                    BorrowedSubstate::Loaded(_, ref mut count) => *count = *count + 1,
-                }
-                return Ok(());
-            }
+        if write_through && self.loaded_substates.contains_key(&substate_id) {
+            return Err(TrackError::AlreadyLoaded(substate_id));
         }
 
-        if write_through {
-            let value = self
-                .state_track
-                .get_substate_from_base(&substate_id)
-                .map_err(TrackError::StateTrackError)?
-                .ok_or(TrackError::NotFound)?;
-            self.borrowed_substates.insert(
-                substate_id.clone(),
-                BorrowedSubstate::loaded(value, mutable),
-            );
-            Ok(())
-        } else {
-            if let Some(substate) = self.state_track.get_substate(&substate_id) {
-                let substate = match substate_id {
-                    SubstateId::ComponentInfo(..)
-                    | SubstateId::ResourceManager(..)
-                    | SubstateId::Vault(..)
-                    | SubstateId::Package(..)
-                    | SubstateId::ComponentState(..)
-                    | SubstateId::System => substate,
-                    _ => panic!(
-                        "Attempting to borrow unsupported substate {:?}",
-                        substate_id
-                    ),
-                };
+        // Load the substate from state track
+        if !self.loaded_substates.contains_key(&substate_id) {
+            let maybe_substate = if write_through {
+                self.state_track.get_substate_from_base(&substate_id)
+            } else {
+                self.state_track.get_substate(&substate_id)
+            };
 
-                self.borrowed_substates.insert(
+            if let Some(substate) = maybe_substate {
+                self.loaded_substates.insert(
                     substate_id.clone(),
-                    BorrowedSubstate::loaded(substate, mutable),
+                    LoadedSubstate {
+                        substate: SubstateCache::Free(substate),
+                        lock_state: LockState::no_lock(),
+                    },
                 );
-                Ok(())
             } else {
-                Err(TrackError::NotFound)
+                return Err(TrackError::NotFound(substate_id));
             }
         }
+
+        let loaded_substate = self
+            .loaded_substates
+            .get_mut(&substate_id)
+            .expect("Existence checked upfront");
+        match loaded_substate.lock_state {
+            LockState::Read(n) => {
+                if mutable {
+                    if n != 0 {
+                        return Err(TrackError::SubstateLocked(
+                            substate_id,
+                            loaded_substate.lock_state,
+                        ));
+                    }
+                    loaded_substate.lock_state = LockState::Write;
+                } else {
+                    loaded_substate.lock_state = LockState::Read(n + 1);
+                }
+            }
+            LockState::Write => {
+                return Err(TrackError::SubstateLocked(
+                    substate_id,
+                    loaded_substate.lock_state,
+                ));
+            }
+        }
+
+        Ok(())
     }
 
-    pub fn release_lock(&mut self, substate_id: SubstateId, write_through: bool) {
-        let borrowed = self
-            .borrowed_substates
+    pub fn release_lock(
+        &mut self,
+        substate_id: SubstateId,
+        write_through: bool,
+    ) -> Result<(), TrackError> {
+        let mut loaded_substate = self
+            .loaded_substates
             .remove(&substate_id)
             .expect("Attempted to release lock on never borrowed substate");
 
+        match &loaded_substate.lock_state {
+            LockState::Read(n) => loaded_substate.lock_state = LockState::Read(n - 1),
+            LockState::Write => loaded_substate.lock_state = LockState::no_lock(),
+        }
+
         if write_through {
-            match borrowed {
-                BorrowedSubstate::Taken => panic!("Value was never returned"),
-                BorrowedSubstate::LoadedMut(value) => {
-                    self.state_track.put_substate_to_base(substate_id, value);
-                }
-                BorrowedSubstate::Loaded(value, mut count) => {
-                    count = count - 1;
-                    if count == 0 {
-                        self.state_track.put_substate_to_base(substate_id, value);
-                    } else {
-                        self.borrowed_substates
-                            .insert(substate_id, BorrowedSubstate::Loaded(value, count));
-                    }
-                }
+            let node_id = match substate_id {
+                SubstateId(
+                    RENodeId::Vault(vault_id),
+                    SubstateOffset::Vault(VaultOffset::Vault),
+                ) => RENodeId::Vault(vault_id),
+                _ => panic!("Not supported yet"),
+            };
+            let node = self.loaded_nodes.remove(&node_id).unwrap();
+            for (offset, substate) in node_to_substates(node) {
+                self.state_track
+                    .put_substate_to_base(SubstateId(node_id, offset), substate);
             }
         } else {
-            match borrowed {
-                BorrowedSubstate::Taken => panic!("Value was never returned"),
-                BorrowedSubstate::LoadedMut(value) => {
-                    self.state_track.put_substate(substate_id, value);
+            self.loaded_substates.insert(substate_id, loaded_substate);
+        }
+        Ok(())
+    }
+
+    fn create_node_if_missing(&mut self, node_id: &RENodeId) {
+        if !self.loaded_nodes.contains_key(node_id) {
+            match node_id {
+                RENodeId::AuthZone(_)
+                | RENodeId::Bucket(_)
+                | RENodeId::Proof(_)
+                | RENodeId::Worktop => panic!("Unexpected"),
+                RENodeId::Global(..) => {
+                    let offset = SubstateOffset::Global(GlobalOffset::Global);
+                    let substate = self.take_substate(SubstateId(*node_id, offset));
+                    let node = HeapRENode::Global(GlobalRENode {
+                        address: substate.into(),
+                    });
+                    self.loaded_nodes.insert(node_id.clone(), node);
                 }
-                BorrowedSubstate::Loaded(value, mut count) => {
-                    count = count - 1;
-                    if count == 0 {
-                        self.state_track.put_substate(substate_id, value);
-                    } else {
-                        self.borrowed_substates
-                            .insert(substate_id, BorrowedSubstate::Loaded(value, count));
-                    }
+                RENodeId::KeyValueStore(_) => {
+                    self.loaded_nodes.insert(
+                        node_id.clone(),
+                        HeapRENode::KeyValueStore(KeyValueStore::new().into()),
+                    );
+                }
+                RENodeId::NonFungibleStore(_) => {
+                    self.loaded_nodes.insert(
+                        node_id.clone(),
+                        HeapRENode::NonFungibleStore(NonFungibleStore::new().into()),
+                    );
+                }
+                RENodeId::Component(..) => {
+                    let offset = SubstateOffset::Component(ComponentOffset::Info);
+                    let substate = self.take_substate(SubstateId(*node_id, offset));
+                    let node = HeapRENode::Component(Component {
+                        info: substate.into(),
+                        state: None,
+                    });
+                    self.loaded_nodes.insert(node_id.clone(), node);
+                }
+                RENodeId::Vault(..) => {
+                    let offset = SubstateOffset::Vault(VaultOffset::Vault);
+                    let substate: VaultSubstate =
+                        self.take_substate(SubstateId(*node_id, offset)).into();
+                    let node = HeapRENode::Vault(Vault::new(substate.0));
+                    self.loaded_nodes.insert(node_id.clone(), node);
+                }
+                RENodeId::ResourceManager(..) => {
+                    let offset =
+                        SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
+                    let substate = self.take_substate(SubstateId(*node_id, offset));
+                    let node = HeapRENode::ResourceManager(ResourceManager {
+                        info: substate.into(),
+                    });
+                    self.loaded_nodes.insert(node_id.clone(), node);
+                }
+                RENodeId::Package(..) => {
+                    let offset = SubstateOffset::Package(PackageOffset::Package);
+                    let substate = self.take_substate(SubstateId(*node_id, offset));
+                    let node = HeapRENode::Package(Package {
+                        info: substate.into(),
+                    });
+                    self.loaded_nodes.insert(node_id.clone(), node);
+                }
+                RENodeId::System(..) => {
+                    let offset = SubstateOffset::System(SystemOffset::System);
+                    let substate = self.take_substate(SubstateId(*node_id, offset));
+                    let node = HeapRENode::System(System {
+                        info: substate.into(),
+                    });
+                    self.loaded_nodes.insert(node_id.clone(), node);
                 }
             }
         }
     }
 
-    pub fn read_substate(&self, substate_id: SubstateId) -> &Substate {
-        match self
-            .borrowed_substates
+    // TODO: Clean this up!
+    // Despite being named as borrow_*, borrow rules are not enforced here but within `acquire_lock`.
+
+    pub fn borrow_node(&mut self, node_id: &RENodeId) -> &HeapRENode {
+        self.create_node_if_missing(node_id);
+        self.loaded_nodes.get(node_id).expect("Node not available")
+    }
+
+    pub fn borrow_node_mut(&mut self, node_id: &RENodeId) -> &mut HeapRENode {
+        self.create_node_if_missing(node_id);
+        self.loaded_nodes
+            .get_mut(node_id)
+            .expect("Node not available")
+    }
+
+    pub fn put_node(&mut self, node_id: RENodeId, node: HeapRENode) {
+        self.loaded_nodes.insert(node_id, node);
+    }
+
+    pub fn borrow_substate(&self, node_id: RENodeId, offset: SubstateOffset) -> &Substate {
+        let substate_id = SubstateId(node_id, offset);
+        self.loaded_substates
             .get(&substate_id)
             .expect(&format!("Substate {:?} was never locked", substate_id))
-        {
-            BorrowedSubstate::LoadedMut(substate) => substate,
-            BorrowedSubstate::Loaded(substate, ..) => substate,
-            BorrowedSubstate::Taken => panic!("Substate was already taken"),
-        }
+            .substate
+            .borrow()
+    }
+
+    pub fn borrow_substate_mut(
+        &mut self,
+        node_id: RENodeId,
+        offset: SubstateOffset,
+    ) -> &mut Substate {
+        let substate_id = SubstateId(node_id, offset);
+        self.loaded_substates
+            .get_mut(&substate_id)
+            .expect(&format!("Substate {:?} was never locked", substate_id))
+            .substate
+            .borrow_mut()
     }
 
     pub fn take_substate(&mut self, substate_id: SubstateId) -> Substate {
-        match self
-            .borrowed_substates
-            .insert(substate_id.clone(), BorrowedSubstate::Taken)
+        self.loaded_substates
+            .get_mut(&substate_id)
             .expect(&format!("Substate {:?} was never locked", substate_id))
-        {
-            BorrowedSubstate::LoadedMut(value) => value,
-            BorrowedSubstate::Loaded(..) => {
-                panic!("Cannot take value on immutable: {:?}", substate_id)
-            }
-            BorrowedSubstate::Taken => panic!("Substate was already taken"),
-        }
+            .substate
+            .take()
     }
 
-    pub fn write_substate<V: Into<Substate>>(&mut self, substate_id: SubstateId, value: V) {
-        let cur_value = self
-            .borrowed_substates
-            .get(&substate_id)
-            .expect(&format!("Substate {:?} was never locked", substate_id));
-        match cur_value {
-            BorrowedSubstate::Loaded(..) => panic!("Cannot write to immutable"),
-            BorrowedSubstate::LoadedMut(..) | BorrowedSubstate::Taken => {}
+    // TODO remove
+    // Currently used by node globalization
+    pub fn put_substate(&mut self, substate_id: SubstateId, substate: Substate) {
+        if !self.loaded_substates.contains_key(&substate_id) {
+            self.loaded_substates.insert(
+                substate_id.clone(),
+                LoadedSubstate {
+                    substate: SubstateCache::Free(substate),
+                    lock_state: LockState::no_lock(),
+                },
+            );
+        } else {
+            self.loaded_substates
+                .get_mut(&substate_id)
+                .unwrap()
+                .substate = SubstateCache::Free(substate);
         }
-
-        self.borrowed_substates
-            .insert(substate_id, BorrowedSubstate::LoadedMut(value.into()));
     }
 
     /// Returns the value of a key value pair
-    pub fn read_key_value(&mut self, parent_address: SubstateId, key: Vec<u8>) -> Substate {
+    pub fn read_key_value(&mut self, parent_address: SubstateId, key: Vec<u8>) -> &Substate {
         // TODO: consider using a single address as function input
         let substate_id = match parent_address {
-            SubstateId::NonFungibleSpace(resource_address) => {
-                SubstateId::NonFungible(resource_address, NonFungibleId(key))
-            }
-            SubstateId::KeyValueStoreSpace(kv_store_id) => {
-                SubstateId::KeyValueStoreEntry(kv_store_id, key)
-            }
+            SubstateId(
+                RENodeId::NonFungibleStore(store_id),
+                SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Space),
+            ) => SubstateId(
+                RENodeId::NonFungibleStore(store_id),
+                SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(NonFungibleId(key))),
+            ),
+            SubstateId(
+                RENodeId::KeyValueStore(kv_store_id),
+                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Space),
+            ) => SubstateId(
+                RENodeId::KeyValueStore(kv_store_id),
+                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key)),
+            ),
             _ => panic!("Unsupported key value"),
         };
 
         match parent_address {
-            SubstateId::NonFungibleSpace(_) => self
-                .state_track
-                .get_substate(&substate_id)
-                .unwrap_or(Substate::NonFungible(NonFungibleWrapper(None))),
-            SubstateId::KeyValueStoreSpace(..) => self
-                .state_track
-                .get_substate(&substate_id)
-                .unwrap_or(Substate::KeyValueStoreEntry(KeyValueStoreEntryWrapper(
-                    None,
-                ))),
+            SubstateId(RENodeId::NonFungibleStore(..), ..) => {
+                if !self.loaded_substates.contains_key(&substate_id) {
+                    let substate = self
+                        .state_track
+                        .get_substate(&substate_id)
+                        .unwrap_or(Substate::NonFungible(NonFungibleSubstate(None)));
+
+                    self.loaded_substates.insert(
+                        substate_id.clone(),
+                        LoadedSubstate {
+                            substate: SubstateCache::Free(substate),
+                            lock_state: LockState::no_lock(),
+                        },
+                    );
+                }
+
+                self.loaded_substates
+                    .get(&substate_id)
+                    .unwrap()
+                    .substate
+                    .borrow()
+            }
+            SubstateId(RENodeId::KeyValueStore(..), ..) => {
+                if !self.loaded_substates.contains_key(&substate_id) {
+                    let substate = self.state_track.get_substate(&substate_id).unwrap_or(
+                        Substate::KeyValueStoreEntry(KeyValueStoreEntrySubstate(None)),
+                    );
+
+                    self.loaded_substates.insert(
+                        substate_id.clone(),
+                        LoadedSubstate {
+                            substate: SubstateCache::Free(substate),
+                            lock_state: LockState::no_lock(),
+                        },
+                    );
+                }
+
+                self.loaded_substates
+                    .get(&substate_id)
+                    .unwrap()
+                    .substate
+                    .borrow()
+            }
+            _ => panic!("Invalid keyed value address {:?}", parent_address),
+        }
+    }
+
+    pub fn read_key_value_mut(
+        &mut self,
+        parent_address: SubstateId,
+        key: Vec<u8>,
+    ) -> &mut Substate {
+        // TODO: consider using a single address as function input
+        let substate_id = match parent_address {
+            SubstateId(
+                RENodeId::NonFungibleStore(non_fungible_store_id),
+                SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Space),
+            ) => SubstateId(
+                RENodeId::NonFungibleStore(non_fungible_store_id),
+                SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(NonFungibleId(key))),
+            ),
+            SubstateId(
+                RENodeId::KeyValueStore(kv_store_id),
+                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Space),
+            ) => SubstateId(
+                RENodeId::KeyValueStore(kv_store_id),
+                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key)),
+            ),
+            _ => panic!("Unsupported key value"),
+        };
+
+        match parent_address {
+            SubstateId(RENodeId::NonFungibleStore(..), ..) => {
+                if !self.loaded_substates.contains_key(&substate_id) {
+                    let substate = self
+                        .state_track
+                        .get_substate(&substate_id)
+                        .unwrap_or(Substate::NonFungible(NonFungibleSubstate(None)));
+
+                    self.loaded_substates.insert(
+                        substate_id.clone(),
+                        LoadedSubstate {
+                            substate: SubstateCache::Free(substate),
+                            lock_state: LockState::no_lock(),
+                        },
+                    );
+                }
+
+                self.loaded_substates
+                    .get_mut(&substate_id)
+                    .unwrap()
+                    .substate
+                    .borrow_mut()
+            }
+            SubstateId(RENodeId::KeyValueStore(..), ..) => {
+                if !self.loaded_substates.contains_key(&substate_id) {
+                    let substate = self.state_track.get_substate(&substate_id).unwrap_or(
+                        Substate::KeyValueStoreEntry(KeyValueStoreEntrySubstate(None)),
+                    );
+
+                    self.loaded_substates.insert(
+                        substate_id.clone(),
+                        LoadedSubstate {
+                            substate: SubstateCache::Free(substate),
+                            lock_state: LockState::no_lock(),
+                        },
+                    );
+                }
+
+                self.loaded_substates
+                    .get_mut(&substate_id)
+                    .unwrap()
+                    .substate
+                    .borrow_mut()
+            }
             _ => panic!("Invalid keyed value address {:?}", parent_address),
         }
     }
@@ -294,31 +545,45 @@ impl<'s, R: FeeReserve> Track<'s, R> {
     ) {
         // TODO: consider using a single address as function input
         let substate_id = match parent_substate_id {
-            SubstateId::NonFungibleSpace(resource_address) => {
-                SubstateId::NonFungible(resource_address, NonFungibleId(key.clone()))
-            }
-            SubstateId::KeyValueStoreSpace(kv_store_id) => {
-                SubstateId::KeyValueStoreEntry(kv_store_id, key.clone())
-            }
+            SubstateId(
+                RENodeId::NonFungibleStore(resource_address),
+                SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Space),
+            ) => SubstateId(
+                RENodeId::NonFungibleStore(resource_address),
+                SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(NonFungibleId(
+                    key.clone(),
+                ))),
+            ),
+            SubstateId(
+                RENodeId::KeyValueStore(kv_store_id),
+                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Space),
+            ) => SubstateId(
+                RENodeId::KeyValueStore(kv_store_id),
+                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key.clone())),
+            ),
             _ => panic!("Unsupported key value"),
         };
 
-        self.state_track.put_substate(substate_id, value.into());
+        if let Some(loaded) = self.loaded_substates.get_mut(&substate_id) {
+            loaded.substate = SubstateCache::Free(value.into());
+        } else {
+            self.state_track.put_substate(substate_id, value.into());
+        }
     }
 
-    pub fn apply_pre_execution_costs<T: ExecutableTransaction>(
+    pub fn apply_pre_execution_costs(
         mut self,
-        transaction: &T,
+        transaction: &Executable,
     ) -> Result<Self, PreExecutionError> {
         let result = self
             .fee_reserve
-            .consume(self.fee_table.tx_base_fee(), "base_fee", false)
+            .consume(self.fee_table.tx_base_fee(), "base_fee", true)
             .and_then(|()| {
                 self.fee_reserve.consume(
                     self.fee_table.tx_manifest_decoding_per_byte()
                         * transaction.manifest_instructions_size() as u32,
                     "decode_manifest",
-                    false,
+                    true,
                 )
             })
             .and_then(|()| {
@@ -326,15 +591,15 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                     self.fee_table.tx_manifest_verification_per_byte()
                         * transaction.manifest_instructions_size() as u32,
                     "verify_manifest",
-                    false,
+                    true,
                 )
             })
             .and_then(|()| {
                 self.fee_reserve.consume(
                     self.fee_table.tx_signature_verification_per_sig()
-                        * transaction.initial_proofs().len() as u32,
+                        * transaction.auth_zone_params().initial_proofs.len() as u32,
                     "verify_signatures",
-                    false,
+                    true,
                 )
             })
             .and_then(|()| {
@@ -355,26 +620,32 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         }
     }
 
-    pub fn finalize(
-        mut self,
-        invoke_result: Result<Vec<Vec<u8>>, RuntimeError>,
-        resource_changes: Vec<ResourceChange>, // TODO: wrong abstraction, resource change should be derived from track instead of kernel
-    ) -> TrackReceipt {
+    pub fn finalize(mut self, invoke_result: Result<Vec<Vec<u8>>, RuntimeError>) -> TrackReceipt {
         let is_success = invoke_result.is_ok();
 
         // Commit/rollback application state changes
         if is_success {
+            for (id, loaded) in self.loaded_substates {
+                if let SubstateCache::Free(substate) = loaded.substate {
+                    self.state_track.put_substate(id, substate);
+                }
+            }
+
+            for (id, substate) in nodes_to_substates(self.loaded_nodes.into_iter().collect()) {
+                self.state_track.put_substate(id, substate);
+            }
+
             self.state_track.commit();
-            assert!(self.borrowed_substates.is_empty())
         } else {
             self.state_track.rollback();
-            self.borrowed_substates.clear();
-            self.new_substates.clear();
+            self.loaded_substates.clear();
         }
 
         // Close fee reserve
         let fee_summary = self.fee_reserve.finalize();
         let is_rejection = !fee_summary.loan_fully_repaid;
+
+        let mut actual_fee_payments: HashMap<VaultId, Decimal> = HashMap::new();
 
         // Commit fee state changes
         let result = if is_rejection {
@@ -386,19 +657,18 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             })
         } else {
             let mut required = fee_summary.burned + fee_summary.tipped;
-            let mut collector = ResourceContainer::new_empty(
-                RADIX_TOKEN,
-                ResourceType::Fungible { divisibility: 18 },
-            );
+            let mut collector: LockableResource =
+                Resource::new_empty(RADIX_TOKEN, ResourceType::Fungible { divisibility: 18 })
+                    .into();
             for (vault_id, mut locked, contingent) in fee_summary.payments.iter().cloned().rev() {
                 let amount = if contingent {
                     if is_success {
-                        Decimal::min(locked.liquid_amount(), required)
+                        Decimal::min(locked.amount(), required)
                     } else {
                         Decimal::zero()
                     }
                 } else {
-                    Decimal::min(locked.liquid_amount(), required)
+                    Decimal::min(locked.amount(), required)
                 };
 
                 // Deduct fee required
@@ -414,39 +684,33 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                     .expect("Failed to add fee to fee collector");
 
                 // Refund overpayment
-                let substate_id = SubstateId::Vault(vault_id);
+                let substate_id = SubstateId(
+                    RENodeId::Vault(vault_id),
+                    SubstateOffset::Vault(VaultOffset::Vault),
+                );
+
                 let mut substate = self
                     .state_track
                     .get_substate_from_base(&substate_id)
-                    .expect("Failed to fetch a fee-locking vault")
-                    .expect("Vault not found");
+                    .expect("Failed to fetch a fee-locking vault");
                 substate
                     .vault_mut()
-                    .put(Bucket::new(locked))
+                    .0
+                    .put(locked)
                     .expect("Failed to put a fee-locking vault");
                 self.state_track.put_substate_to_base(substate_id, substate);
+
+                *actual_fee_payments.entry(vault_id).or_default() += amount;
             }
+            let execution_trace_receipt = ExecutionTraceReceipt::new(
+                self.vault_ops,
+                actual_fee_payments,
+                &mut self.state_track,
+                invoke_result.is_ok(),
+            );
 
             // TODO: update XRD supply or disable it
             // TODO: pay tips to the lead validator
-
-            let mut new_component_addresses = Vec::new();
-            let mut new_resource_addresses = Vec::new();
-            let mut new_package_addresses = Vec::new();
-            for substate_id in self.new_substates {
-                match substate_id {
-                    SubstateId::ComponentInfo(component_address) => {
-                        new_component_addresses.push(component_address)
-                    }
-                    SubstateId::ResourceManager(resource_address) => {
-                        new_resource_addresses.push(resource_address)
-                    }
-                    SubstateId::Package(package_address) => {
-                        new_package_addresses.push(package_address)
-                    }
-                    _ => {}
-                }
-            }
 
             TransactionResult::Commit(CommitResult {
                 outcome: match invoke_result {
@@ -454,12 +718,8 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                     Err(error) => TransactionOutcome::Failure(error),
                 },
                 state_updates: self.state_track.into_base().generate_diff(),
-                entity_changes: EntityChanges {
-                    new_package_addresses,
-                    new_component_addresses,
-                    new_resource_addresses,
-                },
-                resource_changes,
+                entity_changes: EntityChanges::new(self.new_global_addresses),
+                resource_changes: execution_trace_receipt.resource_changes,
             })
         };
 

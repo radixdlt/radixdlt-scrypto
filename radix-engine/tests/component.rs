@@ -1,4 +1,4 @@
-use radix_engine::engine::{KernelError, RuntimeError};
+use radix_engine::engine::{KernelError, LockState, RuntimeError, TrackError};
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
 use scrypto::address::Bech32Decoder;
@@ -16,7 +16,7 @@ fn test_component() {
     // Create component
     let manifest1 = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(package, "ComponentTest", "create_component", args!())
+        .call_scrypto_function(package, "ComponentTest", "create_component", args!())
         .build();
     let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
     receipt1.expect_commit_success();
@@ -30,7 +30,7 @@ fn test_component() {
     // Call functions & methods
     let manifest2 = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(
+        .call_scrypto_function(
             package,
             "ComponentTest",
             "get_component_info",
@@ -44,7 +44,10 @@ fn test_component() {
             args!(Expression::entire_worktop()),
         )
         .build();
-    let receipt2 = test_runner.execute_manifest(manifest2, vec![public_key.into()]);
+    let receipt2 = test_runner.execute_manifest(
+        manifest2,
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
     receipt2.expect_commit_success();
 }
 
@@ -58,7 +61,7 @@ fn invalid_blueprint_name_should_cause_error() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(
+        .call_scrypto_function(
             package_address,
             "NonExistentBlueprint",
             "create_component",
@@ -78,14 +81,14 @@ fn invalid_blueprint_name_should_cause_error() {
 }
 
 #[test]
-fn reentrancy_should_not_be_possible() {
+fn mut_reentrancy_should_not_be_possible() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.compile_and_publish("./tests/component");
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(package_address, "ReentrantComponent", "new", args!())
+        .lock_fee(10u32.into(), SYS_FAUCET_COMPONENT)
+        .call_scrypto_function(package_address, "ReentrantComponent", "new", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
@@ -96,21 +99,90 @@ fn reentrancy_should_not_be_possible() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_method(component_address, "call_self", args!())
+        .lock_fee(10u32.into(), SYS_FAUCET_COMPONENT)
+        .call_method(component_address, "call_mut_self", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        if let RuntimeError::KernelError(KernelError::Reentrancy(SubstateId::ComponentState(
-            address,
-        ))) = e
-        {
-            address.eq(&component_address)
-        } else {
-            false
-        }
+        matches!(
+            e,
+            RuntimeError::KernelError(KernelError::TrackError(TrackError::SubstateLocked(
+                SubstateId(
+                    RENodeId::Component(..),
+                    SubstateOffset::Component(ComponentOffset::State)
+                ),
+                LockState::Write
+            )))
+        )
+    });
+}
+
+#[test]
+fn read_reentrancy_should_be_possible() {
+    // Arrange
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
+    let package_address = test_runner.compile_and_publish("./tests/component");
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        .lock_fee(10u32.into(), SYS_FAUCET_COMPONENT)
+        .call_scrypto_function(package_address, "ReentrantComponent", "new", args!())
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    receipt.expect_commit_success();
+    let component_address = receipt
+        .expect_commit()
+        .entity_changes
+        .new_component_addresses[0];
+
+    // Act
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        .lock_fee(10u32.into(), SYS_FAUCET_COMPONENT)
+        .call_method(component_address, "call_self", args!())
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
+fn read_then_mut_reentrancy_should_not_be_possible() {
+    // Arrange
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
+    let package_address = test_runner.compile_and_publish("./tests/component");
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        .lock_fee(10u32.into(), SYS_FAUCET_COMPONENT)
+        .call_scrypto_function(package_address, "ReentrantComponent", "new", args!())
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    receipt.expect_commit_success();
+    let component_address = receipt
+        .expect_commit()
+        .entity_changes
+        .new_component_addresses[0];
+
+    // Act
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        .lock_fee(10u32.into(), SYS_FAUCET_COMPONENT)
+        .call_method(component_address, "call_mut_self_2", args!())
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::KernelError(KernelError::TrackError(TrackError::SubstateLocked(
+                SubstateId(
+                    RENodeId::Component(..),
+                    SubstateOffset::Component(ComponentOffset::State)
+                ),
+                LockState::Read(1),
+            )))
+        )
     });
 }
 

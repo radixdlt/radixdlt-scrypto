@@ -4,8 +4,8 @@ use sbor::{encode_any, DecodeError, Value};
 use scrypto::address::{AddressError, Bech32Encoder};
 use scrypto::buffer::scrypto_decode;
 use scrypto::core::{
-    BucketFnIdentifier, FnIdentifier, NativeFnIdentifier, NetworkDefinition, Receiver,
-    ResourceManagerFnIdentifier,
+    BucketMethod, FunctionIdent, MethodIdent, NativeFunction, NativeMethod, NetworkDefinition,
+    Receiver, ReceiverMethodIdent, ResourceManagerFunction, ResourceManagerMethod,
 };
 use scrypto::engine::types::*;
 use scrypto::misc::ContextualDisplay;
@@ -25,7 +25,6 @@ pub enum DecompileError {
     AddressError(AddressError),
     InvalidValue(ScryptoValueFormatterError),
     FormattingError(fmt::Error),
-    UnrecognizedNativeFunction,
     InvalidArguments,
 }
 
@@ -337,10 +336,10 @@ pub fn decompile_instruction<F: fmt::Write>(
             f.write_str("DROP_ALL_PROOFS;")?;
         }
         Instruction::CallFunction {
-            fn_identifier,
+            function_ident,
             args,
-        } => match fn_identifier {
-            FnIdentifier::Scrypto {
+        } => match function_ident {
+            FunctionIdent::Scrypto {
                 package_address,
                 blueprint_name,
                 ident,
@@ -371,10 +370,10 @@ pub fn decompile_instruction<F: fmt::Write>(
                 }
                 f.write_str(";")?;
             }
-            FnIdentifier::Native(native_fn_identifier) => {
+            FunctionIdent::Native(native_function_ident) => {
                 let mut recognized = false;
-                match native_fn_identifier {
-                    NativeFnIdentifier::ResourceManager(ResourceManagerFnIdentifier::Create) => {
+                match native_function_ident {
+                    NativeFunction::ResourceManager(ResourceManagerFunction::Create) => {
                         if let Ok(input) = scrypto_decode::<ResourceManagerCreateInput>(&args) {
                             recognized = true;
                             f.write_str(&format!(
@@ -399,13 +398,11 @@ pub fn decompile_instruction<F: fmt::Write>(
                 }
             }
         },
-        Instruction::CallMethod {
-            method_identifier,
-            args,
-        } => match method_identifier {
-            MethodIdentifier::Scrypto {
-                component_address,
-                ident,
+        Instruction::CallMethod { method_ident, args } => match method_ident {
+            ReceiverMethodIdent {
+                receiver:
+                    Receiver::Ref(RENodeId::Global(GlobalAddress::Component(component_address))),
+                method_ident: MethodIdent::Scrypto(ident),
             } => {
                 f.write_str(&format!(
                     "CALL_METHOD ComponentAddress(\"{}\") \"{}\"",
@@ -434,14 +431,14 @@ pub fn decompile_instruction<F: fmt::Write>(
 
                 f.write_str(";")?;
             }
-            MethodIdentifier::Native {
-                native_fn_identifier,
+            ReceiverMethodIdent {
                 receiver,
+                method_ident,
             } => {
                 let mut recognized = false;
-                match (native_fn_identifier, receiver) {
+                match (method_ident, receiver) {
                     (
-                        NativeFnIdentifier::Bucket(BucketFnIdentifier::Burn),
+                        MethodIdent::Native(NativeMethod::Bucket(BucketMethod::Burn)),
                         Receiver::Consumed(RENodeId::Bucket(bucket_id)),
                     ) => {
                         if let Ok(_input) = scrypto_decode::<ConsumingBucketBurnInput>(&args) {
@@ -458,7 +455,9 @@ pub fn decompile_instruction<F: fmt::Write>(
                         }
                     }
                     (
-                        NativeFnIdentifier::ResourceManager(ResourceManagerFnIdentifier::Mint),
+                        MethodIdent::Native(NativeMethod::ResourceManager(
+                            ResourceManagerMethod::Mint,
+                        )),
                         Receiver::Ref(RENodeId::ResourceManager(resource_address)),
                     ) => {
                         if let Ok(input) = scrypto_decode::<ResourceManagerMintInput>(&args) {
@@ -495,7 +494,7 @@ mod tests {
     use crate::manifest::*;
     use sbor::*;
     use scrypto::buffer::scrypto_encode;
-    use scrypto::core::FnIdentifier;
+    use scrypto::core::FunctionIdent;
     use scrypto::core::NetworkDefinition;
     use scrypto::resource::AccessRule;
     use scrypto::resource::Mutability;
@@ -514,8 +513,8 @@ mod tests {
     fn test_decompile_create_resource_with_invalid_arguments() {
         let manifest = decompile(
             &[Instruction::CallFunction {
-                fn_identifier: FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
-                    ResourceManagerFnIdentifier::Create,
+                function_ident: FunctionIdent::Native(NativeFunction::ResourceManager(
+                    ResourceManagerFunction::Create,
                 )),
                 args: scrypto_encode(&BadResourceManagerCreateInput {
                     resource_type: ResourceType::NonFungible,

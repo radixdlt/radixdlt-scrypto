@@ -4,7 +4,7 @@ use scrypto::core::NetworkDefinition;
 use scrypto::crypto::{hash, Hash, PublicKey, Signature, SignatureWithPublicKey};
 
 use crate::manifest::{compile, CompileError};
-use crate::model::Instruction;
+use crate::model::TransactionManifest;
 
 // TODO: add versioning of transaction schema
 
@@ -20,12 +20,6 @@ pub struct TransactionHeader {
     pub notary_as_signatory: bool,
     pub cost_unit_limit: u32,
     pub tip_percentage: u32,
-}
-
-#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
-pub struct TransactionManifest {
-    pub instructions: Vec<Instruction>,
-    pub blobs: Vec<Vec<u8>>,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]

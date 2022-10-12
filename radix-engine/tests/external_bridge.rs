@@ -19,7 +19,7 @@ fn test_external_bridges() {
     // Part 2 - Get a target component address
     let manifest1 = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(
+        .call_scrypto_function(
             target_package_address,
             "ExternalBlueprintTarget",
             "create",
@@ -37,7 +37,7 @@ fn test_external_bridges() {
     // Part 3 - Get the caller component address
     let manifest2 = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(
+        .call_scrypto_function(
             caller_package_address,
             "ExternalBlueprintCaller",
             "create",

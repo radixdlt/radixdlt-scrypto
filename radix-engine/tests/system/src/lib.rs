@@ -9,10 +9,14 @@ blueprint! {
             Runtime::current_epoch()
         }
 
-        pub fn set_epoch(epoch: u64) {
-            let input = RadixEngineInput::InvokeMethod(
-                Receiver::Ref(RENodeId::System),
-                FnIdentifier::Native(NativeFnIdentifier::System(SystemFnIdentifier::SetEpoch)),
+        pub fn set_epoch(component_address: ComponentAddress, epoch: u64) {
+            let input = RadixEngineInput::Invoke(
+                FnIdent::Method(ReceiverMethodIdent {
+                    receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Component(
+                        component_address,
+                    ))),
+                    method_ident: MethodIdent::Native(NativeMethod::System(SystemMethod::SetEpoch)),
+                }),
                 scrypto_encode(&SystemSetEpochInput { epoch }),
             );
             call_engine(input)

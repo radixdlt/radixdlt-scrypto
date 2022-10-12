@@ -1,11 +1,16 @@
 use transaction::errors::*;
 
 use crate::engine::REActor;
-use crate::fee::FeeReserveError;
 use crate::model::*;
 use crate::types::*;
 use crate::wasm::WasmError;
 use sbor::*;
+use scrypto::core::{FnIdent, ReceiverMethodIdent};
+
+use super::AuthError;
+use super::CostingError;
+use super::ExecutionTraceError;
+use super::TrackError;
 
 /// Represents an error which causes a tranasction to be rejected.
 #[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
@@ -33,17 +38,31 @@ pub enum RuntimeError {
     ApplicationError(ApplicationError),
 }
 
+impl From<KernelError> for RuntimeError {
+    fn from(error: KernelError) -> Self {
+        RuntimeError::KernelError(error)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
 pub enum KernelError {
     // invocation
     WasmError(WasmError),
+    RENodeNotVisible(RENodeId),
     InvokeMethodInvalidReceiver(RENodeId),
-    InvokeMethodInvalidReferencePass(RENodeId),
-    InvokeMethodInvalidReferenceReturn(RENodeId),
+
+    InvalidReferencePass(GlobalAddress),
+    InvalidReferenceReturn(GlobalAddress),
+    InvalidReferenceWrite(GlobalAddress),
+    GlobalAddressNotFound(GlobalAddress),
+
     MaxCallDepthLimitReached,
-    MethodNotFound(FnIdentifier),
-    InvalidFnInput { fn_identifier: FnIdentifier },
-    InvalidFnOutput { fn_identifier: FnIdentifier },
+    FnIdentNotFound(FnIdent),
+    MethodNotFound(ReceiverMethodIdent),
+    FunctionNotFound(FunctionIdent),
+    InvalidFnInput2(FnIdent),
+    InvalidFnInput { fn_identifier: FunctionIdent },
+    InvalidFnOutput { fn_identifier: FunctionIdent },
 
     // ID allocation
     IdAllocationError(IdAllocationError),
@@ -67,10 +86,14 @@ pub enum KernelError {
     RENodeNotInTrack,
 
     // Substate
-    Reentrancy(SubstateId),
-    SubstateReadNotReadable(REActor, SubstateId),
-    SubstateWriteNotWriteable(REActor, SubstateId),
-    SubstateReadSubstateNotFound(SubstateId),
+    MovingLockedRENode(RENodeId),
+    LockDoesNotExist(LockHandle),
+    LockNotMutable(LockHandle),
+    OffsetNotAvailable(SubstateOffset),
+    InvalidOverwrite,
+    SubstateNotReadable(REActor, SubstateId),
+    SubstateNotWriteable(REActor, SubstateId),
+    TrackError(TrackError),
 
     // constraints
     ValueNotAllowed,
@@ -81,6 +104,7 @@ pub enum KernelError {
     CantMoveLockedBucket,
     CantMoveRestrictedProof,
     CantMoveWorktop,
+    CantMoveGlobal,
     CantMoveAuthZone,
     DropFailure(DropFailure),
 
@@ -89,19 +113,21 @@ pub enum KernelError {
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
 pub enum ModuleError {
-    AuthorizationError {
-        function: FnIdentifier,
-        authorization: MethodAuthorization,
-        error: MethodAuthorizationError,
-    },
-
-    CostingError(FeeReserveError),
+    AuthError(AuthError),
+    CostingError(CostingError),
+    ExecutionTraceError(ExecutionTraceError),
 }
 
 #[derive(Debug)]
 pub enum InvokeError<E> {
     Error(E),
     Downstream(RuntimeError),
+}
+
+impl<E> From<RuntimeError> for InvokeError<E> {
+    fn from(runtime_error: RuntimeError) -> Self {
+        InvokeError::Downstream(runtime_error)
+    }
 }
 
 impl<E> InvokeError<E> {
@@ -147,6 +173,7 @@ pub enum DropFailure {
     Vault,
     Package,
     KeyValueStore,
+    NonFungibleStore,
 }
 
 impl fmt::Display for RuntimeError {

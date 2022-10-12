@@ -1,42 +1,72 @@
-use crate::model::Instruction;
-use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
-use sbor::*;
-use scrypto::component::ComponentAddress;
-use scrypto::core::{NativeFnIdentifier, Receiver};
+use scrypto::buffer::scrypto_encode;
 use scrypto::crypto::*;
-use scrypto::resource::NonFungibleAddress;
+use scrypto::resource::{NonFungibleAddress, ResourceAddress};
+pub use std::collections::BTreeSet;
 
-#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
-pub enum MethodIdentifier {
-    Scrypto {
-        component_address: ComponentAddress,
-        ident: String,
-    },
-    Native {
-        receiver: Receiver,
-        native_fn_identifier: NativeFnIdentifier,
-    },
+use crate::model::*;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AuthZoneParams {
+    pub initial_proofs: Vec<NonFungibleAddress>,
+    pub virtualizable_proofs_resource_addresses: BTreeSet<ResourceAddress>,
 }
 
-/// A common trait for all transactions that can be executed by Radix Engine.
-pub trait ExecutableTransaction {
-    /// Returns the transaction hash, which must be globally unique.
-    fn transaction_hash(&self) -> Hash;
+/// Represents a validated transaction
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Executable {
+    pub transaction_hash: Hash,
+    pub instructions: Vec<Instruction>,
+    pub auth_zone_params: AuthZoneParams,
+    pub cost_unit_limit: u32,
+    pub tip_percentage: u32,
+    pub blobs: Vec<Vec<u8>>,
+}
 
-    /// Returns the manifest size.
-    fn manifest_instructions_size(&self) -> u32;
+impl Executable {
+    pub fn new(
+        transaction_hash: Hash,
+        instructions: Vec<Instruction>,
+        auth_zone_params: AuthZoneParams,
+        cost_unit_limit: u32,
+        tip_percentage: u32,
+        blobs: Vec<Vec<u8>>,
+    ) -> Self {
+        Self {
+            transaction_hash,
+            instructions,
+            auth_zone_params,
+            cost_unit_limit,
+            tip_percentage,
+            blobs,
+        }
+    }
 
-    /// Returns the limit of cost units consumable
-    fn cost_unit_limit(&self) -> u32;
+    pub fn transaction_hash(&self) -> Hash {
+        self.transaction_hash
+    }
 
-    /// Returns the tip percentage
-    fn tip_percentage(&self) -> u32;
+    pub fn manifest_instructions_size(&self) -> u32 {
+        scrypto_encode(&self.instructions).len() as u32
+    }
 
-    /// Returns the instructions to execute.
-    fn instructions(&self) -> &[Instruction];
+    pub fn cost_unit_limit(&self) -> u32 {
+        self.cost_unit_limit
+    }
 
-    fn initial_proofs(&self) -> Vec<NonFungibleAddress>;
+    pub fn tip_percentage(&self) -> u32 {
+        self.tip_percentage
+    }
 
-    fn blobs(&self) -> &[Vec<u8>];
+    pub fn instructions(&self) -> &[Instruction] {
+        &self.instructions
+    }
+
+    pub fn auth_zone_params(&self) -> AuthZoneParams {
+        self.auth_zone_params.clone()
+    }
+
+    pub fn blobs(&self) -> &[Vec<u8>] {
+        &self.blobs
+    }
 }

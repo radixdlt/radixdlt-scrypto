@@ -5,11 +5,12 @@ use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto::core::ResourceManagerFnIdentifier;
+use scrypto::core::{MethodIdent, ReceiverMethodIdent, ResourceManagerMethod};
+use scrypto::engine::types::GlobalAddress;
 
 use crate::abi::*;
 use crate::buffer::scrypto_encode;
-use crate::core::{FnIdentifier, NativeFnIdentifier, Receiver, VaultFnIdentifier};
+use crate::core::{FnIdent, NativeMethod, Receiver, VaultMethod};
 use crate::crypto::*;
 use crate::engine::types::RENodeId;
 use crate::engine::{api::*, call_engine, types::VaultId};
@@ -67,11 +68,15 @@ pub struct Vault(pub VaultId);
 impl Vault {
     /// Creates an empty vault to permanently hold resource of the given definition.
     pub fn new(resource_address: ResourceAddress) -> Self {
-        let input = RadixEngineInput::InvokeMethod(
-            Receiver::Ref(RENodeId::ResourceManager(resource_address)),
-            FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
-                ResourceManagerFnIdentifier::CreateVault,
-            )),
+        let input = RadixEngineInput::Invoke(
+            FnIdent::Method(ReceiverMethodIdent {
+                receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Resource(
+                    resource_address,
+                ))),
+                method_ident: MethodIdent::Native(NativeMethod::ResourceManager(
+                    ResourceManagerMethod::CreateVault,
+                )),
+            }),
             scrypto_encode(&ResourceManagerCreateVaultInput {}),
         );
         call_engine(input)
@@ -85,77 +90,83 @@ impl Vault {
     }
 
     fn take_internal(&mut self, amount: Decimal) -> Bucket {
-        let input = RadixEngineInput::InvokeMethod(
-            Receiver::Ref(RENodeId::Vault(self.0)),
-            FnIdentifier::Native(NativeFnIdentifier::Vault(VaultFnIdentifier::Take)),
+        let input = RadixEngineInput::Invoke(
+            FnIdent::Method(ReceiverMethodIdent {
+                receiver: Receiver::Ref(RENodeId::Vault(self.0)),
+                method_ident: MethodIdent::Native(NativeMethod::Vault(VaultMethod::Take)),
+            }),
             scrypto_encode(&VaultTakeInput { amount }),
         );
         call_engine(input)
     }
 
     fn lock_fee_internal(&mut self, amount: Decimal) {
-        let input = RadixEngineInput::InvokeMethod(
-            Receiver::Ref(RENodeId::Vault(self.0)),
-            FnIdentifier::Native(NativeFnIdentifier::Vault(VaultFnIdentifier::LockFee)),
+        let input = RadixEngineInput::Invoke(
+            FnIdent::Method(ReceiverMethodIdent {
+                receiver: Receiver::Ref(RENodeId::Vault(self.0)),
+                method_ident: MethodIdent::Native(NativeMethod::Vault(VaultMethod::LockFee)),
+            }),
             scrypto_encode(&VaultTakeInput { amount }),
         );
         call_engine(input)
     }
 
     fn lock_contingent_fee_internal(&mut self, amount: Decimal) {
-        let input = RadixEngineInput::InvokeMethod(
-            Receiver::Ref(RENodeId::Vault(self.0)),
-            FnIdentifier::Native(NativeFnIdentifier::Vault(
-                VaultFnIdentifier::LockContingentFee,
-            )),
+        let input = RadixEngineInput::Invoke(
+            FnIdent::Method(ReceiverMethodIdent {
+                receiver: Receiver::Ref(RENodeId::Vault(self.0)),
+                method_ident: MethodIdent::Native(NativeMethod::Vault(
+                    VaultMethod::LockContingentFee,
+                )),
+            }),
             scrypto_encode(&VaultTakeInput { amount }),
         );
         call_engine(input)
     }
 
     native_functions! {
-        Receiver::Ref(RENodeId::Vault(self.0)), NativeFnIdentifier::Vault => {
+        Receiver::Ref(RENodeId::Vault(self.0)), NativeMethod::Vault => {
             pub fn put(&mut self, bucket: Bucket) -> () {
-                VaultFnIdentifier::Put,
+                VaultMethod::Put,
                 VaultPutInput {
                     bucket
                 }
             }
 
             pub fn take_non_fungibles(&mut self, non_fungible_ids: &BTreeSet<NonFungibleId>) -> Bucket {
-                VaultFnIdentifier::TakeNonFungibles,
+                VaultMethod::TakeNonFungibles,
                 VaultTakeNonFungiblesInput {
                     non_fungible_ids: non_fungible_ids.clone(),
                 }
             }
 
             pub fn amount(&self) -> Decimal {
-                VaultFnIdentifier::GetAmount,
+                VaultMethod::GetAmount,
                 VaultGetAmountInput {}
             }
 
             pub fn resource_address(&self) -> ResourceAddress {
-                VaultFnIdentifier::GetResourceAddress,
+                VaultMethod::GetResourceAddress,
                 VaultGetResourceAddressInput {}
             }
 
             pub fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId> {
-                VaultFnIdentifier::GetNonFungibleIds,
+                VaultMethod::GetNonFungibleIds,
                 VaultGetNonFungibleIdsInput {}
             }
 
             pub fn create_proof(&self) -> Proof {
-                VaultFnIdentifier::CreateProof,
+                VaultMethod::CreateProof,
                 VaultCreateProofInput {}
             }
 
             pub fn create_proof_by_amount(&self, amount: Decimal) -> Proof {
-                VaultFnIdentifier::CreateProofByAmount,
+                VaultMethod::CreateProofByAmount,
                 VaultCreateProofByAmountInput { amount }
             }
 
             pub fn create_proof_by_ids(&self, ids: &BTreeSet<NonFungibleId>) -> Proof {
-                VaultFnIdentifier::CreateProofByIds,
+                VaultMethod::CreateProofByIds,
                 VaultCreateProofByIdsInput { ids: ids.clone() }
             }
         }

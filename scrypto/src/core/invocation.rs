@@ -5,50 +5,90 @@ use sbor::*;
 use crate::component::PackageAddress;
 use crate::engine::types::RENodeId;
 
-#[derive(Debug, Clone, Eq, PartialEq, Copy, TypeId, Encode, Decode)]
-pub enum Receiver {
-    Consumed(RENodeId),
-    Ref(RENodeId),
-    CurrentAuthZone,
+#[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
+pub enum FnIdent {
+    Function(FunctionIdent),
+    Method(ReceiverMethodIdent),
+}
+
+impl Receiver {
+    pub fn node_id(&self) -> RENodeId {
+        match self {
+            Receiver::Consumed(node_id) | Receiver::Ref(node_id) => *node_id,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, TypeId, Encode, Decode)]
-pub enum FnIdentifier {
+pub enum FunctionIdent {
     Scrypto {
         package_address: PackageAddress,
         blueprint_name: String,
         ident: String,
     },
-    Native(NativeFnIdentifier),
+    Native(NativeFunction),
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Copy, TypeId, Encode, Decode)]
+pub enum Receiver {
+    Consumed(RENodeId),
+    Ref(RENodeId),
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
+pub enum MethodIdent {
+    Scrypto(String),
+    Native(NativeMethod),
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
+pub struct ReceiverMethodIdent {
+    pub receiver: Receiver,
+    pub method_ident: MethodIdent,
 }
 
 #[derive(
     Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe, PartialOrd, Ord,
 )]
-pub enum NativeFnIdentifier {
-    Component(ComponentFnIdentifier),
-    System(SystemFnIdentifier),
-    AuthZone(AuthZoneFnIdentifier),
-    ResourceManager(ResourceManagerFnIdentifier),
-    Bucket(BucketFnIdentifier),
-    Vault(VaultFnIdentifier),
-    Proof(ProofFnIdentifier),
-    Worktop(WorktopFnIdentifier),
-    Package(PackageFnIdentifier),
-    TransactionProcessor(TransactionProcessorFnIdentifier),
+pub enum NativeMethod {
+    Component(ComponentMethod),
+    System(SystemMethod),
+    AuthZone(AuthZoneMethod),
+    ResourceManager(ResourceManagerMethod),
+    Bucket(BucketMethod),
+    Vault(VaultMethod),
+    Proof(ProofMethod),
+    Worktop(WorktopMethod),
 }
 
 #[derive(
     Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe, PartialOrd, Ord,
 )]
-pub enum ComponentFnIdentifier {
+pub enum NativeFunction {
+    System(SystemFunction),
+    ResourceManager(ResourceManagerFunction),
+    Package(PackageFunction),
+    TransactionProcessor(TransactionProcessorFunction),
+}
+
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe, PartialOrd, Ord,
+)]
+pub enum ComponentMethod {
     AddAccessCheck,
 }
 
 #[derive(
     Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe, PartialOrd, Ord,
 )]
-pub enum SystemFnIdentifier {
+pub enum SystemFunction {
+    Create,
+}
+
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe, PartialOrd, Ord,
+)]
+pub enum SystemMethod {
     GetTransactionHash,
     GetCurrentEpoch,
     SetEpoch,
@@ -57,20 +97,28 @@ pub enum SystemFnIdentifier {
 #[derive(
     Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe, PartialOrd, Ord,
 )]
-pub enum AuthZoneFnIdentifier {
+pub enum AuthZoneMethod {
     Pop,
     Push,
     CreateProof,
     CreateProofByAmount,
     CreateProofByIds,
     Clear,
+    Drain,
 }
 
 #[derive(
     Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe, PartialOrd, Ord,
 )]
-pub enum ResourceManagerFnIdentifier {
+pub enum ResourceManagerFunction {
     Create,
+}
+
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe, PartialOrd, Ord,
+)]
+pub enum ResourceManagerMethod {
+    Burn,
     UpdateAuth,
     LockAuth,
     Mint,
@@ -88,7 +136,7 @@ pub enum ResourceManagerFnIdentifier {
 #[derive(
     Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe, PartialOrd, Ord,
 )]
-pub enum BucketFnIdentifier {
+pub enum BucketMethod {
     Burn,
     Take,
     TakeNonFungibles,
@@ -102,7 +150,7 @@ pub enum BucketFnIdentifier {
 #[derive(
     Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe, PartialOrd, Ord,
 )]
-pub enum VaultFnIdentifier {
+pub enum VaultMethod {
     Take,
     LockFee,
     LockContingentFee,
@@ -119,7 +167,7 @@ pub enum VaultFnIdentifier {
 #[derive(
     Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe, PartialOrd, Ord,
 )]
-pub enum ProofFnIdentifier {
+pub enum ProofMethod {
     Clone,
     GetAmount,
     GetNonFungibleIds,
@@ -130,7 +178,7 @@ pub enum ProofFnIdentifier {
 #[derive(
     Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe, PartialOrd, Ord,
 )]
-pub enum WorktopFnIdentifier {
+pub enum WorktopMethod {
     TakeAll,
     TakeAmount,
     TakeNonFungibles,
@@ -144,14 +192,14 @@ pub enum WorktopFnIdentifier {
 #[derive(
     Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe, PartialOrd, Ord,
 )]
-pub enum PackageFnIdentifier {
+pub enum PackageFunction {
     Publish,
 }
 
 #[derive(
     Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe, PartialOrd, Ord,
 )]
-pub enum TransactionProcessorFnIdentifier {
+pub enum TransactionProcessorFunction {
     Run,
 }
 

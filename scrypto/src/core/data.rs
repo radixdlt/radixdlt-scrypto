@@ -1,14 +1,18 @@
 use crate::buffer::*;
+use crate::component::{ComponentStateSubstate, KeyValueStoreEntrySubstate};
 use crate::engine::api::RadixEngineInput;
-use crate::engine::api::RadixEngineInput::SubstateWrite;
+use crate::engine::api::RadixEngineInput::Write;
 use crate::engine::call_engine;
-use crate::engine::types::SubstateId;
+use crate::engine::types::{
+    ComponentOffset, KeyValueStoreOffset, LockHandle, RENodeId, SubstateOffset,
+};
 use sbor::rust::fmt;
 use sbor::rust::marker::PhantomData;
 use sbor::rust::ops::{Deref, DerefMut};
 use sbor::{Decode, Encode};
 
 pub struct DataRef<V: Encode> {
+    lock_handle: LockHandle,
     value: V,
 }
 
@@ -19,8 +23,8 @@ impl<V: fmt::Display + Encode> fmt::Display for DataRef<V> {
 }
 
 impl<V: Encode> DataRef<V> {
-    pub fn new(value: V) -> DataRef<V> {
-        DataRef { value }
+    pub fn new(lock_handle: LockHandle, value: V) -> DataRef<V> {
+        DataRef { lock_handle, value }
     }
 }
 
@@ -32,8 +36,16 @@ impl<V: Encode> Deref for DataRef<V> {
     }
 }
 
+impl<V: Encode> Drop for DataRef<V> {
+    fn drop(&mut self) {
+        let input = RadixEngineInput::DropLock(self.lock_handle);
+        let _: () = call_engine(input);
+    }
+}
+
 pub struct DataRefMut<V: Encode> {
-    substate_id: SubstateId,
+    lock_handle: LockHandle,
+    offset: SubstateOffset,
     value: V,
 }
 
@@ -44,15 +56,31 @@ impl<V: fmt::Display + Encode> fmt::Display for DataRefMut<V> {
 }
 
 impl<V: Encode> DataRefMut<V> {
-    pub fn new(substate_id: SubstateId, value: V) -> DataRefMut<V> {
-        DataRefMut { substate_id, value }
+    pub fn new(lock_handle: LockHandle, offset: SubstateOffset, value: V) -> DataRefMut<V> {
+        DataRefMut {
+            lock_handle,
+            offset,
+            value,
+        }
     }
 }
 
 impl<V: Encode> Drop for DataRefMut<V> {
     fn drop(&mut self) {
         let bytes = scrypto_encode(&self.value);
-        let input = SubstateWrite(self.substate_id.clone(), bytes);
+        let substate = match &self.offset {
+            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)) => {
+                scrypto_encode(&KeyValueStoreEntrySubstate(Some(bytes)))
+            }
+            SubstateOffset::Component(ComponentOffset::State) => {
+                scrypto_encode(&ComponentStateSubstate { raw: bytes })
+            }
+            s @ _ => panic!("Unsupported substate: {:?}", s),
+        };
+        let input = Write(self.lock_handle, substate);
+        let _: () = call_engine(input);
+
+        let input = RadixEngineInput::DropLock(self.lock_handle);
         let _: () = call_engine(input);
     }
 }
@@ -72,30 +100,80 @@ impl<V: Encode> DerefMut for DataRefMut<V> {
 }
 
 pub struct DataPointer<V: 'static + Encode + Decode> {
-    substate_id: SubstateId,
+    node_id: RENodeId,
+    offset: SubstateOffset,
     phantom_data: PhantomData<V>,
 }
 
 impl<V: 'static + Encode + Decode> DataPointer<V> {
-    pub fn new(substate_id: SubstateId) -> Self {
+    pub fn new(node_id: RENodeId, offset: SubstateOffset) -> Self {
         Self {
-            substate_id,
+            node_id,
+            offset,
             phantom_data: PhantomData,
         }
     }
 
-    pub fn get_mut(&mut self) -> DataRefMut<V> {
-        let input = RadixEngineInput::SubstateRead(self.substate_id.clone());
-        let value: V = call_engine(input);
-        DataRefMut {
-            substate_id: self.substate_id.clone(),
-            value,
+    pub fn get(&self) -> DataRef<V> {
+        let input = RadixEngineInput::LockSubstate(self.node_id, self.offset.clone(), false);
+        let lock_handle: LockHandle = call_engine(input);
+
+        let input = RadixEngineInput::Read(lock_handle);
+        match &self.offset {
+            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)) => {
+                let substate: KeyValueStoreEntrySubstate = call_engine(input);
+                DataRef {
+                    lock_handle,
+                    value: scrypto_decode(&substate.0.unwrap()).unwrap(),
+                }
+            }
+            SubstateOffset::Component(ComponentOffset::State) => {
+                let substate: ComponentStateSubstate = call_engine(input);
+                DataRef {
+                    lock_handle,
+                    value: scrypto_decode(&substate.raw).unwrap(),
+                }
+            }
+            _ => {
+                let substate: V = call_engine(input);
+                DataRef {
+                    lock_handle,
+                    value: substate,
+                }
+            }
         }
     }
 
-    pub fn get(&self) -> DataRef<V> {
-        let input = RadixEngineInput::SubstateRead(self.substate_id.clone());
-        let value: V = call_engine(input);
-        DataRef { value }
+    pub fn get_mut(&mut self) -> DataRefMut<V> {
+        let input = RadixEngineInput::LockSubstate(self.node_id, self.offset.clone(), true);
+        let lock_handle: LockHandle = call_engine(input);
+
+        let input = RadixEngineInput::Read(lock_handle);
+        match &self.offset {
+            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)) => {
+                let substate: KeyValueStoreEntrySubstate = call_engine(input);
+                DataRefMut {
+                    lock_handle,
+                    offset: self.offset.clone(),
+                    value: scrypto_decode(&substate.0.unwrap()).unwrap(),
+                }
+            }
+            SubstateOffset::Component(ComponentOffset::State) => {
+                let substate: ComponentStateSubstate = call_engine(input);
+                DataRefMut {
+                    lock_handle,
+                    offset: self.offset.clone(),
+                    value: scrypto_decode(&substate.raw).unwrap(),
+                }
+            }
+            _ => {
+                let substate: V = call_engine(input);
+                DataRefMut {
+                    lock_handle,
+                    offset: self.offset.clone(),
+                    value: substate,
+                }
+            }
+        }
     }
 }

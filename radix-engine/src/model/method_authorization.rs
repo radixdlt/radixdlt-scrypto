@@ -62,6 +62,17 @@ impl HardResourceOrNonFungible {
     }
 
     pub fn check(&self, auth_zones: &[&AuthZone]) -> bool {
+        // Check if a proof can be virtualized
+        // TODO: consider moving this logic to AuthZone at some point
+        for auth_zone in auth_zones {
+            if let HardResourceOrNonFungible::NonFungible(non_fungible_address) = self {
+                if auth_zone.is_proof_virtualizable(&non_fungible_address.resource_address()) {
+                    return true;
+                }
+            }
+        }
+
+        // If it can't be virtualized, check the actual proofs in the auth zones
         for auth_zone in auth_zones {
             if auth_zone.proofs.iter().any(|p| self.proof_matches(p)) {
                 return true;

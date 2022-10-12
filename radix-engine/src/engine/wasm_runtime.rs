@@ -1,9 +1,12 @@
 use crate::engine::RuntimeError;
 use crate::engine::{HeapRENode, SystemApi};
 use crate::fee::*;
-use crate::model::{ComponentInfo, ComponentState, HeapKeyValueStore, InvokeError};
+use crate::model::{
+    Component, ComponentInfoSubstate, ComponentStateSubstate, InvokeError, KeyValueStore, Substate,
+};
 use crate::types::*;
 use crate::wasm::*;
+use scrypto::core::FnIdent;
 
 use super::KernelError;
 
@@ -51,27 +54,14 @@ where
     }
 
     // FIXME: limit access to the API
-
-    fn handle_invoke_function(
+    fn handle_invoke(
         &mut self,
-        fn_identifier: FnIdentifier,
+        fn_ident: FnIdent,
         input: Vec<u8>,
     ) -> Result<ScryptoValue, RuntimeError> {
         let call_data = ScryptoValue::from_slice(&input)
             .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
-        self.system_api.invoke_function(fn_identifier, call_data)
-    }
-
-    fn handle_invoke_method(
-        &mut self,
-        receiver: Receiver,
-        fn_identifier: FnIdentifier,
-        input: Vec<u8>,
-    ) -> Result<ScryptoValue, RuntimeError> {
-        let call_data = ScryptoValue::from_slice(&input)
-            .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
-        self.system_api
-            .invoke_method(receiver, fn_identifier, call_data)
+        self.system_api.invoke(fn_ident, call_data)
     }
 
     fn handle_node_create(
@@ -95,75 +85,74 @@ where
                 // TODO: Check state against blueprint schema
 
                 // Create component
-                let component_info =
-                    ComponentInfo::new(package_address, blueprint_name, Vec::new());
-                let component_state = ComponentState::new(state);
-                HeapRENode::Component(component_info, component_state)
+                HeapRENode::Component(Component {
+                    info: ComponentInfoSubstate::new(package_address, blueprint_name, Vec::new()),
+                    state: Some(ComponentStateSubstate::new(state)),
+                })
             }
-            ScryptoRENode::KeyValueStore => HeapRENode::KeyValueStore(HeapKeyValueStore::new()),
+            ScryptoRENode::KeyValueStore => HeapRENode::KeyValueStore(KeyValueStore::new()),
         };
 
         let id = self.system_api.node_create(node)?;
         Ok(ScryptoValue::from_typed(&id))
     }
 
-    // TODO: This logic should move into KeyValueEntry decoding
-    fn verify_stored_key(value: &ScryptoValue) -> Result<(), RuntimeError> {
-        if !value.bucket_ids.is_empty() {
-            return Err(RuntimeError::KernelError(KernelError::BucketNotAllowed));
-        }
-        if !value.proof_ids.is_empty() {
-            return Err(RuntimeError::KernelError(KernelError::ProofNotAllowed));
-        }
-        if !value.vault_ids.is_empty() {
-            return Err(RuntimeError::KernelError(KernelError::VaultNotAllowed));
-        }
-        if !value.kv_store_ids.is_empty() {
-            return Err(RuntimeError::KernelError(
-                KernelError::KeyValueStoreNotAllowed,
-            ));
-        }
-        Ok(())
+    fn handle_get_owned_node_ids(&mut self) -> Result<ScryptoValue, RuntimeError> {
+        let node_ids = self.system_api.get_owned_node_ids()?;
+        Ok(ScryptoValue::from_typed(&node_ids))
     }
 
     fn handle_node_globalize(&mut self, node_id: RENodeId) -> Result<ScryptoValue, RuntimeError> {
-        self.system_api.node_globalize(node_id)?;
+        let global_address = self.system_api.node_globalize(node_id)?;
+        Ok(ScryptoValue::from_typed(&global_address))
+    }
+
+    fn handle_lock_substate(
+        &mut self,
+        node_id: RENodeId,
+        offset: SubstateOffset,
+        mutable: bool,
+    ) -> Result<ScryptoValue, RuntimeError> {
+        self.system_api
+            .lock_substate(node_id, offset, mutable)
+            .map(|handle| ScryptoValue::from_typed(&handle))
+    }
+
+    fn handle_read(&mut self, lock_handle: LockHandle) -> Result<ScryptoValue, RuntimeError> {
+        self.system_api
+            .get_ref(lock_handle)
+            .map(|substate_ref| substate_ref.to_scrypto_value())
+    }
+
+    fn handle_write(
+        &mut self,
+        lock_handle: LockHandle,
+        buffer: Vec<u8>,
+    ) -> Result<ScryptoValue, RuntimeError> {
+        let mut substate_mut = self.system_api.get_ref_mut(lock_handle)?;
+        let substate = Substate::decode_from_buffer(substate_mut.offset(), &buffer)?;
+        let mut raw_mut = substate_mut.get_raw_mut();
+
+        match substate {
+            Substate::ComponentState(next) => *raw_mut.component_state() = next,
+            Substate::KeyValueStoreEntry(next) => {
+                *raw_mut.kv_store_entry() = next;
+            }
+            Substate::NonFungible(next) => {
+                *raw_mut.non_fungible() = next;
+            }
+            _ => return Err(RuntimeError::KernelError(KernelError::InvalidOverwrite)),
+        }
+
+        substate_mut.flush()?;
+
         Ok(ScryptoValue::unit())
     }
 
-    fn handle_substate_read(
-        &mut self,
-        substate_id: SubstateId,
-    ) -> Result<ScryptoValue, RuntimeError> {
-        match &substate_id {
-            SubstateId::KeyValueStoreEntry(_kv_store_id, key_bytes) => {
-                let key_data = ScryptoValue::from_slice(&key_bytes)
-                    .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
-                Self::verify_stored_key(&key_data)?;
-            }
-            _ => {}
-        }
-
-        self.system_api.substate_read(substate_id)
-    }
-
-    fn handle_substate_write(
-        &mut self,
-        substate_id: SubstateId,
-        value: Vec<u8>,
-    ) -> Result<ScryptoValue, RuntimeError> {
-        match &substate_id {
-            SubstateId::KeyValueStoreEntry(_kv_store_id, key_bytes) => {
-                let key_data = ScryptoValue::from_slice(&key_bytes)
-                    .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
-                Self::verify_stored_key(&key_data)?;
-            }
-            _ => {}
-        }
-        let scrypto_value = ScryptoValue::from_slice(&value)
-            .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
-        self.system_api.substate_write(substate_id, scrypto_value)?;
-        Ok(ScryptoValue::unit())
+    fn handle_drop_lock(&mut self, lock_handle: LockHandle) -> Result<ScryptoValue, RuntimeError> {
+        self.system_api
+            .drop_lock(lock_handle)
+            .map(|unit| ScryptoValue::from_typed(&unit))
     }
 
     fn handle_get_actor(&mut self) -> Result<ScryptoActor, RuntimeError> {
@@ -176,14 +165,6 @@ where
 
     fn handle_emit_log(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
         self.system_api.emit_log(level, message)
-    }
-
-    fn handle_check_access_rule(
-        &mut self,
-        access_rule: AccessRule,
-        proof_ids: Vec<ProofId>,
-    ) -> Result<bool, RuntimeError> {
-        self.system_api.check_access_rule(access_rule, proof_ids)
     }
 }
 
@@ -201,29 +182,29 @@ where
     fn main(&mut self, input: ScryptoValue) -> Result<ScryptoValue, InvokeError<WasmError>> {
         let input: RadixEngineInput = scrypto_decode(&input.raw)
             .map_err(|_| InvokeError::Error(WasmError::InvalidRadixEngineInput))?;
-        match input {
-            RadixEngineInput::InvokeFunction(fn_identifier, input_bytes) => {
-                self.handle_invoke_function(fn_identifier, input_bytes)
+        let rtn = match input {
+            RadixEngineInput::Invoke(fn_ident, input_bytes) => {
+                self.handle_invoke(fn_ident, input_bytes)?
             }
-            RadixEngineInput::InvokeMethod(receiver, fn_identifier, input_bytes) => {
-                self.handle_invoke_method(receiver, fn_identifier, input_bytes)
+            RadixEngineInput::RENodeGlobalize(node_id) => self.handle_node_globalize(node_id)?,
+            RadixEngineInput::RENodeCreate(node) => self.handle_node_create(node)?,
+            RadixEngineInput::GetOwnedRENodeIds() => self.handle_get_owned_node_ids()?,
+
+            RadixEngineInput::LockSubstate(node_id, offset, mutable) => {
+                self.handle_lock_substate(node_id, offset, mutable)?
             }
-            RadixEngineInput::RENodeGlobalize(node_id) => self.handle_node_globalize(node_id),
-            RadixEngineInput::RENodeCreate(node) => self.handle_node_create(node),
-            RadixEngineInput::SubstateRead(substate_id) => self.handle_substate_read(substate_id),
-            RadixEngineInput::SubstateWrite(substate_id, value) => {
-                self.handle_substate_write(substate_id, value)
-            }
-            RadixEngineInput::GetActor() => self.handle_get_actor().map(encode),
-            RadixEngineInput::GenerateUuid() => self.handle_generate_uuid().map(encode),
+            RadixEngineInput::Read(lock_handle) => self.handle_read(lock_handle)?,
+            RadixEngineInput::Write(lock_handle, value) => self.handle_write(lock_handle, value)?,
+            RadixEngineInput::DropLock(lock_handle) => self.handle_drop_lock(lock_handle)?,
+
+            RadixEngineInput::GetActor() => self.handle_get_actor().map(encode)?,
+            RadixEngineInput::GenerateUuid() => self.handle_generate_uuid().map(encode)?,
             RadixEngineInput::EmitLog(level, message) => {
-                self.handle_emit_log(level, message).map(encode)
+                self.handle_emit_log(level, message).map(encode)?
             }
-            RadixEngineInput::CheckAccessRule(rule, proof_ids) => {
-                self.handle_check_access_rule(rule, proof_ids).map(encode)
-            }
-        }
-        .map_err(InvokeError::downstream)
+        };
+
+        Ok(rtn)
     }
 
     fn consume_cost_units(&mut self, n: u32) -> Result<(), InvokeError<WasmError>> {

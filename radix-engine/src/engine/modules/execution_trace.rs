@@ -2,11 +2,12 @@ use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::*;
 use crate::types::*;
+use scrypto::core::{FnIdent, MethodIdent, ReceiverMethodIdent};
 
 #[derive(Debug, Clone, PartialEq, TypeId, Encode, Decode)]
 pub struct ResourceChange {
     pub resource_address: ResourceAddress,
-    pub component_address: ComponentAddress,
+    pub component_id: ComponentId, // TODO: support non component actor
     pub vault_id: VaultId,
     pub amount: Decimal,
 }
@@ -17,29 +18,89 @@ pub struct ExecutionTraceReceipt {
 }
 
 #[derive(Debug)]
-pub struct ExecutionTrace {
-    pub resource_changes: HashMap<ComponentAddress, HashMap<VaultId, (ResourceAddress, Decimal)>>,
+pub enum VaultOp {
+    Create(Decimal), // TODO: add trace of vault creation
+    Put(Decimal),    // TODO: add non-fungible support
+    Take(Decimal),
+    LockFee,
+    LockContingentFee,
 }
 
-impl ExecutionTrace {
-    pub fn new() -> ExecutionTrace {
-        Self {
-            resource_changes: HashMap::new(),
-        }
+#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
+pub enum ExecutionTraceError {}
+
+#[derive(Debug)]
+pub struct ExecutionTraceModule {}
+
+impl<R: FeeReserve> Module<R> for ExecutionTraceModule {
+    fn pre_sys_call(
+        &mut self,
+        track: &mut Track<R>,
+        call_frames: &mut Vec<CallFrame>,
+        input: SysCallInput,
+    ) -> Result<(), ModuleError> {
+        Self::trace_invoke_method(track, call_frames, input);
+        Ok(())
     }
 
-    pub fn trace_invoke_method<'s, R: FeeReserve>(
+    fn post_sys_call(
         &mut self,
+        _track: &mut Track<R>,
+        _call_frames: &mut Vec<CallFrame>,
+        _output: SysCallOutput,
+    ) -> Result<(), ModuleError> {
+        Ok(())
+    }
+
+    fn on_wasm_instantiation(
+        &mut self,
+        _track: &mut Track<R>,
+        _call_frames: &mut Vec<CallFrame>,
+        _code: &[u8],
+    ) -> Result<(), ModuleError> {
+        Ok(())
+    }
+
+    fn on_wasm_costing(
+        &mut self,
+        _track: &mut Track<R>,
+        _call_frames: &mut Vec<CallFrame>,
+        _units: u32,
+    ) -> Result<(), ModuleError> {
+        Ok(())
+    }
+
+    fn on_lock_fee(
+        &mut self,
+        _track: &mut Track<R>,
+        _call_frames: &mut Vec<CallFrame>,
+        _vault_id: VaultId,
+        fee: Resource,
+        _contingent: bool,
+    ) -> Result<Resource, ModuleError> {
+        Ok(fee)
+    }
+}
+
+impl ExecutionTraceModule {
+    pub fn new() -> ExecutionTraceModule {
+        Self {}
+    }
+
+    fn trace_invoke_method<'s, R: FeeReserve>(
+        track: &mut Track<'s, R>,
         call_frames: &Vec<CallFrame>,
-        track: &Track<'s, R>,
-        actor: &REActor,
-        fn_identifier: &FnIdentifier,
-        node_id: &RENodeId,
-        node_pointer: RENodePointer,
-        input: &ScryptoValue,
-        next_owned_values: &HashMap<RENodeId, HeapRootRENode>,
-    ) -> Result<(), RuntimeError> {
-        if let RENodeId::Vault(vault_id) = node_id {
+        sys_input: SysCallInput,
+    ) {
+        let actor = &call_frames
+            .last()
+            .expect("Current call frame not found")
+            .actor;
+
+        if let SysCallInput::Invoke {
+            fn_ident, input, ..
+        } = sys_input
+        {
             /* TODO: Warning: depends on call frame's actor being the vault's parent component!
             This isn't always the case! For example, when vault is instantiated in a blueprint
             before the component is globalized (see: test_restricted_transfer in bucket.rs).
@@ -49,131 +110,193 @@ impl ExecutionTrace {
             2. Hook up to when the component is globalized and convert
                blueprint-parented vaults (if any) to regular
                trace entries with component parents. */
-            if let Some(Receiver::Ref(RENodeId::Component(component_address))) = &actor.receiver {
-                match fn_identifier {
-                    FnIdentifier::Native(NativeFnIdentifier::Vault(VaultFnIdentifier::Put)) => {
-                        let decoded_input = scrypto_decode(&input.raw).map_err(|e| {
-                            RuntimeError::ApplicationError(ApplicationError::VaultError(
-                                VaultError::InvalidRequestData(e),
-                            ))
-                        })?;
-
-                        self.handle_vault_put(
-                            component_address,
-                            vault_id,
-                            decoded_input,
-                            next_owned_values,
-                        )?;
+            if let FnIdent::Method(ReceiverMethodIdent {
+                receiver,
+                method_ident,
+            }) = fn_ident
+            {
+                match (receiver, method_ident) {
+                    (
+                        Receiver::Ref(RENodeId::Vault(vault_id)),
+                        MethodIdent::Native(NativeMethod::Vault(VaultMethod::Put)),
+                    ) => {
+                        Self::handle_vault_put(track, actor, vault_id, input, call_frames);
                     }
-                    FnIdentifier::Native(NativeFnIdentifier::Vault(VaultFnIdentifier::Take)) => {
-                        let decoded_input = scrypto_decode(&input.raw).map_err(|e| {
-                            RuntimeError::ApplicationError(ApplicationError::VaultError(
-                                VaultError::InvalidRequestData(e),
-                            ))
-                        })?;
-
-                        let vault_node_ref = node_pointer.to_ref(call_frames, track);
-
-                        let resource_address = vault_node_ref.vault().resource_address();
-
-                        self.handle_vault_take(
-                            &resource_address,
-                            component_address,
-                            vault_id,
-                            decoded_input,
-                        )?;
+                    (
+                        Receiver::Ref(RENodeId::Vault(vault_id)),
+                        MethodIdent::Native(NativeMethod::Vault(VaultMethod::Take)),
+                    ) => {
+                        Self::handle_vault_take(track, actor, vault_id, input);
                     }
-                    _ => {} // no-op
+                    (
+                        Receiver::Ref(RENodeId::Vault(vault_id)),
+                        MethodIdent::Native(NativeMethod::Vault(VaultMethod::LockFee)),
+                    ) => {
+                        Self::handle_vault_lock_fee(track, actor, vault_id);
+                    }
+                    (
+                        Receiver::Ref(RENodeId::Vault(vault_id)),
+                        MethodIdent::Native(NativeMethod::Vault(VaultMethod::LockContingentFee)),
+                    ) => {
+                        Self::handle_vault_lock_contingent_fee(track, actor, vault_id);
+                    }
+                    _ => {}
+                };
+            }
+        }
+    }
+
+    fn handle_vault_put<'s, R: FeeReserve>(
+        track: &mut Track<'s, R>,
+        actor: &REActor,
+        vault_id: &VaultId,
+        input: &ScryptoValue,
+        call_frames: &Vec<CallFrame>,
+    ) {
+        if let Ok(call_data) = scrypto_decode::<VaultPutInput>(&input.raw) {
+            let bucket_id = call_data.bucket.0;
+
+            let frame = call_frames.last().expect("Current call frame not found");
+
+            if let Some(tree) = frame.owned_heap_nodes.get(&RENodeId::Bucket(bucket_id)) {
+                if let HeapRENode::Bucket(bucket_node) = &tree.root {
+                    track.vault_ops.push((
+                        actor.clone(),
+                        vault_id.clone(),
+                        VaultOp::Put(bucket_node.total_amount()),
+                    ));
+                }
+            }
+        }
+    }
+
+    fn handle_vault_take<'s, R: FeeReserve>(
+        track: &mut Track<'s, R>,
+        actor: &REActor,
+        vault_id: &VaultId,
+        input: &ScryptoValue,
+    ) {
+        if let Ok(call_data) = scrypto_decode::<VaultTakeInput>(&input.raw) {
+            track.vault_ops.push((
+                actor.clone(),
+                vault_id.clone(),
+                VaultOp::Take(call_data.amount),
+            ));
+        }
+    }
+
+    fn handle_vault_lock_fee<'s, R: FeeReserve>(
+        track: &mut Track<'s, R>,
+        actor: &REActor,
+        vault_id: &VaultId,
+    ) {
+        track
+            .vault_ops
+            .push((actor.clone(), vault_id.clone(), VaultOp::LockFee));
+    }
+
+    fn handle_vault_lock_contingent_fee<'s, R: FeeReserve>(
+        track: &mut Track<'s, R>,
+        actor: &REActor,
+        vault_id: &VaultId,
+    ) {
+        track
+            .vault_ops
+            .push((actor.clone(), vault_id.clone(), VaultOp::LockContingentFee));
+    }
+}
+
+impl ExecutionTraceReceipt {
+    // TODO: is it better to derive resource changes from substate diff, instead of execution trace?
+    // The current approach relies on various runtime invariants.
+
+    pub fn new(
+        ops: Vec<(REActor, VaultId, VaultOp)>,
+        actual_fee_payments: HashMap<VaultId, Decimal>,
+        state_track: &mut AppStateTrack,
+        is_commit_success: bool,
+    ) -> Self {
+        let mut vault_changes = HashMap::<ComponentId, HashMap<VaultId, Decimal>>::new();
+        let mut vault_locked_by = HashMap::<VaultId, ComponentId>::new();
+        for (actor, vault_id, vault_op) in ops {
+            if let REActor::Method(FullyQualifiedReceiverMethod { receiver, .. }) = actor {
+                if let Receiver::Ref(RENodeId::Component(component_id)) = receiver {
+                    match vault_op {
+                        VaultOp::Create(_) => todo!("Not supported yet!"),
+                        VaultOp::Put(amount) => {
+                            *vault_changes
+                                .entry(component_id)
+                                .or_default()
+                                .entry(vault_id)
+                                .or_default() += amount;
+                        }
+                        VaultOp::Take(amount) => {
+                            *vault_changes
+                                .entry(component_id)
+                                .or_default()
+                                .entry(vault_id)
+                                .or_default() -= amount;
+                        }
+                        VaultOp::LockFee | VaultOp::LockContingentFee => {
+                            *vault_changes
+                                .entry(component_id)
+                                .or_default()
+                                .entry(vault_id)
+                                .or_default() -= 0;
+
+                            // Hack: Additional check to avoid second `lock_fee` attempts (runtime failure) from
+                            // polluting the `vault_locked_by` index.
+                            if !vault_locked_by.contains_key(&vault_id) {
+                                vault_locked_by.insert(vault_id, component_id);
+                            }
+                        }
+                    };
                 }
             }
         }
 
-        Ok(())
-    }
+        let mut resource_changes = Vec::<ResourceChange>::new();
+        for (component_id, map) in vault_changes {
+            for (vault_id, delta) in map {
+                // Amount = put/take amount - fee_amount
+                let fee_amount = actual_fee_payments
+                    .get(&vault_id)
+                    .cloned()
+                    .unwrap_or_default();
+                let amount = if is_commit_success {
+                    delta
+                } else {
+                    Decimal::zero()
+                } - fee_amount;
 
-    fn handle_vault_put(
-        &mut self,
-        component_address: &ComponentAddress,
-        vault_id: &VaultId,
-        input: VaultPutInput,
-        next_owned_values: &HashMap<RENodeId, HeapRootRENode>,
-    ) -> Result<(), RuntimeError> {
-        let bucket_id = input.bucket.0;
-        let bucket_node_id = RENodeId::Bucket(bucket_id);
-
-        let bucket_node =
-            next_owned_values
-                .get(&bucket_node_id)
-                .ok_or(RuntimeError::KernelError(KernelError::RENodeNotFound(
-                    bucket_node_id,
-                )))?;
-
-        if let HeapRENode::Bucket(bucket) = &bucket_node.root {
-            if let ResourceType::Fungible { divisibility: _ } = bucket.resource_type() {
-                self.record_resource_change(
-                    &bucket.resource_address(),
-                    component_address,
-                    vault_id,
-                    bucket.total_amount(),
-                )
-            } else {
-                /* TODO: Also handle non-fungible resource changes */
-                Ok(())
-            }
-        } else {
-            Err(RuntimeError::KernelError(KernelError::BucketNotFound(
-                bucket_id,
-            )))
-        }
-    }
-
-    fn handle_vault_take(
-        &mut self,
-        resource_address: &ResourceAddress,
-        component_address: &ComponentAddress,
-        vault_id: &VaultId,
-        input: VaultTakeInput,
-    ) -> Result<(), RuntimeError> {
-        self.record_resource_change(resource_address, component_address, vault_id, -input.amount)
-    }
-
-    fn record_resource_change(
-        &mut self,
-        resource_address: &ResourceAddress,
-        component_address: &ComponentAddress,
-        vault_id: &VaultId,
-        amount: Decimal,
-    ) -> Result<(), RuntimeError> {
-        let component_changes = self
-            .resource_changes
-            .entry(component_address.clone())
-            .or_insert(HashMap::new());
-
-        let vault_change = component_changes
-            .entry(vault_id.clone())
-            .or_insert((resource_address.clone(), Decimal::zero()));
-
-        vault_change.1 += amount;
-
-        Ok(())
-    }
-
-    pub fn to_receipt(self) -> ExecutionTraceReceipt {
-        let resource_changes: Vec<ResourceChange> = self
-            .resource_changes
-            .into_iter()
-            .flat_map(|(component_address, v)| {
-                v.into_iter().map(
-                    move |(vault_id, (resource_address, amount))| ResourceChange {
+                // Add a resource change log if non-zero
+                if !amount.is_zero() {
+                    let resource_address = Self::get_vault_resource_address(vault_id, state_track);
+                    resource_changes.push(ResourceChange {
                         resource_address,
-                        component_address,
+                        component_id,
                         vault_id,
                         amount,
-                    },
-                )
-            })
-            .filter(|el| !el.amount.is_zero())
-            .collect();
+                    });
+                }
+            }
+        }
+
         ExecutionTraceReceipt { resource_changes }
+    }
+
+    fn get_vault_resource_address(
+        vault_id: VaultId,
+        state_track: &mut AppStateTrack,
+    ) -> ResourceAddress {
+        state_track
+            .get_substate(&SubstateId(
+                RENodeId::Vault(vault_id),
+                SubstateOffset::Vault(VaultOffset::Vault),
+            ))
+            .expect("Failed to find the vault substate")
+            .vault()
+            .0
+            .resource_address()
     }
 }

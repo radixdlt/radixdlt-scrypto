@@ -1,18 +1,16 @@
 use crate::engine::*;
 use crate::fee::FeeReserve;
-use crate::model::ResourceContainer;
+use crate::model::Resource;
 use crate::types::*;
+use scrypto::core::FnIdent;
 
 pub enum SysCallInput<'a> {
-    InvokeFunction {
-        fn_identifier: &'a FnIdentifier,
+    Invoke {
+        fn_ident: &'a FnIdent,
         input: &'a ScryptoValue,
+        depth: usize,
     },
-    InvokeMethod {
-        receiver: &'a Receiver,
-        fn_identifier: &'a FnIdentifier,
-        input: &'a ScryptoValue,
-    },
+    ReadOwnedNodes,
     BorrowNode {
         node_id: &'a RENodeId,
     },
@@ -25,18 +23,19 @@ pub enum SysCallInput<'a> {
     GlobalizeNode {
         node_id: &'a RENodeId,
     },
-    BorrowSubstateMut {
-        substate_id: &'a SubstateId,
+    LockSubstate {
+        node_id: &'a RENodeId,
+        offset: &'a SubstateOffset,
+        mutable: bool,
     },
-    ReturnSubstateMut {
-        substate_ref: &'a NativeSubstateRef,
+    GetRef {
+        lock_handle: &'a LockHandle,
     },
-    ReadSubstate {
-        substate_id: &'a SubstateId,
+    GetRefMut {
+        lock_handle: &'a LockHandle,
     },
-    WriteSubstate {
-        substate_id: &'a SubstateId,
-        value: &'a ScryptoValue,
+    DropLock {
+        lock_handle: &'a LockHandle,
     },
     TakeSubstate {
         substate_id: &'a SubstateId,
@@ -50,66 +49,81 @@ pub enum SysCallInput<'a> {
         level: &'a Level,
         message: &'a String,
     },
-    CheckAccessRule {
-        access_rule: &'a AccessRule,
-        proof_ids: &'a Vec<ProofId>,
-    },
 }
 
 pub enum SysCallOutput<'a> {
-    InvokeFunction { output: &'a ScryptoValue },
-    InvokeMethod { output: &'a ScryptoValue },
-    BorrowNode { node_pointer: &'a RENodePointer },
-    DropNode { node: &'a HeapRootRENode },
-    CreateNode { node_id: &'a RENodeId },
+    Invoke {
+        output: &'a ScryptoValue,
+    },
+    BorrowNode {
+        node_pointer: &'a RENodePointer,
+    },
+    DropNode {
+        node: &'a HeapRootRENode,
+    },
+    CreateNode {
+        node_id: &'a RENodeId,
+    },
     GlobalizeNode,
-    BorrowSubstateMut { substate_ref: &'a NativeSubstateRef },
-    ReturnSubstateMut,
-    ReadSubstate { value: &'a ScryptoValue },
-    WriteSubstate,
-    TakeSubstate { value: &'a ScryptoValue },
-    ReadTransactionHash { hash: &'a Hash },
-    ReadBlob { blob: &'a [u8] },
-    GenerateUuid { uuid: u128 },
+    LockSubstate {
+        lock_handle: LockHandle,
+    },
+    GetRef {
+        node_pointer: &'a RENodePointer,
+        offset: &'a SubstateOffset,
+    },
+    GetRefMut,
+    DropLock,
+    TakeSubstate {
+        value: &'a ScryptoValue,
+    },
+    ReadTransactionHash {
+        hash: &'a Hash,
+    },
+    ReadBlob {
+        blob: &'a [u8],
+    },
+    GenerateUuid {
+        uuid: u128,
+    },
     EmitLog,
-    CheckAccessRule { result: bool },
 }
 
 pub trait Module<R: FeeReserve> {
     fn pre_sys_call(
         &mut self,
         track: &mut Track<R>,
-        heap: &mut Vec<CallFrame>,
+        call_frames: &mut Vec<CallFrame>,
         input: SysCallInput,
     ) -> Result<(), ModuleError>;
 
     fn post_sys_call(
         &mut self,
         track: &mut Track<R>,
-        heap: &mut Vec<CallFrame>,
+        call_frames: &mut Vec<CallFrame>,
         output: SysCallOutput,
     ) -> Result<(), ModuleError>;
 
     fn on_wasm_instantiation(
         &mut self,
         track: &mut Track<R>,
-        heap: &mut Vec<CallFrame>,
+        call_frames: &mut Vec<CallFrame>,
         code: &[u8],
     ) -> Result<(), ModuleError>;
 
     fn on_wasm_costing(
         &mut self,
         track: &mut Track<R>,
-        heap: &mut Vec<CallFrame>,
+        call_frames: &mut Vec<CallFrame>,
         units: u32,
     ) -> Result<(), ModuleError>;
 
     fn on_lock_fee(
         &mut self,
         track: &mut Track<R>,
-        heap: &mut Vec<CallFrame>,
+        call_frames: &mut Vec<CallFrame>,
         vault_id: VaultId,
-        fee: ResourceContainer,
+        fee: Resource,
         contingent: bool,
-    ) -> Result<ResourceContainer, ModuleError>;
+    ) -> Result<Resource, ModuleError>;
 }

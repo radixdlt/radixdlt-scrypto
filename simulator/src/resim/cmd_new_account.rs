@@ -4,6 +4,7 @@ use radix_engine::types::*;
 use rand::Rng;
 use scrypto::prelude::ContextualDisplay;
 
+use crate::resim::Error::TransactionExecutionError;
 use crate::resim::*;
 
 /// Create an account
@@ -31,7 +32,7 @@ impl NewAccount {
         let withdraw_auth = rule!(require(auth_address));
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
-            .call_method(SYS_FAUCET_COMPONENT, "free_xrd", args!())
+            .call_method(SYS_FAUCET_COMPONENT, "free", args!())
             .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
                 builder.new_account_with_resource(&withdraw_auth, bucket_id)
             })
@@ -50,10 +51,12 @@ impl NewAccount {
         let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
 
         if let Some(receipt) = receipt {
-            let account = receipt
-                .expect_commit()
-                .entity_changes
-                .new_component_addresses[0];
+            let commit_result = receipt.result.expect_commit();
+            commit_result
+                .outcome
+                .success_or_else(TransactionExecutionError)?;
+
+            let account = commit_result.entity_changes.new_component_addresses[0];
             writeln!(out, "A new account has been created!").map_err(Error::IOError)?;
             writeln!(
                 out,

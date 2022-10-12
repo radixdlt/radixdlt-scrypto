@@ -14,7 +14,7 @@ fn should_not_be_able_to_read_component_state_after_creation() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(
+        .call_scrypto_function(
             package_address,
             "DataAccess",
             "create_component_and_read_state",
@@ -27,7 +27,7 @@ fn should_not_be_able_to_read_component_state_after_creation() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::SubstateReadNotReadable(..))
+            RuntimeError::KernelError(KernelError::SubstateNotReadable(..))
         )
     })
 }
@@ -42,7 +42,7 @@ fn should_not_be_able_to_write_component_state_after_creation() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(
+        .call_scrypto_function(
             package_address,
             "DataAccess",
             "create_component_and_write_state",
@@ -55,7 +55,7 @@ fn should_not_be_able_to_write_component_state_after_creation() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::SubstateWriteNotWriteable(..))
+            RuntimeError::KernelError(KernelError::SubstateNotWriteable(..))
         )
     })
 }
@@ -70,7 +70,7 @@ fn should_be_able_to_read_component_info() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(
+        .call_scrypto_function(
             package_address,
             "DataAccess",
             "create_component_and_read_info",
@@ -93,7 +93,7 @@ fn should_not_be_able_to_write_component_info() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(
+        .call_scrypto_function(
             package_address,
             "DataAccess",
             "create_component_and_write_info",
@@ -106,7 +106,7 @@ fn should_not_be_able_to_write_component_info() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::SubstateWriteNotWriteable(..))
+            RuntimeError::KernelError(KernelError::SubstateNotWriteable(..))
         )
     });
 }

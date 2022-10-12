@@ -12,7 +12,7 @@ use crate::abi::*;
 use crate::buffer::*;
 use crate::core::{DataRef, DataRefMut};
 use crate::crypto::*;
-use crate::engine::types::{RENodeId, SubstateId};
+use crate::engine::types::{KeyValueStoreOffset, LockHandle, RENodeId, SubstateOffset};
 use crate::engine::{api::*, call_engine, types::KeyValueStoreId};
 use crate::misc::*;
 
@@ -22,6 +22,10 @@ pub struct KeyValueStore<K: Encode + Decode, V: 'static + Encode + Decode + Type
     pub key: PhantomData<K>,
     pub value: PhantomData<V>,
 }
+
+// TODO: de-duplication
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
+pub struct KeyValueStoreEntrySubstate(pub Option<Vec<u8>>);
 
 impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> KeyValueStore<K, V> {
     /// Creates a new key value store.
@@ -38,24 +42,60 @@ impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> KeyValueStore<K,
 
     /// Returns the value that is associated with the given key.
     pub fn get(&self, key: &K) -> Option<DataRef<V>> {
-        let substate_id = SubstateId::KeyValueStoreEntry(self.id, scrypto_encode(key));
-        let input = RadixEngineInput::SubstateRead(substate_id.clone());
-        let value: Option<V> = call_engine(input);
-        value.map(|value| DataRef::new(value))
+        let input = RadixEngineInput::LockSubstate(
+            RENodeId::KeyValueStore(self.id),
+            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(scrypto_encode(key))),
+            false,
+        );
+        let lock_handle: LockHandle = call_engine(input);
+
+        let input = RadixEngineInput::Read(lock_handle);
+        let value: KeyValueStoreEntrySubstate = call_engine(input);
+
+        if value.0.is_none() {
+            let input = RadixEngineInput::DropLock(lock_handle);
+            let _: () = call_engine(input);
+        }
+
+        value
+            .0
+            .map(|raw| DataRef::new(lock_handle, scrypto_decode(&raw).unwrap()))
     }
 
     pub fn get_mut(&mut self, key: &K) -> Option<DataRefMut<V>> {
-        let substate_id = SubstateId::KeyValueStoreEntry(self.id, scrypto_encode(key));
-        let input = RadixEngineInput::SubstateRead(substate_id.clone());
-        let value: Option<V> = call_engine(input);
-        value.map(|value| DataRefMut::new(substate_id, value))
+        let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(scrypto_encode(key)));
+        let input =
+            RadixEngineInput::LockSubstate(RENodeId::KeyValueStore(self.id), offset.clone(), true);
+        let lock_handle: LockHandle = call_engine(input);
+
+        let input = RadixEngineInput::Read(lock_handle);
+        let value: KeyValueStoreEntrySubstate = call_engine(input);
+
+        if value.0.is_none() {
+            let input = RadixEngineInput::DropLock(lock_handle);
+            let _: () = call_engine(input);
+        }
+
+        value
+            .0
+            .map(|raw| DataRefMut::new(lock_handle, offset, scrypto_decode(&raw).unwrap()))
     }
 
     /// Inserts a new key-value pair into this map.
     pub fn insert(&self, key: K, value: V) {
-        let substate_id = SubstateId::KeyValueStoreEntry(self.id, scrypto_encode(&key));
-        let input = RadixEngineInput::SubstateWrite(substate_id, scrypto_encode(&value));
-        call_engine(input)
+        let input = RadixEngineInput::LockSubstate(
+            RENodeId::KeyValueStore(self.id),
+            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(scrypto_encode(&key))),
+            true,
+        );
+        let lock_handle: LockHandle = call_engine(input);
+
+        let substate = KeyValueStoreEntrySubstate(Some(scrypto_encode(&value)));
+        let input = RadixEngineInput::Write(lock_handle, scrypto_encode(&substate));
+        let _: () = call_engine(input);
+
+        let input = RadixEngineInput::DropLock(lock_handle);
+        let _: () = call_engine(input);
     }
 }
 

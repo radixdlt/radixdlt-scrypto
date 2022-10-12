@@ -1,5 +1,3 @@
-use transaction::model::*;
-
 use crate::constants::{DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN};
 use crate::engine::Track;
 use crate::engine::*;
@@ -9,6 +7,8 @@ use crate::model::*;
 use crate::transaction::*;
 use crate::types::*;
 use crate::wasm::*;
+use scrypto::core::{FnIdent, NativeFunction};
+use transaction::model::*;
 
 pub struct FeeReserveConfig {
     pub cost_unit_price: Decimal,
@@ -85,9 +85,9 @@ where
         }
     }
 
-    pub fn execute<T: ExecutableTransaction>(
+    pub fn execute(
         &mut self,
-        transaction: &T,
+        transaction: &Executable,
         fee_reserve_config: &FeeReserveConfig,
         execution_config: &ExecutionConfig,
     ) -> TransactionReceipt {
@@ -101,14 +101,14 @@ where
         self.execute_with_fee_reserve(transaction, execution_config, fee_reserve)
     }
 
-    pub fn execute_with_fee_reserve<T: ExecutableTransaction, R: FeeReserve>(
+    pub fn execute_with_fee_reserve<R: FeeReserve>(
         &mut self,
-        transaction: &T,
+        transaction: &Executable,
         execution_config: &ExecutionConfig,
         fee_reserve: R,
     ) -> TransactionReceipt {
         let transaction_hash = transaction.transaction_hash();
-        let initial_proofs = transaction.initial_proofs();
+        let auth_zone_params = transaction.auth_zone_params();
         let instructions = transaction.instructions().to_vec();
         let blobs: HashMap<Hash, Vec<u8>> = transaction
             .blobs()
@@ -120,7 +120,7 @@ where
         if execution_config.trace {
             println!("{:-^80}", "Transaction Metadata");
             println!("Transaction hash: {}", transaction_hash);
-            println!("Transaction proofs: {:?}", initial_proofs);
+            println!("Transaction auth zone params: {:?}", auth_zone_params);
             println!("Number of unique blobs: {}", blobs.len());
 
             println!("{:-^80}", "Engine Execution Log");
@@ -142,7 +142,7 @@ where
                     },
                     result: TransactionResult::Reject(RejectResult {
                         error: RejectionError::ErrorBeforeFeeLoanRepaid(RuntimeError::ModuleError(
-                            ModuleError::CostingError(err.error),
+                            ModuleError::CostingError(CostingError::FeeReserveError(err.error)),
                         )),
                     }),
                 };
@@ -150,30 +150,29 @@ where
         };
 
         // Invoke the function/method
-        let mut execution_trace = ExecutionTrace::new();
         let invoke_result = {
             let mut modules = Vec::<Box<dyn Module<R>>>::new();
             if execution_config.trace {
                 modules.push(Box::new(LoggerModule::new()));
             }
             modules.push(Box::new(CostingModule::default()));
+            modules.push(Box::new(ExecutionTraceModule::new()));
             let mut kernel = Kernel::new(
                 transaction_hash,
-                initial_proofs,
+                auth_zone_params,
                 &blobs,
                 execution_config.max_call_depth,
                 &mut track,
                 self.wasm_engine,
                 self.wasm_instrumenter,
                 WasmMeteringParams::new(InstructionCostRules::tiered(1, 5, 10, 5000), 512), // TODO: add to ExecutionConfig
-                &mut execution_trace,
                 modules,
             );
             kernel
-                .invoke_function(
-                    FnIdentifier::Native(NativeFnIdentifier::TransactionProcessor(
-                        TransactionProcessorFnIdentifier::Run,
-                    )),
+                .invoke(
+                    FnIdent::Function(FunctionIdent::Native(NativeFunction::TransactionProcessor(
+                        TransactionProcessorFunction::Run,
+                    ))),
                     ScryptoValue::from_typed(&TransactionProcessorRunInput {
                         instructions: instructions.clone(),
                     }),
@@ -185,8 +184,7 @@ where
         };
 
         // Produce the final transaction receipt
-        let execution_trace_receipt = execution_trace.to_receipt();
-        let track_receipt = track.finalize(invoke_result, execution_trace_receipt.resource_changes);
+        let track_receipt = track.finalize(invoke_result);
 
         let receipt = TransactionReceipt {
             contents: TransactionContents { instructions },
@@ -227,9 +225,9 @@ where
     W: WasmEngine<I>,
     I: WasmInstance,
 {
-    pub fn execute_and_commit<T: ExecutableTransaction>(
+    pub fn execute_and_commit(
         &mut self,
-        transaction: &T,
+        transaction: &Executable,
         fee_reserve_config: &FeeReserveConfig,
         execution_config: &ExecutionConfig,
     ) -> TransactionReceipt {

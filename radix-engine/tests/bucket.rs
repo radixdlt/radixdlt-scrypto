@@ -1,6 +1,6 @@
 use radix_engine::engine::*;
 use radix_engine::ledger::TypedInMemorySubstateStore;
-use radix_engine::model::{BucketError, ResourceContainerError};
+use radix_engine::model::{BucketError, ResourceOperationError};
 use radix_engine::types::*;
 use scrypto::misc::ContextualDisplay;
 use scrypto_unit::*;
@@ -16,14 +16,17 @@ fn test_bucket_internal(method_name: &str) {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), account)
-        .call_function(package_address, "BucketTest", method_name, args!())
+        .call_scrypto_function(package_address, "BucketTest", method_name, args!())
         .call_method(
             account,
             "deposit_batch",
             args!(Expression::entire_worktop()),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
 
     // Assert
     receipt.expect_commit_success();
@@ -83,17 +86,20 @@ fn test_bucket_of_badges() {
 
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), account)
-        .call_function(package_address, "BadgeTest", "combine", args!())
-        .call_function(package_address, "BadgeTest", "split", args!())
-        .call_function(package_address, "BadgeTest", "borrow", args!())
-        .call_function(package_address, "BadgeTest", "query", args!())
+        .call_scrypto_function(package_address, "BadgeTest", "combine", args!())
+        .call_scrypto_function(package_address, "BadgeTest", "split", args!())
+        .call_scrypto_function(package_address, "BadgeTest", "borrow", args!())
+        .call_scrypto_function(package_address, "BadgeTest", "query", args!())
         .call_method(
             account,
             "deposit_batch",
             args!(Expression::entire_worktop()),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
     receipt.expect_commit_success();
 }
 
@@ -121,12 +127,15 @@ fn test_take_with_invalid_granularity() {
         )
         .unwrap()
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
 
     // Assert
     receipt.expect_specific_failure(|e| {
         if let RuntimeError::ApplicationError(ApplicationError::BucketError(
-            BucketError::ResourceContainerError(ResourceContainerError::InvalidAmount(
+            BucketError::ResourceOperationError(ResourceOperationError::InvalidAmount(
                 amount,
                 granularity,
             )),
@@ -163,12 +172,15 @@ fn test_take_with_negative_amount() {
         )
         .unwrap()
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
 
     // Assert
     receipt.expect_specific_failure(|e| {
         if let RuntimeError::ApplicationError(ApplicationError::BucketError(
-            BucketError::ResourceContainerError(ResourceContainerError::InvalidAmount(
+            BucketError::ResourceOperationError(ResourceOperationError::InvalidAmount(
                 amount,
                 granularity,
             )),
@@ -204,7 +216,10 @@ fn create_empty_bucket() {
             |builder, bucket_id| builder.return_to_worktop(bucket_id),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
     println!("{}", receipt.display(&Bech32Encoder::for_simulator()));
 
     // Assert

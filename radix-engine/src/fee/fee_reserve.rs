@@ -1,8 +1,7 @@
 use crate::constants::{DEFAULT_COST_UNIT_LIMIT, DEFAULT_COST_UNIT_PRICE, DEFAULT_SYSTEM_LOAN};
 use crate::fee::FeeSummary;
-use crate::model::ResourceContainer;
+use crate::model::Resource;
 use crate::types::*;
-use sbor::rust::cmp::min;
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
 pub enum FeeReserveError {
@@ -23,9 +22,9 @@ pub trait FeeReserve {
     fn repay(
         &mut self,
         vault_id: VaultId,
-        fee: ResourceContainer,
+        fee: Resource,
         contingent: bool,
-    ) -> Result<ResourceContainer, FeeReserveError>;
+    ) -> Result<Resource, FeeReserveError>;
 
     fn finalize(self) -> FeeSummary;
 
@@ -40,13 +39,14 @@ pub trait FeeReserve {
     fn owed(&self) -> u32;
 }
 
+#[derive(Debug)]
 pub struct SystemLoanFeeReserve {
     /// The price of cost unit
     cost_unit_price: Decimal,
     /// The tip percentage
     tip_percentage: u32,
     /// Payments made during the execution of a transaction.
-    payments: Vec<(VaultId, ResourceContainer, bool)>,
+    payments: Vec<(VaultId, Resource, bool)>,
     /// The balance cost units
     balance: u32,
     /// The number of cost units owed to the system
@@ -88,9 +88,14 @@ impl SystemLoanFeeReserve {
     ///
     /// Note that overflow is not checked.
     pub fn credit(&mut self, n: u32) {
-        let repay = min(n, self.owed);
-        self.owed = self.owed - repay;
-        self.balance = self.balance + (n - repay);
+        self.balance += n;
+        self.repay_with_balance();
+    }
+
+    fn repay_with_balance(&mut self) {
+        let n = u32::min(self.owed, self.balance);
+        self.owed -= n;
+        self.balance -= n;
     }
 }
 
@@ -125,6 +130,7 @@ impl FeeReserve for SystemLoanFeeReserve {
 
         // update balance or owed
         if !deferred {
+            // println!("Trace: {}, {}, {}, {}", self.balance, self.owed, reason.to_string(), n);
             self.balance = self
                 .balance
                 .checked_sub(n)
@@ -136,7 +142,10 @@ impl FeeReserve for SystemLoanFeeReserve {
 
         // check system loan
         if self.consumed_instant >= self.check_point && self.owed > 0 {
-            return Err(FeeReserveError::SystemLoanNotCleared);
+            self.repay_with_balance();
+            if self.owed > 0 {
+                return Err(FeeReserveError::SystemLoanNotCleared);
+            }
         }
         Ok(())
     }
@@ -144,15 +153,15 @@ impl FeeReserve for SystemLoanFeeReserve {
     fn repay(
         &mut self,
         vault_id: VaultId,
-        mut fee: ResourceContainer,
+        mut fee: Resource,
         contingent: bool,
-    ) -> Result<ResourceContainer, FeeReserveError> {
+    ) -> Result<Resource, FeeReserveError> {
         let effective_cost_unit_price =
             self.cost_unit_price + self.cost_unit_price * self.tip_percentage / 100;
 
         // TODO: Add `TryInto` implementation once the new decimal types are in place
         let n = u32::from_str(
-            (fee.liquid_amount() / effective_cost_unit_price)
+            (fee.amount() / effective_cost_unit_price)
                 .round(0, RoundingMode::TowardsZero)
                 .to_string()
                 .as_str(),
@@ -183,11 +192,7 @@ impl FeeReserve for SystemLoanFeeReserve {
     }
 
     fn finalize(mut self) -> FeeSummary {
-        if self.owed > 0 && self.balance != 0 {
-            let n = u32::min(self.owed, self.balance);
-            self.owed -= n;
-            self.balance -= n;
-        }
+        self.repay_with_balance();
 
         let consumed = self.consumed_instant + self.consumed_deferred;
         FeeSummary {
@@ -244,8 +249,8 @@ mod tests {
 
     const TEST_VAULT_ID: VaultId = (Hash([0u8; 32]), 1);
 
-    fn xrd<T: Into<Decimal>>(amount: T) -> ResourceContainer {
-        ResourceContainer::new_fungible(RADIX_TOKEN, 18, amount.into())
+    fn xrd<T: Into<Decimal>>(amount: T) -> Resource {
+        Resource::new_fungible(RADIX_TOKEN, 18, amount.into())
     }
 
     #[test]

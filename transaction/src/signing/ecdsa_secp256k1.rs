@@ -49,7 +49,7 @@ mod tests {
     use crate::validation::verify_ecdsa_secp256k1;
     use sbor::rust::str::FromStr;
     use scrypto::{
-        constants::ECDSA_TOKEN,
+        constants::ECDSA_SECP256K1_TOKEN,
         resource::{NonFungibleAddress, NonFungibleId},
     };
 
@@ -70,11 +70,13 @@ mod tests {
 
     #[test]
     fn test_non_fungible_address_codec() {
-        let expected = "000000000000000000000000000000000000000000000000000002300721000000031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f";
+        let expected = "009f94a99ae34e4b3448037283e829acb04b9446a4b11a7944fea2300721000000031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f";
         let private_key = EcdsaSecp256k1PrivateKey::from_bytes(&[1u8; 32]).unwrap();
         let public_key = private_key.public_key();
-        let auth_address =
-            NonFungibleAddress::new(ECDSA_TOKEN, NonFungibleId::from_bytes(public_key.to_vec()));
+        let auth_address = NonFungibleAddress::new(
+            ECDSA_SECP256K1_TOKEN,
+            NonFungibleId::from_bytes(public_key.to_vec()),
+        );
         let s1 = auth_address.to_string();
         let auth_address2 = NonFungibleAddress::from_str(&s1).unwrap();
         let s2 = auth_address2.to_string();

@@ -2,7 +2,7 @@ use crate::engine::{HeapRENode, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::ProofError::UnknownMethod;
 use crate::model::{
-    InvokeError, LockedAmountOrIds, ResourceContainer, ResourceContainerError, ResourceContainerId,
+    InvokeError, LockableResource, LockedAmountOrIds, ResourceContainerId, ResourceOperationError,
 };
 use crate::types::*;
 use crate::wasm::*;
@@ -18,13 +18,13 @@ pub struct Proof {
     /// The total locked amount or non-fungible ids.
     total_locked: LockedAmountOrIds,
     /// The supporting containers.
-    evidence: HashMap<ResourceContainerId, (Rc<RefCell<ResourceContainer>>, LockedAmountOrIds)>,
+    evidence: HashMap<ResourceContainerId, (Rc<RefCell<LockableResource>>, LockedAmountOrIds)>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
 pub enum ProofError {
     /// Error produced by a resource container.
-    ResourceContainerError(ResourceContainerError),
+    ResourceOperationError(ResourceOperationError),
     /// Can't generate zero-amount or empty non-fungible set proofs.
     EmptyProofNotAllowed,
     /// The base proofs are not enough to cover the requested amount or non-fungible ids.
@@ -43,7 +43,7 @@ impl Proof {
         resource_address: ResourceAddress,
         resource_type: ResourceType,
         total_locked: LockedAmountOrIds,
-        evidence: HashMap<ResourceContainerId, (Rc<RefCell<ResourceContainer>>, LockedAmountOrIds)>,
+        evidence: HashMap<ResourceContainerId, (Rc<RefCell<LockableResource>>, LockedAmountOrIds)>,
     ) -> Result<Proof, ProofError> {
         if total_locked.is_empty() {
             return Err(ProofError::EmptyProofNotAllowed);
@@ -172,7 +172,7 @@ impl Proof {
                             container
                                 .borrow_mut()
                                 .lock_by_amount(amount)
-                                .map_err(ProofError::ResourceContainerError)?;
+                                .map_err(ProofError::ResourceOperationError)?;
                             remaining -= amount;
                             evidence.insert(
                                 container_id.clone(),
@@ -240,7 +240,7 @@ impl Proof {
                             container
                                 .borrow_mut()
                                 .lock_by_ids(&ids)
-                                .map_err(ProofError::ResourceContainerError)?;
+                                .map_err(ProofError::ResourceOperationError)?;
                             for id in &ids {
                                 remaining.remove(id);
                             }
@@ -326,7 +326,7 @@ impl Proof {
 
     pub fn main<'s, Y, W, I, R>(
         proof_id: ProofId,
-        proof_fn: ProofFnIdentifier,
+        method: ProofMethod,
         args: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, InvokeError<ProofError>>
@@ -336,53 +336,45 @@ impl Proof {
         I: WasmInstance,
         R: FeeReserve,
     {
-        let substate_id = SubstateId::Proof(proof_id);
-        let mut node_ref = system_api
-            .substate_borrow_mut(&substate_id)
-            .map_err(InvokeError::Downstream)?;
+        let node_id = RENodeId::Proof(proof_id);
+        let node_ref = system_api.borrow_node(&node_id)?;
         let proof = node_ref.proof();
 
-        let rtn = match proof_fn {
-            ProofFnIdentifier::GetAmount => {
+        let rtn = match method {
+            ProofMethod::GetAmount => {
                 let _: ProofGetAmountInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(ProofError::InvalidRequestData(e)))?;
-                Ok(ScryptoValue::from_typed(&proof.total_amount()))
+                ScryptoValue::from_typed(&proof.total_amount())
             }
-            ProofFnIdentifier::GetNonFungibleIds => {
+            ProofMethod::GetNonFungibleIds => {
                 let _: ProofGetNonFungibleIdsInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(ProofError::InvalidRequestData(e)))?;
                 let ids = proof.total_ids()?;
-                Ok(ScryptoValue::from_typed(&ids))
+                ScryptoValue::from_typed(&ids)
             }
-            ProofFnIdentifier::GetResourceAddress => {
+            ProofMethod::GetResourceAddress => {
                 let _: ProofGetResourceAddressInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(ProofError::InvalidRequestData(e)))?;
-                Ok(ScryptoValue::from_typed(&proof.resource_address()))
+                ScryptoValue::from_typed(&proof.resource_address())
             }
-            ProofFnIdentifier::Clone => {
+            ProofMethod::Clone => {
                 let _: ProofCloneInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(ProofError::InvalidRequestData(e)))?;
                 let cloned_proof = proof.clone();
                 let proof_id = system_api
-                    .node_create(HeapRENode::Proof(cloned_proof))
-                    .map_err(InvokeError::Downstream)?
+                    .node_create(HeapRENode::Proof(cloned_proof))?
                     .into();
-                Ok(ScryptoValue::from_typed(&scrypto::resource::Proof(
-                    proof_id,
-                )))
+                ScryptoValue::from_typed(&scrypto::resource::Proof(proof_id))
             }
             _ => return Err(InvokeError::Error(ProofError::UnknownMethod)),
-        }?;
+        };
 
-        system_api
-            .substate_return_mut(node_ref)
-            .map_err(InvokeError::Downstream)?;
         Ok(rtn)
     }
 
     pub fn main_consume<'s, Y, W, I, R>(
         node_id: RENodeId,
-        proof_fn: ProofFnIdentifier,
+        method: ProofMethod,
         args: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, InvokeError<ProofError>>
@@ -392,12 +384,9 @@ impl Proof {
         I: WasmInstance,
         R: FeeReserve,
     {
-        let proof: Proof = system_api
-            .node_drop(&node_id)
-            .map_err(InvokeError::Downstream)?
-            .into();
-        match proof_fn {
-            ProofFnIdentifier::Drop => {
+        let proof: Proof = system_api.node_drop(node_id)?.into();
+        match method {
+            ProofMethod::Drop => {
                 let _: ConsumingProofDropInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(ProofError::InvalidRequestData(e)))?;
                 proof.drop();

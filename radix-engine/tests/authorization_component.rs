@@ -18,7 +18,7 @@ fn cannot_make_cross_component_call_without_authorization() {
     let package_address = test_runner.compile_and_publish("./tests/component");
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(
+        .call_scrypto_function(
             package_address,
             "CrossComponent",
             "create_component_with_auth",
@@ -34,7 +34,7 @@ fn cannot_make_cross_component_call_without_authorization() {
 
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(
+        .call_scrypto_function(
             package_address,
             "CrossComponent",
             "create_component",
@@ -78,7 +78,7 @@ fn can_make_cross_component_call_with_authorization() {
     let package_address = test_runner.compile_and_publish("./tests/component");
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(
+        .call_scrypto_function(
             package_address,
             "CrossComponent",
             "create_component_with_auth",
@@ -94,7 +94,7 @@ fn can_make_cross_component_call_with_authorization() {
 
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(
+        .call_scrypto_function(
             package_address,
             "CrossComponent",
             "create_component",
@@ -117,7 +117,10 @@ fn can_make_cross_component_call_with_authorization() {
             args!(Expression::entire_worktop()),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
     receipt.expect_commit_success();
 
     // Act

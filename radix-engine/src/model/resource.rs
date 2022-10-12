@@ -1,8 +1,7 @@
 use crate::types::*;
 
-/// Represents an error when manipulating resources in a container.
 #[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
-pub enum ResourceContainerError {
+pub enum ResourceOperationError {
     /// Resource addresses do not match.
     ResourceAddressNotMatching,
     /// The amount is invalid, according to the resource divisibility.
@@ -13,12 +12,214 @@ pub enum ResourceContainerError {
     FungibleOperationNotAllowed,
     /// Non-fungible operation on fungible resource is not allowed.
     NonFungibleOperationNotAllowed,
-    /// Resource container is locked because there exists proof(s).
-    ContainerLocked,
+    /// Resource is locked because of proofs
+    ResourceLocked,
 }
 
-#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
-pub enum ResourceContainer {
+/// A raw record of resource persisted in the substate store
+#[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
+pub enum Resource {
+    Fungible {
+        /// The resource address.
+        resource_address: ResourceAddress,
+        /// The resource divisibility.
+        divisibility: u8,
+        /// The total amount.
+        amount: Decimal,
+    },
+    NonFungible {
+        /// The resource address.
+        resource_address: ResourceAddress,
+        /// The total non-fungible ids.
+        ids: BTreeSet<NonFungibleId>,
+    },
+}
+
+impl Resource {
+    pub fn new_fungible(
+        resource_address: ResourceAddress,
+        divisibility: u8,
+        amount: Decimal,
+    ) -> Self {
+        Self::Fungible {
+            resource_address,
+            divisibility,
+            amount,
+        }
+    }
+
+    pub fn new_non_fungible(
+        resource_address: ResourceAddress,
+        ids: BTreeSet<NonFungibleId>,
+    ) -> Self {
+        Self::NonFungible {
+            resource_address,
+            ids,
+        }
+    }
+    pub fn new_empty(resource_address: ResourceAddress, resource_type: ResourceType) -> Self {
+        match resource_type {
+            ResourceType::Fungible { divisibility } => {
+                Self::new_fungible(resource_address, divisibility, Decimal::zero())
+            }
+            ResourceType::NonFungible => Self::new_non_fungible(resource_address, BTreeSet::new()),
+        }
+    }
+
+    pub fn ids(&self) -> &BTreeSet<NonFungibleId> {
+        match self {
+            Resource::Fungible { .. } => {
+                panic!("Attempted to list non-fungible IDs on fungible resource")
+            }
+            Resource::NonFungible { ids, .. } => &ids,
+        }
+    }
+
+    pub fn amount(&self) -> Decimal {
+        match self {
+            Resource::Fungible { amount, .. } => amount.clone(),
+            Resource::NonFungible { ids, .. } => ids.len().into(),
+        }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.amount().is_zero()
+    }
+
+    pub fn resource_address(&self) -> ResourceAddress {
+        match self {
+            Self::Fungible {
+                resource_address, ..
+            }
+            | Self::NonFungible {
+                resource_address, ..
+            } => *resource_address,
+        }
+    }
+
+    pub fn resource_type(&self) -> ResourceType {
+        match self {
+            Self::Fungible { divisibility, .. } => ResourceType::Fungible {
+                divisibility: *divisibility,
+            },
+            Self::NonFungible { .. } => ResourceType::NonFungible,
+        }
+    }
+
+    pub fn put(&mut self, other: Resource) -> Result<(), ResourceOperationError> {
+        // check resource address
+        if self.resource_address() != other.resource_address() {
+            return Err(ResourceOperationError::ResourceAddressNotMatching);
+        }
+
+        // update liquidity
+        match self {
+            Self::Fungible { amount, .. } => {
+                *amount += other.amount();
+            }
+            Self::NonFungible { ids, .. } => {
+                ids.extend(other.ids().clone());
+            }
+        }
+        Ok(())
+    }
+
+    pub fn take_by_amount(
+        &mut self,
+        amount_to_take: Decimal,
+    ) -> Result<Resource, ResourceOperationError> {
+        // check amount granularity
+        let divisibility = self.resource_type().divisibility();
+        Self::check_amount(amount_to_take, divisibility)?;
+
+        // deduct from liquidity pool
+        match self {
+            Self::Fungible { amount, .. } => {
+                if *amount < amount_to_take {
+                    return Err(ResourceOperationError::InsufficientBalance);
+                }
+                *amount = *amount - amount_to_take;
+                Ok(Resource::new_fungible(
+                    self.resource_address(),
+                    divisibility,
+                    amount_to_take,
+                ))
+            }
+            Self::NonFungible { ids, .. } => {
+                if Decimal::from(ids.len()) < amount_to_take {
+                    return Err(ResourceOperationError::InsufficientBalance);
+                }
+                let n: usize = amount_to_take
+                    .to_string()
+                    .parse()
+                    .expect("Failed to convert amount to usize");
+                let ids: BTreeSet<NonFungibleId> = ids.iter().cloned().take(n).collect();
+                self.take_by_ids(&ids)
+            }
+        }
+    }
+
+    pub fn take_by_ids(
+        &mut self,
+        ids_to_take: &BTreeSet<NonFungibleId>,
+    ) -> Result<Resource, ResourceOperationError> {
+        let resource_address = self.resource_address();
+        match self {
+            Self::Fungible { .. } => Err(ResourceOperationError::NonFungibleOperationNotAllowed),
+            Self::NonFungible { ids, .. } => {
+                for id in ids_to_take {
+                    if !ids.remove(&id) {
+                        return Err(ResourceOperationError::InsufficientBalance);
+                    }
+                }
+                Ok(Resource::new_non_fungible(resource_address, ids.clone()))
+            }
+        }
+    }
+
+    pub fn take_all(&mut self) -> Result<Resource, ResourceOperationError> {
+        self.take_by_amount(self.amount())
+    }
+
+    fn check_amount(amount: Decimal, divisibility: u8) -> Result<(), ResourceOperationError> {
+        if amount.is_negative()
+            || amount.0 % I256::from(10i128.pow((18 - divisibility).into())) != I256::from(0)
+        {
+            Err(ResourceOperationError::InvalidAmount(amount, divisibility))
+        } else {
+            Ok(())
+        }
+    }
+}
+
+impl Into<LockableResource> for Resource {
+    fn into(self) -> LockableResource {
+        match self {
+            Resource::Fungible {
+                resource_address,
+                divisibility,
+                amount,
+            } => LockableResource::Fungible {
+                resource_address,
+                divisibility,
+                locked_amounts: BTreeMap::default(),
+                liquid_amount: amount,
+            },
+            Resource::NonFungible {
+                resource_address,
+                ids,
+            } => LockableResource::NonFungible {
+                resource_address,
+                locked_ids: BTreeMap::new(),
+                liquid_ids: ids,
+            },
+        }
+    }
+}
+
+/// Resource that can be partially or completely locked for proofs.
+#[derive(Debug, PartialEq, Eq)]
+pub enum LockableResource {
     Fungible {
         /// The resource address.
         resource_address: ResourceAddress,
@@ -33,7 +234,7 @@ pub enum ResourceContainer {
         /// The resource address.
         resource_address: ResourceAddress,
         /// The locked non-fungible ids and the corresponding times of being locked.
-        locked_ids: HashMap<NonFungibleId, usize>,
+        locked_ids: BTreeMap<NonFungibleId, usize>,
         /// The liquid non-fungible ids.
         liquid_ids: BTreeSet<NonFungibleId>,
     },
@@ -75,62 +276,26 @@ impl LockedAmountOrIds {
     }
 }
 
-impl ResourceContainer {
-    pub fn new_fungible(
-        resource_address: ResourceAddress,
-        divisibility: u8,
-        amount: Decimal,
-    ) -> Self {
-        Self::Fungible {
-            resource_address,
-            divisibility,
-            locked_amounts: BTreeMap::new(),
-            liquid_amount: amount,
-        }
-    }
-
-    pub fn new_non_fungible(
-        resource_address: ResourceAddress,
-        ids: BTreeSet<NonFungibleId>,
-    ) -> Self {
-        Self::NonFungible {
-            resource_address,
-            locked_ids: HashMap::new(),
-            liquid_ids: ids.clone(),
-        }
-    }
-
-    pub fn new_empty(resource_address: ResourceAddress, resource_type: ResourceType) -> Self {
-        match resource_type {
-            ResourceType::Fungible { divisibility } => {
-                Self::new_fungible(resource_address, divisibility, Decimal::zero())
-            }
-            ResourceType::NonFungible => Self::new_non_fungible(resource_address, BTreeSet::new()),
-        }
-    }
-
-    pub fn put(&mut self, other: Self) -> Result<(), ResourceContainerError> {
+impl LockableResource {
+    pub fn put(&mut self, other: Resource) -> Result<(), ResourceOperationError> {
         // check resource address
         if self.resource_address() != other.resource_address() {
-            return Err(ResourceContainerError::ResourceAddressNotMatching);
+            return Err(ResourceOperationError::ResourceAddressNotMatching);
         }
-
-        // Invariant: owned container should always be free
-        assert!(!other.is_locked());
 
         // update liquidity
         match self {
             Self::Fungible { liquid_amount, .. } => {
-                *liquid_amount += other.liquid_amount();
+                *liquid_amount += other.amount();
             }
             Self::NonFungible { liquid_ids, .. } => {
-                liquid_ids.extend(other.liquid_ids()?);
+                liquid_ids.extend(other.ids().clone());
             }
         }
         Ok(())
     }
 
-    pub fn take_by_amount(&mut self, amount: Decimal) -> Result<Self, ResourceContainerError> {
+    pub fn take_by_amount(&mut self, amount: Decimal) -> Result<Resource, ResourceOperationError> {
         // check amount granularity
         let divisibility = self.resource_type().divisibility();
         Self::check_amount(amount, divisibility)?;
@@ -139,10 +304,10 @@ impl ResourceContainer {
         match self {
             Self::Fungible { liquid_amount, .. } => {
                 if *liquid_amount < amount {
-                    return Err(ResourceContainerError::InsufficientBalance);
+                    return Err(ResourceOperationError::InsufficientBalance);
                 }
                 *liquid_amount = *liquid_amount - amount;
-                Ok(Self::new_fungible(
+                Ok(Resource::new_fungible(
                     self.resource_address(),
                     divisibility,
                     amount,
@@ -150,7 +315,7 @@ impl ResourceContainer {
             }
             Self::NonFungible { liquid_ids, .. } => {
                 if Decimal::from(liquid_ids.len()) < amount {
-                    return Err(ResourceContainerError::InsufficientBalance);
+                    return Err(ResourceOperationError::InsufficientBalance);
                 }
                 let n: usize = amount
                     .to_string()
@@ -165,28 +330,31 @@ impl ResourceContainer {
     pub fn take_by_ids(
         &mut self,
         ids: &BTreeSet<NonFungibleId>,
-    ) -> Result<Self, ResourceContainerError> {
+    ) -> Result<Resource, ResourceOperationError> {
         match self {
-            Self::Fungible { .. } => Err(ResourceContainerError::NonFungibleOperationNotAllowed),
+            Self::Fungible { .. } => Err(ResourceOperationError::NonFungibleOperationNotAllowed),
             Self::NonFungible { liquid_ids, .. } => {
                 for id in ids {
                     if !liquid_ids.remove(&id) {
-                        return Err(ResourceContainerError::InsufficientBalance);
+                        return Err(ResourceOperationError::InsufficientBalance);
                     }
                 }
-                Ok(Self::new_non_fungible(self.resource_address(), ids.clone()))
+                Ok(Resource::new_non_fungible(
+                    self.resource_address(),
+                    ids.clone(),
+                ))
             }
         }
     }
 
-    pub fn take_all_liquid(&mut self) -> Result<Self, ResourceContainerError> {
+    pub fn take_all_liquid(&mut self) -> Result<Resource, ResourceOperationError> {
         self.take_by_amount(self.liquid_amount())
     }
 
     pub fn lock_by_amount(
         &mut self,
         amount: Decimal,
-    ) -> Result<LockedAmountOrIds, ResourceContainerError> {
+    ) -> Result<LockedAmountOrIds, ResourceOperationError> {
         // check amount granularity
         let divisibility = self.resource_type().divisibility();
         Self::check_amount(amount, divisibility)?;
@@ -203,7 +371,7 @@ impl ResourceContainer {
                     if *liquid_amount >= delta {
                         *liquid_amount -= delta;
                     } else {
-                        return Err(ResourceContainerError::InsufficientBalance);
+                        return Err(ResourceOperationError::InsufficientBalance);
                     }
                 }
 
@@ -220,7 +388,7 @@ impl ResourceContainer {
                 ..
             } => {
                 if Decimal::from(locked_ids.len() + liquid_ids.len()) < amount {
-                    return Err(ResourceContainerError::InsufficientBalance);
+                    return Err(ResourceOperationError::InsufficientBalance);
                 }
 
                 let n: usize = amount
@@ -240,7 +408,7 @@ impl ResourceContainer {
     pub fn lock_by_ids(
         &mut self,
         ids: &BTreeSet<NonFungibleId>,
-    ) -> Result<LockedAmountOrIds, ResourceContainerError> {
+    ) -> Result<LockedAmountOrIds, ResourceOperationError> {
         match self {
             Self::NonFungible {
                 locked_ids,
@@ -255,13 +423,13 @@ impl ResourceContainer {
                         // if the non-fungible is locked, increase the ref count.
                         *cnt += 1;
                     } else {
-                        return Err(ResourceContainerError::InsufficientBalance);
+                        return Err(ResourceOperationError::InsufficientBalance);
                     }
                 }
 
                 Ok(LockedAmountOrIds::Ids(ids.clone()))
             }
-            Self::Fungible { .. } => Err(ResourceContainerError::NonFungibleOperationNotAllowed),
+            Self::Fungible { .. } => Err(ResourceOperationError::NonFungibleOperationNotAllowed),
         }
     }
 
@@ -320,17 +488,17 @@ impl ResourceContainer {
 
     pub fn max_locked_amount(&self) -> Decimal {
         match self {
-            ResourceContainer::Fungible { locked_amounts, .. } => Self::largest_key(locked_amounts),
-            ResourceContainer::NonFungible { locked_ids, .. } => locked_ids.len().into(),
+            LockableResource::Fungible { locked_amounts, .. } => Self::largest_key(locked_amounts),
+            LockableResource::NonFungible { locked_ids, .. } => locked_ids.len().into(),
         }
     }
 
-    pub fn max_locked_ids(&self) -> Result<BTreeSet<NonFungibleId>, ResourceContainerError> {
+    pub fn max_locked_ids(&self) -> Result<BTreeSet<NonFungibleId>, ResourceOperationError> {
         match self {
-            ResourceContainer::Fungible { .. } => {
-                Err(ResourceContainerError::NonFungibleOperationNotAllowed)
+            LockableResource::Fungible { .. } => {
+                Err(ResourceOperationError::NonFungibleOperationNotAllowed)
             }
-            ResourceContainer::NonFungible { locked_ids, .. } => {
+            LockableResource::NonFungible { locked_ids, .. } => {
                 Ok(locked_ids.keys().cloned().collect())
             }
         }
@@ -343,9 +511,9 @@ impl ResourceContainer {
         }
     }
 
-    pub fn liquid_ids(&self) -> Result<BTreeSet<NonFungibleId>, ResourceContainerError> {
+    pub fn liquid_ids(&self) -> Result<BTreeSet<NonFungibleId>, ResourceOperationError> {
         match self {
-            Self::Fungible { .. } => Err(ResourceContainerError::NonFungibleOperationNotAllowed),
+            Self::Fungible { .. } => Err(ResourceOperationError::NonFungibleOperationNotAllowed),
             Self::NonFungible { liquid_ids, .. } => Ok(liquid_ids.clone()),
         }
     }
@@ -354,7 +522,7 @@ impl ResourceContainer {
         self.max_locked_amount() + self.liquid_amount()
     }
 
-    pub fn total_ids(&self) -> Result<BTreeSet<NonFungibleId>, ResourceContainerError> {
+    pub fn total_ids(&self) -> Result<BTreeSet<NonFungibleId>, ResourceOperationError> {
         let mut total = BTreeSet::new();
         total.extend(self.max_locked_ids()?);
         total.extend(self.liquid_ids()?);
@@ -392,13 +560,44 @@ impl ResourceContainer {
         }
     }
 
-    fn check_amount(amount: Decimal, divisibility: u8) -> Result<(), ResourceContainerError> {
+    fn check_amount(amount: Decimal, divisibility: u8) -> Result<(), ResourceOperationError> {
         if amount.is_negative()
             || amount.0 % I256::from(10i128.pow((18 - divisibility).into())) != I256::from(0)
         {
-            Err(ResourceContainerError::InvalidAmount(amount, divisibility))
+            Err(ResourceOperationError::InvalidAmount(amount, divisibility))
         } else {
             Ok(())
+        }
+    }
+}
+
+impl Into<Resource> for LockableResource {
+    fn into(self) -> Resource {
+        if self.is_locked() {
+            // We keep resource containers in Rc<RefCell> for all concrete resource containers, like Bucket, Vault and Worktop.
+            // When extracting the resource within a container, there should be no locked resource.
+            // It should have failed the Rc::try_unwrap() check.
+            panic!("Attempted to convert resource container with locked resource");
+        }
+        match self {
+            LockableResource::Fungible {
+                resource_address,
+                divisibility,
+                liquid_amount,
+                ..
+            } => Resource::Fungible {
+                resource_address,
+                divisibility,
+                amount: liquid_amount,
+            },
+            LockableResource::NonFungible {
+                resource_address,
+                liquid_ids,
+                ..
+            } => Resource::NonFungible {
+                resource_address,
+                ids: liquid_ids,
+            },
         }
     }
 }

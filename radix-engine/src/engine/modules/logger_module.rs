@@ -1,6 +1,6 @@
 use crate::engine::*;
 use crate::fee::FeeReserve;
-use crate::model::ResourceContainer;
+use crate::model::Resource;
 use crate::types::*;
 
 pub struct LoggerModule {
@@ -26,38 +26,25 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
     fn pre_sys_call(
         &mut self,
         _track: &mut Track<R>,
-        _heap: &mut Vec<CallFrame>,
+        _call_frames: &mut Vec<CallFrame>,
         input: SysCallInput,
     ) -> Result<(), ModuleError> {
         match input {
-            SysCallInput::InvokeFunction {
-                fn_identifier,
-                input,
+            SysCallInput::Invoke {
+                fn_ident, input, ..
             } => {
                 log!(
                     self,
-                    "Invoking function: fn = {:?}, buckets = {:?}, proofs = {:?}",
-                    fn_identifier,
+                    "Invoking: fn = {:?}, buckets = {:?}, proofs = {:?}",
+                    fn_ident,
                     input.bucket_ids,
                     input.proof_ids
                 );
 
                 self.depth = self.depth + 1;
             }
-            SysCallInput::InvokeMethod {
-                fn_identifier,
-                input,
-                ..
-            } => {
-                log!(
-                    self,
-                    "Invoking method: fn = {:?}, buckets = {:?}, proofs = {:?}",
-                    fn_identifier,
-                    input.bucket_ids,
-                    input.proof_ids
-                );
-
-                self.depth = self.depth + 1;
+            SysCallInput::ReadOwnedNodes => {
+                log!(self, "Reading owned nodes");
             }
             SysCallInput::BorrowNode { node_id } => {
                 log!(self, "Borrowing node: node_id = {:?}", node_id);
@@ -71,26 +58,27 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
             SysCallInput::GlobalizeNode { node_id } => {
                 log!(self, "Globalizing node: node_id = {:?}", node_id);
             }
-            SysCallInput::BorrowSubstateMut { substate_id } => {
-                log!(self, "Borrowing substate: substate_id = {:?}", substate_id);
-            }
-            SysCallInput::ReturnSubstateMut { substate_ref } => {
+            SysCallInput::LockSubstate {
+                node_id,
+                offset,
+                mutable,
+            } => {
                 log!(
                     self,
-                    "Returning substate: substate_ref = {:?}",
-                    substate_ref
+                    "Lock substate: node_id {:?} offset {:?} mutable {:?}",
+                    node_id,
+                    offset,
+                    mutable
                 );
             }
-            SysCallInput::ReadSubstate { substate_id } => {
-                log!(self, "Reading substate: substate_id = {:?}", substate_id);
+            SysCallInput::GetRef { lock_handle } => {
+                log!(self, "Reading substate: lock_handle = {:?}", lock_handle);
             }
-            SysCallInput::WriteSubstate { substate_id, value } => {
-                log!(
-                    self,
-                    "Writing substate: substate_id = {:?}, value = {:?}",
-                    substate_id,
-                    value
-                );
+            SysCallInput::GetRefMut { lock_handle } => {
+                log!(self, "Get Mut: lock_handle = {:?}", lock_handle);
+            }
+            SysCallInput::DropLock { lock_handle } => {
+                log!(self, "Drop Lock: lock_handle = {:?}", lock_handle);
             }
             SysCallInput::TakeSubstate { substate_id } => {
                 log!(self, "Taking substate: substate_id = {:?}", substate_id);
@@ -107,9 +95,6 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
             SysCallInput::EmitLog { .. } => {
                 log!(self, "Emitting application log");
             }
-            SysCallInput::CheckAccessRule { .. } => {
-                log!(self, "Checking access rule");
-            }
         }
 
         Ok(())
@@ -118,32 +103,27 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
     fn post_sys_call(
         &mut self,
         _track: &mut Track<R>,
-        _heap: &mut Vec<CallFrame>,
+        _call_frames: &mut Vec<CallFrame>,
         output: SysCallOutput,
     ) -> Result<(), ModuleError> {
         match output {
-            SysCallOutput::InvokeFunction { output, .. } => {
+            SysCallOutput::Invoke { output, .. } => {
                 self.depth = self.depth - 1;
-                log!(self, "Exiting function: output = {:?}", output);
-            }
-            SysCallOutput::InvokeMethod { output, .. } => {
-                self.depth = self.depth - 1;
-                log!(self, "Exiting method: output = {:?}", output);
+                log!(self, "Exiting invoke: output = {:?}", output);
             }
             SysCallOutput::BorrowNode { .. } => {}
             SysCallOutput::DropNode { .. } => {}
             SysCallOutput::CreateNode { .. } => {}
             SysCallOutput::GlobalizeNode { .. } => {}
-            SysCallOutput::BorrowSubstateMut { .. } => {}
-            SysCallOutput::ReturnSubstateMut { .. } => {}
-            SysCallOutput::ReadSubstate { .. } => {}
-            SysCallOutput::WriteSubstate { .. } => {}
+            SysCallOutput::LockSubstate { .. } => {}
+            SysCallOutput::GetRef { .. } => {}
+            SysCallOutput::GetRefMut { .. } => {}
+            SysCallOutput::DropLock { .. } => {}
             SysCallOutput::TakeSubstate { .. } => {}
             SysCallOutput::ReadTransactionHash { .. } => {}
             SysCallOutput::ReadBlob { .. } => {}
             SysCallOutput::GenerateUuid { .. } => {}
             SysCallOutput::EmitLog { .. } => {}
-            SysCallOutput::CheckAccessRule { .. } => {}
         }
 
         Ok(())
@@ -152,7 +132,7 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
     fn on_wasm_instantiation(
         &mut self,
         _track: &mut Track<R>,
-        _heap: &mut Vec<CallFrame>,
+        _call_frames: &mut Vec<CallFrame>,
         _code: &[u8],
     ) -> Result<(), ModuleError> {
         Ok(())
@@ -161,7 +141,7 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
     fn on_wasm_costing(
         &mut self,
         _track: &mut Track<R>,
-        _heap: &mut Vec<CallFrame>,
+        _call_frames: &mut Vec<CallFrame>,
         _units: u32,
     ) -> Result<(), ModuleError> {
         Ok(())
@@ -170,11 +150,11 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
     fn on_lock_fee(
         &mut self,
         _track: &mut Track<R>,
-        _heap: &mut Vec<CallFrame>,
+        _call_frames: &mut Vec<CallFrame>,
         _vault_id: VaultId,
-        fee: ResourceContainer,
+        fee: Resource,
         _contingent: bool,
-    ) -> Result<ResourceContainer, ModuleError> {
+    ) -> Result<Resource, ModuleError> {
         Ok(fee)
     }
 }

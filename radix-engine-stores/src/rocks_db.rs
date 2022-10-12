@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-use radix_engine::engine::Substate;
 use radix_engine::ledger::*;
+use radix_engine::model::Substate;
 use radix_engine::types::*;
 use rocksdb::{DBWithThreadMode, Direction, IteratorMode, SingleThreaded, DB};
 
@@ -17,18 +17,29 @@ impl RadixEngineDB {
     }
 
     pub fn with_bootstrap(root: PathBuf) -> Self {
-        let substate_store = Self::new(root);
-        bootstrap(substate_store)
+        let mut substate_store = Self::new(root);
+        bootstrap(&mut substate_store);
+        substate_store
     }
 
     pub fn list_packages(&self) -> Vec<PackageAddress> {
-        let start = &scrypto_encode(&SubstateId::Package(PackageAddress::Normal([0; 26])));
-        let end = &scrypto_encode(&SubstateId::Package(PackageAddress::Normal([255; 26])));
+        let start = &scrypto_encode(&SubstateId(
+            RENodeId::Package(PackageAddress::Normal([0; 26])),
+            SubstateOffset::Package(PackageOffset::Package),
+        ));
+        let end = &scrypto_encode(&SubstateId(
+            RENodeId::Package(PackageAddress::Normal([255; 26])),
+            SubstateOffset::Package(PackageOffset::Package),
+        ));
         let substate_ids: Vec<SubstateId> = self.list_items(start, end);
         substate_ids
             .into_iter()
             .map(|id| {
-                if let SubstateId::Package(package_address) = id {
+                if let SubstateId(
+                    RENodeId::Package(package_address),
+                    SubstateOffset::Package(PackageOffset::Package),
+                ) = id
+                {
                     package_address
                 } else {
                     panic!("Expected a package substate id.")
@@ -42,13 +53,23 @@ impl RadixEngineDB {
         start: ComponentAddress,
         end: ComponentAddress,
     ) -> Vec<ComponentAddress> {
-        let start = &scrypto_encode(&SubstateId::ComponentState(start));
-        let end = &scrypto_encode(&SubstateId::ComponentState(end));
+        let start = &scrypto_encode(&SubstateId(
+            RENodeId::Global(GlobalAddress::Component(start)),
+            SubstateOffset::Global(GlobalOffset::Global),
+        ));
+        let end = &scrypto_encode(&SubstateId(
+            RENodeId::Global(GlobalAddress::Component(end)),
+            SubstateOffset::Global(GlobalOffset::Global),
+        ));
         let substate_ids: Vec<SubstateId> = self.list_items(start, end);
         substate_ids
             .into_iter()
             .map(|id| {
-                if let SubstateId::ComponentState(component_address) = id {
+                if let SubstateId(
+                    RENodeId::Global(GlobalAddress::Component(component_address)),
+                    SubstateOffset::Global(GlobalOffset::Global),
+                ) = id
+                {
                     component_address
                 } else {
                     panic!("Expected a component substate id.")
@@ -75,17 +96,23 @@ impl RadixEngineDB {
     }
 
     pub fn list_resource_managers(&self) -> Vec<ResourceAddress> {
-        let start = &scrypto_encode(&SubstateId::ResourceManager(ResourceAddress::Normal(
-            [0; 26],
-        )));
-        let end = &scrypto_encode(&SubstateId::ResourceManager(ResourceAddress::Normal(
-            [255; 26],
-        )));
+        let start = &scrypto_encode(&SubstateId(
+            RENodeId::ResourceManager(ResourceAddress::Normal([0; 26])),
+            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
+        ));
+        let end = &scrypto_encode(&SubstateId(
+            RENodeId::ResourceManager(ResourceAddress::Normal([255; 26])),
+            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
+        ));
         let substate_ids: Vec<SubstateId> = self.list_items(start, end);
         substate_ids
             .into_iter()
             .map(|id| {
-                if let SubstateId::ResourceManager(resource_address) = id {
+                if let SubstateId(
+                    RENodeId::ResourceManager(resource_address),
+                    SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
+                ) = id
+                {
                     resource_address
                 } else {
                     panic!("Expected a resource substate id.")
@@ -124,9 +151,9 @@ impl RadixEngineDB {
 impl QueryableSubstateStore for RadixEngineDB {
     fn get_kv_store_entries(&self, kv_store_id: &KeyValueStoreId) -> HashMap<Vec<u8>, Substate> {
         let unit = scrypto_encode(&());
-        let id = scrypto_encode(&SubstateId::KeyValueStoreEntry(
-            kv_store_id.clone(),
-            scrypto_encode(&unit),
+        let id = scrypto_encode(&SubstateId(
+            RENodeId::KeyValueStore(kv_store_id.clone()),
+            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(scrypto_encode(&unit))),
         ));
 
         let mut iter = self
@@ -137,7 +164,11 @@ impl QueryableSubstateStore for RadixEngineDB {
             let (key, value) = kv.unwrap();
             let substate: OutputValue = scrypto_decode(&value.to_vec()).unwrap();
             let substate_id: SubstateId = scrypto_decode(&key).unwrap();
-            if let SubstateId::KeyValueStoreEntry(id, key) = substate_id {
+            if let SubstateId(
+                RENodeId::KeyValueStore(id),
+                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key)),
+            ) = substate_id
+            {
                 if id == *kv_store_id {
                     items.insert(key, substate.substate)
                 } else {
@@ -151,34 +182,14 @@ impl QueryableSubstateStore for RadixEngineDB {
     }
 }
 
-// Implement this as an enum for now to prevent clashes with Substates
-// TODO: Have a better key prefixing strategy
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub enum Root {
-    Root(SubstateId),
-}
-
 impl ReadableSubstateStore for RadixEngineDB {
     fn get_substate(&self, substate_id: &SubstateId) -> Option<OutputValue> {
         self.read(substate_id).map(|b| scrypto_decode(&b).unwrap())
-    }
-
-    fn is_root(&self, substate_id: &SubstateId) -> bool {
-        self.db
-            .get(scrypto_encode(&Root::Root(substate_id.clone())))
-            .unwrap()
-            .is_some()
     }
 }
 
 impl WriteableSubstateStore for RadixEngineDB {
     fn put_substate(&mut self, substate_id: SubstateId, substate: OutputValue) {
         self.write(substate_id, scrypto_encode(&substate));
-    }
-
-    fn set_root(&mut self, substate_id: SubstateId) {
-        self.db
-            .put(scrypto_encode(&Root::Root(substate_id)), vec![])
-            .unwrap();
     }
 }

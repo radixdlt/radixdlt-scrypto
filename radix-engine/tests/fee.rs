@@ -2,7 +2,7 @@ use radix_engine::engine::ApplicationError;
 use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::ledger::WriteableSubstateStore;
-use radix_engine::model::KeyValueStoreEntryWrapper;
+use radix_engine::model::KeyValueStoreEntrySubstate;
 use radix_engine::model::WorktopError;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
@@ -24,9 +24,9 @@ where
     let receipt1 = test_runner.execute_manifest(
         ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(10.into(), account)
-            .withdraw_from_account_by_amount(10.into(), RADIX_TOKEN, account)
+            .withdraw_from_account_by_amount(10u32.into(), RADIX_TOKEN, account)
             .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
-                builder.call_function(
+                builder.call_scrypto_function(
                     package_address,
                     "Fee",
                     "new",
@@ -35,7 +35,7 @@ where
                 builder
             })
             .build(),
-        vec![public_key.into()],
+        vec![NonFungibleAddress::from_public_key(&public_key)],
     );
     let component_address = receipt1
         .expect_commit()
@@ -155,8 +155,8 @@ fn should_succeed_when_lock_fee_and_query_vault() {
     receipt.expect_commit_success();
 }
 
-fn query_account_balance<'s, S>(
-    test_runner: &mut TestRunner<'s, S>,
+fn query_account_balance<S>(
+    test_runner: &mut TestRunner<S>,
     account_address: ComponentAddress,
     resource_address: ResourceAddress,
 ) -> Decimal
@@ -164,15 +164,15 @@ where
     S: radix_engine::ledger::ReadableSubstateStore + WriteableSubstateStore,
 {
     if let Some(account_comp) = test_runner.inspect_component_state(account_address) {
-        let account_comp_state = ScryptoValue::from_slice(account_comp.state()).unwrap();
+        let account_comp_state = ScryptoValue::from_slice(&account_comp.raw).unwrap();
         if let Some(kv_store_id) = account_comp_state.kv_store_ids.iter().next() {
-            if let Some(KeyValueStoreEntryWrapper(Some(value))) = test_runner
+            if let Some(KeyValueStoreEntrySubstate(Some(value))) = test_runner
                 .inspect_key_value_entry(kv_store_id.clone(), scrypto_encode(&resource_address))
             {
-                let kv_entry_value = ScryptoValue::from_slice(&value).unwrap();
-                let vault_id = kv_entry_value.vault_ids.iter().next().unwrap();
+                let kv_store_entry_value = ScryptoValue::from_slice(&value).unwrap();
+                let vault_id = kv_store_entry_value.vault_ids.iter().next().unwrap();
                 let vault = test_runner.inspect_vault(vault_id.clone()).unwrap();
-                return vault.total_amount();
+                return vault.0.amount();
             }
         }
     }
@@ -199,7 +199,10 @@ fn test_fee_accounting_success() {
             args!(Expression::entire_worktop()),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
 
     // Assert
     receipt.expect_commit_success();
@@ -237,7 +240,10 @@ fn test_fee_accounting_failure() {
         )
         .assert_worktop_contains_by_amount(1.into(), RADIX_TOKEN)
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -272,7 +278,10 @@ fn test_fee_accounting_rejection() {
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(Decimal::from_str("0.000000000000000001").unwrap(), account1)
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
 
     // Assert
     receipt.expect_rejection();
@@ -295,8 +304,13 @@ fn test_contingent_fee_accounting_success() {
         .lock_fee(dec!("10"), account1)
         .lock_contingent_fee(dec!("0.001"), account2)
         .build();
-    let receipt =
-        test_runner.execute_manifest(manifest, vec![public_key1.into(), public_key2.into()]);
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![
+            NonFungibleAddress::from_public_key(&public_key1),
+            NonFungibleAddress::from_public_key(&public_key2),
+        ],
+    );
 
     // Assert
     receipt.expect_commit_success();
@@ -330,8 +344,13 @@ fn test_contingent_fee_accounting_failure() {
         .lock_contingent_fee(dec!("0.001"), account2)
         .assert_worktop_contains_by_amount(1.into(), RADIX_TOKEN)
         .build();
-    let receipt =
-        test_runner.execute_manifest(manifest, vec![public_key1.into(), public_key2.into()]);
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![
+            NonFungibleAddress::from_public_key(&public_key1),
+            NonFungibleAddress::from_public_key(&public_key2),
+        ],
+    );
 
     // Assert
     receipt.expect_specific_failure(|e| {

@@ -1,7 +1,11 @@
+use scrypto::core::{FnIdent, MethodIdent, ReceiverMethodIdent};
+use scrypto::resource::ResourceManagerBurnInput;
+
 use crate::engine::{HeapRENode, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::{
-    InvokeError, Proof, ProofError, ResourceContainer, ResourceContainerError, ResourceContainerId,
+    InvokeError, LockableResource, Proof, ProofError, Resource, ResourceContainerId,
+    ResourceOperationError,
 };
 use crate::types::*;
 use crate::wasm::*;
@@ -12,38 +16,38 @@ pub enum BucketError {
     InvalidRequestData(DecodeError),
     CouldNotCreateBucket,
     CouldNotTakeBucket,
-    ResourceContainerError(ResourceContainerError),
+    ResourceOperationError(ResourceOperationError),
     ProofError(ProofError),
     CouldNotCreateProof,
-    MethodNotFound(BucketFnIdentifier),
+    MethodNotFound(BucketMethod),
 }
 
 /// A transient resource container.
 #[derive(Debug)]
 pub struct Bucket {
-    container: Rc<RefCell<ResourceContainer>>,
+    resource: Rc<RefCell<LockableResource>>,
 }
 
 impl Bucket {
-    pub fn new(container: ResourceContainer) -> Self {
+    pub fn new(resource: Resource) -> Self {
         Self {
-            container: Rc::new(RefCell::new(container)),
+            resource: Rc::new(RefCell::new(resource.into())),
         }
     }
 
-    fn put(&mut self, other: Bucket) -> Result<(), ResourceContainerError> {
-        self.borrow_container_mut().put(other.into_container()?)
+    fn put(&mut self, other: Bucket) -> Result<(), ResourceOperationError> {
+        self.borrow_resource_mut().put(other.resource()?)
     }
 
-    fn take(&mut self, amount: Decimal) -> Result<ResourceContainer, ResourceContainerError> {
-        self.borrow_container_mut().take_by_amount(amount)
+    fn take(&mut self, amount: Decimal) -> Result<Resource, ResourceOperationError> {
+        self.borrow_resource_mut().take_by_amount(amount)
     }
 
     fn take_non_fungibles(
         &mut self,
         ids: &BTreeSet<NonFungibleId>,
-    ) -> Result<ResourceContainer, ResourceContainerError> {
-        self.borrow_container_mut().take_by_ids(ids)
+    ) -> Result<Resource, ResourceOperationError> {
+        self.borrow_resource_mut().take_by_ids(ids)
     }
 
     pub fn create_proof(&mut self, self_bucket_id: BucketId) -> Result<Proof, ProofError> {
@@ -68,15 +72,15 @@ impl Bucket {
     ) -> Result<Proof, ProofError> {
         // lock the specified amount
         let locked_amount_or_ids = self
-            .borrow_container_mut()
+            .borrow_resource_mut()
             .lock_by_amount(amount)
-            .map_err(ProofError::ResourceContainerError)?;
+            .map_err(ProofError::ResourceOperationError)?;
 
         // produce proof
         let mut evidence = HashMap::new();
         evidence.insert(
             container_id,
-            (self.container.clone(), locked_amount_or_ids.clone()),
+            (self.resource.clone(), locked_amount_or_ids.clone()),
         );
         Proof::new(
             self.resource_address(),
@@ -93,15 +97,15 @@ impl Bucket {
     ) -> Result<Proof, ProofError> {
         // lock the specified id set
         let locked_amount_or_ids = self
-            .borrow_container_mut()
+            .borrow_resource_mut()
             .lock_by_ids(ids)
-            .map_err(ProofError::ResourceContainerError)?;
+            .map_err(ProofError::ResourceOperationError)?;
 
         // produce proof
         let mut evidence = HashMap::new();
         evidence.insert(
             container_id,
-            (self.container.clone(), locked_amount_or_ids.clone()),
+            (self.resource.clone(), locked_amount_or_ids.clone()),
         );
         Proof::new(
             self.resource_address(),
@@ -112,46 +116,47 @@ impl Bucket {
     }
 
     pub fn resource_address(&self) -> ResourceAddress {
-        self.borrow_container().resource_address()
+        self.borrow_resource().resource_address()
     }
 
     pub fn resource_type(&self) -> ResourceType {
-        self.borrow_container().resource_type()
+        self.borrow_resource().resource_type()
     }
 
     pub fn total_amount(&self) -> Decimal {
-        self.borrow_container().total_amount()
+        self.borrow_resource().total_amount()
     }
 
-    fn total_ids(&self) -> Result<BTreeSet<NonFungibleId>, ResourceContainerError> {
-        self.borrow_container().total_ids()
+    pub fn total_ids(&self) -> Result<BTreeSet<NonFungibleId>, ResourceOperationError> {
+        self.borrow_resource().total_ids()
     }
 
     pub fn is_locked(&self) -> bool {
-        self.borrow_container().is_locked()
+        self.borrow_resource().is_locked()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.borrow_container().is_empty()
+        self.borrow_resource().is_empty()
     }
 
-    pub fn into_container(self) -> Result<ResourceContainer, ResourceContainerError> {
-        Rc::try_unwrap(self.container)
-            .map_err(|_| ResourceContainerError::ContainerLocked)
+    pub fn resource(self) -> Result<Resource, ResourceOperationError> {
+        Rc::try_unwrap(self.resource)
+            .map_err(|_| ResourceOperationError::ResourceLocked)
             .map(|c| c.into_inner())
+            .map(Into::into)
     }
 
-    fn borrow_container(&self) -> Ref<ResourceContainer> {
-        self.container.borrow()
+    fn borrow_resource(&self) -> Ref<LockableResource> {
+        self.resource.borrow()
     }
 
-    fn borrow_container_mut(&mut self) -> RefMut<ResourceContainer> {
-        self.container.borrow_mut()
+    fn borrow_resource_mut(&mut self) -> RefMut<LockableResource> {
+        self.resource.borrow_mut()
     }
 
     pub fn main<'s, Y, W, I, R>(
         bucket_id: BucketId,
-        bucket_fn: BucketFnIdentifier,
+        method: BucketMethod,
         args: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, InvokeError<BucketError>>
@@ -161,98 +166,102 @@ impl Bucket {
         I: WasmInstance,
         R: FeeReserve,
     {
-        let substate_id = SubstateId::Bucket(bucket_id);
-        let mut node_ref = system_api
-            .substate_borrow_mut(&substate_id)
-            .map_err(InvokeError::Downstream)?;
-        let bucket0 = node_ref.bucket();
-
-        let rtn = match bucket_fn {
-            BucketFnIdentifier::Take => {
+        let rtn = match method {
+            BucketMethod::Take => {
                 let input: BucketTakeInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(BucketError::InvalidRequestData(e)))?;
+                let mut node_ref = system_api.borrow_node_mut(&RENodeId::Bucket(bucket_id))?;
+                let bucket0 = node_ref.bucket_mut();
+
                 let container = bucket0
                     .take(input.amount)
-                    .map_err(|e| InvokeError::Error(BucketError::ResourceContainerError(e)))?;
+                    .map_err(|e| InvokeError::Error(BucketError::ResourceOperationError(e)))?;
                 let bucket_id = system_api
-                    .node_create(HeapRENode::Bucket(Bucket::new(container)))
-                    .map_err(InvokeError::Downstream)?
+                    .node_create(HeapRENode::Bucket(Bucket::new(container)))?
                     .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
                     bucket_id,
                 )))
             }
-            BucketFnIdentifier::TakeNonFungibles => {
+            BucketMethod::TakeNonFungibles => {
                 let input: BucketTakeNonFungiblesInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(BucketError::InvalidRequestData(e)))?;
+                let mut node_ref = system_api.borrow_node_mut(&RENodeId::Bucket(bucket_id))?;
+                let bucket0 = node_ref.bucket_mut();
+
                 let container = bucket0
                     .take_non_fungibles(&input.ids)
-                    .map_err(|e| InvokeError::Error(BucketError::ResourceContainerError(e)))?;
+                    .map_err(|e| InvokeError::Error(BucketError::ResourceOperationError(e)))?;
                 let bucket_id = system_api
-                    .node_create(HeapRENode::Bucket(Bucket::new(container)))
-                    .map_err(InvokeError::Downstream)?
+                    .node_create(HeapRENode::Bucket(Bucket::new(container)))?
                     .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
                     bucket_id,
                 )))
             }
-            BucketFnIdentifier::GetNonFungibleIds => {
+            BucketMethod::GetNonFungibleIds => {
                 let _: BucketGetNonFungibleIdsInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(BucketError::InvalidRequestData(e)))?;
+                let mut node_ref = system_api.borrow_node_mut(&RENodeId::Bucket(bucket_id))?;
+                let bucket0 = node_ref.bucket_mut();
+
                 let ids = bucket0
                     .total_ids()
-                    .map_err(|e| InvokeError::Error(BucketError::ResourceContainerError(e)))?;
+                    .map_err(|e| InvokeError::Error(BucketError::ResourceOperationError(e)))?;
                 Ok(ScryptoValue::from_typed(&ids))
             }
-            BucketFnIdentifier::Put => {
+            BucketMethod::Put => {
                 let input: BucketPutInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(BucketError::InvalidRequestData(e)))?;
                 let other_bucket = system_api
-                    .node_drop(&RENodeId::Bucket(input.bucket.0))
-                    .map_err(InvokeError::Downstream)?
+                    .node_drop(RENodeId::Bucket(input.bucket.0))?
                     .into();
+                let mut node_ref = system_api.borrow_node_mut(&RENodeId::Bucket(bucket_id))?;
+                let bucket0 = node_ref.bucket_mut();
+
                 bucket0
                     .put(other_bucket)
-                    .map_err(|e| InvokeError::Error(BucketError::ResourceContainerError(e)))?;
+                    .map_err(|e| InvokeError::Error(BucketError::ResourceOperationError(e)))?;
                 Ok(ScryptoValue::from_typed(&()))
             }
-            BucketFnIdentifier::GetAmount => {
+            BucketMethod::GetAmount => {
                 let _: BucketGetAmountInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(BucketError::InvalidRequestData(e)))?;
+                let mut node_ref = system_api.borrow_node_mut(&RENodeId::Bucket(bucket_id))?;
+                let bucket0 = node_ref.bucket_mut();
+
                 Ok(ScryptoValue::from_typed(&bucket0.total_amount()))
             }
-            BucketFnIdentifier::GetResourceAddress => {
+            BucketMethod::GetResourceAddress => {
                 let _: BucketGetResourceAddressInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(BucketError::InvalidRequestData(e)))?;
+                let mut node_ref = system_api.borrow_node_mut(&RENodeId::Bucket(bucket_id))?;
+                let bucket0 = node_ref.bucket_mut();
+
                 Ok(ScryptoValue::from_typed(&bucket0.resource_address()))
             }
-            BucketFnIdentifier::CreateProof => {
+            BucketMethod::CreateProof => {
                 let _: BucketCreateProofInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(BucketError::InvalidRequestData(e)))?;
+                let mut node_ref = system_api.borrow_node_mut(&RENodeId::Bucket(bucket_id))?;
+                let bucket0 = node_ref.bucket_mut();
                 let proof = bucket0
                     .create_proof(bucket_id)
                     .map_err(|e| InvokeError::Error(BucketError::ProofError(e)))?;
-                let proof_id = system_api
-                    .node_create(HeapRENode::Proof(proof))
-                    .map_err(InvokeError::Downstream)?
-                    .into();
+                let proof_id = system_api.node_create(HeapRENode::Proof(proof))?.into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Proof(
                     proof_id,
                 )))
             }
-            _ => Err(InvokeError::Error(BucketError::MethodNotFound(bucket_fn))),
+            _ => Err(InvokeError::Error(BucketError::MethodNotFound(method))),
         }?;
-
-        system_api
-            .substate_return_mut(node_ref)
-            .map_err(InvokeError::Downstream)?;
 
         Ok(rtn)
     }
 
     pub fn consuming_main<'s, Y, W, I, R>(
         node_id: RENodeId,
-        bucket_fn: BucketFnIdentifier,
+        method: BucketMethod,
         args: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, InvokeError<BucketError>>
@@ -262,42 +271,34 @@ impl Bucket {
         I: WasmInstance,
         R: FeeReserve,
     {
-        match bucket_fn {
-            BucketFnIdentifier::Burn => {
+        match method {
+            BucketMethod::Burn => {
                 let _: ConsumingBucketBurnInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(BucketError::InvalidRequestData(e)))?;
 
-                let bucket: Bucket = system_api
-                    .node_drop(&node_id)
-                    .map_err(InvokeError::Downstream)?
-                    .into();
-
-                // Notify resource manager, TODO: Should not need to notify manually
+                let node_ref = system_api.borrow_node(&node_id)?;
+                let bucket = node_ref.bucket();
                 let resource_address = bucket.resource_address();
-                let resource_substate_id = SubstateId::ResourceManager(resource_address);
-                let mut value = system_api
-                    .substate_borrow_mut(&resource_substate_id)
-                    .map_err(InvokeError::Downstream)?;
-                let resource_manager = value.resource_manager();
-                resource_manager.burn(bucket.total_amount());
-                if matches!(resource_manager.resource_type(), ResourceType::NonFungible) {
-                    for id in bucket
-                        .total_ids()
-                        .expect("Failed to list non-fungible IDs on non-fungible Bucket")
-                    {
-                        let address = SubstateId::NonFungible(resource_address, id);
-                        system_api
-                            .substate_take(address)
-                            .map_err(InvokeError::Downstream)?;
-                    }
-                }
-                system_api
-                    .substate_return_mut(value)
-                    .map_err(InvokeError::Downstream)?;
+                let bucket_id = match node_id {
+                    RENodeId::Bucket(bucket_id) => bucket_id,
+                    _ => panic!("Unexpected"),
+                };
 
-                Ok(ScryptoValue::from_typed(&()))
+                system_api
+                    .invoke(
+                        FnIdent::Method(ReceiverMethodIdent {
+                            receiver: Receiver::Ref(RENodeId::ResourceManager(resource_address)),
+                            method_ident: MethodIdent::Native(NativeMethod::ResourceManager(
+                                ResourceManagerMethod::Burn,
+                            )),
+                        }),
+                        ScryptoValue::from_typed(&ResourceManagerBurnInput {
+                            bucket: scrypto::resource::Bucket(bucket_id),
+                        }),
+                    )
+                    .map_err(InvokeError::Downstream)
             }
-            _ => Err(InvokeError::Error(BucketError::MethodNotFound(bucket_fn))),
+            _ => Err(InvokeError::Error(BucketError::MethodNotFound(method))),
         }
     }
 }

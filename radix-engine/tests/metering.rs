@@ -15,7 +15,7 @@ fn test_loop() {
     let package_address = test_runner.publish_package(code, test_abi_any_in_void_out("Test", "f"));
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(package_address, "Test", "f", args!())
+        .call_scrypto_function(package_address, "Test", "f", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -30,11 +30,11 @@ fn test_loop_out_of_cost_unit() {
     let mut test_runner = TestRunner::new(true, &mut store);
 
     // Act
-    let code = wat2wasm(&include_str!("wasm/loop.wat").replace("${n}", "7000000"));
+    let code = wat2wasm(&include_str!("wasm/loop.wat").replace("${n}", "70000000"));
     let package_address = test_runner.publish_package(code, test_abi_any_in_void_out("Test", "f"));
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(45.into(), SYS_FAUCET_COMPONENT)
-        .call_function(package_address, "Test", "f", args!())
+        .call_scrypto_function(package_address, "Test", "f", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -54,7 +54,7 @@ fn test_recursion() {
     let package_address = test_runner.publish_package(code, test_abi_any_in_void_out("Test", "f"));
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(package_address, "Test", "f", args!())
+        .call_scrypto_function(package_address, "Test", "f", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -73,7 +73,7 @@ fn test_recursion_stack_overflow() {
     let package_address = test_runner.publish_package(code, test_abi_any_in_void_out("Test", "f"));
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(package_address, "Test", "f", args!())
+        .call_scrypto_function(package_address, "Test", "f", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -92,7 +92,7 @@ fn test_grow_memory() {
     let package_address = test_runner.publish_package(code, test_abi_any_in_void_out("Test", "f"));
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(package_address, "Test", "f", args!())
+        .call_scrypto_function(package_address, "Test", "f", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -111,7 +111,7 @@ fn test_grow_memory_out_of_cost_unit() {
     let package_address = test_runner.publish_package(code, test_abi_any_in_void_out("Test", "f"));
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_function(package_address, "Test", "f", args!())
+        .call_scrypto_function(package_address, "Test", "f", args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -129,15 +129,18 @@ fn test_basic_transfer() {
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), account1)
-        .withdraw_from_account_by_amount(100.into(), RADIX_TOKEN, account1)
+        .lock_fee(10u32.into(), account1)
+        .withdraw_from_account_by_amount(100u32.into(), RADIX_TOKEN, account1)
         .call_method(
             account2,
             "deposit_batch",
             args!(Expression::entire_worktop()),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key1.into()]);
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&public_key1)],
+    );
     receipt.expect_commit_success();
 
     // Assert
@@ -148,19 +151,19 @@ fn test_basic_transfer() {
     assert_eq!(
         10000 /* base_fee */
         + 0 /* blobs */
-        + 4300 /* borrow_substate */
-        + 2000 /* create_node */
-        + 1248 /* decode_manifest */
+        + 4400 /* borrow_node */
+        + 7500 /* create_node */
+        + 1698 /* decode_manifest */
+        + 700 /* drop_lock */
         + 1000 /* drop_node */
         + 0 /* instantiate_wasm */
-        + 2205 /* invoke_function */
-        + 2215 /* invoke_method */
-        + 5000 /* read_substate */
-        + 600 /* return_substate */
-        + 1000 /* run_function */
-        + 5200 /* run_method */
-        + 275049 /* run_wasm */
-        + 416 /* verify_manifest */
+        + 2215 /* invoke_function */
+        + 700 /* lock_substate */
+        + 100 /* read_owned_nodes */
+        + 3500 /* read_substate */
+        + 5200 /* run_function */
+        + 338152 /* run_wasm */
+        + 566 /* verify_manifest */
         + 3750 /* verify_signatures */
         + 3000, /* write_substate */
         receipt.execution.fee_summary.cost_unit_consumed
@@ -193,5 +196,83 @@ fn test_publish_large_package() {
     receipt.expect_commit_success();
 
     // Assert
-    assert_eq!(4271555, receipt.execution.fee_summary.cost_unit_consumed);
+    assert_eq!(4284361, receipt.execution.fee_summary.cost_unit_consumed);
+}
+
+#[test]
+fn should_be_able_run_large_manifest() {
+    // Arrange
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
+    let (public_key, _, account) = test_runner.new_account();
+
+    // Act
+    let mut builder = ManifestBuilder::new(&NetworkDefinition::simulator());
+    builder.lock_fee(100u32.into(), account);
+    builder.withdraw_from_account_by_amount(100u32.into(), RADIX_TOKEN, account);
+    for _ in 0..500 {
+        builder.take_from_worktop_by_amount(1.into(), RADIX_TOKEN, |builder, bid| {
+            builder.return_to_worktop(bid)
+        });
+    }
+    builder.call_method(
+        account,
+        "deposit_batch",
+        args!(Expression::entire_worktop()),
+    );
+    let manifest = builder.build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
+fn should_be_able_invoke_account_balance_50_times() {
+    // Arrange
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
+    let (public_key, _, account) = test_runner.new_account();
+
+    // Act
+    let mut builder = ManifestBuilder::new(&NetworkDefinition::simulator());
+    builder.lock_fee(100u32.into(), account);
+    for _ in 0..50 {
+        builder.call_method(account, "balance", args!(RADIX_TOKEN));
+    }
+    let manifest = builder.build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
+fn should_be_able_to_generate_5_proofs_and_then_lock_fee() {
+    // Arrange
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
+    let (public_key, _, account) = test_runner.new_account();
+    let resource_address = test_runner.create_fungible_resource(100.into(), 0, account);
+
+    // Act
+    let mut builder = ManifestBuilder::new(&NetworkDefinition::simulator());
+    for _ in 0..5 {
+        builder.create_proof_from_account_by_amount(1.into(), resource_address, account);
+    }
+    builder.lock_fee(100u32.into(), account);
+    let manifest = builder.build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
+
+    // Assert
+    receipt.expect_commit_success();
 }

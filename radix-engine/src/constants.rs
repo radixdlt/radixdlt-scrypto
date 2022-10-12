@@ -1,6 +1,5 @@
 /// The default cost units loaned from the system to bootstrap execution (lock fee).
-/// TODO: reduce this number by more optimization, currently limited by `Account` wasm instantiation
-pub const DEFAULT_SYSTEM_LOAN: u32 = 1_500_000;
+pub const DEFAULT_SYSTEM_LOAN: u32 = 1_000_000;
 
 /// The default max cost unit limit for a transaction, used by transaction validator.
 pub const DEFAULT_MAX_COST_UNIT_LIMIT: u32 = 100_000_000;

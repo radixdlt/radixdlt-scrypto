@@ -2,7 +2,6 @@ use crate::ledger::*;
 use crate::types::*;
 
 use indexmap::IndexMap;
-use indexmap::IndexSet;
 use scrypto::engine::types::SubstateId;
 
 /// Nodes form an acyclic graph towards the parent
@@ -10,7 +9,6 @@ struct StagedSubstateStoreNode {
     parent_id: u64,
     locked: bool,
     outputs: IndexMap<SubstateId, OutputValue>,
-    new_roots: IndexSet<SubstateId>,
 }
 
 impl StagedSubstateStoreNode {
@@ -19,7 +17,6 @@ impl StagedSubstateStoreNode {
             parent_id,
             locked: false,
             outputs: IndexMap::new(),
-            new_roots: IndexSet::new(),
         }
     }
 }
@@ -112,10 +109,6 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> StagedSubstateStoreM
             self.root.put_substate(substate_id, output);
         }
 
-        for substate_id in node.new_roots {
-            self.root.set_root(substate_id);
-        }
-
         if !remove_children {
             self.set_root_parent(id);
         }
@@ -142,28 +135,11 @@ impl<'t, 's, S: ReadableSubstateStore> StagedSubstateStore<'t, 's, S> {
 
         self.get_substate_recurse(substate_id, node.parent_id)
     }
-
-    fn is_root_recurse(&self, substate_id: &SubstateId, id: u64) -> bool {
-        if id == 0 {
-            return self.stores.root.is_root(substate_id);
-        }
-
-        let node = self.stores.nodes.get(&id).unwrap();
-        if node.new_roots.contains(substate_id) {
-            return true;
-        }
-
-        self.is_root_recurse(substate_id, node.parent_id)
-    }
 }
 
 impl<'t, 's, S: ReadableSubstateStore> ReadableSubstateStore for StagedSubstateStore<'t, 's, S> {
     fn get_substate(&self, substate_id: &SubstateId) -> Option<OutputValue> {
         self.get_substate_recurse(substate_id, self.id)
-    }
-
-    fn is_root(&self, substate_id: &SubstateId) -> bool {
-        self.is_root_recurse(substate_id, self.id)
     }
 }
 
@@ -174,15 +150,6 @@ impl<'t, 's, S: ReadableSubstateStore> WriteableSubstateStore for StagedSubstate
         } else {
             let node = self.stores.nodes.get_mut(&self.id).unwrap();
             node.outputs.insert(substate_id, output);
-        }
-    }
-
-    fn set_root(&mut self, substate_id: SubstateId) {
-        if self.id == 0 {
-            panic!("Cannot write to root store");
-        } else {
-            let node = self.stores.nodes.get_mut(&self.id).unwrap();
-            node.new_roots.insert(substate_id);
         }
     }
 }
