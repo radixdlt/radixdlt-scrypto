@@ -91,32 +91,6 @@ impl AuthModule {
     ) -> Result<(), RuntimeError> {
         let auth = match &method_ident {
             ReceiverMethodIdent {
-                receiver: Receiver::Consumed(RENodeId::Bucket(..)),
-                method_ident: MethodIdent::Native(NativeMethod::Bucket(ref method)),
-            } => {
-                let resource_address = {
-                    let node_ref = node_pointer.to_ref(call_frames, track);
-                    node_ref.bucket().resource_address()
-                };
-                let node_id = RENodeId::ResourceManager(resource_address);
-                let resource_pointer = RENodePointer::Store(node_id);
-                let offset =
-                    SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-                resource_pointer
-                    .acquire_lock(offset.clone(), false, false, track)
-                    .map_err(RuntimeError::KernelError)?;
-
-                let substate_ref = resource_pointer.borrow_substate(&offset, call_frames, track)?;
-                let resource_manager = substate_ref.resource_manager();
-                let auth = vec![resource_manager.get_bucket_auth(*method).clone()];
-
-                resource_pointer
-                    .release_lock(offset, false, track)
-                    .map_err(RuntimeError::KernelError)?;
-
-                auth
-            }
-            ReceiverMethodIdent {
                 receiver: Receiver::Ref(RENodeId::ResourceManager(resource_address)),
                 method_ident: MethodIdent::Native(NativeMethod::ResourceManager(ref method)),
             } => {

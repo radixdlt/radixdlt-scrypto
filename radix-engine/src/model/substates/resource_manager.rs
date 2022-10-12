@@ -42,6 +42,11 @@ impl ResourceManagerSubstate {
                     Some(entry) => entry.get_update_auth(MethodAccessRuleMethod::Lock()),
                 }
             }
+            ResourceManagerMethod::Burn => self
+                .authorization
+                .get(&ResourceMethodAuthKey::Burn)
+                .expect(&format!("Authorization for {:?} not specified", method))
+                .get_method_auth(),
             _ => match self.method_table.get(&method) {
                 None => &MethodAuthorization::Unsupported,
                 Some(Public) => &MethodAuthorization::AllowAll,
