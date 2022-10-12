@@ -1,6 +1,6 @@
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
-use scrypto::address::ContextualDisplay;
+use scrypto::misc::ContextualDisplay;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 

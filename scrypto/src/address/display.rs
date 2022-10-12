@@ -1,8 +1,5 @@
 use super::*;
 
-// Re-export so it's easy to pick up
-pub use crate::misc::ContextualDisplay;
-
 #[derive(Clone, Copy)]
 pub struct AddressDisplayContext<'a> {
     pub encoder: Option<&'a Bech32Encoder>,

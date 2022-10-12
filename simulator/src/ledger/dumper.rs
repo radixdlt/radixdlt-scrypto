@@ -3,7 +3,7 @@ use colored::*;
 use radix_engine::ledger::*;
 use radix_engine::model::*;
 use radix_engine::types::*;
-use scrypto::address::ContextualDisplay;
+use scrypto::misc::ContextualDisplay;
 use std::collections::VecDeque;
 
 use crate::utils::*;

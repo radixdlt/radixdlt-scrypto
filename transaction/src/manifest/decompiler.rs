@@ -1,13 +1,14 @@
 use sbor::rust::collections::*;
 use sbor::rust::fmt;
 use sbor::{encode_any, DecodeError, Value};
-use scrypto::address::{AddressError, Bech32Encoder, ContextualDisplay};
+use scrypto::address::{AddressError, Bech32Encoder};
 use scrypto::buffer::scrypto_decode;
 use scrypto::core::{
     BucketFnIdentifier, FnIdentifier, NativeFnIdentifier, NetworkDefinition, Receiver,
     ResourceManagerFnIdentifier,
 };
 use scrypto::engine::types::*;
+use scrypto::misc::ContextualDisplay;
 use scrypto::resource::{
     ConsumingBucketBurnInput, MintParams, ResourceManagerCreateInput, ResourceManagerMintInput,
 };

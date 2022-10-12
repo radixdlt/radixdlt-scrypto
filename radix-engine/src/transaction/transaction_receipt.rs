@@ -1,5 +1,6 @@
 use colored::*;
-use scrypto::address::ContextualDisplay;
+use scrypto::address::{AddressDisplayContext, NO_NETWORK};
+use scrypto::misc::ContextualDisplay;
 use transaction::manifest::decompiler::{decompile_instruction, DecompilationContext};
 use transaction::model::*;
 
@@ -118,8 +119,8 @@ impl TransactionReceipt {
                 TransactionOutcome::Failure(err) => {
                     if !f(&err) {
                         panic!(
-                            "Expected specific failure but was different error:\n{}",
-                            self.displayable(None)
+                            "Expected specific failure but was different error:\n{:?}",
+                            self
                         );
                     }
                 }
@@ -147,13 +148,6 @@ impl TransactionReceipt {
         let commit = self.expect_commit();
         &commit.entity_changes.new_resource_addresses
     }
-
-    pub fn displayable<'a, T: Into<Option<&'a Bech32Encoder>>>(
-        &'a self,
-        bech32_encoder: T,
-    ) -> DisplayableTransactionReceipt<'a> {
-        DisplayableTransactionReceipt(self, bech32_encoder.into())
-    }
 }
 
 macro_rules! prefix {
@@ -168,19 +162,23 @@ macro_rules! prefix {
 
 impl fmt::Debug for TransactionReceipt {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.displayable(None))
+        write!(f, "{}", self.display(NO_NETWORK))
     }
 }
 
-pub struct DisplayableTransactionReceipt<'a>(&'a TransactionReceipt, Option<&'a Bech32Encoder>);
+impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
+    type Error = fmt::Error;
 
-impl<'a> fmt::Display for DisplayableTransactionReceipt<'a> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let contents = &self.0.contents;
-        let execution = &self.0.execution;
-        let result = &self.0.result;
+    fn contextual_format<F: fmt::Write>(
+        &self,
+        f: &mut F,
+        context: &AddressDisplayContext<'a>,
+    ) -> Result<(), Self::Error> {
+        let contents = &self.contents;
+        let execution = &self.execution;
+        let result = &self.result;
 
-        let bech32_encoder = self.1;
+        let bech32_encoder = context.encoder;
 
         write!(
             f,
@@ -307,11 +305,5 @@ impl<'a> fmt::Display for DisplayableTransactionReceipt<'a> {
         }
 
         Ok(())
-    }
-}
-
-impl<'a> fmt::Debug for DisplayableTransactionReceipt<'a> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self)
     }
 }
