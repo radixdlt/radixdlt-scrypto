@@ -5,7 +5,7 @@ use sbor::rust::collections::HashSet;
 use sbor::rust::fmt;
 use sbor::rust::format;
 use sbor::rust::string::String;
-use sbor::rust::string::ToString;
+use sbor::rust::string::*;
 use sbor::rust::vec::Vec;
 use sbor::type_id::*;
 use sbor::{any::*, *};
@@ -192,76 +192,15 @@ impl ScryptoValue {
             + self.vault_ids.len()
             + self.owned_component_addresses.len()
     }
-
-    pub fn to_string_with_context<'a>(
-        &'a self,
-        bech32_encoder: Option<&'a Bech32Encoder>,
-        bucket_ids: Option<&'a HashMap<BucketId, String>>,
-        proof_ids: Option<&'a HashMap<ProofId, String>>,
-    ) -> Result<String, ScryptoValueFormatterError> {
-        self.to_string_with_fixed_context(
-            bech32_encoder,
-            bucket_ids.unwrap_or(&HashMap::new()),
-            proof_ids.unwrap_or(&HashMap::new()),
-        )
-    }
-
-    pub fn to_string_with_fixed_context<'a>(
-        &'a self,
-        bech32_encoder: Option<&'a Bech32Encoder>,
-        bucket_ids: &'a HashMap<BucketId, String>,
-        proof_ids: &'a HashMap<ProofId, String>,
-    ) -> Result<String, ScryptoValueFormatterError> {
-        let context = ScryptoValueFormatterContext {
-            bech32_encoder,
-            bucket_ids,
-            proof_ids,
-        };
-        ScryptoValueFormatter::format_value(&self.dom, &context)
-    }
-
-    pub fn displayable<
-        'a,
-        T1: Into<Option<&'a Bech32Encoder>>,
-        T2: Into<Option<&'a HashMap<BucketId, String>>>,
-        T3: Into<Option<&'a HashMap<ProofId, String>>>,
-    >(
-        &'a self,
-        bech32_encoder: T1,
-        bucket_names: T2,
-        proof_names: T3,
-    ) -> DisplayableScryptoValue<'a> {
-        DisplayableScryptoValue(
-            self,
-            bech32_encoder.into(),
-            bucket_names.into(),
-            proof_names.into(),
-        )
-    }
 }
 
 impl fmt::Debug for ScryptoValue {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self.to_string_with_context(None, None, None) {
-            Ok(str) => write!(f, "{}", str),
-            Err(err) => write!(f, "Invalid Value: {:?}", err),
-        }
-    }
-}
-
-pub struct DisplayableScryptoValue<'a>(
-    &'a ScryptoValue,
-    Option<&'a Bech32Encoder>,
-    Option<&'a HashMap<BucketId, String>>,
-    Option<&'a HashMap<ProofId, String>>,
-);
-
-impl<'a> fmt::Display for DisplayableScryptoValue<'a> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        match self.0.to_string_with_context(self.1, self.2, self.3) {
-            Ok(str) => write!(f, "{}", str),
-            Err(err) => write!(f, "Invalid Value: {:?}", err),
-        }
+        write!(
+            f,
+            "{}",
+            self.display(ScryptoValueFormatterContext::no_context())
+        )
     }
 }
 
@@ -463,19 +402,95 @@ pub struct ScryptoValueFormatter {}
 
 pub struct ScryptoValueFormatterContext<'a> {
     bech32_encoder: Option<&'a Bech32Encoder>,
-    bucket_ids: &'a HashMap<BucketId, String>,
-    proof_ids: &'a HashMap<ProofId, String>,
+    bucket_names: Option<&'a HashMap<BucketId, String>>,
+    proof_names: Option<&'a HashMap<ProofId, String>>,
+}
+
+impl<'a> ScryptoValueFormatterContext<'a> {
+    pub fn no_context() -> Self {
+        Self {
+            bech32_encoder: None,
+            bucket_names: None,
+            proof_names: None,
+        }
+    }
+
+    pub fn new_with_no_manifest_context(bech32_encoder: Option<&'a Bech32Encoder>) -> Self {
+        Self {
+            bech32_encoder,
+            bucket_names: None,
+            proof_names: None,
+        }
+    }
+
+    pub fn with_manifest_context(
+        bech32_encoder: Option<&'a Bech32Encoder>,
+        bucket_names: &'a HashMap<BucketId, String>,
+        proof_names: &'a HashMap<ProofId, String>,
+    ) -> Self {
+        Self {
+            bech32_encoder,
+            bucket_names: Some(bucket_names),
+            proof_names: Some(proof_names),
+        }
+    }
+
+    pub fn get_bucket_name(&self, bucket_id: &BucketId) -> Option<&str> {
+        self.bucket_names
+            .and_then(|names| names.get(bucket_id).map(|s| s.as_str()))
+    }
+
+    pub fn get_proof_name(&self, proof_id: &ProofId) -> Option<&str> {
+        self.proof_names
+            .and_then(|names| names.get(proof_id).map(|s| s.as_str()))
+    }
+}
+
+impl<'a> Into<ScryptoValueFormatterContext<'a>> for &'a Bech32Encoder {
+    fn into(self) -> ScryptoValueFormatterContext<'a> {
+        ScryptoValueFormatterContext::new_with_no_manifest_context(Some(self))
+    }
+}
+
+impl<'a> Into<ScryptoValueFormatterContext<'a>> for Option<&'a Bech32Encoder> {
+    fn into(self) -> ScryptoValueFormatterContext<'a> {
+        ScryptoValueFormatterContext::new_with_no_manifest_context(self)
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ScryptoValueFormatterError {
     InvalidTypeId(u8),
     InvalidCustomData(ScryptoCustomValueCheckError),
+    FormatError(fmt::Error),
 }
 
 impl From<ScryptoCustomValueCheckError> for ScryptoValueFormatterError {
     fn from(error: ScryptoCustomValueCheckError) -> Self {
         ScryptoValueFormatterError::InvalidCustomData(error)
+    }
+}
+
+impl From<fmt::Error> for ScryptoValueFormatterError {
+    fn from(error: fmt::Error) -> Self {
+        ScryptoValueFormatterError::FormatError(error)
+    }
+}
+
+impl<'a> ContextualDisplay<ScryptoValueFormatterContext<'a>> for ScryptoValue {
+    type Error = ScryptoValueFormatterError;
+
+    fn contextual_format<F: fmt::Write>(
+        &self,
+        f: &mut F,
+        context: &ScryptoValueFormatterContext<'a>,
+    ) -> Result<(), Self::Error> {
+        write!(
+            f,
+            "{}",
+            ScryptoValueFormatter::format_value(&self.dom, context)?
+        )?;
+        Ok(())
     }
 }
 
@@ -674,7 +689,7 @@ impl ScryptoValueFormatter {
                 .map_err(ScryptoCustomValueCheckError::InvalidEddsaEd25519Signature)?,
             ScryptoType::Bucket => Bucket::try_from(data)
                 .map(|bucket| {
-                    if let Some(name) = context.bucket_ids.get(&bucket.0) {
+                    if let Some(name) = context.get_bucket_name(&bucket.0) {
                         format!("Bucket(\"{}\")", name)
                     } else {
                         format!("Bucket({}u32)", bucket.0)
@@ -683,7 +698,7 @@ impl ScryptoValueFormatter {
                 .map_err(ScryptoCustomValueCheckError::InvalidBucket)?,
             ScryptoType::Proof => Proof::try_from(data)
                 .map(|proof| {
-                    if let Some(name) = context.proof_ids.get(&proof.0) {
+                    if let Some(name) = context.get_proof_name(&proof.0) {
                         format!("Proof(\"{}\")", name)
                     } else {
                         format!("Proof({}u32)", proof.0)

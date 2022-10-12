@@ -255,11 +255,7 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
                         prefix!(i, outputs),
                         ScryptoValue::from_slice(output)
                             .expect("Failed to parse return data")
-                            .displayable(
-                                bech32_encoder,
-                                &decompilation_context.bucket_names,
-                                &decompilation_context.proof_names
-                            )
+                            .display(decompilation_context.for_value_display())
                     )?;
                 }
             }
