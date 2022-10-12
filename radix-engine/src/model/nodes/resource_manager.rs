@@ -3,7 +3,7 @@ use crate::fee::FeeReserve;
 use crate::model::{
     Bucket, InvokeError, NonFungible, NonFungibleSubstate, Resource,
     ResourceMethodRule::{Protected, Public},
-    Vault,
+    VaultRuntimeSubstate,
 };
 use crate::model::{
     MethodAccessRule, MethodAccessRuleMethod, NonFungibleStore, ResourceManagerSubstate,
@@ -356,7 +356,7 @@ impl ResourceManager {
                 let resource_type = substate_ref.resource_manager().resource_type;
                 let resource = Resource::new_empty(resource_address, resource_type);
                 let vault_id = system_api
-                    .node_create(HeapRENode::Vault(Vault::new(resource)))?
+                    .node_create(HeapRENode::Vault(VaultRuntimeSubstate::new(resource)))?
                     .into();
                 ScryptoValue::from_typed(&scrypto::resource::Vault(vault_id))
             }

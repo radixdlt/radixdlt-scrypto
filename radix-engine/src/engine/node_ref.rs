@@ -200,7 +200,7 @@ pub enum RENodeRef<'f, 's, R: FeeReserve> {
 }
 
 impl<'f, 's, R: FeeReserve> RENodeRef<'f, 's, R> {
-    pub fn vault(&mut self) -> &Vault {
+    pub fn vault(&mut self) -> &VaultRuntimeSubstate {
         match self {
             RENodeRef::Stack(value, id) => id
                 .as_ref()
@@ -218,7 +218,7 @@ pub enum RENodeRefMut<'f, 's, R: FeeReserve> {
 }
 
 impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
-    pub fn vault_mut(&mut self) -> &mut Vault {
+    pub fn vault_mut(&mut self) -> &mut VaultRuntimeSubstate {
         match self {
             RENodeRefMut::Stack(root_node, _, id) => {
                 root_node.get_node_mut(id.as_ref()).vault_mut()

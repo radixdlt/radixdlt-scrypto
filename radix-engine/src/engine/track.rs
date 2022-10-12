@@ -15,7 +15,7 @@ use crate::model::LockableResource;
 use crate::model::NonFungibleSubstate;
 use crate::model::Resource;
 use crate::model::RuntimeSubstate;
-use crate::model::Vault;
+use crate::model::VaultRuntimeSubstate;
 use crate::model::VaultSubstate;
 use crate::model::{KeyValueStoreEntrySubstate, PersistedSubstate};
 use crate::transaction::CommitResult;
@@ -268,7 +268,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                     let offset = SubstateOffset::Vault(VaultOffset::Vault);
                     let substate: VaultSubstate =
                         self.take_substate(SubstateId(*node_id, offset)).into();
-                    let node = HeapRENode::Vault(Vault::new(substate.0));
+                    let node = HeapRENode::Vault(VaultRuntimeSubstate::new(substate.0));
                     self.loaded_nodes.insert(node_id.clone(), node);
                 }
             }

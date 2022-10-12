@@ -8,7 +8,7 @@ pub enum HeapRENode {
     Bucket(Bucket),
     Proof(Proof),
     AuthZone(AuthZone),
-    Vault(Vault),
+    Vault(VaultRuntimeSubstate),
     Component(Component),
     Worktop(Worktop),
     Package(Package),
@@ -203,14 +203,14 @@ impl HeapRENode {
         }
     }
 
-    pub fn vault(&self) -> &Vault {
+    pub fn vault(&self) -> &VaultRuntimeSubstate {
         match self {
             HeapRENode::Vault(vault) => vault,
             _ => panic!("Expected to be a vault"),
         }
     }
 
-    pub fn vault_mut(&mut self) -> &mut Vault {
+    pub fn vault_mut(&mut self) -> &mut VaultRuntimeSubstate {
         match self {
             HeapRENode::Vault(vault) => vault,
             _ => panic!("Expected to be a vault"),
