@@ -30,9 +30,9 @@ pub enum VaultOp {
 pub enum ExecutionTraceError {}
 
 #[derive(Debug)]
-pub struct ExecutionTrace {}
+pub struct ExecutionTraceModule {}
 
-impl<R: FeeReserve> Module<R> for ExecutionTrace {
+impl<R: FeeReserve> Module<R> for ExecutionTraceModule {
     fn pre_sys_call(
         &mut self,
         track: &mut Track<R>,
@@ -82,8 +82,8 @@ impl<R: FeeReserve> Module<R> for ExecutionTrace {
     }
 }
 
-impl ExecutionTrace {
-    pub fn new() -> ExecutionTrace {
+impl ExecutionTraceModule {
+    pub fn new() -> ExecutionTraceModule {
         Self {}
     }
 
@@ -218,11 +218,10 @@ impl ExecutionTraceReceipt {
     ) -> Self {
         let mut vault_changes = HashMap::<ComponentId, HashMap<VaultId, Decimal>>::new();
         let mut vault_locked_by = HashMap::<VaultId, ComponentId>::new();
-        for op in ops {
-            if let REActor::Method(FullyQualifiedReceiverMethod { receiver, .. }) = op.0 {
+        for (actor, vault_id, vault_op) in ops {
+            if let REActor::Method(FullyQualifiedReceiverMethod { receiver, .. }) = actor {
                 if let Receiver::Ref(RENodeId::Component(component_id)) = receiver {
-                    let vault_id = op.1;
-                    match op.2 {
+                    match vault_op {
                         VaultOp::Create(_) => todo!("Not supported yet!"),
                         VaultOp::Put(amount) => {
                             *vault_changes

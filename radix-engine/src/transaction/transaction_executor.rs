@@ -156,7 +156,7 @@ where
                 modules.push(Box::new(LoggerModule::new()));
             }
             modules.push(Box::new(CostingModule::default()));
-            modules.push(Box::new(ExecutionTrace::new()));
+            modules.push(Box::new(ExecutionTraceModule::new()));
             let mut kernel = Kernel::new(
                 transaction_hash,
                 auth_zone_params,
