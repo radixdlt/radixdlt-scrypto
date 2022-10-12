@@ -16,7 +16,6 @@ use crate::model::NonFungibleSubstate;
 use crate::model::Resource;
 use crate::model::RuntimeSubstate;
 use crate::model::VaultRuntimeSubstate;
-use crate::model::VaultSubstate;
 use crate::model::{KeyValueStoreEntrySubstate, PersistedSubstate};
 use crate::transaction::CommitResult;
 use crate::transaction::EntityChanges;
@@ -266,9 +265,9 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                 | RENodeId::Worktop => panic!("Unexpected"),
                 RENodeId::Vault(..) => {
                     let offset = SubstateOffset::Vault(VaultOffset::Vault);
-                    let substate: VaultSubstate =
+                    let substate: VaultRuntimeSubstate =
                         self.take_substate(SubstateId(*node_id, offset)).into();
-                    let node = HeapRENode::Vault(VaultRuntimeSubstate::new(substate.0));
+                    let node = HeapRENode::Vault(substate);
                     self.loaded_nodes.insert(node_id.clone(), node);
                 }
             }
@@ -494,43 +493,6 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         }
     }
 
-    /// Sets a key value
-    pub fn set_key_value<V: Into<RuntimeSubstate>>(
-        &mut self,
-        parent_substate_id: SubstateId,
-        key: Vec<u8>,
-        value: V,
-    ) {
-        // TODO: consider using a single address as function input
-        let substate_id = match parent_substate_id {
-            SubstateId(
-                RENodeId::NonFungibleStore(resource_address),
-                SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Space),
-            ) => SubstateId(
-                RENodeId::NonFungibleStore(resource_address),
-                SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(NonFungibleId(
-                    key.clone(),
-                ))),
-            ),
-            SubstateId(
-                RENodeId::KeyValueStore(kv_store_id),
-                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Space),
-            ) => SubstateId(
-                RENodeId::KeyValueStore(kv_store_id),
-                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key.clone())),
-            ),
-            _ => panic!("Unsupported key value"),
-        };
-
-        if let Some(loaded) = self.loaded_substates.get_mut(&substate_id) {
-            loaded.substate = SubstateCache::Free(value.into());
-        } else {
-            let substate = value.into();
-            self.state_track
-                .put_substate(substate_id, substate.to_persisted());
-        }
-    }
-
     pub fn apply_pre_execution_costs(
         mut self,
         transaction: &Executable,
@@ -656,7 +618,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                     .to_runtime();
                 substate
                     .vault_mut()
-                    .0
+                    .borrow_resource_mut()
                     .put(locked)
                     .expect("Failed to put a fee-locking vault");
                 self.state_track

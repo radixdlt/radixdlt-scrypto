@@ -18,6 +18,16 @@ pub enum PersistedSubstate {
     KeyValueStoreEntry(KeyValueStoreEntrySubstate),
 }
 
+impl Into<VaultSubstate> for PersistedSubstate {
+    fn into(self) -> VaultSubstate {
+        if let PersistedSubstate::Vault(vault) = self {
+            vault
+        } else {
+            panic!("Not a vault");
+        }
+    }
+}
+
 impl PersistedSubstate {
     pub fn to_runtime(self) -> RuntimeSubstate {
         match self {
@@ -27,13 +37,19 @@ impl PersistedSubstate {
             PersistedSubstate::ComponentInfo(value) => RuntimeSubstate::ComponentInfo(value),
             PersistedSubstate::ComponentState(value) => RuntimeSubstate::ComponentState(value),
             PersistedSubstate::Package(value) => RuntimeSubstate::Package(value),
-            PersistedSubstate::Vault(value) => RuntimeSubstate::Vault(value),
+            PersistedSubstate::Vault(value) => {
+                RuntimeSubstate::Vault(VaultRuntimeSubstate::new(value.0))
+            }
             PersistedSubstate::NonFungible(value) => RuntimeSubstate::NonFungible(value),
             PersistedSubstate::KeyValueStoreEntry(value) => {
                 RuntimeSubstate::KeyValueStoreEntry(value)
             }
         }
     }
+}
+
+pub enum PersistError {
+    VaultLocked,
 }
 
 #[derive(Debug)]
@@ -44,7 +60,7 @@ pub enum RuntimeSubstate {
     ComponentInfo(ComponentInfoSubstate),
     ComponentState(ComponentStateSubstate),
     Package(PackageSubstate),
-    Vault(VaultSubstate),
+    Vault(VaultRuntimeSubstate),
     NonFungible(NonFungibleSubstate),
     KeyValueStoreEntry(KeyValueStoreEntrySubstate),
 }
@@ -58,10 +74,15 @@ impl RuntimeSubstate {
             RuntimeSubstate::ComponentInfo(value) => PersistedSubstate::ComponentInfo(value),
             RuntimeSubstate::ComponentState(value) => PersistedSubstate::ComponentState(value),
             RuntimeSubstate::Package(value) => PersistedSubstate::Package(value),
-            RuntimeSubstate::Vault(value) => PersistedSubstate::Vault(value),
             RuntimeSubstate::NonFungible(value) => PersistedSubstate::NonFungible(value),
             RuntimeSubstate::KeyValueStoreEntry(value) => {
                 PersistedSubstate::KeyValueStoreEntry(value)
+            }
+            RuntimeSubstate::Vault(value) => {
+                let persisted_vault = value
+                    .to_persisted()
+                    .expect("Vault should be liquid at end of successful transaction");
+                PersistedSubstate::Vault(persisted_vault)
             }
         }
     }
@@ -131,14 +152,14 @@ impl RuntimeSubstate {
         }
     }
 
-    pub fn vault(&self) -> &VaultSubstate {
+    pub fn vault(&self) -> &VaultRuntimeSubstate {
         if let RuntimeSubstate::Vault(vault) = self {
             vault
         } else {
             panic!("Not a vault");
         }
     }
-    pub fn vault_mut(&mut self) -> &mut VaultSubstate {
+    pub fn vault_mut(&mut self) -> &mut VaultRuntimeSubstate {
         if let RuntimeSubstate::Vault(vault) = self {
             vault
         } else {
@@ -201,7 +222,7 @@ impl Into<RuntimeSubstate> for ResourceManagerSubstate {
     }
 }
 
-impl Into<RuntimeSubstate> for VaultSubstate {
+impl Into<RuntimeSubstate> for VaultRuntimeSubstate {
     fn into(self) -> RuntimeSubstate {
         RuntimeSubstate::Vault(self)
     }
@@ -279,8 +300,8 @@ impl Into<KeyValueStoreEntrySubstate> for RuntimeSubstate {
     }
 }
 
-impl Into<VaultSubstate> for RuntimeSubstate {
-    fn into(self) -> VaultSubstate {
+impl Into<VaultRuntimeSubstate> for RuntimeSubstate {
+    fn into(self) -> VaultRuntimeSubstate {
         if let RuntimeSubstate::Vault(vault) = self {
             vault
         } else {
@@ -319,7 +340,7 @@ pub enum SubstateRef<'a> {
     NonFungible(&'a NonFungibleSubstate),
     KeyValueStoreEntry(&'a KeyValueStoreEntrySubstate),
     Package(&'a PackageSubstate),
-    Vault(&'a VaultSubstate),
+    Vault(&'a VaultRuntimeSubstate),
     ResourceManager(&'a ResourceManagerSubstate),
     System(&'a SystemSubstate),
     Global(&'a GlobalAddressSubstate),
@@ -334,7 +355,6 @@ impl<'a> SubstateRef<'a> {
             SubstateRef::ComponentInfo(value) => ScryptoValue::from_typed(*value),
             SubstateRef::ComponentState(value) => ScryptoValue::from_typed(*value),
             SubstateRef::Package(value) => ScryptoValue::from_typed(*value),
-            SubstateRef::Vault(value) => ScryptoValue::from_typed(*value),
             SubstateRef::NonFungible(value) => ScryptoValue::from_typed(*value),
             SubstateRef::KeyValueStoreEntry(value) => ScryptoValue::from_typed(*value),
             _ => panic!("Unsupported scrypto value"),
@@ -640,7 +660,7 @@ pub enum RawSubstateRefMut<'a> {
     NonFungible(&'a mut NonFungibleSubstate),
     KeyValueStoreEntry(&'a mut KeyValueStoreEntrySubstate),
     Package(&'a mut PackageSubstate),
-    Vault(&'a mut VaultSubstate),
+    Vault(&'a mut VaultRuntimeSubstate),
     ResourceManager(&'a mut ResourceManagerSubstate),
     System(&'a mut SystemSubstate),
     Global(&'a mut GlobalAddressSubstate),

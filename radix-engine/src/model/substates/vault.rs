@@ -13,6 +13,14 @@ pub struct VaultRuntimeSubstate {
 }
 
 impl VaultRuntimeSubstate {
+    pub fn to_persisted(self) -> Result<VaultSubstate, ResourceOperationError> {
+        Rc::try_unwrap(self.resource)
+            .map_err(|_| ResourceOperationError::ResourceLocked)
+            .map(|c| c.into_inner())
+            .map(Into::into)
+            .map(|r| VaultSubstate(r))
+    }
+
     pub fn new(resource: Resource) -> Self {
         Self {
             resource: Rc::new(RefCell::new(resource.into())),
@@ -128,13 +136,6 @@ impl VaultRuntimeSubstate {
 
     pub fn is_empty(&self) -> bool {
         self.borrow_resource().is_empty()
-    }
-
-    pub fn resource(self) -> Result<Resource, ResourceOperationError> {
-        Rc::try_unwrap(self.resource)
-            .map_err(|_| ResourceOperationError::ResourceLocked)
-            .map(|c| c.into_inner())
-            .map(Into::into)
     }
 
     pub fn borrow_resource(&self) -> Ref<LockableResource> {

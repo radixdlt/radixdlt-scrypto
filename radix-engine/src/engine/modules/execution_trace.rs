@@ -297,7 +297,6 @@ impl ExecutionTraceReceipt {
             .expect("Failed to find the vault substate")
             .to_runtime()
             .vault()
-            .0
             .resource_address()
     }
 }

@@ -17,11 +17,7 @@ pub fn node_to_substates(node: HeapRENode) -> HashMap<SubstateOffset, RuntimeSub
             );
         }
         HeapRENode::Vault(vault) => {
-            let resource = vault
-                .resource()
-                .expect("Vault should be liquid at end of successful transaction");
-            let substate = VaultSubstate(resource);
-            substates.insert(SubstateOffset::Vault(VaultOffset::Vault), substate.into());
+            substates.insert(SubstateOffset::Vault(VaultOffset::Vault), vault.into());
         }
         HeapRENode::KeyValueStore(store) => {
             for (k, v) in store.loaded_entries {

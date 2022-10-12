@@ -189,7 +189,7 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
                 SubstateOffset::Vault(VaultOffset::Vault),
             ))
             .map(|s| s.substate)
-            .map(|s| s.to_runtime().into())
+            .map(|s| s.into())
             .unwrap();
         let amount = vault.0.amount();
         let resource_address = vault.0.resource_address();
