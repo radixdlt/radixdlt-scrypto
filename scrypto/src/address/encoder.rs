@@ -12,6 +12,7 @@ use crate::misc::combine;
 use crate::resource::ResourceAddress;
 
 /// Represents an encoder which understands how to encode Scrypto addresses in Bech32.
+#[derive(Debug)]
 pub struct Bech32Encoder {
     pub hrp_set: HrpSet,
 }

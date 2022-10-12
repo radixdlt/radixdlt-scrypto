@@ -60,6 +60,7 @@ use radix_engine::types::*;
 use radix_engine::wasm::*;
 use radix_engine_stores::rocks_db::RadixEngineDB;
 use scrypto::abi;
+use scrypto::misc::ContextualDisplay;
 use std::env;
 use std::fs;
 use std::path::PathBuf;
@@ -196,12 +197,8 @@ pub fn handle_manifest<O: std::io::Write>(
             );
 
             if output_receipt {
-                writeln!(
-                    out,
-                    "{}",
-                    receipt.displayable(&Bech32Encoder::new(&network))
-                )
-                .map_err(Error::IOError)?;
+                writeln!(out, "{}", receipt.display(&Bech32Encoder::new(&network)))
+                    .map_err(Error::IOError)?;
             }
 
             if receipt.is_commit() {
