@@ -1,6 +1,6 @@
 use sbor::rust::collections::*;
 use sbor::rust::fmt;
-use sbor::{encode_any, DecodeError, Value};
+use sbor::{encode_any, Value};
 use scrypto::address::{AddressError, Bech32Encoder, ContextualDisplay};
 use scrypto::buffer::scrypto_decode;
 use scrypto::core::{
@@ -20,17 +20,9 @@ use crate::validation::*;
 #[derive(Debug, Clone)]
 pub enum DecompileError {
     IdValidationError(IdValidationError),
-    DecodeError(DecodeError),
-    AddressError(AddressError),
-    InvalidValue(ScryptoValueFormatterError),
-    FormattingError(fmt::Error),
+    InvalidAddress(AddressError),
     InvalidArguments,
-}
-
-impl From<ScryptoValueFormatterError> for DecompileError {
-    fn from(error: ScryptoValueFormatterError) -> Self {
-        Self::InvalidValue(error)
-    }
+    FormattingError(fmt::Error),
 }
 
 impl From<fmt::Error> for DecompileError {
@@ -341,13 +333,13 @@ pub fn decompile_instruction<F: fmt::Write>(
                     blueprint_name,
                     ident
                 ))?;
-                let validated_arg =
-                    ScryptoValue::from_slice(&args).map_err(DecompileError::DecodeError)?;
+                let validated_arg = ScryptoValue::from_slice(&args)
+                    .map_err(|_| DecompileError::InvalidArguments)?;
                 if let Value::Struct { fields } = validated_arg.dom {
                     for field in fields {
                         let bytes = encode_any(&field);
                         let validated_arg = ScryptoValue::from_slice(&bytes)
-                            .map_err(DecompileError::DecodeError)?;
+                            .map_err(|_| DecompileError::InvalidArguments)?;
                         context
                             .id_validator
                             .move_resources(&validated_arg)
@@ -358,7 +350,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                             context.bech32_encoder,
                             &context.bucket_names,
                             &context.proof_names,
-                        )?)?;
+                        ))?;
                     }
                 } else {
                     return Err(DecompileError::InvalidArguments);
@@ -378,25 +370,25 @@ pub fn decompile_instruction<F: fmt::Write>(
                                         context.bech32_encoder,
                                         &context.bucket_names,
                                         &context.proof_names,
-                                    )?,
+                                    ),
                                 ScryptoValue::from_typed(&input.metadata)
                                     .to_string_with_fixed_context(
                                         context.bech32_encoder,
                                         &context.bucket_names,
                                         &context.proof_names,
-                                    )?,
+                                    ),
                                 ScryptoValue::from_typed(&input.access_rules)
                                     .to_string_with_fixed_context(
                                         context.bech32_encoder,
                                         &context.bucket_names,
                                         &context.proof_names,
-                                    )?,
+                                    ),
                                 ScryptoValue::from_typed(&input.mint_params)
                                     .to_string_with_fixed_context(
                                         context.bech32_encoder,
                                         &context.bucket_names,
                                         &context.proof_names,
-                                    )?,
+                                    ),
                             ))?;
                         }
                     }
@@ -421,13 +413,13 @@ pub fn decompile_instruction<F: fmt::Write>(
                     ident
                 ))?;
 
-                let validated_arg =
-                    ScryptoValue::from_slice(&args).map_err(DecompileError::DecodeError)?;
+                let validated_arg = ScryptoValue::from_slice(&args)
+                    .map_err(|_| DecompileError::InvalidArguments)?;
                 if let Value::Struct { fields } = validated_arg.dom {
                     for field in fields {
                         let bytes = encode_any(&field);
                         let validated_arg = ScryptoValue::from_slice(&bytes)
-                            .map_err(DecompileError::DecodeError)?;
+                            .map_err(|_| DecompileError::InvalidArguments)?;
                         context
                             .id_validator
                             .move_resources(&validated_arg)
@@ -438,7 +430,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                             context.bech32_encoder,
                             &context.bucket_names,
                             &context.proof_names,
-                        )?)?;
+                        ))?;
                     }
                 } else {
                     return Err(DecompileError::InvalidArguments);

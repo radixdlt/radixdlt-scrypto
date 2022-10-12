@@ -217,7 +217,7 @@ impl ScryptoValue {
         bech32_encoder: Option<&'a Bech32Encoder>,
         bucket_ids: Option<&'a HashMap<BucketId, String>>,
         proof_ids: Option<&'a HashMap<ProofId, String>>,
-    ) -> Result<String, ScryptoValueFormatterError> {
+    ) -> String {
         self.to_string_with_fixed_context(
             bech32_encoder,
             bucket_ids.unwrap_or(&HashMap::new()),
@@ -230,13 +230,14 @@ impl ScryptoValue {
         bech32_encoder: Option<&'a Bech32Encoder>,
         bucket_ids: &'a HashMap<BucketId, String>,
         proof_ids: &'a HashMap<ProofId, String>,
-    ) -> Result<String, ScryptoValueFormatterError> {
+    ) -> String {
         let context = ScryptoValueFormatterContext {
             bech32_encoder,
             bucket_ids,
             proof_ids,
         };
         ScryptoValueFormatter::format_value(&self.dom, &context)
+            .expect("Failed to format ScryptoValue")
     }
 
     pub fn displayable<
@@ -261,10 +262,7 @@ impl ScryptoValue {
 
 impl fmt::Debug for ScryptoValue {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self.to_string_with_context(None, None, None) {
-            Ok(str) => write!(f, "{}", str),
-            Err(err) => write!(f, "Invalid Value: {:?}", err),
-        }
+        write!(f, "{}", self.to_string_with_context(None, None, None))
     }
 }
 
@@ -277,10 +275,11 @@ pub struct DisplayableScryptoValue<'a>(
 
 impl<'a> fmt::Display for DisplayableScryptoValue<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        match self.0.to_string_with_context(self.1, self.2, self.3) {
-            Ok(str) => write!(f, "{}", str),
-            Err(err) => write!(f, "Invalid Value: {:?}", err),
-        }
+        write!(
+            f,
+            "{}",
+            self.0.to_string_with_context(self.1, self.2, self.3)
+        )
     }
 }
 
