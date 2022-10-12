@@ -1,0 +1,37 @@
+# Inovke Global RE nodes
+CALL_METHOD PackageAddress("package_sim1qy4hrp8a9apxldp5cazvxgwdj80cxad4u8cpkaqqnhlsa3lfpe") "method";
+CALL_METHOD ComponentAddress("component_sim1qgvyxt5rrjhwctw7krgmgkrhv82zuamcqkq75tkkrwgs00m736") "method";
+CALL_METHOD ResourceAddress("resource_sim1qrc4s082h9trka3yrghwragylm3sdne0u668h2sy6c9sckkpn6") "method";
+
+# Invoke transient RE nodes
+# TODO: fix resource flow verification for receiver
+TAKE_FROM_WORKTOP ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag") Bucket("xrd");
+CREATE_PROOF_FROM_AUTH_ZONE ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag") Proof("xrd_proof");
+CALL_METHOD Bucket("xrd") "method";
+CALL_METHOD Bucket(1u32) "method";
+CALL_METHOD Proof("xrd_proof") "method";
+CALL_METHOD Proof(1u32) "method";
+CALL_METHOD AuthZone(1u32) "method";
+CALL_METHOD Worktop "method";
+
+# Invoke persistable RE nodes
+CALL_METHOD KeyValueStore("0000000000000000000000000000000000000000000000000000000000000000", 1u32) "method";
+CALL_METHOD NonFungibleStore("0000000000000000000000000000000000000000000000000000000000000000", 1u32) "method";
+CALL_METHOD Component("0000000000000000000000000000000000000000000000000000000000000000", 1u32) "method";
+CALL_METHOD System("0000000000000000000000000000000000000000000000000000000000000000", 1u32) "method";
+CALL_METHOD Vault("0000000000000000000000000000000000000000000000000000000000000000", 1u32) "method";
+CALL_METHOD ResourceManager("resource_sim1qrc4s082h9trka3yrghwragylm3sdne0u668h2sy6c9sckkpn6") "method";
+CALL_METHOD Package("package_sim1qy4hrp8a9apxldp5cazvxgwdj80cxad4u8cpkaqqnhlsa3lfpe") "method";
+
+# Invoke by reference
+CALL_METHOD &Bucket("xrd") "method";
+CALL_METHOD &Bucket(1u32) "method";
+CALL_METHOD &Proof("xrd_proof") "method";
+CALL_METHOD &Proof(1u32) "method";
+CALL_METHOD &KeyValueStore("0000000000000000000000000000000000000000000000000000000000000000", 1u32) "method";
+CALL_METHOD &NonFungibleStore("0000000000000000000000000000000000000000000000000000000000000000", 1u32) "method";
+CALL_METHOD &Component("0000000000000000000000000000000000000000000000000000000000000000", 1u32) "method";
+CALL_METHOD &System("0000000000000000000000000000000000000000000000000000000000000000", 1u32) "method";
+CALL_METHOD &Vault("0000000000000000000000000000000000000000000000000000000000000000", 1u32) "method";
+CALL_METHOD &ResourceManager("resource_sim1qrc4s082h9trka3yrghwragylm3sdne0u668h2sy6c9sckkpn6") "method";
+CALL_METHOD &Package("package_sim1qy4hrp8a9apxldp5cazvxgwdj80cxad4u8cpkaqqnhlsa3lfpe") "method";

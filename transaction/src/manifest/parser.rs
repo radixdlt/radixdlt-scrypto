@@ -210,7 +210,10 @@ impl Parser {
             | TokenKind::Vault
             | TokenKind::ResourceManager
             | TokenKind::Package => Ok(Receiver::Owned(self.parse_re_node()?)),
-            TokenKind::And => Ok(Receiver::Ref(self.parse_re_node()?)),
+            TokenKind::And => {
+                self.advance()?;
+                Ok(Receiver::Ref(self.parse_re_node()?))
+            }
             _ => Err(ParserError::UnexpectedToken(token)),
         }
     }
@@ -218,15 +221,9 @@ impl Parser {
     pub fn parse_global_address(&mut self) -> Result<GlobalAddress, ParserError> {
         let token = self.advance()?;
         match token.kind {
-            TokenKind::PackageAddress => {
-                Ok(GlobalAddress::Package(self.parse_values_one()?.into()))
-            }
-            TokenKind::ComponentAddress => {
-                Ok(GlobalAddress::Component(self.parse_values_one()?.into()))
-            }
-            TokenKind::ResourceAddress => {
-                Ok(GlobalAddress::Resource(self.parse_values_one()?.into()))
-            }
+            TokenKind::PackageAddress => Ok(GlobalAddress::Package(self.parse_values_one()?)),
+            TokenKind::ComponentAddress => Ok(GlobalAddress::Component(self.parse_values_one()?)),
+            TokenKind::ResourceAddress => Ok(GlobalAddress::Resource(self.parse_values_one()?)),
             _ => Err(ParserError::UnexpectedToken(token)),
         }
     }
@@ -234,21 +231,32 @@ impl Parser {
     pub fn parse_re_node(&mut self) -> Result<RENode, ParserError> {
         let token = self.advance()?;
         match token.kind {
-            TokenKind::Bucket => Ok(RENode::Bucket(self.parse_values_one()?.into())),
-            TokenKind::Proof => Ok(RENode::Proof(self.parse_values_one()?.into())),
-            TokenKind::AuthZone => Ok(RENode::AuthZone(self.parse_values_one()?.into())),
+            TokenKind::Bucket => Ok(RENode::Bucket(self.parse_values_one()?)),
+            TokenKind::Proof => Ok(RENode::Proof(self.parse_values_one()?)),
+            TokenKind::AuthZone => Ok(RENode::AuthZone(self.parse_values_one()?)),
             TokenKind::Worktop => Ok(RENode::Worktop),
-            TokenKind::KeyValueStore => Ok(RENode::KeyValueStore(self.parse_values_one()?.into())),
+            TokenKind::KeyValueStore => {
+                let pair = self.parse_values_two()?;
+                Ok(RENode::KeyValueStore(pair.0, pair.1))
+            }
             TokenKind::NonFungibleStore => {
-                Ok(RENode::NonFungibleStore(self.parse_values_one()?.into()))
+                let pair = self.parse_values_two()?;
+                Ok(RENode::NonFungibleStore(pair.0, pair.1))
             }
-            TokenKind::Component => Ok(RENode::Component(self.parse_values_one()?.into())),
-            TokenKind::System => Ok(RENode::System(self.parse_values_one()?.into())),
-            TokenKind::Vault => Ok(RENode::Vault(self.parse_values_one()?.into())),
-            TokenKind::ResourceManager => {
-                Ok(RENode::ResourceManager(self.parse_values_one()?.into()))
+            TokenKind::Component => {
+                let pair = self.parse_values_two()?;
+                Ok(RENode::Component(pair.0, pair.1))
             }
-            TokenKind::Package => Ok(RENode::Package(self.parse_values_one()?.into())),
+            TokenKind::System => {
+                let pair = self.parse_values_two()?;
+                Ok(RENode::System(pair.0, pair.1))
+            }
+            TokenKind::Vault => {
+                let pair = self.parse_values_two()?;
+                Ok(RENode::Vault(pair.0, pair.1))
+            }
+            TokenKind::ResourceManager => Ok(RENode::ResourceManager(self.parse_values_one()?)),
+            TokenKind::Package => Ok(RENode::Package(self.parse_values_one()?)),
             _ => Err(ParserError::UnexpectedToken(token)),
         }
     }
@@ -434,6 +442,19 @@ impl Parser {
             })
         } else {
             Ok(values[0].clone())
+        }
+    }
+
+    fn parse_values_two(&mut self) -> Result<(Value, Value), ParserError> {
+        let values =
+            self.parse_values_any(TokenKind::OpenParenthesis, TokenKind::CloseParenthesis)?;
+        if values.len() != 2 {
+            Err(ParserError::InvalidNumberOfValues {
+                actual: values.len(),
+                expected: 2,
+            })
+        } else {
+            Ok((values[0].clone(), values[1].clone()))
         }
     }
 

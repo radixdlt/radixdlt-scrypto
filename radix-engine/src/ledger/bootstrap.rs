@@ -238,7 +238,7 @@ where
         let mut fee_reserve = SystemLoanFeeReserve::default();
         fee_reserve.credit(GENESIS_CREATION_CREDIT);
         let transaction_receipt =
-            executor.execute_with_fee_reserve(&executable, &ExecutionConfig::debug(), fee_reserve);
+            executor.execute_with_fee_reserve(&executable, &ExecutionConfig::standard(), fee_reserve);
         let commit_result = transaction_receipt.result.expect_commit();
         commit_result.outcome.expect_success();
         commit_result.state_updates.commit(substate_store);

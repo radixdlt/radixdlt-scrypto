@@ -51,7 +51,6 @@ pub enum GeneratorError {
     InvalidExpression(String),
     BlobNotFound(String),
     OddNumberOfElements(usize),
-    InvalidNumberOfElements(usize),
     NameResolverError(NameResolverError),
     IdValidationError(IdValidationError),
     InvalidBlobHash,
@@ -628,53 +627,80 @@ fn generate_re_node_id(
     resolver: &mut NameResolver,
 ) -> Result<RENodeId, GeneratorError> {
     match re_node {
-        ast::RENode::Bucket(value) => Ok(RENodeId::Bucket(generate_bucket(value, resolver)?)),
-        ast::RENode::Proof(value) => Ok(RENodeId::Proof(generate_proof(value, resolver)?)),
-        ast::RENode::AuthZone(value) => Ok(RENodeId::AuthZone(generate_transient_node_id(value)?)),
+        ast::RENode::Bucket(value) => {
+            let bucket_id = match value {
+                ast::Value::U32(n) => Ok(*n),
+                ast::Value::String(s) => resolver
+                    .resolve_bucket(&s)
+                    .map_err(GeneratorError::NameResolverError),
+                v @ _ => invalid_type!(v, ast::Type::U32, ast::Type::String),
+            }?;
+
+            Ok(RENodeId::Bucket(bucket_id))
+        }
+        ast::RENode::Proof(value) => {
+            let bucket_id = match value {
+                ast::Value::U32(n) => Ok(*n),
+                ast::Value::String(s) => resolver
+                    .resolve_proof(&s)
+                    .map_err(GeneratorError::NameResolverError),
+                v @ _ => invalid_type!(v, ast::Type::U32, ast::Type::String),
+            }?;
+
+            Ok(RENodeId::Bucket(bucket_id))
+        }
+        ast::RENode::AuthZone(value) => {
+            let auth_zone_id = match value {
+                ast::Value::U32(v) => Ok(*v),
+                v @ _ => invalid_type!(v, ast::Type::U32),
+            }?;
+            Ok(RENodeId::AuthZone(auth_zone_id))
+        }
         ast::RENode::Worktop => Ok(RENodeId::Worktop),
-        ast::RENode::KeyValueStore(value) => Ok(RENodeId::KeyValueStore(
-            generate_persistable_node_id(value)?,
-        )),
-        ast::RENode::NonFungibleStore(value) => Ok(RENodeId::NonFungibleStore(
-            generate_persistable_node_id(value)?,
-        )),
-        ast::RENode::Component(value) => {
-            Ok(RENodeId::Component(generate_persistable_node_id(value)?))
+        ast::RENode::KeyValueStore(hash, index) => {
+            Ok(RENodeId::KeyValueStore(generate_node_id(hash, index)?))
         }
-        ast::RENode::System(value) => Ok(RENodeId::System(generate_persistable_node_id(value)?)),
-        ast::RENode::Vault(value) => Ok(RENodeId::Vault(generate_persistable_node_id(value)?)),
-        ast::RENode::ResourceManager(value) => Ok(RENodeId::ResourceManager(
-            generate_resource_address(value, bech32_decoder)?,
-        )),
-        ast::RENode::Package(value) => Ok(RENodeId::Package(generate_package_address(
-            value,
-            bech32_decoder,
-        )?)),
-    }
-}
-
-fn generate_transient_node_id(value: &ast::Value) -> Result<u32, GeneratorError> {
-    match value {
-        ast::Value::U32(v) => Ok(*v),
-        v @ _ => invalid_type!(v, ast::Type::U32),
-    }
-}
-
-fn generate_persistable_node_id(value: &ast::Value) -> Result<(Hash, u32), GeneratorError> {
-    match value {
-        ast::Value::Tuple(elements) => {
-            if elements.len() != 2 {
-                return Err(GeneratorError::InvalidNumberOfElements(elements.len()));
-            }
-            let hash = generate_hash(&elements[0])?;
-            let index = match &elements[1] {
-                ast::Value::U32(v) => *v,
-                v @ _ => return invalid_type!(v, ast::Type::U32),
+        ast::RENode::NonFungibleStore(hash, index) => {
+            Ok(RENodeId::NonFungibleStore(generate_node_id(hash, index)?))
+        }
+        ast::RENode::Component(hash, index) => {
+            Ok(RENodeId::Component(generate_node_id(hash, index)?))
+        }
+        ast::RENode::System(hash, index) => Ok(RENodeId::System(generate_node_id(hash, index)?)),
+        ast::RENode::Vault(hash, index) => Ok(RENodeId::Vault(generate_node_id(hash, index)?)),
+        ast::RENode::ResourceManager(value) => {
+            let resource_address = match value {
+                ast::Value::String(s) => bech32_decoder
+                    .validate_and_decode_resource_address(s)
+                    .map_err(|_| GeneratorError::InvalidResourceAddress(s.into()))?,
+                v => return invalid_type!(v, ast::Type::String),
             };
-            Ok((hash, index))
+            Ok(RENodeId::ResourceManager(resource_address))
         }
-        v @ _ => invalid_type!(v, ast::Type::Tuple),
+        ast::RENode::Package(value) => {
+            let package_address = match value {
+                ast::Value::String(s) => bech32_decoder
+                    .validate_and_decode_package_address(s)
+                    .map_err(|_| GeneratorError::InvalidPackageAddress(s.into()))?,
+                v => return invalid_type!(v, ast::Type::String),
+            };
+            Ok(RENodeId::Package(package_address))
+        }
     }
+}
+
+fn generate_node_id(hash: &ast::Value, index: &ast::Value) -> Result<(Hash, u32), GeneratorError> {
+    let hash = match hash {
+        ast::Value::String(s) => {
+            Hash::from_str(s).map_err(|_| GeneratorError::InvalidHash(s.into()))?
+        }
+        v => return invalid_type!(v, ast::Type::String),
+    };
+    let index = match index {
+        ast::Value::U32(v) => *v,
+        v @ _ => return invalid_type!(v, ast::Type::U32),
+    };
+    Ok((hash, index))
 }
 
 fn generate_hash(value: &ast::Value) -> Result<Hash, GeneratorError> {
