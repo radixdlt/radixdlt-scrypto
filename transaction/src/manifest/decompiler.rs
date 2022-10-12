@@ -19,9 +19,9 @@ use crate::validation::*;
 
 #[derive(Debug, Clone)]
 pub enum DecompileError {
-    IdValidationError(IdValidationError),
     InvalidAddress(AddressError),
     InvalidArguments,
+    IdAllocationError(IdAllocationError),
     FormattingError(fmt::Error),
 }
 
@@ -33,7 +33,7 @@ impl From<fmt::Error> for DecompileError {
 
 pub struct DecompilationContext<'a> {
     pub bech32_encoder: Option<&'a Bech32Encoder>,
-    pub id_validator: IdValidator,
+    pub id_allocator: IdAllocator,
     pub bucket_names: HashMap<BucketId, String>,
     pub proof_names: HashMap<ProofId, String>,
 }
@@ -42,7 +42,7 @@ impl<'a> DecompilationContext<'a> {
     pub fn new(bech32_encoder: &'a Bech32Encoder) -> Self {
         Self {
             bech32_encoder: Some(bech32_encoder),
-            id_validator: IdValidator::new(),
+            id_allocator: IdAllocator::new(IdSpace::Transaction),
             bucket_names: HashMap::<BucketId, String>::new(),
             proof_names: HashMap::<ProofId, String>::new(),
         }
@@ -51,7 +51,7 @@ impl<'a> DecompilationContext<'a> {
     pub fn new_with_optional_network(bech32_encoder: Option<&'a Bech32Encoder>) -> Self {
         Self {
             bech32_encoder,
-            id_validator: IdValidator::new(),
+            id_allocator: IdAllocator::new(IdSpace::Transaction),
             bucket_names: HashMap::<BucketId, String>::new(),
             proof_names: HashMap::<ProofId, String>::new(),
         }
@@ -83,9 +83,9 @@ pub fn decompile_instruction<F: fmt::Write>(
     match instruction {
         Instruction::TakeFromWorktop { resource_address } => {
             let bucket_id = context
-                .id_validator
-                .new_bucket()
-                .map_err(DecompileError::IdValidationError)?;
+                .id_allocator
+                .new_bucket_id()
+                .map_err(DecompileError::IdAllocationError)?;
             let name = format!("bucket{}", context.bucket_names.len() + 1);
             write!(
                 f,
@@ -100,9 +100,9 @@ pub fn decompile_instruction<F: fmt::Write>(
             resource_address,
         } => {
             let bucket_id = context
-                .id_validator
-                .new_bucket()
-                .map_err(DecompileError::IdValidationError)?;
+                .id_allocator
+                .new_bucket_id()
+                .map_err(DecompileError::IdAllocationError)?;
             let name = format!("bucket{}", context.bucket_names.len() + 1);
             context.bucket_names.insert(bucket_id, name.clone());
             write!(
@@ -118,9 +118,9 @@ pub fn decompile_instruction<F: fmt::Write>(
             resource_address,
         } => {
             let bucket_id = context
-                .id_validator
-                .new_bucket()
-                .map_err(DecompileError::IdValidationError)?;
+                .id_allocator
+                .new_bucket_id()
+                .map_err(DecompileError::IdAllocationError)?;
             let name = format!("bucket{}", context.bucket_names.len() + 1);
             context.bucket_names.insert(bucket_id, name.clone());
             write!(
@@ -135,10 +135,6 @@ pub fn decompile_instruction<F: fmt::Write>(
             )?;
         }
         Instruction::ReturnToWorktop { bucket_id } => {
-            context
-                .id_validator
-                .drop_bucket(*bucket_id)
-                .map_err(DecompileError::IdValidationError)?;
             write!(
                 f,
                 "RETURN_TO_WORKTOP Bucket({});",
@@ -183,18 +179,14 @@ pub fn decompile_instruction<F: fmt::Write>(
         }
         Instruction::PopFromAuthZone => {
             let proof_id = context
-                .id_validator
-                .new_proof(ProofKind::AuthZoneProof)
-                .map_err(DecompileError::IdValidationError)?;
+                .id_allocator
+                .new_proof_id()
+                .map_err(DecompileError::IdAllocationError)?;
             let name = format!("proof{}", context.proof_names.len() + 1);
             context.proof_names.insert(proof_id, name.clone());
             write!(f, "POP_FROM_AUTH_ZONE Proof(\"{}\");", name)?;
         }
         Instruction::PushToAuthZone { proof_id } => {
-            context
-                .id_validator
-                .drop_proof(*proof_id)
-                .map_err(DecompileError::IdValidationError)?;
             write!(
                 f,
                 "PUSH_TO_AUTH_ZONE Proof({});",
@@ -210,9 +202,9 @@ pub fn decompile_instruction<F: fmt::Write>(
         }
         Instruction::CreateProofFromAuthZone { resource_address } => {
             let proof_id = context
-                .id_validator
-                .new_proof(ProofKind::AuthZoneProof)
-                .map_err(DecompileError::IdValidationError)?;
+                .id_allocator
+                .new_proof_id()
+                .map_err(DecompileError::IdAllocationError)?;
             let name = format!("proof{}", context.proof_names.len() + 1);
             context.proof_names.insert(proof_id, name.clone());
             write!(
@@ -227,9 +219,9 @@ pub fn decompile_instruction<F: fmt::Write>(
             resource_address,
         } => {
             let proof_id = context
-                .id_validator
-                .new_proof(ProofKind::AuthZoneProof)
-                .map_err(DecompileError::IdValidationError)?;
+                .id_allocator
+                .new_proof_id()
+                .map_err(DecompileError::IdAllocationError)?;
             let name = format!("proof{}", context.proof_names.len() + 1);
             context.proof_names.insert(proof_id, name.clone());
             write!(
@@ -245,9 +237,9 @@ pub fn decompile_instruction<F: fmt::Write>(
             resource_address,
         } => {
             let proof_id = context
-                .id_validator
-                .new_proof(ProofKind::AuthZoneProof)
-                .map_err(DecompileError::IdValidationError)?;
+                .id_allocator
+                .new_proof_id()
+                .map_err(DecompileError::IdAllocationError)?;
             let name = format!("proof{}", context.proof_names.len() + 1);
             context.proof_names.insert(proof_id, name.clone());
             write!(
@@ -262,9 +254,9 @@ pub fn decompile_instruction<F: fmt::Write>(
         }
         Instruction::CreateProofFromBucket { bucket_id } => {
             let proof_id = context
-                .id_validator
-                .new_proof(ProofKind::BucketProof(*bucket_id))
-                .map_err(DecompileError::IdValidationError)?;
+                .id_allocator
+                .new_proof_id()
+                .map_err(DecompileError::IdAllocationError)?;
             let name = format!("proof{}", context.proof_names.len() + 1);
             context.proof_names.insert(proof_id, name.clone());
             write!(
@@ -280,9 +272,9 @@ pub fn decompile_instruction<F: fmt::Write>(
         }
         Instruction::CloneProof { proof_id } => {
             let proof_id2 = context
-                .id_validator
-                .clone_proof(*proof_id)
-                .map_err(DecompileError::IdValidationError)?;
+                .id_allocator
+                .new_proof_id()
+                .map_err(DecompileError::IdAllocationError)?;
             let name = format!("proof{}", context.proof_names.len() + 1);
             context.proof_names.insert(proof_id2, name.clone());
             write!(
@@ -297,10 +289,6 @@ pub fn decompile_instruction<F: fmt::Write>(
             )?;
         }
         Instruction::DropProof { proof_id } => {
-            context
-                .id_validator
-                .drop_proof(*proof_id)
-                .map_err(DecompileError::IdValidationError)?;
             write!(
                 f,
                 "DROP_PROOF Proof({});",
@@ -312,10 +300,6 @@ pub fn decompile_instruction<F: fmt::Write>(
             )?;
         }
         Instruction::DropAllProofs => {
-            context
-                .id_validator
-                .drop_all_proofs()
-                .map_err(DecompileError::IdValidationError)?;
             f.write_str("DROP_ALL_PROOFS;")?;
         }
         Instruction::CallFunction {
@@ -340,10 +324,6 @@ pub fn decompile_instruction<F: fmt::Write>(
                         let bytes = encode_any(&field);
                         let validated_arg = ScryptoValue::from_slice(&bytes)
                             .map_err(|_| DecompileError::InvalidArguments)?;
-                        context
-                            .id_validator
-                            .move_resources(&validated_arg)
-                            .map_err(DecompileError::IdValidationError)?;
 
                         f.write_char(' ')?;
                         f.write_str(&validated_arg.to_string_with_fixed_context(
@@ -420,10 +400,6 @@ pub fn decompile_instruction<F: fmt::Write>(
                         let bytes = encode_any(&field);
                         let validated_arg = ScryptoValue::from_slice(&bytes)
                             .map_err(|_| DecompileError::InvalidArguments)?;
-                        context
-                            .id_validator
-                            .move_resources(&validated_arg)
-                            .map_err(DecompileError::IdValidationError)?;
 
                         f.write_char(' ')?;
                         f.write_str(&validated_arg.to_string_with_fixed_context(
