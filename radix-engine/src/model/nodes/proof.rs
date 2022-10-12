@@ -1,4 +1,4 @@
-use crate::engine::{HeapRENode, SystemApi};
+use crate::engine::{HeapRENode, LockFlags, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::ProofError::UnknownMethod;
 use crate::model::{
@@ -338,7 +338,7 @@ impl Proof {
     {
         let node_id = RENodeId::Proof(proof_id);
         let offset = SubstateOffset::Proof(ProofOffset::Proof);
-        let handle = system_api.lock_substate(node_id, offset, false, false)?;
+        let handle = system_api.lock_substate(node_id, offset, LockFlags::empty())?;
         let substate_ref = system_api.get_ref(handle)?;
         let proof = substate_ref.proof();
 

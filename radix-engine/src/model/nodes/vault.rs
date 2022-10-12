@@ -1,4 +1,4 @@
-use crate::engine::{HeapRENode, SystemApi};
+use crate::engine::{HeapRENode, LockFlags, SystemApi};
 use crate::fee::{FeeReserve, FeeReserveError};
 use crate::model::{Bucket, InvokeError, ProofError, ResourceContainerId, ResourceOperationError};
 use crate::types::*;
@@ -20,6 +20,22 @@ pub enum VaultError {
 pub struct Vault;
 
 impl Vault {
+    pub fn method_locks(vault_method: VaultMethod) -> LockFlags {
+        match vault_method {
+            VaultMethod::Take => LockFlags::MUTABLE,
+            VaultMethod::LockFee => LockFlags::MUTABLE | LockFlags::UNMODIFIED_BASE,
+            VaultMethod::LockContingentFee => LockFlags::MUTABLE | LockFlags::UNMODIFIED_BASE,
+            VaultMethod::Put => LockFlags::MUTABLE,
+            VaultMethod::TakeNonFungibles => LockFlags::MUTABLE,
+            VaultMethod::GetAmount => LockFlags::empty(),
+            VaultMethod::GetResourceAddress => LockFlags::empty(),
+            VaultMethod::GetNonFungibleIds => LockFlags::empty(),
+            VaultMethod::CreateProof => LockFlags::MUTABLE,
+            VaultMethod::CreateProofByAmount => LockFlags::MUTABLE,
+            VaultMethod::CreateProofByIds => LockFlags::MUTABLE,
+        }
+    }
+
     pub fn main<'s, Y, W, I, R>(
         vault_id: VaultId,
         method: VaultMethod,
@@ -34,8 +50,7 @@ impl Vault {
     {
         let node_id = RENodeId::Vault(vault_id);
         let offset = SubstateOffset::Vault(VaultOffset::Vault);
-        let (mutable, write_through) = method.lock_type();
-        let vault_handle = system_api.lock_substate(node_id, offset, mutable, write_through)?;
+        let vault_handle = system_api.lock_substate(node_id, offset, Self::method_locks(method))?;
 
         let rtn = match method {
             VaultMethod::Put => {

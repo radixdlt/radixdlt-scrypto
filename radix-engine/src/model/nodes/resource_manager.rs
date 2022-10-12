@@ -1,4 +1,4 @@
-use crate::engine::{HeapRENode, SystemApi};
+use crate::engine::{HeapRENode, LockFlags, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::{
     Bucket, InvokeError, NonFungible, NonFungibleSubstate, Resource,
@@ -166,8 +166,7 @@ impl ResourceManager {
                                 let non_fungible_handle = system_api.lock_substate(
                                     non_fungible_store_node_id,
                                     offset,
-                                    true,
-                                    false,
+                                    LockFlags::MUTABLE,
                                 )?;
                                 let mut substate_mut =
                                     system_api.get_ref_mut(non_fungible_handle)?;
@@ -243,6 +242,24 @@ impl ResourceManager {
         }
     }
 
+    fn method_lock_flags(method: ResourceManagerMethod) -> LockFlags {
+        match method {
+            ResourceManagerMethod::Burn => LockFlags::MUTABLE,
+            ResourceManagerMethod::UpdateAuth => LockFlags::MUTABLE,
+            ResourceManagerMethod::LockAuth => LockFlags::MUTABLE,
+            ResourceManagerMethod::Mint => LockFlags::MUTABLE,
+            ResourceManagerMethod::UpdateNonFungibleData => LockFlags::MUTABLE,
+            ResourceManagerMethod::GetNonFungible => LockFlags::empty(),
+            ResourceManagerMethod::GetMetadata => LockFlags::empty(),
+            ResourceManagerMethod::GetResourceType => LockFlags::empty(),
+            ResourceManagerMethod::GetTotalSupply => LockFlags::empty(),
+            ResourceManagerMethod::UpdateMetadata => LockFlags::MUTABLE,
+            ResourceManagerMethod::NonFungibleExists => LockFlags::empty(),
+            ResourceManagerMethod::CreateBucket => LockFlags::MUTABLE,
+            ResourceManagerMethod::CreateVault => LockFlags::MUTABLE,
+        }
+    }
+
     pub fn main<'s, Y, W, I, R>(
         resource_address: ResourceAddress,
         method: ResourceManagerMethod,
@@ -257,7 +274,8 @@ impl ResourceManager {
     {
         let node_id = RENodeId::ResourceManager(resource_address);
         let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-        let resman_handle = system_api.lock_substate(node_id, offset, true, false)?;
+        let resman_handle =
+            system_api.lock_substate(node_id, offset, Self::method_lock_flags(method))?;
 
         let rtn = match method {
             ResourceManagerMethod::Burn => {
@@ -301,7 +319,7 @@ impl ResourceManager {
                         let offset =
                             SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(id));
                         let non_fungible_handle =
-                            system_api.lock_substate(node_id, offset, true, false)?;
+                            system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
                         let mut substate_mut = system_api.get_ref_mut(non_fungible_handle)?;
                         let mut raw_mut = substate_mut.get_raw_mut();
                         let non_fungible_mut = raw_mut.non_fungible();
@@ -401,7 +419,7 @@ impl ResourceManager {
                     let offset =
                         SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(id.clone()));
                     let non_fungible_handle =
-                        system_api.lock_substate(node_id, offset, true, false)?;
+                        system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
                     {
                         let mut substate_mut = system_api.get_ref_mut(non_fungible_handle)?;
@@ -472,7 +490,8 @@ impl ResourceManager {
                     input.id.clone(),
                 ));
 
-                let non_fungible_handle = system_api.lock_substate(node_id, offset, true, false)?;
+                let non_fungible_handle =
+                    system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
                 let mut substate_mut = system_api.get_ref_mut(non_fungible_handle)?;
                 let mut raw_mut = substate_mut.get_raw_mut();
                 let non_fungible_mut = raw_mut.non_fungible();
@@ -504,7 +523,7 @@ impl ResourceManager {
                 let offset =
                     SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(input.id));
                 let non_fungible_handle =
-                    system_api.lock_substate(node_id, offset, false, false)?;
+                    system_api.lock_substate(node_id, offset, LockFlags::empty())?;
                 let substate = system_api.get_ref(non_fungible_handle)?;
                 let exists = substate.non_fungible().0.is_some();
 
@@ -526,7 +545,7 @@ impl ResourceManager {
                 let offset =
                     SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(input.id));
                 let non_fungible_handle =
-                    system_api.lock_substate(node_id, offset, false, false)?;
+                    system_api.lock_substate(node_id, offset, LockFlags::empty())?;
                 let non_fungible_ref = system_api.get_ref(non_fungible_handle)?;
                 let wrapper = non_fungible_ref.non_fungible();
                 if let Some(non_fungible) = wrapper.0.as_ref() {

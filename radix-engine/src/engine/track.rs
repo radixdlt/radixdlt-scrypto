@@ -61,8 +61,8 @@ pub struct Track<'s, R: FeeReserve> {
 pub enum TrackError {
     NotFound(SubstateId),
     SubstateLocked(SubstateId, LockState),
-    WriteThroughOnNewSubstate(SubstateId),
-    WriteThroughOnUpdatedSubstate(SubstateId),
+    LockUnmodifiedBaseOnNewSubstate(SubstateId),
+    LockUnmodifiedBaseOnOnUpdatedSubstate(SubstateId),
 }
 
 pub struct TrackReceipt {
@@ -113,8 +113,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
     pub fn acquire_lock(
         &mut self,
         substate_id: SubstateId,
-        mutable: bool,
-        write_through: bool,
+        flags: LockFlags,
     ) -> Result<(), TrackError> {
         // Load the substate from state track
         if !self.loaded_substates.contains_key(&substate_id) {
@@ -138,13 +137,15 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             .get_mut(&substate_id)
             .expect("Existence checked upfront");
 
-        if write_through {
+        if flags.contains(LockFlags::UNMODIFIED_BASE) {
             match loaded_substate.metastate {
                 SubstateMetaState::New => {
-                    return Err(TrackError::WriteThroughOnNewSubstate(substate_id))
+                    return Err(TrackError::LockUnmodifiedBaseOnNewSubstate(substate_id))
                 }
                 SubstateMetaState::Updated => {
-                    return Err(TrackError::WriteThroughOnUpdatedSubstate(substate_id))
+                    return Err(TrackError::LockUnmodifiedBaseOnOnUpdatedSubstate(
+                        substate_id,
+                    ))
                 }
                 SubstateMetaState::Loaded => {}
             }
@@ -152,7 +153,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
 
         match loaded_substate.lock_state {
             LockState::Read(n) => {
-                if mutable {
+                if flags.contains(LockFlags::MUTABLE) {
                     if n != 0 {
                         return Err(TrackError::SubstateLocked(
                             substate_id,
@@ -178,7 +179,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
     pub fn release_lock(
         &mut self,
         substate_id: SubstateId,
-        write_through: bool,
+        unmodified_base: bool,
     ) -> Result<(), TrackError> {
         let loaded_substate = self
             .loaded_substates
@@ -191,7 +192,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                 loaded_substate.lock_state = LockState::no_lock();
                 loaded_substate.metastate = SubstateMetaState::Updated;
 
-                if write_through {
+                if unmodified_base {
                     let persisted_substate = loaded_substate.substate.clone_to_persisted();
                     self.state_track
                         .put_substate(substate_id, persisted_substate);

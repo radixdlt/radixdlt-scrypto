@@ -2,12 +2,12 @@ use crate::engine::*;
 use crate::types::*;
 use scrypto::core::NativeFunction;
 
+/// A lock on a substate controlled by a call frame
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SubstateLock {
-    pub pointer: (RENodePointer, SubstateOffset),
-    pub mutable: bool,
+    pub substate_pointer: (RENodePointer, SubstateOffset),
     pub owned_nodes: HashSet<RENodeId>,
-    pub write_through: bool,
+    pub flags: LockFlags,
 }
 
 // TODO: reduce fields visibility
@@ -38,17 +38,15 @@ impl CallFrame {
         &mut self,
         node_pointer: RENodePointer,
         offset: SubstateOffset,
-        mutable: bool,
-        write_through: bool,
+        flags: LockFlags,
     ) -> LockHandle {
         let lock_handle = self.next_lock_handle;
         self.locks.insert(
             lock_handle,
             SubstateLock {
-                pointer: (node_pointer, offset),
-                mutable,
+                substate_pointer: (node_pointer, offset),
                 owned_nodes: HashSet::new(),
-                write_through,
+                flags,
             },
         );
         self.next_lock_handle = self.next_lock_handle + 1;
@@ -65,7 +63,7 @@ impl CallFrame {
     pub fn drop_lock(
         &mut self,
         lock_handle: LockHandle,
-    ) -> Result<(RENodePointer, SubstateOffset, bool), KernelError> {
+    ) -> Result<(RENodePointer, SubstateOffset, LockFlags), KernelError> {
         let substate_lock = self
             .locks
             .remove(&lock_handle)
@@ -77,18 +75,18 @@ impl CallFrame {
 
         let counter = self
             .node_lock_count
-            .entry(substate_lock.pointer.0.node_id())
+            .entry(substate_lock.substate_pointer.0.node_id())
             .or_insert(0u32);
         *counter -= 1;
         if *counter == 0 {
             self.node_lock_count
-                .remove(&substate_lock.pointer.0.node_id());
+                .remove(&substate_lock.substate_pointer.0.node_id());
         }
 
         Ok((
-            substate_lock.pointer.0,
-            substate_lock.pointer.1,
-            substate_lock.write_through,
+            substate_lock.substate_pointer.0,
+            substate_lock.substate_pointer.1,
+            substate_lock.flags,
         ))
     }
 

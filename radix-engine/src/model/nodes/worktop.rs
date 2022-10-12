@@ -1,4 +1,4 @@
-use crate::engine::{DropFailure, HeapRENode, InvokeError, SystemApi};
+use crate::engine::{DropFailure, HeapRENode, InvokeError, LockFlags, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::{Bucket, LockableResource, Resource, ResourceOperationError};
 use crate::types::*;
@@ -198,6 +198,19 @@ impl Worktop {
             .map(|c| c.borrow_mut())
     }
 
+    pub fn method_locks(method: WorktopMethod) -> LockFlags {
+        match method {
+            WorktopMethod::TakeAll => LockFlags::MUTABLE,
+            WorktopMethod::TakeAmount => LockFlags::MUTABLE,
+            WorktopMethod::TakeNonFungibles => LockFlags::MUTABLE,
+            WorktopMethod::Put => LockFlags::MUTABLE,
+            WorktopMethod::AssertContains => LockFlags::empty(),
+            WorktopMethod::AssertContainsAmount => LockFlags::empty(),
+            WorktopMethod::AssertContainsNonFungibles => LockFlags::empty(),
+            WorktopMethod::Drain => LockFlags::MUTABLE,
+        }
+    }
+
     pub fn main<'s, Y, W, I, R>(
         method: WorktopMethod,
         args: ScryptoValue,
@@ -211,7 +224,8 @@ impl Worktop {
     {
         let node_id = RENodeId::Worktop;
         let offset = SubstateOffset::Worktop(WorktopOffset::Worktop);
-        let worktop_handle = system_api.lock_substate(node_id, offset, true, false)?;
+        let worktop_handle =
+            system_api.lock_substate(node_id, offset, Self::method_locks(method))?;
 
         let rtn = match method {
             WorktopMethod::Put => {
@@ -254,7 +268,7 @@ impl Worktop {
                         let offset =
                             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
                         let resource_handle =
-                            system_api.lock_substate(resource_id, offset, false, false)?;
+                            system_api.lock_substate(resource_id, offset, LockFlags::empty())?;
                         let substate_ref = system_api.get_ref(resource_handle)?;
                         substate_ref.resource_manager().resource_type
                     };
@@ -292,7 +306,7 @@ impl Worktop {
                         let offset =
                             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
                         let resource_handle =
-                            system_api.lock_substate(resource_id, offset, false, false)?;
+                            system_api.lock_substate(resource_id, offset, LockFlags::empty())?;
                         let substate_ref = system_api.get_ref(resource_handle)?;
                         substate_ref.resource_manager().resource_type
                     };
@@ -330,7 +344,7 @@ impl Worktop {
                         let offset =
                             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
                         let resource_handle =
-                            system_api.lock_substate(resource_id, offset, false, false)?;
+                            system_api.lock_substate(resource_id, offset, LockFlags::empty())?;
                         let substate_ref = system_api.get_ref(resource_handle)?;
                         substate_ref.resource_manager().resource_type
                     };

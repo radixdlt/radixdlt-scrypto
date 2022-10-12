@@ -110,7 +110,9 @@ where
 
             let node_id = RENodeId::Bucket(bucket_id);
             let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
-            let handle = kernel.lock_substate(node_id, offset, true, false).unwrap();
+            let handle = kernel
+                .lock_substate(node_id, offset, LockFlags::MUTABLE)
+                .unwrap();
             let mut substate_mut = kernel.get_ref_mut(handle).unwrap();
             let mut raw_mut = substate_mut.get_raw_mut();
             let proof = raw_mut
@@ -465,8 +467,8 @@ where
         // Auto drop locks
         for (_, lock) in call_frame.drain_locks() {
             let SubstateLock {
-                pointer: (node_pointer, offset),
-                write_through,
+                substate_pointer: (node_pointer, offset),
+                flags,
                 ..
             } = lock;
             if !(matches!(offset, SubstateOffset::KeyValueStore(..))
@@ -476,7 +478,11 @@ where
                 ))
             {
                 node_pointer
-                    .release_lock(offset, write_through, self.track)
+                    .release_lock(
+                        offset,
+                        flags.contains(LockFlags::UNMODIFIED_BASE),
+                        self.track,
+                    )
                     .map_err(RuntimeError::KernelError)?;
             }
         }
@@ -512,7 +518,7 @@ where
                 let node_pointer = RENodePointer::Store(node_id);
                 let offset = SubstateOffset::Package(PackageOffset::Package);
                 node_pointer
-                    .acquire_lock(offset.clone(), false, false, &mut self.track)
+                    .acquire_lock(offset.clone(), LockFlags::empty(), &mut self.track)
                     .map_err(RuntimeError::KernelError)?;
 
                 let package = self
@@ -604,7 +610,7 @@ where
                 RENodeId::Component(..) => {
                     let offset = SubstateOffset::Component(ComponentOffset::Info);
                     node_pointer
-                        .acquire_lock(offset.clone(), false, false, &mut self.track)
+                        .acquire_lock(offset.clone(), LockFlags::empty(), &mut self.track)
                         .map_err(RuntimeError::KernelError)?;
 
                     let substate_ref = node_pointer.borrow_substate(
@@ -793,7 +799,7 @@ where
                 // TODO: when this is resolved.
                 if !static_refs.contains(&global_address) {
                     node_pointer
-                        .acquire_lock(offset.clone(), false, false, &mut self.track)
+                        .acquire_lock(offset.clone(), LockFlags::empty(), &mut self.track)
                         .map_err(|e| match e {
                             KernelError::TrackError(TrackError::NotFound(..)) => {
                                 RuntimeError::KernelError(KernelError::GlobalAddressNotFound(
@@ -1030,8 +1036,7 @@ where
         &mut self,
         node_id: RENodeId,
         offset: SubstateOffset,
-        mutable: bool,
-        write_through: bool,
+        flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
@@ -1040,7 +1045,7 @@ where
                 SysCallInput::LockSubstate {
                     node_id: &node_id,
                     offset: &offset,
-                    mutable,
+                    flags: &flags,
                 },
             )
             .map_err(RuntimeError::ModuleError)?;
@@ -1056,7 +1061,7 @@ where
         // TODO: Check if valid offset for node_id
 
         // Authorization
-        if mutable {
+        if flags.contains(LockFlags::MUTABLE) {
             if !Self::current_frame(&self.call_frames)
                 .actor
                 .is_substate_writeable(node_pointer.node_id(), offset.clone())
@@ -1087,15 +1092,14 @@ where
             ))
         {
             node_pointer
-                .acquire_lock(offset.clone(), mutable, write_through, &mut self.track)
+                .acquire_lock(offset.clone(), flags, &mut self.track)
                 .map_err(RuntimeError::KernelError)?;
         }
 
         let lock_handle = Self::current_frame_mut(&mut self.call_frames).create_lock(
             node_pointer,
             offset.clone(),
-            mutable,
-            write_through,
+            flags,
         );
 
         for m in &mut self.modules {
@@ -1122,7 +1126,7 @@ where
             .map_err(RuntimeError::ModuleError)?;
         }
 
-        let (node_pointer, offset, write_through) = Self::current_frame_mut(&mut self.call_frames)
+        let (node_pointer, offset, flags) = Self::current_frame_mut(&mut self.call_frames)
             .drop_lock(lock_handle)
             .map_err(RuntimeError::KernelError)?;
 
@@ -1133,7 +1137,11 @@ where
             ))
         {
             node_pointer
-                .release_lock(offset.clone(), write_through, self.track)
+                .release_lock(
+                    offset.clone(),
+                    flags.contains(LockFlags::UNMODIFIED_BASE),
+                    self.track,
+                )
                 .map_err(RuntimeError::KernelError)?;
         }
 
@@ -1162,7 +1170,7 @@ where
         }
 
         let SubstateLock {
-            pointer: (node_pointer, offset),
+            substate_pointer: (node_pointer, offset),
             ..
         } = Self::current_frame_mut(&mut self.call_frames)
             .get_lock(lock_handle)
@@ -1225,15 +1233,15 @@ where
         }
 
         let SubstateLock {
-            pointer: (node_pointer, offset),
-            mutable,
+            substate_pointer: (node_pointer, offset),
+            flags,
             ..
         } = Self::current_frame_mut(&mut self.call_frames)
             .get_lock(lock_handle)
             .map_err(RuntimeError::KernelError)?
             .clone();
 
-        if !mutable {
+        if !flags.contains(LockFlags::MUTABLE) {
             return Err(RuntimeError::KernelError(KernelError::LockNotMutable(
                 lock_handle,
             )));

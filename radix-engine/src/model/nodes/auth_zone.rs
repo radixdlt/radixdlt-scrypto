@@ -1,4 +1,4 @@
-use crate::engine::{HeapRENode, SystemApi};
+use crate::engine::{HeapRENode, LockFlags, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::{
     InvokeError, LockableResource, LockedAmountOrIds, Proof, ProofError, ResourceContainerId,
@@ -142,6 +142,18 @@ impl AuthZone {
             .map_err(|e| InvokeError::Error(AuthZoneError::ProofError(e)))
     }
 
+    pub fn method_locks(method: AuthZoneMethod) -> LockFlags {
+        match method {
+            AuthZoneMethod::Pop => LockFlags::MUTABLE,
+            AuthZoneMethod::Push => LockFlags::MUTABLE,
+            AuthZoneMethod::CreateProof => LockFlags::MUTABLE,
+            AuthZoneMethod::CreateProofByAmount => LockFlags::MUTABLE,
+            AuthZoneMethod::CreateProofByIds => LockFlags::MUTABLE,
+            AuthZoneMethod::Clear => LockFlags::MUTABLE,
+            AuthZoneMethod::Drain => LockFlags::MUTABLE,
+        }
+    }
+
     pub fn main<'s, Y, W, I, R>(
         auth_zone_id: AuthZoneId,
         method: AuthZoneMethod,
@@ -156,7 +168,8 @@ impl AuthZone {
     {
         let node_id = RENodeId::AuthZone(auth_zone_id);
         let offset = SubstateOffset::AuthZone(AuthZoneOffset::AuthZone);
-        let auth_zone_handle = system_api.lock_substate(node_id, offset, true, false)?;
+        let auth_zone_handle =
+            system_api.lock_substate(node_id, offset, Self::method_locks(method))?;
 
         let rtn = match method {
             AuthZoneMethod::Pop => {
@@ -199,7 +212,7 @@ impl AuthZone {
                     let offset =
                         SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
                     let resource_handle =
-                        system_api.lock_substate(resource_id, offset, false, false)?;
+                        system_api.lock_substate(resource_id, offset, LockFlags::empty())?;
                     let substate_ref = system_api.get_ref(resource_handle)?;
                     substate_ref.resource_manager().resource_type
                 };
@@ -226,7 +239,7 @@ impl AuthZone {
                     let offset =
                         SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
                     let resource_handle =
-                        system_api.lock_substate(resource_id, offset, false, false)?;
+                        system_api.lock_substate(resource_id, offset, LockFlags::empty())?;
                     let substate_ref = system_api.get_ref(resource_handle)?;
                     substate_ref.resource_manager().resource_type
                 };
@@ -257,7 +270,7 @@ impl AuthZone {
                     let offset =
                         SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
                     let resource_handle =
-                        system_api.lock_substate(resource_id, offset, false, false)?;
+                        system_api.lock_substate(resource_id, offset, LockFlags::empty())?;
                     let substate_ref = system_api.get_ref(resource_handle)?;
                     substate_ref.resource_manager().resource_type
                 };

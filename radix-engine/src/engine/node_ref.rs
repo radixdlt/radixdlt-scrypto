@@ -30,7 +30,7 @@ impl RENodePointer {
     ) -> Result<Option<RENodePointer>, RuntimeError> {
         if let RENodeId::Global(..) = self.node_id() {
             let offset = SubstateOffset::Global(GlobalOffset::Global);
-            self.acquire_lock(offset.clone(), false, false, track)
+            self.acquire_lock(offset.clone(), LockFlags::empty(), track)
                 .map_err(RuntimeError::KernelError)?;
 
             let substate_ref = self.borrow_substate(&offset, call_frames, track)?;
@@ -46,20 +46,19 @@ impl RENodePointer {
     pub fn acquire_lock<'s, R: FeeReserve>(
         &self,
         offset: SubstateOffset,
-        mutable: bool,
-        write_through: bool,
+        flags: LockFlags,
         track: &mut Track<'s, R>,
     ) -> Result<(), KernelError> {
         let substate_id = SubstateId(self.node_id(), offset);
 
         match self {
             RENodePointer::Store(..) => track
-                .acquire_lock(substate_id, mutable, write_through)
+                .acquire_lock(substate_id, flags)
                 .map_err(KernelError::TrackError),
             RENodePointer::Heap { .. } => {
-                if write_through {
+                if flags.contains(LockFlags::UNMODIFIED_BASE) {
                     Err(KernelError::TrackError(
-                        TrackError::WriteThroughOnNewSubstate(substate_id),
+                        TrackError::LockUnmodifiedBaseOnNewSubstate(substate_id),
                     ))
                 } else {
                     Ok(())
@@ -71,12 +70,12 @@ impl RENodePointer {
     pub fn release_lock<'s, R: FeeReserve>(
         &self,
         offset: SubstateOffset,
-        write_through: bool,
+        unmodified_base: bool,
         track: &mut Track<'s, R>,
     ) -> Result<(), KernelError> {
         match self {
             RENodePointer::Store(..) => track
-                .release_lock(SubstateId(self.node_id(), offset), write_through)
+                .release_lock(SubstateId(self.node_id(), offset), unmodified_base)
                 .map_err(KernelError::TrackError),
             RENodePointer::Heap { .. } => Ok(()),
         }
