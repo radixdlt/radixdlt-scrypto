@@ -163,7 +163,7 @@ impl RENodePointer {
                     for (id, node) in val.to_nodes(id) {
                         let substates = node_to_substates(node);
                         for (offset, substate) in substates {
-                            track.put_substate(SubstateId(id, offset), substate);
+                            track.insert_substate(SubstateId(id, offset), substate);
                         }
                     }
                 }

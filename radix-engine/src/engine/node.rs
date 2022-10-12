@@ -209,20 +209,6 @@ impl HeapRENode {
         }
     }
 
-    pub fn vault(&self) -> &VaultRuntimeSubstate {
-        match self {
-            HeapRENode::Vault(vault) => vault,
-            _ => panic!("Expected to be a vault"),
-        }
-    }
-
-    pub fn vault_mut(&mut self) -> &mut VaultRuntimeSubstate {
-        match self {
-            HeapRENode::Vault(vault) => vault,
-            _ => panic!("Expected to be a vault"),
-        }
-    }
-
     pub fn verify_can_move(&self) -> Result<(), RuntimeError> {
         match self {
             HeapRENode::AuthZone(..) => {

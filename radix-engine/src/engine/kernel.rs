@@ -566,13 +566,21 @@ where
         mut next_frame_node_refs: HashMap<RENodeId, RENodePointer>,
     ) -> Result<(ScryptoValue, HashMap<RENodeId, HeapRootRENode>), RuntimeError> {
         // Authorization and state load
-        let re_actor = {
-            let mut node_id = method_ident.receiver.node_id();
-            let mut node_pointer =
-                Self::current_frame(&self.call_frames).get_node_pointer(node_id)?;
+        let mut node_id = method_ident.receiver.node_id();
+        let mut node_pointer = Self::current_frame(&self.call_frames).get_node_pointer(node_id)?;
 
-            // Deref
-            if let Receiver::Ref(..) = method_ident.receiver {
+        match method_ident.receiver {
+            Receiver::Consumed(..) => {
+                let heap_node = Self::current_frame_mut(&mut self.call_frames)
+                    .owned_heap_nodes
+                    .remove(&node_id)
+                    .ok_or(RuntimeError::KernelError(
+                        KernelError::InvokeMethodInvalidReceiver(node_id),
+                    ))?;
+                next_owned_values.insert(node_id, heap_node);
+            }
+            Receiver::Ref(..) => {
+                // Deref
                 if let Some(derefed) =
                     node_pointer.node_deref(&mut self.call_frames, &mut self.track)?
                 {
@@ -583,82 +591,67 @@ where
                         method_ident: method_ident.method_ident,
                     }
                 }
+                next_frame_node_refs.insert(node_id, node_pointer);
             }
+        }
 
-            // Load actor
-            let re_actor = match &method_ident {
-                ReceiverMethodIdent {
-                    method_ident: MethodIdent::Scrypto(ident),
-                    receiver,
-                } => match node_id {
-                    RENodeId::Component(..) => {
-                        let offset = SubstateOffset::Component(ComponentOffset::Info);
-                        node_pointer
-                            .acquire_lock(offset.clone(), false, false, &mut self.track)
-                            .map_err(RuntimeError::KernelError)?;
+        // Load actor
+        let re_actor = match &method_ident {
+            ReceiverMethodIdent {
+                method_ident: MethodIdent::Scrypto(ident),
+                receiver,
+            } => match node_id {
+                RENodeId::Component(..) => {
+                    let offset = SubstateOffset::Component(ComponentOffset::Info);
+                    node_pointer
+                        .acquire_lock(offset.clone(), false, false, &mut self.track)
+                        .map_err(RuntimeError::KernelError)?;
 
-                        let substate_ref = node_pointer.borrow_substate(
-                            &offset,
-                            &mut self.call_frames,
-                            &mut self.track,
-                        )?;
-                        let info = substate_ref.component_info();
-                        let actor = REActor::Method(FullyQualifiedReceiverMethod {
-                            receiver: receiver.clone(),
-                            method: FullyQualifiedMethod::Scrypto {
-                                package_address: info.package_address.clone(),
-                                blueprint_name: info.blueprint_name.clone(),
-                                ident: ident.to_string(),
-                            },
-                        });
-                        node_pointer
-                            .release_lock(offset, false, &mut self.track)
-                            .map_err(RuntimeError::KernelError)?;
+                    let substate_ref = node_pointer.borrow_substate(
+                        &offset,
+                        &mut self.call_frames,
+                        &mut self.track,
+                    )?;
+                    let info = substate_ref.component_info();
+                    let actor = REActor::Method(FullyQualifiedReceiverMethod {
+                        receiver: receiver.clone(),
+                        method: FullyQualifiedMethod::Scrypto {
+                            package_address: info.package_address.clone(),
+                            blueprint_name: info.blueprint_name.clone(),
+                            ident: ident.to_string(),
+                        },
+                    });
+                    node_pointer
+                        .release_lock(offset, false, &mut self.track)
+                        .map_err(RuntimeError::KernelError)?;
 
-                        actor
-                    }
-                    _ => panic!("Should not get here."),
-                },
-                ReceiverMethodIdent {
-                    method_ident: MethodIdent::Native(native_fn),
-                    receiver,
-                } => REActor::Method(FullyQualifiedReceiverMethod {
-                    receiver: receiver.clone(),
-                    method: FullyQualifiedMethod::Native(native_fn.clone()),
-                }),
-            };
-
-            // TODO: Check Component ABI here rather than in auth
-
-            // Check method authorization
-            AuthModule::receiver_auth(
-                method_ident.clone(),
-                &input,
-                node_pointer.clone(),
-                &mut self.call_frames,
-                &mut self.track,
-            )
-            .map_err(|e| match e {
-                InvokeError::Error(e) => RuntimeError::ModuleError(ModuleError::AuthError(e)),
-                InvokeError::Downstream(runtime_error) => runtime_error,
-            })?;
-
-            match &method_ident.receiver {
-                Receiver::Consumed(..) => {
-                    let heap_node = Self::current_frame_mut(&mut self.call_frames)
-                        .owned_heap_nodes
-                        .remove(&node_id)
-                        .ok_or(RuntimeError::KernelError(
-                            KernelError::InvokeMethodInvalidReceiver(node_id),
-                        ))?;
-                    next_owned_values.insert(node_id, heap_node);
+                    actor
                 }
-                _ => {}
-            }
-
-            next_frame_node_refs.insert(node_id.clone(), node_pointer.clone());
-            re_actor
+                _ => panic!("Should not get here."),
+            },
+            ReceiverMethodIdent {
+                method_ident: MethodIdent::Native(native_fn),
+                receiver,
+            } => REActor::Method(FullyQualifiedReceiverMethod {
+                receiver: receiver.clone(),
+                method: FullyQualifiedMethod::Native(native_fn.clone()),
+            }),
         };
+
+        // TODO: Check Component ABI here rather than in auth
+
+        // Check method authorization
+        AuthModule::receiver_auth(
+            method_ident.clone(),
+            &input,
+            node_pointer.clone(),
+            &mut self.call_frames,
+            &mut self.track,
+        )
+        .map_err(|e| match e {
+            InvokeError::Error(e) => RuntimeError::ModuleError(ModuleError::AuthError(e)),
+            InvokeError::Downstream(runtime_error) => runtime_error,
+        })?;
 
         // start a new frame
         let frame = CallFrame::new_child(
@@ -1003,7 +996,7 @@ where
             &node.root,
         )?;
         self.track.new_global_addresses.push(global_address);
-        self.track.put_substate(
+        self.track.insert_substate(
             SubstateId(
                 RENodeId::Global(global_address),
                 SubstateOffset::Global(GlobalOffset::Global),
@@ -1011,7 +1004,7 @@ where
             RuntimeSubstate::GlobalRENode(global_substate),
         );
         for (id, substate) in nodes_to_substates(node.to_nodes(node_id)) {
-            self.track.put_substate(id, substate);
+            self.track.insert_substate(id, substate);
         }
 
         Self::current_frame_mut(&mut self.call_frames)

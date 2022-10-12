@@ -224,8 +224,8 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             .substate
     }
 
-    pub fn put_substate(&mut self, substate_id: SubstateId, substate: RuntimeSubstate) {
-        assert!(self.loaded_substates.contains_key(&substate_id));
+    pub fn insert_substate(&mut self, substate_id: SubstateId, substate: RuntimeSubstate) {
+        assert!(!self.loaded_substates.contains_key(&substate_id));
 
         self.loaded_substates.insert(
             substate_id,
