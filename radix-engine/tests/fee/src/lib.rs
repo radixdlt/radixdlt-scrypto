@@ -42,6 +42,13 @@ blueprint! {
             self.garbage_vaults.push(vault);
         }
 
+        pub fn update_vault_and_lock_fee(&mut self, amount: Decimal) {
+            info!("Balance: {}", self.xrd.amount());
+            let bucket = self.xrd.take(Decimal::from(1u32));
+            self.xrd.put(bucket);
+            self.xrd.lock_fee(amount);
+        }
+
         pub fn query_vault_and_lock_fee(&mut self, amount: Decimal) {
             info!("Balance: {}", self.xrd.amount());
             self.xrd.lock_fee(amount);

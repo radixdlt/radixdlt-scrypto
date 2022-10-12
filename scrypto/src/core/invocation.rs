@@ -164,6 +164,24 @@ pub enum VaultMethod {
     CreateProofByIds,
 }
 
+impl VaultMethod {
+    pub fn lock_type(&self) -> (bool, bool) {
+        match self {
+            VaultMethod::Take => (true, false),
+            VaultMethod::LockFee => (true, true),
+            VaultMethod::LockContingentFee => (true, true),
+            VaultMethod::Put => (true, false),
+            VaultMethod::TakeNonFungibles => (true, false),
+            VaultMethod::GetAmount => (false, false),
+            VaultMethod::GetResourceAddress => (false, false),
+            VaultMethod::GetNonFungibleIds => (false, false),
+            VaultMethod::CreateProof => (true, false),
+            VaultMethod::CreateProofByAmount => (true, false),
+            VaultMethod::CreateProofByIds => (true, false),
+        }
+    }
+}
+
 #[derive(
     Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe, PartialOrd, Ord,
 )]

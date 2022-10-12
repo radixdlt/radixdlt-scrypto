@@ -1,8 +1,7 @@
 use indexmap::IndexMap;
 use transaction::model::Executable;
 
-use crate::engine::AppStateTrack;
-use crate::engine::BaseStateTrack;
+use crate::engine::StateTrack;
 use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::fee::FeeReserveError;
@@ -100,7 +99,7 @@ pub struct LoadedSubstate {
 /// Transaction-wide states and side effects
 pub struct Track<'s, R: FeeReserve> {
     application_logs: Vec<(Level, String)>,
-    state_track: AppStateTrack<'s>,
+    state_track: StateTrack<'s>,
     loaded_substates: IndexMap<SubstateId, LoadedSubstate>,
     loaded_nodes: IndexMap<RENodeId, HeapRENode>,
     pub new_global_addresses: Vec<GlobalAddress>,
@@ -134,8 +133,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         fee_reserve: R,
         fee_table: FeeTable,
     ) -> Self {
-        let base_state_track = BaseStateTrack::new(substate_store);
-        let state_track = AppStateTrack::new(base_state_track);
+        let state_track = StateTrack::new(substate_store);
 
         Self {
             application_logs: Vec::new(),
@@ -172,11 +170,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
     ) -> Result<(), TrackError> {
         // Load the substate from state track
         if !self.loaded_substates.contains_key(&substate_id) {
-            let maybe_substate = if write_through {
-                self.state_track.get_substate_from_base(&substate_id)
-            } else {
-                self.state_track.get_substate(&substate_id)
-            };
+            let maybe_substate = self.state_track.get_substate(&substate_id);
 
             if let Some(substate) = maybe_substate {
                 self.loaded_substates.insert(
@@ -263,7 +257,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             let node = self.loaded_nodes.remove(&node_id).unwrap();
             for (offset, substate) in node_to_substates(node) {
                 self.state_track
-                    .put_substate_to_base(SubstateId(node_id, offset), substate.to_persisted());
+                    .put_substate(SubstateId(node_id, offset), substate.to_persisted());
             }
         } else {
             self.loaded_substates.insert(substate_id, loaded_substate);
@@ -583,10 +577,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             for (id, substate) in nodes_to_substates(self.loaded_nodes.into_iter().collect()) {
                 self.state_track.put_substate(id, substate.to_persisted());
             }
-
-            self.state_track.commit();
         } else {
-            self.state_track.rollback();
             self.loaded_substates.clear();
         }
 
@@ -640,7 +631,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
 
                 let mut substate = self
                     .state_track
-                    .get_substate_from_base(&substate_id)
+                    .get_substate(&substate_id)
                     .expect("Failed to fetch a fee-locking vault")
                     .to_runtime();
                 substate
@@ -649,7 +640,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                     .put(locked)
                     .expect("Failed to put a fee-locking vault");
                 self.state_track
-                    .put_substate_to_base(substate_id, substate.to_persisted());
+                    .put_substate(substate_id, substate.to_persisted());
 
                 *actual_fee_payments.entry(vault_id).or_default() += amount;
             }
@@ -668,7 +659,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                     Ok(output) => TransactionOutcome::Success(output),
                     Err(error) => TransactionOutcome::Failure(error),
                 },
-                state_updates: self.state_track.into_base().generate_diff(),
+                state_updates: self.state_track.generate_diff(),
                 entity_changes: EntityChanges::new(self.new_global_addresses),
                 resource_changes: execution_trace_receipt.resource_changes,
             })

@@ -82,7 +82,6 @@ pub enum KernelError {
     RENodeGlobalizeTypeNotAllowed(RENodeId),
     RENodeCreateInvalidPermission,
     RENodeCreateNodeNotFound(RENodeId),
-    RENodeNotInTrack,
 
     // Substate
     MovingLockedRENode(RENodeId),
