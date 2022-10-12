@@ -882,42 +882,6 @@ where
         Ok(output)
     }
 
-    fn borrow_node_mut(
-        &mut self,
-        node_id: &RENodeId,
-    ) -> Result<RENodeRefMut<'_, 's, R>, RuntimeError> {
-        for m in &mut self.modules {
-            m.pre_sys_call(
-                &mut self.track,
-                &mut self.call_frames,
-                SysCallInput::BorrowNode { node_id: node_id },
-            )
-            .map_err(RuntimeError::ModuleError)?;
-        }
-
-        let current_frame = Self::current_frame(&self.call_frames);
-        let mut node_pointer = current_frame.get_node_pointer(*node_id)?;
-
-        // Deref
-        if let Some(derefed) = node_pointer.node_deref(&mut self.call_frames, &mut self.track)? {
-            node_pointer = derefed;
-        }
-
-        for m in &mut self.modules {
-            m.post_sys_call(
-                &mut self.track,
-                &mut self.call_frames,
-                SysCallOutput::BorrowNode {
-                    // Can't return the NodeRef due to borrow checks on `call_frames`
-                    node_pointer: &node_pointer,
-                },
-            )
-            .map_err(RuntimeError::ModuleError)?;
-        }
-
-        Ok(node_pointer.to_ref_mut(&mut self.call_frames, &mut self.track))
-    }
-
     fn get_owned_node_ids(&mut self) -> Result<Vec<RENodeId>, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(

@@ -30,11 +30,6 @@ where
     /// Retrieves all nodes owned by the current frame
     fn get_owned_node_ids(&mut self) -> Result<Vec<RENodeId>, RuntimeError>;
 
-    fn borrow_node_mut(
-        &mut self,
-        node_id: &RENodeId,
-    ) -> Result<RENodeRefMut<'_, 's, R>, RuntimeError>;
-
     /// Removes an RENode and all of it's children from the Heap
     fn node_drop(&mut self, node_id: RENodeId) -> Result<HeapRootRENode, RuntimeError>;
 

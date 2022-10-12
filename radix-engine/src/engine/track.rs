@@ -8,13 +8,10 @@ use crate::fee::FeeReserveError;
 use crate::fee::FeeSummary;
 use crate::fee::FeeTable;
 use crate::ledger::*;
-use crate::model::node_to_substates;
-use crate::model::nodes_to_substates;
 use crate::model::LockableResource;
 use crate::model::NonFungibleSubstate;
 use crate::model::Resource;
 use crate::model::RuntimeSubstate;
-use crate::model::VaultRuntimeSubstate;
 use crate::model::{KeyValueStoreEntrySubstate, PersistedSubstate};
 use crate::transaction::CommitResult;
 use crate::transaction::EntityChanges;
@@ -33,53 +30,6 @@ impl LockState {
     pub fn no_lock() -> Self {
         Self::Read(0)
     }
-
-    pub fn is_free(&self) -> bool {
-        matches!(self, LockState::Read(0))
-    }
-}
-
-#[derive(Debug)]
-pub enum SubstateCache {
-    Free(RuntimeSubstate),
-    Taken,
-}
-
-impl SubstateCache {
-    pub fn borrow(&self) -> &RuntimeSubstate {
-        match self {
-            Self::Free(substate) => substate,
-            Self::Taken => {
-                panic!("Attempted to borrow already taken substate")
-            }
-        }
-    }
-
-    pub fn borrow_mut(&mut self) -> &mut RuntimeSubstate {
-        match self {
-            Self::Free(substate) => substate,
-            Self::Taken => {
-                panic!("Attempted to borrow already taken substate")
-            }
-        }
-    }
-
-    pub fn take(&mut self) -> RuntimeSubstate {
-        match core::mem::replace(self, SubstateCache::Taken) {
-            Self::Free(substate) => substate,
-            Self::Taken => {
-                panic!("Attempted to take already taken substate")
-            }
-        }
-    }
-
-    pub fn put(&mut self, substate: RuntimeSubstate) {
-        *self = SubstateCache::Free(substate);
-    }
-
-    pub fn is_taken(&self) -> bool {
-        matches!(self, SubstateCache::Taken)
-    }
 }
 
 #[derive(Debug)]
@@ -91,7 +41,7 @@ pub enum SubstateMetaState {
 
 #[derive(Debug)]
 pub struct LoadedSubstate {
-    pub substate: SubstateCache,
+    pub substate: RuntimeSubstate,
     pub lock_state: LockState,
     pub metastate: SubstateMetaState,
 }
@@ -101,8 +51,7 @@ pub struct Track<'s, R: FeeReserve> {
     application_logs: Vec<(Level, String)>,
     state_track: StateTrack<'s>,
     loaded_substates: IndexMap<SubstateId, LoadedSubstate>,
-    loaded_nodes: IndexMap<RENodeId, HeapRENode>,
-    pub new_global_addresses: Vec<GlobalAddress>,
+    pub new_global_addresses: Vec<GlobalAddress>, // TODO: Remove
     pub fee_reserve: R,
     pub fee_table: FeeTable,
     pub vault_ops: Vec<(REActor, VaultId, VaultOp)>,
@@ -139,7 +88,6 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             application_logs: Vec::new(),
             state_track,
             loaded_substates: IndexMap::new(),
-            loaded_nodes: IndexMap::new(),
             new_global_addresses: Vec::new(),
             fee_reserve,
             fee_table,
@@ -175,7 +123,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                 self.loaded_substates.insert(
                     substate_id.clone(),
                     LoadedSubstate {
-                        substate: SubstateCache::Free(substate.to_runtime()),
+                        substate: substate.to_runtime(),
                         lock_state: LockState::no_lock(),
                         metastate: SubstateMetaState::Loaded,
                     },
@@ -244,8 +192,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                 loaded_substate.metastate = SubstateMetaState::Updated;
 
                 if write_through {
-                    let runtime_substate = loaded_substate.substate.borrow();
-                    let persisted_substate = runtime_substate.clone_to_persisted();
+                    let persisted_substate = loaded_substate.substate.clone_to_persisted();
                     self.state_track
                         .put_substate(substate_id, persisted_substate);
                 }
@@ -255,57 +202,13 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         Ok(())
     }
 
-    fn create_node_if_missing(&mut self, node_id: &RENodeId) {
-        if !self.loaded_nodes.contains_key(node_id) {
-            match node_id {
-                RENodeId::AuthZone(_)
-                | RENodeId::Bucket(_)
-                | RENodeId::Proof(_)
-                | RENodeId::Global(..)
-                | RENodeId::KeyValueStore(_)
-                | RENodeId::NonFungibleStore(_)
-                | RENodeId::Component(..)
-                | RENodeId::ResourceManager(..)
-                | RENodeId::Package(..)
-                | RENodeId::System(..)
-                | RENodeId::Worktop => panic!("Unexpected"),
-                RENodeId::Vault(..) => {
-                    let offset = SubstateOffset::Vault(VaultOffset::Vault);
-                    let substate: VaultRuntimeSubstate =
-                        self.take_substate(SubstateId(*node_id, offset)).into();
-                    let node = HeapRENode::Vault(substate);
-                    self.loaded_nodes.insert(node_id.clone(), node);
-                }
-            }
-        }
-    }
-
-    // TODO: Clean this up!
-    // Despite being named as borrow_*, borrow rules are not enforced here but within `acquire_lock`.
-
-    pub fn borrow_node(&mut self, node_id: &RENodeId) -> &HeapRENode {
-        self.create_node_if_missing(node_id);
-        self.loaded_nodes.get(node_id).expect("Node not available")
-    }
-
-    pub fn borrow_node_mut(&mut self, node_id: &RENodeId) -> &mut HeapRENode {
-        self.create_node_if_missing(node_id);
-        self.loaded_nodes
-            .get_mut(node_id)
-            .expect("Node not available")
-    }
-
-    pub fn put_node(&mut self, node_id: RENodeId, node: HeapRENode) {
-        self.loaded_nodes.insert(node_id, node);
-    }
-
     pub fn borrow_substate(&self, node_id: RENodeId, offset: SubstateOffset) -> &RuntimeSubstate {
         let substate_id = SubstateId(node_id, offset);
-        self.loaded_substates
+        &self
+            .loaded_substates
             .get(&substate_id)
             .expect(&format!("Substate {:?} was never locked", substate_id))
             .substate
-            .borrow()
     }
 
     pub fn borrow_substate_mut(
@@ -314,39 +217,24 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         offset: SubstateOffset,
     ) -> &mut RuntimeSubstate {
         let substate_id = SubstateId(node_id, offset);
-        self.loaded_substates
+        &mut self
+            .loaded_substates
             .get_mut(&substate_id)
             .expect(&format!("Substate {:?} was never locked", substate_id))
             .substate
-            .borrow_mut()
     }
 
-    pub fn take_substate(&mut self, substate_id: SubstateId) -> RuntimeSubstate {
-        self.loaded_substates
-            .get_mut(&substate_id)
-            .expect(&format!("Substate {:?} was never locked", substate_id))
-            .substate
-            .take()
-    }
-
-    // TODO remove
-    // Currently used by node globalization
     pub fn put_substate(&mut self, substate_id: SubstateId, substate: RuntimeSubstate) {
-        if !self.loaded_substates.contains_key(&substate_id) {
-            self.loaded_substates.insert(
-                substate_id.clone(),
-                LoadedSubstate {
-                    substate: SubstateCache::Free(substate),
-                    lock_state: LockState::no_lock(),
-                    metastate: SubstateMetaState::New,
-                },
-            );
-        } else {
-            self.loaded_substates
-                .get_mut(&substate_id)
-                .unwrap()
-                .substate = SubstateCache::Free(substate);
-        }
+        assert!(self.loaded_substates.contains_key(&substate_id));
+
+        self.loaded_substates.insert(
+            substate_id,
+            LoadedSubstate {
+                substate,
+                lock_state: LockState::no_lock(),
+                metastate: SubstateMetaState::New,
+            },
+        );
     }
 
     /// Returns the value of a key value pair
@@ -382,18 +270,14 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                     self.loaded_substates.insert(
                         substate_id.clone(),
                         LoadedSubstate {
-                            substate: SubstateCache::Free(substate),
+                            substate,
                             lock_state: LockState::no_lock(),
                             metastate: SubstateMetaState::Loaded,
                         },
                     );
                 }
 
-                self.loaded_substates
-                    .get(&substate_id)
-                    .unwrap()
-                    .substate
-                    .borrow()
+                &self.loaded_substates.get(&substate_id).unwrap().substate
             }
             SubstateId(RENodeId::KeyValueStore(..), ..) => {
                 if !self.loaded_substates.contains_key(&substate_id) {
@@ -408,18 +292,14 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                     self.loaded_substates.insert(
                         substate_id.clone(),
                         LoadedSubstate {
-                            substate: SubstateCache::Free(substate),
+                            substate,
                             lock_state: LockState::no_lock(),
                             metastate: SubstateMetaState::Loaded,
                         },
                     );
                 }
 
-                self.loaded_substates
-                    .get(&substate_id)
-                    .unwrap()
-                    .substate
-                    .borrow()
+                &self.loaded_substates.get(&substate_id).unwrap().substate
             }
             _ => panic!("Invalid keyed value address {:?}", parent_address),
         }
@@ -461,18 +341,18 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                     self.loaded_substates.insert(
                         substate_id.clone(),
                         LoadedSubstate {
-                            substate: SubstateCache::Free(substate),
+                            substate,
                             lock_state: LockState::no_lock(),
                             metastate: SubstateMetaState::New,
                         },
                     );
                 }
 
-                self.loaded_substates
+                &mut self
+                    .loaded_substates
                     .get_mut(&substate_id)
                     .unwrap()
                     .substate
-                    .borrow_mut()
             }
             SubstateId(RENodeId::KeyValueStore(..), ..) => {
                 if !self.loaded_substates.contains_key(&substate_id) {
@@ -487,18 +367,18 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                     self.loaded_substates.insert(
                         substate_id.clone(),
                         LoadedSubstate {
-                            substate: SubstateCache::Free(substate),
+                            substate,
                             lock_state: LockState::no_lock(),
                             metastate: SubstateMetaState::New,
                         },
                     );
                 }
 
-                self.loaded_substates
+                &mut self
+                    .loaded_substates
                     .get_mut(&substate_id)
                     .unwrap()
                     .substate
-                    .borrow_mut()
             }
             _ => panic!("Invalid keyed value address {:?}", parent_address),
         }
@@ -559,13 +439,8 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         // Commit/rollback application state changes
         if is_success {
             for (id, loaded) in self.loaded_substates {
-                if let SubstateCache::Free(substate) = loaded.substate {
-                    self.state_track.put_substate(id, substate.to_persisted());
-                }
-            }
-
-            for (id, substate) in nodes_to_substates(self.loaded_nodes.into_iter().collect()) {
-                self.state_track.put_substate(id, substate.to_persisted());
+                self.state_track
+                    .put_substate(id, loaded.substate.to_persisted());
             }
         } else {
             self.loaded_substates.clear();
