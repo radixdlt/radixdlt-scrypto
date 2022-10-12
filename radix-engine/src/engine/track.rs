@@ -1,8 +1,7 @@
 use indexmap::IndexMap;
 use transaction::model::Executable;
 
-use crate::engine::AppStateTrack;
-use crate::engine::BaseStateTrack;
+use crate::engine::StateTrack;
 use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::fee::FeeReserveError;
@@ -106,7 +105,7 @@ pub struct LoadedSubstate {
 /// Transaction-wide states and side effects
 pub struct Track<'s, R: FeeReserve> {
     application_logs: Vec<(Level, String)>,
-    state_track: AppStateTrack<'s>,
+    state_track: StateTrack<'s>,
     loaded_substates: IndexMap<SubstateId, LoadedSubstate>,
     loaded_nodes: IndexMap<RENodeId, HeapRENode>,
     pub new_global_addresses: Vec<GlobalAddress>,
@@ -140,8 +139,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         fee_reserve: R,
         fee_table: FeeTable,
     ) -> Self {
-        let base_state_track = BaseStateTrack::new(substate_store);
-        let state_track = AppStateTrack::new(base_state_track);
+        let state_track = StateTrack::new(substate_store);
 
         Self {
             application_logs: Vec::new(),
@@ -661,8 +659,6 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             self.loaded_substates.clear();
         }
 
-        self.state_track.commit();
-
         // Close fee reserve
         let fee_summary = self.fee_reserve.finalize();
         let is_rejection = !fee_summary.loan_fully_repaid;
@@ -739,7 +735,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                     Ok(output) => TransactionOutcome::Success(output),
                     Err(error) => TransactionOutcome::Failure(error),
                 },
-                state_updates: self.state_track.into_base().generate_diff(),
+                state_updates: self.state_track.generate_diff(),
                 entity_changes: EntityChanges::new(self.new_global_addresses),
                 resource_changes: execution_trace_receipt.resource_changes,
             })
