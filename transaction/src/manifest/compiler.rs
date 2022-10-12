@@ -210,4 +210,10 @@ mod tests {
         let manifest = include_str!("../../examples/call_method.rtm");
         crate::manifest::compile(manifest, &NetworkDefinition::simulator(), Vec::new()).unwrap();
     }
+
+    #[test]
+    fn test_call_function() {
+        let manifest = include_str!("../../examples/call_function.rtm");
+        crate::manifest::compile(manifest, &NetworkDefinition::simulator(), Vec::new()).unwrap();
+    }
 }

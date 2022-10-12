@@ -1,0 +1,6 @@
+# Inovke Global RE nodes
+CALL_FUNCTION PackageAddress("package_sim1qy4hrp8a9apxldp5cazvxgwdj80cxad4u8cpkaqqnhlsa3lfpe") "Blueprint" "function";
+CALL_FUNCTION Native "System" "create";
+CALL_FUNCTION Native "ResourceManager" "create";
+CALL_FUNCTION Native "Package" "publish";
+CALL_FUNCTION Native "TransactionProcessor" "run";
