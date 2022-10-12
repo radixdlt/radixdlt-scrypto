@@ -86,7 +86,7 @@ pub enum Instruction {
     },
 
     CallMethod {
-        component_address: Value,
+        receiver: Value,
         method: Value,
         args: Vec<Value>,
     },

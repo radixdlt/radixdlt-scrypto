@@ -339,7 +339,7 @@ pub fn generate_instruction(
             }
         }
         ast::Instruction::CallMethod {
-            component_address,
+            receiver,
             method,
             args,
         } => {
@@ -355,9 +355,7 @@ pub fn generate_instruction(
 
             Instruction::CallMethod {
                 method_ident: ReceiverMethodIdent {
-                    receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Component(
-                        generate_component_address(component_address, bech32_decoder)?,
-                    ))),
+                    receiver: generate_receiver(receiver, bech32_decoder)?,
                     method_ident: MethodIdent::Scrypto(generate_string(method)?),
                 },
                 args: args_from_value_vec!(fields),
@@ -533,6 +531,21 @@ fn generate_resource_address(
             v @ _ => invalid_type!(v, ast::Type::String),
         },
         v @ _ => invalid_type!(v, ast::Type::ResourceAddress),
+    }
+}
+
+fn generate_receiver(
+    value: &ast::Value,
+    bech32_decoder: &Bech32Decoder,
+) -> Result<Receiver, GeneratorError> {
+    match value {
+        ast::Value::ComponentAddress(inner) => match &**inner {
+            ast::Value::String(_) => Ok(Receiver::Ref(RENodeId::Global(GlobalAddress::Component(
+                generate_component_address(value, bech32_decoder)?,
+            )))),
+            v @ _ => invalid_type!(v, ast::Type::String),
+        },
+        v @ _ => invalid_type!(v, ast::Type::ComponentAddress),
     }
 }
 
