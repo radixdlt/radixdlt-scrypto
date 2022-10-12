@@ -355,7 +355,7 @@ pub fn generate_instruction(
 
             Instruction::CallMethod {
                 method_ident: ReceiverMethodIdent {
-                    receiver: generate_receiver(receiver, bech32_decoder)?,
+                    receiver: generate_receiver(receiver, bech32_decoder, resolver)?,
                     method_ident: MethodIdent::Scrypto(generate_string(method)?),
                 },
                 args: args_from_value_vec!(fields),
@@ -537,26 +537,24 @@ fn generate_resource_address(
 fn generate_receiver(
     value: &ast::Value,
     bech32_decoder: &Bech32Decoder,
+    resolver: &mut NameResolver,
 ) -> Result<Receiver, GeneratorError> {
     match value {
-        ast::Value::PackageAddress(inner) => match &**inner {
-            ast::Value::String(_) => Ok(Receiver::Ref(RENodeId::Global(GlobalAddress::Package(
-                generate_package_address(value, bech32_decoder)?,
-            )))),
-            v @ _ => invalid_type!(v, ast::Type::String),
-        },
-        ast::Value::ComponentAddress(inner) => match &**inner {
-            ast::Value::String(_) => Ok(Receiver::Ref(RENodeId::Global(GlobalAddress::Component(
-                generate_component_address(value, bech32_decoder)?,
-            )))),
-            v @ _ => invalid_type!(v, ast::Type::String),
-        },
-        ast::Value::ResourceAddress(inner) => match &**inner {
-            ast::Value::String(_) => Ok(Receiver::Ref(RENodeId::Global(GlobalAddress::Resource(
-                generate_resource_address(value, bech32_decoder)?,
-            )))),
-            v @ _ => invalid_type!(v, ast::Type::String),
-        },
+        ast::Value::PackageAddress(_) => Ok(Receiver::Ref(RENodeId::Global(
+            GlobalAddress::Package(generate_package_address(value, bech32_decoder)?),
+        ))),
+        ast::Value::ComponentAddress(_) => Ok(Receiver::Ref(RENodeId::Global(
+            GlobalAddress::Component(generate_component_address(value, bech32_decoder)?),
+        ))),
+        ast::Value::ResourceAddress(_) => Ok(Receiver::Ref(RENodeId::Global(
+            GlobalAddress::Resource(generate_resource_address(value, bech32_decoder)?),
+        ))),
+        ast::Value::Bucket(_) => Ok(Receiver::Ref(RENodeId::Bucket(generate_bucket(
+            value, resolver,
+        )?))),
+        ast::Value::Proof(_) => Ok(Receiver::Ref(RENodeId::Proof(generate_proof(
+            value, resolver,
+        )?))),
         v @ _ => invalid_type!(
             v,
             ast::Type::PackageAddress,
