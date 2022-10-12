@@ -314,7 +314,7 @@ pub fn generate_instruction(
             Instruction::DropAllProofs
         }
         ast::Instruction::CallFunction {
-            package_address,
+            package_ident,
             blueprint_name,
             function,
             args,
@@ -330,11 +330,12 @@ pub fn generate_instruction(
             }
 
             Instruction::CallFunction {
-                function_ident: FunctionIdent::Scrypto {
-                    package_address: generate_package_address(package_address, bech32_decoder)?,
-                    blueprint_name: generate_string(blueprint_name)?,
-                    ident: generate_string(function)?,
-                },
+                function_ident: generate_function_ident(
+                    package_ident,
+                    blueprint_name,
+                    function,
+                    bech32_decoder,
+                )?,
                 args: args_from_value_vec!(fields),
             }
         }
@@ -534,34 +535,21 @@ fn generate_resource_address(
     }
 }
 
+fn generate_function_ident(
+    package_ident: &ast::PackageIdent,
+    blueprint_name: &ast::Value,
+    function_name: &ast::Value,
+    bech32_decoder: &Bech32Decoder,
+) -> Result<FunctionIdent, GeneratorError> {
+    todo!()
+}
+
 fn generate_receiver(
-    value: &ast::Value,
+    value: &ast::Receiver,
     bech32_decoder: &Bech32Decoder,
     resolver: &mut NameResolver,
 ) -> Result<Receiver, GeneratorError> {
-    match value {
-        ast::Value::PackageAddress(_) => Ok(Receiver::Ref(RENodeId::Global(
-            GlobalAddress::Package(generate_package_address(value, bech32_decoder)?),
-        ))),
-        ast::Value::ComponentAddress(_) => Ok(Receiver::Ref(RENodeId::Global(
-            GlobalAddress::Component(generate_component_address(value, bech32_decoder)?),
-        ))),
-        ast::Value::ResourceAddress(_) => Ok(Receiver::Ref(RENodeId::Global(
-            GlobalAddress::Resource(generate_resource_address(value, bech32_decoder)?),
-        ))),
-        ast::Value::Bucket(_) => Ok(Receiver::Ref(RENodeId::Bucket(generate_bucket(
-            value, resolver,
-        )?))),
-        ast::Value::Proof(_) => Ok(Receiver::Ref(RENodeId::Proof(generate_proof(
-            value, resolver,
-        )?))),
-        v @ _ => invalid_type!(
-            v,
-            ast::Type::PackageAddress,
-            ast::Type::ComponentAddress,
-            ast::Type::ResourceAddress
-        ),
-    }
+    todo!()
 }
 
 fn generate_hash(value: &ast::Value) -> Result<Hash, GeneratorError> {

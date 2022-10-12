@@ -86,8 +86,8 @@ pub enum TokenKind {
     ResourceManager,
     Package,
 
-    /* Borrow */
-    Borrow,
+    /* Native */
+    Native,
 
     /* Punctuations */
     OpenParenthesis,
@@ -96,6 +96,7 @@ pub enum TokenKind {
     GreaterThan,
     Comma,
     Semicolon,
+    And,
 
     /* Instructions */
     TakeFromWorktop,
@@ -217,7 +218,7 @@ impl Lexer {
             '-' | '0'..='9' => self.tokenize_number(),
             '"' => self.tokenize_string(),
             'a'..='z' | 'A'..='Z' => self.tokenize_identifier(),
-            '{' | '}' | '(' | ')' | '<' | '>' | ',' | ';' => self.tokenize_punctuation(),
+            '{' | '}' | '(' | ')' | '<' | '>' | ',' | ';' | '&' => self.tokenize_punctuation(),
             _ => Err(LexerError::UnexpectedChar(
                 self.text[self.current],
                 self.current,
@@ -430,7 +431,7 @@ impl Lexer {
             "ResourceManager" => Ok(TokenKind::ResourceManager),
             "Package" => Ok(TokenKind::Package),
 
-            "borrow" => Ok(TokenKind::Borrow),
+            "Native" => Ok(TokenKind::Native),
 
             "TAKE_FROM_WORKTOP" => Ok(TokenKind::TakeFromWorktop),
             "TAKE_FROM_WORKTOP_BY_AMOUNT" => Ok(TokenKind::TakeFromWorktopByAmount),
@@ -473,6 +474,7 @@ impl Lexer {
             '>' => TokenKind::GreaterThan,
             ',' => TokenKind::Comma,
             ';' => TokenKind::Semicolon,
+            '&' => TokenKind::And,
             _ => {
                 return Err(self.unexpected_char());
             }

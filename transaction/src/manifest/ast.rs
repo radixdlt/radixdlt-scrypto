@@ -79,7 +79,7 @@ pub enum Instruction {
     DropAllProofs,
 
     CallFunction {
-        package_address: Value,
+        package_ident: PackageIdent,
         blueprint_name: Value,
         function: Value,
         args: Vec<Value>,
@@ -114,6 +114,12 @@ pub enum Instruction {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub enum PackageIdent {
+    Scrypto(Value),
+    Native,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Receiver {
     Global(GlobalAddress), // implied reference
     Owned(RENode),
@@ -122,24 +128,24 @@ pub enum Receiver {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum GlobalAddress {
-    PackageAddress,
-    ComponentAddress,
-    ResourceAddress,
+    Package(Value),
+    Component(Value),
+    Resource(Value),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RENode {
-    Bucket,
-    Proof,
-    AuthZone,
+    Bucket(Value),
+    Proof(Value),
+    AuthZone(Value),
     Worktop,
-    KeyValueStore,
-    NonFungibleStore,
-    Component,
-    System,
-    Vault,
-    ResourceManager,
-    Package,
+    KeyValueStore(Value),
+    NonFungibleStore(Value),
+    Component(Value),
+    System(Value),
+    Vault(Value),
+    ResourceManager(Value),
+    Package(Value),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

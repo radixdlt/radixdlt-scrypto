@@ -1,4 +1,6 @@
-use crate::manifest::ast::{Instruction, Type, Value};
+use crate::manifest::ast::{
+    GlobalAddress, Instruction, PackageIdent, RENode, Receiver, Type, Value,
+};
 use crate::manifest::lexer::{Token, TokenKind};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -135,7 +137,7 @@ impl Parser {
             },
             TokenKind::DropAllProofs => Instruction::DropAllProofs,
             TokenKind::CallFunction => Instruction::CallFunction {
-                package_address: self.parse_value()?,
+                package_ident: self.parse_package_ident()?,
                 blueprint_name: self.parse_value()?,
                 function: self.parse_value()?,
                 args: {
@@ -147,7 +149,7 @@ impl Parser {
                 },
             },
             TokenKind::CallMethod => Instruction::CallMethod {
-                receiver: self.parse_value()?,
+                receiver: self.parse_receiver()?,
                 method: self.parse_value()?,
                 args: {
                     let mut values = vec![];
@@ -180,6 +182,75 @@ impl Parser {
         };
         advance_match!(self, TokenKind::Semicolon);
         Ok(instruction)
+    }
+
+    pub fn parse_package_ident(&mut self) -> Result<PackageIdent, ParserError> {
+        let token = self.peek()?;
+        match token.kind {
+            TokenKind::Native => advance_ok!(self, PackageIdent::Native),
+            TokenKind::PackageAddress => Ok(PackageIdent::Scrypto(self.parse_scrypto_types()?)),
+            _ => Err(ParserError::UnexpectedToken(token)),
+        }
+    }
+
+    pub fn parse_receiver(&mut self) -> Result<Receiver, ParserError> {
+        let token = self.peek()?;
+        match token.kind {
+            TokenKind::PackageAddress
+            | TokenKind::ComponentAddress
+            | TokenKind::ResourceAddress => Ok(Receiver::Global(self.parse_global_address()?)),
+            TokenKind::Bucket
+            | TokenKind::Proof
+            | TokenKind::AuthZone
+            | TokenKind::Worktop
+            | TokenKind::KeyValueStore
+            | TokenKind::NonFungibleStore
+            | TokenKind::Component
+            | TokenKind::System
+            | TokenKind::Vault
+            | TokenKind::ResourceManager
+            | TokenKind::Package => Ok(Receiver::Owned(self.parse_re_node()?)),
+            TokenKind::And => Ok(Receiver::Ref(self.parse_re_node()?)),
+            _ => Err(ParserError::UnexpectedToken(token)),
+        }
+    }
+
+    pub fn parse_global_address(&mut self) -> Result<GlobalAddress, ParserError> {
+        let token = self.advance()?;
+        match token.kind {
+            TokenKind::PackageAddress => {
+                Ok(GlobalAddress::Package(self.parse_values_one()?.into()))
+            }
+            TokenKind::ComponentAddress => {
+                Ok(GlobalAddress::Component(self.parse_values_one()?.into()))
+            }
+            TokenKind::ResourceAddress => {
+                Ok(GlobalAddress::Resource(self.parse_values_one()?.into()))
+            }
+            _ => Err(ParserError::UnexpectedToken(token)),
+        }
+    }
+
+    pub fn parse_re_node(&mut self) -> Result<RENode, ParserError> {
+        let token = self.advance()?;
+        match token.kind {
+            TokenKind::Bucket => Ok(RENode::Bucket(self.parse_values_one()?.into())),
+            TokenKind::Proof => Ok(RENode::Proof(self.parse_values_one()?.into())),
+            TokenKind::AuthZone => Ok(RENode::AuthZone(self.parse_values_one()?.into())),
+            TokenKind::Worktop => Ok(RENode::Worktop),
+            TokenKind::KeyValueStore => Ok(RENode::KeyValueStore(self.parse_values_one()?.into())),
+            TokenKind::NonFungibleStore => {
+                Ok(RENode::NonFungibleStore(self.parse_values_one()?.into()))
+            }
+            TokenKind::Component => Ok(RENode::Component(self.parse_values_one()?.into())),
+            TokenKind::System => Ok(RENode::System(self.parse_values_one()?.into())),
+            TokenKind::Vault => Ok(RENode::Vault(self.parse_values_one()?.into())),
+            TokenKind::ResourceManager => {
+                Ok(RENode::ResourceManager(self.parse_values_one()?.into()))
+            }
+            TokenKind::Package => Ok(RENode::Package(self.parse_values_one()?.into())),
+            _ => Err(ParserError::UnexpectedToken(token)),
+        }
     }
 
     pub fn parse_value(&mut self) -> Result<Value, ParserError> {
@@ -664,10 +735,10 @@ mod tests {
         parse_instruction_ok!(
             r#"CALL_FUNCTION  PackageAddress("01d1f50010e4102d88aacc347711491f852c515134a9ecf67ba17c")  "Airdrop"  "new"  500u32  Map<String, U8>("key", 1u8);"#,
             Instruction::CallFunction {
-                package_address: Value::PackageAddress(
+                package_ident: PackageIdent::Scrypto(Value::PackageAddress(
                     Value::String("01d1f50010e4102d88aacc347711491f852c515134a9ecf67ba17c".into())
                         .into()
-                ),
+                )),
                 blueprint_name: Value::String("Airdrop".into()),
                 function: Value::String("new".into()),
                 args: vec![
@@ -683,10 +754,10 @@ mod tests {
         parse_instruction_ok!(
             r#"CALL_METHOD  ComponentAddress("0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1")  "refill"  Bucket("xrd_bucket")  Proof("admin_auth");"#,
             Instruction::CallMethod {
-                receiver: Value::ComponentAddress(
+                receiver: Receiver::Global(GlobalAddress::Component(Value::ComponentAddress(
                     Value::String("0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1".into())
                         .into()
-                ),
+                ))),
                 method: Value::String("refill".into()),
                 args: vec![
                     Value::Bucket(Value::String("xrd_bucket".into()).into()),
@@ -697,10 +768,10 @@ mod tests {
         parse_instruction_ok!(
             r#"CALL_METHOD  ComponentAddress("0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1")  "withdraw_non_fungible"  NonFungibleId("00")  Proof("admin_auth");"#,
             Instruction::CallMethod {
-                receiver: Value::ComponentAddress(
+                receiver: Receiver::Global(GlobalAddress::Component(Value::ComponentAddress(
                     Value::String("0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1".into())
                         .into()
-                ),
+                ))),
                 method: Value::String("withdraw_non_fungible".into()),
                 args: vec![
                     Value::NonFungibleId(Value::String("00".into()).into()),
