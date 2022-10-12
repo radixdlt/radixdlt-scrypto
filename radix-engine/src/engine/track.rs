@@ -9,20 +9,15 @@ use crate::fee::FeeReserveError;
 use crate::fee::FeeSummary;
 use crate::fee::FeeTable;
 use crate::ledger::*;
-use crate::model::Component;
-use crate::model::KeyValueStore;
 use crate::model::KeyValueStoreEntrySubstate;
 use crate::model::LockableResource;
-use crate::model::NonFungibleStore;
 use crate::model::NonFungibleSubstate;
 use crate::model::PersistedSubstate;
 use crate::model::Resource;
-use crate::model::ResourceManager;
-use crate::model::System;
 use crate::model::Vault;
 use crate::model::VaultSubstate;
-use crate::model::{node_to_substates, Package};
-use crate::model::{nodes_to_substates, GlobalRENode};
+use crate::model::{node_to_substates};
+use crate::model::{nodes_to_substates};
 use crate::transaction::CommitResult;
 use crate::transaction::EntityChanges;
 use crate::transaction::RejectResult;
@@ -261,66 +256,19 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                 RENodeId::AuthZone(_)
                 | RENodeId::Bucket(_)
                 | RENodeId::Proof(_)
+                | RENodeId::Global(..)
+                | RENodeId::KeyValueStore(_)
+                | RENodeId::NonFungibleStore(_)
+                | RENodeId::Component(..)
+                | RENodeId::ResourceManager(..)
+                | RENodeId::Package(..)
+                | RENodeId::System(..)
                 | RENodeId::Worktop => panic!("Unexpected"),
-                RENodeId::Global(..) => {
-                    let offset = SubstateOffset::Global(GlobalOffset::Global);
-                    let substate = self.take_substate(SubstateId(*node_id, offset));
-                    let node = HeapRENode::Global(GlobalRENode {
-                        address: substate.into(),
-                    });
-                    self.loaded_nodes.insert(node_id.clone(), node);
-                }
-                RENodeId::KeyValueStore(_) => {
-                    self.loaded_nodes.insert(
-                        node_id.clone(),
-                        HeapRENode::KeyValueStore(KeyValueStore::new().into()),
-                    );
-                }
-                RENodeId::NonFungibleStore(_) => {
-                    self.loaded_nodes.insert(
-                        node_id.clone(),
-                        HeapRENode::NonFungibleStore(NonFungibleStore::new().into()),
-                    );
-                }
-                RENodeId::Component(..) => {
-                    let offset = SubstateOffset::Component(ComponentOffset::Info);
-                    let substate = self.take_substate(SubstateId(*node_id, offset));
-                    let node = HeapRENode::Component(Component {
-                        info: substate.into(),
-                        state: None,
-                    });
-                    self.loaded_nodes.insert(node_id.clone(), node);
-                }
                 RENodeId::Vault(..) => {
                     let offset = SubstateOffset::Vault(VaultOffset::Vault);
                     let substate: VaultSubstate =
                         self.take_substate(SubstateId(*node_id, offset)).into();
                     let node = HeapRENode::Vault(Vault::new(substate.0));
-                    self.loaded_nodes.insert(node_id.clone(), node);
-                }
-                RENodeId::ResourceManager(..) => {
-                    let offset =
-                        SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-                    let substate = self.take_substate(SubstateId(*node_id, offset));
-                    let node = HeapRENode::ResourceManager(ResourceManager {
-                        info: substate.into(),
-                    });
-                    self.loaded_nodes.insert(node_id.clone(), node);
-                }
-                RENodeId::Package(..) => {
-                    let offset = SubstateOffset::Package(PackageOffset::Package);
-                    let substate = self.take_substate(SubstateId(*node_id, offset));
-                    let node = HeapRENode::Package(Package {
-                        info: substate.into(),
-                    });
-                    self.loaded_nodes.insert(node_id.clone(), node);
-                }
-                RENodeId::System(..) => {
-                    let offset = SubstateOffset::System(SystemOffset::System);
-                    let substate = self.take_substate(SubstateId(*node_id, offset));
-                    let node = HeapRENode::System(System {
-                        info: substate.into(),
-                    });
                     self.loaded_nodes.insert(node_id.clone(), node);
                 }
             }
