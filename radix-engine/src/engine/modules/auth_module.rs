@@ -4,6 +4,17 @@ use crate::model::*;
 use crate::types::*;
 use scrypto::core::{FnIdent, MethodIdent, NativeFunction, ReceiverMethodIdent};
 
+#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
+pub enum AuthError {
+    Unauthorized {
+        fn_ident: FnIdent,
+        authorization: MethodAuthorization,
+        error: MethodAuthorizationError,
+    },
+    KernelError(KernelError),
+    TrackError(TrackError),
+}
+
 pub struct AuthModule;
 
 impl AuthModule {
@@ -19,7 +30,7 @@ impl AuthModule {
         fn_ident: FnIdent,
         method_auths: Vec<MethodAuthorization>,
         call_frames: &Vec<CallFrame>, // TODO remove this once heap is implemented
-    ) -> Result<(), RuntimeError> {
+    ) -> Result<(), AuthError> {
         let cur_call_frame = call_frames
             .last()
             .expect("Current call frame does not exist");
@@ -38,13 +49,13 @@ impl AuthModule {
         // Authorization check
         if !method_auths.is_empty() {
             for method_auth in method_auths {
-                method_auth.check(&auth_zones).map_err(|error| {
-                    RuntimeError::ModuleError(ModuleError::AuthError {
+                method_auth
+                    .check(&auth_zones)
+                    .map_err(|error| AuthError::Unauthorized {
                         fn_ident: fn_ident.clone(),
                         authorization: method_auth,
                         error,
-                    })
-                })?;
+                    })?;
             }
         }
 
@@ -72,7 +83,7 @@ impl AuthModule {
     pub fn function_auth(
         function_ident: FunctionIdent,
         call_frames: &mut Vec<CallFrame>,
-    ) -> Result<(), RuntimeError> {
+    ) -> Result<(), AuthError> {
         let auth = match &function_ident {
             FunctionIdent::Native(NativeFunction::System(system_func)) => {
                 System::function_auth(system_func)
@@ -88,7 +99,7 @@ impl AuthModule {
         node_pointer: RENodePointer,
         call_frames: &mut Vec<CallFrame>,
         track: &mut Track<'s, R>,
-    ) -> Result<(), RuntimeError> {
+    ) -> Result<(), AuthError> {
         let auth = match &method_ident {
             ReceiverMethodIdent {
                 receiver: Receiver::Ref(RENodeId::ResourceManager(resource_address)),
@@ -130,7 +141,7 @@ impl AuthModule {
                 let offset = SubstateOffset::Package(PackageOffset::Package);
                 package_pointer
                     .acquire_lock(offset.clone(), false, false, track)
-                    .map_err(RuntimeError::KernelError)?;
+                    .map_err(AuthError::KernelError)?;
 
                 // Assume that package_address/blueprint is the original impl of Component for now
                 // TODO: Remove this assumption
@@ -141,24 +152,24 @@ impl AuthModule {
                 let abi = package
                     .blueprint_abi(&blueprint_name)
                     .expect("Blueprint not found for existing component");
-                let fn_abi = abi.get_fn_abi(ident).ok_or(RuntimeError::KernelError(
+                let fn_abi = abi.get_fn_abi(ident).ok_or(AuthError::KernelError(
                     KernelError::FnIdentNotFound(FnIdent::Method(method_ident.clone())),
                 ))?; // TODO: Move this check into kernel
                 if !fn_abi.input.matches(&input.dom) {
-                    return Err(RuntimeError::KernelError(KernelError::InvalidFnInput2(
+                    return Err(AuthError::KernelError(KernelError::InvalidFnInput2(
                         FnIdent::Method(method_ident),
                     )));
                 }
 
                 package_pointer
                     .release_lock(offset, false, track)
-                    .map_err(RuntimeError::KernelError)?;
+                    .map_err(AuthError::KernelError)?;
 
                 {
                     let mut node_ref = node_pointer.to_ref_mut(call_frames, track);
                     let state = node_ref
                         .component_state_get()
-                        .map_err(|e| RuntimeError::ModuleError(ModuleError::TrackError(e)))?;
+                        .map_err(|e| AuthError::TrackError(e))?;
                     let component = node_ref.component_mut();
                     component
                         .info
@@ -179,7 +190,7 @@ impl AuthModule {
                     SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
                 resource_pointer
                     .acquire_lock(offset.clone(), false, false, track)
-                    .map_err(RuntimeError::KernelError)?;
+                    .map_err(AuthError::KernelError)?;
 
                 let resource_manager = track
                     .borrow_node(&RENodeId::ResourceManager(resource_address))
@@ -188,7 +199,7 @@ impl AuthModule {
 
                 resource_pointer
                     .release_lock(offset, false, track)
-                    .map_err(RuntimeError::KernelError)?;
+                    .map_err(AuthError::KernelError)?;
 
                 auth
             }
