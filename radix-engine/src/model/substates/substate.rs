@@ -417,6 +417,7 @@ pub struct SubstateRefMut<'f, 's, R: FeeReserve> {
     track: &'f mut Track<'s, R>,
 }
 
+// TODO: Remove once flush is moved into kernel substate unlock
 impl<'f, 's, R: FeeReserve> Drop for SubstateRefMut<'f, 's, R> {
     fn drop(&mut self) {
         if !self.flushed {
@@ -450,6 +451,7 @@ impl<'f, 's, R: FeeReserve> SubstateRefMut<'f, 's, R> {
         &self.offset
     }
 
+    // TODO: Move into kernel substate unlock
     fn do_flush(&mut self) -> Result<(), RuntimeError> {
         let (new_global_references, new_children) = {
             let substate_ref_mut = self.get_raw_mut();
