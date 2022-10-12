@@ -168,7 +168,7 @@ impl Bucket {
     {
         let node_id = RENodeId::Bucket(bucket_id);
         let offset = SubstateOffset::Bucket(BucketOffset::Bucket);
-        let bucket_handle = system_api.lock_substate(node_id, offset, true)?;
+        let bucket_handle = system_api.lock_substate(node_id, offset, true, false)?;
 
         let rtn = match method {
             BucketMethod::Take => {
@@ -286,7 +286,7 @@ impl Bucket {
                 let _: ConsumingBucketBurnInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(BucketError::InvalidRequestData(e)))?;
 
-                let bucket_handle = system_api.lock_substate(node_id, offset, false)?;
+                let bucket_handle = system_api.lock_substate(node_id, offset, false, false)?;
                 let substate_ref = system_api.get_ref(bucket_handle)?;
                 let resource_address = substate_ref.bucket().resource_address();
                 let bucket_id = match node_id {

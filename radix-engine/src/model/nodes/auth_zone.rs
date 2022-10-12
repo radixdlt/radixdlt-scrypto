@@ -156,7 +156,7 @@ impl AuthZone {
     {
         let node_id = RENodeId::AuthZone(auth_zone_id);
         let offset = SubstateOffset::AuthZone(AuthZoneOffset::AuthZone);
-        let auth_zone_handle = system_api.lock_substate(node_id, offset, true)?;
+        let auth_zone_handle = system_api.lock_substate(node_id, offset, true, false)?;
 
         let rtn = match method {
             AuthZoneMethod::Pop => {
@@ -198,7 +198,7 @@ impl AuthZone {
                         RENodeId::Global(GlobalAddress::Resource(input.resource_address));
                     let offset =
                         SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-                    let resource_handle = system_api.lock_substate(resource_id, offset, false)?;
+                    let resource_handle = system_api.lock_substate(resource_id, offset, false, false)?;
                     let substate_ref = system_api.get_ref(resource_handle)?;
                     substate_ref.resource_manager().resource_type
                 };
@@ -224,7 +224,7 @@ impl AuthZone {
                         RENodeId::Global(GlobalAddress::Resource(input.resource_address));
                     let offset =
                         SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-                    let resource_handle = system_api.lock_substate(resource_id, offset, false)?;
+                    let resource_handle = system_api.lock_substate(resource_id, offset, false, false)?;
                     let substate_ref = system_api.get_ref(resource_handle)?;
                     substate_ref.resource_manager().resource_type
                 };
@@ -254,7 +254,7 @@ impl AuthZone {
                         RENodeId::Global(GlobalAddress::Resource(input.resource_address));
                     let offset =
                         SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-                    let resource_handle = system_api.lock_substate(resource_id, offset, false)?;
+                    let resource_handle = system_api.lock_substate(resource_id, offset, false, false)?;
                     let substate_ref = system_api.get_ref(resource_handle)?;
                     substate_ref.resource_manager().resource_type
                 };

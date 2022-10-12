@@ -115,7 +115,7 @@ where
         mutable: bool,
     ) -> Result<ScryptoValue, RuntimeError> {
         self.system_api
-            .lock_substate(node_id, offset, mutable)
+            .lock_substate(node_id, offset, mutable, false)
             .map(|handle| ScryptoValue::from_typed(&handle))
     }
 

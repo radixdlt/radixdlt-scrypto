@@ -211,7 +211,7 @@ impl Worktop {
     {
         let node_id = RENodeId::Worktop;
         let offset = SubstateOffset::Worktop(WorktopOffset::Worktop);
-        let worktop_handle = system_api.lock_substate(node_id, offset, true)?;
+        let worktop_handle = system_api.lock_substate(node_id, offset, true, false)?;
 
         let rtn = match method {
             WorktopMethod::Put => {
@@ -254,7 +254,7 @@ impl Worktop {
                         let offset =
                             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
                         let resource_handle =
-                            system_api.lock_substate(resource_id, offset, false)?;
+                            system_api.lock_substate(resource_id, offset, false, false)?;
                         let substate_ref = system_api.get_ref(resource_handle)?;
                         substate_ref.resource_manager().resource_type
                     };
@@ -292,7 +292,7 @@ impl Worktop {
                         let offset =
                             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
                         let resource_handle =
-                            system_api.lock_substate(resource_id, offset, false)?;
+                            system_api.lock_substate(resource_id, offset, false, false)?;
                         let substate_ref = system_api.get_ref(resource_handle)?;
                         substate_ref.resource_manager().resource_type
                     };
@@ -330,7 +330,7 @@ impl Worktop {
                         let offset =
                             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
                         let resource_handle =
-                            system_api.lock_substate(resource_id, offset, false)?;
+                            system_api.lock_substate(resource_id, offset, false, false)?;
                         let substate_ref = system_api.get_ref(resource_handle)?;
                         substate_ref.resource_manager().resource_type
                     };

@@ -54,7 +54,13 @@ impl RENodePointer {
             RENodePointer::Store(..) => track
                 .acquire_lock(SubstateId(self.node_id(), offset), mutable, write_through)
                 .map_err(KernelError::TrackError),
-            RENodePointer::Heap { .. } => Ok(()),
+            RENodePointer::Heap { .. } => {
+                if write_through {
+                    Err(KernelError::RENodeNotInTrack)
+                } else {
+                    Ok(())
+                }
+            },
         }
     }
 

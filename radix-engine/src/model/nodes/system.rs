@@ -87,7 +87,7 @@ impl System {
     {
         let node_id = RENodeId::System(component_id);
         let offset = SubstateOffset::System(SystemOffset::System);
-        let handle = system_api.lock_substate(node_id, offset, true)?;
+        let handle = system_api.lock_substate(node_id, offset, true, false)?;
 
         match method {
             SystemMethod::GetCurrentEpoch => {
