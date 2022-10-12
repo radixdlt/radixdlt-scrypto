@@ -3,6 +3,7 @@ use crate::model::{
     ResourceOperationError, VaultError,
 };
 use crate::types::*;
+use std::ops::Deref;
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct VaultSubstate(pub Resource);
@@ -13,6 +14,38 @@ pub struct VaultRuntimeSubstate {
 }
 
 impl VaultRuntimeSubstate {
+    pub fn clone_to_persisted(&self) -> VaultSubstate {
+        let lockable_resource = self.borrow_resource();
+        if lockable_resource.is_locked() {
+            // We keep resource containers in Rc<RefCell> for all concrete resource containers, like Bucket, Vault and Worktop.
+            // When extracting the resource within a container, there should be no locked resource.
+            // It should have failed the Rc::try_unwrap() check.
+            panic!("Attempted to convert resource container with locked resource");
+        }
+        let resource = match lockable_resource.deref() {
+            LockableResource::Fungible {
+                resource_address,
+                divisibility,
+                liquid_amount,
+                ..
+            } => Resource::Fungible {
+                resource_address: resource_address.clone(),
+                divisibility: divisibility.clone(),
+                amount: liquid_amount.clone(),
+            },
+            LockableResource::NonFungible {
+                resource_address,
+                liquid_ids,
+                ..
+            } => Resource::NonFungible {
+                resource_address: resource_address.clone(),
+                ids: liquid_ids.clone(),
+            },
+        };
+
+        VaultSubstate(resource)
+    }
+
     pub fn to_persisted(self) -> Result<VaultSubstate, ResourceOperationError> {
         Rc::try_unwrap(self.resource)
             .map_err(|_| ResourceOperationError::ResourceLocked)

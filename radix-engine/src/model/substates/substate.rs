@@ -66,6 +66,31 @@ pub enum RuntimeSubstate {
 }
 
 impl RuntimeSubstate {
+    pub fn clone_to_persisted(&self) -> PersistedSubstate {
+        match self {
+            RuntimeSubstate::GlobalRENode(value) => PersistedSubstate::GlobalRENode(value.clone()),
+            RuntimeSubstate::System(value) => PersistedSubstate::System(value.clone()),
+            RuntimeSubstate::ResourceManager(value) => {
+                PersistedSubstate::ResourceManager(value.clone())
+            }
+            RuntimeSubstate::ComponentInfo(value) => {
+                PersistedSubstate::ComponentInfo(value.clone())
+            }
+            RuntimeSubstate::ComponentState(value) => {
+                PersistedSubstate::ComponentState(value.clone())
+            }
+            RuntimeSubstate::Package(value) => PersistedSubstate::Package(value.clone()),
+            RuntimeSubstate::NonFungible(value) => PersistedSubstate::NonFungible(value.clone()),
+            RuntimeSubstate::KeyValueStoreEntry(value) => {
+                PersistedSubstate::KeyValueStoreEntry(value.clone())
+            }
+            RuntimeSubstate::Vault(value) => {
+                let persisted_vault = value.clone_to_persisted();
+                PersistedSubstate::Vault(persisted_vault)
+            }
+        }
+    }
+
     pub fn to_persisted(self) -> PersistedSubstate {
         match self {
             RuntimeSubstate::GlobalRENode(value) => PersistedSubstate::GlobalRENode(value),
@@ -417,6 +442,13 @@ impl<'a> SubstateRef<'a> {
         }
     }
 
+    pub fn vault(&self) -> &VaultRuntimeSubstate {
+        match self {
+            SubstateRef::Vault(value) => *value,
+            _ => panic!("Not a vault"),
+        }
+    }
+
     pub fn resource_manager(&self) -> &ResourceManagerSubstate {
         match self {
             SubstateRef::ResourceManager(value) => *value,
@@ -440,6 +472,11 @@ impl<'a> SubstateRef<'a> {
 
     pub fn references_and_owned_nodes(&self) -> (HashSet<GlobalAddress>, HashSet<RENodeId>) {
         match self {
+            SubstateRef::Vault(vault) => {
+                let mut references = HashSet::new();
+                references.insert(GlobalAddress::Resource(vault.resource_address()));
+                (references, HashSet::new())
+            }
             SubstateRef::Proof(proof) => {
                 let mut references = HashSet::new();
                 references.insert(GlobalAddress::Resource(proof.resource_address()));
@@ -682,6 +719,13 @@ impl<'a> RawSubstateRefMut<'a> {
         match self {
             RawSubstateRefMut::Worktop(value) => *value,
             _ => panic!("Not a worktop"),
+        }
+    }
+
+    pub fn vault(&mut self) -> &mut VaultRuntimeSubstate {
+        match self {
+            RawSubstateRefMut::Vault(value) => *value,
+            _ => panic!("Not a vault"),
         }
     }
 

@@ -565,8 +565,6 @@ where
         mut next_owned_values: HashMap<RENodeId, HeapRootRENode>,
         mut next_frame_node_refs: HashMap<RENodeId, RENodePointer>,
     ) -> Result<(ScryptoValue, HashMap<RENodeId, HeapRootRENode>), RuntimeError> {
-        let mut locked_pointers = Vec::new();
-
         // Authorization and state load
         let re_actor = {
             let mut node_id = method_ident.receiver.node_id();
@@ -630,41 +628,7 @@ where
                 }),
             };
 
-
-
             // TODO: Check Component ABI here rather than in auth
-            match node_id {
-                RENodeId::Vault(..) => {
-                    if let MethodIdent::Native(NativeMethod::Vault(vault_method)) =
-                        method_ident.method_ident
-                    {
-                        let (mutable, write_through) = vault_method.lock_type();
-
-                        let offset = SubstateOffset::Vault(VaultOffset::Vault);
-                        node_pointer
-                            .acquire_lock(offset.clone(), mutable, write_through, &mut self.track)
-                            .map_err(RuntimeError::KernelError)?;
-                        locked_pointers.push((node_pointer, offset.clone(), write_through));
-
-                        let resource_address = {
-                            let mut node_ref =
-                                node_pointer.to_ref(&self.call_frames, &mut self.track);
-                            node_ref.vault().resource_address()
-                        };
-                        let global_resource_node_id =
-                            RENodeId::Global(GlobalAddress::Resource(resource_address));
-                        next_frame_node_refs.insert(
-                            global_resource_node_id,
-                            RENodePointer::Store(global_resource_node_id),
-                        );
-
-                        let resource_node_id = RENodeId::ResourceManager(resource_address);
-                        let resource_node_pointer = RENodePointer::Store(resource_node_id);
-                        next_frame_node_refs.insert(resource_node_id, resource_node_pointer);
-                    }
-                }
-                _ => {}
-            }
 
             // Check method authorization
             AuthModule::receiver_auth(
@@ -704,14 +668,6 @@ where
             next_frame_node_refs,
         );
         let (output, received_values) = self.run(frame, input)?;
-
-        // Release locked addresses
-        for (node_pointer, offset, write_through) in locked_pointers {
-            // TODO: refactor after introducing `Lock` representation.
-            node_pointer
-                .release_lock(offset, write_through, &mut self.track)
-                .map_err(RuntimeError::KernelError)?;
-        }
 
         Ok((output, received_values))
     }

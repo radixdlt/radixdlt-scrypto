@@ -171,7 +171,6 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         // Load the substate from state track
         if !self.loaded_substates.contains_key(&substate_id) {
             let maybe_substate = self.state_track.get_substate(&substate_id);
-
             if let Some(substate) = maybe_substate {
                 self.loaded_substates.insert(
                     substate_id.clone(),
@@ -233,35 +232,26 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         substate_id: SubstateId,
         write_through: bool,
     ) -> Result<(), TrackError> {
-        let mut loaded_substate = self
+        let loaded_substate = self
             .loaded_substates
-            .remove(&substate_id)
+            .get_mut(&substate_id)
             .expect("Attempted to release lock on never borrowed substate");
 
-        match &loaded_substate.lock_state {
+        match loaded_substate.lock_state {
             LockState::Read(n) => loaded_substate.lock_state = LockState::Read(n - 1),
             LockState::Write => {
                 loaded_substate.lock_state = LockState::no_lock();
                 loaded_substate.metastate = SubstateMetaState::Updated;
+
+                if write_through {
+                    let runtime_substate = loaded_substate.substate.borrow();
+                    let persisted_substate = runtime_substate.clone_to_persisted();
+                    self.state_track
+                        .put_substate(substate_id, persisted_substate);
+                }
             }
         }
 
-        if write_through {
-            let node_id = match substate_id {
-                SubstateId(
-                    RENodeId::Vault(vault_id),
-                    SubstateOffset::Vault(VaultOffset::Vault),
-                ) => RENodeId::Vault(vault_id),
-                _ => panic!("Not supported yet"),
-            };
-            let node = self.loaded_nodes.remove(&node_id).unwrap();
-            for (offset, substate) in node_to_substates(node) {
-                self.state_track
-                    .put_substate(SubstateId(node_id, offset), substate.to_persisted());
-            }
-        } else {
-            self.loaded_substates.insert(substate_id, loaded_substate);
-        }
         Ok(())
     }
 

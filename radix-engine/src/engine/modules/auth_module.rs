@@ -212,8 +212,16 @@ impl AuthModule {
                 method_ident: MethodIdent::Native(NativeMethod::Vault(ref vault_fn)),
             } => {
                 let resource_address = {
-                    let mut node_ref = node_pointer.to_ref(call_frames, track);
-                    node_ref.vault().resource_address()
+                    let offset = SubstateOffset::Vault(VaultOffset::Vault);
+                    node_pointer
+                        .acquire_lock(offset.clone(), false, false, track)
+                        .map_err(RuntimeError::KernelError)?;
+                    let substate_ref = node_pointer.borrow_substate(&offset, call_frames, track)?;
+                    let resource_address = substate_ref.vault().resource_address();
+                    node_pointer
+                        .release_lock(offset, false, track)
+                        .map_err(RuntimeError::KernelError)?;
+                    resource_address
                 };
                 let node_id = RENodeId::ResourceManager(resource_address);
                 let resource_pointer = RENodePointer::Store(node_id);

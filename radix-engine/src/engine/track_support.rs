@@ -71,7 +71,7 @@ impl<'s> StateTrack<'s> {
                         SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(key)),
                     ) => {
                         let next_version = if let Some(existing_output_id) =
-                        Self::get_substate_output_id(&self.substate_store, &substate_id)
+                            Self::get_substate_output_id(&self.substate_store, &substate_id)
                         {
                             let next_version = existing_output_id.version + 1;
                             diff.down_substates.push(existing_output_id);
@@ -99,7 +99,7 @@ impl<'s> StateTrack<'s> {
                         SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key)),
                     ) => {
                         let next_version = if let Some(existing_output_id) =
-                        Self::get_substate_output_id(&self.substate_store, &substate_id)
+                            Self::get_substate_output_id(&self.substate_store, &substate_id)
                         {
                             let next_version = existing_output_id.version + 1;
                             diff.down_substates.push(existing_output_id);
@@ -123,7 +123,7 @@ impl<'s> StateTrack<'s> {
                     }
                     _ => {
                         let next_version = if let Some(existing_output_id) =
-                        Self::get_substate_output_id(&self.substate_store, &substate_id)
+                            Self::get_substate_output_id(&self.substate_store, &substate_id)
                         {
                             let next_version = existing_output_id.version + 1;
                             diff.down_substates.push(existing_output_id);
@@ -148,4 +148,3 @@ impl<'s> StateTrack<'s> {
         diff
     }
 }
-
