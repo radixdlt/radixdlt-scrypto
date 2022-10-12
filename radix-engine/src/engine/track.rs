@@ -1,5 +1,4 @@
 use indexmap::IndexMap;
-use std::ops::Add;
 use transaction::model::Executable;
 
 use crate::engine::AppStateTrack;
@@ -51,15 +50,6 @@ impl LockState {
 pub enum SubstateCache {
     Free(Substate),
     Taken,
-}
-
-// TODO: explore the following options
-// 1. Make it an invariant that every node must be persistable at the end of a transaction, so no need of this error.
-// 2. Make `Track` more dynamic and allow nodes to define whether it's ready for persistence.
-// 3. Make transient property part of substate rather than node.
-#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
-pub enum NodeToSubstateFailure {
-    VaultPartiallyLocked,
 }
 
 impl SubstateCache {
@@ -114,6 +104,7 @@ pub struct Track<'s, R: FeeReserve> {
     pub new_global_addresses: Vec<GlobalAddress>,
     pub fee_reserve: R,
     pub fee_table: FeeTable,
+    pub vault_ops: Vec<(REActor, VaultId, VaultOp)>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
@@ -121,7 +112,6 @@ pub enum TrackError {
     NotFound(SubstateId),
     SubstateLocked(SubstateId, LockState),
     AlreadyLoaded(SubstateId),
-    NodeToSubstateFailure(NodeToSubstateFailure),
 }
 
 pub struct TrackReceipt {
@@ -152,6 +142,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             new_global_addresses: Vec::new(),
             fee_reserve,
             fee_table,
+            vault_ops: Vec::new(),
         }
     }
 
@@ -629,11 +620,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         }
     }
 
-    pub fn finalize(
-        mut self,
-        invoke_result: Result<Vec<Vec<u8>>, RuntimeError>,
-        execution_trace: ExecutionTrace, // TODO: wrong abstraction, resource change should be derived from track instead of kernel
-    ) -> TrackReceipt {
+    pub fn finalize(mut self, invoke_result: Result<Vec<Vec<u8>>, RuntimeError>) -> TrackReceipt {
         let is_success = invoke_result.is_ok();
 
         // Commit/rollback application state changes
@@ -658,7 +645,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         let fee_summary = self.fee_reserve.finalize();
         let is_rejection = !fee_summary.loan_fully_repaid;
 
-        let mut actual_fee_payments: HashMap<VaultId, (ResourceAddress, Decimal)> = HashMap::new();
+        let mut actual_fee_payments: HashMap<VaultId, Decimal> = HashMap::new();
 
         // Commit fee state changes
         let result = if is_rejection {
@@ -674,8 +661,6 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                 Resource::new_empty(RADIX_TOKEN, ResourceType::Fungible { divisibility: 18 })
                     .into();
             for (vault_id, mut locked, contingent) in fee_summary.payments.iter().cloned().rev() {
-                let resource_address = locked.resource_address();
-
                 let amount = if contingent {
                     if is_success {
                         Decimal::min(locked.amount(), required)
@@ -715,14 +700,14 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                     .expect("Failed to put a fee-locking vault");
                 self.state_track.put_substate_to_base(substate_id, substate);
 
-                match actual_fee_payments.remove(&vault_id) {
-                    Some((resource_address, current_value)) => actual_fee_payments
-                        .insert(vault_id, (resource_address, current_value.add(amount))),
-                    None => actual_fee_payments.insert(vault_id, (resource_address, amount)),
-                };
+                *actual_fee_payments.entry(vault_id).or_default() += amount;
             }
-
-            let execution_trace_receipt = execution_trace.to_receipt(actual_fee_payments);
+            let execution_trace_receipt = ExecutionTraceReceipt::new(
+                self.vault_ops,
+                actual_fee_payments,
+                &mut self.state_track,
+                invoke_result.is_ok(),
+            );
 
             // TODO: update XRD supply or disable it
             // TODO: pay tips to the lead validator

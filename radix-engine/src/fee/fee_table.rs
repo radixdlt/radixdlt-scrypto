@@ -9,7 +9,7 @@ pub enum SystemApiCostingEntry<'a> {
      * Invocation
      */
     Invoke {
-        function_identifier: FnIdent,
+        fn_ident: FnIdent,
         input: &'a ScryptoValue,
     },
 

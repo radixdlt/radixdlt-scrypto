@@ -1,14 +1,15 @@
 use transaction::errors::*;
 
 use crate::engine::REActor;
-use crate::fee::FeeReserveError;
 use crate::model::*;
 use crate::types::*;
 use crate::wasm::WasmError;
 use sbor::*;
 use scrypto::core::{FnIdent, ReceiverMethodIdent};
 
-use super::NodeToSubstateFailure;
+use super::AuthError;
+use super::CostingError;
+use super::ExecutionTraceError;
 use super::TrackError;
 
 /// Represents an error which causes a tranasction to be rejected.
@@ -93,7 +94,6 @@ pub enum KernelError {
     SubstateNotReadable(REActor, SubstateId),
     SubstateNotWriteable(REActor, SubstateId),
     TrackError(TrackError),
-    NodeToSubstateFailure(NodeToSubstateFailure),
 
     // constraints
     ValueNotAllowed,
@@ -113,14 +113,9 @@ pub enum KernelError {
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
 pub enum ModuleError {
-    AuthError {
-        fn_ident: FnIdent,
-        authorization: MethodAuthorization,
-        error: MethodAuthorizationError,
-    },
-    CostingError(FeeReserveError),
-
-    TrackError(TrackError),
+    AuthError(AuthError),
+    CostingError(CostingError),
+    ExecutionTraceError(ExecutionTraceError),
 }
 
 #[derive(Debug)]

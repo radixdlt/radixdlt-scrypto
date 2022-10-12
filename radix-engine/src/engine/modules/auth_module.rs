@@ -4,6 +4,15 @@ use crate::model::*;
 use crate::types::*;
 use scrypto::core::{FnIdent, MethodIdent, NativeFunction, ReceiverMethodIdent};
 
+#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
+pub enum AuthError {
+    Unauthorized {
+        fn_ident: FnIdent,
+        authorization: MethodAuthorization,
+        error: MethodAuthorizationError,
+    },
+}
+
 pub struct AuthModule;
 
 impl AuthModule {
@@ -19,7 +28,7 @@ impl AuthModule {
         fn_ident: FnIdent,
         method_auths: Vec<MethodAuthorization>,
         call_frames: &Vec<CallFrame>, // TODO remove this once heap is implemented
-    ) -> Result<(), RuntimeError> {
+    ) -> Result<(), AuthError> {
         let cur_call_frame = call_frames
             .last()
             .expect("Current call frame does not exist");
@@ -38,13 +47,13 @@ impl AuthModule {
         // Authorization check
         if !method_auths.is_empty() {
             for method_auth in method_auths {
-                method_auth.check(&auth_zones).map_err(|error| {
-                    RuntimeError::ModuleError(ModuleError::AuthError {
+                method_auth
+                    .check(&auth_zones)
+                    .map_err(|error| AuthError::Unauthorized {
                         fn_ident: fn_ident.clone(),
                         authorization: method_auth,
                         error,
-                    })
-                })?;
+                    })?;
             }
         }
 
@@ -72,7 +81,7 @@ impl AuthModule {
     pub fn function_auth(
         function_ident: FunctionIdent,
         call_frames: &mut Vec<CallFrame>,
-    ) -> Result<(), RuntimeError> {
+    ) -> Result<(), AuthError> {
         let auth = match &function_ident {
             FunctionIdent::Native(NativeFunction::System(system_func)) => {
                 System::function_auth(system_func)
@@ -88,7 +97,7 @@ impl AuthModule {
         node_pointer: RENodePointer,
         call_frames: &mut Vec<CallFrame>,
         track: &mut Track<'s, R>,
-    ) -> Result<(), RuntimeError> {
+    ) -> Result<(), InvokeError<AuthError>> {
         let auth = match &method_ident {
             ReceiverMethodIdent {
                 receiver: Receiver::Ref(RENodeId::ResourceManager(resource_address)),
@@ -162,8 +171,8 @@ impl AuthModule {
                     KernelError::FnIdentNotFound(FnIdent::Method(method_ident.clone())),
                 ))?; // TODO: Move this check into kernel
                 if !fn_abi.input.matches(&input.dom) {
-                    return Err(RuntimeError::KernelError(KernelError::InvalidFnInput2(
-                        FnIdent::Method(method_ident),
+                    return Err(InvokeError::Downstream(RuntimeError::KernelError(
+                        KernelError::InvalidFnInput2(FnIdent::Method(method_ident)),
                     )));
                 }
 
@@ -228,5 +237,6 @@ impl AuthModule {
         };
 
         Self::check_auth(FnIdent::Method(method_ident), auth, call_frames)
+            .map_err(InvokeError::Error)
     }
 }
