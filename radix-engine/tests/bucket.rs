@@ -216,7 +216,10 @@ fn create_empty_bucket() {
             |builder, bucket_id| builder.return_to_worktop(bucket_id),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
     println!("{}", receipt.display(&Bech32Encoder::for_simulator()));
 
     // Assert

@@ -77,7 +77,10 @@ fn test_call_method_with_all_resources_doesnt_drop_auth_zone_proofs() {
             args!(Expression::entire_worktop()),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
     println!("{}", receipt.display(&Bech32Encoder::for_simulator()));
 
     // Assert
@@ -99,7 +102,10 @@ fn test_transaction_can_end_with_proofs_remaining_in_auth_zone() {
         .create_proof_from_account_by_amount(dec!("1"), RADIX_TOKEN, account)
         .create_proof_from_account_by_amount(dec!("1"), RADIX_TOKEN, account)
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
     println!("{}", receipt.display(&Bech32Encoder::for_simulator()));
 
     // Assert
@@ -122,7 +128,10 @@ fn test_non_existent_blob_hash() {
         })
         .0
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
     println!("{}", receipt.display(&Bech32Encoder::for_simulator()));
 
     // Assert
@@ -150,7 +159,10 @@ fn test_entire_auth_zone() {
             args!(Expression::entire_auth_zone(), dec!("1"), RADIX_TOKEN),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
     println!("{}", receipt.display(&Bech32Encoder::for_simulator()));
 
     // Assert
@@ -175,7 +187,10 @@ fn test_faucet_drain_attempt_should_fail() {
             args!(Expression::entire_worktop()),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
     println!("{}", receipt.display(&Bech32Encoder::for_simulator()));
 
     // Assert
