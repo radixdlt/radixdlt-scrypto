@@ -539,13 +539,30 @@ fn generate_receiver(
     bech32_decoder: &Bech32Decoder,
 ) -> Result<Receiver, GeneratorError> {
     match value {
+        ast::Value::PackageAddress(inner) => match &**inner {
+            ast::Value::String(_) => Ok(Receiver::Ref(RENodeId::Global(GlobalAddress::Package(
+                generate_package_address(value, bech32_decoder)?,
+            )))),
+            v @ _ => invalid_type!(v, ast::Type::String),
+        },
         ast::Value::ComponentAddress(inner) => match &**inner {
             ast::Value::String(_) => Ok(Receiver::Ref(RENodeId::Global(GlobalAddress::Component(
                 generate_component_address(value, bech32_decoder)?,
             )))),
             v @ _ => invalid_type!(v, ast::Type::String),
         },
-        v @ _ => invalid_type!(v, ast::Type::ComponentAddress),
+        ast::Value::ResourceAddress(inner) => match &**inner {
+            ast::Value::String(_) => Ok(Receiver::Ref(RENodeId::Global(GlobalAddress::Resource(
+                generate_resource_address(value, bech32_decoder)?,
+            )))),
+            v @ _ => invalid_type!(v, ast::Type::String),
+        },
+        v @ _ => invalid_type!(
+            v,
+            ast::Type::PackageAddress,
+            ast::Type::ComponentAddress,
+            ast::Type::ResourceAddress
+        ),
     }
 }
 
