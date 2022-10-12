@@ -130,9 +130,22 @@ where
         lock_handle: LockHandle,
         buffer: Vec<u8>,
     ) -> Result<ScryptoValue, RuntimeError> {
-        let mut substate_mut = self.system_api.get_mut(lock_handle)?;
+        let mut substate_mut = self.system_api.get_ref_mut(lock_handle)?;
         let substate = PersistedSubstate::decode_from_buffer(substate_mut.offset(), &buffer)?;
-        substate_mut.overwrite(substate)?;
+        let mut raw_mut = substate_mut.get_raw_mut();
+
+        match substate {
+            PersistedSubstate::ComponentState(next) => *raw_mut.component_state() = next,
+            PersistedSubstate::KeyValueStoreEntry(next) => {
+                *raw_mut.kv_store_entry() = next;
+            }
+            PersistedSubstate::NonFungible(next) => {
+                *raw_mut.non_fungible() = next;
+            }
+            _ => return Err(RuntimeError::KernelError(KernelError::InvalidOverwrite)),
+        }
+
+        substate_mut.flush()?;
 
         Ok(ScryptoValue::unit())
     }

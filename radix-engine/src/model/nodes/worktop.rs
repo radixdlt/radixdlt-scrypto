@@ -220,7 +220,7 @@ impl Worktop {
                 let bucket = system_api
                     .node_drop(RENodeId::Bucket(input.bucket.0))?
                     .into();
-                let mut substate_mut = system_api.get_mut(worktop_handle)?;
+                let mut substate_mut = system_api.get_ref_mut(worktop_handle)?;
                 let mut raw_mut = substate_mut.get_raw_mut();
                 let worktop = raw_mut.worktop();
                 worktop
@@ -235,7 +235,7 @@ impl Worktop {
                     .map_err(|e| InvokeError::Error(WorktopError::InvalidRequestData(e)))?;
 
                 let maybe_resource = {
-                    let mut substate_mut = system_api.get_mut(worktop_handle)?;
+                    let mut substate_mut = system_api.get_ref_mut(worktop_handle)?;
                     let mut raw_mut = substate_mut.get_raw_mut();
                     let worktop = raw_mut.worktop();
                     let maybe_resource = worktop
@@ -273,7 +273,7 @@ impl Worktop {
                     .map_err(|e| InvokeError::Error(WorktopError::InvalidRequestData(e)))?;
 
                 let maybe_resource = {
-                    let mut substate_mut = system_api.get_mut(worktop_handle)?;
+                    let mut substate_mut = system_api.get_ref_mut(worktop_handle)?;
                     let mut raw_mut = substate_mut.get_raw_mut();
                     let worktop = raw_mut.worktop();
                     let maybe_resource = worktop
@@ -311,7 +311,7 @@ impl Worktop {
                 let input: WorktopTakeNonFungiblesInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(WorktopError::InvalidRequestData(e)))?;
                 let maybe_resource = {
-                    let mut substate_mut = system_api.get_mut(worktop_handle)?;
+                    let mut substate_mut = system_api.get_ref_mut(worktop_handle)?;
                     let mut raw_mut = substate_mut.get_raw_mut();
                     let worktop = raw_mut.worktop();
                     let maybe_resource = worktop
@@ -385,19 +385,21 @@ impl Worktop {
             WorktopMethod::Drain => {
                 let _: WorktopDrainInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(WorktopError::InvalidRequestData(e)))?;
-                let mut substate_mut = system_api.get_mut(worktop_handle)?;
-                let mut raw_mut = substate_mut.get_raw_mut();
-                let worktop = raw_mut.worktop();
                 let mut resources = Vec::new();
-                for (_, resource) in worktop.resources.drain() {
-                    let taken = resource
-                        .borrow_mut()
-                        .take_all_liquid()
-                        .map_err(|e| InvokeError::Error(WorktopError::ResourceOperationError(e)))?;
-                    if !taken.is_empty() {
-                        resources.push(taken);
+                {
+                    let mut substate_mut = system_api.get_ref_mut(worktop_handle)?;
+                    let mut raw_mut = substate_mut.get_raw_mut();
+                    let worktop = raw_mut.worktop();
+                    for (_, resource) in worktop.resources.drain() {
+                        let taken = resource.borrow_mut().take_all_liquid().map_err(|e| {
+                            InvokeError::Error(WorktopError::ResourceOperationError(e))
+                        })?;
+                        if !taken.is_empty() {
+                            resources.push(taken);
+                        }
                     }
                 }
+
                 let mut buckets = Vec::new();
                 for resource in resources {
                     let bucket_id = system_api

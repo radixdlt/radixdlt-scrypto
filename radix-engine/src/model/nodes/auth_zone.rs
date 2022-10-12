@@ -164,7 +164,7 @@ impl AuthZone {
                     .map_err(|e| InvokeError::Error(AuthZoneError::InvalidRequestData(e)))?;
 
                 let proof = {
-                    let mut substate_mut = system_api.get_mut(auth_zone_handle)?;
+                    let mut substate_mut = system_api.get_ref_mut(auth_zone_handle)?;
                     let mut raw_mut = substate_mut.get_raw_mut();
                     let auth_zone = raw_mut.auth_zone();
                     let proof = auth_zone.pop()?;
@@ -181,7 +181,7 @@ impl AuthZone {
                 let mut proof: Proof = system_api.node_drop(RENodeId::Proof(input.proof.0))?.into();
                 proof.change_to_unrestricted();
 
-                let mut substate_mut = system_api.get_mut(auth_zone_handle)?;
+                let mut substate_mut = system_api.get_ref_mut(auth_zone_handle)?;
                 let mut raw_mut = substate_mut.get_raw_mut();
                 let auth_zone = raw_mut.auth_zone();
                 auth_zone.push(proof);
@@ -204,7 +204,7 @@ impl AuthZone {
                 };
 
                 let proof = {
-                    let mut substate_mut = system_api.get_mut(auth_zone_handle)?;
+                    let mut substate_mut = system_api.get_ref_mut(auth_zone_handle)?;
                     let mut raw_mut = substate_mut.get_raw_mut();
                     let auth_zone = raw_mut.auth_zone();
                     let proof = auth_zone.create_proof(input.resource_address, resource_type)?;
@@ -230,7 +230,7 @@ impl AuthZone {
                 };
 
                 let proof = {
-                    let mut substate_mut = system_api.get_mut(auth_zone_handle)?;
+                    let mut substate_mut = system_api.get_ref_mut(auth_zone_handle)?;
                     let mut raw_mut = substate_mut.get_raw_mut();
                     let auth_zone = raw_mut.auth_zone();
                     let proof = auth_zone.create_proof_by_amount(
@@ -260,7 +260,7 @@ impl AuthZone {
                 };
 
                 let proof = {
-                    let mut substate_mut = system_api.get_mut(auth_zone_handle)?;
+                    let mut substate_mut = system_api.get_ref_mut(auth_zone_handle)?;
                     let mut raw_mut = substate_mut.get_raw_mut();
                     let auth_zone = raw_mut.auth_zone();
                     let maybe_existing_proof = auth_zone.create_proof_by_ids(
@@ -286,7 +286,7 @@ impl AuthZone {
             AuthZoneMethod::Clear => {
                 let _: AuthZoneClearInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(AuthZoneError::InvalidRequestData(e)))?;
-                let mut substate_mut = system_api.get_mut(auth_zone_handle)?;
+                let mut substate_mut = system_api.get_ref_mut(auth_zone_handle)?;
                 let mut raw_mut = substate_mut.get_raw_mut();
                 let auth_zone = raw_mut.auth_zone();
                 auth_zone.clear();
@@ -298,7 +298,7 @@ impl AuthZone {
                     .map_err(|e| InvokeError::Error(AuthZoneError::InvalidRequestData(e)))?;
 
                 let proofs = {
-                    let mut substate_mut = system_api.get_mut(auth_zone_handle)?;
+                    let mut substate_mut = system_api.get_ref_mut(auth_zone_handle)?;
                     let mut raw_mut = substate_mut.get_raw_mut();
                     let auth_zone = raw_mut.auth_zone();
                     let proofs = auth_zone.drain();

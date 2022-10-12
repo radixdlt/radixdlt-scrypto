@@ -137,7 +137,6 @@ fn test_trace_fee_payments() {
     let total_fee_paid = fee_summary.burned.add(fee_summary.tipped);
 
     assert_eq!(1, resource_changes.len());
-
     assert!(resource_changes
         .iter()
         .any(|r| r.component_id == funded_component_id && r.amount == -total_fee_paid));

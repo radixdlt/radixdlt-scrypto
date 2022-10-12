@@ -124,9 +124,10 @@ impl HeapRENode {
             (HeapRENode::Worktop(worktop), SubstateOffset::Worktop(WorktopOffset::Worktop)) => {
                 SubstateRef::Worktop(worktop)
             }
-            (HeapRENode::AuthZone(auth_zone), SubstateOffset::AuthZone(AuthZoneOffset::AuthZone)) => {
-                SubstateRef::AuthZone(auth_zone)
-            }
+            (
+                HeapRENode::AuthZone(auth_zone),
+                SubstateOffset::AuthZone(AuthZoneOffset::AuthZone),
+            ) => SubstateRef::AuthZone(auth_zone),
             (_, offset) => {
                 return Err(RuntimeError::KernelError(KernelError::OffsetNotAvailable(
                     offset.clone(),
@@ -182,9 +183,10 @@ impl HeapRENode {
             (HeapRENode::Worktop(worktop), SubstateOffset::Worktop(WorktopOffset::Worktop)) => {
                 RawSubstateRefMut::Worktop(worktop)
             }
-            (HeapRENode::AuthZone(auth_zone), SubstateOffset::AuthZone(AuthZoneOffset::AuthZone)) => {
-                RawSubstateRefMut::AuthZone(auth_zone)
-            }
+            (
+                HeapRENode::AuthZone(auth_zone),
+                SubstateOffset::AuthZone(AuthZoneOffset::AuthZone),
+            ) => RawSubstateRefMut::AuthZone(auth_zone),
             (_, offset) => {
                 return Err(RuntimeError::KernelError(KernelError::OffsetNotAvailable(
                     offset.clone(),

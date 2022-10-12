@@ -142,7 +142,7 @@ where
                     },
                     result: TransactionResult::Reject(RejectResult {
                         error: RejectionError::ErrorBeforeFeeLoanRepaid(RuntimeError::ModuleError(
-                            ModuleError::CostingError(err.error),
+                            ModuleError::CostingError(CostingError::FeeReserveError(err.error)),
                         )),
                     }),
                 };
@@ -150,13 +150,13 @@ where
         };
 
         // Invoke the function/method
-        let mut execution_trace = ExecutionTrace::new();
         let invoke_result = {
             let mut modules = Vec::<Box<dyn Module<R>>>::new();
             if execution_config.trace {
                 modules.push(Box::new(LoggerModule::new()));
             }
             modules.push(Box::new(CostingModule::default()));
+            modules.push(Box::new(ExecutionTraceModule::new()));
             let mut kernel = Kernel::new(
                 transaction_hash,
                 auth_zone_params,
@@ -166,7 +166,6 @@ where
                 self.wasm_engine,
                 self.wasm_instrumenter,
                 WasmMeteringParams::new(InstructionCostRules::tiered(1, 5, 10, 5000), 512), // TODO: add to ExecutionConfig
-                &mut execution_trace,
                 modules,
             );
             kernel
@@ -185,7 +184,7 @@ where
         };
 
         // Produce the final transaction receipt
-        let track_receipt = track.finalize(invoke_result, execution_trace);
+        let track_receipt = track.finalize(invoke_result);
 
         let receipt = TransactionReceipt {
             contents: TransactionContents { instructions },

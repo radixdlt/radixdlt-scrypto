@@ -174,7 +174,7 @@ impl Bucket {
             BucketMethod::Take => {
                 let input: BucketTakeInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(BucketError::InvalidRequestData(e)))?;
-                let mut substate_mut = system_api.get_mut(bucket_handle)?;
+                let mut substate_mut = system_api.get_ref_mut(bucket_handle)?;
                 let mut raw_mut = substate_mut.get_raw_mut();
                 let bucket = raw_mut.bucket();
                 let container = bucket
@@ -191,7 +191,7 @@ impl Bucket {
             BucketMethod::TakeNonFungibles => {
                 let input: BucketTakeNonFungiblesInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(BucketError::InvalidRequestData(e)))?;
-                let mut substate_mut = system_api.get_mut(bucket_handle)?;
+                let mut substate_mut = system_api.get_ref_mut(bucket_handle)?;
                 let mut raw_mut = substate_mut.get_raw_mut();
                 let bucket = raw_mut.bucket();
                 let container = bucket
@@ -221,7 +221,7 @@ impl Bucket {
                 let other_bucket = system_api
                     .node_drop(RENodeId::Bucket(input.bucket.0))?
                     .into();
-                let mut substate_mut = system_api.get_mut(bucket_handle)?;
+                let mut substate_mut = system_api.get_ref_mut(bucket_handle)?;
                 let mut raw_mut = substate_mut.get_raw_mut();
                 let bucket = raw_mut.bucket();
                 bucket
@@ -248,7 +248,7 @@ impl Bucket {
                 let _: BucketCreateProofInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(BucketError::InvalidRequestData(e)))?;
 
-                let mut substate_mut = system_api.get_mut(bucket_handle)?;
+                let mut substate_mut = system_api.get_ref_mut(bucket_handle)?;
                 let mut raw_mut = substate_mut.get_raw_mut();
                 let bucket = raw_mut.bucket();
                 let proof = bucket
