@@ -10,7 +10,8 @@ use scrypto::component::ComponentAddress;
 use scrypto::component::PackageAddress;
 use scrypto::core::{
     Blob, BucketMethod, Expression, FunctionIdent, MethodIdent, NativeFunction, NativeMethod,
-    Receiver, ReceiverMethodIdent, ResourceManagerFunction, ResourceManagerMethod,
+    PackageFunction, Receiver, ReceiverMethodIdent, ResourceManagerFunction, ResourceManagerMethod,
+    SystemFunction, TransactionProcessorFunction,
 };
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
@@ -55,6 +56,7 @@ pub enum GeneratorError {
     IdValidationError(IdValidationError),
     InvalidBlobHash,
     ArgumentsDoNotMatchAbi,
+    UnknownNativeFunction(String, String),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -542,7 +544,37 @@ fn generate_function_ident(
     function_name: &ast::Value,
     bech32_decoder: &Bech32Decoder,
 ) -> Result<FunctionIdent, GeneratorError> {
-    todo!()
+    let blueprint_name = generate_string(blueprint_name)?;
+    let function_name = generate_string(function_name)?;
+
+    match package_ident {
+        ast::PackageIdent::Scrypto(value) => {
+            let package_address = generate_package_address(value, bech32_decoder)?;
+            Ok(FunctionIdent::Scrypto {
+                package_address,
+                blueprint_name,
+                ident: function_name,
+            })
+        }
+        ast::PackageIdent::Native => match (blueprint_name.as_str(), function_name.as_str()) {
+            ("System", "create") => Ok(FunctionIdent::Native(NativeFunction::System(
+                SystemFunction::Create,
+            ))),
+            ("ResourceManager", "create") => Ok(FunctionIdent::Native(
+                NativeFunction::ResourceManager(ResourceManagerFunction::Create),
+            )),
+            ("Package", "publish") => Ok(FunctionIdent::Native(NativeFunction::Package(
+                PackageFunction::Publish,
+            ))),
+            ("TransactionProcessor", "run") => Ok(FunctionIdent::Native(
+                NativeFunction::TransactionProcessor(TransactionProcessorFunction::Run),
+            )),
+            _ => Err(GeneratorError::UnknownNativeFunction(
+                blueprint_name,
+                function_name,
+            )),
+        },
+    }
 }
 
 fn generate_receiver(
@@ -552,15 +584,30 @@ fn generate_receiver(
 ) -> Result<Receiver, GeneratorError> {
     match receiver {
         ast::Receiver::Global(global_address) => match global_address {
-            ast::GlobalAddress::Package(value) => Ok(Receiver::Ref(RENodeId::Global(
-                GlobalAddress::Package(generate_package_address(value, bech32_decoder)?),
-            ))),
-            ast::GlobalAddress::Component(value) => Ok(Receiver::Ref(RENodeId::Global(
-                GlobalAddress::Component(generate_component_address(value, bech32_decoder)?),
-            ))),
-            ast::GlobalAddress::Resource(value) => Ok(Receiver::Ref(RENodeId::Global(
-                GlobalAddress::Resource(generate_resource_address(value, bech32_decoder)?),
-            ))),
+            ast::GlobalAddress::Package(v) => {
+                let s = generate_string(v)?;
+                Ok(Receiver::Ref(RENodeId::Global(GlobalAddress::Package(
+                    bech32_decoder
+                        .validate_and_decode_package_address(&s)
+                        .map_err(|_| GeneratorError::InvalidPackageAddress(s))?,
+                ))))
+            }
+            ast::GlobalAddress::Component(v) => {
+                let s = generate_string(v)?;
+                Ok(Receiver::Ref(RENodeId::Global(GlobalAddress::Component(
+                    bech32_decoder
+                        .validate_and_decode_component_address(&s)
+                        .map_err(|_| GeneratorError::InvalidComponentAddress(s))?,
+                ))))
+            }
+            ast::GlobalAddress::Resource(v) => {
+                let s = generate_string(v)?;
+                Ok(Receiver::Ref(RENodeId::Global(GlobalAddress::Resource(
+                    bech32_decoder
+                        .validate_and_decode_resource_address(&s)
+                        .map_err(|_| GeneratorError::InvalidResourceAddress(s))?,
+                ))))
+            }
         },
         ast::Receiver::Ref(re_node) => Ok(Receiver::Ref(generate_re_node_id(
             re_node,

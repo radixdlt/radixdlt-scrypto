@@ -754,10 +754,10 @@ mod tests {
         parse_instruction_ok!(
             r#"CALL_METHOD  ComponentAddress("0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1")  "refill"  Bucket("xrd_bucket")  Proof("admin_auth");"#,
             Instruction::CallMethod {
-                receiver: Receiver::Global(GlobalAddress::Component(Value::ComponentAddress(
+                receiver: Receiver::Global(GlobalAddress::Component(
                     Value::String("0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1".into())
                         .into()
-                ))),
+                )),
                 method: Value::String("refill".into()),
                 args: vec![
                     Value::Bucket(Value::String("xrd_bucket".into()).into()),
@@ -768,10 +768,10 @@ mod tests {
         parse_instruction_ok!(
             r#"CALL_METHOD  ComponentAddress("0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1")  "withdraw_non_fungible"  NonFungibleId("00")  Proof("admin_auth");"#,
             Instruction::CallMethod {
-                receiver: Receiver::Global(GlobalAddress::Component(Value::ComponentAddress(
+                receiver: Receiver::Global(GlobalAddress::Component(
                     Value::String("0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1".into())
                         .into()
-                ))),
+                )),
                 method: Value::String("withdraw_non_fungible".into()),
                 args: vec![
                     Value::NonFungibleId(Value::String("00".into()).into()),

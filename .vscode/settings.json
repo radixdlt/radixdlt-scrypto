@@ -18,6 +18,7 @@
         "eddsa",
         "instantiatable",
         "Instrumenter",
+        "persistable",
         "Scrypto",
         "Substate",
         "substates",
