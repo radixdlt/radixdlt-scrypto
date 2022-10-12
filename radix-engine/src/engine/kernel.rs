@@ -1091,7 +1091,7 @@ where
                 RENodeId::Global(global_address),
                 SubstateOffset::Global(GlobalOffset::Global),
             ),
-            PersistedSubstate::GlobalRENode(global_substate),
+            RuntimeSubstate::GlobalRENode(global_substate),
         );
         for (id, substate) in nodes_to_substates(node.to_nodes(node_id)) {
             self.track.put_substate(id, substate);

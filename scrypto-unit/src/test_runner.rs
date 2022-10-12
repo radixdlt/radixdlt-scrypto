@@ -87,7 +87,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
                 node_id,
                 SubstateOffset::Global(GlobalOffset::Global),
             ))
-            .map(|s| s.substate)?;
+            .map(|s| s.substate.to_runtime())?;
         Some(global.global_re_node().node_deref())
     }
 
@@ -102,7 +102,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
                 node_id,
                 SubstateOffset::Component(ComponentOffset::Info),
             ))
-            .map(|output| output.substate.into())
+            .map(|output| output.substate.to_runtime().into())
     }
 
     pub fn inspect_component_state(
@@ -117,7 +117,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
                 node_id,
                 SubstateOffset::Component(ComponentOffset::State),
             ))
-            .map(|output| output.substate.into())
+            .map(|output| output.substate.to_runtime().into())
     }
 
     pub fn inspect_key_value_entry(
@@ -131,7 +131,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
                 RENodeId::KeyValueStore(kv_store_id),
                 SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key)),
             ))
-            .map(|output| output.substate.into())
+            .map(|output| output.substate.to_runtime().into())
     }
 
     pub fn inspect_vault(
@@ -144,7 +144,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> TestRunner<'s, S> {
                 RENodeId::Vault(vault_id),
                 SubstateOffset::Vault(VaultOffset::Vault),
             ))
-            .map(|output| output.substate.into())
+            .map(|output| output.substate.to_runtime().into())
     }
 
     pub fn new_account_with_auth_rule(&mut self, withdraw_auth: &AccessRule) -> ComponentAddress {

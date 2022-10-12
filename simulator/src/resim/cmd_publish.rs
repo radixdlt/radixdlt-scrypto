@@ -1,7 +1,6 @@
 use clap::Parser;
 use colored::*;
 use radix_engine::ledger::{OutputValue, ReadableSubstateStore, WriteableSubstateStore};
-use radix_engine::model::PersistedSubstate;
 use radix_engine::types::*;
 use scrypto::prelude::ContextualDisplay;
 use std::ffi::OsStr;

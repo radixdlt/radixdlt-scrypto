@@ -2,8 +2,8 @@ use crate::engine::HeapRENode;
 use crate::model::*;
 use crate::types::*;
 
-pub fn node_to_substates(node: HeapRENode) -> HashMap<SubstateOffset, PersistedSubstate> {
-    let mut substates = HashMap::<SubstateOffset, PersistedSubstate>::new();
+pub fn node_to_substates(node: HeapRENode) -> HashMap<SubstateOffset, RuntimeSubstate> {
+    let mut substates = HashMap::<SubstateOffset, RuntimeSubstate>::new();
 
     match node {
         HeapRENode::Bucket(_) => panic!("Unexpected"),
@@ -13,7 +13,7 @@ pub fn node_to_substates(node: HeapRENode) -> HashMap<SubstateOffset, PersistedS
             let substate = global_node.address;
             substates.insert(
                 SubstateOffset::Global(GlobalOffset::Global),
-                PersistedSubstate::GlobalRENode(substate),
+                RuntimeSubstate::GlobalRENode(substate),
             );
         }
         HeapRENode::Vault(vault) => {
@@ -78,7 +78,7 @@ pub fn node_to_substates(node: HeapRENode) -> HashMap<SubstateOffset, PersistedS
 
 pub fn nodes_to_substates(
     nodes: HashMap<RENodeId, HeapRENode>,
-) -> HashMap<SubstateId, PersistedSubstate> {
+) -> HashMap<SubstateId, RuntimeSubstate> {
     let mut substates = HashMap::new();
     for (id, node) in nodes {
         for (offset, substate) in node_to_substates(node) {

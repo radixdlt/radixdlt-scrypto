@@ -9,15 +9,15 @@ use crate::fee::FeeReserveError;
 use crate::fee::FeeSummary;
 use crate::fee::FeeTable;
 use crate::ledger::*;
-use crate::model::KeyValueStoreEntrySubstate;
+use crate::model::node_to_substates;
+use crate::model::nodes_to_substates;
 use crate::model::LockableResource;
 use crate::model::NonFungibleSubstate;
-use crate::model::PersistedSubstate;
 use crate::model::Resource;
+use crate::model::RuntimeSubstate;
 use crate::model::Vault;
 use crate::model::VaultSubstate;
-use crate::model::{node_to_substates};
-use crate::model::{nodes_to_substates};
+use crate::model::{KeyValueStoreEntrySubstate, PersistedSubstate};
 use crate::transaction::CommitResult;
 use crate::transaction::EntityChanges;
 use crate::transaction::RejectResult;
@@ -43,12 +43,12 @@ impl LockState {
 
 #[derive(Debug)]
 pub enum SubstateCache {
-    Free(PersistedSubstate),
+    Free(RuntimeSubstate),
     Taken,
 }
 
 impl SubstateCache {
-    pub fn borrow(&self) -> &PersistedSubstate {
+    pub fn borrow(&self) -> &RuntimeSubstate {
         match self {
             Self::Free(substate) => substate,
             Self::Taken => {
@@ -57,7 +57,7 @@ impl SubstateCache {
         }
     }
 
-    pub fn borrow_mut(&mut self) -> &mut PersistedSubstate {
+    pub fn borrow_mut(&mut self) -> &mut RuntimeSubstate {
         match self {
             Self::Free(substate) => substate,
             Self::Taken => {
@@ -66,7 +66,7 @@ impl SubstateCache {
         }
     }
 
-    pub fn take(&mut self) -> PersistedSubstate {
+    pub fn take(&mut self) -> RuntimeSubstate {
         match core::mem::replace(self, SubstateCache::Taken) {
             Self::Free(substate) => substate,
             Self::Taken => {
@@ -75,7 +75,7 @@ impl SubstateCache {
         }
     }
 
-    pub fn put(&mut self, substate: PersistedSubstate) {
+    pub fn put(&mut self, substate: RuntimeSubstate) {
         *self = SubstateCache::Free(substate);
     }
 
@@ -178,7 +178,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                 self.loaded_substates.insert(
                     substate_id.clone(),
                     LoadedSubstate {
-                        substate: SubstateCache::Free(substate),
+                        substate: SubstateCache::Free(substate.to_runtime()),
                         lock_state: LockState::no_lock(),
                     },
                 );
@@ -242,7 +242,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             let node = self.loaded_nodes.remove(&node_id).unwrap();
             for (offset, substate) in node_to_substates(node) {
                 self.state_track
-                    .put_substate_to_base(SubstateId(node_id, offset), substate);
+                    .put_substate_to_base(SubstateId(node_id, offset), substate.to_persisted());
             }
         } else {
             self.loaded_substates.insert(substate_id, loaded_substate);
@@ -294,7 +294,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         self.loaded_nodes.insert(node_id, node);
     }
 
-    pub fn borrow_substate(&self, node_id: RENodeId, offset: SubstateOffset) -> &PersistedSubstate {
+    pub fn borrow_substate(&self, node_id: RENodeId, offset: SubstateOffset) -> &RuntimeSubstate {
         let substate_id = SubstateId(node_id, offset);
         self.loaded_substates
             .get(&substate_id)
@@ -307,7 +307,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         &mut self,
         node_id: RENodeId,
         offset: SubstateOffset,
-    ) -> &mut PersistedSubstate {
+    ) -> &mut RuntimeSubstate {
         let substate_id = SubstateId(node_id, offset);
         self.loaded_substates
             .get_mut(&substate_id)
@@ -316,7 +316,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             .borrow_mut()
     }
 
-    pub fn take_substate(&mut self, substate_id: SubstateId) -> PersistedSubstate {
+    pub fn take_substate(&mut self, substate_id: SubstateId) -> RuntimeSubstate {
         self.loaded_substates
             .get_mut(&substate_id)
             .expect(&format!("Substate {:?} was never locked", substate_id))
@@ -326,7 +326,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
 
     // TODO remove
     // Currently used by node globalization
-    pub fn put_substate(&mut self, substate_id: SubstateId, substate: PersistedSubstate) {
+    pub fn put_substate(&mut self, substate_id: SubstateId, substate: RuntimeSubstate) {
         if !self.loaded_substates.contains_key(&substate_id) {
             self.loaded_substates.insert(
                 substate_id.clone(),
@@ -344,11 +344,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
     }
 
     /// Returns the value of a key value pair
-    pub fn read_key_value(
-        &mut self,
-        parent_address: SubstateId,
-        key: Vec<u8>,
-    ) -> &PersistedSubstate {
+    pub fn read_key_value(&mut self, parent_address: SubstateId, key: Vec<u8>) -> &RuntimeSubstate {
         // TODO: consider using a single address as function input
         let substate_id = match parent_address {
             SubstateId(
@@ -374,7 +370,8 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                     let substate = self
                         .state_track
                         .get_substate(&substate_id)
-                        .unwrap_or(PersistedSubstate::NonFungible(NonFungibleSubstate(None)));
+                        .map(PersistedSubstate::to_runtime)
+                        .unwrap_or(RuntimeSubstate::NonFungible(NonFungibleSubstate(None)));
 
                     self.loaded_substates.insert(
                         substate_id.clone(),
@@ -393,9 +390,13 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             }
             SubstateId(RENodeId::KeyValueStore(..), ..) => {
                 if !self.loaded_substates.contains_key(&substate_id) {
-                    let substate = self.state_track.get_substate(&substate_id).unwrap_or(
-                        PersistedSubstate::KeyValueStoreEntry(KeyValueStoreEntrySubstate(None)),
-                    );
+                    let substate = self
+                        .state_track
+                        .get_substate(&substate_id)
+                        .map(PersistedSubstate::to_runtime)
+                        .unwrap_or(RuntimeSubstate::KeyValueStoreEntry(
+                            KeyValueStoreEntrySubstate(None),
+                        ));
 
                     self.loaded_substates.insert(
                         substate_id.clone(),
@@ -420,7 +421,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         &mut self,
         parent_address: SubstateId,
         key: Vec<u8>,
-    ) -> &mut PersistedSubstate {
+    ) -> &mut RuntimeSubstate {
         // TODO: consider using a single address as function input
         let substate_id = match parent_address {
             SubstateId(
@@ -446,7 +447,8 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                     let substate = self
                         .state_track
                         .get_substate(&substate_id)
-                        .unwrap_or(PersistedSubstate::NonFungible(NonFungibleSubstate(None)));
+                        .map(PersistedSubstate::to_runtime)
+                        .unwrap_or(RuntimeSubstate::NonFungible(NonFungibleSubstate(None)));
 
                     self.loaded_substates.insert(
                         substate_id.clone(),
@@ -465,9 +467,13 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             }
             SubstateId(RENodeId::KeyValueStore(..), ..) => {
                 if !self.loaded_substates.contains_key(&substate_id) {
-                    let substate = self.state_track.get_substate(&substate_id).unwrap_or(
-                        PersistedSubstate::KeyValueStoreEntry(KeyValueStoreEntrySubstate(None)),
-                    );
+                    let substate = self
+                        .state_track
+                        .get_substate(&substate_id)
+                        .map(PersistedSubstate::to_runtime)
+                        .unwrap_or(RuntimeSubstate::KeyValueStoreEntry(
+                            KeyValueStoreEntrySubstate(None),
+                        ));
 
                     self.loaded_substates.insert(
                         substate_id.clone(),
@@ -489,7 +495,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
     }
 
     /// Sets a key value
-    pub fn set_key_value<V: Into<PersistedSubstate>>(
+    pub fn set_key_value<V: Into<RuntimeSubstate>>(
         &mut self,
         parent_substate_id: SubstateId,
         key: Vec<u8>,
@@ -519,7 +525,9 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         if let Some(loaded) = self.loaded_substates.get_mut(&substate_id) {
             loaded.substate = SubstateCache::Free(value.into());
         } else {
-            self.state_track.put_substate(substate_id, value.into());
+            let substate = value.into();
+            self.state_track
+                .put_substate(substate_id, substate.to_persisted());
         }
     }
 
@@ -579,12 +587,12 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         if is_success {
             for (id, loaded) in self.loaded_substates {
                 if let SubstateCache::Free(substate) = loaded.substate {
-                    self.state_track.put_substate(id, substate);
+                    self.state_track.put_substate(id, substate.to_persisted());
                 }
             }
 
             for (id, substate) in nodes_to_substates(self.loaded_nodes.into_iter().collect()) {
-                self.state_track.put_substate(id, substate);
+                self.state_track.put_substate(id, substate.to_persisted());
             }
 
             self.state_track.commit();
@@ -644,13 +652,15 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                 let mut substate = self
                     .state_track
                     .get_substate_from_base(&substate_id)
-                    .expect("Failed to fetch a fee-locking vault");
+                    .expect("Failed to fetch a fee-locking vault")
+                    .to_runtime();
                 substate
                     .vault_mut()
                     .0
                     .put(locked)
                     .expect("Failed to put a fee-locking vault");
-                self.state_track.put_substate_to_base(substate_id, substate);
+                self.state_track
+                    .put_substate_to_base(substate_id, substate.to_persisted());
 
                 *actual_fee_payments.entry(vault_id).or_default() += amount;
             }
