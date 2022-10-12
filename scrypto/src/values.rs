@@ -561,7 +561,7 @@ impl ScryptoValueFormatter {
                 Self::format_elements(elements, context)?
             ),
             // custom types
-            Value::Custom { type_id, bytes } => Self::from_custom_value(*type_id, bytes, context)?,
+            Value::Custom { type_id, bytes } => Self::format_custom_value(*type_id, bytes, context)?,
         })
     }
 
@@ -617,7 +617,7 @@ impl ScryptoValueFormatter {
         Ok(buf)
     }
 
-    pub fn from_custom_value(
+    pub fn format_custom_value(
         type_id: u8,
         data: &[u8],
         context: &ScryptoValueFormatterContext,
