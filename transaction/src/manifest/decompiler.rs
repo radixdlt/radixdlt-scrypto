@@ -598,7 +598,7 @@ mod tests {
     }
 
     #[test]
-    fn test_decompile() {
+    fn test_decompile_complex() {
         let network = NetworkDefinition::simulator();
         let manifest_str = include_str!("../../examples/complex.rtm");
         let blobs = vec![
@@ -630,6 +630,67 @@ CALL_METHOD ComponentAddress("account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pn
 DROP_ALL_PROOFS;
 CALL_METHOD ComponentAddress("component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum") "complicated_method" Decimal("1") PreciseDecimal("2");
 PUBLISH_PACKAGE Blob("36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618") Blob("15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d");
+"#
+        )
+    }
+
+    #[test]
+    fn test_decompile_call_function() {
+        let network = NetworkDefinition::simulator();
+        let manifest = compile(
+            include_str!("../../examples/call_function.rtm"),
+            &network,
+            vec![],
+        )
+        .unwrap();
+        let manifest2 = decompile(&manifest.instructions, &network).unwrap();
+        assert_eq!(
+            manifest2,
+            r#"CALL_FUNCTION PackageAddress("package_sim1qy4hrp8a9apxldp5cazvxgwdj80cxad4u8cpkaqqnhlsa3lfpe") "Blueprint" "function";
+CALL_FUNCTION Native "System" "create";
+CALL_FUNCTION Native "ResourceManager" "create";
+CALL_FUNCTION Native "Package" "publish";
+CALL_FUNCTION Native "TransactionProcessor" "run";
+"#
+        )
+    }
+
+    #[test]
+    fn test_decompile_call_method() {
+        let network = NetworkDefinition::simulator();
+        let manifest = compile(
+            include_str!("../../examples/call_method.rtm"),
+            &network,
+            vec![],
+        )
+        .unwrap();
+        let manifest2 = decompile(&manifest.instructions, &network).unwrap();
+        println!("manifest2{}", manifest2);
+        assert_eq!(
+            manifest2,
+            r#"CALL_METHOD ComponentAddress("component_sim1qgvyxt5rrjhwctw7krgmgkrhv82zuamcqkq75tkkrwgs00m736") "free_xrd";
+TAKE_FROM_WORKTOP ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag") Bucket("bucket1");
+CREATE_PROOF_FROM_AUTH_ZONE ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag") Proof("proof1");
+CALL_METHOD Bucket("bucket1") "get_resource_address";
+CALL_METHOD Bucket(1u32) "get_resource_address";
+CALL_METHOD Bucket(513u32) "get_resource_address";
+CALL_METHOD Bucket(1u32) "get_resource_address";
+CALL_METHOD AuthZone(1u32) "drain";
+CALL_METHOD Worktop "drain";
+CALL_METHOD Component("000000000000000000000000000000000000000000000000000000000000000000000005") "add_access_check";
+CALL_METHOD System("000000000000000000000000000000000000000000000000000000000000000000000005") "get_transaction_hash";
+CALL_METHOD Vault("000000000000000000000000000000000000000000000000000000000000000000000005") "get_resource_address";
+CALL_METHOD ResourceManager("resource_sim1qrc4s082h9trka3yrghwragylm3sdne0u668h2sy6c9sckkpn6") "burn";
+CALL_METHOD &Bucket("bucket1") "get_resource_address";
+CALL_METHOD &Bucket(1u32) "get_resource_address";
+CALL_METHOD &Bucket(513u32) "get_resource_address";
+CALL_METHOD &Bucket(1u32) "get_resource_address";
+CALL_METHOD &AuthZone(1u32) "drain";
+CALL_METHOD &Worktop "drain";
+CALL_METHOD &Component("000000000000000000000000000000000000000000000000000000000000000000000005") "add_access_check";
+CALL_METHOD &System("000000000000000000000000000000000000000000000000000000000000000000000005") "get_transaction_hash";
+CALL_METHOD &Vault("000000000000000000000000000000000000000000000000000000000000000000000005") "get_resource_address";
+CALL_METHOD &ResourceManager("resource_sim1qrc4s082h9trka3yrghwragylm3sdne0u668h2sy6c9sckkpn6") "burn";
 "#
         )
     }
