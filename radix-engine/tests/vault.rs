@@ -28,7 +28,7 @@ fn non_existent_vault_in_component_creation_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::RENodeCreateNodeNotFound(RENodeId::Vault(_)))
+            RuntimeError::KernelError(KernelError::RENodeNotFound(RENodeId::Vault(_)))
         )
     });
 }
@@ -170,7 +170,7 @@ fn invalid_double_ownership_of_vault() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::RENodeCreateNodeNotFound(RENodeId::Vault(_)))
+            RuntimeError::KernelError(KernelError::RENodeNotFound(RENodeId::Vault(_)))
         )
     });
 }

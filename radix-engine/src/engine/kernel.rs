@@ -440,14 +440,8 @@ where
 
         // Take values to return
         let values_to_take = output.node_ids();
-        let (received_values, mut missing) = Self::current_frame_mut(&mut self.call_frames)
-            .take_available_values(values_to_take, false)?;
-        let first_missing_value = missing.drain().nth(0);
-        if let Some(missing_node) = first_missing_value {
-            return Err(RuntimeError::KernelError(KernelError::RENodeNotFound(
-                missing_node,
-            )));
-        }
+        let received_values =
+            Self::current_frame_mut(&mut self.call_frames).take_nodes(values_to_take, false)?;
 
         // Check references returned
         for global_address in output.global_references() {
@@ -735,19 +729,13 @@ where
             ));
         }
 
+        // Figure out what nodes to move from this process
         // Prevent vaults/kvstores from being moved
         Self::process_call_data(&input)?;
-
-        // Figure out what buckets and proofs to move from this process
         let values_to_take = input.node_ids();
-        let (taken_values, mut missing) = Self::current_frame_mut(&mut self.call_frames)
-            .take_available_values(values_to_take, false)?;
-        let first_missing_value = missing.drain().nth(0);
-        if let Some(missing_value) = first_missing_value {
-            return Err(RuntimeError::KernelError(KernelError::RENodeNotFound(
-                missing_value,
-            )));
-        }
+        let taken_values =
+            Self::current_frame_mut(&mut self.call_frames).take_nodes(values_to_take, false)?;
+
         // Internal state update to taken values
         let mut next_owned_values = HashMap::new();
         for (id, mut value) in taken_values {
@@ -945,14 +933,9 @@ where
 
         // Take any required child nodes
         let children = re_node.get_child_nodes()?;
-        let (taken_root_nodes, mut missing) =
-            Self::current_frame_mut(&mut self.call_frames).take_available_values(children, true)?;
-        let first_missing_node = missing.drain().nth(0);
-        if let Some(missing_node) = first_missing_node {
-            return Err(RuntimeError::KernelError(
-                KernelError::RENodeCreateNodeNotFound(missing_node),
-            ));
-        }
+        let taken_root_nodes =
+            Self::current_frame_mut(&mut self.call_frames).take_nodes(children, true)?;
+
         let mut child_nodes = HashMap::new();
         for (id, taken_root_node) in taken_root_nodes {
             child_nodes.extend(taken_root_node.to_nodes(id));

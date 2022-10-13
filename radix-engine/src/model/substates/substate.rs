@@ -530,30 +530,6 @@ impl<'a> SubstateRef<'a> {
     }
 }
 
-pub fn verify_stored_value_update(
-    old: &HashSet<RENodeId>,
-    missing: &HashSet<RENodeId>,
-) -> Result<(), RuntimeError> {
-    // TODO: optimize intersection search
-    for old_id in old.iter() {
-        if !missing.contains(&old_id) {
-            return Err(RuntimeError::KernelError(KernelError::StoredNodeRemoved(
-                old_id.clone(),
-            )));
-        }
-    }
-
-    for missing_id in missing.iter() {
-        if !old.contains(missing_id) {
-            return Err(RuntimeError::KernelError(KernelError::RENodeNotFound(
-                *missing_id,
-            )));
-        }
-    }
-
-    Ok(())
-}
-
 pub struct SubstateRefMut<'f, 's, R: FeeReserve> {
     flushed: bool,
     lock_handle: LockHandle,
@@ -600,7 +576,7 @@ impl<'f, 's, R: FeeReserve> SubstateRefMut<'f, 's, R> {
 
     // TODO: Move into kernel substate unlock
     fn do_flush(&mut self) -> Result<(), RuntimeError> {
-        let (new_global_references, new_children) = {
+        let (new_global_references, mut new_children) = {
             let substate_ref_mut = self.get_raw_mut();
             substate_ref_mut.to_ref().references_and_owned_nodes()
         };
@@ -616,25 +592,28 @@ impl<'f, 's, R: FeeReserve> SubstateRefMut<'f, 's, R> {
             }
         }
 
-        // Take values from current frame
-        let (taken_nodes, missing_nodes) = {
-            if !new_children.is_empty() {
-                if !SubstateProperties::can_own_nodes(&self.offset) {
-                    return Err(RuntimeError::KernelError(KernelError::ValueNotAllowed));
-                }
-
-                current_frame.take_available_values(new_children, true)?
-            } else {
-                (HashMap::new(), HashSet::new())
+        for old_child in &self.prev_children {
+            if !new_children.remove(old_child) {
+                return Err(RuntimeError::KernelError(KernelError::StoredNodeRemoved(
+                    old_child.clone(),
+                )));
             }
-        };
-        verify_stored_value_update(&self.prev_children, &missing_nodes)?;
+        }
 
-        for child_node in taken_nodes.keys() {
+        let new_children_nodes = current_frame.take_nodes(new_children, true)?;
+
+        if !new_children_nodes.is_empty() {
+            // TODO: Put this in a better place
+            if !SubstateProperties::can_own_nodes(&self.offset) {
+                return Err(RuntimeError::KernelError(KernelError::ValueNotAllowed));
+            }
+        }
+
+        for child_node in new_children_nodes.keys() {
             current_frame.add_lock_visible_node(self.lock_handle, *child_node)?;
         }
         self.node_pointer
-            .add_children(taken_nodes, &mut self.call_frames, &mut self.track);
+            .add_children(new_children_nodes, &mut self.call_frames, &mut self.track);
 
         Ok(())
     }

@@ -81,7 +81,6 @@ pub enum KernelError {
     StoredNodeRemoved(RENodeId),
     RENodeGlobalizeTypeNotAllowed(RENodeId),
     RENodeCreateInvalidPermission,
-    RENodeCreateNodeNotFound(RENodeId),
 
     // Substate
     MovingLockedRENode(RENodeId),

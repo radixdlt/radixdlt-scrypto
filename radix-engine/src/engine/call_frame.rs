@@ -155,14 +155,13 @@ impl CallFrame {
             .map_err(|e| RuntimeError::KernelError(KernelError::DropFailure(e)))
     }
 
-    pub fn take_available_values(
+    pub fn take_nodes(
         &mut self,
         node_ids: HashSet<RENodeId>,
         persist_only: bool,
-    ) -> Result<(HashMap<RENodeId, HeapRootRENode>, HashSet<RENodeId>), RuntimeError> {
-        let (taken, missing) = {
+    ) -> Result<HashMap<RENodeId, HeapRootRENode>, RuntimeError> {
+        let taken = {
             let mut taken_values = HashMap::new();
-            let mut missing_values = HashSet::new();
 
             for id in node_ids {
                 if self.node_lock_count.contains_key(&id) {
@@ -179,14 +178,14 @@ impl CallFrame {
                     }
                     taken_values.insert(id, value);
                 } else {
-                    missing_values.insert(id);
+                    return Err(RuntimeError::KernelError(KernelError::RENodeNotFound(id)));
                 }
             }
 
-            (taken_values, missing_values)
+            taken_values
         };
 
-        // Moved values must have their references removed
+        // Moved nodes must have their child node references removed
         for (id, value) in &taken {
             self.node_refs.remove(id);
             for (id, ..) in &value.child_nodes {
@@ -194,7 +193,7 @@ impl CallFrame {
             }
         }
 
-        Ok((taken, missing))
+        Ok(taken)
     }
 
     pub fn take_node(&mut self, node_id: RENodeId) -> Result<HeapRootRENode, RuntimeError> {
