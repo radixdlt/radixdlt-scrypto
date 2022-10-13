@@ -4,8 +4,7 @@ use sbor::rust::collections::HashMap;
 use sbor::rust::collections::HashSet;
 use sbor::rust::fmt;
 use sbor::rust::format;
-use sbor::rust::string::String;
-use sbor::rust::string::ToString;
+use sbor::rust::string::*;
 use sbor::rust::vec::Vec;
 use sbor::type_id::*;
 use sbor::{any::*, *};
@@ -211,76 +210,15 @@ impl ScryptoValue {
             + self.vault_ids.len()
             + self.component_ids.len()
     }
-
-    pub fn to_string_with_context<'a>(
-        &'a self,
-        bech32_encoder: Option<&'a Bech32Encoder>,
-        bucket_ids: Option<&'a HashMap<BucketId, String>>,
-        proof_ids: Option<&'a HashMap<ProofId, String>>,
-    ) -> Result<String, ScryptoValueFormatterError> {
-        self.to_string_with_fixed_context(
-            bech32_encoder,
-            bucket_ids.unwrap_or(&HashMap::new()),
-            proof_ids.unwrap_or(&HashMap::new()),
-        )
-    }
-
-    pub fn to_string_with_fixed_context<'a>(
-        &'a self,
-        bech32_encoder: Option<&'a Bech32Encoder>,
-        bucket_ids: &'a HashMap<BucketId, String>,
-        proof_ids: &'a HashMap<ProofId, String>,
-    ) -> Result<String, ScryptoValueFormatterError> {
-        let context = ScryptoValueFormatterContext {
-            bech32_encoder,
-            bucket_ids,
-            proof_ids,
-        };
-        ScryptoValueFormatter::format_value(&self.dom, &context)
-    }
-
-    pub fn displayable<
-        'a,
-        T1: Into<Option<&'a Bech32Encoder>>,
-        T2: Into<Option<&'a HashMap<BucketId, String>>>,
-        T3: Into<Option<&'a HashMap<ProofId, String>>>,
-    >(
-        &'a self,
-        bech32_encoder: T1,
-        bucket_names: T2,
-        proof_names: T3,
-    ) -> DisplayableScryptoValue<'a> {
-        DisplayableScryptoValue(
-            self,
-            bech32_encoder.into(),
-            bucket_names.into(),
-            proof_names.into(),
-        )
-    }
 }
 
 impl fmt::Debug for ScryptoValue {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self.to_string_with_context(None, None, None) {
-            Ok(str) => write!(f, "{}", str),
-            Err(err) => write!(f, "Invalid Value: {:?}", err),
-        }
-    }
-}
-
-pub struct DisplayableScryptoValue<'a>(
-    &'a ScryptoValue,
-    Option<&'a Bech32Encoder>,
-    Option<&'a HashMap<BucketId, String>>,
-    Option<&'a HashMap<ProofId, String>>,
-);
-
-impl<'a> fmt::Display for DisplayableScryptoValue<'a> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        match self.0.to_string_with_context(self.1, self.2, self.3) {
-            Ok(str) => write!(f, "{}", str),
-            Err(err) => write!(f, "Invalid Value: {:?}", err),
-        }
+        write!(
+            f,
+            "{}",
+            self.display(ScryptoValueFormatterContext::no_context())
+        )
     }
 }
 
@@ -483,16 +421,70 @@ impl CustomValueVisitor for ScryptoCustomValueChecker {
 /// Utility that formats any Scrypto value.
 pub struct ScryptoValueFormatter {}
 
+#[derive(Clone, Copy, Debug)]
 pub struct ScryptoValueFormatterContext<'a> {
     bech32_encoder: Option<&'a Bech32Encoder>,
-    bucket_ids: &'a HashMap<BucketId, String>,
-    proof_ids: &'a HashMap<ProofId, String>,
+    bucket_names: Option<&'a HashMap<BucketId, String>>,
+    proof_names: Option<&'a HashMap<ProofId, String>>,
+}
+
+impl<'a> ScryptoValueFormatterContext<'a> {
+    pub fn no_context() -> Self {
+        Self {
+            bech32_encoder: None,
+            bucket_names: None,
+            proof_names: None,
+        }
+    }
+
+    pub fn no_manifest_context(bech32_encoder: Option<&'a Bech32Encoder>) -> Self {
+        Self {
+            bech32_encoder,
+            bucket_names: None,
+            proof_names: None,
+        }
+    }
+
+    pub fn with_manifest_context(
+        bech32_encoder: Option<&'a Bech32Encoder>,
+        bucket_names: &'a HashMap<BucketId, String>,
+        proof_names: &'a HashMap<ProofId, String>,
+    ) -> Self {
+        Self {
+            bech32_encoder,
+            bucket_names: Some(bucket_names),
+            proof_names: Some(proof_names),
+        }
+    }
+
+    pub fn get_bucket_name(&self, bucket_id: &BucketId) -> Option<&str> {
+        self.bucket_names
+            .and_then(|names| names.get(bucket_id).map(|s| s.as_str()))
+    }
+
+    pub fn get_proof_name(&self, proof_id: &ProofId) -> Option<&str> {
+        self.proof_names
+            .and_then(|names| names.get(proof_id).map(|s| s.as_str()))
+    }
+}
+
+impl<'a> Into<ScryptoValueFormatterContext<'a>> for &'a Bech32Encoder {
+    fn into(self) -> ScryptoValueFormatterContext<'a> {
+        ScryptoValueFormatterContext::no_manifest_context(Some(self))
+    }
+}
+
+impl<'a> Into<ScryptoValueFormatterContext<'a>> for Option<&'a Bech32Encoder> {
+    fn into(self) -> ScryptoValueFormatterContext<'a> {
+        ScryptoValueFormatterContext::no_manifest_context(self)
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ScryptoValueFormatterError {
     InvalidTypeId(u8),
     InvalidCustomData(ScryptoCustomValueCheckError),
+    FormatError(fmt::Error),
 }
 
 impl From<ScryptoCustomValueCheckError> for ScryptoValueFormatterError {
@@ -501,239 +493,336 @@ impl From<ScryptoCustomValueCheckError> for ScryptoValueFormatterError {
     }
 }
 
+impl From<fmt::Error> for ScryptoValueFormatterError {
+    fn from(error: fmt::Error) -> Self {
+        ScryptoValueFormatterError::FormatError(error)
+    }
+}
+
+impl<'a> ContextualDisplay<ScryptoValueFormatterContext<'a>> for ScryptoValue {
+    type Error = ScryptoValueFormatterError;
+
+    fn contextual_format<F: fmt::Write>(
+        &self,
+        f: &mut F,
+        context: &ScryptoValueFormatterContext<'a>,
+    ) -> Result<(), Self::Error> {
+        ScryptoValueFormatter::format_value(f, &self.dom, context)
+    }
+}
+
+impl<'a> ContextualDisplay<ScryptoValueFormatterContext<'a>> for Value {
+    type Error = ScryptoValueFormatterError;
+
+    fn contextual_format<F: fmt::Write>(
+        &self,
+        f: &mut F,
+        context: &ScryptoValueFormatterContext<'a>,
+    ) -> Result<(), Self::Error> {
+        ScryptoValueFormatter::format_value(f, &self, context)
+    }
+}
+
 impl ScryptoValueFormatter {
-    pub fn format_value(
+    pub fn format_value<F: fmt::Write>(
+        f: &mut F,
         value: &Value,
         context: &ScryptoValueFormatterContext,
-    ) -> Result<String, ScryptoValueFormatterError> {
-        Ok(match value {
+    ) -> Result<(), ScryptoValueFormatterError> {
+        match value {
             // primitive types
-            Value::Unit => "()".to_string(),
-            Value::Bool { value } => value.to_string(),
-            Value::I8 { value } => format!("{}i8", value),
-            Value::I16 { value } => format!("{}i16", value),
-            Value::I32 { value } => format!("{}i32", value),
-            Value::I64 { value } => format!("{}i64", value),
-            Value::I128 { value } => format!("{}i128", value),
-            Value::U8 { value } => format!("{}u8", value),
-            Value::U16 { value } => format!("{}u16", value),
-            Value::U32 { value } => format!("{}u32", value),
-            Value::U64 { value } => format!("{}u64", value),
-            Value::U128 { value } => format!("{}u128", value),
-            Value::String { value } => format!("\"{}\"", value),
+            Value::Unit => write!(f, "()")?,
+            Value::Bool { value } => write!(f, "{}", value)?,
+            Value::I8 { value } => write!(f, "{}i8", value)?,
+            Value::I16 { value } => write!(f, "{}i16", value)?,
+            Value::I32 { value } => write!(f, "{}i32", value)?,
+            Value::I64 { value } => write!(f, "{}i64", value)?,
+            Value::I128 { value } => write!(f, "{}i128", value)?,
+            Value::U8 { value } => write!(f, "{}u8", value)?,
+            Value::U16 { value } => write!(f, "{}u16", value)?,
+            Value::U32 { value } => write!(f, "{}u32", value)?,
+            Value::U64 { value } => write!(f, "{}u64", value)?,
+            Value::U128 { value } => write!(f, "{}u128", value)?,
+            Value::String { value } => write!(f, "\"{}\"", value)?,
             // struct & enum
             Value::Struct { fields } => {
-                format!("Struct({})", Self::format_elements(fields, context)?)
+                f.write_str("Struct(")?;
+                Self::format_elements(f, fields, context)?;
+                f.write_str(")")?;
             }
             Value::Enum { name, fields } => {
-                format!(
-                    "Enum(\"{}\"{}{})",
-                    name,
-                    if fields.is_empty() { "" } else { ", " },
-                    Self::format_elements(fields, context)?
-                )
+                f.write_str("Enum(\"")?;
+                f.write_str(name)?;
+                f.write_str("\"")?;
+                if !fields.is_empty() {
+                    f.write_str(", ")?;
+                    Self::format_elements(f, fields, context)?;
+                }
+                f.write_str(")")?;
             }
             // rust types
             Value::Option { value } => match value.borrow() {
-                Some(x) => format!("Some({})", Self::format_value(x, context)?),
-                None => "None".to_string(),
+                Some(x) => {
+                    f.write_str("Some(")?;
+                    Self::format_value(f, x, context)?;
+                    f.write_str(")")?;
+                }
+                None => write!(f, "None")?,
             },
             Value::Array {
                 element_type_id,
                 elements,
-            } => format!(
-                "Array<{}>({})",
-                Self::format_type_id(*element_type_id)?,
-                Self::format_elements(elements, context)?
-            ),
+            } => {
+                f.write_str("Array<")?;
+                Self::format_type_id(f, *element_type_id)?;
+                f.write_str(">(")?;
+                Self::format_elements(f, elements, context)?;
+                f.write_str(")")?;
+            }
             Value::Tuple { elements } => {
-                format!("Tuple({})", Self::format_elements(elements, context)?)
+                f.write_str("Tuple(")?;
+                Self::format_elements(f, elements, context)?;
+                f.write_str(")")?;
             }
             Value::Result { value } => match value.borrow() {
-                Ok(x) => format!("Ok({})", Self::format_value(x, context)?),
-                Err(x) => format!("Err({})", Self::format_value(x, context)?),
+                Ok(x) => {
+                    f.write_str("Ok(")?;
+                    Self::format_value(f, x, context)?;
+                    f.write_str(")")?
+                }
+                Err(x) => {
+                    f.write_str("Err(")?;
+                    Self::format_value(f, x, context)?;
+                    f.write_str(")")?;
+                }
             },
             // collections
             Value::List {
                 element_type_id,
                 elements,
             } => {
-                format!(
-                    "Vec<{}>({})",
-                    Self::format_type_id(*element_type_id)?,
-                    Self::format_elements(elements, context)?
-                )
+                f.write_str("Vec<")?;
+                Self::format_type_id(f, *element_type_id)?;
+                f.write_str(">(")?;
+                Self::format_elements(f, elements, context)?;
+                f.write_str(")")?;
             }
             Value::Set {
                 element_type_id,
                 elements,
-            } => format!(
-                "Set<{}>({})",
-                Self::format_type_id(*element_type_id)?,
-                Self::format_elements(elements, context)?
-            ),
+            } => {
+                f.write_str("Set<")?;
+                Self::format_type_id(f, *element_type_id)?;
+                f.write_str(">(")?;
+                Self::format_elements(f, elements, context)?;
+                f.write_str(")")?;
+            }
             Value::Map {
                 key_type_id,
                 value_type_id,
                 elements,
-            } => format!(
-                "Map<{}, {}>({})",
-                Self::format_type_id(*key_type_id)?,
-                Self::format_type_id(*value_type_id)?,
-                Self::format_elements(elements, context)?
-            ),
+            } => {
+                f.write_str("Map<")?;
+                Self::format_type_id(f, *key_type_id)?;
+                f.write_str(", ")?;
+                Self::format_type_id(f, *value_type_id)?;
+                f.write_str(">(")?;
+                Self::format_elements(f, elements, context)?;
+                f.write_str(")")?;
+            }
             // custom types
-            Value::Custom { type_id, bytes } => Self::from_custom_value(*type_id, bytes, context)?,
-        })
+            Value::Custom { type_id, bytes } => {
+                Self::format_custom_value(f, *type_id, bytes, context)?;
+            }
+        };
+        Ok(())
     }
 
-    pub fn format_type_id(type_id: u8) -> Result<String, ScryptoValueFormatterError> {
+    pub fn format_type_id<F: fmt::Write>(
+        f: &mut F,
+        type_id: u8,
+    ) -> Result<(), ScryptoValueFormatterError> {
         if let Some(ty) = ScryptoType::from_id(type_id) {
-            return Ok(ty.name());
+            write!(f, "{}", ty.name())?;
+            return Ok(());
         }
 
-        Ok(match type_id {
+        match type_id {
             // primitive types
-            TYPE_UNIT => "Unit",
-            TYPE_BOOL => "Bool",
-            TYPE_I8 => "I8",
-            TYPE_I16 => "I16",
-            TYPE_I32 => "I32",
-            TYPE_I64 => "I64",
-            TYPE_I128 => "I128",
-            TYPE_U8 => "U8",
-            TYPE_U16 => "U16",
-            TYPE_U32 => "U32",
-            TYPE_U64 => "U64",
-            TYPE_U128 => "U128",
-            TYPE_STRING => "String",
+            TYPE_UNIT => f.write_str("Unit")?,
+            TYPE_BOOL => f.write_str("Bool")?,
+            TYPE_I8 => f.write_str("I8")?,
+            TYPE_I16 => f.write_str("I16")?,
+            TYPE_I32 => f.write_str("I32")?,
+            TYPE_I64 => f.write_str("I64")?,
+            TYPE_I128 => f.write_str("I128")?,
+            TYPE_U8 => f.write_str("U8")?,
+            TYPE_U16 => f.write_str("U16")?,
+            TYPE_U32 => f.write_str("U32")?,
+            TYPE_U64 => f.write_str("U64")?,
+            TYPE_U128 => f.write_str("U128")?,
+            TYPE_STRING => f.write_str("String")?,
             // struct & enum
-            TYPE_STRUCT => "Struct",
-            TYPE_ENUM => "Enum",
-            TYPE_OPTION => "Option",
-            TYPE_RESULT => "Result",
+            TYPE_STRUCT => f.write_str("Struct")?,
+            TYPE_ENUM => f.write_str("Enum")?,
+            TYPE_OPTION => f.write_str("Option")?,
+            TYPE_RESULT => f.write_str("Result")?,
             // composite
-            TYPE_ARRAY => "Array",
-            TYPE_TUPLE => "Tuple",
+            TYPE_ARRAY => f.write_str("Array")?,
+            TYPE_TUPLE => f.write_str("Tuple")?,
             // collections
-            TYPE_LIST => "List",
-            TYPE_SET => "Set",
-            TYPE_MAP => "Map",
+            TYPE_LIST => f.write_str("List")?,
+            TYPE_SET => f.write_str("Set")?,
+            TYPE_MAP => f.write_str("Map")?,
             //
             _ => Err(ScryptoValueFormatterError::InvalidTypeId(type_id))?,
-        }
-        .to_string())
+        };
+
+        Ok(())
     }
 
-    pub fn format_elements(
+    pub fn format_elements<F: fmt::Write>(
+        f: &mut F,
         values: &[Value],
         context: &ScryptoValueFormatterContext,
-    ) -> Result<String, ScryptoValueFormatterError> {
-        let mut buf = String::new();
+    ) -> Result<(), ScryptoValueFormatterError> {
         for (i, x) in values.iter().enumerate() {
             if i != 0 {
-                buf.push_str(", ");
+                f.write_str(", ")?;
             }
-            buf.push_str(Self::format_value(x, context)?.as_str());
+            Self::format_value(f, x, context)?;
         }
-        Ok(buf)
+        Ok(())
     }
 
-    pub fn from_custom_value(
+    pub fn format_custom_value<F: fmt::Write>(
+        f: &mut F,
         type_id: u8,
         data: &[u8],
         context: &ScryptoValueFormatterContext,
-    ) -> Result<String, ScryptoValueFormatterError> {
+    ) -> Result<(), ScryptoValueFormatterError> {
         let scrypto_type = ScryptoType::from_id(type_id);
         if scrypto_type.is_none() {
             Err(ScryptoCustomValueCheckError::UnknownTypeId(type_id))?;
         }
-        Ok(match scrypto_type.unwrap() {
-            ScryptoType::Decimal => Decimal::try_from(data)
-                .map(|d| format!("Decimal(\"{}\")", d))
-                .map_err(ScryptoCustomValueCheckError::InvalidDecimal)?,
-            ScryptoType::PreciseDecimal => PreciseDecimal::try_from(data)
-                .map(|d| format!("PreciseDecimal(\"{}\")", d))
-                .map_err(ScryptoCustomValueCheckError::InvalidPreciseDecimal)?,
-            ScryptoType::PackageAddress => PackageAddress::try_from(data)
-                .map(|address| {
-                    format!(
-                        "PackageAddress(\"{}\")",
-                        address.display(context.bech32_encoder)
-                    )
-                })
-                .map_err(ScryptoCustomValueCheckError::InvalidPackageAddress)?,
-            ScryptoType::ComponentAddress => ComponentAddress::try_from(data)
-                .map(|address| {
-                    format!(
-                        "ComponentAddress(\"{}\")",
-                        address.display(context.bech32_encoder)
-                    )
-                })
-                .map_err(ScryptoCustomValueCheckError::InvalidComponentAddress)?,
-            ScryptoType::Component => Component::try_from(data)
-                .map(|d| format!("Component(\"{}\")", d))
-                .map_err(ScryptoCustomValueCheckError::InvalidComponent)?,
-            ScryptoType::KeyValueStore => KeyValueStore::<(), ()>::try_from(data)
-                .map(|d| format!("KeyValueStore(\"{}\")", d))
-                .map_err(ScryptoCustomValueCheckError::InvalidKeyValueStore)?,
-            ScryptoType::Hash => Hash::try_from(data)
-                .map(|d| format!("Hash(\"{}\")", d))
-                .map_err(ScryptoCustomValueCheckError::InvalidHash)?,
-            ScryptoType::EcdsaSecp256k1PublicKey => EcdsaSecp256k1PublicKey::try_from(data)
-                .map(|d| format!("EcdsaSecp256k1PublicKey(\"{}\")", d))
-                .map_err(ScryptoCustomValueCheckError::InvalidEcdsaSecp256k1PublicKey)?,
-            ScryptoType::EcdsaSecp256k1Signature => EcdsaSecp256k1Signature::try_from(data)
-                .map(|d| format!("EcdsaSecp256k1Signature(\"{}\")", d))
-                .map_err(ScryptoCustomValueCheckError::InvalidEcdsaSecp256k1Signature)?,
-            ScryptoType::EddsaEd25519PublicKey => EddsaEd25519PublicKey::try_from(data)
-                .map(|d| format!("EddsaEd25519PublicKey(\"{}\")", d))
-                .map_err(ScryptoCustomValueCheckError::InvalidEddsaEd25519PublicKey)?,
-            ScryptoType::EddsaEd25519Signature => EddsaEd25519Signature::try_from(data)
-                .map(|d| format!("EddsaEd25519Signature(\"{}\")", d))
-                .map_err(ScryptoCustomValueCheckError::InvalidEddsaEd25519Signature)?,
-            ScryptoType::Bucket => Bucket::try_from(data)
-                .map(|bucket| {
-                    if let Some(name) = context.bucket_ids.get(&bucket.0) {
-                        format!("Bucket(\"{}\")", name)
-                    } else {
-                        format!("Bucket({}u32)", bucket.0)
-                    }
-                })
-                .map_err(ScryptoCustomValueCheckError::InvalidBucket)?,
-            ScryptoType::Proof => Proof::try_from(data)
-                .map(|proof| {
-                    if let Some(name) = context.proof_ids.get(&proof.0) {
-                        format!("Proof(\"{}\")", name)
-                    } else {
-                        format!("Proof({}u32)", proof.0)
-                    }
-                })
-                .map_err(ScryptoCustomValueCheckError::InvalidProof)?,
-            ScryptoType::Vault => Vault::try_from(data)
-                .map(|d| format!("Vault(\"{}\")", d))
-                .map_err(ScryptoCustomValueCheckError::InvalidVault)?,
-            ScryptoType::NonFungibleId => NonFungibleId::try_from(data)
-                .map(|d| format!("NonFungibleId(\"{}\")", d))
-                .map_err(ScryptoCustomValueCheckError::InvalidNonFungibleId)?,
-            ScryptoType::NonFungibleAddress => NonFungibleAddress::try_from(data)
-                .map(|d| format!("NonFungibleAddress(\"{}\")", d))
-                .map_err(ScryptoCustomValueCheckError::InvalidNonFungibleAddress)?,
-            ScryptoType::ResourceAddress => ResourceAddress::try_from(data)
-                .map(|address| {
-                    format!(
-                        "ResourceAddress(\"{}\")",
-                        address.display(context.bech32_encoder)
-                    )
-                })
-                .map_err(ScryptoCustomValueCheckError::InvalidResourceAddress)?,
-            ScryptoType::Expression => Expression::try_from(data)
-                .map(|d| format!("Expression(\"{}\")", d))
-                .map_err(ScryptoCustomValueCheckError::InvalidExpression)?,
-            ScryptoType::Blob => Blob::try_from(data)
-                .map(|d| format!("Blob(\"{}\")", d))
-                .map_err(ScryptoCustomValueCheckError::InvalidBlob)?,
-        })
+        match scrypto_type.unwrap() {
+            ScryptoType::Decimal => {
+                let value = Decimal::try_from(data)
+                    .map_err(ScryptoCustomValueCheckError::InvalidDecimal)?;
+                write!(f, "Decimal(\"{}\")", value)?;
+            }
+            ScryptoType::PreciseDecimal => {
+                let value = PreciseDecimal::try_from(data)
+                    .map_err(ScryptoCustomValueCheckError::InvalidPreciseDecimal)?;
+                write!(f, "PreciseDecimal(\"{}\")", value)?;
+            }
+            ScryptoType::PackageAddress => {
+                let value = PackageAddress::try_from(data)
+                    .map_err(ScryptoCustomValueCheckError::InvalidPackageAddress)?;
+                f.write_str("PackageAddress(\"")?;
+                value
+                    .format(f, context.bech32_encoder)
+                    .map_err(ScryptoCustomValueCheckError::InvalidPackageAddress)?;
+                f.write_str("\")")?;
+            }
+            ScryptoType::ComponentAddress => {
+                let value = ComponentAddress::try_from(data)
+                    .map_err(ScryptoCustomValueCheckError::InvalidComponentAddress)?;
+                f.write_str("ComponentAddress(\"")?;
+                value
+                    .format(f, context.bech32_encoder)
+                    .map_err(ScryptoCustomValueCheckError::InvalidComponentAddress)?;
+                f.write_str("\")")?;
+            }
+            ScryptoType::Component => {
+                let value = Component::try_from(data)
+                    .map_err(ScryptoCustomValueCheckError::InvalidComponent)?;
+                write!(f, "Component(\"{}\")", value)?;
+            }
+            ScryptoType::KeyValueStore => {
+                let value = KeyValueStore::<(), ()>::try_from(data)
+                    .map_err(ScryptoCustomValueCheckError::InvalidKeyValueStore)?;
+                write!(f, "KeyValueStore(\"{}\")", value)?;
+            }
+            ScryptoType::Hash => {
+                let value =
+                    Hash::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidHash)?;
+                write!(f, "Hash(\"{}\")", value)?;
+            }
+            ScryptoType::EcdsaSecp256k1PublicKey => {
+                let value = EcdsaSecp256k1PublicKey::try_from(data)
+                    .map_err(ScryptoCustomValueCheckError::InvalidEcdsaSecp256k1PublicKey)?;
+                write!(f, "EcdsaSecp256k1PublicKey(\"{}\")", value)?;
+            }
+            ScryptoType::EcdsaSecp256k1Signature => {
+                let value = EcdsaSecp256k1Signature::try_from(data)
+                    .map_err(ScryptoCustomValueCheckError::InvalidEcdsaSecp256k1Signature)?;
+                write!(f, "EcdsaSecp256k1Signature(\"{}\")", value)?;
+            }
+            ScryptoType::EddsaEd25519PublicKey => {
+                let value = EddsaEd25519PublicKey::try_from(data)
+                    .map_err(ScryptoCustomValueCheckError::InvalidEddsaEd25519PublicKey)?;
+                write!(f, "EddsaEd25519PublicKey(\"{}\")", value)?;
+            }
+            ScryptoType::EddsaEd25519Signature => {
+                let value = EddsaEd25519Signature::try_from(data)
+                    .map_err(ScryptoCustomValueCheckError::InvalidEddsaEd25519Signature)?;
+                write!(f, "EddsaEd25519Signature(\"{}\")", value)?;
+            }
+            ScryptoType::Bucket => {
+                let value =
+                    Bucket::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidBucket)?;
+                if let Some(name) = context.get_bucket_name(&value.0) {
+                    write!(f, "Bucket(\"{}\")", name)?;
+                } else {
+                    write!(f, "Bucket({}u32)", value.0)?;
+                }
+            }
+            ScryptoType::Proof => {
+                let value =
+                    Proof::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidProof)?;
+                if let Some(name) = context.get_proof_name(&value.0) {
+                    write!(f, "Proof(\"{}\")", name)?;
+                } else {
+                    write!(f, "Proof({}u32)", value.0)?;
+                }
+            }
+            ScryptoType::Vault => {
+                let value =
+                    Vault::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidVault)?;
+                write!(f, "Vault(\"{}\")", value)?;
+            }
+            ScryptoType::NonFungibleId => {
+                let value = NonFungibleId::try_from(data)
+                    .map_err(ScryptoCustomValueCheckError::InvalidNonFungibleId)?;
+                write!(f, "NonFungibleId(\"{}\")", value)?;
+            }
+            ScryptoType::NonFungibleAddress => {
+                let value = NonFungibleAddress::try_from(data)
+                    .map_err(ScryptoCustomValueCheckError::InvalidNonFungibleAddress)?;
+                write!(f, "NonFungibleAddress(\"{}\")", value)?;
+            }
+            ScryptoType::ResourceAddress => {
+                let value = ResourceAddress::try_from(data)
+                    .map_err(ScryptoCustomValueCheckError::InvalidResourceAddress)?;
+                f.write_str("ResourceAddress(\"")?;
+                value
+                    .format(f, context.bech32_encoder)
+                    .map_err(ScryptoCustomValueCheckError::InvalidResourceAddress)?;
+                f.write_str("\")")?;
+            }
+            ScryptoType::Expression => {
+                let value = Expression::try_from(data)
+                    .map_err(ScryptoCustomValueCheckError::InvalidExpression)?;
+                write!(f, "Expression(\"{}\")", value)?;
+            }
+            ScryptoType::Blob => {
+                let value =
+                    Blob::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidBlob)?;
+                write!(f, "Blob(\"{}\")", value)?;
+            }
+        }
+        Ok(())
     }
 }
 
