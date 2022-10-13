@@ -9,7 +9,7 @@ fn test_integer_basic_ops() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let (_, _, account) = test_runner.new_account();
+    let (public_key, _, account) = test_runner.new_account();
     let package_address = test_runner.compile_and_publish("./tests/math-ops-check");
 
     // Act
@@ -25,7 +25,10 @@ fn test_integer_basic_ops() {
         )
         .unwrap()
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
     println!("{}", receipt.display(&Bech32Encoder::for_simulator()));
 
     // Assert
