@@ -118,22 +118,22 @@ impl NativeInterpreter {
     {
         match (receiver.clone(), native_method.clone()) {
             (Receiver::Consumed(node_id), NativeMethod::Bucket(method)) => {
-                Bucket::consuming_main(node_id, method, input, system_api).map_err(|e| e.into())
+                BucketSubstate::consuming_main(node_id, method, input, system_api).map_err(|e| e.into())
             }
             (Receiver::Consumed(node_id), NativeMethod::Proof(method)) => {
-                Proof::main_consume(node_id, method, input, system_api).map_err(|e| e.into())
+                ProofSubstate::main_consume(node_id, method, input, system_api).map_err(|e| e.into())
             }
             (Receiver::Ref(RENodeId::AuthZone(auth_zone_id)), NativeMethod::AuthZone(method)) => {
-                AuthZone::main(auth_zone_id, method, input, system_api).map_err(|e| e.into())
+                AuthZoneSubstate::main(auth_zone_id, method, input, system_api).map_err(|e| e.into())
             }
             (Receiver::Ref(RENodeId::Bucket(bucket_id)), NativeMethod::Bucket(method)) => {
-                Bucket::main(bucket_id, method, input, system_api).map_err(|e| e.into())
+                BucketSubstate::main(bucket_id, method, input, system_api).map_err(|e| e.into())
             }
             (Receiver::Ref(RENodeId::Proof(proof_id)), NativeMethod::Proof(method)) => {
-                Proof::main(proof_id, method, input, system_api).map_err(|e| e.into())
+                ProofSubstate::main(proof_id, method, input, system_api).map_err(|e| e.into())
             }
             (Receiver::Ref(RENodeId::Worktop), NativeMethod::Worktop(method)) => {
-                Worktop::main(method, input, system_api).map_err(|e| e.into())
+                WorktopSubstate::main(method, input, system_api).map_err(|e| e.into())
             }
             (Receiver::Ref(RENodeId::Vault(vault_id)), NativeMethod::Vault(method)) => {
                 Vault::main(vault_id, method, input, system_api).map_err(|e| e.into())

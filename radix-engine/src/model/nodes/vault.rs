@@ -1,6 +1,6 @@
 use crate::engine::{HeapRENode, LockFlags, SystemApi};
 use crate::fee::{FeeReserve, FeeReserveError};
-use crate::model::{Bucket, InvokeError, ProofError, ResourceContainerId, ResourceOperationError};
+use crate::model::{BucketSubstate, InvokeError, ProofError, ResourceContainerId, ResourceOperationError};
 use crate::types::*;
 use crate::wasm::*;
 
@@ -82,7 +82,7 @@ impl Vault {
                 };
 
                 let bucket_id = system_api
-                    .node_create(HeapRENode::Bucket(Bucket::new(container)))?
+                    .node_create(HeapRENode::Bucket(BucketSubstate::new(container)))?
                     .into();
                 ScryptoValue::from_typed(&scrypto::resource::Bucket(bucket_id))
             }
@@ -138,7 +138,7 @@ impl Vault {
                 };
 
                 let bucket_id = system_api
-                    .node_create(HeapRENode::Bucket(Bucket::new(container)))?
+                    .node_create(HeapRENode::Bucket(BucketSubstate::new(container)))?
                     .into();
                 ScryptoValue::from_typed(&scrypto::resource::Bucket(bucket_id))
             }

@@ -8,7 +8,7 @@ use crate::types::*;
 use crate::wasm::*;
 
 #[derive(Debug)]
-pub struct Proof {
+pub struct ProofSubstate {
     /// The resource address.
     resource_address: ResourceAddress,
     /// The resource type.
@@ -38,13 +38,13 @@ pub enum ProofError {
     UnknownMethod,
 }
 
-impl Proof {
+impl ProofSubstate {
     pub fn new(
         resource_address: ResourceAddress,
         resource_type: ResourceType,
         total_locked: LockedAmountOrIds,
         evidence: HashMap<ResourceContainerId, (Rc<RefCell<LockableResource>>, LockedAmountOrIds)>,
-    ) -> Result<Proof, ProofError> {
+    ) -> Result<ProofSubstate, ProofError> {
         if total_locked.is_empty() {
             return Err(ProofError::EmptyProofNotAllowed);
         }
@@ -60,7 +60,7 @@ impl Proof {
 
     /// Computes the locked amount or non-fungible IDs, in total and per resource container.
     pub fn compute_total_locked(
-        proofs: &[Proof],
+        proofs: &[ProofSubstate],
         resource_address: ResourceAddress,
         resource_type: ResourceType,
     ) -> (
@@ -68,7 +68,7 @@ impl Proof {
         HashMap<ResourceContainerId, LockedAmountOrIds>,
     ) {
         // filter proofs by resource address and restricted flag
-        let proofs: Vec<&Proof> = proofs
+        let proofs: Vec<&ProofSubstate> = proofs
             .iter()
             .filter(|p| p.resource_address() == resource_address && !p.is_restricted())
             .collect();
@@ -127,10 +127,10 @@ impl Proof {
 
     /// Creates a composite proof from proofs. This method will generate a max proof.
     pub fn compose(
-        proofs: &[Proof],
+        proofs: &[ProofSubstate],
         resource_address: ResourceAddress,
         resource_type: ResourceType,
-    ) -> Result<Proof, ProofError> {
+    ) -> Result<ProofSubstate, ProofError> {
         let (total, _) = Self::compute_total_locked(proofs, resource_address, resource_type);
         match total {
             LockedAmountOrIds::Amount(amount) => {
@@ -143,11 +143,11 @@ impl Proof {
     }
 
     pub fn compose_by_amount(
-        proofs: &[Proof],
+        proofs: &[ProofSubstate],
         amount: Decimal,
         resource_address: ResourceAddress,
         resource_type: ResourceType,
-    ) -> Result<Proof, ProofError> {
+    ) -> Result<ProofSubstate, ProofError> {
         let (total_locked, mut per_container) =
             Self::compute_total_locked(proofs, resource_address, resource_type);
 
@@ -182,7 +182,7 @@ impl Proof {
                     }
                 }
 
-                Proof::new(
+                ProofSubstate::new(
                     resource_address,
                     resource_type,
                     LockedAmountOrIds::Amount(amount),
@@ -205,11 +205,11 @@ impl Proof {
     }
 
     pub fn compose_by_ids(
-        proofs: &[Proof],
+        proofs: &[ProofSubstate],
         ids: &BTreeSet<NonFungibleId>,
         resource_address: ResourceAddress,
         resource_type: ResourceType,
-    ) -> Result<Proof, ProofError> {
+    ) -> Result<ProofSubstate, ProofError> {
         let (total_locked, mut per_container) =
             Self::compute_total_locked(proofs, resource_address, resource_type);
 
@@ -252,7 +252,7 @@ impl Proof {
                     }
                 }
 
-                Proof::new(
+                ProofSubstate::new(
                     resource_address,
                     resource_type,
                     LockedAmountOrIds::Ids(ids.clone()),
@@ -385,7 +385,7 @@ impl Proof {
         I: WasmInstance,
         R: FeeReserve,
     {
-        let proof: Proof = system_api.node_drop(node_id)?.into();
+        let proof: ProofSubstate = system_api.node_drop(node_id)?.into();
         match method {
             ProofMethod::Drop => {
                 let _: ConsumingProofDropInput = scrypto_decode(&args.raw)

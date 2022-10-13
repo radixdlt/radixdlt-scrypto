@@ -131,7 +131,7 @@ where
             virtual_proofs_buckets.insert(resource_address, bucket_id);
         }
 
-        let auth_zone = AuthZone::new_with_proofs(proofs, virtual_proofs_buckets);
+        let auth_zone = AuthZoneSubstate::new_with_proofs(proofs, virtual_proofs_buckets);
 
         kernel
             .node_create(HeapRENode::AuthZone(auth_zone))
@@ -146,7 +146,7 @@ where
         ids: BTreeSet<NonFungibleId>,
     ) -> BucketId {
         match self
-            .node_create(HeapRENode::Bucket(Bucket::new(Resource::new_non_fungible(
+            .node_create(HeapRENode::Bucket(BucketSubstate::new(Resource::new_non_fungible(
                 resource_address,
                 ids,
             ))))
@@ -312,7 +312,7 @@ where
         let virtual_proofs_buckets = AuthModule::get_auth_zone(root_frame)
             .virtual_proofs_buckets
             .clone();
-        self.node_create(HeapRENode::AuthZone(AuthZone::new_with_proofs(
+        self.node_create(HeapRENode::AuthZone(AuthZoneSubstate::new_with_proofs(
             vec![],
             virtual_proofs_buckets,
         )))?;

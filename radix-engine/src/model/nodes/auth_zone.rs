@@ -1,7 +1,7 @@
 use crate::engine::{HeapRENode, LockFlags, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::{
-    InvokeError, LockableResource, LockedAmountOrIds, Proof, ProofError, ResourceContainerId,
+    InvokeError, LockableResource, LockedAmountOrIds, ProofSubstate, ProofError, ResourceContainerId,
 };
 use crate::types::*;
 use crate::wasm::*;
@@ -20,8 +20,8 @@ pub enum AuthZoneError {
 
 /// A transient resource container.
 #[derive(Debug)]
-pub struct AuthZone {
-    pub proofs: Vec<Proof>,
+pub struct AuthZoneSubstate {
+    pub proofs: Vec<ProofSubstate>,
     /// IDs of buckets that act as an evidence for virtual proofs.
     /// A virtual proof for any NonFunbigleId can be created for any ResourceAddress in the map.
     /// Note: when a virtual proof is created,
@@ -29,9 +29,9 @@ pub struct AuthZone {
     pub virtual_proofs_buckets: BTreeMap<ResourceAddress, BucketId>,
 }
 
-impl AuthZone {
+impl AuthZoneSubstate {
     pub fn new_with_proofs(
-        proofs: Vec<Proof>,
+        proofs: Vec<ProofSubstate>,
         virtual_proofs_buckets: BTreeMap<ResourceAddress, BucketId>,
     ) -> Self {
         Self {
@@ -55,7 +55,7 @@ impl AuthZone {
         &self,
         resource_address: &ResourceAddress,
         ids: &BTreeSet<NonFungibleId>,
-    ) -> Proof {
+    ) -> ProofSubstate {
         let bucket_id = self
             .virtual_proofs_buckets
             .get(resource_address)
@@ -78,7 +78,7 @@ impl AuthZone {
                 LockedAmountOrIds::Ids(ids.clone()),
             ),
         );
-        Proof::new(
+        ProofSubstate::new(
             resource_address.clone(),
             ResourceType::NonFungible,
             LockedAmountOrIds::Ids(ids.clone()),
@@ -87,7 +87,7 @@ impl AuthZone {
         .expect("Failed to create a virtual proof")
     }
 
-    fn pop(&mut self) -> Result<Proof, InvokeError<AuthZoneError>> {
+    fn pop(&mut self) -> Result<ProofSubstate, InvokeError<AuthZoneError>> {
         if self.proofs.is_empty() {
             return Err(InvokeError::Error(AuthZoneError::EmptyAuthZone));
         }
@@ -95,11 +95,11 @@ impl AuthZone {
         Ok(self.proofs.remove(self.proofs.len() - 1))
     }
 
-    fn push(&mut self, proof: Proof) {
+    fn push(&mut self, proof: ProofSubstate) {
         self.proofs.push(proof);
     }
 
-    pub fn drain(&mut self) -> Vec<Proof> {
+    pub fn drain(&mut self) -> Vec<ProofSubstate> {
         self.proofs.drain(0..).collect()
     }
 
@@ -117,8 +117,8 @@ impl AuthZone {
         &self,
         resource_address: ResourceAddress,
         resource_type: ResourceType,
-    ) -> Result<Proof, InvokeError<AuthZoneError>> {
-        Proof::compose(&self.proofs, resource_address, resource_type)
+    ) -> Result<ProofSubstate, InvokeError<AuthZoneError>> {
+        ProofSubstate::compose(&self.proofs, resource_address, resource_type)
             .map_err(|e| InvokeError::Error(AuthZoneError::ProofError(e)))
     }
 
@@ -127,8 +127,8 @@ impl AuthZone {
         amount: Decimal,
         resource_address: ResourceAddress,
         resource_type: ResourceType,
-    ) -> Result<Proof, InvokeError<AuthZoneError>> {
-        Proof::compose_by_amount(&self.proofs, amount, resource_address, resource_type)
+    ) -> Result<ProofSubstate, InvokeError<AuthZoneError>> {
+        ProofSubstate::compose_by_amount(&self.proofs, amount, resource_address, resource_type)
             .map_err(|e| InvokeError::Error(AuthZoneError::ProofError(e)))
     }
 
@@ -137,8 +137,8 @@ impl AuthZone {
         ids: &BTreeSet<NonFungibleId>,
         resource_address: ResourceAddress,
         resource_type: ResourceType,
-    ) -> Result<Proof, InvokeError<AuthZoneError>> {
-        Proof::compose_by_ids(&self.proofs, ids, resource_address, resource_type)
+    ) -> Result<ProofSubstate, InvokeError<AuthZoneError>> {
+        ProofSubstate::compose_by_ids(&self.proofs, ids, resource_address, resource_type)
             .map_err(|e| InvokeError::Error(AuthZoneError::ProofError(e)))
     }
 
@@ -191,7 +191,7 @@ impl AuthZone {
             AuthZoneMethod::Push => {
                 let input: AuthZonePushInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(AuthZoneError::InvalidRequestData(e)))?;
-                let mut proof: Proof = system_api.node_drop(RENodeId::Proof(input.proof.0))?.into();
+                let mut proof: ProofSubstate = system_api.node_drop(RENodeId::Proof(input.proof.0))?.into();
                 proof.change_to_unrestricted();
 
                 let mut substate_mut = system_api.get_ref_mut(auth_zone_handle)?;

@@ -4,7 +4,7 @@ use scrypto::resource::ResourceManagerBurnInput;
 use crate::engine::{HeapRENode, LockFlags, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::{
-    InvokeError, LockableResource, Proof, ProofError, Resource, ResourceContainerId,
+    InvokeError, LockableResource, ProofSubstate, ProofError, Resource, ResourceContainerId,
     ResourceOperationError,
 };
 use crate::types::*;
@@ -24,18 +24,18 @@ pub enum BucketError {
 
 /// A transient resource container.
 #[derive(Debug)]
-pub struct Bucket {
+pub struct BucketSubstate {
     resource: Rc<RefCell<LockableResource>>,
 }
 
-impl Bucket {
+impl BucketSubstate {
     pub fn new(resource: Resource) -> Self {
         Self {
             resource: Rc::new(RefCell::new(resource.into())),
         }
     }
 
-    fn put(&mut self, other: Bucket) -> Result<(), ResourceOperationError> {
+    fn put(&mut self, other: BucketSubstate) -> Result<(), ResourceOperationError> {
         self.borrow_resource_mut().put(other.resource()?)
     }
 
@@ -50,7 +50,7 @@ impl Bucket {
         self.borrow_resource_mut().take_by_ids(ids)
     }
 
-    pub fn create_proof(&mut self, self_bucket_id: BucketId) -> Result<Proof, ProofError> {
+    pub fn create_proof(&mut self, self_bucket_id: BucketId) -> Result<ProofSubstate, ProofError> {
         let container_id = ResourceContainerId::Bucket(self_bucket_id);
         match self.resource_type() {
             ResourceType::Fungible { .. } => {
@@ -69,7 +69,7 @@ impl Bucket {
         &mut self,
         amount: Decimal,
         container_id: ResourceContainerId,
-    ) -> Result<Proof, ProofError> {
+    ) -> Result<ProofSubstate, ProofError> {
         // lock the specified amount
         let locked_amount_or_ids = self
             .borrow_resource_mut()
@@ -82,7 +82,7 @@ impl Bucket {
             container_id,
             (self.resource.clone(), locked_amount_or_ids.clone()),
         );
-        Proof::new(
+        ProofSubstate::new(
             self.resource_address(),
             self.resource_type(),
             locked_amount_or_ids,
@@ -94,7 +94,7 @@ impl Bucket {
         &mut self,
         ids: &BTreeSet<NonFungibleId>,
         container_id: ResourceContainerId,
-    ) -> Result<Proof, ProofError> {
+    ) -> Result<ProofSubstate, ProofError> {
         // lock the specified id set
         let locked_amount_or_ids = self
             .borrow_resource_mut()
@@ -107,7 +107,7 @@ impl Bucket {
             container_id,
             (self.resource.clone(), locked_amount_or_ids.clone()),
         );
-        Proof::new(
+        ProofSubstate::new(
             self.resource_address(),
             self.resource_type(),
             locked_amount_or_ids,
@@ -196,7 +196,7 @@ impl Bucket {
                     .map_err(|e| InvokeError::Error(BucketError::ResourceOperationError(e)))?;
                 substate_mut.flush()?;
                 let bucket_id = system_api
-                    .node_create(HeapRENode::Bucket(Bucket::new(container)))?
+                    .node_create(HeapRENode::Bucket(BucketSubstate::new(container)))?
                     .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
                     bucket_id,
@@ -213,7 +213,7 @@ impl Bucket {
                     .map_err(|e| InvokeError::Error(BucketError::ResourceOperationError(e)))?;
                 substate_mut.flush()?;
                 let bucket_id = system_api
-                    .node_create(HeapRENode::Bucket(Bucket::new(container)))?
+                    .node_create(HeapRENode::Bucket(BucketSubstate::new(container)))?
                     .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
                     bucket_id,

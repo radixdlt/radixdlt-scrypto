@@ -1,5 +1,5 @@
 use crate::model::{
-    Bucket, InvokeError, LockableResource, Proof, ProofError, Resource, ResourceContainerId,
+    BucketSubstate, InvokeError, LockableResource, ProofSubstate, ProofError, Resource, ResourceContainerId,
     ResourceOperationError, VaultError,
 };
 use crate::types::*;
@@ -60,7 +60,7 @@ impl VaultRuntimeSubstate {
         }
     }
 
-    pub fn put(&mut self, other: Bucket) -> Result<(), ResourceOperationError> {
+    pub fn put(&mut self, other: BucketSubstate) -> Result<(), ResourceOperationError> {
         self.borrow_resource_mut().put(other.resource()?)
     }
 
@@ -83,7 +83,7 @@ impl VaultRuntimeSubstate {
         Ok(resource)
     }
 
-    pub fn create_proof(&mut self, container_id: ResourceContainerId) -> Result<Proof, ProofError> {
+    pub fn create_proof(&mut self, container_id: ResourceContainerId) -> Result<ProofSubstate, ProofError> {
         match self.resource_type() {
             ResourceType::Fungible { .. } => {
                 self.create_proof_by_amount(self.total_amount(), container_id)
@@ -101,7 +101,7 @@ impl VaultRuntimeSubstate {
         &mut self,
         amount: Decimal,
         container_id: ResourceContainerId,
-    ) -> Result<Proof, ProofError> {
+    ) -> Result<ProofSubstate, ProofError> {
         // lock the specified amount
         let locked_amount_or_ids = self
             .borrow_resource_mut()
@@ -114,7 +114,7 @@ impl VaultRuntimeSubstate {
             container_id,
             (self.resource.clone(), locked_amount_or_ids.clone()),
         );
-        Proof::new(
+        ProofSubstate::new(
             self.resource_address(),
             self.resource_type(),
             locked_amount_or_ids,
@@ -126,7 +126,7 @@ impl VaultRuntimeSubstate {
         &mut self,
         ids: &BTreeSet<NonFungibleId>,
         container_id: ResourceContainerId,
-    ) -> Result<Proof, ProofError> {
+    ) -> Result<ProofSubstate, ProofError> {
         // lock the specified id set
         let locked_amount_or_ids = self
             .borrow_resource_mut()
@@ -139,7 +139,7 @@ impl VaultRuntimeSubstate {
             container_id,
             (self.resource.clone(), locked_amount_or_ids.clone()),
         );
-        Proof::new(
+        ProofSubstate::new(
             self.resource_address(),
             self.resource_type(),
             locked_amount_or_ids,

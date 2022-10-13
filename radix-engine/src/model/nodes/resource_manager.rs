@@ -1,7 +1,7 @@
 use crate::engine::{HeapRENode, LockFlags, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::{
-    Bucket, InvokeError, NonFungible, NonFungibleSubstate, Resource,
+    BucketSubstate, InvokeError, NonFungible, NonFungibleSubstate, Resource,
     ResourceMethodRule::{Protected, Public},
     VaultRuntimeSubstate,
 };
@@ -227,7 +227,7 @@ impl ResourceManager {
                         ),
                     };
                     let bucket_id = system_api
-                        .node_create(HeapRENode::Bucket(Bucket::new(container)))?
+                        .node_create(HeapRENode::Bucket(BucketSubstate::new(container)))?
                         .into();
                     Some(scrypto::resource::Bucket(bucket_id))
                 } else {
@@ -282,7 +282,7 @@ impl ResourceManager {
                 let input: ResourceManagerBurnInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))?;
 
-                let bucket: Bucket = system_api
+                let bucket: BucketSubstate = system_api
                     .node_drop(RENodeId::Bucket(input.bucket.0))?
                     .into();
 
@@ -387,7 +387,7 @@ impl ResourceManager {
 
                 let container = Resource::new_empty(resource_address, resource_type);
                 let bucket_id = system_api
-                    .node_create(HeapRENode::Bucket(Bucket::new(container)))?
+                    .node_create(HeapRENode::Bucket(BucketSubstate::new(container)))?
                     .into();
                 ScryptoValue::from_typed(&scrypto::resource::Bucket(bucket_id))
             }
@@ -405,7 +405,7 @@ impl ResourceManager {
                 };
 
                 let bucket_id = system_api
-                    .node_create(HeapRENode::Bucket(Bucket::new(resource)))?
+                    .node_create(HeapRENode::Bucket(BucketSubstate::new(resource)))?
                     .into();
 
                 let non_fungible_store_id = {

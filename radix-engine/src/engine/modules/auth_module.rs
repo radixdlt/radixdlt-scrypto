@@ -60,7 +60,7 @@ impl AuthModule {
         Ok(())
     }
 
-    pub fn get_auth_zone(call_frame: &CallFrame) -> &AuthZone {
+    pub fn get_auth_zone(call_frame: &CallFrame) -> &AuthZoneSubstate {
         call_frame
             .owned_heap_nodes
             .values()
