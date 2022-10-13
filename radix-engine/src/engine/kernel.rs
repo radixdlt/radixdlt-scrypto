@@ -629,14 +629,14 @@ where
                             .map_err(RuntimeError::KernelError)?;
                     }
 
-                    let actor = REActor::Method(FullyQualifiedReceiverMethod {
+                    let actor = FullyQualifiedReceiverMethod {
                         receiver: receiver.clone(),
                         method: FullyQualifiedMethod::Scrypto {
                             package_address,
                             blueprint_name: blueprint_name.clone(),
                             ident: ident.to_string(),
                         },
-                    });
+                    };
                     node_pointer
                         .release_lock(offset, false, &mut self.track)
                         .map_err(RuntimeError::KernelError)?;
@@ -648,17 +648,18 @@ where
             ReceiverMethodIdent {
                 method_ident: MethodIdent::Native(native_fn),
                 receiver,
-            } => REActor::Method(FullyQualifiedReceiverMethod {
+            } => FullyQualifiedReceiverMethod {
                 receiver: receiver.clone(),
                 method: FullyQualifiedMethod::Native(native_fn.clone()),
-            }),
+            },
         };
 
         // TODO: Check Component ABI here rather than in auth
 
         // Check method authorization
+
         AuthModule::receiver_auth(
-            method_ident.clone(),
+            re_actor.clone(),
             &input,
             node_pointer.clone(),
             &mut self.call_frames,
@@ -672,7 +673,7 @@ where
         // start a new frame
         let frame = CallFrame::new_child(
             Self::current_frame(&self.call_frames).depth + 1,
-            re_actor,
+            REActor::Method(re_actor),
             next_owned_values,
             next_frame_node_refs,
         );

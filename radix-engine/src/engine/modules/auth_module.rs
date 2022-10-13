@@ -2,12 +2,12 @@ use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::*;
 use crate::types::*;
-use scrypto::core::{FnIdent, MethodIdent, NativeFunction, ReceiverMethodIdent};
+use scrypto::core::NativeFunction;
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
 pub enum AuthError {
     Unauthorized {
-        fn_ident: FnIdent,
+        actor: REActor,
         authorization: MethodAuthorization,
         error: MethodAuthorizationError,
     },
@@ -25,7 +25,7 @@ impl AuthModule {
     }
 
     fn check_auth(
-        fn_ident: FnIdent,
+        actor: REActor,
         method_auths: Vec<MethodAuthorization>,
         call_frames: &Vec<CallFrame>, // TODO remove this once heap is implemented
     ) -> Result<(), AuthError> {
@@ -50,7 +50,7 @@ impl AuthModule {
                 method_auth
                     .check(&auth_zones)
                     .map_err(|error| AuthError::Unauthorized {
-                        fn_ident: fn_ident.clone(),
+                        actor: actor.clone(),
                         authorization: method_auth,
                         error,
                     })?;
@@ -88,22 +88,24 @@ impl AuthModule {
             }
             _ => vec![],
         };
-        Self::check_auth(FnIdent::Function(function_ident), auth, call_frames)
+        Self::check_auth(REActor::Function(function_ident), auth, call_frames)
     }
 
     pub fn receiver_auth<'s, R: FeeReserve>(
-        method_ident: ReceiverMethodIdent,
+        next_actor: FullyQualifiedReceiverMethod,
         input: &ScryptoValue,
         node_pointer: RENodePointer,
         call_frames: &mut Vec<CallFrame>,
         track: &mut Track<'s, R>,
     ) -> Result<(), InvokeError<AuthError>> {
-        let auth = match &method_ident {
-            ReceiverMethodIdent {
-                receiver: Receiver::Ref(RENodeId::ResourceManager(resource_address)),
-                method_ident: MethodIdent::Native(NativeMethod::ResourceManager(ref method)),
-            } => {
-                let node_id = RENodeId::ResourceManager(*resource_address);
+        let FullyQualifiedReceiverMethod { receiver, method } = next_actor.clone();
+
+        let auth = match (receiver, method) {
+            (
+                Receiver::Ref(RENodeId::ResourceManager(resource_address)),
+                FullyQualifiedMethod::Native(NativeMethod::ResourceManager(ref method)),
+            ) => {
+                let node_id = RENodeId::ResourceManager(resource_address);
                 let resource_pointer = RENodePointer::Store(node_id);
                 let offset =
                     SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
@@ -121,36 +123,18 @@ impl AuthModule {
                 let auth = vec![method_auth];
                 auth
             }
-            ReceiverMethodIdent {
-                receiver: Receiver::Ref(RENodeId::System(..)),
-                method_ident: MethodIdent::Native(NativeMethod::System(ref method)),
-            } => System::method_auth(method),
-            ReceiverMethodIdent {
-                receiver: Receiver::Ref(RENodeId::Component(..)),
-                method_ident: MethodIdent::Native(..),
-            } => match node_pointer {
-                RENodePointer::Store(..) => vec![MethodAuthorization::DenyAll],
-                RENodePointer::Heap { .. } => vec![],
-            },
-            ReceiverMethodIdent {
-                receiver: Receiver::Ref(RENodeId::Component(..)),
-                method_ident: MethodIdent::Scrypto(ref ident),
-            } => {
-                let (package_address, blueprint_name) = {
-                    let offset = SubstateOffset::Component(ComponentOffset::Info);
-                    node_pointer
-                        .acquire_lock(offset.clone(), LockFlags::empty(), track)
-                        .map_err(RuntimeError::KernelError)?;
-                    let substate_ref = node_pointer.borrow_substate(&offset, call_frames, track)?;
-                    let info = substate_ref.component_info();
-                    let package_and_blueprint =
-                        (info.package_address.clone(), info.blueprint_name.clone());
-                    node_pointer
-                        .release_lock(offset, false, track)
-                        .map_err(RuntimeError::KernelError)?;
-                    package_and_blueprint
-                };
-
+            (
+                Receiver::Ref(RENodeId::System(..)),
+                FullyQualifiedMethod::Native(NativeMethod::System(ref method)),
+            ) => System::method_auth(method),
+            (
+                Receiver::Ref(RENodeId::Component(..)),
+                FullyQualifiedMethod::Scrypto {
+                    package_address,
+                    blueprint_name,
+                    ident,
+                },
+            ) => {
                 let node_id = RENodeId::Package(package_address);
                 let package_pointer = RENodePointer::Store(node_id);
                 let offset = SubstateOffset::Package(PackageOffset::Package);
@@ -191,17 +175,17 @@ impl AuthModule {
                         .map_err(RuntimeError::KernelError)?;
                     let substate_ref = node_pointer.borrow_substate(&offset, call_frames, track)?;
                     let info = substate_ref.component_info();
-                    let auth = info.method_authorization(&state, &schema, ident);
+                    let auth = info.method_authorization(&state, &schema, &ident);
                     node_pointer
                         .release_lock(offset, false, track)
                         .map_err(RuntimeError::KernelError)?;
                     auth
                 }
             }
-            ReceiverMethodIdent {
-                receiver: Receiver::Ref(RENodeId::Vault(..)),
-                method_ident: MethodIdent::Native(NativeMethod::Vault(ref vault_fn)),
-            } => {
+            (
+                Receiver::Ref(RENodeId::Vault(..)),
+                FullyQualifiedMethod::Native(NativeMethod::Vault(ref vault_fn)),
+            ) => {
                 let resource_address = {
                     let offset = SubstateOffset::Vault(VaultOffset::Vault);
                     node_pointer
@@ -235,7 +219,6 @@ impl AuthModule {
             _ => vec![],
         };
 
-        Self::check_auth(FnIdent::Method(method_ident), auth, call_frames)
-            .map_err(InvokeError::Error)
+        Self::check_auth(REActor::Method(next_actor), auth, call_frames).map_err(InvokeError::Error)
     }
 }
