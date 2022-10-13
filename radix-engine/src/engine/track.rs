@@ -179,7 +179,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
     pub fn release_lock(
         &mut self,
         substate_id: SubstateId,
-        unmodified_base: bool,
+        force_write: bool,
     ) -> Result<(), TrackError> {
         let loaded_substate = self
             .loaded_substates
@@ -192,7 +192,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                 loaded_substate.lock_state = LockState::no_lock();
                 loaded_substate.metastate = SubstateMetaState::Updated;
 
-                if unmodified_base {
+                if force_write {
                     let persisted_substate = loaded_substate.substate.clone_to_persisted();
                     self.state_track
                         .put_substate(substate_id, persisted_substate);

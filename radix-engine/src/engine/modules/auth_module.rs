@@ -108,7 +108,7 @@ impl AuthModule {
                 let offset =
                     SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
                 resource_pointer
-                    .acquire_lock(offset.clone(), LockFlags::empty(), track)
+                    .acquire_lock(offset.clone(), LockFlags::read_only(), track)
                     .map_err(RuntimeError::KernelError)?;
 
                 let substate_ref = resource_pointer.borrow_substate(&offset, call_frames, track)?;
@@ -139,7 +139,7 @@ impl AuthModule {
                 let (package_address, blueprint_name) = {
                     let offset = SubstateOffset::Component(ComponentOffset::Info);
                     node_pointer
-                        .acquire_lock(offset.clone(), LockFlags::empty(), track)
+                        .acquire_lock(offset.clone(), LockFlags::read_only(), track)
                         .map_err(RuntimeError::KernelError)?;
                     let substate_ref = node_pointer.borrow_substate(&offset, call_frames, track)?;
                     let info = substate_ref.component_info();
@@ -155,7 +155,7 @@ impl AuthModule {
                 let package_pointer = RENodePointer::Store(node_id);
                 let offset = SubstateOffset::Package(PackageOffset::Package);
                 package_pointer
-                    .acquire_lock(offset.clone(), LockFlags::empty(), track)
+                    .acquire_lock(offset.clone(), LockFlags::read_only(), track)
                     .map_err(RuntimeError::KernelError)?;
 
                 // Assume that package_address/blueprint is the original impl of Component for now
@@ -183,7 +183,7 @@ impl AuthModule {
                 let state = {
                     let offset = SubstateOffset::Component(ComponentOffset::State);
                     node_pointer
-                        .acquire_lock(offset.clone(), LockFlags::empty(), track)
+                        .acquire_lock(offset.clone(), LockFlags::read_only(), track)
                         .map_err(RuntimeError::KernelError)?;
                     let substate_ref = node_pointer.borrow_substate(&offset, call_frames, track)?;
                     let state = substate_ref.component_state().clone();
@@ -196,7 +196,7 @@ impl AuthModule {
                 {
                     let offset = SubstateOffset::Component(ComponentOffset::Info);
                     node_pointer
-                        .acquire_lock(offset.clone(), LockFlags::empty(), track)
+                        .acquire_lock(offset.clone(), LockFlags::read_only(), track)
                         .map_err(RuntimeError::KernelError)?;
                     let substate_ref = node_pointer.borrow_substate(&offset, call_frames, track)?;
                     let info = substate_ref.component_info();
@@ -228,7 +228,7 @@ impl AuthModule {
                 let offset =
                     SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
                 resource_pointer
-                    .acquire_lock(offset.clone(), LockFlags::empty(), track)
+                    .acquire_lock(offset.clone(), LockFlags::read_only(), track)
                     .map_err(RuntimeError::KernelError)?;
 
                 let substate_ref = resource_pointer.borrow_substate(&offset, call_frames, track)?;

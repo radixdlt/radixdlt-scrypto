@@ -76,8 +76,8 @@ impl System {
     fn method_lock_flags(method: SystemMethod) -> LockFlags {
         match method {
             SystemMethod::SetEpoch => LockFlags::MUTABLE,
-            SystemMethod::GetCurrentEpoch => LockFlags::empty(),
-            SystemMethod::GetTransactionHash => LockFlags::empty(),
+            SystemMethod::GetCurrentEpoch => LockFlags::read_only(),
+            SystemMethod::GetTransactionHash => LockFlags::read_only(),
         }
     }
 

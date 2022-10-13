@@ -249,12 +249,12 @@ impl ResourceManager {
             ResourceManagerMethod::LockAuth => LockFlags::MUTABLE,
             ResourceManagerMethod::Mint => LockFlags::MUTABLE,
             ResourceManagerMethod::UpdateNonFungibleData => LockFlags::MUTABLE,
-            ResourceManagerMethod::GetNonFungible => LockFlags::empty(),
-            ResourceManagerMethod::GetMetadata => LockFlags::empty(),
-            ResourceManagerMethod::GetResourceType => LockFlags::empty(),
-            ResourceManagerMethod::GetTotalSupply => LockFlags::empty(),
+            ResourceManagerMethod::GetNonFungible => LockFlags::read_only(),
+            ResourceManagerMethod::GetMetadata => LockFlags::read_only(),
+            ResourceManagerMethod::GetResourceType => LockFlags::read_only(),
+            ResourceManagerMethod::GetTotalSupply => LockFlags::read_only(),
             ResourceManagerMethod::UpdateMetadata => LockFlags::MUTABLE,
-            ResourceManagerMethod::NonFungibleExists => LockFlags::empty(),
+            ResourceManagerMethod::NonFungibleExists => LockFlags::read_only(),
             ResourceManagerMethod::CreateBucket => LockFlags::MUTABLE,
             ResourceManagerMethod::CreateVault => LockFlags::MUTABLE,
         }
@@ -523,7 +523,7 @@ impl ResourceManager {
                 let offset =
                     SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(input.id));
                 let non_fungible_handle =
-                    system_api.lock_substate(node_id, offset, LockFlags::empty())?;
+                    system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
                 let substate = system_api.get_ref(non_fungible_handle)?;
                 let exists = substate.non_fungible().0.is_some();
 
@@ -545,7 +545,7 @@ impl ResourceManager {
                 let offset =
                     SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(input.id));
                 let non_fungible_handle =
-                    system_api.lock_substate(node_id, offset, LockFlags::empty())?;
+                    system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
                 let non_fungible_ref = system_api.get_ref(non_fungible_handle)?;
                 let wrapper = non_fungible_ref.non_fungible();
                 if let Some(non_fungible) = wrapper.0.as_ref() {

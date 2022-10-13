@@ -518,7 +518,7 @@ where
                 let node_pointer = RENodePointer::Store(node_id);
                 let offset = SubstateOffset::Package(PackageOffset::Package);
                 node_pointer
-                    .acquire_lock(offset.clone(), LockFlags::empty(), &mut self.track)
+                    .acquire_lock(offset.clone(), LockFlags::read_only(), &mut self.track)
                     .map_err(RuntimeError::KernelError)?;
 
                 let package = self
@@ -799,7 +799,7 @@ where
                 // TODO: when this is resolved.
                 if !static_refs.contains(&global_address) {
                     node_pointer
-                        .acquire_lock(offset.clone(), LockFlags::empty(), &mut self.track)
+                        .acquire_lock(offset.clone(), LockFlags::read_only(), &mut self.track)
                         .map_err(|e| match e {
                             KernelError::TrackError(TrackError::NotFound(..)) => {
                                 RuntimeError::KernelError(KernelError::GlobalAddressNotFound(

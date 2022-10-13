@@ -23,13 +23,15 @@ impl Vault {
     pub fn method_locks(vault_method: VaultMethod) -> LockFlags {
         match vault_method {
             VaultMethod::Take => LockFlags::MUTABLE,
-            VaultMethod::LockFee => LockFlags::MUTABLE | LockFlags::UNMODIFIED_BASE,
+            VaultMethod::LockFee => {
+                LockFlags::MUTABLE | LockFlags::UNMODIFIED_BASE | LockFlags::FORCE_WRITE
+            }
             VaultMethod::LockContingentFee => LockFlags::MUTABLE | LockFlags::UNMODIFIED_BASE,
             VaultMethod::Put => LockFlags::MUTABLE,
             VaultMethod::TakeNonFungibles => LockFlags::MUTABLE,
-            VaultMethod::GetAmount => LockFlags::empty(),
-            VaultMethod::GetResourceAddress => LockFlags::empty(),
-            VaultMethod::GetNonFungibleIds => LockFlags::empty(),
+            VaultMethod::GetAmount => LockFlags::read_only(),
+            VaultMethod::GetResourceAddress => LockFlags::read_only(),
+            VaultMethod::GetNonFungibleIds => LockFlags::read_only(),
             VaultMethod::CreateProof => LockFlags::MUTABLE,
             VaultMethod::CreateProofByAmount => LockFlags::MUTABLE,
             VaultMethod::CreateProofByIds => LockFlags::MUTABLE,
