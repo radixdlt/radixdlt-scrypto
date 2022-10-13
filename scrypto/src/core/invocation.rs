@@ -1,6 +1,7 @@
 use sbor::rust::string::*;
 use sbor::rust::vec::Vec;
 use sbor::*;
+use strum::*;
 
 use crate::component::PackageAddress;
 use crate::engine::types::RENodeId;
@@ -72,22 +73,67 @@ pub enum NativeFunction {
 }
 
 #[derive(
-    Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe, PartialOrd, Ord,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    TypeId,
+    Encode,
+    Decode,
+    Describe,
+    PartialOrd,
+    Ord,
+    EnumString,
+    EnumVariantNames,
+    IntoStaticStr,
 )]
+#[strum(serialize_all = "snake_case")]
 pub enum ComponentMethod {
     AddAccessCheck,
 }
 
 #[derive(
-    Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe, PartialOrd, Ord,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    TypeId,
+    Encode,
+    Decode,
+    Describe,
+    PartialOrd,
+    Ord,
+    EnumString,
+    EnumVariantNames,
+    IntoStaticStr,
 )]
+#[strum(serialize_all = "snake_case")]
 pub enum SystemFunction {
     Create,
 }
 
 #[derive(
-    Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe, PartialOrd, Ord,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    TypeId,
+    Encode,
+    Decode,
+    Describe,
+    PartialOrd,
+    Ord,
+    EnumString,
+    EnumVariantNames,
+    IntoStaticStr,
 )]
+#[strum(serialize_all = "snake_case")]
 pub enum SystemMethod {
     GetTransactionHash,
     GetCurrentEpoch,
@@ -95,8 +141,23 @@ pub enum SystemMethod {
 }
 
 #[derive(
-    Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe, PartialOrd, Ord,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    TypeId,
+    Encode,
+    Decode,
+    Describe,
+    PartialOrd,
+    Ord,
+    EnumString,
+    EnumVariantNames,
+    IntoStaticStr,
 )]
+#[strum(serialize_all = "snake_case")]
 pub enum AuthZoneMethod {
     Pop,
     Push,
@@ -108,15 +169,45 @@ pub enum AuthZoneMethod {
 }
 
 #[derive(
-    Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe, PartialOrd, Ord,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    TypeId,
+    Encode,
+    Decode,
+    Describe,
+    PartialOrd,
+    Ord,
+    EnumString,
+    EnumVariantNames,
+    IntoStaticStr,
 )]
+#[strum(serialize_all = "snake_case")]
 pub enum ResourceManagerFunction {
     Create,
 }
 
 #[derive(
-    Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe, PartialOrd, Ord,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    TypeId,
+    Encode,
+    Decode,
+    Describe,
+    PartialOrd,
+    Ord,
+    EnumString,
+    EnumVariantNames,
+    IntoStaticStr,
 )]
+#[strum(serialize_all = "snake_case")]
 pub enum ResourceManagerMethod {
     Burn,
     UpdateAuth,
@@ -134,8 +225,23 @@ pub enum ResourceManagerMethod {
 }
 
 #[derive(
-    Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe, PartialOrd, Ord,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    TypeId,
+    Encode,
+    Decode,
+    Describe,
+    PartialOrd,
+    Ord,
+    EnumString,
+    EnumVariantNames,
+    IntoStaticStr,
 )]
+#[strum(serialize_all = "snake_case")]
 pub enum BucketMethod {
     Burn,
     Take,
@@ -148,8 +254,23 @@ pub enum BucketMethod {
 }
 
 #[derive(
-    Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe, PartialOrd, Ord,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    TypeId,
+    Encode,
+    Decode,
+    Describe,
+    PartialOrd,
+    Ord,
+    EnumString,
+    EnumVariantNames,
+    IntoStaticStr,
 )]
+#[strum(serialize_all = "snake_case")]
 pub enum VaultMethod {
     Take,
     LockFee,
@@ -165,8 +286,23 @@ pub enum VaultMethod {
 }
 
 #[derive(
-    Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe, PartialOrd, Ord,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    TypeId,
+    Encode,
+    Decode,
+    Describe,
+    PartialOrd,
+    Ord,
+    EnumString,
+    EnumVariantNames,
+    IntoStaticStr,
 )]
+#[strum(serialize_all = "snake_case")]
 pub enum ProofMethod {
     Clone,
     GetAmount,
@@ -176,8 +312,23 @@ pub enum ProofMethod {
 }
 
 #[derive(
-    Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe, PartialOrd, Ord,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    TypeId,
+    Encode,
+    Decode,
+    Describe,
+    PartialOrd,
+    Ord,
+    EnumString,
+    EnumVariantNames,
+    IntoStaticStr,
 )]
+#[strum(serialize_all = "snake_case")]
 pub enum WorktopMethod {
     TakeAll,
     TakeAmount,
@@ -190,15 +341,45 @@ pub enum WorktopMethod {
 }
 
 #[derive(
-    Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe, PartialOrd, Ord,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    TypeId,
+    Encode,
+    Decode,
+    Describe,
+    PartialOrd,
+    Ord,
+    EnumString,
+    EnumVariantNames,
+    IntoStaticStr,
 )]
+#[strum(serialize_all = "snake_case")]
 pub enum PackageFunction {
     Publish,
 }
 
 #[derive(
-    Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe, PartialOrd, Ord,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    TypeId,
+    Encode,
+    Decode,
+    Describe,
+    PartialOrd,
+    Ord,
+    EnumString,
+    EnumVariantNames,
+    IntoStaticStr,
 )]
+#[strum(serialize_all = "snake_case")]
 pub enum TransactionProcessorFunction {
     Run,
 }
@@ -208,4 +389,19 @@ pub enum TransactionProcessorFunction {
 pub enum ScryptoRENode {
     Component(PackageAddress, String, Vec<u8>),
     KeyValueStore,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use sbor::rust::str::FromStr;
+
+    #[test]
+    fn from_into_string() {
+        let method = WorktopMethod::TakeAll;
+        let name: &str = method.into();
+        assert_eq!(name, "take_all");
+        let method2 = WorktopMethod::from_str("take_all").unwrap();
+        assert_eq!(method2, method);
+    }
 }

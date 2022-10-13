@@ -5,8 +5,9 @@ use scrypto::address::{AddressError, Bech32Encoder};
 use scrypto::buffer::scrypto_decode;
 use scrypto::core::{
     BucketMethod, FunctionIdent, MethodIdent, NativeFunction, NativeMethod, NetworkDefinition,
-    Receiver, ReceiverMethodIdent, ResourceManagerFunction, ResourceManagerMethod,
+    Receiver, ResourceManagerFunction, ResourceManagerMethod,
 };
+use scrypto::crypto::Hash;
 use scrypto::engine::types::*;
 use scrypto::misc::ContextualDisplay;
 use scrypto::resource::{
@@ -315,85 +316,13 @@ pub fn decompile_instruction<F: fmt::Write>(
             function_ident,
             args,
         } => decompile_call_function(f, context, function_ident, args)?,
-        Instruction::CallMethod { method_ident, args } => match method_ident {
-            ReceiverMethodIdent {
-                receiver:
-                    Receiver::Ref(RENodeId::Global(GlobalAddress::Component(component_address))),
-                method_ident: MethodIdent::Scrypto(ident),
-            } => {
-                f.write_str(&format!(
-                    "CALL_METHOD ComponentAddress(\"{}\") \"{}\"",
-                    component_address.display(context.bech32_encoder),
-                    ident
-                ))?;
-
-                let validated_arg = ScryptoValue::from_slice(&args)
-                    .map_err(|_| DecompileError::InvalidArguments)?;
-                if let Value::Struct { fields } = validated_arg.dom {
-                    for field in fields {
-                        let bytes = encode_any(&field);
-                        let validated_arg = ScryptoValue::from_slice(&bytes)
-                            .map_err(|_| DecompileError::InvalidArguments)?;
-
-                        f.write_char(' ')?;
-                        write!(f, "{}", &validated_arg.display(context.for_value_display()))?;
-                    }
-                } else {
-                    return Err(DecompileError::InvalidArguments);
-                }
-
-                f.write_str(";")?;
-            }
-            ReceiverMethodIdent {
-                receiver,
-                method_ident,
-            } => {
-                let mut recognized = false;
-                match (method_ident, receiver) {
-                    (
-                        MethodIdent::Native(NativeMethod::Bucket(BucketMethod::Burn)),
-                        Receiver::Consumed(RENodeId::Bucket(bucket_id)),
-                    ) => {
-                        if let Ok(_input) = scrypto_decode::<ConsumingBucketBurnInput>(&args) {
-                            recognized = true;
-                            write!(
-                                f,
-                                "BURN_BUCKET Bucket({});",
-                                context
-                                    .bucket_names
-                                    .get(&bucket_id)
-                                    .map(|name| format!("\"{}\"", name))
-                                    .unwrap_or(format!("{}u32", bucket_id)),
-                            )?;
-                        }
-                    }
-                    (
-                        MethodIdent::Native(NativeMethod::ResourceManager(
-                            ResourceManagerMethod::Mint,
-                        )),
-                        Receiver::Ref(RENodeId::ResourceManager(resource_address)),
-                    ) => {
-                        if let Ok(input) = scrypto_decode::<ResourceManagerMintInput>(&args) {
-                            if let MintParams::Fungible { amount } = input.mint_params {
-                                recognized = true;
-                                write!(
-                                    f,
-                                    "MINT_FUNGIBLE ResourceAddress(\"{}\") Decimal(\"{}\");",
-                                    resource_address.display(context.bech32_encoder),
-                                    amount,
-                                )?;
-                            }
-                        }
-                    }
-                    _ => {}
-                }
-
-                if !recognized {
-                    // FIXME: we need a syntax to represent unrecognized invocation
-                    // To unblock alphanet, we temporarily decompile any unrecognized instruction into nothing.
-                }
-            }
-        },
+        Instruction::CallMethod { method_ident, args } => decompile_call_method(
+            f,
+            context,
+            &method_ident.receiver,
+            &method_ident.method_ident,
+            args,
+        )?,
         Instruction::PublishPackage { code, abi } => {
             write!(f, "PUBLISH_PACKAGE Blob(\"{}\") Blob(\"{}\");", code, abi)?;
         }
@@ -428,7 +357,7 @@ pub fn decompile_call_function<F: fmt::Write>(
     }
 
     // Fall back to generic representation
-    let (receiver, blueprint_name, ident) = match function_ident {
+    let (package_ident, blueprint_name, ident) = match function_ident {
         FunctionIdent::Scrypto {
             package_address,
             blueprint_name,
@@ -473,23 +402,158 @@ pub fn decompile_call_function<F: fmt::Write>(
     };
     f.write_str(&format!(
         "CALL_FUNCTION {} \"{}\" \"{}\"",
-        receiver, blueprint_name, ident
+        package_ident, blueprint_name, ident
     ))?;
     let value = ScryptoValue::from_slice(&args).map_err(|_| DecompileError::InvalidArguments)?;
     if let Value::Struct { fields } = value.dom {
         for field in fields {
             let bytes = encode_any(&field);
-            let validated_arg =
+            let arg =
                 ScryptoValue::from_slice(&bytes).map_err(|_| DecompileError::InvalidArguments)?;
-
             f.write_char(' ')?;
-            write!(f, "{}", validated_arg.display(context.for_value_display()))?;
+            write!(f, "{}", arg.display(context.for_value_display()))?;
         }
     } else {
         return Err(DecompileError::InvalidArguments);
     }
     f.write_str(";")?;
     Ok(())
+}
+
+pub fn decompile_call_method<F: fmt::Write>(
+    f: &mut F,
+    context: &mut DecompilationContext,
+    receiver: &Receiver,
+    method_ident: &MethodIdent,
+    args: &Vec<u8>,
+) -> Result<(), DecompileError> {
+    // Try to recognize the invocation
+    match (method_ident, receiver) {
+        (
+            MethodIdent::Native(NativeMethod::Bucket(BucketMethod::Burn)),
+            Receiver::Consumed(RENodeId::Bucket(bucket_id)),
+        ) => {
+            if let Ok(_input) = scrypto_decode::<ConsumingBucketBurnInput>(&args) {
+                write!(
+                    f,
+                    "BURN_BUCKET Bucket({});",
+                    context
+                        .bucket_names
+                        .get(&bucket_id)
+                        .map(|name| format!("\"{}\"", name))
+                        .unwrap_or(format!("{}u32", bucket_id)),
+                )?;
+                return Ok(());
+            }
+        }
+        (
+            MethodIdent::Native(NativeMethod::ResourceManager(ResourceManagerMethod::Mint)),
+            Receiver::Ref(RENodeId::ResourceManager(resource_address)),
+        ) => {
+            if let Ok(input) = scrypto_decode::<ResourceManagerMintInput>(&args) {
+                if let MintParams::Fungible { amount } = input.mint_params {
+                    write!(
+                        f,
+                        "MINT_FUNGIBLE ResourceAddress(\"{}\") Decimal(\"{}\");",
+                        resource_address.display(context.bech32_encoder),
+                        amount,
+                    )?;
+                }
+                return Ok(());
+            }
+        }
+        _ => {}
+    }
+
+    // Fall back to generic representation
+    let receiver = match receiver {
+        Receiver::Ref(node_id) => format!(
+            "{}{}",
+            if matches!(node_id, RENodeId::Global(_)) {
+                ""
+            } else {
+                "&"
+            },
+            format_node_id(node_id, context)
+        ),
+        Receiver::Consumed(node_id) => format_node_id(node_id, context),
+    };
+    let ident: &str = match method_ident {
+        MethodIdent::Scrypto(ident) => ident,
+        MethodIdent::Native(native_method) => match native_method {
+            NativeMethod::Component(m) => m.into(),
+            NativeMethod::System(m) => m.into(),
+            NativeMethod::AuthZone(m) => m.into(),
+            NativeMethod::ResourceManager(m) => m.into(),
+            NativeMethod::Bucket(m) => m.into(),
+            NativeMethod::Vault(m) => m.into(),
+            NativeMethod::Proof(m) => m.into(),
+            NativeMethod::Worktop(m) => m.into(),
+        },
+    };
+    f.write_str(&format!("CALL_METHOD {} \"{}\"", receiver, ident))?;
+    let value = ScryptoValue::from_slice(&args).map_err(|_| DecompileError::InvalidArguments)?;
+    if let Value::Struct { fields } = value.dom {
+        for field in fields {
+            let bytes = encode_any(&field);
+            let arg =
+                ScryptoValue::from_slice(&bytes).map_err(|_| DecompileError::InvalidArguments)?;
+            f.write_char(' ')?;
+            write!(f, "{}", &arg.display(context.for_value_display()))?;
+        }
+    } else {
+        return Err(DecompileError::InvalidArguments);
+    }
+
+    f.write_str(";")?;
+    Ok(())
+}
+
+fn format_node_id(node_id: &RENodeId, context: &mut DecompilationContext) -> String {
+    match node_id {
+        RENodeId::Global(global_address) => match global_address {
+            GlobalAddress::Component(address) => format!(
+                "ComponentAddress(\"{}\")",
+                address.display(context.bech32_encoder)
+            ),
+            GlobalAddress::Package(address) => format!(
+                "PackageAddress(\"{}\")",
+                address.display(context.bech32_encoder)
+            ),
+            GlobalAddress::Resource(address) => format!(
+                "ResourceAddress(\"{}\")",
+                address.display(context.bech32_encoder)
+            ),
+        },
+        RENodeId::Bucket(id) => match context.bucket_names.get(id) {
+            Some(name) => format!("Bucket(\"{}\")", name),
+            None => format!("Bucket({}u32)", id),
+        },
+        RENodeId::Proof(id) => match context.proof_names.get(id) {
+            Some(name) => format!("Proof(\"{}\")", name),
+            None => format!("Proof({}u32)", id),
+        },
+        RENodeId::AuthZone(id) => format!("AuthZone({}u32)", id),
+        RENodeId::Worktop => "Worktop".to_owned(),
+        RENodeId::KeyValueStore(id) => format!("KeyValueStore(\"{}\")", format_id(id)),
+        RENodeId::NonFungibleStore(id) => format!("NonFungibleStore(\"{}\")", format_id(id)),
+        RENodeId::Component(id) => format!("Component(\"{}\")", format_id(id)),
+        RENodeId::System(id) => format!("System(\"{}\")", format_id(id)),
+        RENodeId::Vault(id) => format!("Vault(\"{}\")", format_id(id)),
+        RENodeId::ResourceManager(address) => format!(
+            "ResourceManager(\"{}\")",
+            address.display(context.bech32_encoder)
+        ),
+        RENodeId::Package(address) => {
+            format!("Package(\"{}\")", address.display(context.bech32_encoder))
+        }
+    }
+}
+
+fn format_id(id: &(Hash, u32)) -> String {
+    let mut buf = id.0.to_vec();
+    buf.extend(id.1.to_le_bytes());
+    hex::encode(buf)
 }
 
 #[cfg(test)]
