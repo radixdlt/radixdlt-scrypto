@@ -160,21 +160,12 @@ impl AuthModule {
 
                 // Assume that package_address/blueprint is the original impl of Component for now
                 // TODO: Remove this assumption
-                let package = track
-                    .borrow_substate(node_id, offset.clone())
-                    .package()
-                    .clone(); // TODO: Remove clone
-                let abi = package
+                let package = track.borrow_substate(node_id, offset.clone()).package();
+                let schema = package
                     .blueprint_abi(&blueprint_name)
-                    .expect("Blueprint not found for existing component");
-                let fn_abi = abi.get_fn_abi(ident).ok_or(RuntimeError::KernelError(
-                    KernelError::FnIdentNotFound(FnIdent::Method(method_ident.clone())),
-                ))?; // TODO: Move this check into kernel
-                if !fn_abi.input.matches(&input.dom) {
-                    return Err(InvokeError::Downstream(RuntimeError::KernelError(
-                        KernelError::InvalidFnInput2(FnIdent::Method(method_ident)),
-                    )));
-                }
+                    .expect("Blueprint not found for existing component")
+                    .structure
+                    .clone();
 
                 package_pointer
                     .release_lock(offset, false, track)
@@ -200,7 +191,7 @@ impl AuthModule {
                         .map_err(RuntimeError::KernelError)?;
                     let substate_ref = node_pointer.borrow_substate(&offset, call_frames, track)?;
                     let info = substate_ref.component_info();
-                    let auth = info.method_authorization(&state, &abi.structure, ident);
+                    let auth = info.method_authorization(&state, &schema, ident);
                     node_pointer
                         .release_lock(offset, false, track)
                         .map_err(RuntimeError::KernelError)?;
