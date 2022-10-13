@@ -1,8 +1,7 @@
 use indexmap::IndexMap;
 use transaction::model::Executable;
 
-use crate::engine::AppStateTrack;
-use crate::engine::BaseStateTrack;
+use crate::engine::StateTrack;
 use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::fee::FeeReserveError;
@@ -90,15 +89,23 @@ impl SubstateCache {
 }
 
 #[derive(Debug)]
+pub enum SubstateMetaState {
+    New,
+    Updated,
+    Loaded,
+}
+
+#[derive(Debug)]
 pub struct LoadedSubstate {
     pub substate: SubstateCache,
     pub lock_state: LockState,
+    pub metastate: SubstateMetaState,
 }
 
 /// Transaction-wide states and side effects
 pub struct Track<'s, R: FeeReserve> {
     application_logs: Vec<(Level, String)>,
-    state_track: AppStateTrack<'s>,
+    state_track: StateTrack<'s>,
     loaded_substates: IndexMap<SubstateId, LoadedSubstate>,
     loaded_nodes: IndexMap<RENodeId, HeapRENode>,
     pub new_global_addresses: Vec<GlobalAddress>,
@@ -111,7 +118,8 @@ pub struct Track<'s, R: FeeReserve> {
 pub enum TrackError {
     NotFound(SubstateId),
     SubstateLocked(SubstateId, LockState),
-    AlreadyLoaded(SubstateId),
+    LockUnmodifiedBaseOnNewSubstate(SubstateId),
+    LockUnmodifiedBaseOnOnUpdatedSubstate(SubstateId),
 }
 
 pub struct TrackReceipt {
@@ -131,8 +139,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         fee_reserve: R,
         fee_table: FeeTable,
     ) -> Self {
-        let base_state_track = BaseStateTrack::new(substate_store);
-        let state_track = AppStateTrack::new(base_state_track);
+        let state_track = StateTrack::new(substate_store);
 
         Self {
             application_logs: Vec::new(),
@@ -164,20 +171,11 @@ impl<'s, R: FeeReserve> Track<'s, R> {
     pub fn acquire_lock(
         &mut self,
         substate_id: SubstateId,
-        mutable: bool,
-        write_through: bool,
+        flags: LockFlags,
     ) -> Result<(), TrackError> {
-        if write_through && self.loaded_substates.contains_key(&substate_id) {
-            return Err(TrackError::AlreadyLoaded(substate_id));
-        }
-
         // Load the substate from state track
         if !self.loaded_substates.contains_key(&substate_id) {
-            let maybe_substate = if write_through {
-                self.state_track.get_substate_from_base(&substate_id)
-            } else {
-                self.state_track.get_substate(&substate_id)
-            };
+            let maybe_substate = self.state_track.get_substate(&substate_id);
 
             if let Some(substate) = maybe_substate {
                 self.loaded_substates.insert(
@@ -185,6 +183,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                     LoadedSubstate {
                         substate: SubstateCache::Free(substate),
                         lock_state: LockState::no_lock(),
+                        metastate: SubstateMetaState::Loaded,
                     },
                 );
             } else {
@@ -196,9 +195,24 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             .loaded_substates
             .get_mut(&substate_id)
             .expect("Existence checked upfront");
+
+        if flags.contains(LockFlags::UNMODIFIED_BASE) {
+            match loaded_substate.metastate {
+                SubstateMetaState::New => {
+                    return Err(TrackError::LockUnmodifiedBaseOnNewSubstate(substate_id))
+                }
+                SubstateMetaState::Updated => {
+                    return Err(TrackError::LockUnmodifiedBaseOnOnUpdatedSubstate(
+                        substate_id,
+                    ))
+                }
+                SubstateMetaState::Loaded => {}
+            }
+        }
+
         match loaded_substate.lock_state {
             LockState::Read(n) => {
-                if mutable {
+                if flags.contains(LockFlags::MUTABLE) {
                     if n != 0 {
                         return Err(TrackError::SubstateLocked(
                             substate_id,
@@ -224,7 +238,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
     pub fn release_lock(
         &mut self,
         substate_id: SubstateId,
-        write_through: bool,
+        force_write: bool,
     ) -> Result<(), TrackError> {
         let mut loaded_substate = self
             .loaded_substates
@@ -233,10 +247,13 @@ impl<'s, R: FeeReserve> Track<'s, R> {
 
         match &loaded_substate.lock_state {
             LockState::Read(n) => loaded_substate.lock_state = LockState::Read(n - 1),
-            LockState::Write => loaded_substate.lock_state = LockState::no_lock(),
+            LockState::Write => {
+                loaded_substate.lock_state = LockState::no_lock();
+                loaded_substate.metastate = SubstateMetaState::Updated;
+            }
         }
 
-        if write_through {
+        if force_write {
             let node_id = match substate_id {
                 SubstateId(
                     RENodeId::Vault(vault_id),
@@ -247,7 +264,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             let node = self.loaded_nodes.remove(&node_id).unwrap();
             for (offset, substate) in node_to_substates(node) {
                 self.state_track
-                    .put_substate_to_base(SubstateId(node_id, offset), substate);
+                    .put_substate(SubstateId(node_id, offset), substate);
             }
         } else {
             self.loaded_substates.insert(substate_id, loaded_substate);
@@ -385,6 +402,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                 LoadedSubstate {
                     substate: SubstateCache::Free(substate),
                     lock_state: LockState::no_lock(),
+                    metastate: SubstateMetaState::New,
                 },
             );
         } else {
@@ -429,6 +447,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                         LoadedSubstate {
                             substate: SubstateCache::Free(substate),
                             lock_state: LockState::no_lock(),
+                            metastate: SubstateMetaState::Loaded,
                         },
                     );
                 }
@@ -450,6 +469,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                         LoadedSubstate {
                             substate: SubstateCache::Free(substate),
                             lock_state: LockState::no_lock(),
+                            metastate: SubstateMetaState::Loaded,
                         },
                     );
                 }
@@ -501,6 +521,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                         LoadedSubstate {
                             substate: SubstateCache::Free(substate),
                             lock_state: LockState::no_lock(),
+                            metastate: SubstateMetaState::New,
                         },
                     );
                 }
@@ -522,6 +543,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                         LoadedSubstate {
                             substate: SubstateCache::Free(substate),
                             lock_state: LockState::no_lock(),
+                            metastate: SubstateMetaState::New,
                         },
                     );
                 }
@@ -634,10 +656,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             for (id, substate) in nodes_to_substates(self.loaded_nodes.into_iter().collect()) {
                 self.state_track.put_substate(id, substate);
             }
-
-            self.state_track.commit();
         } else {
-            self.state_track.rollback();
             self.loaded_substates.clear();
         }
 
@@ -691,14 +710,14 @@ impl<'s, R: FeeReserve> Track<'s, R> {
 
                 let mut substate = self
                     .state_track
-                    .get_substate_from_base(&substate_id)
+                    .get_substate(&substate_id)
                     .expect("Failed to fetch a fee-locking vault");
                 substate
                     .vault_mut()
                     .0
                     .put(locked)
                     .expect("Failed to put a fee-locking vault");
-                self.state_track.put_substate_to_base(substate_id, substate);
+                self.state_track.put_substate(substate_id, substate);
 
                 *actual_fee_payments.entry(vault_id).or_default() += amount;
             }
@@ -717,7 +736,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                     Ok(output) => TransactionOutcome::Success(output),
                     Err(error) => TransactionOutcome::Failure(error),
                 },
-                state_updates: self.state_track.into_base().generate_diff(),
+                state_updates: self.state_track.generate_diff(),
                 entity_changes: EntityChanges::new(self.new_global_addresses),
                 resource_changes: execution_trace_receipt.resource_changes,
             })

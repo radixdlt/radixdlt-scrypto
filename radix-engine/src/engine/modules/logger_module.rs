@@ -61,14 +61,14 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
             SysCallInput::LockSubstate {
                 node_id,
                 offset,
-                mutable,
+                flags,
             } => {
                 log!(
                     self,
-                    "Lock substate: node_id {:?} offset {:?} mutable {:?}",
+                    "Lock substate: node_id {:?} offset {:?} flags {:?}",
                     node_id,
                     offset,
-                    mutable
+                    flags
                 );
             }
             SysCallInput::GetRef { lock_handle } => {

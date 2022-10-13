@@ -213,7 +213,7 @@ impl ExecutionTraceReceipt {
     pub fn new(
         ops: Vec<(REActor, VaultId, VaultOp)>,
         actual_fee_payments: HashMap<VaultId, Decimal>,
-        state_track: &mut AppStateTrack,
+        state_track: &mut StateTrack,
         is_commit_success: bool,
     ) -> Self {
         let mut vault_changes = HashMap::<ComponentId, HashMap<VaultId, Decimal>>::new();
@@ -287,7 +287,7 @@ impl ExecutionTraceReceipt {
 
     fn get_vault_resource_address(
         vault_id: VaultId,
-        state_track: &mut AppStateTrack,
+        state_track: &mut StateTrack,
     ) -> ResourceAddress {
         state_track
             .get_substate(&SubstateId(

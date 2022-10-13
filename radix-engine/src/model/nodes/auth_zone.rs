@@ -1,4 +1,4 @@
-use crate::engine::{HeapRENode, SystemApi};
+use crate::engine::{HeapRENode, LockFlags, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::{
     InvokeError, LockableResource, LockedAmountOrIds, Proof, ProofError, ResourceContainerId,
@@ -234,19 +234,14 @@ impl AuthZone {
                 let input: AuthZoneCreateProofByIdsInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(AuthZoneError::InvalidRequestData(e)))?;
                 let resource_type = {
-                    let result = system_api.invoke(
-                        FnIdent::Method(ReceiverMethodIdent {
-                            receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Resource(
-                                input.resource_address,
-                            ))),
-                            method_ident: MethodIdent::Native(NativeMethod::ResourceManager(
-                                ResourceManagerMethod::GetResourceType,
-                            )),
-                        }),
-                        ScryptoValue::from_typed(&ResourceManagerGetResourceTypeInput {}),
-                    )?;
-                    let resource_type: ResourceType = scrypto_decode(&result.raw).unwrap();
-                    resource_type
+                    let resource_id =
+                        RENodeId::Global(GlobalAddress::Resource(input.resource_address));
+                    let offset =
+                        SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
+                    let resource_handle =
+                        system_api.lock_substate(resource_id, offset, LockFlags::read_only())?;
+                    let substate_ref = system_api.get_ref(resource_handle)?;
+                    substate_ref.resource_manager().resource_type
                 };
 
                 let mut node_ref = system_api.borrow_node_mut(&RENodeId::AuthZone(auth_zone_id))?;
