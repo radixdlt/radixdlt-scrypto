@@ -275,7 +275,6 @@ where
         &mut self,
         input: ScryptoValue,
     ) -> Result<(ScryptoValue, HashMap<RENodeId, HeapRootRENode>), RuntimeError> {
-
         // Copy-over root frame's auth zone virtual_proofs_buckets
         // TODO: Clean this up at some point (possible move to auth zone?)
         // TODO: Move to a better spot
@@ -527,7 +526,7 @@ where
         );
         self.call_frames.push(frame);
 
-        AuthModule::function_auth(function_ident.clone(), &mut self.call_frames)
+        AuthModule::function_auth(&mut self.call_frames)
             .map_err(|e| RuntimeError::ModuleError(ModuleError::AuthError(e)))?;
 
         let (output, received_values) = self.run(input)?;
@@ -666,16 +665,11 @@ where
         );
         self.call_frames.push(frame);
 
-        AuthModule::receiver_auth(
-            re_actor,
-            &input,
-            node_pointer.clone(),
-            &mut self.call_frames,
-            &mut self.track,
-        )
-        .map_err(|e| match e {
-            InvokeError::Error(e) => RuntimeError::ModuleError(ModuleError::AuthError(e)),
-            InvokeError::Downstream(runtime_error) => runtime_error,
+        AuthModule::receiver_auth(&input, &mut self.call_frames, &mut self.track).map_err(|e| {
+            match e {
+                InvokeError::Error(e) => RuntimeError::ModuleError(ModuleError::AuthError(e)),
+                InvokeError::Downstream(runtime_error) => runtime_error,
+            }
         })?;
 
         let (output, received_values) = self.run(input)?;

@@ -25,14 +25,14 @@ impl AuthModule {
     }
 
     fn check_auth(
-        actor: REActor,
         method_auths: Vec<MethodAuthorization>,
         call_frames: &Vec<CallFrame>, // TODO remove this once heap is implemented
     ) -> Result<(), AuthError> {
         // This module is called with a new call frame. Get the previous one which has an authzone.
         let second_to_last_index = call_frames.len() - 2;
 
-        let prev_call_frame = call_frames.get(second_to_last_index)
+        let prev_call_frame = call_frames
+            .get(second_to_last_index)
             .expect("Previous call frame does not exist");
 
         let auth_zone = Self::get_auth_zone(prev_call_frame);
@@ -52,7 +52,7 @@ impl AuthModule {
                 method_auth
                     .check(&auth_zones)
                     .map_err(|error| AuthError::Unauthorized {
-                        actor: actor.clone(),
+                        actor: call_frames.last().unwrap().actor.clone(),
                         authorization: method_auth,
                         error,
                     })?;
@@ -80,27 +80,33 @@ impl AuthModule {
             .auth_zone()
     }
 
-    pub fn function_auth(
-        function_ident: FunctionIdent,
-        call_frames: &mut Vec<CallFrame>,
-    ) -> Result<(), AuthError> {
-        let auth = match &function_ident {
+    pub fn function_auth(call_frames: &mut Vec<CallFrame>) -> Result<(), AuthError> {
+        let call_frame = call_frames.last().unwrap();
+        let function_ident = match &call_frame.actor {
+            REActor::Function(function_ident) => function_ident,
+            _ => panic!("oops"),
+        };
+
+        let auth = match function_ident {
             FunctionIdent::Native(NativeFunction::System(system_func)) => {
                 System::function_auth(system_func)
             }
             _ => vec![],
         };
-        Self::check_auth(REActor::Function(function_ident), auth, call_frames)
+
+        Self::check_auth(auth, call_frames)
     }
 
     pub fn receiver_auth<'s, R: FeeReserve>(
-        next_actor: FullyQualifiedReceiverMethod,
-        input: &ScryptoValue,
-        node_pointer: RENodePointer,
+        input: &ScryptoValue, // TODO: Remove
         call_frames: &mut Vec<CallFrame>,
         track: &mut Track<'s, R>,
     ) -> Result<(), InvokeError<AuthError>> {
-        let FullyQualifiedReceiverMethod { receiver, method } = next_actor.clone();
+        let call_frame = call_frames.last().unwrap();
+        let FullyQualifiedReceiverMethod { receiver, method } = match &call_frame.actor {
+            REActor::Method(method) => method.clone(),
+            _ => panic!("oops"),
+        };
 
         let auth = match (receiver, method) {
             (
@@ -157,14 +163,20 @@ impl AuthModule {
                     .release_lock(offset, false, track)
                     .map_err(RuntimeError::KernelError)?;
 
+                let component_node_pointer = call_frames
+                    .last()
+                    .unwrap()
+                    .get_node_pointer(receiver.node_id())?;
+
                 let state = {
                     let offset = SubstateOffset::Component(ComponentOffset::State);
-                    node_pointer
+                    component_node_pointer
                         .acquire_lock(offset.clone(), LockFlags::empty(), track)
                         .map_err(RuntimeError::KernelError)?;
-                    let substate_ref = node_pointer.borrow_substate(&offset, call_frames, track)?;
+                    let substate_ref =
+                        component_node_pointer.borrow_substate(&offset, call_frames, track)?;
                     let state = substate_ref.component_state().clone();
-                    node_pointer
+                    component_node_pointer
                         .release_lock(offset, false, track)
                         .map_err(RuntimeError::KernelError)?;
                     state
@@ -172,13 +184,14 @@ impl AuthModule {
 
                 {
                     let offset = SubstateOffset::Component(ComponentOffset::Info);
-                    node_pointer
+                    component_node_pointer
                         .acquire_lock(offset.clone(), LockFlags::empty(), track)
                         .map_err(RuntimeError::KernelError)?;
-                    let substate_ref = node_pointer.borrow_substate(&offset, call_frames, track)?;
+                    let substate_ref =
+                        component_node_pointer.borrow_substate(&offset, call_frames, track)?;
                     let info = substate_ref.component_info();
                     let auth = info.method_authorization(&state, &schema, &ident);
-                    node_pointer
+                    component_node_pointer
                         .release_lock(offset, false, track)
                         .map_err(RuntimeError::KernelError)?;
                     auth
@@ -188,14 +201,20 @@ impl AuthModule {
                 Receiver::Ref(RENodeId::Vault(..)),
                 FullyQualifiedMethod::Native(NativeMethod::Vault(ref vault_fn)),
             ) => {
+                let vault_node_pointer = call_frames
+                    .last()
+                    .unwrap()
+                    .get_node_pointer(receiver.node_id())?;
+
                 let resource_address = {
                     let offset = SubstateOffset::Vault(VaultOffset::Vault);
-                    node_pointer
+                    vault_node_pointer
                         .acquire_lock(offset.clone(), LockFlags::empty(), track)
                         .map_err(RuntimeError::KernelError)?;
-                    let substate_ref = node_pointer.borrow_substate(&offset, call_frames, track)?;
+                    let substate_ref =
+                        vault_node_pointer.borrow_substate(&offset, call_frames, track)?;
                     let resource_address = substate_ref.vault().resource_address();
-                    node_pointer
+                    vault_node_pointer
                         .release_lock(offset, false, track)
                         .map_err(RuntimeError::KernelError)?;
                     resource_address
@@ -221,6 +240,6 @@ impl AuthModule {
             _ => vec![],
         };
 
-        Self::check_auth(REActor::Method(next_actor), auth, call_frames).map_err(InvokeError::Error)
+        Self::check_auth(auth, call_frames).map_err(InvokeError::Error)
     }
 }
