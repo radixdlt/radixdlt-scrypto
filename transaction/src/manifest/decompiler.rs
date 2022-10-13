@@ -314,62 +314,7 @@ pub fn decompile_instruction<F: fmt::Write>(
         Instruction::CallFunction {
             function_ident,
             args,
-        } => match function_ident {
-            FunctionIdent::Scrypto {
-                package_address,
-                blueprint_name,
-                ident,
-            } => {
-                f.write_str(&format!(
-                    "CALL_FUNCTION PackageAddress(\"{}\") \"{}\" \"{}\"",
-                    package_address.display(context.bech32_encoder),
-                    blueprint_name,
-                    ident
-                ))?;
-                let validated_arg = ScryptoValue::from_slice(&args)
-                    .map_err(|_| DecompileError::InvalidArguments)?;
-                if let Value::Struct { fields } = validated_arg.dom {
-                    for field in fields {
-                        let bytes = encode_any(&field);
-                        let validated_arg = ScryptoValue::from_slice(&bytes)
-                            .map_err(|_| DecompileError::InvalidArguments)?;
-
-                        f.write_char(' ')?;
-                        write!(f, "{}", validated_arg.display(context.for_value_display()))?;
-                    }
-                } else {
-                    return Err(DecompileError::InvalidArguments);
-                }
-                f.write_str(";")?;
-            }
-            FunctionIdent::Native(native_function_ident) => {
-                let mut recognized = false;
-                match native_function_ident {
-                    NativeFunction::ResourceManager(ResourceManagerFunction::Create) => {
-                        if let Ok(input) = scrypto_decode::<ResourceManagerCreateInput>(&args) {
-                            recognized = true;
-                            f.write_str(&format!(
-                                "CREATE_RESOURCE {} {} {} {};",
-                                ScryptoValue::from_typed(&input.resource_type)
-                                    .display(context.for_value_display()),
-                                ScryptoValue::from_typed(&input.metadata)
-                                    .display(context.for_value_display()),
-                                ScryptoValue::from_typed(&input.access_rules)
-                                    .display(context.for_value_display()),
-                                ScryptoValue::from_typed(&input.mint_params)
-                                    .display(context.for_value_display()),
-                            ))?;
-                        }
-                    }
-                    _ => {}
-                }
-
-                if !recognized {
-                    // FIXME: we need a syntax to represent unrecognized invocation
-                    // To unblock alphanet, we temporarily decompile any unrecognized instruction into nothing.
-                }
-            }
-        },
+        } => decompile_call_function(f, context, function_ident, args)?,
         Instruction::CallMethod { method_ident, args } => match method_ident {
             ReceiverMethodIdent {
                 receiver:
@@ -456,6 +401,97 @@ pub fn decompile_instruction<F: fmt::Write>(
     Ok(())
 }
 
+pub fn decompile_call_function<F: fmt::Write>(
+    f: &mut F,
+    context: &mut DecompilationContext,
+    function_ident: &FunctionIdent,
+    args: &Vec<u8>,
+) -> Result<(), DecompileError> {
+    // Try to recognize the invocation
+    match function_ident {
+        FunctionIdent::Native(NativeFunction::ResourceManager(ResourceManagerFunction::Create)) => {
+            if let Ok(input) = scrypto_decode::<ResourceManagerCreateInput>(&args) {
+                f.write_str(&format!(
+                    "CREATE_RESOURCE {} {} {} {};",
+                    ScryptoValue::from_typed(&input.resource_type)
+                        .display(context.for_value_display()),
+                    ScryptoValue::from_typed(&input.metadata).display(context.for_value_display()),
+                    ScryptoValue::from_typed(&input.access_rules)
+                        .display(context.for_value_display()),
+                    ScryptoValue::from_typed(&input.mint_params)
+                        .display(context.for_value_display()),
+                ))?;
+                return Ok(());
+            }
+        }
+        _ => {}
+    }
+
+    // Fall back to generic representation
+    let (receiver, blueprint_name, ident) = match function_ident {
+        FunctionIdent::Scrypto {
+            package_address,
+            blueprint_name,
+            ident,
+        } => (
+            format!(
+                "PackageAddress(\"{}\")",
+                package_address.display(context.bech32_encoder),
+            ),
+            blueprint_name.as_str(),
+            ident.as_str(),
+        ),
+        FunctionIdent::Native(native_function) => {
+            let (blueprint_name, ident) = match native_function {
+                NativeFunction::System(func) => (
+                    "System",
+                    match func {
+                        scrypto::core::SystemFunction::Create => "create",
+                    },
+                ),
+                NativeFunction::ResourceManager(func) => (
+                    "ResourceManager",
+                    match func {
+                        scrypto::core::ResourceManagerFunction::Create => "create",
+                    },
+                ),
+                NativeFunction::Package(func) => (
+                    "Package",
+                    match func {
+                        scrypto::core::PackageFunction::Publish => "publish",
+                    },
+                ),
+                NativeFunction::TransactionProcessor(func) => (
+                    "TransactionProcessor",
+                    match func {
+                        scrypto::core::TransactionProcessorFunction::Run => "run",
+                    },
+                ),
+            };
+            ("Native".to_owned(), blueprint_name, ident)
+        }
+    };
+    f.write_str(&format!(
+        "CALL_FUNCTION {} \"{}\" \"{}\"",
+        receiver, blueprint_name, ident
+    ))?;
+    let value = ScryptoValue::from_slice(&args).map_err(|_| DecompileError::InvalidArguments)?;
+    if let Value::Struct { fields } = value.dom {
+        for field in fields {
+            let bytes = encode_any(&field);
+            let validated_arg =
+                ScryptoValue::from_slice(&bytes).map_err(|_| DecompileError::InvalidArguments)?;
+
+            f.write_char(' ')?;
+            write!(f, "{}", validated_arg.display(context.for_value_display()))?;
+        }
+    } else {
+        return Err(DecompileError::InvalidArguments);
+    }
+    f.write_str(";")?;
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -494,7 +530,7 @@ mod tests {
         )
         .unwrap();
 
-        assert_eq!(manifest, "\n");
+        assert_eq!(manifest, "CALL_FUNCTION Native \"ResourceManager\" \"create\" Enum(\"NonFungible\") Map<String, String>() Map<Enum, Tuple>();\n");
     }
 
     #[test]
