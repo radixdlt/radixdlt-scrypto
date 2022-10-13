@@ -25,7 +25,13 @@ fn stored_bucket_in_committed_component_should_fail() {
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        matches!(e, RuntimeError::KernelError(KernelError::ValueNotAllowed))
+        matches!(
+            e,
+            RuntimeError::KernelError(KernelError::InvalidOwnership(
+                SubstateOffset::Component(ComponentOffset::State),
+                RENodeId::Bucket(..)
+            ))
+        )
     });
 }
 
@@ -50,6 +56,12 @@ fn stored_bucket_in_owned_component_should_fail() {
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        matches!(e, RuntimeError::KernelError(KernelError::ValueNotAllowed))
+        matches!(
+            e,
+            RuntimeError::KernelError(KernelError::InvalidOwnership(
+                SubstateOffset::Component(ComponentOffset::State),
+                RENodeId::Bucket(..)
+            ))
+        )
     });
 }

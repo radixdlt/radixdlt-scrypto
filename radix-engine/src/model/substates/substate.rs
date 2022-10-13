@@ -600,20 +600,17 @@ impl<'f, 's, R: FeeReserve> SubstateRefMut<'f, 's, R> {
             }
         }
 
-        let new_children_nodes = current_frame.take_nodes(new_children, true)?;
+        for child_id in new_children {
+            SubstateProperties::verify_can_own(&self.offset, child_id)?;
 
-        if !new_children_nodes.is_empty() {
-            // TODO: Put this in a better place
-            if !SubstateProperties::can_own_nodes(&self.offset) {
-                return Err(RuntimeError::KernelError(KernelError::ValueNotAllowed));
-            }
-        }
+            // Move child from call frame owned to call frame reference
+            let current_frame = self.call_frames.last_mut().unwrap();
+            let node = current_frame.take_node(child_id)?;
+            current_frame.add_lock_visible_node(self.lock_handle, child_id)?;
 
-        for child_node in new_children_nodes.keys() {
-            current_frame.add_lock_visible_node(self.lock_handle, *child_node)?;
+            self.node_pointer
+                .add_child(child_id, node, &mut self.call_frames, &mut self.track);
         }
-        self.node_pointer
-            .add_children(new_children_nodes, &mut self.call_frames, &mut self.track);
 
         Ok(())
     }

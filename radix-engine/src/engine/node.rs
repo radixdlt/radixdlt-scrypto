@@ -19,62 +19,37 @@ pub enum HeapRENode {
 }
 
 impl HeapRENode {
-    /// Not that this method is intended for heap nodes only, see the panic below.
-    pub fn get_child_nodes(&self) -> Result<HashSet<RENodeId>, RuntimeError> {
+    pub fn get_substates(&self) -> Vec<SubstateOffset> {
         match self {
-            HeapRENode::Global(global_node) => {
-                let child_node = match &global_node.address {
-                    GlobalAddressSubstate::Component(component) => RENodeId::Component(component.0),
-                    GlobalAddressSubstate::SystemComponent(component) => {
-                        RENodeId::System(component.0)
-                    }
-                    GlobalAddressSubstate::Package(package_address) => {
-                        RENodeId::Package(*package_address)
-                    }
-                    GlobalAddressSubstate::Resource(resource_address) => {
-                        RENodeId::ResourceManager(*resource_address)
-                    }
-                };
-                let mut child_nodes = HashSet::new();
-                child_nodes.insert(child_node);
-                Ok(child_nodes)
+            HeapRENode::Global(..) => {
+                vec![SubstateOffset::Global(GlobalOffset::Global)]
             }
-            HeapRENode::Component(component) => {
-                if let Some(state) = &component.state {
-                    let value = ScryptoValue::from_slice(&state.raw)
-                        .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
-                    Ok(value.node_ids())
-                } else {
-                    panic!("Component state should be available for heap component")
-                }
+            HeapRENode::Component(..) => {
+                vec![
+                    SubstateOffset::Component(ComponentOffset::State),
+                    SubstateOffset::Component(ComponentOffset::Info),
+                ]
             }
-            HeapRENode::KeyValueStore(store) => {
-                let mut child_nodes = HashSet::new();
-                for (_id, substate) in &store.loaded_entries {
-                    if let Some(v) = &substate.0 {
-                        let value = ScryptoValue::from_slice(&v)
-                            .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
-                        child_nodes.extend(value.node_ids());
-                    }
-                }
-                Ok(child_nodes)
+            HeapRENode::KeyValueStore(store) => store
+                .loaded_entries
+                .iter()
+                .map(|(key, _)| {
+                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key.clone()))
+                })
+                .collect(),
+            HeapRENode::NonFungibleStore(..) => vec![],
+            HeapRENode::ResourceManager(..) => {
+                vec![SubstateOffset::ResourceManager(
+                    ResourceManagerOffset::ResourceManager,
+                )]
             }
-            HeapRENode::NonFungibleStore(..) => Ok(HashSet::new()),
-            HeapRENode::ResourceManager(resource_manager) => {
-                let mut child_nodes = HashSet::new();
-                if let Some(non_fungible_store_id) = &resource_manager.info.non_fungible_store_id {
-                    child_nodes
-                        .insert(RENodeId::NonFungibleStore(non_fungible_store_id.to_owned()));
-                }
-                Ok(child_nodes)
-            }
-            HeapRENode::Package(..) => Ok(HashSet::new()),
-            HeapRENode::Bucket(..) => Ok(HashSet::new()),
-            HeapRENode::Proof(..) => Ok(HashSet::new()),
-            HeapRENode::AuthZone(..) => Ok(HashSet::new()),
-            HeapRENode::Vault(..) => Ok(HashSet::new()),
-            HeapRENode::Worktop(..) => Ok(HashSet::new()),
-            HeapRENode::System(..) => Ok(HashSet::new()),
+            HeapRENode::Package(..) => vec![SubstateOffset::Package(PackageOffset::Package)],
+            HeapRENode::Bucket(..) => vec![SubstateOffset::Bucket(BucketOffset::Bucket)],
+            HeapRENode::Proof(..) => vec![SubstateOffset::Proof(ProofOffset::Proof)],
+            HeapRENode::AuthZone(..) => vec![SubstateOffset::AuthZone(AuthZoneOffset::AuthZone)],
+            HeapRENode::Vault(..) => vec![SubstateOffset::Vault(VaultOffset::Vault)],
+            HeapRENode::Worktop(..) => vec![SubstateOffset::Worktop(WorktopOffset::Worktop)],
+            HeapRENode::System(..) => vec![SubstateOffset::System(SystemOffset::System)],
         }
     }
 
@@ -130,6 +105,12 @@ impl HeapRENode {
             ) => SubstateRef::AuthZone(auth_zone),
             (HeapRENode::Vault(vault), SubstateOffset::Vault(VaultOffset::Vault)) => {
                 SubstateRef::Vault(vault)
+            }
+            (HeapRENode::Package(package), SubstateOffset::Package(PackageOffset::Package)) => {
+                SubstateRef::Package(&package.info)
+            }
+            (HeapRENode::System(system), SubstateOffset::System(SystemOffset::System)) => {
+                SubstateRef::System(&system.info)
             }
             (_, offset) => {
                 return Err(RuntimeError::KernelError(KernelError::OffsetNotAvailable(
@@ -192,6 +173,12 @@ impl HeapRENode {
             ) => RawSubstateRefMut::AuthZone(auth_zone),
             (HeapRENode::Vault(vault), SubstateOffset::Vault(VaultOffset::Vault)) => {
                 RawSubstateRefMut::Vault(vault)
+            }
+            (HeapRENode::Package(package), SubstateOffset::Package(PackageOffset::Package)) => {
+                RawSubstateRefMut::Package(&mut package.info)
+            }
+            (HeapRENode::System(system), SubstateOffset::System(SystemOffset::System)) => {
+                RawSubstateRefMut::System(&mut system.info)
             }
             (_, offset) => {
                 return Err(RuntimeError::KernelError(KernelError::OffsetNotAvailable(

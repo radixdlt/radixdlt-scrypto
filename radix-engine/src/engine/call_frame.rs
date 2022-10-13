@@ -158,39 +158,12 @@ impl CallFrame {
     pub fn take_nodes(
         &mut self,
         node_ids: HashSet<RENodeId>,
-        persist_only: bool,
     ) -> Result<HashMap<RENodeId, HeapRootRENode>, RuntimeError> {
-        let taken = {
-            let mut taken_values = HashMap::new();
+        let mut taken = HashMap::new();
 
-            for id in node_ids {
-                if self.node_lock_count.contains_key(&id) {
-                    return Err(RuntimeError::KernelError(KernelError::MovingLockedRENode(
-                        id,
-                    )));
-                }
-
-                let maybe = self.owned_heap_nodes.remove(&id);
-                if let Some(value) = maybe {
-                    value.root().verify_can_move()?;
-                    if persist_only {
-                        value.root().verify_can_persist()?;
-                    }
-                    taken_values.insert(id, value);
-                } else {
-                    return Err(RuntimeError::KernelError(KernelError::RENodeNotFound(id)));
-                }
-            }
-
-            taken_values
-        };
-
-        // Moved nodes must have their child node references removed
-        for (id, value) in &taken {
-            self.node_refs.remove(id);
-            for (id, ..) in &value.child_nodes {
-                self.node_refs.remove(id);
-            }
+        for node_id in node_ids {
+            let node = self.take_node(node_id)?;
+            taken.insert(node_id, node);
         }
 
         Ok(taken)

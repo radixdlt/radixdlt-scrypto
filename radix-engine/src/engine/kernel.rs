@@ -441,7 +441,7 @@ where
         // Take values to return
         let values_to_take = output.node_ids();
         let received_values =
-            Self::current_frame_mut(&mut self.call_frames).take_nodes(values_to_take, false)?;
+            Self::current_frame_mut(&mut self.call_frames).take_nodes(values_to_take)?;
 
         // Check references returned
         for global_address in output.global_references() {
@@ -734,7 +734,7 @@ where
         Self::process_call_data(&input)?;
         let values_to_take = input.node_ids();
         let taken_values =
-            Self::current_frame_mut(&mut self.call_frames).take_nodes(values_to_take, false)?;
+            Self::current_frame_mut(&mut self.call_frames).take_nodes(values_to_take)?;
 
         // Internal state update to taken values
         let mut next_owned_values = HashMap::new();
@@ -919,7 +919,7 @@ where
         Ok(node)
     }
 
-    fn node_create(&mut self, re_node: HeapRENode) -> Result<RENodeId, RuntimeError> {
+    fn node_create(&mut self, mut re_node: HeapRENode) -> Result<RENodeId, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
                 &mut self.track,
@@ -932,9 +932,16 @@ where
         // TODO: Authorization
 
         // Take any required child nodes
-        let children = re_node.get_child_nodes()?;
-        let taken_root_nodes =
-            Self::current_frame_mut(&mut self.call_frames).take_nodes(children, true)?;
+        let mut taken_root_nodes = HashMap::new();
+        for offset in re_node.get_substates() {
+            let substate = re_node.borrow_substate(&offset)?;
+            let (_, owned) = substate.references_and_owned_nodes();
+            for child_id in owned {
+                SubstateProperties::verify_can_own(&offset, child_id)?;
+                let node = Self::current_frame_mut(&mut self.call_frames).take_node(child_id)?;
+                taken_root_nodes.insert(child_id, node);
+            }
+        }
 
         let mut child_nodes = HashMap::new();
         for (id, taken_root_node) in taken_root_nodes {

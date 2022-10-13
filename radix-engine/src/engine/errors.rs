@@ -93,6 +93,7 @@ pub enum KernelError {
     TrackError(TrackError),
 
     // constraints
+    InvalidOwnership(SubstateOffset, RENodeId),
     ValueNotAllowed,
     BucketNotAllowed,
     ProofNotAllowed,
