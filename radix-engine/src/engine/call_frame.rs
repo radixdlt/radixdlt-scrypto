@@ -206,6 +206,13 @@ impl CallFrame {
         let maybe = self.owned_heap_nodes.remove(&node_id);
         if let Some(root_node) = maybe {
             root_node.root().verify_can_move()?;
+
+            // Moved nodes must have their child node references removed
+            self.node_refs.remove(&node_id);
+            for (id, ..) in &root_node.child_nodes {
+                self.node_refs.remove(id);
+            }
+
             Ok(root_node)
         } else {
             Err(RuntimeError::KernelError(KernelError::RENodeNotFound(
