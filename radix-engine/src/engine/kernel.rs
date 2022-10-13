@@ -273,10 +273,8 @@ where
 
     fn run(
         &mut self,
-        frame: CallFrame,
         input: ScryptoValue,
     ) -> Result<(ScryptoValue, HashMap<RENodeId, HeapRootRENode>), RuntimeError> {
-        self.call_frames.push(frame);
 
         // Copy-over root frame's auth zone virtual_proofs_buckets
         // TODO: Clean this up at some point (possible move to auth zone?)
@@ -520,9 +518,6 @@ where
             _ => {}
         };
 
-        AuthModule::function_auth(function_ident.clone(), &mut self.call_frames)
-            .map_err(|e| RuntimeError::ModuleError(ModuleError::AuthError(e)))?;
-
         // start a new frame and run
         let frame = CallFrame::new_child(
             Self::current_frame(&self.call_frames).depth + 1,
@@ -530,7 +525,12 @@ where
             next_owned_values,
             next_frame_node_refs,
         );
-        let (output, received_values) = self.run(frame, input)?;
+        self.call_frames.push(frame);
+
+        AuthModule::function_auth(function_ident.clone(), &mut self.call_frames)
+            .map_err(|e| RuntimeError::ModuleError(ModuleError::AuthError(e)))?;
+
+        let (output, received_values) = self.run(input)?;
 
         Ok((output, received_values))
     }
@@ -539,8 +539,8 @@ where
         &mut self,
         mut method_ident: ReceiverMethodIdent,
         input: ScryptoValue,
-        mut next_owned_values: HashMap<RENodeId, HeapRootRENode>,
-        mut next_frame_node_refs: HashMap<RENodeId, RENodePointer>,
+        mut owned_nodes: HashMap<RENodeId, HeapRootRENode>,
+        mut refed_nodes: HashMap<RENodeId, RENodePointer>,
     ) -> Result<(ScryptoValue, HashMap<RENodeId, HeapRootRENode>), RuntimeError> {
         // Authorization and state load
         let mut node_id = method_ident.receiver.node_id();
@@ -554,7 +554,7 @@ where
                     .ok_or(RuntimeError::KernelError(
                         KernelError::InvokeMethodInvalidReceiver(node_id),
                     ))?;
-                next_owned_values.insert(node_id, heap_node);
+                owned_nodes.insert(node_id, heap_node);
             }
             Receiver::Ref(..) => {
                 // Deref
@@ -568,7 +568,7 @@ where
                         method_ident: method_ident.method_ident,
                     }
                 }
-                next_frame_node_refs.insert(node_id, node_pointer);
+                refed_nodes.insert(node_id, node_pointer);
             }
         }
 
@@ -658,8 +658,16 @@ where
 
         // Check method authorization
 
+        let frame = CallFrame::new_child(
+            Self::current_frame(&self.call_frames).depth + 1,
+            REActor::Method(re_actor.clone()),
+            owned_nodes,
+            refed_nodes,
+        );
+        self.call_frames.push(frame);
+
         AuthModule::receiver_auth(
-            re_actor.clone(),
+            re_actor,
             &input,
             node_pointer.clone(),
             &mut self.call_frames,
@@ -670,14 +678,7 @@ where
             InvokeError::Downstream(runtime_error) => runtime_error,
         })?;
 
-        // start a new frame
-        let frame = CallFrame::new_child(
-            Self::current_frame(&self.call_frames).depth + 1,
-            REActor::Method(re_actor),
-            next_owned_values,
-            next_frame_node_refs,
-        );
-        let (output, received_values) = self.run(frame, input)?;
+        let (output, received_values) = self.run(input)?;
 
         Ok((output, received_values))
     }

@@ -29,17 +29,19 @@ impl AuthModule {
         method_auths: Vec<MethodAuthorization>,
         call_frames: &Vec<CallFrame>, // TODO remove this once heap is implemented
     ) -> Result<(), AuthError> {
-        let cur_call_frame = call_frames
-            .last()
-            .expect("Current call frame does not exist");
+        // This module is called with a new call frame. Get the previous one which has an authzone.
+        let second_to_last_index = call_frames.len() - 2;
 
-        let auth_zone = Self::get_auth_zone(cur_call_frame);
+        let prev_call_frame = call_frames.get(second_to_last_index)
+            .expect("Previous call frame does not exist");
+
+        let auth_zone = Self::get_auth_zone(prev_call_frame);
 
         let mut auth_zones = vec![auth_zone];
 
         // FIXME: This is wrong as it allows extern component calls to use caller's auth zone
         // Also, need to add a test for this
-        if let Some(frame) = call_frames.iter().rev().nth(1) {
+        if let Some(frame) = call_frames.iter().rev().nth(2) {
             let auth_zone = Self::get_auth_zone(frame);
             auth_zones.push(auth_zone);
         }
