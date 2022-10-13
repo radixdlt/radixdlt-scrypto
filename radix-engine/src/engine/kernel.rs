@@ -157,18 +157,6 @@ where
         }
     }
 
-    fn process_call_data(validated: &ScryptoValue) -> Result<(), RuntimeError> {
-        if !validated.kv_store_ids.is_empty() {
-            return Err(RuntimeError::KernelError(
-                KernelError::KeyValueStoreNotAllowed,
-            ));
-        }
-        if !validated.vault_ids.is_empty() {
-            return Err(RuntimeError::KernelError(KernelError::VaultNotAllowed));
-        }
-        Ok(())
-    }
-
     fn process_return_data(validated: &ScryptoValue) -> Result<(), RuntimeError> {
         if !validated.kv_store_ids.is_empty() {
             return Err(RuntimeError::KernelError(
@@ -729,21 +717,13 @@ where
             ));
         }
 
-        // Figure out what nodes to move from this process
-        // Prevent vaults/kvstores from being moved
-        Self::process_call_data(&input)?;
-        let values_to_take = input.node_ids();
-        let taken_values =
-            Self::current_frame_mut(&mut self.call_frames).take_nodes(values_to_take)?;
-
         // Internal state update to taken values
-        let mut next_owned_values = HashMap::new();
-        for (id, mut value) in taken_values {
-            match &mut value.root_mut() {
-                HeapRENode::Proof(proof) => proof.change_to_restricted(),
-                _ => {}
-            }
-            next_owned_values.insert(id, value);
+        let mut nodes_to_pass = HashMap::new();
+        for node_id in input.node_ids() {
+            let mut node = Self::current_frame_mut(&mut self.call_frames).take_node(node_id)?;
+            let root_node = node.root_mut();
+            root_node.move_downstream(node_id)?;
+            nodes_to_pass.insert(node_id, node);
         }
 
         let mut next_node_refs = HashMap::new();
@@ -835,10 +815,10 @@ where
         // TODO: Slowly unify these two
         let (output, received_values) = match fn_ident {
             FnIdent::Method(method_ident) => {
-                self.invoke_method(method_ident, input, next_owned_values, next_node_refs)?
+                self.invoke_method(method_ident, input, nodes_to_pass, next_node_refs)?
             }
             FnIdent::Function(function_ident) => {
-                self.invoke_function(function_ident, input, next_owned_values, next_node_refs)?
+                self.invoke_function(function_ident, input, nodes_to_pass, next_node_refs)?
             }
         };
 

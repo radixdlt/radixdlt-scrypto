@@ -1,6 +1,8 @@
 use crate::engine::{KernelError, RuntimeError};
 use crate::types::*;
 
+pub struct NodeProperties;
+
 pub struct SubstateProperties;
 
 impl SubstateProperties {

@@ -94,6 +94,8 @@ pub enum KernelError {
 
     // constraints
     InvalidOwnership(SubstateOffset, RENodeId),
+    CantMoveDownstream(RENodeId),
+
     ValueNotAllowed,
     BucketNotAllowed,
     ProofNotAllowed,
