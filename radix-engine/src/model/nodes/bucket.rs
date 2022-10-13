@@ -4,7 +4,7 @@ use scrypto::resource::ResourceManagerBurnInput;
 use crate::engine::{HeapRENode, LockFlags, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::{
-    InvokeError, LockableResource, ProofSubstate, ProofError, Resource, ResourceContainerId,
+    InvokeError, LockableResource, ProofError, ProofSubstate, Resource, ResourceContainerId,
     ResourceOperationError,
 };
 use crate::types::*;
@@ -156,13 +156,13 @@ impl BucketSubstate {
 
     pub fn method_locks(method: BucketMethod) -> LockFlags {
         match method {
-            BucketMethod::Burn => LockFlags::empty(),
+            BucketMethod::Burn => LockFlags::read_only(),
             BucketMethod::Take => LockFlags::MUTABLE,
             BucketMethod::TakeNonFungibles => LockFlags::MUTABLE,
             BucketMethod::Put => LockFlags::MUTABLE,
-            BucketMethod::GetNonFungibleIds => LockFlags::empty(),
-            BucketMethod::GetAmount => LockFlags::empty(),
-            BucketMethod::GetResourceAddress => LockFlags::empty(),
+            BucketMethod::GetNonFungibleIds => LockFlags::read_only(),
+            BucketMethod::GetAmount => LockFlags::read_only(),
+            BucketMethod::GetResourceAddress => LockFlags::read_only(),
             BucketMethod::CreateProof => LockFlags::MUTABLE,
         }
     }

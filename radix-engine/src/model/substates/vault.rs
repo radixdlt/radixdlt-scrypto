@@ -1,6 +1,6 @@
 use crate::model::{
-    BucketSubstate, InvokeError, LockableResource, ProofSubstate, ProofError, Resource, ResourceContainerId,
-    ResourceOperationError, VaultError,
+    BucketSubstate, InvokeError, LockableResource, ProofError, ProofSubstate, Resource,
+    ResourceContainerId, ResourceOperationError, VaultError,
 };
 use crate::types::*;
 use std::ops::Deref;
@@ -83,7 +83,10 @@ impl VaultRuntimeSubstate {
         Ok(resource)
     }
 
-    pub fn create_proof(&mut self, container_id: ResourceContainerId) -> Result<ProofSubstate, ProofError> {
+    pub fn create_proof(
+        &mut self,
+        container_id: ResourceContainerId,
+    ) -> Result<ProofSubstate, ProofError> {
         match self.resource_type() {
             ResourceType::Fungible { .. } => {
                 self.create_proof_by_amount(self.total_amount(), container_id)

@@ -146,10 +146,9 @@ where
         ids: BTreeSet<NonFungibleId>,
     ) -> BucketId {
         match self
-            .node_create(HeapRENode::Bucket(BucketSubstate::new(Resource::new_non_fungible(
-                resource_address,
-                ids,
-            ))))
+            .node_create(HeapRENode::Bucket(BucketSubstate::new(
+                Resource::new_non_fungible(resource_address, ids),
+            )))
             .expect("Failed to create a bucket")
         {
             RENodeId::Bucket(bucket_id) => bucket_id,

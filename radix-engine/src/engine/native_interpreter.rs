@@ -118,13 +118,16 @@ impl NativeInterpreter {
     {
         match (receiver.clone(), native_method.clone()) {
             (Receiver::Consumed(node_id), NativeMethod::Bucket(method)) => {
-                BucketSubstate::consuming_main(node_id, method, input, system_api).map_err(|e| e.into())
+                BucketSubstate::consuming_main(node_id, method, input, system_api)
+                    .map_err(|e| e.into())
             }
             (Receiver::Consumed(node_id), NativeMethod::Proof(method)) => {
-                ProofSubstate::main_consume(node_id, method, input, system_api).map_err(|e| e.into())
+                ProofSubstate::main_consume(node_id, method, input, system_api)
+                    .map_err(|e| e.into())
             }
             (Receiver::Ref(RENodeId::AuthZone(auth_zone_id)), NativeMethod::AuthZone(method)) => {
-                AuthZoneSubstate::main(auth_zone_id, method, input, system_api).map_err(|e| e.into())
+                AuthZoneSubstate::main(auth_zone_id, method, input, system_api)
+                    .map_err(|e| e.into())
             }
             (Receiver::Ref(RENodeId::Bucket(bucket_id)), NativeMethod::Bucket(method)) => {
                 BucketSubstate::main(bucket_id, method, input, system_api).map_err(|e| e.into())

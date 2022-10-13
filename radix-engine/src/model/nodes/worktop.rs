@@ -204,9 +204,9 @@ impl WorktopSubstate {
             WorktopMethod::TakeAmount => LockFlags::MUTABLE,
             WorktopMethod::TakeNonFungibles => LockFlags::MUTABLE,
             WorktopMethod::Put => LockFlags::MUTABLE,
-            WorktopMethod::AssertContains => LockFlags::empty(),
-            WorktopMethod::AssertContainsAmount => LockFlags::empty(),
-            WorktopMethod::AssertContainsNonFungibles => LockFlags::empty(),
+            WorktopMethod::AssertContains => LockFlags::read_only(),
+            WorktopMethod::AssertContainsAmount => LockFlags::read_only(),
+            WorktopMethod::AssertContainsNonFungibles => LockFlags::read_only(),
             WorktopMethod::Drain => LockFlags::MUTABLE,
         }
     }
