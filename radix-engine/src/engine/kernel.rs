@@ -273,10 +273,20 @@ where
 
     fn run(
         &mut self,
+        frame: CallFrame,
         input: ScryptoValue,
     ) -> Result<(ScryptoValue, HashMap<RENodeId, HeapRootRENode>), RuntimeError> {
+        self.call_frames.push(frame);
+
+        //  Verify Auth
+        AuthModule::verify_auth(&input, &mut self.call_frames, &mut self.track).map_err(
+            |e| match e {
+                InvokeError::Error(e) => RuntimeError::ModuleError(ModuleError::AuthError(e)),
+                InvokeError::Downstream(runtime_error) => runtime_error,
+            },
+        )?;
         // Copy-over root frame's auth zone virtual_proofs_buckets
-        // TODO: Clean this up at some point (possible move to auth zone?)
+        // TODO: Clean this up at some point (move to AuthModule)
         // TODO: Move to a better spot
         let root_frame = self
             .call_frames
@@ -524,12 +534,8 @@ where
             next_owned_values,
             next_frame_node_refs,
         );
-        self.call_frames.push(frame);
 
-        AuthModule::function_auth(&mut self.call_frames)
-            .map_err(|e| RuntimeError::ModuleError(ModuleError::AuthError(e)))?;
-
-        let (output, received_values) = self.run(input)?;
+        let (output, received_values) = self.run(frame, input)?;
 
         Ok((output, received_values))
     }
@@ -653,26 +659,14 @@ where
             },
         };
 
-        // TODO: Check Component ABI here rather than in auth
-
-        // Check method authorization
-
         let frame = CallFrame::new_child(
             Self::current_frame(&self.call_frames).depth + 1,
             REActor::Method(re_actor.clone()),
             owned_nodes,
             refed_nodes,
         );
-        self.call_frames.push(frame);
 
-        AuthModule::receiver_auth(&input, &mut self.call_frames, &mut self.track).map_err(|e| {
-            match e {
-                InvokeError::Error(e) => RuntimeError::ModuleError(ModuleError::AuthError(e)),
-                InvokeError::Downstream(runtime_error) => runtime_error,
-            }
-        })?;
-
-        let (output, received_values) = self.run(input)?;
+        let (output, received_values) = self.run(frame, input)?;
 
         Ok((output, received_values))
     }
@@ -1285,6 +1279,30 @@ where
         )
     }
 
+    fn read_transaction_hash(&mut self) -> Result<Hash, RuntimeError> {
+        for m in &mut self.modules {
+            m.pre_sys_call(
+                &mut self.track,
+                &mut self.call_frames,
+                SysCallInput::ReadTransactionHash,
+            )
+            .map_err(RuntimeError::ModuleError)?;
+        }
+
+        for m in &mut self.modules {
+            m.post_sys_call(
+                &mut self.track,
+                &mut self.call_frames,
+                SysCallOutput::ReadTransactionHash {
+                    hash: &self.transaction_hash,
+                },
+            )
+            .map_err(RuntimeError::ModuleError)?;
+        }
+
+        Ok(self.transaction_hash)
+    }
+
     fn read_blob(&mut self, blob_hash: &Hash) -> Result<&[u8], RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
@@ -1311,30 +1329,6 @@ where
         }
 
         Ok(blob)
-    }
-
-    fn read_transaction_hash(&mut self) -> Result<Hash, RuntimeError> {
-        for m in &mut self.modules {
-            m.pre_sys_call(
-                &mut self.track,
-                &mut self.call_frames,
-                SysCallInput::ReadTransactionHash,
-            )
-            .map_err(RuntimeError::ModuleError)?;
-        }
-
-        for m in &mut self.modules {
-            m.post_sys_call(
-                &mut self.track,
-                &mut self.call_frames,
-                SysCallOutput::ReadTransactionHash {
-                    hash: &self.transaction_hash,
-                },
-            )
-            .map_err(RuntimeError::ModuleError)?;
-        }
-
-        Ok(self.transaction_hash)
     }
 
     fn generate_uuid(&mut self) -> Result<u128, RuntimeError> {
