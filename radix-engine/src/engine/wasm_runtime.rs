@@ -117,7 +117,7 @@ where
             LockFlags::MUTABLE
         } else {
             // TODO: Do we want to expose full flag functionality to Scrypto?
-            LockFlags::empty()
+            LockFlags::read_only()
         };
 
         self.system_api

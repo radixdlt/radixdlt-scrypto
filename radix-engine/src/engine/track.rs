@@ -238,7 +238,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
     pub fn release_lock(
         &mut self,
         substate_id: SubstateId,
-        unmodified_base: bool,
+        force_write: bool,
     ) -> Result<(), TrackError> {
         let mut loaded_substate = self
             .loaded_substates
@@ -253,7 +253,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             }
         }
 
-        if unmodified_base {
+        if force_write {
             let node_id = match substate_id {
                 SubstateId(
                     RENodeId::Vault(vault_id),

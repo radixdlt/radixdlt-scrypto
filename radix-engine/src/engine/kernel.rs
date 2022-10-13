@@ -513,7 +513,7 @@ where
                 let node_pointer = RENodePointer::Store(node_id);
                 let offset = SubstateOffset::Package(PackageOffset::Package);
                 node_pointer
-                    .acquire_lock(offset.clone(), LockFlags::empty(), &mut self.track)
+                    .acquire_lock(offset.clone(), LockFlags::read_only(), &mut self.track)
                     .map_err(RuntimeError::KernelError)?;
 
                 let package = self
@@ -597,7 +597,7 @@ where
                     RENodeId::Component(..) => {
                         let offset = SubstateOffset::Component(ComponentOffset::Info);
                         node_pointer
-                            .acquire_lock(offset.clone(), LockFlags::empty(), &mut self.track)
+                            .acquire_lock(offset.clone(), LockFlags::read_only(), &mut self.track)
                             .map_err(RuntimeError::KernelError)?;
 
                         let substate_ref = node_pointer.borrow_substate(
@@ -668,15 +668,16 @@ where
                     {
                         let flags = match vault_method {
                             VaultMethod::Take => LockFlags::MUTABLE,
-                            VaultMethod::LockFee => LockFlags::MUTABLE | LockFlags::UNMODIFIED_BASE,
-                            VaultMethod::LockContingentFee => {
-                                LockFlags::MUTABLE | LockFlags::UNMODIFIED_BASE
+                            VaultMethod::LockFee | VaultMethod::LockContingentFee => {
+                                LockFlags::MUTABLE
+                                    | LockFlags::UNMODIFIED_BASE
+                                    | LockFlags::FORCE_WRITE
                             }
                             VaultMethod::Put => LockFlags::MUTABLE,
                             VaultMethod::TakeNonFungibles => LockFlags::MUTABLE,
-                            VaultMethod::GetAmount => LockFlags::empty(),
-                            VaultMethod::GetResourceAddress => LockFlags::empty(),
-                            VaultMethod::GetNonFungibleIds => LockFlags::empty(),
+                            VaultMethod::GetAmount => LockFlags::read_only(),
+                            VaultMethod::GetResourceAddress => LockFlags::read_only(),
+                            VaultMethod::GetNonFungibleIds => LockFlags::read_only(),
                             VaultMethod::CreateProof => LockFlags::MUTABLE,
                             VaultMethod::CreateProofByAmount => LockFlags::MUTABLE,
                             VaultMethod::CreateProofByIds => LockFlags::MUTABLE,
@@ -689,7 +690,7 @@ where
                         locked_pointers.push((
                             node_pointer,
                             offset.clone(),
-                            flags.contains(LockFlags::UNMODIFIED_BASE),
+                            flags.contains(LockFlags::FORCE_WRITE),
                         ));
 
                         let resource_address = {
@@ -752,10 +753,10 @@ where
         let (output, received_values) = self.run(frame, input)?;
 
         // Release locked addresses
-        for (node_pointer, offset, write_through) in locked_pointers {
+        for (node_pointer, offset, force_write) in locked_pointers {
             // TODO: refactor after introducing `Lock` representation.
             node_pointer
-                .release_lock(offset, write_through, &mut self.track)
+                .release_lock(offset, force_write, &mut self.track)
                 .map_err(RuntimeError::KernelError)?;
         }
 
@@ -890,7 +891,7 @@ where
                 // TODO: when this is resolved.
                 if !static_refs.contains(&global_address) {
                     node_pointer
-                        .acquire_lock(offset.clone(), LockFlags::empty(), &mut self.track)
+                        .acquire_lock(offset.clone(), LockFlags::read_only(), &mut self.track)
                         .map_err(|e| match e {
                             KernelError::TrackError(TrackError::NotFound(..)) => {
                                 RuntimeError::KernelError(KernelError::GlobalAddressNotFound(
