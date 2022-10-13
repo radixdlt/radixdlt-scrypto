@@ -71,44 +71,30 @@ pub enum KernelError {
     DecodeError(DecodeError),
 
     // RENode
-    BucketNotFound(BucketId),
-    ProofNotFound(ProofId),
     PackageNotFound(PackageAddress),
     BlueprintNotFound(PackageAddress, String),
-    ResourceManagerNotFound(ResourceAddress),
-    WorktopNotFound,
     RENodeNotFound(RENodeId),
     StoredNodeRemoved(RENodeId),
     RENodeGlobalizeTypeNotAllowed(RENodeId),
     RENodeCreateInvalidPermission,
 
-    // Substate
+    TrackError(TrackError),
     MovingLockedRENode(RENodeId),
     LockDoesNotExist(LockHandle),
     LockNotMutable(LockHandle),
-    OffsetNotAvailable(SubstateOffset),
+    DropFailure(DropFailure),
+    BlobNotFound(Hash),
+
+    // Substate Constraints
+    InvalidOffset(SubstateOffset),
+    InvalidOwnership(SubstateOffset, RENodeId),
     InvalidOverwrite,
+
+    // Actor Constraints
     SubstateNotReadable(REActor, SubstateId),
     SubstateNotWriteable(REActor, SubstateId),
-    TrackError(TrackError),
-
-    // constraints
-    InvalidOwnership(SubstateOffset, RENodeId),
     CantMoveDownstream(RENodeId),
-
-    ValueNotAllowed,
-    BucketNotAllowed,
-    ProofNotAllowed,
-    VaultNotAllowed,
-    KeyValueStoreNotAllowed,
-    CantMoveLockedBucket,
-    CantMoveRestrictedProof,
-    CantMoveWorktop,
-    CantMoveGlobal,
-    CantMoveAuthZone,
-    DropFailure(DropFailure),
-
-    BlobNotFound(Hash),
+    CantMoveUpstream(RENodeId),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]

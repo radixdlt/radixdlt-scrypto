@@ -155,20 +155,6 @@ impl CallFrame {
             .map_err(|e| RuntimeError::KernelError(KernelError::DropFailure(e)))
     }
 
-    pub fn take_nodes(
-        &mut self,
-        node_ids: HashSet<RENodeId>,
-    ) -> Result<HashMap<RENodeId, HeapRootRENode>, RuntimeError> {
-        let mut taken = HashMap::new();
-
-        for node_id in node_ids {
-            let node = self.take_node(node_id)?;
-            taken.insert(node_id, node);
-        }
-
-        Ok(taken)
-    }
-
     pub fn take_node(&mut self, node_id: RENodeId) -> Result<HeapRootRENode, RuntimeError> {
         if self.node_lock_count.contains_key(&node_id) {
             return Err(RuntimeError::KernelError(KernelError::MovingLockedRENode(
@@ -178,8 +164,6 @@ impl CallFrame {
 
         let maybe = self.owned_heap_nodes.remove(&node_id);
         if let Some(root_node) = maybe {
-            root_node.root().verify_can_move()?;
-
             // Moved nodes must have their child node references removed
             self.node_refs.remove(&node_id);
             for (id, ..) in &root_node.child_nodes {

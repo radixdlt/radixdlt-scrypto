@@ -157,18 +157,6 @@ where
         }
     }
 
-    fn process_return_data(validated: &ScryptoValue) -> Result<(), RuntimeError> {
-        if !validated.kv_store_ids.is_empty() {
-            return Err(RuntimeError::KernelError(
-                KernelError::KeyValueStoreNotAllowed,
-            ));
-        }
-
-        // TODO: Should we disallow vaults to be moved?
-
-        Ok(())
-    }
-
     fn new_uuid(
         id_allocator: &mut IdAllocator,
         transaction_hash: Hash,
@@ -424,12 +412,13 @@ where
         };
 
         // Process return data
-        Self::process_return_data(&output)?;
-
-        // Take values to return
-        let values_to_take = output.node_ids();
-        let received_values =
-            Self::current_frame_mut(&mut self.call_frames).take_nodes(values_to_take)?;
+        let mut nodes_to_return = HashMap::new();
+        for node_id in output.node_ids() {
+            let mut node = Self::current_frame_mut(&mut self.call_frames).take_node(node_id)?;
+            let root_node = node.root_mut();
+            root_node.prepare_move_upstream(node_id)?;
+            nodes_to_return.insert(node_id, node);
+        }
 
         // Check references returned
         for global_address in output.global_references() {
@@ -472,7 +461,7 @@ where
         // drop proofs and check resource leak
         call_frame.drop_frame()?;
 
-        Ok((output, received_values))
+        Ok((output, nodes_to_return))
     }
 
     fn current_frame_mut(call_frames: &mut Vec<CallFrame>) -> &mut CallFrame {
@@ -722,7 +711,7 @@ where
         for node_id in input.node_ids() {
             let mut node = Self::current_frame_mut(&mut self.call_frames).take_node(node_id)?;
             let root_node = node.root_mut();
-            root_node.move_downstream(node_id)?;
+            root_node.prepare_move_downstream(node_id)?;
             nodes_to_pass.insert(node_id, node);
         }
 

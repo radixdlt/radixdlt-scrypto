@@ -130,7 +130,7 @@ impl RuntimeSubstate {
                 RuntimeSubstate::NonFungible(substate)
             }
             offset => {
-                return Err(RuntimeError::KernelError(KernelError::OffsetNotAvailable(
+                return Err(RuntimeError::KernelError(KernelError::InvalidOffset(
                     offset.clone(),
                 )))
             }

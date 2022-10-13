@@ -333,7 +333,7 @@ fn cant_move_restricted_proof() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::CantMoveRestrictedProof)
+            RuntimeError::KernelError(KernelError::CantMoveDownstream(RENodeId::Proof(..)))
         )
     });
 }
@@ -376,7 +376,7 @@ fn cant_move_locked_bucket() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::CantMoveLockedBucket)
+            RuntimeError::KernelError(KernelError::CantMoveUpstream(RENodeId::Bucket(..)))
         )
     });
 }

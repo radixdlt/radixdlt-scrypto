@@ -113,7 +113,7 @@ impl HeapRENode {
                 SubstateRef::System(&system.info)
             }
             (_, offset) => {
-                return Err(RuntimeError::KernelError(KernelError::OffsetNotAvailable(
+                return Err(RuntimeError::KernelError(KernelError::InvalidOffset(
                     offset.clone(),
                 )));
             }
@@ -181,7 +181,7 @@ impl HeapRENode {
                 RawSubstateRefMut::System(&mut system.info)
             }
             (_, offset) => {
-                return Err(RuntimeError::KernelError(KernelError::OffsetNotAvailable(
+                return Err(RuntimeError::KernelError(KernelError::InvalidOffset(
                     offset.clone(),
                 )));
             }
@@ -196,7 +196,7 @@ impl HeapRENode {
         }
     }
 
-    pub fn move_downstream(&mut self, self_node_id: RENodeId) -> Result<(), RuntimeError> {
+    pub fn prepare_move_downstream(&mut self, self_node_id: RENodeId) -> Result<(), RuntimeError> {
         match self {
             HeapRENode::AuthZone(..) => Err(RuntimeError::KernelError(
                 KernelError::CantMoveDownstream(self_node_id),
@@ -248,57 +248,44 @@ impl HeapRENode {
         }
     }
 
-    pub fn verify_can_move(&self) -> Result<(), RuntimeError> {
+    pub fn prepare_move_upstream(&mut self, self_node_id: RENodeId) -> Result<(), RuntimeError> {
         match self {
-            HeapRENode::AuthZone(..) => {
-                Err(RuntimeError::KernelError(KernelError::CantMoveAuthZone))
-            }
+            HeapRENode::AuthZone(..) => Err(RuntimeError::KernelError(
+                KernelError::CantMoveUpstream(self_node_id),
+            )),
             HeapRENode::Bucket(bucket) => {
                 if bucket.is_locked() {
-                    Err(RuntimeError::KernelError(KernelError::CantMoveLockedBucket))
+                    Err(RuntimeError::KernelError(KernelError::CantMoveUpstream(
+                        self_node_id,
+                    )))
                 } else {
                     Ok(())
                 }
             }
-            HeapRENode::Proof(proof) => {
-                if proof.is_restricted() {
-                    Err(RuntimeError::KernelError(
-                        KernelError::CantMoveRestrictedProof,
-                    ))
-                } else {
-                    Ok(())
-                }
-            }
-            HeapRENode::KeyValueStore(..) => Ok(()),
-            HeapRENode::NonFungibleStore(..) => Ok(()),
+            HeapRENode::Proof(..) => Ok(()),
             HeapRENode::Component(..) => Ok(()),
             HeapRENode::Vault(..) => Ok(()),
-            HeapRENode::ResourceManager(..) => Ok(()),
-            HeapRENode::Package(..) => Ok(()),
-            HeapRENode::Worktop(..) => Err(RuntimeError::KernelError(KernelError::CantMoveWorktop)),
-            HeapRENode::System(..) => Ok(()),
-            HeapRENode::Global(..) => Err(RuntimeError::KernelError(KernelError::CantMoveGlobal)),
-        }
-    }
-
-    pub fn verify_can_persist(&self) -> Result<(), RuntimeError> {
-        match self {
-            HeapRENode::Global { .. } => Ok(()),
-            HeapRENode::KeyValueStore { .. } => Ok(()),
-            HeapRENode::NonFungibleStore { .. } => Ok(()),
-            HeapRENode::Component { .. } => Ok(()),
-            HeapRENode::Vault(..) => Ok(()),
-            HeapRENode::ResourceManager(..) => {
-                Err(RuntimeError::KernelError(KernelError::ValueNotAllowed))
-            }
-            HeapRENode::AuthZone(..) => {
-                Err(RuntimeError::KernelError(KernelError::ValueNotAllowed))
-            }
-            HeapRENode::Package(..) => Err(RuntimeError::KernelError(KernelError::ValueNotAllowed)),
-            HeapRENode::Bucket(..) => Err(RuntimeError::KernelError(KernelError::ValueNotAllowed)),
-            HeapRENode::Proof(..) => Err(RuntimeError::KernelError(KernelError::ValueNotAllowed)),
-            HeapRENode::Worktop(..) => Err(RuntimeError::KernelError(KernelError::ValueNotAllowed)),
-            HeapRENode::System(..) => Err(RuntimeError::KernelError(KernelError::ValueNotAllowed)),
+            HeapRENode::ResourceManager(..) => Err(RuntimeError::KernelError(
+                KernelError::CantMoveUpstream(self_node_id),
+            )),
+            HeapRENode::KeyValueStore(..) => Err(RuntimeError::KernelError(
+                KernelError::CantMoveUpstream(self_node_id),
+            )),
+            HeapRENode::NonFungibleStore(..) => Err(RuntimeError::KernelError(
+                KernelError::CantMoveUpstream(self_node_id),
+            )),
+            HeapRENode::Package(..) => Err(RuntimeError::KernelError(
+                KernelError::CantMoveUpstream(self_node_id),
+            )),
+            HeapRENode::Worktop(..) => Err(RuntimeError::KernelError(
+                KernelError::CantMoveUpstream(self_node_id),
+            )),
+            HeapRENode::System(..) => Err(RuntimeError::KernelError(
+                KernelError::CantMoveUpstream(self_node_id),
+            )),
+            HeapRENode::Global(..) => Err(RuntimeError::KernelError(
+                KernelError::CantMoveUpstream(self_node_id),
+            )),
         }
     }
 
