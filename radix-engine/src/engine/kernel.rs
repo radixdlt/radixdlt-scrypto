@@ -20,6 +20,10 @@ macro_rules! trace {
     };
 }
 
+enum ScryptoActorError {
+    Invalid,
+}
+
 pub struct Kernel<
     'g, // Lifetime of values outliving all frames
     's, // Substate store lifetime
@@ -517,6 +521,47 @@ where
         }
     }
 
+    // TODO: Move out
+    fn scrypto_verify_actor(
+        &mut self,
+        receiver: Option<RENodeId>,
+        package_address: PackageAddress,
+        blueprint_name: String,
+        ident: String,
+        input: &ScryptoValue,
+    ) -> Result<(), InvokeError<ScryptoActorError>> {
+        let package_node_id = RENodeId::Package(package_address);
+        let package_pointer = RENodePointer::Store(package_node_id);
+        let offset = SubstateOffset::Package(PackageOffset::Package);
+        package_pointer
+            .acquire_lock(offset.clone(), LockFlags::empty(), &mut self.track)
+            .map_err(RuntimeError::KernelError)?;
+
+        let substate_ref =
+            package_pointer.borrow_substate(&offset, &mut self.call_frames, &mut self.track)?;
+        let package = substate_ref.package();
+        let abi = package
+            .blueprint_abi(&blueprint_name)
+            .expect("Blueprint not found for existing component");
+        let fn_abi = abi
+            .get_fn_abi(&ident)
+            .ok_or(InvokeError::Error(ScryptoActorError::Invalid))?;
+
+        if !fn_abi.input.matches(&input.dom) {
+            return Err(InvokeError::Error(ScryptoActorError::Invalid));
+        }
+
+        if fn_abi.mutability.is_some() != receiver.is_some() {
+            return Err(InvokeError::Error(ScryptoActorError::Invalid));
+        }
+
+        package_pointer
+            .release_lock(offset, false, &mut self.track)
+            .map_err(RuntimeError::KernelError)?;
+
+        Ok(())
+    }
+
     fn load_actor(
         &mut self,
         fn_ident: FnIdent,
@@ -546,40 +591,19 @@ where
                     (info.package_address.clone(), info.blueprint_name.clone())
                 };
 
-                // Verify actor and input are legit
-                {
-                    let package_node_id = RENodeId::Package(package_address);
-                    let package_pointer = RENodePointer::Store(package_node_id);
-                    let offset = SubstateOffset::Package(PackageOffset::Package);
-                    package_pointer
-                        .acquire_lock(offset.clone(), LockFlags::empty(), &mut self.track)
-                        .map_err(RuntimeError::KernelError)?;
-
-                    // Assume that package_address/blueprint is the original impl of Component for now
-                    // TODO: Remove this assumption
-                    let substate_ref = package_pointer.borrow_substate(
-                        &offset,
-                        &mut self.call_frames,
-                        &mut self.track,
-                    )?;
-                    let package = substate_ref.package();
-                    let abi = package
-                        .blueprint_abi(&blueprint_name)
-                        .expect("Blueprint not found for existing component");
-                    let fn_abi = abi.get_fn_abi(&ident).ok_or(RuntimeError::KernelError(
-                        KernelError::InvalidFnIdent(fn_ident.clone()),
-                    ))?;
-
-                    if !fn_abi.input.matches(&input.dom) {
-                        return Err(RuntimeError::KernelError(KernelError::InvalidFnInput(
-                            fn_ident,
-                        )));
+                self.scrypto_verify_actor(
+                    Some(node_id),
+                    package_address,
+                    blueprint_name.clone(),
+                    ident.to_string(),
+                    input,
+                )
+                .map_err(|e| match e {
+                    InvokeError::Downstream(runtime_error) => runtime_error,
+                    InvokeError::Error(..) => {
+                        RuntimeError::KernelError(KernelError::InvalidFnIdent(fn_ident.clone()))
                     }
-
-                    package_pointer
-                        .release_lock(offset, false, &mut self.track)
-                        .map_err(RuntimeError::KernelError)?;
-                }
+                })?;
 
                 let method = FullyQualifiedReceiverMethod {
                     receiver: Receiver::Ref(node_id),
