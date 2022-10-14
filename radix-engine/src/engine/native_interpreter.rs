@@ -122,8 +122,7 @@ impl NativeInterpreter {
                     .map_err(|e| e.into())
             }
             (Receiver::Consumed(node_id), NativeMethod::Proof(method)) => {
-                ProofSubstate::main_consume(node_id, method, input, system_api)
-                    .map_err(|e| e.into())
+                Proof::main_consume(node_id, method, input, system_api).map_err(|e| e.into())
             }
             (Receiver::Ref(RENodeId::AuthZone(auth_zone_id)), NativeMethod::AuthZone(method)) => {
                 AuthZoneSubstate::main(auth_zone_id, method, input, system_api)
@@ -133,7 +132,7 @@ impl NativeInterpreter {
                 BucketSubstate::main(bucket_id, method, input, system_api).map_err(|e| e.into())
             }
             (Receiver::Ref(RENodeId::Proof(proof_id)), NativeMethod::Proof(method)) => {
-                ProofSubstate::main(proof_id, method, input, system_api).map_err(|e| e.into())
+                Proof::main(proof_id, method, input, system_api).map_err(|e| e.into())
             }
             (Receiver::Ref(RENodeId::Worktop), NativeMethod::Worktop(method)) => {
                 Worktop::main(method, input, system_api).map_err(|e| e.into())
