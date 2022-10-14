@@ -150,7 +150,7 @@ impl NativeInterpreter {
                 System::main(component_id, method, input, system_api).map_err(|e| e.into())
             }
             _ => {
-                return Err(RuntimeError::KernelError(KernelError::FnIdentNotFound(
+                return Err(RuntimeError::KernelError(KernelError::InvalidFnIdent(
                     FnIdent::Method(ReceiverMethodIdent {
                         receiver,
                         method_ident: MethodIdent::Native(native_method),

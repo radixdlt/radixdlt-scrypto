@@ -57,8 +57,9 @@ pub enum KernelError {
     GlobalAddressNotFound(GlobalAddress),
 
     MaxCallDepthLimitReached,
-    FnIdentNotFound(FnIdent),
+    InvalidFnIdent(FnIdent),
     InvalidFnInput(FnIdent),
+
     FunctionNotFound(FunctionIdent),
     InvalidFnOutput { fn_identifier: FunctionIdent },
 
