@@ -182,6 +182,25 @@ impl CallFrame {
         }
     }
 
+    pub fn get_heap_node_mut(
+        &mut self,
+        node_id: RENodeId,
+    ) -> Result<&mut HeapRootRENode, RuntimeError> {
+        self.owned_heap_nodes
+            .get_mut(&node_id)
+            .ok_or(RuntimeError::KernelError(KernelError::RENodeNotFound(
+                node_id,
+            )))
+    }
+
+    pub fn get_heap_node(&self, node_id: RENodeId) -> Result<&HeapRootRENode, RuntimeError> {
+        self.owned_heap_nodes
+            .get(&node_id)
+            .ok_or(RuntimeError::KernelError(KernelError::RENodeNotFound(
+                node_id,
+            )))
+    }
+
     pub fn get_node_pointer(&self, node_id: RENodeId) -> Result<RENodePointer, RuntimeError> {
         // Find node
         let node_pointer = {
