@@ -1,3 +1,4 @@
+mod bucket;
 mod component;
 mod kv_store_entry;
 mod non_fungible;
@@ -9,6 +10,7 @@ mod system;
 mod vault;
 mod worktop;
 
+pub use bucket::*;
 pub use component::*;
 pub use kv_store_entry::*;
 pub use non_fungible::*;
