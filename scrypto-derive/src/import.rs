@@ -168,7 +168,7 @@ fn get_native_type(ty: &des::Type) -> Result<(Type, Vec<Item>)> {
                         #[derive(Debug, ::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
                         pub struct #ident (
                             #( pub #types ),*
-                        )
+                        );
                     });
                 }
                 des::Fields::Unit => {
@@ -465,5 +465,156 @@ mod tests {
                 }
             },
         );
+    }
+
+    #[test]
+    fn test_failing_import() {
+        let input = TokenStream::from_str(
+            r###"
+                r#"
+                {
+                    "package_address": "package_sim1q8m9uvrm78frmk8xt4pjc8nuqmsqrad982v7lwh443dq8nwh0j",
+                    "blueprint_name": "ComponentAddressRepo",
+                    "abi": {
+                      "structure": {
+                        "type": "Struct",
+                        "name": "ComponentAddressRepo",
+                        "fields": {
+                          "type": "Named",
+                          "named": [
+                            [
+                              "components_by_id",
+                              {
+                                "type": "HashMap",
+                                "key": {
+                                  "type": "Custom",
+                                  "type_id": 180,
+                                  "generics": []
+                                },
+                                "value": {
+                                  "type": "Custom",
+                                  "type_id": 129,
+                                  "generics": []
+                                }
+                              }
+                            ],
+                            [
+                              "ids_by_component",
+                              {
+                                "type": "HashMap",
+                                "key": {
+                                  "type": "Custom",
+                                  "type_id": 129,
+                                  "generics": []
+                                },
+                                "value": {
+                                  "type": "Custom",
+                                  "type_id": 180,
+                                  "generics": []
+                                }
+                              }
+                            ]
+                          ]
+                        }
+                      },
+                      "fns": [
+                        {
+                          "ident": "instantiate_global",
+                          "mutability": null,
+                          "input": {
+                            "type": "Struct",
+                            "name": "ComponentAddressRepo_instantiate_global_Input",
+                            "fields": {
+                              "type": "Named",
+                              "named": []
+                            }
+                          },
+                          "output": {
+                            "type": "Custom",
+                            "type_id": 129,
+                            "generics": []
+                          },
+                          "export_name": "ComponentAddressRepo_instantiate_global"
+                        },
+                        {
+                          "ident": "lookup_address",
+                          "mutability": "Immutable",
+                          "input": {
+                            "type": "Struct",
+                            "name": "ComponentAddressRepo_lookup_address_Input",
+                            "fields": {
+                              "type": "Named",
+                              "named": [
+                                [
+                                  "arg0",
+                                  {
+                                    "type": "Struct",
+                                    "name": "ComponentAddressLookup",
+                                    "fields": {
+                                      "type": "Unnamed",
+                                      "unnamed": [
+                                        {
+                                          "type": "Custom",
+                                          "type_id": 180,
+                                          "generics": []
+                                        }
+                                      ]
+                                    }
+                                  }
+                                ]
+                              ]
+                            }
+                          },
+                          "output": {
+                            "type": "Custom",
+                            "type_id": 129,
+                            "generics": []
+                          },
+                          "export_name": "ComponentAddressRepo_lookup_address"
+                        },
+                        {
+                          "ident": "create_lookup",
+                          "mutability": "Mutable",
+                          "input": {
+                            "type": "Struct",
+                            "name": "ComponentAddressRepo_create_lookup_Input",
+                            "fields": {
+                              "type": "Named",
+                              "named": [
+                                [
+                                  "arg0",
+                                  {
+                                    "type": "Custom",
+                                    "type_id": 129,
+                                    "generics": []
+                                  }
+                                ]
+                              ]
+                            }
+                          },
+                          "output": {
+                            "type": "Struct",
+                            "name": "ComponentAddressLookup",
+                            "fields": {
+                              "type": "Unnamed",
+                              "unnamed": [
+                                {
+                                  "type": "Custom",
+                                  "type_id": 180,
+                                  "generics": []
+                                }
+                              ]
+                            }
+                          },
+                          "export_name": "ComponentAddressRepo_create_lookup"
+                        }
+                      ]
+                    }
+                  }
+                "#
+            "###,
+        )
+        .unwrap();
+        handle_import(input).unwrap();
     }
 }

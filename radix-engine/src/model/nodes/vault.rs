@@ -1,6 +1,8 @@
 use crate::engine::{HeapRENode, LockFlags, SystemApi};
 use crate::fee::{FeeReserve, FeeReserveError};
-use crate::model::{Bucket, InvokeError, ProofError, ResourceContainerId, ResourceOperationError};
+use crate::model::{
+    BucketSubstate, InvokeError, ProofError, ResourceContainerId, ResourceOperationError,
+};
 use crate::types::*;
 use crate::wasm::*;
 
@@ -23,13 +25,15 @@ impl Vault {
     pub fn method_locks(vault_method: VaultMethod) -> LockFlags {
         match vault_method {
             VaultMethod::Take => LockFlags::MUTABLE,
-            VaultMethod::LockFee => LockFlags::MUTABLE | LockFlags::UNMODIFIED_BASE,
+            VaultMethod::LockFee => {
+                LockFlags::MUTABLE | LockFlags::UNMODIFIED_BASE | LockFlags::FORCE_WRITE
+            }
             VaultMethod::LockContingentFee => LockFlags::MUTABLE | LockFlags::UNMODIFIED_BASE,
             VaultMethod::Put => LockFlags::MUTABLE,
             VaultMethod::TakeNonFungibles => LockFlags::MUTABLE,
-            VaultMethod::GetAmount => LockFlags::empty(),
-            VaultMethod::GetResourceAddress => LockFlags::empty(),
-            VaultMethod::GetNonFungibleIds => LockFlags::empty(),
+            VaultMethod::GetAmount => LockFlags::read_only(),
+            VaultMethod::GetResourceAddress => LockFlags::read_only(),
+            VaultMethod::GetNonFungibleIds => LockFlags::read_only(),
             VaultMethod::CreateProof => LockFlags::MUTABLE,
             VaultMethod::CreateProofByAmount => LockFlags::MUTABLE,
             VaultMethod::CreateProofByIds => LockFlags::MUTABLE,
@@ -80,7 +84,7 @@ impl Vault {
                 };
 
                 let bucket_id = system_api
-                    .node_create(HeapRENode::Bucket(Bucket::new(container)))?
+                    .node_create(HeapRENode::Bucket(BucketSubstate::new(container)))?
                     .into();
                 ScryptoValue::from_typed(&scrypto::resource::Bucket(bucket_id))
             }
@@ -136,7 +140,7 @@ impl Vault {
                 };
 
                 let bucket_id = system_api
-                    .node_create(HeapRENode::Bucket(Bucket::new(container)))?
+                    .node_create(HeapRENode::Bucket(BucketSubstate::new(container)))?
                     .into();
                 ScryptoValue::from_typed(&scrypto::resource::Bucket(bucket_id))
             }

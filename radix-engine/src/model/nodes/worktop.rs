@@ -1,6 +1,6 @@
-use crate::engine::{DropFailure, HeapRENode, InvokeError, LockFlags, SystemApi};
+use crate::engine::{HeapRENode, InvokeError, LockFlags, SystemApi};
 use crate::fee::FeeReserve;
-use crate::model::{Bucket, LockableResource, Resource, ResourceOperationError};
+use crate::model::{BucketSubstate, Resource, ResourceOperationError};
 use crate::types::*;
 use crate::wasm::*;
 
@@ -46,13 +46,6 @@ pub struct WorktopAssertContainsNonFungiblesInput {
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct WorktopDrainInput {}
 
-/// Worktop collects resources from function or method returns.
-#[derive(Debug)]
-pub struct Worktop {
-    // TODO: refactor worktop to be `HashMap<ResourceAddress, BucketId>`
-    resources: HashMap<ResourceAddress, Rc<RefCell<LockableResource>>>,
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
 pub enum WorktopError {
     InvalidRequestData(DecodeError),
@@ -64,149 +57,18 @@ pub enum WorktopError {
     AssertionFailed,
 }
 
+pub struct Worktop;
+
 impl Worktop {
-    pub fn new() -> Self {
-        Self {
-            resources: HashMap::new(),
-        }
-    }
-
-    pub fn drop(self) -> Result<(), DropFailure> {
-        for (_address, resource) in self.resources {
-            if !resource.borrow().is_empty() {
-                return Err(DropFailure::Worktop);
-            }
-        }
-
-        Ok(())
-    }
-
-    pub fn put(&mut self, other: Bucket) -> Result<(), ResourceOperationError> {
-        let resource_address = other.resource_address();
-        let other_resource = other.resource()?;
-        if let Some(mut resource) = self.borrow_resource_mut(resource_address) {
-            return resource.put(other_resource);
-        }
-        self.resources.insert(
-            resource_address,
-            Rc::new(RefCell::new(other_resource.into())),
-        );
-        Ok(())
-    }
-
-    fn take(
-        &mut self,
-        amount: Decimal,
-        resource_address: ResourceAddress,
-    ) -> Result<Option<Resource>, ResourceOperationError> {
-        if let Some(mut resource) = self.borrow_resource_mut(resource_address) {
-            resource.take_by_amount(amount).map(Option::Some)
-        } else if !amount.is_zero() {
-            Err(ResourceOperationError::InsufficientBalance)
-        } else {
-            Ok(None)
-        }
-    }
-
-    pub fn take_non_fungibles(
-        &mut self,
-        ids: &BTreeSet<NonFungibleId>,
-        resource_address: ResourceAddress,
-    ) -> Result<Option<Resource>, ResourceOperationError> {
-        if let Some(mut resource) = self.borrow_resource_mut(resource_address) {
-            resource.take_by_ids(ids).map(Option::Some)
-        } else if !ids.is_empty() {
-            Err(ResourceOperationError::InsufficientBalance)
-        } else {
-            Ok(None)
-        }
-    }
-
-    fn take_all(
-        &mut self,
-        resource_address: ResourceAddress,
-    ) -> Result<Option<Resource>, ResourceOperationError> {
-        if let Some(mut resource) = self.borrow_resource_mut(resource_address) {
-            Ok(Some(resource.take_all_liquid()?))
-        } else {
-            Ok(None)
-        }
-    }
-
-    pub fn resource_addresses(&self) -> Vec<ResourceAddress> {
-        self.resources.keys().cloned().collect()
-    }
-
-    pub fn total_amount(&self, resource_address: ResourceAddress) -> Decimal {
-        if let Some(resource) = self.borrow_resource(resource_address) {
-            resource.total_amount()
-        } else {
-            Decimal::zero()
-        }
-    }
-
-    pub fn total_ids(
-        &self,
-        resource_address: ResourceAddress,
-    ) -> Result<BTreeSet<NonFungibleId>, ResourceOperationError> {
-        if let Some(resource) = self.borrow_resource(resource_address) {
-            resource.total_ids()
-        } else {
-            Ok(BTreeSet::new())
-        }
-    }
-
-    pub fn is_locked(&self) -> bool {
-        for resource_address in self.resource_addresses() {
-            if let Some(resource) = self.borrow_resource(resource_address) {
-                if resource.is_locked() {
-                    return true;
-                }
-            }
-        }
-        false
-    }
-
-    pub fn is_empty(&self) -> bool {
-        for resource_address in self.resource_addresses() {
-            if let Some(resource) = self.borrow_resource(resource_address) {
-                if !resource.total_amount().is_zero() {
-                    return false;
-                }
-            }
-        }
-        true
-    }
-
-    pub fn create_reference_for_proof(
-        &self,
-        resource_address: ResourceAddress,
-    ) -> Option<Rc<RefCell<LockableResource>>> {
-        self.resources.get(&resource_address).map(Clone::clone)
-    }
-
-    fn borrow_resource(&self, resource_address: ResourceAddress) -> Option<Ref<LockableResource>> {
-        self.resources.get(&resource_address).map(|c| c.borrow())
-    }
-
-    fn borrow_resource_mut(
-        &mut self,
-        resource_address: ResourceAddress,
-    ) -> Option<RefMut<LockableResource>> {
-        self.resources
-            .get(&resource_address)
-            .map(|c| c.borrow_mut())
-    }
-
     pub fn method_locks(method: WorktopMethod) -> LockFlags {
         match method {
             WorktopMethod::TakeAll => LockFlags::MUTABLE,
             WorktopMethod::TakeAmount => LockFlags::MUTABLE,
             WorktopMethod::TakeNonFungibles => LockFlags::MUTABLE,
             WorktopMethod::Put => LockFlags::MUTABLE,
-            WorktopMethod::AssertContains => LockFlags::empty(),
-            WorktopMethod::AssertContainsAmount => LockFlags::empty(),
-            WorktopMethod::AssertContainsNonFungibles => LockFlags::empty(),
+            WorktopMethod::AssertContains => LockFlags::read_only(),
+            WorktopMethod::AssertContainsAmount => LockFlags::read_only(),
+            WorktopMethod::AssertContainsNonFungibles => LockFlags::read_only(),
             WorktopMethod::Drain => LockFlags::MUTABLE,
         }
     }
@@ -276,7 +138,7 @@ impl Worktop {
                     Resource::new_empty(input.resource_address, resource_type)
                 };
                 let bucket_id = system_api
-                    .node_create(HeapRENode::Bucket(Bucket::new(resource_resource)))?
+                    .node_create(HeapRENode::Bucket(BucketSubstate::new(resource_resource)))?
                     .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
                     bucket_id,
@@ -315,7 +177,7 @@ impl Worktop {
                 };
 
                 let bucket_id = system_api
-                    .node_create(HeapRENode::Bucket(Bucket::new(resource_resource)))?
+                    .node_create(HeapRENode::Bucket(BucketSubstate::new(resource_resource)))?
                     .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
                     bucket_id,
@@ -353,7 +215,7 @@ impl Worktop {
                 };
 
                 let bucket_id = system_api
-                    .node_create(HeapRENode::Bucket(Bucket::new(resource_resource)))?
+                    .node_create(HeapRENode::Bucket(BucketSubstate::new(resource_resource)))?
                     .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
                     bucket_id,
@@ -417,7 +279,7 @@ impl Worktop {
                 let mut buckets = Vec::new();
                 for resource in resources {
                     let bucket_id = system_api
-                        .node_create(HeapRENode::Bucket(Bucket::new(resource)))?
+                        .node_create(HeapRENode::Bucket(BucketSubstate::new(resource)))?
                         .into();
                     buckets.push(scrypto::resource::Bucket(bucket_id))
                 }

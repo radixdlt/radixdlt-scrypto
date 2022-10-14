@@ -4,7 +4,7 @@ use std::str::FromStr;
 use radix_engine::types::{
     AddressError, Bech32Decoder, Bech32Encoder, ComponentAddress, PackageAddress, ResourceAddress,
 };
-use scrypto::address::ContextualDisplay;
+use scrypto::misc::ContextualDisplay;
 
 #[derive(Clone)]
 pub struct SimulatorPackageAddress(pub PackageAddress);

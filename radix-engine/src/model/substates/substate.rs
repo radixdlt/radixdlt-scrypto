@@ -2,6 +2,7 @@ use crate::engine::{
     CallFrame, KernelError, RENodePointer, RuntimeError, SubstateProperties, Track,
 };
 use crate::fee::FeeReserve;
+use crate::model::substates::worktop::WorktopSubstate;
 use crate::model::*;
 use crate::types::*;
 
@@ -356,10 +357,10 @@ impl Into<GlobalAddressSubstate> for RuntimeSubstate {
 }
 
 pub enum SubstateRef<'a> {
-    AuthZone(&'a AuthZone),
-    Worktop(&'a Worktop),
-    Proof(&'a Proof),
-    Bucket(&'a Bucket),
+    AuthZone(&'a AuthZoneSubstate),
+    Worktop(&'a WorktopSubstate),
+    Proof(&'a ProofSubstate),
+    Bucket(&'a BucketSubstate),
     ComponentInfo(&'a ComponentInfoSubstate),
     ComponentState(&'a ComponentStateSubstate),
     NonFungible(&'a NonFungibleSubstate),
@@ -414,28 +415,28 @@ impl<'a> SubstateRef<'a> {
         }
     }
 
-    pub fn proof(&self) -> &Proof {
+    pub fn proof(&self) -> &ProofSubstate {
         match self {
             SubstateRef::Proof(value) => *value,
             _ => panic!("Not a proof"),
         }
     }
 
-    pub fn auth_zone(&self) -> &AuthZone {
+    pub fn auth_zone(&self) -> &AuthZoneSubstate {
         match self {
             SubstateRef::AuthZone(value) => *value,
             _ => panic!("Not an authzone"),
         }
     }
 
-    pub fn worktop(&self) -> &Worktop {
+    pub fn worktop(&self) -> &WorktopSubstate {
         match self {
             SubstateRef::Worktop(value) => *value,
             _ => panic!("Not a worktop"),
         }
     }
 
-    pub fn bucket(&self) -> &Bucket {
+    pub fn bucket(&self) -> &BucketSubstate {
         match self {
             SubstateRef::Bucket(value) => *value,
             _ => panic!("Not a bucket"),
@@ -696,21 +697,21 @@ pub enum RawSubstateRefMut<'a> {
     ResourceManager(&'a mut ResourceManagerSubstate),
     System(&'a mut SystemSubstate),
     Global(&'a mut GlobalAddressSubstate),
-    Bucket(&'a mut Bucket),
-    Proof(&'a mut Proof),
-    Worktop(&'a mut Worktop),
-    AuthZone(&'a mut AuthZone),
+    Bucket(&'a mut BucketSubstate),
+    Proof(&'a mut ProofSubstate),
+    Worktop(&'a mut WorktopSubstate),
+    AuthZone(&'a mut AuthZoneSubstate),
 }
 
 impl<'a> RawSubstateRefMut<'a> {
-    pub fn auth_zone(&mut self) -> &mut AuthZone {
+    pub fn auth_zone(&mut self) -> &mut AuthZoneSubstate {
         match self {
             RawSubstateRefMut::AuthZone(value) => *value,
             _ => panic!("Not an authzone"),
         }
     }
 
-    pub fn worktop(&mut self) -> &mut Worktop {
+    pub fn worktop(&mut self) -> &mut WorktopSubstate {
         match self {
             RawSubstateRefMut::Worktop(value) => *value,
             _ => panic!("Not a worktop"),
@@ -724,7 +725,7 @@ impl<'a> RawSubstateRefMut<'a> {
         }
     }
 
-    pub fn bucket(&mut self) -> &mut Bucket {
+    pub fn bucket(&mut self) -> &mut BucketSubstate {
         match self {
             RawSubstateRefMut::Bucket(value) => *value,
             _ => panic!("Not a bucket"),

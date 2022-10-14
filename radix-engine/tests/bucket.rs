@@ -2,6 +2,7 @@ use radix_engine::engine::*;
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::model::{BucketError, ResourceOperationError};
 use radix_engine::types::*;
+use scrypto::misc::ContextualDisplay;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -219,7 +220,7 @@ fn create_empty_bucket() {
         manifest,
         vec![NonFungibleAddress::from_public_key(&public_key)],
     );
-    println!("{}", receipt.displayable(&Bech32Encoder::for_simulator()));
+    println!("{}", receipt.display(&Bech32Encoder::for_simulator()));
 
     // Assert
     receipt.expect_commit_success();

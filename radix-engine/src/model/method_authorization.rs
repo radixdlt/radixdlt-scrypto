@@ -1,5 +1,5 @@
 use crate::model::method_authorization::MethodAuthorizationError::NotAuthorized;
-use crate::model::{AuthZone, Proof};
+use crate::model::{AuthZoneSubstate, ProofSubstate};
 use crate::types::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
@@ -28,7 +28,7 @@ pub enum HardResourceOrNonFungible {
 }
 
 impl HardResourceOrNonFungible {
-    pub fn proof_matches(&self, proof: &Proof) -> bool {
+    pub fn proof_matches(&self, proof: &ProofSubstate) -> bool {
         match self {
             HardResourceOrNonFungible::NonFungible(non_fungible_address) => {
                 let proof_resource_address = proof.resource_address();
@@ -46,7 +46,7 @@ impl HardResourceOrNonFungible {
         }
     }
 
-    pub fn check_has_amount(&self, amount: Decimal, auth_zones: &[&AuthZone]) -> bool {
+    pub fn check_has_amount(&self, amount: Decimal, auth_zones: &[&AuthZoneSubstate]) -> bool {
         for auth_zone in auth_zones {
             // FIXME: Need to check the composite max amount rather than just each proof individually
             if auth_zone
@@ -61,7 +61,7 @@ impl HardResourceOrNonFungible {
         false
     }
 
-    pub fn check(&self, auth_zones: &[&AuthZone]) -> bool {
+    pub fn check(&self, auth_zones: &[&AuthZoneSubstate]) -> bool {
         // Check if a proof can be virtualized
         // TODO: consider moving this logic to AuthZone at some point
         for auth_zone in auth_zones {
@@ -111,7 +111,7 @@ pub enum HardProofRule {
 }
 
 impl HardProofRule {
-    pub fn check(&self, auth_zones: &[&AuthZone]) -> Result<(), MethodAuthorizationError> {
+    pub fn check(&self, auth_zones: &[&AuthZoneSubstate]) -> Result<(), MethodAuthorizationError> {
         match self {
             HardProofRule::Require(resource) => {
                 if resource.check(auth_zones) {
@@ -173,7 +173,7 @@ pub enum HardAuthRule {
 }
 
 impl HardAuthRule {
-    fn check(&self, auth_zones: &[&AuthZone]) -> Result<(), MethodAuthorizationError> {
+    fn check(&self, auth_zones: &[&AuthZoneSubstate]) -> Result<(), MethodAuthorizationError> {
         match self {
             HardAuthRule::ProofRule(rule) => rule.check(auth_zones),
             HardAuthRule::AnyOf(rules) => {
@@ -202,7 +202,7 @@ pub enum MethodAuthorization {
 }
 
 impl MethodAuthorization {
-    pub fn check(&self, auth_zones: &[&AuthZone]) -> Result<(), MethodAuthorizationError> {
+    pub fn check(&self, auth_zones: &[&AuthZoneSubstate]) -> Result<(), MethodAuthorizationError> {
         match self {
             MethodAuthorization::Protected(rule) => rule.check(auth_zones),
             MethodAuthorization::AllowAll => Ok(()),

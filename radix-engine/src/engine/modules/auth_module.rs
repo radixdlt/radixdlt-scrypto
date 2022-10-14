@@ -62,7 +62,7 @@ impl AuthModule {
         Ok(())
     }
 
-    pub fn get_auth_zone(call_frame: &CallFrame) -> &AuthZone {
+    pub fn get_auth_zone(call_frame: &CallFrame) -> &AuthZoneSubstate {
         call_frame
             .owned_heap_nodes
             .values()
@@ -172,7 +172,6 @@ impl AuthModule {
                                 .map_err(RuntimeError::KernelError)?;
                             state
                         };
-
                         {
                             let offset = SubstateOffset::Component(ComponentOffset::Info);
                             component_node_pointer

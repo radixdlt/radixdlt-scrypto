@@ -5,12 +5,12 @@ use crate::types::*;
 #[derive(Debug)]
 pub enum HeapRENode {
     Global(GlobalRENode), // TODO: Remove
-    Bucket(Bucket),
-    Proof(Proof),
-    AuthZone(AuthZone),
+    Bucket(BucketSubstate),
+    Proof(ProofSubstate),
+    AuthZone(AuthZoneSubstate),
     Vault(VaultRuntimeSubstate),
     Component(Component),
-    Worktop(Worktop),
+    Worktop(WorktopSubstate),
     Package(Package),
     KeyValueStore(KeyValueStore),
     NonFungibleStore(NonFungibleStore),
@@ -189,7 +189,7 @@ impl HeapRENode {
         Ok(substate_ref)
     }
 
-    pub fn auth_zone(&self) -> &AuthZone {
+    pub fn auth_zone(&self) -> &AuthZoneSubstate {
         match self {
             HeapRENode::AuthZone(auth_zone, ..) => auth_zone,
             _ => panic!("Expected to be a resource manager"),
@@ -385,8 +385,8 @@ impl HeapRootRENode {
     }
 }
 
-impl Into<Bucket> for HeapRootRENode {
-    fn into(self) -> Bucket {
+impl Into<BucketSubstate> for HeapRootRENode {
+    fn into(self) -> BucketSubstate {
         match self.root {
             HeapRENode::Bucket(bucket) => bucket,
             _ => panic!("Expected to be a bucket"),
@@ -394,8 +394,8 @@ impl Into<Bucket> for HeapRootRENode {
     }
 }
 
-impl Into<Proof> for HeapRootRENode {
-    fn into(self) -> Proof {
+impl Into<ProofSubstate> for HeapRootRENode {
+    fn into(self) -> ProofSubstate {
         match self.root {
             HeapRENode::Proof(proof) => proof,
             _ => panic!("Expected to be a proof"),

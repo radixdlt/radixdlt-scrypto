@@ -1,7 +1,7 @@
 use crate::engine::{HeapRENode, LockFlags, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::{
-    Bucket, InvokeError, NonFungible, NonFungibleSubstate, Resource,
+    BucketSubstate, InvokeError, NonFungible, NonFungibleSubstate, Resource,
     ResourceMethodRule::{Protected, Public},
     VaultRuntimeSubstate,
 };
@@ -227,7 +227,7 @@ impl ResourceManager {
                         ),
                     };
                     let bucket_id = system_api
-                        .node_create(HeapRENode::Bucket(Bucket::new(container)))?
+                        .node_create(HeapRENode::Bucket(BucketSubstate::new(container)))?
                         .into();
                     Some(scrypto::resource::Bucket(bucket_id))
                 } else {
@@ -249,12 +249,12 @@ impl ResourceManager {
             ResourceManagerMethod::LockAuth => LockFlags::MUTABLE,
             ResourceManagerMethod::Mint => LockFlags::MUTABLE,
             ResourceManagerMethod::UpdateNonFungibleData => LockFlags::MUTABLE,
-            ResourceManagerMethod::GetNonFungible => LockFlags::empty(),
-            ResourceManagerMethod::GetMetadata => LockFlags::empty(),
-            ResourceManagerMethod::GetResourceType => LockFlags::empty(),
-            ResourceManagerMethod::GetTotalSupply => LockFlags::empty(),
+            ResourceManagerMethod::GetNonFungible => LockFlags::read_only(),
+            ResourceManagerMethod::GetMetadata => LockFlags::read_only(),
+            ResourceManagerMethod::GetResourceType => LockFlags::read_only(),
+            ResourceManagerMethod::GetTotalSupply => LockFlags::read_only(),
             ResourceManagerMethod::UpdateMetadata => LockFlags::MUTABLE,
-            ResourceManagerMethod::NonFungibleExists => LockFlags::empty(),
+            ResourceManagerMethod::NonFungibleExists => LockFlags::read_only(),
             ResourceManagerMethod::CreateBucket => LockFlags::MUTABLE,
             ResourceManagerMethod::CreateVault => LockFlags::MUTABLE,
         }
@@ -282,7 +282,7 @@ impl ResourceManager {
                 let input: ResourceManagerBurnInput = scrypto_decode(&args.raw)
                     .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))?;
 
-                let bucket: Bucket = system_api
+                let bucket: BucketSubstate = system_api
                     .node_drop(RENodeId::Bucket(input.bucket.0))?
                     .into();
 
@@ -387,7 +387,7 @@ impl ResourceManager {
 
                 let container = Resource::new_empty(resource_address, resource_type);
                 let bucket_id = system_api
-                    .node_create(HeapRENode::Bucket(Bucket::new(container)))?
+                    .node_create(HeapRENode::Bucket(BucketSubstate::new(container)))?
                     .into();
                 ScryptoValue::from_typed(&scrypto::resource::Bucket(bucket_id))
             }
@@ -405,7 +405,7 @@ impl ResourceManager {
                 };
 
                 let bucket_id = system_api
-                    .node_create(HeapRENode::Bucket(Bucket::new(resource)))?
+                    .node_create(HeapRENode::Bucket(BucketSubstate::new(resource)))?
                     .into();
 
                 let non_fungible_store_id = {
@@ -523,7 +523,7 @@ impl ResourceManager {
                 let offset =
                     SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(input.id));
                 let non_fungible_handle =
-                    system_api.lock_substate(node_id, offset, LockFlags::empty())?;
+                    system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
                 let substate = system_api.get_ref(non_fungible_handle)?;
                 let exists = substate.non_fungible().0.is_some();
 
@@ -545,7 +545,7 @@ impl ResourceManager {
                 let offset =
                     SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(input.id));
                 let non_fungible_handle =
-                    system_api.lock_substate(node_id, offset, LockFlags::empty())?;
+                    system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
                 let non_fungible_ref = system_api.get_ref(non_fungible_handle)?;
                 let wrapper = non_fungible_ref.non_fungible();
                 if let Some(non_fungible) = wrapper.0.as_ref() {
