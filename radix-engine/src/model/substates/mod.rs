@@ -1,3 +1,4 @@
+mod auth_zone;
 mod bucket;
 mod component;
 mod kv_store_entry;
@@ -10,6 +11,7 @@ mod system;
 mod vault;
 mod worktop;
 
+pub use auth_zone::*;
 pub use bucket::*;
 pub use component::*;
 pub use kv_store_entry::*;
