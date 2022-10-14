@@ -219,7 +219,7 @@ impl ExecutionTraceReceipt {
         let mut vault_changes = HashMap::<ComponentId, HashMap<VaultId, Decimal>>::new();
         let mut vault_locked_by = HashMap::<VaultId, ComponentId>::new();
         for (actor, vault_id, vault_op) in ops {
-            if let REActor::Method(FullyQualifiedReceiverMethod { receiver, .. }) = actor {
+            if let REActor::Method(ResolvedReceiverMethod { receiver, .. }) = actor {
                 if let Receiver::Ref(RENodeId::Component(component_id)) = receiver {
                     match vault_op {
                         VaultOp::Create(_) => todo!("Not supported yet!"),

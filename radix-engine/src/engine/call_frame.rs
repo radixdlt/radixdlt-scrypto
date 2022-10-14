@@ -113,9 +113,9 @@ impl CallFrame {
     pub fn new_root() -> Self {
         Self {
             depth: 0,
-            actor: REActor::Function(FunctionIdent::Native(NativeFunction::TransactionProcessor(
-                TransactionProcessorFunction::Run,
-            ))),
+            actor: REActor::Function(ResolvedFunction::Native(
+                NativeFunction::TransactionProcessor(TransactionProcessorFunction::Run),
+            )),
             node_refs: HashMap::new(),
             owned_heap_nodes: HashMap::new(),
             next_lock_handle: 0u32,
@@ -155,48 +155,6 @@ impl CallFrame {
             .map_err(|e| RuntimeError::KernelError(KernelError::DropFailure(e)))
     }
 
-    pub fn take_available_values(
-        &mut self,
-        node_ids: HashSet<RENodeId>,
-        persist_only: bool,
-    ) -> Result<(HashMap<RENodeId, HeapRootRENode>, HashSet<RENodeId>), RuntimeError> {
-        let (taken, missing) = {
-            let mut taken_values = HashMap::new();
-            let mut missing_values = HashSet::new();
-
-            for id in node_ids {
-                if self.node_lock_count.contains_key(&id) {
-                    return Err(RuntimeError::KernelError(KernelError::MovingLockedRENode(
-                        id,
-                    )));
-                }
-
-                let maybe = self.owned_heap_nodes.remove(&id);
-                if let Some(value) = maybe {
-                    value.root().verify_can_move()?;
-                    if persist_only {
-                        value.root().verify_can_persist()?;
-                    }
-                    taken_values.insert(id, value);
-                } else {
-                    missing_values.insert(id);
-                }
-            }
-
-            (taken_values, missing_values)
-        };
-
-        // Moved values must have their references removed
-        for (id, value) in &taken {
-            self.node_refs.remove(id);
-            for (id, ..) in &value.child_nodes {
-                self.node_refs.remove(id);
-            }
-        }
-
-        Ok((taken, missing))
-    }
-
     pub fn take_node(&mut self, node_id: RENodeId) -> Result<HeapRootRENode, RuntimeError> {
         if self.node_lock_count.contains_key(&node_id) {
             return Err(RuntimeError::KernelError(KernelError::MovingLockedRENode(
@@ -206,7 +164,12 @@ impl CallFrame {
 
         let maybe = self.owned_heap_nodes.remove(&node_id);
         if let Some(root_node) = maybe {
-            root_node.root().verify_can_move()?;
+            // Moved nodes must have their child node references removed
+            self.node_refs.remove(&node_id);
+            for (id, ..) in &root_node.child_nodes {
+                self.node_refs.remove(id);
+            }
+
             Ok(root_node)
         } else {
             Err(RuntimeError::KernelError(KernelError::RENodeNotFound(

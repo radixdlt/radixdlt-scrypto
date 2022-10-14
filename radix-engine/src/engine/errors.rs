@@ -5,7 +5,7 @@ use crate::model::*;
 use crate::types::*;
 use crate::wasm::WasmError;
 use sbor::*;
-use scrypto::core::{FnIdent, ReceiverMethodIdent};
+use scrypto::core::FnIdent;
 
 use super::AuthError;
 use super::CostingError;
@@ -30,6 +30,9 @@ impl fmt::Display for RejectionError {
 pub enum RuntimeError {
     /// An error occurred within the kernel.
     KernelError(KernelError),
+
+    /// An error occurred within an interpreter
+    InterpreterError(InterpreterError),
 
     /// An error occurred within a kernel module.
     ModuleError(ModuleError),
@@ -57,11 +60,9 @@ pub enum KernelError {
     GlobalAddressNotFound(GlobalAddress),
 
     MaxCallDepthLimitReached,
-    FnIdentNotFound(FnIdent),
-    MethodNotFound(ReceiverMethodIdent),
+    InvalidFnIdent(FnIdent),
+
     FunctionNotFound(FunctionIdent),
-    InvalidFnInput2(FnIdent),
-    InvalidFnInput { fn_identifier: FunctionIdent },
     InvalidFnOutput { fn_identifier: FunctionIdent },
 
     // ID allocation
@@ -71,42 +72,41 @@ pub enum KernelError {
     DecodeError(DecodeError),
 
     // RENode
-    BucketNotFound(BucketId),
-    ProofNotFound(ProofId),
-    PackageNotFound(PackageAddress),
-    BlueprintNotFound(PackageAddress, String),
-    ResourceManagerNotFound(ResourceAddress),
-    WorktopNotFound,
     RENodeNotFound(RENodeId),
     StoredNodeRemoved(RENodeId),
     RENodeGlobalizeTypeNotAllowed(RENodeId),
     RENodeCreateInvalidPermission,
-    RENodeCreateNodeNotFound(RENodeId),
 
-    // Substate
+    TrackError(TrackError),
     MovingLockedRENode(RENodeId),
     LockDoesNotExist(LockHandle),
     LockNotMutable(LockHandle),
-    OffsetNotAvailable(SubstateOffset),
+    DropFailure(DropFailure),
+    BlobNotFound(Hash),
+
+    // Substate Constraints
+    InvalidOffset(SubstateOffset),
+    InvalidOwnership(SubstateOffset, RENodeId),
     InvalidOverwrite,
+
+    // Actor Constraints
     SubstateNotReadable(REActor, SubstateId),
     SubstateNotWriteable(REActor, SubstateId),
-    TrackError(TrackError),
+    CantMoveDownstream(RENodeId),
+    CantMoveUpstream(RENodeId),
+}
 
-    // constraints
-    ValueNotAllowed,
-    BucketNotAllowed,
-    ProofNotAllowed,
-    VaultNotAllowed,
-    KeyValueStoreNotAllowed,
-    CantMoveLockedBucket,
-    CantMoveRestrictedProof,
-    CantMoveWorktop,
-    CantMoveGlobal,
-    CantMoveAuthZone,
-    DropFailure(DropFailure),
+#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
+pub enum ScryptoActorError {
+    BlueprintNotFound,
+    IdentNotFound,
+    InvalidReceiver,
+    InvalidInput,
+}
 
-    BlobNotFound(Hash),
+#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
+pub enum InterpreterError {
+    InvalidScryptoActor(FnIdent, ScryptoActorError),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]

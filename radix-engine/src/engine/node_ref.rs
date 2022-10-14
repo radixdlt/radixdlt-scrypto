@@ -142,9 +142,10 @@ impl RENodePointer {
         Ok(substate_ref)
     }
 
-    pub fn add_children<'f, 's, R: FeeReserve>(
+    pub fn add_child<'f, 's, R: FeeReserve>(
         &self,
-        child_nodes: HashMap<RENodeId, HeapRootRENode>,
+        node_id: RENodeId,
+        node: HeapRootRENode,
         call_frames: &'f mut Vec<CallFrame>,
         track: &'f mut Track<'s, R>,
     ) {
@@ -153,17 +154,13 @@ impl RENodePointer {
                 let frame = call_frames.get_mut(*frame_id).unwrap();
                 let root_node = frame.owned_heap_nodes.get_mut(&root).unwrap();
 
-                for (id, val) in child_nodes {
-                    root_node.insert_non_root_nodes(val.to_nodes(id));
-                }
+                root_node.insert_non_root_nodes(node.to_nodes(node_id));
             }
             RENodePointer::Store(..) => {
-                for (id, val) in child_nodes {
-                    for (id, node) in val.to_nodes(id) {
-                        let substates = node_to_substates(node);
-                        for (offset, substate) in substates {
-                            track.insert_substate(SubstateId(id, offset), substate);
-                        }
+                for (id, node) in node.to_nodes(node_id) {
+                    let substates = node_to_substates(node);
+                    for (offset, substate) in substates {
+                        track.insert_substate(SubstateId(id, offset), substate);
                     }
                 }
             }

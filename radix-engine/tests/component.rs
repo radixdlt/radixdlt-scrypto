@@ -1,7 +1,10 @@
-use radix_engine::engine::{KernelError, LockState, RuntimeError, TrackError};
+use radix_engine::engine::{
+    InterpreterError, KernelError, LockState, RuntimeError, ScryptoActorError, TrackError,
+};
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
 use scrypto::address::Bech32Decoder;
+use scrypto::core::FnIdent;
 use scrypto::engine::types::SubstateId;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -56,13 +59,13 @@ fn invalid_blueprint_name_should_cause_error() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.compile_and_publish("./tests/component");
+    let package_addr = test_runner.compile_and_publish("./tests/component");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
         .call_scrypto_function(
-            package_address,
+            package_addr,
             "NonExistentBlueprint",
             "create_component",
             args!(),
@@ -72,8 +75,16 @@ fn invalid_blueprint_name_should_cause_error() {
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        if let RuntimeError::KernelError(KernelError::BlueprintNotFound(addr, blueprint)) = e {
-            addr.eq(&package_address) && blueprint.eq("NonExistentBlueprint")
+        if let RuntimeError::InterpreterError(InterpreterError::InvalidScryptoActor(
+            FnIdent::Function(FunctionIdent::Scrypto {
+                package_address,
+                blueprint_name,
+                ..
+            }),
+            ScryptoActorError::BlueprintNotFound,
+        )) = e
+        {
+            package_addr.eq(&package_address) && blueprint_name.eq("NonExistentBlueprint")
         } else {
             false
         }
