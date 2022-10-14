@@ -6,7 +6,7 @@ use transaction::validation::*;
 
 use crate::engine::{HeapRENode, SystemApi};
 use crate::fee::FeeReserve;
-use crate::model::InvokeError;
+use crate::model::{InvokeError, WorktopSubstate};
 use crate::model::{
     WorktopAssertContainsAmountInput, WorktopAssertContainsInput,
     WorktopAssertContainsNonFungiblesInput, WorktopDrainInput, WorktopPutInput,
@@ -14,8 +14,6 @@ use crate::model::{
 };
 use crate::types::*;
 use crate::wasm::*;
-
-use super::Worktop;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct TransactionProcessorRunInput {
@@ -220,7 +218,7 @@ impl TransactionProcessor {
                 let mut id_allocator = IdAllocator::new(IdSpace::Transaction);
 
                 let _worktop_id = system_api
-                    .node_create(HeapRENode::Worktop(Worktop::new()))
+                    .node_create(HeapRENode::Worktop(WorktopSubstate::new()))
                     .map_err(InvokeError::Downstream)?;
 
                 let owned_node_ids = system_api

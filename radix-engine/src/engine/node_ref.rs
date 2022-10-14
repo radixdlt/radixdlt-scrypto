@@ -30,7 +30,7 @@ impl RENodePointer {
     ) -> Result<Option<RENodePointer>, RuntimeError> {
         if let RENodeId::Global(..) = self.node_id() {
             let offset = SubstateOffset::Global(GlobalOffset::Global);
-            self.acquire_lock(offset.clone(), false, false, track)
+            self.acquire_lock(offset.clone(), LockFlags::read_only(), track)
                 .map_err(RuntimeError::KernelError)?;
 
             let substate_ref = self.borrow_substate(&offset, call_frames, track)?;
@@ -46,27 +46,36 @@ impl RENodePointer {
     pub fn acquire_lock<'s, R: FeeReserve>(
         &self,
         offset: SubstateOffset,
-        mutable: bool,
-        write_through: bool,
+        flags: LockFlags,
         track: &mut Track<'s, R>,
     ) -> Result<(), KernelError> {
+        let substate_id = SubstateId(self.node_id(), offset);
+
         match self {
             RENodePointer::Store(..) => track
-                .acquire_lock(SubstateId(self.node_id(), offset), mutable, write_through)
+                .acquire_lock(substate_id, flags)
                 .map_err(KernelError::TrackError),
-            RENodePointer::Heap { .. } => Ok(()),
+            RENodePointer::Heap { .. } => {
+                if flags.contains(LockFlags::UNMODIFIED_BASE) {
+                    Err(KernelError::TrackError(
+                        TrackError::LockUnmodifiedBaseOnNewSubstate(substate_id),
+                    ))
+                } else {
+                    Ok(())
+                }
+            }
         }
     }
 
     pub fn release_lock<'s, R: FeeReserve>(
         &self,
         offset: SubstateOffset,
-        write_through: bool,
+        force_write: bool,
         track: &mut Track<'s, R>,
     ) -> Result<(), KernelError> {
         match self {
             RENodePointer::Store(..) => track
-                .release_lock(SubstateId(self.node_id(), offset), write_through)
+                .release_lock(SubstateId(self.node_id(), offset), force_write)
                 .map_err(KernelError::TrackError),
             RENodePointer::Heap { .. } => Ok(()),
         }
@@ -80,38 +89,6 @@ impl RENodePointer {
                 id: Option::Some(child_id),
             },
             RENodePointer::Store(..) => RENodePointer::Store(child_id),
-        }
-    }
-
-    pub fn to_ref<'f, 'p, 's, R: FeeReserve>(
-        &self,
-        call_frames: &'f Vec<CallFrame>,
-        track: &'f mut Track<'s, R>,
-    ) -> RENodeRef<'f, 's, R> {
-        match self {
-            RENodePointer::Heap { frame_id, root, id } => {
-                let frame = call_frames.get(*frame_id).unwrap();
-                RENodeRef::Stack(frame.owned_heap_nodes.get(root).unwrap(), id.clone())
-            }
-            RENodePointer::Store(node_id) => RENodeRef::Track(track, node_id.clone()),
-        }
-    }
-
-    pub fn to_ref_mut<'f, 'p, 's, R: FeeReserve>(
-        &self,
-        call_frames: &'f mut Vec<CallFrame>,
-        track: &'f mut Track<'s, R>,
-    ) -> RENodeRefMut<'f, 's, R> {
-        match self {
-            RENodePointer::Heap { frame_id, root, id } => {
-                let frame = call_frames.get_mut(*frame_id).unwrap();
-                RENodeRefMut::Stack(
-                    frame.owned_heap_nodes.get_mut(root).unwrap(),
-                    root.clone(),
-                    id.clone(),
-                )
-            }
-            RENodePointer::Store(node_id) => RENodeRefMut::Track(track, node_id.clone()),
         }
     }
 
@@ -165,9 +142,10 @@ impl RENodePointer {
         Ok(substate_ref)
     }
 
-    pub fn add_children<'f, 's, R: FeeReserve>(
+    pub fn add_child<'f, 's, R: FeeReserve>(
         &self,
-        child_nodes: HashMap<RENodeId, HeapRootRENode>,
+        node_id: RENodeId,
+        node: HeapRootRENode,
         call_frames: &'f mut Vec<CallFrame>,
         track: &'f mut Track<'s, R>,
     ) {
@@ -176,14 +154,13 @@ impl RENodePointer {
                 let frame = call_frames.get_mut(*frame_id).unwrap();
                 let root_node = frame.owned_heap_nodes.get_mut(&root).unwrap();
 
-                for (id, val) in child_nodes {
-                    root_node.insert_non_root_nodes(val.to_nodes(id));
-                }
+                root_node.insert_non_root_nodes(node.to_nodes(node_id));
             }
             RENodePointer::Store(..) => {
-                for (id, val) in child_nodes {
-                    for (id, node) in val.to_nodes(id) {
-                        track.put_node(id, node);
+                for (id, node) in node.to_nodes(node_id) {
+                    let substates = node_to_substates(node);
+                    for (offset, substate) in substates {
+                        track.insert_substate(SubstateId(id, offset), substate);
                     }
                 }
             }
@@ -192,98 +169,4 @@ impl RENodePointer {
 
     // TODO: ref drop mechanism
     // TODO: concurrent refs and mut refs
-}
-
-pub enum RENodeRef<'f, 's, R: FeeReserve> {
-    Stack(&'f HeapRootRENode, Option<RENodeId>),
-    Track(&'f mut Track<'s, R>, RENodeId),
-}
-
-impl<'f, 's, R: FeeReserve> RENodeRef<'f, 's, R> {
-    pub fn bucket(&self) -> &Bucket {
-        match self {
-            RENodeRef::Stack(value, id) => id
-                .as_ref()
-                .map_or(value.root(), |v| value.non_root(v))
-                .bucket(),
-            RENodeRef::Track(..) => {
-                panic!("Unexpected")
-            }
-        }
-    }
-
-    pub fn proof(&self) -> &Proof {
-        match self {
-            RENodeRef::Stack(value, id) => id
-                .as_ref()
-                .map_or(value.root(), |v| value.non_root(v))
-                .proof(),
-            RENodeRef::Track(..) => {
-                panic!("Unexpected")
-            }
-        }
-    }
-
-    pub fn vault(&mut self) -> &Vault {
-        match self {
-            RENodeRef::Stack(value, id) => id
-                .as_ref()
-                .map_or(value.root(), |v| value.non_root(v))
-                .vault(),
-
-            RENodeRef::Track(track, node_id) => track.borrow_node(node_id).vault(),
-        }
-    }
-}
-
-pub enum RENodeRefMut<'f, 's, R: FeeReserve> {
-    Stack(&'f mut HeapRootRENode, RENodeId, Option<RENodeId>),
-    Track(&'f mut Track<'s, R>, RENodeId),
-}
-
-impl<'f, 's, R: FeeReserve> RENodeRefMut<'f, 's, R> {
-    pub fn bucket_mut(&mut self) -> &mut Bucket {
-        match self {
-            RENodeRefMut::Stack(root_node, _, id) => {
-                root_node.get_node_mut(id.as_ref()).bucket_mut()
-            }
-            RENodeRefMut::Track(..) => panic!("Bucket should be in stack"),
-        }
-    }
-
-    pub fn proof_mut(&mut self) -> &mut Proof {
-        match self {
-            RENodeRefMut::Stack(root_node, _, id) => {
-                root_node.get_node_mut(id.as_ref()).proof_mut()
-            }
-            RENodeRefMut::Track(..) => panic!("Proof should be in stack"),
-        }
-    }
-
-    pub fn auth_zone_mut(&mut self) -> &mut AuthZone {
-        match self {
-            RENodeRefMut::Stack(re_value, _, id) => {
-                re_value.get_node_mut(id.as_ref()).auth_zone_mut()
-            }
-            RENodeRefMut::Track(..) => panic!("AuthZone should be in stack"),
-        }
-    }
-
-    pub fn worktop_mut(&mut self) -> &mut Worktop {
-        match self {
-            RENodeRefMut::Stack(root_node, _, id) => {
-                root_node.get_node_mut(id.as_ref()).worktop_mut()
-            }
-            RENodeRefMut::Track(track, node_id) => track.borrow_node_mut(node_id).worktop_mut(),
-        }
-    }
-
-    pub fn vault_mut(&mut self) -> &mut Vault {
-        match self {
-            RENodeRefMut::Stack(root_node, _, id) => {
-                root_node.get_node_mut(id.as_ref()).vault_mut()
-            }
-            RENodeRefMut::Track(track, node_id) => track.borrow_node_mut(node_id).vault_mut(),
-        }
-    }
 }

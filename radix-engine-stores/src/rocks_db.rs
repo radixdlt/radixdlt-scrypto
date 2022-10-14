@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 
 use radix_engine::ledger::*;
-use radix_engine::model::Substate;
+use radix_engine::model::PersistedSubstate;
 use radix_engine::types::*;
 use rocksdb::{DBWithThreadMode, Direction, IteratorMode, SingleThreaded, DB};
 
@@ -149,7 +149,10 @@ impl RadixEngineDB {
 }
 
 impl QueryableSubstateStore for RadixEngineDB {
-    fn get_kv_store_entries(&self, kv_store_id: &KeyValueStoreId) -> HashMap<Vec<u8>, Substate> {
+    fn get_kv_store_entries(
+        &self,
+        kv_store_id: &KeyValueStoreId,
+    ) -> HashMap<Vec<u8>, PersistedSubstate> {
         let unit = scrypto_encode(&());
         let id = scrypto_encode(&SubstateId(
             RENodeId::KeyValueStore(kv_store_id.clone()),

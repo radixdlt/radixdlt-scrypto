@@ -47,6 +47,30 @@ blueprint! {
 }
 
 blueprint! {
+    struct Invoke {}
+
+    impl Invoke {
+        pub fn call_invalid_scrypto_call_on_vault() {
+            let bucket = ResourceBuilder::new_fungible()
+                .divisibility(DIVISIBILITY_MAXIMUM)
+                .metadata("name", "TestToken")
+                .initial_supply(Decimal::from(10));
+            let vault = Vault::with_bucket(bucket);
+            let node_id = RENodeId::Vault(vault.0);
+
+            let input = RadixEngineInput::Invoke(
+                FnIdent::Method(ReceiverMethodIdent {
+                    method_ident: MethodIdent::Scrypto("test".to_string()),
+                    receiver: Receiver::Ref(node_id),
+                }),
+                args!(),
+            );
+            let _: () = call_engine(input);
+        }
+    }
+}
+
+blueprint! {
     struct NodeCreate {}
 
     impl NodeCreate {

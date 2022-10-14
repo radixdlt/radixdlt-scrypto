@@ -1,8 +1,9 @@
-use crate::engine::RuntimeError;
 use crate::engine::{HeapRENode, SystemApi};
+use crate::engine::{LockFlags, RuntimeError};
 use crate::fee::*;
 use crate::model::{
-    Component, ComponentInfoSubstate, ComponentStateSubstate, InvokeError, KeyValueStore, Substate,
+    Component, ComponentInfoSubstate, ComponentStateSubstate, InvokeError, KeyValueStore,
+    RuntimeSubstate,
 };
 use crate::types::*;
 use crate::wasm::*;
@@ -113,8 +114,15 @@ where
         offset: SubstateOffset,
         mutable: bool,
     ) -> Result<ScryptoValue, RuntimeError> {
+        let flags = if mutable {
+            LockFlags::MUTABLE
+        } else {
+            // TODO: Do we want to expose full flag functionality to Scrypto?
+            LockFlags::read_only()
+        };
+
         self.system_api
-            .lock_substate(node_id, offset, mutable)
+            .lock_substate(node_id, offset, flags)
             .map(|handle| ScryptoValue::from_typed(&handle))
     }
 
@@ -130,15 +138,15 @@ where
         buffer: Vec<u8>,
     ) -> Result<ScryptoValue, RuntimeError> {
         let mut substate_mut = self.system_api.get_ref_mut(lock_handle)?;
-        let substate = Substate::decode_from_buffer(substate_mut.offset(), &buffer)?;
+        let substate = RuntimeSubstate::decode_from_buffer(substate_mut.offset(), &buffer)?;
         let mut raw_mut = substate_mut.get_raw_mut();
 
         match substate {
-            Substate::ComponentState(next) => *raw_mut.component_state() = next,
-            Substate::KeyValueStoreEntry(next) => {
+            RuntimeSubstate::ComponentState(next) => *raw_mut.component_state() = next,
+            RuntimeSubstate::KeyValueStoreEntry(next) => {
                 *raw_mut.kv_store_entry() = next;
             }
-            Substate::NonFungible(next) => {
+            RuntimeSubstate::NonFungible(next) => {
                 *raw_mut.non_fungible() = next;
             }
             _ => return Err(RuntimeError::KernelError(KernelError::InvalidOverwrite)),

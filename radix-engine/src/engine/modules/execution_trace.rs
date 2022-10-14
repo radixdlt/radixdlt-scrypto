@@ -213,13 +213,13 @@ impl ExecutionTraceReceipt {
     pub fn new(
         ops: Vec<(REActor, VaultId, VaultOp)>,
         actual_fee_payments: HashMap<VaultId, Decimal>,
-        state_track: &mut AppStateTrack,
+        state_track: &mut StateTrack,
         is_commit_success: bool,
     ) -> Self {
         let mut vault_changes = HashMap::<ComponentId, HashMap<VaultId, Decimal>>::new();
         let mut vault_locked_by = HashMap::<VaultId, ComponentId>::new();
         for (actor, vault_id, vault_op) in ops {
-            if let REActor::Method(FullyQualifiedReceiverMethod { receiver, .. }) = actor {
+            if let REActor::Method(ResolvedReceiverMethod { receiver, .. }) = actor {
                 if let Receiver::Ref(RENodeId::Component(component_id)) = receiver {
                     match vault_op {
                         VaultOp::Create(_) => todo!("Not supported yet!"),
@@ -287,7 +287,7 @@ impl ExecutionTraceReceipt {
 
     fn get_vault_resource_address(
         vault_id: VaultId,
-        state_track: &mut AppStateTrack,
+        state_track: &mut StateTrack,
     ) -> ResourceAddress {
         state_track
             .get_substate(&SubstateId(
@@ -295,8 +295,8 @@ impl ExecutionTraceReceipt {
                 SubstateOffset::Vault(VaultOffset::Vault),
             ))
             .expect("Failed to find the vault substate")
+            .to_runtime()
             .vault()
-            .0
             .resource_address()
     }
 }

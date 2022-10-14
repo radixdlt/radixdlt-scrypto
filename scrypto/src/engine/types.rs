@@ -171,6 +171,7 @@ pub enum WorktopOffset {
     Worktop,
 }
 
+/// Specifies a specific Substate into a given RENode
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum SubstateOffset {
     Global(GlobalOffset),

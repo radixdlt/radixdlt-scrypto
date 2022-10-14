@@ -1,5 +1,7 @@
 use crate::ExpectedResult::{InvalidInput, InvalidOutput, Success};
-use radix_engine::engine::{ApplicationError, KernelError, RuntimeError};
+use radix_engine::engine::{
+    ApplicationError, InterpreterError, KernelError, RuntimeError, ScryptoActorError,
+};
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::model::ComponentError;
 use radix_engine::types::*;
@@ -64,7 +66,10 @@ fn test_arg(method_name: &str, args: Vec<u8>, expected_result: ExpectedResult) {
             receipt.expect_specific_failure(|e| {
                 matches!(
                     e,
-                    RuntimeError::KernelError(KernelError::InvalidFnInput2(..))
+                    RuntimeError::InterpreterError(InterpreterError::InvalidScryptoActor(
+                        _,
+                        ScryptoActorError::InvalidInput
+                    ))
                 )
             });
         }

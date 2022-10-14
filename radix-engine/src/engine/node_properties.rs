@@ -1,65 +1,36 @@
-use super::{KernelError, RuntimeError};
+use crate::engine::{KernelError, RuntimeError};
 use crate::types::*;
-use scrypto::core::{MethodIdent, ReceiverMethodIdent};
 
-pub struct RENodeProperties;
-
-impl RENodeProperties {
-    pub fn to_primary_offset(
-        method_ident: &ReceiverMethodIdent,
-    ) -> Result<SubstateOffset, RuntimeError> {
-        let offset = match &method_ident.method_ident {
-            MethodIdent::Native(..) => match method_ident.receiver.node_id() {
-                RENodeId::AuthZone(..) => SubstateOffset::AuthZone(AuthZoneOffset::AuthZone),
-                RENodeId::Bucket(..) => SubstateOffset::Bucket(BucketOffset::Bucket),
-                RENodeId::Proof(..) => SubstateOffset::Proof(ProofOffset::Proof),
-                RENodeId::ResourceManager(..) => {
-                    SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager)
-                }
-                RENodeId::System(..) => SubstateOffset::System(SystemOffset::System),
-                RENodeId::Worktop => SubstateOffset::Worktop(WorktopOffset::Worktop),
-                RENodeId::Component(..) => SubstateOffset::Component(ComponentOffset::Info),
-                RENodeId::Vault(..) => SubstateOffset::Vault(VaultOffset::Vault),
-                _ => {
-                    return Err(RuntimeError::KernelError(KernelError::MethodNotFound(
-                        method_ident.clone(),
-                    )))
-                }
-            },
-            MethodIdent::Scrypto { .. } => match method_ident.receiver.node_id() {
-                RENodeId::Component(..) => SubstateOffset::Component(ComponentOffset::Info),
-                _ => {
-                    return Err(RuntimeError::KernelError(KernelError::MethodNotFound(
-                        method_ident.clone(),
-                    )))
-                }
-            },
-        };
-
-        Ok(offset)
-    }
-}
+pub struct NodeProperties;
 
 pub struct SubstateProperties;
 
 impl SubstateProperties {
-    pub fn can_own_nodes(offset: &SubstateOffset) -> bool {
+    pub fn verify_can_own(offset: &SubstateOffset, node_id: RENodeId) -> Result<(), RuntimeError> {
         match offset {
-            SubstateOffset::Global(..) => true,
-            SubstateOffset::AuthZone(..) => false,
-            SubstateOffset::Component(ComponentOffset::State) => true,
-            SubstateOffset::Component(ComponentOffset::Info) => false,
-            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager) => true,
-            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)) => true,
-            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Space) => false,
-            SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(..)) => false,
-            SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Space) => false,
-            SubstateOffset::Vault(..) => false,
-            SubstateOffset::Package(..) => false,
-            SubstateOffset::System(..) => false,
-            SubstateOffset::Bucket(..) => false,
-            SubstateOffset::Proof(..) => false,
-            SubstateOffset::Worktop(..) => false, // TODO: Fix
+            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..))
+            | SubstateOffset::Component(ComponentOffset::State) => match node_id {
+                RENodeId::KeyValueStore(..) | RENodeId::Component { .. } | RENodeId::Vault(..) => {
+                    Ok(())
+                }
+                _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
+                    offset.clone(),
+                    node_id,
+                ))),
+            },
+            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager) => {
+                match node_id {
+                    RENodeId::NonFungibleStore(..) => Ok(()),
+                    _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
+                        offset.clone(),
+                        node_id,
+                    ))),
+                }
+            }
+            _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
+                offset.clone(),
+                node_id,
+            ))),
         }
     }
 }

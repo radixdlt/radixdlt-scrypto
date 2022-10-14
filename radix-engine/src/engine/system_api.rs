@@ -4,7 +4,28 @@ use crate::fee::FeeReserve;
 use crate::model::{Resource, SubstateRef, SubstateRefMut};
 use crate::types::*;
 use crate::wasm::*;
+use bitflags::bitflags;
 use scrypto::core::FnIdent;
+
+bitflags! {
+    pub struct LockFlags: u32 {
+        /// Allows the locked substate to be mutated
+        const MUTABLE = 0b00000001;
+        /// Checks that the substate locked is unmodified from the beginning of
+        /// the transaction. This is used mainly for locking fees in vaults which
+        /// requires this in order to be able to support rollbacks
+        const UNMODIFIED_BASE = 0b00000010;
+        /// Forces a write of a substate even on a transaction failure
+        /// Currently used for vault fees.
+        const FORCE_WRITE = 0b00000100;
+    }
+}
+
+impl LockFlags {
+    pub fn read_only() -> Self {
+        LockFlags::empty()
+    }
+}
 
 pub trait SystemApi<'s, W, I, R>
 where
@@ -30,13 +51,6 @@ where
     /// Retrieves all nodes owned by the current frame
     fn get_owned_node_ids(&mut self) -> Result<Vec<RENodeId>, RuntimeError>;
 
-    fn borrow_node(&mut self, node_id: &RENodeId) -> Result<RENodeRef<'_, 's, R>, RuntimeError>;
-
-    fn borrow_node_mut(
-        &mut self,
-        node_id: &RENodeId,
-    ) -> Result<RENodeRefMut<'_, 's, R>, RuntimeError>;
-
     /// Removes an RENode and all of it's children from the Heap
     fn node_drop(&mut self, node_id: RENodeId) -> Result<HeapRootRENode, RuntimeError>;
 
@@ -46,14 +60,21 @@ where
     /// Moves an RENode from Heap to Store
     fn node_globalize(&mut self, node_id: RENodeId) -> Result<GlobalAddress, RuntimeError>;
 
+    /// Locks a visible substate
     fn lock_substate(
         &mut self,
         node_id: RENodeId,
         offset: SubstateOffset,
-        mutable: bool,
+        flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError>;
+
+    /// Drops a lock
     fn drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError>;
+
+    /// Get a non-mutable reference to a locked substate
     fn get_ref(&mut self, lock_handle: LockHandle) -> Result<SubstateRef, RuntimeError>;
+
+    /// Get a mutable reference to a locked substate
     fn get_ref_mut(
         &mut self,
         lock_handle: LockHandle,

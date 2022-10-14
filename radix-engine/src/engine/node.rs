@@ -5,12 +5,12 @@ use crate::types::*;
 #[derive(Debug)]
 pub enum HeapRENode {
     Global(GlobalRENode), // TODO: Remove
-    Bucket(Bucket),
-    Proof(Proof),
-    AuthZone(AuthZone),
-    Vault(Vault),
+    Bucket(BucketSubstate),
+    Proof(ProofSubstate),
+    AuthZone(AuthZoneSubstate),
+    Vault(VaultRuntimeSubstate),
     Component(Component),
-    Worktop(Worktop),
+    Worktop(WorktopSubstate),
     Package(Package),
     KeyValueStore(KeyValueStore),
     NonFungibleStore(NonFungibleStore),
@@ -19,62 +19,37 @@ pub enum HeapRENode {
 }
 
 impl HeapRENode {
-    /// Not that this method is intended for heap nodes only, see the panic below.
-    pub fn get_child_nodes(&self) -> Result<HashSet<RENodeId>, RuntimeError> {
+    pub fn get_substates(&self) -> Vec<SubstateOffset> {
         match self {
-            HeapRENode::Global(global_node) => {
-                let child_node = match &global_node.address {
-                    GlobalAddressSubstate::Component(component) => RENodeId::Component(component.0),
-                    GlobalAddressSubstate::SystemComponent(component) => {
-                        RENodeId::System(component.0)
-                    }
-                    GlobalAddressSubstate::Package(package_address) => {
-                        RENodeId::Package(*package_address)
-                    }
-                    GlobalAddressSubstate::Resource(resource_address) => {
-                        RENodeId::ResourceManager(*resource_address)
-                    }
-                };
-                let mut child_nodes = HashSet::new();
-                child_nodes.insert(child_node);
-                Ok(child_nodes)
+            HeapRENode::Global(..) => {
+                vec![SubstateOffset::Global(GlobalOffset::Global)]
             }
-            HeapRENode::Component(component) => {
-                if let Some(state) = &component.state {
-                    let value = ScryptoValue::from_slice(&state.raw)
-                        .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
-                    Ok(value.node_ids())
-                } else {
-                    panic!("Component state should be available for heap component")
-                }
+            HeapRENode::Component(..) => {
+                vec![
+                    SubstateOffset::Component(ComponentOffset::State),
+                    SubstateOffset::Component(ComponentOffset::Info),
+                ]
             }
-            HeapRENode::KeyValueStore(store) => {
-                let mut child_nodes = HashSet::new();
-                for (_id, substate) in &store.loaded_entries {
-                    if let Some(v) = &substate.0 {
-                        let value = ScryptoValue::from_slice(&v)
-                            .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))?;
-                        child_nodes.extend(value.node_ids());
-                    }
-                }
-                Ok(child_nodes)
+            HeapRENode::KeyValueStore(store) => store
+                .loaded_entries
+                .iter()
+                .map(|(key, _)| {
+                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key.clone()))
+                })
+                .collect(),
+            HeapRENode::NonFungibleStore(..) => vec![],
+            HeapRENode::ResourceManager(..) => {
+                vec![SubstateOffset::ResourceManager(
+                    ResourceManagerOffset::ResourceManager,
+                )]
             }
-            HeapRENode::NonFungibleStore(..) => Ok(HashSet::new()),
-            HeapRENode::ResourceManager(resource_manager) => {
-                let mut child_nodes = HashSet::new();
-                if let Some(non_fungible_store_id) = &resource_manager.info.non_fungible_store_id {
-                    child_nodes
-                        .insert(RENodeId::NonFungibleStore(non_fungible_store_id.to_owned()));
-                }
-                Ok(child_nodes)
-            }
-            HeapRENode::Package(..) => Ok(HashSet::new()),
-            HeapRENode::Bucket(..) => Ok(HashSet::new()),
-            HeapRENode::Proof(..) => Ok(HashSet::new()),
-            HeapRENode::AuthZone(..) => Ok(HashSet::new()),
-            HeapRENode::Vault(..) => Ok(HashSet::new()),
-            HeapRENode::Worktop(..) => Ok(HashSet::new()),
-            HeapRENode::System(..) => Ok(HashSet::new()),
+            HeapRENode::Package(..) => vec![SubstateOffset::Package(PackageOffset::Package)],
+            HeapRENode::Bucket(..) => vec![SubstateOffset::Bucket(BucketOffset::Bucket)],
+            HeapRENode::Proof(..) => vec![SubstateOffset::Proof(ProofOffset::Proof)],
+            HeapRENode::AuthZone(..) => vec![SubstateOffset::AuthZone(AuthZoneOffset::AuthZone)],
+            HeapRENode::Vault(..) => vec![SubstateOffset::Vault(VaultOffset::Vault)],
+            HeapRENode::Worktop(..) => vec![SubstateOffset::Worktop(WorktopOffset::Worktop)],
+            HeapRENode::System(..) => vec![SubstateOffset::System(SystemOffset::System)],
         }
     }
 
@@ -115,8 +90,30 @@ impl HeapRENode {
                 HeapRENode::ResourceManager(resource_manager),
                 SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
             ) => SubstateRef::ResourceManager(&resource_manager.info),
+            (HeapRENode::Bucket(bucket), SubstateOffset::Bucket(BucketOffset::Bucket)) => {
+                SubstateRef::Bucket(bucket)
+            }
+            (HeapRENode::Proof(proof), SubstateOffset::Proof(ProofOffset::Proof)) => {
+                SubstateRef::Proof(proof)
+            }
+            (HeapRENode::Worktop(worktop), SubstateOffset::Worktop(WorktopOffset::Worktop)) => {
+                SubstateRef::Worktop(worktop)
+            }
+            (
+                HeapRENode::AuthZone(auth_zone),
+                SubstateOffset::AuthZone(AuthZoneOffset::AuthZone),
+            ) => SubstateRef::AuthZone(auth_zone),
+            (HeapRENode::Vault(vault), SubstateOffset::Vault(VaultOffset::Vault)) => {
+                SubstateRef::Vault(vault)
+            }
+            (HeapRENode::Package(package), SubstateOffset::Package(PackageOffset::Package)) => {
+                SubstateRef::Package(&package.info)
+            }
+            (HeapRENode::System(system), SubstateOffset::System(SystemOffset::System)) => {
+                SubstateRef::System(&system.info)
+            }
             (_, offset) => {
-                return Err(RuntimeError::KernelError(KernelError::OffsetNotAvailable(
+                return Err(RuntimeError::KernelError(KernelError::InvalidOffset(
                     offset.clone(),
                 )));
             }
@@ -161,8 +158,30 @@ impl HeapRENode {
                 HeapRENode::ResourceManager(resource_manager),
                 SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
             ) => RawSubstateRefMut::ResourceManager(&mut resource_manager.info),
+            (HeapRENode::Bucket(bucket), SubstateOffset::Bucket(BucketOffset::Bucket)) => {
+                RawSubstateRefMut::Bucket(bucket)
+            }
+            (HeapRENode::Proof(proof), SubstateOffset::Proof(ProofOffset::Proof)) => {
+                RawSubstateRefMut::Proof(proof)
+            }
+            (HeapRENode::Worktop(worktop), SubstateOffset::Worktop(WorktopOffset::Worktop)) => {
+                RawSubstateRefMut::Worktop(worktop)
+            }
+            (
+                HeapRENode::AuthZone(auth_zone),
+                SubstateOffset::AuthZone(AuthZoneOffset::AuthZone),
+            ) => RawSubstateRefMut::AuthZone(auth_zone),
+            (HeapRENode::Vault(vault), SubstateOffset::Vault(VaultOffset::Vault)) => {
+                RawSubstateRefMut::Vault(vault)
+            }
+            (HeapRENode::Package(package), SubstateOffset::Package(PackageOffset::Package)) => {
+                RawSubstateRefMut::Package(&mut package.info)
+            }
+            (HeapRENode::System(system), SubstateOffset::System(SystemOffset::System)) => {
+                RawSubstateRefMut::System(&mut system.info)
+            }
             (_, offset) => {
-                return Err(RuntimeError::KernelError(KernelError::OffsetNotAvailable(
+                return Err(RuntimeError::KernelError(KernelError::InvalidOffset(
                     offset.clone(),
                 )));
             }
@@ -170,125 +189,103 @@ impl HeapRENode {
         Ok(substate_ref)
     }
 
-    pub fn auth_zone(&self) -> &AuthZone {
+    pub fn auth_zone(&self) -> &AuthZoneSubstate {
         match self {
             HeapRENode::AuthZone(auth_zone, ..) => auth_zone,
             _ => panic!("Expected to be a resource manager"),
         }
     }
 
-    pub fn auth_zone_mut(&mut self) -> &mut AuthZone {
+    pub fn prepare_move_downstream(&mut self, self_node_id: RENodeId) -> Result<(), RuntimeError> {
         match self {
-            HeapRENode::AuthZone(auth_zone, ..) => auth_zone,
-            _ => panic!("Expected to be an auth zone"),
-        }
-    }
-
-    pub fn bucket(&self) -> &Bucket {
-        match self {
-            HeapRENode::Bucket(bucket) => bucket,
-            _ => panic!("Expected to be a bucket"),
-        }
-    }
-    pub fn bucket_mut(&mut self) -> &mut Bucket {
-        match self {
-            HeapRENode::Bucket(bucket) => bucket,
-            _ => panic!("Expected to be a bucket"),
-        }
-    }
-
-    pub fn proof(&self) -> &Proof {
-        match self {
-            HeapRENode::Proof(proof) => proof,
-            _ => panic!("Expected to be a proof"),
-        }
-    }
-    pub fn proof_mut(&mut self) -> &mut Proof {
-        match self {
-            HeapRENode::Proof(proof) => proof,
-            _ => panic!("Expected to be a proof"),
-        }
-    }
-
-    pub fn vault(&self) -> &Vault {
-        match self {
-            HeapRENode::Vault(vault) => vault,
-            _ => panic!("Expected to be a vault"),
-        }
-    }
-
-    pub fn vault_mut(&mut self) -> &mut Vault {
-        match self {
-            HeapRENode::Vault(vault) => vault,
-            _ => panic!("Expected to be a vault"),
-        }
-    }
-
-    pub fn worktop(&self) -> &Worktop {
-        match self {
-            HeapRENode::Worktop(worktop) => worktop,
-            _ => panic!("Expected to be a worktop"),
-        }
-    }
-
-    pub fn worktop_mut(&mut self) -> &mut Worktop {
-        match self {
-            HeapRENode::Worktop(worktop) => worktop,
-            _ => panic!("Expected to be a worktop"),
-        }
-    }
-
-    pub fn verify_can_move(&self) -> Result<(), RuntimeError> {
-        match self {
-            HeapRENode::AuthZone(..) => {
-                Err(RuntimeError::KernelError(KernelError::CantMoveAuthZone))
-            }
+            HeapRENode::AuthZone(..) => Err(RuntimeError::KernelError(
+                KernelError::CantMoveDownstream(self_node_id),
+            )),
             HeapRENode::Bucket(bucket) => {
                 if bucket.is_locked() {
-                    Err(RuntimeError::KernelError(KernelError::CantMoveLockedBucket))
+                    Err(RuntimeError::KernelError(KernelError::CantMoveDownstream(
+                        self_node_id,
+                    )))
                 } else {
                     Ok(())
                 }
             }
             HeapRENode::Proof(proof) => {
                 if proof.is_restricted() {
-                    Err(RuntimeError::KernelError(
-                        KernelError::CantMoveRestrictedProof,
-                    ))
+                    Err(RuntimeError::KernelError(KernelError::CantMoveDownstream(
+                        self_node_id,
+                    )))
+                } else {
+                    proof.change_to_restricted();
+                    Ok(())
+                }
+            }
+            HeapRENode::Component(..) => Ok(()),
+            HeapRENode::ResourceManager(..) => Err(RuntimeError::KernelError(
+                KernelError::CantMoveDownstream(self_node_id),
+            )),
+            HeapRENode::KeyValueStore(..) => Err(RuntimeError::KernelError(
+                KernelError::CantMoveDownstream(self_node_id),
+            )),
+            HeapRENode::NonFungibleStore(..) => Err(RuntimeError::KernelError(
+                KernelError::CantMoveDownstream(self_node_id),
+            )),
+            HeapRENode::Vault(..) => Err(RuntimeError::KernelError(
+                KernelError::CantMoveDownstream(self_node_id),
+            )),
+            HeapRENode::Package(..) => Err(RuntimeError::KernelError(
+                KernelError::CantMoveDownstream(self_node_id),
+            )),
+            HeapRENode::Worktop(..) => Err(RuntimeError::KernelError(
+                KernelError::CantMoveDownstream(self_node_id),
+            )),
+            HeapRENode::System(..) => Err(RuntimeError::KernelError(
+                KernelError::CantMoveDownstream(self_node_id),
+            )),
+            HeapRENode::Global(..) => Err(RuntimeError::KernelError(
+                KernelError::CantMoveDownstream(self_node_id),
+            )),
+        }
+    }
+
+    pub fn prepare_move_upstream(&mut self, self_node_id: RENodeId) -> Result<(), RuntimeError> {
+        match self {
+            HeapRENode::AuthZone(..) => Err(RuntimeError::KernelError(
+                KernelError::CantMoveUpstream(self_node_id),
+            )),
+            HeapRENode::Bucket(bucket) => {
+                if bucket.is_locked() {
+                    Err(RuntimeError::KernelError(KernelError::CantMoveUpstream(
+                        self_node_id,
+                    )))
                 } else {
                     Ok(())
                 }
             }
-            HeapRENode::KeyValueStore(..) => Ok(()),
-            HeapRENode::NonFungibleStore(..) => Ok(()),
+            HeapRENode::Proof(..) => Ok(()),
             HeapRENode::Component(..) => Ok(()),
             HeapRENode::Vault(..) => Ok(()),
-            HeapRENode::ResourceManager(..) => Ok(()),
-            HeapRENode::Package(..) => Ok(()),
-            HeapRENode::Worktop(..) => Err(RuntimeError::KernelError(KernelError::CantMoveWorktop)),
-            HeapRENode::System(..) => Ok(()),
-            HeapRENode::Global(..) => Err(RuntimeError::KernelError(KernelError::CantMoveGlobal)),
-        }
-    }
-
-    pub fn verify_can_persist(&self) -> Result<(), RuntimeError> {
-        match self {
-            HeapRENode::Global { .. } => Ok(()),
-            HeapRENode::KeyValueStore { .. } => Ok(()),
-            HeapRENode::NonFungibleStore { .. } => Ok(()),
-            HeapRENode::Component { .. } => Ok(()),
-            HeapRENode::Vault(..) => Ok(()),
-            HeapRENode::ResourceManager(..) => {
-                Err(RuntimeError::KernelError(KernelError::ValueNotAllowed))
-            }
-            HeapRENode::AuthZone(..) => {
-                Err(RuntimeError::KernelError(KernelError::ValueNotAllowed))
-            }
-            HeapRENode::Package(..) => Err(RuntimeError::KernelError(KernelError::ValueNotAllowed)),
-            HeapRENode::Bucket(..) => Err(RuntimeError::KernelError(KernelError::ValueNotAllowed)),
-            HeapRENode::Proof(..) => Err(RuntimeError::KernelError(KernelError::ValueNotAllowed)),
-            HeapRENode::Worktop(..) => Err(RuntimeError::KernelError(KernelError::ValueNotAllowed)),
-            HeapRENode::System(..) => Err(RuntimeError::KernelError(KernelError::ValueNotAllowed)),
+            HeapRENode::ResourceManager(..) => Err(RuntimeError::KernelError(
+                KernelError::CantMoveUpstream(self_node_id),
+            )),
+            HeapRENode::KeyValueStore(..) => Err(RuntimeError::KernelError(
+                KernelError::CantMoveUpstream(self_node_id),
+            )),
+            HeapRENode::NonFungibleStore(..) => Err(RuntimeError::KernelError(
+                KernelError::CantMoveUpstream(self_node_id),
+            )),
+            HeapRENode::Package(..) => Err(RuntimeError::KernelError(
+                KernelError::CantMoveUpstream(self_node_id),
+            )),
+            HeapRENode::Worktop(..) => Err(RuntimeError::KernelError(
+                KernelError::CantMoveUpstream(self_node_id),
+            )),
+            HeapRENode::System(..) => Err(RuntimeError::KernelError(
+                KernelError::CantMoveUpstream(self_node_id),
+            )),
+            HeapRENode::Global(..) => Err(RuntimeError::KernelError(
+                KernelError::CantMoveUpstream(self_node_id),
+            )),
         }
     }
 
@@ -388,8 +385,8 @@ impl HeapRootRENode {
     }
 }
 
-impl Into<Bucket> for HeapRootRENode {
-    fn into(self) -> Bucket {
+impl Into<BucketSubstate> for HeapRootRENode {
+    fn into(self) -> BucketSubstate {
         match self.root {
             HeapRENode::Bucket(bucket) => bucket,
             _ => panic!("Expected to be a bucket"),
@@ -397,8 +394,8 @@ impl Into<Bucket> for HeapRootRENode {
     }
 }
 
-impl Into<Proof> for HeapRootRENode {
-    fn into(self) -> Proof {
+impl Into<ProofSubstate> for HeapRootRENode {
+    fn into(self) -> ProofSubstate {
         match self.root {
             HeapRENode::Proof(proof) => proof,
             _ => panic!("Expected to be a proof"),

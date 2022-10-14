@@ -124,20 +124,6 @@ impl ScryptoValue {
         node_ids
     }
 
-    pub fn stored_node_ids(&self) -> HashSet<RENodeId> {
-        let mut node_ids = HashSet::new();
-        for vault_id in &self.vault_ids {
-            node_ids.insert(RENodeId::Vault(*vault_id));
-        }
-        for kv_store_id in &self.kv_store_ids {
-            node_ids.insert(RENodeId::KeyValueStore(*kv_store_id));
-        }
-        for component_address in &self.component_ids {
-            node_ids.insert(RENodeId::Component(*component_address));
-        }
-        node_ids
-    }
-
     pub fn global_references(&self) -> HashSet<GlobalAddress> {
         let mut node_ids = HashSet::new();
         for component_address in &self.refed_component_addresses {

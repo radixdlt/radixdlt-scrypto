@@ -2,8 +2,8 @@ use crate::engine::HeapRENode;
 use crate::model::*;
 use crate::types::*;
 
-pub fn node_to_substates(node: HeapRENode) -> HashMap<SubstateOffset, Substate> {
-    let mut substates = HashMap::<SubstateOffset, Substate>::new();
+pub fn node_to_substates(node: HeapRENode) -> HashMap<SubstateOffset, RuntimeSubstate> {
+    let mut substates = HashMap::<SubstateOffset, RuntimeSubstate>::new();
 
     match node {
         HeapRENode::Bucket(_) => panic!("Unexpected"),
@@ -13,15 +13,11 @@ pub fn node_to_substates(node: HeapRENode) -> HashMap<SubstateOffset, Substate> 
             let substate = global_node.address;
             substates.insert(
                 SubstateOffset::Global(GlobalOffset::Global),
-                Substate::GlobalRENode(substate),
+                RuntimeSubstate::GlobalRENode(substate),
             );
         }
         HeapRENode::Vault(vault) => {
-            let resource = vault
-                .resource()
-                .expect("Vault should be liquid at end of successful transaction");
-            let substate = VaultSubstate(resource);
-            substates.insert(SubstateOffset::Vault(VaultOffset::Vault), substate.into());
+            substates.insert(SubstateOffset::Vault(VaultOffset::Vault), vault.into());
         }
         HeapRENode::KeyValueStore(store) => {
             for (k, v) in store.loaded_entries {
@@ -76,7 +72,9 @@ pub fn node_to_substates(node: HeapRENode) -> HashMap<SubstateOffset, Substate> 
     substates
 }
 
-pub fn nodes_to_substates(nodes: HashMap<RENodeId, HeapRENode>) -> HashMap<SubstateId, Substate> {
+pub fn nodes_to_substates(
+    nodes: HashMap<RENodeId, HeapRENode>,
+) -> HashMap<SubstateId, RuntimeSubstate> {
     let mut substates = HashMap::new();
     for (id, node) in nodes {
         for (offset, substate) in node_to_substates(node) {

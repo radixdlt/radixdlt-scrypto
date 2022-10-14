@@ -1,7 +1,7 @@
 use std::io;
 
 use radix_engine::engine::*;
-use radix_engine::model::ExtractAbiError;
+use radix_engine::model::{ExportError, ExtractAbiError};
 use radix_engine::wasm::PrepareError;
 use sbor::*;
 use scrypto::address::AddressError;
@@ -42,7 +42,7 @@ pub enum Error {
 
     TransactionRejected(RejectionError),
 
-    AbiExportError(RuntimeError),
+    AbiExportError(ExportError),
 
     LedgerDumpError(DisplayError),
 
