@@ -519,15 +519,15 @@ where
 
     fn load_actor(
         &mut self,
-        method_ident: ReceiverMethodIdent,
+        fn_ident: FnIdent,
         input: &ScryptoValue,
     ) -> Result<REActor, RuntimeError> {
         // Load actor
-        let re_actor = match &method_ident {
-            ReceiverMethodIdent {
+        let re_actor = match &fn_ident {
+            FnIdent::Method(ReceiverMethodIdent {
                 method_ident: MethodIdent::Scrypto(ident),
                 receiver,
-            } => match receiver.node_id() {
+            }) => match receiver.node_id() {
                 RENodeId::Component(..) => {
                     let node_pointer = Self::current_frame(&self.call_frames)
                         .get_node_pointer(receiver.node_id())?;
@@ -567,12 +567,12 @@ where
                             .blueprint_abi(&blueprint_name)
                             .expect("Blueprint not found for existing component");
                         let fn_abi = abi.get_fn_abi(&ident).ok_or(RuntimeError::KernelError(
-                            KernelError::FnIdentNotFound(FnIdent::Method(method_ident.clone())),
+                            KernelError::FnIdentNotFound(fn_ident.clone()),
                         ))?;
 
                         if !fn_abi.input.matches(&input.dom) {
-                            return Err(RuntimeError::KernelError(KernelError::InvalidFnInput2(
-                                FnIdent::Method(method_ident),
+                            return Err(RuntimeError::KernelError(KernelError::InvalidFnInput(
+                                fn_ident,
                             )));
                         }
 
@@ -581,7 +581,7 @@ where
                             .map_err(RuntimeError::KernelError)?;
                     }
 
-                    let actor = FullyQualifiedReceiverMethod {
+                    let method = FullyQualifiedReceiverMethod {
                         receiver: receiver.clone(),
                         method: FullyQualifiedMethod::Scrypto {
                             package_address,
@@ -593,20 +593,62 @@ where
                         .release_lock(offset, false, &mut self.track)
                         .map_err(RuntimeError::KernelError)?;
 
-                    actor
+                    REActor::Method(method)
                 }
                 _ => panic!("Should not get here."),
             },
-            ReceiverMethodIdent {
+            FnIdent::Method(ReceiverMethodIdent {
                 method_ident: MethodIdent::Native(native_fn),
                 receiver,
-            } => FullyQualifiedReceiverMethod {
+            }) => REActor::Method(FullyQualifiedReceiverMethod {
                 receiver: receiver.clone(),
                 method: FullyQualifiedMethod::Native(native_fn.clone()),
+            }),
+            FnIdent::Function(function_ident) => match function_ident {
+                FunctionIdent::Scrypto {
+                    package_address,
+                    blueprint_name,
+                    ident,
+                } => {
+                    let node_id = RENodeId::Package(package_address.clone());
+                    let node_pointer = RENodePointer::Store(node_id);
+                    let offset = SubstateOffset::Package(PackageOffset::Package);
+                    node_pointer
+                        .acquire_lock(offset.clone(), LockFlags::empty(), &mut self.track)
+                        .map_err(RuntimeError::KernelError)?;
+
+                    let package = self
+                        .track
+                        .borrow_substate(node_id, offset.clone())
+                        .package();
+
+                    let abi =
+                        package
+                            .blueprint_abi(blueprint_name)
+                            .ok_or(RuntimeError::KernelError(KernelError::BlueprintNotFound(
+                                package_address.clone(),
+                                blueprint_name.clone(),
+                            )))?;
+                    let fn_abi = abi.get_fn_abi(ident).ok_or(RuntimeError::KernelError(
+                        KernelError::FunctionNotFound(function_ident.clone()),
+                    ))?;
+                    if !fn_abi.input.matches(&input.dom) {
+                        return Err(RuntimeError::KernelError(KernelError::InvalidFnInput(
+                            FnIdent::Function(function_ident.clone()),
+                        )));
+                    }
+
+                    node_pointer
+                        .release_lock(offset, false, &mut self.track)
+                        .map_err(RuntimeError::KernelError)?;
+
+                    REActor::Function(function_ident.clone())
+                }
+                FunctionIdent::Native(..) => REActor::Function(function_ident.clone()),
             },
         };
 
-        Ok(REActor::Method(re_actor))
+        Ok(re_actor)
     }
 
     fn invoke_function(
@@ -616,51 +658,12 @@ where
         next_owned_values: HashMap<RENodeId, HeapRootRENode>,
         next_frame_node_refs: HashMap<RENodeId, RENodePointer>,
     ) -> Result<(ScryptoValue, HashMap<RENodeId, HeapRootRENode>), RuntimeError> {
-        match &function_ident {
-            FunctionIdent::Scrypto {
-                package_address,
-                blueprint_name,
-                ident,
-            } => {
-                let node_id = RENodeId::Package(package_address.clone());
-                let node_pointer = RENodePointer::Store(node_id);
-                let offset = SubstateOffset::Package(PackageOffset::Package);
-                node_pointer
-                    .acquire_lock(offset.clone(), LockFlags::empty(), &mut self.track)
-                    .map_err(RuntimeError::KernelError)?;
-
-                let package = self
-                    .track
-                    .borrow_substate(node_id, offset.clone())
-                    .package();
-
-                let abi =
-                    package
-                        .blueprint_abi(blueprint_name)
-                        .ok_or(RuntimeError::KernelError(KernelError::BlueprintNotFound(
-                            package_address.clone(),
-                            blueprint_name.clone(),
-                        )))?;
-                let fn_abi = abi.get_fn_abi(ident).ok_or(RuntimeError::KernelError(
-                    KernelError::FunctionNotFound(function_ident.clone()),
-                ))?;
-                if !fn_abi.input.matches(&input.dom) {
-                    return Err(RuntimeError::KernelError(KernelError::InvalidFnInput2(
-                        FnIdent::Function(function_ident.clone()),
-                    )));
-                }
-
-                node_pointer
-                    .release_lock(offset, false, &mut self.track)
-                    .map_err(RuntimeError::KernelError)?;
-            }
-            _ => {}
-        };
+        let actor = self.load_actor(FnIdent::Function(function_ident), &input)?;
 
         // start a new frame and run
         let frame = CallFrame::new_child(
             Self::current_frame(&self.call_frames).depth + 1,
-            REActor::Function(function_ident.clone()),
+            actor,
             next_owned_values,
             next_frame_node_refs,
         );
@@ -705,7 +708,7 @@ where
             }
         }
 
-        let actor = self.load_actor(method_ident, &input)?;
+        let actor = self.load_actor(FnIdent::Method(method_ident), &input)?;
 
         let frame = CallFrame::new_child(
             Self::current_frame(&self.call_frames).depth + 1,

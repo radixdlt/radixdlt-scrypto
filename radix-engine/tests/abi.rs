@@ -64,7 +64,7 @@ fn test_arg(method_name: &str, args: Vec<u8>, expected_result: ExpectedResult) {
             receipt.expect_specific_failure(|e| {
                 matches!(
                     e,
-                    RuntimeError::KernelError(KernelError::InvalidFnInput2(..))
+                    RuntimeError::KernelError(KernelError::InvalidFnInput(..))
                 )
             });
         }
