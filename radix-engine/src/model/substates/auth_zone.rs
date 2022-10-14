@@ -199,14 +199,8 @@ impl AuthZoneSubstate {
     }
 
     pub fn new_frame(&mut self) {
-        let virtual_proofs_buckets = self
-            .auth_zones
-            .first()
-            .unwrap()
-            .virtual_proofs_buckets
-            .clone();
         self.auth_zones
-            .push(AuthZone::new_with_proofs(vec![], virtual_proofs_buckets));
+            .push(AuthZone::new_with_proofs(vec![], BTreeMap::new()));
     }
 
     pub fn pop_frame(&mut self) {
@@ -227,6 +221,22 @@ impl AuthZoneSubstate {
 
     pub fn cur_auth_zone(&self) -> &AuthZone {
         self.auth_zones.last().unwrap()
+    }
+
+    pub fn create_proof_by_ids(
+        &self,
+        ids: &BTreeSet<NonFungibleId>,
+        resource_address: ResourceAddress,
+        resource_type: ResourceType,
+    ) -> Result<ProofSubstate, InvokeError<AuthZoneError>> {
+        for auth_zone in self.auth_zones.iter().rev() {
+            match auth_zone.create_proof_by_ids(ids, resource_address, resource_type) {
+                Ok(proof) => return Ok(proof),
+                Err(_) => {}
+            }
+        }
+
+        Err(InvokeError::Error(AuthZoneError::CouldNotCreateProof))
     }
 }
 
@@ -343,7 +353,7 @@ impl AuthZone {
             .map_err(|e| InvokeError::Error(AuthZoneError::ProofError(e)))
     }
 
-    pub fn create_proof_by_ids(
+    fn create_proof_by_ids(
         &self,
         ids: &BTreeSet<NonFungibleId>,
         resource_address: ResourceAddress,
