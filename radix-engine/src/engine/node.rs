@@ -322,7 +322,7 @@ impl HeapRENode {
                 } else {
                     Err(DropFailure::Bucket)
                 }
-            },
+            }
             HeapRENode::ResourceManager(..) => Err(DropFailure::Resource),
             HeapRENode::System(..) => Err(DropFailure::System),
             HeapRENode::Proof(proof) => {

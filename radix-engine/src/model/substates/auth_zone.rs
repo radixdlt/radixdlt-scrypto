@@ -5,7 +5,6 @@ use crate::model::{
 };
 use crate::types::*;
 
-
 /// A transient resource container.
 #[derive(Debug)]
 pub struct AuthZoneSubstate {
@@ -14,22 +13,34 @@ pub struct AuthZoneSubstate {
 
 impl AuthZoneSubstate {
     pub fn new_frame(&mut self, actor: &REActor) {
-        if matches!(actor, REActor::Method(ResolvedReceiverMethod {
-            method: ResolvedMethod::Native(NativeMethod::AuthZone(..)),
-            ..
-        })){
+        if matches!(
+            actor,
+            REActor::Method(ResolvedReceiverMethod {
+                method: ResolvedMethod::Native(NativeMethod::AuthZone(..)),
+                ..
+            })
+        ) {
             return;
         }
 
-        let virtual_proofs_buckets = self.auth_zones.first().unwrap().virtual_proofs_buckets.clone();
-        self.auth_zones.push(AuthZone::new_with_proofs(vec![], virtual_proofs_buckets));
+        let virtual_proofs_buckets = self
+            .auth_zones
+            .first()
+            .unwrap()
+            .virtual_proofs_buckets
+            .clone();
+        self.auth_zones
+            .push(AuthZone::new_with_proofs(vec![], virtual_proofs_buckets));
     }
 
     pub fn pop_frame(&mut self, actor: &REActor) {
-        if matches!(actor, REActor::Method(ResolvedReceiverMethod {
-            method: ResolvedMethod::Native(NativeMethod::AuthZone(..)),
-            ..
-        })){
+        if matches!(
+            actor,
+            REActor::Method(ResolvedReceiverMethod {
+                method: ResolvedMethod::Native(NativeMethod::AuthZone(..)),
+                ..
+            })
+        ) {
             return;
         }
 

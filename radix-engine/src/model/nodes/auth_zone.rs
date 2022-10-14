@@ -99,7 +99,9 @@ impl AuthZoneImpl {
                     let mut substate_mut = system_api.get_ref_mut(auth_zone_handle)?;
                     let mut raw_mut = substate_mut.get_raw_mut();
                     let auth_zone = raw_mut.auth_zone();
-                    let proof = auth_zone.cur_auth_zone().create_proof(input.resource_address, resource_type)?;
+                    let proof = auth_zone
+                        .cur_auth_zone()
+                        .create_proof(input.resource_address, resource_type)?;
                     substate_mut.flush()?;
                     proof
                 };
@@ -164,8 +166,13 @@ impl AuthZoneImpl {
                     );
                     let proof = match maybe_existing_proof {
                         Ok(proof) => proof,
-                        Err(_) if auth_zone.cur_auth_zone().is_proof_virtualizable(&input.resource_address) => {
-                            auth_zone.cur_auth_zone()
+                        Err(_)
+                            if auth_zone
+                                .cur_auth_zone()
+                                .is_proof_virtualizable(&input.resource_address) =>
+                        {
+                            auth_zone
+                                .cur_auth_zone()
                                 .virtualize_non_fungible_proof(&input.resource_address, &input.ids)
                         }
                         Err(e) => Err(e)?,

@@ -227,10 +227,12 @@ impl CallFrame {
     }
 
     pub fn find_ref<P>(&self, predicate: P) -> Option<&RENodeId>
-        where
-            P: FnMut(&&RENodeId) -> bool + Copy,
+    where
+        P: FnMut(&&RENodeId) -> bool + Copy,
     {
-        self.owned_heap_nodes.keys().find(predicate)
+        self.owned_heap_nodes
+            .keys()
+            .find(predicate)
             .or_else(|| self.node_refs.keys().find(predicate))
     }
 }

@@ -137,7 +137,7 @@ where
         }
 
         let auth_zone = AuthZoneSubstate {
-            auth_zones: vec![AuthZone::new_with_proofs(proofs, virtual_proofs_buckets)]
+            auth_zones: vec![AuthZone::new_with_proofs(proofs, virtual_proofs_buckets)],
         };
 
         kernel
@@ -287,13 +287,12 @@ where
         owned_nodes: HashMap<RENodeId, HeapRootRENode>,
         mut refed_nodes: HashMap<RENodeId, RENodePointer>,
     ) -> Result<(ScryptoValue, HashMap<RENodeId, HeapRootRENode>), RuntimeError> {
-
-        let new_refed_nodes = AuthModule::on_new_frame(&actor, &input, &mut self.call_frames, &mut self.track).map_err(
-            |e| match e {
-                InvokeError::Error(e) => RuntimeError::ModuleError(e.into()),
-                InvokeError::Downstream(runtime_error) => runtime_error,
-            },
-        )?;
+        let new_refed_nodes =
+            AuthModule::on_new_frame(&actor, &input, &mut self.call_frames, &mut self.track)
+                .map_err(|e| match e {
+                    InvokeError::Error(e) => RuntimeError::ModuleError(e.into()),
+                    InvokeError::Downstream(runtime_error) => runtime_error,
+                })?;
 
         refed_nodes.extend(new_refed_nodes);
 
@@ -456,13 +455,10 @@ where
             }
         }
 
-
-        AuthModule::on_pop_frame(&call_frame, &mut self.call_frames).map_err(
-            |e| match e {
-                InvokeError::Error(e) => RuntimeError::ModuleError(e.into()),
-                InvokeError::Downstream(runtime_error) => runtime_error,
-            },
-        )?;
+        AuthModule::on_pop_frame(&call_frame, &mut self.call_frames).map_err(|e| match e {
+            InvokeError::Error(e) => RuntimeError::ModuleError(e.into()),
+            InvokeError::Downstream(runtime_error) => runtime_error,
+        })?;
 
         // drop proofs and check resource leak
         call_frame.drop_frame()?;

@@ -24,68 +24,24 @@ impl AuthModule {
         NonFungibleId::from_u32(1)
     }
 
-    fn check_auth(
-        method_auths: Vec<MethodAuthorization>,
-        call_frames: &Vec<CallFrame>, // TODO remove this once heap is implemented
-    ) -> Result<(), AuthError> {
-        let auth_zone = Self::get_auth_zone(call_frames);
-
-        let auth_zones = &auth_zone.auth_zones;
-
-        /*
-        // FIXME: This is wrong as it allows extern component calls to use caller's auth zone
-        // Also, need to add a test for this
-        if let Some(frame) = call_frames.iter().rev().nth(1) {
-            let auth_zone = Self::get_auth_zone(frame);
-            auth_zones.push(auth_zone);
-        }
-         */
-
-        // Authorization check
-        if !method_auths.is_empty() {
-            for method_auth in method_auths {
-                method_auth
-                    .check(auth_zones)
-                    .map_err(|error| AuthError::Unauthorized {
-                        actor: call_frames.last().unwrap().actor.clone(),
-                        authorization: method_auth,
-                        error,
-                    })?;
-            }
-        }
-
-        Ok(())
-    }
-
-    fn get_auth_zone(call_frames: &Vec<CallFrame>) -> &AuthZoneSubstate {
-        let root_frame =
-            call_frames
-            .first()
-            .expect("Failed to get a root frame");
-
-        root_frame
-            .owned_heap_nodes
-            .values()
-            .find(|e| {
-                matches!(
-                    e,
-                    HeapRootRENode {
-                        root: HeapRENode::AuthZone(..), ..
-                    }
-                )
-            })
-            .expect("Could not find auth zone")
-            .root
-            .auth_zone()
-    }
-
     pub fn on_new_frame<'s, R: FeeReserve>(
         actor: &REActor,
         input: &ScryptoValue, // TODO: Remove
         call_frames: &mut Vec<CallFrame>,
         track: &mut Track<'s, R>,
     ) -> Result<HashMap<RENodeId, RENodePointer>, InvokeError<AuthError>> {
-        let auth = match actor.clone() {
+        let mut new_refs = HashMap::new();
+        if matches!(
+            actor,
+            REActor::Method(ResolvedReceiverMethod {
+                method: ResolvedMethod::Native(NativeMethod::AuthZone(..)),
+                ..
+            })
+        ) {
+            return Ok(new_refs);
+        }
+
+        let method_auths = match actor.clone() {
             REActor::Function(function_ident) => match function_ident {
                 ResolvedFunction::Native(NativeFunction::System(system_func)) => {
                     System::function_auth(&system_func)
@@ -235,38 +191,43 @@ impl AuthModule {
             }
         };
 
-        Self::check_auth(auth, call_frames).map_err(InvokeError::Error)?;
-
-        let mut new_refs = HashMap::new();
-
-        if matches!(actor, REActor::Method(ResolvedReceiverMethod {
-            method: ResolvedMethod::Native(NativeMethod::AuthZone(..)),
-            ..
-        })){
-            return Ok(new_refs);
-        }
-
         let frame = call_frames.last_mut().unwrap();
-        let auth_zone_id = frame.find_ref(|e| {
-            matches!(e, RENodeId::AuthZone(..))
-        }).unwrap().clone();
+        let auth_zone_id = frame
+            .find_ref(|e| matches!(e, RENodeId::AuthZone(..)))
+            .unwrap()
+            .clone();
         let node_pointer = frame.get_node_pointer(auth_zone_id).unwrap();
-        {
-            let mut authzone = match node_pointer {
-                RENodePointer::Heap { frame_id, root, id } => {
-                    let frame = call_frames.get_mut(frame_id).unwrap();
-                    let heap_re_node = frame
-                        .get_owned_heap_node_mut(root)
-                        .unwrap()
-                        .get_node_mut(id.as_ref());
-                    heap_re_node.borrow_substate_mut(&SubstateOffset::AuthZone(AuthZoneOffset::AuthZone)).unwrap()
-                }
-                _ => panic!("Unexpected")
-            };
-            // Copy-over root frame's auth zone virtual_proofs_buckets
-            authzone.auth_zone().new_frame(&actor);
+
+        let mut authzone = match node_pointer {
+            RENodePointer::Heap { frame_id, root, id } => {
+                let frame = call_frames.get_mut(frame_id).unwrap();
+                let heap_re_node = frame
+                    .get_owned_heap_node_mut(root)
+                    .unwrap()
+                    .get_node_mut(id.as_ref());
+                heap_re_node
+                    .borrow_substate_mut(&SubstateOffset::AuthZone(AuthZoneOffset::AuthZone))
+                    .unwrap()
+            }
+            _ => panic!("Unexpected"),
+        };
+
+        // Authorization check
+        let auth_zones = &authzone.auth_zone().auth_zones;
+        if !method_auths.is_empty() {
+            for method_auth in method_auths {
+                method_auth.check(auth_zones).map_err(|error| {
+                    InvokeError::Error(AuthError::Unauthorized {
+                        actor: actor.clone(),
+                        authorization: method_auth,
+                        error,
+                    })
+                })?;
+            }
         }
 
+        // New auth zone frame managed by the AuthModule
+        authzone.auth_zone().new_frame(&actor);
         new_refs.insert(auth_zone_id, node_pointer);
 
         Ok(new_refs)
@@ -276,9 +237,20 @@ impl AuthModule {
         frame: &CallFrame,
         call_frames: &mut Vec<CallFrame>,
     ) -> Result<(), InvokeError<AuthError>> {
-        let auth_zone_id = frame.find_ref(|e| {
-            matches!(e, RENodeId::AuthZone(..))
-        }).unwrap().clone();
+        if matches!(
+            frame.actor,
+            REActor::Method(ResolvedReceiverMethod {
+                method: ResolvedMethod::Native(NativeMethod::AuthZone(..)),
+                ..
+            })
+        ) {
+            return Ok(());
+        }
+
+        let auth_zone_id = frame
+            .find_ref(|e| matches!(e, RENodeId::AuthZone(..)))
+            .unwrap()
+            .clone();
         let node_pointer = frame.get_node_pointer(auth_zone_id).unwrap();
         {
             let mut authzone = match node_pointer {
@@ -288,9 +260,11 @@ impl AuthModule {
                         .get_owned_heap_node_mut(root)
                         .unwrap()
                         .get_node_mut(id.as_ref());
-                    heap_re_node.borrow_substate_mut(&SubstateOffset::AuthZone(AuthZoneOffset::AuthZone)).unwrap()
+                    heap_re_node
+                        .borrow_substate_mut(&SubstateOffset::AuthZone(AuthZoneOffset::AuthZone))
+                        .unwrap()
                 }
-                _ => panic!("Unexpected")
+                _ => panic!("Unexpected"),
             };
             // Copy-over root frame's auth zone virtual_proofs_buckets
             authzone.auth_zone().pop_frame(&frame.actor);
