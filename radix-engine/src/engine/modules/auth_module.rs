@@ -28,26 +28,24 @@ impl AuthModule {
         method_auths: Vec<MethodAuthorization>,
         call_frames: &Vec<CallFrame>, // TODO remove this once heap is implemented
     ) -> Result<(), AuthError> {
-        let prev_call_frame = call_frames
-            .last()
-            .expect("Previous call frame does not exist");
+        let auth_zone = Self::get_auth_zone(call_frames);
 
-        let auth_zone = Self::get_auth_zone(prev_call_frame);
+        let mut auth_zones = &auth_zone.auth_zones;
 
-        let mut auth_zones = vec![auth_zone];
-
+        /*
         // FIXME: This is wrong as it allows extern component calls to use caller's auth zone
         // Also, need to add a test for this
         if let Some(frame) = call_frames.iter().rev().nth(1) {
             let auth_zone = Self::get_auth_zone(frame);
             auth_zones.push(auth_zone);
         }
+         */
 
         // Authorization check
         if !method_auths.is_empty() {
             for method_auth in method_auths {
                 method_auth
-                    .check(&auth_zones)
+                    .check(auth_zones)
                     .map_err(|error| AuthError::Unauthorized {
                         actor: call_frames.last().unwrap().actor.clone(),
                         authorization: method_auth,
@@ -59,16 +57,20 @@ impl AuthModule {
         Ok(())
     }
 
-    pub fn get_auth_zone(call_frame: &CallFrame) -> &AuthZoneSubstate {
-        call_frame
+    fn get_auth_zone(call_frames: &Vec<CallFrame>) -> &AuthZoneSubstate {
+        let root_frame =
+            call_frames
+            .first()
+            .expect("Failed to get a root frame");
+
+        root_frame
             .owned_heap_nodes
             .values()
             .find(|e| {
                 matches!(
                     e,
                     HeapRootRENode {
-                        root: HeapRENode::AuthZone(..),
-                        ..
+                        root: HeapRENode::AuthZone(..), ..
                     }
                 )
             })

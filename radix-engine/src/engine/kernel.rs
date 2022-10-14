@@ -136,7 +136,9 @@ where
             virtual_proofs_buckets.insert(resource_address, bucket_id);
         }
 
-        let auth_zone = AuthZoneSubstate::new_with_proofs(proofs, virtual_proofs_buckets);
+        let auth_zone = AuthZoneSubstate {
+            auth_zones: vec![AuthZone::new_with_proofs(proofs, virtual_proofs_buckets)]
+        };
 
         kernel
             .node_create(HeapRENode::AuthZone(auth_zone))
@@ -184,6 +186,7 @@ where
                         &component.info.blueprint_name,
                     )
                     .map_err(|e| RuntimeError::KernelError(KernelError::IdAllocationError(e)))?;
+                println!("Component: {:?}", component_address.to_vec());
                 let component_id: ComponentId = node_id.into();
                 Ok((
                     GlobalAddress::Component(component_address),
@@ -194,6 +197,8 @@ where
                 let component_address = id_allocator
                     .new_system_component_address(transaction_hash)
                     .map_err(|e| RuntimeError::KernelError(KernelError::IdAllocationError(e)))?;
+
+                println!("System: {:?}", component_address.to_vec());
                 let component_id: ComponentId = node_id.into();
                 Ok((
                     GlobalAddress::Component(component_address),
@@ -204,6 +209,8 @@ where
             }
             HeapRENode::ResourceManager(..) => {
                 let resource_address: ResourceAddress = node_id.into();
+
+                println!("Resource: {:?}", resource_address.to_vec());
                 Ok((
                     GlobalAddress::Resource(resource_address),
                     GlobalAddressSubstate::Resource(resource_address),
@@ -211,6 +218,8 @@ where
             }
             HeapRENode::Package(..) => {
                 let package_address: PackageAddress = node_id.into();
+
+                println!("Package: {:?}", package_address.to_vec());
                 Ok((
                     GlobalAddress::Package(package_address),
                     GlobalAddressSubstate::Package(package_address),
@@ -280,7 +289,7 @@ where
         actor: REActor,
         input: ScryptoValue,
         owned_nodes: HashMap<RENodeId, HeapRootRENode>,
-        refed_nodes: HashMap<RENodeId, RENodePointer>,
+        mut refed_nodes: HashMap<RENodeId, RENodePointer>,
     ) -> Result<(ScryptoValue, HashMap<RENodeId, HeapRootRENode>), RuntimeError> {
         //  Verify Auth
         AuthModule::verify_auth(&actor, &input, &mut self.call_frames, &mut self.track).map_err(
@@ -295,11 +304,26 @@ where
         // TODO: Move to a better spot
         let root_frame = self
             .call_frames
-            .first()
+            .first_mut()
             .expect("Failed to get a root frame");
-        let virtual_proofs_buckets = AuthModule::get_auth_zone(root_frame)
-            .virtual_proofs_buckets
-            .clone();
+
+        let (node_id, node) = root_frame
+            .owned_heap_nodes.iter_mut()
+            .find(|e| {
+                matches!(
+                    e,
+                    (RENodeId::AuthZone(..), _)
+                )
+            })
+            .expect("Could not find auth zone");
+
+        node.root.auth_zone_mut().new_frame(&actor);
+
+        refed_nodes.insert(*node_id, RENodePointer::Heap {
+            frame_id: 0,
+            root: *node_id,
+            id: None,
+        });
 
         let frame = CallFrame::new_child(
             Self::current_frame(&self.call_frames).depth + 1,
@@ -308,12 +332,6 @@ where
             refed_nodes,
         );
         self.call_frames.push(frame);
-
-
-        self.node_create(HeapRENode::AuthZone(AuthZoneSubstate::new_with_proofs(
-            vec![],
-            virtual_proofs_buckets,
-        )))?;
 
         let output = {
             let rtn = match Self::current_frame(&self.call_frames).actor.clone() {
@@ -443,6 +461,22 @@ where
         }
 
         let mut call_frame = self.call_frames.pop().unwrap();
+
+
+        let root_frame = self
+            .call_frames
+            .first_mut()
+            .expect("Failed to get a root frame");
+        let (_, node) = root_frame
+            .owned_heap_nodes.iter_mut()
+            .find(|e| {
+                matches!(
+                    e,
+                    (RENodeId::AuthZone(..), _)
+                )
+            })
+            .expect("Could not find auth zone");
+        node.root.auth_zone_mut().pop_frame(&call_frame.actor);
 
         // Auto drop locks
         for (_, lock) in call_frame.drain_locks() {
@@ -884,10 +918,15 @@ where
             .map_err(RuntimeError::ModuleError)?;
         }
 
+        // TODO: Move this into higher layer, e.g. transaction processor
+        if Self::current_frame(&self.call_frames).depth == 0 {
+            self.call_frames.pop().unwrap().drop_frame()?;
+        }
+
         Ok(output)
     }
 
-    fn get_owned_node_ids(&mut self) -> Result<Vec<RENodeId>, RuntimeError> {
+    fn get_refed_node_ids(&mut self) -> Result<Vec<RENodeId>, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
                 &mut self.track,
@@ -897,7 +936,7 @@ where
             .map_err(RuntimeError::ModuleError)?;
         }
 
-        let node_ids = Self::current_frame_mut(&mut self.call_frames).get_owned_nodes();
+        let node_ids = Self::current_frame_mut(&mut self.call_frames).get_refed_nodes();
 
         Ok(node_ids)
     }

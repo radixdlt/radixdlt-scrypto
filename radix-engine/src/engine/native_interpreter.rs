@@ -124,7 +124,7 @@ impl NativeInterpreter {
                 Proof::main_consume(node_id, method, input, system_api).map_err(|e| e.into())
             }
             (Receiver::Ref(RENodeId::AuthZone(auth_zone_id)), NativeMethod::AuthZone(method)) => {
-                AuthZone::main(auth_zone_id, method, input, system_api).map_err(|e| e.into())
+                AuthZoneImpl::main(auth_zone_id, method, input, system_api).map_err(|e| e.into())
             }
             (Receiver::Ref(RENodeId::Bucket(bucket_id)), NativeMethod::Bucket(method)) => {
                 Bucket::main(bucket_id, method, input, system_api).map_err(|e| e.into())

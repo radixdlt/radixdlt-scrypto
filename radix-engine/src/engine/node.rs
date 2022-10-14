@@ -189,6 +189,13 @@ impl HeapRENode {
         Ok(substate_ref)
     }
 
+    pub fn auth_zone_mut(&mut self) -> &mut AuthZoneSubstate {
+        match self {
+            HeapRENode::AuthZone(auth_zone, ..) => auth_zone,
+            _ => panic!("Expected to be a resource manager"),
+        }
+    }
+
     pub fn auth_zone(&self) -> &AuthZoneSubstate {
         match self {
             HeapRENode::AuthZone(auth_zone, ..) => auth_zone,
@@ -295,7 +302,7 @@ impl HeapRENode {
         match self {
             HeapRENode::Global(..) => panic!("Should never get here"),
             HeapRENode::AuthZone(mut auth_zone) => {
-                auth_zone.clear();
+                auth_zone.clear_all();
                 Ok(())
             }
             HeapRENode::Package(..) => Err(DropFailure::Package),
@@ -303,7 +310,19 @@ impl HeapRENode {
             HeapRENode::KeyValueStore(..) => Err(DropFailure::KeyValueStore),
             HeapRENode::NonFungibleStore(..) => Err(DropFailure::NonFungibleStore),
             HeapRENode::Component(..) => Err(DropFailure::Component),
-            HeapRENode::Bucket(..) => Err(DropFailure::Bucket),
+            HeapRENode::Bucket(bucket) => {
+                // FIXME: Hack to allow virtual buckets to be cleaned up, better would
+                // FIXME: be to let auth module burn these buckets
+                if bucket.resource_address().eq(&ECDSA_SECP256K1_TOKEN) {
+                    Ok(())
+                } else if bucket.resource_address().eq(&EDDSA_ED25519_TOKEN) {
+                    Ok(())
+                } else if bucket.resource_address().eq(&SYSTEM_TOKEN) {
+                    Ok(())
+                } else {
+                    Err(DropFailure::Bucket)
+                }
+            },
             HeapRENode::ResourceManager(..) => Err(DropFailure::Resource),
             HeapRENode::System(..) => Err(DropFailure::System),
             HeapRENode::Proof(proof) => {

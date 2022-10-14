@@ -1,12 +1,66 @@
+use crate::engine::{REActor, ResolvedMethod, ResolvedReceiverMethod};
 use crate::model::{
     AuthZoneError, InvokeError, LockableResource, LockedAmountOrIds, ProofSubstate,
     ResourceContainerId,
 };
 use crate::types::*;
 
+
 /// A transient resource container.
 #[derive(Debug)]
 pub struct AuthZoneSubstate {
+    pub auth_zones: Vec<AuthZone>,
+}
+
+impl AuthZoneSubstate {
+    pub fn new_frame(&mut self, actor: &REActor) {
+        /*
+let virtual_proofs_buckets = AuthModule::get_auth_zone(root_frame)
+    .virtual_proofs_buckets
+    .clone();
+ */
+
+        if matches!(actor, REActor::Method(ResolvedReceiverMethod {
+            method: ResolvedMethod::Native(NativeMethod::AuthZone(..)),
+            ..
+        })){
+            return;
+        }
+
+        let virtual_proofs_buckets = self.auth_zones.first().unwrap().virtual_proofs_buckets.clone();
+        self.auth_zones.push(AuthZone::new_with_proofs(vec![], virtual_proofs_buckets));
+    }
+
+    pub fn pop_frame(&mut self, actor: &REActor) {
+        if matches!(actor, REActor::Method(ResolvedReceiverMethod {
+            method: ResolvedMethod::Native(NativeMethod::AuthZone(..)),
+            ..
+        })){
+            return;
+        }
+
+        if let Some(mut auth_zone) = self.auth_zones.pop() {
+            auth_zone.clear()
+        }
+    }
+
+    pub fn clear_all(&mut self) {
+        for auth_zone in &mut self.auth_zones {
+            auth_zone.clear()
+        }
+    }
+
+    pub fn cur_auth_zone_mut(&mut self) -> &mut AuthZone {
+        self.auth_zones.last_mut().unwrap()
+    }
+
+    pub fn cur_auth_zone(&mut self) -> &AuthZone {
+        self.auth_zones.last().unwrap()
+    }
+}
+
+#[derive(Debug)]
+pub struct AuthZone {
     pub proofs: Vec<ProofSubstate>,
     /// IDs of buckets that act as an evidence for virtual proofs.
     /// A virtual proof for any NonFunbigleId can be created for any ResourceAddress in the map.
@@ -15,7 +69,7 @@ pub struct AuthZoneSubstate {
     pub virtual_proofs_buckets: BTreeMap<ResourceAddress, BucketId>,
 }
 
-impl AuthZoneSubstate {
+impl AuthZone {
     pub fn new_with_proofs(
         proofs: Vec<ProofSubstate>,
         virtual_proofs_buckets: BTreeMap<ResourceAddress, BucketId>,

@@ -99,7 +99,7 @@ where
     }
 
     fn handle_get_owned_node_ids(&mut self) -> Result<ScryptoValue, RuntimeError> {
-        let node_ids = self.system_api.get_owned_node_ids()?;
+        let node_ids = self.system_api.get_refed_node_ids()?;
         Ok(ScryptoValue::from_typed(&node_ids))
     }
 

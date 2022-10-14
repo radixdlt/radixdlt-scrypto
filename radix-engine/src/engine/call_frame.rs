@@ -222,7 +222,7 @@ impl CallFrame {
         Ok(node_pointer)
     }
 
-    pub fn get_owned_nodes(&self) -> Vec<RENodeId> {
-        self.owned_heap_nodes.keys().cloned().collect()
+    pub fn get_refed_nodes(&self) -> Vec<RENodeId> {
+        self.node_refs.keys().cloned().collect()
     }
 }
