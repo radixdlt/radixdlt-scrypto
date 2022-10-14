@@ -79,13 +79,25 @@ pub enum Instruction {
     DropAllProofs,
 
     CallFunction {
-        package_ident: PackageIdent,
+        package_address: Value,
         blueprint_name: Value,
-        function: Value,
+        function_name: Value,
         args: Vec<Value>,
     },
 
     CallMethod {
+        receiver: ScryptoReceiver,
+        method: Value,
+        args: Vec<Value>,
+    },
+
+    CallNativeFunction {
+        blueprint_name: Value,
+        function_name: Value,
+        args: Vec<Value>,
+    },
+
+    CallNativeMethod {
         receiver: Receiver,
         method: Value,
         args: Vec<Value>,
@@ -114,23 +126,15 @@ pub enum Instruction {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum PackageIdent {
-    Scrypto(Value),
-    Native,
+pub enum ScryptoReceiver {
+    Global(Value),
+    Local(Value),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Receiver {
-    Global(GlobalAddress), // implied reference
     Owned(RENode),
     Ref(RENode),
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum GlobalAddress {
-    Package(Value),
-    Component(Value),
-    Resource(Value),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -139,6 +143,7 @@ pub enum RENode {
     Proof(Value),
     AuthZone(Value),
     Worktop,
+    Global(Value),
     KeyValueStore(Value),
     NonFungibleStore(Value),
     Component(Value),

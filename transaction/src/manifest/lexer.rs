@@ -65,15 +65,14 @@ pub enum TokenKind {
     Hash,
     NonFungibleId,
     NonFungibleAddress,
-    Expression,
-    Blob,
-
-    /* Global RE Nodes */
     PackageAddress,
     ComponentAddress,
     ResourceAddress,
+    Expression,
+    Blob,
 
-    /* Other RE Nodes */
+    /* RE Nodes */
+    Global,
     Bucket,
     Proof,
     AuthZone,
@@ -85,9 +84,6 @@ pub enum TokenKind {
     Vault,
     ResourceManager,
     Package,
-
-    /* Native */
-    Native,
 
     /* Punctuations */
     OpenParenthesis,
@@ -118,6 +114,8 @@ pub enum TokenKind {
     DropAllProofs,
     CallFunction,
     CallMethod,
+    CallNativeFunction,
+    CallNativeMethod,
     PublishPackage,
     CreateResource,
     BurnBucket,
@@ -407,6 +405,9 @@ impl Lexer {
             "Hash" => Ok(TokenKind::Hash),
             "NonFungibleId" => Ok(TokenKind::NonFungibleId),
             "NonFungibleAddress" => Ok(TokenKind::NonFungibleAddress),
+            "PackageAddress" => Ok(TokenKind::PackageAddress),
+            "ComponentAddress" => Ok(TokenKind::ComponentAddress),
+            "ResourceAddress" => Ok(TokenKind::ResourceAddress),
             "Expression" => Ok(TokenKind::Expression),
             "Blob" => Ok(TokenKind::Blob),
 
@@ -415,10 +416,7 @@ impl Lexer {
             "Ok" => Ok(TokenKind::Ok),
             "Err" => Ok(TokenKind::Err),
 
-            "PackageAddress" => Ok(TokenKind::PackageAddress),
-            "ComponentAddress" => Ok(TokenKind::ComponentAddress),
-            "ResourceAddress" => Ok(TokenKind::ResourceAddress),
-
+            "Global" => Ok(TokenKind::Global),
             "Bucket" => Ok(TokenKind::Bucket),
             "Proof" => Ok(TokenKind::Proof),
             "AuthZone" => Ok(TokenKind::AuthZone),
@@ -430,8 +428,6 @@ impl Lexer {
             "Vault" => Ok(TokenKind::Vault),
             "ResourceManager" => Ok(TokenKind::ResourceManager),
             "Package" => Ok(TokenKind::Package),
-
-            "Native" => Ok(TokenKind::Native),
 
             "TAKE_FROM_WORKTOP" => Ok(TokenKind::TakeFromWorktop),
             "TAKE_FROM_WORKTOP_BY_AMOUNT" => Ok(TokenKind::TakeFromWorktopByAmount),
@@ -454,6 +450,8 @@ impl Lexer {
             "DROP_ALL_PROOFS" => Ok(TokenKind::DropAllProofs),
             "CALL_FUNCTION" => Ok(TokenKind::CallFunction),
             "CALL_METHOD" => Ok(TokenKind::CallMethod),
+            "CALL_NATIVE_FUNCTION" => Ok(TokenKind::CallNativeFunction),
+            "CALL_NATIVE_METHOD" => Ok(TokenKind::CallNativeMethod),
             "PUBLISH_PACKAGE" => Ok(TokenKind::PublishPackage),
             "CREATE_RESOURCE" => Ok(TokenKind::CreateResource),
             "BURN_BUCKET" => Ok(TokenKind::BurnBucket),

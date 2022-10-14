@@ -3,10 +3,12 @@ use sbor::rust::fmt;
 use sbor::{encode_any, Value};
 use scrypto::address::{AddressError, Bech32Encoder};
 use scrypto::buffer::scrypto_decode;
-use scrypto::core::{
-    BucketMethod, FunctionIdent, MethodIdent, NativeFunction, NativeMethod, NetworkDefinition,
-    Receiver, ResourceManagerFunction, ResourceManagerMethod,
-};
+use scrypto::core::NativeFunctionIdent;
+use scrypto::core::NativeMethodIdent;
+use scrypto::core::ScryptoFunctionIdent;
+use scrypto::core::ScryptoMethodIdent;
+use scrypto::core::ScryptoReceiver;
+use scrypto::core::{NetworkDefinition, Receiver};
 use scrypto::crypto::Hash;
 use scrypto::engine::types::*;
 use scrypto::misc::ContextualDisplay;
@@ -315,14 +317,17 @@ pub fn decompile_instruction<F: fmt::Write>(
         Instruction::CallFunction {
             function_ident,
             args,
-        } => decompile_call_function(f, context, function_ident, args)?,
-        Instruction::CallMethod { method_ident, args } => decompile_call_method(
-            f,
-            context,
-            &method_ident.receiver,
-            &method_ident.method_ident,
+        } => decompile_call_scrypto_function(f, context, function_ident, args)?,
+        Instruction::CallMethod { method_ident, args } => {
+            decompile_call_scrypto_method(f, context, method_ident, args)?
+        }
+        Instruction::CallNativeFunction {
+            function_ident,
             args,
-        )?,
+        } => decompile_call_native_function(f, context, function_ident, args)?,
+        Instruction::CallNativeMethod { method_ident, args } => {
+            decompile_call_native_method(f, context, method_ident, args)?
+        }
         Instruction::PublishPackage { code, abi } => {
             write!(f, "PUBLISH_PACKAGE Blob(\"{}\") Blob(\"{}\");", code, abi)?;
         }
@@ -330,15 +335,37 @@ pub fn decompile_instruction<F: fmt::Write>(
     Ok(())
 }
 
-pub fn decompile_call_function<F: fmt::Write>(
+pub fn decompile_call_scrypto_function<F: fmt::Write>(
     f: &mut F,
     context: &mut DecompilationContext,
-    function_ident: &FunctionIdent,
+    function_ident: &ScryptoFunctionIdent,
+    args: &Vec<u8>,
+) -> Result<(), DecompileError> {
+    write!(
+        f,
+        "CALL_FUNCTION PackageAddress(\"{}\") \"{}\" \"{}\"",
+        function_ident
+            .package_address
+            .display(context.bech32_encoder),
+        function_ident.blueprint_name,
+        function_ident.function_name,
+    )?;
+    format_args(f, context, args)?;
+    f.write_str(";")?;
+    Ok(())
+}
+
+pub fn decompile_call_native_function<F: fmt::Write>(
+    f: &mut F,
+    context: &mut DecompilationContext,
+    function_ident: &NativeFunctionIdent,
     args: &Vec<u8>,
 ) -> Result<(), DecompileError> {
     // Try to recognize the invocation
-    match function_ident {
-        FunctionIdent::Native(NativeFunction::ResourceManager(ResourceManagerFunction::Create)) => {
+    let blueprint_name = &function_ident.blueprint_name;
+    let function_name = &function_ident.function_name;
+    match (blueprint_name.as_str(), function_name.as_ref()) {
+        ("ResourceManager", "create") => {
             if let Ok(input) = scrypto_decode::<ResourceManagerCreateInput>(&args) {
                 f.write_str(&format!(
                     "CREATE_RESOURCE {} {} {} {};",
@@ -357,82 +384,49 @@ pub fn decompile_call_function<F: fmt::Write>(
     }
 
     // Fall back to generic representation
-    let (package_ident, blueprint_name, ident) = match function_ident {
-        FunctionIdent::Scrypto {
-            package_address,
-            blueprint_name,
-            ident,
-        } => (
-            format!(
-                "PackageAddress(\"{}\")",
-                package_address.display(context.bech32_encoder),
-            ),
-            blueprint_name.as_str(),
-            ident.as_str(),
-        ),
-        FunctionIdent::Native(native_function) => {
-            let (blueprint_name, ident) = match native_function {
-                NativeFunction::System(func) => (
-                    "System",
-                    match func {
-                        scrypto::core::SystemFunction::Create => "create",
-                    },
-                ),
-                NativeFunction::ResourceManager(func) => (
-                    "ResourceManager",
-                    match func {
-                        scrypto::core::ResourceManagerFunction::Create => "create",
-                    },
-                ),
-                NativeFunction::Package(func) => (
-                    "Package",
-                    match func {
-                        scrypto::core::PackageFunction::Publish => "publish",
-                    },
-                ),
-                NativeFunction::TransactionProcessor(func) => (
-                    "TransactionProcessor",
-                    match func {
-                        scrypto::core::TransactionProcessorFunction::Run => "run",
-                    },
-                ),
-            };
-            ("Native".to_owned(), blueprint_name, ident)
-        }
-    };
-    f.write_str(&format!(
-        "CALL_FUNCTION {} \"{}\" \"{}\"",
-        package_ident, blueprint_name, ident
-    ))?;
-    let value = ScryptoValue::from_slice(&args).map_err(|_| DecompileError::InvalidArguments)?;
-    if let Value::Struct { fields } = value.dom {
-        for field in fields {
-            let bytes = encode_any(&field);
-            let arg =
-                ScryptoValue::from_slice(&bytes).map_err(|_| DecompileError::InvalidArguments)?;
-            f.write_char(' ')?;
-            write!(f, "{}", arg.display(context.for_value_display()))?;
-        }
-    } else {
-        return Err(DecompileError::InvalidArguments);
-    }
+    write!(
+        f,
+        "CALL_NATIVE_FUNCTION \"{}\" \"{}\"",
+        blueprint_name, function_name,
+    )?;
+    format_args(f, context, args)?;
     f.write_str(";")?;
     Ok(())
 }
 
-pub fn decompile_call_method<F: fmt::Write>(
+pub fn decompile_call_scrypto_method<F: fmt::Write>(
     f: &mut F,
     context: &mut DecompilationContext,
-    receiver: &Receiver,
-    method_ident: &MethodIdent,
+    method_ident: &ScryptoMethodIdent,
+    args: &Vec<u8>,
+) -> Result<(), DecompileError> {
+    let receiver = match method_ident.receiver {
+        ScryptoReceiver::Global(address) => format!(
+            "ComponentAddress(\"{}\")",
+            address.display(context.bech32_encoder)
+        ),
+        ScryptoReceiver::Local(id) => {
+            format!("Component(\"{}\")", format_id(&id))
+        }
+    };
+    f.write_str(&format!(
+        "CALL_METHOD {} \"{}\"",
+        receiver, method_ident.method_name
+    ))?;
+    format_args(f, context, args)?;
+    f.write_str(";")?;
+    Ok(())
+}
+
+pub fn decompile_call_native_method<F: fmt::Write>(
+    f: &mut F,
+    context: &mut DecompilationContext,
+    method_ident: &NativeMethodIdent,
     args: &Vec<u8>,
 ) -> Result<(), DecompileError> {
     // Try to recognize the invocation
-    match (method_ident, receiver) {
-        (
-            MethodIdent::Native(NativeMethod::Bucket(BucketMethod::Burn)),
-            Receiver::Consumed(RENodeId::Bucket(bucket_id)),
-        ) => {
+    match (method_ident.receiver, method_ident.method_name.as_ref()) {
+        (Receiver::Consumed(RENodeId::Bucket(bucket_id)), "burn") => {
             if let Ok(_input) = scrypto_decode::<ConsumingBucketBurnInput>(&args) {
                 write!(
                     f,
@@ -446,10 +440,7 @@ pub fn decompile_call_method<F: fmt::Write>(
                 return Ok(());
             }
         }
-        (
-            MethodIdent::Native(NativeMethod::ResourceManager(ResourceManagerMethod::Mint)),
-            Receiver::Ref(RENodeId::ResourceManager(resource_address)),
-        ) => {
+        (Receiver::Ref(RENodeId::ResourceManager(resource_address)), "mint") => {
             if let Ok(input) = scrypto_decode::<ResourceManagerMintInput>(&args) {
                 if let MintParams::Fungible { amount } = input.mint_params {
                     write!(
@@ -466,32 +457,24 @@ pub fn decompile_call_method<F: fmt::Write>(
     }
 
     // Fall back to generic representation
-    let receiver = match receiver {
-        Receiver::Ref(node_id) => format!(
-            "{}{}",
-            if matches!(node_id, RENodeId::Global(_)) {
-                ""
-            } else {
-                "&"
-            },
-            format_node_id(node_id, context)
-        ),
-        Receiver::Consumed(node_id) => format_node_id(node_id, context),
+    let receiver = match method_ident.receiver {
+        Receiver::Ref(node_id) => format!("&{}", format_node_id(&node_id, context)),
+        Receiver::Consumed(node_id) => format_node_id(&node_id, context),
     };
-    let ident: &str = match method_ident {
-        MethodIdent::Scrypto(ident) => ident,
-        MethodIdent::Native(native_method) => match native_method {
-            NativeMethod::Component(m) => m.into(),
-            NativeMethod::System(m) => m.into(),
-            NativeMethod::AuthZone(m) => m.into(),
-            NativeMethod::ResourceManager(m) => m.into(),
-            NativeMethod::Bucket(m) => m.into(),
-            NativeMethod::Vault(m) => m.into(),
-            NativeMethod::Proof(m) => m.into(),
-            NativeMethod::Worktop(m) => m.into(),
-        },
-    };
-    f.write_str(&format!("CALL_METHOD {} \"{}\"", receiver, ident))?;
+    f.write_str(&format!(
+        "CALL_NATIVE_METHOD {} \"{}\"",
+        receiver, method_ident.method_name
+    ))?;
+    format_args(f, context, args)?;
+    f.write_str(";")?;
+    Ok(())
+}
+
+pub fn format_args<F: fmt::Write>(
+    f: &mut F,
+    context: &mut DecompilationContext,
+    args: &Vec<u8>,
+) -> Result<(), DecompileError> {
     let value = ScryptoValue::from_slice(&args).map_err(|_| DecompileError::InvalidArguments)?;
     if let Value::Struct { fields } = value.dom {
         for field in fields {
@@ -505,25 +488,21 @@ pub fn decompile_call_method<F: fmt::Write>(
         return Err(DecompileError::InvalidArguments);
     }
 
-    f.write_str(";")?;
     Ok(())
 }
 
 fn format_node_id(node_id: &RENodeId, context: &mut DecompilationContext) -> String {
     match node_id {
         RENodeId::Global(global_address) => match global_address {
-            GlobalAddress::Component(address) => format!(
-                "ComponentAddress(\"{}\")",
-                address.display(context.bech32_encoder)
-            ),
-            GlobalAddress::Package(address) => format!(
-                "PackageAddress(\"{}\")",
-                address.display(context.bech32_encoder)
-            ),
-            GlobalAddress::Resource(address) => format!(
-                "ResourceAddress(\"{}\")",
-                address.display(context.bech32_encoder)
-            ),
+            GlobalAddress::Component(address) => {
+                format!("Global(\"{}\")", address.display(context.bech32_encoder))
+            }
+            GlobalAddress::Package(address) => {
+                format!("Global(\"{}\")", address.display(context.bech32_encoder))
+            }
+            GlobalAddress::Resource(address) => {
+                format!("Global(\"{}\")", address.display(context.bech32_encoder))
+            }
         },
         RENodeId::Bucket(id) => match context.bucket_names.get(id) {
             Some(name) => format!("Bucket(\"{}\")", name),
@@ -562,8 +541,9 @@ mod tests {
     use crate::manifest::*;
     use sbor::*;
     use scrypto::buffer::scrypto_encode;
-    use scrypto::core::FunctionIdent;
+    use scrypto::core::NativeFunctionIdent;
     use scrypto::core::NetworkDefinition;
+    use scrypto::core::ResourceManagerFunction;
     use scrypto::resource::AccessRule;
     use scrypto::resource::Mutability;
     use scrypto::resource::ResourceMethodAuthKey;
@@ -580,10 +560,11 @@ mod tests {
     #[test]
     fn test_decompile_create_resource_with_invalid_arguments() {
         let manifest = decompile(
-            &[Instruction::CallFunction {
-                function_ident: FunctionIdent::Native(NativeFunction::ResourceManager(
-                    ResourceManagerFunction::Create,
-                )),
+            &[Instruction::CallNativeFunction {
+                function_ident: NativeFunctionIdent {
+                    blueprint_name: "ResourceManager".to_owned(),
+                    function_name: ResourceManagerFunction::Create.to_string(),
+                },
                 args: scrypto_encode(&BadResourceManagerCreateInput {
                     resource_type: ResourceType::NonFungible,
                     metadata: HashMap::new(),
@@ -594,7 +575,7 @@ mod tests {
         )
         .unwrap();
 
-        assert_eq!(manifest, "CALL_FUNCTION Native \"ResourceManager\" \"create\" Enum(\"NonFungible\") Map<String, String>() Map<Enum, Tuple>();\n");
+        assert_eq!(manifest, "CALL_NATIVE_FUNCTION \"ResourceManager\" \"create\" Enum(\"NonFungible\") Map<String, String>() Map<Enum, Tuple>();\n");
     }
 
     #[test]
@@ -647,10 +628,10 @@ PUBLISH_PACKAGE Blob("36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02
         assert_eq!(
             manifest2,
             r#"CALL_FUNCTION PackageAddress("package_sim1qy4hrp8a9apxldp5cazvxgwdj80cxad4u8cpkaqqnhlsa3lfpe") "Blueprint" "function";
-CALL_FUNCTION Native "System" "create";
-CALL_FUNCTION Native "ResourceManager" "create";
-CALL_FUNCTION Native "Package" "publish";
-CALL_FUNCTION Native "TransactionProcessor" "run";
+CALL_NATIVE_FUNCTION "System" "create";
+CALL_NATIVE_FUNCTION "ResourceManager" "create";
+CALL_NATIVE_FUNCTION "Package" "publish";
+CALL_NATIVE_FUNCTION "TransactionProcessor" "run";
 "#
         )
     }
@@ -665,32 +646,40 @@ CALL_FUNCTION Native "TransactionProcessor" "run";
         )
         .unwrap();
         let manifest2 = decompile(&manifest.instructions, &network).unwrap();
-        println!("manifest2{}", manifest2);
         assert_eq!(
             manifest2,
             r#"CALL_METHOD ComponentAddress("component_sim1qgvyxt5rrjhwctw7krgmgkrhv82zuamcqkq75tkkrwgs00m736") "free_xrd";
+CALL_METHOD Component("000000000000000000000000000000000000000000000000000000000000000000000005") "free_xrd";
 TAKE_FROM_WORKTOP ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag") Bucket("bucket1");
 CREATE_PROOF_FROM_AUTH_ZONE ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag") Proof("proof1");
-CALL_METHOD Bucket("bucket1") "get_resource_address";
-CALL_METHOD Bucket(1u32) "get_resource_address";
-CALL_METHOD Bucket(513u32) "get_resource_address";
-CALL_METHOD Bucket(1u32) "get_resource_address";
-CALL_METHOD AuthZone(1u32) "drain";
-CALL_METHOD Worktop "drain";
-CALL_METHOD Component("000000000000000000000000000000000000000000000000000000000000000000000005") "add_access_check";
-CALL_METHOD System("000000000000000000000000000000000000000000000000000000000000000000000005") "get_transaction_hash";
-CALL_METHOD Vault("000000000000000000000000000000000000000000000000000000000000000000000005") "get_resource_address";
-CALL_METHOD ResourceManager("resource_sim1qrc4s082h9trka3yrghwragylm3sdne0u668h2sy6c9sckkpn6") "burn";
-CALL_METHOD &Bucket("bucket1") "get_resource_address";
-CALL_METHOD &Bucket(1u32) "get_resource_address";
-CALL_METHOD &Bucket(513u32) "get_resource_address";
-CALL_METHOD &Bucket(1u32) "get_resource_address";
-CALL_METHOD &AuthZone(1u32) "drain";
-CALL_METHOD &Worktop "drain";
-CALL_METHOD &Component("000000000000000000000000000000000000000000000000000000000000000000000005") "add_access_check";
-CALL_METHOD &System("000000000000000000000000000000000000000000000000000000000000000000000005") "get_transaction_hash";
-CALL_METHOD &Vault("000000000000000000000000000000000000000000000000000000000000000000000005") "get_resource_address";
-CALL_METHOD &ResourceManager("resource_sim1qrc4s082h9trka3yrghwragylm3sdne0u668h2sy6c9sckkpn6") "burn";
+CALL_NATIVE_METHOD &Bucket("bucket1") "get_resource_address";
+CALL_NATIVE_METHOD &Bucket(1u32) "get_resource_address";
+CALL_NATIVE_METHOD &Bucket(513u32) "get_resource_address";
+CALL_NATIVE_METHOD &Bucket(1u32) "get_resource_address";
+CALL_NATIVE_METHOD &AuthZone(1u32) "drain";
+CALL_NATIVE_METHOD &Worktop "drain";
+CALL_NATIVE_METHOD &KeyValueStore("000000000000000000000000000000000000000000000000000000000000000000000005") "method";
+CALL_NATIVE_METHOD &NonFungibleStore("000000000000000000000000000000000000000000000000000000000000000000000005") "method";
+CALL_NATIVE_METHOD &Component("000000000000000000000000000000000000000000000000000000000000000000000005") "add_access_check";
+CALL_NATIVE_METHOD &System("000000000000000000000000000000000000000000000000000000000000000000000005") "get_transaction_hash";
+CALL_NATIVE_METHOD &Vault("000000000000000000000000000000000000000000000000000000000000000000000005") "get_resource_address";
+CALL_NATIVE_METHOD &ResourceManager("resource_sim1qrc4s082h9trka3yrghwragylm3sdne0u668h2sy6c9sckkpn6") "burn";
+CALL_NATIVE_METHOD &Package("package_sim1qy4hrp8a9apxldp5cazvxgwdj80cxad4u8cpkaqqnhlsa3lfpe") "method";
+CALL_NATIVE_METHOD &Global("resource_sim1qrc4s082h9trka3yrghwragylm3sdne0u668h2sy6c9sckkpn6") "burn";
+CALL_NATIVE_METHOD Bucket("bucket1") "get_resource_address";
+CALL_NATIVE_METHOD Bucket(1u32) "get_resource_address";
+CALL_NATIVE_METHOD Bucket(513u32) "get_resource_address";
+CALL_NATIVE_METHOD Bucket(1u32) "get_resource_address";
+CALL_NATIVE_METHOD AuthZone(1u32) "drain";
+CALL_NATIVE_METHOD Worktop "drain";
+CALL_NATIVE_METHOD KeyValueStore("000000000000000000000000000000000000000000000000000000000000000000000005") "method";
+CALL_NATIVE_METHOD NonFungibleStore("000000000000000000000000000000000000000000000000000000000000000000000005") "method";
+CALL_NATIVE_METHOD Component("000000000000000000000000000000000000000000000000000000000000000000000005") "add_access_check";
+CALL_NATIVE_METHOD System("000000000000000000000000000000000000000000000000000000000000000000000005") "get_transaction_hash";
+CALL_NATIVE_METHOD Vault("000000000000000000000000000000000000000000000000000000000000000000000005") "get_resource_address";
+CALL_NATIVE_METHOD ResourceManager("resource_sim1qrc4s082h9trka3yrghwragylm3sdne0u668h2sy6c9sckkpn6") "burn";
+CALL_NATIVE_METHOD Package("package_sim1qy4hrp8a9apxldp5cazvxgwdj80cxad4u8cpkaqqnhlsa3lfpe") "method";
+CALL_NATIVE_METHOD Global("resource_sim1qrc4s082h9trka3yrghwragylm3sdne0u668h2sy6c9sckkpn6") "method";
 "#
         )
     }

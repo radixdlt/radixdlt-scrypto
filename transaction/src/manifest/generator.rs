@@ -9,10 +9,9 @@ use scrypto::buffer::scrypto_decode;
 use scrypto::component::ComponentAddress;
 use scrypto::component::PackageAddress;
 use scrypto::core::{
-    AuthZoneMethod, Blob, BucketMethod, ComponentMethod, Expression, FunctionIdent, MethodIdent,
-    NativeFunction, NativeMethod, PackageFunction, ProofMethod, Receiver, ReceiverMethodIdent,
-    ResourceManagerFunction, ResourceManagerMethod, SystemFunction, SystemMethod,
-    TransactionProcessorFunction, VaultMethod, WorktopMethod,
+    Blob, BucketMethod, Expression, NativeFunctionIdent, NativeMethodIdent, Receiver,
+    ResourceManagerFunction, ResourceManagerMethod, ScryptoFunctionIdent, ScryptoMethodIdent,
+    ScryptoReceiver,
 };
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
@@ -59,6 +58,7 @@ pub enum GeneratorError {
     ArgumentsDoNotMatchAbi,
     UnknownNativeFunction(String, String),
     UnknownMethod(String),
+    InvalidGlobal(String),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -319,13 +319,14 @@ pub fn generate_instruction(
             Instruction::DropAllProofs
         }
         ast::Instruction::CallFunction {
-            package_ident,
+            package_address,
             blueprint_name,
-            function,
+            function_name,
             args,
         } => {
-            let function_ident =
-                generate_function_ident(package_ident, blueprint_name, function, bech32_decoder)?;
+            let package_address = generate_package_address(package_address, bech32_decoder)?;
+            let blueprint_name = generate_string(&blueprint_name)?;
+            let function_name = generate_string(&function_name)?;
             let args = generate_args(args, resolver, bech32_decoder, blobs)?;
             let mut fields = Vec::new();
             for arg in &args {
@@ -337,7 +338,11 @@ pub fn generate_instruction(
             }
 
             Instruction::CallFunction {
-                function_ident,
+                function_ident: ScryptoFunctionIdent {
+                    package_address,
+                    blueprint_name,
+                    function_name,
+                },
                 args: args_from_value_vec!(fields),
             }
         }
@@ -346,8 +351,8 @@ pub fn generate_instruction(
             method,
             args,
         } => {
-            let receiver = generate_receiver(receiver, bech32_decoder, resolver)?;
-            let method_ident = generate_method_ident(&receiver, method)?;
+            let receiver = generate_scrypto_receiver(receiver, bech32_decoder)?;
+            let method_name = generate_string(&method)?;
             let args = generate_args(args, resolver, bech32_decoder, blobs)?;
             let mut fields = Vec::new();
             for arg in &args {
@@ -359,13 +364,64 @@ pub fn generate_instruction(
             }
 
             Instruction::CallMethod {
-                method_ident: ReceiverMethodIdent {
+                method_ident: ScryptoMethodIdent {
                     receiver,
-                    method_ident,
+                    method_name,
                 },
                 args: args_from_value_vec!(fields),
             }
         }
+        ast::Instruction::CallNativeFunction {
+            blueprint_name,
+            function_name,
+            args,
+        } => {
+            let blueprint_name = generate_string(&blueprint_name)?;
+            let function_name = generate_string(&function_name)?;
+            let args = generate_args(args, resolver, bech32_decoder, blobs)?;
+            let mut fields = Vec::new();
+            for arg in &args {
+                let validated_arg = ScryptoValue::from_slice(arg).unwrap();
+                id_validator
+                    .move_resources(&validated_arg)
+                    .map_err(GeneratorError::IdValidationError)?;
+                fields.push(validated_arg.dom);
+            }
+
+            Instruction::CallNativeFunction {
+                function_ident: NativeFunctionIdent {
+                    blueprint_name,
+                    function_name,
+                },
+                args: args_from_value_vec!(fields),
+            }
+        }
+        ast::Instruction::CallNativeMethod {
+            receiver,
+            method,
+            args,
+        } => {
+            let receiver = generate_receiver(receiver, bech32_decoder, resolver)?;
+            let method_name = generate_string(&method)?;
+            let args = generate_args(args, resolver, bech32_decoder, blobs)?;
+            let mut fields = Vec::new();
+            for arg in &args {
+                let validated_arg = ScryptoValue::from_slice(arg).unwrap();
+                id_validator
+                    .move_resources(&validated_arg)
+                    .map_err(GeneratorError::IdValidationError)?;
+                fields.push(validated_arg.dom);
+            }
+
+            Instruction::CallNativeMethod {
+                method_ident: NativeMethodIdent {
+                    receiver,
+                    method_name,
+                },
+                args: args_from_value_vec!(fields),
+            }
+        }
+
         ast::Instruction::PublishPackage { code, abi } => Instruction::PublishPackage {
             code: generate_blob(code, blobs)?,
             abi: generate_blob(abi, blobs)?,
@@ -398,19 +454,20 @@ pub fn generate_instruction(
                 return Err(GeneratorError::ArgumentsDoNotMatchAbi);
             }
 
-            Instruction::CallFunction {
-                function_ident: FunctionIdent::Native(NativeFunction::ResourceManager(
-                    ResourceManagerFunction::Create,
-                )),
+            Instruction::CallNativeFunction {
+                function_ident: NativeFunctionIdent {
+                    blueprint_name: "ResourceManager".to_owned(),
+                    function_name: ResourceManagerFunction::Create.to_string(),
+                },
                 args,
             }
         }
         ast::Instruction::BurnBucket { bucket } => {
             let bucket_id = generate_bucket(bucket, resolver)?;
-            Instruction::CallMethod {
-                method_ident: ReceiverMethodIdent {
+            Instruction::CallNativeMethod {
+                method_ident: NativeMethodIdent {
                     receiver: Receiver::Consumed(RENodeId::Bucket(bucket_id)),
-                    method_ident: MethodIdent::Native(NativeMethod::Bucket(BucketMethod::Burn)),
+                    method_name: BucketMethod::Burn.to_string(),
                 },
                 args: args!(),
             }
@@ -426,12 +483,10 @@ pub fn generate_instruction(
                 },
             };
 
-            Instruction::CallMethod {
-                method_ident: ReceiverMethodIdent {
+            Instruction::CallNativeMethod {
+                method_ident: NativeMethodIdent {
                     receiver: Receiver::Ref(RENodeId::ResourceManager(resource_address)),
-                    method_ident: MethodIdent::Native(NativeMethod::ResourceManager(
-                        ResourceManagerMethod::Mint,
-                    )),
+                    method_name: ResourceManagerMethod::Mint.to_string(),
                 },
                 args: args!(input),
             }
@@ -467,7 +522,7 @@ fn generate_args(
 fn generate_string(value: &ast::Value) -> Result<String, GeneratorError> {
     match value {
         ast::Value::String(s) => Ok(s.into()),
-        v @ _ => invalid_type!(v, ast::Type::String),
+        v => invalid_type!(v, ast::Type::String),
     }
 }
 
@@ -477,9 +532,9 @@ fn generate_decimal(value: &ast::Value) -> Result<Decimal, GeneratorError> {
             ast::Value::String(s) => {
                 Decimal::from_str(s).map_err(|_| GeneratorError::InvalidDecimal(s.into()))
             }
-            v @ _ => invalid_type!(v, ast::Type::String),
+            v => invalid_type!(v, ast::Type::String),
         },
-        v @ _ => invalid_type!(v, ast::Type::Decimal),
+        v => invalid_type!(v, ast::Type::Decimal),
     }
 }
 
@@ -488,9 +543,9 @@ fn generate_precise_decimal(value: &ast::Value) -> Result<PreciseDecimal, Genera
         ast::Value::PreciseDecimal(inner) => match &**inner {
             ast::Value::String(s) => PreciseDecimal::from_str(s)
                 .map_err(|_| GeneratorError::InvalidPreciseDecimal(s.into())),
-            v @ _ => invalid_type!(v, ast::Type::String),
+            v => invalid_type!(v, ast::Type::String),
         },
-        v @ _ => invalid_type!(v, ast::Type::Decimal),
+        v => invalid_type!(v, ast::Type::Decimal),
     }
 }
 
@@ -503,9 +558,9 @@ fn generate_package_address(
             ast::Value::String(s) => bech32_decoder
                 .validate_and_decode_package_address(s)
                 .map_err(|_| GeneratorError::InvalidPackageAddress(s.into())),
-            v @ _ => invalid_type!(v, ast::Type::String),
+            v => invalid_type!(v, ast::Type::String),
         },
-        v @ _ => invalid_type!(v, ast::Type::PackageAddress),
+        v => invalid_type!(v, ast::Type::PackageAddress),
     }
 }
 
@@ -518,9 +573,9 @@ fn generate_component_address(
             ast::Value::String(s) => bech32_decoder
                 .validate_and_decode_component_address(s)
                 .map_err(|_| GeneratorError::InvalidComponentAddress(s.into())),
-            v @ _ => invalid_type!(v, ast::Type::String),
+            v => invalid_type!(v, ast::Type::String),
         },
-        v @ _ => invalid_type!(v, ast::Type::ComponentAddress),
+        v => invalid_type!(v, ast::Type::ComponentAddress),
     }
 }
 
@@ -533,58 +588,26 @@ fn generate_resource_address(
             ast::Value::String(s) => bech32_decoder
                 .validate_and_decode_resource_address(s)
                 .map_err(|_| GeneratorError::InvalidResourceAddress(s.into())),
-            v @ _ => invalid_type!(v, ast::Type::String),
+            v => invalid_type!(v, ast::Type::String),
         },
-        v @ _ => invalid_type!(v, ast::Type::ResourceAddress),
+        v => invalid_type!(v, ast::Type::ResourceAddress),
     }
 }
 
-fn generate_function_ident(
-    package_ident: &ast::PackageIdent,
-    blueprint_name: &ast::Value,
-    function_name: &ast::Value,
+fn generate_scrypto_receiver(
+    receiver: &ast::ScryptoReceiver,
     bech32_decoder: &Bech32Decoder,
-) -> Result<FunctionIdent, GeneratorError> {
-    let blueprint_name = generate_string(blueprint_name)?;
-    let function_name = generate_string(function_name)?;
-
-    match package_ident {
-        ast::PackageIdent::Scrypto(value) => {
-            let package_address = generate_package_address(value, bech32_decoder)?;
-            Ok(FunctionIdent::Scrypto {
-                package_address,
-                blueprint_name,
-                ident: function_name,
-            })
-        }
-        ast::PackageIdent::Native => match blueprint_name.as_str() {
-            "System" => Ok(FunctionIdent::Native(NativeFunction::System(
-                SystemFunction::from_str(&function_name).map_err(|_| {
-                    GeneratorError::UnknownNativeFunction(blueprint_name, function_name)
-                })?,
-            ))),
-            "ResourceManager" => Ok(FunctionIdent::Native(NativeFunction::ResourceManager(
-                ResourceManagerFunction::from_str(&function_name).map_err(|_| {
-                    GeneratorError::UnknownNativeFunction(blueprint_name, function_name)
-                })?,
-            ))),
-            "Package" => Ok(FunctionIdent::Native(NativeFunction::Package(
-                PackageFunction::from_str(&function_name).map_err(|_| {
-                    GeneratorError::UnknownNativeFunction(blueprint_name, function_name)
-                })?,
-            ))),
-            "TransactionProcessor" => {
-                Ok(FunctionIdent::Native(NativeFunction::TransactionProcessor(
-                    TransactionProcessorFunction::from_str(&function_name).map_err(|_| {
-                        GeneratorError::UnknownNativeFunction(blueprint_name, function_name)
-                    })?,
-                )))
-            }
-            _ => Err(GeneratorError::UnknownNativeFunction(
-                blueprint_name,
-                function_name,
+) -> Result<ScryptoReceiver, GeneratorError> {
+    match receiver {
+        ast::ScryptoReceiver::Global(v) => match v {
+            ast::Value::String(s) => Ok(ScryptoReceiver::Global(
+                bech32_decoder
+                    .validate_and_decode_component_address(&s)
+                    .map_err(|_| GeneratorError::InvalidResourceAddress(s.to_owned()))?,
             )),
+            v => invalid_type!(v, ast::Type::String),
         },
+        ast::ScryptoReceiver::Local(v) => Ok(ScryptoReceiver::Local(generate_node_id(v)?)),
     }
 }
 
@@ -594,32 +617,6 @@ fn generate_receiver(
     resolver: &mut NameResolver,
 ) -> Result<Receiver, GeneratorError> {
     match receiver {
-        ast::Receiver::Global(global_address) => match global_address {
-            ast::GlobalAddress::Package(v) => {
-                let s = generate_string(v)?;
-                Ok(Receiver::Ref(RENodeId::Global(GlobalAddress::Package(
-                    bech32_decoder
-                        .validate_and_decode_package_address(&s)
-                        .map_err(|_| GeneratorError::InvalidPackageAddress(s))?,
-                ))))
-            }
-            ast::GlobalAddress::Component(v) => {
-                let s = generate_string(v)?;
-                Ok(Receiver::Ref(RENodeId::Global(GlobalAddress::Component(
-                    bech32_decoder
-                        .validate_and_decode_component_address(&s)
-                        .map_err(|_| GeneratorError::InvalidComponentAddress(s))?,
-                ))))
-            }
-            ast::GlobalAddress::Resource(v) => {
-                let s = generate_string(v)?;
-                Ok(Receiver::Ref(RENodeId::Global(GlobalAddress::Resource(
-                    bech32_decoder
-                        .validate_and_decode_resource_address(&s)
-                        .map_err(|_| GeneratorError::InvalidResourceAddress(s))?,
-                ))))
-            }
-        },
         ast::Receiver::Ref(re_node) => Ok(Receiver::Ref(generate_re_node_id(
             re_node,
             bech32_decoder,
@@ -630,58 +627,6 @@ fn generate_receiver(
             bech32_decoder,
             resolver,
         )?)),
-    }
-}
-
-fn generate_method_ident(
-    receiver: &Receiver,
-    method: &ast::Value,
-) -> Result<MethodIdent, GeneratorError> {
-    let method = generate_string(method)?;
-    match receiver {
-        Receiver::Ref(RENodeId::Global(GlobalAddress::Component(_))) => {
-            Ok(MethodIdent::Scrypto(method))
-        }
-        Receiver::Ref(node_id) | Receiver::Consumed(node_id) => {
-            Ok(MethodIdent::Native(match node_id {
-                RENodeId::Bucket(_) => NativeMethod::Bucket(
-                    BucketMethod::from_str(&method)
-                        .map_err(|_| GeneratorError::UnknownMethod(method))?,
-                ),
-                RENodeId::Proof(_) => NativeMethod::Proof(
-                    ProofMethod::from_str(&method)
-                        .map_err(|_| GeneratorError::UnknownMethod(method))?,
-                ),
-                RENodeId::AuthZone(_) => NativeMethod::AuthZone(
-                    AuthZoneMethod::from_str(&method)
-                        .map_err(|_| GeneratorError::UnknownMethod(method))?,
-                ),
-                RENodeId::Worktop => NativeMethod::Worktop(
-                    WorktopMethod::from_str(&method)
-                        .map_err(|_| GeneratorError::UnknownMethod(method))?,
-                ),
-                RENodeId::Global(_) => return Err(GeneratorError::UnknownMethod(method)), // TODO: remove
-                RENodeId::KeyValueStore(_) => return Err(GeneratorError::UnknownMethod(method)),
-                RENodeId::NonFungibleStore(_) => return Err(GeneratorError::UnknownMethod(method)),
-                RENodeId::Component(_) => NativeMethod::Component(
-                    ComponentMethod::from_str(&method)
-                        .map_err(|_| GeneratorError::UnknownMethod(method))?,
-                ),
-                RENodeId::System(_) => NativeMethod::System(
-                    SystemMethod::from_str(&method)
-                        .map_err(|_| GeneratorError::UnknownMethod(method))?,
-                ),
-                RENodeId::Vault(_) => NativeMethod::Vault(
-                    VaultMethod::from_str(&method)
-                        .map_err(|_| GeneratorError::UnknownMethod(method))?,
-                ),
-                RENodeId::ResourceManager(_) => NativeMethod::ResourceManager(
-                    ResourceManagerMethod::from_str(&method)
-                        .map_err(|_| GeneratorError::UnknownMethod(method))?,
-                ),
-                RENodeId::Package(_) => return Err(GeneratorError::UnknownMethod(method)),
-            }))
-        }
     }
 }
 
@@ -697,7 +642,7 @@ fn generate_re_node_id(
                 ast::Value::String(s) => resolver
                     .resolve_bucket(&s)
                     .map_err(GeneratorError::NameResolverError),
-                v @ _ => invalid_type!(v, ast::Type::U32, ast::Type::String),
+                v => invalid_type!(v, ast::Type::U32, ast::Type::String),
             }?;
 
             Ok(RENodeId::Bucket(bucket_id))
@@ -708,7 +653,7 @@ fn generate_re_node_id(
                 ast::Value::String(s) => resolver
                     .resolve_proof(&s)
                     .map_err(GeneratorError::NameResolverError),
-                v @ _ => invalid_type!(v, ast::Type::U32, ast::Type::String),
+                v => invalid_type!(v, ast::Type::U32, ast::Type::String),
             }?;
 
             Ok(RENodeId::Bucket(bucket_id))
@@ -716,7 +661,7 @@ fn generate_re_node_id(
         ast::RENode::AuthZone(value) => {
             let auth_zone_id = match value {
                 ast::Value::U32(v) => Ok(*v),
-                v @ _ => invalid_type!(v, ast::Type::U32),
+                v => invalid_type!(v, ast::Type::U32),
             }?;
             Ok(RENodeId::AuthZone(auth_zone_id))
         }
@@ -748,6 +693,23 @@ fn generate_re_node_id(
             };
             Ok(RENodeId::Package(package_address))
         }
+        ast::RENode::Global(value) => match value {
+            ast::Value::String(s) => bech32_decoder
+                .validate_and_decode_package_address(s)
+                .map(|a| RENodeId::Global(GlobalAddress::Package(a)))
+                .or_else(|_| {
+                    bech32_decoder
+                        .validate_and_decode_component_address(s)
+                        .map(|a| RENodeId::Global(GlobalAddress::Component(a)))
+                })
+                .or_else(|_| {
+                    bech32_decoder
+                        .validate_and_decode_resource_address(s)
+                        .map(|a| RENodeId::Global(GlobalAddress::Resource(a)))
+                })
+                .map_err(|_| GeneratorError::InvalidGlobal(s.into())),
+            v => return invalid_type!(v, ast::Type::String),
+        },
     }
 }
 
@@ -773,9 +735,9 @@ fn generate_hash(value: &ast::Value) -> Result<Hash, GeneratorError> {
             ast::Value::String(s) => {
                 Hash::from_str(s).map_err(|_| GeneratorError::InvalidHash(s.into()))
             }
-            v @ _ => invalid_type!(v, ast::Type::String),
+            v => invalid_type!(v, ast::Type::String),
         },
-        v @ _ => invalid_type!(v, ast::Type::Hash),
+        v => invalid_type!(v, ast::Type::Hash),
     }
 }
 
@@ -789,9 +751,9 @@ fn declare_bucket(
             ast::Value::String(name) => resolver
                 .insert_bucket(name.to_string(), bucket_id)
                 .map_err(GeneratorError::NameResolverError),
-            v @ _ => invalid_type!(v, ast::Type::String),
+            v => invalid_type!(v, ast::Type::String),
         },
-        v @ _ => invalid_type!(v, ast::Type::Bucket),
+        v => invalid_type!(v, ast::Type::Bucket),
     }
 }
 
@@ -805,9 +767,9 @@ fn generate_bucket(
             ast::Value::String(s) => resolver
                 .resolve_bucket(&s)
                 .map_err(GeneratorError::NameResolverError),
-            v @ _ => invalid_type!(v, ast::Type::U32, ast::Type::String),
+            v => invalid_type!(v, ast::Type::U32, ast::Type::String),
         },
-        v @ _ => invalid_type!(v, ast::Type::Bucket),
+        v => invalid_type!(v, ast::Type::Bucket),
     }
 }
 
@@ -821,9 +783,9 @@ fn declare_proof(
             ast::Value::String(name) => resolver
                 .insert_proof(name.to_string(), proof_id)
                 .map_err(GeneratorError::NameResolverError),
-            v @ _ => invalid_type!(v, ast::Type::String),
+            v => invalid_type!(v, ast::Type::String),
         },
-        v @ _ => invalid_type!(v, ast::Type::Proof),
+        v => invalid_type!(v, ast::Type::Proof),
     }
 }
 
@@ -837,9 +799,9 @@ fn generate_proof(
             ast::Value::String(s) => resolver
                 .resolve_proof(&s)
                 .map_err(GeneratorError::NameResolverError),
-            v @ _ => invalid_type!(v, ast::Type::U32, ast::Type::String),
+            v => invalid_type!(v, ast::Type::U32, ast::Type::String),
         },
-        v @ _ => invalid_type!(v, ast::Type::Proof),
+        v => invalid_type!(v, ast::Type::Proof),
     }
 }
 
@@ -848,9 +810,9 @@ fn generate_non_fungible_id(value: &ast::Value) -> Result<NonFungibleId, Generat
         ast::Value::NonFungibleId(inner) => match &**inner {
             ast::Value::String(s) => NonFungibleId::from_str(s)
                 .map_err(|_| GeneratorError::InvalidNonFungibleId(s.into())),
-            v @ _ => invalid_type!(v, ast::Type::String),
+            v => invalid_type!(v, ast::Type::String),
         },
-        v @ _ => invalid_type!(v, ast::Type::NonFungibleId),
+        v => invalid_type!(v, ast::Type::NonFungibleId),
     }
 }
 
@@ -859,9 +821,9 @@ fn generate_non_fungible_address(value: &ast::Value) -> Result<NonFungibleAddres
         ast::Value::NonFungibleAddress(inner) => match &**inner {
             ast::Value::String(s) => NonFungibleAddress::from_str(s)
                 .map_err(|_| GeneratorError::InvalidNonFungibleAddress(s.into())),
-            v @ _ => invalid_type!(v, ast::Type::String),
+            v => invalid_type!(v, ast::Type::String),
         },
-        v @ _ => invalid_type!(v, ast::Type::NonFungibleAddress),
+        v => invalid_type!(v, ast::Type::NonFungibleAddress),
     }
 }
 
@@ -871,9 +833,9 @@ fn generate_expression(value: &ast::Value) -> Result<Expression, GeneratorError>
             ast::Value::String(s) => {
                 Expression::from_str(s).map_err(|_| GeneratorError::InvalidExpression(s.into()))
             }
-            v @ _ => invalid_type!(v, ast::Type::String),
+            v => invalid_type!(v, ast::Type::String),
         },
-        v @ _ => invalid_type!(v, ast::Type::Expression),
+        v => invalid_type!(v, ast::Type::Expression),
     }
 }
 
@@ -890,9 +852,9 @@ fn generate_blob(
                     .ok_or(GeneratorError::BlobNotFound(s.clone()))?;
                 Ok(Blob(hash))
             }
-            v @ _ => invalid_type!(v, ast::Type::String),
+            v => invalid_type!(v, ast::Type::String),
         },
-        v @ _ => invalid_type!(v, ast::Type::Blob),
+        v => invalid_type!(v, ast::Type::Blob),
     }
 }
 
@@ -910,7 +872,7 @@ fn generate_non_fungible_ids(
 
             values.iter().map(|v| generate_non_fungible_id(v)).collect()
         }
-        v @ _ => invalid_type!(v, ast::Type::Set),
+        v => invalid_type!(v, ast::Type::Set),
     }
 }
 
@@ -1449,14 +1411,14 @@ mod tests {
         generate_instruction_ok!(
             r#"CALL_FUNCTION  PackageAddress("package_sim1q8gl2qqsusgzmz92es68wy2fr7zjc523xj57eanm597qrz3dx7")  "Airdrop"  "new"  500u32  Map<String, U8>("key", 1u8)  PreciseDecimal("120");"#,
             Instruction::CallFunction {
-                function_ident: FunctionIdent::Scrypto {
+                function_ident: ScryptoFunctionIdent {
                     package_address: Bech32Decoder::for_simulator()
                         .validate_and_decode_package_address(
                             "package_sim1q8gl2qqsusgzmz92es68wy2fr7zjc523xj57eanm597qrz3dx7".into()
                         )
                         .unwrap(),
                     blueprint_name: "Airdrop".into(),
-                    ident: "new".to_string(),
+                    function_name: "new".to_string(),
                 },
                 args: args!(500u32, HashMap::from([("key", 1u8),]), pdec!("120"))
             }
@@ -1464,9 +1426,9 @@ mod tests {
         generate_instruction_ok!(
             r#"CALL_METHOD  ComponentAddress("component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum")  "refill";"#,
             Instruction::CallMethod {
-                method_ident: ReceiverMethodIdent {
-                    receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Component(component1))),
-                    method_ident: MethodIdent::Scrypto("refill".to_string()),
+                method_ident: ScryptoMethodIdent {
+                    receiver: ScryptoReceiver::Global(component1),
+                    method_name: "refill".to_string(),
                 },
                 args: args!()
             }

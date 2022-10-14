@@ -16,7 +16,7 @@ pub struct ScryptoFunctionIdent {
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, TypeId, Encode, Decode)]
 pub struct NativeFunctionIdent {
-    /* TODO: we may consider using NativeFunction enum here, which provider better compiler checks.
+    /* TODO: we may consider using `NativeFunction` enum here, which provides better compiler checks and saves space.
     The only downside is we'll have to update the transaction model every time a native function is added.
      */
     pub blueprint_name: String,
